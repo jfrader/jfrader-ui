@@ -11,6 +11,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 
@@ -21,7 +22,7 @@ export interface AlertPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface AlertProps extends Omit<ComponentPropsWithRef<'div'>, 'title' | 'role'> {
+export interface AlertProps extends Omit<ComponentPropsWithRef<'div'>, 'title' | 'role'>, SxProps {
   tone?: AlertTone;
   /** Announced tone word. Put visible meaning in the title text. */
   toneLabel?: string;
@@ -138,45 +139,47 @@ export function Alert({
   dismissLabel = 'Dismiss',
   slotProps,
   className,
+  sx,
   ...rest
 }: AlertProps) {
   const dismissible = onDismiss !== undefined;
 
   return (
-    <div
-      {...rest}
-      ref={ref}
-      data-ui="alert"
-      data-tone={tone}
+    <WithSx
       className={[className, slotProps?.root?.className].filter(Boolean).join(' ') || undefined}
-      css={[rootStyle, toneStyles[tone], dismissible && dismissibleStyle, slotProps?.root?.css]}
+      styles={[rootStyle, toneStyles[tone], dismissible && dismissibleStyle, slotProps?.root?.css]}
+      sx={sx}
     >
-      <div role={tone === 'danger' ? 'alert' : 'status'} aria-atomic="true" css={messageStyle}>
-        <span css={visuallyHiddenStyle}>{toneLabel}</span>
-        {isRenderable(title) && (
-          <div className={slotProps?.title?.className} css={[titleStyle, slotProps?.title?.css]}>
-            {title}
+      {(className) => (
+        <div {...rest} ref={ref} data-ui="alert" data-tone={tone} className={className}>
+          <div role={tone === 'danger' ? 'alert' : 'status'} aria-atomic="true" css={messageStyle}>
+            <span css={visuallyHiddenStyle}>{toneLabel}</span>
+            {isRenderable(title) && (
+              <div className={slotProps?.title?.className} css={[titleStyle, slotProps?.title?.css]}>
+                {title}
+              </div>
+            )}
+            {isRenderable(children) && (
+              <div className={slotProps?.body?.className} css={[bodyStyle, slotProps?.body?.css]}>
+                {children}
+              </div>
+            )}
           </div>
-        )}
-        {isRenderable(children) && (
-          <div className={slotProps?.body?.className} css={[bodyStyle, slotProps?.body?.css]}>
-            {children}
-          </div>
-        )}
-      </div>
-      {dismissible && (
-        <button
-          type="button"
-          data-ui="alert-dismiss"
-          aria-label={dismissLabel}
-          onClick={() => onDismiss?.()}
-          className={slotProps?.dismiss?.className}
-          css={[dismissStyle, slotProps?.dismiss?.css]}
-        >
-          <span aria-hidden>×</span>
-        </button>
+          {dismissible && (
+            <button
+              type="button"
+              data-ui="alert-dismiss"
+              aria-label={dismissLabel}
+              onClick={() => onDismiss?.()}
+              className={slotProps?.dismiss?.className}
+              css={[dismissStyle, slotProps?.dismiss?.css]}
+            >
+              <span aria-hidden>×</span>
+            </button>
+          )}
+        </div>
       )}
-    </div>
+    </WithSx>
   );
 }
 

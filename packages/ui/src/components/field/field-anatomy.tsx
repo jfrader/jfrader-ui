@@ -4,6 +4,7 @@
 import { useId, type AriaAttributes, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 
 export interface FieldPartProps {
@@ -76,19 +77,23 @@ export function useFieldAnatomy({
   return { id, descriptionId, errorId, describedBy, ariaInvalid };
 }
 
-interface FieldRootProps {
+interface FieldRootProps extends SxProps {
   'data-ui': string;
   className?: string;
   part?: FieldPartProps;
   children: ReactNode;
 }
 
-export function FieldRoot({ 'data-ui': dataUi, className, part, children }: FieldRootProps) {
+export function FieldRoot({ 'data-ui': dataUi, className, sx, part, children }: FieldRootProps) {
   const rootClassName = [className, part?.className].filter(Boolean).join(' ') || undefined;
   return (
-    <div data-ui={dataUi} className={rootClassName} css={[rootStyle, part?.css]}>
-      {children}
-    </div>
+    <WithSx className={rootClassName} styles={[rootStyle, part?.css]} sx={sx}>
+      {(className) => (
+        <div data-ui={dataUi} className={className}>
+          {children}
+        </div>
+      )}
+    </WithSx>
   );
 }
 

@@ -7,11 +7,12 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { loadingRing, loadingRingPulse } from '../../styling/loading-ring';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
 export type SpinnerSize = 'sm' | 'md' | 'lg';
 
-export interface SpinnerProps extends Omit<ComponentPropsWithRef<'span'>, 'children'> {
+export interface SpinnerProps extends Omit<ComponentPropsWithRef<'span'>, 'children'>, SxProps {
   size?: SpinnerSize;
   /** Accessible text announced for the status region. */
   label?: string;
@@ -38,12 +39,16 @@ const sizeStyles: Record<SpinnerSize, SerializedStyles> = {
   lg: css({ inlineSize: vars.space[6], blockSize: vars.space[6] }),
 };
 
-export function Spinner({ ref, size = 'md', label = 'Loading', ...rest }: SpinnerProps) {
+export function Spinner({ ref, size = 'md', label = 'Loading', className, sx, ...rest }: SpinnerProps) {
   return (
-    <span {...rest} ref={ref} role="status" data-ui="spinner" css={rootStyle}>
-      <span aria-hidden="true" data-ui="spinner-indicator" css={[ringStyle, sizeStyles[size]]} />
-      <span css={visuallyHiddenStyle}>{label}</span>
-    </span>
+    <WithSx className={className} styles={rootStyle} sx={sx}>
+      {(className) => (
+        <span {...rest} ref={ref} role="status" data-ui="spinner" className={className}>
+          <span aria-hidden="true" data-ui="spinner-indicator" css={[ringStyle, sizeStyles[size]]} />
+          <span css={visuallyHiddenStyle}>{label}</span>
+        </span>
+      )}
+    </WithSx>
   );
 }
 

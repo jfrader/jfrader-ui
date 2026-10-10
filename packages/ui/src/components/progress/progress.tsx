@@ -7,6 +7,7 @@ import { useId, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 
@@ -15,7 +16,7 @@ export interface ProgressPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface ProgressProps extends Omit<ComponentPropsWithRef<'div'>, 'children'> {
+export interface ProgressProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   /** Current value in `0..max`; leave undefined for indeterminate progress. */
   value?: number;
   max?: number;
@@ -98,6 +99,8 @@ export function Progress({
   getValueLabel,
   slotProps,
   'aria-labelledby': ariaLabelledByProp,
+  className,
+  sx,
   ...rest
 }: ProgressProps) {
   const labelId = `${useId()}-label`;
@@ -108,31 +111,35 @@ export function Progress({
   const percent = current === undefined ? 0 : (current / normalizedMax) * 100;
 
   return (
-    <div
-      {...rest}
-      ref={ref}
-      role="progressbar"
-      data-ui="progress"
-      data-state={isIndeterminate ? 'indeterminate' : 'determinate'}
-      aria-labelledby={ariaLabelledBy}
-      aria-valuemin={0}
-      aria-valuemax={normalizedMax}
-      aria-valuenow={current}
-      aria-valuetext={current === undefined ? undefined : getValueLabel?.(current, normalizedMax)}
-      css={trackStyle}
-    >
-      {hasLabel && (
-        <span id={labelId} css={visuallyHiddenStyle}>
-          {label}
-        </span>
+    <WithSx className={className} styles={trackStyle} sx={sx}>
+      {(className) => (
+        <div
+          {...rest}
+          ref={ref}
+          role="progressbar"
+          data-ui="progress"
+          data-state={isIndeterminate ? 'indeterminate' : 'determinate'}
+          aria-labelledby={ariaLabelledBy}
+          aria-valuemin={0}
+          aria-valuemax={normalizedMax}
+          aria-valuenow={current}
+          aria-valuetext={current === undefined ? undefined : getValueLabel?.(current, normalizedMax)}
+          className={className}
+        >
+          {hasLabel && (
+            <span id={labelId} css={visuallyHiddenStyle}>
+              {label}
+            </span>
+          )}
+          <div
+            data-ui="progress-indicator"
+            className={slotProps?.indicator?.className}
+            style={isIndeterminate ? undefined : { width: `${percent}%` }}
+            css={[indicatorStyle, isIndeterminate && indeterminateIndicatorStyle, slotProps?.indicator?.css]}
+          />
+        </div>
       )}
-      <div
-        data-ui="progress-indicator"
-        className={slotProps?.indicator?.className}
-        style={isIndeterminate ? undefined : { width: `${percent}%` }}
-        css={[indicatorStyle, isIndeterminate && indeterminateIndicatorStyle, slotProps?.indicator?.css]}
-      />
-    </div>
+    </WithSx>
   );
 }
 

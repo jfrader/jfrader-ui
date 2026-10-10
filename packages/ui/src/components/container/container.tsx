@@ -4,10 +4,11 @@
 import type { ComponentPropsWithRef } from 'react';
 import { css, type SerializedStyles } from '../../styling/css';
 import { spaceStyles, type LayoutSpace } from '../../styling/layout-style';
+import { WithSx, type SxProps } from '../../styling/sx';
 
 export type ContainerSize = 'sm' | 'md' | 'lg' | 'xl';
 
-export interface ContainerProps extends ComponentPropsWithRef<'div'> {
+export interface ContainerProps extends ComponentPropsWithRef<'div'>, SxProps {
   size?: ContainerSize;
   paddingInline?: LayoutSpace;
 }
@@ -35,15 +36,11 @@ const sizeStyles: Record<ContainerSize, SerializedStyles> = {
 
 const paddingStyles = spaceStyles('paddingInline');
 
-export function Container({ ref, size = 'lg', paddingInline = 'md', ...rest }: ContainerProps) {
+export function Container({ ref, size = 'lg', paddingInline = 'md', className, sx, ...rest }: ContainerProps) {
   return (
-    <div
-      {...rest}
-      ref={ref}
-      data-ui="container"
-      data-size={size}
-      css={[rootStyle, sizeStyles[size], paddingStyles[paddingInline]]}
-    />
+    <WithSx className={className} styles={[rootStyle, sizeStyles[size], paddingStyles[paddingInline]]} sx={sx}>
+      {(className) => <div {...rest} ref={ref} data-ui="container" data-size={size} className={className} />}
+    </WithSx>
   );
 }
 

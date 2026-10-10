@@ -26,6 +26,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { findByValue, moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -34,7 +35,7 @@ export type ToggleGroupOrientation = 'horizontal' | 'vertical';
 
 type ToggleGroupValue = string | string[];
 
-interface ToggleGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'> {
+interface ToggleGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
   orientation?: ToggleGroupOrientation;
   disabled?: boolean;
   allowEmpty?: boolean;
@@ -57,7 +58,7 @@ export interface ToggleGroupMultipleProps extends ToggleGroupBaseProps {
 
 export type ToggleGroupProps = ToggleGroupSingleProps | ToggleGroupMultipleProps;
 
-export interface ToggleGroupItemProps extends Omit<ComponentPropsWithRef<'button'>, 'value'> {
+export interface ToggleGroupItemProps extends Omit<ComponentPropsWithRef<'button'>, 'value'>, SxProps {
   value: string;
 }
 
@@ -175,6 +176,8 @@ function ToggleGroupRoot({
   label,
   'aria-label': ariaLabelProp,
   onKeyDown,
+  className,
+  sx,
   ...rest
 }: ToggleGroupProps) {
   // `toggle` only emits the shape that matches `type`, so either callback accepts it.
@@ -225,25 +228,38 @@ function ToggleGroupRoot({
 
   return (
     <ToggleGroupContext.Provider value={context}>
-      <div
-        {...rest}
-        ref={rootRef}
-        role="group"
-        aria-label={label ?? ariaLabelProp}
-        aria-disabled={disabled || undefined}
-        data-ui="toggle-group-root"
-        data-type={type}
-        data-orientation={orientation}
-        onKeyDown={handleKeyDown}
-        css={[rootStyle, rootOrientationStyles[orientation]]}
-      />
+      <WithSx className={className} styles={[rootStyle, rootOrientationStyles[orientation]]} sx={sx}>
+        {(className) => (
+          <div
+            {...rest}
+            ref={rootRef}
+            role="group"
+            aria-label={label ?? ariaLabelProp}
+            aria-disabled={disabled || undefined}
+            data-ui="toggle-group-root"
+            data-type={type}
+            data-orientation={orientation}
+            onKeyDown={handleKeyDown}
+            className={className}
+          />
+        )}
+      </WithSx>
     </ToggleGroupContext.Provider>
   );
 }
 
 ToggleGroupRoot.displayName = 'ToggleGroup';
 
-function ToggleGroupItem({ ref, value, disabled: disabledProp, onClick, onFocus, ...rest }: ToggleGroupItemProps) {
+function ToggleGroupItem({
+  ref,
+  value,
+  disabled: disabledProp,
+  onClick,
+  onFocus,
+  className,
+  sx,
+  ...rest
+}: ToggleGroupItemProps) {
   const { pressed, toggle, focused, setFocused, disabled: groupDisabled } = useToggleGroupContext('Item');
   const disabled = groupDisabled || disabledProp;
   const isPressed = pressed.includes(value);
@@ -261,20 +277,24 @@ function ToggleGroupItem({ ref, value, disabled: disabledProp, onClick, onFocus,
   };
 
   return (
-    <button
-      {...rest}
-      ref={ref}
-      type="button"
-      aria-pressed={isPressed}
-      data-ui="toggle-group-item"
-      data-value={value}
-      data-state={isPressed ? 'on' : 'off'}
-      tabIndex={isTabStop ? 0 : -1}
-      disabled={disabled}
-      onClick={handleClick}
-      onFocus={handleFocus}
-      css={itemStyle}
-    />
+    <WithSx className={className} styles={itemStyle} sx={sx}>
+      {(className) => (
+        <button
+          {...rest}
+          ref={ref}
+          type="button"
+          aria-pressed={isPressed}
+          data-ui="toggle-group-item"
+          data-value={value}
+          data-state={isPressed ? 'on' : 'off'}
+          tabIndex={isTabStop ? 0 : -1}
+          disabled={disabled}
+          onClick={handleClick}
+          onFocus={handleFocus}
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 

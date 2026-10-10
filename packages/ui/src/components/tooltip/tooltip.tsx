@@ -26,6 +26,7 @@ import {
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -45,8 +46,8 @@ export interface TooltipProps {
   children?: ReactNode;
 }
 
-export interface TooltipTriggerProps extends ComponentPropsWithRef<'button'> {}
-export interface TooltipContentProps extends ComponentPropsWithRef<'div'> {}
+export interface TooltipTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
+export interface TooltipContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -111,7 +112,7 @@ function TooltipRoot({
 
 TooltipRoot.displayName = 'Tooltip';
 
-function TooltipTrigger({ ref, 'aria-describedby': ariaDescribedByProp, ...rest }: TooltipTriggerProps) {
+function TooltipTrigger({ ref, 'aria-describedby': ariaDescribedByProp, className, sx, ...rest }: TooltipTriggerProps) {
   const { refs, getReferenceProps } = useTooltipContext('Trigger');
   const mergedRef = useMergeRefs([refs.setReference, ref]);
   const referenceProps = getReferenceProps(rest);
@@ -121,20 +122,24 @@ function TooltipTrigger({ ref, 'aria-describedby': ariaDescribedByProp, ...rest 
     undefined;
 
   return (
-    <button
-      type="button"
-      {...referenceProps}
-      ref={mergedRef}
-      aria-describedby={describedBy}
-      data-ui="tooltip-trigger"
-      css={triggerStyle}
-    />
+    <WithSx className={className} styles={triggerStyle} sx={sx}>
+      {(className) => (
+        <button
+          type="button"
+          {...referenceProps}
+          ref={mergedRef}
+          aria-describedby={describedBy}
+          data-ui="tooltip-trigger"
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 
 TooltipTrigger.displayName = 'Tooltip.Trigger';
 
-function TooltipContent({ ref, style, ...rest }: TooltipContentProps) {
+function TooltipContent({ ref, style, className, sx, ...rest }: TooltipContentProps) {
   const { open, refs, floatingStyles, getFloatingProps } = useTooltipContext('Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
 
@@ -147,13 +152,17 @@ function TooltipContent({ ref, style, ...rest }: TooltipContentProps) {
 
   return (
     <FloatingPortal>
-      <div
-        {...floatingProps}
-        ref={mergedRef}
-        data-ui="tooltip"
-        style={{ ...style, ...floatingStyles }}
-        css={contentStyle}
-      />
+      <WithSx className={className} styles={contentStyle} sx={sx}>
+        {(className) => (
+          <div
+            {...floatingProps}
+            ref={mergedRef}
+            data-ui="tooltip"
+            style={{ ...style, ...floatingStyles }}
+            className={className}
+          />
+        )}
+      </WithSx>
     </FloatingPortal>
   );
 }

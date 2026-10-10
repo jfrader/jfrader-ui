@@ -3,10 +3,11 @@
 import type { ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
+import { WithSx, type SxProps } from '../../styling/sx';
 
 export type PillTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
 
-export interface PillProps extends ComponentPropsWithRef<'span'> {
+export interface PillProps extends ComponentPropsWithRef<'span'>, SxProps {
   tone?: PillTone;
 }
 
@@ -43,8 +44,12 @@ const toneStyles: Record<PillTone, SerializedStyles> = {
   danger: css({ backgroundColor: vars.color.dangerSoft, color: vars.color.dangerText }),
 };
 
-export function Pill({ ref, tone = 'neutral', ...rest }: PillProps) {
-  return <span {...rest} ref={ref} data-ui="pill" data-tone={tone} css={[rootStyle, toneStyles[tone]]} />;
+export function Pill({ ref, tone = 'neutral', className, sx, ...rest }: PillProps) {
+  return (
+    <WithSx className={className} styles={[rootStyle, toneStyles[tone]]} sx={sx}>
+      {(className) => <span {...rest} ref={ref} data-ui="pill" data-tone={tone} className={className} />}
+    </WithSx>
+  );
 }
 
 Pill.displayName = 'Pill';

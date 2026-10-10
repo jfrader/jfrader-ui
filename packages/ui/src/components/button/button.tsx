@@ -20,6 +20,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { loadingRing, loadingRingPulse } from '../../styling/loading-ring';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 
 export type ButtonVariant = 'solid' | 'soft' | 'outline' | 'ghost';
 export type ButtonTone = 'neutral' | 'accent' | 'danger';
@@ -32,7 +33,7 @@ export interface ButtonRenderProps extends Omit<ButtonHTMLAttributes<HTMLElement
   'data-ui': string;
 }
 
-export interface ButtonProps extends Omit<ComponentPropsWithRef<'button'>, 'color'> {
+export interface ButtonProps extends Omit<ComponentPropsWithRef<'button'>, 'color'>, SxProps {
   variant?: ButtonVariant;
   tone?: ButtonTone;
   size?: ButtonSize;
@@ -192,7 +193,9 @@ export function Button({
   type,
   children,
   onClick,
+  className,
   css: cssProp,
+  sx,
   render,
   ...props
 }: ButtonProps) {
@@ -232,32 +235,48 @@ export function Button({
 
   if (render) {
     const { disabled: _disabled, ...attributes } = rest;
-    return render({
-      ...attributes,
-      ref: renderRef,
-      type,
-      'data-ui': marker,
-      'aria-busy': loading ? true : rest['aria-busy'],
-      'aria-disabled': isInactive ? true : ariaDisabled,
-      onClick: handleClick,
-      css: [baseStyle, renderedStyle, sizeStyles[size], variantStyles[variant][tone], cssProp],
-      children: content,
-    });
+    // The rendered element merges `css` before `className`, so `sx` rides in the className.
+    return (
+      <WithSx className={className} sx={sx}>
+        {(className) =>
+          render({
+            ...attributes,
+            className,
+            ref: renderRef,
+            type,
+            'data-ui': marker,
+            'aria-busy': loading ? true : rest['aria-busy'],
+            'aria-disabled': isInactive ? true : ariaDisabled,
+            onClick: handleClick,
+            css: [baseStyle, renderedStyle, sizeStyles[size], variantStyles[variant][tone], cssProp],
+            children: content,
+          })
+        }
+      </WithSx>
+    );
   }
 
   return (
-    <button
-      {...rest}
-      ref={ref}
-      type={type ?? 'button'}
-      data-ui={marker}
-      aria-busy={loading ? true : rest['aria-busy']}
-      aria-disabled={isInactive ? true : ariaDisabled}
-      onClick={handleClick}
-      css={[baseStyle, sizeStyles[size], variantStyles[variant][tone], cssProp]}
+    <WithSx
+      className={className}
+      styles={[baseStyle, sizeStyles[size], variantStyles[variant][tone], cssProp]}
+      sx={sx}
     >
-      {content}
-    </button>
+      {(className) => (
+        <button
+          {...rest}
+          ref={ref}
+          type={type ?? 'button'}
+          data-ui={marker}
+          aria-busy={loading ? true : rest['aria-busy']}
+          aria-disabled={isInactive ? true : ariaDisabled}
+          onClick={handleClick}
+          className={className}
+        >
+          {content}
+        </button>
+      )}
+    </WithSx>
   );
 }
 

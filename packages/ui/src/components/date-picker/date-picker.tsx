@@ -51,6 +51,7 @@ import {
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { raisedSurface } from '../../styling/surface';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -106,7 +107,7 @@ export interface DatePickerInputProps
   > {}
 
 /** The popup renders its own calendar. */
-export type DatePickerPopupProps = Omit<ComponentPropsWithRef<'div'>, 'children'>;
+export type DatePickerPopupProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps;
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -446,7 +447,7 @@ function DatePickerInput({
 
 DatePickerInput.displayName = 'DatePicker.Input';
 
-function DatePickerPopup({ ref, style, ...rest }: DatePickerPopupProps) {
+function DatePickerPopup({ ref, style, className, sx, ...rest }: DatePickerPopupProps) {
   const {
     open,
     value,
@@ -512,31 +513,35 @@ function DatePickerPopup({ ref, style, ...rest }: DatePickerPopupProps) {
         initialFocus={initialFocusRef}
         returnFocus={false}
       >
-        <div
-          {...getFloatingProps({ ...labelling, ...rest })}
-          ref={mergedRef}
-          data-ui="date-picker-popup"
-          style={{ ...style, ...floatingStyles }}
-          css={popupStyle}
-        >
-          {/* '' keeps the calendar controlled while nothing is selected; selection goes
-              through the grid click handler. */}
-          <Calendar
-            value={value ?? ''}
-            defaultVisibleMonth={initialMonth}
-            min={min}
-            max={max}
-            locale={locale}
-            firstDayOfWeek={firstDayOfWeek}
-          >
-            <Calendar.Header />
-            <Calendar.Grid
-              ref={mergedGridRef}
-              onClick={handleGridClick}
-              onPointerDownCapture={handleGridPointerDown}
-            />
-          </Calendar>
-        </div>
+        <WithSx className={className} styles={popupStyle} sx={sx}>
+          {(className) => (
+            <div
+              {...getFloatingProps({ ...labelling, ...rest })}
+              ref={mergedRef}
+              data-ui="date-picker-popup"
+              style={{ ...style, ...floatingStyles }}
+              className={className}
+            >
+              {/* '' keeps the calendar controlled while nothing is selected; selection goes
+                  through the grid click handler. */}
+              <Calendar
+                value={value ?? ''}
+                defaultVisibleMonth={initialMonth}
+                min={min}
+                max={max}
+                locale={locale}
+                firstDayOfWeek={firstDayOfWeek}
+              >
+                <Calendar.Header />
+                <Calendar.Grid
+                  ref={mergedGridRef}
+                  onClick={handleGridClick}
+                  onPointerDownCapture={handleGridPointerDown}
+                />
+              </Calendar>
+            </div>
+          )}
+        </WithSx>
       </FloatingFocusManager>
     </FloatingPortal>
   );

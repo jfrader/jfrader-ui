@@ -7,6 +7,7 @@ import type { ChangeEvent, ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
+import type { SxProps } from '../../styling/sx';
 import {
   FieldDescription,
   FieldError,
@@ -22,7 +23,7 @@ export type TextareaResize = 'none' | 'vertical';
 
 export interface TextareaPartProps extends FieldPartProps {}
 
-export interface TextareaProps extends ComponentPropsWithRef<'textarea'> {
+export interface TextareaProps extends ComponentPropsWithRef<'textarea'>, SxProps {
   label?: ReactNode;
   description?: ReactNode;
   error?: ReactNode;
@@ -66,6 +67,7 @@ export function Textarea({
   onValueChange,
   slotProps,
   className,
+  sx,
   required,
   id: idProp,
   'aria-describedby': ariaDescribedByProp,
@@ -86,7 +88,7 @@ export function Textarea({
   };
 
   return (
-    <FieldRoot data-ui="textarea" className={className} part={slotProps?.root}>
+    <FieldRoot data-ui="textarea" className={className} sx={sx} part={slotProps?.root}>
       <FieldLabel htmlFor={field.id} required={required} part={slotProps?.label}>
         {label}
       </FieldLabel>

@@ -8,6 +8,7 @@
 import { createContext, useContext, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { WithSx, type SxProps } from '../../styling/sx';
 
 export type CardVariant = 'flat' | 'raised';
 
@@ -27,22 +28,22 @@ export interface CardSlotProps {
   footer?: CardPartProps;
 }
 
-export interface CardProps extends ComponentPropsWithRef<'div'> {
+export interface CardProps extends ComponentPropsWithRef<'div'>, SxProps {
   variant?: CardVariant;
   slotProps?: CardSlotProps;
 }
 
-export type CardHeaderProps = ComponentPropsWithRef<'div'>;
+export type CardHeaderProps = ComponentPropsWithRef<'div'> & SxProps;
 
-export interface CardTitleProps extends ComponentPropsWithRef<'h3'> {
+export interface CardTitleProps extends ComponentPropsWithRef<'h3'>, SxProps {
   level?: CardHeadingLevel;
 }
 
-export type CardDescriptionProps = ComponentPropsWithRef<'p'>;
+export type CardDescriptionProps = ComponentPropsWithRef<'p'> & SxProps;
 
-export type CardContentProps = ComponentPropsWithRef<'div'>;
+export type CardContentProps = ComponentPropsWithRef<'div'> & SxProps;
 
-export type CardFooterProps = ComponentPropsWithRef<'div'>;
+export type CardFooterProps = ComponentPropsWithRef<'div'> & SxProps;
 
 const CardSlotContext = createContext<CardSlotProps | undefined>(undefined);
 
@@ -50,7 +51,7 @@ function joinClassNames(...names: (string | undefined)[]) {
   return names.filter(Boolean).join(' ') || undefined;
 }
 
-// Precedence: base → variant → slotProps.root.css → consumer css (merged last by Emotion).
+// Precedence: base → variant → slotProps.root.css → consumer css → consumer sx.
 const rootStyle = css({
   boxSizing: 'border-box',
   minInlineSize: 0,
@@ -107,94 +108,73 @@ const footerStyle = css({
   '& > :only-child': { marginInlineStart: 'auto' },
 });
 
-function CardRoot({ ref, variant = 'raised', slotProps, className, ...rest }: CardProps) {
+function CardRoot({ ref, variant = 'raised', slotProps, className, sx, ...rest }: CardProps) {
   return (
     <CardSlotContext.Provider value={slotProps}>
-      <div
-        {...rest}
-        ref={ref}
-        data-ui="card"
-        data-variant={variant}
+      <WithSx
         className={joinClassNames(slotProps?.root?.className, className)}
-        css={[rootStyle, variantStyles[variant], slotProps?.root?.css]}
-      />
+        styles={[rootStyle, variantStyles[variant], slotProps?.root?.css]}
+        sx={sx}
+      >
+        {(className) => <div {...rest} ref={ref} data-ui="card" data-variant={variant} className={className} />}
+      </WithSx>
     </CardSlotContext.Provider>
   );
 }
 
 CardRoot.displayName = 'Card';
 
-function CardHeader({ ref, className, ...rest }: CardHeaderProps) {
+function CardHeader({ ref, className, sx, ...rest }: CardHeaderProps) {
   const slot = useContext(CardSlotContext)?.header;
   return (
-    <div
-      {...rest}
-      ref={ref}
-      data-ui="card-header"
-      className={joinClassNames(slot?.className, className)}
-      css={[headerStyle, slot?.css]}
-    />
+    <WithSx className={joinClassNames(slot?.className, className)} styles={[headerStyle, slot?.css]} sx={sx}>
+      {(className) => <div {...rest} ref={ref} data-ui="card-header" className={className} />}
+    </WithSx>
   );
 }
 
 CardHeader.displayName = 'Card.Header';
 
-function CardTitle({ ref, level = 3, className, ...rest }: CardTitleProps) {
+function CardTitle({ ref, level = 3, className, sx, ...rest }: CardTitleProps) {
   const slot = useContext(CardSlotContext)?.title;
   const Heading = `h${level}` as const;
   return (
-    <Heading
-      {...rest}
-      ref={ref}
-      data-ui="card-title"
-      className={joinClassNames(slot?.className, className)}
-      css={[titleStyle, slot?.css]}
-    />
+    <WithSx className={joinClassNames(slot?.className, className)} styles={[titleStyle, slot?.css]} sx={sx}>
+      {(className) => <Heading {...rest} ref={ref} data-ui="card-title" className={className} />}
+    </WithSx>
   );
 }
 
 CardTitle.displayName = 'Card.Title';
 
-function CardDescription({ ref, className, ...rest }: CardDescriptionProps) {
+function CardDescription({ ref, className, sx, ...rest }: CardDescriptionProps) {
   const slot = useContext(CardSlotContext)?.description;
   return (
-    <p
-      {...rest}
-      ref={ref}
-      data-ui="card-description"
-      className={joinClassNames(slot?.className, className)}
-      css={[descriptionStyle, slot?.css]}
-    />
+    <WithSx className={joinClassNames(slot?.className, className)} styles={[descriptionStyle, slot?.css]} sx={sx}>
+      {(className) => <p {...rest} ref={ref} data-ui="card-description" className={className} />}
+    </WithSx>
   );
 }
 
 CardDescription.displayName = 'Card.Description';
 
-function CardContent({ ref, className, ...rest }: CardContentProps) {
+function CardContent({ ref, className, sx, ...rest }: CardContentProps) {
   const slot = useContext(CardSlotContext)?.content;
   return (
-    <div
-      {...rest}
-      ref={ref}
-      data-ui="card-content"
-      className={joinClassNames(slot?.className, className)}
-      css={[contentStyle, slot?.css]}
-    />
+    <WithSx className={joinClassNames(slot?.className, className)} styles={[contentStyle, slot?.css]} sx={sx}>
+      {(className) => <div {...rest} ref={ref} data-ui="card-content" className={className} />}
+    </WithSx>
   );
 }
 
 CardContent.displayName = 'Card.Content';
 
-function CardFooter({ ref, className, ...rest }: CardFooterProps) {
+function CardFooter({ ref, className, sx, ...rest }: CardFooterProps) {
   const slot = useContext(CardSlotContext)?.footer;
   return (
-    <div
-      {...rest}
-      ref={ref}
-      data-ui="card-footer"
-      className={joinClassNames(slot?.className, className)}
-      css={[footerStyle, slot?.css]}
-    />
+    <WithSx className={joinClassNames(slot?.className, className)} styles={[footerStyle, slot?.css]} sx={sx}>
+      {(className) => <div {...rest} ref={ref} data-ui="card-footer" className={className} />}
+    </WithSx>
   );
 }
 

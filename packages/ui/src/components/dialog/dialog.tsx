@@ -32,6 +32,7 @@ import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
 import { modalShellReset, raisedSurface } from '../../styling/surface';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import {
   omitNativeOpen,
@@ -55,7 +56,7 @@ export interface DialogPartRenderProps extends ButtonHTMLAttributes<HTMLButtonEl
   'data-ui': string;
 }
 
-export interface DialogTriggerProps extends ComponentPropsWithRef<'button'> {
+export interface DialogTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   /**
    * Replaces the default button. Spread ALL supplied props onto the operative element and attach
    * the supplied ref, including when composing through Button. The forwarded and callback refs
@@ -71,13 +72,13 @@ export interface DialogTriggerProps extends ComponentPropsWithRef<'button'> {
    */
   render?: (props: DialogPartRenderProps) => ReactNode;
 }
-export interface DialogContentProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'> {
+export interface DialogContentProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'>, SxProps {
   /** Set false to keep structured content out of the dialog's accessible description. */
   withDescription?: boolean;
 }
-export interface DialogTitleProps extends ComponentPropsWithRef<'h2'> {}
-export interface DialogDescriptionProps extends ComponentPropsWithRef<'p'> {}
-export interface DialogCloseProps extends ComponentPropsWithRef<'button'> {
+export interface DialogTitleProps extends ComponentPropsWithRef<'h2'>, SxProps {}
+export interface DialogDescriptionProps extends ComponentPropsWithRef<'p'>, SxProps {}
+export interface DialogCloseProps extends ComponentPropsWithRef<'button'>, SxProps {
   /**
    * Replaces the default button. Spread ALL supplied props onto the operative element and attach
    * the supplied ref, including when composing through Button. The forwarded and callback refs
@@ -201,7 +202,7 @@ function DialogRoot({ open: openProp, defaultOpen = false, onOpenChange, childre
 
 DialogRoot.displayName = 'Dialog';
 
-function DialogTrigger({ ref = null, onClick, render, ...rest }: DialogTriggerProps) {
+function DialogTrigger({ ref = null, onClick, render, className, sx, ...rest }: DialogTriggerProps) {
   const { open, setOpen } = useDialogContext('Trigger');
   const { 'data-ui': partMarker, ...attributes } = rest as typeof rest & { 'data-ui'?: string };
 
@@ -221,12 +222,19 @@ function DialogTrigger({ ref = null, onClick, render, ...rest }: DialogTriggerPr
     onClick: handleClick,
   };
 
-  return render ? render(triggerProps) : <button {...triggerProps} css={triggerStyle} />;
+  // The render path has no own styles: the rendered element (e.g. a Button) supplies them.
+  return (
+    <WithSx className={className} styles={render ? undefined : triggerStyle} sx={sx}>
+      {(className) =>
+        render ? render({ ...triggerProps, className }) : <button {...triggerProps} className={className} />
+      }
+    </WithSx>
+  );
 }
 
 DialogTrigger.displayName = 'Dialog.Trigger';
 
-function DialogContent({ ref, ...props }: DialogContentProps) {
+function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
   const {
     children,
     onCancel,
@@ -252,25 +260,29 @@ function DialogContent({ ref, ...props }: DialogContentProps) {
     .join(' ') || undefined;
 
   return (
-    <dialog
-      {...rest}
-      {...dialogProps}
-      data-ui="dialog"
-      aria-modal="true"
-      aria-labelledby={labelledBy}
-      aria-describedby={describedBy}
-      css={dialogStyle}
-    >
-      <DialogRequestCloseContext.Provider value={requestClose}>
-        <div css={panelStyle}>{children}</div>
-      </DialogRequestCloseContext.Provider>
-    </dialog>
+    <WithSx className={className} styles={dialogStyle} sx={sx}>
+      {(className) => (
+        <dialog
+          {...rest}
+          {...dialogProps}
+          data-ui="dialog"
+          aria-modal="true"
+          aria-labelledby={labelledBy}
+          aria-describedby={describedBy}
+          className={className}
+        >
+          <DialogRequestCloseContext.Provider value={requestClose}>
+            <div css={panelStyle}>{children}</div>
+          </DialogRequestCloseContext.Provider>
+        </dialog>
+      )}
+    </WithSx>
   );
 }
 
 DialogContent.displayName = 'Dialog.Content';
 
-function DialogTitle({ ref, ...props }: DialogTitleProps) {
+function DialogTitle({ ref, className, sx, ...props }: DialogTitleProps) {
   const { titleId, setHasTitle } = useDialogContext('Title');
 
   useEffect(() => {
@@ -278,12 +290,16 @@ function DialogTitle({ ref, ...props }: DialogTitleProps) {
     return () => setHasTitle(false);
   }, [setHasTitle]);
 
-  return <h2 {...props} ref={ref} id={titleId} data-ui="dialog-title" css={titleStyle} />;
+  return (
+    <WithSx className={className} styles={titleStyle} sx={sx}>
+      {(className) => <h2 {...props} ref={ref} id={titleId} data-ui="dialog-title" className={className} />}
+    </WithSx>
+  );
 }
 
 DialogTitle.displayName = 'Dialog.Title';
 
-function DialogDescription({ ref, ...props }: DialogDescriptionProps) {
+function DialogDescription({ ref, className, sx, ...props }: DialogDescriptionProps) {
   const { descriptionId, setHasDescription } = useDialogContext('Description');
 
   useEffect(() => {
@@ -291,12 +307,18 @@ function DialogDescription({ ref, ...props }: DialogDescriptionProps) {
     return () => setHasDescription(false);
   }, [setHasDescription]);
 
-  return <p {...props} ref={ref} id={descriptionId} data-ui="dialog-description" css={descriptionStyle} />;
+  return (
+    <WithSx className={className} styles={descriptionStyle} sx={sx}>
+      {(className) => (
+        <p {...props} ref={ref} id={descriptionId} data-ui="dialog-description" className={className} />
+      )}
+    </WithSx>
+  );
 }
 
 DialogDescription.displayName = 'Dialog.Description';
 
-function DialogClose({ ref = null, onClick, render, ...rest }: DialogCloseProps) {
+function DialogClose({ ref = null, onClick, render, className, sx, ...rest }: DialogCloseProps) {
   const { setOpen } = useDialogContext('Close');
   const requestClose = useContext(DialogRequestCloseContext);
   const { 'data-ui': partMarker, ...attributes } = rest as typeof rest & { 'data-ui'?: string };
@@ -317,7 +339,13 @@ function DialogClose({ ref = null, onClick, render, ...rest }: DialogCloseProps)
     onClick: handleClick,
   };
 
-  return render ? render(closeProps) : <button {...closeProps} css={closeStyle} />;
+  return (
+    <WithSx className={className} styles={render ? undefined : closeStyle} sx={sx}>
+      {(className) =>
+        render ? render({ ...closeProps, className }) : <button {...closeProps} className={className} />
+      }
+    </WithSx>
+  );
 }
 
 DialogClose.displayName = 'Dialog.Close';

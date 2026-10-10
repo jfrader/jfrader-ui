@@ -5,10 +5,11 @@
 import { Children, Fragment, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { WithSx, type SxProps } from '../../styling/sx';
 
-export type KbdProps = ComponentPropsWithRef<'kbd'>;
+export type KbdProps = ComponentPropsWithRef<'kbd'> & SxProps;
 
-export type KbdGroupProps = ComponentPropsWithRef<'span'>;
+export type KbdGroupProps = ComponentPropsWithRef<'span'> & SxProps;
 
 const KEY_SEPARATOR = '+';
 
@@ -51,26 +52,34 @@ const separatorStyle = css({
   color: vars.color.textMuted,
 });
 
-function KbdRoot({ ref, ...props }: KbdProps) {
-  return <kbd {...props} ref={ref} data-ui="kbd" css={rootStyle} />;
+function KbdRoot({ ref, className, sx, ...props }: KbdProps) {
+  return (
+    <WithSx className={className} styles={rootStyle} sx={sx}>
+      {(className) => <kbd {...props} ref={ref} data-ui="kbd" className={className} />}
+    </WithSx>
+  );
 }
 
 KbdRoot.displayName = 'Kbd';
 
-function KbdGroup({ ref, children, ...rest }: KbdGroupProps) {
+function KbdGroup({ ref, children, className, sx, ...rest }: KbdGroupProps) {
   return (
-    <span {...rest} ref={ref} data-ui="kbd-group" css={groupStyle}>
-      {Children.toArray(children).map((child, index) => (
-        <Fragment key={index}>
-          {index > 0 && (
-            <span aria-hidden data-ui="kbd-separator" css={separatorStyle}>
-              {KEY_SEPARATOR}
-            </span>
-          )}
-          {child}
-        </Fragment>
-      ))}
-    </span>
+    <WithSx className={className} styles={groupStyle} sx={sx}>
+      {(className) => (
+        <span {...rest} ref={ref} data-ui="kbd-group" className={className}>
+          {Children.toArray(children).map((child, index) => (
+            <Fragment key={index}>
+              {index > 0 && (
+                <span aria-hidden data-ui="kbd-separator" css={separatorStyle}>
+                  {KEY_SEPARATOR}
+                </span>
+              )}
+              {child}
+            </Fragment>
+          ))}
+        </span>
+      )}
+    </WithSx>
   );
 }
 

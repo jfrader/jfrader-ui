@@ -26,6 +26,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { partId } from '../../utils/part-id';
 import { findByValue, moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -33,7 +34,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 export type TabsOrientation = 'horizontal' | 'vertical';
 export type TabsActivation = 'auto' | 'manual';
 
-export interface TabsProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'> {
+export interface TabsProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
@@ -41,13 +42,13 @@ export interface TabsProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange'
   activation?: TabsActivation;
 }
 
-export type TabsListProps = ComponentPropsWithRef<'div'>;
+export type TabsListProps = ComponentPropsWithRef<'div'> & SxProps;
 
-export interface TabsTabProps extends ComponentPropsWithRef<'button'> {
+export interface TabsTabProps extends ComponentPropsWithRef<'button'>, SxProps {
   value: string;
 }
 
-export interface TabsPanelProps extends ComponentPropsWithRef<'div'> {
+export interface TabsPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
   value: string;
 }
 
@@ -161,6 +162,8 @@ function TabsRoot({
   onValueChange,
   orientation = 'horizontal',
   activation = 'auto',
+  className,
+  sx,
   ...rest
 }: TabsProps) {
   const baseId = useId();
@@ -174,14 +177,18 @@ function TabsRoot({
 
   return (
     <TabsContext.Provider value={context}>
-      <div {...rest} ref={ref} data-ui="tabs-root" data-orientation={orientation} css={rootStyle} />
+      <WithSx className={className} styles={rootStyle} sx={sx}>
+        {(className) => (
+          <div {...rest} ref={ref} data-ui="tabs-root" data-orientation={orientation} className={className} />
+        )}
+      </WithSx>
     </TabsContext.Provider>
   );
 }
 
 TabsRoot.displayName = 'Tabs';
 
-function TabsList({ ref, onKeyDown, ...rest }: TabsListProps) {
+function TabsList({ ref, onKeyDown, className, sx, ...rest }: TabsListProps) {
   const { orientation, value, focused, setFocused } = useTabsContext('List');
   const listRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(ref, () => listRef.current as HTMLDivElement, []);
@@ -206,24 +213,28 @@ function TabsList({ ref, onKeyDown, ...rest }: TabsListProps) {
   };
 
   return (
-    <div
-      {...rest}
-      ref={listRef}
-      role="tablist"
-      aria-orientation={orientation}
-      data-ui="tabs-list"
-      data-orientation={orientation}
-      data-roving={focused ?? ''}
-      data-selected={value ?? ''}
-      onKeyDown={handleKeyDown}
-      css={listStyles[orientation]}
-    />
+    <WithSx className={className} styles={listStyles[orientation]} sx={sx}>
+      {(className) => (
+        <div
+          {...rest}
+          ref={listRef}
+          role="tablist"
+          aria-orientation={orientation}
+          data-ui="tabs-list"
+          data-orientation={orientation}
+          data-roving={focused ?? ''}
+          data-selected={value ?? ''}
+          onKeyDown={handleKeyDown}
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 
 TabsList.displayName = 'Tabs.List';
 
-function TabsTab({ ref, value, disabled, onClick, onFocus, ...rest }: TabsTabProps) {
+function TabsTab({ ref, value, disabled, onClick, onFocus, className, sx, ...rest }: TabsTabProps) {
   const {
     value: selectedValue,
     setValue,
@@ -260,47 +271,67 @@ function TabsTab({ ref, value, disabled, onClick, onFocus, ...rest }: TabsTabPro
   };
 
   return (
-    <button
-      {...rest}
-      ref={ref}
-      type="button"
-      role="tab"
-      id={partId(baseId, 'tab', value)}
-      data-ui="tabs-tab"
-      data-value={value}
-      data-state={isSelected ? 'active' : 'inactive'}
-      aria-selected={isSelected}
-      aria-controls={partId(baseId, 'panel', value)}
-      tabIndex={isTabStop ? 0 : -1}
-      disabled={disabled}
-      onClick={handleClick}
-      onFocus={handleFocus}
-      css={[tabStyle, tabOrientationStyles[orientation]]}
-    />
+    <WithSx className={className} styles={[tabStyle, tabOrientationStyles[orientation]]} sx={sx}>
+      {(className) => (
+        <button
+          {...rest}
+          ref={ref}
+          type="button"
+          role="tab"
+          id={partId(baseId, 'tab', value)}
+          data-ui="tabs-tab"
+          data-value={value}
+          data-state={isSelected ? 'active' : 'inactive'}
+          aria-selected={isSelected}
+          aria-controls={partId(baseId, 'panel', value)}
+          tabIndex={isTabStop ? 0 : -1}
+          disabled={disabled}
+          onClick={handleClick}
+          onFocus={handleFocus}
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 
 TabsTab.displayName = 'Tabs.Tab';
 
-function TabsPanel({ ref, value, tabIndex = 0, 'aria-labelledby': ariaLabelledByProp, ...rest }: TabsPanelProps) {
+function TabsPanel({
+  ref,
+  value,
+  tabIndex = 0,
+  'aria-labelledby': ariaLabelledByProp,
+  className,
+  sx,
+  ...rest
+}: TabsPanelProps) {
   const { value: selectedValue, baseId, orientation } = useTabsContext('Panel');
   const isSelected = selectedValue === value;
   const ariaLabelledBy =
     [ariaLabelledByProp, partId(baseId, 'tab', value)].filter(Boolean).join(' ') || undefined;
 
   return (
-    <div
-      {...rest}
-      ref={ref}
-      role="tabpanel"
-      id={partId(baseId, 'panel', value)}
-      aria-labelledby={ariaLabelledBy}
-      tabIndex={tabIndex}
-      hidden={!isSelected}
-      data-ui="tabs-panel"
-      data-state={isSelected ? 'active' : 'inactive'}
-      css={[panelStyle, orientation === 'horizontal' && horizontalPanelStyle]}
-    />
+    <WithSx
+      className={className}
+      styles={[panelStyle, orientation === 'horizontal' && horizontalPanelStyle]}
+      sx={sx}
+    >
+      {(className) => (
+        <div
+          {...rest}
+          ref={ref}
+          role="tabpanel"
+          id={partId(baseId, 'panel', value)}
+          aria-labelledby={ariaLabelledBy}
+          tabIndex={tabIndex}
+          hidden={!isSelected}
+          data-ui="tabs-panel"
+          data-state={isSelected ? 'active' : 'inactive'}
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 

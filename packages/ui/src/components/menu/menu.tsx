@@ -44,6 +44,7 @@ import { css } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useCollectionIndexRegistration, useCollectionListItem } from '../../utils/collection-registry';
@@ -59,15 +60,15 @@ export interface MenuProps {
   children?: ReactNode;
 }
 
-export interface MenuTriggerProps extends ComponentPropsWithRef<'button'> {}
-export interface MenuContentProps extends ComponentPropsWithRef<'div'> {}
-export interface MenuItemProps extends Omit<ComponentPropsWithRef<'button'>, 'onSelect'> {
+export interface MenuTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
+export interface MenuContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
+export interface MenuItemProps extends Omit<ComponentPropsWithRef<'button'>, 'onSelect'>, SxProps {
   /** Called when the item is activated. The menu then closes unless a click handler called
    * `event.preventDefault()`. */
   onSelect?: () => void;
   disabled?: boolean;
 }
-export interface MenuSeparatorProps extends ComponentPropsWithRef<'div'> {}
+export interface MenuSeparatorProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -231,18 +232,28 @@ function MenuRoot({
 
 MenuRoot.displayName = 'Menu';
 
-function MenuTrigger({ ref, ...props }: MenuTriggerProps) {
+function MenuTrigger({ ref, className, sx, ...props }: MenuTriggerProps) {
   const { refs, getReferenceProps } = useMenuContext('Trigger');
   const mergedRef = useMergeRefs([refs.setReference, ref]);
 
   return (
-    <button type="button" {...getReferenceProps(props)} ref={mergedRef} data-ui="menu-trigger" css={triggerStyle} />
+    <WithSx className={className} styles={triggerStyle} sx={sx}>
+      {(className) => (
+        <button
+          type="button"
+          {...getReferenceProps(props)}
+          ref={mergedRef}
+          data-ui="menu-trigger"
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 
 MenuTrigger.displayName = 'Menu.Trigger';
 
-function MenuContent({ ref, style, children, ...rest }: MenuContentProps) {
+function MenuContent({ ref, style, children, className, sx, ...rest }: MenuContentProps) {
   const { open, refs, floatingContext, floatingStyles, elementsRef, labelsRef, getFloatingProps } =
     useMenuContext('Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
@@ -261,17 +272,21 @@ function MenuContent({ ref, style, children, ...rest }: MenuContentProps) {
         returnFocus={false}
         restoreFocus
       >
-        <div
-          {...getFloatingProps(rest)}
-          ref={mergedRef}
-          data-ui="menu"
-          style={{ ...style, ...floatingStyles }}
-          css={listboxSurfaceStyle}
-        >
-          <FloatingList elementsRef={elementsRef} labelsRef={labelsRef}>
-            <MenuContentContext.Provider value>{children}</MenuContentContext.Provider>
-          </FloatingList>
-        </div>
+        <WithSx className={className} styles={listboxSurfaceStyle} sx={sx}>
+          {(className) => (
+            <div
+              {...getFloatingProps(rest)}
+              ref={mergedRef}
+              data-ui="menu"
+              style={{ ...style, ...floatingStyles }}
+              className={className}
+            >
+              <FloatingList elementsRef={elementsRef} labelsRef={labelsRef}>
+                <MenuContentContext.Provider value>{children}</MenuContentContext.Provider>
+              </FloatingList>
+            </div>
+          )}
+        </WithSx>
       </FloatingFocusManager>
     </FloatingPortal>
   );
@@ -279,7 +294,7 @@ function MenuContent({ ref, style, children, ...rest }: MenuContentProps) {
 
 MenuContent.displayName = 'Menu.Content';
 
-function MenuItem({ ref, onSelect, disabled = false, onClick, ...rest }: MenuItemProps) {
+function MenuItem({ ref, onSelect, disabled = false, onClick, className, sx, ...rest }: MenuItemProps) {
   const { activeIndex, requestClose, disabledIndices, getItemProps } = useMenuItemContext();
   // A null label removes disabled items from typeahead; undefined falls back to textContent.
   const { ref: listItemRef, index } = useCollectionListItem({ label: disabled ? null : undefined });
@@ -297,24 +312,32 @@ function MenuItem({ ref, onSelect, disabled = false, onClick, ...rest }: MenuIte
   };
 
   return (
-    <button
-      type="button"
-      {...getItemProps({ ...rest, onClick: handleClick })}
-      ref={mergedRef}
-      role="menuitem"
-      tabIndex={isActive ? 0 : -1}
-      aria-disabled={disabled || undefined}
-      data-active={isActive || undefined}
-      data-ui="menu-item"
-      css={[itemStyle, listboxItemStateStyle]}
-    />
+    <WithSx className={className} styles={[itemStyle, listboxItemStateStyle]} sx={sx}>
+      {(className) => (
+        <button
+          type="button"
+          {...getItemProps({ ...rest, onClick: handleClick })}
+          ref={mergedRef}
+          role="menuitem"
+          tabIndex={isActive ? 0 : -1}
+          aria-disabled={disabled || undefined}
+          data-active={isActive || undefined}
+          data-ui="menu-item"
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 
 MenuItem.displayName = 'Menu.Item';
 
-function MenuSeparator({ ref, ...props }: MenuSeparatorProps) {
-  return <div {...props} ref={ref} role="separator" data-ui="menu-separator" css={separatorStyle} />;
+function MenuSeparator({ ref, className, sx, ...props }: MenuSeparatorProps) {
+  return (
+    <WithSx className={className} styles={separatorStyle} sx={sx}>
+      {(className) => <div {...props} ref={ref} role="separator" data-ui="menu-separator" className={className} />}
+    </WithSx>
+  );
 }
 
 MenuSeparator.displayName = 'Menu.Separator';
