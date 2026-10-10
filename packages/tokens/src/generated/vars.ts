@@ -11,6 +11,7 @@ export const vars = {
     "border": "var(--ui-color-border)",
     "borderSubtle": "var(--ui-color-border-subtle)",
     "borderStrong": "var(--ui-color-border-strong)",
+    "borderControl": "var(--ui-color-border-control)",
     "text": "var(--ui-color-text)",
     "textMuted": "var(--ui-color-text-muted)",
     "textSubtle": "var(--ui-color-text-subtle)",

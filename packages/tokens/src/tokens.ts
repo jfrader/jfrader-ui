@@ -9,6 +9,8 @@ export const base = {
     border: '#23252a',
     borderSubtle: '#1d1e22',
     borderStrong: '#3e3e44',
+    // Boundary for form controls (>=3:1 against page and control interiors, WCAG 1.4.11).
+    borderControl: '#62666d',
     text: '#f7f8f8',
     textMuted: '#8a8f98',
     textSubtle: '#757982',
@@ -114,6 +116,7 @@ export const light = {
     border: 'oklch(93.5% 0 0)',
     borderSubtle: 'oklch(96.5% 0 0)',
     borderStrong: 'oklch(82% 0 0)',
+    borderControl: 'oklch(60% 0 0)',
     text: 'oklch(15% 0 0)',
     textMuted: 'oklch(46% 0 0)',
     textSubtle: 'oklch(50% 0 0)',
