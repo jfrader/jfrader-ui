@@ -1,0 +1,115 @@
+import { Meta, Source, Unstyled } from '@storybook/addon-docs/blocks';
+import { Card, Pill } from '@jfrader/ui';
+import './home.css';
+
+<Meta title="Home" />
+
+export const swatches = [
+  'bg',
+  'surface',
+  'surface-raised',
+  'border',
+  'text',
+  'accent',
+  'danger',
+  'warning',
+  'success',
+  'info',
+];
+
+export const quickStart = `// package.json (inside the workspace)
+"dependencies": {
+  "@emotion/react": "^11.14.0",
+  "@jfrader/tokens": "workspace:*",
+  "@jfrader/ui": "workspace:*"
+}
+
+// vite.config.ts
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [react({ jsxImportSource: '@emotion/react' })],
+});
+
+// tsconfig.json → compilerOptions
+"jsx": "react-jsx",
+"jsxImportSource": "@emotion/react",
+"moduleResolution": "bundler"
+
+// main.tsx
+import { createRoot } from 'react-dom/client';
+import '@jfrader/tokens/tokens.css';
+import { Button } from '@jfrader/ui';
+
+document.documentElement.dataset.theme = 'dark'; // or 'light'
+
+createRoot(document.getElementById('root')!).render(
+  <Button tone="accent">Save</Button>,
+);`;
+
+<Unstyled>
+  <div className="home">
+    <header className="home-hero">
+      <Pill tone="accent">30+ components</Pill>
+      <h1 className="home-wordmark">jfrader ui</h1>
+      <p className="home-lede">Accessible React components for dark and light interfaces, themed with CSS custom properties.</p>
+      <div className="home-actions">
+        <a className="home-cta" data-tone="accent" href="./?path=/story/showcase-appshell--default" target="_top">View the showcase</a>
+        <a className="home-cta" data-tone="neutral" href="./?path=/docs/components-button--docs" target="_top">Browse components</a>
+      </div>
+    </header>
+
+    <section className="home-section" aria-labelledby="home-palette">
+      <h2 id="home-palette" className="home-heading">Palette</h2>
+      <ul className="home-swatches">
+        {swatches.map((name) => (
+          <li key={name} className="home-swatch">
+            <span className="home-swatch-chip" style={{ backgroundColor: `var(--ui-color-${name})` }} />
+            <span>{name}</span>
+            <code className="home-swatch-var">--ui-color-{name}</code>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section className="home-section" aria-labelledby="home-features">
+      <h2 id="home-features" className="home-heading">Features</h2>
+      <div className="home-features">
+        <Card>
+          <Card.Header>
+            <Card.Title>Token theming</Card.Title>
+            <Card.Description>Colors, spacing and type are <code className="home-code">--ui-*</code> custom properties.</Card.Description>
+          </Card.Header>
+          <Card.Content>Set <code className="home-code">data-theme="light"</code> on <code className="home-code">&lt;html&gt;</code> to switch themes.</Card.Content>
+        </Card>
+        <Card>
+          <Card.Header>
+            <Card.Title>Accessibility first</Card.Title>
+            <Card.Description>Keyboard maps follow the WAI-ARIA APG.</Card.Description>
+          </Card.Header>
+          <Card.Content>Every story runs axe; a violation fails <code className="home-code">pnpm test</code>.</Card.Content>
+        </Card>
+        <Card>
+          <Card.Header>
+            <Card.Title>TypeScript API</Card.Title>
+            <Card.Description>Typed props, compound parts and token references.</Card.Description>
+          </Card.Header>
+          <Card.Content>Visual props are <code className="home-code">variant</code>, <code className="home-code">tone</code> and <code className="home-code">size</code>.</Card.Content>
+        </Card>
+        <Card>
+          <Card.Header>
+            <Card.Title>Storybook workbench</Card.Title>
+            <Card.Description>Stories, autodocs and browser tests in one place.</Card.Description>
+          </Card.Header>
+          <Card.Content>Run <code className="home-code">pnpm dev</code> to open it on port 6006.</Card.Content>
+        </Card>
+      </div>
+    </section>
+
+    <section className="home-section" aria-labelledby="home-quick-start">
+      <h2 id="home-quick-start" className="home-heading">Quick start</h2>
+      <Source code={quickStart} language="tsx" dark />
+    </section>
+  </div>
+</Unstyled>

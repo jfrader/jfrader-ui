@@ -5,5 +5,5 @@
     "jsxImportSource": "@emotion/react",
     "types": ["vite/client", "node"]
   },
-  "include": [".storybook", "src", "vite.config.ts", "vitest.config.ts"]
+  "include": [".storybook", "src", "home", "showcase", "vite.config.ts", "vitest.config.ts"]
 }
