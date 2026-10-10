@@ -1,5 +1,5 @@
 // Fails when a packages/ui component folder has no `./<name>` export, or an export points at a missing file.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 const packageDir = path.join(import.meta.dirname, '..', 'packages', 'ui');
@@ -12,7 +12,10 @@ const targetsOf = (entry) =>
 const errors = [];
 
 for (const dirent of readdirSync(componentsDir, { withFileTypes: true })) {
-  if (dirent.isDirectory() && !(`./${dirent.name}` in exportsMap)) {
+  // Internal implementation folders (e.g. field/) have no index.ts and are not public.
+  const isComponent =
+    dirent.isDirectory() && existsSync(path.join(componentsDir, dirent.name, 'index.ts'));
+  if (isComponent && !(`./${dirent.name}` in exportsMap)) {
     errors.push(`missing export "./${dirent.name}" for src/components/${dirent.name}`);
   }
 }
