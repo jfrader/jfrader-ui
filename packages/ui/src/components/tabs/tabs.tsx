@@ -26,6 +26,7 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
+import { findByValue, moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export type TabsOrientation = 'horizontal' | 'vertical';
@@ -70,17 +71,9 @@ function useTabsContext(part: string): TabsContextValue {
 const partId = (baseId: string, part: 'tab' | 'panel', value: string) =>
   `${baseId}-${part}-${encodeURIComponent(value)}`;
 
-type Move = (current: number, count: number) => number;
-
-const NEXT: Move = (current, count) => (current + 1) % count;
-const PREVIOUS: Move = (current, count) => (current - 1 + count) % count;
-const FIRST: Move = () => 0;
-const LAST: Move = (_current, count) => count - 1;
-
-const KEY_MOVES: Record<TabsOrientation | 'horizontalRtl', Partial<Record<string, Move>>> = {
-  horizontal: { ArrowRight: NEXT, ArrowLeft: PREVIOUS, Home: FIRST, End: LAST },
-  horizontalRtl: { ArrowRight: PREVIOUS, ArrowLeft: NEXT, Home: FIRST, End: LAST },
-  vertical: { ArrowDown: NEXT, ArrowUp: PREVIOUS, Home: FIRST, End: LAST },
+const TAB_QUERY: OwnedItemsQuery = {
+  itemSelector: '[role="tab"]:not([disabled])',
+  ownerSelector: '[role="tablist"]',
 };
 
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
@@ -198,33 +191,17 @@ const List = forwardRef<HTMLDivElement, TabsListProps>(function TabsList({ onKey
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]:not([disabled])')).filter(
-      (tab) => tab.closest('[role="tablist"]') === list,
-    );
+    const tabs = queryOwnedItems(list, TAB_QUERY);
     if (tabs.length === 0) return;
     if (tabs.some((tab) => tab.tabIndex === 0)) return;
-    const prefer = (candidate: string | null | undefined) =>
-      tabs.find((tab) => tab.dataset.value === candidate)?.dataset.value;
-    setFocused(prefer(value) ?? prefer(focused) ?? tabs[0]?.dataset.value ?? null);
+    setFocused((findByValue(tabs, value) ?? findByValue(tabs, focused) ?? tabs[0])?.dataset.value ?? null);
   });
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
     const list = listRef.current;
     if (event.defaultPrevented || !list) return;
-
-    const isRtl = orientation === 'horizontal' && getComputedStyle(list).direction === 'rtl';
-    const move = KEY_MOVES[isRtl ? 'horizontalRtl' : orientation][event.key];
-    if (!move) return;
-
-    const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]:not([disabled])')).filter(
-      (tab) => tab.closest('[role="tablist"]') === list,
-    );
-    const current = tabs.indexOf(event.target as HTMLButtonElement);
-    if (current === -1) return;
-
-    event.preventDefault();
-    tabs[move(current, tabs.length)]?.focus();
+    moveRovingFocus(event, list, orientation, TAB_QUERY);
   };
 
   return (
