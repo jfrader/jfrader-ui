@@ -17,7 +17,6 @@ import {
   forwardRef,
   useContext,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -35,7 +34,6 @@ import {
   useClick,
   useDismiss,
   useInteractions,
-  useListItem,
   useListNavigation,
   useMergeRefs,
   useRole,
@@ -47,6 +45,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
+import { useCollectionIndexRegistration, useCollectionListItem } from '../../utils/collection-registry';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 const TYPEAHEAD_RESET_MS = 500;
@@ -305,18 +304,12 @@ const Item = forwardRef<HTMLButtonElement, MenuItemProps>(function MenuItem(
 ) {
   const { activeIndex, requestClose, disabledIndices, getItemProps } = useMenuItemContext();
   // A null label removes disabled items from typeahead; undefined falls back to textContent.
-  const { ref: listItemRef, index } = useListItem({ label: disabled ? null : undefined });
+  const { ref: listItemRef, index } = useCollectionListItem({ label: disabled ? null : undefined });
   const mergedRef = useMergeRefs([listItemRef, ref]);
   const isActive = index !== -1 && activeIndex === index;
 
   // Layout effect so the registry is current before list navigation picks the initial item.
-  useLayoutEffect(() => {
-    if (!disabled || index === -1) return;
-    disabledIndices.add(index);
-    return () => {
-      disabledIndices.delete(index);
-    };
-  }, [disabled, index, disabledIndices]);
+  useCollectionIndexRegistration(index, disabled, disabledIndices);
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     if (disabled) return;

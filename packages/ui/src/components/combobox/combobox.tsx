@@ -51,7 +51,6 @@ import {
   FloatingPortal,
   useDismiss,
   useInteractions,
-  useListItem,
   useListNavigation,
   useMergeRefs,
   type UseInteractionsReturn,
@@ -59,6 +58,12 @@ import {
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
+import {
+  collectionItemId,
+  useCollectionItem,
+  useCollectionRegistry,
+  type CollectionRegistration,
+} from '../../utils/collection-registry';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { TextField, type TextFieldProps } from '../text-field';
@@ -155,8 +160,7 @@ interface ComboboxContextValue {
   selectIndex: (index: number) => void;
   clearValue: () => void;
   requestOpenChange: (open: boolean) => void;
-  registerOption: (value: string, record: OptionRecord) => void;
-  unregisterOption: (value: string) => void;
+  registration: CollectionRegistration<OptionRecord>;
   setInputLabelling: (labelling: InputLabelling | null) => void;
 }
 
@@ -175,11 +179,6 @@ function useComboboxListContext(part: string): ComboboxContextValue {
   if (!useContext(ComboboxListContext)) throw new Error(`Combobox.${part} must be rendered inside <Combobox.List>.`);
   return context;
 }
-
-const optionId = (baseId: string, value: string) => `${baseId}-opt-${encodeURIComponent(value)}-item`;
-
-const isSameOption = (a: OptionRecord | undefined, b: OptionRecord) =>
-  a !== undefined && a.index === b.index && a.label === b.label && a.disabled === b.disabled;
 
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
@@ -285,7 +284,7 @@ function ComboboxRoot({
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   // The text that filters the options: what the user typed, or '' right after a selection.
   const [query, setQuery] = useState('');
-  const [options, setOptions] = useState<ReadonlyMap<string, OptionRecord>>(() => new Map());
+  const [options, registration] = useCollectionRegistry<OptionRecord>();
   const [inputLabelling, setInputLabelling] = useState<InputLabelling | null>(null);
   const elementsRef = useRef<Array<HTMLElement | null>>([]);
   const inputHandleRef = useRef<InputHandle | null>(null);
@@ -309,25 +308,6 @@ function ComboboxRoot({
     });
     return { valuesByIndex: values, skippedIndices: skipped, matchCount: count };
   }, [options, query, matchesQuery]);
-
-  // Stable so items' registration effects do not re-run when the registry changes.
-  const registerOption = useCallback(
-    (optionValue: string, record: OptionRecord) =>
-      setOptions((prev) =>
-        isSameOption(prev.get(optionValue), record) ? prev : new Map(prev).set(optionValue, record),
-      ),
-    [],
-  );
-  const unregisterOption = useCallback(
-    (optionValue: string) =>
-      setOptions((prev) => {
-        if (!prev.has(optionValue)) return prev;
-        const next = new Map(prev);
-        next.delete(optionValue);
-        return next;
-      }),
-    [],
-  );
 
   const { refs, floatingStyles, context } = useOverlayFloating({
     open,
@@ -397,8 +377,7 @@ function ComboboxRoot({
       },
       clearValue: () => requestValueChange(null),
       requestOpenChange,
-      registerOption,
-      unregisterOption,
+      registration,
       setInputLabelling,
     };
   }, [
@@ -422,8 +401,7 @@ function ComboboxRoot({
     skippedIndices,
     requestValueChange,
     requestOpenChange,
-    registerOption,
-    unregisterOption,
+    registration,
   ]);
 
   return (
@@ -646,33 +624,19 @@ const Item = forwardRef<HTMLDivElement, ComboboxItemProps>(function ComboboxItem
   { value, disabled = false, onClick, children, ...rest },
   ref,
 ) {
-  const {
-    baseId,
-    selectedValue,
-    activeIndex,
-    options,
-    isVisible,
-    getItemProps,
-    selectValue,
-    registerOption,
-    unregisterOption,
-  } = useComboboxListContext('Item');
-  const { ref: listItemRef, index } = useListItem();
-  const mergedRef = useMergeRefs([listItemRef, ref]);
+  const { baseId, selectedValue, activeIndex, options, isVisible, getItemProps, selectValue, registration } =
+    useComboboxListContext('Item');
   const textRef = useRef<HTMLSpanElement>(null);
+  const { ref: listItemRef, index } = useCollectionItem(value, registration, textRef, (itemIndex, itemLabel) => ({
+    index: itemIndex,
+    label: itemLabel,
+    disabled,
+  }));
+  const mergedRef = useMergeRefs([listItemRef, ref]);
   const label = options.get(value)?.label;
   const hidden = label !== undefined && !isVisible(label);
   const isActive = index !== -1 && activeIndex === index;
   const isSelected = selectedValue === value;
-
-  // Every commit: keep the label (read from the rendered text) and index current. Layout
-  // effect so the input and list navigation see them before paint. Registration is a no-op
-  // when nothing changed.
-  useLayoutEffect(() => {
-    registerOption(value, { index, label: textRef.current?.textContent ?? '', disabled });
-  });
-
-  useLayoutEffect(() => () => unregisterOption(value), [value, unregisterOption]);
 
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     onClick?.(event);
@@ -682,7 +646,7 @@ const Item = forwardRef<HTMLDivElement, ComboboxItemProps>(function ComboboxItem
 
   return (
     <div
-      {...getItemProps({ id: optionId(baseId, value), ...rest, onClick: handleClick })}
+      {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
       ref={mergedRef}
       role="option"
       hidden={hidden}

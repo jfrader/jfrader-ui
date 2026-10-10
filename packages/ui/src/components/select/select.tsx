@@ -21,7 +21,6 @@
 import {
   createContext,
   forwardRef,
-  useCallback,
   useContext,
   useId,
   useLayoutEffect,
@@ -42,7 +41,6 @@ import {
   useClick,
   useDismiss,
   useInteractions,
-  useListItem,
   useListNavigation,
   useMergeRefs,
   useRole,
@@ -53,6 +51,12 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
+import {
+  collectionItemId,
+  useCollectionItem,
+  useCollectionRegistry,
+  type CollectionRegistration,
+} from '../../utils/collection-registry';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 const TYPEAHEAD_RESET_MS = 500;
@@ -121,8 +125,7 @@ interface SelectContextValue {
   selectIndex: (index: number) => void;
   matchTypeahead: (search: string) => void;
   requestOpenChange: (open: boolean) => void;
-  registerOption: (value: string, record: OptionRecord) => void;
-  unregisterOption: (value: string) => void;
+  registration: CollectionRegistration<OptionRecord>;
   setTriggerLabelling: (labelling: TriggerLabelling | null) => void;
 }
 
@@ -141,11 +144,6 @@ function useSelectItemContext(): SelectContextValue {
   if (!useContext(SelectContentContext)) throw new Error('Select.Item must be rendered inside <Select.Content>.');
   return context;
 }
-
-const optionId = (baseId: string, value: string) => `${baseId}-opt-${encodeURIComponent(value)}-item`;
-
-const isSameOption = (a: OptionRecord | undefined, b: OptionRecord) =>
-  a !== undefined && a.index === b.index && a.label === b.label && a.disabled === b.disabled;
 
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
@@ -252,7 +250,7 @@ function SelectRoot({
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   // Typeahead on the closed trigger opens on the match, not on the selected option.
   const [openedByTypeahead, setOpenedByTypeahead] = useState(false);
-  const [options, setOptions] = useState<ReadonlyMap<string, OptionRecord>>(() => new Map());
+  const [options, registration] = useCollectionRegistry<OptionRecord>();
   const [triggerLabelling, setTriggerLabelling] = useState<TriggerLabelling | null>(null);
   const elementsRef = useRef<Array<HTMLElement | null>>([]);
   const labelsRef = useRef<Array<string | null>>([]);
@@ -274,25 +272,6 @@ function SelectRoot({
     });
     return { valuesByIndex: values, disabledIndices: disabledSet };
   }, [options]);
-
-  // Stable so items' registration effects do not re-run when the registry changes.
-  const registerOption = useCallback(
-    (optionValue: string, record: OptionRecord) =>
-      setOptions((prev) =>
-        isSameOption(prev.get(optionValue), record) ? prev : new Map(prev).set(optionValue, record),
-      ),
-    [],
-  );
-  const unregisterOption = useCallback(
-    (optionValue: string) =>
-      setOptions((prev) => {
-        if (!prev.has(optionValue)) return prev;
-        const next = new Map(prev);
-        next.delete(optionValue);
-        return next;
-      }),
-    [],
-  );
 
   const selectedRecord = selectedValue === undefined ? undefined : options.get(selectedValue);
   const selectedIndex = selectedRecord && selectedRecord.index !== -1 ? selectedRecord.index : null;
@@ -370,8 +349,7 @@ function SelectRoot({
         selectValue(next);
       },
       requestOpenChange,
-      registerOption,
-      unregisterOption,
+      registration,
       setTriggerLabelling,
     };
   }, [
@@ -391,8 +369,7 @@ function SelectRoot({
     disabledIndices,
     requestValueChange,
     requestOpenChange,
-    registerOption,
-    unregisterOption,
+    registration,
   ]);
 
   return (
@@ -524,37 +501,20 @@ const Item = forwardRef<HTMLDivElement, SelectItemProps>(function SelectItem(
   { value, disabled = false, onClick, children, ...rest },
   ref,
 ) {
-  const {
-    baseId,
-    selectedValue,
-    activeIndex,
-    labelsRef,
-    getItemProps,
-    selectValue,
-    registerOption,
-    unregisterOption,
-  } = useSelectItemContext();
-  const { ref: listItemRef, index } = useListItem();
-  const mergedRef = useMergeRefs([listItemRef, ref]);
+  const { baseId, selectedValue, activeIndex, labelsRef, getItemProps, selectValue, registration } =
+    useSelectItemContext();
   const textRef = useRef<HTMLSpanElement>(null);
+  // Disabled options stay out of typeahead.
+  const { ref: listItemRef, index } = useCollectionItem(
+    value,
+    registration,
+    textRef,
+    (itemIndex, label) => ({ index: itemIndex, label, disabled }),
+    { labelsRef, include: !disabled },
+  );
+  const mergedRef = useMergeRefs([listItemRef, ref]);
   const isActive = index !== -1 && activeIndex === index;
   const isSelected = selectedValue === value;
-
-  // Every commit: keep the label (read from the rendered text) and index current. Layout
-  // effect so Select.Value and list navigation see them before paint. Registration is a
-  // no-op when nothing changed.
-  useLayoutEffect(() => {
-    const label = textRef.current?.textContent ?? '';
-    registerOption(value, { index, label, disabled });
-    if (index === -1) return;
-    // A null label removes disabled options from typeahead.
-    labelsRef.current[index] = disabled ? null : label;
-    return () => {
-      labelsRef.current[index] = null;
-    };
-  });
-
-  useLayoutEffect(() => () => unregisterOption(value), [value, unregisterOption]);
 
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     onClick?.(event);
@@ -564,7 +524,7 @@ const Item = forwardRef<HTMLDivElement, SelectItemProps>(function SelectItem(
 
   return (
     <div
-      {...getItemProps({ id: optionId(baseId, value), ...rest, onClick: handleClick })}
+      {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
       ref={mergedRef}
       role="option"
       aria-selected={isSelected}

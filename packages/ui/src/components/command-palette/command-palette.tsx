@@ -22,7 +22,6 @@ import {
   useCallback,
   useContext,
   useId,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -40,7 +39,6 @@ import {
   FloatingList,
   useFloatingRootContext,
   useInteractions,
-  useListItem,
   useListNavigation,
   useMergeRefs,
   type UseInteractionsReturn,
@@ -54,6 +52,12 @@ import {
   useNativeDialogRoot,
   type NativeDialogController,
 } from '../../overlay/use-native-dialog';
+import {
+  collectionItemId,
+  useCollectionItem,
+  useCollectionRegistry,
+  type CollectionRegistration,
+} from '../../utils/collection-registry';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -125,8 +129,7 @@ interface CommandPaletteContextValue extends NativeDialogController {
   getItemProps: UseInteractionsReturn['getItemProps'];
   changeQuery: (query: string) => void;
   moveToEdge: (edge: 'first' | 'last') => void;
-  registerItem: (value: string, record: ItemRecord) => void;
-  unregisterItem: (value: string) => void;
+  registration: CollectionRegistration<ItemRecord>;
 }
 
 const CommandPaletteContext = createContext<CommandPaletteContextValue | null>(null);
@@ -137,11 +140,6 @@ function useCommandPaletteContext(part: string): CommandPaletteContextValue {
   if (!context) throw new Error(`CommandPalette.${part} must be rendered inside <CommandPalette>.`);
   return context;
 }
-
-const optionId = (baseId: string, value: string) => `${baseId}-opt-${encodeURIComponent(value)}-item`;
-
-const isSameItem = (a: ItemRecord | undefined, b: ItemRecord) =>
-  a !== undefined && a.index === b.index && a.label === b.label && a.keywords === b.keywords && a.groupId === b.groupId;
 
 // React does not render `autofocus` on the client (it calls focus() on mount, while the dialog
 // is still closed). The native attribute lets showModal() focus the Input.
@@ -299,7 +297,7 @@ function CommandPaletteRoot({
   const [query, setQuery] = useState('');
   const [queryChanged, setQueryChanged] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [items, setItems] = useState<ReadonlyMap<string, ItemRecord>>(() => new Map());
+  const [items, registration] = useCollectionRegistry<ItemRecord>();
   const [inputElement, setInputElement] = useState<HTMLInputElement | null>(null);
   const [listElement, setListElement] = useState<HTMLDivElement | null>(null);
   const [wasOpen, setWasOpen] = useState(open);
@@ -319,22 +317,6 @@ function CommandPaletteRoot({
   const toggleOpen = useCallback(() => {
     setOpen(!(open && dialogElementRef.current?.open));
   }, [open, setOpen, dialogElementRef]);
-
-  const registerItem = useCallback(
-    (value: string, record: ItemRecord) =>
-      setItems((prev) => (isSameItem(prev.get(value), record) ? prev : new Map(prev).set(value, record))),
-    [],
-  );
-  const unregisterItem = useCallback(
-    (value: string) =>
-      setItems((prev) => {
-        if (!prev.has(value)) return prev;
-        const next = new Map(prev);
-        next.delete(value);
-        return next;
-      }),
-    [],
-  );
 
   const { matchedValues, matchedIndices, visibleGroupIds } = useMemo(() => {
     const values = new Set<string>();
@@ -415,8 +397,7 @@ function CommandPaletteRoot({
         const index = edge === 'first' ? matchedIndices[0] : matchedIndices[matchedIndices.length - 1];
         if (index !== undefined) setActiveIndex(index);
       },
-      registerItem,
-      unregisterItem,
+      registration,
     }),
     [
       open,
@@ -438,8 +419,7 @@ function CommandPaletteRoot({
       getReferenceProps,
       getFloatingProps,
       getItemProps,
-      registerItem,
-      unregisterItem,
+      registration,
     ],
   );
 
@@ -638,20 +618,18 @@ const Item = forwardRef<HTMLDivElement, CommandPaletteItemProps>(function Comman
   { value, onSelect, keywords, onClick, children, ...rest },
   ref,
 ) {
-  const { baseId, activeIndex, matchedValues, getItemProps, setOpen, registerItem, unregisterItem } =
+  const { baseId, activeIndex, matchedValues, getItemProps, setOpen, registration } =
     useCommandPaletteContext('Item');
   const groupId = useContext(CommandPaletteGroupContext);
-  const { ref: listItemRef, index } = useListItem();
   const elementRef = useRef<HTMLDivElement | null>(null);
+  const { ref: listItemRef, index } = useCollectionItem(value, registration, elementRef, (itemIndex, label) => ({
+    index: itemIndex,
+    label,
+    keywords,
+    groupId,
+  }));
   const mergedRef = useMergeRefs([listItemRef, elementRef, ref]);
   const isActive = index !== -1 && activeIndex === index;
-
-  // Every commit: keep the label (read from the rendered text) and index current, before
-  // paint. Registration is a no-op when nothing changed.
-  useLayoutEffect(() => {
-    registerItem(value, { index, label: elementRef.current?.textContent ?? '', keywords, groupId });
-  });
-  useLayoutEffect(() => () => unregisterItem(value), [value, unregisterItem]);
 
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     onClick?.(event);
@@ -662,7 +640,7 @@ const Item = forwardRef<HTMLDivElement, CommandPaletteItemProps>(function Comman
 
   return (
     <div
-      {...getItemProps({ id: optionId(baseId, value), ...rest, onClick: handleClick })}
+      {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
       ref={mergedRef}
       role="option"
       aria-selected={isActive}
