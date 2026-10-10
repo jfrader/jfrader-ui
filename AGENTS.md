@@ -43,8 +43,8 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 
 ## Dependency allowlist
 
-- `@emotion/react` is installed now.
-- `@floating-ui/react` and `motion` are approved but only installed when a component actually needs them.
+- `@emotion/react` and `@floating-ui/react` (Popover, Tooltip, Menu) are installed now.
+- `motion` is approved but only installed when a component actually needs it.
 - Any other dependency requires updating this file first.
 
 ## Generated files

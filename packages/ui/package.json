@@ -3,10 +3,22 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./button": "./src/components/button/index.ts" },
-  "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit" },
-  "dependencies": { "@jfrader/tokens": "workspace:*", "@emotion/react": "^11.14.0" },
-  "peerDependencies": { "react": ">=18.2.0", "react-dom": ">=18.2.0" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./button": "./src/components/button/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@floating-ui/react": "^0.27.20",
+    "@jfrader/tokens": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0",
+    "react-dom": ">=18.2.0"
+  },
   "devDependencies": {
     "@storybook/react-vite": "^10.6.1",
     "@types/react": "^19.3.0",

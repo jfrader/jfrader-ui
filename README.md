@@ -2,7 +2,7 @@
 
 A from-scratch React component system styled with Emotion and themed through CSS custom properties, with Storybook 10 as the workbench.
 
-Status: M1 in progress — ThemeRoot, Button, TextField, Checkbox, Switch (Tabs, Dialog, Popover/Tooltip, Menu next)
+Status: M1 in progress — ThemeRoot, Button, TextField, Checkbox, Switch, Tabs, Dialog, Popover, Tooltip, Menu (Toast, Select next)
 
 ## Packages
 

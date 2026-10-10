@@ -40,6 +40,7 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { triggerStyle } from '../../styling/trigger-style';
 import { useScrollLock } from '../../overlay/use-scroll-lock';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -121,41 +122,6 @@ const descriptionStyle = css({
   marginBlockEnd: vars.space[4],
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
-});
-
-const triggerStyle = css({
-  appearance: 'none',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
-  backgroundColor: vars.color.surfaceRaised,
-  minBlockSize: '40px',
-  paddingBlock: vars.space[2],
-  paddingInline: vars.space[4],
-  font: 'inherit',
-  fontSize: vars.textSize.sm,
-  fontWeight: vars.fontWeight.medium,
-  color: vars.color.text,
-  cursor: 'pointer',
-  transitionProperty: 'background-color, border-color',
-  transitionDuration: vars.motion.duration.fast,
-  transitionTimingFunction: vars.motion.easeStandard,
-  '&:hover:not(:disabled)': {
-    backgroundColor: vars.color.surfaceHover,
-  },
-  '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
-  },
-  '&:disabled': {
-    opacity: 0.55,
-    cursor: 'not-allowed',
-  },
-  [REDUCED_MOTION]: {
-    transitionDuration: '0s',
-  },
 });
 
 const closeStyle = css({

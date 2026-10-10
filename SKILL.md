@@ -162,20 +162,27 @@ Pitfalls this pattern exists to avoid:
 | Switch | native checkbox `role="switch"`; binary only, never mixed | Space toggles once | ring on the track |
 | Tabs | `tablist`/`tab`/`tabpanel` with `aria-controls`/`aria-labelledby`/`aria-selected`; roving tabindex on the **focused** tab (falls back to selected, then first enabled) | horizontal/vertical arrows (RTL-aware), Home/End; `auto` activation selects on focus, `manual` needs Enter/Space; Tab exits into the active panel | the focused tab carries the ring (it may be unselected in manual mode); panels keep state while hidden |
 | Dialog | native `<dialog>.showModal()` + `aria-modal`; `aria-labelledby`/`describedby` merged from Title/Description when present (`withDescription={false}` opts out) | Escape closes via one Root-owned path; backdrop click only when it targets the dialog element | focus moves inside on open, returns to the invoker on close or unmount; background inert via top layer |
+| Popover | `role="dialog"` (non-modal) via `useRole`; trigger `aria-haspopup="dialog"`/`aria-expanded`/`aria-controls`; name via `aria-labelledby` (preferred) or `aria-label` | Enter/Space toggle; Escape closes; outside press closes | non-modal focus management preserves page tab order (`modal={false}`, no initial focus, `returnFocus={false}`, no trap); Escape returns focus to the trigger only after an accepted close; outside press never moves focus |
+| Tooltip | `role="tooltip"`; trigger `aria-describedby` (merged with consumer ids) while open | hover (open/close delays), focus-visible opens; Escape closes | never focusable or interactive; hoverable per WCAG 1.4.13 (the content keeps it open); focus stays on the trigger |
+| Menu | `menu`/`menuitem` (`aria-disabled` for disabled), menu labelled by the trigger; trigger `aria-haspopup="menu"`/`aria-expanded`/`aria-controls` | Enter/Space/ArrowDown open on first enabled item, ArrowUp on last; arrows wrap and skip disabled; Home/End; typeahead (500ms reset); Escape closes; Tab out of the content closes (Shift+Tab from the first item returns to the trigger, where the menu stays open and Tab re-enters) | `FloatingFocusManager modal={false}` (`returnFocus` off); pointer open also focuses the first item; an accepted Escape/selection restores focus to the trigger explicitly — outside press and Tab-out never move focus |
 
-Overlay family contracts (Popover/Tooltip/Menu are the next batch — follow these):
+Overlay family contracts (Popover/Tooltip/Menu follow these):
 
 - **Modal dialog:** top layer or equivalent inert background; focus contained; Escape closes; focus
   returns on close. Native `<dialog>` lifecycle: every native close (`<form method="dialog">`,
   forwarded `.close()`) is reconciled into `onOpenChange`; only lock scroll after `showModal()`
   succeeds; a consumer `preventDefault()` on `cancel` vetoes closure.
-- **Non-modal popover:** no focus trap and no initial focus by default; Escape closes and returns
-  focus to the trigger only when focus is inside; a focus-out dismissal must **not** restore focus.
+- **Non-modal popover:** preserve the page tab order across the portal with non-modal focus
+  management (`FloatingFocusManager modal={false} initialFocus={-1} returnFocus={false}`), but no
+  trap and no initial focus; Escape returns focus to the trigger only after an accepted close; a
+  focus-out dismissal must **not** restore focus.
 - **Tooltip:** never focusable, no interactive content, activated by hover **and** keyboard focus,
-  dismissed by Escape, wired with `aria-describedby`, generous timing per WCAG 1.4.13 (hoverable).
+  dismissed by Escape, wired with `aria-describedby`; hoverable per WCAG 1.4.13 — the content stays
+  open while the pointer rests on it (never `pointer-events: none`), with generous timing.
 - **Menu:** opening moves focus to the first item (or the typeahead match); arrows move, typeahead
-  jumps, Home/End optional; Escape closes and returns focus to the trigger; Tab closes and lets focus
-  move on; disabled items are skipped by arrows but remain in the list.
+  jumps, Home/End optional; Escape closes and returns focus to the trigger; Tab out of the content
+  closes and lets focus move on (Shift+Tab from the first item returns to the trigger with the menu
+  still open); disabled items are skipped by arrows but remain in the list.
 - **Nesting:** only the topmost layer handles Escape/outside-dismiss; opening a child layer keeps the
   parent intact.
 - **With `@floating-ui/react`:** use its interaction prop getters and `useRole`/`FloatingFocusManager`
