@@ -32,6 +32,8 @@ import {
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
+import { REDUCED_MOTION } from '../../styling/media';
+import { modalShellReset, raisedSurface } from '../../styling/surface';
 import { triggerStyle } from '../../styling/trigger-style';
 import {
   omitNativeOpen,
@@ -113,30 +115,15 @@ function useDialogContext(part: string): DialogContextValue {
   return context;
 }
 
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-
-const dialogStyle = css({
-  border: 0,
-  padding: 0,
-  background: 'transparent',
-  color: 'inherit',
-  '&::backdrop': {
-    backgroundColor: vars.color.scrim,
-  },
-});
+const dialogStyle = css(modalShellReset);
 
 const panelStyle = css({
-  boxSizing: 'border-box',
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.border}`,
+  ...raisedSurface,
   borderRadius: vars.radius.lg,
   boxShadow: vars.shadow.floating,
   padding: vars.space[5],
   minInlineSize: '320px',
   maxInlineSize: 'min(560px, calc(100vw - 32px))',
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
-  lineHeight: vars.lineHeight.base,
 });
 
 const titleStyle = css({

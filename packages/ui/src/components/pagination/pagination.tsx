@@ -12,6 +12,7 @@ import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef, type
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
+import { REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
 export interface PaginationProps extends Omit<HTMLAttributes<HTMLElement>, 'onChange'> {
@@ -52,8 +53,6 @@ function getPageItems(page: number, totalPages: number, siblingCount: number): P
   if (!showEndEllipsis) return [1, 'start-ellipsis', ...range(totalPages - edgeRun + 1, totalPages)];
   return [1, 'start-ellipsis', ...range(leftSibling, rightSibling), 'end-ellipsis', totalPages];
 }
-
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 const listStyle = css({
   display: 'flex',

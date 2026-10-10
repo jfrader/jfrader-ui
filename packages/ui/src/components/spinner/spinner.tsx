@@ -6,6 +6,7 @@ import { forwardRef, type HTMLAttributes } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { loadingRing, loadingRingPulse } from '../../styling/loading-ring';
+import { REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
 export type SpinnerSize = 'sm' | 'md' | 'lg';
@@ -15,8 +16,6 @@ export interface SpinnerProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'chi
   /** Accessible text announced for the status region. */
   label?: string;
 }
-
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 const rootStyle = css({
   position: 'relative',

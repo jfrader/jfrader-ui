@@ -10,6 +10,7 @@ import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
+import { REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 
@@ -35,8 +36,6 @@ export interface AlertProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'
     dismiss?: AlertPartProps;
   };
 }
-
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 const TONE_LABELS: Record<AlertTone, string> = {
   info: 'Information',

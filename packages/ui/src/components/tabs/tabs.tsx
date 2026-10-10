@@ -26,7 +26,8 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
-import { focusRingInset } from '../../styling/focus-ring';
+import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
+import { REDUCED_MOTION } from '../../styling/media';
 import { partId } from '../../utils/part-id';
 import { findByValue, moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -74,8 +75,6 @@ const TAB_QUERY: OwnedItemsQuery = {
   itemSelector: '[role="tab"]:not([disabled])',
   ownerSelector: '[role="tablist"]',
 };
-
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 const rootStyle = css({
   '&[data-orientation="vertical"]': {
@@ -148,8 +147,7 @@ const panelStyle = css({
   color: vars.color.text,
   outline: 'none',
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
+    ...focusRingOutset,
   },
   '&[hidden]': {
     display: 'none',

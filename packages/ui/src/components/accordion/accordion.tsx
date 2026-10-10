@@ -26,6 +26,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
+import { REDUCED_MOTION } from '../../styling/media';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -104,8 +105,6 @@ const toOpenValues = (value: AccordionValue | undefined, type: AccordionType): s
   const singleValue = Array.isArray(value) ? value[0] : value;
   return singleValue === undefined || singleValue === EMPTY_SINGLE_VALUE ? [] : [singleValue];
 };
-
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 const itemStyle = css({
   borderBlockEnd: `1px solid ${vars.color.border}`,
