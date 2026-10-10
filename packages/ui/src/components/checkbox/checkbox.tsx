@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
+import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { isRenderable } from '../../utils/renderable';
 
@@ -41,38 +42,10 @@ const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 const BOX_SIZE: Record<CheckboxSize, string> = { sm: '16px', md: '20px' };
 
-const rootStyle = css({
-  display: 'inline-flex',
-  flexDirection: 'column',
-  gap: vars.space[1],
-  cursor: 'pointer',
-  'input:checked + span': { backgroundColor: vars.color.accent, borderColor: vars.color.accent },
+const glyphStateStyle = css({
   'input:checked + span svg': { opacity: 1 },
   '&[data-indeterminate] input + span': { backgroundColor: vars.color.accent, borderColor: vars.color.accent },
   '&[data-indeterminate] input + span svg': { opacity: 1 },
-  'input:focus-visible + span': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
-  },
-  '&:has(input:disabled)': {
-    opacity: 0.55,
-    cursor: 'not-allowed',
-  },
-});
-
-const rowStyle = css({
-  position: 'relative',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: vars.space[2],
-});
-
-const inputStyle = css({
-  position: 'absolute',
-  opacity: 0,
-  inlineSize: '16px',
-  blockSize: '16px',
-  margin: 0,
 });
 
 const boxStyle = css({
@@ -171,9 +144,9 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
       data-ui="checkbox"
       data-indeterminate={indeterminate || undefined}
       className={rootClassName}
-      css={[rootStyle, slotProps?.root?.css]}
+      css={[choiceRootStyle, glyphStateStyle, choiceRootStateStyle, slotProps?.root?.css]}
     >
-      <span css={rowStyle}>
+      <span css={choiceRowStyle}>
         <input
           {...rest}
           ref={inputRef}
@@ -182,7 +155,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
           aria-describedby={ariaDescribedBy}
           aria-checked={indeterminate ? 'mixed' : undefined}
           onChange={handleChange}
-          css={inputStyle}
+          css={choiceInputStyle}
         />
         <span
           aria-hidden="true"

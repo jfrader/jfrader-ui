@@ -4,6 +4,7 @@
 // never conveyed by color alone.
 import { forwardRef, useId, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
+import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { isRenderable } from '../../utils/renderable';
 
@@ -30,37 +31,6 @@ export interface SwitchProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 const TRACK_WIDTH: Record<SwitchSize, string> = { sm: '36px', md: '44px' };
-
-const rootStyle = css({
-  display: 'inline-flex',
-  flexDirection: 'column',
-  gap: vars.space[1],
-  cursor: 'pointer',
-  'input:checked + span': { backgroundColor: vars.color.accent, borderColor: vars.color.accent },
-  'input:focus-visible + span': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
-  },
-  '&:has(input:disabled)': {
-    opacity: 0.55,
-    cursor: 'not-allowed',
-  },
-});
-
-const rowStyle = css({
-  position: 'relative',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: vars.space[2],
-});
-
-const inputStyle = css({
-  position: 'absolute',
-  opacity: 0,
-  inlineSize: '16px',
-  blockSize: '16px',
-  margin: 0,
-});
 
 const trackStyle = css({
   position: 'relative',
@@ -171,9 +141,9 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
       data-ui="switch"
       dir={dir}
       className={rootClassName}
-      css={[rootStyle, checkedThumbStyles[size], slotProps?.root?.css]}
+      css={[choiceRootStyle, choiceRootStateStyle, checkedThumbStyles[size], slotProps?.root?.css]}
     >
-      <span css={rowStyle}>
+      <span css={choiceRowStyle}>
         <input
           {...rest}
           ref={ref}
@@ -182,7 +152,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
           aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
           onChange={handleChange}
-          css={inputStyle}
+          css={choiceInputStyle}
         />
         <span
           aria-hidden="true"
