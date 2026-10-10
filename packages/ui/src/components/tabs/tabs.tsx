@@ -1,0 +1,327 @@
+// APG pattern: tabs. The tablist is a single tab stop: the roving tabindex sits on the
+// focused tab, falling back to the selected tab and then to the first enabled tab, so Tab
+// always enters and exits the tablist predictably.
+// Keyboard map: ArrowRight/ArrowLeft (horizontal, swapped under RTL) or ArrowDown/ArrowUp
+// (vertical) move focus to the next/previous enabled tab and wrap; Home/End jump to the
+// first/last enabled tab. With activation="manual", Enter/Space selects the focused tab;
+// with activation="auto", selection follows focus, and a click on an already-focused tab
+// (a retry after a rejected controlled request) still issues exactly one request.
+// Tab values are embedded in element ids percent-encoded, so arbitrary strings stay valid
+// IDREF targets. Panels keep their state while hidden.
+import {
+  createContext,
+  forwardRef,
+  useContext,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+  type FocusEvent,
+  type HTMLAttributes,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
+import { vars } from '@jfrader/tokens/vars';
+import { css, type SerializedStyles } from '../../styling/css';
+import { useControlledState } from '../../utils/use-controlled-state';
+
+export type TabsOrientation = 'horizontal' | 'vertical';
+export type TabsActivation = 'auto' | 'manual';
+
+export interface TabsProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+  orientation?: TabsOrientation;
+  activation?: TabsActivation;
+}
+
+export type TabsListProps = HTMLAttributes<HTMLDivElement>;
+
+export interface TabsTabProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  value: string;
+}
+
+export interface TabsPanelProps extends HTMLAttributes<HTMLDivElement> {
+  value: string;
+}
+
+interface TabsContextValue {
+  value: string | undefined;
+  setValue: (value: string) => void;
+  focused: string | null;
+  setFocused: (value: string | null) => void;
+  orientation: TabsOrientation;
+  activation: TabsActivation;
+  baseId: string;
+}
+
+const TabsContext = createContext<TabsContextValue | null>(null);
+
+function useTabsContext(part: string): TabsContextValue {
+  const context = useContext(TabsContext);
+  if (!context) throw new Error(`Tabs.${part} must be rendered inside <Tabs>.`);
+  return context;
+}
+
+const partId = (baseId: string, part: 'tab' | 'panel', value: string) =>
+  `${baseId}-${part}-${encodeURIComponent(value)}`;
+
+type Move = (current: number, count: number) => number;
+
+const NEXT: Move = (current, count) => (current + 1) % count;
+const PREVIOUS: Move = (current, count) => (current - 1 + count) % count;
+const FIRST: Move = () => 0;
+const LAST: Move = (_current, count) => count - 1;
+
+const KEY_MOVES: Record<TabsOrientation | 'horizontalRtl', Partial<Record<string, Move>>> = {
+  horizontal: { ArrowRight: NEXT, ArrowLeft: PREVIOUS, Home: FIRST, End: LAST },
+  horizontalRtl: { ArrowRight: PREVIOUS, ArrowLeft: NEXT, Home: FIRST, End: LAST },
+  vertical: { ArrowDown: NEXT, ArrowUp: PREVIOUS, Home: FIRST, End: LAST },
+};
+
+const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
+
+const rootStyle = css({
+  '&[data-orientation="vertical"]': {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: vars.space[4],
+  },
+});
+
+const listStyles: Record<TabsOrientation, SerializedStyles> = {
+  horizontal: css({
+    display: 'inline-flex',
+    gap: vars.space[1],
+    borderBlockEnd: `1px solid ${vars.color.border}`,
+  }),
+  vertical: css({
+    display: 'inline-flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    borderInlineEnd: `1px solid ${vars.color.border}`,
+  }),
+};
+
+const tabStyle = css({
+  appearance: 'none',
+  border: 0,
+  background: 'transparent',
+  cursor: 'pointer',
+  paddingBlock: vars.space[2],
+  paddingInline: vars.space[3],
+  font: 'inherit',
+  fontSize: vars.textSize.sm,
+  fontWeight: vars.fontWeight.medium,
+  color: vars.color.textMuted,
+  transitionProperty: 'color, border-color',
+  transitionDuration: vars.motion.duration.fast,
+  transitionTimingFunction: vars.motion.easeStandard,
+  '&:hover:not(:disabled):not([aria-selected="true"])': {
+    color: vars.color.text,
+  },
+  '&[aria-selected="true"]': {
+    color: vars.color.text,
+    borderColor: vars.color.accent,
+  },
+  '&:disabled': {
+    opacity: 0.55,
+    cursor: 'not-allowed',
+  },
+  '&:focus-visible': {
+    outline: `2px solid ${vars.color.focusRing}`,
+    outlineOffset: '-2px',
+  },
+  [REDUCED_MOTION]: {
+    transitionDuration: '0s',
+  },
+});
+
+const tabOrientationStyles: Record<TabsOrientation, SerializedStyles> = {
+  horizontal: css({
+    borderBlockEnd: '2px solid transparent',
+    marginBlockEnd: '-1px',
+  }),
+  vertical: css({
+    borderInlineEnd: '2px solid transparent',
+    marginInlineEnd: '-1px',
+    textAlign: 'start',
+  }),
+};
+
+const panelStyle = css({
+  color: vars.color.text,
+  outline: 'none',
+  '&:focus-visible': {
+    outline: `2px solid ${vars.color.focusRing}`,
+    outlineOffset: '2px',
+  },
+  '&[hidden]': {
+    display: 'none',
+  },
+});
+
+const horizontalPanelStyle = css({ paddingBlockStart: vars.space[3] });
+
+const Root = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
+  { value: valueProp, defaultValue, onValueChange, orientation = 'horizontal', activation = 'auto', ...rest },
+  ref,
+) {
+  const baseId = useId();
+  const [value, setValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
+  const [focused, setFocused] = useState<string | null>(null);
+
+  const context = useMemo(
+    () => ({ value, setValue, focused, setFocused, orientation, activation, baseId }),
+    [value, setValue, focused, orientation, activation, baseId],
+  );
+
+  return (
+    <TabsContext.Provider value={context}>
+      <div {...rest} ref={ref} data-ui="tabs-root" data-orientation={orientation} css={rootStyle} />
+    </TabsContext.Provider>
+  );
+});
+
+const List = forwardRef<HTMLDivElement, TabsListProps>(function TabsList({ onKeyDown, ...rest }, ref) {
+  const { orientation, value, focused, setFocused } = useTabsContext('List');
+  const listRef = useRef<HTMLDivElement>(null);
+  useImperativeHandle(ref, () => listRef.current as HTMLDivElement, []);
+
+  // Keep exactly one tab in the page tab order, preferring (in order): the focused tab, the
+  // selected tab, the first enabled tab. This also recovers when the focused or selected tab
+  // becomes disabled or is removed.
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]:not([disabled])'));
+    if (tabs.length === 0) return;
+    if (tabs.some((tab) => tab.tabIndex === 0)) return;
+    const prefer = (candidate: string | null | undefined) =>
+      tabs.find((tab) => tab.dataset.value === candidate)?.dataset.value;
+    setFocused(prefer(value) ?? prefer(focused) ?? tabs[0]?.dataset.value ?? null);
+  });
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    onKeyDown?.(event);
+    const list = listRef.current;
+    if (event.defaultPrevented || !list) return;
+
+    const isRtl = orientation === 'horizontal' && getComputedStyle(list).direction === 'rtl';
+    const move = KEY_MOVES[isRtl ? 'horizontalRtl' : orientation][event.key];
+    if (!move) return;
+
+    const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]:not([disabled])'));
+    const current = tabs.indexOf(event.target as HTMLButtonElement);
+    if (current === -1) return;
+
+    event.preventDefault();
+    tabs[move(current, tabs.length)]?.focus();
+  };
+
+  return (
+    <div
+      {...rest}
+      ref={listRef}
+      role="tablist"
+      aria-orientation={orientation}
+      data-ui="tabs-list"
+      data-orientation={orientation}
+      data-roving={focused ?? ''}
+      data-selected={value ?? ''}
+      onKeyDown={handleKeyDown}
+      css={listStyles[orientation]}
+    />
+  );
+});
+
+const Tab = forwardRef<HTMLButtonElement, TabsTabProps>(function TabsTab(
+  { value, disabled, onClick, onFocus, ...rest },
+  ref,
+) {
+  const {
+    value: selectedValue,
+    setValue,
+    focused,
+    setFocused,
+    activation,
+    baseId,
+    orientation,
+  } = useTabsContext('Tab');
+  const isSelected = selectedValue === value;
+  const isTabStop = !disabled && (focused !== null ? focused === value : isSelected);
+  // Tracks whether the focus event already issued the selection request for this activation,
+  // so a click following that focus never notifies twice.
+  const focusRequestRef = useRef(false);
+
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    onClick?.(event);
+    if (event.defaultPrevented) return;
+    const focusAlreadyRequested = focusRequestRef.current;
+    focusRequestRef.current = false;
+    // Auto activation normally requests selection from the focus event. A click on a tab
+    // that was already focused (repeat click after a rejected controlled request, or Enter
+    // on a focused tab) must still issue exactly one request.
+    if (activation === 'auto' && focusAlreadyRequested) return;
+    setValue(value);
+  };
+
+  const handleFocus = (event: FocusEvent<HTMLButtonElement>) => {
+    onFocus?.(event);
+    if (event.defaultPrevented) return;
+    focusRequestRef.current = true;
+    setFocused(value);
+    if (activation === 'auto') setValue(value);
+  };
+
+  return (
+    <button
+      {...rest}
+      ref={ref}
+      type="button"
+      role="tab"
+      id={partId(baseId, 'tab', value)}
+      data-ui="tabs-tab"
+      data-value={value}
+      data-state={isSelected ? 'active' : 'inactive'}
+      aria-selected={isSelected}
+      aria-controls={partId(baseId, 'panel', value)}
+      tabIndex={isTabStop ? 0 : -1}
+      disabled={disabled}
+      onClick={handleClick}
+      onFocus={handleFocus}
+      css={[tabStyle, tabOrientationStyles[orientation]]}
+    />
+  );
+});
+
+const Panel = forwardRef<HTMLDivElement, TabsPanelProps>(function TabsPanel(
+  { value, tabIndex = 0, 'aria-labelledby': ariaLabelledByProp, ...rest },
+  ref,
+) {
+  const { value: selectedValue, baseId, orientation } = useTabsContext('Panel');
+  const isSelected = selectedValue === value;
+  const ariaLabelledBy =
+    [ariaLabelledByProp, partId(baseId, 'tab', value)].filter(Boolean).join(' ') || undefined;
+
+  return (
+    <div
+      {...rest}
+      ref={ref}
+      role="tabpanel"
+      id={partId(baseId, 'panel', value)}
+      aria-labelledby={ariaLabelledBy}
+      tabIndex={tabIndex}
+      hidden={!isSelected}
+      data-ui="tabs-panel"
+      data-state={isSelected ? 'active' : 'inactive'}
+      css={[panelStyle, orientation === 'horizontal' && horizontalPanelStyle]}
+    />
+  );
+});
+
+export const Tabs = Object.assign(Root, { List, Tab, Panel });
