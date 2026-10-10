@@ -5,10 +5,41 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts",
-    "./button": "./src/components/button/index.ts"
+    ".": { "types": "./src/index.ts", "import": "./src/index.ts" },
+    "./accordion": { "types": "./src/components/accordion/index.ts", "import": "./src/components/accordion/index.ts" },
+    "./alert": { "types": "./src/components/alert/index.ts", "import": "./src/components/alert/index.ts" },
+    "./avatar": { "types": "./src/components/avatar/index.ts", "import": "./src/components/avatar/index.ts" },
+    "./badge": { "types": "./src/components/badge/index.ts", "import": "./src/components/badge/index.ts" },
+    "./breadcrumbs": { "types": "./src/components/breadcrumbs/index.ts", "import": "./src/components/breadcrumbs/index.ts" },
+    "./button": { "types": "./src/components/button/index.ts", "import": "./src/components/button/index.ts" },
+    "./calendar": { "types": "./src/components/calendar/index.ts", "import": "./src/components/calendar/index.ts" },
+    "./card": { "types": "./src/components/card/index.ts", "import": "./src/components/card/index.ts" },
+    "./checkbox": { "types": "./src/components/checkbox/index.ts", "import": "./src/components/checkbox/index.ts" },
+    "./combobox": { "types": "./src/components/combobox/index.ts", "import": "./src/components/combobox/index.ts" },
+    "./command-palette": { "types": "./src/components/command-palette/index.ts", "import": "./src/components/command-palette/index.ts" },
+    "./date-picker": { "types": "./src/components/date-picker/index.ts", "import": "./src/components/date-picker/index.ts" },
+    "./dialog": { "types": "./src/components/dialog/index.ts", "import": "./src/components/dialog/index.ts" },
+    "./divider": { "types": "./src/components/divider/index.ts", "import": "./src/components/divider/index.ts" },
+    "./kbd": { "types": "./src/components/kbd/index.ts", "import": "./src/components/kbd/index.ts" },
+    "./menu": { "types": "./src/components/menu/index.ts", "import": "./src/components/menu/index.ts" },
+    "./pagination": { "types": "./src/components/pagination/index.ts", "import": "./src/components/pagination/index.ts" },
+    "./popover": { "types": "./src/components/popover/index.ts", "import": "./src/components/popover/index.ts" },
+    "./progress": { "types": "./src/components/progress/index.ts", "import": "./src/components/progress/index.ts" },
+    "./radio-group": { "types": "./src/components/radio-group/index.ts", "import": "./src/components/radio-group/index.ts" },
+    "./select": { "types": "./src/components/select/index.ts", "import": "./src/components/select/index.ts" },
+    "./skeleton": { "types": "./src/components/skeleton/index.ts", "import": "./src/components/skeleton/index.ts" },
+    "./spinner": { "types": "./src/components/spinner/index.ts", "import": "./src/components/spinner/index.ts" },
+    "./switch": { "types": "./src/components/switch/index.ts", "import": "./src/components/switch/index.ts" },
+    "./tabs": { "types": "./src/components/tabs/index.ts", "import": "./src/components/tabs/index.ts" },
+    "./text-field": { "types": "./src/components/text-field/index.ts", "import": "./src/components/text-field/index.ts" },
+    "./textarea": { "types": "./src/components/textarea/index.ts", "import": "./src/components/textarea/index.ts" },
+    "./theme-root": { "types": "./src/components/theme-root/index.ts", "import": "./src/components/theme-root/index.ts" },
+    "./toast": { "types": "./src/components/toast/index.ts", "import": "./src/components/toast/index.ts" },
+    "./toggle-group": { "types": "./src/components/toggle-group/index.ts", "import": "./src/components/toggle-group/index.ts" },
+    "./tooltip": { "types": "./src/components/tooltip/index.ts", "import": "./src/components/tooltip/index.ts" }
   },
   "scripts": {
+    "build": "vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json --emitDeclarationOnly --outDir dist/types",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -24,9 +55,11 @@
     "@storybook/react-vite": "^10.6.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "storybook": "^10.6.1",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
   }
 }

@@ -9,7 +9,8 @@
     "dev": "pnpm generate && pnpm --filter @jfrader/storybook dev",
     "build": "pnpm generate && pnpm --filter @jfrader/storybook build",
     "test": "pnpm generate && pnpm --filter @jfrader/storybook test",
-    "typecheck": "pnpm generate && pnpm -r typecheck"
+    "typecheck": "pnpm generate && pnpm -r typecheck",
+    "verify:exports": "node scripts/verify-exports.mjs"
   },
   "pnpm": { "onlyBuiltDependencies": ["esbuild", "playwright"] },
   "devDependencies": { "typescript": "^7.0.2" }
