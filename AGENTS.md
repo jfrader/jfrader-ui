@@ -45,6 +45,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 
 - `@emotion/react` and `@floating-ui/react` (Popover, Tooltip, Menu) are installed now.
 - `motion` is approved but only installed when a component actually needs it.
+- `lucide-react` is approved for consumer apps and examples (e.g. `apps/pilot`); `@jfrader/ui` itself must not depend on it.
 - Any other dependency requires updating this file first.
 
 ## Generated files
@@ -77,4 +78,3 @@ Work in this repo is tracked in Linear: project **`jfrader-ui`** in the `Gurisit
 - New work → a Backlog issue in this project first, then an issue worktree at `~/Workspace/Worktrees/jfrader-ui-GURI-N` on branch `jfrader/guri-N-…` from `origin/master` (base remote is now the private GitHub repo).
 - `gitBranchName` comes from the Linear issue. Commits/PRs reference the id (`Refs GURI-N`, `Fixes GURI-N`); after merge, reconcile the issue (closing comment, attachments to the issue, state `Done`).
 - Repo files stay the source of truth for code and conventions; Linear carries intent and progress.
-

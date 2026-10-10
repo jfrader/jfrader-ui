@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Inbox, Trash } from 'lucide-react';
 import { Badge, Button, Card, Dialog, Pill, Switch, TextField, type ThemeName } from '@jfrader/ui';
 
 interface Profile {
@@ -44,7 +45,12 @@ export function App() {
       <header className="page-header">
         <h1 className="page-title">Settings</h1>
         <Badge badgeContent={unread} tone="danger">
-          <Button variant="ghost" aria-label={`Inbox, ${unread} unread`} onClick={() => setUnread(0)}>
+          <Button
+            variant="ghost"
+            startIcon={<Inbox />}
+            aria-label={`Inbox, ${unread} unread`}
+            onClick={() => setUnread(0)}
+          >
             Inbox
           </Button>
         </Badge>
@@ -111,7 +117,13 @@ export function App() {
         </Card.Header>
         <Card.Footer>
           {deletionScheduled && <Pill tone="danger">Deletion scheduled</Pill>}
-          <Button variant="outline" tone="danger" disabled={deletionScheduled} onClick={() => setDeleteOpen(true)}>
+          <Button
+            variant="outline"
+            tone="danger"
+            startIcon={<Trash />}
+            disabled={deletionScheduled}
+            onClick={() => setDeleteOpen(true)}
+          >
             Delete account
           </Button>
         </Card.Footer>
