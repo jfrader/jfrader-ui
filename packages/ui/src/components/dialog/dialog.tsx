@@ -25,7 +25,9 @@ import {
   type DialogHTMLAttributes,
   type HTMLAttributes,
   type MouseEvent,
+  type MouseEventHandler,
   type ReactNode,
+  type Ref,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
@@ -46,14 +48,50 @@ export interface DialogProps {
   children?: ReactNode;
 }
 
-export interface DialogTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {}
+/** Props a part's `render` callback spreads onto the element it returns (e.g. a `Button`). */
+export interface DialogPartRenderProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  ref: Ref<HTMLButtonElement>;
+  'data-ui': string;
+}
+
+export interface DialogTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  /**
+   * Replaces the default button. Spread ALL supplied props onto the operative element and attach
+   * the supplied ref, including when composing through Button. The forwarded and callback refs
+   * refer to the rendered element, which need not be a button; their public types remain
+   * HTMLButtonElement for compatibility.
+   * Overridden handlers, className and style win; compose behavior manually to retain both:
+   * `onClick={(e) => { p.onClick?.(e); mine(e); }}`.
+   * Only the render path joins data-ui markers into a token list; library selectors should use
+   * `[data-ui~="dialog-trigger"]`. The default button always has data-ui="dialog-trigger".
+   * For disabled anchors, compose through Button's render path: aria-disabled keeps them
+   * focusable and its supplied handler blocks primary click/Enter activation, but does NOT
+   * cover auxiliary/middle-click navigation. This part alone supplies native button semantics.
+   */
+  render?: (props: DialogPartRenderProps) => ReactNode;
+}
 export interface DialogContentProps extends Omit<DialogHTMLAttributes<HTMLDialogElement>, 'open'> {
   /** Set false to keep structured content out of the dialog's accessible description. */
   withDescription?: boolean;
 }
 export interface DialogTitleProps extends HTMLAttributes<HTMLHeadingElement> {}
 export interface DialogDescriptionProps extends HTMLAttributes<HTMLParagraphElement> {}
-export interface DialogCloseProps extends ButtonHTMLAttributes<HTMLButtonElement> {}
+export interface DialogCloseProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  /**
+   * Replaces the default button. Spread ALL supplied props onto the operative element and attach
+   * the supplied ref, including when composing through Button. The forwarded and callback refs
+   * refer to the rendered element, which need not be a button; their public types remain
+   * HTMLButtonElement for compatibility.
+   * Overridden handlers, className and style win; compose behavior manually to retain both:
+   * `onClick={(e) => { p.onClick?.(e); mine(e); }}`.
+   * Only the render path joins data-ui markers into a token list; library selectors should use
+   * `[data-ui~="dialog-close"]`. The default button always has data-ui="dialog-close".
+   * For disabled anchors, compose through Button's render path: aria-disabled keeps them
+   * focusable and its supplied handler blocks primary click/Enter activation, but does NOT
+   * cover auxiliary/middle-click navigation. This part alone supplies native button semantics.
+   */
+  render?: (props: DialogPartRenderProps) => ReactNode;
+}
 
 interface DialogContextValue extends NativeDialogController {
   titleId: string;
@@ -176,26 +214,30 @@ function DialogRoot({ open: openProp, defaultOpen = false, onOpenChange, childre
   return <DialogContext.Provider value={context}>{children}</DialogContext.Provider>;
 }
 
-const Trigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(function DialogTrigger({ onClick, ...rest }, ref) {
+const Trigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(function DialogTrigger(
+  { onClick, render, ...rest },
+  ref,
+) {
   const { open, setOpen } = useDialogContext('Trigger');
+  const { 'data-ui': partMarker, ...attributes } = rest as typeof rest & { 'data-ui'?: string };
 
-  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
-    onClick?.(event);
+  const consumerClick: MouseEventHandler<HTMLElement> | undefined = onClick;
+  const handleClick = (event: MouseEvent<HTMLElement>) => {
+    consumerClick?.(event);
     if (!event.defaultPrevented) setOpen(true);
   };
 
-  return (
-    <button
-      type="button"
-      {...rest}
-      ref={ref}
-      data-ui="dialog-trigger"
-      aria-haspopup="dialog"
-      aria-expanded={open}
-      onClick={handleClick}
-      css={triggerStyle}
-    />
-  );
+  const triggerProps: DialogPartRenderProps = {
+    type: 'button',
+    ...attributes,
+    ref,
+    'data-ui': render && partMarker !== undefined ? `${partMarker} dialog-trigger` : 'dialog-trigger',
+    'aria-haspopup': 'dialog',
+    'aria-expanded': open,
+    onClick: handleClick,
+  };
+
+  return render ? render(triggerProps) : <button {...triggerProps} css={triggerStyle} />;
 });
 
 const Content = forwardRef<HTMLDialogElement, DialogContentProps>(function DialogContent(props, ref) {
@@ -262,18 +304,28 @@ const Description = forwardRef<HTMLParagraphElement, DialogDescriptionProps>(fun
   return <p {...props} ref={ref} id={descriptionId} data-ui="dialog-description" css={descriptionStyle} />;
 });
 
-const Close = forwardRef<HTMLButtonElement, DialogCloseProps>(function DialogClose({ onClick, ...rest }, ref) {
+const Close = forwardRef<HTMLButtonElement, DialogCloseProps>(function DialogClose({ onClick, render, ...rest }, ref) {
   const { setOpen } = useDialogContext('Close');
   const requestClose = useContext(DialogRequestCloseContext);
+  const { 'data-ui': partMarker, ...attributes } = rest as typeof rest & { 'data-ui'?: string };
 
-  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
-    onClick?.(event);
+  const consumerClick: MouseEventHandler<HTMLElement> | undefined = onClick;
+  const handleClick = (event: MouseEvent<HTMLElement>) => {
+    consumerClick?.(event);
     if (event.defaultPrevented) return;
     if (requestClose) requestClose();
     else setOpen(false);
   };
 
-  return <button type="button" {...rest} ref={ref} data-ui="dialog-close" onClick={handleClick} css={closeStyle} />;
+  const closeProps: DialogPartRenderProps = {
+    type: 'button',
+    ...attributes,
+    ref,
+    'data-ui': render && partMarker !== undefined ? `${partMarker} dialog-close` : 'dialog-close',
+    onClick: handleClick,
+  };
+
+  return render ? render(closeProps) : <button {...closeProps} css={closeStyle} />;
 });
 
 export const Dialog = Object.assign(DialogRoot, { Trigger, Content, Title, Description, Close });

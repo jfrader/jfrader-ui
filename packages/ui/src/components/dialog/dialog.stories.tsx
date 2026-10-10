@@ -3,10 +3,14 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { Button } from '../button';
 import { Dialog, type DialogProps } from './index';
 
 const TITLE = 'Edit profile';
 const DESCRIPTION = 'Update your display name and avatar.';
+const DELETE_LABEL = 'Delete account';
+const composedTriggerClick = fn();
+const composedTriggerRef = fn<(element: HTMLButtonElement | null) => void>();
 
 const bodyStyle = css({
   margin: 0,
@@ -53,6 +57,35 @@ function FormDialog(props: DialogProps) {
         <form method="dialog">
           <button type="submit">Confirm</button>
         </form>
+      </Dialog.Content>
+    </Dialog>
+  );
+}
+
+function ComposedDialog(props: DialogProps) {
+  return (
+    <Dialog {...props}>
+      <Dialog.Trigger
+        ref={composedTriggerRef}
+        onClick={composedTriggerClick}
+        render={(triggerProps) => (
+          <Button {...triggerProps} tone="danger" render={(buttonProps) => <button {...buttonProps} />}>
+            {DELETE_LABEL}
+          </Button>
+        )}
+      />
+      <Dialog.Content>
+        <Dialog.Title>{DELETE_LABEL}</Dialog.Title>
+        <Dialog.Description>Your profile and saved drafts are removed.</Dialog.Description>
+        <div css={footerStyle}>
+          <Dialog.Close
+            render={(closeProps) => (
+              <Button {...closeProps} variant="outline" render={(buttonProps) => <button {...buttonProps} />}>
+                Cancel
+              </Button>
+            )}
+          />
+        </div>
       </Dialog.Content>
     </Dialog>
   );
@@ -247,6 +280,54 @@ export const ScrollLock: Story = {
     await expectClosed(canvasElement, trigger);
     await expect(documentElement.style.overflow).toBe('');
     await expect(body.style.overflow).toBe('');
+  },
+};
+
+export const TriggerAsButton: Story = {
+  render: (args) => <ComposedDialog {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('button', { name: DELETE_LABEL });
+    // One element carries both the Button styles and the trigger behavior: no wrapper.
+    await expect(trigger).toHaveAttribute('data-ui', 'dialog-trigger button');
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(canvas.getAllByRole('button')).toHaveLength(1);
+    await expect(composedTriggerRef).toHaveBeenLastCalledWith(trigger);
+    await expect(composedTriggerRef.mock.calls.at(-1)?.[0]).toBeInstanceOf(HTMLButtonElement);
+
+    composedTriggerClick.mockClear();
+    canvasElement.tabIndex = -1;
+    canvasElement.focus();
+    await userEvent.tab();
+    canvasElement.removeAttribute('tabindex');
+    await expect(trigger).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    const dialog = await canvas.findByRole('dialog');
+    await expect(composedTriggerClick).toHaveBeenCalledTimes(1);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(dialog).toHaveAccessibleName(DELETE_LABEL);
+    await expect(dialog.contains(canvasElement.ownerDocument.activeElement)).toBe(true);
+
+    const close = within(dialog).getByRole('button', { name: 'Cancel' });
+    await expect(close).toHaveAttribute('data-ui', 'dialog-close button');
+    await expect(close).toHaveAttribute('type', 'button');
+    await userEvent.click(close);
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const TriggerAsButtonOpen: Story = {
+  args: { defaultOpen: true },
+  render: (args) => <ComposedDialog {...args} />,
+  play: async ({ canvasElement }) => {
+    // Persistent open state so the axe gate sees the composed Close button.
+    const dialog = await within(canvasElement).findByRole('dialog');
+    await expect(dialog).toHaveAttribute('open');
+    await expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveAttribute(
+      'data-ui',
+      'dialog-close button',
+    );
   },
 };
 
