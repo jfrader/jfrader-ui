@@ -1,21 +1,45 @@
 {
   "name": "@jfrader/tokens",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Design tokens for @jfrader/ui: CSS custom properties and typed var() references.",
+  "keywords": [
+    "design-tokens",
+    "css-variables",
+    "theming",
+    "design-system"
+  ],
+  "homepage": "https://github.com/jfrader/jfrader-ui/tree/master/packages/tokens#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jfrader/jfrader-ui.git",
+    "directory": "packages/tokens"
+  },
+  "license": "MIT",
   "type": "module",
+  "files": [
+    "dist",
+    "base.css"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./vars": "./src/generated/vars.ts",
     "./tokens.css": "./dist/tokens.css",
     "./base.css": "./base.css"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "generate": "tsx scripts/generate.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "build": "pnpm generate && vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "pnpm build && node ../../scripts/flip-exports.mjs dist --package tokens",
+    "postpack": "node ../../scripts/flip-exports.mjs src --package tokens"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
   }
 }

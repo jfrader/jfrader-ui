@@ -1,9 +1,26 @@
 {
   "name": "@jfrader/ui",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "React components styled with Emotion and themed through CSS custom properties.",
+  "keywords": [
+    "react",
+    "components",
+    "design-system",
+    "emotion",
+    "accessibility"
+  ],
+  "homepage": "https://github.com/jfrader/jfrader-ui/tree/master/packages/ui#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jfrader/jfrader-ui.git",
+    "directory": "packages/ui"
+  },
+  "license": "MIT",
   "type": "module",
   "sideEffects": false,
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": { "types": "./src/index.ts", "import": "./src/index.ts" },
     "./accordion": { "types": "./src/components/accordion/index.ts", "import": "./src/components/accordion/index.ts" },
@@ -43,9 +60,14 @@
     "./toggle-group": { "types": "./src/components/toggle-group/index.ts", "import": "./src/components/toggle-group/index.ts" },
     "./tooltip": { "types": "./src/components/tooltip/index.ts", "import": "./src/components/tooltip/index.ts" }
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json --emitDeclarationOnly --outDir dist/types",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "pnpm build && node ../../scripts/flip-exports.mjs dist --package ui",
+    "postpack": "node ../../scripts/flip-exports.mjs src --package ui"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

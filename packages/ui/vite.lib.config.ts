@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
@@ -12,7 +12,8 @@ const externalPackages = [...Object.keys(pkg.dependencies ?? {}), ...Object.keys
 // One entry per exports-map subpath so `dist/<name>.js` can back `@jfrader/ui/<name>`.
 const componentEntries = Object.fromEntries(
   readdirSync(componentsDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
+    // Internal folders (e.g. field/) have no index.ts and no subpath.
+    .filter((entry) => entry.isDirectory() && existsSync(path.join(componentsDir, entry.name, 'index.ts')))
     .map((entry) => [entry.name, path.join(componentsDir, entry.name, 'index.ts')]),
 );
 
