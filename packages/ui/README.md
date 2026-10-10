@@ -17,9 +17,11 @@ React components styled with Emotion and themed through the CSS custom propertie
 | `@jfrader/ui/checkbox` | `Checkbox` |
 | `@jfrader/ui/combobox` | `Combobox` |
 | `@jfrader/ui/command-palette` | `CommandPalette` |
+| `@jfrader/ui/container` | `Container` |
 | `@jfrader/ui/date-picker` | `DatePicker` |
 | `@jfrader/ui/dialog` | `Dialog` |
 | `@jfrader/ui/divider` | `Divider` |
+| `@jfrader/ui/flex` | `Flex` |
 | `@jfrader/ui/kbd` | `Kbd` |
 | `@jfrader/ui/menu` | `Menu` |
 | `@jfrader/ui/pagination` | `Pagination` |
@@ -30,6 +32,7 @@ React components styled with Emotion and themed through the CSS custom propertie
 | `@jfrader/ui/select` | `Select` |
 | `@jfrader/ui/skeleton` | `Skeleton` |
 | `@jfrader/ui/spinner` | `Spinner` |
+| `@jfrader/ui/stack` | `Stack` |
 | `@jfrader/ui/switch` | `Switch` |
 | `@jfrader/ui/tabs` | `Tabs` |
 | `@jfrader/ui/text-field` | `TextField` |
