@@ -11,6 +11,7 @@
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef, type HTMLAttributes } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { focusRingOutset } from '../../styling/focus-ring';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
 export interface PaginationProps extends Omit<HTMLAttributes<HTMLElement>, 'onChange'> {
@@ -103,8 +104,7 @@ const buttonStyle = css({
     opacity: 0.55,
   },
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
+    ...focusRingOutset,
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',

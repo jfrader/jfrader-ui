@@ -15,7 +15,11 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { focusRingOutset } from '../../styling/focus-ring';
+import { iconWrapperStyle } from '../../styling/icon-wrapper';
+import { loadingRing, loadingRingPulse } from '../../styling/loading-ring';
+import { REDUCED_MOTION } from '../../styling/media';
 
 export type ButtonVariant = 'solid' | 'soft' | 'outline' | 'ghost';
 export type ButtonTone = 'neutral' | 'accent' | 'danger';
@@ -52,7 +56,6 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 }
 
 const HOVER = '&:hover:not(:disabled):not([aria-disabled="true"])';
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 const baseStyle = css({
   display: 'inline-flex',
@@ -71,8 +74,7 @@ const baseStyle = css({
   transitionDuration: vars.motion.duration.fast,
   transitionTimingFunction: vars.motion.easeStandard,
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
+    ...focusRingOutset,
   },
   '&:disabled, &[aria-disabled="true"]': {
     cursor: 'not-allowed',
@@ -170,32 +172,12 @@ const renderedStyle = css({
   textDecoration: 'none',
 });
 
-const iconStyle = css({
-  display: 'inline-flex',
-  flexShrink: 0,
-  '& svg': { inlineSize: '1em', blockSize: '1em' },
-});
-
-const spin = keyframes({
-  from: { transform: 'rotate(0deg)' },
-  to: { transform: 'rotate(360deg)' },
-});
-
-const pulse = keyframes({
-  from: { opacity: 1 },
-  to: { opacity: 0.35 },
-});
-
 const spinnerStyle = css({
-  display: 'inline-block',
+  ...loadingRing,
   inlineSize: '1em',
   blockSize: '1em',
-  border: '2px solid currentColor',
-  borderInlineEndColor: 'transparent',
-  borderRadius: vars.radius.full,
-  animation: `${spin} 0.7s linear infinite`,
   [REDUCED_MOTION]: {
-    animation: `${pulse} 1.2s ease-in-out infinite alternate`,
+    animation: `${loadingRingPulse} 1.2s ease-in-out infinite alternate`,
   },
 });
 
@@ -237,13 +219,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const content = (
     <>
       {leading != null && (
-        <span css={iconStyle} aria-hidden>
+        <span css={iconWrapperStyle} aria-hidden>
           {leading}
         </span>
       )}
       {children}
       {endIcon != null && (
-        <span css={iconStyle} aria-hidden>
+        <span css={iconWrapperStyle} aria-hidden>
           {endIcon}
         </span>
       )}

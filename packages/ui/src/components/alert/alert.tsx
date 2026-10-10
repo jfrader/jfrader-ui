@@ -9,6 +9,7 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { focusRingOutset } from '../../styling/focus-ring';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 
@@ -121,8 +122,7 @@ const dismissStyle = css({
     color: vars.color.text,
   },
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
+    ...focusRingOutset,
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',

@@ -31,6 +31,7 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { focusRingOutset } from '../../styling/focus-ring';
 import { triggerStyle } from '../../styling/trigger-style';
 import {
   omitNativeOpen,
@@ -175,8 +176,7 @@ const closeStyle = css({
     color: vars.color.text,
   },
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
+    ...focusRingOutset,
   },
   '&:disabled': {
     opacity: 0.55,
