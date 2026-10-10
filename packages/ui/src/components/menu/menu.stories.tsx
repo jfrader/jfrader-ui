@@ -1,8 +1,8 @@
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Menu, type MenuProps } from './index';
@@ -12,10 +12,10 @@ const TRIGGER = 'Options';
 const onEdit = fn();
 const onDelete = fn();
 
-const rowStyle = css({
+const rowStyle = {
   display: 'flex',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Navigation/Menu',
@@ -38,7 +38,7 @@ type Story = StoryObj<typeof meta>;
 
 function MenuExample(props: MenuProps) {
   return (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <Menu {...props}>
         <Menu.Trigger>{TRIGGER}</Menu.Trigger>
         <Menu.Content>
@@ -52,6 +52,7 @@ function MenuExample(props: MenuProps) {
     </div>
   );
 }
+MenuExample.displayName = 'MenuExample';
 
 function ControlledMenu(props: MenuProps) {
   const [open, setOpen] = useState(false);
@@ -66,6 +67,7 @@ function ControlledMenu(props: MenuProps) {
     />
   );
 }
+ControlledMenu.displayName = 'ControlledMenu';
 
 /** Portaled content lives in the story document's body, outside the canvas. */
 function bodyOf(canvasElement: HTMLElement) {

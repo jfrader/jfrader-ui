@@ -1,7 +1,7 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Avatar, type AvatarSize, type AvatarStatus } from './index';
 
@@ -19,11 +19,11 @@ const PHOTO_SRC = `data:image/svg+xml,${encodeURIComponent(
 )}`;
 const BROKEN_SRC = 'data:image/png;base64,broken';
 
-const rowStyle = css({
+const rowStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Data display/Avatar',
@@ -64,7 +64,7 @@ export const Initials: Story = {
 
 export const InitialsEdgeCases: Story = {
   render: (args) => (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <Avatar {...args} name="cher" />
       <Avatar {...args} name="  grace   brewster murray hopper " />
       <Avatar {...args} name="Émile Zola" />
@@ -93,7 +93,7 @@ export const BrokenImage: Story = {
 
 export const Sizes: Story = {
   render: (args) => (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       {SIZES.map((size) => (
         <Avatar {...args} key={size} size={size} name={`Size ${size}`} />
       ))}
@@ -111,7 +111,7 @@ export const Sizes: Story = {
 
 export const Status: Story = {
   render: (args) => (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       {STATUSES.map((status) => (
         <Avatar {...args} key={status} status={status} />
       ))}
@@ -133,7 +133,7 @@ export const Status: Story = {
 export const LightTheme: Story = {
   decorators: [withLightTheme],
   render: (args) => (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <Avatar {...args} src={PHOTO_SRC} status="online" />
       <Avatar {...args} status="busy" />
       <Avatar {...args} status="offline" />

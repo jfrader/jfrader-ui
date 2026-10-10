@@ -1,22 +1,22 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Spinner, type SpinnerSize } from './index';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly SpinnerSize[];
 const SIZE_PX: Record<SpinnerSize, number> = { sm: 16, md: 20, lg: 24 };
 
-const rowStyle = css({
+const rowStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: vars.space[4],
-});
+} satisfies CSSProperties;
 
-const accentStyle = css({
+const accentStyle = {
   color: vars.color.accentText,
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Feedback/Spinner',
@@ -50,7 +50,7 @@ export const CustomLabel: Story = {
 
 export const Sizes: Story = {
   render: (args) => (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       {SIZES.map((size) => (
         <Spinner {...args} key={size} size={size} label={`Loading ${size}`} />
       ))}
@@ -71,7 +71,7 @@ export const Sizes: Story = {
 
 export const InheritsColor: Story = {
   render: (args) => (
-    <div css={accentStyle}>
+    <div style={accentStyle}>
       <Spinner {...args} />
     </div>
   ),

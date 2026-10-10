@@ -1,8 +1,8 @@
+import type { CSSProperties } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { RadioGroup, type RadioGroupOrientation, type RadioGroupProps } from './index';
 
@@ -14,20 +14,20 @@ const OPTIONS = [
 
 const ORIENTATIONS = ['vertical', 'horizontal'] as const satisfies readonly RadioGroupOrientation[];
 
-const fieldStyle = css({
+const fieldStyle = {
   display: 'grid',
   gap: vars.space[2],
-});
+} satisfies CSSProperties;
 
-const groupLabelStyle = css({
+const groupLabelStyle = {
   fontSize: vars.textSize.sm,
   fontWeight: vars.fontWeight.medium,
-});
+} satisfies CSSProperties;
 
-const stackStyle = css({
+const stackStyle = {
   display: 'grid',
   gap: vars.space[6],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Inputs/RadioGroup',
@@ -49,8 +49,8 @@ function RadioExample({
 }: RadioGroupProps & { groupLabel?: string; disabledValue?: string }) {
   const labelId = useId();
   return (
-    <div css={fieldStyle}>
-      <span id={labelId} css={groupLabelStyle}>
+    <div style={fieldStyle}>
+      <span id={labelId} style={groupLabelStyle}>
         {groupLabel}
       </span>
       <RadioGroup {...props} aria-labelledby={labelId}>
@@ -67,6 +67,7 @@ function RadioExample({
     </div>
   );
 }
+RadioExample.displayName = 'RadioExample';
 
 function ControlledRadioGroup(props: RadioGroupProps) {
   const [value, setValue] = useState('free');
@@ -81,6 +82,7 @@ function ControlledRadioGroup(props: RadioGroupProps) {
     />
   );
 }
+ControlledRadioGroup.displayName = 'ControlledRadioGroup';
 
 const getGroup = (canvasElement: HTMLElement, name = 'Plan') =>
   within(within(canvasElement).getByRole('radiogroup', { name }));
@@ -125,7 +127,7 @@ export const WithoutDescriptions: Story = {
 export const Controlled: Story = {
   args: { onValueChange: fn() },
   render: (args) => (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       <ControlledRadioGroup {...args} />
       <RadioExample groupLabel="Locked plan" value="free" onValueChange={args.onValueChange} />
     </div>

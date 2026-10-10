@@ -1,8 +1,7 @@
-import type { MouseEvent } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button, type ButtonSize, type ButtonTone, type ButtonVariant } from './index';
 
@@ -13,17 +12,17 @@ const GRID_VARIANTS = ['solid', 'soft', 'outline'] as const satisfies readonly B
 const linkRef = fn<(element: HTMLButtonElement | null) => void>();
 const disabledLinkClick = fn();
 
-const gridStyle = css({
+const gridStyle = {
   display: 'grid',
   gridTemplateColumns: `repeat(${GRID_VARIANTS.length}, auto)`,
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
-const rowStyle = css({
+const rowStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
 function PlusIcon() {
   return (
@@ -32,6 +31,7 @@ function PlusIcon() {
     </svg>
   );
 }
+PlusIcon.displayName = 'PlusIcon';
 
 function ArrowIcon() {
   return (
@@ -40,6 +40,7 @@ function ArrowIcon() {
     </svg>
   );
 }
+ArrowIcon.displayName = 'ArrowIcon';
 
 const meta = {
   title: 'Inputs/Button',
@@ -68,7 +69,7 @@ export const Default: Story = {
 
 export const Variants: Story = {
   render: (args) => (
-    <div css={gridStyle}>
+    <div style={gridStyle}>
       {TONES.map((tone) =>
         GRID_VARIANTS.map((variant) => (
           <Button {...args} key={`${tone}-${variant}`} tone={tone} variant={variant}>
@@ -82,7 +83,7 @@ export const Variants: Story = {
 
 export const Sizes: Story = {
   render: (args) => (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       {SIZES.map((size) => (
         <Button {...args} key={size} size={size}>
           {size}
@@ -146,7 +147,7 @@ export const RenderAsLink: Story = {
     onClick: fn((event: MouseEvent<HTMLElement>) => event.preventDefault()),
   },
   render: (args) => (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <Button {...args} ref={linkRef} render={(props) => <a {...props} href="#docs" />} />
       <Button
         {...args}

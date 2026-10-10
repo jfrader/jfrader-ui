@@ -50,6 +50,7 @@ function CommandPaletteExample(props: CommandPaletteProps) {
     </>
   );
 }
+CommandPaletteExample.displayName = 'CommandPaletteExample';
 
 function getInput(canvasElement: HTMLElement) {
   return within(canvasElement).getByRole('combobox', { name: LABEL });
@@ -196,6 +197,7 @@ function NativeCloseExample(props: CommandPaletteProps) {
     </CommandPalette>
   );
 }
+NativeCloseExample.displayName = 'NativeCloseExample';
 
 export const RepairNativeClose: Story = {
   args: { open: true, onOpenChange: fn() },

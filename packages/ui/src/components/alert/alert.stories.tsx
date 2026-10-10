@@ -51,6 +51,7 @@ function ToneMatrix(props: AlertProps) {
     </>
   );
 }
+ToneMatrix.displayName = 'ToneMatrix';
 
 async function expectToneRoles(canvasElement: HTMLElement) {
   const canvas = within(canvasElement);

@@ -1,8 +1,8 @@
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Dialog, type DialogProps } from './index';
@@ -13,16 +13,16 @@ const DELETE_LABEL = 'Delete account';
 const composedTriggerClick = fn();
 const composedTriggerRef = fn<(element: HTMLButtonElement | null) => void>();
 
-const bodyStyle = css({
+const bodyStyle = {
   margin: 0,
   fontSize: vars.textSize.sm,
-});
+} satisfies CSSProperties;
 
-const footerStyle = css({
+const footerStyle = {
   display: 'flex',
   justifyContent: 'flex-end',
   marginBlockStart: vars.space[5],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Surfaces/Dialog',
@@ -40,14 +40,15 @@ function DialogExample(props: DialogProps) {
       <Dialog.Content>
         <Dialog.Title>{TITLE}</Dialog.Title>
         <Dialog.Description>{DESCRIPTION}</Dialog.Description>
-        <p css={bodyStyle}>Your display name appears on comments and mentions.</p>
-        <div css={footerStyle}>
+        <p style={bodyStyle}>Your display name appears on comments and mentions.</p>
+        <div style={footerStyle}>
           <Dialog.Close>Close</Dialog.Close>
         </div>
       </Dialog.Content>
     </Dialog>
   );
 }
+DialogExample.displayName = 'DialogExample';
 
 function FormDialog(props: DialogProps) {
   return (
@@ -62,6 +63,7 @@ function FormDialog(props: DialogProps) {
     </Dialog>
   );
 }
+FormDialog.displayName = 'FormDialog';
 
 function ComposedDialog(props: DialogProps) {
   return (
@@ -78,7 +80,7 @@ function ComposedDialog(props: DialogProps) {
       <Dialog.Content>
         <Dialog.Title>{DELETE_LABEL}</Dialog.Title>
         <Dialog.Description>Your profile and saved drafts are removed.</Dialog.Description>
-        <div css={footerStyle}>
+        <div style={footerStyle}>
           <Dialog.Close
             render={(closeProps) => (
               <Button {...closeProps} variant="outline" render={(buttonProps) => <button {...buttonProps} />}>
@@ -91,6 +93,7 @@ function ComposedDialog(props: DialogProps) {
     </Dialog>
   );
 }
+ComposedDialog.displayName = 'ComposedDialog';
 
 function ControlledDialog(props: DialogProps) {
   const [open, setOpen] = useState(false);
@@ -105,6 +108,7 @@ function ControlledDialog(props: DialogProps) {
     />
   );
 }
+ControlledDialog.displayName = 'ControlledDialog';
 
 async function openDialog(canvasElement: HTMLElement) {
   const canvas = within(canvasElement);

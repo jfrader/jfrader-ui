@@ -1,17 +1,17 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Skeleton } from './index';
 
-const linesStyle = css({
+const linesStyle = {
   display: 'grid',
   gap: vars.space[2],
   inlineSize: '20rem',
-});
+} satisfies CSSProperties;
 
-const cardStyle = css({
+const cardStyle = {
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '20rem',
@@ -19,19 +19,19 @@ const cardStyle = css({
   border: `1px solid ${vars.color.border}`,
   borderRadius: vars.radius.md,
   backgroundColor: vars.color.surface,
-});
+} satisfies CSSProperties;
 
-const headerStyle = css({
+const headerStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
-const headerTextStyle = css({
+const headerTextStyle = {
   display: 'grid',
   flex: 1,
   gap: vars.space[2],
-});
+} satisfies CSSProperties;
 
 function skeletonsIn(canvasElement: HTMLElement) {
   return Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="skeleton"]'));
@@ -60,7 +60,7 @@ export const Default: Story = {
 
 export const Text: Story = {
   render: (args) => (
-    <div css={linesStyle}>
+    <div style={linesStyle}>
       <Skeleton {...args} />
       <Skeleton {...args} />
       <Skeleton {...args} width="60%" />
@@ -94,10 +94,10 @@ export const CustomRadius: Story = {
 
 export const Card: Story = {
   render: (args) => (
-    <div css={cardStyle}>
-      <div css={headerStyle}>
+    <div style={cardStyle}>
+      <div style={headerStyle}>
         <Skeleton {...args} circle />
-        <div css={headerTextStyle}>
+        <div style={headerTextStyle}>
           <Skeleton {...args} width="50%" />
           <Skeleton {...args} width="30%" height={12} />
         </div>

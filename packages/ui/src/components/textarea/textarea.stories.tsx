@@ -53,6 +53,7 @@ function ControlledTextarea(props: TextareaProps) {
     />
   );
 }
+ControlledTextarea.displayName = 'ControlledTextarea';
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {

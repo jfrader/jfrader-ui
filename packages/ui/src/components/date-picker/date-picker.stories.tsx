@@ -1,7 +1,7 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { DatePicker, type DatePickerProps } from './index';
@@ -12,11 +12,11 @@ const OUTSIDE = 'After';
 const FIELD_NAME = 'departure';
 const DISPLAY_FORMAT = new Intl.DateTimeFormat(LOCALE, { dateStyle: 'medium', calendar: 'gregory', timeZone: 'UTC' });
 
-const stackStyle = css({
+const stackStyle = {
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '320px',
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Pickers/DatePicker',
@@ -40,7 +40,7 @@ type Story = StoryObj<typeof meta>;
 
 function DatePickerExample(props: DatePickerProps) {
   return (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       <DatePicker {...props}>
         <DatePicker.Input label={LABEL} />
         <DatePicker.Popup />
@@ -49,6 +49,7 @@ function DatePickerExample(props: DatePickerProps) {
     </div>
   );
 }
+DatePickerExample.displayName = 'DatePickerExample';
 
 /** The input shows the date as Intl formats it, e.g. "Oct 13, 2026". */
 function formatted(iso: string) {

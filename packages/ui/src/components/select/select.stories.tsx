@@ -1,8 +1,8 @@
+import type { CSSProperties } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Select, type SelectProps } from './index';
@@ -11,11 +11,11 @@ const LABEL = 'Fruit';
 const PLACEHOLDER = 'Pick a fruit';
 const TYPEAHEAD_PAUSE_MS = 550;
 
-const rowStyle = css({
+const rowStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Inputs/Select',
@@ -29,7 +29,7 @@ type Story = StoryObj<typeof meta>;
 function SelectExample(props: SelectProps) {
   const labelId = useId();
   return (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <span id={labelId}>{LABEL}</span>
       <Select {...props}>
         <Select.Trigger aria-labelledby={labelId}>
@@ -48,6 +48,7 @@ function SelectExample(props: SelectProps) {
     </div>
   );
 }
+SelectExample.displayName = 'SelectExample';
 
 function ControlledSelect(props: SelectProps) {
   const [value, setValue] = useState('apple');
@@ -74,6 +75,7 @@ function ControlledSelect(props: SelectProps) {
     </>
   );
 }
+ControlledSelect.displayName = 'ControlledSelect';
 
 /** Portaled content lives in the story document's body, outside the canvas. */
 function bodyOf(canvasElement: HTMLElement) {

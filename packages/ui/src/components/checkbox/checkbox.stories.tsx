@@ -1,18 +1,18 @@
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Checkbox, type CheckboxProps, type CheckboxSize } from './index';
 
 const SIZES = ['sm', 'md'] as const satisfies readonly CheckboxSize[];
 const BOX_SIZES = { sm: 16, md: 20 } as const;
 
-const stackStyle = css({
+const stackStyle = {
   display: 'grid',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Inputs/Checkbox',
@@ -42,6 +42,7 @@ function ControlledCheckbox(props: CheckboxProps) {
     />
   );
 }
+ControlledCheckbox.displayName = 'ControlledCheckbox';
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {
@@ -144,7 +145,7 @@ export const Disabled: Story = {
 
 export const Sizes: Story = {
   render: (args) => (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       {SIZES.map((size) => (
         <Checkbox {...args} key={size} size={size} label={`Size ${size}`} description="Supporting text" />
       ))}

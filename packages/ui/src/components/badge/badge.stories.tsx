@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -18,7 +19,7 @@ const rowStyle = css({
   padding: vars.space[3],
 });
 
-const squareStyle = css({
+const squareStyle = {
   display: 'block',
   inlineSize: vars.space[6],
   blockSize: vars.space[6],
@@ -26,16 +27,17 @@ const squareStyle = css({
   backgroundColor: vars.color.surfaceHover,
   border: `1px solid ${vars.color.borderStrong}`,
   boxSizing: 'border-box',
-});
+} satisfies CSSProperties;
 
-const circleStyle = css({ borderRadius: vars.radius.full });
+const circleStyle = { borderRadius: vars.radius.full } satisfies CSSProperties;
 
 const slotRootStyle = css({ marginInlineStart: vars.space[4] });
 const slotBadgeStyle = css({ fontWeight: vars.fontWeight.semibold });
 
 function Square({ round = false }: { round?: boolean }) {
-  return <span css={[squareStyle, round && circleStyle]} />;
+  return <span style={{ ...squareStyle, ...(round ? circleStyle : {}) }} />;
 }
+Square.displayName = 'Square';
 
 function getRoots(canvasElement: HTMLElement) {
   return Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="badge"]'));

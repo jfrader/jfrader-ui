@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -24,18 +25,18 @@ const frameStyle = css({
   inlineSize: '240px',
 });
 
-const surfaceStyle = css({
+const surfaceStyle = {
   backgroundColor: vars.color.surface,
   padding: vars.space[4],
-});
+} satisfies CSSProperties;
 
 const disabledActivation = fn();
 
-const iconStyle = css({
+const iconStyle = {
   fill: 'none',
   stroke: 'currentColor',
   strokeWidth: 2,
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Navigation/Navigation',
@@ -73,14 +74,16 @@ function SidebarExample(props: NavigationProps) {
     </Navigation>
   );
 }
+SidebarExample.displayName = 'SidebarExample';
 
 function CircleIcon() {
   return (
-    <svg viewBox="0 0 16 16" css={iconStyle}>
+    <svg viewBox="0 0 16 16" style={iconStyle}>
       <circle cx="8" cy="8" r="6" />
     </svg>
   );
 }
+CircleIcon.displayName = 'CircleIcon';
 
 const getSummaries = (nav: HTMLElement) =>
   Array.from(nav.querySelectorAll<HTMLElement>('[data-ui="navigation-group-summary"]'));
@@ -277,7 +280,7 @@ export const DisabledActivation: Story = {
 
 export const SurfaceBacked: Story = {
   render: (args) => (
-    <div css={surfaceStyle}>
+    <div style={surfaceStyle}>
       <Navigation {...args}>
         <Navigation.Group label="Workspace" collapsible defaultOpen>
           {WORKSPACE.map((item) => (
