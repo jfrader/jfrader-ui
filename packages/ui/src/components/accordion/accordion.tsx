@@ -24,6 +24,7 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export type AccordionValue = string | string[];
@@ -77,23 +78,16 @@ function useAccordionItemContext(part: string): AccordionItemContextValue {
 }
 
 const EMPTY_SINGLE_VALUE = '';
-const TRIGGER_SELECTOR = '[data-ui="accordion-trigger"]:not([disabled])';
-const ROOT_SELECTOR = '[data-ui="accordion"]';
+const TRIGGER_QUERY: OwnedItemsQuery = {
+  itemSelector: '[data-ui="accordion-trigger"]:not([disabled])',
+  ownerSelector: '[data-ui="accordion"]',
+};
 
 const toOpenValues = (value: AccordionValue | undefined, multiple: boolean): string[] => {
   if (multiple && Array.isArray(value)) return value;
   // In single mode, array value/defaultValue uses only its first element.
   const singleValue = Array.isArray(value) ? value[0] : value;
   return singleValue === undefined || singleValue === EMPTY_SINGLE_VALUE ? [] : [singleValue];
-};
-
-type Move = (current: number, count: number) => number;
-
-const KEY_MOVES: Partial<Record<string, Move>> = {
-  ArrowDown: (current, count) => (current + 1) % count,
-  ArrowUp: (current, count) => (current - 1 + count) % count,
-  Home: () => 0,
-  End: (_current, count) => count - 1,
 };
 
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
@@ -210,19 +204,9 @@ const Root = forwardRef<HTMLDivElement, AccordionProps>(function Accordion(
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
-    const move = KEY_MOVES[event.key];
-    if (event.defaultPrevented || !move) return;
-
+    if (event.defaultPrevented) return;
     // Scope to this accordion's own triggers so a nested accordion keeps its own focus order.
-    const root = event.currentTarget;
-    const triggers = Array.from(root.querySelectorAll<HTMLButtonElement>(TRIGGER_SELECTOR)).filter(
-      (trigger) => trigger.closest(ROOT_SELECTOR) === root,
-    );
-    const current = triggers.indexOf(event.target as HTMLButtonElement);
-    if (current === -1) return;
-
-    event.preventDefault();
-    triggers[move(current, triggers.length)]?.focus();
+    moveRovingFocus(event, event.currentTarget, 'vertical', TRIGGER_QUERY);
   };
 
   return (

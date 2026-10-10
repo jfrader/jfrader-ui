@@ -26,6 +26,7 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
+import { findByValue, moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export type ToggleGroupType = 'single' | 'multiple';
@@ -72,19 +73,9 @@ const toPressed = (value: string | string[] | undefined, type: ToggleGroupType):
   return value === undefined || value === '' ? EMPTY : [value];
 };
 
-const ITEM_SELECTOR = '[data-ui="toggle-group-item"]:not([disabled])';
-
-type Move = (current: number, count: number) => number;
-
-const NEXT: Move = (current, count) => (current + 1) % count;
-const PREVIOUS: Move = (current, count) => (current - 1 + count) % count;
-const FIRST: Move = () => 0;
-const LAST: Move = (_current, count) => count - 1;
-
-const KEY_MOVES: Record<ToggleGroupOrientation | 'horizontalRtl', Partial<Record<string, Move>>> = {
-  horizontal: { ArrowRight: NEXT, ArrowLeft: PREVIOUS, Home: FIRST, End: LAST },
-  horizontalRtl: { ArrowRight: PREVIOUS, ArrowLeft: NEXT, Home: FIRST, End: LAST },
-  vertical: { ArrowDown: NEXT, ArrowUp: PREVIOUS, Home: FIRST, End: LAST },
+const ITEM_QUERY: OwnedItemsQuery = {
+  itemSelector: '[data-ui="toggle-group-item"]:not([disabled])',
+  ownerSelector: '[data-ui="toggle-group-root"]',
 };
 
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
@@ -205,33 +196,18 @@ const Root = forwardRef<HTMLDivElement, ToggleGroupProps>(function ToggleGroup(
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const items = Array.from(root.querySelectorAll<HTMLButtonElement>(ITEM_SELECTOR)).filter(
-      (item) => item.closest('[data-ui="toggle-group-root"]') === root,
-    );
+    const items = queryOwnedItems(root, ITEM_QUERY);
     if (items.length === 0) return;
     if (items.some((item) => item.tabIndex === 0)) return;
     const firstPressed = items.find((item) => item.getAttribute('aria-pressed') === 'true');
-    const prefer = (candidate: string | null) => items.find((item) => item.dataset.value === candidate);
-    setFocused((firstPressed ?? prefer(focused) ?? items[0])?.dataset.value ?? null);
+    setFocused((firstPressed ?? findByValue(items, focused) ?? items[0])?.dataset.value ?? null);
   });
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
     const root = rootRef.current;
     if (event.defaultPrevented || !root) return;
-
-    const isRtl = orientation === 'horizontal' && getComputedStyle(root).direction === 'rtl';
-    const move = KEY_MOVES[isRtl ? 'horizontalRtl' : orientation][event.key];
-    if (!move) return;
-
-    const items = Array.from(root.querySelectorAll<HTMLButtonElement>(ITEM_SELECTOR)).filter(
-      (item) => item.closest('[data-ui="toggle-group-root"]') === root,
-    );
-    const current = items.indexOf(event.target as HTMLButtonElement);
-    if (current === -1) return;
-
-    event.preventDefault();
-    items[move(current, items.length)]?.focus();
+    moveRovingFocus(event, root, orientation, ITEM_QUERY);
   };
 
   return (
