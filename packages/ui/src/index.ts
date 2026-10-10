@@ -14,6 +14,7 @@ export * from './components/dialog';
 export * from './components/divider';
 export * from './components/kbd';
 export * from './components/menu';
+export * from './components/navigation';
 export * from './components/pagination';
 export * from './components/popover';
 export * from './components/progress';
