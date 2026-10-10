@@ -182,6 +182,19 @@ Overlay family contracts (Popover/Tooltip/Menu are the next batch — follow the
   deliberately (`modal={false}` for tooltips/popovers, deliberate initial focus for menus); scope
   focus reads and scroll locks to the floating element's `ownerDocument`; disable positioning
   middleware when the surface is closed.
+- **Initial focus:** put native `autofocus` on the intended descendant; the browser's dialog
+  focus algorithm honors it (there is no universal "first input" guarantee).
+- **Platform adoption notes (docs verified 2026-10-10):** use `dialog.requestClose()` for close
+  affordances so they share cancel semantics (Baseline since May 2025; fall back to a state close
+  on older Safari). `closedby` is *not* Baseline (Safari preview) — keep manual backdrop handling.
+  `@starting-style` entry transitions are Baseline, but top-layer **exit** animation (transitioning
+  `display`/`overlay`) is not — ship exit transitions only with per-browser testing. `:user-invalid`
+  is Widely Available for post-interaction native validation. `field-sizing: content` (Baseline
+  June 2026) is the right tool if a future Textarea autosizes. CSS anchor positioning's core is
+  interoperable but the feature group is not Baseline — `@floating-ui/react` remains the choice.
+  `color-mix()` / relative colors / `light-dark()` are available for token derivation, but
+  `data-theme` + tokens stays the theming contract. Platform close requests can be noncancelable
+  (CloseWatcher safeguards): never promise a veto for every path; always reconcile `close`.
 
 ## 7. Testing requirements (definition of done, expanded)
 

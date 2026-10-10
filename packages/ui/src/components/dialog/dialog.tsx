@@ -1,18 +1,22 @@
 // APG pattern: dialog (modal), built on native <dialog> + showModal(). The top layer makes
 // the rest of the page inert and traps focus; close() returns focus to the element that was
 // focused before opening (normally the Trigger).
-// Keyboard map: Tab/Shift+Tab cycle inside the dialog; Escape closes it. Escape is the
-// browser's own cancellation: `cancel` is the single dismissal authority (we preventDefault
-// it and route through the Root), so a consumer preventDefault on `cancel` is a real veto.
-// Synthetic key events in tests do not trigger the native cancel; dispatch a cancel event.
+// Keyboard map: Tab/Shift+Tab cycle inside the dialog; Escape closes it.
+//
+// Close requests are the single dismissal authority: Escape (native cancel), the Close
+// button and backdrop clicks all route through `requestClose()` when the browser supports it
+// (Baseline since May 2025; older Safari falls back to the state close), so a consumer
+// preventDefault on `cancel` vetoes every request consistently. Note: platform close
+// requests are noncancelable under CloseWatcher activation safeguards; `close` reconciliation
+// handles those. `closedby` is NOT Baseline (Safari preview) — keep manual backdrop handling.
+// Synthetic key events in tests do not trigger native cancel; dispatch a cancel event.
 //
 // Lifecycle contract — the Root owns logical `open`, Content owns native state:
-// - Every dismissal path (native `cancel`, backdrop click, Close, and a native `close`
-//   caused by <form method="dialog"> or a forwarded ref .close()) requests
-//   `onOpenChange(false)`.
-// - If a controlled parent rejects a request while the native dialog already closed
-//   (unavoidable for native form closure), scroll is released and the next open request
-//   repairs the native state directly without notifying again (Root bumps a repair token).
+// - Every dismissal path requests `onOpenChange(false)`; native closure caused by
+//   <form method="dialog"> or a forwarded ref .close() reconciles through the `close` event.
+// - If a controlled parent rejects a request while the native dialog already closed, scroll
+//   is released and the next open request repairs the native state without notifying again
+//   (Root bumps a repair token).
 // - Content does not accept a native `open` prop.
 // - If Content unmounts while open (removal is not a close), focus returns to the invoking
 //   element when it is still connected.
@@ -69,6 +73,8 @@ interface DialogContextValue {
 }
 
 const DialogContext = createContext<DialogContextValue | null>(null);
+// Provided by Content so Close/backdrop share one dismissal path.
+const DialogRequestCloseContext = createContext<(() => void) | null>(null);
 
 function useDialogContext(part: string): DialogContextValue {
   const context = useContext(DialogContext);
@@ -299,7 +305,7 @@ const Content = forwardRef<HTMLDialogElement, DialogContentProps>(function Dialo
       try {
         dialog.showModal();
       } catch {
-        // Disconnected element: nothing to show.
+        // Disconnected element or conflicting state (already open nonmodally): nothing to do.
       }
       setIsNativeOpen(dialog.open);
     } else if (!open && dialog.open) {
@@ -320,18 +326,30 @@ const Content = forwardRef<HTMLDialogElement, DialogContentProps>(function Dialo
     [],
   );
 
+  // One dismissal path for Close/backdrop: prefer the native close request so `cancel` (and
+  // any consumer veto) applies; fall back to the state close on engines without requestClose.
+  const requestClose = useCallback(() => {
+    const dialog = dialogRef.current;
+    if (dialog && dialog.open && typeof dialog.requestClose === 'function') {
+      dialog.requestClose();
+      return;
+    }
+    setOpen(false);
+  }, [setOpen]);
+
   const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
     onCancel?.(event);
     const vetoed = event.defaultPrevented;
     // We own closure: block the browser's own close and route through the Root, unless the
-    // consumer vetoed the cancellation.
+    // consumer vetoed the cancellation. (Platform close requests can be noncancelable under
+    // CloseWatcher safeguards; the `close` reconciliation covers those.)
     event.preventDefault();
     if (!vetoed) setOpen(false);
   };
 
   const handleClick = (event: MouseEvent<HTMLDialogElement>) => {
     onClick?.(event);
-    if (event.target === dialogRef.current && !event.defaultPrevented) setOpen(false);
+    if (event.target === dialogRef.current && !event.defaultPrevented) requestClose();
   };
 
   const handleClose = (event: SyntheticEvent<HTMLDialogElement>) => {
@@ -359,7 +377,9 @@ const Content = forwardRef<HTMLDialogElement, DialogContentProps>(function Dialo
       onClose={handleClose}
       css={dialogStyle}
     >
-      <div css={panelStyle}>{children}</div>
+      <DialogRequestCloseContext.Provider value={requestClose}>
+        <div css={panelStyle}>{children}</div>
+      </DialogRequestCloseContext.Provider>
     </dialog>
   );
 });
@@ -388,10 +408,13 @@ const Description = forwardRef<HTMLParagraphElement, DialogDescriptionProps>(fun
 
 const Close = forwardRef<HTMLButtonElement, DialogCloseProps>(function DialogClose({ onClick, ...rest }, ref) {
   const { setOpen } = useDialogContext('Close');
+  const requestClose = useContext(DialogRequestCloseContext);
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     onClick?.(event);
-    if (!event.defaultPrevented) setOpen(false);
+    if (event.defaultPrevented) return;
+    if (requestClose) requestClose();
+    else setOpen(false);
   };
 
   return <button type="button" {...rest} ref={ref} data-ui="dialog-close" onClick={handleClick} css={closeStyle} />;
