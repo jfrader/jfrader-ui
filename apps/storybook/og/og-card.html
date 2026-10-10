@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>jfrader ui — share card</title>
+    <!-- Rendered to ../public/og-image.png by og/render.mjs; mirror the component values, tokens decide the color. -->
+    <link rel="stylesheet" href="../../../packages/tokens/dist/tokens.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+      }
+
+      body {
+        background-color: var(--ui-color-bg);
+        color: var(--ui-color-text);
+        /* Roboto heads the stack: on Linux fontconfig substitutes unknown families (Inter maps to
+           Noto Sans) before Chromium ever consults the fallback list. */
+        font-family: Roboto, Inter, 'Helvetica Neue', Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .canvas {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 464px;
+        gap: 72px;
+        align-items: center;
+        inline-size: 1200px;
+        block-size: 630px;
+        padding: 64px 72px;
+        overflow: hidden;
+        background-color: var(--ui-color-bg);
+      }
+
+      .halo {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(90px);
+        pointer-events: none;
+      }
+
+      .halo--one {
+        inline-size: 620px;
+        block-size: 620px;
+        inset-inline-start: -160px;
+        inset-block-start: -260px;
+        background-color: color-mix(in oklab, var(--ui-color-accent) 24%, transparent);
+      }
+
+      .halo--two {
+        inline-size: 520px;
+        block-size: 520px;
+        inset-inline-end: -140px;
+        inset-block-end: -280px;
+        background-color: color-mix(in oklab, var(--ui-color-accent) 16%, transparent);
+      }
+
+      .dots {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(
+          circle at 1px 1px,
+          color-mix(in oklab, var(--ui-color-text) 8%, transparent) 1px,
+          transparent 0
+        );
+        background-size: 28px 28px;
+        mask-image: radial-gradient(120% 110% at 28% 0%, black 22%, transparent 72%);
+        pointer-events: none;
+      }
+
+      .intro {
+        position: relative;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        block-size: 100%;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 18px;
+        font-weight: var(--ui-font-weight-semibold);
+        letter-spacing: -0.01em;
+      }
+
+      .brand svg {
+        display: block;
+        inline-size: 30px;
+        block-size: 30px;
+      }
+
+      .pitch {
+        align-self: center;
+        display: grid;
+        gap: 18px;
+      }
+
+      .pitch h1 {
+        margin: 0;
+        font-size: 54px;
+        font-weight: var(--ui-font-weight-semibold);
+        line-height: 1.06;
+        letter-spacing: -0.022em;
+      }
+
+      .pitch p {
+        margin: 0;
+        font-size: 19px;
+        line-height: var(--ui-line-height-base);
+        color: var(--ui-color-text-muted);
+      }
+
+      .accent {
+        color: var(--ui-color-accent);
+      }
+
+      .footnote {
+        font-family: var(--ui-font-mono);
+        font-size: 14px;
+        color: var(--ui-color-text-subtle);
+      }
+
+      .stage {
+        position: relative;
+      }
+
+      .panel {
+        position: absolute;
+        inset-block-start: -26px;
+        inset-inline-end: -26px;
+        inline-size: 100%;
+        block-size: 74%;
+        border: 1px solid var(--ui-color-border-subtle);
+        border-radius: var(--ui-radius-xl);
+        background-color: color-mix(in oklab, var(--ui-color-surface) 72%, transparent);
+      }
+
+      .search {
+        position: absolute;
+        z-index: 2;
+        inset-block-start: -36px;
+        inset-inline-start: -40px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 11px 16px;
+        rotate: -2deg;
+        background-color: var(--ui-color-surface-raised);
+        border: 1px solid var(--ui-color-border);
+        border-radius: var(--ui-radius-md);
+        box-shadow: var(--ui-shadow-floating);
+        font-size: 15px;
+        color: var(--ui-color-text-muted);
+      }
+
+      .keys {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--ui-space-1);
+      }
+
+      .keys kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-inline-size: 22px;
+        padding: 2px 6px;
+        background-color: var(--ui-color-surface-hover);
+        border: 1px solid var(--ui-color-border-subtle);
+        border-block-end: 2px solid var(--ui-color-border-strong);
+        border-radius: var(--ui-radius-sm);
+        font-family: var(--ui-font-mono);
+        font-size: 12px;
+        font-weight: var(--ui-font-weight-medium);
+        line-height: var(--ui-line-height-tight);
+        color: var(--ui-color-text);
+      }
+
+      .card {
+        position: relative;
+        z-index: 1;
+        background-color: var(--ui-color-surface-raised);
+        border: 1px solid var(--ui-color-border);
+        border-radius: var(--ui-radius-lg);
+        box-shadow: var(--ui-shadow-raised);
+        padding-block: var(--ui-space-4);
+        padding-inline: var(--ui-space-5);
+      }
+
+      .card header {
+        display: grid;
+        gap: var(--ui-space-1);
+        margin-block-end: var(--ui-space-4);
+      }
+
+      .card h2 {
+        margin: 0;
+        font-size: var(--ui-text-size-md);
+        font-weight: var(--ui-font-weight-semibold);
+        line-height: var(--ui-line-height-tight);
+      }
+
+      .card header p {
+        margin: 0;
+        font-size: var(--ui-text-size-sm);
+        color: var(--ui-color-text-muted);
+      }
+
+      .field {
+        display: grid;
+        gap: var(--ui-space-1);
+        margin-block-end: var(--ui-space-4);
+      }
+
+      .field label {
+        font-size: var(--ui-text-size-sm);
+        font-weight: var(--ui-font-weight-medium);
+        color: var(--ui-color-text);
+      }
+
+      .input {
+        display: flex;
+        align-items: center;
+        block-size: 40px;
+        padding-inline: var(--ui-space-4);
+        background-color: var(--ui-color-surface-raised);
+        border: 1px solid var(--ui-color-border-control);
+        border-radius: var(--ui-radius-md);
+        font-size: var(--ui-text-size-sm);
+      }
+
+      .input .caret {
+        inline-size: 1px;
+        block-size: 17px;
+        margin-inline-start: 2px;
+        background-color: var(--ui-color-accent);
+      }
+
+      .pills {
+        display: flex;
+        gap: var(--ui-space-2);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        block-size: var(--ui-space-5);
+        padding-inline: var(--ui-space-2);
+        border-radius: var(--ui-radius-full);
+        font-size: var(--ui-text-size-xs);
+        font-weight: var(--ui-font-weight-medium);
+        line-height: 1;
+      }
+
+      .pill--success {
+        background-color: var(--ui-color-success-soft);
+        color: var(--ui-color-success);
+      }
+
+      .pill--accent {
+        background-color: var(--ui-color-accent-soft);
+        color: var(--ui-color-accent-text);
+      }
+
+      .card footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--ui-space-2);
+        margin-block-start: var(--ui-space-4);
+        padding-block-start: var(--ui-space-4);
+        border-block-start: 1px solid var(--ui-color-border-subtle);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        block-size: 40px;
+        padding-inline: var(--ui-space-4);
+        background-color: transparent;
+        border: 1px solid transparent;
+        border-radius: var(--ui-radius-md);
+        font-family: inherit;
+        font-size: var(--ui-text-size-sm);
+        font-weight: var(--ui-font-weight-medium);
+        line-height: var(--ui-line-height-tight);
+        letter-spacing: -0.011em;
+        white-space: nowrap;
+      }
+
+      .btn--accent {
+        background-color: var(--ui-color-accent);
+        color: var(--ui-color-accent-contrast);
+      }
+
+      .btn--outline {
+        border-color: var(--ui-color-border-strong);
+        color: var(--ui-color-text);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas">
+      <div class="halo halo--one"></div>
+      <div class="halo halo--two"></div>
+      <div class="dots"></div>
+
+      <div class="intro">
+        <div class="brand">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <defs>
+              <linearGradient id="violet" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#7747ff" />
+                <stop offset="1" stop-color="#a78bff" />
+              </linearGradient>
+            </defs>
+            <rect width="32" height="32" rx="8" fill="url(#violet)" />
+            <g fill="#fff">
+              <rect x="8" y="9.2" width="16" height="3.2" rx="1.6" />
+              <rect x="8" y="14.6" width="11.2" height="3.2" rx="1.6" opacity="0.78" />
+              <rect x="8" y="20" width="6.4" height="3.2" rx="1.6" opacity="0.56" />
+            </g>
+          </svg>
+          <span>jfrader ui</span>
+        </div>
+
+        <div class="pitch">
+          <h1>React components,<br />built from scratch<span class="accent">.</span></h1>
+          <p>Design tokens, theming and accessibility as one system.</p>
+        </div>
+
+        <div class="footnote">ui.jfrader.com</div>
+      </div>
+
+      <div class="stage">
+        <div class="panel"></div>
+
+        <div class="search">
+          <span>Search components</span>
+          <span class="keys"><kbd>⌘</kbd><kbd>K</kbd></span>
+        </div>
+
+        <article class="card">
+          <header>
+            <h2>New project</h2>
+            <p>jfrader-ui · Storybook</p>
+          </header>
+
+          <div class="field">
+            <label>Project name</label>
+            <div class="input"><span>jfrader-ui</span><span class="caret"></span></div>
+          </div>
+
+          <div class="pills">
+            <span class="pill pill--success">axe clean</span>
+            <span class="pill pill--accent">WCAG AA</span>
+          </div>
+
+          <footer>
+            <button class="btn btn--outline" type="button">Cancel</button>
+            <button class="btn btn--accent" type="button">Create project</button>
+          </footer>
+        </article>
+      </div>
+    </div>
+  </body>
+</html>

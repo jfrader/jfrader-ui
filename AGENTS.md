@@ -17,6 +17,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 | `pnpm generate` | Generate `packages/tokens/dist/tokens.css` and `packages/tokens/src/generated/vars.ts` |
 | `pnpm dev` | Generate tokens and start Storybook on port 6006 |
 | `pnpm build` | Generate tokens and build static Storybook |
+| `pnpm og:image` | Regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
 | `pnpm test` | Generate tokens and run Storybook Vitest browser tests |
 | `pnpm typecheck` | Typecheck every package |
 

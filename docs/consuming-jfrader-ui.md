@@ -8,6 +8,22 @@ Published `@jfrader/ui` and `@jfrader/tokens` packages ship compiled ES modules 
 pnpm add @jfrader/ui @jfrader/tokens @emotion/react react react-dom
 ```
 
+### Registry choice
+
+npmjs is the zero-configuration default. GitHub Packages carries the same
+verified tarball, but GitHub requires authentication even for public npm
+packages:
+
+```ini
+@jfrader:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+Registry selection applies to the whole `@jfrader` scope; npm does not fall
+back from GitHub Packages to npmjs. Projects that map that scope to GitHub must
+authenticate there or use an explicit npmjs tarball URL for a package that is
+not mirrored.
+
 ## Published packages
 
 Use your app's normal React JSX configuration. Configure Emotion's `jsxImportSource` only if the app itself uses Emotion's `css` prop.
