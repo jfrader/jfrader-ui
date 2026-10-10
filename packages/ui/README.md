@@ -83,11 +83,20 @@ Writes ES modules to `dist/` (`dist/index.js` plus one `dist/<name>.js` per comp
 
 ## Publishing
 
-`@jfrader/ui` and `@jfrader/tokens` publish together from `.github/workflows/publish.yml`.
+`@jfrader/ui` and `@jfrader/tokens` publish together from `.github/workflows/publish.yml` to npmjs and GitHub Packages.
 
 1. Set the same `version` in `packages/ui/package.json` and `packages/tokens/package.json` and merge to `master`.
-2. Tag the merge commit and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-3. CI runs typecheck and tests, builds both packages, switches `exports` to `dist/` and runs `pnpm -r publish`. `workspace:*` becomes the published version.
+2. Push an annotated tag on that commit: `git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z`.
+3. CI checks the tag against both manifests, runs typecheck, tests and `verify:exports`, builds both packages, switches `exports` to `dist/` and packs each package once with `pnpm pack`. `workspace:*` becomes the published version.
+4. CI verifies or publishes the same tarballs to npmjs, then to GitHub Packages, tokens before UI. A matching artifact already at that version is accepted; a different one fails the release.
+
+To re-run a release without re-tagging:
+
+```sh
+gh workflow run publish.yml --repo jfrader/jfrader-ui --ref v0.1.1
+```
+
+npmjs authenticates through the package's trusted publisher for `jfrader/jfrader-ui` → `.github/workflows/publish.yml`, configured on npmjs after the first version is published by hand. GitHub Packages uses the workflow's `GITHUB_TOKEN`. See the [root README](https://github.com/jfrader/jfrader-ui#publishing) for the full release setup.
 
 In the repo, `exports` point at `src/` so the workspace consumes source. `node scripts/flip-exports.mjs dist` validates and switches both packages to the publish layout; `node scripts/flip-exports.mjs src` switches both back. The UI `prepack` builds UI and flips only its manifest with `--package ui`; `postpack` restores only UI. Each flip validates only the selected package's export targets.
 
@@ -102,3 +111,14 @@ pnpm --filter @jfrader/ui pack --pack-destination /tmp/opencode
 Root `pnpm build` builds Storybook, not the published packages. If packing fails after `prepack`, run `node scripts/flip-exports.mjs src` from the repo root to restore workspace exports.
 
 It must contain only `dist/**`, `package.json`, `README.md` and `LICENSE`.
+
+### Registry choice / installing
+
+npmjs needs no authentication; GitHub Packages requires authentication even for public packages. To install from GitHub Packages, add this to `.npmrc`:
+
+```ini
+@jfrader:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+See the [root README's registry section](https://github.com/jfrader/jfrader-ui#registry-choice) for details.

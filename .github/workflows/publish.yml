@@ -1,39 +1,122 @@
-name: Publish
+name: Publish packages
 
 on:
   push:
-    tags: ['v*']
+    tags:
+      - "v*"
+  workflow_dispatch: {}
 
 permissions:
   contents: read
+  id-token: write
+  packages: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    if: github.repository == 'jfrader/jfrader-ui'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
+      - name: Check out release
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
-          node-version: 22
-          cache: pnpm
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up npmjs
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
 
-      - run: pnpm install --frozen-lockfile
+      - name: Set up pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          run_install: false
 
-      - run: pnpm --filter @jfrader/storybook exec playwright install --with-deps chromium
+      - name: Install release npm
+        run: npm install --global npm@11.18.0
 
-      - run: pnpm typecheck
+      - name: Verify release identity
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const expected = { tokens: '@jfrader/tokens', ui: '@jfrader/ui' };
+          for (const [dir, name] of Object.entries(expected)) {
+            const manifest = JSON.parse(readFileSync(`packages/${dir}/package.json`, 'utf8'));
+            if (manifest.name !== name) throw new Error(`Unexpected package name in packages/${dir}`);
+            if (process.env.GITHUB_REF_NAME !== `v${manifest.version}`) throw new Error(`Tag/version mismatch for ${name}`);
+          }
+          NODE
+          git fetch origin master
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/master
 
-      - run: pnpm test
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter @jfrader/storybook exec playwright install --with-deps chromium
 
-      - run: pnpm --filter @jfrader/tokens build && pnpm --filter @jfrader/ui build
+      - name: Check release
+        run: |
+          pnpm typecheck
+          pnpm test
+          pnpm verify:exports
+          git diff --exit-code -- packages/tokens/src/generated
 
-      # Flip once up front and skip the pack scripts so every manifest pnpm reads is already in the dist layout.
-      - run: node scripts/flip-exports.mjs dist
+      - name: Build packages
+        run: |
+          pnpm --filter @jfrader/tokens build
+          pnpm --filter @jfrader/ui build
 
-      - run: pnpm -r publish --access public --no-git-checks --ignore-scripts
+      # pnpm pack, not npm pack: it rewrites `workspace:*` to the released version in the packed manifest.
+      - name: Pack once
+        id: pack
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm_config_ignore_scripts: "true"
+        run: |
+          node scripts/flip-exports.mjs dist
+          mkdir -p "$RUNNER_TEMP/release"
+          for package in tokens ui; do
+            (cd "packages/$package" && pnpm pack --json --pack-destination "$RUNNER_TEMP/release") > "$RUNNER_TEMP/pack-$package.json"
+          done
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+          import path from 'node:path';
+          for (const dir of ['tokens', 'ui']) {
+            const packed = JSON.parse(readFileSync(path.join(process.env.RUNNER_TEMP, `pack-${dir}.json`), 'utf8'));
+            const manifest = JSON.parse(readFileSync(`packages/${dir}/package.json`, 'utf8'));
+            if (packed.name !== manifest.name || packed.version !== manifest.version) {
+              throw new Error(`Packed artifact identity mismatch for ${manifest.name}`);
+            }
+            appendFileSync(process.env.GITHUB_OUTPUT, `${dir}=${path.resolve(process.env.RUNNER_TEMP, 'release', packed.filename)}\n`);
+          }
+          NODE
+          node scripts/flip-exports.mjs src
+
+      # Tokens first: the UI package depends on @jfrader/tokens@<version>.
+      # npmjs authenticates through each package's trusted publisher (OIDC) for this workflow; no token.
+      - name: Publish to npmjs
+        run: |
+          node scripts/publish-registry.mjs "${{ steps.pack.outputs.tokens }}" https://registry.npmjs.org packages/tokens/package.json
+          node scripts/publish-registry.mjs "${{ steps.pack.outputs.ui }}" https://registry.npmjs.org packages/ui/package.json
+
+      - name: Set up GitHub Packages
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: "@jfrader"
+          package-manager-cache: false
+
+      - name: Publish to GitHub Packages
+        run: |
+          node scripts/publish-registry.mjs "${{ steps.pack.outputs.tokens }}" https://npm.pkg.github.com packages/tokens/package.json
+          node scripts/publish-registry.mjs "${{ steps.pack.outputs.ui }}" https://npm.pkg.github.com packages/ui/package.json
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
