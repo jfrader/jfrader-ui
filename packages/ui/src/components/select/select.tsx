@@ -49,6 +49,15 @@ import {
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import {
+  listboxItemStateStyle,
+  listboxItemStyle,
+  listboxOptionCheckStyle,
+  listboxOptionStyle,
+  listboxOptionTextStyle,
+  listboxScrollStyle,
+  listboxSurfaceStyle,
+} from '../../styling/listbox-style';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import {
@@ -145,8 +154,6 @@ function useSelectItemContext(): SelectContextValue {
   return context;
 }
 
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-
 const selectTriggerStyle = css({
   justifyContent: 'flex-start',
   minInlineSize: '180px',
@@ -162,74 +169,6 @@ const valueStyle = css({
   '&[data-placeholder]': {
     color: vars.color.textMuted,
   },
-});
-
-const contentStyle = css({
-  boxSizing: 'border-box',
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
-  boxShadow: vars.shadow.overlay,
-  padding: vars.space[1],
-  minInlineSize: '180px',
-  maxInlineSize: 'min(320px, calc(100vw - 32px))',
-  maxBlockSize: '280px',
-  overflow: 'auto',
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
-  lineHeight: vars.lineHeight.base,
-  '&[hidden]': {
-    display: 'none',
-  },
-});
-
-const itemStyle = css({
-  boxSizing: 'border-box',
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space[2],
-  inlineSize: '100%',
-  minBlockSize: '32px',
-  flexShrink: 0,
-  borderRadius: vars.radius.sm,
-  paddingBlock: vars.space[1],
-  paddingInline: vars.space[2],
-  fontSize: vars.textSize.sm,
-  color: vars.color.text,
-  cursor: 'pointer',
-  userSelect: 'none',
-  transitionProperty: 'background-color',
-  transitionDuration: vars.motion.duration.fast,
-  transitionTimingFunction: vars.motion.easeStandard,
-  '&:hover:not([aria-disabled="true"]), &[data-active]:not([aria-disabled="true"])': {
-    backgroundColor: vars.color.surfaceHover,
-  },
-  // The active option is the virtual focus target: it carries the focus ring.
-  '&[data-active]': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '-2px',
-  },
-  '&[aria-selected="true"]': {
-    fontWeight: vars.fontWeight.medium,
-  },
-  '&[aria-disabled="true"]': {
-    opacity: 0.55,
-    cursor: 'not-allowed',
-  },
-  [REDUCED_MOTION]: {
-    transitionDuration: '0s',
-  },
-});
-
-const itemTextStyle = css({
-  flex: 1,
-  minInlineSize: 0,
-});
-
-const checkStyle = css({
-  color: vars.color.accentText,
 });
 
 function SelectRoot({
@@ -487,7 +426,7 @@ const Content = forwardRef<HTMLDivElement, SelectContentProps>(function SelectCo
         data-state={open ? 'open' : 'closed'}
         data-ui="select-listbox"
         style={{ ...style, ...floatingStyles }}
-        css={contentStyle}
+        css={[listboxSurfaceStyle, listboxScrollStyle]}
       >
         <FloatingList elementsRef={elementsRef}>
           <SelectContentContext.Provider value>{children}</SelectContentContext.Provider>
@@ -531,13 +470,13 @@ const Item = forwardRef<HTMLDivElement, SelectItemProps>(function SelectItem(
       aria-disabled={disabled || undefined}
       data-active={isActive || undefined}
       data-ui="select-item"
-      css={itemStyle}
+      css={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle]}
     >
-      <span ref={textRef} css={itemTextStyle}>
+      <span ref={textRef} css={listboxOptionTextStyle}>
         {children}
       </span>
       {isSelected && (
-        <span aria-hidden="true" css={checkStyle}>
+        <span aria-hidden="true" css={listboxOptionCheckStyle}>
           {SELECTED_GLYPH}
         </span>
       )}

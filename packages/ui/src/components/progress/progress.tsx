@@ -6,6 +6,7 @@
 import { forwardRef, useId, type HTMLAttributes, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 
 export interface ProgressPartProps {
@@ -79,19 +80,6 @@ const indeterminateIndicatorStyle = css({
     '&, &:dir(rtl)': { animation: 'none' },
     opacity: 0.7,
   },
-});
-
-const visuallyHiddenStyle = css({
-  position: 'absolute',
-  inlineSize: '1px',
-  blockSize: '1px',
-  padding: 0,
-  margin: '-1px',
-  overflow: 'hidden',
-  clip: 'rect(0, 0, 0, 0)',
-  clipPath: 'inset(50%)',
-  whiteSpace: 'nowrap',
-  border: 0,
 });
 
 function normalizeProgress(value: number | undefined, max: number) {

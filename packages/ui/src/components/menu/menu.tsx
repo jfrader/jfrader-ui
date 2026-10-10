@@ -43,6 +43,7 @@ import {
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useCollectionIndexRegistration, useCollectionListItem } from '../../utils/collection-registry';
@@ -103,22 +104,6 @@ function useMenuItemContext(): MenuContextValue {
 
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
-const contentStyle = css({
-  boxSizing: 'border-box',
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
-  boxShadow: vars.shadow.overlay,
-  padding: vars.space[1],
-  minInlineSize: '180px',
-  maxInlineSize: 'min(320px, calc(100vw - 32px))',
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
-  lineHeight: vars.lineHeight.base,
-});
-
 const itemStyle = css({
   appearance: 'none',
   boxSizing: 'border-box',
@@ -139,16 +124,9 @@ const itemStyle = css({
   transitionProperty: 'background-color',
   transitionDuration: vars.motion.duration.fast,
   transitionTimingFunction: vars.motion.easeStandard,
-  '&:hover:not([aria-disabled="true"]), &[data-active]:not([aria-disabled="true"])': {
-    backgroundColor: vars.color.surfaceHover,
-  },
   '&:focus-visible': {
     outline: `2px solid ${vars.color.focusRing}`,
     outlineOffset: '-2px',
-  },
-  '&[aria-disabled="true"]': {
-    opacity: 0.55,
-    cursor: 'not-allowed',
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',
@@ -287,7 +265,7 @@ const Content = forwardRef<HTMLDivElement, MenuContentProps>(function MenuConten
           ref={mergedRef}
           data-ui="menu"
           style={{ ...style, ...floatingStyles }}
-          css={contentStyle}
+          css={listboxSurfaceStyle}
         >
           <FloatingList elementsRef={elementsRef} labelsRef={labelsRef}>
             <MenuContentContext.Provider value>{children}</MenuContentContext.Provider>
@@ -328,7 +306,7 @@ const Item = forwardRef<HTMLButtonElement, MenuItemProps>(function MenuItem(
       aria-disabled={disabled || undefined}
       data-active={isActive || undefined}
       data-ui="menu-item"
-      css={itemStyle}
+      css={[itemStyle, listboxItemStateStyle]}
     />
   );
 });
