@@ -1,0 +1,169 @@
+// Semantics: one `role="img"` root per avatar whose accessible name is the person's name, plus
+// the status word when a status is set ("Ada Lovelace, online"). The photo, initials and status
+// badge are presentational children of that root. Status uses shape and color for sighted users
+// and text for AT; the name stays unchanged when a broken photo falls back to initials. Not interactive.
+import { forwardRef, useState, type HTMLAttributes } from 'react';
+import { vars } from '@jfrader/tokens/vars';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+
+export type AvatarSize = 'sm' | 'md' | 'lg';
+export type AvatarStatus = 'online' | 'away' | 'busy' | 'offline';
+
+export interface AvatarPartProps {
+  className?: string;
+  css?: Interpolation<Theme>;
+}
+
+export interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children' | 'role' | 'aria-label'> {
+  /** Used for the accessible name and the initials fallback. */
+  name: string;
+  src?: string;
+  size?: AvatarSize;
+  status?: AvatarStatus;
+  /** Spoken status word; defaults to the `status` value. Pass a translated word for other locales. */
+  statusLabel?: string;
+  slotProps?: {
+    image?: AvatarPartProps;
+    fallback?: AvatarPartProps;
+    status?: AvatarPartProps;
+  };
+}
+
+const MAX_INITIALS = 2;
+
+// Grapheme-aware so names starting with combining marks or emoji keep a whole character.
+const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
+function getWordInitial(word: string): string {
+  const segments = Array.from(graphemes.segment(word), ({ segment }) => segment);
+  const first = segments[0] ?? '';
+  if (!/\p{Extended_Pictographic}/u.test(first)) return first;
+
+  let initial = '';
+  for (const segment of segments) {
+    if (!/\p{Extended_Pictographic}/u.test(segment)) break;
+    initial += segment;
+  }
+  return initial;
+}
+
+function getInitials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, MAX_INITIALS)
+    .map(getWordInitial)
+    .join('')
+    .toLocaleUpperCase();
+}
+
+// Initials use `text` on `surfaceHover`: ~16:1 dark, ~18:1 light (WCAG AA needs 4.5:1).
+const rootStyle = css({
+  position: 'relative',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  boxSizing: 'border-box',
+  borderRadius: vars.radius.full,
+  backgroundColor: vars.color.surfaceHover,
+  color: vars.color.text,
+  fontWeight: vars.fontWeight.medium,
+  lineHeight: 1,
+  userSelect: 'none',
+  verticalAlign: 'middle',
+});
+
+const sizeStyles: Record<AvatarSize, SerializedStyles> = {
+  sm: css({ inlineSize: vars.space[6], blockSize: vars.space[6], fontSize: vars.textSize.xs }),
+  md: css({ inlineSize: vars.space[8], blockSize: vars.space[8], fontSize: vars.textSize.sm }),
+  lg: css({ inlineSize: vars.space[10], blockSize: vars.space[10], fontSize: vars.textSize.md }),
+};
+
+const imageStyle = css({
+  display: 'block',
+  inlineSize: '100%',
+  blockSize: '100%',
+  borderRadius: vars.radius.full,
+  objectFit: 'cover',
+});
+
+// The page-colored outline separates each shape from the photo; it is not the state cue.
+const statusStyle = css({
+  position: 'absolute',
+  insetBlockEnd: 0,
+  insetInlineEnd: 0,
+  inlineSize: '25%',
+  blockSize: '25%',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    insetBlockStart: 0,
+    insetInlineStart: 0,
+    inlineSize: '100%',
+    blockSize: '100%',
+    boxSizing: 'border-box',
+    borderRadius: vars.radius.full,
+    boxShadow: `0 0 0 2px ${vars.color.bg}`,
+  },
+});
+
+const statusToneStyles: Record<AvatarStatus, SerializedStyles> = {
+  online: css({ '&::before': { backgroundColor: vars.color.success } }),
+  away: css({ '&::before': { border: `2px solid ${vars.color.warning}`, backgroundColor: 'transparent' } }),
+  busy: css({ '&::before': { backgroundColor: vars.color.danger, blockSize: '30%', insetBlockStart: '35%' } }),
+  offline: css({
+    '&::before': {
+      backgroundColor: vars.color.textSubtle,
+      inlineSize: '60%',
+      blockSize: '60%',
+      insetBlockStart: '20%',
+      insetInlineStart: '20%',
+    },
+  }),
+};
+
+export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
+  { name, src, size = 'md', status, statusLabel, slotProps, ...rest },
+  ref,
+) {
+  // Keyed by URL so a new `src` gets a fresh attempt without an effect.
+  // A failed URL stays suppressed when revisited after success → failure → same-URL cycles.
+  const [failedSrc, setFailedSrc] = useState<string>();
+  const showImage = src !== undefined && src !== '' && src !== failedSrc;
+  const label = status === undefined ? name : `${name}, ${statusLabel ?? status}`;
+
+  return (
+    <span
+      {...rest}
+      ref={ref}
+      data-ui="avatar"
+      role="img"
+      aria-label={label}
+      css={[rootStyle, sizeStyles[size]]}
+    >
+      {showImage ? (
+        <img
+          src={src}
+          alt=""
+          onError={() => setFailedSrc(src)}
+          className={slotProps?.image?.className}
+          css={[imageStyle, slotProps?.image?.css]}
+        />
+      ) : (
+        <span aria-hidden="true" className={slotProps?.fallback?.className} css={slotProps?.fallback?.css}>
+          {getInitials(name)}
+        </span>
+      )}
+      {status !== undefined && (
+        <span
+          aria-hidden="true"
+          data-status={status}
+          className={slotProps?.status?.className}
+          css={[statusStyle, statusToneStyles[status], slotProps?.status?.css]}
+        />
+      )}
+    </span>
+  );
+});
