@@ -1,30 +1,20 @@
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { modalShellReset, raisedSurface } from '../../styling/surface';
 
 export const dialogStyle = css({
-  border: 0,
-  padding: 0,
-  background: 'transparent',
-  color: 'inherit',
+  ...modalShellReset,
   // Anchored to the top so the panel does not jump while the list height changes.
   marginBlockStart: vars.space[12],
-  '&::backdrop': {
-    backgroundColor: vars.color.scrim,
-  },
 });
 
 export const panelStyle = css({
-  boxSizing: 'border-box',
+  ...raisedSurface,
   display: 'flex',
   flexDirection: 'column',
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.border}`,
   borderRadius: vars.radius.lg,
   boxShadow: vars.shadow.floating,
   inlineSize: 'min(560px, calc(100vw - 32px))',
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
-  lineHeight: vars.lineHeight.base,
 });
 
 export const inputStyle = css({
