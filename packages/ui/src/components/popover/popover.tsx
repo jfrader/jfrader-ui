@@ -34,6 +34,7 @@ import {
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { raisedSurface } from '../../styling/surface';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -69,18 +70,13 @@ function usePopoverContext(part: string): PopoverContextValue {
 }
 
 const contentStyle = css({
-  boxSizing: 'border-box',
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.border}`,
+  ...raisedSurface,
   borderRadius: vars.radius.lg,
   boxShadow: vars.shadow.overlay,
   padding: vars.space[4],
   minInlineSize: '200px',
   maxInlineSize: 'min(360px, calc(100vw - 32px))',
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
-  lineHeight: vars.lineHeight.base,
 });
 
 function PopoverRoot({

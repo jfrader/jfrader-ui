@@ -51,6 +51,7 @@ import {
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { raisedSurface } from '../../styling/surface';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -203,15 +204,10 @@ const inputStyle = css({
 });
 
 const popupStyle = css({
-  boxSizing: 'border-box',
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.border}`,
+  ...raisedSurface,
   borderRadius: vars.radius.md,
   boxShadow: vars.shadow.overlay,
   padding: vars.space[3],
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
-  lineHeight: vars.lineHeight.base,
 });
 
 // ---- Parts.
