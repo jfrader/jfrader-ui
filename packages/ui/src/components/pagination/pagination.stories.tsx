@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Pagination, type PaginationProps } from './index';
 
 const stackStyle = css({
@@ -346,7 +347,7 @@ export const Keyboard: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   play: async ({ canvasElement }) => {
     await expect(currentPage(getNav(canvasElement))).toEqual([['5', 'page']]);
   },

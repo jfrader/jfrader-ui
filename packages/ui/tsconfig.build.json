@@ -8,5 +8,5 @@
     "outDir": "dist/types"
   },
   "include": ["src"],
-  "exclude": ["src/**/*.stories.tsx"]
+  "exclude": ["src/**/*.stories.tsx", "src/testing"]
 }

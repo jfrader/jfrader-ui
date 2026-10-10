@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { TextField, type TextFieldProps, type TextFieldSize } from './index';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly TextFieldSize[];
@@ -168,7 +169,7 @@ export const Required: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { error: 'Enter a valid email address.' },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');

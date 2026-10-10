@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Calendar, type CalendarProps } from './index';
 
 const LOCALE = 'en-US';
@@ -417,7 +418,7 @@ export const RejectedControlledVisibleMonth: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { defaultValue: '2026-10-12' },
   render: (args) => <CalendarExample {...args} />,
   play: async ({ canvasElement }) => {

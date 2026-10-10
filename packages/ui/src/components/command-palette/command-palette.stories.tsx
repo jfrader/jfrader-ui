@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { withLightTheme } from '../../testing/story-decorators';
 import { CommandPalette, type CommandPaletteProps } from './index';
 
 const LABEL = 'Command palette';
@@ -279,7 +280,7 @@ export const RejectedControlled: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
     const { trigger } = await openPalette(canvasElement);

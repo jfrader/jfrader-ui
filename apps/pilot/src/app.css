@@ -11,39 +11,14 @@ body {
 }
 
 .page {
-  display: grid;
-  gap: var(--ui-space-6);
+  /* The app intentionally narrows Container's md size. */
   max-inline-size: 720px;
-  margin-inline: auto;
   padding-block: var(--ui-space-10);
-  padding-inline: var(--ui-space-4);
-}
-
-.page-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--ui-space-4);
 }
 
 .page-title {
-  display: flex;
-  align-items: center;
-  gap: var(--ui-space-3);
   margin: 0;
   font-size: var(--ui-text-size-2xl);
   font-weight: var(--ui-font-weight-semibold);
   line-height: var(--ui-line-height-tight);
-}
-
-.stack {
-  display: grid;
-  gap: var(--ui-space-4);
-}
-
-.dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--ui-space-2);
 }

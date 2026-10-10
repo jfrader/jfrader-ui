@@ -6,6 +6,7 @@ import { forwardRef, useId, type ChangeEvent, type InputHTMLAttributes, type Rea
 import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { REDUCED_MOTION } from '../../styling/media';
 import { isRenderable } from '../../utils/renderable';
 
 export type SwitchSize = 'sm' | 'md';
@@ -27,8 +28,6 @@ export interface SwitchProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
     description?: SwitchPartProps;
   };
 }
-
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 const TRACK_WIDTH: Record<SwitchSize, string> = { sm: '36px', md: '44px' };
 

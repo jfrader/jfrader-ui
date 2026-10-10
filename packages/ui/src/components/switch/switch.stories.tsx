@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Switch, type SwitchProps, type SwitchSize } from './index';
 
 const SIZES = ['sm', 'md'] as const satisfies readonly SwitchSize[];
@@ -150,7 +151,7 @@ export const Sizes: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { defaultChecked: true, description: 'Turns off Wi-Fi and Bluetooth.' },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('switch')).toBeChecked();

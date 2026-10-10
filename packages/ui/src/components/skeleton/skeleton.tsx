@@ -4,6 +4,7 @@
 import { forwardRef, type HTMLAttributes } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes } from '../../styling/css';
+import { REDUCED_MOTION } from '../../styling/media';
 
 type Length = number | string;
 
@@ -14,8 +15,6 @@ export interface SkeletonProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chi
   circle?: boolean;
   radius?: Length;
 }
-
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 // Background is twice the element width: 200% parks the highlight before the start, -100% past the end.
 const shimmer = keyframes({

@@ -107,6 +107,10 @@ import { Inbox } from 'lucide-react';
 
 Replace any glyph with your own SVG where needed. Brand artwork stays app-owned.
 
+## Badge counts
+
+A `Badge` count is not part of the wrapped control's accessible name. If the control has an `aria-label`, include the count in it: `aria-label="Inbox, 3 unread"`. If the control is named by its visible text, the count is read after it.
+
 ## Fonts
 
 Load fonts in the app. The token font stack starts with `Inter`.

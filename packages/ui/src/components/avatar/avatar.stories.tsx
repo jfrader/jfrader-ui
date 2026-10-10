@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Avatar, type AvatarSize, type AvatarStatus } from './index';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly AvatarSize[];
@@ -130,7 +131,7 @@ export const Status: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   render: (args) => (
     <div css={rowStyle}>
       <Avatar {...args} src={PHOTO_SRC} status="online" />

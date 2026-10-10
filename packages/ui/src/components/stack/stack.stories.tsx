@@ -4,6 +4,7 @@ import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { LAYOUT_SPACES, LAYOUT_SPACE_TOKEN, type LayoutSpace } from '../../styling/layout-style';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Stack, type StackAlign } from './index';
 
 const ALIGNS = {
@@ -139,7 +140,7 @@ export const GapSteps: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   render: (args) => (
     <>
       <Stack {...args}>

@@ -129,6 +129,11 @@ const toneStyles: Record<BadgeTone, SerializedStyles> = {
   neutral: css({ backgroundColor: vars.color.textMuted, color: vars.color.bg }),
 };
 
+/**
+ * The marker text never joins the wrapped control's accessible name.
+ * - Control with an explicit `aria-label`: put the count in the label (`aria-label="Inbox, 3 unread"`).
+ * - Control named by its visible text: the count is read right after the control's name.
+ */
 export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
   {
     children,

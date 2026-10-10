@@ -3,6 +3,7 @@ import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Accordion, type AccordionProps } from './index';
 
 const ITEMS = [
@@ -327,7 +328,7 @@ export const StatePreserved: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { defaultValue: 'two' },
   render: (args) => <AccordionExample {...args} />,
   play: async ({ canvasElement }) => {

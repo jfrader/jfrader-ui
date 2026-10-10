@@ -98,11 +98,13 @@ const footerStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
-  justifyContent: 'flex-end',
+  justifyContent: 'space-between',
   gap: vars.space[2],
   marginBlockStart: vars.space[4],
   paddingBlockStart: vars.space[4],
   borderBlockStart: `1px solid ${vars.color.borderSubtle}`,
+  // A lone footer action stays pinned to the end.
+  '& > :only-child': { marginInlineStart: 'auto' },
 });
 
 const CardRoot = forwardRef<HTMLDivElement, CardProps>(function Card(

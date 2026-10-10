@@ -43,7 +43,9 @@ import {
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { focusRingInset } from '../../styling/focus-ring';
 import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
+import { REDUCED_MOTION } from '../../styling/media';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useCollectionIndexRegistration, useCollectionListItem } from '../../utils/collection-registry';
@@ -102,8 +104,6 @@ function useMenuItemContext(): MenuContextValue {
   return context;
 }
 
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-
 const itemStyle = css({
   appearance: 'none',
   boxSizing: 'border-box',
@@ -125,8 +125,7 @@ const itemStyle = css({
   transitionDuration: vars.motion.duration.fast,
   transitionTimingFunction: vars.motion.easeStandard,
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '-2px',
+    ...focusRingInset,
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',

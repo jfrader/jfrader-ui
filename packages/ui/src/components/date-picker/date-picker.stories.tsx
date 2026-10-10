@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { DatePicker, type DatePickerProps } from './index';
 
@@ -498,7 +499,7 @@ export const DisabledControlledOpen: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { defaultOpen: true, defaultValue: '2026-10-12' },
   render: (args) => <DatePickerExample {...args} />,
   play: async ({ canvasElement }) => {

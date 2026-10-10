@@ -3,6 +3,7 @@ import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { ToggleGroup, type ToggleGroupProps, type ToggleGroupSingleProps } from './index';
 
 interface Option {
@@ -366,7 +367,7 @@ export const ControlledRejectedMultiple: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { defaultValue: 'grid' },
   render: (args) => <ToggleGroupExample {...args} />,
   play: async ({ canvasElement }) => {
