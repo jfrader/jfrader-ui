@@ -10,6 +10,7 @@
     "generate": "pnpm --filter @jfrader/tokens generate",
     "dev": "pnpm generate && pnpm --filter @jfrader/storybook dev",
     "build": "pnpm generate && pnpm --filter @jfrader/storybook build",
+    "og:image": "pnpm generate && pnpm --filter @jfrader/storybook og:image",
     "test": "pnpm generate && pnpm --filter @jfrader/storybook test",
     "typecheck": "pnpm generate && pnpm -r typecheck",
     "verify:exports": "node scripts/verify-exports.mjs"

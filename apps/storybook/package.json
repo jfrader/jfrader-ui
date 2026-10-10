@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "storybook dev -p 6006",
     "build": "storybook build",
+    "og:image": "node og/render.mjs",
     "test": "vitest run --project=storybook",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
