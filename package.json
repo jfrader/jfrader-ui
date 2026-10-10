@@ -1,0 +1,16 @@
+{
+  "name": "jfrader-ui-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.12.1",
+  "engines": { "node": ">=22.12" },
+  "scripts": {
+    "generate": "pnpm --filter @jfrader/tokens generate",
+    "dev": "pnpm generate && pnpm --filter @jfrader/storybook dev",
+    "build": "pnpm generate && pnpm --filter @jfrader/storybook build",
+    "test": "pnpm generate && pnpm --filter @jfrader/storybook test",
+    "typecheck": "pnpm generate && pnpm -r typecheck"
+  },
+  "pnpm": { "onlyBuiltDependencies": ["esbuild", "playwright"] },
+  "devDependencies": { "typescript": "^7.0.2" }
+}
