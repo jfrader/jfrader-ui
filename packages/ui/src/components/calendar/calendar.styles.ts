@@ -1,0 +1,145 @@
+import { vars } from '@jfrader/tokens/vars';
+import { css } from '../../styling/css';
+
+// ---- Styles.
+
+const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
+const FORCED_COLORS = '@media (forced-colors: active)';
+
+export const rootStyle = css({
+  display: 'inline-flex',
+  flexDirection: 'column',
+  gap: vars.space[2],
+  fontFamily: vars.font.sans,
+  color: vars.color.text,
+});
+
+export const headerStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
+
+export const labelStyle = css({
+  flex: 1,
+  textAlign: 'center',
+  fontSize: vars.textSize.sm,
+  fontWeight: vars.fontWeight.semibold,
+});
+
+const controlTransition = {
+  transitionDuration: vars.motion.duration.fast,
+  transitionTimingFunction: vars.motion.easeStandard,
+  [REDUCED_MOTION]: {
+    transitionDuration: '0s',
+  },
+};
+
+export const navButtonStyle = css({
+  appearance: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  inlineSize: '32px',
+  blockSize: '32px',
+  padding: 0,
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.sm,
+  backgroundColor: 'transparent',
+  font: 'inherit',
+  fontSize: vars.textSize.lg,
+  lineHeight: 1,
+  color: vars.color.text,
+  cursor: 'pointer',
+  transitionProperty: 'background-color',
+  ...controlTransition,
+  '&:hover:not([aria-disabled="true"])': {
+    backgroundColor: vars.color.surfaceHover,
+  },
+  '&[aria-disabled="true"]': {
+    opacity: 0.55,
+    cursor: 'not-allowed',
+  },
+  '&:focus-visible': {
+    outline: `2px solid ${vars.color.focusRing}`,
+    outlineOffset: '2px',
+  },
+});
+
+export const glyphStyle = css({
+  display: 'inline-block',
+  '&:dir(rtl)': {
+    transform: 'scaleX(-1)',
+  },
+});
+
+export const gridStyle = css({
+  borderCollapse: 'separate',
+  borderSpacing: vars.space[1],
+  marginInline: `calc(-1 * ${vars.space[1]})`,
+});
+
+export const weekdayStyle = css({
+  paddingBlock: vars.space[1],
+  fontSize: vars.textSize.xs,
+  fontWeight: vars.fontWeight.medium,
+  color: vars.color.textMuted,
+  textAlign: 'center',
+});
+
+export const cellStyle = css({
+  padding: 0,
+});
+
+export const dayStyle = css({
+  appearance: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  inlineSize: '36px',
+  blockSize: '36px',
+  padding: 0,
+  border: '1px solid transparent',
+  borderRadius: vars.radius.sm,
+  backgroundColor: 'transparent',
+  font: 'inherit',
+  fontSize: vars.textSize.sm,
+  fontVariantNumeric: 'tabular-nums',
+  color: vars.color.text,
+  cursor: 'pointer',
+  transitionProperty: 'background-color, border-color, color',
+  ...controlTransition,
+  '&:hover:not(:disabled):not([data-selected])': {
+    backgroundColor: vars.color.surfaceHover,
+  },
+  '&[data-today]': {
+    borderColor: vars.color.borderControl,
+    fontWeight: vars.fontWeight.semibold,
+  },
+  '&[data-selected]': {
+    backgroundColor: vars.color.accent,
+    borderColor: vars.color.accent,
+    color: vars.color.accentContrast,
+    fontWeight: vars.fontWeight.semibold,
+  },
+  '&[data-selected]:hover': {
+    backgroundColor: vars.color.accentHover,
+  },
+  '&:disabled': {
+    opacity: 0.55,
+    cursor: 'not-allowed',
+    textDecoration: 'line-through',
+  },
+  '&:focus-visible': {
+    outline: `2px solid ${vars.color.focusRing}`,
+    outlineOffset: '2px',
+  },
+  [FORCED_COLORS]: {
+    '&[data-selected]': {
+      forcedColorAdjust: 'none',
+      backgroundColor: 'Highlight',
+      borderColor: 'Highlight',
+      color: 'HighlightText',
+    },
+  },
+});

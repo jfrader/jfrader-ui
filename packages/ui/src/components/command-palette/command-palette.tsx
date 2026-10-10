@@ -43,8 +43,6 @@ import {
   useMergeRefs,
   type UseInteractionsReturn,
 } from '@floating-ui/react';
-import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { listboxItemStyle } from '../../styling/listbox-style';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -62,6 +60,16 @@ import {
 } from '../../utils/collection-registry';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import {
+  dialogStyle,
+  emptyStyle,
+  groupHeadingStyle,
+  groupStyle,
+  inputStyle,
+  itemStyle,
+  listStyle,
+  panelStyle,
+} from './command-palette.styles';
 
 const DEFAULT_LABEL = 'Command palette';
 const DEFAULT_EMPTY_MESSAGE = 'No results';
@@ -148,98 +156,6 @@ function useCommandPaletteContext(part: string): CommandPaletteContextValue {
 const setNativeAutofocus = (element: HTMLInputElement | null) => {
   element?.setAttribute('autofocus', '');
 };
-
-const dialogStyle = css({
-  border: 0,
-  padding: 0,
-  background: 'transparent',
-  color: 'inherit',
-  // Anchored to the top so the panel does not jump while the list height changes.
-  marginBlockStart: vars.space[12],
-  '&::backdrop': {
-    backgroundColor: vars.color.scrim,
-  },
-});
-
-const panelStyle = css({
-  boxSizing: 'border-box',
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.lg,
-  boxShadow: vars.shadow.floating,
-  inlineSize: 'min(560px, calc(100vw - 32px))',
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
-  lineHeight: vars.lineHeight.base,
-});
-
-const inputStyle = css({
-  boxSizing: 'border-box',
-  inlineSize: '100%',
-  blockSize: '48px',
-  margin: 0,
-  border: 0,
-  borderBlockEnd: `1px solid ${vars.color.borderControl}`,
-  borderStartStartRadius: vars.radius.lg,
-  borderStartEndRadius: vars.radius.lg,
-  backgroundColor: 'transparent',
-  paddingInline: vars.space[4],
-  font: 'inherit',
-  fontSize: vars.textSize.md,
-  color: vars.color.text,
-  '&::placeholder': { color: vars.color.textSubtle },
-  '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '-2px',
-  },
-});
-
-const listStyle = css({
-  boxSizing: 'border-box',
-  display: 'flex',
-  flexDirection: 'column',
-  maxBlockSize: '320px',
-  overflow: 'auto',
-  padding: vars.space[1],
-  '&[hidden]': {
-    display: 'none',
-  },
-});
-
-const groupStyle = css({
-  display: 'flex',
-  flexDirection: 'column',
-  '&[hidden]': {
-    display: 'none',
-  },
-});
-
-const groupHeadingStyle = css({
-  paddingBlock: vars.space[1],
-  paddingInline: vars.space[2],
-  fontSize: vars.textSize.xs,
-  fontWeight: vars.fontWeight.medium,
-  color: vars.color.textMuted,
-});
-
-const itemStyle = css({
-  '&:hover, &[data-active]': {
-    backgroundColor: vars.color.surfaceHover,
-  },
-  '&[hidden]': {
-    display: 'none',
-  },
-});
-
-const emptyStyle = css({
-  paddingBlock: vars.space[6],
-  paddingInline: vars.space[4],
-  textAlign: 'center',
-  fontSize: vars.textSize.sm,
-  color: vars.color.textMuted,
-});
 
 function CommandPaletteRoot({
   open: openProp,
