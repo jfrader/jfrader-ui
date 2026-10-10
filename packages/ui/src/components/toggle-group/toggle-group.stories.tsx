@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useState, type ReactNode } from 'react';
+import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
-import { ToggleGroup, type ToggleGroupProps } from './index';
+import { ToggleGroup, type ToggleGroupProps, type ToggleGroupSingleProps } from './index';
 
 interface Option {
   value: string;
@@ -54,7 +54,35 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = Omit<StoryObj<ToggleGroupProps>, 'render' | 'play'> & {
+  render?: (args: ToggleGroupProps) => ReactNode;
+  play?: (context: StoryContext<ToggleGroupProps>) => Promise<void>;
+};
+
+type CheckedToggleGroupArgs<Args extends NonNullable<Story['args']>> = Args;
+
+export type ToggleGroupTypeRegression = {
+  // @ts-expect-error An array value in single mode is a type error.
+  singleArrayValue: CheckedToggleGroupArgs<{ type: 'single'; value: string[] }>;
+  // @ts-expect-error An array callback in single mode is a type error.
+  singleArrayCallback: CheckedToggleGroupArgs<{ type: 'single'; onValueChange: (value: string[]) => void }>;
+  // @ts-expect-error A string value in multiple mode is a type error.
+  multipleStringValue: CheckedToggleGroupArgs<{ type: 'multiple'; value: string }>;
+  // @ts-expect-error A string callback in multiple mode is a type error.
+  multipleStringCallback: CheckedToggleGroupArgs<{ type: 'multiple'; onValueChange: (value: string) => void }>;
+  narrowing: typeof narrowToggleGroupProps;
+};
+
+function narrowToggleGroupProps(props: ToggleGroupProps) {
+  if (props.type === 'multiple') {
+    const value: string[] | undefined = props.value;
+    const onValueChange: ((value: string[]) => void) | undefined = props.onValueChange;
+    return { value, onValueChange };
+  }
+  const value: string | undefined = props.value;
+  const onValueChange: ((value: string) => void) | undefined = props.onValueChange;
+  return { value, onValueChange };
+}
 
 function ToggleGroupExample({
   options = VIEWS,
@@ -73,13 +101,13 @@ function ToggleGroupExample({
   );
 }
 
-function ControlledToggleGroup(props: ToggleGroupProps) {
-  const [value, setValue] = useState<string | string[]>('list');
+function ControlledToggleGroup(props: ToggleGroupSingleProps) {
+  const [value, setValue] = useState('list');
   return (
     <ToggleGroupExample
       {...props}
       value={value}
-      onValueChange={(next) => {
+      onValueChange={(next: string) => {
         setValue(next);
         props.onValueChange?.(next);
       }}
@@ -112,6 +140,7 @@ export const Single: Story = {
 };
 
 export const SingleArrayDefaultValue: Story = {
+  // @ts-expect-error An array in single mode is a type error; at runtime its first element wins.
   args: { type: 'single', defaultValue: ['a', 'b'], onValueChange: fn() },
   render: (args) => <ToggleGroupExample {...args} options={ARRAY_OPTIONS} />,
   play: async ({ args, canvasElement }) => {
@@ -121,6 +150,7 @@ export const SingleArrayDefaultValue: Story = {
 };
 
 export const SingleArrayControlledValue: Story = {
+  // @ts-expect-error An array in single mode is a type error; at runtime its first element wins.
   args: { type: 'single', value: ['a', 'b'], onValueChange: fn() },
   render: (args) => <ToggleGroupExample {...args} options={ARRAY_OPTIONS} />,
   play: async ({ args, canvasElement }) => {
@@ -286,7 +316,7 @@ export const DisabledGroup: Story = {
   },
 };
 
-export const Controlled: Story = {
+export const Controlled: StoryObj<ToggleGroupSingleProps> = {
   args: { onValueChange: fn() },
   render: (args) => <ControlledToggleGroup {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -298,8 +328,8 @@ export const Controlled: Story = {
 };
 
 export const ControlledRejected: Story = {
-  args: { onValueChange: fn() },
-  render: (args) => <ToggleGroupExample {...args} value="list" />,
+  args: { value: 'list', onValueChange: fn() },
+  render: (args) => <ToggleGroupExample {...args} />,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const grid = canvas.getByRole('button', { name: 'Grid' });
@@ -321,8 +351,8 @@ export const ControlledRejected: Story = {
 };
 
 export const ControlledRejectedMultiple: Story = {
-  args: { type: 'multiple', onValueChange: fn() },
-  render: (args) => <ToggleGroupExample {...args} value={['bold']} options={FORMATS} label="Text style" />,
+  args: { type: 'multiple', value: ['bold'], onValueChange: fn() },
+  render: (args) => <ToggleGroupExample {...args} options={FORMATS} label="Text style" />,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Italic' }));
