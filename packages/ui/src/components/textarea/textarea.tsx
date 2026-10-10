@@ -6,6 +6,7 @@
 import { forwardRef, type ChangeEvent, type ReactNode, type TextareaHTMLAttributes } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
+import { inputControlStyle } from '../../styling/input-control';
 import {
   FieldDescription,
   FieldError,
@@ -32,40 +33,9 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   slotProps?: FieldSlotProps<TextareaPartProps>;
 }
 
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-
 const controlStyle = css({
-  display: 'block',
-  inlineSize: '100%',
-  boxSizing: 'border-box',
-  margin: 0,
   paddingBlock: vars.space[2],
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.md,
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
   lineHeight: vars.lineHeight.base,
-  transitionProperty: 'border-color',
-  transitionDuration: vars.motion.duration.fast,
-  transitionTimingFunction: vars.motion.easeStandard,
-  '&::placeholder': { color: vars.color.textSubtle },
-  '&:hover:not(:disabled):not(:focus-visible)': { borderColor: vars.color.textSubtle },
-  '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
-    borderColor: vars.color.focusRing,
-  },
-  '&:disabled': {
-    opacity: 0.55,
-    cursor: 'not-allowed',
-  },
-  '&[aria-invalid="true"]:not(:focus-visible)': {
-    borderColor: vars.color.dangerBorder,
-  },
-  [REDUCED_MOTION]: {
-    transitionDuration: '0s',
-  },
 });
 
 // Size minimums are floors: rows or autoResize can make the control taller.
@@ -133,6 +103,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         onChange={handleChange}
         className={slotProps?.control?.className}
         css={[
+          inputControlStyle,
           controlStyle,
           sizeStyles[size],
           resizeStyles[resize],
