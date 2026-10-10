@@ -4,22 +4,13 @@
 // Keyboard map: Tab/Shift+Tab cycle inside the dialog; Escape closes it.
 //
 // Close requests are the single dismissal authority: Escape (native cancel), the Close
-// button and backdrop clicks all route through `requestClose()` when the browser supports it
-// (Baseline since May 2025; older Safari falls back to the state close), so a consumer
-// preventDefault on `cancel` vetoes every request consistently. Note: platform close
-// requests are noncancelable under CloseWatcher activation safeguards; `close` reconciliation
-// handles those. `closedby` is NOT Baseline (Safari preview) — keep manual backdrop handling.
+// button and backdrop clicks all route through `requestClose()`, so a consumer
+// preventDefault on `cancel` vetoes every request consistently. `closedby` is NOT Baseline
+// (Safari preview) — keep manual backdrop handling.
 // Synthetic key events in tests do not trigger native cancel; dispatch a cancel event.
 //
-// Lifecycle contract — the Root owns logical `open`, Content owns native state:
-// - Every dismissal path requests `onOpenChange(false)`; native closure caused by
-//   <form method="dialog"> or a forwarded ref .close() reconciles through the `close` event.
-// - If a controlled parent rejects a request while the native dialog already closed, scroll
-//   is released and the next open request repairs the native state without notifying again
-//   (Root bumps a repair token).
-// - Content does not accept a native `open` prop.
-// - If Content unmounts while open (removal is not a close), focus returns to the invoking
-//   element when it is still connected.
+// Lifecycle contract (Root owns logical `open`, Content owns native state): see
+// `overlay/use-native-dialog.ts`.
 import {
   createContext,
   forwardRef,
@@ -27,7 +18,6 @@ import {
   useContext,
   useEffect,
   useId,
-  useImperativeHandle,
   useMemo,
   useRef,
   useState,
@@ -36,12 +26,17 @@ import {
   type HTMLAttributes,
   type MouseEvent,
   type ReactNode,
-  type SyntheticEvent,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { triggerStyle } from '../../styling/trigger-style';
-import { useScrollLock } from '../../overlay/use-scroll-lock';
+import {
+  omitNativeOpen,
+  requestNativeDialogClose,
+  useNativeDialog,
+  useNativeDialogRoot,
+  type NativeDialogController,
+} from '../../overlay/use-native-dialog';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export interface DialogProps {
@@ -60,11 +55,7 @@ export interface DialogTitleProps extends HTMLAttributes<HTMLHeadingElement> {}
 export interface DialogDescriptionProps extends HTMLAttributes<HTMLParagraphElement> {}
 export interface DialogCloseProps extends ButtonHTMLAttributes<HTMLButtonElement> {}
 
-interface DialogContextValue {
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  repairToken: number;
-  setDialogElement: (element: HTMLDialogElement | null) => void;
+interface DialogContextValue extends NativeDialogController {
   titleId: string;
   descriptionId: string;
   hasTitle: boolean;
@@ -161,35 +152,15 @@ const closeStyle = css({
 function DialogRoot({ open: openProp, defaultOpen = false, onOpenChange, children }: DialogProps) {
   const baseId = useId();
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
-  const [repairToken, setRepairToken] = useState(0);
+  const { setDialogElement, setOpen, requestClose, repairToken } = useNativeDialogRoot(open, requestOpenChange);
   const [hasTitle, setHasTitle] = useState(false);
   const [hasDescription, setHasDescription] = useState(false);
-  const dialogElementRef = useRef<HTMLDialogElement | null>(null);
-
-  const setDialogElement = useCallback((element: HTMLDialogElement | null) => {
-    dialogElementRef.current = element;
-  }, []);
-
-  const setOpen = useCallback(
-    (next: boolean) => {
-      const element = dialogElementRef.current;
-      const nativeOpen = element?.open ?? false;
-      if (next === open && nativeOpen === open) return;
-      if (next === open) {
-        // A controlled parent rejected an earlier request and the native dialog diverged:
-        // ask Content to re-sync native state from the prop, without notifying again.
-        setRepairToken((token) => token + 1);
-        return;
-      }
-      requestOpenChange(next);
-    },
-    [open, requestOpenChange],
-  );
 
   const context = useMemo(
     () => ({
       open,
       setOpen,
+      requestClose,
       repairToken,
       setDialogElement,
       titleId: `${baseId}-title`,
@@ -199,7 +170,7 @@ function DialogRoot({ open: openProp, defaultOpen = false, onOpenChange, childre
       setHasTitle,
       setHasDescription,
     }),
-    [open, setOpen, repairToken, setDialogElement, baseId, hasTitle, hasDescription],
+    [open, setOpen, requestClose, repairToken, setDialogElement, baseId, hasTitle, hasDescription],
   );
 
   return <DialogContext.Provider value={context}>{children}</DialogContext.Provider>;
@@ -228,9 +199,6 @@ const Trigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(function Dialo
 });
 
 const Content = forwardRef<HTMLDialogElement, DialogContentProps>(function DialogContent(props, ref) {
-  // Root owns logical openness: a native `open` prop passed here is deliberately ignored.
-  const { open: ignoredNativeOpen, ...propsWithoutOpen } = props as DialogContentProps & { open?: unknown };
-  void ignoredNativeOpen;
   const {
     children,
     onCancel,
@@ -240,91 +208,15 @@ const Content = forwardRef<HTMLDialogElement, DialogContentProps>(function Dialo
     'aria-describedby': ariaDescribedByProp,
     withDescription = true,
     ...rest
-  } = propsWithoutOpen;
+  } = omitNativeOpen(props);
 
-  const { open, setOpen, repairToken, setDialogElement, titleId, descriptionId, hasTitle, hasDescription } =
-    useDialogContext('Content');
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useImperativeHandle(ref, () => dialogRef.current as HTMLDialogElement, []);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
-  const wasOpenRef = useRef(false);
-  const [isNativeOpen, setIsNativeOpen] = useState(false);
-
-  const setDialogRefs = useCallback(
-    (element: HTMLDialogElement | null) => {
-      dialogRef.current = element;
-      setDialogElement(element);
-    },
-    [setDialogElement],
-  );
-
-  // Scroll lock follows the native (actual) dialog state, not the logical prop, so a rejected
-  // controlled dismissal can never leave the page stuck.
-  useScrollLock(isNativeOpen, () => dialogRef.current?.ownerDocument);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) {
-      restoreFocusRef.current = (dialog.ownerDocument.activeElement as HTMLElement | null) ?? null;
-      wasOpenRef.current = true;
-      try {
-        dialog.showModal();
-      } catch {
-        // Disconnected element or conflicting state (already open nonmodally): nothing to do.
-      }
-      setIsNativeOpen(dialog.open);
-    } else if (!open && dialog.open) {
-      dialog.close();
-      wasOpenRef.current = false;
-      setIsNativeOpen(false);
-    }
-  }, [open, repairToken]);
-
-  // If Content unmounts while open, removal bypasses the native focus return: do it ourselves.
-  useEffect(
-    () => () => {
-      const invoker = restoreFocusRef.current;
-      if (wasOpenRef.current && invoker && invoker.isConnected && typeof invoker.focus === 'function') {
-        invoker.focus();
-      }
-    },
-    [],
-  );
-
-  // One dismissal path for Close/backdrop: prefer the native close request so `cancel` (and
-  // any consumer veto) applies; fall back to the state close on engines without requestClose.
+  const context = useDialogContext('Content');
+  const { setOpen, titleId, descriptionId, hasTitle, hasDescription } = context;
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
   const requestClose = useCallback(() => {
-    const dialog = dialogRef.current;
-    if (dialog && dialog.open && typeof dialog.requestClose === 'function') {
-      dialog.requestClose();
-      return;
-    }
-    setOpen(false);
+    requestNativeDialogClose(dialogRef.current, setOpen);
   }, [setOpen]);
-
-  const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
-    onCancel?.(event);
-    const vetoed = event.defaultPrevented;
-    // We own closure: block the browser's own close and route through the Root, unless the
-    // consumer vetoed the cancellation. (Platform close requests can be noncancelable under
-    // CloseWatcher safeguards; the `close` reconciliation covers those.)
-    event.preventDefault();
-    if (!vetoed) setOpen(false);
-  };
-
-  const handleClick = (event: MouseEvent<HTMLDialogElement>) => {
-    onClick?.(event);
-    if (event.target === dialogRef.current && !event.defaultPrevented) requestClose();
-  };
-
-  const handleClose = (event: SyntheticEvent<HTMLDialogElement>) => {
-    wasOpenRef.current = false;
-    onClose?.(event);
-    setIsNativeOpen(false);
-    // Native closure that bypassed our paths: <form method="dialog"> or a forwarded ref.
-    if (open) setOpen(false);
-  };
+  const dialogProps = useNativeDialog({ ...context, requestClose }, { onCancel, onClick, onClose }, ref, dialogRef);
 
   const labelledBy = [ariaLabelledByProp, hasTitle && titleId].filter(Boolean).join(' ') || undefined;
   const describedBy = [ariaDescribedByProp, withDescription && hasDescription && descriptionId]
@@ -334,14 +226,11 @@ const Content = forwardRef<HTMLDialogElement, DialogContentProps>(function Dialo
   return (
     <dialog
       {...rest}
-      ref={setDialogRefs}
+      {...dialogProps}
       data-ui="dialog"
       aria-modal="true"
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
-      onCancel={handleCancel}
-      onClick={handleClick}
-      onClose={handleClose}
       css={dialogStyle}
     >
       <DialogRequestCloseContext.Provider value={requestClose}>

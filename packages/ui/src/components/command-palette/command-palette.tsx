@@ -12,9 +12,8 @@
 // change resets the active option to the first match, and a polite live region announces the
 // result count.
 //
-// Dialog lifecycle mirrors Dialog: Root owns logical `open` and the dismissal path, Content owns
-// native state (showModal/close, scroll lock after showModal, close reconciliation, rejected
-// controlled repair, focus restore on unmount). Escape on the Input routes through
+// Dialog lifecycle is shared with Dialog (`overlay/use-native-dialog.ts`): Root owns logical
+// `open` and the dismissal path, Content owns native state. Escape on the Input routes through
 // `requestClose()` so a consumer `cancel` veto applies; accepted closes return focus natively.
 // The Trigger is optional: consumers usually drive `open` themselves (e.g. Cmd+K).
 import {
@@ -22,9 +21,7 @@ import {
   forwardRef,
   useCallback,
   useContext,
-  useEffect,
   useId,
-  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -38,7 +35,6 @@ import {
   type MouseEvent,
   type MutableRefObject,
   type ReactNode,
-  type SyntheticEvent,
 } from 'react';
 import {
   FloatingList,
@@ -52,7 +48,12 @@ import {
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { triggerStyle } from '../../styling/trigger-style';
-import { useScrollLock } from '../../overlay/use-scroll-lock';
+import {
+  omitNativeOpen,
+  useNativeDialog,
+  useNativeDialogRoot,
+  type NativeDialogController,
+} from '../../overlay/use-native-dialog';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -104,13 +105,8 @@ interface ItemRecord {
   groupId: string | null;
 }
 
-interface CommandPaletteContextValue {
-  open: boolean;
-  setOpen: (open: boolean) => void;
+interface CommandPaletteContextValue extends NativeDialogController {
   toggleOpen: () => void;
-  requestClose: () => void;
-  repairToken: number;
-  setDialogElement: (element: HTMLDialogElement | null) => void;
   label: string;
   emptyMessage: ReactNode;
   baseId: string;
@@ -296,7 +292,10 @@ function CommandPaletteRoot({
 }: CommandPaletteProps) {
   const baseId = useId();
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
-  const [repairToken, setRepairToken] = useState(0);
+  const { dialogElementRef, setDialogElement, setOpen, requestClose, repairToken } = useNativeDialogRoot(
+    open,
+    requestOpenChange,
+  );
   const [query, setQuery] = useState('');
   const [queryChanged, setQueryChanged] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -304,7 +303,6 @@ function CommandPaletteRoot({
   const [inputElement, setInputElement] = useState<HTMLInputElement | null>(null);
   const [listElement, setListElement] = useState<HTMLDivElement | null>(null);
   const [wasOpen, setWasOpen] = useState(open);
-  const dialogElementRef = useRef<HTMLDialogElement | null>(null);
   const elementsRef = useRef<Array<HTMLElement | null>>([]);
 
   // Every opening starts from an empty query.
@@ -317,39 +315,10 @@ function CommandPaletteRoot({
     }
   }
 
-  const setDialogElement = useCallback((element: HTMLDialogElement | null) => {
-    dialogElementRef.current = element;
-  }, []);
-
-  const setOpen = useCallback(
-    (next: boolean) => {
-      const nativeOpen = dialogElementRef.current?.open ?? false;
-      if (next === open && nativeOpen === open) return;
-      if (next === open) {
-        // A controlled parent rejected an earlier request and the native dialog diverged:
-        // ask Content to re-sync native state from the prop, without notifying again.
-        setRepairToken((token) => token + 1);
-        return;
-      }
-      requestOpenChange(next);
-    },
-    [open, requestOpenChange],
-  );
-
-  // One dismissal path: prefer the native close request so `cancel` (and any consumer veto)
-  // applies; fall back to the state close on engines without requestClose.
-  const requestClose = useCallback(() => {
-    const dialog = dialogElementRef.current;
-    if (dialog && dialog.open && typeof dialog.requestClose === 'function') {
-      dialog.requestClose();
-      return;
-    }
-    setOpen(false);
-  }, [setOpen]);
-
+  // Native-aware toggle: a logically open palette whose native dialog diverged reopens (repair).
   const toggleOpen = useCallback(() => {
     setOpen(!(open && dialogElementRef.current?.open));
-  }, [open, setOpen]);
+  }, [open, setOpen, dialogElementRef]);
 
   const registerItem = useCallback(
     (value: string, record: ItemRecord) =>
@@ -503,93 +472,19 @@ const Trigger = forwardRef<HTMLButtonElement, CommandPaletteTriggerProps>(functi
 });
 
 const Content = forwardRef<HTMLDialogElement, CommandPaletteContentProps>(function CommandPaletteContent(props, ref) {
-  // Root owns logical openness: a native `open` prop passed here is deliberately ignored.
-  const { open: ignoredNativeOpen, ...propsWithoutOpen } = props as CommandPaletteContentProps & { open?: unknown };
-  void ignoredNativeOpen;
-  const { children, onCancel, onClick, onClose, ...rest } = propsWithoutOpen;
+  const { children, onCancel, onClick, onClose, ...rest } = omitNativeOpen(props);
 
-  const { open, setOpen, requestClose, repairToken, setDialogElement, label, announcement } =
-    useCommandPaletteContext('Content');
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useImperativeHandle(ref, () => dialogRef.current as HTMLDialogElement, []);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
-  const wasOpenRef = useRef(false);
-  const [isNativeOpen, setIsNativeOpen] = useState(false);
-
-  const setDialogRefs = useCallback(
-    (element: HTMLDialogElement | null) => {
-      dialogRef.current = element;
-      setDialogElement(element);
-    },
-    [setDialogElement],
-  );
-
-  // Scroll lock follows the native (actual) dialog state, so a rejected controlled dismissal
-  // can never leave the page stuck.
-  useScrollLock(isNativeOpen, () => dialogRef.current?.ownerDocument);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) {
-      restoreFocusRef.current = (dialog.ownerDocument.activeElement as HTMLElement | null) ?? null;
-      wasOpenRef.current = true;
-      try {
-        dialog.showModal();
-      } catch {
-        // Disconnected element or conflicting state (already open nonmodally): nothing to do.
-      }
-      setIsNativeOpen(dialog.open);
-    } else if (!open && dialog.open) {
-      dialog.close();
-      wasOpenRef.current = false;
-      setIsNativeOpen(false);
-    }
-  }, [open, repairToken]);
-
-  // If Content unmounts while open, removal bypasses the native focus return: do it ourselves.
-  useEffect(
-    () => () => {
-      const invoker = restoreFocusRef.current;
-      if (wasOpenRef.current && invoker && invoker.isConnected && typeof invoker.focus === 'function') {
-        invoker.focus();
-      }
-    },
-    [],
-  );
-
-  const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
-    onCancel?.(event);
-    const vetoed = event.defaultPrevented;
-    // We own closure: block the browser's own close and route through the Root, unless the
-    // consumer vetoed the cancellation. Noncancelable platform requests reconcile on `close`.
-    event.preventDefault();
-    if (!vetoed) setOpen(false);
-  };
-
-  const handleClick = (event: MouseEvent<HTMLDialogElement>) => {
-    onClick?.(event);
-    if (event.target === dialogRef.current && !event.defaultPrevented) requestClose();
-  };
-
-  const handleClose = (event: SyntheticEvent<HTMLDialogElement>) => {
-    wasOpenRef.current = false;
-    onClose?.(event);
-    setIsNativeOpen(false);
-    // Native closure that bypassed our paths: <form method="dialog"> or a forwarded ref.
-    if (open) setOpen(false);
-  };
+  const context = useCommandPaletteContext('Content');
+  const { label, announcement } = context;
+  const dialogProps = useNativeDialog(context, { onCancel, onClick, onClose }, ref);
 
   return (
     <dialog
       aria-label={label}
       {...rest}
-      ref={setDialogRefs}
+      {...dialogProps}
       data-ui="command-palette"
       aria-modal="true"
-      onCancel={handleCancel}
-      onClick={handleClick}
-      onClose={handleClose}
       css={dialogStyle}
     >
       <div css={panelStyle}>
