@@ -1,0 +1,53 @@
+html {
+  color-scheme: dark;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background-color: var(--ui-color-bg);
+  color: var(--ui-color-text);
+  font-family: var(--ui-font-sans);
+  line-height: var(--ui-line-height-base);
+}
+
+.page {
+  display: grid;
+  gap: var(--ui-space-6);
+  max-inline-size: 720px;
+  margin-inline: auto;
+  padding-block: var(--ui-space-10);
+  padding-inline: var(--ui-space-4);
+}
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-4);
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+  margin: 0;
+  font-size: var(--ui-text-size-2xl);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: var(--ui-line-height-tight);
+}
+
+.stack {
+  display: grid;
+  gap: var(--ui-space-4);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ui-space-2);
+}
