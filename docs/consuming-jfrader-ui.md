@@ -8,6 +8,8 @@ Published `@jfrader/ui` and `@jfrader/tokens` packages ship compiled ES modules 
 pnpm add @jfrader/ui @jfrader/tokens @emotion/react react react-dom
 ```
 
+`@jfrader/ui` requires React 19 (`react` and `react-dom` `^19.0.0`): components take `ref` as a regular prop.
+
 ### Registry choice
 
 npmjs is the zero-configuration default. GitHub Packages carries the same

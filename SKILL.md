@@ -112,7 +112,7 @@ Fill this in the spec/PR before coding (it prevents 80% of review findings):
    `open/defaultOpen/onOpenChange`, `checked/defaultChecked/onCheckedChange`).
 4. **Events** — state callbacks receive values (`onValueChange`, `onCheckedChange`, `onOpenChange`);
    native event callbacks (`onChange`, `onClick`, `onCancel`) keep their native event signature.
-5. **Ref target** — which DOM element the forwarded ref reaches.
+5. **Ref target** — which DOM element the `ref` prop reaches.
 6. **Customization surface** — `className` (root), `slotProps` for single widgets with internal
    parts, `render` for polymorphism (planned; do not add `asChild`).
 7. **Environments** — RTL, reduced motion, forced colors, SSR/hydration notes.
@@ -147,6 +147,9 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `layout-style` — `flexLayoutStyles` (Flex, Stack) and the layout space scale (Container).
 
 - PascalCase components, `<Name>Props` types, explicit public exports; helpers stay private.
+- React 19 ref-as-prop: components are plain functions reading `ref` from props typed with
+  `ComponentPropsWithRef<'el'>`; never `forwardRef`. Every public component and compound part sets a
+  dotted `displayName` (`Dialog.Trigger`) so DevTools and Storybook code panels show the public name.
 - `data-ui="<name>"` on every component root (and `data-ui="<name>-<part>"` on compound parts).
 - One folder per component; a shared hook only when a second consumer exists.
 - The package index re-exports components + types with `export *`.
@@ -193,7 +196,7 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
 
 - **Modal dialog:** top layer or equivalent inert background; focus contained; Escape closes; focus
   returns on close. Native `<dialog>` lifecycle: every native close (`<form method="dialog">`,
-  forwarded `.close()`) is reconciled into `onOpenChange`; only lock scroll after `showModal()`
+  `.close()` through the `ref`) is reconciled into `onOpenChange`; only lock scroll after `showModal()`
   succeeds; a consumer `preventDefault()` on `cancel` vetoes closure.
 - **Non-modal popover:** preserve the page tab order across the portal with non-modal focus
   management (`FloatingFocusManager modal={false} initialFocus={-1} returnFocus={false}`), but no

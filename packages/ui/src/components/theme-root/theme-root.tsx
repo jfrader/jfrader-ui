@@ -1,10 +1,10 @@
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 
 export type ThemeName = 'dark' | 'light';
 
-export interface ThemeRootProps extends HTMLAttributes<HTMLDivElement> {
+export interface ThemeRootProps extends ComponentPropsWithRef<'div'> {
   theme?: ThemeName;
   children?: ReactNode;
 }
@@ -15,9 +15,8 @@ const rootStyle = css({
   '&[data-theme="light"]': { colorScheme: 'light' },
 });
 
-export const ThemeRoot = forwardRef<HTMLDivElement, ThemeRootProps>(function ThemeRoot(
-  { theme, ...rest },
-  ref,
-) {
+export function ThemeRoot({ ref, theme, ...rest }: ThemeRootProps) {
   return <div data-ui="theme-root" data-theme={theme ?? 'dark'} {...rest} ref={ref} css={rootStyle} />;
-});
+}
+
+ThemeRoot.displayName = 'ThemeRoot';

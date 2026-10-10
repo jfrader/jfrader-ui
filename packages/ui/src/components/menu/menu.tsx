@@ -14,15 +14,13 @@
 // Disabled items stay in the list with aria-disabled="true"; arrows and typeahead skip them.
 import {
   createContext,
-  forwardRef,
   useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type ButtonHTMLAttributes,
+  type ComponentPropsWithRef,
   type CSSProperties,
-  type HTMLAttributes,
   type MouseEvent,
   type MutableRefObject,
   type ReactNode,
@@ -61,15 +59,15 @@ export interface MenuProps {
   children?: ReactNode;
 }
 
-export interface MenuTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {}
-export interface MenuContentProps extends HTMLAttributes<HTMLDivElement> {}
-export interface MenuItemProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onSelect'> {
+export interface MenuTriggerProps extends ComponentPropsWithRef<'button'> {}
+export interface MenuContentProps extends ComponentPropsWithRef<'div'> {}
+export interface MenuItemProps extends Omit<ComponentPropsWithRef<'button'>, 'onSelect'> {
   /** Called when the item is activated. The menu then closes unless a click handler called
    * `event.preventDefault()`. */
   onSelect?: () => void;
   disabled?: boolean;
 }
-export interface MenuSeparatorProps extends HTMLAttributes<HTMLDivElement> {}
+export interface MenuSeparatorProps extends ComponentPropsWithRef<'div'> {}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -231,16 +229,20 @@ function MenuRoot({
   return <MenuContext.Provider value={value}>{children}</MenuContext.Provider>;
 }
 
-const Trigger = forwardRef<HTMLButtonElement, MenuTriggerProps>(function MenuTrigger(props, ref) {
+MenuRoot.displayName = 'Menu';
+
+function MenuTrigger({ ref, ...props }: MenuTriggerProps) {
   const { refs, getReferenceProps } = useMenuContext('Trigger');
   const mergedRef = useMergeRefs([refs.setReference, ref]);
 
   return (
     <button type="button" {...getReferenceProps(props)} ref={mergedRef} data-ui="menu-trigger" css={triggerStyle} />
   );
-});
+}
 
-const Content = forwardRef<HTMLDivElement, MenuContentProps>(function MenuContent({ style, children, ...rest }, ref) {
+MenuTrigger.displayName = 'Menu.Trigger';
+
+function MenuContent({ ref, style, children, ...rest }: MenuContentProps) {
   const { open, refs, floatingContext, floatingStyles, elementsRef, labelsRef, getFloatingProps } =
     useMenuContext('Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
@@ -273,12 +275,11 @@ const Content = forwardRef<HTMLDivElement, MenuContentProps>(function MenuConten
       </FloatingFocusManager>
     </FloatingPortal>
   );
-});
+}
 
-const Item = forwardRef<HTMLButtonElement, MenuItemProps>(function MenuItem(
-  { onSelect, disabled = false, onClick, ...rest },
-  ref,
-) {
+MenuContent.displayName = 'Menu.Content';
+
+function MenuItem({ ref, onSelect, disabled = false, onClick, ...rest }: MenuItemProps) {
   const { activeIndex, requestClose, disabledIndices, getItemProps } = useMenuItemContext();
   // A null label removes disabled items from typeahead; undefined falls back to textContent.
   const { ref: listItemRef, index } = useCollectionListItem({ label: disabled ? null : undefined });
@@ -308,10 +309,19 @@ const Item = forwardRef<HTMLButtonElement, MenuItemProps>(function MenuItem(
       css={[itemStyle, listboxItemStateStyle]}
     />
   );
-});
+}
 
-const Separator = forwardRef<HTMLDivElement, MenuSeparatorProps>(function MenuSeparator(props, ref) {
+MenuItem.displayName = 'Menu.Item';
+
+function MenuSeparator({ ref, ...props }: MenuSeparatorProps) {
   return <div {...props} ref={ref} role="separator" data-ui="menu-separator" css={separatorStyle} />;
-});
+}
 
-export const Menu = Object.assign(MenuRoot, { Trigger, Content, Item, Separator });
+MenuSeparator.displayName = 'Menu.Separator';
+
+export const Menu = Object.assign(MenuRoot, {
+  Trigger: MenuTrigger,
+  Content: MenuContent,
+  Item: MenuItem,
+  Separator: MenuSeparator,
+});

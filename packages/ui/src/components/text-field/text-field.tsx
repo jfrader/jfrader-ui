@@ -1,7 +1,7 @@
 // APG pattern: native text input. The label, description and error text are wired with
 // explicit ids (`htmlFor`, `aria-describedby`) so assistive tech reads name, help and
 // error in order; the error region is an alert.
-import { forwardRef, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from 'react';
+import type { ChangeEvent, ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
@@ -19,7 +19,7 @@ export type TextFieldSize = 'sm' | 'md' | 'lg';
 
 export interface TextFieldPartProps extends FieldPartProps {}
 
-export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
+export interface TextFieldProps extends Omit<ComponentPropsWithRef<'input'>, 'size'> {
   label?: ReactNode;
   description?: ReactNode;
   error?: ReactNode;
@@ -34,24 +34,22 @@ const sizeStyles: Record<TextFieldSize, SerializedStyles> = {
   lg: css({ blockSize: '48px', paddingInline: vars.space[4], fontSize: vars.textSize.md }),
 };
 
-export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
-  {
-    label,
-    description,
-    error,
-    size = 'md',
-    onChange,
-    onValueChange,
-    slotProps,
-    className,
-    required,
-    id: idProp,
-    'aria-describedby': ariaDescribedByProp,
-    'aria-invalid': ariaInvalidProp,
-    ...rest
-  },
+export function TextField({
   ref,
-) {
+  label,
+  description,
+  error,
+  size = 'md',
+  onChange,
+  onValueChange,
+  slotProps,
+  className,
+  required,
+  id: idProp,
+  'aria-describedby': ariaDescribedByProp,
+  'aria-invalid': ariaInvalidProp,
+  ...rest
+}: TextFieldProps) {
   const field = useFieldAnatomy({
     id: idProp,
     description,
@@ -89,4 +87,6 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       </FieldError>
     </FieldRoot>
   );
-});
+}
+
+TextField.displayName = 'TextField';

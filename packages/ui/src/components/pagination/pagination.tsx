@@ -8,14 +8,14 @@
 // `siblingCount` neighbours each side, and an ellipsis only where it hides two or more pages.
 // `page` is controlled: activating a page requests it through onPageChange and the component
 // only moves when the parent updates `page`. Requests for the current page are not changes.
-import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef, type HTMLAttributes } from 'react';
+import { useImperativeHandle, useLayoutEffect, useMemo, useRef, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
-export interface PaginationProps extends Omit<HTMLAttributes<HTMLElement>, 'onChange'> {
+export interface PaginationProps extends Omit<ComponentPropsWithRef<'nav'>, 'onChange'> {
   page: number;
   totalPages: number;
   onPageChange?: (page: number) => void;
@@ -121,20 +121,18 @@ const glyphStyle = css({
   },
 });
 
-export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagination(
-  {
-    page,
-    totalPages,
-    onPageChange,
-    siblingCount = 1,
-    label = 'Pagination',
-    previousLabel = 'Previous page',
-    nextLabel = 'Next page',
-    locale = typeof navigator === 'undefined' ? undefined : navigator.language,
-    ...rest
-  },
+export function Pagination({
   ref,
-) {
+  page,
+  totalPages,
+  onPageChange,
+  siblingCount = 1,
+  label = 'Pagination',
+  previousLabel = 'Previous page',
+  nextLabel = 'Next page',
+  locale = typeof navigator === 'undefined' ? undefined : navigator.language,
+  ...rest
+}: PaginationProps) {
   const lastPage = normalizeCount(totalPages);
   const current = Math.min(Math.max(normalizeCount(page), 1), Math.max(lastPage, 1));
   const items = getPageItems(current, lastPage, Math.min(normalizeCount(siblingCount), MAX_SIBLING_COUNT));
@@ -217,4 +215,6 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
       </ul>
     </nav>
   );
-});
+}
+
+Pagination.displayName = 'Pagination';

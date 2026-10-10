@@ -11,16 +11,14 @@
 // reports values in the order they were pressed.
 import {
   createContext,
-  forwardRef,
   useContext,
   useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
   useState,
-  type ButtonHTMLAttributes,
+  type ComponentPropsWithRef,
   type FocusEvent,
-  type HTMLAttributes,
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
@@ -36,7 +34,7 @@ export type ToggleGroupOrientation = 'horizontal' | 'vertical';
 
 type ToggleGroupValue = string | string[];
 
-interface ToggleGroupBaseProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
+interface ToggleGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'> {
   orientation?: ToggleGroupOrientation;
   disabled?: boolean;
   allowEmpty?: boolean;
@@ -59,7 +57,7 @@ export interface ToggleGroupMultipleProps extends ToggleGroupBaseProps {
 
 export type ToggleGroupProps = ToggleGroupSingleProps | ToggleGroupMultipleProps;
 
-export interface ToggleGroupItemProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'value'> {
+export interface ToggleGroupItemProps extends Omit<ComponentPropsWithRef<'button'>, 'value'> {
   value: string;
 }
 
@@ -165,22 +163,20 @@ const itemStyle = css({
   },
 });
 
-const Root = forwardRef<HTMLDivElement, ToggleGroupProps>(function ToggleGroup(
-  {
-    type = 'single',
-    value: valueProp,
-    defaultValue,
-    onValueChange,
-    orientation = 'horizontal',
-    disabled = false,
-    allowEmpty = false,
-    label,
-    'aria-label': ariaLabelProp,
-    onKeyDown,
-    ...rest
-  },
+function ToggleGroupRoot({
   ref,
-) {
+  type = 'single',
+  value: valueProp,
+  defaultValue,
+  onValueChange,
+  orientation = 'horizontal',
+  disabled = false,
+  allowEmpty = false,
+  label,
+  'aria-label': ariaLabelProp,
+  onKeyDown,
+  ...rest
+}: ToggleGroupProps) {
   // `toggle` only emits the shape that matches `type`, so either callback accepts it.
   const [value, setValue] = useControlledState<ToggleGroupValue>(
     valueProp,
@@ -243,12 +239,11 @@ const Root = forwardRef<HTMLDivElement, ToggleGroupProps>(function ToggleGroup(
       />
     </ToggleGroupContext.Provider>
   );
-});
+}
 
-const Item = forwardRef<HTMLButtonElement, ToggleGroupItemProps>(function ToggleGroupItem(
-  { value, disabled: disabledProp, onClick, onFocus, ...rest },
-  ref,
-) {
+ToggleGroupRoot.displayName = 'ToggleGroup';
+
+function ToggleGroupItem({ ref, value, disabled: disabledProp, onClick, onFocus, ...rest }: ToggleGroupItemProps) {
   const { pressed, toggle, focused, setFocused, disabled: groupDisabled } = useToggleGroupContext('Item');
   const disabled = groupDisabled || disabledProp;
   const isPressed = pressed.includes(value);
@@ -281,6 +276,8 @@ const Item = forwardRef<HTMLButtonElement, ToggleGroupItemProps>(function Toggle
       css={itemStyle}
     />
   );
-});
+}
 
-export const ToggleGroup = Object.assign(Root, { Item });
+ToggleGroupItem.displayName = 'ToggleGroup.Item';
+
+export const ToggleGroup = Object.assign(ToggleGroupRoot, { Item: ToggleGroupItem });

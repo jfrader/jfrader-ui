@@ -2,7 +2,7 @@
 // the status word when a status is set ("Ada Lovelace, online"). The photo, initials and status
 // badge are presentational children of that root. Status uses shape and color for sighted users
 // and text for AT; the name stays unchanged when a broken photo falls back to initials. Not interactive.
-import { forwardRef, useState, type HTMLAttributes } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 
@@ -14,7 +14,7 @@ export interface AvatarPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children' | 'role' | 'aria-label'> {
+export interface AvatarProps extends Omit<ComponentPropsWithRef<'span'>, 'children' | 'role' | 'aria-label'> {
   /** Used for the accessible name and the initials fallback. */
   name: string;
   src?: string;
@@ -124,10 +124,7 @@ const statusToneStyles: Record<AvatarStatus, SerializedStyles> = {
   }),
 };
 
-export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
-  { name, src, size = 'md', status, statusLabel, slotProps, ...rest },
-  ref,
-) {
+export function Avatar({ ref, name, src, size = 'md', status, statusLabel, slotProps, ...rest }: AvatarProps) {
   // Keyed by URL so a new `src` gets a fresh attempt without an effect.
   // A failed URL stays suppressed when revisited after success → failure → same-URL cycles.
   const [failedSrc, setFailedSrc] = useState<string>();
@@ -166,4 +163,6 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
       )}
     </span>
   );
-});
+}
+
+Avatar.displayName = 'Avatar';

@@ -13,7 +13,6 @@
 // `overlay/use-native-dialog.ts`.
 import {
   createContext,
-  forwardRef,
   useCallback,
   useContext,
   useEffect,
@@ -22,8 +21,7 @@ import {
   useRef,
   useState,
   type ButtonHTMLAttributes,
-  type DialogHTMLAttributes,
-  type HTMLAttributes,
+  type ComponentPropsWithRef,
   type MouseEvent,
   type MouseEventHandler,
   type ReactNode,
@@ -57,7 +55,7 @@ export interface DialogPartRenderProps extends ButtonHTMLAttributes<HTMLButtonEl
   'data-ui': string;
 }
 
-export interface DialogTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface DialogTriggerProps extends ComponentPropsWithRef<'button'> {
   /**
    * Replaces the default button. Spread ALL supplied props onto the operative element and attach
    * the supplied ref, including when composing through Button. The forwarded and callback refs
@@ -73,13 +71,13 @@ export interface DialogTriggerProps extends ButtonHTMLAttributes<HTMLButtonEleme
    */
   render?: (props: DialogPartRenderProps) => ReactNode;
 }
-export interface DialogContentProps extends Omit<DialogHTMLAttributes<HTMLDialogElement>, 'open'> {
+export interface DialogContentProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'> {
   /** Set false to keep structured content out of the dialog's accessible description. */
   withDescription?: boolean;
 }
-export interface DialogTitleProps extends HTMLAttributes<HTMLHeadingElement> {}
-export interface DialogDescriptionProps extends HTMLAttributes<HTMLParagraphElement> {}
-export interface DialogCloseProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface DialogTitleProps extends ComponentPropsWithRef<'h2'> {}
+export interface DialogDescriptionProps extends ComponentPropsWithRef<'p'> {}
+export interface DialogCloseProps extends ComponentPropsWithRef<'button'> {
   /**
    * Replaces the default button. Spread ALL supplied props onto the operative element and attach
    * the supplied ref, including when composing through Button. The forwarded and callback refs
@@ -201,10 +199,9 @@ function DialogRoot({ open: openProp, defaultOpen = false, onOpenChange, childre
   return <DialogContext.Provider value={context}>{children}</DialogContext.Provider>;
 }
 
-const Trigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(function DialogTrigger(
-  { onClick, render, ...rest },
-  ref,
-) {
+DialogRoot.displayName = 'Dialog';
+
+function DialogTrigger({ ref = null, onClick, render, ...rest }: DialogTriggerProps) {
   const { open, setOpen } = useDialogContext('Trigger');
   const { 'data-ui': partMarker, ...attributes } = rest as typeof rest & { 'data-ui'?: string };
 
@@ -225,9 +222,11 @@ const Trigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(function Dialo
   };
 
   return render ? render(triggerProps) : <button {...triggerProps} css={triggerStyle} />;
-});
+}
 
-const Content = forwardRef<HTMLDialogElement, DialogContentProps>(function DialogContent(props, ref) {
+DialogTrigger.displayName = 'Dialog.Trigger';
+
+function DialogContent({ ref, ...props }: DialogContentProps) {
   const {
     children,
     onCancel,
@@ -267,9 +266,11 @@ const Content = forwardRef<HTMLDialogElement, DialogContentProps>(function Dialo
       </DialogRequestCloseContext.Provider>
     </dialog>
   );
-});
+}
 
-const Title = forwardRef<HTMLHeadingElement, DialogTitleProps>(function DialogTitle(props, ref) {
+DialogContent.displayName = 'Dialog.Content';
+
+function DialogTitle({ ref, ...props }: DialogTitleProps) {
   const { titleId, setHasTitle } = useDialogContext('Title');
 
   useEffect(() => {
@@ -278,9 +279,11 @@ const Title = forwardRef<HTMLHeadingElement, DialogTitleProps>(function DialogTi
   }, [setHasTitle]);
 
   return <h2 {...props} ref={ref} id={titleId} data-ui="dialog-title" css={titleStyle} />;
-});
+}
 
-const Description = forwardRef<HTMLParagraphElement, DialogDescriptionProps>(function DialogDescription(props, ref) {
+DialogTitle.displayName = 'Dialog.Title';
+
+function DialogDescription({ ref, ...props }: DialogDescriptionProps) {
   const { descriptionId, setHasDescription } = useDialogContext('Description');
 
   useEffect(() => {
@@ -289,9 +292,11 @@ const Description = forwardRef<HTMLParagraphElement, DialogDescriptionProps>(fun
   }, [setHasDescription]);
 
   return <p {...props} ref={ref} id={descriptionId} data-ui="dialog-description" css={descriptionStyle} />;
-});
+}
 
-const Close = forwardRef<HTMLButtonElement, DialogCloseProps>(function DialogClose({ onClick, render, ...rest }, ref) {
+DialogDescription.displayName = 'Dialog.Description';
+
+function DialogClose({ ref = null, onClick, render, ...rest }: DialogCloseProps) {
   const { setOpen } = useDialogContext('Close');
   const requestClose = useContext(DialogRequestCloseContext);
   const { 'data-ui': partMarker, ...attributes } = rest as typeof rest & { 'data-ui'?: string };
@@ -313,6 +318,14 @@ const Close = forwardRef<HTMLButtonElement, DialogCloseProps>(function DialogClo
   };
 
   return render ? render(closeProps) : <button {...closeProps} css={closeStyle} />;
-});
+}
 
-export const Dialog = Object.assign(DialogRoot, { Trigger, Content, Title, Description, Close });
+DialogClose.displayName = 'Dialog.Close';
+
+export const Dialog = Object.assign(DialogRoot, {
+  Trigger: DialogTrigger,
+  Content: DialogContent,
+  Title: DialogTitle,
+  Description: DialogDescription,
+  Close: DialogClose,
+});

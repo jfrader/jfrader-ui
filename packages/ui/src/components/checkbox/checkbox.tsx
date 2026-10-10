@@ -3,13 +3,12 @@
 // while `indeterminate` is set. `indeterminate` is controlled: clear the prop to leave
 // the mixed state.
 import {
-  forwardRef,
   useEffect,
   useId,
   useImperativeHandle,
   useRef,
   type ChangeEvent,
-  type InputHTMLAttributes,
+  type ComponentPropsWithRef,
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
@@ -25,7 +24,7 @@ export interface CheckboxPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'type'> {
+export interface CheckboxProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type'> {
   label?: ReactNode;
   description?: ReactNode;
   indeterminate?: boolean;
@@ -98,22 +97,20 @@ function CheckGlyph({ indeterminate }: { indeterminate: boolean }) {
   );
 }
 
-export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Checkbox(
-  {
-    label,
-    description,
-    indeterminate = false,
-    size = 'md',
-    onChange,
-    onCheckedChange,
-    slotProps,
-    className,
-    'aria-labelledby': ariaLabelledByProp,
-    'aria-describedby': ariaDescribedByProp,
-    ...rest
-  },
+export function Checkbox({
   ref,
-) {
+  label,
+  description,
+  indeterminate = false,
+  size = 'md',
+  onChange,
+  onCheckedChange,
+  slotProps,
+  className,
+  'aria-labelledby': ariaLabelledByProp,
+  'aria-describedby': ariaDescribedByProp,
+  ...rest
+}: CheckboxProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   useImperativeHandle(ref, () => inputRef.current as HTMLInputElement, []);
 
@@ -180,4 +177,6 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
       )}
     </label>
   );
-});
+}
+
+Checkbox.displayName = 'Checkbox';

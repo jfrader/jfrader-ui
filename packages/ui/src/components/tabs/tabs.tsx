@@ -10,7 +10,6 @@
 // IDREF targets. Panels keep their state while hidden.
 import {
   createContext,
-  forwardRef,
   useContext,
   useEffect,
   useId,
@@ -18,9 +17,8 @@ import {
   useMemo,
   useRef,
   useState,
-  type ButtonHTMLAttributes,
+  type ComponentPropsWithRef,
   type FocusEvent,
-  type HTMLAttributes,
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
@@ -35,7 +33,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 export type TabsOrientation = 'horizontal' | 'vertical';
 export type TabsActivation = 'auto' | 'manual';
 
-export interface TabsProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
+export interface TabsProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'> {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
@@ -43,13 +41,13 @@ export interface TabsProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChang
   activation?: TabsActivation;
 }
 
-export type TabsListProps = HTMLAttributes<HTMLDivElement>;
+export type TabsListProps = ComponentPropsWithRef<'div'>;
 
-export interface TabsTabProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface TabsTabProps extends ComponentPropsWithRef<'button'> {
   value: string;
 }
 
-export interface TabsPanelProps extends HTMLAttributes<HTMLDivElement> {
+export interface TabsPanelProps extends ComponentPropsWithRef<'div'> {
   value: string;
 }
 
@@ -156,10 +154,15 @@ const panelStyle = css({
 
 const horizontalPanelStyle = css({ paddingBlockStart: vars.space[3] });
 
-const Root = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
-  { value: valueProp, defaultValue, onValueChange, orientation = 'horizontal', activation = 'auto', ...rest },
+function TabsRoot({
   ref,
-) {
+  value: valueProp,
+  defaultValue,
+  onValueChange,
+  orientation = 'horizontal',
+  activation = 'auto',
+  ...rest
+}: TabsProps) {
   const baseId = useId();
   const [value, setValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState<string | null>(null);
@@ -174,9 +177,11 @@ const Root = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
       <div {...rest} ref={ref} data-ui="tabs-root" data-orientation={orientation} css={rootStyle} />
     </TabsContext.Provider>
   );
-});
+}
 
-const List = forwardRef<HTMLDivElement, TabsListProps>(function TabsList({ onKeyDown, ...rest }, ref) {
+TabsRoot.displayName = 'Tabs';
+
+function TabsList({ ref, onKeyDown, ...rest }: TabsListProps) {
   const { orientation, value, focused, setFocused } = useTabsContext('List');
   const listRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(ref, () => listRef.current as HTMLDivElement, []);
@@ -214,12 +219,11 @@ const List = forwardRef<HTMLDivElement, TabsListProps>(function TabsList({ onKey
       css={listStyles[orientation]}
     />
   );
-});
+}
 
-const Tab = forwardRef<HTMLButtonElement, TabsTabProps>(function TabsTab(
-  { value, disabled, onClick, onFocus, ...rest },
-  ref,
-) {
+TabsList.displayName = 'Tabs.List';
+
+function TabsTab({ ref, value, disabled, onClick, onFocus, ...rest }: TabsTabProps) {
   const {
     value: selectedValue,
     setValue,
@@ -274,12 +278,11 @@ const Tab = forwardRef<HTMLButtonElement, TabsTabProps>(function TabsTab(
       css={[tabStyle, tabOrientationStyles[orientation]]}
     />
   );
-});
+}
 
-const Panel = forwardRef<HTMLDivElement, TabsPanelProps>(function TabsPanel(
-  { value, tabIndex = 0, 'aria-labelledby': ariaLabelledByProp, ...rest },
-  ref,
-) {
+TabsTab.displayName = 'Tabs.Tab';
+
+function TabsPanel({ ref, value, tabIndex = 0, 'aria-labelledby': ariaLabelledByProp, ...rest }: TabsPanelProps) {
   const { value: selectedValue, baseId, orientation } = useTabsContext('Panel');
   const isSelected = selectedValue === value;
   const ariaLabelledBy =
@@ -299,6 +302,8 @@ const Panel = forwardRef<HTMLDivElement, TabsPanelProps>(function TabsPanel(
       css={[panelStyle, orientation === 'horizontal' && horizontalPanelStyle]}
     />
   );
-});
+}
 
-export const Tabs = Object.assign(Root, { List, Tab, Panel });
+TabsPanel.displayName = 'Tabs.Panel';
+
+export const Tabs = Object.assign(TabsRoot, { List: TabsList, Tab: TabsTab, Panel: TabsPanel });

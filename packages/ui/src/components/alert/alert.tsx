@@ -6,7 +6,7 @@
 // The spec maps danger to alert only for genuinely urgent content; consumers own that judgment.
 // Keyboard map: the dismiss button is a native button (Tab to reach, Enter/Space to activate).
 // Dismissal is a request: `onDismiss` fires and the parent removes the alert.
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -21,7 +21,7 @@ export interface AlertPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface AlertProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title' | 'role'> {
+export interface AlertProps extends Omit<ComponentPropsWithRef<'div'>, 'title' | 'role'> {
   tone?: AlertTone;
   /** Announced tone word. Put visible meaning in the title text. */
   toneLabel?: string;
@@ -128,20 +128,18 @@ const dismissStyle = css({
   },
 });
 
-export const Alert = forwardRef<HTMLDivElement, AlertProps>(function Alert(
-  {
-    tone = 'info',
-    toneLabel = TONE_LABELS[tone],
-    title,
-    children,
-    onDismiss,
-    dismissLabel = 'Dismiss',
-    slotProps,
-    className,
-    ...rest
-  },
+export function Alert({
   ref,
-) {
+  tone = 'info',
+  toneLabel = TONE_LABELS[tone],
+  title,
+  children,
+  onDismiss,
+  dismissLabel = 'Dismiss',
+  slotProps,
+  className,
+  ...rest
+}: AlertProps) {
   const dismissible = onDismiss !== undefined;
 
   return (
@@ -180,4 +178,6 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(function Alert(
       )}
     </div>
   );
-});
+}
+
+Alert.displayName = 'Alert';

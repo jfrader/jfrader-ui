@@ -6,8 +6,8 @@
 // cannot be assumed to support `disabled` or `type`: disabled folds into aria-disabled, and
 // `type` is only forwarded when passed explicitly.
 import {
-  forwardRef,
   type ButtonHTMLAttributes,
+  type ComponentPropsWithRef,
   type MouseEvent,
   type MouseEventHandler,
   type ReactNode,
@@ -32,7 +32,7 @@ export interface ButtonRenderProps extends Omit<ButtonHTMLAttributes<HTMLElement
   'data-ui': string;
 }
 
-export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'color'> {
+export interface ButtonProps extends Omit<ComponentPropsWithRef<'button'>, 'color'> {
   variant?: ButtonVariant;
   tone?: ButtonTone;
   size?: ButtonSize;
@@ -181,23 +181,21 @@ const spinnerStyle = css({
   },
 });
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  {
-    variant = 'solid',
-    tone = 'neutral',
-    size = 'md',
-    loading = false,
-    startIcon,
-    endIcon,
-    type,
-    children,
-    onClick,
-    css: cssProp,
-    render,
-    ...props
-  },
+export function Button({
   ref,
-) {
+  variant = 'solid',
+  tone = 'neutral',
+  size = 'md',
+  loading = false,
+  startIcon,
+  endIcon,
+  type,
+  children,
+  onClick,
+  css: cssProp,
+  render,
+  ...props
+}: ButtonProps) {
   // Only the render path preserves a composing part's marker alongside the Button marker.
   const { 'data-ui': partMarker, ...rest } = props as typeof props & { 'data-ui'?: string };
   const marker = render && partMarker !== undefined ? `${partMarker} button` : 'button';
@@ -261,4 +259,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {content}
     </button>
   );
-});
+}
+
+Button.displayName = 'Button';

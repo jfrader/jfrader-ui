@@ -1,13 +1,13 @@
 // Page-width wrapper: full inline size up to a max, centred with auto inline margins, with
 // inline padding from the layout space scale. Layout only: a plain div with no role. Logical
 // properties only, so it is direction-neutral.
-import { forwardRef, type HTMLAttributes } from 'react';
+import type { ComponentPropsWithRef } from 'react';
 import { css, type SerializedStyles } from '../../styling/css';
 import { spaceStyles, type LayoutSpace } from '../../styling/layout-style';
 
 export type ContainerSize = 'sm' | 'md' | 'lg' | 'xl';
 
-export interface ContainerProps extends HTMLAttributes<HTMLDivElement> {
+export interface ContainerProps extends ComponentPropsWithRef<'div'> {
   size?: ContainerSize;
   paddingInline?: LayoutSpace;
 }
@@ -35,10 +35,7 @@ const sizeStyles: Record<ContainerSize, SerializedStyles> = {
 
 const paddingStyles = spaceStyles('paddingInline');
 
-export const Container = forwardRef<HTMLDivElement, ContainerProps>(function Container(
-  { size = 'lg', paddingInline = 'md', ...rest },
-  ref,
-) {
+export function Container({ ref, size = 'lg', paddingInline = 'md', ...rest }: ContainerProps) {
   return (
     <div
       {...rest}
@@ -48,4 +45,6 @@ export const Container = forwardRef<HTMLDivElement, ContainerProps>(function Con
       css={[rootStyle, sizeStyles[size], paddingStyles[paddingInline]]}
     />
   );
-});
+}
+
+Container.displayName = 'Container';

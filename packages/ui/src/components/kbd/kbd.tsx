@@ -2,13 +2,13 @@
 // input (keys, key combinations, typed commands); it has no ARIA role and is not interactive.
 // Kbd.Group lays out a combination as one <kbd> per key with a visual "+" between them. The "+"
 // is aria-hidden, so assistive tech reads the keys in order ("Cmd K").
-import { Children, Fragment, forwardRef, type HTMLAttributes } from 'react';
+import { Children, Fragment, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 
-export type KbdProps = HTMLAttributes<HTMLElement>;
+export type KbdProps = ComponentPropsWithRef<'kbd'>;
 
-export type KbdGroupProps = HTMLAttributes<HTMLSpanElement>;
+export type KbdGroupProps = ComponentPropsWithRef<'span'>;
 
 const KEY_SEPARATOR = '+';
 
@@ -51,11 +51,13 @@ const separatorStyle = css({
   color: vars.color.textMuted,
 });
 
-const KbdRoot = forwardRef<HTMLElement, KbdProps>(function Kbd(props, ref) {
+function KbdRoot({ ref, ...props }: KbdProps) {
   return <kbd {...props} ref={ref} data-ui="kbd" css={rootStyle} />;
-});
+}
 
-const Group = forwardRef<HTMLSpanElement, KbdGroupProps>(function KbdGroup({ children, ...rest }, ref) {
+KbdRoot.displayName = 'Kbd';
+
+function KbdGroup({ ref, children, ...rest }: KbdGroupProps) {
   return (
     <span {...rest} ref={ref} data-ui="kbd-group" css={groupStyle}>
       {Children.toArray(children).map((child, index) => (
@@ -70,6 +72,8 @@ const Group = forwardRef<HTMLSpanElement, KbdGroupProps>(function KbdGroup({ chi
       ))}
     </span>
   );
-});
+}
 
-export const Kbd = Object.assign(KbdRoot, { Group });
+KbdGroup.displayName = 'Kbd.Group';
+
+export const Kbd = Object.assign(KbdRoot, { Group: KbdGroup });

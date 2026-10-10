@@ -13,12 +13,10 @@
 // Panels stay mounted while collapsed (`hidden`), so their inner state persists.
 import {
   createContext,
-  forwardRef,
   useContext,
   useId,
   useMemo,
-  type ButtonHTMLAttributes,
-  type HTMLAttributes,
+  type ComponentPropsWithRef,
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
@@ -33,7 +31,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 export type AccordionType = 'single' | 'multiple';
 export type AccordionValue = string | string[];
 
-interface AccordionBaseProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
+interface AccordionBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'> {
   /** Allow closing the last open panel. */
   collapsible?: boolean;
 }
@@ -55,14 +53,14 @@ export interface AccordionMultipleProps extends AccordionBaseProps {
 
 export type AccordionProps = AccordionSingleProps | AccordionMultipleProps;
 
-export interface AccordionItemProps extends HTMLAttributes<HTMLDivElement> {
+export interface AccordionItemProps extends ComponentPropsWithRef<'div'> {
   value: string;
   disabled?: boolean;
 }
 
-export type AccordionTriggerProps = ButtonHTMLAttributes<HTMLButtonElement>;
+export type AccordionTriggerProps = ComponentPropsWithRef<'button'>;
 
-export type AccordionPanelProps = HTMLAttributes<HTMLDivElement>;
+export type AccordionPanelProps = ComponentPropsWithRef<'div'>;
 
 interface AccordionContextValue {
   openValues: readonly string[];
@@ -180,18 +178,16 @@ const panelStyle = css({
   },
 });
 
-const Root = forwardRef<HTMLDivElement, AccordionProps>(function Accordion(
-  {
-    value: valueProp,
-    defaultValue,
-    onValueChange,
-    type = 'single',
-    collapsible = true,
-    onKeyDown,
-    ...rest
-  },
+function AccordionRoot({
   ref,
-) {
+  value: valueProp,
+  defaultValue,
+  onValueChange,
+  type = 'single',
+  collapsible = true,
+  onKeyDown,
+  ...rest
+}: AccordionProps) {
   // `toggle` only emits the shape that matches `type`, so either callback accepts it.
   const [value, setValue] = useControlledState<AccordionValue>(
     valueProp,
@@ -226,12 +222,11 @@ const Root = forwardRef<HTMLDivElement, AccordionProps>(function Accordion(
       <div {...rest} ref={ref} data-ui="accordion" onKeyDown={handleKeyDown} />
     </AccordionContext.Provider>
   );
-});
+}
 
-const Item = forwardRef<HTMLDivElement, AccordionItemProps>(function AccordionItem(
-  { value, disabled = false, ...rest },
-  ref,
-) {
+AccordionRoot.displayName = 'Accordion';
+
+function AccordionItem({ ref, value, disabled = false, ...rest }: AccordionItemProps) {
   const { openValues } = useAccordionContext('Item');
   const id = useId();
   const expanded = openValues.includes(value);
@@ -253,12 +248,11 @@ const Item = forwardRef<HTMLDivElement, AccordionItemProps>(function AccordionIt
       />
     </AccordionItemContext.Provider>
   );
-});
+}
 
-const Trigger = forwardRef<HTMLButtonElement, AccordionTriggerProps>(function AccordionTrigger(
-  { onClick, disabled: disabledProp, ...rest },
-  ref,
-) {
+AccordionItem.displayName = 'Accordion.Item';
+
+function AccordionTrigger({ ref, onClick, disabled: disabledProp, ...rest }: AccordionTriggerProps) {
   const { toggle, canCollapse } = useAccordionContext('Trigger');
   const { value, disabled: itemDisabled, expanded, triggerId, panelId } = useAccordionItemContext('Trigger');
   const locked = expanded && !canCollapse;
@@ -287,12 +281,11 @@ const Trigger = forwardRef<HTMLButtonElement, AccordionTriggerProps>(function Ac
       />
     </h3>
   );
-});
+}
 
-const Panel = forwardRef<HTMLDivElement, AccordionPanelProps>(function AccordionPanel(
-  { 'aria-labelledby': ariaLabelledByProp, ...rest },
-  ref,
-) {
+AccordionTrigger.displayName = 'Accordion.Trigger';
+
+function AccordionPanel({ ref, 'aria-labelledby': ariaLabelledByProp, ...rest }: AccordionPanelProps) {
   const { expanded, triggerId, panelId } = useAccordionItemContext('Panel');
   const ariaLabelledBy = [ariaLabelledByProp, triggerId].filter(Boolean).join(' ');
 
@@ -309,6 +302,12 @@ const Panel = forwardRef<HTMLDivElement, AccordionPanelProps>(function Accordion
       css={panelStyle}
     />
   );
-});
+}
 
-export const Accordion = Object.assign(Root, { Item, Trigger, Panel });
+AccordionPanel.displayName = 'Accordion.Panel';
+
+export const Accordion = Object.assign(AccordionRoot, {
+  Item: AccordionItem,
+  Trigger: AccordionTrigger,
+  Panel: AccordionPanel,
+});

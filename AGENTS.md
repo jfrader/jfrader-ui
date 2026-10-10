@@ -37,7 +37,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 - Composite widgets are compound components whose roots are callable (`Dialog`, `Tabs`, `Select`, …) with the same part names (`Dialog.Trigger`, `Dialog.Content`, …).
 - Single widgets with internal parts expose `slotProps`.
 - Polymorphism comes later through a `render` prop. No `asChild`.
-- Use `forwardRef` everywhere (React peer range is `>=18.2`).
+- React 19 ref-as-prop: components are plain functions that read `ref` from props typed with `ComponentPropsWithRef<'el'>`; never `forwardRef`. Set a dotted `displayName` on every public component and part (`Card.Header.displayName === 'Card.Header'`). React peer range is `^19.0.0`.
 - Put `data-ui="<name>"` on every component root.
 - Callbacks receive values for state changes (`onValueChange`, `onCheckedChange`); native event
   callbacks (`onChange`, `onClick`, `onCancel`) keep their native event signature.

@@ -7,12 +7,10 @@
 // without it disappearing, across the offset gap and while reading. No focus manager is used.
 import {
   createContext,
-  forwardRef,
   useContext,
   useMemo,
-  type ButtonHTMLAttributes,
+  type ComponentPropsWithRef,
   type CSSProperties,
-  type HTMLAttributes,
   type ReactNode,
 } from 'react';
 import {
@@ -47,8 +45,8 @@ export interface TooltipProps {
   children?: ReactNode;
 }
 
-export interface TooltipTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {}
-export interface TooltipContentProps extends HTMLAttributes<HTMLDivElement> {}
+export interface TooltipTriggerProps extends ComponentPropsWithRef<'button'> {}
+export interface TooltipContentProps extends ComponentPropsWithRef<'div'> {}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -111,10 +109,9 @@ function TooltipRoot({
   return <TooltipContext.Provider value={value}>{children}</TooltipContext.Provider>;
 }
 
-const Trigger = forwardRef<HTMLButtonElement, TooltipTriggerProps>(function TooltipTrigger(
-  { 'aria-describedby': ariaDescribedByProp, ...rest },
-  ref,
-) {
+TooltipRoot.displayName = 'Tooltip';
+
+function TooltipTrigger({ ref, 'aria-describedby': ariaDescribedByProp, ...rest }: TooltipTriggerProps) {
   const { refs, getReferenceProps } = useTooltipContext('Trigger');
   const mergedRef = useMergeRefs([refs.setReference, ref]);
   const referenceProps = getReferenceProps(rest);
@@ -133,9 +130,11 @@ const Trigger = forwardRef<HTMLButtonElement, TooltipTriggerProps>(function Tool
       css={triggerStyle}
     />
   );
-});
+}
 
-const Content = forwardRef<HTMLDivElement, TooltipContentProps>(function TooltipContent({ style, ...rest }, ref) {
+TooltipTrigger.displayName = 'Tooltip.Trigger';
+
+function TooltipContent({ ref, style, ...rest }: TooltipContentProps) {
   const { open, refs, floatingStyles, getFloatingProps } = useTooltipContext('Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
 
@@ -157,6 +156,8 @@ const Content = forwardRef<HTMLDivElement, TooltipContentProps>(function Tooltip
       />
     </FloatingPortal>
   );
-});
+}
 
-export const Tooltip = Object.assign(TooltipRoot, { Trigger, Content });
+TooltipContent.displayName = 'Tooltip.Content';
+
+export const Tooltip = Object.assign(TooltipRoot, { Trigger: TooltipTrigger, Content: TooltipContent });
