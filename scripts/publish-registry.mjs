@@ -70,7 +70,7 @@ const { stdout, stderr } = await npm([
 process.stdout.write(stdout);
 process.stderr.write(stderr);
 
-for (let attempt = 0; attempt < 18; attempt += 1) {
+for (let attempt = 0; attempt < 90; attempt += 1) {
   const integrity = await readPublishedIntegrity();
   if (integrity) {
     assertSameArtifact(integrity);
