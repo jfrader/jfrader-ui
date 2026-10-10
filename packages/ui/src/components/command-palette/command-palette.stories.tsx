@@ -7,7 +7,7 @@ const LABEL = 'Command palette';
 const TRIGGER = 'Open commands';
 
 const meta = {
-  title: 'Components/CommandPalette',
+  title: 'Surfaces/CommandPalette',
   component: CommandPalette,
 } satisfies Meta<typeof CommandPalette>;
 

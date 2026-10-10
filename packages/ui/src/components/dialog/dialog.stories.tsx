@@ -24,7 +24,7 @@ const footerStyle = css({
 });
 
 const meta = {
-  title: 'Components/Dialog',
+  title: 'Surfaces/Dialog',
   component: Dialog,
 } satisfies Meta<typeof Dialog>;
 

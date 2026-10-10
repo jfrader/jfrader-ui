@@ -15,7 +15,7 @@ const rowStyle = css({
 });
 
 const meta = {
-  title: 'Components/Tooltip',
+  title: 'Surfaces/Tooltip',
   component: Tooltip,
 } satisfies Meta<typeof Tooltip>;
 

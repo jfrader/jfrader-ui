@@ -58,7 +58,7 @@ const proseStyle = css({
 });
 
 const meta = {
-  title: 'Components/Container',
+  title: 'Layout/Container',
   component: Container,
   parameters: { layout: 'fullscreen' },
   argTypes: {

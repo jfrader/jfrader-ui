@@ -14,7 +14,7 @@ const stackStyle = css({
 });
 
 const meta = {
-  title: 'Components/Checkbox',
+  title: 'Inputs/Checkbox',
   component: Checkbox,
   args: { label: 'Email me updates', size: 'md' },
   argTypes: {

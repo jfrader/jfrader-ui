@@ -37,7 +37,7 @@ const frameStyle = css({
 });
 
 const meta = {
-  title: 'Components/ToggleGroup',
+  title: 'Inputs/ToggleGroup',
   component: ToggleGroup,
   argTypes: {
     type: { control: 'radio', options: ['single', 'multiple'] },

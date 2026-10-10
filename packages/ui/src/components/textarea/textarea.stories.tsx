@@ -16,7 +16,7 @@ const stackStyle = css({
 });
 
 const meta = {
-  title: 'Components/Textarea',
+  title: 'Inputs/Textarea',
   component: Textarea,
   args: { label: 'Message', placeholder: 'Write a message', size: 'md' },
   argTypes: {

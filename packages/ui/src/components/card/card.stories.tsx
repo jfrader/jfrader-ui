@@ -26,7 +26,7 @@ const formStyle = css({
 });
 
 const meta = {
-  title: 'Components/Card',
+  title: 'Data display/Card',
   component: Card,
   args: { variant: 'raised' },
   argTypes: {

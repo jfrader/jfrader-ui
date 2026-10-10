@@ -37,7 +37,7 @@ function skeletonsIn(canvasElement: HTMLElement) {
 }
 
 const meta = {
-  title: 'Components/Skeleton',
+  title: 'Feedback/Skeleton',
   component: Skeleton,
   tags: ['autodocs'],
 } satisfies Meta<typeof Skeleton>;

@@ -19,7 +19,7 @@ const stackStyle = css({
 });
 
 const meta = {
-  title: 'Components/Breadcrumbs',
+  title: 'Navigation/Breadcrumbs',
   component: Breadcrumbs,
 } satisfies Meta<typeof Breadcrumbs>;
 

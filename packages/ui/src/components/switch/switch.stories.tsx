@@ -14,7 +14,7 @@ const stackStyle = css({
 });
 
 const meta = {
-  title: 'Components/Switch',
+  title: 'Inputs/Switch',
   component: Switch,
   args: { label: 'Airplane mode', size: 'md' },
   argTypes: {

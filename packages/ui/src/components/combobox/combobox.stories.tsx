@@ -17,7 +17,7 @@ const stackStyle = css({
 });
 
 const meta = {
-  title: 'Components/Combobox',
+  title: 'Inputs/Combobox',
   component: Combobox,
 } satisfies Meta<typeof Combobox>;
 

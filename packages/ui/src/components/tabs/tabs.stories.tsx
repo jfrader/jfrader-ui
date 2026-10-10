@@ -18,7 +18,7 @@ const frameStyle = css({
 });
 
 const meta = {
-  title: 'Components/Tabs',
+  title: 'Navigation/Tabs',
   component: Tabs,
   argTypes: {
     orientation: { control: 'radio', options: ['horizontal', 'vertical'] },

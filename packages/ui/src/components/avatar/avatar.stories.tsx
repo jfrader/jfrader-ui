@@ -25,7 +25,7 @@ const rowStyle = css({
 });
 
 const meta = {
-  title: 'Components/Avatar',
+  title: 'Data display/Avatar',
   component: Avatar,
   args: { name: NAME, size: 'md' },
   argTypes: {

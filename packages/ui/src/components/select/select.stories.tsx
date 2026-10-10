@@ -17,7 +17,7 @@ const rowStyle = css({
 });
 
 const meta = {
-  title: 'Components/Select',
+  title: 'Inputs/Select',
   component: Select,
 } satisfies Meta<typeof Select>;
 

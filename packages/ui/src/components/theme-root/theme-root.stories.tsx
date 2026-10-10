@@ -23,7 +23,7 @@ const rowStyle = css({
 });
 
 const meta = {
-  title: 'Components/ThemeRoot',
+  title: 'Foundations/Theme',
   component: ThemeRoot,
   args: { onClick: fn() },
   argTypes: {

@@ -20,7 +20,7 @@ const stackStyle = css({
 });
 
 const meta = {
-  title: 'Components/Alert',
+  title: 'Feedback/Alert',
   component: Alert,
   args: { tone: 'info', title: TONE_COPY.info.title, children: TONE_COPY.info.body },
   argTypes: {

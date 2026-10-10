@@ -23,7 +23,7 @@ function indicatorOf(progressbar: HTMLElement) {
 }
 
 const meta = {
-  title: 'Components/Progress',
+  title: 'Feedback/Progress',
   component: Progress,
   tags: ['autodocs'],
   argTypes: {
