@@ -9,6 +9,7 @@ export * from './components/card';
 export * from './components/checkbox';
 export * from './components/command-palette';
 export * from './components/combobox';
+export * from './components/date-picker';
 export * from './components/dialog';
 export * from './components/divider';
 export * from './components/kbd';
