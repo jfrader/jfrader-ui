@@ -77,12 +77,12 @@ const variantStyles: Record<ButtonVariant, Record<ButtonTone, SerializedStyles>>
   soft: {
     accent: css({
       backgroundColor: vars.color.accentSoft,
-      color: vars.color.accent,
+      color: vars.color.accentText,
       [HOVER]: { backgroundColor: vars.color.accentSoftHover },
     }),
     danger: css({
       backgroundColor: vars.color.dangerSoft,
-      color: vars.color.danger,
+      color: vars.color.dangerText,
       [HOVER]: { backgroundColor: vars.color.dangerSoftHover },
     }),
     neutral: css({
@@ -95,13 +95,13 @@ const variantStyles: Record<ButtonVariant, Record<ButtonTone, SerializedStyles>>
     accent: css({
       backgroundColor: 'transparent',
       borderColor: vars.color.accentBorder,
-      color: vars.color.accent,
+      color: vars.color.accentText,
       [HOVER]: { backgroundColor: vars.color.accentSoft },
     }),
     danger: css({
       backgroundColor: 'transparent',
       borderColor: vars.color.dangerBorder,
-      color: vars.color.danger,
+      color: vars.color.dangerText,
       [HOVER]: { backgroundColor: vars.color.dangerSoft },
     }),
     neutral: css({
@@ -114,12 +114,12 @@ const variantStyles: Record<ButtonVariant, Record<ButtonTone, SerializedStyles>>
   ghost: {
     accent: css({
       backgroundColor: 'transparent',
-      color: vars.color.accent,
+      color: vars.color.accentText,
       [HOVER]: { backgroundColor: vars.color.accentSoft },
     }),
     danger: css({
       backgroundColor: 'transparent',
-      color: vars.color.danger,
+      color: vars.color.dangerText,
       [HOVER]: { backgroundColor: vars.color.dangerSoft },
     }),
     neutral: css({

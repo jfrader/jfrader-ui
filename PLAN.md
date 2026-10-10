@@ -141,3 +141,4 @@ Adopted from the four independent reviews:
 - React peer `>=18.2` (huertoku) → keep `forwardRef` until 18.2 is dropped.
 - M1 build order (Claude Code's): ThemeRoot+Tokens, Button, TextField, Checkbox/Switch, Tabs, Dialog, Popover/Tooltip, Menu; Select 9th.
 - Open items for M1 planning: Tailwind repos consume tokens-only or full React? · trucoshi MUI 6 migration approach · icons · font loading · browser support floor · future of `@superguri/ui`.
+- Palette (2026-10-09, Fran's pick): Arc-style pastel violet (`#a78bff` fill with dark text, hover `#c7b7ff`) on Linear's near-black surface stack (`#08090a` → `#141516`, hairline borders, minimal shadows); light theme = Arc-style white/gray structure with the violet family. `accentText`/`dangerText` roles separate "accent as fill" from "accent as text" — AA-verified. An accent axis (swap violet per app/product) is the natural follow-up, not built yet.
