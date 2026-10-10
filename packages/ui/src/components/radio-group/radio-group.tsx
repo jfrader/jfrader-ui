@@ -17,7 +17,9 @@ import {
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
+import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -65,9 +67,6 @@ function useRadioGroupContext(part: string): RadioGroupContextValue {
   return context;
 }
 
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-const FORCED_COLORS = '@media (forced-colors: active)';
-
 const CONTROL_SIZE = '16px';
 
 const rootStyles: Record<RadioGroupOrientation, SerializedStyles> = {
@@ -84,37 +83,12 @@ const rootStyles: Record<RadioGroupOrientation, SerializedStyles> = {
   }),
 };
 
-const radioStyle = css({
-  display: 'inline-flex',
-  flexDirection: 'column',
-  gap: vars.space[1],
-  cursor: 'pointer',
-  'input:checked + span': { backgroundColor: vars.color.accent, borderColor: vars.color.accent },
+const dotStateStyle = css({
   'input:checked + span::after': { opacity: 1 },
-  'input:focus-visible + span': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
-  },
-  '&:has(input:disabled)': {
-    opacity: 0.55,
-    cursor: 'not-allowed',
-  },
 });
 
-const rowStyle = css({
-  position: 'relative',
-  display: 'inline-flex',
-  alignItems: 'center',
+const rowFloorStyle = css({
   minBlockSize: '32px',
-  gap: vars.space[2],
-});
-
-const inputStyle = css({
-  position: 'absolute',
-  opacity: 0,
-  inlineSize: CONTROL_SIZE,
-  blockSize: CONTROL_SIZE,
-  margin: 0,
 });
 
 const circleStyle = css({
@@ -225,8 +199,12 @@ const Radio = forwardRef<HTMLInputElement, RadioGroupRadioProps>(function RadioG
   };
 
   return (
-    <label data-ui="radio-group-radio" className={rootClassName} css={[radioStyle, slotProps?.root?.css]}>
-      <span css={rowStyle}>
+    <label
+      data-ui="radio-group-radio"
+      className={rootClassName}
+      css={[choiceRootStyle, dotStateStyle, choiceRootStateStyle, slotProps?.root?.css]}
+    >
+      <span css={[choiceRowStyle, rowFloorStyle]}>
         <input
           {...rest}
           ref={ref}
@@ -238,7 +216,7 @@ const Radio = forwardRef<HTMLInputElement, RadioGroupRadioProps>(function RadioG
           aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
           onChange={handleChange}
-          css={inputStyle}
+          css={choiceInputStyle}
         />
         <span aria-hidden="true" className={slotProps?.control?.className} css={[circleStyle, slotProps?.control?.css]} />
         {hasLabel && (
