@@ -1,8 +1,8 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Combobox, type ComboboxInputProps, type ComboboxProps } from './index';
@@ -11,11 +11,11 @@ const LABEL = 'Fruit';
 const DESCRIPTION = 'Type to search';
 const EMPTY_LABEL = 'No results';
 
-const stackStyle = css({
+const stackStyle = {
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '320px',
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Inputs/Combobox',
@@ -33,7 +33,7 @@ interface ComboboxExampleProps extends ComboboxProps {
 
 function ComboboxExample({ inputProps, listId, ...props }: ComboboxExampleProps) {
   return (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       <Combobox {...props}>
         <Combobox.Input label={LABEL} {...inputProps} />
         <Combobox.List id={listId}>
@@ -50,6 +50,7 @@ function ComboboxExample({ inputProps, listId, ...props }: ComboboxExampleProps)
     </div>
   );
 }
+ComboboxExample.displayName = 'ComboboxExample';
 
 /** Portaled content lives in the story document's body, outside the canvas. */
 function bodyOf(canvasElement: HTMLElement) {
@@ -345,6 +346,7 @@ function RejectFirstSelectionExample({ onValueChange, ...props }: ComboboxProps)
     />
   );
 }
+RejectFirstSelectionExample.displayName = 'RejectFirstSelectionExample';
 
 export const RejectedThenAcceptedSelection: Story = {
   args: { onInputChange: fn(), onValueChange: fn() },

@@ -101,6 +101,7 @@ function ToggleGroupExample({
     </ToggleGroup>
   );
 }
+ToggleGroupExample.displayName = 'ToggleGroupExample';
 
 function ControlledToggleGroup(props: ToggleGroupSingleProps) {
   const [value, setValue] = useState('list');
@@ -115,6 +116,7 @@ function ControlledToggleGroup(props: ToggleGroupSingleProps) {
     />
   );
 }
+ControlledToggleGroup.displayName = 'ControlledToggleGroup';
 
 function expectPressed(canvasElement: HTMLElement, pressed: readonly boolean[]) {
   const items = within(canvasElement).getAllByRole('button').filter((item) => item.hasAttribute('aria-pressed'));

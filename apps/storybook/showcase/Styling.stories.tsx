@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { css } from '@emotion/react';
@@ -7,18 +8,19 @@ import { WithSx } from '../../../packages/ui/src/styling/sx';
 
 const COLUMN_INLINE_SIZE = '320px';
 
-const columnStyle = css({
+const columnStyle = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'flex-start',
   gap: theme.space[3],
   inlineSize: COLUMN_INLINE_SIZE,
-});
+} satisfies CSSProperties;
 
 const FeaturedCard = styled(Card)(({ theme }) => ({
   borderColor: theme.color.accentBorder,
   boxShadow: theme.shadow.overlay,
 }));
+FeaturedCard.displayName = 'FeaturedCard';
 
 const smallCorners = css({ borderRadius: theme.radius.sm });
 const highlightStyle = css({ borderColor: theme.color.accentBorder });
@@ -50,6 +52,24 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const StyledWithTheme: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `const FeaturedCard = styled(Card)(({ theme }) => ({
+  borderColor: theme.color.accentBorder,
+  boxShadow: theme.shadow.overlay,
+}));
+
+<FeaturedCard>
+  <Card.Header>
+    <Card.Title>Team plan</Card.Title>
+    <Card.Description>Shared projects for up to 20 members.</Card.Description>
+  </Card.Header>
+  <Card.Footer><Button tone="accent">Upgrade</Button></Card.Footer>
+</FeaturedCard>`,
+      },
+    },
+  },
   render: () => (
     <FeaturedCard>
       <Card.Header>
@@ -70,8 +90,18 @@ export const StyledWithTheme: Story = {
 };
 
 export const SxOneOffs: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<div style={{ display: 'flex', flexDirection: 'column', gap: theme.space[3], inlineSize: '320px' }}>
+  <Button tone="accent" sx={{ inlineSize: '100%' }}>Create project</Button>
+  <Button sx={{ borderRadius: theme.radius.full }}>Invite</Button>
+</div>`,
+      },
+    },
+  },
   render: () => (
-    <div css={columnStyle}>
+    <div style={columnStyle}>
       <Button tone="accent" sx={{ inlineSize: '100%' }}>
         Create project
       </Button>
@@ -90,8 +120,21 @@ export const SxOneOffs: Story = {
 };
 
 export const SxOverCss: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `const smallCorners = css({ borderRadius: theme.radius.sm });
+
+<>
+  <Button css={smallCorners} sx={(theme) => ({ borderRadius: theme.radius.full })}>Rounded</Button>
+  <Button css={smallCorners}>Small corners</Button>
+  <Button>Default corners</Button>
+</>`,
+      },
+    },
+  },
   render: () => (
-    <div css={columnStyle}>
+    <div style={columnStyle}>
       <Button css={smallCorners} sx={(theme) => ({ borderRadius: theme.radius.full })}>
         Rounded
       </Button>
@@ -130,8 +173,18 @@ function SxToggleProbe() {
     </div>
   );
 }
+SxToggleProbe.displayName = 'SxToggleProbe';
 
 export const UndefinedSxParity: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<WithSx sx={undefined}>
+  {(className) => <input className={className} aria-label="Preserved input" defaultValue="Preserved" />}
+</WithSx>`,
+      },
+    },
+  },
   render: () => (
     <div>
       <WithSx className={undefined} sx={undefined}>
@@ -157,8 +210,20 @@ export const UndefinedSxParity: Story = {
 };
 
 export const RenderPathParity: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<>
+  <Button render={(props) => <a {...props} href="#button-render" />}>Rendered link</Button>
+  <Dialog>
+    <Dialog.Trigger render={(props) => <Button {...props} />}>Rendered trigger</Dialog.Trigger>
+  </Dialog>
+</>`,
+      },
+    },
+  },
   render: () => (
-    <div css={columnStyle}>
+    <div style={columnStyle}>
       <Button render={(props) => <a {...props} href="#button-render" />}>
         Rendered link
       </Button>
@@ -185,6 +250,21 @@ export const RenderPathParity: Story = {
 };
 
 export const CssPropWithTokens: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `const highlightStyle = css({ borderColor: theme.color.accentBorder });
+const roomyStyle = css({ paddingBlock: theme.space[6] });
+
+<Card css={[highlightStyle, roomyStyle]}>
+  <Card.Header>
+    <Card.Title>Usage</Card.Title>
+    <Card.Description>12 of 20 seats in use.</Card.Description>
+  </Card.Header>
+</Card>`,
+      },
+    },
+  },
   render: () => (
     <Card css={[highlightStyle, roomyStyle]}>
       <Card.Header>

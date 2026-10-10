@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -11,13 +12,13 @@ const frameStyle = css({
   inlineSize: '20rem',
 });
 
-const fieldStyle = css({
+const fieldStyle = {
   display: 'grid',
   gap: vars.space[2],
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-});
+} satisfies CSSProperties;
 
 function indicatorOf(progressbar: HTMLElement) {
   return progressbar.querySelector<HTMLElement>('[data-ui="progress-indicator"]');
@@ -84,7 +85,7 @@ export const ValueText: Story = {
 export const VisibleLabel: Story = {
   args: { value: 70 },
   render: (args) => (
-    <div css={fieldStyle}>
+    <div style={fieldStyle}>
       <span id="storage-label">Storage used</span>
       <Progress {...args} aria-labelledby="storage-label" />
     </div>

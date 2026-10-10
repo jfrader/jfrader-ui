@@ -56,6 +56,7 @@ function TabsExample({ disabledValue, ...props }: TabsProps & { disabledValue?: 
     </Tabs>
   );
 }
+TabsExample.displayName = 'TabsExample';
 
 function ControlledTabs(props: TabsProps) {
   const [value, setValue] = useState('one');
@@ -70,6 +71,7 @@ function ControlledTabs(props: TabsProps) {
     />
   );
 }
+ControlledTabs.displayName = 'ControlledTabs';
 
 function RemovableTabs() {
   const [items, setItems] = useState<readonly (typeof ITEMS)[number][]>(ITEMS);
@@ -95,6 +97,7 @@ function RemovableTabs() {
     </>
   );
 }
+RemovableTabs.displayName = 'RemovableTabs';
 
 /** Selection and ARIA relationships for the selected panel (roving tabindex is asserted separately). */
 async function expectSelected(canvasElement: HTMLElement, selectedIndex: number) {
@@ -244,6 +247,18 @@ export const DisabledSelectedFallback: Story = {
 };
 
 export const RemovedFocusedFallback: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<Tabs defaultValue="two" activation="manual">
+  <Tabs.List aria-label="Settings">
+    {items.map((item) => <Tabs.Tab key={item.value} value={item.value}>{item.label}</Tabs.Tab>)}
+  </Tabs.List>
+  {items.map((item) => <Tabs.Panel key={item.value} value={item.value}>{item.panel}</Tabs.Panel>)}
+</Tabs>`,
+      },
+    },
+  },
   render: () => <RemovableTabs />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

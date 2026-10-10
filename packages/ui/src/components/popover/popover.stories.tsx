@@ -1,8 +1,8 @@
+import type { CSSProperties } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Popover, type PopoverProps } from './index';
@@ -12,23 +12,23 @@ const HEADING = 'Share link';
 const AFTER = 'After popover';
 const OUTSIDE = 'Outside target';
 
-const headingStyle = css({
+const headingStyle = {
   margin: 0,
   marginBlockEnd: vars.space[3],
   fontSize: vars.textSize.md,
   fontWeight: vars.fontWeight.semibold,
-});
+} satisfies CSSProperties;
 
-const actionsStyle = css({
+const actionsStyle = {
   display: 'flex',
   gap: vars.space[2],
-});
+} satisfies CSSProperties;
 
-const rowStyle = css({
+const rowStyle = {
   display: 'flex',
   gap: vars.space[3],
   alignItems: 'center',
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Surfaces/Popover',
@@ -42,16 +42,17 @@ type Story = StoryObj<typeof meta>;
 function PopoverBody({ labelledBy }: { labelledBy: string }) {
   return (
     <>
-      <h2 id={labelledBy} css={headingStyle}>
+      <h2 id={labelledBy} style={headingStyle}>
         {HEADING}
       </h2>
-      <div css={actionsStyle}>
+      <div style={actionsStyle}>
         <Button size="sm">Copy link</Button>
         <Button size="sm">Email link</Button>
       </div>
     </>
   );
 }
+PopoverBody.displayName = 'PopoverBody';
 
 function PopoverExample(props: PopoverProps) {
   const headingId = useId();
@@ -64,11 +65,12 @@ function PopoverExample(props: PopoverProps) {
     </Popover>
   );
 }
+PopoverExample.displayName = 'PopoverExample';
 
 function PopoverWithAfter(props: PopoverProps) {
   const headingId = useId();
   return (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <Popover {...props}>
         <Popover.Trigger>{TRIGGER}</Popover.Trigger>
         <Popover.Content aria-labelledby={headingId}>
@@ -79,11 +81,12 @@ function PopoverWithAfter(props: PopoverProps) {
     </div>
   );
 }
+PopoverWithAfter.displayName = 'PopoverWithAfter';
 
 function PopoverWithOutside(props: PopoverProps) {
   const headingId = useId();
   return (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <Popover {...props}>
         <Popover.Trigger>{TRIGGER}</Popover.Trigger>
         <Popover.Content aria-labelledby={headingId}>
@@ -94,6 +97,7 @@ function PopoverWithOutside(props: PopoverProps) {
     </div>
   );
 }
+PopoverWithOutside.displayName = 'PopoverWithOutside';
 
 function ControlledPopover(props: PopoverProps) {
   const [open, setOpen] = useState(false);
@@ -108,6 +112,7 @@ function ControlledPopover(props: PopoverProps) {
     />
   );
 }
+ControlledPopover.displayName = 'ControlledPopover';
 
 /** Portaled content lives in the story document's body, outside the canvas. */
 function bodyOf(canvasElement: HTMLElement) {

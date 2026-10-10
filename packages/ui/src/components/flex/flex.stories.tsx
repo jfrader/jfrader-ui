@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect } from 'storybook/test';
 import { base } from '@jfrader/tokens';
@@ -32,9 +33,9 @@ const frameStyle = css({
   inlineSize: '360px',
 });
 
-const narrowStyle = css({ inlineSize: '160px' });
+const narrowStyle = { inlineSize: '160px' } satisfies CSSProperties;
 
-const boxStyle = css({
+const boxStyle = {
   boxSizing: 'border-box',
   paddingBlock: vars.space[2],
   paddingInline: vars.space[3],
@@ -44,14 +45,14 @@ const boxStyle = css({
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-});
+} satisfies CSSProperties;
 
-const proseStyle = css({
+const proseStyle = {
   margin: 0,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Layout/Flex',
@@ -80,13 +81,14 @@ function Boxes({ count = 3 }: { count?: number }) {
   return (
     <>
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} css={boxStyle} data-box>
+        <div key={index} style={boxStyle} data-box>
           Item {index + 1}
         </div>
       ))}
     </>
   );
 }
+Boxes.displayName = 'Boxes';
 
 function getFlexes(canvasElement: HTMLElement) {
   return Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="flex"]'));
@@ -167,7 +169,7 @@ export const AlignAndJustify: Story = {
 
 export const Wrap: Story = {
   render: (args) => (
-    <div css={narrowStyle}>
+    <div style={narrowStyle}>
       <Flex {...args} wrap>
         <Boxes count={4} />
       </Flex>
@@ -208,7 +210,7 @@ export const GapSteps: Story = {
 export const Inline: Story = {
   args: { gap: 'xs' },
   render: (args) => (
-    <div css={proseStyle}>
+    <div style={proseStyle}>
       Assigned to{' '}
       <Flex {...args} inline align="baseline">
         <span>Ana</span>

@@ -86,6 +86,7 @@ function AccordionExample({
     </Accordion>
   );
 }
+AccordionExample.displayName = 'AccordionExample';
 
 /** Accepts every request except opening Billing, which the parent rejects. */
 function ControlledAccordion(props: AccordionProps) {
@@ -116,6 +117,7 @@ function ControlledAccordion(props: AccordionProps) {
     />
   );
 }
+ControlledAccordion.displayName = 'ControlledAccordion';
 
 /** Expansion state and ARIA relationships for every rendered item. */
 async function expectExpanded(canvasElement: HTMLElement, openLabels: readonly ItemLabel[]) {

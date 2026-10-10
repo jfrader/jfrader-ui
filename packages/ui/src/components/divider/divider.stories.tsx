@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -13,15 +14,15 @@ const stackStyle = css({
   color: vars.color.text,
 });
 
-const rowStyle = css({
+const rowStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: vars.space[3],
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-});
+} satisfies CSSProperties;
 
-const proseStyle = css({ margin: 0 });
+const proseStyle = { margin: 0 } satisfies CSSProperties;
 
 const meta = {
   title: 'Data display/Divider',
@@ -42,26 +43,28 @@ type Story = StoryObj<typeof Divider>;
 function Sections() {
   return (
     <>
-      <p css={proseStyle}>Signed in as ana@example.com</p>
+      <p style={proseStyle}>Signed in as ana@example.com</p>
       <Divider />
-      <p css={proseStyle}>3 active sessions</p>
+      <p style={proseStyle}>3 active sessions</p>
     </>
   );
 }
+Sections.displayName = 'Sections';
 
 function SignInOptions() {
   return (
     <>
-      <p css={proseStyle}>Continue with GitHub</p>
+      <p style={proseStyle}>Continue with GitHub</p>
       <Divider label="or" />
-      <p css={proseStyle}>Continue with email</p>
+      <p style={proseStyle}>Continue with email</p>
     </>
   );
 }
+SignInOptions.displayName = 'SignInOptions';
 
 function Toolbar() {
   return (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <span>Bold</span>
       <span>Italic</span>
       <Divider orientation="vertical" />
@@ -69,8 +72,20 @@ function Toolbar() {
     </div>
   );
 }
+Toolbar.displayName = 'Toolbar';
 
 export const Default: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<>
+  <p>Signed in as ana@example.com</p>
+  <Divider />
+  <p>3 active sessions</p>
+</>`,
+      },
+    },
+  },
   args: {},
   render: () => <Sections />,
   play: async ({ canvasElement }) => {
@@ -85,6 +100,17 @@ export const Default: Story = {
 };
 
 export const Labeled: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<>
+  <p>Continue with GitHub</p>
+  <Divider label="or" />
+  <p>Continue with email</p>
+</>`,
+      },
+    },
+  },
   args: {},
   render: () => <SignInOptions />,
   play: async ({ canvasElement }) => {
@@ -109,6 +135,16 @@ export const Labeled: Story = {
 };
 
 export const ExternalLabelledBy: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<>
+  <span id="divider-context">Sign-in options</span>
+  <Divider label="or" aria-labelledby="divider-context" />
+</>`,
+      },
+    },
+  },
   args: {},
   render: () => (
     <>
@@ -123,6 +159,13 @@ export const ExternalLabelledBy: Story = {
 };
 
 export const ZeroLabel: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: '<Divider label={0} />',
+      },
+    },
+  },
   args: {},
   render: () => <Divider label={0} />,
   play: async ({ canvasElement }) => {
@@ -132,6 +175,16 @@ export const ZeroLabel: Story = {
 };
 
 export const EmptyLabels: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<>
+  <Divider label={false} />
+  <Divider label={null} />
+</>`,
+      },
+    },
+  },
   args: {},
   render: () => (
     <>
@@ -155,6 +208,17 @@ export const EmptyLabels: Story = {
 };
 
 export const KeyboardFocus: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<>
+  <button type="button">Before divider</button>
+  <Divider />
+  <button type="button">After divider</button>
+</>`,
+      },
+    },
+  },
   render: () => (
     <>
       <button type="button">Before divider</button>
@@ -175,6 +239,18 @@ export const KeyboardFocus: Story = {
 };
 
 export const Vertical: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<div style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
+  <span>Bold</span>
+  <span>Italic</span>
+  <Divider orientation="vertical" />
+  <span>Link</span>
+</div>`,
+      },
+    },
+  },
   render: () => <Toolbar />,
   play: async ({ canvasElement }) => {
     const separator = within(canvasElement).getByRole('separator');
@@ -190,6 +266,17 @@ export const Vertical: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<ThemeRoot theme="light">
+  <Divider />
+  <Divider label="or" />
+  <div style={{ display: 'flex' }}><span>Bold</span><Divider orientation="vertical" /><span>Link</span></div>
+</ThemeRoot>`,
+      },
+    },
+  },
   decorators: [withLightTheme],
   render: () => (
     <>

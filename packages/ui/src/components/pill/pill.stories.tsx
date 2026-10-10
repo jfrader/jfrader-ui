@@ -1,25 +1,25 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Pill, type PillTone } from './index';
 
 const TONES = ['neutral', 'accent', 'success', 'warning', 'danger'] as const satisfies readonly PillTone[];
 const PILL_HEIGHT = 20;
 
-const rowStyle = css({
+const rowStyle = {
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
   gap: vars.space[2],
-});
+} satisfies CSSProperties;
 
-const proseStyle = css({
+const proseStyle = {
   margin: 0,
   fontSize: vars.textSize.md,
   color: vars.color.text,
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Data display/Pill',
@@ -36,7 +36,7 @@ type Story = StoryObj<typeof meta>;
 
 function ToneRow() {
   return (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       {TONES.map((tone) => (
         <Pill key={tone} tone={tone}>
           {tone}
@@ -45,6 +45,7 @@ function ToneRow() {
     </div>
   );
 }
+ToneRow.displayName = 'ToneRow';
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {
@@ -55,6 +56,19 @@ export const Default: Story = {
 };
 
 export const Tones: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<>
+  <Pill tone="neutral">neutral</Pill>
+  <Pill tone="accent">accent</Pill>
+  <Pill tone="success">success</Pill>
+  <Pill tone="warning">warning</Pill>
+  <Pill tone="danger">danger</Pill>
+</>`,
+      },
+    },
+  },
   render: () => <ToneRow />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -69,7 +83,7 @@ export const Tones: Story = {
 export const InlineWithText: Story = {
   args: { tone: 'accent', children: 'Beta' },
   render: (args) => (
-    <p css={proseStyle}>
+    <p style={proseStyle}>
       Shared workspaces <Pill {...args} /> are rolling out this week.
     </p>
   ),
@@ -81,6 +95,21 @@ export const InlineWithText: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<ThemeRoot theme="light">
+<>
+  <Pill tone="neutral">neutral</Pill>
+  <Pill tone="accent">accent</Pill>
+  <Pill tone="success">success</Pill>
+  <Pill tone="warning">warning</Pill>
+  <Pill tone="danger">danger</Pill>
+</>
+</ThemeRoot>`,
+      },
+    },
+  },
   decorators: [withLightTheme],
   render: () => <ToneRow />,
   play: async ({ canvasElement }) => {

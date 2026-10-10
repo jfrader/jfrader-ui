@@ -1,18 +1,18 @@
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Switch, type SwitchProps, type SwitchSize } from './index';
 
 const SIZES = ['sm', 'md'] as const satisfies readonly SwitchSize[];
 const TRACK_WIDTHS = { sm: 36, md: 44 } as const;
 
-const stackStyle = css({
+const stackStyle = {
   display: 'grid',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Inputs/Switch',
@@ -41,6 +41,7 @@ function ControlledSwitch(props: SwitchProps) {
     />
   );
 }
+ControlledSwitch.displayName = 'ControlledSwitch';
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {
@@ -133,7 +134,7 @@ export const Disabled: Story = {
 
 export const Sizes: Story = {
   render: (args) => (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       {SIZES.map((size) => (
         <Switch {...args} key={size} size={size} label={`Size ${size}`} description="Supporting text" />
       ))}

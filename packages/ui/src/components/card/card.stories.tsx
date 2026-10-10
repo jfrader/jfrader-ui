@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useId } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
@@ -16,15 +17,15 @@ const frameStyle = css({
   inlineSize: '360px',
 });
 
-const listStyle = css({
+const listStyle = {
   margin: 0,
   paddingInlineStart: vars.space[5],
-});
+} satisfies CSSProperties;
 
-const formStyle = css({
+const formStyle = {
   display: 'grid',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Data display/Card',
@@ -54,7 +55,7 @@ function PlanCard(props: CardProps) {
         <Card.Description>Billed monthly, renews on 1 November.</Card.Description>
       </Card.Header>
       <Card.Content>
-        <ul css={listStyle}>
+        <ul style={listStyle}>
           <li>Unlimited projects</li>
           <li>10 GB storage</li>
           <li>Priority support</li>
@@ -67,6 +68,7 @@ function PlanCard(props: CardProps) {
     </Card>
   );
 }
+PlanCard.displayName = 'PlanCard';
 
 function partsOf(element: Element) {
   return Array.from(element.children, (child) => child.getAttribute('data-ui'));
@@ -179,7 +181,7 @@ function InviteCard(props: CardProps) {
         <Card.Description>They get editor access to this workspace.</Card.Description>
       </Card.Header>
       <Card.Content>
-        <form id={formId} css={formStyle} onSubmit={(event) => event.preventDefault()}>
+        <form id={formId} style={formStyle} onSubmit={(event) => event.preventDefault()}>
           <TextField label="Email" type="email" name="email" placeholder="ana@example.com" />
         </form>
       </Card.Content>
@@ -194,6 +196,7 @@ function InviteCard(props: CardProps) {
     </Card>
   );
 }
+InviteCard.displayName = 'InviteCard';
 
 export const WithForm: Story = {
   render: (args) => <InviteCard {...args} />,
@@ -233,6 +236,25 @@ const slotTitleOverrideStyle = css({ textTransform: 'uppercase' });
 const consumerTitleOverrideStyle = css({ textTransform: 'lowercase' });
 
 export const ConsumerStylePrecedence: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<Card
+  variant="raised"
+  className="consumer-card"
+  css={css({ fontStyle: 'normal' })}
+  slotProps={{
+    root: { className: 'slot-card', css: css({ fontStyle: 'italic' }) },
+    title: { className: 'slot-title', css: css({ textTransform: 'uppercase' }) },
+  }}
+>
+  <Card.Title className="consumer-title" css={css({ textTransform: 'lowercase' })}>
+    Consumer styles
+  </Card.Title>
+</Card>`,
+      },
+    },
+  },
   render: (args) => (
     <Card
       {...args}

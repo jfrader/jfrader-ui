@@ -1,21 +1,21 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Kbd } from './index';
 
-const stackStyle = css({
+const stackStyle = {
   display: 'grid',
   justifyItems: 'start',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
-const proseStyle = css({
+const proseStyle = {
   margin: 0,
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Data display/Kbd',
@@ -35,14 +35,16 @@ function CommandShortcut() {
     </Kbd.Group>
   );
 }
+CommandShortcut.displayName = 'CommandShortcut';
 
 function ShortcutHints() {
   return (
-    <p css={proseStyle}>
+    <p style={proseStyle}>
       Press <CommandShortcut /> to search, or <Kbd>Esc</Kbd> to close.
     </p>
   );
 }
+ShortcutHints.displayName = 'ShortcutHints';
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {
@@ -55,6 +57,16 @@ export const Default: Story = {
 };
 
 export const Combination: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<Kbd.Group>
+  <Kbd>Cmd</Kbd>
+  <Kbd>K</Kbd>
+</Kbd.Group>`,
+      },
+    },
+  },
   render: () => <CommandShortcut />,
   play: async ({ canvasElement }) => {
     const group = canvasElement.querySelector('[data-ui="kbd-group"]') as HTMLElement;
@@ -74,6 +86,18 @@ export const Combination: Story = {
 };
 
 export const SkipsEmptyChildren: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<Kbd.Group>
+  <Kbd>Shift</Kbd>
+  {false}
+  {null}
+  <Kbd>Tab</Kbd>
+</Kbd.Group>`,
+      },
+    },
+  },
   render: () => (
     <Kbd.Group>
       <Kbd>Shift</Kbd>
@@ -89,6 +113,16 @@ export const SkipsEmptyChildren: Story = {
 };
 
 export const ZeroChildren: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<Kbd.Group>
+  <Kbd>{0}</Kbd>
+  {0}
+</Kbd.Group>`,
+      },
+    },
+  },
   render: () => (
     <Kbd.Group>
       <Kbd>{0}</Kbd>
@@ -105,6 +139,17 @@ export const ZeroChildren: Story = {
 };
 
 export const KeyboardFocus: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<>
+  <button type="button">Before key</button>
+  <Kbd>Esc</Kbd>
+  <button type="button">After key</button>
+</>`,
+      },
+    },
+  },
   render: () => (
     <>
       <button type="button">Before key</button>
@@ -125,6 +170,13 @@ export const KeyboardFocus: Story = {
 };
 
 export const Inline: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: '<p>Press <Kbd.Group><Kbd>Cmd</Kbd><Kbd>K</Kbd></Kbd.Group> to search, or <Kbd>Esc</Kbd> to close.</p>',
+      },
+    },
+  },
   render: () => <ShortcutHints />,
   play: async ({ canvasElement }) => {
     const paragraph = canvasElement.querySelector('p') as HTMLElement;
@@ -134,9 +186,19 @@ export const Inline: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<ThemeRoot theme="light">
+  <Kbd>Esc</Kbd>
+  <Kbd.Group><Kbd>Cmd</Kbd><Kbd>K</Kbd></Kbd.Group>
+</ThemeRoot>`,
+      },
+    },
+  },
   decorators: [withLightTheme],
   render: () => (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       <Kbd>Esc</Kbd>
       <CommandShortcut />
       <ShortcutHints />

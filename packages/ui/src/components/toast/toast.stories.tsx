@@ -1,8 +1,8 @@
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Toast, useToast, type ToastOptions, type ToastProviderProps } from './index';
@@ -14,12 +14,12 @@ const PERSISTENT_TITLE = 'Sync paused';
 /** Generous ceiling for timers + the exit transition (tokens: 160ms). */
 const REMOVAL_TIMEOUT = { timeout: 3000 };
 
-const rowStyle = css({
+const rowStyle = {
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Feedback/Toast',
@@ -33,7 +33,7 @@ type Story = StoryObj<typeof meta>;
 function Triggers({ options }: { options?: ToastOptions }) {
   const { toast } = useToast();
   return (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <Button onClick={() => toast({ title: TITLE, description: DESCRIPTION, ...options })}>Show toast</Button>
       <Button
         onClick={() =>
@@ -46,12 +46,13 @@ function Triggers({ options }: { options?: ToastOptions }) {
     </div>
   );
 }
+Triggers.displayName = 'Triggers';
 
 function ActionTriggers() {
   const { toast } = useToast();
   const [runs, setRuns] = useState(0);
   return (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <Button
         onClick={() =>
           toast({
@@ -85,6 +86,7 @@ function ActionTriggers() {
     </div>
   );
 }
+ActionTriggers.displayName = 'ActionTriggers';
 
 function ToastHarness({ options, children, ...providerProps }: ToastProviderProps & { options?: ToastOptions }) {
   return (
@@ -94,6 +96,7 @@ function ToastHarness({ options, children, ...providerProps }: ToastProviderProp
     </Toast>
   );
 }
+ToastHarness.displayName = 'ToastHarness';
 
 /** Toasts are portaled into the story document's body, outside the canvas. */
 function bodyOf(canvasElement: HTMLElement) {

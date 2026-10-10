@@ -26,6 +26,7 @@ function CalendarExample(props: CalendarProps) {
     </Calendar>
   );
 }
+CalendarExample.displayName = 'CalendarExample';
 
 function ControlledCalendar({ onValueChange, onVisibleMonthChange, ...props }: CalendarProps) {
   const [value, setValue] = useState('2026-10-14');
@@ -46,6 +47,7 @@ function ControlledCalendar({ onValueChange, onVisibleMonthChange, ...props }: C
     />
   );
 }
+ControlledCalendar.displayName = 'ControlledCalendar';
 
 const day = (canvasElement: HTMLElement, name: string) => within(canvasElement).getByRole('button', { name });
 

@@ -1,7 +1,7 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { TextField } from '../text-field';
@@ -9,19 +9,19 @@ import { ThemeRoot, type ThemeName } from './index';
 
 const THEMES = ['dark', 'light'] as const satisfies readonly ThemeName[];
 
-const surfaceStyle = css({
+const surfaceStyle = {
   display: 'grid',
   gap: vars.space[4],
   padding: vars.space[6],
   borderRadius: vars.radius.lg,
   backgroundColor: vars.color.surface,
-});
+} satisfies CSSProperties;
 
-const rowStyle = css({
+const rowStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Foundations/Theme',
@@ -31,8 +31,8 @@ const meta = {
     theme: { control: 'radio', options: THEMES },
   },
   render: (args) => (
-    <ThemeRoot {...args} css={surfaceStyle}>
-      <div css={rowStyle}>
+    <ThemeRoot {...args} style={surfaceStyle}>
+      <div style={rowStyle}>
         <Button tone="accent">Save</Button>
         <Button variant="outline">Cancel</Button>
       </div>

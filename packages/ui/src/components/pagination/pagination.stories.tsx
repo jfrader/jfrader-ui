@@ -1,16 +1,16 @@
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Pagination, type PaginationProps } from './index';
 
-const stackStyle = css({
+const stackStyle = {
   display: 'grid',
   justifyItems: 'start',
   gap: vars.space[4],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Navigation/Pagination',
@@ -40,6 +40,7 @@ function ControlledPagination({ page: initialPage, onPageChange, ...props }: Pag
     />
   );
 }
+ControlledPagination.displayName = 'ControlledPagination';
 
 const getNav = (canvasElement: HTMLElement, name = 'Pagination') =>
   within(canvasElement).getByRole('navigation', { name });
@@ -86,7 +87,7 @@ export const Default: Story = {
 export const Boundaries: Story = {
   args: { onPageChange: fn() },
   render: (args) => (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       <Pagination {...args} page={1} label="First page reached" />
       <Pagination {...args} page={20} label="Last page reached" />
       <ControlledPagination {...args} page={19} label="Near the end" />
@@ -131,7 +132,7 @@ export const Boundaries: Story = {
 export const Controlled: Story = {
   args: { onPageChange: fn() },
   render: (args) => (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       <ControlledPagination {...args} />
       <Pagination {...args} label="Locked pagination" />
     </div>
@@ -214,8 +215,19 @@ const caseLabel = ({ totalPages, page, siblingCount }: WindowCase) =>
   `Page ${page} of ${totalPages}${siblingCount === undefined ? '' : `, ${siblingCount} siblings`}`;
 
 export const WindowingMatrix: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<>
+  <Pagination page={1} totalPages={20} siblingCount={1} locale="en-US" />
+  <Pagination page={10} totalPages={20} siblingCount={2} locale="en-US" />
+  <Pagination page={20} totalPages={20} siblingCount={1} locale="en-US" />
+</>`,
+      },
+    },
+  },
   render: () => (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       {WINDOW_CASES.map((windowCase) => (
         <Pagination
           key={caseLabel(windowCase)}
@@ -249,7 +261,7 @@ export const WindowingMatrix: Story = {
 export const InvalidAndEmptyInputs: Story = {
   args: { onPageChange: fn() },
   render: (args) => (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       <Pagination {...args} page={0} totalPages={20} label="Page zero" />
       <Pagination {...args} page={5} totalPages={0} label="No pages" />
       <Pagination {...args} page={1} totalPages={1} label="Single page" />

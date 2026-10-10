@@ -71,10 +71,9 @@ const preview: Preview = {
     a11y: { test: 'error' },
     docs: {
       container: ThemedDocsContainer,
-      // Autodocs "Show code" renders the story's authored source instead of the
-      // stringified render tree (whose anonymous/minified helpers appear as <y>,
-      // React.ForwardRef, …). See storybook.js.org/docs/api/doc-blocks/doc-block-source.
-      source: { type: 'code' },
+      // Snippets use Storybook's default (the story's rendered usage with its arg values).
+      // Do not set source.type: 'code' here: the authored story source includes the play
+      // tests, which read as examples. See GURI-2129.
     },
     options: {
       storySort: {

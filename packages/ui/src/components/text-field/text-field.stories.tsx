@@ -50,6 +50,7 @@ function ControlledTextField(props: TextFieldProps) {
     />
   );
 }
+ControlledTextField.displayName = 'ControlledTextField';
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {

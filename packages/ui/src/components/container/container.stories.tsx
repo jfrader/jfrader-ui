@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
@@ -21,15 +22,15 @@ const frameStyle = css({
   paddingBlock: vars.space[6],
 });
 
-const centeringFrameStyle = css({ inlineSize: '900px' });
+const centeringFrameStyle = { inlineSize: '900px' } satisfies CSSProperties;
 
-const pageStyle = css({
+const pageStyle = {
   minBlockSize: '100vh',
   paddingBlock: vars.space[10],
   backgroundColor: vars.color.bg,
-});
+} satisfies CSSProperties;
 
-const boxStyle = css({
+const boxStyle = {
   boxSizing: 'border-box',
   paddingBlock: vars.space[2],
   paddingInline: vars.space[3],
@@ -39,24 +40,24 @@ const boxStyle = css({
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-});
+} satisfies CSSProperties;
 
-const headingStyle = css({
+const headingStyle = {
   margin: 0,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize['2xl'],
   fontWeight: vars.fontWeight.semibold,
   lineHeight: vars.lineHeight.tight,
   color: vars.color.text,
-});
+} satisfies CSSProperties;
 
-const proseStyle = css({
+const proseStyle = {
   margin: 0,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.md,
   lineHeight: vars.lineHeight.base,
   color: vars.color.textMuted,
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Layout/Container',
@@ -94,7 +95,7 @@ export const Sizes: Story = {
     <>
       {SIZES.map((size) => (
         <Container {...args} key={size} size={size}>
-          <div css={boxStyle}>Container {size}</div>
+          <div style={boxStyle}>Container {size}</div>
         </Container>
       ))}
     </>
@@ -119,9 +120,9 @@ export const Sizes: Story = {
 
 export const Centering: Story = {
   render: (args) => (
-    <div css={centeringFrameStyle}>
+    <div style={centeringFrameStyle}>
       <Container {...args} size="sm">
-        <div css={boxStyle}>Centered container</div>
+        <div style={boxStyle}>Centered container</div>
       </Container>
     </div>
   ),
@@ -139,11 +140,11 @@ export const Padding: Story = {
   render: (args) => (
     <>
       <Container {...args} data-padding="default">
-        <div css={boxStyle}>Default padding</div>
+        <div style={boxStyle}>Default padding</div>
       </Container>
       {LAYOUT_SPACES.map((space) => (
         <Container {...args} key={space} paddingInline={space} data-padding={space}>
-          <div css={boxStyle}>Padding {space}</div>
+          <div style={boxStyle}>Padding {space}</div>
         </Container>
       ))}
     </>
@@ -163,11 +164,11 @@ export const Padding: Story = {
 
 function Page() {
   return (
-    <div css={pageStyle}>
+    <div style={pageStyle}>
       <Container size="sm">
         <Stack gap="lg">
-          <h2 css={headingStyle}>Workspace settings</h2>
-          <p css={proseStyle}>Rename the workspace or move it to another team.</p>
+          <h2 style={headingStyle}>Workspace settings</h2>
+          <p style={proseStyle}>Rename the workspace or move it to another team.</p>
           <Flex gap="sm" justify="end">
             <Button variant="outline">Cancel</Button>
             <Button tone="accent">Save</Button>
@@ -177,8 +178,25 @@ function Page() {
     </div>
   );
 }
+Page.displayName = 'Page';
 
 export const CenteredPage: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<Container size="sm">
+  <Stack gap="lg">
+    <h2>Workspace settings</h2>
+    <p>Rename the workspace or move it to another team.</p>
+    <Flex gap="sm" justify="end">
+      <Button variant="outline">Cancel</Button>
+      <Button tone="accent">Save</Button>
+    </Flex>
+  </Stack>
+</Container>`,
+      },
+    },
+  },
   render: () => <Page />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -202,10 +220,10 @@ export const RTL: Story = {
     <div dir="rtl">
       <Container {...args} size="sm" paddingInline="lg">
         <Flex gap="md">
-          <div css={boxStyle} data-box>
+          <div style={boxStyle} data-box>
             Item 1
           </div>
-          <div css={boxStyle} data-box>
+          <div style={boxStyle} data-box>
             Item 2
           </div>
         </Flex>
@@ -231,6 +249,24 @@ export const RTL: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<ThemeRoot theme="light">
+<Container size="sm">
+  <Stack gap="lg">
+    <h2>Workspace settings</h2>
+    <p>Rename the workspace or move it to another team.</p>
+    <Flex gap="sm" justify="end">
+      <Button variant="outline">Cancel</Button>
+      <Button tone="accent">Save</Button>
+    </Flex>
+  </Stack>
+</Container>
+</ThemeRoot>`,
+      },
+    },
+  },
   decorators: [withLightTheme],
   render: () => <Page />,
   play: async ({ canvasElement }) => {

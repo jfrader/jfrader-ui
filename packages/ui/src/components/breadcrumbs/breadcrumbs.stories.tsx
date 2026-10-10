@@ -1,8 +1,8 @@
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Breadcrumbs } from './index';
@@ -13,11 +13,11 @@ const LEVELS = [
   { label: 'jfrader-ui', href: '/projects/jfrader-ui' },
 ] as const;
 
-const stackStyle = css({
+const stackStyle = {
   display: 'grid',
   justifyItems: 'start',
   gap: vars.space[4],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Navigation/Breadcrumbs',
@@ -141,7 +141,7 @@ export const ExplicitCurrent: Story = {
 function GrowingTrail() {
   const [depth, setDepth] = useState(2);
   return (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       <Breadcrumbs>
         {LEVELS.slice(0, depth).map((level) => (
           <Breadcrumbs.Item key={level.href} href={level.href}>
@@ -155,9 +155,21 @@ function GrowingTrail() {
     </div>
   );
 }
+GrowingTrail.displayName = 'GrowingTrail';
 
 // aria-current follows the last item when items mount or unmount.
 export const DynamicItems: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<Breadcrumbs>
+  {levels.slice(0, depth).map((level) => (
+    <Breadcrumbs.Item key={level.href} href={level.href}>{level.label}</Breadcrumbs.Item>
+  ))}
+</Breadcrumbs>`,
+      },
+    },
+  },
   render: () => <GrowingTrail />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -175,7 +187,7 @@ function ReorderingTrail() {
   const [swapped, setSwapped] = useState(false);
   const levels = swapped ? [LEVELS[2], LEVELS[1]] : [LEVELS[1], LEVELS[2]];
   return (
-    <div css={stackStyle}>
+    <div style={stackStyle}>
       <Breadcrumbs>
         <Breadcrumbs.Item href={LEVELS[0].href}>{LEVELS[0].label}</Breadcrumbs.Item>
         {levels.map((level) => (
@@ -190,8 +202,21 @@ function ReorderingTrail() {
     </div>
   );
 }
+ReorderingTrail.displayName = 'ReorderingTrail';
 
 export const ReorderedItems: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `<Breadcrumbs>
+  <Breadcrumbs.Item href="/">Home</Breadcrumbs.Item>
+  {levels.map((level) => (
+    <Breadcrumbs.Item key={level.href} href={level.href}>{level.label}</Breadcrumbs.Item>
+  ))}
+</Breadcrumbs>`,
+      },
+    },
+  },
   render: () => <ReorderingTrail />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

@@ -1,8 +1,8 @@
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Tooltip, type TooltipProps } from './index';
@@ -10,10 +10,10 @@ import { Tooltip, type TooltipProps } from './index';
 const TRIGGER = 'Copy';
 const TIP = 'Copy to clipboard';
 
-const rowStyle = css({
+const rowStyle = {
   display: 'flex',
   gap: vars.space[3],
-});
+} satisfies CSSProperties;
 
 const meta = {
   title: 'Surfaces/Tooltip',
@@ -26,7 +26,7 @@ type Story = StoryObj<typeof meta>;
 
 function TooltipExample(props: TooltipProps) {
   return (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <Tooltip {...props}>
         <Tooltip.Trigger>{TRIGGER}</Tooltip.Trigger>
         <Tooltip.Content>{TIP}</Tooltip.Content>
@@ -35,6 +35,7 @@ function TooltipExample(props: TooltipProps) {
     </div>
   );
 }
+TooltipExample.displayName = 'TooltipExample';
 
 function ControlledTooltip(props: TooltipProps) {
   const [open, setOpen] = useState(false);
@@ -49,6 +50,7 @@ function ControlledTooltip(props: TooltipProps) {
     />
   );
 }
+ControlledTooltip.displayName = 'ControlledTooltip';
 
 /** Portaled content lives in the story document's body, outside the canvas. */
 function bodyOf(canvasElement: HTMLElement) {
@@ -126,7 +128,7 @@ export const FocusOpens: Story = {
 
 export const ExternalAria: Story = {
   render: (args) => (
-    <div css={rowStyle}>
+    <div style={rowStyle}>
       <Tooltip {...args}>
         <Tooltip.Trigger aria-describedby="external-hint">{TRIGGER}</Tooltip.Trigger>
         <Tooltip.Content>{TIP}</Tooltip.Content>
