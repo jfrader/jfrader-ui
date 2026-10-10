@@ -129,8 +129,7 @@ export const dayStyle = css({
     textDecoration: 'line-through',
   },
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
+    ...focusRingOutset,
   },
   [FORCED_COLORS]: {
     '&[data-selected]': {

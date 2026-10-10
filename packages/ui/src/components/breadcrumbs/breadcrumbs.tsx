@@ -27,6 +27,7 @@ import {
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
+import { REDUCED_MOTION } from '../../styling/media';
 
 export interface BreadcrumbsProps extends HTMLAttributes<HTMLElement> {
   /** Accessible name of the navigation landmark. */
@@ -90,8 +91,6 @@ const itemStyle = css({
 const separatorStyle = css({
   display: 'inline-flex',
 });
-
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 const contentStyle = css({
   display: 'inline-flex',

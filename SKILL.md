@@ -127,7 +127,24 @@ src/components/<kebab-case>/
   index.ts                  # re-exports component + types
 src/utils/                  # shared non-styling helpers (renderable, use-controlled-state)
 src/overlay/                # internal modules (scroll lock, future focus/top-layer helpers) — not exported
+src/styling/                # internal styling modules — not exported (see list below)
 ```
+
+Shared styling modules in `src/styling/` (reuse before writing a local copy):
+
+- `css` — the styling seam (`css`, `keyframes`, types).
+- `media` — `REDUCED_MOTION` and `FORCED_COLORS` query keys; payloads stay component-local.
+- `focus-ring` — `focusRingOutset` / `focusRingInset` declarations; the selector stays local.
+- `visually-hidden` — screen-reader-only text.
+- `disclosure-caret` — inline-end caret for an `&::after`; rotation and reduced motion stay local.
+- `icon-wrapper` — sizes a decorative icon to the surrounding font size.
+- `loading-ring` — spinning ring and its reduced-motion pulse (Button, Spinner).
+- `surface` — `raisedSurface` panel and `modalShellReset` for native `<dialog>` shells.
+- `trigger-style` — overlay trigger button (Dialog, Popover, Menu).
+- `listbox-style` — popup surface, item and option fragments (Menu, Select, Combobox, CommandPalette).
+- `input-control` — text-input control skin (TextField, Textarea).
+- `choice-control` — root, row and hidden-input fragments (Checkbox, Switch, RadioGroup.Radio).
+- `layout-style` — `flexLayoutStyles` (Flex, Stack) and the layout space scale (Container).
 
 - PascalCase components, `<Name>Props` types, explicit public exports; helpers stay private.
 - `data-ui="<name>"` on every component root (and `data-ui="<name>-<part>"` on compound parts).
