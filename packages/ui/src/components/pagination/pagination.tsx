@@ -27,7 +27,12 @@ export interface PaginationProps extends Omit<HTMLAttributes<HTMLElement>, 'onCh
 
 type PageItem = number | 'start-ellipsis' | 'end-ellipsis';
 
-const range = (start: number, end: number) => Array.from({ length: end - start + 1 }, (_, index) => start + index);
+const MAX_SIBLING_COUNT = 50;
+const MAX_PAGE_ITEMS = MAX_SIBLING_COUNT * 2 + 5;
+const normalizeCount = (value: number) => Math.max(0, Math.floor(Number.isFinite(value) ? value : 0));
+
+const range = (start: number, end: number) =>
+  Array.from({ length: Math.min(MAX_PAGE_ITEMS, Math.max(0, end - start + 1)) }, (_, index) => start + index);
 
 function getPageItems(page: number, totalPages: number, siblingCount: number): PageItem[] {
   // first + last + current + two ellipses, plus siblings on both sides.
@@ -143,9 +148,9 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
   },
   ref,
 ) {
-  const lastPage = Math.max(Math.floor(totalPages), 0);
-  const current = Math.min(Math.max(Math.floor(page), 1), Math.max(lastPage, 1));
-  const items = getPageItems(current, lastPage, Math.max(Math.floor(siblingCount), 0));
+  const lastPage = normalizeCount(totalPages);
+  const current = Math.min(Math.max(normalizeCount(page), 1), Math.max(lastPage, 1));
+  const items = getPageItems(current, lastPage, Math.min(normalizeCount(siblingCount), MAX_SIBLING_COUNT));
   const numberFormat = useMemo(() => new Intl.NumberFormat(locale), [locale]);
 
   const navRef = useRef<HTMLElement>(null);

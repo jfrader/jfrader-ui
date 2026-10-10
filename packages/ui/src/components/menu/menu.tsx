@@ -182,7 +182,7 @@ function MenuRoot({
     placement,
     onOpenChange: (next, _event, reason) => {
       // Escape requests a close; focus is restored only once the close is actually applied.
-      if (!next && reason === 'escape-key') pendingFocusRestoreRef.current = true;
+      if (!next) pendingFocusRestoreRef.current = reason === 'escape-key';
       requestOpenChange(next);
     },
   });

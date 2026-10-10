@@ -573,6 +573,7 @@ const Content = forwardRef<HTMLDialogElement, CommandPaletteContentProps>(functi
   };
 
   const handleClose = (event: SyntheticEvent<HTMLDialogElement>) => {
+    wasOpenRef.current = false;
     onClose?.(event);
     setIsNativeOpen(false);
     // Native closure that bypassed our paths: <form method="dialog"> or a forwarded ref.

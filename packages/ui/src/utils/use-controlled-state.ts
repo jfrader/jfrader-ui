@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 /**
  * One state authority for controlled/uncontrolled components.
@@ -14,14 +14,16 @@ export function useControlledState<T>(
   const isControlled = value !== undefined;
   const [internal, setInternal] = useState<T | undefined>(defaultValue);
   const current = isControlled ? value : internal;
+  const currentRef = useRef(current);
+  currentRef.current = current;
 
   const requestChange = useCallback(
     (next: T) => {
-      if (next === current) return;
+      if (next === currentRef.current) return;
       if (!isControlled) setInternal(next);
       onChange?.(next);
     },
-    [current, isControlled, onChange],
+    [isControlled, onChange],
   );
 
   return [current, requestChange] as const;

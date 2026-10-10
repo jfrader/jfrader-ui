@@ -188,7 +188,8 @@ export const NativeClose: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Confirm' }));
     await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
     // Two legitimate requests: open(true) from the trigger, then false from the form close.
-    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    // The close-event reconciliation is a React state update — wait for it, not just the DOM.
+    await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledTimes(2));
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
   },
 };
@@ -205,7 +206,7 @@ export const ControlledRejectedNativeClose: Story = {
     await canvas.findByRole('dialog');
     await userEvent.click(canvas.getByRole('button', { name: 'Confirm' }));
     await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
-    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(documentElement.style.overflow).toBe(''));
 
     await userEvent.click(canvas.getByRole('button', { name: 'Open form' }));

@@ -205,7 +205,9 @@ const Root = forwardRef<HTMLDivElement, ToggleGroupProps>(function ToggleGroup(
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const items = Array.from(root.querySelectorAll<HTMLButtonElement>(ITEM_SELECTOR));
+    const items = Array.from(root.querySelectorAll<HTMLButtonElement>(ITEM_SELECTOR)).filter(
+      (item) => item.closest('[data-ui="toggle-group-root"]') === root,
+    );
     if (items.length === 0) return;
     if (items.some((item) => item.tabIndex === 0)) return;
     const firstPressed = items.find((item) => item.getAttribute('aria-pressed') === 'true');
@@ -222,7 +224,9 @@ const Root = forwardRef<HTMLDivElement, ToggleGroupProps>(function ToggleGroup(
     const move = KEY_MOVES[isRtl ? 'horizontalRtl' : orientation][event.key];
     if (!move) return;
 
-    const items = Array.from(root.querySelectorAll<HTMLButtonElement>(ITEM_SELECTOR));
+    const items = Array.from(root.querySelectorAll<HTMLButtonElement>(ITEM_SELECTOR)).filter(
+      (item) => item.closest('[data-ui="toggle-group-root"]') === root,
+    );
     const current = items.indexOf(event.target as HTMLButtonElement);
     if (current === -1) return;
 

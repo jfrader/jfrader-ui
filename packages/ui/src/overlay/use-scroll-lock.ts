@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 // Per-document lock accounting: concurrent documents (iframes in stories/tests) never
 // corrupt each other's snapshots. Nested locks restore only when the last one releases.
@@ -15,9 +15,12 @@ const locks = new Map<Document, LockEntry>();
  * Pass `getDocument` for overlays mounted in another document (iframes).
  */
 export function useScrollLock(active: boolean, getDocument?: () => Document | undefined): void {
+  const getDocumentRef = useRef(getDocument);
+  getDocumentRef.current = getDocument;
+
   useEffect(() => {
     if (!active) return;
-    const doc = getDocument?.() ?? (typeof document === 'undefined' ? undefined : document);
+    const doc = getDocumentRef.current?.() ?? (typeof document === 'undefined' ? undefined : document);
     if (!doc) return;
 
     const existing = locks.get(doc);
@@ -42,5 +45,5 @@ export function useScrollLock(active: boolean, getDocument?: () => Document | un
       doc.body.style.overflow = entry.bodyOverflow;
       locks.delete(doc);
     };
-  }, [active, getDocument]);
+  }, [active]);
 }

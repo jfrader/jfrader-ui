@@ -198,7 +198,9 @@ const List = forwardRef<HTMLDivElement, TabsListProps>(function TabsList({ onKey
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]:not([disabled])'));
+    const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]:not([disabled])')).filter(
+      (tab) => tab.closest('[role="tablist"]') === list,
+    );
     if (tabs.length === 0) return;
     if (tabs.some((tab) => tab.tabIndex === 0)) return;
     const prefer = (candidate: string | null | undefined) =>
@@ -215,7 +217,9 @@ const List = forwardRef<HTMLDivElement, TabsListProps>(function TabsList({ onKey
     const move = KEY_MOVES[isRtl ? 'horizontalRtl' : orientation][event.key];
     if (!move) return;
 
-    const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]:not([disabled])'));
+    const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]:not([disabled])')).filter(
+      (tab) => tab.closest('[role="tablist"]') === list,
+    );
     const current = tabs.indexOf(event.target as HTMLButtonElement);
     if (current === -1) return;
 

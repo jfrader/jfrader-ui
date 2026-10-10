@@ -33,7 +33,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 
 - Visual props are `variant`, `tone` and `size`.
 - Controlled state uses `value` / `defaultValue` / `onValueChange` and `open` / `defaultOpen` / `onOpenChange`. Support controlled and uncontrolled use.
-- Composite widgets are compound components (`Dialog.Root`, `Dialog.Trigger`, …).
+- Composite widgets are compound components whose roots are callable (`Dialog`, `Tabs`, `Select`, …) with the same part names (`Dialog.Trigger`, `Dialog.Content`, …).
 - Single widgets with internal parts expose `slotProps`.
 - Polymorphism comes later through a `render` prop. No `asChild`.
 - Use `forwardRef` everywhere (React peer range is `>=18.2`).
