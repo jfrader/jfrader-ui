@@ -3,18 +3,23 @@
 // error in order; the error region is an alert.
 // `autoResize` uses `field-sizing: content` (Baseline June 2026); engines without it ignore
 // the declaration and keep the fixed `rows` height.
-import { forwardRef, useId, type ChangeEvent, type ReactNode, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, type ChangeEvent, type ReactNode, type TextareaHTMLAttributes } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { isRenderable } from '../../utils/renderable';
+import { css, type SerializedStyles } from '../../styling/css';
+import {
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  FieldRoot,
+  useFieldAnatomy,
+  type FieldPartProps,
+  type FieldSlotProps,
+} from '../field/field-anatomy';
 
 export type TextareaSize = 'sm' | 'md' | 'lg';
 export type TextareaResize = 'none' | 'vertical';
 
-export interface TextareaPartProps {
-  className?: string;
-  css?: Interpolation<Theme>;
-}
+export interface TextareaPartProps extends FieldPartProps {}
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: ReactNode;
@@ -24,34 +29,10 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   resize?: TextareaResize;
   autoResize?: boolean;
   onValueChange?: (value: string) => void;
-  slotProps?: {
-    root?: TextareaPartProps;
-    label?: TextareaPartProps;
-    control?: TextareaPartProps;
-    description?: TextareaPartProps;
-    error?: TextareaPartProps;
-  };
+  slotProps?: FieldSlotProps<TextareaPartProps>;
 }
 
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-
-const rootStyle = css({
-  display: 'grid',
-  gap: vars.space[1],
-  inlineSize: '100%',
-});
-
-const labelStyle = css({
-  display: 'inline-flex',
-  gap: vars.space[1],
-  fontSize: vars.textSize.sm,
-  fontWeight: vars.fontWeight.medium,
-  color: vars.color.text,
-});
-
-const requiredMarkStyle = css({
-  color: vars.color.dangerText,
-});
 
 const controlStyle = css({
   display: 'block',
@@ -102,16 +83,6 @@ const resizeStyles: Record<TextareaResize, SerializedStyles> = {
 
 const autoResizeStyle = css({ fieldSizing: 'content' });
 
-const descriptionStyle = css({
-  fontSize: vars.textSize.sm,
-  color: vars.color.textMuted,
-});
-
-const errorStyle = css({
-  fontSize: vars.textSize.sm,
-  color: vars.color.dangerText,
-});
-
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
   {
     label,
@@ -133,16 +104,13 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   },
   ref,
 ) {
-  const generatedId = useId();
-  const id = idProp ?? generatedId;
-  const descriptionId = `${id}-description`;
-  const errorId = `${id}-error`;
-  const hasDescription = isRenderable(description);
-  const hasError = isRenderable(error);
-  const describedBy =
-    [ariaDescribedByProp, hasDescription && descriptionId, hasError && errorId].filter(Boolean).join(' ') || undefined;
-  const ariaInvalid = hasError ? true : ariaInvalidProp;
-  const rootClassName = [className, slotProps?.root?.className].filter(Boolean).join(' ') || undefined;
+  const field = useFieldAnatomy({
+    id: idProp,
+    description,
+    error,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-invalid': ariaInvalidProp,
+  });
 
   const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     onChange?.(event);
@@ -150,25 +118,18 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   };
 
   return (
-    <div data-ui="textarea" className={rootClassName} css={[rootStyle, slotProps?.root?.css]}>
-      {isRenderable(label) && (
-        <label htmlFor={id} className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.css]}>
-          {label}
-          {required && (
-            <span aria-hidden css={requiredMarkStyle}>
-              {' *'}
-            </span>
-          )}
-        </label>
-      )}
+    <FieldRoot data-ui="textarea" className={className} part={slotProps?.root}>
+      <FieldLabel htmlFor={field.id} required={required} part={slotProps?.label}>
+        {label}
+      </FieldLabel>
       <textarea
         {...rest}
         ref={ref}
-        id={id}
+        id={field.id}
         rows={rows}
         required={required}
-        aria-describedby={describedBy}
-        aria-invalid={ariaInvalid}
+        aria-describedby={field.describedBy}
+        aria-invalid={field.ariaInvalid}
         onChange={handleChange}
         className={slotProps?.control?.className}
         css={[
@@ -179,25 +140,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
           slotProps?.control?.css,
         ]}
       />
-      {hasDescription && (
-        <span
-          id={descriptionId}
-          className={slotProps?.description?.className}
-          css={[descriptionStyle, slotProps?.description?.css]}
-        >
-          {description}
-        </span>
-      )}
-      {hasError && (
-        <span
-          id={errorId}
-          role="alert"
-          className={slotProps?.error?.className}
-          css={[errorStyle, slotProps?.error?.css]}
-        >
-          {error}
-        </span>
-      )}
-    </div>
+      <FieldDescription id={field.descriptionId} part={slotProps?.description}>
+        {description}
+      </FieldDescription>
+      <FieldError id={field.errorId} part={slotProps?.error}>
+        {error}
+      </FieldError>
+    </FieldRoot>
   );
 });

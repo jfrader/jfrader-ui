@@ -1,17 +1,22 @@
 // APG pattern: native text input. The label, description and error text are wired with
 // explicit ids (`htmlFor`, `aria-describedby`) so assistive tech reads name, help and
 // error in order; the error region is an alert.
-import { forwardRef, useId, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { isRenderable } from '../../utils/renderable';
+import { css, type SerializedStyles } from '../../styling/css';
+import {
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  FieldRoot,
+  useFieldAnatomy,
+  type FieldPartProps,
+  type FieldSlotProps,
+} from '../field/field-anatomy';
 
 export type TextFieldSize = 'sm' | 'md' | 'lg';
 
-export interface TextFieldPartProps {
-  className?: string;
-  css?: Interpolation<Theme>;
-}
+export interface TextFieldPartProps extends FieldPartProps {}
 
 export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: ReactNode;
@@ -19,34 +24,10 @@ export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   error?: ReactNode;
   size?: TextFieldSize;
   onValueChange?: (value: string) => void;
-  slotProps?: {
-    root?: TextFieldPartProps;
-    label?: TextFieldPartProps;
-    control?: TextFieldPartProps;
-    description?: TextFieldPartProps;
-    error?: TextFieldPartProps;
-  };
+  slotProps?: FieldSlotProps<TextFieldPartProps>;
 }
 
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-
-const rootStyle = css({
-  display: 'grid',
-  gap: vars.space[1],
-  inlineSize: '100%',
-});
-
-const labelStyle = css({
-  display: 'inline-flex',
-  gap: vars.space[1],
-  fontSize: vars.textSize.sm,
-  fontWeight: vars.fontWeight.medium,
-  color: vars.color.text,
-});
-
-const requiredMarkStyle = css({
-  color: vars.color.dangerText,
-});
 
 const controlStyle = css({
   display: 'block',
@@ -86,16 +67,6 @@ const sizeStyles: Record<TextFieldSize, SerializedStyles> = {
   lg: css({ blockSize: '48px', paddingInline: vars.space[4], fontSize: vars.textSize.md }),
 };
 
-const descriptionStyle = css({
-  fontSize: vars.textSize.sm,
-  color: vars.color.textMuted,
-});
-
-const errorStyle = css({
-  fontSize: vars.textSize.sm,
-  color: vars.color.dangerText,
-});
-
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
   {
     label,
@@ -114,16 +85,13 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   },
   ref,
 ) {
-  const generatedId = useId();
-  const id = idProp ?? generatedId;
-  const descriptionId = `${id}-description`;
-  const errorId = `${id}-error`;
-  const hasDescription = isRenderable(description);
-  const hasError = isRenderable(error);
-  const describedBy =
-    [ariaDescribedByProp, hasDescription && descriptionId, hasError && errorId].filter(Boolean).join(' ') || undefined;
-  const ariaInvalid = hasError ? true : ariaInvalidProp;
-  const rootClassName = [className, slotProps?.root?.className].filter(Boolean).join(' ') || undefined;
+  const field = useFieldAnatomy({
+    id: idProp,
+    description,
+    error,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-invalid': ariaInvalidProp,
+  });
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChange?.(event);
@@ -131,47 +99,27 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   };
 
   return (
-    <div data-ui="text-field" className={rootClassName} css={[rootStyle, slotProps?.root?.css]}>
-      {isRenderable(label) && (
-        <label htmlFor={id} className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.css]}>
-          {label}
-          {required && (
-            <span aria-hidden css={requiredMarkStyle}>
-              {' *'}
-            </span>
-          )}
-        </label>
-      )}
+    <FieldRoot data-ui="text-field" className={className} part={slotProps?.root}>
+      <FieldLabel htmlFor={field.id} required={required} part={slotProps?.label}>
+        {label}
+      </FieldLabel>
       <input
         {...rest}
         ref={ref}
-        id={id}
+        id={field.id}
         required={required}
-        aria-describedby={describedBy}
-        aria-invalid={ariaInvalid}
+        aria-describedby={field.describedBy}
+        aria-invalid={field.ariaInvalid}
         onChange={handleChange}
         className={slotProps?.control?.className}
         css={[controlStyle, sizeStyles[size], slotProps?.control?.css]}
       />
-      {hasDescription && (
-        <span
-          id={descriptionId}
-          className={slotProps?.description?.className}
-          css={[descriptionStyle, slotProps?.description?.css]}
-        >
-          {description}
-        </span>
-      )}
-      {hasError && (
-        <span
-          id={errorId}
-          role="alert"
-          className={slotProps?.error?.className}
-          css={[errorStyle, slotProps?.error?.css]}
-        >
-          {error}
-        </span>
-      )}
-    </div>
+      <FieldDescription id={field.descriptionId} part={slotProps?.description}>
+        {description}
+      </FieldDescription>
+      <FieldError id={field.errorId} part={slotProps?.error}>
+        {error}
+      </FieldError>
+    </FieldRoot>
   );
 });
