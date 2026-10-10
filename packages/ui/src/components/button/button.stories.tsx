@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -8,6 +9,8 @@ const VARIANTS = ['solid', 'soft', 'outline', 'ghost'] as const satisfies readon
 const TONES = ['neutral', 'accent', 'danger'] as const satisfies readonly ButtonTone[];
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly ButtonSize[];
 const GRID_VARIANTS = ['solid', 'soft', 'outline'] as const satisfies readonly ButtonVariant[];
+const linkRef = fn<(element: HTMLButtonElement | null) => void>();
+const disabledLinkClick = fn();
 
 const gridStyle = css({
   display: 'grid',
@@ -55,7 +58,12 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  render: (args) => <Button {...args} data-ui="custom" />,
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('button')).toHaveAttribute('data-ui', 'button');
+  },
+};
 
 export const Variants: Story = {
   render: (args) => (
@@ -116,12 +124,81 @@ export const KeyboardActivation: Story = {
   args: { onClick: fn() },
   play: async ({ args, canvasElement }) => {
     const button = within(canvasElement).getByRole('button');
+    canvasElement.tabIndex = -1;
+    canvasElement.focus();
     await userEvent.tab();
+    canvasElement.removeAttribute('tabindex');
     await expect(button).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     await expect(args.onClick).toHaveBeenCalledTimes(1);
     await userEvent.keyboard('[Space]');
     await expect(args.onClick).toHaveBeenCalledTimes(2);
     await expect(getComputedStyle(button).outlineWidth).not.toBe('0px');
+  },
+};
+
+export const RenderAsLink: Story = {
+  // The handler cancels navigation so the play test stays on the story.
+  args: {
+    tone: 'accent',
+    children: 'Read the docs',
+    onClick: fn((event: MouseEvent<HTMLElement>) => event.preventDefault()),
+  },
+  render: (args) => (
+    <div css={rowStyle}>
+      <Button {...args} ref={linkRef} render={(props) => <a {...props} href="#docs" />} />
+      <Button
+        {...args}
+        disabled
+        onClick={disabledLinkClick}
+        render={(props) => <a {...props} href="#disabled-docs" />}
+      >
+        Disabled docs
+      </Button>
+    </div>
+  ),
+  play: async ({ args, canvasElement }) => {
+    const link = within(canvasElement).getByRole('link', { name: 'Read the docs' });
+    await expect(link).toHaveAttribute('href', '#docs');
+    await expect(link).toHaveAttribute('data-ui', 'button');
+    await expect(link).not.toHaveAttribute('type');
+    await expect(canvasElement.querySelector('button')).toBeNull();
+    await expect(linkRef).toHaveBeenLastCalledWith(link);
+    await expect(linkRef.mock.calls.at(-1)?.[0]).toBeInstanceOf(HTMLAnchorElement);
+    canvasElement.tabIndex = -1;
+    canvasElement.focus();
+    await userEvent.tab();
+    canvasElement.removeAttribute('tabindex');
+    await expect(link).toHaveFocus();
+    await expect(getComputedStyle(link).outlineWidth).not.toBe('0px');
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+
+    const disabledLink = within(canvasElement).getByRole('link', { name: 'Disabled docs' });
+    await expect(disabledLink).toHaveAttribute('aria-disabled', 'true');
+    disabledLinkClick.mockClear();
+    const document = canvasElement.ownerDocument;
+    const locationBefore = document.location.href;
+    const defaultClick = fn((event: Event) => event.defaultPrevented);
+    const observeClick = (event: Event) => {
+      if (event.target === disabledLink) defaultClick(event);
+    };
+    document.addEventListener('click', observeClick);
+    try {
+      link.focus();
+      await userEvent.tab();
+      await expect(disabledLink).toHaveFocus();
+      await userEvent.keyboard('{Enter}');
+      await expect(defaultClick).toHaveBeenCalledTimes(1);
+      await expect(defaultClick).toHaveLastReturnedWith(true);
+      await userEvent.click(disabledLink);
+      await expect(defaultClick).toHaveBeenCalledTimes(2);
+      await expect(defaultClick).toHaveLastReturnedWith(true);
+      await expect(disabledLinkClick).not.toHaveBeenCalled();
+      await expect(document.location.href).toBe(locationBefore);
+      await expect(args.onClick).toHaveBeenCalledTimes(1);
+    } finally {
+      document.removeEventListener('click', observeClick);
+    }
   },
 };

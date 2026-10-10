@@ -3,6 +3,7 @@ export type {
   DialogCloseProps,
   DialogContentProps,
   DialogDescriptionProps,
+  DialogPartRenderProps,
   DialogProps,
   DialogTitleProps,
   DialogTriggerProps,
