@@ -1,3 +1,6 @@
+// APG pattern: button. Enter and Space activate it once; disabled buttons drop out of the tab
+// order. Loading keeps focus via aria-disabled + aria-busy instead of the disabled attribute.
+// `type` defaults to "button" so buttons inside forms never submit accidentally.
 import { forwardRef, type ButtonHTMLAttributes, type MouseEvent, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';

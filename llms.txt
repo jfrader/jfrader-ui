@@ -18,6 +18,7 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - Components: packages/ui/src/components/<name>/
 - Storybook config: apps/storybook/.storybook/
 - Agent conventions: AGENTS.md
+- Component authoring + maintenance guide: SKILL.md
 
 ## Commands
 

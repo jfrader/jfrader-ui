@@ -1,6 +1,7 @@
 # AGENTS.md
 
-Conventions for agents working in this repo.
+Conventions for agents working in this repo. **For the full component authoring and maintenance
+guide (accessibility, performance, state ownership, review checklist), read `SKILL.md`.**
 
 ## Purpose & layout
 
@@ -37,7 +38,8 @@ Conventions for agents working in this repo.
 - Polymorphism comes later through a `render` prop. No `asChild`.
 - Use `forwardRef` everywhere (React peer range is `>=18.2`).
 - Put `data-ui="<name>"` on every component root.
-- Callbacks receive values, not events.
+- Callbacks receive values for state changes (`onValueChange`, `onCheckedChange`); native event
+  callbacks (`onChange`, `onClick`, `onCancel`) keep their native event signature.
 
 ## Dependency allowlist
 
