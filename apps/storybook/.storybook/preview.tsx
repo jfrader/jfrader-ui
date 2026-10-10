@@ -2,6 +2,7 @@ import type { Preview } from '@storybook/react-vite';
 import { withThemeByDataAttribute } from '@storybook/addon-themes';
 import '@jfrader/tokens/tokens.css';
 import './preview.css';
+import { theme } from './theme';
 
 const preview: Preview = {
   decorators: [
@@ -19,6 +20,10 @@ const preview: Preview = {
       },
     },
     a11y: { test: 'error' },
+    docs: { theme },
+    options: {
+      storySort: { order: ['Home', 'Showcase', 'Components'] },
+    },
   },
   tags: ['autodocs', 'test'],
 };
