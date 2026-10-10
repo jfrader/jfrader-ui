@@ -23,6 +23,7 @@ React components styled with Emotion and themed through the CSS custom propertie
 | `@jfrader/ui/kbd` | `Kbd` |
 | `@jfrader/ui/menu` | `Menu` |
 | `@jfrader/ui/pagination` | `Pagination` |
+| `@jfrader/ui/pill` | `Pill` |
 | `@jfrader/ui/popover` | `Popover` |
 | `@jfrader/ui/progress` | `Progress` |
 | `@jfrader/ui/radio-group` | `RadioGroup` |

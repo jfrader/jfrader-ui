@@ -16,6 +16,7 @@ export * from './components/kbd';
 export * from './components/menu';
 export * from './components/navigation';
 export * from './components/pagination';
+export * from './components/pill';
 export * from './components/popover';
 export * from './components/progress';
 export * from './components/radio-group';
