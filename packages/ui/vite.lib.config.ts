@@ -32,6 +32,8 @@ export default defineConfig({
       // Dependencies and peers (react, react-dom, @emotion/react, @floating-ui/react, @jfrader/tokens)
       // and their subpaths (react/jsx-runtime, @emotion/react/jsx-runtime, @jfrader/tokens/vars) stay external.
       external: (id) => externalPackages.some((name) => id === name || id.startsWith(`${name}/`)),
+      // Every chunk is a client module for React Server Components; postBanner lands after minification.
+      output: { postBanner: "'use client';" },
     },
   },
 });
