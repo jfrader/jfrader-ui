@@ -5,6 +5,7 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { WithSx, type SxProps } from '../../styling/sx';
 
 export type BadgeVariant = 'standard' | 'dot';
 export type BadgeTone = 'accent' | 'danger' | 'neutral';
@@ -16,7 +17,7 @@ export interface BadgePartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface BadgeProps extends ComponentPropsWithRef<'span'> {
+export interface BadgeProps extends ComponentPropsWithRef<'span'>, SxProps {
   children: ReactNode;
   badgeContent?: ReactNode;
   /** Numbers above `max` render as `max+`. */
@@ -147,6 +148,7 @@ export function Badge({
   overlap = 'rectangular',
   slotProps,
   className,
+  sx,
   ...rest
 }: BadgeProps) {
   const isDot = variant === 'dot';
@@ -161,34 +163,32 @@ export function Badge({
   const rootClassName = [className, slotProps?.root?.className].filter(Boolean).join(' ') || undefined;
 
   return (
-    <span
-      {...rest}
-      ref={ref}
-      data-ui="badge"
-      className={rootClassName}
-      css={[rootStyle, slotProps?.root?.css]}
-    >
-      {children}
-      {!hidden && (
-        <span
-          data-ui="badge-marker"
-          data-variant={variant}
-          data-tone={tone}
-          aria-hidden={isDot ? 'true' : undefined}
-          className={slotProps?.badge?.className}
-          css={[
-            markerStyle,
-            variantStyles[variant],
-            !isDot && overlapStyles[overlap],
-            anchorStyles[anchorKey],
-            toneStyles[tone],
-            slotProps?.badge?.css,
-          ]}
-        >
-          {isDot ? null : content}
+    <WithSx className={rootClassName} styles={[rootStyle, slotProps?.root?.css]} sx={sx}>
+      {(className) => (
+        <span {...rest} ref={ref} data-ui="badge" className={className}>
+          {children}
+          {!hidden && (
+            <span
+              data-ui="badge-marker"
+              data-variant={variant}
+              data-tone={tone}
+              aria-hidden={isDot ? 'true' : undefined}
+              className={slotProps?.badge?.className}
+              css={[
+                markerStyle,
+                variantStyles[variant],
+                !isDot && overlapStyles[overlap],
+                anchorStyles[anchorKey],
+                toneStyles[tone],
+                slotProps?.badge?.css,
+              ]}
+            >
+              {isDot ? null : content}
+            </span>
+          )}
         </span>
       )}
-    </span>
+    </WithSx>
   );
 }
 

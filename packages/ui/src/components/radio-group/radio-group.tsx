@@ -18,12 +18,13 @@ import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export type RadioGroupOrientation = 'vertical' | 'horizontal';
 
-export interface RadioGroupProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'> {
+export interface RadioGroupProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
@@ -38,7 +39,8 @@ export interface RadioGroupRadioPartProps {
 }
 
 export interface RadioGroupRadioProps
-  extends Omit<ComponentPropsWithRef<'input'>, 'type' | 'value' | 'name' | 'checked' | 'defaultChecked' | 'size'> {
+  extends Omit<ComponentPropsWithRef<'input'>, 'type' | 'value' | 'name' | 'checked' | 'defaultChecked' | 'size'>,
+    SxProps {
   value: string;
   label?: ReactNode;
   description?: ReactNode;
@@ -137,6 +139,8 @@ function RadioGroupRoot({
   name: nameProp,
   disabled = false,
   orientation = 'vertical',
+  className,
+  sx,
   ...rest
 }: RadioGroupProps) {
   const generatedName = useId();
@@ -147,15 +151,19 @@ function RadioGroupRoot({
 
   return (
     <RadioGroupContext.Provider value={context}>
-      <div
-        {...rest}
-        ref={ref}
-        role="radiogroup"
-        aria-orientation={orientation}
-        data-ui="radio-group-root"
-        data-orientation={orientation}
-        css={rootStyles[orientation]}
-      />
+      <WithSx className={className} styles={rootStyles[orientation]} sx={sx}>
+        {(className) => (
+          <div
+            {...rest}
+            ref={ref}
+            role="radiogroup"
+            aria-orientation={orientation}
+            data-ui="radio-group-root"
+            data-orientation={orientation}
+            className={className}
+          />
+        )}
+      </WithSx>
     </RadioGroupContext.Provider>
   );
 }
@@ -171,6 +179,7 @@ function RadioGroupRadio({
   onChange,
   slotProps,
   className,
+  sx,
   'aria-labelledby': ariaLabelledByProp,
   'aria-describedby': ariaDescribedByProp,
   ...rest
@@ -195,42 +204,50 @@ function RadioGroupRadio({
   };
 
   return (
-    <label
-      data-ui="radio-group-radio"
+    <WithSx
       className={rootClassName}
-      css={[choiceRootStyle, dotStateStyle, choiceRootStateStyle, slotProps?.root?.css]}
+      styles={[choiceRootStyle, dotStateStyle, choiceRootStateStyle, slotProps?.root?.css]}
+      sx={sx}
     >
-      <span css={[choiceRowStyle, rowFloorStyle]}>
-        <input
-          {...rest}
-          ref={ref}
-          type="radio"
-          name={name}
-          value={value}
-          checked={selectedValue === value}
-          disabled={disabled}
-          aria-labelledby={ariaLabelledBy}
-          aria-describedby={ariaDescribedBy}
-          onChange={handleChange}
-          css={choiceInputStyle}
-        />
-        <span aria-hidden="true" className={slotProps?.control?.className} css={[circleStyle, slotProps?.control?.css]} />
-        {hasLabel && (
-          <span id={labelId} className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.css]}>
-            {label}
+      {(className) => (
+        <label data-ui="radio-group-radio" className={className}>
+          <span css={[choiceRowStyle, rowFloorStyle]}>
+            <input
+              {...rest}
+              ref={ref}
+              type="radio"
+              name={name}
+              value={value}
+              checked={selectedValue === value}
+              disabled={disabled}
+              aria-labelledby={ariaLabelledBy}
+              aria-describedby={ariaDescribedBy}
+              onChange={handleChange}
+              css={choiceInputStyle}
+            />
+            <span
+              aria-hidden="true"
+              className={slotProps?.control?.className}
+              css={[circleStyle, slotProps?.control?.css]}
+            />
+            {hasLabel && (
+              <span id={labelId} className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.css]}>
+                {label}
+              </span>
+            )}
           </span>
-        )}
-      </span>
-      {hasDescription && (
-        <span
-          id={descriptionId}
-          className={slotProps?.description?.className}
-          css={[descriptionStyle, slotProps?.description?.css]}
-        >
-          {description}
-        </span>
+          {hasDescription && (
+            <span
+              id={descriptionId}
+              className={slotProps?.description?.className}
+              css={[descriptionStyle, slotProps?.description?.css]}
+            >
+              {description}
+            </span>
+          )}
+        </label>
       )}
-    </label>
+    </WithSx>
   );
 }
 

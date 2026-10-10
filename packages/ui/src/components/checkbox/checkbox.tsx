@@ -15,6 +15,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 
 export type CheckboxSize = 'sm' | 'md';
@@ -24,7 +25,7 @@ export interface CheckboxPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface CheckboxProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type'> {
+export interface CheckboxProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type'>, SxProps {
   label?: ReactNode;
   description?: ReactNode;
   indeterminate?: boolean;
@@ -107,6 +108,7 @@ export function Checkbox({
   onCheckedChange,
   slotProps,
   className,
+  sx,
   'aria-labelledby': ariaLabelledByProp,
   'aria-describedby': ariaDescribedByProp,
   ...rest
@@ -136,46 +138,53 @@ export function Checkbox({
   };
 
   return (
-    <label
-      data-ui="checkbox"
-      data-indeterminate={indeterminate || undefined}
+    <WithSx
       className={rootClassName}
-      css={[choiceRootStyle, glyphStateStyle, choiceRootStateStyle, slotProps?.root?.css]}
+      styles={[choiceRootStyle, glyphStateStyle, choiceRootStateStyle, slotProps?.root?.css]}
+      sx={sx}
     >
-      <span css={choiceRowStyle}>
-        <input
-          {...rest}
-          ref={inputRef}
-          type="checkbox"
-          aria-labelledby={ariaLabelledBy}
-          aria-describedby={ariaDescribedBy}
-          aria-checked={indeterminate ? 'mixed' : undefined}
-          onChange={handleChange}
-          css={choiceInputStyle}
-        />
-        <span
-          aria-hidden="true"
-          className={slotProps?.control?.className}
-          css={[boxStyle, boxSizeStyles[size], slotProps?.control?.css]}
-        >
-          <CheckGlyph indeterminate={indeterminate} />
-        </span>
-        {hasLabel && (
-          <span id={labelId} className={slotProps?.label?.className} css={[labelSizeStyles[size], slotProps?.label?.css]}>
-            {label}
+      {(className) => (
+        <label data-ui="checkbox" data-indeterminate={indeterminate || undefined} className={className}>
+          <span css={choiceRowStyle}>
+            <input
+              {...rest}
+              ref={inputRef}
+              type="checkbox"
+              aria-labelledby={ariaLabelledBy}
+              aria-describedby={ariaDescribedBy}
+              aria-checked={indeterminate ? 'mixed' : undefined}
+              onChange={handleChange}
+              css={choiceInputStyle}
+            />
+            <span
+              aria-hidden="true"
+              className={slotProps?.control?.className}
+              css={[boxStyle, boxSizeStyles[size], slotProps?.control?.css]}
+            >
+              <CheckGlyph indeterminate={indeterminate} />
+            </span>
+            {hasLabel && (
+              <span
+                id={labelId}
+                className={slotProps?.label?.className}
+                css={[labelSizeStyles[size], slotProps?.label?.css]}
+              >
+                {label}
+              </span>
+            )}
           </span>
-        )}
-      </span>
-      {hasDescription && (
-        <span
-          id={descriptionId}
-          className={slotProps?.description?.className}
-          css={[descriptionStyle, descriptionSizeStyles[size], slotProps?.description?.css]}
-        >
-          {description}
-        </span>
+          {hasDescription && (
+            <span
+              id={descriptionId}
+              className={slotProps?.description?.className}
+              css={[descriptionStyle, descriptionSizeStyles[size], slotProps?.description?.css]}
+            >
+              {description}
+            </span>
+          )}
+        </label>
       )}
-    </label>
+    </WithSx>
   );
 }
 

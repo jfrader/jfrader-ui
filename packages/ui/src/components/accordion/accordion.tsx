@@ -25,13 +25,14 @@ import { css } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export type AccordionType = 'single' | 'multiple';
 export type AccordionValue = string | string[];
 
-interface AccordionBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'> {
+interface AccordionBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
   /** Allow closing the last open panel. */
   collapsible?: boolean;
 }
@@ -53,14 +54,14 @@ export interface AccordionMultipleProps extends AccordionBaseProps {
 
 export type AccordionProps = AccordionSingleProps | AccordionMultipleProps;
 
-export interface AccordionItemProps extends ComponentPropsWithRef<'div'> {
+export interface AccordionItemProps extends ComponentPropsWithRef<'div'>, SxProps {
   value: string;
   disabled?: boolean;
 }
 
-export type AccordionTriggerProps = ComponentPropsWithRef<'button'>;
+export type AccordionTriggerProps = ComponentPropsWithRef<'button'> & SxProps;
 
-export type AccordionPanelProps = ComponentPropsWithRef<'div'>;
+export type AccordionPanelProps = ComponentPropsWithRef<'div'> & SxProps;
 
 interface AccordionContextValue {
   openValues: readonly string[];
@@ -186,6 +187,8 @@ function AccordionRoot({
   type = 'single',
   collapsible = true,
   onKeyDown,
+  className,
+  sx,
   ...rest
 }: AccordionProps) {
   // `toggle` only emits the shape that matches `type`, so either callback accepts it.
@@ -219,14 +222,18 @@ function AccordionRoot({
 
   return (
     <AccordionContext.Provider value={context}>
-      <div {...rest} ref={ref} data-ui="accordion" onKeyDown={handleKeyDown} />
+      <WithSx className={className} sx={sx}>
+        {(className) => (
+          <div {...rest} ref={ref} data-ui="accordion" onKeyDown={handleKeyDown} className={className} />
+        )}
+      </WithSx>
     </AccordionContext.Provider>
   );
 }
 
 AccordionRoot.displayName = 'Accordion';
 
-function AccordionItem({ ref, value, disabled = false, ...rest }: AccordionItemProps) {
+function AccordionItem({ ref, value, disabled = false, className, sx, ...rest }: AccordionItemProps) {
   const { openValues } = useAccordionContext('Item');
   const id = useId();
   const expanded = openValues.includes(value);
@@ -238,21 +245,25 @@ function AccordionItem({ ref, value, disabled = false, ...rest }: AccordionItemP
 
   return (
     <AccordionItemContext.Provider value={context}>
-      <div
-        {...rest}
-        ref={ref}
-        data-ui="accordion-item"
-        data-state={expanded ? 'open' : 'closed'}
-        data-disabled={disabled ? '' : undefined}
-        css={itemStyle}
-      />
+      <WithSx className={className} styles={itemStyle} sx={sx}>
+        {(className) => (
+          <div
+            {...rest}
+            ref={ref}
+            data-ui="accordion-item"
+            data-state={expanded ? 'open' : 'closed'}
+            data-disabled={disabled ? '' : undefined}
+            className={className}
+          />
+        )}
+      </WithSx>
     </AccordionItemContext.Provider>
   );
 }
 
 AccordionItem.displayName = 'Accordion.Item';
 
-function AccordionTrigger({ ref, onClick, disabled: disabledProp, ...rest }: AccordionTriggerProps) {
+function AccordionTrigger({ ref, onClick, disabled: disabledProp, className, sx, ...rest }: AccordionTriggerProps) {
   const { toggle, canCollapse } = useAccordionContext('Trigger');
   const { value, disabled: itemDisabled, expanded, triggerId, panelId } = useAccordionItemContext('Trigger');
   const locked = expanded && !canCollapse;
@@ -265,42 +276,50 @@ function AccordionTrigger({ ref, onClick, disabled: disabledProp, ...rest }: Acc
 
   return (
     <h3 data-ui="accordion-heading" css={headingStyle}>
-      <button
-        {...rest}
-        ref={ref}
-        type="button"
-        id={triggerId}
-        data-ui="accordion-trigger"
-        data-state={expanded ? 'open' : 'closed'}
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        aria-disabled={locked || undefined}
-        disabled={itemDisabled || disabledProp}
-        onClick={handleClick}
-        css={triggerStyle}
-      />
+      <WithSx className={className} styles={triggerStyle} sx={sx}>
+        {(className) => (
+          <button
+            {...rest}
+            ref={ref}
+            type="button"
+            id={triggerId}
+            data-ui="accordion-trigger"
+            data-state={expanded ? 'open' : 'closed'}
+            aria-expanded={expanded}
+            aria-controls={panelId}
+            aria-disabled={locked || undefined}
+            disabled={itemDisabled || disabledProp}
+            onClick={handleClick}
+            className={className}
+          />
+        )}
+      </WithSx>
     </h3>
   );
 }
 
 AccordionTrigger.displayName = 'Accordion.Trigger';
 
-function AccordionPanel({ ref, 'aria-labelledby': ariaLabelledByProp, ...rest }: AccordionPanelProps) {
+function AccordionPanel({ ref, 'aria-labelledby': ariaLabelledByProp, className, sx, ...rest }: AccordionPanelProps) {
   const { expanded, triggerId, panelId } = useAccordionItemContext('Panel');
   const ariaLabelledBy = [ariaLabelledByProp, triggerId].filter(Boolean).join(' ');
 
   return (
-    <div
-      {...rest}
-      ref={ref}
-      role="region"
-      id={panelId}
-      aria-labelledby={ariaLabelledBy}
-      hidden={!expanded}
-      data-ui="accordion-panel"
-      data-state={expanded ? 'open' : 'closed'}
-      css={panelStyle}
-    />
+    <WithSx className={className} styles={panelStyle} sx={sx}>
+      {(className) => (
+        <div
+          {...rest}
+          ref={ref}
+          role="region"
+          id={panelId}
+          aria-labelledby={ariaLabelledBy}
+          hidden={!expanded}
+          data-ui="accordion-panel"
+          data-state={expanded ? 'open' : 'closed'}
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 

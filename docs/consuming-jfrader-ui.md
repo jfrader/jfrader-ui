@@ -119,6 +119,84 @@ html[data-theme='light'] {
 
 To switch at runtime, set `document.documentElement.dataset.theme` and store the value under the same `localStorage` key.
 
+## Styling your app
+
+Style app code with `styled`, `sx` and the `css` prop. Their values come from the token `theme`, so they follow `data-theme` and `ThemeRoot` without re-rendering.
+
+### `styled` and the theme
+
+```tsx
+import { Card, styled } from '@jfrader/ui';
+
+const FeaturedCard = styled(Card)(({ theme }) => ({
+  borderColor: theme.color.accentBorder,
+  boxShadow: theme.shadow.overlay,
+}));
+
+const Toolbar = styled.div(({ theme }) => ({
+  display: 'flex',
+  gap: theme.space[2],
+}));
+```
+
+`({ theme })` needs a `ThemeProvider` above the component. `ThemeRoot` mounts one. Without `ThemeRoot`, wrap the app:
+
+```tsx
+import { ThemeProvider } from '@jfrader/ui';
+
+<ThemeProvider>{children}</ThemeProvider>;
+```
+
+A custom `ThemeProvider` must go inside `ThemeRoot` (or replace it): `ThemeRoot` mounts the default provider, overriding an outer custom one.
+
+`useTheme()` returns the same object inside components:
+
+```tsx
+import { useTheme } from '@jfrader/ui';
+
+function Sparkline({ points }: { points: string }) {
+  const theme = useTheme();
+  return (
+    <svg viewBox="0 0 100 20" aria-hidden="true">
+      <polyline points={points} fill="none" style={{ stroke: theme.color.accent }} />
+    </svg>
+  );
+}
+```
+
+### `sx`
+
+Every public visual part root takes `sx` for one-off overrides. Context/provider components render no DOM and take no `sx`. It accepts the same values as `css`, including theme callbacks, and needs no JSX configuration:
+
+```tsx
+<Button sx={{ inlineSize: '100%' }}>Create project</Button>
+<Card.Title sx={(theme) => ({ color: theme.color.accentText })}>Team plan</Card.Title>
+```
+
+Precedence, last wins: component styles → `slotProps` → `css` → `sx`.
+
+### `css` prop
+
+The `css` prop needs Emotion's `jsxImportSource` (see [Vite](#vite) and [tsconfig](#tsconfig)). Compose module-level styles in arrays:
+
+```tsx
+import { css } from '@emotion/react';
+import { Card, theme } from '@jfrader/ui';
+
+const highlight = css({ borderColor: theme.color.accentBorder });
+const roomy = css({ paddingBlock: theme.space[6] });
+
+<Card css={[highlight, roomy]} />;
+```
+
+### Tokens
+
+Take every value from `theme` (the same object as `vars` from `@jfrader/tokens/vars`). Each value is a `var(--ui-*)` reference. Never write raw hex or rgb values.
+
+### Next.js
+
+`styled`, the `css` prop, `useTheme` and `ThemeProvider` run Emotion where they are used, so use them in Client Components (`'use client'`) under the [Emotion registry](#emotion-registry). Server Components can pass a plain-object `sx`; theme callbacks are functions and only work from Client Components.
+
 ## Icons
 
 Use [Lucide](https://lucide.dev) for shared control glyphs, with named imports:

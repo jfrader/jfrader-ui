@@ -75,10 +75,19 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 
 - **Tokens only.** Import typed references from `@jfrader/tokens/vars`. No raw colors, no magic pixel
   values where a token exists.
-- **Module-level `css()` constants.** Never build style objects per render. Compose as
-  `css={[base, variants[variant], slotProps?.x?.css, consumerCss]}` — consumer styles last.
+- **Module-level `css()` constants.** Never build style objects per render. Compose a public part's
+  root through `WithSx` (`src/styling/sx.tsx`):
+  `<WithSx className={className} styles={[base, variants[variant], slotProps?.x?.css]} sx={sx}>` and
+  put the `className` it hands back on the element. Order: own styles → `slotProps` → consumer `css`
+  (Emotion passes it in as a `className` class) → consumer `sx`. Internal elements keep a plain
+  `css={...}`.
+- **`sx` on every public visual part root** (`SxProps`), threaded through `WithSx`. Context/provider
+  components render no DOM and take no `sx`. Never add `sx` to its `css` array: there it would lose
+  to the consumer's `css`. Parts styled only
+  through `slotProps` do not get `sx`.
 - **The styling seam**: import `css`/`keyframes`/types only from `src/styling/css.ts`. Never from
-  `@emotion/react` directly, never `styled()`.
+  `@emotion/react` directly, never `styled()` inside the library. `styled`, `ThemeProvider`,
+  `useTheme` and `theme` are the app-facing styling API; library internals stay on `css()` constants.
 - **State through attributes**: `:hover`, `[aria-disabled="true"]`, `[aria-invalid="true"]`,
   `[data-state]`, `:checked`, `:focus-visible` — not class soup.
 - **Transitions list properties explicitly** (`background-color, border-color`), never `transition: all`.
@@ -86,8 +95,9 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - **Dynamic values** (progress, coordinates) go through inline CSS custom properties or `style`
   attributes, never through generated per-value classes.
 - **Theming has two paths.** Apps set `data-theme` on `<html>`; `ThemeRoot` themes a scoped subtree
-  (embedded widgets). Components read tokens only and never pick a theme themselves. Consumer setup
-  lives in `docs/consuming-jfrader-ui.md`.
+  (embedded widgets). Components read tokens only and never pick a theme themselves. The Emotion
+  theme (`theme`, mounted by `ThemeProvider` and by `ThemeRoot`) is the token object itself, so it
+  never changes between dark and light. Consumer setup lives in `docs/consuming-jfrader-ui.md`.
 - **No deep descendant-chain styling.** Direct relations from the component's own DOM are fine
   (`input:checked + span`, `&[data-indeterminate] input + span svg`); avoid unrelated descendant
   selectors and tag-only chains beyond one level.
@@ -113,8 +123,9 @@ Fill this in the spec/PR before coding (it prevents 80% of review findings):
 4. **Events** — state callbacks receive values (`onValueChange`, `onCheckedChange`, `onOpenChange`);
    native event callbacks (`onChange`, `onClick`, `onCancel`) keep their native event signature.
 5. **Ref target** — which DOM element the `ref` prop reaches.
-6. **Customization surface** — `className` (root), `slotProps` for single widgets with internal
-   parts, `render` for polymorphism (planned; do not add `asChild`).
+6. **Customization surface** — `className`, `css` and `sx` on every public visual part root,
+   `slotProps` for single widgets with internal parts, `render` for polymorphism (planned; do not
+   add `asChild`).
 7. **Environments** — RTL, reduced motion, forced colors, SSR/hydration notes.
 8. **Lifecycle status** — new / stable / deprecated (with replacement).
 
@@ -127,12 +138,15 @@ src/components/<kebab-case>/
   index.ts                  # re-exports component + types
 src/utils/                  # shared non-styling helpers (renderable, use-controlled-state)
 src/overlay/                # internal modules (scroll lock, future focus/top-layer helpers) — not exported
-src/styling/                # internal styling modules — not exported (see list below)
+src/styling/                # styling modules (see list below); only styled, theme and SxProps are exported
 ```
 
 Shared styling modules in `src/styling/` (reuse before writing a local copy):
 
-- `css` — the styling seam (`css`, `keyframes`, types).
+- `css` — the styling seam (`css`, `keyframes`, types, Emotion's theme provider/hook).
+- `sx` — `SxProps` and `WithSx`, which merges own styles, consumer `css` and `sx` for a part root.
+- `theme` — the token `theme` and the Emotion `Theme` augmentation (public).
+- `styled` — re-export of `@emotion/styled` for apps (public; never used by components).
 - `media` — `REDUCED_MOTION` and `FORCED_COLORS` query keys; payloads stay component-local.
 - `focus-ring` — `focusRingOutset` / `focusRingInset` declarations; the selector stays local.
 - `visually-hidden` — screen-reader-only text.
@@ -152,7 +166,9 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
   dotted `displayName` (`Dialog.Trigger`) so DevTools and Storybook code panels show the public name.
 - `data-ui="<name>"` on every component root (and `data-ui="<name>-<part>"` on compound parts).
 - One folder per component; a shared hook only when a second consumer exists.
-- The package index re-exports components + types with `export *`.
+- The package index re-exports components + types with `export *`, plus the styling API (`styled`,
+  `theme`, `ThemeProvider`, `useTheme`, `SxProps`). `theme-provider/` has no `index.ts`, so it gets
+  no subpath export.
 
 ## 5. State ownership recipe
 
@@ -281,8 +297,9 @@ Manual gates before calling a component 1.0 (record what was and wasn't tested):
 - **API changes**: additive = minor, fix = patch, breaking = deprecate first (`@deprecated` JSDoc with
   the replacement, example, and removal plan). Consumers wrap components to customize; we do not add
   style-override registries.
-- **Dependencies**: the allowlist is `@emotion/react`, `@floating-ui/react`, `motion` (only when a
-  component needs them). Update `AGENTS.md` before adding anything else.
+- **Dependencies**: the allowlist is `@emotion/react`, `@emotion/styled` (the app-facing `styled`),
+  `@floating-ui/react`, `motion` (only when a component needs them). Update `AGENTS.md` before adding
+  anything else.
 - **Compound part naming stays consistent** across components: callable roots (`Tabs`, `Dialog`) with
   the same part names — `Trigger`, `Content`, `Title`, `Description`, `Close`, `List`, `Tab`, `Panel`.
 - Keep `SKILL.md`, `AGENTS.md`, `PLAN.md` and `README.md` status in sync in the same change that

@@ -28,14 +28,15 @@ import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 
-export interface NavigationProps extends ComponentPropsWithRef<'nav'> {
+export interface NavigationProps extends ComponentPropsWithRef<'nav'>, SxProps {
   /** Accessible name of the navigation landmark. */
   label?: string;
 }
 
-export interface NavigationGroupProps extends ComponentPropsWithRef<'section'> {
+export interface NavigationGroupProps extends ComponentPropsWithRef<'section'>, SxProps {
   label?: ReactNode;
   /** Render as a native <details> disclosure; the label becomes its <summary>. */
   collapsible?: boolean;
@@ -44,7 +45,7 @@ export interface NavigationGroupProps extends ComponentPropsWithRef<'section'> {
 }
 
 // Renders an <a> or a <span>, so the ref is typed as the common HTMLElement.
-export interface NavigationItemProps extends AnchorHTMLAttributes<HTMLElement>, RefAttributes<HTMLElement> {
+export interface NavigationItemProps extends AnchorHTMLAttributes<HTMLElement>, RefAttributes<HTMLElement>, SxProps {
   href?: string;
   /** Marks the current page (aria-current="page"). */
   active?: boolean;
@@ -171,13 +172,26 @@ const itemStyle = css({
   },
 });
 
-function NavigationRoot({ ref, label = 'Main', ...rest }: NavigationProps) {
-  return <nav {...rest} ref={ref} aria-label={label} data-ui="navigation" css={rootStyle} />;
+function NavigationRoot({ ref, label = 'Main', className, sx, ...rest }: NavigationProps) {
+  return (
+    <WithSx className={className} styles={rootStyle} sx={sx}>
+      {(className) => <nav {...rest} ref={ref} aria-label={label} data-ui="navigation" className={className} />}
+    </WithSx>
+  );
 }
 
 NavigationRoot.displayName = 'Navigation';
 
-function NavigationGroup({ ref, label, collapsible = false, defaultOpen, children, ...rest }: NavigationGroupProps) {
+function NavigationGroup({
+  ref,
+  label,
+  collapsible = false,
+  defaultOpen,
+  children,
+  className,
+  sx,
+  ...rest
+}: NavigationGroupProps) {
   const labelId = useId();
   const hasLabel = isRenderable(label);
   if (collapsible && !hasLabel) {
@@ -189,38 +203,50 @@ function NavigationGroup({ ref, label, collapsible = false, defaultOpen, childre
     </ul>
   );
 
-  if (collapsible) {
-    return (
-      <details
-        {...rest}
-        ref={ref as Ref<HTMLDetailsElement>}
-        open={defaultOpen}
-        data-ui="navigation-group"
-        css={groupStyle}
-      >
-        <summary id={labelId} data-ui="navigation-group-summary" css={[labelStyle, summaryStyle]}>
-          {label}
-        </summary>
-        {list}
-      </details>
-    );
-  }
-
   return (
-    <section {...rest} ref={ref} data-ui="navigation-group" css={groupStyle}>
-      {hasLabel && (
-        <h2 id={labelId} data-ui="navigation-group-label" css={labelStyle}>
-          {label}
-        </h2>
-      )}
-      {list}
-    </section>
+    <WithSx className={className} styles={groupStyle} sx={sx}>
+      {(className) =>
+        collapsible ? (
+          <details
+            {...rest}
+            ref={ref as Ref<HTMLDetailsElement>}
+            open={defaultOpen}
+            data-ui="navigation-group"
+            className={className}
+          >
+            <summary id={labelId} data-ui="navigation-group-summary" css={[labelStyle, summaryStyle]}>
+              {label}
+            </summary>
+            {list}
+          </details>
+        ) : (
+          <section {...rest} ref={ref} data-ui="navigation-group" className={className}>
+            {hasLabel && (
+              <h2 id={labelId} data-ui="navigation-group-label" css={labelStyle}>
+                {label}
+              </h2>
+            )}
+            {list}
+          </section>
+        )
+      }
+    </WithSx>
   );
 }
 
 NavigationGroup.displayName = 'Navigation.Group';
 
-function NavigationItem({ ref, href, active = false, disabled = false, icon, children, ...rest }: NavigationItemProps) {
+function NavigationItem({
+  ref,
+  href,
+  active = false,
+  disabled = false,
+  icon,
+  children,
+  className,
+  sx,
+  ...rest
+}: NavigationItemProps) {
   const content = (
     <>
       {isRenderable(icon) && (
@@ -244,23 +270,33 @@ function NavigationItem({ ref, href, active = false, disabled = false, icon, chi
 
   return (
     <li data-ui="navigation-list-item">
-      {href !== undefined ? (
-        <a
-          {...rest}
-          {...state}
-          ref={ref as Ref<HTMLAnchorElement>}
-          href={disabled ? undefined : href}
-          role={disabled ? 'link' : undefined}
-          data-ui="navigation-item"
-          css={itemStyle}
-        >
-          {content}
-        </a>
-      ) : (
-        <span {...rest} {...state} ref={ref as Ref<HTMLSpanElement>} data-ui="navigation-item" css={itemStyle}>
-          {content}
-        </span>
-      )}
+      <WithSx className={className} styles={itemStyle} sx={sx}>
+        {(className) =>
+          href !== undefined ? (
+            <a
+              {...rest}
+              {...state}
+              ref={ref as Ref<HTMLAnchorElement>}
+              href={disabled ? undefined : href}
+              role={disabled ? 'link' : undefined}
+              data-ui="navigation-item"
+              className={className}
+            >
+              {content}
+            </a>
+          ) : (
+            <span
+              {...rest}
+              {...state}
+              ref={ref as Ref<HTMLSpanElement>}
+              data-ui="navigation-item"
+              className={className}
+            >
+              {content}
+            </span>
+          )
+        }
+      </WithSx>
     </li>
   );
 }

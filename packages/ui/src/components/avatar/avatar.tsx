@@ -5,6 +5,7 @@
 import { useState, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { WithSx, type SxProps } from '../../styling/sx';
 
 export type AvatarSize = 'sm' | 'md' | 'lg';
 export type AvatarStatus = 'online' | 'away' | 'busy' | 'offline';
@@ -14,7 +15,9 @@ export interface AvatarPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface AvatarProps extends Omit<ComponentPropsWithRef<'span'>, 'children' | 'role' | 'aria-label'> {
+export interface AvatarProps
+  extends Omit<ComponentPropsWithRef<'span'>, 'children' | 'role' | 'aria-label'>,
+    SxProps {
   /** Used for the accessible name and the initials fallback. */
   name: string;
   src?: string;
@@ -124,7 +127,18 @@ const statusToneStyles: Record<AvatarStatus, SerializedStyles> = {
   }),
 };
 
-export function Avatar({ ref, name, src, size = 'md', status, statusLabel, slotProps, ...rest }: AvatarProps) {
+export function Avatar({
+  ref,
+  name,
+  src,
+  size = 'md',
+  status,
+  statusLabel,
+  slotProps,
+  className,
+  sx,
+  ...rest
+}: AvatarProps) {
   // Keyed by URL so a new `src` gets a fresh attempt without an effect.
   // A failed URL stays suppressed when revisited after success → failure → same-URL cycles.
   const [failedSrc, setFailedSrc] = useState<string>();
@@ -132,36 +146,33 @@ export function Avatar({ ref, name, src, size = 'md', status, statusLabel, slotP
   const label = status === undefined ? name : `${name}, ${statusLabel ?? status}`;
 
   return (
-    <span
-      {...rest}
-      ref={ref}
-      data-ui="avatar"
-      role="img"
-      aria-label={label}
-      css={[rootStyle, sizeStyles[size]]}
-    >
-      {showImage ? (
-        <img
-          src={src}
-          alt=""
-          onError={() => setFailedSrc(src)}
-          className={slotProps?.image?.className}
-          css={[imageStyle, slotProps?.image?.css]}
-        />
-      ) : (
-        <span aria-hidden="true" className={slotProps?.fallback?.className} css={slotProps?.fallback?.css}>
-          {getInitials(name)}
+    <WithSx className={className} styles={[rootStyle, sizeStyles[size]]} sx={sx}>
+      {(className) => (
+        <span {...rest} ref={ref} data-ui="avatar" role="img" aria-label={label} className={className}>
+          {showImage ? (
+            <img
+              src={src}
+              alt=""
+              onError={() => setFailedSrc(src)}
+              className={slotProps?.image?.className}
+              css={[imageStyle, slotProps?.image?.css]}
+            />
+          ) : (
+            <span aria-hidden="true" className={slotProps?.fallback?.className} css={slotProps?.fallback?.css}>
+              {getInitials(name)}
+            </span>
+          )}
+          {status !== undefined && (
+            <span
+              aria-hidden="true"
+              data-status={status}
+              className={slotProps?.status?.className}
+              css={[statusStyle, statusToneStyles[status], slotProps?.status?.css]}
+            />
+          )}
         </span>
       )}
-      {status !== undefined && (
-        <span
-          aria-hidden="true"
-          data-status={status}
-          className={slotProps?.status?.className}
-          css={[statusStyle, statusToneStyles[status], slotProps?.status?.css]}
-        />
-      )}
-    </span>
+    </WithSx>
   );
 }
 

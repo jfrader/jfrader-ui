@@ -34,6 +34,7 @@ import { createPortal } from 'react-dom';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { Button } from '../button';
 
@@ -64,7 +65,7 @@ export interface ToastProviderProps {
   dismissLabel?: string;
 }
 
-export interface ToastViewportProps extends ComponentPropsWithRef<'div'> {}
+export interface ToastViewportProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
 export interface ToastApi {
   toast: (options: ToastOptions) => string;
@@ -301,7 +302,7 @@ function ToastProvider({
 
 ToastProvider.displayName = 'Toast.Provider';
 
-function ToastViewport({ ref, ...props }: ToastViewportProps) {
+function ToastViewport({ ref, className, sx, ...props }: ToastViewportProps) {
   const { toasts } = useToastQueueContext('Viewport');
   // The local anchor selects the host document (including iframe/other-document mounts),
   // not the global realm's document. It also renders on the server; the portal waits for mount.
@@ -317,11 +318,15 @@ function ToastViewport({ ref, ...props }: ToastViewportProps) {
       <span hidden ref={anchorRef} />
       {portalRoot &&
         createPortal(
-          <div {...props} ref={ref} data-ui="toast-viewport" css={viewportStyle}>
-            {toasts.map((record) => (
-              <ToastItem key={record.id} record={record} />
-            ))}
-          </div>,
+          <WithSx className={className} styles={viewportStyle} sx={sx}>
+            {(className) => (
+              <div {...props} ref={ref} data-ui="toast-viewport" className={className}>
+                {toasts.map((record) => (
+                  <ToastItem key={record.id} record={record} />
+                ))}
+              </div>
+            )}
+          </WithSx>,
           portalRoot,
         )}
     </>

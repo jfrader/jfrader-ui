@@ -33,6 +33,7 @@ import {
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { raisedSurface } from '../../styling/surface';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -45,8 +46,8 @@ export interface PopoverProps {
   children?: ReactNode;
 }
 
-export interface PopoverTriggerProps extends ComponentPropsWithRef<'button'> {}
-export interface PopoverContentProps extends ComponentPropsWithRef<'div'> {}
+export interface PopoverTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
+export interface PopoverContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -120,24 +121,28 @@ function PopoverRoot({
 
 PopoverRoot.displayName = 'Popover';
 
-function PopoverTrigger({ ref, ...props }: PopoverTriggerProps) {
+function PopoverTrigger({ ref, className, sx, ...props }: PopoverTriggerProps) {
   const { refs, getReferenceProps } = usePopoverContext('Trigger');
   const mergedRef = useMergeRefs([refs.setReference, ref]);
 
   return (
-    <button
-      type="button"
-      {...getReferenceProps(props)}
-      ref={mergedRef}
-      data-ui="popover-trigger"
-      css={triggerStyle}
-    />
+    <WithSx className={className} styles={triggerStyle} sx={sx}>
+      {(className) => (
+        <button
+          type="button"
+          {...getReferenceProps(props)}
+          ref={mergedRef}
+          data-ui="popover-trigger"
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 
 PopoverTrigger.displayName = 'Popover.Trigger';
 
-function PopoverContent({ ref, style, ...rest }: PopoverContentProps) {
+function PopoverContent({ ref, style, className, sx, ...rest }: PopoverContentProps) {
   const { open, refs, floatingContext, floatingStyles, getFloatingProps } = usePopoverContext('Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
 
@@ -154,13 +159,17 @@ function PopoverContent({ ref, style, ...rest }: PopoverContentProps) {
         returnFocus={false}
         closeOnFocusOut={false}
       >
-        <div
-          {...getFloatingProps(rest)}
-          ref={mergedRef}
-          data-ui="popover"
-          style={{ ...style, ...floatingStyles }}
-          css={contentStyle}
-        />
+        <WithSx className={className} styles={contentStyle} sx={sx}>
+          {(className) => (
+            <div
+              {...getFloatingProps(rest)}
+              ref={mergedRef}
+              data-ui="popover"
+              style={{ ...style, ...floatingStyles }}
+              className={className}
+            />
+          )}
+        </WithSx>
       </FloatingFocusManager>
     </FloatingPortal>
   );

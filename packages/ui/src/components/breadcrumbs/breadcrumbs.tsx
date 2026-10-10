@@ -26,15 +26,16 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 
-export interface BreadcrumbsProps extends ComponentPropsWithRef<'nav'> {
+export interface BreadcrumbsProps extends ComponentPropsWithRef<'nav'>, SxProps {
   /** Accessible name of the navigation landmark. */
   label?: string;
   /** Rendered (aria-hidden) between items. */
   separator?: ReactNode;
 }
 
-export interface BreadcrumbsItemProps extends ComponentPropsWithRef<'li'> {
+export interface BreadcrumbsItemProps extends ComponentPropsWithRef<'li'>, SxProps {
   href?: string;
   /** Marks the current page. Defaults to the last item when no item sets it. */
   current?: boolean;
@@ -123,7 +124,15 @@ const linkStyle = css({
   },
 });
 
-function BreadcrumbsRoot({ ref, label = 'Breadcrumb', separator = '/', children, ...rest }: BreadcrumbsProps) {
+function BreadcrumbsRoot({
+  ref,
+  label = 'Breadcrumb',
+  separator = '/',
+  children,
+  className,
+  sx,
+  ...rest
+}: BreadcrumbsProps) {
   const records = useRef(new Map<string, ItemRecord>());
   const [autoCurrentId, setAutoCurrentId] = useState<string | null>(null);
   const resolvedId = useRef<string | null>(null);
@@ -160,16 +169,20 @@ function BreadcrumbsRoot({ ref, label = 'Breadcrumb', separator = '/', children,
 
   return (
     <BreadcrumbsContext.Provider value={context}>
-      <nav {...rest} ref={ref} aria-label={label} data-ui="breadcrumbs">
-        <ol css={listStyle}>{children}</ol>
-      </nav>
+      <WithSx className={className} sx={sx}>
+        {(className) => (
+          <nav {...rest} ref={ref} aria-label={label} data-ui="breadcrumbs" className={className}>
+            <ol css={listStyle}>{children}</ol>
+          </nav>
+        )}
+      </WithSx>
     </BreadcrumbsContext.Provider>
   );
 }
 
 BreadcrumbsRoot.displayName = 'Breadcrumbs';
 
-function BreadcrumbsItem({ ref, href, current, children, ...rest }: BreadcrumbsItemProps) {
+function BreadcrumbsItem({ ref, href, current, children, className, sx, ...rest }: BreadcrumbsItemProps) {
   const { separator, autoCurrentId, register, unregister } = useBreadcrumbsContext('Item');
   const id = useId();
   const itemRef = useRef<HTMLLIElement>(null);
@@ -187,20 +200,24 @@ function BreadcrumbsItem({ ref, href, current, children, ...rest }: BreadcrumbsI
   const ariaCurrent = isCurrent ? 'page' : undefined;
 
   return (
-    <li {...rest} ref={itemRef} data-ui="breadcrumbs-item" css={itemStyle}>
-      <span aria-hidden="true" data-ui="breadcrumbs-separator" css={separatorStyle}>
-        {separator}
-      </span>
-      {href !== undefined ? (
-        <a href={href} aria-current={ariaCurrent} css={[contentStyle, linkStyle]}>
-          {children}
-        </a>
-      ) : (
-        <span aria-current={ariaCurrent} css={contentStyle}>
-          {children}
-        </span>
+    <WithSx className={className} styles={itemStyle} sx={sx}>
+      {(className) => (
+        <li {...rest} ref={itemRef} data-ui="breadcrumbs-item" className={className}>
+          <span aria-hidden="true" data-ui="breadcrumbs-separator" css={separatorStyle}>
+            {separator}
+          </span>
+          {href !== undefined ? (
+            <a href={href} aria-current={ariaCurrent} css={[contentStyle, linkStyle]}>
+              {children}
+            </a>
+          ) : (
+            <span aria-current={ariaCurrent} css={contentStyle}>
+              {children}
+            </span>
+          )}
+        </li>
       )}
-    </li>
+    </WithSx>
   );
 }
 

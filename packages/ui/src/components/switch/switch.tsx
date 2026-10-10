@@ -7,6 +7,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 
 export type SwitchSize = 'sm' | 'md';
@@ -16,7 +17,7 @@ export interface SwitchPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface SwitchProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type'> {
+export interface SwitchProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type'>, SxProps {
   label?: ReactNode;
   description?: ReactNode;
   size?: SwitchSize;
@@ -114,6 +115,7 @@ export function Switch({
   onCheckedChange,
   slotProps,
   className,
+  sx,
   dir,
   'aria-labelledby': ariaLabelledByProp,
   'aria-describedby': ariaDescribedByProp,
@@ -134,44 +136,51 @@ export function Switch({
   };
 
   return (
-    <label
-      data-ui="switch"
-      dir={dir}
+    <WithSx
       className={rootClassName}
-      css={[choiceRootStyle, choiceRootStateStyle, checkedThumbStyles[size], slotProps?.root?.css]}
+      styles={[choiceRootStyle, choiceRootStateStyle, checkedThumbStyles[size], slotProps?.root?.css]}
+      sx={sx}
     >
-      <span css={choiceRowStyle}>
-        <input
-          {...rest}
-          ref={ref}
-          type="checkbox"
-          role="switch"
-          aria-labelledby={ariaLabelledBy}
-          aria-describedby={ariaDescribedBy}
-          onChange={handleChange}
-          css={choiceInputStyle}
-        />
-        <span
-          aria-hidden="true"
-          className={slotProps?.control?.className}
-          css={[trackStyle, trackSizeStyles[size], slotProps?.control?.css]}
-        />
-        {hasLabel && (
-          <span id={labelId} className={slotProps?.label?.className} css={[labelSizeStyles[size], slotProps?.label?.css]}>
-            {label}
+      {(className) => (
+        <label data-ui="switch" dir={dir} className={className}>
+          <span css={choiceRowStyle}>
+            <input
+              {...rest}
+              ref={ref}
+              type="checkbox"
+              role="switch"
+              aria-labelledby={ariaLabelledBy}
+              aria-describedby={ariaDescribedBy}
+              onChange={handleChange}
+              css={choiceInputStyle}
+            />
+            <span
+              aria-hidden="true"
+              className={slotProps?.control?.className}
+              css={[trackStyle, trackSizeStyles[size], slotProps?.control?.css]}
+            />
+            {hasLabel && (
+              <span
+                id={labelId}
+                className={slotProps?.label?.className}
+                css={[labelSizeStyles[size], slotProps?.label?.css]}
+              >
+                {label}
+              </span>
+            )}
           </span>
-        )}
-      </span>
-      {hasDescription && (
-        <span
-          id={descriptionId}
-          className={slotProps?.description?.className}
-          css={[descriptionStyle, descriptionSizeStyles[size], slotProps?.description?.css]}
-        >
-          {description}
-        </span>
+          {hasDescription && (
+            <span
+              id={descriptionId}
+              className={slotProps?.description?.className}
+              css={[descriptionStyle, descriptionSizeStyles[size], slotProps?.description?.css]}
+            >
+              {description}
+            </span>
+          )}
+        </label>
       )}
-    </label>
+    </WithSx>
   );
 }
 

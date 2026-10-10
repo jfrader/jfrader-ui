@@ -56,6 +56,7 @@ import {
   listboxScrollStyle,
   listboxSurfaceStyle,
 } from '../../styling/listbox-style';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import {
@@ -85,15 +86,15 @@ export interface SelectProps {
   children?: ReactNode;
 }
 
-export interface SelectTriggerProps extends ComponentPropsWithRef<'button'> {
+export interface SelectTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   id?: string;
 }
-export interface SelectValueProps extends ComponentPropsWithRef<'span'> {
+export interface SelectValueProps extends ComponentPropsWithRef<'span'>, SxProps {
   /** Shown when no option matches the selected value. */
   placeholder?: ReactNode;
 }
-export interface SelectContentProps extends ComponentPropsWithRef<'div'> {}
-export interface SelectItemProps extends ComponentPropsWithRef<'div'> {
+export interface SelectContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
+export interface SelectItemProps extends ComponentPropsWithRef<'div'>, SxProps {
   /** Unique within the select. */
   value: string;
   disabled?: boolean;
@@ -319,7 +320,15 @@ function SelectRoot({
 
 SelectRoot.displayName = 'Select';
 
-function SelectTrigger({ ref, id: idProp, disabled: disabledProp, onKeyDown, ...rest }: SelectTriggerProps) {
+function SelectTrigger({
+  ref,
+  id: idProp,
+  disabled: disabledProp,
+  onKeyDown,
+  className,
+  sx,
+  ...rest
+}: SelectTriggerProps) {
   const {
     baseId,
     open,
@@ -368,34 +377,48 @@ function SelectTrigger({ ref, id: idProp, disabled: disabledProp, onKeyDown, ...
   };
 
   return (
-    <button
-      type="button"
-      {...getReferenceProps({ ...rest, id, disabled: disabled || disabledProp, onKeyDown: handleKeyDown })}
-      ref={mergedRef}
-      data-state={open ? 'open' : 'closed'}
-      data-ui="select-trigger"
-      css={[triggerStyle, selectTriggerStyle]}
-    />
+    <WithSx className={className} styles={[triggerStyle, selectTriggerStyle]} sx={sx}>
+      {(className) => (
+        <button
+          type="button"
+          {...getReferenceProps({ ...rest, id, disabled: disabled || disabledProp, onKeyDown: handleKeyDown })}
+          ref={mergedRef}
+          data-state={open ? 'open' : 'closed'}
+          data-ui="select-trigger"
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 
 SelectTrigger.displayName = 'Select.Trigger';
 
-function SelectValue({ ref, placeholder, ...rest }: SelectValueProps) {
+function SelectValue({ ref, placeholder, className, sx, ...rest }: SelectValueProps) {
   const { selectedValue, options } = useSelectContext('Value');
   const label = selectedValue === undefined ? undefined : options.get(selectedValue)?.label;
   const isPlaceholder = label === undefined;
 
   return (
-    <span {...rest} ref={ref} data-placeholder={isPlaceholder || undefined} data-ui="select-value" css={valueStyle}>
-      {isPlaceholder ? placeholder : label}
-    </span>
+    <WithSx className={className} styles={valueStyle} sx={sx}>
+      {(className) => (
+        <span
+          {...rest}
+          ref={ref}
+          data-placeholder={isPlaceholder || undefined}
+          data-ui="select-value"
+          className={className}
+        >
+          {isPlaceholder ? placeholder : label}
+        </span>
+      )}
+    </WithSx>
   );
 }
 
 SelectValue.displayName = 'Select.Value';
 
-function SelectContent({ ref, style, onMouseDown, children, ...rest }: SelectContentProps) {
+function SelectContent({ ref, style, onMouseDown, children, className, sx, ...rest }: SelectContentProps) {
   const { open, triggerLabelling, refs, floatingStyles, elementsRef, getFloatingProps } = useSelectContext('Content');
   // Only an open listbox is the floating element, so a closed one does no positioning work.
   const mergedRef = useMergeRefs([open ? refs.setFloating : null, ref]);
@@ -417,26 +440,30 @@ function SelectContent({ ref, style, onMouseDown, children, ...rest }: SelectCon
 
   return (
     <FloatingPortal>
-      <div
-        {...getFloatingProps({ ...labelling, ...rest, onMouseDown: handleMouseDown })}
-        ref={mergedRef}
-        hidden={!open}
-        data-state={open ? 'open' : 'closed'}
-        data-ui="select-listbox"
-        style={{ ...style, ...floatingStyles }}
-        css={[listboxSurfaceStyle, listboxScrollStyle]}
-      >
-        <FloatingList elementsRef={elementsRef}>
-          <SelectContentContext.Provider value>{children}</SelectContentContext.Provider>
-        </FloatingList>
-      </div>
+      <WithSx className={className} styles={[listboxSurfaceStyle, listboxScrollStyle]} sx={sx}>
+        {(className) => (
+          <div
+            {...getFloatingProps({ ...labelling, ...rest, onMouseDown: handleMouseDown })}
+            ref={mergedRef}
+            hidden={!open}
+            data-state={open ? 'open' : 'closed'}
+            data-ui="select-listbox"
+            style={{ ...style, ...floatingStyles }}
+            className={className}
+          >
+            <FloatingList elementsRef={elementsRef}>
+              <SelectContentContext.Provider value>{children}</SelectContentContext.Provider>
+            </FloatingList>
+          </div>
+        )}
+      </WithSx>
     </FloatingPortal>
   );
 }
 
 SelectContent.displayName = 'Select.Content';
 
-function SelectItem({ ref, value, disabled = false, onClick, children, ...rest }: SelectItemProps) {
+function SelectItem({ ref, value, disabled = false, onClick, children, className, sx, ...rest }: SelectItemProps) {
   const { baseId, selectedValue, activeIndex, labelsRef, getItemProps, selectValue, registration } =
     useSelectItemContext();
   const textRef = useRef<HTMLSpanElement>(null);
@@ -459,25 +486,29 @@ function SelectItem({ ref, value, disabled = false, onClick, children, ...rest }
   };
 
   return (
-    <div
-      {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
-      ref={mergedRef}
-      role="option"
-      aria-selected={isSelected}
-      aria-disabled={disabled || undefined}
-      data-active={isActive || undefined}
-      data-ui="select-item"
-      css={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle]}
-    >
-      <span ref={textRef} css={listboxOptionTextStyle}>
-        {children}
-      </span>
-      {isSelected && (
-        <span aria-hidden="true" css={listboxOptionCheckStyle}>
-          {SELECTED_GLYPH}
-        </span>
+    <WithSx className={className} styles={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle]} sx={sx}>
+      {(className) => (
+        <div
+          {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
+          ref={mergedRef}
+          role="option"
+          aria-selected={isSelected}
+          aria-disabled={disabled || undefined}
+          data-active={isActive || undefined}
+          data-ui="select-item"
+          className={className}
+        >
+          <span ref={textRef} css={listboxOptionTextStyle}>
+            {children}
+          </span>
+          {isSelected && (
+            <span aria-hidden="true" css={listboxOptionCheckStyle}>
+              {SELECTED_GLYPH}
+            </span>
+          )}
+        </div>
       )}
-    </div>
+    </WithSx>
   );
 }
 

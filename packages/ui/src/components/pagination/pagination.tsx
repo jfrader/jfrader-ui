@@ -13,9 +13,10 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
-export interface PaginationProps extends Omit<ComponentPropsWithRef<'nav'>, 'onChange'> {
+export interface PaginationProps extends Omit<ComponentPropsWithRef<'nav'>, 'onChange'>, SxProps {
   page: number;
   totalPages: number;
   onPageChange?: (page: number) => void;
@@ -131,6 +132,8 @@ export function Pagination({
   previousLabel = 'Previous page',
   nextLabel = 'Next page',
   locale = typeof navigator === 'undefined' ? undefined : navigator.language,
+  className,
+  sx,
   ...rest
 }: PaginationProps) {
   const lastPage = normalizeCount(totalPages);
@@ -160,60 +163,64 @@ export function Pagination({
   };
 
   return (
-    <nav {...rest} ref={navRef} aria-label={label} data-ui="pagination">
-      <ul css={listStyle}>
-        <li>
-          <button
-            type="button"
-            disabled={current <= 1}
-            onClick={() => requestPage(current - 1, true)}
-            data-ui="pagination-previous"
-            css={[cellStyle, buttonStyle]}
-          >
-            <span aria-hidden="true" css={glyphStyle}>
-              ‹
-            </span>
-            <span css={visuallyHiddenStyle}>{previousLabel}</span>
-          </button>
-        </li>
-        {items.map((item) =>
-          typeof item === 'number' ? (
-            <li key={item}>
+    <WithSx className={className} sx={sx}>
+      {(className) => (
+        <nav {...rest} ref={navRef} aria-label={label} data-ui="pagination" className={className}>
+          <ul css={listStyle}>
+            <li>
               <button
                 type="button"
-                aria-current={item === current ? 'page' : undefined}
-                aria-label={numberFormat.format(item)}
-                onClick={() => requestPage(item)}
-                data-ui="pagination-page"
+                disabled={current <= 1}
+                onClick={() => requestPage(current - 1, true)}
+                data-ui="pagination-previous"
                 css={[cellStyle, buttonStyle]}
               >
-                {numberFormat.format(item)}
+                <span aria-hidden="true" css={glyphStyle}>
+                  ‹
+                </span>
+                <span css={visuallyHiddenStyle}>{previousLabel}</span>
               </button>
             </li>
-          ) : (
-            <li key={item}>
-              <span aria-hidden="true" data-ui="pagination-ellipsis" css={[cellStyle, ellipsisStyle]}>
-                …
-              </span>
+            {items.map((item) =>
+              typeof item === 'number' ? (
+                <li key={item}>
+                  <button
+                    type="button"
+                    aria-current={item === current ? 'page' : undefined}
+                    aria-label={numberFormat.format(item)}
+                    onClick={() => requestPage(item)}
+                    data-ui="pagination-page"
+                    css={[cellStyle, buttonStyle]}
+                  >
+                    {numberFormat.format(item)}
+                  </button>
+                </li>
+              ) : (
+                <li key={item}>
+                  <span aria-hidden="true" data-ui="pagination-ellipsis" css={[cellStyle, ellipsisStyle]}>
+                    …
+                  </span>
+                </li>
+              ),
+            )}
+            <li>
+              <button
+                type="button"
+                disabled={current >= lastPage}
+                onClick={() => requestPage(current + 1, true)}
+                data-ui="pagination-next"
+                css={[cellStyle, buttonStyle]}
+              >
+                <span aria-hidden="true" css={glyphStyle}>
+                  ›
+                </span>
+                <span css={visuallyHiddenStyle}>{nextLabel}</span>
+              </button>
             </li>
-          ),
-        )}
-        <li>
-          <button
-            type="button"
-            disabled={current >= lastPage}
-            onClick={() => requestPage(current + 1, true)}
-            data-ui="pagination-next"
-            css={[cellStyle, buttonStyle]}
-          >
-            <span aria-hidden="true" css={glyphStyle}>
-              ›
-            </span>
-            <span css={visuallyHiddenStyle}>{nextLabel}</span>
-          </button>
-        </li>
-      </ul>
-    </nav>
+          </ul>
+        </nav>
+      )}
+    </WithSx>
   );
 }
 

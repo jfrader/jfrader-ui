@@ -5,6 +5,7 @@ import type { ChangeEvent, ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
+import type { SxProps } from '../../styling/sx';
 import {
   FieldDescription,
   FieldError,
@@ -19,7 +20,7 @@ export type TextFieldSize = 'sm' | 'md' | 'lg';
 
 export interface TextFieldPartProps extends FieldPartProps {}
 
-export interface TextFieldProps extends Omit<ComponentPropsWithRef<'input'>, 'size'> {
+export interface TextFieldProps extends Omit<ComponentPropsWithRef<'input'>, 'size'>, SxProps {
   label?: ReactNode;
   description?: ReactNode;
   error?: ReactNode;
@@ -44,6 +45,7 @@ export function TextField({
   onValueChange,
   slotProps,
   className,
+  sx,
   required,
   id: idProp,
   'aria-describedby': ariaDescribedByProp,
@@ -64,7 +66,7 @@ export function TextField({
   };
 
   return (
-    <FieldRoot data-ui="text-field" className={className} part={slotProps?.root}>
+    <FieldRoot data-ui="text-field" className={className} sx={sx} part={slotProps?.root}>
       <FieldLabel htmlFor={field.id} required={required} part={slotProps?.label}>
         {label}
       </FieldLabel>

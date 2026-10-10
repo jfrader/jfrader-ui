@@ -40,6 +40,7 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { listboxItemStyle } from '../../styling/listbox-style';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import {
@@ -90,17 +91,18 @@ export interface CommandPaletteProps {
   children?: ReactNode;
 }
 
-export interface CommandPaletteTriggerProps extends ComponentPropsWithRef<'button'> {}
-export interface CommandPaletteContentProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'> {}
+export interface CommandPaletteTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
+export interface CommandPaletteContentProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'>, SxProps {}
 export interface CommandPaletteInputProps
-  extends Omit<ComponentPropsWithRef<'input'>, 'value' | 'defaultValue' | 'type'> {}
-export interface CommandPaletteListProps extends ComponentPropsWithRef<'div'> {}
-export interface CommandPaletteEmptyProps extends ComponentPropsWithRef<'div'> {}
-export interface CommandPaletteGroupProps extends Omit<ComponentPropsWithRef<'div'>, 'children'> {
+  extends Omit<ComponentPropsWithRef<'input'>, 'value' | 'defaultValue' | 'type'>,
+    SxProps {}
+export interface CommandPaletteListProps extends ComponentPropsWithRef<'div'>, SxProps {}
+export interface CommandPaletteEmptyProps extends ComponentPropsWithRef<'div'>, SxProps {}
+export interface CommandPaletteGroupProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   label: ReactNode;
   children?: ReactNode;
 }
-export interface CommandPaletteItemProps extends Omit<ComponentPropsWithRef<'div'>, 'onSelect'> {
+export interface CommandPaletteItemProps extends Omit<ComponentPropsWithRef<'div'>, 'onSelect'>, SxProps {
   /** Unique within the palette. */
   value: string;
   onSelect?: () => void;
@@ -303,7 +305,7 @@ function CommandPaletteRoot({
 
 CommandPaletteRoot.displayName = 'CommandPalette';
 
-function CommandPaletteTrigger({ ref, onClick, ...rest }: CommandPaletteTriggerProps) {
+function CommandPaletteTrigger({ ref, onClick, className, sx, ...rest }: CommandPaletteTriggerProps) {
   const { open, toggleOpen } = useCommandPaletteContext('Trigger');
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
@@ -312,22 +314,26 @@ function CommandPaletteTrigger({ ref, onClick, ...rest }: CommandPaletteTriggerP
   };
 
   return (
-    <button
-      type="button"
-      {...rest}
-      ref={ref}
-      data-ui="command-palette-trigger"
-      aria-haspopup="dialog"
-      aria-expanded={open}
-      onClick={handleClick}
-      css={triggerStyle}
-    />
+    <WithSx className={className} styles={triggerStyle} sx={sx}>
+      {(className) => (
+        <button
+          type="button"
+          {...rest}
+          ref={ref}
+          data-ui="command-palette-trigger"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={handleClick}
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 
 CommandPaletteTrigger.displayName = 'CommandPalette.Trigger';
 
-function CommandPaletteContent({ ref, ...props }: CommandPaletteContentProps) {
+function CommandPaletteContent({ ref, className, sx, ...props }: CommandPaletteContentProps) {
   const { children, onCancel, onClick, onClose, ...rest } = omitNativeOpen(props);
 
   const context = useCommandPaletteContext('Content');
@@ -335,27 +341,31 @@ function CommandPaletteContent({ ref, ...props }: CommandPaletteContentProps) {
   const dialogProps = useNativeDialog(context, { onCancel, onClick, onClose }, ref);
 
   return (
-    <dialog
-      aria-label={label}
-      {...rest}
-      {...dialogProps}
-      data-ui="command-palette"
-      aria-modal="true"
-      css={dialogStyle}
-    >
-      <div css={panelStyle}>
-        {children}
-        <div role="status" aria-live="polite" aria-atomic="true" css={visuallyHiddenStyle}>
-          {announcement}
-        </div>
-      </div>
-    </dialog>
+    <WithSx className={className} styles={dialogStyle} sx={sx}>
+      {(className) => (
+        <dialog
+          aria-label={label}
+          {...rest}
+          {...dialogProps}
+          data-ui="command-palette"
+          aria-modal="true"
+          className={className}
+        >
+          <div css={panelStyle}>
+            {children}
+            <div role="status" aria-live="polite" aria-atomic="true" css={visuallyHiddenStyle}>
+              {announcement}
+            </div>
+          </div>
+        </dialog>
+      )}
+    </WithSx>
   );
 }
 
 CommandPaletteContent.displayName = 'CommandPalette.Content';
 
-function CommandPaletteInput({ ref, onChange, onKeyDown, ...rest }: CommandPaletteInputProps) {
+function CommandPaletteInput({ ref, onChange, onKeyDown, className, sx, ...rest }: CommandPaletteInputProps) {
   const {
     label,
     listId,
@@ -401,27 +411,31 @@ function CommandPaletteInput({ ref, onChange, onKeyDown, ...rest }: CommandPalet
   };
 
   return (
-    <input
-      aria-label={label}
-      autoComplete="off"
-      spellCheck={false}
-      {...getReferenceProps({ ...rest, onChange: handleChange, onKeyDown: handleKeyDown })}
-      ref={mergedRef}
-      type="text"
-      value={query}
-      role="combobox"
-      aria-autocomplete="list"
-      aria-expanded={matchCount > 0}
-      aria-controls={listId}
-      data-ui="command-palette-input"
-      css={inputStyle}
-    />
+    <WithSx className={className} styles={inputStyle} sx={sx}>
+      {(className) => (
+        <input
+          aria-label={label}
+          autoComplete="off"
+          spellCheck={false}
+          {...getReferenceProps({ ...rest, onChange: handleChange, onKeyDown: handleKeyDown })}
+          ref={mergedRef}
+          type="text"
+          value={query}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={matchCount > 0}
+          aria-controls={listId}
+          data-ui="command-palette-input"
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 
 CommandPaletteInput.displayName = 'CommandPalette.Input';
 
-function CommandPaletteList({ ref, onMouseDown, children, ...rest }: CommandPaletteListProps) {
+function CommandPaletteList({ ref, onMouseDown, children, className, sx, ...rest }: CommandPaletteListProps) {
   const { label, listId, matchCount, elementsRef, setListElement, getFloatingProps } =
     useCommandPaletteContext('List');
   const mergedRef = useMergeRefs([setListElement, ref]);
@@ -433,31 +447,39 @@ function CommandPaletteList({ ref, onMouseDown, children, ...rest }: CommandPale
   };
 
   return (
-    <div
-      aria-label={label}
-      {...getFloatingProps({ ...rest, onMouseDown: handleMouseDown })}
-      ref={mergedRef}
-      id={listId}
-      role="listbox"
-      hidden={matchCount === 0}
-      data-ui="command-palette-list"
-      css={listStyle}
-    >
-      <FloatingList elementsRef={elementsRef}>{children}</FloatingList>
-    </div>
+    <WithSx className={className} styles={listStyle} sx={sx}>
+      {(className) => (
+        <div
+          aria-label={label}
+          {...getFloatingProps({ ...rest, onMouseDown: handleMouseDown })}
+          ref={mergedRef}
+          id={listId}
+          role="listbox"
+          hidden={matchCount === 0}
+          data-ui="command-palette-list"
+          className={className}
+        >
+          <FloatingList elementsRef={elementsRef}>{children}</FloatingList>
+        </div>
+      )}
+    </WithSx>
   );
 }
 
 CommandPaletteList.displayName = 'CommandPalette.List';
 
-function CommandPaletteEmpty({ ref, children, ...rest }: CommandPaletteEmptyProps) {
+function CommandPaletteEmpty({ ref, children, className, sx, ...rest }: CommandPaletteEmptyProps) {
   const { matchCount, emptyMessage } = useCommandPaletteContext('Empty');
   if (matchCount > 0) return null;
 
   return (
-    <div {...rest} ref={ref} data-ui="command-palette-empty" css={emptyStyle}>
-      {isRenderable(children) ? children : emptyMessage}
-    </div>
+    <WithSx className={className} styles={emptyStyle} sx={sx}>
+      {(className) => (
+        <div {...rest} ref={ref} data-ui="command-palette-empty" className={className}>
+          {isRenderable(children) ? children : emptyMessage}
+        </div>
+      )}
+    </WithSx>
   );
 }
 
@@ -468,6 +490,8 @@ function CommandPaletteGroup({
   label,
   children,
   'aria-labelledby': externalLabelledBy,
+  className,
+  sx,
   ...rest
 }: CommandPaletteGroupProps) {
   const { visibleGroupIds } = useCommandPaletteContext('Group');
@@ -475,26 +499,40 @@ function CommandPaletteGroup({
   const headingId = `${groupId}-heading`;
 
   return (
-    <div
-      {...rest}
-      ref={ref}
-      role="group"
-      aria-labelledby={[externalLabelledBy, headingId].filter(Boolean).join(' ')}
-      hidden={!visibleGroupIds.has(groupId)}
-      data-ui="command-palette-group"
-      css={groupStyle}
-    >
-      <div id={headingId} css={groupHeadingStyle}>
-        {label}
-      </div>
-      <CommandPaletteGroupContext.Provider value={groupId}>{children}</CommandPaletteGroupContext.Provider>
-    </div>
+    <WithSx className={className} styles={groupStyle} sx={sx}>
+      {(className) => (
+        <div
+          {...rest}
+          ref={ref}
+          role="group"
+          aria-labelledby={[externalLabelledBy, headingId].filter(Boolean).join(' ')}
+          hidden={!visibleGroupIds.has(groupId)}
+          data-ui="command-palette-group"
+          className={className}
+        >
+          <div id={headingId} css={groupHeadingStyle}>
+            {label}
+          </div>
+          <CommandPaletteGroupContext.Provider value={groupId}>{children}</CommandPaletteGroupContext.Provider>
+        </div>
+      )}
+    </WithSx>
   );
 }
 
 CommandPaletteGroup.displayName = 'CommandPalette.Group';
 
-function CommandPaletteItem({ ref, value, onSelect, keywords, onClick, children, ...rest }: CommandPaletteItemProps) {
+function CommandPaletteItem({
+  ref,
+  value,
+  onSelect,
+  keywords,
+  onClick,
+  children,
+  className,
+  sx,
+  ...rest
+}: CommandPaletteItemProps) {
   const { baseId, activeIndex, matchedValues, getItemProps, setOpen, registration } =
     useCommandPaletteContext('Item');
   const groupId = useContext(CommandPaletteGroupContext);
@@ -516,18 +554,22 @@ function CommandPaletteItem({ ref, value, onSelect, keywords, onClick, children,
   };
 
   return (
-    <div
-      {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
-      ref={mergedRef}
-      role="option"
-      aria-selected={isActive}
-      hidden={!matchedValues.has(value)}
-      data-active={isActive || undefined}
-      data-ui="command-palette-item"
-      css={[listboxItemStyle, itemStyle]}
-    >
-      {children}
-    </div>
+    <WithSx className={className} styles={[listboxItemStyle, itemStyle]} sx={sx}>
+      {(className) => (
+        <div
+          {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
+          ref={mergedRef}
+          role="option"
+          aria-selected={isActive}
+          hidden={!matchedValues.has(value)}
+          data-active={isActive || undefined}
+          data-ui="command-palette-item"
+          className={className}
+        >
+          {children}
+        </div>
+      )}
+    </WithSx>
   );
 }
 

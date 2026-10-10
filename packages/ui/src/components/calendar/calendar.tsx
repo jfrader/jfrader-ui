@@ -35,6 +35,7 @@ import {
   type ComponentPropsWithRef,
   type KeyboardEvent,
 } from 'react';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import {
   cellStyle,
@@ -74,7 +75,7 @@ import {
 /** Day of the week as counted by `Date#getUTCDay`: 0 is Sunday, 6 is Saturday. */
 export type CalendarWeekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-export interface CalendarProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'> {
+export interface CalendarProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
   /** Selected date, 'YYYY-MM-DD'. */
   value?: string;
   defaultValue?: string;
@@ -94,8 +95,8 @@ export interface CalendarProps extends Omit<ComponentPropsWithRef<'div'>, 'defau
 }
 
 /** The header renders its own month buttons and label. */
-export type CalendarHeaderProps = Omit<ComponentPropsWithRef<'div'>, 'children'>;
-export type CalendarGridProps = ComponentPropsWithRef<'table'>;
+export type CalendarHeaderProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps;
+export type CalendarGridProps = ComponentPropsWithRef<'table'> & SxProps;
 
 /** The day that carries roving focus, and the day to keep it on if `date` is not shown. */
 interface FocusTarget {
@@ -145,6 +146,8 @@ function CalendarRoot({
   max: maxProp,
   locale: localeProp,
   firstDayOfWeek: firstDayOfWeekProp,
+  className,
+  sx,
   ...rest
 }: CalendarProps) {
   const labelId = `${useId()}-label`;
@@ -208,14 +211,16 @@ function CalendarRoot({
 
   return (
     <CalendarContext.Provider value={context}>
-      <div {...rest} ref={ref} data-ui="calendar" css={rootStyle} />
+      <WithSx className={className} styles={rootStyle} sx={sx}>
+        {(className) => <div {...rest} ref={ref} data-ui="calendar" className={className} />}
+      </WithSx>
     </CalendarContext.Provider>
   );
 }
 
 CalendarRoot.displayName = 'Calendar';
 
-function CalendarHeader({ ref, ...props }: CalendarHeaderProps) {
+function CalendarHeader({ ref, className, sx, ...props }: CalendarHeaderProps) {
   const { visibleMonth, min, max, formatters, requestVisibleMonth, labelId, setHasHeader } =
     useCalendarContext('Header');
 
@@ -232,39 +237,43 @@ function CalendarHeader({ ref, ...props }: CalendarHeaderProps) {
   const monthName = (month: string) => formatters.month.format(dateFromIso(firstOfMonth(month)));
 
   return (
-    <div {...props} ref={ref} data-ui="calendar-header" css={headerStyle}>
-      <button
-        type="button"
-        data-ui="calendar-previous"
-        aria-label={monthName(previous)}
-        aria-disabled={previousDisabled || undefined}
-        onClick={() => {
-          if (!previousDisabled) requestVisibleMonth(previous);
-        }}
-        css={navButtonStyle}
-      >
-        <span aria-hidden="true" css={glyphStyle}>
-          {PREVIOUS_GLYPH}
-        </span>
-      </button>
-      <span id={labelId} aria-live="polite" aria-atomic="true" data-ui="calendar-label" css={labelStyle}>
-        {monthName(visibleMonth)}
-      </span>
-      <button
-        type="button"
-        data-ui="calendar-next"
-        aria-label={monthName(next)}
-        aria-disabled={nextDisabled || undefined}
-        onClick={() => {
-          if (!nextDisabled) requestVisibleMonth(next);
-        }}
-        css={navButtonStyle}
-      >
-        <span aria-hidden="true" css={glyphStyle}>
-          {NEXT_GLYPH}
-        </span>
-      </button>
-    </div>
+    <WithSx className={className} styles={headerStyle} sx={sx}>
+      {(className) => (
+        <div {...props} ref={ref} data-ui="calendar-header" className={className}>
+          <button
+            type="button"
+            data-ui="calendar-previous"
+            aria-label={monthName(previous)}
+            aria-disabled={previousDisabled || undefined}
+            onClick={() => {
+              if (!previousDisabled) requestVisibleMonth(previous);
+            }}
+            css={navButtonStyle}
+          >
+            <span aria-hidden="true" css={glyphStyle}>
+              {PREVIOUS_GLYPH}
+            </span>
+          </button>
+          <span id={labelId} aria-live="polite" aria-atomic="true" data-ui="calendar-label" css={labelStyle}>
+            {monthName(visibleMonth)}
+          </span>
+          <button
+            type="button"
+            data-ui="calendar-next"
+            aria-label={monthName(next)}
+            aria-disabled={nextDisabled || undefined}
+            onClick={() => {
+              if (!nextDisabled) requestVisibleMonth(next);
+            }}
+            css={navButtonStyle}
+          >
+            <span aria-hidden="true" css={glyphStyle}>
+              {NEXT_GLYPH}
+            </span>
+          </button>
+        </div>
+      )}
+    </WithSx>
   );
 }
 
@@ -312,6 +321,8 @@ function CalendarGrid({
   onKeyDown,
   'aria-labelledby': ariaLabelledByProp,
   'aria-label': ariaLabelProp,
+  className,
+  sx,
   ...rest
 }: CalendarGridProps) {
   const {
@@ -376,45 +387,49 @@ function CalendarGrid({
   const monthLabel = formatters.month.format(dateFromIso(first));
 
   return (
-    <table
-      {...rest}
-      ref={gridRef}
-      role="grid"
-      aria-labelledby={ariaLabelledBy}
-      aria-label={ariaLabelledBy === undefined ? (ariaLabelProp ?? monthLabel) : ariaLabelProp}
-      data-ui="calendar-grid"
-      onKeyDown={handleKeyDown}
-      css={gridStyle}
-    >
-      <thead>
-        <tr role="row">
-          {weekdays.map((weekday) => (
-            <th
-              key={weekday.getUTCDay()}
-              role="columnheader"
-              scope="col"
-              abbr={formatters.weekdayLong.format(weekday)}
-              css={weekdayStyle}
-            >
-              {formatters.weekdayShort.format(weekday)}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {weeks.map((week, weekIndex) => (
-          <tr key={weekIndex} role="row">
-            {week.map((date, column) =>
-              date === null ? (
-                <td key={`empty-${column}`} role="gridcell" css={cellStyle} />
-              ) : (
-                <Day key={date} date={date} isTabStop={date === tabStop} />
-              ),
-            )}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <WithSx className={className} styles={gridStyle} sx={sx}>
+      {(className) => (
+        <table
+          {...rest}
+          ref={gridRef}
+          role="grid"
+          aria-labelledby={ariaLabelledBy}
+          aria-label={ariaLabelledBy === undefined ? (ariaLabelProp ?? monthLabel) : ariaLabelProp}
+          data-ui="calendar-grid"
+          onKeyDown={handleKeyDown}
+          className={className}
+        >
+          <thead>
+            <tr role="row">
+              {weekdays.map((weekday) => (
+                <th
+                  key={weekday.getUTCDay()}
+                  role="columnheader"
+                  scope="col"
+                  abbr={formatters.weekdayLong.format(weekday)}
+                  css={weekdayStyle}
+                >
+                  {formatters.weekdayShort.format(weekday)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {weeks.map((week, weekIndex) => (
+              <tr key={weekIndex} role="row">
+                {week.map((date, column) =>
+                  date === null ? (
+                    <td key={`empty-${column}`} role="gridcell" css={cellStyle} />
+                  ) : (
+                    <Day key={date} date={date} isTabStop={date === tabStop} />
+                  ),
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </WithSx>
   );
 }
 

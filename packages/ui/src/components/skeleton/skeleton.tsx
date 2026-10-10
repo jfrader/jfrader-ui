@@ -5,10 +5,11 @@ import type { ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
 
 type Length = number | string;
 
-export interface SkeletonProps extends Omit<ComponentPropsWithRef<'div'>, 'children'> {
+export interface SkeletonProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   width?: Length;
   height?: Length;
   /** Round placeholder; height follows width unless `height` is given. */
@@ -47,16 +48,20 @@ const circleStyle = css({
   borderRadius: vars.radius.full,
 });
 
-export function Skeleton({ ref, width, height, circle = false, radius, style, ...rest }: SkeletonProps) {
+export function Skeleton({ ref, width, height, circle = false, radius, style, className, sx, ...rest }: SkeletonProps) {
   return (
-    <div
-      {...rest}
-      ref={ref}
-      aria-hidden="true"
-      data-ui="skeleton"
-      style={{ inlineSize: width, blockSize: height, borderRadius: circle ? undefined : radius, ...style }}
-      css={[baseStyle, circle && circleStyle]}
-    />
+    <WithSx className={className} styles={[baseStyle, circle && circleStyle]} sx={sx}>
+      {(className) => (
+        <div
+          {...rest}
+          ref={ref}
+          aria-hidden="true"
+          data-ui="skeleton"
+          style={{ inlineSize: width, blockSize: height, borderRadius: circle ? undefined : radius, ...style }}
+          className={className}
+        />
+      )}
+    </WithSx>
   );
 }
 

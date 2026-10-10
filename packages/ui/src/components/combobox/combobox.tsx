@@ -65,6 +65,7 @@ import {
   listboxScrollStyle,
   listboxSurfaceStyle,
 } from '../../styling/listbox-style';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import {
   collectionItemId,
@@ -111,13 +112,13 @@ export interface ComboboxInputProps extends Omit<TextFieldProps, 'value' | 'defa
   /** Initial input text; when set, it filters the options from the first render. */
   defaultInputValue?: string;
 }
-export interface ComboboxListProps extends ComponentPropsWithRef<'div'> {}
-export interface ComboboxItemProps extends ComponentPropsWithRef<'div'> {
+export interface ComboboxListProps extends ComponentPropsWithRef<'div'>, SxProps {}
+export interface ComboboxItemProps extends ComponentPropsWithRef<'div'>, SxProps {
   /** Unique within the combobox. */
   value: string;
   disabled?: boolean;
 }
-export interface ComboboxEmptyProps extends ComponentPropsWithRef<'div'> {}
+export interface ComboboxEmptyProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -368,6 +369,7 @@ function ComboboxInput({
   size,
   slotProps,
   className,
+  sx,
   id: idProp,
   onChange,
   onKeyDown,
@@ -503,6 +505,7 @@ function ComboboxInput({
       size={size}
       slotProps={slotProps}
       className={className}
+      sx={sx}
       value={text}
       disabled={disabled}
       onChange={handleChange}
@@ -519,7 +522,7 @@ function ComboboxInput({
 
 ComboboxInput.displayName = 'Combobox.Input';
 
-function ComboboxList({ ref, id: idProp, style, onMouseDown, children, ...rest }: ComboboxListProps) {
+function ComboboxList({ ref, id: idProp, style, onMouseDown, children, className, sx, ...rest }: ComboboxListProps) {
   const { baseId, setListId, open, inputLabelling, refs, floatingStyles, elementsRef, getFloatingProps } =
     useComboboxContext('List');
   const listId = idProp ?? `${baseId}-listbox`;
@@ -545,27 +548,31 @@ function ComboboxList({ ref, id: idProp, style, onMouseDown, children, ...rest }
 
   return (
     <FloatingPortal>
-      <div
-        {...getFloatingProps({ id: listId, ...labelling, ...rest, onMouseDown: handleMouseDown })}
-        ref={mergedRef}
-        role="listbox"
-        hidden={!open}
-        data-state={open ? 'open' : 'closed'}
-        data-ui="combobox-list"
-        style={{ ...style, ...floatingStyles }}
-        css={[listboxSurfaceStyle, listboxScrollStyle]}
-      >
-        <FloatingList elementsRef={elementsRef}>
-          <ComboboxListContext.Provider value>{children}</ComboboxListContext.Provider>
-        </FloatingList>
-      </div>
+      <WithSx className={className} styles={[listboxSurfaceStyle, listboxScrollStyle]} sx={sx}>
+        {(className) => (
+          <div
+            {...getFloatingProps({ id: listId, ...labelling, ...rest, onMouseDown: handleMouseDown })}
+            ref={mergedRef}
+            role="listbox"
+            hidden={!open}
+            data-state={open ? 'open' : 'closed'}
+            data-ui="combobox-list"
+            style={{ ...style, ...floatingStyles }}
+            className={className}
+          >
+            <FloatingList elementsRef={elementsRef}>
+              <ComboboxListContext.Provider value>{children}</ComboboxListContext.Provider>
+            </FloatingList>
+          </div>
+        )}
+      </WithSx>
     </FloatingPortal>
   );
 }
 
 ComboboxList.displayName = 'Combobox.List';
 
-function ComboboxItem({ ref, value, disabled = false, onClick, children, ...rest }: ComboboxItemProps) {
+function ComboboxItem({ ref, value, disabled = false, onClick, children, className, sx, ...rest }: ComboboxItemProps) {
   const { baseId, selectedValue, activeIndex, options, isVisible, getItemProps, selectValue, registration } =
     useComboboxListContext('Item');
   const textRef = useRef<HTMLSpanElement>(null);
@@ -587,38 +594,50 @@ function ComboboxItem({ ref, value, disabled = false, onClick, children, ...rest
   };
 
   return (
-    <div
-      {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
-      ref={mergedRef}
-      role="option"
-      hidden={hidden}
-      aria-selected={isSelected}
-      aria-disabled={disabled || undefined}
-      data-active={isActive || undefined}
-      data-ui="combobox-item"
-      css={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle, itemStyle]}
+    <WithSx
+      className={className}
+      styles={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle, itemStyle]}
+      sx={sx}
     >
-      <span ref={textRef} css={listboxOptionTextStyle}>
-        {children}
-      </span>
-      {isSelected && (
-        <span aria-hidden="true" css={listboxOptionCheckStyle}>
-          {SELECTED_GLYPH}
-        </span>
+      {(className) => (
+        <div
+          {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
+          ref={mergedRef}
+          role="option"
+          hidden={hidden}
+          aria-selected={isSelected}
+          aria-disabled={disabled || undefined}
+          data-active={isActive || undefined}
+          data-ui="combobox-item"
+          className={className}
+        >
+          <span ref={textRef} css={listboxOptionTextStyle}>
+            {children}
+          </span>
+          {isSelected && (
+            <span aria-hidden="true" css={listboxOptionCheckStyle}>
+              {SELECTED_GLYPH}
+            </span>
+          )}
+        </div>
       )}
-    </div>
+    </WithSx>
   );
 }
 
 ComboboxItem.displayName = 'Combobox.Item';
 
-function ComboboxEmpty({ ref, children, ...rest }: ComboboxEmptyProps) {
+function ComboboxEmpty({ ref, children, className, sx, ...rest }: ComboboxEmptyProps) {
   const { matchCount } = useComboboxListContext('Empty');
   if (matchCount > 0) return null;
   return (
-    <div {...rest} ref={ref} data-ui="combobox-empty" css={emptyStyle}>
-      {isRenderable(children) ? children : DEFAULT_EMPTY_LABEL}
-    </div>
+    <WithSx className={className} styles={emptyStyle} sx={sx}>
+      {(className) => (
+        <div {...rest} ref={ref} data-ui="combobox-empty" className={className}>
+          {isRenderable(children) ? children : DEFAULT_EMPTY_LABEL}
+        </div>
+      )}
+    </WithSx>
   );
 }
 

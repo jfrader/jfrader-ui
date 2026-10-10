@@ -9,13 +9,15 @@
 import { useId, type HTMLAttributes, type ReactNode, type Ref, type RefAttributes } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 
 export type DividerOrientation = 'horizontal' | 'vertical';
 
 // Renders an <hr> or a <div>, so the ref is typed as the common HTMLElement.
 type DividerBaseProps = Omit<HTMLAttributes<HTMLElement>, 'children' | 'role' | 'aria-orientation'> &
-  RefAttributes<HTMLElement>;
+  RefAttributes<HTMLElement> &
+  SxProps;
 
 export interface DividerHorizontalProps extends DividerBaseProps {
   orientation?: 'horizontal';
@@ -80,53 +82,67 @@ export function Divider({
   orientation = 'horizontal',
   label,
   'aria-labelledby': ariaLabelledBy,
+  className,
+  sx,
   ...rest
 }: DividerProps) {
   const labelId = useId();
-
-  if (orientation === 'vertical') {
-    return (
-      <div
-        {...rest}
-        ref={ref as Ref<HTMLDivElement>}
-        role="separator"
-        aria-orientation="vertical"
-        aria-labelledby={ariaLabelledBy}
-        data-ui="divider"
-        data-orientation="vertical"
-        css={verticalStyle}
-      />
-    );
-  }
-
-  if (isRenderable(label)) {
-    return (
-      <div
-        {...rest}
-        ref={ref as Ref<HTMLDivElement>}
-        role="separator"
-        aria-orientation="horizontal"
-        aria-labelledby={[labelId, ariaLabelledBy].filter(Boolean).join(' ')}
-        data-ui="divider"
-        data-orientation="horizontal"
-        css={labelledStyle}
-      >
-        <span id={labelId} data-ui="divider-label">
-          {label}
-        </span>
-      </div>
-    );
-  }
+  const vertical = orientation === 'vertical';
+  const labelled = !vertical && isRenderable(label);
 
   return (
-    <hr
-      {...rest}
-      ref={ref as Ref<HTMLHRElement>}
-      aria-labelledby={ariaLabelledBy}
-      data-ui="divider"
-      data-orientation="horizontal"
-      css={horizontalStyle}
-    />
+    <WithSx
+      className={className}
+      styles={vertical ? verticalStyle : labelled ? labelledStyle : horizontalStyle}
+      sx={sx}
+    >
+      {(className) => {
+        if (vertical) {
+          return (
+            <div
+              {...rest}
+              ref={ref as Ref<HTMLDivElement>}
+              role="separator"
+              aria-orientation="vertical"
+              aria-labelledby={ariaLabelledBy}
+              data-ui="divider"
+              data-orientation="vertical"
+              className={className}
+            />
+          );
+        }
+
+        if (labelled) {
+          return (
+            <div
+              {...rest}
+              ref={ref as Ref<HTMLDivElement>}
+              role="separator"
+              aria-orientation="horizontal"
+              aria-labelledby={[labelId, ariaLabelledBy].filter(Boolean).join(' ')}
+              data-ui="divider"
+              data-orientation="horizontal"
+              className={className}
+            >
+              <span id={labelId} data-ui="divider-label">
+                {label}
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <hr
+            {...rest}
+            ref={ref as Ref<HTMLHRElement>}
+            aria-labelledby={ariaLabelledBy}
+            data-ui="divider"
+            data-orientation="horizontal"
+            className={className}
+          />
+        );
+      }}
+    </WithSx>
   );
 }
 
