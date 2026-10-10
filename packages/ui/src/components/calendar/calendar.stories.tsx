@@ -8,7 +8,7 @@ const LOCALE = 'en-US';
 const REJECTED_DATE = '2026-10-17';
 
 const meta = {
-  title: 'Components/Calendar',
+  title: 'Pickers/Calendar',
   component: Calendar,
   args: { locale: LOCALE },
 } satisfies Meta<typeof Calendar>;

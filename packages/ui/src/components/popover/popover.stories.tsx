@@ -30,7 +30,7 @@ const rowStyle = css({
 });
 
 const meta = {
-  title: 'Components/Popover',
+  title: 'Surfaces/Popover',
   component: Popover,
 } satisfies Meta<typeof Popover>;
 

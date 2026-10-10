@@ -18,7 +18,7 @@ const accentStyle = css({
 });
 
 const meta = {
-  title: 'Components/Spinner',
+  title: 'Feedback/Spinner',
   component: Spinner,
   tags: ['autodocs'],
   args: { size: 'md', label: 'Loading' },

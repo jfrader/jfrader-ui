@@ -12,7 +12,7 @@ const stackStyle = css({
 });
 
 const meta = {
-  title: 'Components/Pagination',
+  title: 'Navigation/Pagination',
   component: Pagination,
   args: { page: 5, totalPages: 20, locale: 'en-US' },
   argTypes: {

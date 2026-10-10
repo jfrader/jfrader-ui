@@ -21,7 +21,7 @@ const rowStyle = css({
 });
 
 const meta = {
-  title: 'Components/Toast',
+  title: 'Feedback/Toast',
   component: Toast,
 } satisfies Meta<typeof Toast>;
 

@@ -53,7 +53,7 @@ const proseStyle = css({
 });
 
 const meta = {
-  title: 'Components/Flex',
+  title: 'Layout/Flex',
   component: Flex,
   args: { gap: 'sm' },
   argTypes: {

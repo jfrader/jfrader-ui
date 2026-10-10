@@ -21,7 +21,7 @@ const proseStyle = css({
 });
 
 const meta = {
-  title: 'Components/Pill',
+  title: 'Data display/Pill',
   component: Pill,
   args: { children: 'Draft', tone: 'neutral' },
   argTypes: {

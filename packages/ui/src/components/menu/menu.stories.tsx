@@ -17,7 +17,7 @@ const rowStyle = css({
 });
 
 const meta = {
-  title: 'Components/Menu',
+  title: 'Navigation/Menu',
   component: Menu,
   parameters: {
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus

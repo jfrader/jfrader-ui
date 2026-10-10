@@ -57,7 +57,7 @@ async function expectMarkerAt(marker: HTMLElement, x: number, y: number) {
 }
 
 const meta = {
-  title: 'Components/Badge',
+  title: 'Data display/Badge',
   component: Badge,
   args: { children: <Square />, badgeContent: 4 },
   argTypes: {

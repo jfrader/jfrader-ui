@@ -21,7 +21,7 @@ const frameStyle = css({
 });
 
 const meta = {
-  title: 'Components/Accordion',
+  title: 'Surfaces/Accordion',
   component: Accordion,
   argTypes: {
     type: { control: 'radio', options: ['single', 'multiple'] },

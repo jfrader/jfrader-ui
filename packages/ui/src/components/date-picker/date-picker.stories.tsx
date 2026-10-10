@@ -18,7 +18,7 @@ const stackStyle = css({
 });
 
 const meta = {
-  title: 'Components/DatePicker',
+  title: 'Pickers/DatePicker',
   component: DatePicker,
   args: { locale: LOCALE },
   parameters: {

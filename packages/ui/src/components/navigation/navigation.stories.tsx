@@ -37,7 +37,7 @@ const iconStyle = css({
 });
 
 const meta = {
-  title: 'Components/Navigation',
+  title: 'Navigation/Navigation',
   component: Navigation,
   decorators: [
     (Story) => (

@@ -34,7 +34,7 @@ const boxStyle = css({
 });
 
 const meta = {
-  title: 'Components/Stack',
+  title: 'Layout/Stack',
   component: Stack,
   argTypes: {
     align: { control: 'select', options: Object.keys(ALIGNS) },

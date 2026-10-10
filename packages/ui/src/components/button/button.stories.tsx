@@ -41,7 +41,7 @@ function ArrowIcon() {
 }
 
 const meta = {
-  title: 'Components/Button',
+  title: 'Inputs/Button',
   component: Button,
   tags: ['autodocs'],
   args: { children: 'Button', variant: 'solid', tone: 'neutral', size: 'md' },

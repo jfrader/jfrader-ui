@@ -15,7 +15,7 @@ const stackStyle = css({
 });
 
 const meta = {
-  title: 'Components/TextField',
+  title: 'Inputs/TextField',
   component: TextField,
   args: { label: 'Email', placeholder: 'you@example.com', size: 'md' },
   argTypes: {

@@ -29,7 +29,7 @@ const stackStyle = css({
 });
 
 const meta = {
-  title: 'Components/RadioGroup',
+  title: 'Inputs/RadioGroup',
   component: RadioGroup,
   argTypes: {
     orientation: { control: 'radio', options: ORIENTATIONS },

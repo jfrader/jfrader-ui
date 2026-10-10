@@ -23,7 +23,7 @@ const rowStyle = css({
 const proseStyle = css({ margin: 0 });
 
 const meta = {
-  title: 'Components/Divider',
+  title: 'Data display/Divider',
   component: Divider,
   decorators: [
     (Story) => (
