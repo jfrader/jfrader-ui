@@ -8,7 +8,7 @@
 // page order. Disabled items keep a real `disabled` button and are skipped by arrows.
 //
 // State: `value` is a string in single mode ('' means every panel is collapsed) and a
-// string[] with `multiple`. With `collapsible={false}` the last open panel cannot be
+// string[] with type="multiple". With `collapsible={false}` the last open panel cannot be
 // closed; its trigger carries aria-disabled="true" while it is the only open one.
 // Panels stay mounted while collapsed (`hidden`), so their inner state persists.
 import {
@@ -27,17 +27,30 @@ import { css } from '../../styling/css';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
+export type AccordionType = 'single' | 'multiple';
 export type AccordionValue = string | string[];
 
-export interface AccordionProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
-  value?: AccordionValue;
-  defaultValue?: AccordionValue;
-  onValueChange?: (value: AccordionValue) => void;
-  /** Allow several panels open at once. Values are emitted as string[]. */
-  multiple?: boolean;
+interface AccordionBaseProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
   /** Allow closing the last open panel. */
   collapsible?: boolean;
 }
+
+export interface AccordionSingleProps extends AccordionBaseProps {
+  type?: 'single';
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+}
+
+export interface AccordionMultipleProps extends AccordionBaseProps {
+  /** Allow several panels open at once. */
+  type: 'multiple';
+  value?: string[];
+  defaultValue?: string[];
+  onValueChange?: (value: string[]) => void;
+}
+
+export type AccordionProps = AccordionSingleProps | AccordionMultipleProps;
 
 export interface AccordionItemProps extends HTMLAttributes<HTMLDivElement> {
   value: string;
@@ -83,8 +96,8 @@ const TRIGGER_QUERY: OwnedItemsQuery = {
   ownerSelector: '[data-ui="accordion"]',
 };
 
-const toOpenValues = (value: AccordionValue | undefined, multiple: boolean): string[] => {
-  if (multiple && Array.isArray(value)) return value;
+const toOpenValues = (value: AccordionValue | undefined, type: AccordionType): string[] => {
+  if (type === 'multiple' && Array.isArray(value)) return value;
   // In single mode, array value/defaultValue uses only its first element.
   const singleValue = Array.isArray(value) ? value[0] : value;
   return singleValue === undefined || singleValue === EMPTY_SINGLE_VALUE ? [] : [singleValue];
@@ -178,29 +191,34 @@ const Root = forwardRef<HTMLDivElement, AccordionProps>(function Accordion(
     value: valueProp,
     defaultValue,
     onValueChange,
-    multiple = false,
+    type = 'single',
     collapsible = true,
     onKeyDown,
     ...rest
   },
   ref,
 ) {
-  const [value, setValue] = useControlledState<AccordionValue>(valueProp, defaultValue, onValueChange);
+  // `toggle` only emits the shape that matches `type`, so either callback accepts it.
+  const [value, setValue] = useControlledState<AccordionValue>(
+    valueProp,
+    defaultValue,
+    onValueChange as ((value: AccordionValue) => void) | undefined,
+  );
 
   const context = useMemo(() => {
-    const openValues = toOpenValues(value, multiple);
+    const openValues = toOpenValues(value, type);
     const canCollapse = collapsible || openValues.length > 1;
     const toggle = (itemValue: string) => {
       const isOpen = openValues.includes(itemValue);
       if (isOpen && !canCollapse) return;
-      if (multiple) {
+      if (type === 'multiple') {
         setValue(isOpen ? openValues.filter((open) => open !== itemValue) : [...openValues, itemValue]);
       } else {
         setValue(isOpen ? EMPTY_SINGLE_VALUE : itemValue);
       }
     };
     return { openValues, toggle, canCollapse };
-  }, [value, setValue, multiple, collapsible]);
+  }, [value, setValue, type, collapsible]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);

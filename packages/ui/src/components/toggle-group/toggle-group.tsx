@@ -32,16 +32,30 @@ import { useControlledState } from '../../utils/use-controlled-state';
 export type ToggleGroupType = 'single' | 'multiple';
 export type ToggleGroupOrientation = 'horizontal' | 'vertical';
 
-export interface ToggleGroupProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
-  type?: ToggleGroupType;
-  value?: string | string[];
-  defaultValue?: string | string[];
-  onValueChange?: (value: string | string[]) => void;
+type ToggleGroupValue = string | string[];
+
+interface ToggleGroupBaseProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
   orientation?: ToggleGroupOrientation;
   disabled?: boolean;
   allowEmpty?: boolean;
   label?: string;
 }
+
+export interface ToggleGroupSingleProps extends ToggleGroupBaseProps {
+  type?: 'single';
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+}
+
+export interface ToggleGroupMultipleProps extends ToggleGroupBaseProps {
+  type: 'multiple';
+  value?: string[];
+  defaultValue?: string[];
+  onValueChange?: (value: string[]) => void;
+}
+
+export type ToggleGroupProps = ToggleGroupSingleProps | ToggleGroupMultipleProps;
 
 export interface ToggleGroupItemProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'value'> {
   value: string;
@@ -65,7 +79,7 @@ function useToggleGroupContext(part: string): ToggleGroupContextValue {
 
 const EMPTY: readonly string[] = [];
 
-const toPressed = (value: string | string[] | undefined, type: ToggleGroupType): readonly string[] => {
+const toPressed = (value: ToggleGroupValue | undefined, type: ToggleGroupType): readonly string[] => {
   if (Array.isArray(value)) {
     if (type === 'multiple') return value;
     value = value[0] ?? '';
@@ -169,7 +183,12 @@ const Root = forwardRef<HTMLDivElement, ToggleGroupProps>(function ToggleGroup(
   },
   ref,
 ) {
-  const [value, setValue] = useControlledState<string | string[]>(valueProp, defaultValue, onValueChange);
+  // `toggle` only emits the shape that matches `type`, so either callback accepts it.
+  const [value, setValue] = useControlledState<ToggleGroupValue>(
+    valueProp,
+    defaultValue,
+    onValueChange as ((value: ToggleGroupValue) => void) | undefined,
+  );
   const [focused, setFocused] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(ref, () => rootRef.current as HTMLDivElement, []);

@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useState, type ReactNode } from 'react';
+import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
-import { Accordion, type AccordionProps, type AccordionValue } from './index';
+import { Accordion, type AccordionProps } from './index';
 
 const ITEMS = [
   { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
@@ -24,7 +24,7 @@ const meta = {
   title: 'Components/Accordion',
   component: Accordion,
   argTypes: {
-    multiple: { control: 'boolean' },
+    type: { control: 'radio', options: ['single', 'multiple'] },
     collapsible: { control: 'boolean' },
   },
   decorators: [
@@ -38,7 +38,35 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = Omit<StoryObj<AccordionProps>, 'render' | 'play'> & {
+  render?: (args: AccordionProps) => ReactNode;
+  play?: (context: StoryContext<AccordionProps>) => Promise<void>;
+};
+
+type CheckedAccordionArgs<Args extends NonNullable<Story['args']>> = Args;
+
+export type AccordionTypeRegression = {
+  // @ts-expect-error An array value in single mode is a type error.
+  singleArrayValue: CheckedAccordionArgs<{ type: 'single'; value: string[] }>;
+  // @ts-expect-error An array callback in single mode is a type error.
+  singleArrayCallback: CheckedAccordionArgs<{ type: 'single'; onValueChange: (value: string[]) => void }>;
+  // @ts-expect-error A string value in multiple mode is a type error.
+  multipleStringValue: CheckedAccordionArgs<{ type: 'multiple'; value: string }>;
+  // @ts-expect-error A string callback in multiple mode is a type error.
+  multipleStringCallback: CheckedAccordionArgs<{ type: 'multiple'; onValueChange: (value: string) => void }>;
+  narrowing: typeof narrowAccordionProps;
+};
+
+function narrowAccordionProps(props: AccordionProps) {
+  if (props.type === 'multiple') {
+    const value: string[] | undefined = props.value;
+    const onValueChange: ((value: string[]) => void) | undefined = props.onValueChange;
+    return { value, onValueChange };
+  }
+  const value: string | undefined = props.value;
+  const onValueChange: ((value: string) => void) | undefined = props.onValueChange;
+  return { value, onValueChange };
+}
 
 function AccordionExample({
   count = ITEMS.length,
@@ -59,17 +87,30 @@ function AccordionExample({
 }
 
 /** Accepts every request except opening Billing, which the parent rejects. */
-function ControlledAccordion({ onValueChange, multiple = false, ...props }: AccordionProps) {
-  const [value, setValue] = useState<AccordionValue>(multiple ? ['one'] : 'one');
+function ControlledAccordion(props: AccordionProps) {
+  const [singleValue, setSingleValue] = useState('one');
+  const [multipleValue, setMultipleValue] = useState(['one']);
+  if (props.type === 'multiple') {
+    const { onValueChange, ...rest } = props;
+    return (
+      <AccordionExample
+        {...rest}
+        value={multipleValue}
+        onValueChange={(next: string[]) => {
+          onValueChange?.(next);
+          if (!next.includes(REJECTED_VALUE)) setMultipleValue(next);
+        }}
+      />
+    );
+  }
+  const { onValueChange, ...rest } = props;
   return (
     <AccordionExample
-      {...props}
-      multiple={multiple}
-      value={value}
-      onValueChange={(next) => {
+      {...rest}
+      value={singleValue}
+      onValueChange={(next: string) => {
         onValueChange?.(next);
-        const rejected = Array.isArray(next) ? next.includes(REJECTED_VALUE) : next === REJECTED_VALUE;
-        if (!rejected) setValue(next);
+        if (next !== REJECTED_VALUE) setSingleValue(next);
       }}
     />
   );
@@ -109,7 +150,7 @@ export const Default: Story = {
 };
 
 export const Multiple: Story = {
-  args: { multiple: true, defaultValue: ['one'], onValueChange: fn() },
+  args: { type: 'multiple', defaultValue: ['one'], onValueChange: fn() },
   render: (args) => <AccordionExample {...args} />,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
@@ -149,7 +190,7 @@ export const Controlled: Story = {
 };
 
 export const ControlledMultiple: Story = {
-  args: { multiple: true, onValueChange: fn() },
+  args: { type: 'multiple', onValueChange: fn() },
   render: (args) => <ControlledAccordion {...args} />,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
