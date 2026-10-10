@@ -1,4 +1,13 @@
-import { autoUpdate, flip, offset, shift, useFloating, type OpenChangeReason, type Placement } from '@floating-ui/react';
+import {
+  autoUpdate,
+  flip,
+  offset,
+  shift,
+  useFloating,
+  type OpenChangeReason,
+  type Placement,
+  type UseFloatingReturn,
+} from '@floating-ui/react';
 
 /** Gap between the trigger and the floating surface, in px (matches `space[2]`). */
 const ANCHOR_GAP = 8;
@@ -15,7 +24,11 @@ export interface OverlayFloatingOptions {
  * Shared positioning for Popover, Tooltip and Menu. `autoUpdate` only runs while both
  * elements are mounted, so a closed (unmounted) surface does no positioning work.
  */
-export function useOverlayFloating({ open, onOpenChange, placement }: OverlayFloatingOptions) {
+export function useOverlayFloating({
+  open,
+  onOpenChange,
+  placement,
+}: OverlayFloatingOptions): UseFloatingReturn<HTMLButtonElement> {
   return useFloating<HTMLButtonElement>({
     open,
     onOpenChange,

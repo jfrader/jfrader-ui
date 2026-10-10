@@ -1,6 +1,6 @@
 # Consuming jfrader-ui
 
-`@jfrader/ui` ships TSX source that uses Emotion's `css` prop. The consuming app compiles it.
+Published `@jfrader/ui` and `@jfrader/tokens` packages ship compiled ES modules and TypeScript declarations. The app does not compile the library's TSX or need Emotion's `jsxImportSource` for library internals.
 
 ## Dependencies
 
@@ -8,7 +8,17 @@
 pnpm add @jfrader/ui @jfrader/tokens @emotion/react react react-dom
 ```
 
-## Vite
+## Published packages
+
+Use your app's normal React JSX configuration. Configure Emotion's `jsxImportSource` only if the app itself uses Emotion's `css` prop.
+
+## In-repo workspace development
+
+Workspace exports point at TypeScript and TSX under `src/`. The app must compile that source with Emotion's JSX runtime. Generate the tokens with `pnpm generate` before starting the app.
+
+The following Vite and TypeScript settings apply to workspace source consumption, or to an app that uses Emotion's `css` prop itself.
+
+### Vite
 
 ```ts
 // vite.config.ts
@@ -20,7 +30,7 @@ export default defineConfig({
 });
 ```
 
-## tsconfig
+### tsconfig
 
 For the Vite setup above, use:
 

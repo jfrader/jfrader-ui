@@ -1,4 +1,6 @@
 // Fails when a packages/ui component folder has no `./<name>` export, or an export points at a missing file.
+// Validates the repo (src) layout only; the publish (dist) layout is validated after a build by
+// scripts/flip-exports.mjs and the `npm pack --dry-run` check in the package READMEs.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 

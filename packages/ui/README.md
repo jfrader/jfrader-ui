@@ -76,25 +76,29 @@ Token names and values live in `packages/tokens/src/tokens.ts`.
 ## Build
 
 ```sh
-pnpm generate
-pnpm --filter @jfrader/ui build
+pnpm --filter @jfrader/tokens build && pnpm --filter @jfrader/ui build
 ```
 
 Writes ES modules to `dist/` (`dist/index.js` plus one `dist/<name>.js` per component) and declarations to `dist/types/`. `react`, `react-dom` and every package in `dependencies` stay external.
 
-## Publishing (not yet enabled)
+## Publishing
 
-The package is `private: true` and its `exports` point at `src/` so the workspace consumes source directly. To publish:
+`@jfrader/ui` and `@jfrader/tokens` publish together from `.github/workflows/publish.yml`.
 
-1. Remove `"private": true`.
-2. Add `"files": ["dist"]`.
-3. Point each `exports` entry at `dist`:
+1. Set the same `version` in `packages/ui/package.json` and `packages/tokens/package.json` and merge to `master`.
+2. Tag the merge commit and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+3. CI runs typecheck and tests, builds both packages, switches `exports` to `dist/` and runs `pnpm -r publish`. `workspace:*` becomes the published version.
 
-   ```json
-   ".": { "types": "./dist/types/index.d.ts", "import": "./dist/index.js" },
-   "./button": { "types": "./dist/types/components/button/index.d.ts", "import": "./dist/button.js" }
-   ```
+In the repo, `exports` point at `src/` so the workspace consumes source. `node scripts/flip-exports.mjs dist` validates and switches both packages to the publish layout; `node scripts/flip-exports.mjs src` switches both back. The UI `prepack` builds UI and flips only its manifest with `--package ui`; `postpack` restores only UI. Each flip validates only the selected package's export targets.
 
-   Repeat for every component subpath, or move these into `publishConfig.exports` to keep source conditions in the workspace.
-4. Publish `@jfrader/tokens` first; `pnpm publish` rewrites `workspace:*` to its version.
-5. Run `pnpm generate`, `pnpm --filter @jfrader/ui build` and `pnpm verify:exports` before publishing.
+Build tokens before packing UI: the published UI package depends on `@jfrader/tokens`, which stays external rather than being bundled. The UI hook does not build or validate tokens; prepare its published artifacts separately. Run from the repo root:
+
+```sh
+pnpm --filter @jfrader/tokens build && pnpm --filter @jfrader/ui build
+pnpm --filter @jfrader/ui exec npm pack --dry-run --json
+pnpm --filter @jfrader/ui pack --pack-destination /tmp/opencode
+```
+
+Root `pnpm build` builds Storybook, not the published packages. If packing fails after `prepack`, run `node scripts/flip-exports.mjs src` from the repo root to restore workspace exports.
+
+It must contain only `dist/**`, `package.json`, `README.md` and `LICENSE`.

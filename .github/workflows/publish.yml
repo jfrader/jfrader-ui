@@ -1,0 +1,39 @@
+name: Publish
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @jfrader/storybook exec playwright install --with-deps chromium
+
+      - run: pnpm typecheck
+
+      - run: pnpm test
+
+      - run: pnpm --filter @jfrader/tokens build && pnpm --filter @jfrader/ui build
+
+      # Flip once up front and skip the pack scripts so every manifest pnpm reads is already in the dist layout.
+      - run: node scripts/flip-exports.mjs dist
+
+      - run: pnpm -r publish --access public --no-git-checks --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
