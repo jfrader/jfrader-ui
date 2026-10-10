@@ -2,7 +2,7 @@
 
 A from-scratch React component system styled with Emotion and themed through CSS custom properties, with Storybook 10 as the workbench.
 
-Status: M1 complete — reviewed and tested: ThemeRoot, Button, TextField, Textarea, Checkbox, Switch, RadioGroup, Select, Tabs, Accordion, Dialog, Popover, Tooltip, Menu, Toast, Alert, Avatar, Badge, Spinner, Progress, Skeleton
+Status: 30 components — reviewed, tested (265 browser tests + axe gate) and story-documented. M1 + M2 complete; see PLAN.md for the inventory.
 
 ## Packages
 

@@ -7,9 +7,8 @@
 // Keyboard map: the dismiss button is a native button (Tab to reach, Enter/Space to activate).
 // Dismissal is a request: `onDismiss` fires and the parent removes the alert.
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
-import type { Interpolation, Theme } from '@emotion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type SerializedStyles } from '../../styling/css';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { isRenderable } from '../../utils/renderable';
 
 export type AlertTone = 'info' | 'success' | 'warning' | 'danger';
