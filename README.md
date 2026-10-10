@@ -12,6 +12,8 @@ Status: 30 components — reviewed, tested (265 browser tests + axe gate) and st
 | `packages/ui` | `@jfrader/ui` | React components |
 | `apps/storybook` | `@jfrader/storybook` | Storybook workbench and docs |
 
+To use the library in an app, see [docs/consuming-jfrader-ui.md](docs/consuming-jfrader-ui.md).
+
 ## Commands
 
 Run from the repo root.

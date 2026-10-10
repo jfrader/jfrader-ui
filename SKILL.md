@@ -85,6 +85,9 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   Declare `keyframes` at module scope.
 - **Dynamic values** (progress, coordinates) go through inline CSS custom properties or `style`
   attributes, never through generated per-value classes.
+- **Theming has two paths.** Apps set `data-theme` on `<html>`; `ThemeRoot` themes a scoped subtree
+  (embedded widgets). Components read tokens only and never pick a theme themselves. Consumer setup
+  lives in `docs/consuming-jfrader-ui.md`.
 - **No deep descendant-chain styling.** Direct relations from the component's own DOM are fine
   (`input:checked + span`, `&[data-indeterminate] input + span svg`); avoid unrelated descendant
   selectors and tag-only chains beyond one level.

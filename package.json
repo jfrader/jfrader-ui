@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.12.1",
   "engines": { "node": ">=22.12" },
   "scripts": {
+    "postinstall": "pnpm generate",
     "generate": "pnpm --filter @jfrader/tokens generate",
     "dev": "pnpm generate && pnpm --filter @jfrader/storybook dev",
     "build": "pnpm generate && pnpm --filter @jfrader/storybook build",
