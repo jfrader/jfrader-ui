@@ -1,14 +1,14 @@
 // Decorative loading placeholder: aria-hidden, no role, not focusable. Announce the loading state
 // elsewhere (a Spinner, aria-busy on the region being filled). Dimensions are dynamic, so they go
 // through the style attribute; numbers are pixels, strings pass through as CSS lengths.
-import { forwardRef, type HTMLAttributes } from 'react';
+import type { ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 
 type Length = number | string;
 
-export interface SkeletonProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface SkeletonProps extends Omit<ComponentPropsWithRef<'div'>, 'children'> {
   width?: Length;
   height?: Length;
   /** Round placeholder; height follows width unless `height` is given. */
@@ -47,10 +47,7 @@ const circleStyle = css({
   borderRadius: vars.radius.full,
 });
 
-export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(function Skeleton(
-  { width, height, circle = false, radius, style, ...rest },
-  ref,
-) {
+export function Skeleton({ ref, width, height, circle = false, radius, style, ...rest }: SkeletonProps) {
   return (
     <div
       {...rest}
@@ -61,4 +58,6 @@ export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(function Skele
       css={[baseStyle, circle && circleStyle]}
     />
   );
-});
+}
+
+Skeleton.displayName = 'Skeleton';

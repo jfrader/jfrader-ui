@@ -27,7 +27,6 @@
 // validation (`required`) is not wired in this version.
 import {
   createContext,
-  forwardRef,
   useCallback,
   useContext,
   useId,
@@ -36,10 +35,10 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type ComponentPropsWithRef,
   type CSSProperties,
   type Dispatch,
   type FocusEvent,
-  type HTMLAttributes,
   type KeyboardEvent,
   type MouseEvent,
   type MutableRefObject,
@@ -112,13 +111,13 @@ export interface ComboboxInputProps extends Omit<TextFieldProps, 'value' | 'defa
   /** Initial input text; when set, it filters the options from the first render. */
   defaultInputValue?: string;
 }
-export interface ComboboxListProps extends HTMLAttributes<HTMLDivElement> {}
-export interface ComboboxItemProps extends HTMLAttributes<HTMLDivElement> {
+export interface ComboboxListProps extends ComponentPropsWithRef<'div'> {}
+export interface ComboboxItemProps extends ComponentPropsWithRef<'div'> {
   /** Unique within the combobox. */
   value: string;
   disabled?: boolean;
 }
-export interface ComboboxEmptyProps extends HTMLAttributes<HTMLDivElement> {}
+export interface ComboboxEmptyProps extends ComponentPropsWithRef<'div'> {}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -357,25 +356,25 @@ function ComboboxRoot({
   );
 }
 
-const Input = forwardRef<HTMLInputElement, ComboboxInputProps>(function ComboboxInput(
-  {
-    inputValue,
-    defaultInputValue,
-    label,
-    description,
-    error,
-    size,
-    slotProps,
-    className,
-    id: idProp,
-    onChange,
-    onKeyDown,
-    onBlur,
-    disabled = false,
-    ...rest
-  },
+ComboboxRoot.displayName = 'Combobox';
+
+function ComboboxInput({
   ref,
-) {
+  inputValue,
+  defaultInputValue,
+  label,
+  description,
+  error,
+  size,
+  slotProps,
+  className,
+  id: idProp,
+  onChange,
+  onKeyDown,
+  onBlur,
+  disabled = false,
+  ...rest
+}: ComboboxInputProps) {
   const {
     listId,
     open,
@@ -516,12 +515,11 @@ const Input = forwardRef<HTMLInputElement, ComboboxInputProps>(function Combobox
       data-ui="combobox-input"
     />
   );
-});
+}
 
-const List = forwardRef<HTMLDivElement, ComboboxListProps>(function ComboboxList(
-  { id: idProp, style, onMouseDown, children, ...rest },
-  ref,
-) {
+ComboboxInput.displayName = 'Combobox.Input';
+
+function ComboboxList({ ref, id: idProp, style, onMouseDown, children, ...rest }: ComboboxListProps) {
   const { baseId, setListId, open, inputLabelling, refs, floatingStyles, elementsRef, getFloatingProps } =
     useComboboxContext('List');
   const listId = idProp ?? `${baseId}-listbox`;
@@ -563,12 +561,11 @@ const List = forwardRef<HTMLDivElement, ComboboxListProps>(function ComboboxList
       </div>
     </FloatingPortal>
   );
-});
+}
 
-const Item = forwardRef<HTMLDivElement, ComboboxItemProps>(function ComboboxItem(
-  { value, disabled = false, onClick, children, ...rest },
-  ref,
-) {
+ComboboxList.displayName = 'Combobox.List';
+
+function ComboboxItem({ ref, value, disabled = false, onClick, children, ...rest }: ComboboxItemProps) {
   const { baseId, selectedValue, activeIndex, options, isVisible, getItemProps, selectValue, registration } =
     useComboboxListContext('Item');
   const textRef = useRef<HTMLSpanElement>(null);
@@ -611,9 +608,11 @@ const Item = forwardRef<HTMLDivElement, ComboboxItemProps>(function ComboboxItem
       )}
     </div>
   );
-});
+}
 
-const Empty = forwardRef<HTMLDivElement, ComboboxEmptyProps>(function ComboboxEmpty({ children, ...rest }, ref) {
+ComboboxItem.displayName = 'Combobox.Item';
+
+function ComboboxEmpty({ ref, children, ...rest }: ComboboxEmptyProps) {
   const { matchCount } = useComboboxListContext('Empty');
   if (matchCount > 0) return null;
   return (
@@ -621,6 +620,13 @@ const Empty = forwardRef<HTMLDivElement, ComboboxEmptyProps>(function ComboboxEm
       {isRenderable(children) ? children : DEFAULT_EMPTY_LABEL}
     </div>
   );
-});
+}
 
-export const Combobox = Object.assign(ComboboxRoot, { Input, List, Item, Empty });
+ComboboxEmpty.displayName = 'Combobox.Empty';
+
+export const Combobox = Object.assign(ComboboxRoot, {
+  Input: ComboboxInput,
+  List: ComboboxList,
+  Item: ComboboxItem,
+  Empty: ComboboxEmpty,
+});

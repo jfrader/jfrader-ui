@@ -24,7 +24,6 @@
 // midnight or time zones.
 import {
   createContext,
-  forwardRef,
   useContext,
   useEffect,
   useId,
@@ -33,7 +32,7 @@ import {
   useMemo,
   useRef,
   useState,
-  type HTMLAttributes,
+  type ComponentPropsWithRef,
   type KeyboardEvent,
 } from 'react';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -75,7 +74,7 @@ import {
 /** Day of the week as counted by `Date#getUTCDay`: 0 is Sunday, 6 is Saturday. */
 export type CalendarWeekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-export interface CalendarProps extends Omit<HTMLAttributes<HTMLDivElement>, 'defaultValue' | 'onChange'> {
+export interface CalendarProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'> {
   /** Selected date, 'YYYY-MM-DD'. */
   value?: string;
   defaultValue?: string;
@@ -95,8 +94,8 @@ export interface CalendarProps extends Omit<HTMLAttributes<HTMLDivElement>, 'def
 }
 
 /** The header renders its own month buttons and label. */
-export type CalendarHeaderProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'>;
-export type CalendarGridProps = HTMLAttributes<HTMLTableElement>;
+export type CalendarHeaderProps = Omit<ComponentPropsWithRef<'div'>, 'children'>;
+export type CalendarGridProps = ComponentPropsWithRef<'table'>;
 
 /** The day that carries roving focus, and the day to keep it on if `date` is not shown. */
 interface FocusTarget {
@@ -134,22 +133,20 @@ const NEXT_GLYPH = '›';
 
 // ---- Parts.
 
-const Root = forwardRef<HTMLDivElement, CalendarProps>(function Calendar(
-  {
-    value: valueProp,
-    defaultValue,
-    onValueChange,
-    visibleMonth: visibleMonthProp,
-    defaultVisibleMonth,
-    onVisibleMonthChange,
-    min: minProp,
-    max: maxProp,
-    locale: localeProp,
-    firstDayOfWeek: firstDayOfWeekProp,
-    ...rest
-  },
+function CalendarRoot({
   ref,
-) {
+  value: valueProp,
+  defaultValue,
+  onValueChange,
+  visibleMonth: visibleMonthProp,
+  defaultVisibleMonth,
+  onVisibleMonthChange,
+  min: minProp,
+  max: maxProp,
+  locale: localeProp,
+  firstDayOfWeek: firstDayOfWeekProp,
+  ...rest
+}: CalendarProps) {
   const labelId = `${useId()}-label`;
   // Today follows the user's local civil day, not the UTC day used for arithmetic.
   const now = new Date();
@@ -214,9 +211,11 @@ const Root = forwardRef<HTMLDivElement, CalendarProps>(function Calendar(
       <div {...rest} ref={ref} data-ui="calendar" css={rootStyle} />
     </CalendarContext.Provider>
   );
-});
+}
 
-const Header = forwardRef<HTMLDivElement, CalendarHeaderProps>(function CalendarHeader(props, ref) {
+CalendarRoot.displayName = 'Calendar';
+
+function CalendarHeader({ ref, ...props }: CalendarHeaderProps) {
   const { visibleMonth, min, max, formatters, requestVisibleMonth, labelId, setHasHeader } =
     useCalendarContext('Header');
 
@@ -267,7 +266,9 @@ const Header = forwardRef<HTMLDivElement, CalendarHeaderProps>(function Calendar
       </button>
     </div>
   );
-});
+}
+
+CalendarHeader.displayName = 'Calendar.Header';
 
 interface DayProps {
   date: string;
@@ -306,10 +307,13 @@ function Day({ date, isTabStop }: DayProps) {
   );
 }
 
-const Grid = forwardRef<HTMLTableElement, CalendarGridProps>(function CalendarGrid(
-  { onKeyDown, 'aria-labelledby': ariaLabelledByProp, 'aria-label': ariaLabelProp, ...rest },
+function CalendarGrid({
   ref,
-) {
+  onKeyDown,
+  'aria-labelledby': ariaLabelledByProp,
+  'aria-label': ariaLabelProp,
+  ...rest
+}: CalendarGridProps) {
   const {
     value,
     visibleMonth,
@@ -412,6 +416,8 @@ const Grid = forwardRef<HTMLTableElement, CalendarGridProps>(function CalendarGr
       </tbody>
     </table>
   );
-});
+}
 
-export const Calendar = Object.assign(Root, { Header, Grid });
+CalendarGrid.displayName = 'Calendar.Grid';
+
+export const Calendar = Object.assign(CalendarRoot, { Header: CalendarHeader, Grid: CalendarGrid });

@@ -3,7 +3,7 @@
 // (`value` undefined): no aria-valuenow. An accessible name is required in every usage:
 // provide `label` (rendered visually hidden inside the bar), `aria-label`, or `aria-labelledby`
 // pointing at a visible label (`label` and `aria-labelledby` merge when given).
-import { forwardRef, useId, type HTMLAttributes, type ReactNode } from 'react';
+import { useId, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -15,7 +15,7 @@ export interface ProgressPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface ProgressProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface ProgressProps extends Omit<ComponentPropsWithRef<'div'>, 'children'> {
   /** Current value in `0..max`; leave undefined for indeterminate progress. */
   value?: number;
   max?: number;
@@ -90,18 +90,16 @@ function normalizeProgress(value: number | undefined, max: number) {
   return { value: normalizedValue, max: normalizedMax };
 }
 
-export const Progress = forwardRef<HTMLDivElement, ProgressProps>(function Progress(
-  {
-    value,
-    max = DEFAULT_MAX,
-    label,
-    getValueLabel,
-    slotProps,
-    'aria-labelledby': ariaLabelledByProp,
-    ...rest
-  },
+export function Progress({
   ref,
-) {
+  value,
+  max = DEFAULT_MAX,
+  label,
+  getValueLabel,
+  slotProps,
+  'aria-labelledby': ariaLabelledByProp,
+  ...rest
+}: ProgressProps) {
   const labelId = `${useId()}-label`;
   const hasLabel = isRenderable(label);
   const ariaLabelledBy = [ariaLabelledByProp, hasLabel && labelId].filter(Boolean).join(' ') || undefined;
@@ -136,4 +134,6 @@ export const Progress = forwardRef<HTMLDivElement, ProgressProps>(function Progr
       />
     </div>
   );
-});
+}
+
+Progress.displayName = 'Progress';

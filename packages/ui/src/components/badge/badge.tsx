@@ -2,7 +2,7 @@
 // marker's text follows the child in reading order, so assistive tech reads "child, count";
 // the dot carries no text and is hidden from AT. Pass words in `badgeContent` when the number
 // alone is ambiguous. Not interactive.
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 
@@ -16,7 +16,7 @@ export interface BadgePartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
+export interface BadgeProps extends ComponentPropsWithRef<'span'> {
   children: ReactNode;
   badgeContent?: ReactNode;
   /** Numbers above `max` render as `max+`. */
@@ -134,23 +134,21 @@ const toneStyles: Record<BadgeTone, SerializedStyles> = {
  * - Control with an explicit `aria-label`: put the count in the label (`aria-label="Inbox, 3 unread"`).
  * - Control named by its visible text: the count is read right after the control's name.
  */
-export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
-  {
-    children,
-    badgeContent,
-    max = DEFAULT_MAX,
-    showZero = false,
-    invisible = false,
-    variant = 'standard',
-    tone = 'accent',
-    anchor,
-    overlap = 'rectangular',
-    slotProps,
-    className,
-    ...rest
-  },
+export function Badge({
   ref,
-) {
+  children,
+  badgeContent,
+  max = DEFAULT_MAX,
+  showZero = false,
+  invisible = false,
+  variant = 'standard',
+  tone = 'accent',
+  anchor,
+  overlap = 'rectangular',
+  slotProps,
+  className,
+  ...rest
+}: BadgeProps) {
   const isDot = variant === 'dot';
   // MUI-faithful: null/undefined/false never render a marker, even with showZero; numeric zero
   // hides unless showZero; dot never hides on content. The one deliberate extension over MUI
@@ -192,4 +190,6 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
       )}
     </span>
   );
-});
+}
+
+Badge.displayName = 'Badge';

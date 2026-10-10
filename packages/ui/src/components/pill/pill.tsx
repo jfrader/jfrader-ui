@@ -1,12 +1,12 @@
 // Static status label. Plain inline text with no role: the pill's meaning lives in its
 // children, so tone color is never the only cue. Not interactive.
-import { forwardRef, type HTMLAttributes } from 'react';
+import type { ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 
 export type PillTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
 
-export interface PillProps extends HTMLAttributes<HTMLSpanElement> {
+export interface PillProps extends ComponentPropsWithRef<'span'> {
   tone?: PillTone;
 }
 
@@ -43,6 +43,8 @@ const toneStyles: Record<PillTone, SerializedStyles> = {
   danger: css({ backgroundColor: vars.color.dangerSoft, color: vars.color.dangerText }),
 };
 
-export const Pill = forwardRef<HTMLSpanElement, PillProps>(function Pill({ tone = 'neutral', ...rest }, ref) {
+export function Pill({ ref, tone = 'neutral', ...rest }: PillProps) {
   return <span {...rest} ref={ref} data-ui="pill" data-tone={tone} css={[rootStyle, toneStyles[tone]]} />;
-});
+}
+
+Pill.displayName = 'Pill';

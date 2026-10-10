@@ -11,7 +11,6 @@
 // separator is hidden with CSS so they only ever render between items.
 import {
   createContext,
-  forwardRef,
   useCallback,
   useContext,
   useId,
@@ -20,8 +19,7 @@ import {
   useMemo,
   useRef,
   useState,
-  type HTMLAttributes,
-  type LiHTMLAttributes,
+  type ComponentPropsWithRef,
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
@@ -29,14 +27,14 @@ import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
 
-export interface BreadcrumbsProps extends HTMLAttributes<HTMLElement> {
+export interface BreadcrumbsProps extends ComponentPropsWithRef<'nav'> {
   /** Accessible name of the navigation landmark. */
   label?: string;
   /** Rendered (aria-hidden) between items. */
   separator?: ReactNode;
 }
 
-export interface BreadcrumbsItemProps extends LiHTMLAttributes<HTMLLIElement> {
+export interface BreadcrumbsItemProps extends ComponentPropsWithRef<'li'> {
   href?: string;
   /** Marks the current page. Defaults to the last item when no item sets it. */
   current?: boolean;
@@ -125,10 +123,7 @@ const linkStyle = css({
   },
 });
 
-const Root = forwardRef<HTMLElement, BreadcrumbsProps>(function Breadcrumbs(
-  { label = 'Breadcrumb', separator = '/', children, ...rest },
-  ref,
-) {
+function BreadcrumbsRoot({ ref, label = 'Breadcrumb', separator = '/', children, ...rest }: BreadcrumbsProps) {
   const records = useRef(new Map<string, ItemRecord>());
   const [autoCurrentId, setAutoCurrentId] = useState<string | null>(null);
   const resolvedId = useRef<string | null>(null);
@@ -170,12 +165,11 @@ const Root = forwardRef<HTMLElement, BreadcrumbsProps>(function Breadcrumbs(
       </nav>
     </BreadcrumbsContext.Provider>
   );
-});
+}
 
-const Item = forwardRef<HTMLLIElement, BreadcrumbsItemProps>(function BreadcrumbsItem(
-  { href, current, children, ...rest },
-  ref,
-) {
+BreadcrumbsRoot.displayName = 'Breadcrumbs';
+
+function BreadcrumbsItem({ ref, href, current, children, ...rest }: BreadcrumbsItemProps) {
   const { separator, autoCurrentId, register, unregister } = useBreadcrumbsContext('Item');
   const id = useId();
   const itemRef = useRef<HTMLLIElement>(null);
@@ -208,6 +202,8 @@ const Item = forwardRef<HTMLLIElement, BreadcrumbsItemProps>(function Breadcrumb
       )}
     </li>
   );
-});
+}
 
-export const Breadcrumbs = Object.assign(Root, { Item });
+BreadcrumbsItem.displayName = 'Breadcrumbs.Item';
+
+export const Breadcrumbs = Object.assign(BreadcrumbsRoot, { Item: BreadcrumbsItem });

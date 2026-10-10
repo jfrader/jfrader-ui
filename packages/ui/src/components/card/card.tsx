@@ -5,7 +5,7 @@
 // the card is placed (a card under an h2 section keeps h3, a top-level card grid may need h2).
 // slotProps on the root style the parts rendered inside it, so a consumer can theme a card's
 // anatomy from one place; a part's own className/css still merges last.
-import { createContext, forwardRef, useContext, type HTMLAttributes } from 'react';
+import { createContext, useContext, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 
@@ -27,22 +27,22 @@ export interface CardSlotProps {
   footer?: CardPartProps;
 }
 
-export interface CardProps extends HTMLAttributes<HTMLDivElement> {
+export interface CardProps extends ComponentPropsWithRef<'div'> {
   variant?: CardVariant;
   slotProps?: CardSlotProps;
 }
 
-export type CardHeaderProps = HTMLAttributes<HTMLDivElement>;
+export type CardHeaderProps = ComponentPropsWithRef<'div'>;
 
-export interface CardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
+export interface CardTitleProps extends ComponentPropsWithRef<'h3'> {
   level?: CardHeadingLevel;
 }
 
-export type CardDescriptionProps = HTMLAttributes<HTMLParagraphElement>;
+export type CardDescriptionProps = ComponentPropsWithRef<'p'>;
 
-export type CardContentProps = HTMLAttributes<HTMLDivElement>;
+export type CardContentProps = ComponentPropsWithRef<'div'>;
 
-export type CardFooterProps = HTMLAttributes<HTMLDivElement>;
+export type CardFooterProps = ComponentPropsWithRef<'div'>;
 
 const CardSlotContext = createContext<CardSlotProps | undefined>(undefined);
 
@@ -107,10 +107,7 @@ const footerStyle = css({
   '& > :only-child': { marginInlineStart: 'auto' },
 });
 
-const CardRoot = forwardRef<HTMLDivElement, CardProps>(function Card(
-  { variant = 'raised', slotProps, className, ...rest },
-  ref,
-) {
+function CardRoot({ ref, variant = 'raised', slotProps, className, ...rest }: CardProps) {
   return (
     <CardSlotContext.Provider value={slotProps}>
       <div
@@ -123,9 +120,11 @@ const CardRoot = forwardRef<HTMLDivElement, CardProps>(function Card(
       />
     </CardSlotContext.Provider>
   );
-});
+}
 
-const Header = forwardRef<HTMLDivElement, CardHeaderProps>(function CardHeader({ className, ...rest }, ref) {
+CardRoot.displayName = 'Card';
+
+function CardHeader({ ref, className, ...rest }: CardHeaderProps) {
   const slot = useContext(CardSlotContext)?.header;
   return (
     <div
@@ -136,12 +135,11 @@ const Header = forwardRef<HTMLDivElement, CardHeaderProps>(function CardHeader({
       css={[headerStyle, slot?.css]}
     />
   );
-});
+}
 
-const Title = forwardRef<HTMLHeadingElement, CardTitleProps>(function CardTitle(
-  { level = 3, className, ...rest },
-  ref,
-) {
+CardHeader.displayName = 'Card.Header';
+
+function CardTitle({ ref, level = 3, className, ...rest }: CardTitleProps) {
   const slot = useContext(CardSlotContext)?.title;
   const Heading = `h${level}` as const;
   return (
@@ -153,12 +151,11 @@ const Title = forwardRef<HTMLHeadingElement, CardTitleProps>(function CardTitle(
       css={[titleStyle, slot?.css]}
     />
   );
-});
+}
 
-const Description = forwardRef<HTMLParagraphElement, CardDescriptionProps>(function CardDescription(
-  { className, ...rest },
-  ref,
-) {
+CardTitle.displayName = 'Card.Title';
+
+function CardDescription({ ref, className, ...rest }: CardDescriptionProps) {
   const slot = useContext(CardSlotContext)?.description;
   return (
     <p
@@ -169,9 +166,11 @@ const Description = forwardRef<HTMLParagraphElement, CardDescriptionProps>(funct
       css={[descriptionStyle, slot?.css]}
     />
   );
-});
+}
 
-const Content = forwardRef<HTMLDivElement, CardContentProps>(function CardContent({ className, ...rest }, ref) {
+CardDescription.displayName = 'Card.Description';
+
+function CardContent({ ref, className, ...rest }: CardContentProps) {
   const slot = useContext(CardSlotContext)?.content;
   return (
     <div
@@ -182,9 +181,11 @@ const Content = forwardRef<HTMLDivElement, CardContentProps>(function CardConten
       css={[contentStyle, slot?.css]}
     />
   );
-});
+}
 
-const Footer = forwardRef<HTMLDivElement, CardFooterProps>(function CardFooter({ className, ...rest }, ref) {
+CardContent.displayName = 'Card.Content';
+
+function CardFooter({ ref, className, ...rest }: CardFooterProps) {
   const slot = useContext(CardSlotContext)?.footer;
   return (
     <div
@@ -195,6 +196,14 @@ const Footer = forwardRef<HTMLDivElement, CardFooterProps>(function CardFooter({
       css={[footerStyle, slot?.css]}
     />
   );
-});
+}
 
-export const Card = Object.assign(CardRoot, { Header, Title, Description, Content, Footer });
+CardFooter.displayName = 'Card.Footer';
+
+export const Card = Object.assign(CardRoot, {
+  Header: CardHeader,
+  Title: CardTitle,
+  Description: CardDescription,
+  Content: CardContent,
+  Footer: CardFooter,
+});

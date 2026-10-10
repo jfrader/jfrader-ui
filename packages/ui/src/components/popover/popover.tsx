@@ -11,14 +11,12 @@
 // visible heading inside the content; use `aria-label` only when no visible label exists.
 import {
   createContext,
-  forwardRef,
   useContext,
   useEffect,
   useMemo,
   useRef,
-  type ButtonHTMLAttributes,
+  type ComponentPropsWithRef,
   type CSSProperties,
-  type HTMLAttributes,
   type ReactNode,
 } from 'react';
 import {
@@ -47,8 +45,8 @@ export interface PopoverProps {
   children?: ReactNode;
 }
 
-export interface PopoverTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {}
-export interface PopoverContentProps extends HTMLAttributes<HTMLDivElement> {}
+export interface PopoverTriggerProps extends ComponentPropsWithRef<'button'> {}
+export interface PopoverContentProps extends ComponentPropsWithRef<'div'> {}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -120,7 +118,9 @@ function PopoverRoot({
   return <PopoverContext.Provider value={value}>{children}</PopoverContext.Provider>;
 }
 
-const Trigger = forwardRef<HTMLButtonElement, PopoverTriggerProps>(function PopoverTrigger(props, ref) {
+PopoverRoot.displayName = 'Popover';
+
+function PopoverTrigger({ ref, ...props }: PopoverTriggerProps) {
   const { refs, getReferenceProps } = usePopoverContext('Trigger');
   const mergedRef = useMergeRefs([refs.setReference, ref]);
 
@@ -133,9 +133,11 @@ const Trigger = forwardRef<HTMLButtonElement, PopoverTriggerProps>(function Popo
       css={triggerStyle}
     />
   );
-});
+}
 
-const Content = forwardRef<HTMLDivElement, PopoverContentProps>(function PopoverContent({ style, ...rest }, ref) {
+PopoverTrigger.displayName = 'Popover.Trigger';
+
+function PopoverContent({ ref, style, ...rest }: PopoverContentProps) {
   const { open, refs, floatingContext, floatingStyles, getFloatingProps } = usePopoverContext('Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
 
@@ -162,6 +164,8 @@ const Content = forwardRef<HTMLDivElement, PopoverContentProps>(function Popover
       </FloatingFocusManager>
     </FloatingPortal>
   );
-});
+}
 
-export const Popover = Object.assign(PopoverRoot, { Trigger, Content });
+PopoverContent.displayName = 'Popover.Content';
+
+export const Popover = Object.assign(PopoverRoot, { Trigger: PopoverTrigger, Content: PopoverContent });

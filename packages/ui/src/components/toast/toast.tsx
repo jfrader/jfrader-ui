@@ -18,7 +18,6 @@
 // not a controlled prop axis, so `useControlledState` (controlled props only) does not apply.
 import {
   createContext,
-  forwardRef,
   useCallback,
   useContext,
   useEffect,
@@ -26,8 +25,8 @@ import {
   useMemo,
   useRef,
   useState,
+  type ComponentPropsWithRef,
   type FocusEvent,
-  type HTMLAttributes,
   type MouseEvent,
   type ReactNode,
 } from 'react';
@@ -65,7 +64,7 @@ export interface ToastProviderProps {
   dismissLabel?: string;
 }
 
-export interface ToastViewportProps extends HTMLAttributes<HTMLDivElement> {}
+export interface ToastViewportProps extends ComponentPropsWithRef<'div'> {}
 
 export interface ToastApi {
   toast: (options: ToastOptions) => string;
@@ -300,7 +299,9 @@ function ToastProvider({
   );
 }
 
-const Viewport = forwardRef<HTMLDivElement, ToastViewportProps>(function ToastViewport(props, ref) {
+ToastProvider.displayName = 'Toast.Provider';
+
+function ToastViewport({ ref, ...props }: ToastViewportProps) {
   const { toasts } = useToastQueueContext('Viewport');
   // The local anchor selects the host document (including iframe/other-document mounts),
   // not the global realm's document. It also renders on the server; the portal waits for mount.
@@ -325,7 +326,9 @@ const Viewport = forwardRef<HTMLDivElement, ToastViewportProps>(function ToastVi
         )}
     </>
   );
-});
+}
+
+ToastViewport.displayName = 'Toast.Viewport';
 
 function ToastItem({ record }: { record: ToastRecord }) {
   const { dismiss, remove, registerRoot, dismissLabel } = useToastQueueContext('Viewport');
@@ -454,4 +457,11 @@ function DismissGlyph() {
   );
 }
 
-export const Toast = Object.assign(ToastProvider, { Provider: ToastProvider, Viewport });
+// `Toast` and `Toast.Provider` share one implementation in the public API, but each
+// public name needs its own displayName for devtools and the docs code panels.
+function ToastRoot(props: ToastProviderProps) {
+  return <ToastProvider {...props} />;
+}
+ToastRoot.displayName = 'Toast';
+
+export const Toast = Object.assign(ToastRoot, { Provider: ToastProvider, Viewport: ToastViewport });

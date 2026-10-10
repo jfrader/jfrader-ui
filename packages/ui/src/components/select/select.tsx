@@ -20,16 +20,14 @@
 // validation (`required`) is not wired in this version.
 import {
   createContext,
-  forwardRef,
   useContext,
   useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  type ButtonHTMLAttributes,
+  type ComponentPropsWithRef,
   type CSSProperties,
-  type HTMLAttributes,
   type KeyboardEvent,
   type MouseEvent,
   type MutableRefObject,
@@ -87,15 +85,15 @@ export interface SelectProps {
   children?: ReactNode;
 }
 
-export interface SelectTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface SelectTriggerProps extends ComponentPropsWithRef<'button'> {
   id?: string;
 }
-export interface SelectValueProps extends HTMLAttributes<HTMLSpanElement> {
+export interface SelectValueProps extends ComponentPropsWithRef<'span'> {
   /** Shown when no option matches the selected value. */
   placeholder?: ReactNode;
 }
-export interface SelectContentProps extends HTMLAttributes<HTMLDivElement> {}
-export interface SelectItemProps extends HTMLAttributes<HTMLDivElement> {
+export interface SelectContentProps extends ComponentPropsWithRef<'div'> {}
+export interface SelectItemProps extends ComponentPropsWithRef<'div'> {
   /** Unique within the select. */
   value: string;
   disabled?: boolean;
@@ -319,10 +317,9 @@ function SelectRoot({
   );
 }
 
-const Trigger = forwardRef<HTMLButtonElement, SelectTriggerProps>(function SelectTrigger(
-  { id: idProp, disabled: disabledProp, onKeyDown, ...rest },
-  ref,
-) {
+SelectRoot.displayName = 'Select';
+
+function SelectTrigger({ ref, id: idProp, disabled: disabledProp, onKeyDown, ...rest }: SelectTriggerProps) {
   const {
     baseId,
     open,
@@ -380,9 +377,11 @@ const Trigger = forwardRef<HTMLButtonElement, SelectTriggerProps>(function Selec
       css={[triggerStyle, selectTriggerStyle]}
     />
   );
-});
+}
 
-const Value = forwardRef<HTMLSpanElement, SelectValueProps>(function SelectValue({ placeholder, ...rest }, ref) {
+SelectTrigger.displayName = 'Select.Trigger';
+
+function SelectValue({ ref, placeholder, ...rest }: SelectValueProps) {
   const { selectedValue, options } = useSelectContext('Value');
   const label = selectedValue === undefined ? undefined : options.get(selectedValue)?.label;
   const isPlaceholder = label === undefined;
@@ -392,12 +391,11 @@ const Value = forwardRef<HTMLSpanElement, SelectValueProps>(function SelectValue
       {isPlaceholder ? placeholder : label}
     </span>
   );
-});
+}
 
-const Content = forwardRef<HTMLDivElement, SelectContentProps>(function SelectContent(
-  { style, onMouseDown, children, ...rest },
-  ref,
-) {
+SelectValue.displayName = 'Select.Value';
+
+function SelectContent({ ref, style, onMouseDown, children, ...rest }: SelectContentProps) {
   const { open, triggerLabelling, refs, floatingStyles, elementsRef, getFloatingProps } = useSelectContext('Content');
   // Only an open listbox is the floating element, so a closed one does no positioning work.
   const mergedRef = useMergeRefs([open ? refs.setFloating : null, ref]);
@@ -434,12 +432,11 @@ const Content = forwardRef<HTMLDivElement, SelectContentProps>(function SelectCo
       </div>
     </FloatingPortal>
   );
-});
+}
 
-const Item = forwardRef<HTMLDivElement, SelectItemProps>(function SelectItem(
-  { value, disabled = false, onClick, children, ...rest },
-  ref,
-) {
+SelectContent.displayName = 'Select.Content';
+
+function SelectItem({ ref, value, disabled = false, onClick, children, ...rest }: SelectItemProps) {
   const { baseId, selectedValue, activeIndex, labelsRef, getItemProps, selectValue, registration } =
     useSelectItemContext();
   const textRef = useRef<HTMLSpanElement>(null);
@@ -482,6 +479,13 @@ const Item = forwardRef<HTMLDivElement, SelectItemProps>(function SelectItem(
       )}
     </div>
   );
-});
+}
 
-export const Select = Object.assign(SelectRoot, { Trigger, Value, Content, Item });
+SelectItem.displayName = 'Select.Item';
+
+export const Select = Object.assign(SelectRoot, {
+  Trigger: SelectTrigger,
+  Value: SelectValue,
+  Content: SelectContent,
+  Item: SelectItem,
+});

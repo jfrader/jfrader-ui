@@ -2,7 +2,7 @@
 // the label is part of the click target, and state is exposed through the native
 // checked property. The thumb position and track color change together, so state is
 // never conveyed by color alone.
-import { forwardRef, useId, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useId, type ChangeEvent, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
@@ -16,7 +16,7 @@ export interface SwitchPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface SwitchProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'type'> {
+export interface SwitchProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type'> {
   label?: ReactNode;
   description?: ReactNode;
   size?: SwitchSize;
@@ -105,22 +105,20 @@ const descriptionSizeStyles: Record<SwitchSize, SerializedStyles> = {
   md: css({ marginInlineStart: `calc(${TRACK_WIDTH.md} + ${vars.space[2]})` }),
 };
 
-export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
-  {
-    label,
-    description,
-    size = 'md',
-    onChange,
-    onCheckedChange,
-    slotProps,
-    className,
-    dir,
-    'aria-labelledby': ariaLabelledByProp,
-    'aria-describedby': ariaDescribedByProp,
-    ...rest
-  },
+export function Switch({
   ref,
-) {
+  label,
+  description,
+  size = 'md',
+  onChange,
+  onCheckedChange,
+  slotProps,
+  className,
+  dir,
+  'aria-labelledby': ariaLabelledByProp,
+  'aria-describedby': ariaDescribedByProp,
+  ...rest
+}: SwitchProps) {
   const id = useId();
   const labelId = `${id}-label`;
   const descriptionId = `${id}-description`;
@@ -175,4 +173,6 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
       )}
     </label>
   );
-});
+}
+
+Switch.displayName = 'Switch';

@@ -1,6 +1,5 @@
 // Vertical stack: the shared flex recipe fixed to a block-level column with an md gap. Layout
 // only: a plain div with no role. Children stretch to the stack's inline size by default.
-import { forwardRef } from 'react';
 import { flexLayoutStyles, type FlexAlign } from '../../styling/layout-style';
 import type { FlexProps } from '../flex';
 
@@ -10,10 +9,7 @@ export interface StackProps extends Omit<FlexProps, 'direction' | 'inline' | 'al
   align?: StackAlign;
 }
 
-export const Stack = forwardRef<HTMLDivElement, StackProps>(function Stack(
-  { gap = 'md', align, justify, wrap, ...rest },
-  ref,
-) {
+export function Stack({ ref, gap = 'md', align, justify, wrap, ...rest }: StackProps) {
   return (
     <div
       {...rest}
@@ -22,4 +18,6 @@ export const Stack = forwardRef<HTMLDivElement, StackProps>(function Stack(
       css={flexLayoutStyles({ direction: 'column', gap, align, justify, wrap })}
     />
   );
-});
+}
+
+Stack.displayName = 'Stack';

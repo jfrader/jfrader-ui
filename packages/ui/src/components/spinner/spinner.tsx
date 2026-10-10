@@ -2,7 +2,7 @@
 // ring is decorative. Not focusable, no keyboard map. Screen readers announce live-region text
 // reliably only when it changes inside a region that was already mounted, so render the spinner
 // where the busy region already exists rather than relying on the mount itself being announced.
-import { forwardRef, type HTMLAttributes } from 'react';
+import type { ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { loadingRing, loadingRingPulse } from '../../styling/loading-ring';
@@ -11,7 +11,7 @@ import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
 export type SpinnerSize = 'sm' | 'md' | 'lg';
 
-export interface SpinnerProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children'> {
+export interface SpinnerProps extends Omit<ComponentPropsWithRef<'span'>, 'children'> {
   size?: SpinnerSize;
   /** Accessible text announced for the status region. */
   label?: string;
@@ -38,14 +38,13 @@ const sizeStyles: Record<SpinnerSize, SerializedStyles> = {
   lg: css({ inlineSize: vars.space[6], blockSize: vars.space[6] }),
 };
 
-export const Spinner = forwardRef<HTMLSpanElement, SpinnerProps>(function Spinner(
-  { size = 'md', label = 'Loading', ...rest },
-  ref,
-) {
+export function Spinner({ ref, size = 'md', label = 'Loading', ...rest }: SpinnerProps) {
   return (
     <span {...rest} ref={ref} role="status" data-ui="spinner" css={rootStyle}>
       <span aria-hidden="true" data-ui="spinner-indicator" css={[ringStyle, sizeStyles[size]]} />
       <span css={visuallyHiddenStyle}>{label}</span>
     </span>
   );
-});
+}
+
+Spinner.displayName = 'Spinner';

@@ -14,13 +14,13 @@
 // Disabled items lose their href (a link keeps role="link" with aria-disabled="true"), force
 // tabIndex=-1, and prevent clicks without invoking the consumer's handler.
 import {
-  forwardRef,
   useId,
   type AnchorHTMLAttributes,
-  type HTMLAttributes,
+  type ComponentPropsWithRef,
   type MouseEvent,
   type ReactNode,
   type Ref,
+  type RefAttributes,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
@@ -30,12 +30,12 @@ import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { isRenderable } from '../../utils/renderable';
 
-export interface NavigationProps extends HTMLAttributes<HTMLElement> {
+export interface NavigationProps extends ComponentPropsWithRef<'nav'> {
   /** Accessible name of the navigation landmark. */
   label?: string;
 }
 
-export interface NavigationGroupProps extends HTMLAttributes<HTMLElement> {
+export interface NavigationGroupProps extends ComponentPropsWithRef<'section'> {
   label?: ReactNode;
   /** Render as a native <details> disclosure; the label becomes its <summary>. */
   collapsible?: boolean;
@@ -43,7 +43,8 @@ export interface NavigationGroupProps extends HTMLAttributes<HTMLElement> {
   defaultOpen?: boolean;
 }
 
-export interface NavigationItemProps extends AnchorHTMLAttributes<HTMLElement> {
+// Renders an <a> or a <span>, so the ref is typed as the common HTMLElement.
+export interface NavigationItemProps extends AnchorHTMLAttributes<HTMLElement>, RefAttributes<HTMLElement> {
   href?: string;
   /** Marks the current page (aria-current="page"). */
   active?: boolean;
@@ -170,14 +171,13 @@ const itemStyle = css({
   },
 });
 
-const Root = forwardRef<HTMLElement, NavigationProps>(function Navigation({ label = 'Main', ...rest }, ref) {
+function NavigationRoot({ ref, label = 'Main', ...rest }: NavigationProps) {
   return <nav {...rest} ref={ref} aria-label={label} data-ui="navigation" css={rootStyle} />;
-});
+}
 
-const Group = forwardRef<HTMLElement, NavigationGroupProps>(function NavigationGroup(
-  { label, collapsible = false, defaultOpen, children, ...rest },
-  ref,
-) {
+NavigationRoot.displayName = 'Navigation';
+
+function NavigationGroup({ ref, label, collapsible = false, defaultOpen, children, ...rest }: NavigationGroupProps) {
   const labelId = useId();
   const hasLabel = isRenderable(label);
   if (collapsible && !hasLabel) {
@@ -216,12 +216,11 @@ const Group = forwardRef<HTMLElement, NavigationGroupProps>(function NavigationG
       {list}
     </section>
   );
-});
+}
 
-const Item = forwardRef<HTMLElement, NavigationItemProps>(function NavigationItem(
-  { href, active = false, disabled = false, icon, children, ...rest },
-  ref,
-) {
+NavigationGroup.displayName = 'Navigation.Group';
+
+function NavigationItem({ ref, href, active = false, disabled = false, icon, children, ...rest }: NavigationItemProps) {
   const content = (
     <>
       {isRenderable(icon) && (
@@ -264,6 +263,8 @@ const Item = forwardRef<HTMLElement, NavigationItemProps>(function NavigationIte
       )}
     </li>
   );
-});
+}
 
-export const Navigation = Object.assign(Root, { Group, Item });
+NavigationItem.displayName = 'Navigation.Item';
+
+export const Navigation = Object.assign(NavigationRoot, { Group: NavigationGroup, Item: NavigationItem });

@@ -20,11 +20,11 @@ import {
   useImperativeHandle,
   useRef,
   useState,
-  type ForwardedRef,
   type MouseEvent,
   type MouseEventHandler,
   type MutableRefObject,
   type ReactEventHandler,
+  type Ref,
   type SyntheticEvent,
 } from 'react';
 import { useScrollLock } from './use-scroll-lock';
@@ -99,7 +99,7 @@ export function omitNativeOpen<P extends object>(props: P & { open?: unknown }) 
 export function useNativeDialog(
   { open, setOpen, requestClose, repairToken, setDialogElement }: NativeDialogController,
   { onCancel, onClick, onClose }: NativeDialogHandlers,
-  forwardedRef: ForwardedRef<HTMLDialogElement>,
+  forwardedRef: Ref<HTMLDialogElement> | undefined,
   contentRef?: MutableRefObject<HTMLDialogElement | null>,
 ) {
   const internalDialogRef = useRef<HTMLDialogElement | null>(null);

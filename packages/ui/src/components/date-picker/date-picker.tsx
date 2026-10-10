@@ -23,7 +23,6 @@
 // Forms: `name` renders a hidden input carrying the ISO value ('' when empty).
 import {
   createContext,
-  forwardRef,
   useContext,
   useEffect,
   useId,
@@ -31,8 +30,8 @@ import {
   useMemo,
   useRef,
   useState,
+  type ComponentPropsWithRef,
   type CSSProperties,
-  type HTMLAttributes,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
@@ -107,7 +106,7 @@ export interface DatePickerInputProps
   > {}
 
 /** The popup renders its own calendar. */
-export type DatePickerPopupProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'>;
+export type DatePickerPopupProps = Omit<ComponentPropsWithRef<'div'>, 'children'>;
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -344,10 +343,18 @@ function DatePickerRoot({
   );
 }
 
-const Input = forwardRef<HTMLInputElement, DatePickerInputProps>(function DatePickerInput(
-  { label, id: idProp, disabled: disabledProp, slotProps, onKeyDown, onKeyUp, ...rest },
+DatePickerRoot.displayName = 'DatePicker';
+
+function DatePickerInput({
   ref,
-) {
+  label,
+  id: idProp,
+  disabled: disabledProp,
+  slotProps,
+  onKeyDown,
+  onKeyUp,
+  ...rest
+}: DatePickerInputProps) {
   const {
     open,
     disabled: rootDisabled,
@@ -435,9 +442,11 @@ const Input = forwardRef<HTMLInputElement, DatePickerInputProps>(function DatePi
       data-ui="date-picker-input"
     />
   );
-});
+}
 
-const Popup = forwardRef<HTMLDivElement, DatePickerPopupProps>(function DatePickerPopup({ style, ...rest }, ref) {
+DatePickerInput.displayName = 'DatePicker.Input';
+
+function DatePickerPopup({ ref, style, ...rest }: DatePickerPopupProps) {
   const {
     open,
     value,
@@ -531,6 +540,8 @@ const Popup = forwardRef<HTMLDivElement, DatePickerPopupProps>(function DatePick
       </FloatingFocusManager>
     </FloatingPortal>
   );
-});
+}
 
-export const DatePicker = Object.assign(DatePickerRoot, { Input, Popup });
+DatePickerPopup.displayName = 'DatePicker.Popup';
+
+export const DatePicker = Object.assign(DatePickerRoot, { Input: DatePickerInput, Popup: DatePickerPopup });

@@ -58,7 +58,7 @@ import { Dialog } from '@jfrader/ui/dialog';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 ```
 
-`react` and `react-dom` (`>=18.2`) are peer dependencies.
+`react` and `react-dom` (`^19.0.0`) are peer dependencies.
 
 Next.js App Router: see [Next.js App Router](https://github.com/jfrader/jfrader-ui/blob/master/docs/consuming-jfrader-ui.md#nextjs-app-router) for the required Emotion registry.
 

@@ -6,14 +6,16 @@
 // A label (horizontal only) renders a div with role="separator" and a visible centred label.
 // The separator role makes its children presentational, so the label is also wired as the
 // separator's accessible name through aria-labelledby (merged with any consumer ids).
-import { forwardRef, useId, type HTMLAttributes, type ReactNode, type Ref } from 'react';
+import { useId, type HTMLAttributes, type ReactNode, type Ref, type RefAttributes } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { isRenderable } from '../../utils/renderable';
 
 export type DividerOrientation = 'horizontal' | 'vertical';
 
-type DividerBaseProps = Omit<HTMLAttributes<HTMLElement>, 'children' | 'role' | 'aria-orientation'>;
+// Renders an <hr> or a <div>, so the ref is typed as the common HTMLElement.
+type DividerBaseProps = Omit<HTMLAttributes<HTMLElement>, 'children' | 'role' | 'aria-orientation'> &
+  RefAttributes<HTMLElement>;
 
 export interface DividerHorizontalProps extends DividerBaseProps {
   orientation?: 'horizontal';
@@ -73,10 +75,13 @@ const labelledStyle = css({
   },
 });
 
-export const Divider = forwardRef<HTMLElement, DividerProps>(function Divider(
-  { orientation = 'horizontal', label, 'aria-labelledby': ariaLabelledBy, ...rest },
+export function Divider({
   ref,
-) {
+  orientation = 'horizontal',
+  label,
+  'aria-labelledby': ariaLabelledBy,
+  ...rest
+}: DividerProps) {
   const labelId = useId();
 
   if (orientation === 'vertical') {
@@ -123,4 +128,6 @@ export const Divider = forwardRef<HTMLElement, DividerProps>(function Divider(
       css={horizontalStyle}
     />
   );
-});
+}
+
+Divider.displayName = 'Divider';

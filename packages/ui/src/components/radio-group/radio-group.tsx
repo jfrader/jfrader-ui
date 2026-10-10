@@ -7,13 +7,11 @@
 // Each hidden native input stays operable and draws the focus ring on its visual circle.
 import {
   createContext,
-  forwardRef,
   useContext,
   useId,
   useMemo,
   type ChangeEvent,
-  type HTMLAttributes,
-  type InputHTMLAttributes,
+  type ComponentPropsWithRef,
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
@@ -25,7 +23,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 
 export type RadioGroupOrientation = 'vertical' | 'horizontal';
 
-export interface RadioGroupProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
+export interface RadioGroupProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'> {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
@@ -40,7 +38,7 @@ export interface RadioGroupRadioPartProps {
 }
 
 export interface RadioGroupRadioProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'name' | 'checked' | 'defaultChecked' | 'size'> {
+  extends Omit<ComponentPropsWithRef<'input'>, 'type' | 'value' | 'name' | 'checked' | 'defaultChecked' | 'size'> {
   value: string;
   label?: ReactNode;
   description?: ReactNode;
@@ -131,18 +129,16 @@ const descriptionStyle = css({
   color: vars.color.textMuted,
 });
 
-const Root = forwardRef<HTMLDivElement, RadioGroupProps>(function RadioGroup(
-  {
-    value: valueProp,
-    defaultValue,
-    onValueChange,
-    name: nameProp,
-    disabled = false,
-    orientation = 'vertical',
-    ...rest
-  },
+function RadioGroupRoot({
   ref,
-) {
+  value: valueProp,
+  defaultValue,
+  onValueChange,
+  name: nameProp,
+  disabled = false,
+  orientation = 'vertical',
+  ...rest
+}: RadioGroupProps) {
   const generatedName = useId();
   const name = nameProp ?? generatedName;
   const [value, setValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
@@ -162,23 +158,23 @@ const Root = forwardRef<HTMLDivElement, RadioGroupProps>(function RadioGroup(
       />
     </RadioGroupContext.Provider>
   );
-});
+}
 
-const Radio = forwardRef<HTMLInputElement, RadioGroupRadioProps>(function RadioGroupRadio(
-  {
-    value,
-    label,
-    description,
-    disabled: disabledProp,
-    onChange,
-    slotProps,
-    className,
-    'aria-labelledby': ariaLabelledByProp,
-    'aria-describedby': ariaDescribedByProp,
-    ...rest
-  },
+RadioGroupRoot.displayName = 'RadioGroup';
+
+function RadioGroupRadio({
   ref,
-) {
+  value,
+  label,
+  description,
+  disabled: disabledProp,
+  onChange,
+  slotProps,
+  className,
+  'aria-labelledby': ariaLabelledByProp,
+  'aria-describedby': ariaDescribedByProp,
+  ...rest
+}: RadioGroupRadioProps) {
   const { value: selectedValue, setValue, name, disabled: groupDisabled } = useRadioGroupContext('Radio');
   const disabled = groupDisabled || disabledProp;
 
@@ -236,6 +232,8 @@ const Radio = forwardRef<HTMLInputElement, RadioGroupRadioProps>(function RadioG
       )}
     </label>
   );
-});
+}
 
-export const RadioGroup = Object.assign(Root, { Radio });
+RadioGroupRadio.displayName = 'RadioGroup.Radio';
+
+export const RadioGroup = Object.assign(RadioGroupRoot, { Radio: RadioGroupRadio });

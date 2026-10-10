@@ -3,7 +3,7 @@
 // error in order; the error region is an alert.
 // `autoResize` uses `field-sizing: content` (Baseline June 2026); engines without it ignore
 // the declaration and keep the fixed `rows` height.
-import { forwardRef, type ChangeEvent, type ReactNode, type TextareaHTMLAttributes } from 'react';
+import type { ChangeEvent, ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
@@ -22,7 +22,7 @@ export type TextareaResize = 'none' | 'vertical';
 
 export interface TextareaPartProps extends FieldPartProps {}
 
-export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextareaProps extends ComponentPropsWithRef<'textarea'> {
   label?: ReactNode;
   description?: ReactNode;
   error?: ReactNode;
@@ -53,27 +53,25 @@ const resizeStyles: Record<TextareaResize, SerializedStyles> = {
 
 const autoResizeStyle = css({ fieldSizing: 'content' });
 
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  {
-    label,
-    description,
-    error,
-    size = 'md',
-    resize = 'vertical',
-    autoResize = false,
-    rows = 3,
-    onChange,
-    onValueChange,
-    slotProps,
-    className,
-    required,
-    id: idProp,
-    'aria-describedby': ariaDescribedByProp,
-    'aria-invalid': ariaInvalidProp,
-    ...rest
-  },
+export function Textarea({
   ref,
-) {
+  label,
+  description,
+  error,
+  size = 'md',
+  resize = 'vertical',
+  autoResize = false,
+  rows = 3,
+  onChange,
+  onValueChange,
+  slotProps,
+  className,
+  required,
+  id: idProp,
+  'aria-describedby': ariaDescribedByProp,
+  'aria-invalid': ariaInvalidProp,
+  ...rest
+}: TextareaProps) {
   const field = useFieldAnatomy({
     id: idProp,
     description,
@@ -119,4 +117,6 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
       </FieldError>
     </FieldRoot>
   );
-});
+}
+
+Textarea.displayName = 'Textarea';

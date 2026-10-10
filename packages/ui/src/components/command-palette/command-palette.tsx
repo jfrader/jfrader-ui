@@ -18,18 +18,14 @@
 // The Trigger is optional: consumers usually drive `open` themselves (e.g. Cmd+K).
 import {
   createContext,
-  forwardRef,
   useCallback,
   useContext,
   useId,
   useMemo,
   useRef,
   useState,
-  type ButtonHTMLAttributes,
   type ChangeEvent,
-  type DialogHTMLAttributes,
-  type HTMLAttributes,
-  type InputHTMLAttributes,
+  type ComponentPropsWithRef,
   type KeyboardEvent,
   type MouseEvent,
   type MutableRefObject,
@@ -94,17 +90,17 @@ export interface CommandPaletteProps {
   children?: ReactNode;
 }
 
-export interface CommandPaletteTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {}
-export interface CommandPaletteContentProps extends Omit<DialogHTMLAttributes<HTMLDialogElement>, 'open'> {}
+export interface CommandPaletteTriggerProps extends ComponentPropsWithRef<'button'> {}
+export interface CommandPaletteContentProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'> {}
 export interface CommandPaletteInputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'defaultValue' | 'type'> {}
-export interface CommandPaletteListProps extends HTMLAttributes<HTMLDivElement> {}
-export interface CommandPaletteEmptyProps extends HTMLAttributes<HTMLDivElement> {}
-export interface CommandPaletteGroupProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
+  extends Omit<ComponentPropsWithRef<'input'>, 'value' | 'defaultValue' | 'type'> {}
+export interface CommandPaletteListProps extends ComponentPropsWithRef<'div'> {}
+export interface CommandPaletteEmptyProps extends ComponentPropsWithRef<'div'> {}
+export interface CommandPaletteGroupProps extends Omit<ComponentPropsWithRef<'div'>, 'children'> {
   label: ReactNode;
   children?: ReactNode;
 }
-export interface CommandPaletteItemProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onSelect'> {
+export interface CommandPaletteItemProps extends Omit<ComponentPropsWithRef<'div'>, 'onSelect'> {
   /** Unique within the palette. */
   value: string;
   onSelect?: () => void;
@@ -305,10 +301,9 @@ function CommandPaletteRoot({
   return <CommandPaletteContext.Provider value={context}>{children}</CommandPaletteContext.Provider>;
 }
 
-const Trigger = forwardRef<HTMLButtonElement, CommandPaletteTriggerProps>(function CommandPaletteTrigger(
-  { onClick, ...rest },
-  ref,
-) {
+CommandPaletteRoot.displayName = 'CommandPalette';
+
+function CommandPaletteTrigger({ ref, onClick, ...rest }: CommandPaletteTriggerProps) {
   const { open, toggleOpen } = useCommandPaletteContext('Trigger');
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
@@ -328,9 +323,11 @@ const Trigger = forwardRef<HTMLButtonElement, CommandPaletteTriggerProps>(functi
       css={triggerStyle}
     />
   );
-});
+}
 
-const Content = forwardRef<HTMLDialogElement, CommandPaletteContentProps>(function CommandPaletteContent(props, ref) {
+CommandPaletteTrigger.displayName = 'CommandPalette.Trigger';
+
+function CommandPaletteContent({ ref, ...props }: CommandPaletteContentProps) {
   const { children, onCancel, onClick, onClose, ...rest } = omitNativeOpen(props);
 
   const context = useCommandPaletteContext('Content');
@@ -354,12 +351,11 @@ const Content = forwardRef<HTMLDialogElement, CommandPaletteContentProps>(functi
       </div>
     </dialog>
   );
-});
+}
 
-const Input = forwardRef<HTMLInputElement, CommandPaletteInputProps>(function CommandPaletteInput(
-  { onChange, onKeyDown, ...rest },
-  ref,
-) {
+CommandPaletteContent.displayName = 'CommandPalette.Content';
+
+function CommandPaletteInput({ ref, onChange, onKeyDown, ...rest }: CommandPaletteInputProps) {
   const {
     label,
     listId,
@@ -421,12 +417,11 @@ const Input = forwardRef<HTMLInputElement, CommandPaletteInputProps>(function Co
       css={inputStyle}
     />
   );
-});
+}
 
-const List = forwardRef<HTMLDivElement, CommandPaletteListProps>(function CommandPaletteList(
-  { onMouseDown, children, ...rest },
-  ref,
-) {
+CommandPaletteInput.displayName = 'CommandPalette.Input';
+
+function CommandPaletteList({ ref, onMouseDown, children, ...rest }: CommandPaletteListProps) {
   const { label, listId, matchCount, elementsRef, setListElement, getFloatingProps } =
     useCommandPaletteContext('List');
   const mergedRef = useMergeRefs([setListElement, ref]);
@@ -451,12 +446,11 @@ const List = forwardRef<HTMLDivElement, CommandPaletteListProps>(function Comman
       <FloatingList elementsRef={elementsRef}>{children}</FloatingList>
     </div>
   );
-});
+}
 
-const Empty = forwardRef<HTMLDivElement, CommandPaletteEmptyProps>(function CommandPaletteEmpty(
-  { children, ...rest },
-  ref,
-) {
+CommandPaletteList.displayName = 'CommandPalette.List';
+
+function CommandPaletteEmpty({ ref, children, ...rest }: CommandPaletteEmptyProps) {
   const { matchCount, emptyMessage } = useCommandPaletteContext('Empty');
   if (matchCount > 0) return null;
 
@@ -465,12 +459,17 @@ const Empty = forwardRef<HTMLDivElement, CommandPaletteEmptyProps>(function Comm
       {isRenderable(children) ? children : emptyMessage}
     </div>
   );
-});
+}
 
-const Group = forwardRef<HTMLDivElement, CommandPaletteGroupProps>(function CommandPaletteGroup(
-  { label, children, 'aria-labelledby': externalLabelledBy, ...rest },
+CommandPaletteEmpty.displayName = 'CommandPalette.Empty';
+
+function CommandPaletteGroup({
   ref,
-) {
+  label,
+  children,
+  'aria-labelledby': externalLabelledBy,
+  ...rest
+}: CommandPaletteGroupProps) {
   const { visibleGroupIds } = useCommandPaletteContext('Group');
   const groupId = useId();
   const headingId = `${groupId}-heading`;
@@ -491,12 +490,11 @@ const Group = forwardRef<HTMLDivElement, CommandPaletteGroupProps>(function Comm
       <CommandPaletteGroupContext.Provider value={groupId}>{children}</CommandPaletteGroupContext.Provider>
     </div>
   );
-});
+}
 
-const Item = forwardRef<HTMLDivElement, CommandPaletteItemProps>(function CommandPaletteItem(
-  { value, onSelect, keywords, onClick, children, ...rest },
-  ref,
-) {
+CommandPaletteGroup.displayName = 'CommandPalette.Group';
+
+function CommandPaletteItem({ ref, value, onSelect, keywords, onClick, children, ...rest }: CommandPaletteItemProps) {
   const { baseId, activeIndex, matchedValues, getItemProps, setOpen, registration } =
     useCommandPaletteContext('Item');
   const groupId = useContext(CommandPaletteGroupContext);
@@ -531,6 +529,16 @@ const Item = forwardRef<HTMLDivElement, CommandPaletteItemProps>(function Comman
       {children}
     </div>
   );
-});
+}
 
-export const CommandPalette = Object.assign(CommandPaletteRoot, { Trigger, Content, Input, List, Empty, Group, Item });
+CommandPaletteItem.displayName = 'CommandPalette.Item';
+
+export const CommandPalette = Object.assign(CommandPaletteRoot, {
+  Trigger: CommandPaletteTrigger,
+  Content: CommandPaletteContent,
+  Input: CommandPaletteInput,
+  List: CommandPaletteList,
+  Empty: CommandPaletteEmpty,
+  Group: CommandPaletteGroup,
+  Item: CommandPaletteItem,
+});
