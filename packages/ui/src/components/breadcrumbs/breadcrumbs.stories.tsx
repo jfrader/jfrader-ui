@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Breadcrumbs } from './index';
 
@@ -215,7 +216,7 @@ export const ReorderedItems: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   render: (args) => (
     <Breadcrumbs {...args}>
       <Breadcrumbs.Item href={LEVELS[0].href}>{LEVELS[0].label}</Breadcrumbs.Item>

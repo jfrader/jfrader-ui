@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Combobox, type ComboboxInputProps, type ComboboxProps } from './index';
 
@@ -410,7 +411,7 @@ export const Open: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { defaultValue: 'apple', defaultOpen: true },
   render: (args) => (
     <ComboboxExample {...args} inputProps={{ description: DESCRIPTION, error: 'Pick a fruit from the list' }} />

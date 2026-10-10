@@ -26,9 +26,9 @@ Consumer setup (dependencies, Vite, tsconfig, styles, theming, icons, fonts) is 
 - **Base styles ship.** `@jfrader/tokens/base.css` sets `box-sizing` and the `body` margin, background, text color and font. The pilot imports it and keeps only `line-height` on `body`. Page headings (outside `Card`/`Dialog` titles) are still app-owned.
 - **Overlay triggers compose with `Button`.** `Dialog.Trigger` and `Dialog.Close` accept the `render` prop (GURI-1989), so the pilot composes the danger Delete-account trigger and the outline Cancel button from `Button` — no controlled workaround, no styling mismatch.
 - **Plain Vite runs the Emotion dev JSX runtime without a shim.** Verified in the browser: `pnpm --filter @jfrader/pilot dev` renders the app (heading present, both Lucide icons, zero page errors). Storybook's `jsx-dev-runtime` alias is not needed here.
+- **Layout primitives.** `Container` sets the page width and inline padding, `Stack` spaces the sections and card fields, and `Flex` lays out the header row and the dialog actions. The only layout rule left in `app.css` is the page's block padding.
+- **`Card.Footer` separates status from actions.** The footer uses `justify-content: space-between`, so the status `Pill` sits on the start edge and the Save button on the end edge.
 
 ### Open
 
 - **`Badge` doesn't feed into the control's accessible name.** The count sits outside the wrapped `Button`, so the button's name is just "Inbox". The pilot sets `aria-label="Inbox, 3 unread"` by hand.
-- **There's no layout primitive.** There's no Stack, Flex or page container. Every gap and row in the pilot is hand-written CSS using `--ui-*` variables, and the variable names had to be worked out from `tokens.ts` plus the kebab-case rule in the generator (`vars.textSize['2xl']` becomes `--ui-text-size-2xl`).
-- **`Card.Footer` pushes content to the end.** It sets `justify-content: flex-end`, so a status `Pill` placed before the Save button ends up packed against it on the right. Getting it on the start edge would mean overriding the footer's styles.

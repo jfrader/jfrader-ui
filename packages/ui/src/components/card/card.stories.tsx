@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { TextField } from '../text-field';
 import { Card, type CardProps, type CardVariant } from './index';
@@ -94,8 +95,41 @@ export const Basic: Story = {
     await expect(canvas.queryByRole('region')).toBeNull();
 
     const footer = card.querySelector('[data-ui="card-footer"]') as HTMLElement;
+    const [leading, trailing] = within(footer).getAllByRole('button');
     await expect(within(footer).getAllByRole('button')).toHaveLength(2);
     await expect(getComputedStyle(footer).borderBlockStartWidth).toBe('1px');
+    // Leading content sits on the start edge, actions on the end edge.
+    await expect(getComputedStyle(footer).justifyContent).toBe('space-between');
+    const footerRect = footer.getBoundingClientRect();
+    await expect(leading!.getBoundingClientRect().left).toBeCloseTo(footerRect.left, 0);
+    await expect(trailing!.getBoundingClientRect().right).toBeCloseTo(footerRect.right, 0);
+  },
+};
+
+export const SingleAction: Story = {
+  render: (args) => (
+    <Card {...args}>
+      <Card.Header>
+        <Card.Title>Account</Card.Title>
+      </Card.Header>
+      <Card.Footer>
+        <Button tone="accent">Save</Button>
+      </Card.Footer>
+    </Card>
+  ),
+  play: async ({ canvasElement }) => {
+    const footer = canvasElement.querySelector<HTMLElement>('[data-ui="card-footer"]');
+    if (!footer) throw new Error('Expected a card footer');
+    const action = within(footer).getByRole('button', { name: 'Save' });
+    await expect(footer.children).toHaveLength(1);
+    await expect(parseFloat(getComputedStyle(action).marginInlineStart)).toBeGreaterThan(0);
+    const footerRect = footer.getBoundingClientRect();
+    const actionRect = action.getBoundingClientRect();
+    const isRtl = getComputedStyle(footer).direction === 'rtl';
+    await expect(isRtl ? actionRect.left : actionRect.right).toBeCloseTo(
+      isRtl ? footerRect.left : footerRect.right,
+      0,
+    );
   },
 };
 
@@ -225,7 +259,7 @@ export const ConsumerStylePrecedence: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   render: (args) => (
     <>
       {VARIANTS.map((variant) => (

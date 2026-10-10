@@ -4,6 +4,7 @@ import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { LAYOUT_SPACES, LAYOUT_SPACE_TOKEN, type LayoutSpace } from '../../styling/layout-style';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Flex } from '../flex';
 import { Stack } from '../stack';
@@ -230,7 +231,7 @@ export const RTL: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   render: () => <Page />,
   play: async ({ canvasElement }) => {
     await expect(getContainers(canvasElement)).toHaveLength(1);

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { TextField } from '../text-field';
 import { ThemeRoot, type ThemeName } from './index';
@@ -45,7 +46,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 function getRoot(canvasElement: HTMLElement) {
-  return canvasElement.querySelector<HTMLElement>('[data-ui="theme-root"]');
+  return canvasElement.querySelector<HTMLElement>('[data-ui="theme-root"]:not([data-story-theme-scope])');
 }
 
 export const Default: Story = {
@@ -64,7 +65,7 @@ export const Light: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { theme: 'light' },
   play: async ({ canvasElement }) => {
     await expect(getRoot(canvasElement)).toHaveAttribute('data-theme', 'light');

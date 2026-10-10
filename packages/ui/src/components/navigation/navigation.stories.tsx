@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Navigation, type NavigationProps } from './index';
 
 const WORKSPACE = [
@@ -332,7 +333,7 @@ export const IconItems: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   render: (args) => <SidebarExample {...args} />,
   play: async ({ canvasElement }) => {
     const nav = within(canvasElement).getByRole('navigation', { name: 'Main' });

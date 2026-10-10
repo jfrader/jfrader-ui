@@ -34,6 +34,7 @@ import {
 import { createPortal } from 'react-dom';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
+import { REDUCED_MOTION } from '../../styling/media';
 import { isRenderable } from '../../utils/renderable';
 import { Button } from '../button';
 
@@ -98,9 +99,9 @@ const TONE_STRIPE_WIDTH = '3px';
 const ToastApiContext = createContext<ToastApi | null>(null);
 const ToastQueueContext = createContext<ToastQueueContextValue | null>(null);
 
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-
 // Fixed + portaled at the end of the body: later in DOM order than the page, so no z-index.
+// Portaled overlays use the page theme, so scoped-light stories do not gate light-theme toast contrast;
+// this limitation is tracked in the portaled-overlay theming follow-up issue.
 // The viewport ignores the pointer so the empty corner never blocks the page; toasts opt back in.
 const viewportStyle = css({
   position: 'fixed',

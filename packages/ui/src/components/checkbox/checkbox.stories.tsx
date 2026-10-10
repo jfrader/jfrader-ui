@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Checkbox, type CheckboxProps, type CheckboxSize } from './index';
 
 const SIZES = ['sm', 'md'] as const satisfies readonly CheckboxSize[];
@@ -161,7 +162,7 @@ export const Sizes: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { defaultChecked: true, description: 'One email a month, no more.' },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('checkbox')).toBeChecked();

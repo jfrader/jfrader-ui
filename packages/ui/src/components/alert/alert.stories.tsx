@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Alert, type AlertProps, type AlertTone } from './index';
 
 const TONES = ['info', 'success', 'warning', 'danger'] as const satisfies readonly AlertTone[];
@@ -152,7 +153,7 @@ export const BooleanContent: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { onDismiss: fn() },
   render: (args) => <ToneMatrix {...args} />,
   play: async ({ canvasElement }) => {

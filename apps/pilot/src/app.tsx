@@ -1,6 +1,18 @@
 import { useState, type FormEvent } from 'react';
 import { Inbox, Trash } from 'lucide-react';
-import { Badge, Button, Card, Dialog, Pill, Switch, TextField, type ThemeName } from '@jfrader/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Container,
+  Dialog,
+  Flex,
+  Pill,
+  Stack,
+  Switch,
+  TextField,
+  type ThemeName,
+} from '@jfrader/ui';
 
 interface Profile {
   name: string;
@@ -41,116 +53,126 @@ export function App() {
   };
 
   return (
-    <main className="page">
-      <header className="page-header">
-        <h1 className="page-title">Settings</h1>
-        <Badge badgeContent={unread} tone="danger">
-          <Button
-            variant="ghost"
-            startIcon={<Inbox />}
-            aria-label={`Inbox, ${unread} unread`}
-            onClick={() => setUnread(0)}
-          >
-            Inbox
-          </Button>
-        </Badge>
-      </header>
-
-      <form onSubmit={handleSubmit}>
-        <Card>
-          <Card.Header>
-            <Card.Title level={2}>Profile</Card.Title>
-            <Card.Description>Shown on your public page.</Card.Description>
-          </Card.Header>
-          <Card.Content className="stack">
-            <TextField
-              label="Display name"
-              value={draft.name}
-              onValueChange={(name) => setDraft({ ...draft, name })}
-            />
-            <TextField
-              label="Email"
-              type="email"
-              required
-              value={draft.email}
-              error={emailMissing ? 'Enter an email address.' : undefined}
-              onValueChange={(email) => setDraft({ ...draft, email })}
-            />
-          </Card.Content>
-          <Card.Footer>
-            <Pill tone={dirty ? 'warning' : 'success'}>{dirty ? 'Unsaved changes' : 'Saved'}</Pill>
-            <Button type="submit" tone="accent" disabled={!dirty}>
-              Save profile
-            </Button>
-          </Card.Footer>
-        </Card>
-      </form>
-
-      <Card>
-        <Card.Header>
-          <Card.Title level={2}>Notifications</Card.Title>
-        </Card.Header>
-        <Card.Content className="stack">
-          <Switch
-            label="Email alerts"
-            description="Sign-ins from new devices and billing receipts."
-            checked={emailAlerts}
-            onCheckedChange={setEmailAlerts}
-          />
-          <Switch label="Product updates" checked={productUpdates} onCheckedChange={setProductUpdates} />
-        </Card.Content>
-      </Card>
-
-      <Card>
-        <Card.Header>
-          <Card.Title level={2}>Appearance</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <Switch label="Light theme" checked={theme === 'light'} onCheckedChange={handleThemeChange} />
-        </Card.Content>
-      </Card>
-
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <Card>
-          <Card.Header>
-            <Card.Title level={2}>Delete account</Card.Title>
-            <Card.Description>Removes your profile and settings after 30 days.</Card.Description>
-          </Card.Header>
-          <Card.Footer>
-            {deletionScheduled && <Pill tone="danger">Deletion scheduled</Pill>}
-            <Dialog.Trigger
-              render={(props) => (
+    <main>
+      <Container size="md" className="page">
+        <Stack gap="lg">
+          <header>
+            <Flex wrap align="center" justify="between" gap="md">
+              <h1 className="page-title">Settings</h1>
+              <Badge badgeContent={unread} tone="danger">
                 <Button
-                  {...props}
-                  variant="outline"
-                  tone="danger"
-                  startIcon={<Trash />}
-                  disabled={deletionScheduled}
+                  variant="ghost"
+                  startIcon={<Inbox />}
+                  aria-label={`Inbox, ${unread} unread`}
+                  onClick={() => setUnread(0)}
                 >
+                  Inbox
+                </Button>
+              </Badge>
+            </Flex>
+          </header>
+
+          <form onSubmit={handleSubmit}>
+            <Card>
+              <Card.Header>
+                <Card.Title level={2}>Profile</Card.Title>
+                <Card.Description>Shown on your public page.</Card.Description>
+              </Card.Header>
+              <Card.Content>
+                <Stack gap="md">
+                  <TextField
+                    label="Display name"
+                    value={draft.name}
+                    onValueChange={(name) => setDraft({ ...draft, name })}
+                  />
+                  <TextField
+                    label="Email"
+                    type="email"
+                    required
+                    value={draft.email}
+                    error={emailMissing ? 'Enter an email address.' : undefined}
+                    onValueChange={(email) => setDraft({ ...draft, email })}
+                  />
+                </Stack>
+              </Card.Content>
+              <Card.Footer>
+                <Pill tone={dirty ? 'warning' : 'success'}>{dirty ? 'Unsaved changes' : 'Saved'}</Pill>
+                <Button type="submit" tone="accent" disabled={!dirty}>
+                  Save profile
+                </Button>
+              </Card.Footer>
+            </Card>
+          </form>
+
+          <Card>
+            <Card.Header>
+              <Card.Title level={2}>Notifications</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              <Stack gap="md">
+                <Switch
+                  label="Email alerts"
+                  description="Sign-ins from new devices and billing receipts."
+                  checked={emailAlerts}
+                  onCheckedChange={setEmailAlerts}
+                />
+                <Switch label="Product updates" checked={productUpdates} onCheckedChange={setProductUpdates} />
+              </Stack>
+            </Card.Content>
+          </Card>
+
+          <Card>
+            <Card.Header>
+              <Card.Title level={2}>Appearance</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              <Switch label="Light theme" checked={theme === 'light'} onCheckedChange={handleThemeChange} />
+            </Card.Content>
+          </Card>
+
+          <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <Card>
+              <Card.Header>
+                <Card.Title level={2}>Delete account</Card.Title>
+                <Card.Description>Removes your profile and settings after 30 days.</Card.Description>
+              </Card.Header>
+              <Card.Footer>
+                {deletionScheduled && <Pill tone="danger">Deletion scheduled</Pill>}
+                <Dialog.Trigger
+                  render={(props) => (
+                    <Button
+                      {...props}
+                      variant="outline"
+                      tone="danger"
+                      startIcon={<Trash />}
+                      disabled={deletionScheduled}
+                    >
+                      Delete account
+                    </Button>
+                  )}
+                />
+              </Card.Footer>
+            </Card>
+
+            <Dialog.Content>
+              <Dialog.Title>Delete your account?</Dialog.Title>
+              <Dialog.Description>Your profile and settings are removed after 30 days.</Dialog.Description>
+              <Flex justify="end" gap="sm">
+                <Dialog.Close
+                  render={(props) => (
+                    <Button {...props} variant="outline">
+                      Cancel
+                    </Button>
+                  )}
+                />
+                <Button tone="danger" onClick={handleConfirmDelete}>
                   Delete account
                 </Button>
-              )}
-            />
-          </Card.Footer>
-        </Card>
-
-        <Dialog.Content>
-          <Dialog.Title>Delete your account?</Dialog.Title>
-          <Dialog.Description>Your profile and settings are removed after 30 days.</Dialog.Description>
-          <div className="dialog-actions">
-            <Dialog.Close
-              render={(props) => (
-                <Button {...props} variant="outline">
-                  Cancel
-                </Button>
-              )}
-            />
-            <Button tone="danger" onClick={handleConfirmDelete}>
-              Delete account
-            </Button>
-          </div>
-        </Dialog.Content>
-      </Dialog>
+              </Flex>
+            </Dialog.Content>
+          </Dialog>
+        </Stack>
+      </Container>
     </main>
   );
 }

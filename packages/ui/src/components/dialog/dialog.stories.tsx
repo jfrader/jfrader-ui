@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Dialog, type DialogProps } from './index';
 
@@ -332,7 +333,7 @@ export const TriggerAsButtonOpen: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   render: (args) => <DialogExample {...args} />,
   play: async ({ canvasElement }) => {
     const { canvas, trigger, dialog } = await openDialog(canvasElement);

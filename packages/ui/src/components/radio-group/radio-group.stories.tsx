@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { RadioGroup, type RadioGroupOrientation, type RadioGroupProps } from './index';
 
 const OPTIONS = [
@@ -242,7 +243,7 @@ export const Keyboard: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { defaultValue: 'pro' },
   render: (args) => <RadioExample {...args} disabledValue="team" />,
   play: async ({ canvasElement }) => {

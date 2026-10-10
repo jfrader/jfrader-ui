@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Pill, type PillTone } from './index';
 
 const TONES = ['neutral', 'accent', 'success', 'warning', 'danger'] as const satisfies readonly PillTone[];
@@ -80,7 +81,7 @@ export const InlineWithText: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   render: () => <ToneRow />,
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelectorAll('[data-ui="pill"]')).toHaveLength(TONES.length);

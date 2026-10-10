@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Badge, type BadgeTone } from './index';
 
 const TONES = ['accent', 'danger', 'neutral'] as const satisfies readonly BadgeTone[];
@@ -78,6 +79,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+/** If the wrapped control has an `aria-label`, include the count in it: `aria-label="Inbox, 3 unread"`. */
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const [root] = getRoots(canvasElement);
@@ -250,7 +252,7 @@ export const SlotProps: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   render: (args) => (
     <>
       {TONES.map((tone) => (

@@ -1,5 +1,6 @@
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { focusRingInset } from '../../styling/focus-ring';
 import { modalShellReset, raisedSurface } from '../../styling/surface';
 
 export const dialogStyle = css({
@@ -33,8 +34,7 @@ export const inputStyle = css({
   color: vars.color.text,
   '&::placeholder': { color: vars.color.textSubtle },
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '-2px',
+    ...focusRingInset,
   },
 });
 

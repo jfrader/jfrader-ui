@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
 import { Textarea, type TextareaProps, type TextareaResize, type TextareaSize } from './index';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly TextareaSize[];
@@ -219,7 +220,7 @@ export const Keyboard: Story = {
 };
 
 export const LightTheme: Story = {
-  globals: { theme: 'light' },
+  decorators: [withLightTheme],
   args: { description: 'Visible to the whole team.', error: 'Write at least 10 characters.' },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
