@@ -6,6 +6,7 @@
 import { forwardRef, useId, type HTMLAttributes, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 
@@ -27,8 +28,6 @@ export interface ProgressProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chi
   };
 }
 
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-const FORCED_COLORS = '@media (forced-colors: active)';
 const INDETERMINATE_WIDTH = '40%';
 const SLIDE_TIMING = '1.4s ease-in-out infinite';
 const DEFAULT_MAX = 100;

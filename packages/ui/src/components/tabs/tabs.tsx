@@ -26,6 +26,7 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
+import { focusRingInset } from '../../styling/focus-ring';
 import { partId } from '../../utils/part-id';
 import { findByValue, moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -124,8 +125,7 @@ const tabStyle = css({
     cursor: 'not-allowed',
   },
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '-2px',
+    ...focusRingInset,
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',

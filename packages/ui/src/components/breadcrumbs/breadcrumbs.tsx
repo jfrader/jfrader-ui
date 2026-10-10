@@ -26,6 +26,7 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { focusRingOutset } from '../../styling/focus-ring';
 
 export interface BreadcrumbsProps extends HTMLAttributes<HTMLElement> {
   /** Accessible name of the navigation landmark. */
@@ -118,8 +119,7 @@ const linkStyle = css({
     textDecorationColor: 'currentColor',
   },
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
+    ...focusRingOutset,
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',

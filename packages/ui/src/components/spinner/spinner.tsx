@@ -4,7 +4,8 @@
 // where the busy region already exists rather than relying on the mount itself being announced.
 import { forwardRef, type HTMLAttributes } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type SerializedStyles } from '../../styling/css';
+import { css, type SerializedStyles } from '../../styling/css';
+import { loadingRing, loadingRingPulse } from '../../styling/loading-ring';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
 export type SpinnerSize = 'sm' | 'md' | 'lg';
@@ -17,16 +18,6 @@ export interface SpinnerProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'chi
 
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
-const spin = keyframes({
-  from: { transform: 'rotate(0deg)' },
-  to: { transform: 'rotate(360deg)' },
-});
-
-const pulse = keyframes({
-  from: { opacity: 1 },
-  to: { opacity: 0.35 },
-});
-
 const rootStyle = css({
   position: 'relative',
   display: 'inline-flex',
@@ -34,15 +25,11 @@ const rootStyle = css({
 });
 
 const ringStyle = css({
-  display: 'inline-block',
+  ...loadingRing,
   flexShrink: 0,
   boxSizing: 'border-box',
-  border: '2px solid currentColor',
-  borderInlineEndColor: 'transparent',
-  borderRadius: vars.radius.full,
-  animation: `${spin} 0.7s linear infinite`,
   [REDUCED_MOTION]: {
-    animation: `${pulse} 1.6s ease-in-out infinite alternate`,
+    animation: `${loadingRingPulse} 1.6s ease-in-out infinite alternate`,
   },
 });
 

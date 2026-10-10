@@ -1,10 +1,9 @@
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { focusRingOutset } from '../../styling/focus-ring';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 
 // ---- Styles.
-
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-const FORCED_COLORS = '@media (forced-colors: active)';
 
 export const rootStyle = css({
   display: 'inline-flex',
@@ -61,8 +60,7 @@ export const navButtonStyle = css({
     cursor: 'not-allowed',
   },
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
+    ...focusRingOutset,
   },
 });
 

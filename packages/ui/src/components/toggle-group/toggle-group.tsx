@@ -26,6 +26,8 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
+import { focusRingInset } from '../../styling/focus-ring';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { findByValue, moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -92,9 +94,6 @@ const ITEM_QUERY: OwnedItemsQuery = {
   ownerSelector: '[data-ui="toggle-group-root"]',
 };
 
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-const FORCED_COLORS = '@media (forced-colors: active)';
-
 // Gap between the track edge and its items.
 const TRACK_INSET = '2px';
 
@@ -152,8 +151,7 @@ const itemStyle = css({
     cursor: 'not-allowed',
   },
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '-2px',
+    ...focusRingInset,
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',

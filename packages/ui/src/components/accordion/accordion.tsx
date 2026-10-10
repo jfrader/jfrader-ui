@@ -24,6 +24,8 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { disclosureCaret } from '../../styling/disclosure-caret';
+import { focusRingInset } from '../../styling/focus-ring';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -138,13 +140,7 @@ const triggerStyle = css({
   transitionDuration: vars.motion.duration.fast,
   transitionTimingFunction: vars.motion.easeStandard,
   '&::after': {
-    content: '""',
-    flexShrink: 0,
-    borderBlock: `${vars.space[1]} solid transparent`,
-    borderInlineStart: `calc(${vars.space[1]} * 1.5) solid currentColor`,
-    transitionProperty: 'transform',
-    transitionDuration: vars.motion.duration.base,
-    transitionTimingFunction: vars.motion.easeStandard,
+    ...disclosureCaret,
   },
   '&[aria-expanded="true"]::after': {
     transform: 'rotate(90deg)',
@@ -165,8 +161,7 @@ const triggerStyle = css({
     cursor: 'not-allowed',
   },
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '-2px',
+    ...focusRingInset,
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',

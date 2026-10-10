@@ -24,6 +24,10 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { disclosureCaret } from '../../styling/disclosure-caret';
+import { focusRingInset } from '../../styling/focus-ring';
+import { iconWrapperStyle } from '../../styling/icon-wrapper';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { isRenderable } from '../../utils/renderable';
 
 export interface NavigationProps extends HTMLAttributes<HTMLElement> {
@@ -48,8 +52,6 @@ export interface NavigationItemProps extends AnchorHTMLAttributes<HTMLElement> {
   icon?: ReactNode;
 }
 
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-const FORCED_COLORS = '@media (forced-colors: active)';
 const ITEM_MIN_BLOCK_SIZE = vars.space[8];
 const LABEL_TRACKING = '0.06em';
 
@@ -101,13 +103,7 @@ const summaryStyle = css({
     display: 'none',
   },
   '&::after': {
-    content: '""',
-    flexShrink: 0,
-    borderBlock: `${vars.space[1]} solid transparent`,
-    borderInlineStart: `calc(${vars.space[1]} * 1.5) solid currentColor`,
-    transitionProperty: 'transform',
-    transitionDuration: vars.motion.duration.base,
-    transitionTimingFunction: vars.motion.easeStandard,
+    ...disclosureCaret,
   },
   '&:hover': {
     backgroundColor: vars.color.surfaceHover,
@@ -161,8 +157,7 @@ const itemStyle = css({
     pointerEvents: 'none',
   },
   '&:focus-visible': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '-2px',
+    ...focusRingInset,
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',
@@ -174,12 +169,6 @@ const itemStyle = css({
       color: 'SelectedItemText',
     },
   },
-});
-
-const iconStyle = css({
-  display: 'inline-flex',
-  flexShrink: 0,
-  '& svg': { inlineSize: '1em', blockSize: '1em' },
 });
 
 const Root = forwardRef<HTMLElement, NavigationProps>(function Navigation({ label = 'Main', ...rest }, ref) {
@@ -237,7 +226,7 @@ const Item = forwardRef<HTMLElement, NavigationItemProps>(function NavigationIte
   const content = (
     <>
       {isRenderable(icon) && (
-        <span aria-hidden="true" data-ui="navigation-item-icon" css={iconStyle}>
+        <span aria-hidden="true" data-ui="navigation-item-icon" css={iconWrapperStyle}>
           {icon}
         </span>
       )}
