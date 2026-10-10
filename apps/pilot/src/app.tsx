@@ -110,31 +110,41 @@ export function App() {
         </Card.Content>
       </Card>
 
-      <Card>
-        <Card.Header>
-          <Card.Title level={2}>Delete account</Card.Title>
-          <Card.Description>Removes your profile and settings after 30 days.</Card.Description>
-        </Card.Header>
-        <Card.Footer>
-          {deletionScheduled && <Pill tone="danger">Deletion scheduled</Pill>}
-          <Button
-            variant="outline"
-            tone="danger"
-            startIcon={<Trash />}
-            disabled={deletionScheduled}
-            onClick={() => setDeleteOpen(true)}
-          >
-            Delete account
-          </Button>
-        </Card.Footer>
-      </Card>
-
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <Card>
+          <Card.Header>
+            <Card.Title level={2}>Delete account</Card.Title>
+            <Card.Description>Removes your profile and settings after 30 days.</Card.Description>
+          </Card.Header>
+          <Card.Footer>
+            {deletionScheduled && <Pill tone="danger">Deletion scheduled</Pill>}
+            <Dialog.Trigger
+              render={(props) => (
+                <Button
+                  {...props}
+                  variant="outline"
+                  tone="danger"
+                  startIcon={<Trash />}
+                  disabled={deletionScheduled}
+                >
+                  Delete account
+                </Button>
+              )}
+            />
+          </Card.Footer>
+        </Card>
+
         <Dialog.Content>
           <Dialog.Title>Delete your account?</Dialog.Title>
           <Dialog.Description>Your profile and settings are removed after 30 days.</Dialog.Description>
           <div className="dialog-actions">
-            <Dialog.Close>Cancel</Dialog.Close>
+            <Dialog.Close
+              render={(props) => (
+                <Button {...props} variant="outline">
+                  Cancel
+                </Button>
+              )}
+            />
             <Button tone="danger" onClick={handleConfirmDelete}>
               Delete account
             </Button>
