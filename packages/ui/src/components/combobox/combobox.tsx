@@ -75,6 +75,7 @@ import {
 } from '../../utils/collection-registry';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useLatestCallback } from '../../utils/use-latest-callback';
 import { TextField, type TextFieldProps } from '../text-field';
 
 const PLACEMENT = 'bottom-start';
@@ -230,6 +231,8 @@ function ComboboxRoot({
   const [inputLabelling, setInputLabelling] = useState<InputLabelling | null>(null);
   const elementsRef = useRef<Array<HTMLElement | null>>([]);
   const inputHandleRef = useRef<InputHandle | null>(null);
+  // A pure event callback: forwarding the latest one keeps an inline handler out of the context deps.
+  const handleInputChange = useLatestCallback(onInputChange);
 
   const matchesQuery = useCallback(
     (label: string, text: string) => text === '' || filter(label, text),
@@ -294,7 +297,7 @@ function ComboboxRoot({
       getReferenceProps,
       getFloatingProps,
       getItemProps,
-      onInputChange,
+      onInputChange: handleInputChange,
       isVisible: (label) => matchesQuery(label, query),
       findMatches: (text) => {
         let count = 0;
@@ -337,7 +340,7 @@ function ComboboxRoot({
     getReferenceProps,
     getFloatingProps,
     getItemProps,
-    onInputChange,
+    handleInputChange,
     matchesQuery,
     valuesByIndex,
     skippedIndices,
