@@ -45,7 +45,9 @@ import {
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { listboxItemStyle } from '../../styling/listbox-style';
 import { triggerStyle } from '../../styling/trigger-style';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import {
   omitNativeOpen,
   useNativeDialog,
@@ -147,8 +149,6 @@ const setNativeAutofocus = (element: HTMLInputElement | null) => {
   element?.setAttribute('autofocus', '');
 };
 
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-
 const dialogStyle = css({
   border: 0,
   padding: 0,
@@ -225,35 +225,11 @@ const groupHeadingStyle = css({
 });
 
 const itemStyle = css({
-  boxSizing: 'border-box',
-  display: 'flex',
-  alignItems: 'center',
-  inlineSize: '100%',
-  minBlockSize: '32px',
-  flexShrink: 0,
-  borderRadius: vars.radius.sm,
-  paddingBlock: vars.space[1],
-  paddingInline: vars.space[2],
-  fontSize: vars.textSize.sm,
-  color: vars.color.text,
-  cursor: 'pointer',
-  userSelect: 'none',
-  transitionProperty: 'background-color',
-  transitionDuration: vars.motion.duration.fast,
-  transitionTimingFunction: vars.motion.easeStandard,
   '&:hover, &[data-active]': {
     backgroundColor: vars.color.surfaceHover,
   },
-  // The active option is the virtual focus target: it carries the focus ring.
-  '&[data-active]': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '-2px',
-  },
   '&[hidden]': {
     display: 'none',
-  },
-  [REDUCED_MOTION]: {
-    transitionDuration: '0s',
   },
 });
 
@@ -263,19 +239,6 @@ const emptyStyle = css({
   textAlign: 'center',
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
-});
-
-const visuallyHiddenStyle = css({
-  position: 'absolute',
-  inlineSize: '1px',
-  blockSize: '1px',
-  padding: 0,
-  margin: '-1px',
-  overflow: 'hidden',
-  clip: 'rect(0, 0, 0, 0)',
-  clipPath: 'inset(50%)',
-  whiteSpace: 'nowrap',
-  border: 0,
 });
 
 function CommandPaletteRoot({
@@ -647,7 +610,7 @@ const Item = forwardRef<HTMLDivElement, CommandPaletteItemProps>(function Comman
       hidden={!matchedValues.has(value)}
       data-active={isActive || undefined}
       data-ui="command-palette-item"
-      css={itemStyle}
+      css={[listboxItemStyle, itemStyle]}
     >
       {children}
     </div>

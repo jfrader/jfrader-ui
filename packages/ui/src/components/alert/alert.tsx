@@ -9,6 +9,7 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 
 export type AlertTone = 'info' | 'success' | 'warning' | 'danger';
@@ -42,19 +43,6 @@ const TONE_LABELS: Record<AlertTone, string> = {
   warning: 'Warning',
   danger: 'Error',
 };
-
-const visuallyHiddenStyle = css({
-  position: 'absolute',
-  inlineSize: '1px',
-  blockSize: '1px',
-  padding: 0,
-  margin: '-1px',
-  overflow: 'hidden',
-  clip: 'rect(0, 0, 0, 0)',
-  clipPath: 'inset(50%)',
-  whiteSpace: 'nowrap',
-  border: 0,
-});
 
 const rootStyle = css({
   display: 'grid',

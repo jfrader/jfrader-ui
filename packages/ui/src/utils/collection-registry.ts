@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useState, type MutableRefObject, type RefObject } from 'react';
 import { useListItem } from '@floating-ui/react';
+import { partId } from './part-id';
 
 // Shared list-item plumbing for Menu and value-keyed collections (Select, Combobox,
 // CommandPalette). Value-keyed items register a record; FloatingList recomputes each
@@ -29,9 +30,8 @@ export interface LabelLookup {
 const isSameRecord = <R extends CollectionRecord>(a: R | undefined, b: R) =>
   a !== undefined && (Object.keys(b) as Array<keyof R>).every((key) => a[key] === b[key]);
 
-/** The DOM id of a registered item; the value is encoded so any string yields a valid id. */
-export const collectionItemId = (baseId: string, value: string) =>
-  `${baseId}-opt-${encodeURIComponent(value)}-item`;
+/** The DOM id of a registered item. */
+export const collectionItemId = (baseId: string, value: string) => `${partId(baseId, 'opt', value)}-item`;
 
 /**
  * Root side: the registered records keyed by value, and a stable registration so items'

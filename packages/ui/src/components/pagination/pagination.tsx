@@ -11,6 +11,7 @@
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef, type HTMLAttributes } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
 export interface PaginationProps extends Omit<HTMLAttributes<HTMLElement>, 'onChange'> {
   page: number;
@@ -119,19 +120,6 @@ const glyphStyle = css({
   '&:dir(rtl)': {
     transform: 'scaleX(-1)',
   },
-});
-
-const visuallyHiddenStyle = css({
-  position: 'absolute',
-  inlineSize: '1px',
-  blockSize: '1px',
-  padding: 0,
-  margin: '-1px',
-  overflow: 'hidden',
-  clip: 'rect(0, 0, 0, 0)',
-  clipPath: 'inset(50%)',
-  whiteSpace: 'nowrap',
-  border: 0,
 });
 
 export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagination(

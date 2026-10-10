@@ -5,6 +5,7 @@
 import { forwardRef, type HTMLAttributes } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type SerializedStyles } from '../../styling/css';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
 export type SpinnerSize = 'sm' | 'md' | 'lg';
 
@@ -50,19 +51,6 @@ const sizeStyles: Record<SpinnerSize, SerializedStyles> = {
   md: css({ inlineSize: vars.space[5], blockSize: vars.space[5] }),
   lg: css({ inlineSize: vars.space[6], blockSize: vars.space[6] }),
 };
-
-const visuallyHiddenStyle = css({
-  position: 'absolute',
-  inlineSize: '1px',
-  blockSize: '1px',
-  padding: 0,
-  margin: '-1px',
-  overflow: 'hidden',
-  clip: 'rect(0, 0, 0, 0)',
-  clipPath: 'inset(50%)',
-  whiteSpace: 'nowrap',
-  border: 0,
-});
 
 export const Spinner = forwardRef<HTMLSpanElement, SpinnerProps>(function Spinner(
   { size = 'md', label = 'Loading', ...rest },

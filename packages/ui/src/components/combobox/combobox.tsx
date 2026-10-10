@@ -57,6 +57,15 @@ import {
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import {
+  listboxItemStateStyle,
+  listboxItemStyle,
+  listboxOptionCheckStyle,
+  listboxOptionStyle,
+  listboxOptionTextStyle,
+  listboxScrollStyle,
+  listboxSurfaceStyle,
+} from '../../styling/listbox-style';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import {
   collectionItemId,
@@ -180,77 +189,10 @@ function useComboboxListContext(part: string): ComboboxContextValue {
   return context;
 }
 
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-
-const listStyle = css({
-  boxSizing: 'border-box',
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
-  boxShadow: vars.shadow.overlay,
-  padding: vars.space[1],
-  minInlineSize: '180px',
-  maxInlineSize: 'min(320px, calc(100vw - 32px))',
-  maxBlockSize: '280px',
-  overflow: 'auto',
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
-  lineHeight: vars.lineHeight.base,
-  '&[hidden]': {
-    display: 'none',
-  },
-});
-
 const itemStyle = css({
-  boxSizing: 'border-box',
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space[2],
-  inlineSize: '100%',
-  minBlockSize: '32px',
-  flexShrink: 0,
-  borderRadius: vars.radius.sm,
-  paddingBlock: vars.space[1],
-  paddingInline: vars.space[2],
-  fontSize: vars.textSize.sm,
-  color: vars.color.text,
-  cursor: 'pointer',
-  userSelect: 'none',
-  transitionProperty: 'background-color',
-  transitionDuration: vars.motion.duration.fast,
-  transitionTimingFunction: vars.motion.easeStandard,
   '&[hidden]': {
     display: 'none',
   },
-  '&:hover:not([aria-disabled="true"]), &[data-active]:not([aria-disabled="true"])': {
-    backgroundColor: vars.color.surfaceHover,
-  },
-  // The highlighted option is the virtual focus target: it carries the focus ring.
-  '&[data-active]': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '-2px',
-  },
-  '&[aria-selected="true"]': {
-    fontWeight: vars.fontWeight.medium,
-  },
-  '&[aria-disabled="true"]': {
-    opacity: 0.55,
-    cursor: 'not-allowed',
-  },
-  [REDUCED_MOTION]: {
-    transitionDuration: '0s',
-  },
-});
-
-const itemTextStyle = css({
-  flex: 1,
-  minInlineSize: 0,
-});
-
-const checkStyle = css({
-  color: vars.color.accentText,
 });
 
 const emptyStyle = css({
@@ -610,7 +552,7 @@ const List = forwardRef<HTMLDivElement, ComboboxListProps>(function ComboboxList
         data-state={open ? 'open' : 'closed'}
         data-ui="combobox-list"
         style={{ ...style, ...floatingStyles }}
-        css={listStyle}
+        css={[listboxSurfaceStyle, listboxScrollStyle]}
       >
         <FloatingList elementsRef={elementsRef}>
           <ComboboxListContext.Provider value>{children}</ComboboxListContext.Provider>
@@ -654,13 +596,13 @@ const Item = forwardRef<HTMLDivElement, ComboboxItemProps>(function ComboboxItem
       aria-disabled={disabled || undefined}
       data-active={isActive || undefined}
       data-ui="combobox-item"
-      css={itemStyle}
+      css={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle, itemStyle]}
     >
-      <span ref={textRef} css={itemTextStyle}>
+      <span ref={textRef} css={listboxOptionTextStyle}>
         {children}
       </span>
       {isSelected && (
-        <span aria-hidden="true" css={checkStyle}>
+        <span aria-hidden="true" css={listboxOptionCheckStyle}>
           {SELECTED_GLYPH}
         </span>
       )}

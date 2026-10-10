@@ -26,6 +26,7 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
+import { partId } from '../../utils/part-id';
 import { findByValue, moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -67,9 +68,6 @@ function useTabsContext(part: string): TabsContextValue {
   if (!context) throw new Error(`Tabs.${part} must be rendered inside <Tabs>.`);
   return context;
 }
-
-const partId = (baseId: string, part: 'tab' | 'panel', value: string) =>
-  `${baseId}-${part}-${encodeURIComponent(value)}`;
 
 const TAB_QUERY: OwnedItemsQuery = {
   itemSelector: '[role="tab"]:not([disabled])',
