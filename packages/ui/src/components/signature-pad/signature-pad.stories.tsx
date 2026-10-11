@@ -553,34 +553,95 @@ export const Replay: Story = {
 const replayApi = createRef<SignaturePadHandle>();
 export const ReplayIgnoresObservers: Story = {
   args: { defaultValue: seeded, apiRef: replayApi },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Regression: resize and style mutations during replay must not repaint the full signature over the playback frame. The test drives replay frames by hand, asserts the canvas keeps the mid-replay pixels after its own ResizeObserver and MutationObserver have seen the mutations, and asserts the replay is still live (its pending frame is only cancelled by Escape). Only frames requested synchronously by `replay()` and by the replay frame itself are attributed to the component; any frame the host page schedules meanwhile passes through to the browser and is not counted.',
+      },
+    },
+  },
   play: async ({ canvasElement, userEvent }) => {
     const canvas = pad(canvasElement);
     const view = canvas.ownerDocument.defaultView!;
-    const frames: FrameRequestCallback[] = [];
-    const request = spyOn(view, 'requestAnimationFrame').mockImplementation((callback) => {
-      frames.push(callback);
-      return frames.length;
-    });
-    const cancel = spyOn(view, 'cancelAnimationFrame').mockImplementation(() => {});
     const root = canvas.closest<HTMLElement>('[data-ui="signature-pad"]')!;
+    const fullArtifact = canvas.toDataURL();
+    const requestFrame = view.requestAnimationFrame.bind(view);
+    const cancelFrame = view.cancelAnimationFrame.bind(view);
+    const owned: FrameRequestCallback[] = [];
+    const cancelled: number[] = [];
+    let attributing = false;
+    const request = spyOn(view, 'requestAnimationFrame').mockImplementation((callback) => {
+      if (!attributing) return requestFrame(callback);
+      owned.push(callback);
+      return -owned.length;
+    });
+    const cancel = spyOn(view, 'cancelAnimationFrame').mockImplementation((id) => {
+      if (id < 0) cancelled.push(id);
+      else cancelFrame(id);
+    });
+    const attribute = (run: () => void) => {
+      attributing = true;
+      try {
+        run();
+      } finally {
+        attributing = false;
+      }
+    };
+    const settled = (observe: (done: () => void) => () => void) =>
+      new Promise<void>((resolve) => {
+        const stop = observe(() => {
+          stop();
+          resolve();
+        });
+      });
     try {
-      await act(async () => replayApi.current!.replay());
-      await expect(frames).toHaveLength(1);
-      await act(async () => frames[0]!(0));
-      const firstFrame = canvas.toDataURL();
-      await expect(firstFrame).not.toBe(canvas.ownerDocument.createElement('canvas').toDataURL());
+      let replayStart = 0;
+      await act(async () =>
+        attribute(() => {
+          replayStart = view.performance.now();
+          replayApi.current!.replay();
+        }),
+      );
+      await expect(owned).toHaveLength(1);
+      const MID_REPLAY_MS = 120;
+      await act(async () => attribute(() => owned[0]!(replayStart + MID_REPLAY_MS)));
+      await expect(owned).toHaveLength(2);
+      const midReplay = canvas.toDataURL();
+      const context = canvas.getContext('2d')!;
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      await expect(pixels.some((value, i) => i % 4 === 3 && value > 0)).toBe(true);
+      await expect(midReplay).not.toBe(fullArtifact);
+      const width = canvas.clientWidth;
+      const resized = settled((done) => {
+        const observer = new ResizeObserver(() => {
+          if (canvas.clientWidth !== width) done();
+        });
+        observer.observe(canvas);
+        return () => observer.disconnect();
+      });
+      const mutated = settled((done) => {
+        const observer = new MutationObserver(done);
+        observer.observe(root, { attributes: true, attributeFilter: ['style'] });
+        return () => observer.disconnect();
+      });
       root.style.setProperty('--signature-probe', '1');
       root.style.inlineSize = '90%';
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      await expect(canvas.toDataURL()).toBe(firstFrame);
+      await act(async () => {
+        await Promise.all([resized, mutated]);
+      });
+      await expect(canvas.toDataURL()).toBe(midReplay);
+      await expect(cancelled).toEqual([]);
+      await act(async () => canvas.focus());
+      await userEvent.keyboard('{Escape}');
+      await expect(cancelled).toEqual([-2]);
+      await expect(owned).toHaveLength(2);
     } finally {
       root.style.removeProperty('--signature-probe');
       root.style.inlineSize = '';
       request.mockRestore();
       cancel.mockRestore();
     }
-    await act(async () => canvas.focus());
-    await userEvent.keyboard('{Escape}');
     await expect(within(canvasElement).getByRole('button', { name: 'Replay' })).toBeEnabled();
   },
 };
