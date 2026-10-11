@@ -32,6 +32,7 @@ export default defineConfig({
       })],
       test: {
         name: 'storybook',
+        setupFiles: path.join(import.meta.dirname, '.storybook/vitest.setup.ts'),
         browser: {
           enabled: true,
           headless: true,
