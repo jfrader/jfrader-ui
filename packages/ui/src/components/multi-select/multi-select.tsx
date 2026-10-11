@@ -9,6 +9,9 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type HTMLProps,
+  type KeyboardEvent,
+  type KeyboardEventHandler,
   type ReactNode,
 } from 'react';
 import {
@@ -256,6 +259,19 @@ function useMultiSelectModel({
     },
   });
   const interactions = useInteractions([role, dismiss, navigation]);
+  // Floating UI runs hook handlers before the user's; the trigger's own key handling (and any
+  // consumer veto) must run first, and navigation/dismissal only for keys it left unhandled.
+  const getReferenceProps = ({ onKeyDown, ...userProps }: HTMLProps<HTMLButtonElement> = {}) => {
+    const props = interactions.getReferenceProps(userProps);
+    const hookKeyDown = props.onKeyDown as KeyboardEventHandler<HTMLButtonElement> | undefined;
+    return {
+      ...props,
+      onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => {
+        onKeyDown?.(event);
+        if (!event.defaultPrevented && !event.nativeEvent.isComposing) hookKeyDown?.(event);
+      },
+    };
+  };
   const change = (next: readonly string[]) => {
     const unique = [...new Set(next)];
     if (unique.length === selected.length && unique.every((value, index) => value === selected[index]))
@@ -326,6 +342,7 @@ function useMultiSelectModel({
     requestOpen,
     ...floating,
     ...interactions,
+    getReferenceProps,
   };
 }
 type Model = ReturnType<typeof useMultiSelectModel>;
@@ -438,6 +455,40 @@ function MultiSelectTrigger({
       m.setDirection(trigger.ownerDocument.defaultView?.getComputedStyle(trigger).direction ?? 'ltr');
     return () => m.setTriggerName(null);
   }, [id, labelledBy, label, m.setTriggerName]);
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    onKeyDown?.(event);
+    if (event.defaultPrevented || m.disabled || disabledProp || event.nativeEvent.isComposing) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (event.repeat || heldToggle.current) return;
+      heldToggle.current = true;
+      if (!m.open) m.requestOpen(true);
+      else if (m.activeIndex !== null) {
+        const value = m.byIndex[m.activeIndex];
+        if (value !== undefined) m.toggle(value);
+      }
+    } else if (event.key === 'Tab') m.requestOpen(false);
+    else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      const now = performance.now();
+      const text =
+        (now - buffer.current.time > TYPEAHEAD_RESET_MS ? '' : buffer.current.text) + event.key;
+      buffer.current = { text, time: now };
+      for (let offset = 1; offset <= m.byIndex.length; offset++) {
+        const index = ((m.activeIndex ?? -1) + offset) % m.byIndex.length;
+        const value = m.byIndex[index];
+        const record = value === undefined ? undefined : m.options.get(value);
+        if (
+          record &&
+          !record.disabled &&
+          m.formatters.collator.compare(record.label.slice(0, text.length), text) === 0
+        ) {
+          m.requestOpen(true);
+          m.setActiveIndex(index);
+          break;
+        }
+      }
+    }
+  };
   return (
     <WithSx className={className} styles={[triggerStyle, triggerSkin, sizes[size]]} sx={sx}>
       {(className) => (
@@ -446,6 +497,7 @@ function MultiSelectTrigger({
             ...rest,
             id,
             disabled: m.disabled || disabledProp,
+            onKeyDown: handleKeyDown,
             onKeyUp: (event: React.KeyboardEvent<HTMLButtonElement>) => {
               onKeyUp?.(event);
               if (event.key === 'Enter' || event.key === ' ') heldToggle.current = false;
@@ -460,42 +512,6 @@ function MultiSelectTrigger({
               onBlur?.(event);
             },
           })}
-          onKeyDown={(event) => {
-            onKeyDown?.(event);
-            if (event.defaultPrevented || m.disabled || disabledProp || event.nativeEvent.isComposing) return;
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              if (event.repeat || heldToggle.current) return;
-              heldToggle.current = true;
-              if (!m.open) m.requestOpen(true);
-              else if (m.activeIndex !== null) {
-                const value = m.byIndex[m.activeIndex];
-                if (value !== undefined) m.toggle(value);
-              }
-            } else if (event.key === 'Tab') m.requestOpen(false);
-            else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-              const now = performance.now();
-              const text =
-                (now - buffer.current.time > TYPEAHEAD_RESET_MS ? '' : buffer.current.text) + event.key;
-              buffer.current = { text, time: now };
-              for (let offset = 1; offset <= m.byIndex.length; offset++) {
-                const index = ((m.activeIndex ?? -1) + offset) % m.byIndex.length;
-                const value = m.byIndex[index];
-                const record = value === undefined ? undefined : m.options.get(value);
-                if (
-                  record &&
-                  !record.disabled &&
-                  m.formatters.collator.compare(record.label.slice(0, text.length), text) === 0
-                ) {
-                  m.requestOpen(true);
-                  m.setActiveIndex(index);
-                  break;
-                }
-              }
-            }
-            const navigate = m.getReferenceProps().onKeyDown;
-            if (!event.defaultPrevented && typeof navigate === 'function') navigate(event);
-          }}
           type="button"
           ref={mergedRef}
           role="combobox"
@@ -579,7 +595,8 @@ function MultiSelectContent({
   const id = idProp ?? `${m.baseId}-listbox`;
   useLayoutEffect(() => {
     m.setListId(id);
-  }, [id, m.setListId]);
+    return () => m.setListId(`${m.baseId}-listbox`);
+  }, [id, m.baseId, m.setListId]);
   const mergedRef = useMergeRefs([m.open ? m.refs.setFloating : null, ref]);
   const naming =
     rest['aria-label'] !== undefined || rest['aria-labelledby'] !== undefined

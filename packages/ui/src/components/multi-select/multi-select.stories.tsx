@@ -238,15 +238,34 @@ export const Required: Story = {
   ),
   play: async ({ canvas, canvasElement, userEvent }) => {
     const form = canvasElement.querySelector('form')!;
-    await expect(triggerOf(canvasElement)).toHaveAttribute('aria-required', 'true');
-    await expect(form.checkValidity()).toBe(false);
-    await expect(canvasElement.ownerDocument.activeElement).toBe(triggerOf(canvasElement));
-    await userEvent.click(triggerOf(canvasElement));
+    const trigger = triggerOf(canvasElement);
+    await expect(trigger).toHaveAttribute('aria-required', 'true');
+    await expect(trigger).not.toHaveAttribute('aria-invalid');
+    await expect(form.reportValidity()).toBe(false);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+    await waitFor(async () => {
+      await expect(trigger).toHaveAttribute('aria-invalid', 'true');
+    });
+    await userEvent.click(trigger);
     await userEvent.click(body(canvasElement).getByRole('option', { name: 'Bug' }));
-    await expect(form.checkValidity()).toBe(true);
+    await expect(trigger).not.toHaveAttribute('aria-invalid');
+    await expect(form.reportValidity()).toBe(true);
     await expect(new FormData(form).getAll('labels')).toEqual(['bug']);
     await userEvent.keyboard('{Escape}');
     await expect(canvas.getByRole('button', { name: 'Submit' })).toBeEnabled();
+  },
+};
+export const RequiredSatisfied: Story = {
+  args: { required: true, name: 'labels', defaultValue: ['bug'] },
+  render: Required.render,
+  play: async ({ canvas, canvasElement }) => {
+    const form = canvasElement.querySelector('form')!;
+    const submit = canvas.getByRole('button', { name: 'Submit' });
+    submit.focus();
+    await expect(form.reportValidity()).toBe(true);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(submit);
+    await expect(triggerOf(canvasElement)).not.toHaveAttribute('aria-invalid');
+    await expect(new FormData(form).getAll('labels')).toEqual(['bug']);
   },
 };
 export const Error: Story = {
@@ -345,13 +364,138 @@ export const ControlledReject: Story = {
     await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
   },
 };
+export const ControlledValueUncontrolledOpen: Story = {
+  args: { value: [] },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const trigger = triggerOf(canvasElement);
+    await userEvent.click(trigger);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.click(body(canvasElement).getByRole('option', { name: 'Bug' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['bug']);
+    await expect(body(canvasElement).getByRole('option', { name: 'Bug' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+    await expect(trigger).toHaveAccessibleDescription('0 options selected');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  },
+};
+export const ControlledOpenUncontrolledValue: Story = {
+  args: { open: true },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const trigger = triggerOf(canvasElement);
+    await userEvent.click(body(canvasElement).getByRole('option', { name: 'Bug' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['bug']);
+    await expect(body(canvasElement).getByRole('option', { name: 'Bug' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(trigger).toHaveAccessibleDescription('1 option selected: Bug');
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(body(canvasElement).getByRole('option', { name: 'Bug' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  },
+};
+function ExternalUpdatesExample(props: MultiSelectProps) {
+  const [value, setValue] = useState<readonly string[]>(['bug']);
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Example {...props} value={value} open={open} />
+      <Button onClick={() => setValue(['docs', 'feature'])}>Set value</Button>
+      <Button onClick={() => setOpen(true)}>Open list</Button>
+    </>
+  );
+}
+export const ExternalUpdates: Story = {
+  render: (args) => <ExternalUpdatesExample {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = triggerOf(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Set value' }));
+    await expect(trigger).toHaveAccessibleDescription('2 options selected: Documentation and Feature');
+    await userEvent.click(canvas.getByRole('button', { name: 'Open list' }));
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+const duplicatedValue = Object.freeze(['bug', 'feature', 'bug']);
+export const DuplicateValues: Story = {
+  args: { value: duplicatedValue, name: 'labels' },
+  render: Required.render,
+  play: async ({ canvasElement, userEvent, args }) => {
+    const form = canvasElement.querySelector('form')!;
+    const trigger = triggerOf(canvasElement);
+    await expect(trigger).toHaveAccessibleDescription('2 options selected: Bug and Feature');
+    await expect(new FormData(form).getAll('labels')).toEqual(['bug', 'feature']);
+    await userEvent.click(trigger);
+    await userEvent.click(body(canvasElement).getByRole('option', { name: 'Documentation' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['bug', 'feature', 'docs']);
+    await expect(args.onValueChange!.mock.calls[0]![0]).not.toBe(duplicatedValue);
+    await expect(duplicatedValue).toEqual(['bug', 'feature', 'bug']);
+    await userEvent.keyboard('{Escape}');
+  },
+};
+export const TwoInstances: Story = {
+  args: { defaultOpen: true },
+  render: (args) => (
+    <>
+      <Example {...args} />
+      <Example {...args} />
+    </>
+  ),
+  play: async ({ canvasElement, canvas }) => {
+    const document = canvasElement.ownerDocument;
+    const triggers = canvas.getAllByRole('combobox', { name: LABEL });
+    await expect(triggers).toHaveLength(2);
+    const [first, second] = triggers as [HTMLElement, HTMLElement];
+    await expect(first.id).not.toBe(second.id);
+    await expect(first.getAttribute('aria-controls')).not.toBe(second.getAttribute('aria-controls'));
+    for (const trigger of triggers) {
+      const list = document.getElementById(trigger.getAttribute('aria-controls')!)!;
+      await expect(list).toHaveAttribute('role', 'listbox');
+      await expect(within(list).getAllByRole('option')).toHaveLength(4);
+      const label = document.querySelector(`label[for="${CSS.escape(trigger.id)}"]`);
+      await expect(label).toHaveTextContent(LABEL);
+    }
+    const ids = [...document.querySelectorAll('[data-ui^="multi-select"][id]')].map((element) => element.id);
+    await expect(new Set(ids).size).toBe(ids.length);
+  },
+};
 export const PersistentOpen: Story = { args: { open: true } };
 export const PersistentOpenSelected: Story = {
   args: { open: true, defaultValue: ['bug', 'locked'] },
 };
+// Deliberately leaves an open listbox with zero options for the axe gate; the empty status is
+// announced outside the listbox, so the listbox holds no non-option semantics.
 export const PersistentOpenEmpty: Story = {
   args: { open: true },
   render: (args) => <Example {...args} empty />,
+  play: async ({ canvasElement }) => {
+    const list = body(canvasElement).getByRole('listbox', { name: LABEL });
+    await waitFor(async () => {
+      await expect(list).toBeVisible();
+    });
+    await expect(within(list).queryAllByRole('option')).toHaveLength(0);
+    const status = body(canvasElement)
+      .getAllByRole('status')
+      .find((element) => element.textContent === 'No options');
+    await expect(status).toBeDefined();
+    await expect(list.contains(status!)).toBe(false);
+  },
 };
 export const Keyboard: Story = {
   play: async ({ canvasElement, canvas, userEvent, args }) => {
