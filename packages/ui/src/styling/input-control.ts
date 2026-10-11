@@ -2,7 +2,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from './css';
 import { REDUCED_MOTION } from './media';
 
-// Shared control skin for text inputs (TextField, Textarea).
+// Shared control skin for text inputs (TextField, Textarea, PasswordField).
 export const inputControlStyle = css({
   display: 'block',
   inlineSize: '100%',
