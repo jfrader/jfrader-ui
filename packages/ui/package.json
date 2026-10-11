@@ -44,6 +44,7 @@
     "./flex": { "types": "./src/components/flex/index.ts", "import": "./src/components/flex/index.ts" },
     "./kbd": { "types": "./src/components/kbd/index.ts", "import": "./src/components/kbd/index.ts" },
     "./menu": { "types": "./src/components/menu/index.ts", "import": "./src/components/menu/index.ts" },
+    "./metric-card": { "types": "./src/components/metric-card/index.ts", "import": "./src/components/metric-card/index.ts" },
     "./navigation": { "types": "./src/components/navigation/index.ts", "import": "./src/components/navigation/index.ts" },
     "./pagination": { "types": "./src/components/pagination/index.ts", "import": "./src/components/pagination/index.ts" },
     "./password-field": { "types": "./src/components/password-field/index.ts", "import": "./src/components/password-field/index.ts" },
