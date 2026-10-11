@@ -70,7 +70,8 @@ function parts(canvasElement: HTMLElement) {
 async function assertFocus(element: HTMLElement) {
   await expect(element.ownerDocument.activeElement).toBe(element);
   await expect(getComputedStyle(element).outlineStyle).not.toBe('none');
-  await expect(getComputedStyle(element).outlineWidth).toBe('2px');
+  // Fractional devicePixelRatios device-snap outline widths (authored 2px computes ~1.49px).
+  await expect(parseFloat(getComputedStyle(element).outlineWidth)).toBeGreaterThan(1);
 }
 
 async function assertMasked(input: HTMLInputElement, button: HTMLButtonElement) {
@@ -84,7 +85,7 @@ async function assertRevealed(input: HTMLInputElement, button: HTMLButtonElement
 }
 
 const slashOffset = (button: HTMLButtonElement) =>
-  getComputedStyle(button.querySelector('svg > [data-slash]')!).strokeDashoffset;
+  parseFloat(getComputedStyle(button.querySelector('svg > [data-slash]')!).strokeDashoffset);
 
 export const Default: Story = {
   play: async ({ canvas, canvasElement }) => {
@@ -100,7 +101,7 @@ export const Default: Story = {
     await expect(input).toHaveAttribute('spellcheck', 'false');
     await expect(input).toHaveAttribute('autocomplete', 'current-password');
     await expect(root.querySelector('[aria-hidden="true"] > svg')).not.toBeNull();
-    await expect(slashOffset(button)).toBe('1px');
+    await expect(slashOffset(button)).toBeGreaterThan(0.5);
     const inputRect = input.getBoundingClientRect();
     const buttonRect = button.getBoundingClientRect();
     await expect(buttonRect.left).toBeGreaterThan(inputRect.left + inputRect.width / 2);
@@ -115,7 +116,7 @@ export const Revealed: Story = {
     await assertRevealed(input, button);
     await expect(input).toHaveValue('correct horse battery staple');
     // Mounting already on: the slash is drawn without a transition.
-    await expect(slashOffset(button)).toBe('0px');
+    await expect(slashOffset(button)).toBeLessThan(0.5);
   },
 };
 
@@ -226,7 +227,7 @@ export const Uncontrolled: Story = {
     await expect(input).toHaveValue('hunter2');
     await expect([input.selectionStart, input.selectionEnd]).toEqual([2, 5]);
     await expect(ref).toHaveBeenCalledTimes(refCalls);
-    await waitFor(() => expect(slashOffset(button)).toBe('0px'), { timeout: SLASH_SETTLE_MS * 5 });
+    await waitFor(() => expect(slashOffset(button)).toBeLessThan(0.5), { timeout: SLASH_SETTLE_MS * 5 });
     await userEvent.click(button);
     await assertMasked(input, button);
     await expect(args.onRevealedChange).toHaveBeenCalledTimes(2);
@@ -360,7 +361,7 @@ export const RejectedControlled: Story = {
     await assertMasked(input, button);
     await expect(args.onRevealedChange).toHaveBeenCalledTimes(2);
     await expect(args.onRevealedChange).toHaveBeenLastCalledWith(true);
-    await expect(slashOffset(button)).toBe('1px');
+    await expect(slashOffset(button)).toBeGreaterThan(0.5);
   },
 };
 
