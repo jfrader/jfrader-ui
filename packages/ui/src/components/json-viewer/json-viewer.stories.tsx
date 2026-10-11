@@ -29,7 +29,7 @@ const meta = {
       source: { code: snippet },
       description: {
         component:
-          'Read-only strict JSON inspector. Cycles, accessors, unsupported values and nonfinite numbers are rejected. Value copy uses pretty JSON, including quoted strings; paths use dot identifiers and JSON-escaped brackets. Expansion, search query and current path each support controlled/default/callback props. Search overlays ancestor expansion and pages; clearing restores base state. Arrays and objects are paged, not virtualized, and are not intended for arbitrary multi-megabyte input. Each expanded treeitem nests its child group; roving DOM focus uses the TreeView contract: Up/Down clamp, Right opens/enters, Left closes/parents (also in RTL), Home/End, Enter/Space, 500ms typeahead. / opens search; Ctrl/Cmd+C copies value, +Shift copies path. Environment stories are structural fixtures; actual media emulation and screen-reader checks are separate QA gates.',
+          'Read-only strict JSON inspector. Cycles, accessors, unsupported values and nonfinite numbers are rejected. Value copy uses pretty JSON, including quoted strings; paths use dot identifiers and JSON-escaped brackets. Expansion, search query and current path each support controlled/default/callback props. Search overlays ancestor expansion and pages; clearing restores base state. Arrays and objects are paged, not virtualized, and are not intended for arbitrary multi-megabyte input. Each expanded treeitem owns its child group via aria-owns (flattened DOM sibling; names stay scoped to labels); roving DOM focus uses the TreeView contract: Up/Down clamp, Right opens/enters, Left closes/parents (also in RTL), Home/End, Enter/Space, 500ms typeahead. / opens search; Ctrl/Cmd+C copies value, +Shift copies path. Environment stories are structural fixtures; actual media emulation and screen-reader checks are separate QA gates.',
       },
     },
     a11y: { test: 'error' },
@@ -62,25 +62,20 @@ async function withClipboard(
   }
 }
 
-const expectNestedGroups = async (canvasElement: HTMLElement) => {
-  await expect(canvasElement.querySelector('[aria-owns], [role="none"]')).toBeNull();
-  const tree = within(canvasElement).getByRole('tree');
+const expectOwnedGroups = async (canvasElement: HTMLElement) => {
+  // Flattened structure: each expanded treeitem OWNS a DOM-sibling role=group via aria-owns, and
+  // every treeitem's accessible name is scoped to its label span (no subtree bleed).
+  for (const group of within(canvasElement).getAllByRole('group')) {
+    if (group.getAttribute('data-ui') === 'json-viewer-invalid') continue;
+    const owner = canvasElement.querySelector(`[role="treeitem"][aria-owns="${group.id}"]`);
+    await expect(owner).not.toBeNull();
+    await expect(Number(owner!.getAttribute('aria-level')) + 1).toBe(
+      Number(group.querySelector('[role="treeitem"]')!.getAttribute('aria-level')),
+    );
+  }
+  await expect(canvasElement.querySelectorAll('[role="treeitem"] [role="group"]')).toHaveLength(0);
   for (const row of within(canvasElement).getAllByRole('treeitem')) {
-    const level = Number(row.getAttribute('aria-level'));
-    const parent = row.parentElement!;
-    if (level === 1) await expect(parent).toBe(tree);
-    else {
-      await expect(parent).toHaveAttribute('role', 'group');
-      await expect(parent.parentElement).toHaveAttribute('aria-level', String(level - 1));
-    }
-    const group = row.querySelector(':scope > [role="group"]');
-    if (row.getAttribute('aria-expanded') === 'true') {
-      await expect(group).not.toBeNull();
-      await expect(group!.querySelector(':scope > [role="treeitem"]')).toHaveAttribute(
-        'aria-level',
-        String(level + 1),
-      );
-    } else await expect(group).toBeNull();
+    await expect(row).toHaveAttribute('aria-labelledby');
   }
 };
 
@@ -92,13 +87,18 @@ export const Default: Story = {
     }
     await expect(canvasElement.querySelectorAll('[role="treeitem"][tabindex="0"]')).toHaveLength(1);
     await expect(canvas.getAllByRole('group')).toHaveLength(1);
-    await expectNestedGroups(canvasElement);
+    await expectOwnedGroups(canvasElement);
     for (const row of canvas.getAllByRole('treeitem')) {
-      await expect(row).not.toHaveAttribute('aria-labelledby');
+      // The accessible name is scoped to the label; without aria-labelledby the nested group's
+      // content bleeds into the name (role=group is not name-from-content, treeitem is).
+      await expect(row).toHaveAttribute('aria-labelledby');
       await expect(
         row.querySelector('[data-ui="json-viewer-row"]')!.getBoundingClientRect().height,
       ).toBeGreaterThanOrEqual(32);
     }
+    const branch = canvasElement.querySelector('[role="treeitem"][aria-expanded="true"]') as HTMLElement;
+    const branchLabel = branch.querySelector('[data-ui="json-viewer-label"]')!.textContent!.trim();
+    await expect(canvas.getByRole('treeitem', { name: branchLabel })).toBe(branch);
     await expect(canvasElement.querySelector('[data-ui="json-viewer-status"]')).toBeEmptyDOMElement();
   },
 };
@@ -128,7 +128,7 @@ export const Nested: Story = {
   args: { defaultExpandDepth: 3 },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getAllByRole('group')).toHaveLength(4);
-    await expectNestedGroups(canvasElement);
+    await expectOwnedGroups(canvasElement);
   },
 };
 export const SearchExpanded: Story = { args: { defaultQuery: 'writer' } };

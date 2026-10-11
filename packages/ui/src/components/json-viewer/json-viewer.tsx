@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -259,7 +260,10 @@ const detailsStyle = css({
 const statusStyle = css({ paddingInline: vars.space[3], '&:empty': { padding: 0 } });
 
 /** Read-only JSON tree. Search overlays expansion/pages; clearing restores base state.
- * Each expanded treeitem nests its child role=group; roving DOM focus follows the TreeView
+ * Each expanded treeitem OWNS its child role=group via aria-owns; the group is a DOM sibling
+ * (flattened out of the treeitem) so the author name stays scoped to the label — nesting it in
+ * the DOM would fold the whole subtree into the treeitem's visible text and break the
+ * label-content-name-mismatch axe gate. Roving DOM focus follows the TreeView
  * navigation contract. Right opens, Left closes/moves to parent even in RTL. Up/Down clamp;
  * Home/End move; Enter/Space activate; 500ms typeahead; / searches; Ctrl/Cmd+C copies JSON
  * (+Shift copies path).
@@ -308,6 +312,7 @@ export function JsonViewer({
   const lastFocus = useRef<HTMLDivElement | null>(null);
   const suppressFocusSelection = useRef(false);
   const typeahead = useRef({ text: '', time: 0 });
+  const labelIdBase = useId();
   const nodes = useMemo(() => inspect(data, rootName), [data, rootName]);
   const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const labels: JsonViewerLabels = {
@@ -665,16 +670,21 @@ export function JsonViewer({
     );
   };
   const rendered = new Map<string, ReactNode>();
-  for (const row of visible.toReversed()) {
+  for (const [index, row] of visible.toReversed().entries()) {
     const node = nodes?.get(row.path);
     const children = childrenByPath.get(row.path);
+    const labelId = `${labelIdBase}-label-${index}`;
+    const groupId = children ? `${labelIdBase}-group-${index}` : undefined;
     rendered.set(
       row.path,
-      <div
-        key={row.path}
-        role="treeitem"
-        data-ui="json-viewer-item"
-        aria-level={row.level}
+      <div key={row.path} data-ui="json-viewer-node" role="none">
+        <div
+          id={`${labelIdBase}-item-${index}`}
+          role="treeitem"
+          data-ui="json-viewer-item"
+          aria-labelledby={labelId}
+          aria-owns={groupId}
+          aria-level={row.level}
         aria-posinset={row.position}
         aria-setsize={row.setSize}
         aria-expanded={node && isBranch(node) ? isOpen(row.path) : undefined}
@@ -706,7 +716,7 @@ export function JsonViewer({
           <span data-ui="json-viewer-caret" aria-hidden="true" css={caretStyle}>
             {node && isBranch(node) ? (isOpen(row.path) ? '▾' : '▸') : '·'}
           </span>
-          <span data-ui="json-viewer-label">
+          <span data-ui="json-viewer-label" id={labelId}>
             {row.more !== undefined ? (
               labels.showMore(row.more)
             ) : (
@@ -730,8 +740,10 @@ export function JsonViewer({
             )}
           </span>
         </div>
+        </div>
         {children && (
           <div
+            id={groupId}
             role="group"
             data-ui="json-viewer-group"
             className={slotProps?.group?.className}
