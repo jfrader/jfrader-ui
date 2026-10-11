@@ -38,6 +38,7 @@
     "./date-picker": { "types": "./src/components/date-picker/index.ts", "import": "./src/components/date-picker/index.ts" },
     "./dialog": { "types": "./src/components/dialog/index.ts", "import": "./src/components/dialog/index.ts" },
     "./divider": { "types": "./src/components/divider/index.ts", "import": "./src/components/divider/index.ts" },
+    "./empty-state": { "types": "./src/components/empty-state/index.ts", "import": "./src/components/empty-state/index.ts" },
     "./flex": { "types": "./src/components/flex/index.ts", "import": "./src/components/flex/index.ts" },
     "./kbd": { "types": "./src/components/kbd/index.ts", "import": "./src/components/kbd/index.ts" },
     "./menu": { "types": "./src/components/menu/index.ts", "import": "./src/components/menu/index.ts" },

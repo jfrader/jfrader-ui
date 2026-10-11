@@ -13,6 +13,7 @@ export * from './components/container';
 export * from './components/date-picker';
 export * from './components/dialog';
 export * from './components/divider';
+export * from './components/empty-state';
 export * from './components/flex';
 export * from './components/kbd';
 export * from './components/menu';
