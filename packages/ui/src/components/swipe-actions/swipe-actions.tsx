@@ -11,7 +11,6 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
-  type PointerEvent,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -25,6 +24,7 @@ import {
   useMotionValue,
   useReducedMotion,
 } from 'motion/react';
+import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
@@ -43,6 +43,8 @@ export interface SwipeAction {
   tone?: 'neutral' | 'accent' | 'danger';
   disabled?: boolean;
   onSelect: () => void;
+  /** Caller intent that this command keeps its row. Every command closes the rail and the row
+   * never deletes data itself, so this is metadata for the caller's `onSelect`. */
   keepRow?: boolean;
 }
 type Slot = { className?: string; css?: Interpolation<Theme> };
@@ -87,6 +89,8 @@ const SPRING = {
   damping: 40,
   mass: 1,
 } as const;
+const FADE_SECONDS = Number.parseFloat(base.motion.duration.fast) / 1000;
+const SLIDE_SECONDS = Number.parseFloat(base.motion.duration.slow) / 1000;
 const EMPTY_ACTIONS: readonly SwipeAction[] = [];
 const INTERACTIVE =
   'button,a,input,select,textarea,[contenteditable]:not([contenteditable="false"]),[role="button"]';
@@ -314,6 +318,7 @@ type Drag = {
   locked: boolean;
   vertical: boolean;
   direction: number;
+  unlisten: () => void;
 };
 
 function SwipeActionsRow({
@@ -343,9 +348,8 @@ function SwipeActionsRow({
   const element = useRef<HTMLLIElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
-  const removalFocus = useRef(false);
+  const menuFocus = useRef(false);
   const orderRef = useRef(context.ids);
-  if (context.ids.includes(id)) orderRef.current = context.ids;
   const leadingRail = useRef<HTMLDivElement>(null);
   const trailingRail = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
@@ -355,8 +359,6 @@ function SwipeActionsRow({
   const x = useMotionValue(0);
   const reduced = useReducedMotion();
   const present = useIsPresent();
-  const presentRef = useRef(present);
-  presentRef.current = present;
   const [menuOpen, setMenuOpen] = useState(false);
   const [settleVersion, setSettleVersion] = useState(0);
   const mergedRef = useMergeRefs([element, ref]);
@@ -406,6 +408,10 @@ function SwipeActionsRow({
     if (trailingRail.current) observer.observe(trailingRail.current);
     return () => observer.disconnect();
   }, []);
+  // Last order that still contained this row, so an exiting row knows its neighbors.
+  useLayoutEffect(() => {
+    if (context.ids.includes(id)) orderRef.current = context.ids;
+  }, [context.ids, id]);
   useLayoutEffect(() => {
     if (!present) return;
     const node = element.current;
@@ -419,7 +425,9 @@ function SwipeActionsRow({
     return () => {
       const active = node.ownerDocument.activeElement;
       const focused =
-        node.contains(active) || menu.current?.contains(active) || removalFocus.current;
+        node.contains(active) ||
+        menu.current?.contains(active) ||
+        (menuFocus.current && (!active || active === node.ownerDocument.body));
       const order = orderRef.current;
       const index = order.indexOf(id);
       rows.delete(id);
@@ -438,6 +446,7 @@ function SwipeActionsRow({
   useEffect(() => {
     const view = element.current?.ownerDocument.defaultView;
     return () => {
+      drag.current?.unlisten();
       drag.current = null;
       x.stop();
       if (swallowTimer.current !== undefined) view?.clearTimeout(swallowTimer.current);
@@ -447,29 +456,23 @@ function SwipeActionsRow({
     if (disabled || action.disabled || !present) return;
     request(null);
     setMenuOpen(false);
-    const node = element.current;
-    const focused =
-      !!node &&
-      (node.contains(node.ownerDocument.activeElement) ||
-        menu.current?.contains(node.ownerDocument.activeElement));
-    removalFocus.current = !!focused;
+    // A menu command that removes the row unmounts the menu, dropping its focus to the body
+    // before the row exits; remember that focus belonged here. Menu itself restores the trigger
+    // when the row stays.
+    menuFocus.current = !!menu.current?.contains(menu.current.ownerDocument.activeElement);
     action.onSelect();
     setSettleVersion((version) => version + 1);
-    node?.ownerDocument.defaultView?.queueMicrotask(() => {
-      if (focused && element.current?.isConnected && !element.current.inert) {
-        trigger.current?.focus();
-        removalFocus.current = false;
-      }
-    });
   };
-  const finish = (event: PointerEvent<HTMLLIElement>, cancel: boolean) => {
+  const finish = (pointerId: number, cancel: boolean) => {
     const current = drag.current;
-    if (!current || current.pointer !== event.pointerId) return;
+    if (!current || current.pointer !== pointerId) return;
     drag.current = null;
+    current.unlisten();
     releaseVelocity.current = cancel ? 0 : current.velocity;
+    const node = element.current;
     if (current.locked) {
       swallowClick.current = true;
-      const view = event.currentTarget.ownerDocument.defaultView;
+      const view = node?.ownerDocument.defaultView;
       if (swallowTimer.current !== undefined) view?.clearTimeout(swallowTimer.current);
       swallowTimer.current = view?.setTimeout(() => {
         swallowClick.current = false;
@@ -480,7 +483,7 @@ function SwipeActionsRow({
       const outwardVelocity = current.velocity * (side === 'leading' ? 1 : -1) * current.direction;
       const threshold = Math.max(
         width + COMMIT_MARGIN,
-        (element.current?.getBoundingClientRect().width ?? 0) * COMMIT_RATIO,
+        (node?.getBoundingClientRect().width ?? 0) * COMMIT_RATIO,
       );
       const distance = Math.abs(logicalX);
       const armed =
@@ -492,8 +495,7 @@ function SwipeActionsRow({
         const action = side === 'leading' ? candidates[0] : candidates.at(-1);
         if (action) dispatch(action);
       } else if (!cancel) request(enabled(side) && distance >= width / 2 ? { id, side } : null);
-      if (event.currentTarget.hasPointerCapture(event.pointerId))
-        event.currentTarget.releasePointerCapture(event.pointerId);
+      if (node?.hasPointerCapture(pointerId)) node.releasePointerCapture(pointerId);
     }
     setSettleVersion((version) => version + 1);
   };
@@ -533,7 +535,10 @@ function SwipeActionsRow({
           initial={reduced ? false : { height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
           exit={reduced ? undefined : { height: 0, opacity: 0, minHeight: 0 }}
-          transition={{ duration: reduced ? 0 : 0.24 }}
+          transition={{
+            duration: reduced ? 0 : SLIDE_SECONDS,
+            opacity: { duration: reduced ? 0 : FADE_SECONDS },
+          }}
           onPointerDown={(event) => {
             onPointerDown?.(event);
             if (
@@ -546,6 +551,15 @@ function SwipeActionsRow({
               (event.target as Element).closest(INTERACTIVE)
             )
               return;
+            const node = event.currentTarget;
+            const doc = node.ownerDocument;
+            // Capture starts only after the horizontal lock, so a release or cancel outside the row
+            // before then never reaches it; abandon the gesture there.
+            const endOutside = (outside: globalThis.PointerEvent) => {
+              if (!node.contains(outside.target as Node)) finish(outside.pointerId, true);
+            };
+            doc.addEventListener('pointerup', endOutside, true);
+            doc.addEventListener('pointercancel', endOutside, true);
             drag.current = {
               pointer: event.pointerId,
               startX: event.clientX,
@@ -557,6 +571,10 @@ function SwipeActionsRow({
               locked: false,
               vertical: false,
               direction: direction(),
+              unlisten: () => {
+                doc.removeEventListener('pointerup', endOutside, true);
+                doc.removeEventListener('pointercancel', endOutside, true);
+              },
             };
           }}
           onPointerMove={(event) => {
@@ -594,15 +612,15 @@ function SwipeActionsRow({
           }}
           onPointerUp={(event) => {
             onPointerUp?.(event);
-            finish(event, false);
+            finish(event.pointerId, false);
           }}
           onPointerCancel={(event) => {
             onPointerCancel?.(event);
-            finish(event, true);
+            finish(event.pointerId, true);
           }}
           onLostPointerCapture={(event) => {
             onLostPointerCapture?.(event);
-            finish(event, true);
+            finish(event.pointerId, true);
           }}
           onClickCapture={(event) => {
             onClickCapture?.(event);
@@ -674,12 +692,6 @@ function SwipeActionsRow({
               </Menu.Trigger>
               <Menu.Content
                 ref={(node) => {
-                  if (
-                    !node &&
-                    !presentRef.current &&
-                    menu.current?.contains(menu.current.ownerDocument.activeElement)
-                  )
-                    removalFocus.current = true;
                   menu.current = node;
                   const row = rows.get(id);
                   if (row) row.menu = node;
@@ -693,9 +705,6 @@ function SwipeActionsRow({
                     disabled={disabled || action.disabled}
                     className={slotProps?.menuItem?.className}
                     css={slotProps?.menuItem?.css}
-                    onClick={(event) => {
-                      event.preventDefault();
-                    }}
                     onSelect={() => dispatch(action)}
                   >
                     {renderLabel(action)}

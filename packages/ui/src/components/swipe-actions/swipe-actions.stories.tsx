@@ -110,7 +110,7 @@ function pointer(row: HTMLElement) {
   let time = 0;
   return {
     captured,
-    fire: (type: string, dx: number, init: PointerEventInit = {}) => {
+    fire: (type: string, dx: number, init: PointerEventInit = {}, target: Element = row) => {
       const event = new PointerEvent(type, {
         bubbles: true,
         cancelable: true,
@@ -124,7 +124,7 @@ function pointer(row: HTMLElement) {
       });
       time += 100;
       Object.defineProperty(event, 'timeStamp', { value: time });
-      return fireEvent(row, event);
+      return fireEvent(target, event);
     },
     restore: () => {
       row.setPointerCapture = originals.set;
@@ -266,6 +266,33 @@ export const FullSwipeOff: Story = {
     await reveal(row, 400);
     await near(row, 80);
     await expect(select).toHaveBeenCalledTimes(0);
+  },
+};
+export const UncapturedReleaseOutside: Story = {
+  ...FullSwipeOff,
+  play: async ({ canvasElement }) => {
+    const row = rowOf(canvasElement);
+    const outside = canvasElement.ownerDocument.body;
+    const p = pointer(row);
+    try {
+      // Sub-slop press, then vertical intent, each released outside the row before any capture.
+      p.fire('pointerdown', 0);
+      p.fire('pointermove', 4);
+      p.fire('pointerup', 4, {}, outside);
+      p.fire('pointerdown', 0, { pointerId: 2 });
+      p.fire('pointermove', 0, { pointerId: 2, clientY: row.getBoundingClientRect().top + 150 });
+      await expect(p.captured.size).toBe(0);
+      p.fire('pointerup', 0, { pointerId: 2 }, outside);
+      // A fresh pointer swipes normally: neither earlier gesture is still latched.
+      p.fire('pointerdown', 0, { pointerId: 3 });
+      p.fire('pointermove', 80, { pointerId: 3 });
+      await expect(p.captured.has(3)).toBe(true);
+      p.fire('pointerup', 80, { pointerId: 3 });
+    } finally {
+      p.restore();
+    }
+    await near(row, 80);
+    await expect(row).toHaveAttribute('data-state', 'leading');
   },
 };
 export const FullSwipe: Story = {
