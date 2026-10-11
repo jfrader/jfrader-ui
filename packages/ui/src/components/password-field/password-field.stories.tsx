@@ -6,6 +6,10 @@ import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { PasswordField, type PasswordFieldProps, type PasswordFieldSize } from './index';
 
+// Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
+const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
+
+
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly PasswordFieldSize[];
 const HEIGHTS = { sm: 32, md: 40, lg: 48 } as const;
 const REVEAL_SIZES = { sm: 24, md: 32, lg: 40 } as const;
@@ -240,9 +244,9 @@ export const Uncontrolled: Story = {
 function FormExample({ children }: { children: ReactNode }) {
   return (
     <>
-      <button type="button">Before</button>
+      <button style={FIXTURE_BUTTON} type="button">Before</button>
       <form onSubmit={(event) => event.preventDefault()}>{children}</form>
-      <button type="button">After</button>
+      <button style={FIXTURE_BUTTON} type="button">After</button>
     </>
   );
 }
@@ -309,10 +313,10 @@ function ControlledExample(args: PasswordFieldProps) {
           setRevealed(next);
         }}
       />
-      <button type="button" onClick={() => setValue('from-parent')}>
+      <button style={FIXTURE_BUTTON} type="button" onClick={() => setValue('from-parent')}>
         Fill from parent
       </button>
-      <button type="button" onClick={() => setRevealed((current) => !current)}>
+      <button style={FIXTURE_BUTTON} type="button" onClick={() => setRevealed((current) => !current)}>
         Toggle from parent
       </button>
     </>
@@ -374,7 +378,7 @@ function ResetExample({ cancelReset, ...args }: PasswordFieldProps & { cancelRes
       }}
     >
       <PasswordField {...args} />
-      <button type="reset">Reset</button>
+      <button style={FIXTURE_BUTTON} type="reset">Reset</button>
     </form>
   );
 }
