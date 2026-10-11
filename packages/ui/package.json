@@ -56,6 +56,7 @@
     "./segmented-control": { "types": "./src/components/segmented-control/index.ts", "import": "./src/components/segmented-control/index.ts" },
     "./select": { "types": "./src/components/select/index.ts", "import": "./src/components/select/index.ts" },
     "./skeleton": { "types": "./src/components/skeleton/index.ts", "import": "./src/components/skeleton/index.ts" },
+    "./slider": { "types": "./src/components/slider/index.ts", "import": "./src/components/slider/index.ts" },
     "./spinner": { "types": "./src/components/spinner/index.ts", "import": "./src/components/spinner/index.ts" },
     "./stack": { "types": "./src/components/stack/index.ts", "import": "./src/components/stack/index.ts" },
     "./switch": { "types": "./src/components/switch/index.ts", "import": "./src/components/switch/index.ts" },
