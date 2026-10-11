@@ -64,6 +64,7 @@
     "./stepper": { "types": "./src/components/stepper/index.ts", "import": "./src/components/stepper/index.ts" },
     "./switch": { "types": "./src/components/switch/index.ts", "import": "./src/components/switch/index.ts" },
     "./tabs": { "types": "./src/components/tabs/index.ts", "import": "./src/components/tabs/index.ts" },
+    "./tag-input": { "types": "./src/components/tag-input/index.ts", "import": "./src/components/tag-input/index.ts" },
     "./text-field": { "types": "./src/components/text-field/index.ts", "import": "./src/components/text-field/index.ts" },
     "./textarea": { "types": "./src/components/textarea/index.ts", "import": "./src/components/textarea/index.ts" },
     "./theme-root": { "types": "./src/components/theme-root/index.ts", "import": "./src/components/theme-root/index.ts" },
