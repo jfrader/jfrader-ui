@@ -270,7 +270,7 @@ function SelectionRing({
       observer.disconnect();
       stop();
     };
-  }, [root, value, content, reducedMotion, x, y, width, height]);
+  }, [root, value, reducedMotion, x, y, width, height]);
   return (
     <motion.span
       aria-hidden="true"
@@ -355,7 +355,7 @@ function RadioCardsRoot({
     };
     forms.forEach((form) => form.addEventListener('reset', reset));
     return () => forms.forEach((form) => form.removeEventListener('reset', reset));
-  });
+  }, [resetToDefault, valueProp, defaultValue]);
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
     if (event.defaultPrevented || disabled) return;
