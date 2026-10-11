@@ -65,7 +65,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Native file input, Browse button and file list; no custom dropzone role. Tab reaches Browse then row actions; Enter/Space activate once. ArrowUp/Down preserve the row action without wrapping; Delete/Backspace remove. Paste accepts files only while focus is inside, excluding editable controls. Escape is not intercepted. Upload intents and image previews start only for committed selections; existing rows never auto-upload. Submit value items, not input.files: dropped and accumulated files are not native FormData, and native required does not validate that list. Sizes use Intl decimal 1000 scaling. Validate uploaded content independently on the server. Real OS picker, screen reader, mobile and actual media-environment checks remain browser/manual QA gates.',
+          'The visible surface is the native label of an operable file input; no custom dropzone role or second picker button. Clicking anywhere on the surface opens the picker; Tab reaches the input (the surface draws the focus ring) then row actions; Enter/Space open the native picker once. ArrowUp/Down preserve the row action without wrapping; Delete/Backspace remove. Paste accepts files only while focus is inside, excluding editable controls. Escape is not intercepted. Upload intents and image previews start only for committed selections; existing rows never auto-upload. Submit value items, not input.files: dropped and accumulated files are not native FormData, and native required does not validate that list. Sizes use Intl decimal 1000 scaling. Validate uploaded content independently on the server. Real OS picker, screen reader, mobile and actual media-environment checks remain browser/manual QA gates.',
       },
       source: {
         code: `<FileDropzone label="Add receipts" accept="image/*,.pdf" maxFiles={3}
@@ -81,6 +81,10 @@ const file = (name = 'receipt.pdf', contents = 'pdf', type = 'application/pdf') 
   new File([contents], name, { type, lastModified: 1 });
 const inputOf = (element: HTMLElement) => element.querySelector<HTMLInputElement>('input[type="file"]')!;
 const rootOf = (element: HTMLElement) => element.querySelector<HTMLElement>('[data-ui="file-dropzone"]')!;
+const targetOf = (element: HTMLElement) => element.querySelector<HTMLElement>('[data-dragging]')!;
+// Row actions keep 32px (vars.space[8]); fractional devicePixelRatio may round the measured box.
+const MIN_ACTION_HEIGHT = 32;
+const PX_TOLERANCE = 0.5;
 const existing: FileDropzoneItem[] = [{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }];
 function ControlledExample(props: FileDropzoneProps) {
   const [value, setValue] = useState(props.defaultValue ?? []);
@@ -248,8 +252,7 @@ export const DropAndPaste: Story = {
     await dispatchFiles(root, 'paste', [file('ignored.pdf')]);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Remove receipt.pdf' }));
-    await userEvent.tab();
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Browse files' }));
+    await expect(root.ownerDocument.activeElement).toBe(inputOf(canvasElement));
     await dispatchFiles(root, 'paste', [file('pasted.pdf')]);
     await expect(args.onValueChange).toHaveBeenCalledTimes(3);
     await expect(within(canvasElement).getByText('pasted.pdf')).toBeVisible();
@@ -416,6 +419,11 @@ export const UploadFailed: Story = {
       }),
     ).toBeVisible();
     await expect(within(canvasElement).getByText('<server> rejected the upload')).toBeVisible();
+    for (const action of within(canvasElement).getAllByRole('button')) {
+      await expect(action.getBoundingClientRect().height).toBeGreaterThanOrEqual(
+        MIN_ACTION_HEIGHT - PX_TOLERANCE,
+      );
+    }
     await expect(canvasElement.querySelector('server')).not.toBeInTheDocument();
   },
 };
@@ -547,10 +555,10 @@ export const Keyboard: Story = {
   },
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
-    const browse = canvas.getByRole('button', { name: 'Browse files' });
+    const input = inputOf(canvasElement);
     await userEvent.tab();
-    await expect(browse.ownerDocument.activeElement).toBe(browse);
-    await expect(getComputedStyle(browse).outlineStyle).not.toBe('none');
+    await expect(input.ownerDocument.activeElement).toBe(input);
+    await expect(getComputedStyle(targetOf(canvasElement)).outlineStyle).not.toBe('none');
     await userEvent.keyboard('{Enter} ');
     await expect(args.slotProps?.input?.onClick).toHaveBeenCalledTimes(2);
     await expect(args.onValueChange).not.toHaveBeenCalled();
@@ -558,6 +566,12 @@ export const Keyboard: Story = {
     const first = canvas.getByRole('button', { name: 'Remove invoice.pdf' });
     const second = canvas.getByRole('button', { name: 'Remove two.pdf' });
     await expect(first.ownerDocument.activeElement).toBe(first);
+    await expect(getComputedStyle(targetOf(canvasElement)).outlineStyle).toBe('none');
+    for (const action of [first, second]) {
+      await expect(action.getBoundingClientRect().height).toBeGreaterThanOrEqual(
+        MIN_ACTION_HEIGHT - PX_TOLERANCE,
+      );
+    }
     await userEvent.keyboard('{ArrowUp}');
     await expect(first.ownerDocument.activeElement).toBe(first);
     await userEvent.keyboard('{ArrowDown}{ArrowDown}');
@@ -565,15 +579,45 @@ export const Keyboard: Story = {
     await userEvent.keyboard('{ArrowUp}');
     await expect(first.ownerDocument.activeElement).toBe(first);
     await userEvent.tab({ shift: true });
-    await expect(browse.ownerDocument.activeElement).toBe(browse);
+    await expect(input.ownerDocument.activeElement).toBe(input);
     await userEvent.tab();
     await userEvent.keyboard('{Delete}');
     await expect(second.ownerDocument.activeElement).toBe(second);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await userEvent.keyboard('{Backspace}');
-    await expect(browse.ownerDocument.activeElement).toBe(browse);
+    await expect(input.ownerDocument.activeElement).toBe(input);
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
-    await expect(browse.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
+    await expect(args.slotProps?.input?.onClick).toHaveBeenCalledTimes(2);
+  },
+};
+export const SurfaceOpensPicker: Story = {
+  args: {
+    defaultValue: existing,
+    listPlacement: 'inside',
+    slotProps: { input: { onClick: fn() } },
+  },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const canvas = within(canvasElement);
+    const input = inputOf(canvasElement);
+    const surface = input.closest('label')!;
+    await expect(surface).toHaveAttribute('for', input.id);
+    await expect(input).not.toHaveAttribute('tabindex');
+    await expect(canvas.queryByRole('button', { name: 'Browse files' })).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByText('Drop files or browse.'));
+    await expect(args.slotProps?.input?.onClick).toHaveBeenCalledTimes(1);
+    await userEvent.click(canvas.getByText('Browse files'));
+    await expect(args.slotProps?.input?.onClick).toHaveBeenCalledTimes(2);
+    await userEvent.click(canvas.getByText('invoice.pdf'));
+    await expect(args.slotProps?.input?.onClick).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Clicks on the surface reach the native input once through its label; rows placed inside the frame stay outside the label. The real OS picker is a browser QA gate.',
+      },
+    },
   },
 };
 export const ExternalAria: Story = {
@@ -627,12 +671,17 @@ export const FalsyLabels: Story = {
   ),
   play: async ({ canvasElement }) => {
     const inputs = Array.from(canvasElement.querySelectorAll('input'));
-    for (const input of inputs.slice(0, 2)) {
+    const [falseInput, nullInput, zeroInput, emptyInput] = inputs;
+    for (const input of [falseInput!, nullInput!]) {
       await expect(input).not.toHaveAttribute('aria-labelledby');
       await expect(input).not.toHaveAttribute('aria-describedby');
+      await expect(input).toHaveAccessibleName('Browse files');
     }
-    for (const input of inputs.slice(2)) {
-      await expect(input.getAttribute('aria-labelledby')).toContain('-label');
+    await expect(zeroInput!.getAttribute('aria-labelledby')).toContain('-label');
+    await expect(zeroInput).toHaveAccessibleName('0');
+    await expect(emptyInput).not.toHaveAttribute('aria-labelledby');
+    await expect(emptyInput).toHaveAccessibleName('Browse files');
+    for (const input of [zeroInput!, emptyInput!]) {
       await expect(input.getAttribute('aria-describedby')).toContain('-description');
     }
     await expect(new Set(inputs.map(input => input.id)).size).toBe(4);
@@ -885,15 +934,17 @@ export const RefAndSlots: Story = {
       target: { css: { borderRadius: 0 } },
       label: { css: { fontWeight: 700 } },
       action: { css: { borderRadius: 0 } },
+      browse: { css: { borderStyle: 'dotted' } },
     },
   },
   play: async ({ canvasElement, args }) => {
     await expect(args.ref).toHaveBeenCalledWith(rootOf(canvasElement));
     await expect(args.inputRef).toHaveBeenCalledWith(inputOf(canvasElement));
     await expect(getComputedStyle(canvasElement.querySelector('[data-dragging]')!).borderRadius).toBe('0px');
-    await expect(
-      getComputedStyle(within(canvasElement).getByRole('button', { name: 'Browse files' })).borderRadius,
-    ).toBe('0px');
+    const browse = within(canvasElement).getByText('Browse files');
+    await expect(getComputedStyle(browse).borderStyle).toBe('dotted');
+    await expect(getComputedStyle(browse).borderRadius).not.toBe('0px');
+    await expect(getComputedStyle(inputOf(canvasElement).closest('label')!).fontWeight).toBe('700');
     await expect(getComputedStyle(rootOf(canvasElement)).paddingInlineStart).toBe('16px');
   },
 };
@@ -1049,7 +1100,8 @@ export const PasteExcludesEditing: Story = {
     await userEvent.click(comment);
     await dispatchFiles(comment, 'paste', [file()]);
     await expect(args.onValueChange).not.toHaveBeenCalled();
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Browse files' }));
+    await userEvent.tab({ shift: true });
+    await expect(comment.ownerDocument.activeElement).toBe(inputOf(canvasElement));
     await dispatchFiles(rootOf(canvasElement), 'paste', [file()]);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
@@ -1057,7 +1109,8 @@ export const PasteExcludesEditing: Story = {
 export const PasteDisabled: Story = {
   args: { paste: false },
   play: async ({ canvasElement, userEvent, args }) => {
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Browse files' }));
+    await userEvent.tab();
+    await expect(canvasElement.ownerDocument.activeElement).toBe(inputOf(canvasElement));
     await dispatchFiles(rootOf(canvasElement), 'paste', [file()]);
     await expect(args.onValueChange).not.toHaveBeenCalled();
   },
@@ -1077,7 +1130,7 @@ export const ConsumerEventVeto: Story = {
 };
 export const ActionAriaPreserved: Story = {
   args: {
-    defaultValue: existing,
+    defaultValue: [...existing, { id: 'two', name: 'two.pdf', size: 0 }],
     slotProps: {
       action: {
         'aria-label': 'Attachment action',
@@ -1088,16 +1141,23 @@ export const ActionAriaPreserved: Story = {
   },
   render: args => (
     <>
-      <span id="action-name">Browse files Remove invoice.pdf</span>
+      <span id="action-name">Remove invoice.pdf Remove two.pdf</span>
       <span id="action-description">Action help</span>
       <FileDropzone {...args} />
     </>
   ),
   play: async ({ canvasElement }) => {
-    for (const button of within(canvasElement).getAllByRole('button')) {
+    const actions = within(canvasElement).getAllByRole('button');
+    await expect(actions).toHaveLength(2);
+    for (const button of actions) {
+      await expect(button).toHaveAttribute('data-action', 'remove');
       await expect(button).toHaveAttribute('aria-label', 'Attachment action');
       await expect(button).toHaveAttribute('aria-labelledby', 'action-name unresolved-action');
       await expect(button.getAttribute('aria-describedby')).toContain('action-description unresolved-help');
     }
+    const browse = within(canvasElement).getByText('Browse files');
+    await expect(browse).not.toHaveAttribute('aria-label');
+    await expect(browse).not.toHaveAttribute('aria-labelledby');
+    await expect(inputOf(canvasElement)).not.toHaveAttribute('aria-label');
   },
 };
