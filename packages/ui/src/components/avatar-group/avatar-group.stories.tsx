@@ -10,6 +10,8 @@ import { AvatarGroup, type AvatarGroupMember } from './index';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly AvatarSize[];
 const SIZE_PX = { sm: 24, md: 32, lg: 40 } as const;
+const SEPARATION_BORDER_WIDTH = '2px';
+const CSS_PIXEL = 1;
 const STATUSES = ['online', 'away', 'busy', 'offline'] as const satisfies readonly AvatarStatus[];
 
 // Procedural noise portrait: self-contained pixels, zero color literals.
@@ -28,6 +30,16 @@ const HUGE_MEMBERS: readonly AvatarGroupMember[] = Array.from(
   { length: HUGE_VISIBLE + HUGE_HIDDEN },
   (_, i) => ({ id: `member-${i}`, name: `Member ${i + 1}` }),
 );
+
+// Chromium snaps border widths down to whole device pixels, so a fractional device pixel ratio
+// computes an authored 2px border as e.g. 1.48837px. The loss stays under one CSS pixel, which
+// still tells the 2px, 3px and 4px widths these stories compare apart.
+async function expectBorderWidth(element: HTMLElement, authored: string) {
+  const expected = parseFloat(authored);
+  const actual = parseFloat(getComputedStyle(element).borderTopWidth);
+  await expect(actual).toBeGreaterThan(expected - CSS_PIXEL);
+  await expect(actual).toBeLessThanOrEqual(expected);
+}
 
 function overflowCount(overflow: HTMLElement): HTMLElement {
   const count = overflow.querySelector<HTMLElement>('[aria-hidden="true"]');
@@ -430,6 +442,7 @@ function ExternalAriaHarness() {
         label="Ignored fallback"
         members={[{ id: '4', name: 'Katherine Johnson' }]}
       />
+      {/* Intentionally unresolved: a consumer labelledby is kept as given, so this group has no fallback name. */}
       <AvatarGroup
         aria-labelledby="missing-heading"
         label="Ignored fallback"
@@ -618,7 +631,7 @@ export const ForcedColorsRule: Story = {
     for (const element of separated) {
       const style = getComputedStyle(element);
       await expect(style.borderTopStyle).toBe('solid');
-      await expect(style.borderTopWidth).toBe('2px');
+      await expectBorderWidth(element, SEPARATION_BORDER_WIDTH);
       const borderColors = forcedColorsDeclarations(element).map((rule) => rule.borderColor.toLowerCase());
       await expect(borderColors).toContain('canvas');
     }
@@ -731,7 +744,7 @@ export const ConsumerStylePrecedence: Story = {
     // Slot css wins over the built-in 2px separation border
     const overflow = within(group).getByRole('img', { name: '1 more member' });
     await expect(overflow).toHaveClass('slot-overflow');
-    await expect(getComputedStyle(overflow).borderTopWidth).toBe(OVERRIDE.overflowBorderWidth);
+    await expectBorderWidth(overflow, OVERRIDE.overflowBorderWidth);
 
     // Slot css wins over the visually hidden nowrap
     const summary = summaryOf(group);
@@ -743,7 +756,7 @@ export const ConsumerStylePrecedence: Story = {
     await expect(avatars).toHaveLength(2);
     for (const avatar of avatars) {
       await expect(avatar).toHaveClass('consumer-avatar');
-      await expect(getComputedStyle(avatar).borderTopWidth).toBe(OVERRIDE.avatarBorderWidth);
+      await expectBorderWidth(avatar, OVERRIDE.avatarBorderWidth);
     }
   },
 };
