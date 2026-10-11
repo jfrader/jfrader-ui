@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -97,8 +97,7 @@ function focusCanvasStart(canvasElement: HTMLElement) {
 
 export const Default: Story = {
   args: { icon: <FolderIcon /> },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
+  play: async ({ canvas, canvasElement }) => {
     const root = getRoot(canvasElement);
     await expect(root.tagName).toBe('SECTION');
     await expect(root).toHaveAttribute('data-variant', 'centered');
@@ -239,8 +238,7 @@ export const Centered: Story = {
 
 export const HeadingLevel: Story = {
   args: { headingLevel: 2 },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
+  play: async ({ canvas }) => {
     const heading = canvas.getByRole('heading', { level: 2, name: 'No projects yet' });
     await expect(heading.tagName).toBe('H2');
     await expect(canvas.queryByRole('heading', { level: 3 })).toBeNull();
@@ -265,8 +263,7 @@ export const NoMatches: Story = {
     icon: <SearchIcon />,
     action: <Button variant="outline">Clear filters</Button>,
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
+  play: async ({ canvas }) => {
     await expect(canvas.getByRole('heading', { name: 'No matches' })).toBeVisible();
     await expect(canvas.getByRole('button', { name: 'Clear filters' })).toBeVisible();
   },
@@ -286,21 +283,19 @@ export const FirstRun: Story = {
       </>
     ),
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
+  play: async ({ canvas }) => {
     await expect(canvas.getByRole('button', { name: 'New board' })).toBeVisible();
     await expect(canvas.getByRole('link', { name: 'Browse templates' })).toHaveAttribute('href', '#templates');
   },
 };
 
-const sectionRef = fn();
+const inviteRef = fn();
 
 function InviteState(props: EmptyStateProps) {
   const [sent, setSent] = useState(false);
   return sent ? (
     <EmptyState
       {...props}
-      ref={sectionRef}
       icon={<CheckIcon />}
       title="Invite sent"
       description="ana@example.com can join the workspace now."
@@ -309,7 +304,6 @@ function InviteState(props: EmptyStateProps) {
   ) : (
     <EmptyState
       {...props}
-      ref={sectionRef}
       icon={<FolderIcon />}
       title="No teammates yet"
       description="Invite someone to share this workspace."
@@ -320,11 +314,17 @@ function InviteState(props: EmptyStateProps) {
 InviteState.displayName = 'InviteState';
 
 export const SuccessUpdate: Story = {
+  args: { ref: inviteRef },
+  argTypes: { ref: { control: false } },
   render: (args) => <InviteState {...args} />,
-  play: async ({ canvasElement }) => {
-    sectionRef.mockClear();
-    const canvas = within(canvasElement);
+  play: async ({ canvas, canvasElement, userEvent }) => {
     const root = getRoot(canvasElement);
+    // The ref received the rendered section itself, and nothing else.
+    await expect(inviteRef.mock.calls[0]?.[0]).toBe(root);
+    await expect(inviteRef.mock.lastCall?.[0]).toBe(root);
+    await expect(inviteRef.mock.calls.every(([node]) => node === root || node === null)).toBe(true);
+    const refCallsBeforeUpdate = inviteRef.mock.calls.length;
+
     const button = canvas.getByRole('button', { name: 'Send invite' });
     focusCanvasStart(canvasElement);
     await userEvent.tab();
@@ -332,9 +332,11 @@ export const SuccessUpdate: Story = {
     await userEvent.keyboard('{Enter}');
 
     // Same section and button nodes; the copy is replaced in place with no outgoing duplicate.
-    await expect(getRoot(canvasElement)).toBe(root);
-    await expect(sectionRef).not.toHaveBeenCalled();
     await expect(canvas.getByRole('heading', { name: 'Invite sent' })).toBeVisible();
+    await expect(getRoot(canvasElement)).toBe(root);
+    // The ref was neither detached nor re-attached by the update.
+    await expect(inviteRef).toHaveBeenCalledTimes(refCallsBeforeUpdate);
+    await expect(inviteRef.mock.lastCall?.[0]).toBe(root);
     await expect(canvas.queryByText('No teammates yet')).toBeNull();
     await expect(canvas.queryByText('Invite someone to share this workspace.')).toBeNull();
     await expect(canvas.getAllByRole('heading')).toHaveLength(1);
@@ -392,6 +394,55 @@ export const EmptyDescription: Story = {
   },
 };
 
+const FALSY_NODES = [false, null] as const;
+const FALSY_LABELS = ['Archived projects', 'Shared projects'] as const;
+
+/** Every id referenced by the root's ARIA relationships resolves to an element in the document. */
+async function expectResolvedIdRefs(root: HTMLElement) {
+  for (const attribute of ['aria-labelledby', 'aria-describedby']) {
+    for (const id of root.getAttribute(attribute)?.split(' ') ?? []) {
+      await expect(root.ownerDocument.getElementById(id)).not.toBeNull();
+    }
+  }
+}
+
+export const FalsySlots: Story = {
+  args: { icon: <FolderIcon />, action: <Button variant="outline">Create project</Button> },
+  render: (args) => (
+    <>
+      {FALSY_NODES.map((value, index) => (
+        <Fragment key={String(value)}>
+          <h2 id={`falsy-${value}-label`}>{FALSY_LABELS[index]}</h2>
+          <EmptyState {...args} title={value} aria-labelledby={`falsy-${value}-label`} />
+          <EmptyState {...args} icon={value} description={value} action={value} />
+        </Fragment>
+      ))}
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const [index, value] of FALSY_NODES.entries()) {
+      const [untitled, bare] = [getRoot(canvasElement, index * 2), getRoot(canvasElement, index * 2 + 1)];
+
+      // title={value}: no heading, and the named region references only the consumer label.
+      await expect(within(untitled).queryByRole('heading')).toBeNull();
+      await expect(untitled).toHaveAttribute('aria-labelledby', `falsy-${value}-label`);
+      await expect(untitled).toHaveAccessibleName(FALSY_LABELS[index]);
+      await expect(untitled).toHaveAttribute('aria-describedby', untitled.querySelector('p')!.id);
+      await expectResolvedIdRefs(untitled);
+
+      // icon/description/action={value}: no wrappers and no description relationship.
+      await expect(partsOf(bare)).toEqual(['empty-state-content']);
+      await expect(getPart(bare, 'icon')).toBeNull();
+      await expect(getPart(bare, 'action')).toBeNull();
+      await expect(bare.querySelector('p')).toBeNull();
+      await expect(bare).not.toHaveAttribute('aria-describedby');
+      await expect(bare).not.toHaveAttribute('aria-labelledby');
+      await expect(within(bare).getByRole('heading', { level: 3 })).toHaveTextContent('No projects yet');
+      await expectResolvedIdRefs(bare);
+    }
+  },
+};
+
 export const ZeroContent: Story = {
   args: { title: 0, description: 0, icon: 0, action: 0 },
   play: async ({ canvasElement }) => {
@@ -440,8 +491,7 @@ export const NamedRegion: Story = {
       />
     </>
   ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
+  play: async ({ canvas }) => {
     const projects = canvas.getByRole('region', { name: 'Projects No projects yet' });
     const title = within(projects).getByRole('heading', { level: 3 });
     await expect(projects.getAttribute('aria-labelledby')?.split(' ')).toEqual(['projects-heading', title.id]);
@@ -517,8 +567,8 @@ export const LightTheme: Story = {
       ))}
     </>
   ),
-  play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getAllByRole('heading', { level: 3 })).toHaveLength(VARIANTS.length);
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByRole('heading', { level: 3 })).toHaveLength(VARIANTS.length);
   },
 };
 
@@ -555,16 +605,15 @@ export const RTL: Story = {
   },
 };
 
-export const ForcedColors: Story = {
+export const PanelEdgeAndFocusRing: Story = {
   args: { icon: <FolderIcon />, action: <Button variant="outline">Create project</Button> },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     const root = getRoot(canvasElement);
-    // Forced colors repaint borders and outlines but drop shadows and backgrounds, so the panel
-    // edge and the focus ring must be real borders/outlines.
+    // The icon panel edge is a real border and the action focus ring a real outline, not shadows.
     const icon = getComputedStyle(getPart(root, 'icon')!);
     await expect(icon.borderTopStyle).toBe('solid');
     await expect(icon.borderTopWidth).toBe('1px');
-    const button = within(root).getByRole('button');
+    const button = canvas.getByRole('button', { name: 'Create project' });
     focusCanvasStart(canvasElement);
     await userEvent.tab();
     await expect(button).toHaveFocus();
@@ -572,17 +621,17 @@ export const ForcedColors: Story = {
   },
 };
 
-export const ReducedMotion: Story = {
+export const StaticContent: Story = {
   args: { icon: <FolderIcon />, action: <Button tone="accent">Create project</Button> },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvas, canvasElement }) => {
     const root = getRoot(canvasElement);
-    // The component itself never animates, so every motion preference renders the same content.
+    // The component declares no animations or transitions of its own.
     await expect(root.getAnimations({ subtree: true })).toHaveLength(0);
     for (const part of [root, ...root.querySelectorAll<HTMLElement>('[data-ui^="empty-state-"]')]) {
       await expect(getComputedStyle(part).transitionDuration).toBe('0s');
       await expect(getComputedStyle(part).animationName).toBe('none');
     }
-    await expect(within(root).getByRole('button', { name: 'Create project' })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Create project' })).toBeVisible();
   },
 };
 
@@ -603,7 +652,7 @@ export const KeyboardActions: Story = {
       </>
     ),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     createProject.mockClear();
     importProject.mockClear();
     const document = canvasElement.ownerDocument;
