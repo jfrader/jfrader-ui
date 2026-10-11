@@ -124,6 +124,12 @@ export const Sizes: Story = {
       <JsonViewer {...args} size="md" />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    // Library policy: interactive rows keep the 32px+ main-axis floor at both sizes.
+    const [smViewer, mdViewer] = canvasElement.querySelectorAll<HTMLElement>('[data-ui="json-viewer"]');
+    await expect(smViewer!.querySelector('[role="treeitem"]')!.getBoundingClientRect().height).toBeGreaterThanOrEqual(31.5);
+    await expect(mdViewer!.querySelector('[role="treeitem"]')!.getBoundingClientRect().height).toBeGreaterThanOrEqual(39.5);
+  },
 };
 export const Nested: Story = {
   args: { defaultExpandDepth: 3 },

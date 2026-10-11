@@ -969,7 +969,7 @@ export function JsonViewer({
           style={
             {
               '--json-max-height': typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
-              '--json-row-height': size === 'sm' ? vars.space[6] : vars.space[8],
+              '--json-row-height': size === 'sm' ? vars.space[8] : vars.space[10],
               ...style,
             } as CSSProperties
           }
