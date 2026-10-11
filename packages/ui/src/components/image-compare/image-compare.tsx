@@ -234,6 +234,13 @@ const handleStyle = css({
     borderColor: 'CanvasText',
     color: 'CanvasText',
     boxShadow: 'none',
+    // Forced colors must survive hover/active/focus too: system colors only, never brand hues.
+    '&:hover:not([aria-disabled="true"]), &[data-dragging]': {
+      background: 'Canvas',
+      borderColor: 'Highlight',
+    },
+    '&[data-dragging]': { color: 'Highlight' },
+    '&:focus-visible': { outlineColor: 'Highlight' },
   },
 });
 const handleOrientationStyles: Record<ImageCompareOrientation, SerializedStyles> = {
