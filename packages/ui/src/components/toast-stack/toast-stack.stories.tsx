@@ -1,0 +1,522 @@
+import { useEffect, useRef, useState } from 'react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, fn, waitFor, within } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
+import { withLightTheme } from '../../testing/story-decorators';
+import { Button } from '../button';
+import { ThemeRoot } from '../theme-root';
+import { Toast, useToast, type ToastOptions } from '../toast';
+import { ToastStack, type ToastStackProps } from './index';
+
+const messages: ToastOptions[] = [
+  { title: 'Profile saved', description: 'Your changes are published.', duration: null },
+  { title: 'Export ready', description: 'Download your report.', duration: null },
+  { title: 'Message sent', duration: null },
+  { title: 'Upload complete', duration: null },
+  { title: 'Project created', duration: null },
+];
+const action = fn((event: { preventDefault: () => void }) => event.preventDefault());
+const meta = {
+  title: 'Feedback/ToastStack',
+  component: ToastStack,
+  tags: ['autodocs'],
+  parameters: {
+    docs: {
+      source: { code: '<Toast max={12}><PublishButton /><ToastStack maxVisible={3} /></Toast>' },
+      description: {
+        component:
+          'One renderer per Toast provider. Tab reaches toggle and newest-to-oldest controls; Escape dismisses a focused toast. Alt+T is opt-in. Timed messages require equivalent persistent access. Environment stories are structural fixtures; media emulation and screen-reader smoke are separate QA gates.',
+      },
+    },
+  },
+} satisfies Meta<typeof ToastStack>;
+export default meta;
+type Story = StoryObj<typeof meta>;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function Controls({ initial, mode }: { initial: ToastOptions[]; mode?: 'update' | 'evict' }) {
+  const api = useToast();
+  const initialized = useRef(false);
+  const ids = useRef<string[]>([]);
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    ids.current = initial.map((options) => {
+      let id: string;
+      id = api.toast({
+        ...options,
+        ...(mode
+          ? {
+              action: {
+                label: mode === 'update' ? 'Save' : 'Create another',
+                onClick: (event) => {
+                  event.preventDefault();
+                  if (mode === 'update')
+                    api.update(id, { title: 'Saved successfully', loading: false, duration: null });
+                  else api.toast({ title: 'New notification', duration: null });
+                },
+              },
+            }
+          : {}),
+      });
+      return id;
+    });
+  }, [api, initial, mode]);
+  return (
+    <div style={{ display: 'flex', gap: vars.space[2], flexWrap: 'wrap' }}>
+      <Button onClick={() => ids.current.push(api.toast({ title: 'New notification', duration: null }))}>
+        Notify
+      </Button>
+      <Button
+        onClick={() =>
+          api.update(ids.current.at(-1)!, {
+            title: 'Saved successfully',
+            loading: false,
+            duration: null,
+            action: undefined,
+          })
+        }
+      >
+        Complete
+      </Button>
+      <Button onClick={() => api.dismiss(ids.current.at(-1)!)}>Dismiss newest</Button>
+      <Button
+        onClick={() => {
+          api.update('missing', { title: 'Unreachable' });
+          api.dismiss('missing');
+        }}
+      >
+        Unknown id
+      </Button>
+      <Button>Outside</Button>
+    </div>
+  );
+}
+function Harness({
+  initial = messages.slice(0, 3),
+  max = 12,
+  mode,
+  ...args
+}: ToastStackProps & { initial?: ToastOptions[]; max?: number; mode?: 'update' | 'evict' }) {
+  return (
+    <Toast max={max}>
+      <Controls initial={initial} mode={mode} />
+      <ToastStack {...args} />
+    </Toast>
+  );
+}
+const bodyOf = (element: HTMLElement) => within(element.ownerDocument.body);
+async function settled(element: HTMLElement) {
+  await sleep(280);
+  await waitFor(async () => {
+    await expect(element.querySelector('[data-populated="true"]')).not.toBeNull();
+  });
+}
+
+export const Default: Story = {
+  render: (args) => <Harness {...args} />,
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    await expect(region).not.toHaveAttribute('aria-live');
+    const cards = region.querySelectorAll('[data-ui="toast"]');
+    await expect(cards).toHaveLength(3);
+    await expect(cards[0]).toHaveTextContent('Message sent');
+    await expect(cards[1]).toHaveAttribute('inert');
+    await expect(cards[1]).toHaveAttribute('aria-hidden', 'true');
+    await expect(cards[1]?.querySelector('[role="status"]')).toBeEmptyDOMElement();
+    await expect(within(region).getAllByRole('status')).toHaveLength(1);
+    await expect(within(region).getByRole('status').querySelector('button')).toBeNull();
+  },
+};
+export const List: Story = {
+  args: { variant: 'list' },
+  render: (args) => <Harness {...args} />,
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    await expect(within(region).getAllByRole('status')).toHaveLength(3);
+    const cards = region.querySelectorAll<HTMLElement>('[data-ui="toast"]');
+    await expect(
+      cards[0]!.getBoundingClientRect().top - cards[1]!.getBoundingClientRect().bottom,
+    ).toBeGreaterThan(6);
+  },
+};
+export const PersistentStack: Story = { ...List };
+export const Empty: Story = { render: (args) => <Harness {...args} initial={[]} /> };
+export const AllTones: Story = {
+  args: { variant: 'list' },
+  render: (args) => (
+    <Harness
+      {...args}
+      initial={(['neutral', 'info', 'warning', 'success', 'danger'] as const).map((tone) => ({
+        title: `${tone} notification`,
+        tone,
+        duration: null,
+      }))}
+    />
+  ),
+};
+export const OverflowPromotion: Story = {
+  args: { maxVisible: 2 },
+  render: (args) => <Harness {...args} initial={messages} max={4} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    await expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(4);
+    await expect(region.querySelectorAll('[data-stack-visible="true"]')).toHaveLength(2);
+    await expect(within(region).getByRole('button', { name: 'Expand notifications' })).toHaveTextContent(
+      '(+2)',
+    );
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Dismiss newest' }));
+    await bodyOf(canvasElement).findByText('Upload complete');
+    await expect(bodyOf(canvasElement).queryByText('Profile saved')).toBeNull();
+    await settled(region);
+    await expect(bodyOf(canvasElement).getByText('Upload complete')).toBeVisible();
+  },
+};
+export const Keyboard: Story = {
+  args: { hotkey: true },
+  render: (args) => <Harness {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    const outside = within(canvasElement).getByRole('button', { name: 'Outside' });
+    outside.focus();
+    await userEvent.keyboard('{Escape}');
+    await expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(3);
+    await userEvent.tab();
+    const toggle = within(region).getByRole('button', { name: 'Collapse notifications' });
+    await expect(canvasElement.ownerDocument.activeElement).toBe(toggle);
+    await expect(getComputedStyle(toggle).outlineStyle).not.toBe('none');
+    await expect(toggle).toHaveAttribute(
+      'aria-controls',
+      region.querySelector('[data-ui="toast-stack-list"]')!.id,
+    );
+    await userEvent.tab({ shift: true });
+    await expect(canvasElement.ownerDocument.activeElement).toBe(outside);
+    await userEvent.keyboard('{Alt>}t{/Alt}');
+    const dismiss = within(region).getAllByRole('button', { name: 'Dismiss' })[0]!;
+    await expect(canvasElement.ownerDocument.activeElement).toBe(dismiss);
+    await expect(getComputedStyle(dismiss).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(async () => {
+      await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(2);
+    });
+    await expect(canvasElement.ownerDocument.activeElement).toBe(
+      within(region).getAllByRole('button', { name: 'Dismiss' })[0],
+    );
+    await settled(region);
+  },
+};
+export const HoverAndTouchExpansion: Story = {
+  render: (args) => <Harness {...args} initial={messages} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    await userEvent.hover(region);
+    await expect(region).toHaveAttribute('data-expanded', 'true');
+    await within(region).findByText('Profile saved');
+    await settled(region);
+    await expect(within(region).getByText('Profile saved')).toBeVisible();
+    await userEvent.unhover(region);
+    await expect(region).toHaveAttribute('data-expanded', 'false');
+    await userEvent.click(within(region).getByRole('button', { name: 'Expand notifications' }));
+    await userEvent.unhover(region);
+    await expect(region).toHaveAttribute('data-expanded', 'true');
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Outside' }));
+    await expect(region).toHaveAttribute('data-expanded', 'false');
+    await settled(region);
+  },
+};
+export const PauseOnHover: Story = {
+  render: (args) => (
+    <Harness {...args} initial={messages.slice(0, 2).map((item) => ({ ...item, duration: 600 }))} />
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    await userEvent.hover(region);
+    await sleep(750);
+    await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(2);
+    await userEvent.unhover(region);
+    await waitFor(
+      async () => {
+        await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(0);
+      },
+      { timeout: 2500 },
+    );
+  },
+};
+export const LoadingUpdate: Story = {
+  render: (args) => <Harness {...args} initial={[{ title: 'Saving project', loading: true }]} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    const item = region.querySelector('[data-ui="toast"]');
+    await expect(within(region).getAllByRole('status')).toHaveLength(1);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Complete' }));
+    await expect(await within(region).findByText('Saved successfully')).toBeVisible();
+    await expect(region.querySelector('[data-ui="toast"]')).toBe(item);
+    await expect(region.querySelector('[data-ui="spinner"]')).toBeNull();
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Unknown id' }));
+    await expect(region.querySelector('[data-ui="toast"]')).toBe(item);
+  },
+};
+export const UndoPrevented: Story = {
+  args: { variant: 'list' },
+  render: (args) => (
+    <Harness
+      {...args}
+      initial={[{ title: 'Message archived', duration: null, action: { label: 'Undo', onClick: action } }]}
+    />
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    action.mockClear();
+    const undo = await bodyOf(canvasElement).findByRole('button', { name: 'Undo' });
+    undo.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(action).toHaveBeenCalledTimes(1);
+    await expect(action.mock.calls[0]![0]).toEqual(expect.objectContaining({ defaultPrevented: true }));
+    await userEvent.keyboard(' ');
+    await expect(action).toHaveBeenCalledTimes(2);
+    await expect(undo.closest('[data-ui="toast"]')).toHaveAttribute('data-state', 'open');
+    await sleep(280);
+  },
+};
+export const ControlledByImperativeQueue: Story = { ...LoadingUpdate };
+export const UpdateFocusedAction: Story = {
+  render: (args) => (
+    <Harness {...args} mode="update" initial={[{ title: 'Saving project', loading: true }]} />
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const undo = await bodyOf(canvasElement).findByRole('button', { name: 'Save' });
+    await sleep(280);
+    undo.focus();
+    const item = undo.closest('[data-ui="toast"]');
+    await userEvent.keyboard('{Enter}');
+    await expect(await bodyOf(canvasElement).findByText('Saved successfully')).toBeVisible();
+    await expect(undo.closest('[data-ui="toast"]')).toBe(item);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(undo);
+    await expect(item).toHaveAttribute('data-state', 'open');
+    await sleep(280);
+  },
+};
+export const ExternalAria: Story = {
+  args: {
+    'aria-label': 'Updates',
+    'aria-labelledby': 'external-name missing-name',
+    'aria-describedby': 'external-help missing-help',
+  },
+  render: (args) => (
+    <>
+      <span id="external-name">Inbox</span>
+      <span id="external-help">Recent updates</span>
+      <Harness {...args} />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Inbox' });
+    await expect(region).toHaveAttribute('aria-label', 'Updates');
+    await expect(region).toHaveAttribute('aria-labelledby', 'external-name missing-name');
+    await expect(region).toHaveAttribute('aria-describedby', 'external-help missing-help');
+    await settled(region);
+  },
+};
+export const FalsyContent: Story = {
+  args: { variant: 'list' },
+  render: (args) => (
+    <Harness
+      {...args}
+      initial={[false, null, 0, ''].map((value) => ({ title: value, description: value, duration: null }))}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    const regions = within(region).getAllByRole('status');
+    await expect(regions[0]).toHaveTextContent('');
+    await expect(regions[0]?.children).toHaveLength(2);
+    await expect(regions[1]).toHaveTextContent('00');
+    await expect(regions[2]).toBeEmptyDOMElement();
+    await expect(regions[3]).toBeEmptyDOMElement();
+  },
+};
+export const QueueEvictionFocus: Story = {
+  args: { variant: 'list' },
+  render: (args) => <Harness {...args} max={3} mode="evict" />,
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    within(region).getAllByRole('button', { name: 'Create another' })[2]!.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(canvasElement.ownerDocument.activeElement).toBe(
+      within(region).getAllByRole('button', { name: 'Dismiss' })[0],
+    );
+    await bodyOf(canvasElement).findByText('New notification');
+    // Activation outside the queue must not drag unrelated page focus back into it.
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Unknown id' }));
+    await expect(canvasElement.ownerDocument.activeElement).toBe(
+      within(canvasElement).getByRole('button', { name: 'Unknown id' }),
+    );
+    await bodyOf(canvasElement).findByText('New notification');
+    await expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(3);
+    await settled(region);
+    await expect(bodyOf(canvasElement).getByText('New notification')).toBeVisible();
+  },
+};
+export const Positions: Story = {
+  args: { position: 'bottom-start' },
+  render: (args) => <Harness {...args} />,
+};
+export const Contained: Story = {
+  args: { contained: true },
+  render: (args) => (
+    <div style={{ position: 'relative', blockSize: '30rem' }}>
+      <Harness {...args} />
+    </div>
+  ),
+};
+export const RTL: Story = {
+  args: { dir: 'rtl', position: 'bottom-start', variant: 'list' },
+  render: (args) => <Harness {...args} />,
+};
+export const ReducedMotion: Story = { ...PersistentStack };
+export const ForcedColors: Story = { ...PersistentStack };
+export const NarrowLongCopy: Story = {
+  args: { variant: 'list', sx: { inlineSize: '18rem' } },
+  render: (args) => (
+    <Harness
+      {...args}
+      initial={[
+        {
+          title: 'Your international collaboration workspace is ready',
+          description:
+            'A long notification wraps without truncating the important details or hiding its controls.',
+          duration: null,
+        },
+      ]}
+    />
+  ),
+};
+export const LightTheme: Story = {
+  ...PersistentStack,
+  globals: { theme: 'light' },
+  decorators: [withLightTheme],
+};
+function Scoped({ args }: { args: ToastStackProps }) {
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  return (
+    <ThemeRoot theme="light" portalContainer={container}>
+      <div ref={setContainer} />
+      <Harness {...args} />
+    </ThemeRoot>
+  );
+}
+export const ScopedPortal: Story = { args: { variant: 'list' }, render: (args) => <Scoped args={args} /> };
+
+export const ConsumerEscapeVeto: Story = {
+  args: {
+    onKeyDown: fn((event) => {
+      if (event.key === 'Escape') event.preventDefault();
+    }),
+  },
+  render: (args) => <Harness {...args} initial={messages.slice(0, 1)} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    within(region).getByRole('button', { name: 'Dismiss' }).focus();
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onKeyDown).toHaveBeenCalledTimes(1);
+    await expect(args.onKeyDown).toHaveBeenCalledWith(
+      expect.objectContaining({ key: 'Escape', defaultPrevented: true }),
+    );
+    await expect(region.querySelector('[data-ui="toast"]')).toHaveAttribute('data-state', 'open');
+  },
+};
+
+export const QueuedLifetime: Story = {
+  render: (args) => (
+    <Harness {...args} initial={messages.slice(0, 2).map((item) => ({ ...item, duration: 550 }))} />
+  ),
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    await waitFor(
+      async () => {
+        await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(1);
+      },
+      { timeout: 1500 },
+    );
+    await expect(await within(region).findByText('Profile saved')).toBeInTheDocument();
+    await sleep(180);
+    await expect(region.querySelector('[data-state="open"]')).toHaveTextContent('Profile saved');
+    await waitFor(
+      async () => {
+        await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(0);
+      },
+      { timeout: 1500 },
+    );
+  },
+};
+
+export const StylingAndRef: Story = {
+  args: {
+    variant: 'list',
+    ref: fn(),
+    sx: { paddingInlineStart: vars.space[8] },
+    slotProps: { list: { css: { borderBlockStart: `2px solid ${vars.color.borderControl}` } } },
+  },
+  render: (args) => <Harness {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    await expect(args.ref).toHaveBeenCalledWith(region);
+    await expect(Math.abs(parseFloat(getComputedStyle(region).paddingInlineStart) - 32)).toBeLessThan(1.1);
+    const list = region.querySelector<HTMLElement>('[data-ui="toast-stack-list"]')!;
+    await expect(getComputedStyle(list).borderBlockStartStyle).toBe('solid');
+    await expect(Math.abs(parseFloat(getComputedStyle(list).borderBlockStartWidth) - 2)).toBeLessThan(1.1);
+  },
+};
+
+export const NativeDismissKeys: Story = {
+  args: { variant: 'list' },
+  render: (args) => <Harness {...args} initial={messages.slice(0, 2)} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    within(region).getAllByRole('button', { name: 'Dismiss' })[0]!.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(1);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(
+      within(region).getByRole('button', { name: 'Dismiss' }),
+    );
+    await userEvent.keyboard(' ');
+    await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(0);
+    await waitFor(async () => {
+      await expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(0);
+    });
+  },
+};
+
+export const EditableHotkey: Story = {
+  args: { hotkey: true },
+  render: (args) => (
+    <>
+      <label>
+        Draft
+        <input style={{ minBlockSize: vars.space[8] }} />
+      </label>
+      <Harness {...args} />
+    </>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    const input = within(canvasElement).getByRole('textbox', { name: 'Draft' });
+    await userEvent.click(input);
+    await userEvent.keyboard('{Alt>}t{/Alt}');
+    await expect(canvasElement.ownerDocument.activeElement).toBe(input);
+    await expect(region).toHaveAttribute('data-expanded', 'false');
+  },
+};
