@@ -467,14 +467,19 @@ export function AnnouncementBar({
           onFocusCapture={(event) => {
             slotProps?.root?.onFocusCapture?.(event);
             rest.onFocusCapture?.(event);
-            if (
-              autoPlay &&
-              multiple &&
-              !safetyStop &&
-              !event.currentTarget.contains(event.relatedTarget as Node | null)
-            ) {
-              setSafetyStop(true);
-              requestPaused(true);
+            if (autoPlay && multiple && !safetyStop) {
+              const fromOutside = !event.currentTarget.contains(event.relatedTarget as Node | null);
+              // Rotation must never move focus: if focus lands inside the rotating content
+              // (an action or any interactive node) while running, re-engage the safety stop —
+              // otherwise the next swap unmounts the focused element and focus falls to body.
+              const landsInRotatingContent =
+                running &&
+                (event.target as Element | null)?.closest?.('[data-ui="announcement-bar-content"]') !=
+                  null;
+              if (fromOutside || landsInRotatingContent) {
+                setSafetyStop(true);
+                requestPaused(true);
+              }
             }
           }}
         >

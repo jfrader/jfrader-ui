@@ -95,7 +95,16 @@ export const MultipleManual: Story = {
 };
 export const AutoPlayWithPause: Story = {
   args: { autoPlay: true, controls: false, interval: 60000 },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Assumes normal motion: the OS-level reduced-motion preference disables auto-rotation, so this play returns early when prefers-reduced-motion: reduce matches (see Reduced Motion for that branch).',
+      },
+    },
+  },
   play: async ({ canvasElement, userEvent }) => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('button', { name: 'Previous announcement' })).toBeVisible();
     await expect(canvas.getByRole('button', { name: 'Next announcement' })).toBeVisible();
@@ -108,6 +117,9 @@ export const AutoPlayWithPause: Story = {
     await userEvent.keyboard(' ');
     await expect(canvas.getByRole('button', { name: 'Resume announcements' })).toBe(resume);
     await expect(canvasElement.querySelector('section')).toHaveAttribute('data-running', 'false');
+    // The focus-into-content safety stop (rotation must never move focus) is exercised through
+    // the data-running attribute in browser QA: the vitest page reports itself as hidden, so
+    // rotation cannot run here.
   },
 };
 
