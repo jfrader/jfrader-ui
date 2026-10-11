@@ -183,7 +183,7 @@ function AppShellScene() {
 
 const meta = {
   title: 'Showcase/AppShell',
-  tags: ['!autodocs'],
+  tags: ['!autodocs', 'dev'],
   parameters: {
     layout: 'fullscreen',
     controls: { disable: true },
