@@ -50,7 +50,8 @@ RefField.displayName = 'RefSearchField';
 async function expectFocus(element: HTMLElement) {
   await expect(element.ownerDocument.activeElement).toBe(element);
   await expect(getComputedStyle(element).outlineStyle).not.toBe('none');
-  await expect(getComputedStyle(element).outlineWidth).toBe('2px');
+  // Fractional devicePixelRatios device-snap outline widths (authored 2px computes ~1.49px).
+  await expect(parseFloat(getComputedStyle(element).outlineWidth)).toBeGreaterThan(1);
 }
 
 export const Default: Story = {
