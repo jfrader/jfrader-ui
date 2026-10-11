@@ -61,6 +61,7 @@
     "./slider": { "types": "./src/components/slider/index.ts", "import": "./src/components/slider/index.ts" },
     "./spinner": { "types": "./src/components/spinner/index.ts", "import": "./src/components/spinner/index.ts" },
     "./stack": { "types": "./src/components/stack/index.ts", "import": "./src/components/stack/index.ts" },
+    "./stepper": { "types": "./src/components/stepper/index.ts", "import": "./src/components/stepper/index.ts" },
     "./switch": { "types": "./src/components/switch/index.ts", "import": "./src/components/switch/index.ts" },
     "./tabs": { "types": "./src/components/tabs/index.ts", "import": "./src/components/tabs/index.ts" },
     "./text-field": { "types": "./src/components/text-field/index.ts", "import": "./src/components/text-field/index.ts" },
