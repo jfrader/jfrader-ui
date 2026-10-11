@@ -57,6 +57,7 @@
     "./hover-card": { "types": "./src/components/hover-card/index.ts", "import": "./src/components/hover-card/index.ts" },
     "./json-viewer": { "types": "./src/components/json-viewer/index.ts", "import": "./src/components/json-viewer/index.ts" },
     "./kbd": { "types": "./src/components/kbd/index.ts", "import": "./src/components/kbd/index.ts" },
+    "./mention-input": { "types": "./src/components/mention-input/index.ts", "import": "./src/components/mention-input/index.ts" },
     "./menu": { "types": "./src/components/menu/index.ts", "import": "./src/components/menu/index.ts" },
     "./metric-card": { "types": "./src/components/metric-card/index.ts", "import": "./src/components/metric-card/index.ts" },
     "./navigation": { "types": "./src/components/navigation/index.ts", "import": "./src/components/navigation/index.ts" },
