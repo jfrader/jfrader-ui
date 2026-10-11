@@ -288,6 +288,14 @@ export const Default: Story = {
 };
 
 export const Keyboard: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Enter or Space on the value opens the editor with the whole text selected. A pointer click opens it with the caret at the end instead (see Action Buttons).',
+      },
+    },
+  },
   args: { onValueChange: fn(), onOpenChange: fn() },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const onSave = args.onSave as Spy;
@@ -366,6 +374,14 @@ export const Keyboard: Story = {
 };
 
 export const ActionButtons: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A pointer click on the value opens the editor with the caret at the end; Enter or Space selects the whole text instead (see Keyboard).',
+      },
+    },
+  },
   args: { onValueChange: fn(), onOpenChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Edit Project name: Apollo' }));
@@ -506,6 +522,14 @@ export const NoBlurSave: Story = {
 };
 
 export const Multiline: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Opening swaps the value for a native input or textarea, so the row height and wrapping change immediately, with no size animation. A multiline editor grows with its content.',
+      },
+    },
+  },
   args: { multiline: true, variant: 'body', label: 'Description', defaultValue: 'Line one', onValueChange: fn() },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.tab();
@@ -554,6 +578,14 @@ export const Composition: Story = {
 };
 
 export const Open: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The accessible name changes with the mode: the value button is named "Edit Project name: Apollo" (`messages.edit({ label, value })`), the editor is named "Project name" (`label`).',
+      },
+    },
+  },
   args: { defaultOpen: true, description: 'Shown in the sidebar.' },
   play: async ({ canvas, canvasElement }) => {
     const editor = canvas.getByRole('textbox', { name: 'Project name' });
