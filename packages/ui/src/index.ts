@@ -19,6 +19,7 @@ export * from './components/empty-state';
 export * from './components/flex';
 export * from './components/kbd';
 export * from './components/menu';
+export * from './components/metric-card';
 export * from './components/navigation';
 export * from './components/pagination';
 export * from './components/password-field';
