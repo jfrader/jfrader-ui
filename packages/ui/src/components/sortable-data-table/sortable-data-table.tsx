@@ -125,7 +125,13 @@ const cellStyle = css({
   verticalAlign: 'middle',
   overflowWrap: 'anywhere',
   borderBlockEnd: `1px solid ${vars.color.borderSubtle}`,
-  '&[data-numeric]': { textAlign: 'end', fontVariantNumeric: 'tabular-nums' },
+  '&[data-numeric]': {
+    textAlign: 'end',
+    fontVariantNumeric: 'tabular-nums',
+    // The sort control is an inline-flex button, so textAlign never reaches its label:
+    // push its content to the end so numeric headers align with their end-aligned cells.
+    '& button': { justifyContent: 'flex-end' },
+  },
 });
 const densityStyles = { sm: css({ paddingBlock: vars.space[2] }), md: css({ paddingBlock: vars.space[3] }) };
 const headerStyle = css({

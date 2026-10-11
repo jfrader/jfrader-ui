@@ -96,6 +96,9 @@ export const StableNumericSorting: Story = {
     await expect(args.onValueChange).toHaveBeenNthCalledWith(3, { columnId: 'budget', direction: 'asc' });
     await expect(rows.map((row) => row.id)).toEqual(['c', 'a', 'b', 'd']);
     await expect(canvasElement.querySelectorAll('th[aria-sort]')).toHaveLength(1);
+    // Numeric headers align with their end-aligned cells: the inline-flex sort control is pushed to the end.
+    const numericHeader = canvasElement.querySelector<HTMLElement>('th[data-numeric]')!;
+    await expect(getComputedStyle(numericHeader.querySelector('button')!).justifyContent).toBe('flex-end');
   },
 };
 function Controlled({ onValueChange, onSelectionChange, ...args }: SortableDataTableProps<Project>) {
