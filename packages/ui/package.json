@@ -47,6 +47,7 @@
     "./popover": { "types": "./src/components/popover/index.ts", "import": "./src/components/popover/index.ts" },
     "./progress": { "types": "./src/components/progress/index.ts", "import": "./src/components/progress/index.ts" },
     "./radio-group": { "types": "./src/components/radio-group/index.ts", "import": "./src/components/radio-group/index.ts" },
+    "./search-field": { "types": "./src/components/search-field/index.ts", "import": "./src/components/search-field/index.ts" },
     "./select": { "types": "./src/components/select/index.ts", "import": "./src/components/select/index.ts" },
     "./skeleton": { "types": "./src/components/skeleton/index.ts", "import": "./src/components/skeleton/index.ts" },
     "./spinner": { "types": "./src/components/spinner/index.ts", "import": "./src/components/spinner/index.ts" },
