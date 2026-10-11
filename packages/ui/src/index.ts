@@ -9,6 +9,7 @@ export * from './components/calendar';
 export * from './components/card';
 export * from './components/checkbox';
 export * from './components/chip-group';
+export * from './components/code-block';
 export * from './components/command-palette';
 export * from './components/combobox';
 export * from './components/container';

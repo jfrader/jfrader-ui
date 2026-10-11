@@ -34,6 +34,7 @@
     "./card": { "types": "./src/components/card/index.ts", "import": "./src/components/card/index.ts" },
     "./checkbox": { "types": "./src/components/checkbox/index.ts", "import": "./src/components/checkbox/index.ts" },
     "./chip-group": { "types": "./src/components/chip-group/index.ts", "import": "./src/components/chip-group/index.ts" },
+    "./code-block": { "types": "./src/components/code-block/index.ts", "import": "./src/components/code-block/index.ts" },
     "./combobox": { "types": "./src/components/combobox/index.ts", "import": "./src/components/combobox/index.ts" },
     "./command-palette": { "types": "./src/components/command-palette/index.ts", "import": "./src/components/command-palette/index.ts" },
     "./container": { "types": "./src/components/container/index.ts", "import": "./src/components/container/index.ts" },
