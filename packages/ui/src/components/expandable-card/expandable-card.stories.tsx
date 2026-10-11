@@ -371,7 +371,12 @@ export const ExternalARIA: Story = {
         'aria-labelledby',
         `external-title unresolved-reference ${title.id}${element === trigger ? ` ${description.id}` : ''}`,
       );
-      await expect(element).toHaveAttribute('aria-describedby', `external-description ${description.id}`);
+      // The trigger's visible Description is part of its NAME (label-in-name); announcing it again
+      // as a description would double it. The region keeps it as a description.
+      await expect(element).toHaveAttribute(
+        'aria-describedby',
+        element === panel ? `external-description ${description.id}` : 'external-description',
+      );
     }
     await expect(trigger).toHaveAttribute('aria-label', 'Consumer label');
     await expect(panel).toHaveAttribute('aria-label', 'Consumer region');

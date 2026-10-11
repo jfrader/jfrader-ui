@@ -71,9 +71,11 @@ const GEOMETRY_SPRING = {
   damping: 40,
   mass: 1,
 } as const;
+/** `motion.easeStandard` (tokens.ts) as cubic-bezier numbers; `motion` cannot consume the CSS string. */
+const EASE_STANDARD = [0.2, 0.6, 0.2, 1] as const;
 const DETAIL_FADE = {
-  duration: Number.parseFloat(base.motion.duration.fast) / 1000,
-  ease: [0.2, 0.6, 0.2, 1],
+  duration: Number.parseFloat(base.motion.duration.fast) / 1000, // e.g. '120ms' -> 0.12s
+  ease: EASE_STANDARD,
 } as const;
 const rootStyle = css({
   ...raisedSurface,
@@ -289,6 +291,8 @@ function ExpandableCardTrigger({
   const mergedRef = useMergeRefs([c.triggerRef, ref]);
   const Heading = `h${c.headingLevel}` as const;
   return (
+    // The heading mirrors the trigger name: with a falsy Title the heading would otherwise be
+    // empty and fail the axe `empty-heading` gate (verified in the Falsy Nodes story).
     <Heading css={headingStyle} aria-labelledby={c.triggerId}>
       <WithSx className={className} styles={triggerStyle} sx={sx}>
         {(className) => (
@@ -303,7 +307,7 @@ function ExpandableCardTrigger({
             aria-expanded={c.open}
             aria-controls={c.panelId}
             aria-labelledby={ids(labelledBy, c.hasTitle && c.titleId, c.hasDescription && c.descriptionId)}
-            aria-describedby={ids(describedBy, c.hasDescription && c.descriptionId)}
+            aria-describedby={ids(describedBy)}
             onClick={(event) => {
               onClick?.(event);
               if (!event.defaultPrevented) c.request(!c.open);
@@ -395,6 +399,9 @@ function ExpandableCardContent({
     panel.inert = !c.open;
     if (c.open) panel.hidden = false;
     else if (!initialized.current) panel.hidden = true;
+    // The render sets `hidden` for SSR/initial markup; when a measured close animation runs,
+    // clear it so the shrink is visible and restore it when the animation completes (below).
+    else panel.hidden = false;
     if (c.expandedWidth === undefined) return;
     const write = (value: number) => {
       panel.style.blockSize = `${value}px`;
@@ -458,6 +465,7 @@ function ExpandableCardContent({
           role="region"
           className={className}
           data-ui="expandable-card-content"
+          hidden={!c.open}
           aria-hidden={!c.open || undefined}
           aria-labelledby={ids(labelledBy, c.hasTitle ? c.titleId : c.triggerId)}
           aria-describedby={ids(describedBy, c.hasDescription && c.descriptionId)}
