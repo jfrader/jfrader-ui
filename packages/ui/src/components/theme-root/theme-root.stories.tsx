@@ -1,11 +1,14 @@
 import type { CSSProperties } from 'react';
+import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
+import { Popover, type PopoverProps } from '../popover';
 import { TextField } from '../text-field';
-import { ThemeRoot, type ThemeName } from './index';
+import { ThemeRoot, type ThemeName, type ThemeRootProps } from './index';
 
 const THEMES = ['dark', 'light'] as const satisfies readonly ThemeName[];
 
@@ -22,6 +25,54 @@ const rowStyle = {
   alignItems: 'center',
   gap: vars.space[3],
 } satisfies CSSProperties;
+
+const headingStyle = {
+  margin: 0,
+  marginBlockEnd: vars.space[2],
+  fontSize: vars.textSize.md,
+} satisfies CSSProperties;
+
+function ThemedPopover({ label, ...props }: PopoverProps & { label: string }) {
+  const headingId = useId();
+  return (
+    <Popover {...props}>
+      <Popover.Trigger>{label}</Popover.Trigger>
+      <Popover.Content aria-labelledby={headingId}>
+        <h2 id={headingId} style={headingStyle}>
+          {`${label} details`}
+        </h2>
+        <Button size="sm">{`${label} action`}</Button>
+      </Popover.Content>
+    </Popover>
+  );
+}
+ThemedPopover.displayName = 'ThemedPopover';
+
+/** Overlays inside the root portal into a host element it owns (set through a state ref). */
+function PortalContainerExample({ theme, children }: ThemeRootProps) {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return (
+    <ThemeRoot theme={theme} portalContainer={host} style={surfaceStyle}>
+      {children}
+      <div ref={setHost} data-overlay-host="" />
+    </ThemeRoot>
+  );
+}
+PortalContainerExample.displayName = 'PortalContainerExample';
+
+function LiveThemeExample() {
+  const [theme, setTheme] = useState<ThemeName>('dark');
+  return (
+    <ThemeRoot theme={theme} style={surfaceStyle}>
+      <div style={rowStyle}>
+        {/* Held open: the theme switch click would otherwise dismiss it as an outside press. */}
+        <ThemedPopover label="Share" open />
+        <Button onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}>Switch theme</Button>
+      </div>
+    </ThemeRoot>
+  );
+}
+LiveThemeExample.displayName = 'LiveThemeExample';
 
 const meta = {
   title: 'Foundations/Theme',
@@ -69,5 +120,160 @@ export const LightTheme: Story = {
   args: { theme: 'light' },
   play: async ({ canvasElement }) => {
     await expect(getRoot(canvasElement)).toHaveAttribute('data-theme', 'light');
+  },
+};
+
+function getHost(canvasElement: HTMLElement) {
+  const host = canvasElement.querySelector<HTMLElement>('[data-overlay-host]');
+  if (!host) throw new Error('The overlay host is not rendered.');
+  return host;
+}
+
+export const PortalContainer: Story = {
+  args: { theme: 'light' },
+  render: (args) => (
+    <PortalContainerExample {...args}>
+      <div style={rowStyle}>
+        <ThemedPopover label="Share" />
+        <Button>After</Button>
+      </div>
+    </PortalContainerExample>
+  ),
+  play: async ({ canvasElement }) => {
+    const { ownerDocument } = canvasElement;
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('button', { name: 'Share' });
+
+    await userEvent.tab();
+    await expect(ownerDocument.activeElement).toBe(trigger);
+    await userEvent.keyboard('{Enter}');
+    const popover = await canvas.findByRole('dialog', { name: 'Share details' });
+    // The overlay lands in the root's container, not the body, and keeps the root's theme.
+    await expect(getHost(canvasElement).contains(popover)).toBe(true);
+    await expectThemedSurface(popover, 'light');
+
+    // Keyboard order is untouched: trigger → portaled content → the next page control.
+    await expect(ownerDocument.activeElement).toBe(trigger);
+    await userEvent.tab();
+    await expect(ownerDocument.activeElement).toBe(within(popover).getByRole('button', { name: 'Share action' }));
+    await userEvent.tab();
+    await expect(ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'After' }));
+    await expect(popover).toBeVisible();
+  },
+};
+
+export const NestedOverlayKeyboard: Story = {
+  args: { theme: 'light' },
+  render: (args) => (
+    <PortalContainerExample {...args}>
+      <div style={rowStyle}>
+        <Popover>
+          <Popover.Trigger>Outer</Popover.Trigger>
+          <Popover.Content aria-label="Outer details">
+            <ThemedPopover label="Inner" />
+            <Button>After inner</Button>
+          </Popover.Content>
+        </Popover>
+        <Button>After outer</Button>
+      </div>
+    </PortalContainerExample>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const outerTrigger = canvas.getByRole('button', { name: 'Outer' });
+    await userEvent.tab();
+    await expect(outerTrigger).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    const outer = await canvas.findByRole('dialog', { name: 'Outer details' });
+    const innerTrigger = within(outer).getByRole('button', { name: 'Inner' });
+    await expect(getHost(canvasElement).contains(outer)).toBe(true);
+    await expect(outerTrigger).toHaveAttribute('aria-controls', outer.id);
+
+    await userEvent.tab();
+    await expect(innerTrigger).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    const inner = await canvas.findByRole('dialog', { name: 'Inner details' });
+    await expect(getHost(canvasElement).contains(inner)).toBe(true);
+    await expect(innerTrigger).toHaveAttribute('aria-controls', inner.id);
+    await expect(innerTrigger).toHaveFocus();
+    const innerAction = within(inner).getByRole('button', { name: 'Inner action' });
+    const afterInner = within(outer).getByRole('button', { name: 'After inner' });
+    const afterOuter = canvas.getByRole('button', { name: 'After outer' });
+
+    // Both portals share a DOM host; Tab must still follow their nested React order.
+    for (const control of [innerAction, afterInner, afterOuter]) {
+      await userEvent.tab();
+      await waitFor(() => expect(control).toHaveFocus());
+    }
+    for (const control of [afterInner, innerAction, innerTrigger, outerTrigger]) {
+      await userEvent.tab({ shift: true });
+      await waitFor(() => expect(control).toHaveFocus());
+    }
+    await expect(outer).toBeVisible();
+    await expect(inner).toBeVisible();
+
+    await userEvent.tab();
+    await expect(innerTrigger).toHaveFocus();
+    await userEvent.tab();
+    await expect(innerAction).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(canvas.queryByRole('dialog', { name: 'Inner details' })).toBeNull());
+    await expect(innerTrigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(outerTrigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(outer).toBeVisible();
+    await waitFor(() => expect(innerTrigger).toHaveFocus());
+  },
+};
+
+export const NestedThemeRoots: Story = {
+  args: { theme: 'dark' },
+  render: (args) => (
+    <PortalContainerExample {...args}>
+      <div style={rowStyle}>
+        <ThemedPopover label="Outer" defaultOpen placement="bottom-start" />
+        <ThemeRoot theme="light" style={surfaceStyle}>
+          <ThemedPopover label="Inner" defaultOpen placement="top-start" />
+        </ThemeRoot>
+      </div>
+    </PortalContainerExample>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const outer = await canvas.findByRole('dialog', { name: 'Outer details' });
+    const inner = await canvas.findByRole('dialog', { name: 'Inner details' });
+    // The nearest ThemeRoot names the theme; the inner root keeps the outer root's container.
+    await expect(getHost(canvasElement).contains(outer)).toBe(true);
+    await expect(getHost(canvasElement).contains(inner)).toBe(true);
+    await expectThemedSurface(outer, 'dark');
+    await expectThemedSurface(inner, 'light');
+  },
+};
+
+export const LiveThemeChange: Story = {
+  render: () => <LiveThemeExample />,
+  parameters: {
+    docs: {
+      // No-args render: keep an authored usage snippet instead of the stringified tree.
+      source: {
+        code: `function LiveTheme() {
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  return (
+    <ThemeRoot theme={theme}>
+      <Popover open>…</Popover>
+      <Button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>Switch theme</Button>
+    </ThemeRoot>
+  );
+}`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const popover = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'Share details' });
+    await expectThemedSurface(popover, 'dark');
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Switch theme' }));
+    // The open overlay follows the root's new theme in place, without remounting.
+    await expectThemedSurface(popover, 'light');
+    await expect(popover.isConnected).toBe(true);
   },
 };

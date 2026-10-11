@@ -35,7 +35,6 @@ import {
 } from 'react';
 import {
   FloatingList,
-  FloatingPortal,
   useClick,
   useDismiss,
   useInteractions,
@@ -58,6 +57,7 @@ import {
 } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import {
   collectionItemId,
@@ -439,7 +439,7 @@ function SelectContent({ ref, style, onMouseDown, children, className, sx, ...re
   };
 
   return (
-    <FloatingPortal>
+    <OverlayPortal>
       <WithSx className={className} styles={[listboxSurfaceStyle, listboxScrollStyle]} sx={sx}>
         {(className) => (
           <div
@@ -457,7 +457,7 @@ function SelectContent({ ref, style, onMouseDown, children, className, sx, ...re
           </div>
         )}
       </WithSx>
-    </FloatingPortal>
+    </OverlayPortal>
   );
 }
 

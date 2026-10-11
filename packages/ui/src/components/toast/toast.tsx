@@ -35,6 +35,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { ThemeBoundary, useThemeScope } from '../../styling/theme-scope';
 import { isRenderable } from '../../utils/renderable';
 import { Button } from '../button';
 
@@ -99,9 +100,8 @@ const TONE_STRIPE_WIDTH = '3px';
 const ToastApiContext = createContext<ToastApi | null>(null);
 const ToastQueueContext = createContext<ToastQueueContextValue | null>(null);
 
-// Fixed + portaled at the end of the body: later in DOM order than the page, so no z-index.
-// Portaled overlays use the page theme, so scoped-light stories do not gate light-theme toast contrast;
-// this limitation is tracked in the portaled-overlay theming follow-up issue.
+// Fixed + portaled at the end of the body (or the ThemeRoot's `portalContainer`): later in DOM
+// order than the page, so no z-index. ThemeBoundary carries the enclosing ThemeRoot's theme.
 // The viewport ignores the pointer so the empty corner never blocks the page; toasts opt back in.
 const viewportStyle = css({
   position: 'fixed',
@@ -307,10 +307,13 @@ function ToastViewport({ ref, className, sx, ...props }: ToastViewportProps) {
   // The local anchor selects the host document (including iframe/other-document mounts),
   // not the global realm's document. It also renders on the server; the portal waits for mount.
   const anchorRef = useRef<HTMLSpanElement>(null);
-  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+  const [bodyRoot, setBodyRoot] = useState<HTMLElement | null>(null);
+  // Same contract as OverlayPortal: an explicit container wins and `null` waits for the host.
+  const container = useThemeScope()?.portalContainer;
+  const portalRoot = container === undefined ? bodyRoot : container;
 
   useEffect(() => {
-    setPortalRoot(anchorRef.current?.ownerDocument.body ?? null);
+    setBodyRoot(anchorRef.current?.ownerDocument.body ?? null);
   }, []);
 
   return (
@@ -318,15 +321,17 @@ function ToastViewport({ ref, className, sx, ...props }: ToastViewportProps) {
       <span hidden ref={anchorRef} />
       {portalRoot &&
         createPortal(
-          <WithSx className={className} styles={viewportStyle} sx={sx}>
-            {(className) => (
-              <div {...props} ref={ref} data-ui="toast-viewport" className={className}>
-                {toasts.map((record) => (
-                  <ToastItem key={record.id} record={record} />
-                ))}
-              </div>
-            )}
-          </WithSx>,
+          <ThemeBoundary>
+            <WithSx className={className} styles={viewportStyle} sx={sx}>
+              {(className) => (
+                <div {...props} ref={ref} data-ui="toast-viewport" className={className}>
+                  {toasts.map((record) => (
+                    <ToastItem key={record.id} record={record} />
+                  ))}
+                </div>
+              )}
+            </WithSx>
+          </ThemeBoundary>,
           portalRoot,
         )}
     </>

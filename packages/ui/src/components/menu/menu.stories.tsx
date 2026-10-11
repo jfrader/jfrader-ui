@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Menu, type MenuProps } from './index';
 
@@ -343,12 +344,26 @@ export const SelectPreventDefault: Story = {
   },
 };
 
+export const LightThemeOpen: Story = {
+  decorators: [withLightTheme],
+  args: { defaultOpen: true },
+  render: (args) => <MenuExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
+    await expect(menu).toBeVisible();
+    await expect(canvasElement.contains(menu)).toBe(false);
+    await expectThemedSurface(menu, 'light');
+  },
+};
+
 export const LightTheme: Story = {
   decorators: [withLightTheme],
   render: (args) => <MenuExample {...args} />,
   play: async ({ canvasElement }) => {
     await userEvent.click(getTrigger(canvasElement));
-    await expect(await bodyOf(canvasElement).findByRole('menu')).toBeVisible();
+    const menu = await bodyOf(canvasElement).findByRole('menu');
+    await expect(menu).toBeVisible();
+    await expectThemedSurface(menu, 'light');
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);
   },

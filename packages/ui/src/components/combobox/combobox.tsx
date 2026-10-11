@@ -47,7 +47,6 @@ import {
 } from 'react';
 import {
   FloatingList,
-  FloatingPortal,
   useDismiss,
   useInteractions,
   useListNavigation,
@@ -66,6 +65,7 @@ import {
   listboxSurfaceStyle,
 } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import {
   collectionItemId,
@@ -547,7 +547,7 @@ function ComboboxList({ ref, id: idProp, style, onMouseDown, children, className
   };
 
   return (
-    <FloatingPortal>
+    <OverlayPortal>
       <WithSx className={className} styles={[listboxSurfaceStyle, listboxScrollStyle]} sx={sx}>
         {(className) => (
           <div
@@ -566,7 +566,7 @@ function ComboboxList({ ref, id: idProp, style, onMouseDown, children, className
           </div>
         )}
       </WithSx>
-    </FloatingPortal>
+    </OverlayPortal>
   );
 }
 

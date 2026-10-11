@@ -14,7 +14,6 @@ import {
   type ReactNode,
 } from 'react';
 import {
-  FloatingPortal,
   useDismiss,
   useFocus,
   useHover,
@@ -28,6 +27,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -151,7 +151,7 @@ function TooltipContent({ ref, style, className, sx, ...rest }: TooltipContentPr
   void ignoredTabIndex;
 
   return (
-    <FloatingPortal>
+    <OverlayPortal>
       <WithSx className={className} styles={contentStyle} sx={sx}>
         {(className) => (
           <div
@@ -163,7 +163,7 @@ function TooltipContent({ ref, style, className, sx, ...rest }: TooltipContentPr
           />
         )}
       </WithSx>
-    </FloatingPortal>
+    </OverlayPortal>
   );
 }
 

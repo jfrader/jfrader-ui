@@ -67,6 +67,16 @@ async function expectSelected(canvasElement: HTMLElement, name: string) {
 export const Default: Story = {
   args: { defaultValue: '2026-10-12' },
   render: (args) => <CalendarExample {...args} />,
+  parameters: {
+    docs: {
+      source: {
+        code: `<Calendar locale="en-US" defaultValue="2026-10-12">
+  <Calendar.Header />
+  <Calendar.Grid />
+</Calendar>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expectMonth(canvasElement, 'October 2026');

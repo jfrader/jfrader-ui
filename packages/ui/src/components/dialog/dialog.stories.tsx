@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Dialog, type DialogProps } from './index';
 
@@ -342,6 +343,10 @@ export const LightTheme: Story = {
   play: async ({ canvasElement }) => {
     const { canvas, trigger, dialog } = await openDialog(canvasElement);
     await expect(dialog).toHaveAccessibleName(TITLE);
+    // Not portaled: the native <dialog> stays in the ThemeRoot's DOM (only rendered in the top
+    // layer), so it inherits the scoped theme without a ThemeBoundary.
+    await expect(canvasElement.contains(dialog)).toBe(true);
+    await expectThemedSurface(dialog.firstElementChild as HTMLElement, 'light');
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);
   },

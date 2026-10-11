@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Combobox, type ComboboxInputProps, type ComboboxProps } from './index';
 
@@ -351,6 +352,35 @@ RejectFirstSelectionExample.displayName = 'RejectFirstSelectionExample';
 export const RejectedThenAcceptedSelection: Story = {
   args: { onInputChange: fn(), onValueChange: fn() },
   render: (args) => <RejectFirstSelectionExample {...args} />,
+  parameters: {
+    docs: {
+      source: {
+        code: `function FruitPicker() {
+  const [value, setValue] = useState<string | null>('apple');
+  const [reject, setReject] = useState(true);
+
+  return (
+    <Combobox
+      value={value}
+      onValueChange={(next) => {
+        if (reject) setReject(false);
+        else setValue(next);
+      }}
+    >
+      <Combobox.Input label="Fruit" />
+      <Combobox.List>
+        <Combobox.Item value="apple">Apple</Combobox.Item>
+        <Combobox.Item value="apricot">Apricot</Combobox.Item>
+        <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+        <Combobox.Item value="cherry">Cherry</Combobox.Item>
+        <Combobox.Empty />
+      </Combobox.List>
+    </Combobox>
+  );
+}`,
+      },
+    },
+  },
   play: async ({ args, canvasElement }) => {
     const input = getInput(canvasElement);
     await waitFor(() => expect(input).toHaveValue('Apple'));
@@ -420,7 +450,10 @@ export const LightTheme: Story = {
   ),
   play: async ({ canvasElement }) => {
     const input = getInput(canvasElement);
-    await expect(await bodyOf(canvasElement).findByRole('listbox')).toBeVisible();
+    const listbox = await bodyOf(canvasElement).findByRole('listbox');
+    await expect(listbox).toBeVisible();
+    // Left open so the axe gate checks the portaled listbox in the light theme.
+    await expectThemedSurface(listbox, 'light');
     await expect(input).toHaveAttribute('aria-invalid', 'true');
     await expect(input.getAttribute('aria-describedby')?.split(' ')).toHaveLength(2);
   },

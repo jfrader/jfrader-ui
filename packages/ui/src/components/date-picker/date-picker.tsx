@@ -40,7 +40,6 @@ import {
 } from 'react';
 import {
   FloatingFocusManager,
-  FloatingPortal,
   useClick,
   useDismiss,
   useInteractions,
@@ -52,6 +51,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -500,7 +500,7 @@ function DatePickerPopup({ ref, style, className, sx, ...rest }: DatePickerPopup
   };
 
   return (
-    <FloatingPortal>
+    <OverlayPortal>
       {/* Non-modal: no trap; Tab-out closes via focus-out. Focus return is explicit (see
           selectDate and the Escape path) — returnFocus is off so an outside press never
           transiently focuses the input. Initial focus is the grid's tab-stop day, passed as a
@@ -543,7 +543,7 @@ function DatePickerPopup({ ref, style, className, sx, ...rest }: DatePickerPopup
           )}
         </WithSx>
       </FloatingFocusManager>
-    </FloatingPortal>
+    </OverlayPortal>
   );
 }
 

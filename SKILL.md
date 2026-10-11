@@ -98,6 +98,11 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   (embedded widgets). Components read tokens only and never pick a theme themselves. The Emotion
   theme (`theme`, mounted by `ThemeProvider` and by `ThemeRoot`) is the token object itself, so it
   never changes between dark and light. Consumer setup lives in `docs/consuming-jfrader-ui.md`.
+- **Portaled content goes through the theme scope.** Floating overlays portal with `OverlayPortal`
+  (`src/overlay/overlay-portal.tsx`), never a bare `FloatingPortal`; a custom `createPortal` wraps
+  its content in `ThemeBoundary` and honors `useThemeScope()?.portalContainer` (see Toast). This
+  re-applies the nearest `ThemeRoot`'s named theme inside the portal and routes it to the root's
+  `portalContainer`. Native `<dialog>` is not portaled and needs neither.
 - **No deep descendant-chain styling.** Direct relations from the component's own DOM are fine
   (`input:checked + span`, `&[data-indeterminate] input + span svg`); avoid unrelated descendant
   selectors and tag-only chains beyond one level.
@@ -137,7 +142,7 @@ src/components/<kebab-case>/
   <kebab-case>.stories.tsx  # CSF3 + play tests
   index.ts                  # re-exports component + types
 src/utils/                  # shared non-styling helpers (renderable, use-controlled-state)
-src/overlay/                # internal modules (scroll lock, future focus/top-layer helpers) — not exported
+src/overlay/                # internal modules (overlay portal, scroll lock, future focus/top-layer helpers) — not exported
 src/styling/                # styling modules (see list below); only styled, theme and SxProps are exported
 ```
 
@@ -146,6 +151,8 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `css` — the styling seam (`css`, `keyframes`, types, Emotion's theme provider/hook).
 - `sx` — `SxProps` and `WithSx`, which merges own styles, consumer `css` and `sx` for a part root.
 - `theme` — the token `theme` and the Emotion `Theme` augmentation (public).
+- `theme-scope` — ThemeRoot's scope context (`useThemeScope`), `themeScopeStyle` and `ThemeBoundary`
+  for portaled content.
 - `styled` — re-export of `@emotion/styled` for apps (public; never used by components).
 - `media` — `REDUCED_MOTION` and `FORCED_COLORS` query keys; payloads stay component-local.
 - `focus-ring` — `focusRingOutset` / `focusRingInset` declarations; the selector stays local.

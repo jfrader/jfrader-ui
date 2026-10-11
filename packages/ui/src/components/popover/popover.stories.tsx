@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Popover, type PopoverProps } from './index';
 
@@ -255,6 +256,7 @@ export const LightTheme: Story = {
   play: async ({ canvasElement }) => {
     const { trigger, popover } = await openPopover(canvasElement);
     await expect(popover).toBeVisible();
+    await expectThemedSurface(popover, 'light');
     await userEvent.click(trigger);
     await expectClosed(canvasElement, trigger);
   },

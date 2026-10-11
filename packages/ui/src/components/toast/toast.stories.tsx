@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Toast, useToast, type ToastOptions, type ToastProviderProps } from './index';
 
@@ -305,5 +306,6 @@ export const LightTheme: Story = {
     await expect(within(toast).getByRole('status')).toHaveAttribute('aria-atomic', 'true');
     await expectSettled(toast);
     await expect(toast).toBeVisible();
+    await expectThemedSurface(toast, 'light');
   },
 };

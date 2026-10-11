@@ -28,7 +28,6 @@ import {
 import {
   FloatingFocusManager,
   FloatingList,
-  FloatingPortal,
   useClick,
   useDismiss,
   useInteractions,
@@ -46,6 +45,7 @@ import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbo
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useCollectionIndexRegistration, useCollectionListItem } from '../../utils/collection-registry';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -261,7 +261,7 @@ function MenuContent({ ref, style, children, className, sx, ...rest }: MenuConte
   if (!open) return null;
 
   return (
-    <FloatingPortal>
+    <OverlayPortal>
       {/* Non-modal: no trap; Tab closes via focus-out. Focus return is explicit (see
           requestClose) — returnFocus is off so an outside press never transiently focuses
           the trigger. */}
@@ -288,7 +288,7 @@ function MenuContent({ ref, style, children, className, sx, ...rest }: MenuConte
           )}
         </WithSx>
       </FloatingFocusManager>
-    </FloatingPortal>
+    </OverlayPortal>
   );
 }
 
