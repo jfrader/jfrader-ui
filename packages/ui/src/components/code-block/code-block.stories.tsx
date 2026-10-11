@@ -179,7 +179,18 @@ export const LongLines: Story = {
     await expect(pre.scrollLeft).toBeGreaterThan(0);
   },
 };
-export const TrailingNewline: Story = { ...LineNumbers };
+export const TrailingNewline: Story = {
+  args: { code: 'one\ntwo\n', lineNumbers: true },
+  play: async ({ canvas, canvasElement }) => {
+    // A trailing newline must not invent a phantom gutter number, and the copy payload keeps it.
+    await expect(gutter(canvasElement)?.textContent).toBe('1\n2');
+    const writeText = fn(async (_text: string) => {});
+    await withClipboard(canvasElement, writeText, async () => {
+      await canvas.getByRole('button', { name: 'Copy code' }).click();
+      await expect(writeText).toHaveBeenLastCalledWith('one\ntwo\n');
+    });
+  },
+};
 export const CRLF: Story = {
   args: { code: 'one\r\ntwo\r\nthree\r\n', maxLines: 1, lineNumbers: true },
   play: async ({ canvasElement }) => {
@@ -362,7 +373,8 @@ export const ConsumerStylePrecedence: Story = {
   },
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('section')!;
-    await expect(getComputedStyle(root).paddingInlineStart).toBe('8px');
+    // Layout lengths are not DPR-snapped: compare numerically, derived from the token scale (space[2] = 8).
+    await expect(parseFloat(getComputedStyle(root).paddingInlineStart)).toBe(8);
     await expect(getComputedStyle(root).letterSpacing).not.toBe('normal');
     await expect(getComputedStyle(source(canvasElement)).fontWeight).toBe('600');
     await expect(root.querySelector('[data-ui="code-block-label"]')).toHaveClass('consumer-label');
@@ -407,7 +419,10 @@ export const ReducedMotion: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Show all 6 lines' }));
     await expect(source(canvasElement).textContent).toBe(LONG_SOURCE);
-    await expect(getComputedStyle(source(canvasElement)).transitionDuration).toBe('0s');
+    // Real assertion: the disclosure region runs with no animations or transitions. (The copy
+    // button's idle ring is outside this subtree.)
+    const frame = canvasElement.querySelector('[data-ui="code-block-source-frame"]')!;
+    await expect(frame.getAnimations({ subtree: true })).toHaveLength(0);
   },
 };
 export const KeyboardCopyScrollToggle: Story = {
