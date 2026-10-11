@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Tooltip, type TooltipProps } from './index';
 
@@ -176,12 +177,25 @@ export const Controlled: Story = {
   },
 };
 
+export const LightThemeOpen: Story = {
+  decorators: [withLightTheme],
+  args: { defaultOpen: true },
+  render: (args) => <TooltipExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const tooltip = await bodyOf(canvasElement).findByRole('tooltip');
+    await expect(tooltip).toBeVisible();
+    await expect(canvasElement.contains(tooltip)).toBe(false);
+    await expectThemedSurface(tooltip, 'light', vars.color.bgSoft);
+  },
+};
+
 export const LightTheme: Story = {
   decorators: [withLightTheme],
   render: (args) => <TooltipExample {...args} />,
   play: async ({ canvasElement }) => {
     const { tooltip } = await tabToOpen(canvasElement);
     await expect(tooltip).toBeVisible();
+    await expectThemedSurface(tooltip, 'light', vars.color.bgSoft);
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);
   },

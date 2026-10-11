@@ -93,8 +93,6 @@ Set the app theme with `data-theme="dark"` or `data-theme="light"` on `<html>`.
 
 Wrap a subtree in `ThemeRoot theme="light"` (or `"dark"`) to theme only that subtree, such as an embedded widget.
 
-Tooltip, Popover, Menu and Select overlays portaled to `body` keep the page theme, so scoped theming applies to inline content; to theme a subtree including overlays, set `data-theme` on `<html>`.
-
 Set the attribute before first paint:
 
 ```html
@@ -118,6 +116,27 @@ html[data-theme='light'] {
 ```
 
 To switch at runtime, set `document.documentElement.dataset.theme` and store the value under the same `localStorage` key.
+
+### Scoped theming and overlays
+
+Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast portal their content to `body`. Inside a `ThemeRoot`, that content takes the nearest `ThemeRoot`'s `theme`, and follows it when the theme changes while open. Dialog renders in place and inherits it directly.
+
+Only the theme name carries over. CSS you set on an element around the overlay, such as overriding a `--ui-*` variable on a wrapper, does not reach portaled content.
+
+To keep overlays inside a layout boundary (a modal `<dialog>`'s top layer, an embedded widget's own element), give the `ThemeRoot` a `portalContainer`:
+
+```tsx
+const [overlayHost, setOverlayHost] = useState<HTMLElement | null>(null);
+
+<ThemeRoot theme="light" portalContainer={overlayHost}>
+  <Select>{/* … */}</Select>
+  <div ref={setOverlayHost} />
+</ThemeRoot>;
+```
+
+- Omitted: overlays use the enclosing `ThemeRoot`'s container, or `body`.
+- `null`: overlays render once the element is set.
+- An element: overlays render into it. Set it once; switching to a different element later is not supported.
 
 ## Styling your app
 

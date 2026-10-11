@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Select, type SelectProps } from './index';
 
@@ -115,6 +116,31 @@ async function focusTrigger(canvasElement: HTMLElement) {
 export const Default: Story = {
   args: { defaultValue: 'apple', onValueChange: fn() },
   render: (args) => <SelectExample {...args} />,
+  parameters: {
+    docs: {
+      source: {
+        code: `function FruitPicker() {
+  const labelId = useId();
+
+  return (
+    <>
+      <span id={labelId}>Fruit</span>
+      <Select defaultValue="apple">
+        <Select.Trigger aria-labelledby={labelId}>
+          <Select.Value placeholder="Pick a fruit" />
+        </Select.Trigger>
+        <Select.Content>
+          <Select.Item value="apple">Apple</Select.Item>
+          <Select.Item value="banana" disabled>Banana</Select.Item>
+          <Select.Item value="cherry">Cherry</Select.Item>
+        </Select.Content>
+      </Select>
+    </>
+  );
+}`,
+      },
+    },
+  },
   play: async ({ args, canvasElement }) => {
     const trigger = getTrigger(canvasElement);
     await expect(trigger.tagName).toBe('BUTTON');
@@ -479,13 +505,29 @@ export const Open: Story = {
   },
 };
 
+export const LightThemeOpen: Story = {
+  decorators: [withLightTheme],
+  args: { defaultOpen: true, defaultValue: 'apple' },
+  render: (args) => <SelectExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const listbox = await bodyOf(canvasElement).findByRole('listbox', { name: LABEL });
+    await expect(listbox).toBeVisible();
+    await expect(canvasElement.contains(listbox)).toBe(false);
+    await expectThemedSurface(listbox, 'light');
+  },
+};
+
 export const LightTheme: Story = {
   decorators: [withLightTheme],
   args: { defaultValue: 'apple' },
   render: (args) => <SelectExample {...args} />,
   play: async ({ canvasElement }) => {
     await userEvent.click(getTrigger(canvasElement));
-    await expect(await bodyOf(canvasElement).findByRole('listbox')).toBeVisible();
+    const listbox = await bodyOf(canvasElement).findByRole('listbox');
+    await expect(listbox).toBeVisible();
+    // The listbox is portaled out of the light ThemeRoot yet paints the light surface.
+    await expect(canvasElement.contains(listbox)).toBe(false);
+    await expectThemedSurface(listbox, 'light');
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);
   },

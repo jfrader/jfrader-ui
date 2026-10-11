@@ -1,5 +1,5 @@
 // Non-modal popover with dialog semantics (role="dialog", no aria-modal), positioned by
-// @floating-ui/react and portaled to the body.
+// @floating-ui/react and portaled to the body (or the ThemeRoot's `portalContainer`).
 // Keyboard map: Enter/Space on the trigger toggles; Escape closes; Tab moves through the
 // content and out without closing it (non-modal).
 // Focus contract: non-modal focus management (FloatingFocusManager modal={false},
@@ -21,7 +21,6 @@ import {
 } from 'react';
 import {
   FloatingFocusManager,
-  FloatingPortal,
   useClick,
   useDismiss,
   useInteractions,
@@ -35,6 +34,7 @@ import { css } from '../../styling/css';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -149,7 +149,7 @@ function PopoverContent({ ref, style, className, sx, ...rest }: PopoverContentPr
   if (!open) return null;
 
   return (
-    <FloatingPortal>
+    <OverlayPortal>
       {/* Non-modal: keeps the page's tab order across the portal (Tab reaches the content),
           while suppressing initial focus, the trap and automatic focus return. */}
       <FloatingFocusManager
@@ -171,7 +171,7 @@ function PopoverContent({ ref, style, className, sx, ...rest }: PopoverContentPr
           )}
         </WithSx>
       </FloatingFocusManager>
-    </FloatingPortal>
+    </OverlayPortal>
   );
 }
 

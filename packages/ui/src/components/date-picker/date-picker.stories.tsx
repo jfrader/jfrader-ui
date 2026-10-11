@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { DatePicker, type DatePickerProps } from './index';
 
@@ -99,6 +100,16 @@ async function focusInput(canvasElement: HTMLElement) {
 export const Default: Story = {
   args: { defaultValue: '2026-10-12', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <DatePickerExample {...args} />,
+  parameters: {
+    docs: {
+      source: {
+        code: `<DatePicker locale="en-US" defaultValue="2026-10-12">
+  <DatePicker.Input label="Departure" />
+  <DatePicker.Popup />
+</DatePicker>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement }) => {
     const input = getInput(canvasElement);
     await expect(input.tagName).toBe('INPUT');
@@ -504,7 +515,9 @@ export const LightTheme: Story = {
   args: { defaultOpen: true, defaultValue: '2026-10-12' },
   render: (args) => <DatePickerExample {...args} />,
   play: async ({ canvasElement }) => {
-    await expect(await bodyOf(canvasElement).findByRole('dialog', { name: LABEL })).toBeVisible();
+    const popup = await bodyOf(canvasElement).findByRole('dialog', { name: LABEL });
+    await expect(popup).toBeVisible();
+    await expectThemedSurface(popup, 'light');
     await expectDayFocused(canvasElement, 'October 12, 2026');
   },
 };
