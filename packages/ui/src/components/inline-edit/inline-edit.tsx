@@ -13,8 +13,8 @@
 // always shows the persisted value (the controlled prop), never the draft. A failed save keeps
 // the draft open with a status message; one closed by the parent mid-save offers Retry. An
 // external value update or unmount while a save is pending drops that save's settlement.
-// Keyboard and button saves/cancels return focus to the trigger after an accepted close while
-// focus is still inside the widget; leaving saves never move focus.
+// Keyboard and button saves/cancels return focus to the trigger once the close is accepted, even
+// later, unless focus has moved elsewhere meanwhile; leaving saves never move focus.
 import {
   useEffect,
   useId,
@@ -491,6 +491,19 @@ export function InlineEdit({
   openRef.current = isOpen;
   const committedRef = useRef(committed);
 
+  const focusInside = () => {
+    const root = rootRef.current;
+    const active = root?.ownerDocument.activeElement;
+    return root != null && active != null && root.contains(active);
+  };
+
+  const focusUnclaimed = () => {
+    const root = rootRef.current;
+    if (!root) return false;
+    const { activeElement, body } = root.ownerDocument;
+    return activeElement === null || activeElement === body || root.contains(activeElement);
+  };
+
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -509,15 +522,19 @@ export function InlineEdit({
     setPhase('idle');
   }, [committed]);
 
+  // An intent waits for its transition: the parent may accept the open or close request later.
+  // It applies only while focus is still unclaimed (inside the widget or dropped with a removed
+  // part), so a late acceptance never pulls focus back from wherever the user went.
   useLayoutEffect(() => {
-    if (focusIntent === null) return;
+    if (focusIntent === null || (focusIntent === 'trigger') === isOpen) return;
     setFocusIntent(null);
+    if (!focusUnclaimed()) return;
     if (focusIntent === 'trigger') {
-      if (!isOpen) triggerRef.current?.focus();
+      triggerRef.current?.focus();
       return;
     }
     const control = controlElement.current;
-    if (!isOpen || !control) return;
+    if (!control) return;
     control.focus();
     if (focusIntent === 'select') control.select();
     else control.setSelectionRange(control.value.length, control.value.length);
@@ -550,12 +567,6 @@ export function InlineEdit({
   const errorContent = hasExternalError ? error : invalid;
   const hasError = isRenderable(errorContent);
   const hasDescription = isRenderable(description);
-
-  const focusInside = () => {
-    const root = rootRef.current;
-    const active = root?.ownerDocument.activeElement;
-    return root != null && active != null && root.contains(active);
-  };
 
   const persist = (next: string, returnFocus: boolean) => {
     const run = {};
@@ -592,9 +603,9 @@ export function InlineEdit({
     requestOpen(false);
   };
 
-  const save = (returnFocus: boolean) => {
+  // The one gate for every persistence attempt: editor saves and Retry.
+  const submit = (next: string, returnFocus: boolean) => {
     if (!editable || saving || runRef.current !== null) return;
-    const next = normalize(draft);
     if (next === committed) {
       setInvalid(null);
       setPhase('idle');
@@ -612,18 +623,22 @@ export function InlineEdit({
     persist(next, returnFocus);
   };
 
+  const save = (returnFocus: boolean) => submit(normalize(draft), returnFocus);
+
+  /** Returns whether the cancel was handled. */
   const cancel = () => {
-    if (!editable || saving) return;
+    if (!editable || saving) return false;
     setDraft(committed);
     setInvalid(null);
     if (phase === 'failed') setPhase('idle');
     setFailedDraft(null);
     close(true);
+    return true;
   };
 
+  // The failed draft was normalized when it was first saved.
   const retry = () => {
-    if (!editable || saving || failedDraft === null) return;
-    persist(failedDraft, true);
+    if (failedDraft !== null) submit(failedDraft, true);
   };
 
   const handleTriggerClick = () => {
@@ -652,8 +667,10 @@ export function InlineEdit({
 
   const handleEditorKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Escape' || event.defaultPrevented || composing.current || isComposing(event)) return;
+    if (!cancel()) return;
+    // A handled Escape belongs to the editor; an enclosing overlay must not dismiss with it.
     event.preventDefault();
-    cancel();
+    event.stopPropagation();
   };
 
   const handleCompositionStart = (event: CompositionEvent<ControlElement>) => {
@@ -672,8 +689,8 @@ export function InlineEdit({
     onBlur?.(event);
     // openRef: an editor removed by a close must not save from its stale handler.
     if (!openRef.current || !saveOnBlur || composing.current) return;
-    const next = event.relatedTarget;
-    if (next instanceof Node && event.currentTarget.contains(next)) return;
+    // contains() works across documents, unlike an instanceof check against this window's Node.
+    if (event.currentTarget.contains(event.relatedTarget)) return;
     if (event.currentTarget.ownerDocument.activeElement === event.target) return;
     save(false);
   };

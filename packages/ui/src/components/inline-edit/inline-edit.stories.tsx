@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fireEvent, fn, waitFor } from 'storybook/test';
+import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -164,6 +165,109 @@ function ParentControls(props: InlineEditProps) {
   );
 }
 ParentControls.displayName = 'ParentControlledInlineEdit';
+
+/** The parent holds each open request and applies it only when Apply is pressed. */
+function DeferredOpenField(props: InlineEditProps) {
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState<boolean | null>(null);
+  return (
+    <>
+      <InlineEdit
+        {...props}
+        open={open}
+        onOpenChange={(next) => {
+          props.onOpenChange?.(next);
+          setPending(next);
+        }}
+      />
+      <button
+        style={FIXTURE_BUTTON}
+        type="button"
+        onMouseDown={keepFocus}
+        onClick={() => {
+          if (pending !== null) setOpen(pending);
+          setPending(null);
+        }}
+      >
+        Apply request
+      </button>
+      <button style={FIXTURE_BUTTON} type="button">
+        Elsewhere
+      </button>
+    </>
+  );
+}
+DeferredOpenField.displayName = 'DeferredOpenInlineEdit';
+
+/** An enclosing layer that dismisses on Escape, counting the presses it receives. */
+function EscapeLayer(props: InlineEditProps) {
+  const [escapes, setEscapes] = useState(0);
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') setEscapes((count) => count + 1);
+  };
+  return (
+    <div onKeyDown={handleKeyDown}>
+      <InlineEdit {...props} />
+      <InlineEdit
+        {...props}
+        label="Vetoed"
+        controlProps={{ onKeyDown: (event) => event.key === 'Escape' && event.preventDefault() }}
+      />
+      <output data-testid="layer-escapes">{escapes}</output>
+    </div>
+  );
+}
+EscapeLayer.displayName = 'EscapeLayerInlineEdit';
+
+/** The parent can close the editor, report a conflict or tighten validation after a failed save. */
+function RetryPolicyField(props: InlineEditProps) {
+  const [open, setOpen] = useState(false);
+  const [conflict, setConflict] = useState(false);
+  const [requireName, setRequireName] = useState(false);
+  return (
+    <>
+      <InlineEdit
+        {...props}
+        open={open}
+        onOpenChange={(next) => {
+          props.onOpenChange?.(next);
+          setOpen(next);
+        }}
+        error={conflict ? 'That name is taken.' : undefined}
+        validate={requireName ? (next) => (next.trim() ? null : 'Enter a name') : undefined}
+      />
+      <button style={FIXTURE_BUTTON} type="button" onClick={() => setOpen(false)}>
+        Close editor
+      </button>
+      <button style={FIXTURE_BUTTON} type="button" aria-pressed={conflict} onClick={() => setConflict(!conflict)}>
+        Report conflict
+      </button>
+      <button style={FIXTURE_BUTTON} type="button" aria-pressed={requireName} onClick={() => setRequireName(true)}>
+        Require a name
+      </button>
+    </>
+  );
+}
+RetryPolicyField.displayName = 'RetryPolicyInlineEdit';
+
+/** Renders the widget into an iframe document, the other realm a focus target can come from. */
+function FrameField(props: InlineEditProps) {
+  const [body, setBody] = useState<HTMLElement | null>(null);
+  return (
+    <>
+      <iframe title="Embedded editor" ref={(frame) => setBody(frame?.contentDocument?.body ?? null)} />
+      {body &&
+        createPortal(
+          <>
+            <InlineEdit {...props} />
+            <button type="button">After</button>
+          </>,
+          body,
+        )}
+    </>
+  );
+}
+FrameField.displayName = 'FrameInlineEdit';
 
 export const Default: Story = {
   play: async ({ canvas, canvasElement }) => {
@@ -341,6 +445,34 @@ export const LeaveSaves: Story = {
     await expect(editor.ownerDocument.activeElement).toBe(editor);
     await expect(args.onSave).toHaveBeenCalledTimes(3);
     await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+  },
+};
+
+export const LeaveInFrame: Story = {
+  args: { onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <FrameField {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const frame = canvasElement.querySelector('iframe')!;
+    const frameDoc = frame.contentDocument!;
+    const inFrame = within(frameDoc.body);
+    await waitFor(() => expect(inFrame.getByRole('button', { name: 'Edit Project name: Apollo' })).toBeVisible());
+    fireEvent.click(inFrame.getByRole('button', { name: 'Edit Project name: Apollo' }));
+    const editor = inFrame.getByRole('textbox') as HTMLInputElement;
+    await expect(frameDoc.activeElement).toBe(editor);
+    fireEvent.change(editor, { target: { value: 'Zeus' } });
+
+    // Focus moving to an action inside the frame is not a leave.
+    inFrame.getByRole('button', { name: 'Save' }).focus();
+    await expect(args.onSave).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(inFrame.getByRole('textbox')).toHaveValue('Zeus');
+
+    // Focus moving past the widget in the frame is.
+    inFrame.getByRole('button', { name: 'After' }).focus();
+    await expect(args.onSave).toHaveBeenCalledTimes(1);
+    await expect(args.onSave).toHaveBeenLastCalledWith('Zeus');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('Zeus');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
   },
 };
 
@@ -575,6 +707,43 @@ export const RetryResolves: Story = {
   },
 };
 
+export const RetryGuards: Story = {
+  args: { onSave: fn(() => Promise.reject(new Error('Offline'))), onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <RetryPolicyField {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const onSave = args.onSave as Spy;
+    const save = deferred();
+    onSave.mockImplementationOnce(() => save.promise);
+    await userEvent.tab();
+    await userEvent.keyboard('{Enter}{Backspace}{Enter}');
+    await userEvent.click(canvas.getByRole('button', { name: 'Close editor' }));
+    save.reject(new Error('Offline'));
+    const retry = await canvas.findByRole('button', { name: 'Retry save' });
+    onSave.mockImplementation(() => Promise.resolve());
+
+    // An external error that arrived after the failure blocks Retry.
+    const conflict = canvas.getByRole('button', { name: 'Report conflict' });
+    await userEvent.click(conflict);
+    await userEvent.click(retry);
+    await expect(onSave).toHaveBeenCalledTimes(1);
+    await expect(canvas.getByRole('alert')).toHaveTextContent('That name is taken.');
+    await expect(rootOf(canvasElement)).toHaveAttribute('data-phase', 'failed');
+
+    // So does validation that now rejects the failed draft.
+    await userEvent.click(conflict);
+    await userEvent.click(canvas.getByRole('button', { name: 'Require a name' }));
+    await userEvent.click(retry);
+    await expect(onSave).toHaveBeenCalledTimes(1);
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Enter a name');
+    await expect(canvas.getByRole('button', { name: 'Edit Project name: Apollo' })).toHaveAccessibleDescription(
+      'Enter a name',
+    );
+    await expect(canvas.getByRole('button', { name: 'Retry save' })).toBeVisible();
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+  },
+};
+
 export const Controlled: Story = {
   args: { onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <ControlledField {...args} />,
@@ -650,6 +819,118 @@ export const RejectedValue: Story = {
   },
 };
 
+export const DeferredOpen: Story = {
+  args: { onOpenChange: fn() },
+  render: (args) => <DeferredOpenField {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const apply = canvas.getByRole('button', { name: 'Apply request' });
+    await userEvent.tab();
+    const trigger = canvas.getByRole('button', { name: 'Edit Project name: Apollo' });
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+    // Pending: nothing opens and focus stays on the value.
+    await expect(canvas.queryByRole('textbox')).toBeNull();
+    await expectFocus(trigger);
+    // The parent accepts later: the editor still takes focus with the text selected.
+    await userEvent.click(apply);
+    const editor = canvas.getByRole('textbox') as HTMLInputElement;
+    await expectFocus(editor);
+    await expect([editor.selectionStart, editor.selectionEnd]).toEqual([0, 6]);
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(apply);
+
+    // Accepted after focus went elsewhere: the editor opens without taking focus.
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Project name: Apollo' }));
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(3);
+    const elsewhere = canvas.getByRole('button', { name: 'Elsewhere' });
+    await userEvent.click(elsewhere);
+    await userEvent.click(apply);
+    await expect(canvas.getByRole('textbox')).toBeVisible();
+    await expect(elsewhere.ownerDocument.activeElement).toBe(elsewhere);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(3);
+  },
+};
+
+export const DeferredClose: Story = {
+  args: { onOpenChange: fn(), onValueChange: fn() },
+  render: (args) => <DeferredOpenField {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const apply = canvas.getByRole('button', { name: 'Apply request' });
+    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
+    await userEvent.click(apply);
+    const editor = canvas.getByRole('textbox');
+    await userEvent.keyboard(' 2{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    // Pending: the editor stays, focused, with the persisted value.
+    await expect(editor).toHaveValue('Apollo');
+    await expectFocus(editor);
+    // The parent accepts later: focus returns to the value.
+    await userEvent.click(apply);
+    await expect(canvas.queryByRole('textbox')).toBeNull();
+    await expectFocus(canvas.getByRole('button', { name: 'Edit Project name: Apollo' }));
+
+    // Accepted after focus went elsewhere: focus stays where the user put it.
+    await userEvent.keyboard('{Enter}');
+    await userEvent.click(apply);
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(4);
+    const elsewhere = canvas.getByRole('button', { name: 'Elsewhere' });
+    // Leaving with the unchanged draft repeats the close request.
+    await userEvent.click(elsewhere);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(5);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await userEvent.click(apply);
+    await expect(canvas.queryByRole('textbox')).toBeNull();
+    await expect(elsewhere.ownerDocument.activeElement).toBe(elsewhere);
+    await expect(args.onSave).not.toHaveBeenCalled();
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const EscapeInsideLayer: Story = {
+  // No leave saves, so moving between the two editors requests nothing.
+  args: { defaultOpen: true, saveOnBlur: false, onOpenChange: fn() },
+  render: (args) => <EscapeLayer {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const documentEscape = fn();
+    const onDocumentKeyDown = (event: globalThis.KeyboardEvent) => event.key === 'Escape' && documentEscape();
+    const doc = canvasElement.ownerDocument;
+    doc.addEventListener('keydown', onDocumentKeyDown);
+    const layerEscapes = canvas.getByTestId('layer-escapes');
+    try {
+      // Composing: the editor leaves Escape to the layer.
+      const editor = canvas.getByRole('textbox', { name: 'Project name' });
+      await userEvent.click(editor);
+      fireEvent.keyDown(editor, { key: 'Escape', isComposing: true });
+      await expect(layerEscapes).toHaveTextContent('1');
+      await expect(documentEscape).toHaveBeenCalledTimes(1);
+      await expect(args.onOpenChange).not.toHaveBeenCalled();
+
+      // A consumer veto leaves the editor open and Escape to the layer.
+      await userEvent.click(canvas.getByRole('textbox', { name: 'Vetoed' }));
+      await userEvent.keyboard('{Escape}');
+      await expect(canvas.getByRole('textbox', { name: 'Vetoed' })).toBeVisible();
+      await expect(layerEscapes).toHaveTextContent('2');
+      await expect(documentEscape).toHaveBeenCalledTimes(2);
+      await expect(args.onOpenChange).not.toHaveBeenCalled();
+
+      // A handled cancel keeps Escape from the layer and the document.
+      await userEvent.click(editor);
+      await userEvent.keyboard('{Escape}');
+      await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+      await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+      await expect(canvas.queryByRole('textbox', { name: 'Project name' })).toBeNull();
+      await expect(layerEscapes).toHaveTextContent('2');
+      await expect(documentEscape).toHaveBeenCalledTimes(2);
+    } finally {
+      doc.removeEventListener('keydown', onDocumentKeyDown);
+    }
+  },
+};
+
 export const ExternalUpdateWhileEditing: Story = {
   args: { onValueChange: fn() },
   render: (args) => <ExternalValueField {...args} />,
@@ -674,23 +955,71 @@ export const StaleSave: Story = {
   args: { onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <ExternalValueField {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
-    const save = deferred();
-    (args.onSave as Spy).mockImplementation(() => save.promise);
+    const onSave = args.onSave as Spy;
+    const root = rootOf(canvasElement);
+    const settled = async (promise: Promise<void>) => {
+      await promise.catch(() => {});
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    };
+    const [staleA, saveB, staleC, saveD] = [deferred(), deferred(), deferred(), deferred()];
+    for (const run of [staleA, saveB, staleC, saveD]) onSave.mockImplementationOnce(() => run.promise);
+    const rename = canvas.getByRole('button', { name: 'Rename to Hermes' });
+
+    // Save A goes stale when the value changes elsewhere; the editor is editable again.
     await userEvent.tab();
     await userEvent.keyboard('{Enter}Zeus{Enter}');
-    await expect(rootOf(canvasElement)).toHaveAttribute('data-phase', 'saving');
-    await userEvent.click(canvas.getByRole('button', { name: 'Rename to Hermes' }));
-    // The external update drops the pending save: the editor is editable again.
+    await expect(root).toHaveAttribute('data-phase', 'saving');
+    await userEvent.click(rename);
     const editor = canvas.getByRole('textbox');
-    await expect(rootOf(canvasElement)).toHaveAttribute('data-phase', 'idle');
+    await expect(root).toHaveAttribute('data-phase', 'idle');
     await expect(editor).not.toHaveAttribute('readonly');
-    save.resolve();
-    await save.promise;
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await expect(editor).toHaveValue('Zeus');
+
+    // Save B starts; A resolving during B changes nothing.
+    await userEvent.clear(editor);
+    await userEvent.keyboard('Athena{Enter}');
+    await expect(onSave).toHaveBeenCalledTimes(2);
+    await expect(onSave).toHaveBeenLastCalledWith('Athena');
+    await expect(root).toHaveAttribute('data-phase', 'saving');
+    staleA.resolve();
+    await settled(staleA.promise);
+    await expect(root).toHaveAttribute('data-phase', 'saving');
+    await expect(editor).toHaveAttribute('readonly');
     await expect(args.onValueChange).not.toHaveBeenCalled();
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
-    await expect(editor).toHaveValue('Zeus');
-    await expect(rootOf(canvasElement)).toHaveAttribute('data-phase', 'idle');
+
+    // B settles and commits its own value only.
+    saveB.resolve();
+    await settled(saveB.promise);
+    await expect(root).toHaveAttribute('data-phase', 'saved');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('Athena');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await expectFocus(canvas.getByRole('button', { name: 'Edit Project name: Athena' }));
+
+    // C goes stale and fails only after D has saved: the failure is dropped.
+    await userEvent.keyboard('{Enter}Zeus{Enter}');
+    await expect(onSave).toHaveBeenCalledTimes(3);
+    await userEvent.click(rename);
+    await expect(root).toHaveAttribute('data-phase', 'idle');
+    await userEvent.clear(canvas.getByRole('textbox'));
+    await userEvent.keyboard('Ares{Enter}');
+    await expect(onSave).toHaveBeenCalledTimes(4);
+    await expect(onSave).toHaveBeenLastCalledWith('Ares');
+    saveD.resolve();
+    await settled(saveD.promise);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('Ares');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(4);
+    staleC.reject(new Error('Offline'));
+    await settled(staleC.promise);
+    await expect(root).toHaveAttribute('data-phase', 'saved');
+    await expect(statusOf(canvasElement)).toHaveTextContent('Saved');
+    await expect(canvas.queryByRole('button', { name: 'Retry save' })).toBeNull();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(4);
+    await expect(canvas.getByRole('button', { name: 'Edit Project name: Ares' })).toBeVisible();
   },
 };
 
@@ -942,13 +1271,14 @@ export const RefAndStyles: Story = {
     const rootRef = args.ref as Spy;
     await expect(rootRef.mock.calls.at(-1)?.[0]).toBe(root);
     await expect(root).toHaveClass('consumer-root');
-    // Own styles → slotProps → css → sx: sx wins over css.
-    await expect(getComputedStyle(root).paddingInlineStart).toBe('24px');
     const trigger = canvas.getByRole('button', { name: /^Edit/ });
     await expect(trigger).toHaveClass('consumer-trigger');
     const probe = canvasElement.ownerDocument.createElement('span');
     probe.style.color = vars.color.accentText;
+    probe.style.paddingInlineStart = vars.space[6];
     root.append(probe);
+    // Own styles → slotProps → css → sx: sx wins over css.
+    await expect(getComputedStyle(root).paddingInlineStart).toBe(getComputedStyle(probe).paddingInlineStart);
     await expect(getComputedStyle(trigger).color).toBe(getComputedStyle(probe).color);
     probe.remove();
 
