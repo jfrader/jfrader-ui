@@ -136,7 +136,9 @@ export const Icon: Story = {
     const rect = icon.getBoundingClientRect();
     await expect(rect.width).toBe(48);
     await expect(rect.height).toBe(48);
-    await expect(getComputedStyle(icon).borderTopWidth).toBe('1px');
+    await expect(getComputedStyle(icon).borderTopStyle).toBe('solid');
+    // Fractional devicePixelRatios compute authored 1px as e.g. 0.74419px; assert a real drawn border, not literal px.
+    await expect(parseFloat(getComputedStyle(icon).borderTopWidth)).toBeGreaterThan(0);
     await expect(icon.querySelector('svg')?.getBoundingClientRect().width).toBe(24);
   },
 };
@@ -612,7 +614,7 @@ export const PanelEdgeAndFocusRing: Story = {
     // The icon panel edge is a real border and the action focus ring a real outline, not shadows.
     const icon = getComputedStyle(getPart(root, 'icon')!);
     await expect(icon.borderTopStyle).toBe('solid');
-    await expect(icon.borderTopWidth).toBe('1px');
+    await expect(parseFloat(icon.borderTopWidth)).toBeGreaterThan(0);
     const button = canvas.getByRole('button', { name: 'Create project' });
     focusCanvasStart(canvasElement);
     await userEvent.tab();
