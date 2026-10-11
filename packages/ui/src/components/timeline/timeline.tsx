@@ -1,8 +1,9 @@
 'use client';
 
-// Semantics: a named `region` holding one ordered list per local calendar day, each list labelled
-// by a real day heading (`headingLevel`, default h3). Events are always shown newest first;
-// equal timestamps keep their input order and events with unusable dates trail in their own group.
+// Semantics: a named `region` holding one group per local calendar day, labelled by a real day
+// heading (`headingLevel`, default h3) and listing its events in an ordered list. Events are always
+// shown newest first; equal timestamps keep their input order and events with unusable dates trail
+// in their own group.
 // No feed/accordion role: rows are plain list items, and an event with `detail` turns its title
 // into a native disclosure button (`aria-expanded`/`aria-controls`) whose panel stays mounted and
 // `hidden` while collapsed.
@@ -267,6 +268,9 @@ function findDuplicates(ids: readonly string[]) {
   return [...duplicates];
 }
 
+/** Order- and repeat-insensitive identity of an id set. */
+const idSetKey = (ids: readonly string[]) => JSON.stringify([...new Set(ids)].sort());
+
 function relativeTime(epoch: number, now: number, distance: number, format: Formatters) {
   let value = (epoch - now) / MS_PER_SECOND;
   for (const [unit, limit] of RELATIVE_STEPS) {
@@ -355,12 +359,6 @@ const headingStyle = css({
   fontSize: vars.textSize.sm,
   fontWeight: vars.fontWeight.semibold,
   color: vars.color.text,
-});
-
-// Relative day words come lowercase from Intl ("today"); headings start with a capital.
-const dayLabelStyle = css({
-  display: 'inline-block',
-  '&::first-letter': { textTransform: 'uppercase' },
 });
 
 const dayCountStyle = css({
@@ -595,7 +593,19 @@ export function Timeline({
     onValueChange?.([...next]),
   );
   const openIds = new Set(open);
-  const toggle = (id: string) => requestOpen(openIds.has(id) ? open.filter((openId) => openId !== id) : [...open, id]);
+  const openKey = idSetKey(open);
+  // The id set last requested from the current open set; a request repeating it is not re-sent.
+  const lastRequest = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    lastRequest.current = null;
+  }, [openKey]);
+  const toggle = (id: string) => {
+    const next = openIds.has(id) ? open.filter((openId) => openId !== id) : [...open, id];
+    const nextKey = idSetKey(next);
+    if (nextKey === openKey || nextKey === lastRequest.current) return;
+    lastRequest.current = nextKey;
+    requestOpen(next);
+  };
 
   // What the previous commit showed: drives entry feedback, announcements, anchoring and focus repair.
   const committed = useRef<{ ids: ReadonlySet<string>; order: readonly string[]; newestEpoch: number | null } | null>(
@@ -728,6 +738,10 @@ export function Timeline({
   const empty = events.length === 0;
   const emptyId = `${baseId}-empty`;
   const Heading = `h${headingLevel}` as const;
+  const name = {
+    'aria-label': ariaLabelProp ?? (ariaLabelledBy ? undefined : labels.region),
+    'aria-labelledby': ariaLabelledBy,
+  };
   const describedBy = [ariaDescribedBy, empty ? emptyId : undefined].filter(Boolean).join(' ') || undefined;
 
   return (
@@ -737,8 +751,7 @@ export function Timeline({
           {...rest}
           ref={mergedRef}
           role="region"
-          aria-label={ariaLabelProp ?? (ariaLabelledBy ? undefined : labels.region)}
-          aria-labelledby={ariaLabelledBy}
+          {...name}
           aria-describedby={describedBy}
           data-ui="timeline"
           data-size={size}
@@ -751,8 +764,9 @@ export function Timeline({
             ref={scrollerRef}
             data-ui="timeline-scroller"
             data-bounded={bounded ? '' : undefined}
-            // A bounded scroller must be scrollable from the keyboard even without disclosures.
-            tabIndex={bounded ? 0 : undefined}
+            // A bounded scroller must be scrollable from the keyboard even without disclosures, so it
+            // is a tab stop and carries the timeline's name.
+            {...(bounded ? { tabIndex: 0, role: 'group', ...name } : undefined)}
             style={bounded ? { maxBlockSize: maxHeight } : undefined}
             onScroll={captureAnchor}
             className={slotProps?.scroller?.className}
@@ -766,8 +780,11 @@ export function Timeline({
               groups.map((group) => {
                 const headingId = partId(baseId, 'day', group.key);
                 return (
+                  // A group, not a named section: one region landmark per day would flood landmark navigation.
                   <section
                     key={group.key}
+                    role="group"
+                    aria-labelledby={headingId}
                     data-ui="timeline-group"
                     data-day={group.key}
                     className={slotProps?.group?.className}
@@ -780,16 +797,13 @@ export function Timeline({
                       css={[headingStyle, slotProps?.heading?.css]}
                     >
                       {group.epoch === null ? (
-                        <span css={dayLabelStyle}>{dayHeading(group, formatters, labels)}</span>
+                        <span>{dayHeading(group, formatters, labels)}</span>
                       ) : (
-                        <time dateTime={group.key} css={dayLabelStyle}>
-                          {dayHeading(group, formatters, labels)}
-                        </time>
+                        <time dateTime={group.key}>{dayHeading(group, formatters, labels)}</time>
                       )}
                       <span css={dayCountStyle}>{labels.dayCount(group.rows.length)}</span>
                     </Heading>
                     <ol
-                      aria-labelledby={headingId}
                       data-ui="timeline-list"
                       className={slotProps?.list?.className}
                       css={[listStyle, slotProps?.list?.css]}

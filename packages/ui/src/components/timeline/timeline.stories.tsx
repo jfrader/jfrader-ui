@@ -226,7 +226,12 @@ export const Default: Story = {
     const lists = canvas.getAllByRole('list');
     await expect(lists.map((list) => within(list).getAllByRole('listitem').length)).toEqual([2, 2, 1]);
     await expect(lists[0]!.tagName).toBe('OL');
-    await expect(lists[1]).toHaveAccessibleName(`${relative.format(-1, 'day')} 2 events`);
+    // Each day group is named by its heading; days are groups, not extra landmarks.
+    const days = canvas.getAllByRole('group');
+    await expect(days).toEqual(parts(canvasElement, 'group'));
+    await expect(days[1]).toHaveAccessibleName(`${relative.format(-1, 'day')} 2 events`);
+    await expect(days[1]!.getAttribute('aria-labelledby')).toBe(parts(canvasElement, 'heading')[1]!.id);
+    await expect(canvas.getAllByRole('region')).toEqual([region]);
     const time = part(item(canvasElement, 'deploy'), 'time');
     await expect(time).toHaveAttribute('datetime', '2026-10-11T11:55:00.000Z');
     await expect(time.firstChild!.textContent).toBe(relative.format(-5, 'minute'));
@@ -432,8 +437,56 @@ export const RejectedControlled: Story = {
     await expect(deploy).toHaveAttribute('aria-expanded', 'false');
     await expect(controlled(deploy)).not.toBeVisible();
     await expect(deploy.ownerDocument.activeElement).toBe(deploy);
+    // The same id set again is not a new request.
     await userEvent.keyboard('{Enter}');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(deploy).toHaveAttribute('aria-expanded', 'false');
+    await expect(deploy.ownerDocument.activeElement).toBe(deploy);
+    const build = triggerOf(canvasElement, 'build');
+    await userEvent.click(build);
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['build']);
+    await expect(build).toHaveAttribute('aria-expanded', 'false');
+    await expect(controlled(build)).not.toBeVisible();
+  },
+};
+
+/** Story-only control that activates one disclosure twice before React re-renders. */
+function DoubleActivation(args: TimelineProps) {
+  return (
+    <>
+      <div css={toolbarStyle}>
+        <button
+          type="button"
+          css={fixtureStyle}
+          onClick={(event) => {
+            const timeline = event.currentTarget.parentElement!.nextElementSibling!;
+            const deploy = triggerOf(timeline, 'deploy');
+            deploy.click();
+            deploy.click();
+          }}
+        >
+          Open deploy twice
+        </button>
+      </div>
+      <Timeline {...args} />
+    </>
+  );
+}
+
+export const RepeatedRequest: Story = {
+  render: (args) => <DoubleActivation {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    // Both activations request the same id set from the same open state: one notification, one commit.
+    await userEvent.click(canvas.getByRole('button', { name: 'Open deploy twice' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['deploy']);
+    const deploy = triggerOf(canvasElement, 'deploy');
+    await expect(deploy).toHaveAttribute('aria-expanded', 'true');
+    // Once committed, the opposite request is new again.
+    await userEvent.click(deploy);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith([]);
     await expect(deploy).toHaveAttribute('aria-expanded', 'false');
   },
 };
@@ -461,12 +514,15 @@ export const AriaMerge: Story = {
     <div css={stackStyle}>
       <h2 id="history-heading">Recent changes</h2>
       <p id="history-hint">Times are UTC</p>
-      <Timeline {...args} />
-      <Timeline {...args} aria-label="Fallback history" aria-labelledby="missing-reference" />
+      <Timeline {...args} maxHeight="10rem" />
+      <Timeline {...args} maxHeight="10rem" aria-label="Fallback history" aria-labelledby="missing-reference" />
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const [labelled, fallback] = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="timeline"]'));
+    const [labelled, fallback] = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="timeline"]')) as [
+      HTMLElement,
+      HTMLElement,
+    ];
     await expect(labelled).toHaveAttribute('aria-labelledby', 'history-heading');
     await expect(labelled).not.toHaveAttribute('aria-label');
     await expect(labelled).toHaveAccessibleName('Recent changes');
@@ -474,6 +530,12 @@ export const AriaMerge: Story = {
     await expect(fallback).toHaveAttribute('aria-labelledby', 'missing-reference');
     await expect(fallback).toHaveAttribute('aria-label', 'Fallback history');
     await expect(fallback).toHaveAccessibleName('Fallback history');
+    // The focusable scroller carries the same external name relationships.
+    await expect(part(labelled, 'scroller')).toHaveAttribute('aria-labelledby', 'history-heading');
+    await expect(part(labelled, 'scroller')).not.toHaveAttribute('aria-label');
+    await expect(part(labelled, 'scroller')).toHaveAccessibleName('Recent changes');
+    await expect(part(fallback, 'scroller')).toHaveAttribute('aria-labelledby', 'missing-reference');
+    await expect(part(fallback, 'scroller')).toHaveAccessibleName('Fallback history');
   },
 };
 
@@ -639,10 +701,13 @@ export const LongContent: Story = {
 };
 
 export const Scrolling: Story = {
-  args: { maxHeight: '14rem' },
-  play: async ({ canvasElement, userEvent }) => {
+  args: { maxHeight: '14rem', 'aria-label': undefined },
+  play: async ({ canvas, canvasElement, userEvent }) => {
     const scroller = part(canvasElement, 'scroller');
     await expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
+    // Without an external name, the region and its focusable scroller share the labels.region fallback.
+    await expect(canvas.getByRole('region')).toHaveAccessibleName('Activity');
+    await expect(canvas.getByRole('group', { name: 'Activity' })).toBe(scroller);
     await userEvent.tab();
     await expectFocusRing(scroller);
     scroller.scrollTop = scroller.scrollHeight;
@@ -790,13 +855,15 @@ export const SlotStyling: Story = {
   render: (args) => <Timeline {...args} css={{ paddingInline: vars.space[2] }} />,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="timeline"]')!;
-    await expect(getComputedStyle(root).paddingInlineStart).toBe('20px');
+    const expectPx = (value: string, px: number) =>
+      expect(Math.abs(Number.parseFloat(value) - px)).toBeLessThan(GEOMETRY_TOLERANCE);
+    await expectPx(getComputedStyle(root).paddingInlineStart, 20);
     const heading = part(root, 'heading');
     await expect(heading).toHaveClass('custom-heading');
-    await expect(getComputedStyle(heading).paddingInlineStart).toBe('12px');
-    await expect(getComputedStyle(part(root, 'trigger')).paddingInlineStart).toBe('24px');
-    await expect(getComputedStyle(part(root, 'time')).fontWeight).toBe('600');
-    await expect(getComputedStyle(part(root, 'item')).paddingBlockEnd).toBe('40px');
+    await expectPx(getComputedStyle(heading).paddingInlineStart, 12);
+    await expectPx(getComputedStyle(part(root, 'trigger')).paddingInlineStart, 24);
+    await expect(Number(getComputedStyle(part(root, 'time')).fontWeight)).toBe(600);
+    await expectPx(getComputedStyle(part(root, 'item')).paddingBlockEnd, 40);
   },
 };
 
