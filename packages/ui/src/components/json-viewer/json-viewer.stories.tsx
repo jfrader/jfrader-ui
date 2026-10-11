@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { vars } from '@jfrader/tokens/vars';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -313,6 +314,65 @@ export const LongKeys: Story = {
   ),
 };
 export const EmptyContainers: Story = { args: { data: { object: {}, array: [] } } };
+const typedPayload: JsonValue = {
+  text: 'Ada',
+  total: 1234.5,
+  enabled: true,
+  missing: null,
+  tags: ['a'],
+  meta: { id: 1 },
+};
+const tokenColor = (anchor: HTMLElement, color: string) => {
+  const probe = anchor.ownerDocument.createElement('span');
+  probe.style.color = color;
+  anchor.append(probe);
+  const value = anchor.ownerDocument.defaultView!.getComputedStyle(probe).color;
+  probe.remove();
+  return value;
+};
+const typeColorsPlay: Story['play'] = async ({ canvas, canvasElement }) => {
+  const root = canvasElement.querySelector<HTMLElement>('[data-ui="json-viewer"]')!;
+  const view = canvasElement.ownerDocument.defaultView!;
+  const expected = {
+    string: vars.color.accentText,
+    number: vars.color.textMuted,
+    boolean: vars.color.warning,
+    null: vars.color.textMuted,
+  };
+  for (const [type, color] of Object.entries(expected)) {
+    const value = root.querySelector<HTMLElement>(`[data-ui="json-viewer-value"][data-type="${type}"]`)!;
+    await expect(view.getComputedStyle(value).color).toBe(tokenColor(root, color));
+  }
+  await expect(view.getComputedStyle(root.querySelector('[data-type="null"]')!).fontStyle).toBe('italic');
+  await expect(view.getComputedStyle(root.querySelector('[data-type="number"]')!).fontVariantNumeric).toBe(
+    'tabular-nums',
+  );
+  const key = root.querySelector<HTMLElement>('[data-ui="json-viewer-key"]')!;
+  await expect(view.getComputedStyle(key).color).toBe(tokenColor(root, vars.color.text));
+  await expect(canvas.getByRole('treeitem', { name: 'root: 6 keys' })).toBeInTheDocument();
+  await expect(canvas.getByRole('treeitem', { name: 'tags: 1 item' })).toBeInTheDocument();
+  await expect(canvas.getByRole('treeitem', { name: 'meta: 1 key' })).toBeInTheDocument();
+};
+export const TypeColors: Story = {
+  args: { data: typedPayload, defaultExpandDepth: 1 },
+  play: typeColorsPlay,
+};
+export const TypeColorsLight: Story = {
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  args: { data: typedPayload, defaultExpandDepth: 1 },
+  play: typeColorsPlay,
+};
+export const CountLabels: Story = {
+  args: {
+    data: { list: [1, 2], map: {} },
+    labels: { count: (count, type) => `${type}:${count}` },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('treeitem', { name: 'list: array:2' })).toBeInTheDocument();
+    await expect(canvas.getByRole('treeitem', { name: 'map: object:0' })).toBeInTheDocument();
+  },
+};
 export const LightTheme: Story = {
   decorators: [withLightTheme],
   globals: { theme: 'light' },
@@ -329,6 +389,9 @@ export const RTL: Story = {
     await expectFocus(canvasElement, canvas.getByRole('treeitem', { name: /^leaf:/ }));
     await userEvent.keyboard('{ArrowLeft}');
     await expectFocus(canvasElement, branch);
+    await expect(canvasElement.querySelector('[data-ui="json-viewer-details"]')).toHaveAttribute('dir', 'ltr');
+    const chip = canvasElement.querySelector('[data-ui="json-viewer-type"]')!;
+    await expect(canvasElement.ownerDocument.defaultView!.getComputedStyle(chip).unicodeBidi).toBe('plaintext');
   },
 };
 export const ForcedColors: Story = {
