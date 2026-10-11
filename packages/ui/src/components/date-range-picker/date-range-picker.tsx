@@ -947,12 +947,13 @@ function DateRangePickerPanel({
     [contentRef],
   );
   const mergedRef = useMergeRefs([refs.setFloating, ref, setContentNode]);
-  // Read once as the surface mounts: the trigger's effective direction, which the portal would
-  // otherwise lose.
-  const [triggerDirection] = useState(() => {
-    const reference = refs.domReference.current;
-    return reference?.ownerDocument.defaultView?.getComputedStyle(reference).direction;
-  });
+  // The trigger's effective direction, which the portal would otherwise lose. Read after the
+  // trigger attaches: a surface open on mount renders before the trigger's ref is set.
+  const triggerNode = floatingContext.elements.domReference;
+  const [triggerDirection, setTriggerDirection] = useState<string>();
+  useLayoutEffect(() => {
+    setTriggerDirection(triggerNode?.ownerDocument.defaultView?.getComputedStyle(triggerNode).direction);
+  }, [triggerNode]);
 
   const labelling =
     ariaLabelledBy !== undefined || ariaLabel !== undefined

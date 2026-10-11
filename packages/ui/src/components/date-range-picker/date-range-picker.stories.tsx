@@ -397,6 +397,25 @@ export const HoverThenKeyboard: Story = {
   },
 };
 
+/** A navigation key clamped at a bound still hands the preview to the keyboard. */
+export const HoverThenClampedKey: Story = {
+  args: { months: 1, min: '2026-10-05' },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    await findDialog(canvasElement);
+    await userEvent.click(day(canvasElement, '2026-10-05'));
+    await userEvent.hover(day(canvasElement, '2026-10-12'));
+    await expect(day(canvasElement, '2026-10-12')).toHaveAttribute('data-preview-end');
+
+    await userEvent.keyboard('{ArrowLeft}');
+    await expectDayFocused(canvasElement, '2026-10-05');
+    await expect(day(canvasElement, '2026-10-12')).not.toHaveAttribute('data-preview');
+    await expect(day(canvasElement, '2026-10-05')).toHaveAttribute('data-preview-end');
+    await expect(summary(canvasElement)).toHaveTextContent(summaryText({ start: '2026-10-05', end: '2026-10-05' }, 1));
+  },
+};
+
 export const Empty: Story = {
   args: { value: null, onValueChange: fn() },
   render: (args) => <RangeExample {...args} />,
@@ -1246,6 +1265,32 @@ export const TriggerDirRTL: Story = {
     await userEvent.click(getTrigger(canvasElement));
     await expect(await findDialog(canvasElement)).toHaveAttribute('dir', 'rtl');
     await expectRtlArrows(canvasElement, userEvent);
+  },
+};
+
+/** Initially open in an RTL subtree: the direction is read once the trigger is attached. */
+export const SubtreeRTLInitiallyOpen: Story = {
+  args: { defaultValue: WEEK, months: 1, presets: PRESETS, defaultOpen: true },
+  render: (args) => (
+    <div dir="rtl">
+      <RangeExample {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    await expect(getComputedStyle(canvasElement.ownerDocument.documentElement).direction).toBe('ltr');
+    await expect(await findDialog(canvasElement)).toHaveAttribute('dir', 'rtl');
+    await expectRtlArrows(canvasElement, userEvent);
+  },
+};
+
+/** Controlled open on mount with `dir` on the trigger alone. */
+export const TriggerDirRTLInitiallyOpen: Story = {
+  args: { defaultValue: WEEK, months: 1, presets: PRESETS, open: true, onOpenChange: fn() },
+  render: (args) => <RangeExample {...args} trigger={{ dir: 'rtl' }} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await expect(await findDialog(canvasElement)).toHaveAttribute('dir', 'rtl');
+    await expectRtlArrows(canvasElement, userEvent);
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
   },
 };
 

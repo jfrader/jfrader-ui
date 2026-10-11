@@ -29,7 +29,8 @@
 // Activation in range mode only reports `onDayActivate`; the parent owns the interval.
 // `tabStopDate` hands roving focus to the parent (several grids sharing one tab stop): the
 // grid's only tab stop is exactly that date when it is shown and enabled, else none. Keyboard
-// moves then report their destination through `onFocusedDateChange` (across months too) and
+// moves then report their destination through `onFocusedDateChange` (across months too, and
+// the focused day itself when a bound clamps the move) and
 // neither request visibleMonth nor move DOM focus: the parent reveals the month, passes the
 // new tabStopDate and focuses the matching day.
 import {
@@ -510,11 +511,11 @@ function CalendarGrid({
 
     event.preventDefault();
     const target = clampDate(move(from, { firstDayOfWeek, shiftKey: event.shiftKey }), min, max);
-    if (target === from) return;
     if (isParentFocus) {
       onFocusedDateChange(target);
       return;
     }
+    if (target === from) return;
     setFocus({ date: target, fallback: from });
     focusPendingRef.current = true;
     if (monthOf(target) !== visibleMonth) requestVisibleMonth(monthOf(target));

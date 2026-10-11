@@ -494,3 +494,19 @@ export const ParentTabStop: Story = {
     await expect(day(canvasElement, 'October 30, 2026')).toHaveFocus();
   },
 };
+
+/** A parent-owned move clamped to the focused day is still reported. */
+export const ParentTabStopClamped: Story = {
+  args: { visibleMonth: '2026-10', min: '2026-10-05', tabStopDate: '2026-10-05', onFocusedDateChange: fn() },
+  render: (args) => <CalendarExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await userEvent.click(day(canvasElement, 'October 5, 2026'));
+    await expect(args.onFocusedDateChange).toHaveBeenCalledTimes(1);
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(args.onFocusedDateChange).toHaveBeenCalledTimes(2);
+    await expect(args.onFocusedDateChange).toHaveBeenLastCalledWith('2026-10-05');
+    // Unrecognized keys report nothing.
+    await userEvent.keyboard('a');
+    await expect(args.onFocusedDateChange).toHaveBeenCalledTimes(2);
+  },
+};
