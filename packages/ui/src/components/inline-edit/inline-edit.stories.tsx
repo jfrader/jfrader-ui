@@ -897,6 +897,41 @@ export const DeferredAfterOutsidePress: Story = {
   },
 };
 
+export const DeferredAfterBlur: Story = {
+  args: { onOpenChange: fn() },
+  render: (args) => <DeferredOpenField {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const apply = canvas.getByRole('button', { name: 'Apply request' });
+    const trigger = canvas.getByRole('button', { name: 'Edit Project name: Apollo' });
+    const page = trigger.ownerDocument;
+    // A programmatic blur drops focus to the page with no press or focus elsewhere; a later open
+    // leaves it there.
+    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    trigger.blur();
+    await expect(page.activeElement).toBe(page.body);
+    await userEvent.click(apply);
+    const editor = canvas.getByRole('textbox');
+    await expect(editor).toBeVisible();
+    await expect(page.activeElement).toBe(page.body);
+
+    // A later close leaves it there too.
+    await userEvent.click(editor);
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    editor.blur();
+    // Leaving with the unchanged draft repeats the close request.
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(3);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await expect(page.activeElement).toBe(page.body);
+    await userEvent.click(apply);
+    await expect(canvas.queryByRole('textbox')).toBeNull();
+    await expect(page.activeElement).toBe(page.body);
+    await expect(args.onSave).not.toHaveBeenCalled();
+  },
+};
+
 export const DeferredClose: Story = {
   args: { onOpenChange: fn(), onValueChange: fn() },
   render: (args) => <DeferredOpenField {...args} />,

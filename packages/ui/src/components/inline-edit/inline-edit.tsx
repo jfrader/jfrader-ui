@@ -541,8 +541,8 @@ export function InlineEdit({
   }, [focusIntent, isOpen]);
 
   // Departing the widget drops a pending intent: focus landing outside, or a press outside that
-  // may move focus, even onto plain content. A part removed by the accepted transition drops focus
-  // without either, so it keeps the intent.
+  // may move focus, even onto plain content. A blur to nothing is caught by handleBlur. A part
+  // removed by the accepted transition drops focus without any of these, so it keeps the intent.
   useEffect(() => {
     const root = rootRef.current;
     if (focusIntent === null || !root) return;
@@ -704,15 +704,16 @@ export function InlineEdit({
     controlProps?.onCompositionEnd?.(event);
   };
 
-  // Only focus leaving the whole widget saves. A window blur leaves the element focused in its
-  // document, so it is not a leave.
+  // Only focus leaving the whole widget is a leave: it drops a pending focus intent and saves. A
+  // window blur leaves the element focused in its document, so it is not a leave.
   const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
     onBlur?.(event);
-    // openRef: an editor removed by a close must not save from its stale handler.
-    if (!openRef.current || !saveOnBlur || composing.current) return;
     // contains() works across documents, unlike an instanceof check against this window's Node.
     if (event.currentTarget.contains(event.relatedTarget)) return;
     if (event.currentTarget.ownerDocument.activeElement === event.target) return;
+    setFocusIntent(null);
+    // openRef: an editor removed by a close must not save from its stale handler.
+    if (!openRef.current || !saveOnBlur || composing.current) return;
     save(false);
   };
 
