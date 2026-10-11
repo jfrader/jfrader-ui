@@ -13,8 +13,10 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
+import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
@@ -34,7 +36,8 @@ export interface JsonViewerLabels {
   copied: string;
   copyFailed: string;
   invalidData: string;
-  count: (count: number) => string;
+  /** Child count chip; `type` tells objects (keys) from arrays (items). */
+  count: (count: number, type: 'object' | 'array') => string;
   match: (current: number, total: number, truncated: boolean) => string;
   showMore: (remaining: number) => string;
 }
@@ -96,6 +99,10 @@ interface VisibleNode {
   more?: number;
 }
 const TYPEAHEAD_MS = 500;
+const COUNT_NOUNS = {
+  object: { one: 'key', other: 'keys' },
+  array: { one: 'item', other: 'items' },
+} as const;
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_MAX_MATCHES = 2000;
 const positiveInteger = (value: number, fallback: number) =>
@@ -173,43 +180,93 @@ function inspect(data: JsonValue, rootName: string): Map<string, DataNode> | nul
   }
 }
 
+const SELECTION_BAR = '2px';
+const thinScrollbar = {
+  scrollbarWidth: 'thin',
+  scrollbarColor: `${vars.color.borderStrong} transparent`,
+} as const;
 const rootStyle = css({
+  ...raisedSurface,
   minInlineSize: 0,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.md,
-  background: vars.color.surface,
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
+  borderRadius: vars.radius.lg,
+  boxShadow: vars.shadow.raised,
   fontSize: vars.textSize.sm,
-  lineHeight: vars.lineHeight.base,
   overflow: 'hidden',
 });
 const toolbarStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
-  gap: vars.space[2],
-  padding: vars.space[3],
+  gap: vars.space[1],
+  padding: vars.space[2],
   borderBlockEnd: `1px solid ${vars.color.border}`,
 });
-const searchStyle = css({ flex: '1 1 12rem', minInlineSize: 0 });
+const searchWrapStyle = css({
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  flex: '1 1 12rem',
+  minInlineSize: 0,
+});
+const searchIconStyle = css({
+  position: 'absolute',
+  insetInlineStart: vars.space[3],
+  display: 'inline-flex',
+  color: vars.color.textMuted,
+  pointerEvents: 'none',
+  '& svg': { inlineSize: vars.space[4], blockSize: vars.space[4] },
+});
+const searchStyle = css({ flex: 1, minInlineSize: 0 });
+const searchControlStyle = css({
+  paddingInlineStart: `calc(${vars.space[3]} + ${vars.space[4]} + ${vars.space[2]})`,
+});
+const matchStatusStyle = css({
+  color: vars.color.textMuted,
+  fontSize: vars.textSize.xs,
+  fontVariantNumeric: 'tabular-nums',
+  whiteSpace: 'nowrap',
+  paddingInline: vars.space[1],
+  '&:empty': { paddingInline: 0 },
+});
+const actionsStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space[1],
+  marginInlineStart: 'auto',
+});
+const separatorStyle = css({
+  alignSelf: 'center',
+  inlineSize: '1px',
+  blockSize: vars.space[4],
+  marginInline: vars.space[1],
+  background: vars.color.border,
+});
+const actionStyle = css({
+  inlineSize: vars.space[8],
+  paddingInline: 0,
+  color: vars.color.textMuted,
+  '&:hover:not(:disabled)': { color: vars.color.text },
+  '& svg': { inlineSize: vars.space[4], blockSize: vars.space[4] },
+});
 const treeStyle = css({
+  ...thinScrollbar,
   overflow: 'auto',
   maxBlockSize: 'var(--json-max-height)',
   padding: vars.space[2],
   fontFamily: vars.font.mono,
-  '--json-indent': vars.space[4],
-  '@media (max-width: 40rem)': { '--json-indent': vars.space[3] },
+  '--json-indent': vars.space[5],
+  '--json-caret': vars.space[4],
+  '@media (max-width: 40rem)': { '--json-indent': vars.space[4] },
 });
 const itemStyle = css({ outline: 'none', '&:focus-visible > [data-ui="json-viewer-row"]': focusRingInset });
 const rowStyle = css({
   display: 'flex',
   alignItems: 'center',
-  gap: vars.space[2],
+  gap: vars.space[1],
   minBlockSize: 'var(--json-row-height)',
-  paddingInline: vars.space[2],
-  paddingInlineStart: 'calc(var(--json-depth) * var(--json-indent) + var(--ui-space-2))',
-  borderInlineStart: '2px solid transparent',
+  paddingInlineEnd: vars.space[3],
+  paddingInlineStart: `calc(var(--json-depth) * var(--json-indent) + ${vars.space[1]})`,
+  borderInlineStart: `${SELECTION_BAR} solid transparent`,
   borderRadius: vars.radius.sm,
   cursor: 'pointer',
   whiteSpace: 'pre',
@@ -219,8 +276,8 @@ const rowStyle = css({
   transitionTimingFunction: vars.motion.easeStandard,
   '&:hover': { background: vars.color.surfaceHover },
   '[aria-selected="true"] > &': {
-    borderInlineStartColor: vars.color.accentText,
-    background: vars.color.surfaceHover,
+    borderInlineStartColor: vars.color.accent,
+    background: vars.color.accentSoft,
   },
   [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: {
@@ -228,36 +285,150 @@ const rowStyle = css({
     '[aria-selected="true"] > &': { borderInlineStartColor: 'Highlight' },
   },
 });
-const caretStyle = css({
-  display: 'inline-block',
-  inlineSize: vars.space[4],
-  color: vars.color.textMuted,
-  '&:dir(rtl)': { transform: 'scaleX(-1)' },
+// Indent guide: a hairline under the owning row's caret, spanning the group's rows.
+const groupStyle = css({
+  position: 'relative',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    insetBlock: 0,
+    insetInlineStart: `calc(var(--json-depth) * var(--json-indent) + ${vars.space[1]} + ${SELECTION_BAR} + var(--json-caret) / 2)`,
+    inlineSize: '1px',
+    background: vars.color.border,
+    pointerEvents: 'none',
+  },
+  [FORCED_COLORS]: { '&::before': { background: 'GrayText' } },
 });
-const valueStyle = css({ color: vars.color.text });
-const typeStyle = css({ color: vars.color.textMuted, fontSize: vars.textSize.xs });
+const caretStyle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  inlineSize: 'var(--json-caret)',
+  color: vars.color.textMuted,
+  '&[data-state]::after': disclosureCaret,
+  '&[data-state="open"]::after': { transform: 'rotate(90deg)' },
+  '&[data-state="open"]:dir(rtl)::after': { transform: 'rotate(-90deg)' },
+  [REDUCED_MOTION]: { '&::after': { transitionDuration: '0s' } },
+});
+// JSON text runs resolve their own direction so RTL layouts keep keys, values and counts readable.
+const ownDirection = { unicodeBidi: 'plaintext' } as const;
+const keyStyle = css({ ...ownDirection, color: vars.color.text });
+const punctuationStyle = css({ color: vars.color.textMuted });
+const valueStyle = css({
+  ...ownDirection,
+  '&[data-type="string"]': { color: vars.color.accentText },
+  '&[data-type="number"]': { color: vars.color.textMuted, fontVariantNumeric: 'tabular-nums' },
+  '&[data-type="boolean"]': { color: vars.color.warning },
+  '&[data-type="null"]': { color: vars.color.textMuted, fontStyle: 'italic' },
+  [FORCED_COLORS]: { color: 'CanvasText' },
+});
+const chipStyle = css({
+  ...ownDirection,
+  display: 'inline-flex',
+  alignItems: 'center',
+  paddingInline: vars.space[2],
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.full,
+  color: vars.color.textMuted,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.xs,
+  fontVariantNumeric: 'tabular-nums',
+  lineHeight: vars.lineHeight.base,
+});
+const moreStyle = css({ color: vars.color.accentText, fontFamily: vars.font.sans });
 const markStyle = css({
-  color: vars.color.accentText,
-  background: 'transparent',
+  color: vars.color.text,
+  background: vars.color.accentSoft,
+  borderRadius: `calc(${vars.radius.sm} / 2)`,
   textDecoration: 'underline',
-  fontWeight: vars.fontWeight.medium,
-  [FORCED_COLORS]: { color: 'Highlight' },
+  textDecorationColor: vars.color.accentText,
+  textUnderlineOffset: '0.2em',
+  [FORCED_COLORS]: { color: 'Highlight', background: 'Canvas' },
 });
 const pathStyle = css({
+  display: 'grid',
+  gap: vars.space[2],
   padding: vars.space[3],
   borderBlockStart: `1px solid ${vars.color.border}`,
+  background: vars.color.surface,
+  minInlineSize: 0,
+});
+const pathHeaderStyle = css({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[2],
+  minInlineSize: 0,
+});
+const pathCodeStyle = css({
+  ...ownDirection,
+  fontFamily: vars.font.mono,
+  fontWeight: vars.fontWeight.medium,
   overflowWrap: 'anywhere',
   minInlineSize: 0,
 });
 const detailsStyle = css({
+  ...thinScrollbar,
   margin: 0,
+  padding: vars.space[3],
+  border: `1px solid ${vars.color.borderSubtle}`,
+  borderRadius: vars.radius.md,
+  background: vars.color.surfaceInset,
   whiteSpace: 'pre-wrap',
+  overflowWrap: 'anywhere',
   fontFamily: vars.font.mono,
+  fontSize: vars.textSize.xs,
   maxBlockSize: 'var(--json-max-height)',
   overflow: 'auto',
   '&:focus-visible': focusRingInset,
 });
-const statusStyle = css({ paddingInline: vars.space[3], '&:empty': { padding: 0 } });
+const statusStyle = css({
+  paddingInline: vars.space[3],
+  paddingBlock: vars.space[2],
+  borderBlockStart: `1px solid ${vars.color.border}`,
+  color: vars.color.textMuted,
+  fontSize: vars.textSize.xs,
+  '&:empty': { padding: 0, borderBlockStart: 0 },
+});
+const invalidStyle = css({ padding: vars.space[4], color: vars.color.textMuted });
+
+const icon = (children: ReactNode) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    focusable="false"
+  >
+    {children}
+  </svg>
+);
+const searchIcon = icon(
+  <>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
+  </>,
+);
+const previousIcon = icon(<path d="m18 15-6-6-6 6" />);
+const nextIcon = icon(<path d="m6 9 6 6 6-6" />);
+const expandIcon = icon(<path d="m7 15 5 5 5-5M7 9l5-5 5 5" />);
+const collapseIcon = icon(<path d="m7 20 5-5 5 5M7 4l5 5 5-5" />);
+const copyIcon = icon(
+  <>
+    <rect x="9" y="9" width="12" height="12" rx="2" />
+    <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+  </>,
+);
+const pathIcon = icon(
+  <>
+    <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
+    <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
+  </>,
+);
 
 /** Read-only JSON tree. Search overlays expansion/pages; clearing restores base state.
  * Each expanded treeitem OWNS its child role=group via aria-owns; the group is a DOM sibling
@@ -315,6 +486,7 @@ export function JsonViewer({
   const labelIdBase = useId();
   const nodes = useMemo(() => inspect(data, rootName), [data, rootName]);
   const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const plural = useMemo(() => new Intl.PluralRules(locale), [locale]);
   const labels: JsonViewerLabels = {
     tree: 'JSON',
     search: 'Search JSON',
@@ -327,7 +499,8 @@ export function JsonViewer({
     copied: 'Copied',
     copyFailed: 'Copy failed',
     invalidData: 'Invalid JSON data',
-    count: (count) => format.format(count),
+    count: (count, type) =>
+      `${format.format(count)} ${COUNT_NOUNS[type][plural.select(count) === 'one' ? 'one' : 'other']}`,
     match: (current, total, truncated) =>
       `${format.format(current)} / ${format.format(total)}${truncated ? '+' : ''}`,
     showMore: (remaining) => `Show more (${format.format(remaining)} remaining)`,
@@ -713,29 +886,41 @@ export function JsonViewer({
           css={[rowStyle, slotProps?.row?.css]}
           style={{ '--json-depth': row.level - 1 } as CSSProperties}
         >
-          <span data-ui="json-viewer-caret" aria-hidden="true" css={caretStyle}>
-            {node && isBranch(node) ? (isOpen(row.path) ? '▾' : '▸') : '·'}
-          </span>
+          <span
+            data-ui="json-viewer-caret"
+            data-state={node && isBranch(node) ? (isOpen(row.path) ? 'open' : 'closed') : undefined}
+            aria-hidden="true"
+            css={caretStyle}
+          />
           <span data-ui="json-viewer-label" id={labelId}>
             {row.more !== undefined ? (
-              labels.showMore(row.more)
+              <span css={moreStyle}>{labels.showMore(row.more)}</span>
             ) : (
               <>
-                {highlight(node!.key)}:{' '}
-                <span
-                  data-ui="json-viewer-value"
-                  className={slotProps?.value?.className}
-                  css={[valueStyle, slotProps?.value?.css]}
-                >
-                  {node!.type === 'object' || node!.type === 'array'
-                    ? labels.count(node!.children.length)
-                    : node!.type === 'string'
+                <span data-ui="json-viewer-key" css={keyStyle}>
+                  {highlight(node!.key)}
+                </span>
+                <span css={punctuationStyle}>:</span>{' '}
+                {node!.type === 'object' || node!.type === 'array' ? (
+                  <span
+                    data-ui="json-viewer-type"
+                    className={slotProps?.value?.className}
+                    css={[chipStyle, slotProps?.value?.css]}
+                  >
+                    {labels.count(node!.children.length, node!.type)}
+                  </span>
+                ) : (
+                  <span
+                    data-ui="json-viewer-value"
+                    data-type={node!.type}
+                    className={slotProps?.value?.className}
+                    css={[valueStyle, slotProps?.value?.css]}
+                  >
+                    {node!.type === 'string'
                       ? highlight(String(node!.value), true)
                       : highlight(JSON.stringify(node!.value))}
-                </span>{' '}
-                <span data-ui="json-viewer-type" css={typeStyle}>
-                  ({node!.type})
-                </span>
+                  </span>
+                )}
               </>
             )}
           </span>
@@ -747,7 +932,8 @@ export function JsonViewer({
             role="group"
             data-ui="json-viewer-group"
             className={slotProps?.group?.className}
-            css={slotProps?.group?.css}
+            css={[groupStyle, slotProps?.group?.css]}
+            style={{ '--json-depth': row.level - 1 } as CSSProperties}
           >
             {children.map((child) => rendered.get(child.path))}
           </div>
@@ -755,20 +941,23 @@ export function JsonViewer({
       </div>,
     );
   }
-  const action = (label: string, run: () => void, disabled = false) => (
+  const action = (label: string, icon: ReactNode, run: () => void, disabled = false) => (
     <Button
       data-ui="json-viewer-action"
       size="sm"
-      variant="outline"
+      variant="ghost"
+      aria-label={label}
+      title={label}
       className={slotProps?.action?.className}
-      css={slotProps?.action?.css}
+      css={[actionStyle, slotProps?.action?.css]}
       disabled={disabled}
       onClick={run}
       render={(props) => <button {...props} type="button" disabled={disabled} />}
     >
-      {label}
+      {icon}
     </Button>
   );
+  const separator = <span aria-hidden="true" css={separatorStyle} />;
   return (
     <WithSx className={className} styles={rootStyle} sx={sx}>
       {(className) => (
@@ -804,6 +993,7 @@ export function JsonViewer({
               aria-label={ariaLabel ?? labels.tree}
               aria-labelledby={labelledBy}
               aria-describedby={describedBy}
+              css={invalidStyle}
             >
               {labels.invalidData}
             </div>
@@ -815,53 +1005,67 @@ export function JsonViewer({
                 css={[toolbarStyle, slotProps?.toolbar?.css]}
               >
                 {searchable && (
-                  <>
+                  <span css={searchWrapStyle}>
+                    <span css={searchIconStyle} aria-hidden="true">
+                      {searchIcon}
+                    </span>
                     <TextField
                       data-ui="json-viewer-search"
                       ref={searchRef}
                       aria-label={labels.search}
+                      placeholder={labels.search}
                       value={query}
                       onValueChange={requestQuery}
                       size="sm"
                       className={slotProps?.search?.className}
                       sx={[searchStyle, slotProps?.search?.css]}
+                      slotProps={{ control: { css: searchControlStyle } }}
                     />
-                    <span
-                      data-ui="json-viewer-match-status"
-                      role="status"
-                      aria-live="polite"
-                      aria-atomic="true"
-                    >
-                      {query
-                        ? labels.match(
-                            Math.max(0, search.matches.indexOf(selected) + 1),
-                            search.matches.length,
-                            search.truncated,
-                          )
-                        : ''}
-                    </span>
-                    {action(labels.previousMatch, () => navigateMatch(-1, true), !search.matches.length)}
-                    {action(labels.nextMatch, () => navigateMatch(1, true), !search.matches.length)}
-                  </>
+                  </span>
                 )}
-                {action(labels.expandAll, () => {
-                  setOverlay({ ...searchOverlay, closed: new Set() });
-                  changeExpansion([...nodes.values()].filter(isBranch).map((node) => node.path));
-                })}
-                {action(labels.collapseAll, () => {
-                  setOverlay({ ...searchOverlay, closed: new Set(search.ancestors) });
-                  changeExpansion(isBranch(nodes.get(rootName)!) ? [rootName] : []);
-                })}
-                {copyable && (
-                  <>
-                    {action(labels.copyValue, () => {
-                      void copy('value');
-                    })}
-                    {action(labels.copyPath, () => {
-                      void copy('path');
-                    })}
-                  </>
-                )}
+                <span css={actionsStyle}>
+                  {searchable && (
+                    <>
+                      <span
+                        data-ui="json-viewer-match-status"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        css={matchStatusStyle}
+                      >
+                        {query
+                          ? labels.match(
+                              Math.max(0, search.matches.indexOf(selected) + 1),
+                              search.matches.length,
+                              search.truncated,
+                            )
+                          : ''}
+                      </span>
+                      {action(labels.previousMatch, previousIcon, () => navigateMatch(-1, true), !search.matches.length)}
+                      {action(labels.nextMatch, nextIcon, () => navigateMatch(1, true), !search.matches.length)}
+                      {separator}
+                    </>
+                  )}
+                  {action(labels.expandAll, expandIcon, () => {
+                    setOverlay({ ...searchOverlay, closed: new Set() });
+                    changeExpansion([...nodes.values()].filter(isBranch).map((node) => node.path));
+                  })}
+                  {action(labels.collapseAll, collapseIcon, () => {
+                    setOverlay({ ...searchOverlay, closed: new Set(search.ancestors) });
+                    changeExpansion(isBranch(nodes.get(rootName)!) ? [rootName] : []);
+                  })}
+                  {copyable && (
+                    <>
+                      {separator}
+                      {action(labels.copyValue, copyIcon, () => {
+                        void copy('value');
+                      })}
+                      {action(labels.copyPath, pathIcon, () => {
+                        void copy('path');
+                      })}
+                    </>
+                  )}
+                </span>
               </div>
               <div
                 ref={treeRef}
@@ -881,9 +1085,15 @@ export function JsonViewer({
                   className={slotProps?.pathBar?.className}
                   css={[pathStyle, slotProps?.pathBar?.css]}
                 >
-                  <code data-ui="json-viewer-path">{current.path}</code>{' '}
-                  <span data-ui="json-viewer-current-type">({current.type})</span>
-                  <pre data-ui="json-viewer-details" tabIndex={0} css={detailsStyle}>
+                  <span css={pathHeaderStyle}>
+                    <code data-ui="json-viewer-path" css={pathCodeStyle}>
+                      {current.path}
+                    </code>
+                    <span data-ui="json-viewer-current-type" css={chipStyle}>
+                      {current.type}
+                    </span>
+                  </span>
+                  <pre data-ui="json-viewer-details" dir="ltr" tabIndex={0} css={detailsStyle}>
                     {serializeDetails(current.value)}
                   </pre>
                 </div>
