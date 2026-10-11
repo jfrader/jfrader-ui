@@ -6,8 +6,8 @@
 // Keyboard: Enter/comma commit the draft; Backspace at caret 0 picks the last token and a second
 // press removes it; ArrowLeft/ArrowRight move the pick in list order (past the last token returns
 // to the input); Escape drops the pick; Tab follows DOM order: remove buttons, input, page. Composition
-// bypasses every shortcut. The committed list and the draft are independent controlled axes; a
-// native form reset restores the uncontrolled ones without callbacks.
+// bypasses every shortcut and the field-exit commit. The committed list and the draft are independent
+// controlled axes; a native form reset restores the uncontrolled ones without callbacks.
 import {
   useEffect,
   useMemo,
@@ -15,6 +15,7 @@ import {
   useState,
   type ChangeEvent,
   type ComponentPropsWithRef,
+  type CompositionEvent,
   type FocusEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -111,6 +112,18 @@ const EMPTY_TOKENS: readonly string[] = [];
 const DRAFT_MIN_INLINE_SIZE = '8ch';
 
 const trim = (draft: string) => draft.trim();
+
+// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
+declare const process: { env: { NODE_ENV?: string } };
+
+/** Entries that break the list contract: empty, not normalized, or a duplicate of an earlier entry. */
+const invalidTokens = (tokens: readonly string[], normalize: (draft: string) => string, collator: Intl.Collator) =>
+  tokens.filter(
+    (token, index) =>
+      token === '' ||
+      normalize(token) !== token ||
+      tokens.findIndex((other) => collator.compare(other, token) === 0) !== index,
+  );
 
 function defaultMessages(locale: Intl.LocalesArgument): TagInputMessages {
   const count = new Intl.NumberFormat(locale);
@@ -265,7 +278,7 @@ const inputStyle = css({
   fontFamily: vars.font.sans,
   fontSize: 'inherit',
   lineHeight: vars.lineHeight.base,
-  '&::placeholder': { color: vars.color.textSubtle },
+  '&::placeholder': { color: vars.color.textMuted },
   '&:disabled': { cursor: 'not-allowed' },
   [COARSE_POINTER]: { fontSize: vars.textSize.md },
 });
@@ -319,6 +332,8 @@ export function TagInput({
   onChange,
   onKeyDown,
   onBlur,
+  onCompositionStart,
+  onCompositionEnd,
   id: idProp,
   'aria-labelledby': ariaLabelledByProp,
   'aria-describedby': ariaDescribedByProp,
@@ -350,8 +365,11 @@ export function TagInput({
   const draft = draftState ?? '';
 
   const [picked, setPicked] = useState<string | null>(null);
-  const activeToken = picked !== null && tokens.includes(picked) ? picked : null;
   const [duplicateOf, setDuplicateOf] = useState<string | null>(null);
+  // A token that leaves the accepted list drops its pick and duplicate emphasis for good, so a
+  // later list that contains the same string again starts unpicked.
+  if (picked !== null && !tokens.includes(picked)) setPicked(null);
+  if (duplicateOf !== null && !tokens.includes(duplicateOf)) setDuplicateOf(null);
   const [notice, setNotice] = useState<Notice>({ text: '', rejection: false });
   const [pending, setPending] = useState<PendingNotice | null>(null);
 
@@ -361,6 +379,19 @@ export function TagInput({
   useEffect(() => {
     mounted.current = true;
   }, []);
+  const composing = useRef(false);
+
+  const warnedTokens = useRef<string | null>(null);
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    const invalid = invalidTokens(tokens, normalize, collator);
+    const warning =
+      invalid.length > 0
+        ? `TagInput: tokens must be unique, nonempty and normalized; invalid entries: ${JSON.stringify(invalid)}`
+        : null;
+    if (warning !== null && warning !== warnedTokens.current) console.warn(warning);
+    warnedTokens.current = warning;
+  }, [tokens, normalize, collator]);
 
   const requestTokens = (next: readonly string[]) => {
     if (!sameTokens(next, tokens)) requestTokensRaw(next);
@@ -373,14 +404,14 @@ export function TagInput({
       rejection,
     }));
 
-  // Added/Removed are announced once the accepted list shows the change; a rejected controlled
-  // request is never announced as success.
+  // Added/Removed are announced once the accepted list shows the change. The request waits for a
+  // delayed controlled acceptance until the next add/remove request or a form reset supersedes it,
+  // so a rejected request is never announced as success.
   useEffect(() => {
     if (!pending) return;
     const present = tokens.includes(pending.token);
-    if (pending.kind === 'added' ? present : !present) {
-      announce(pending.kind === 'added' ? text.added(pending.token) : text.removed(pending.token));
-    }
+    if (pending.kind === 'added' ? !present : present) return;
+    announce(pending.kind === 'added' ? text.added(pending.token) : text.removed(pending.token));
     setPending(null);
   }, [pending, tokens]);
 
@@ -404,6 +435,7 @@ export function TagInput({
         resetDraft();
         setPicked(null);
         setDuplicateOf(null);
+        setPending(null);
         setNotice({ text: '', rejection: false });
         input.value = current.inputValue === undefined ? initialDraft.current : current.draft;
       });
@@ -469,23 +501,23 @@ export function TagInput({
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     onKeyDown?.(event);
-    if (event.defaultPrevented || isComposing(event) || !editable) return;
+    if (event.defaultPrevented || composing.current || isComposing(event) || !editable) return;
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     const { key, currentTarget: input } = event;
     const atStart = input.selectionStart === 0 && input.selectionEnd === 0;
-    const index = activeToken === null ? -1 : tokens.indexOf(activeToken);
+    const index = picked === null ? -1 : tokens.indexOf(picked);
 
     if (separators.includes(key as TagInputSeparator)) {
-      // An empty Enter keeps native form submission; a separator comma is never typed.
-      if (key === 'Enter' && draft === '') return;
+      // An empty draft keeps native behavior (Enter submits the form, comma types).
+      if (draft === '') return;
       event.preventDefault();
       commit();
       return;
     }
     if (key === 'Backspace' || key === 'Delete') {
-      if (activeToken !== null) {
+      if (picked !== null) {
         event.preventDefault();
-        if (!event.repeat) remove(activeToken);
+        if (!event.repeat) remove(picked);
       } else if (key === 'Backspace' && atStart && tokens.length > 0) {
         event.preventDefault();
         if (!event.repeat) pick(tokens[tokens.length - 1]!);
@@ -493,18 +525,18 @@ export function TagInput({
       return;
     }
     if (event.shiftKey) return;
-    if (key === 'ArrowLeft' && (activeToken !== null || (atStart && tokens.length > 0))) {
+    if (key === 'ArrowLeft' && (picked !== null || (atStart && tokens.length > 0))) {
       event.preventDefault();
-      const previous = activeToken === null ? tokens[tokens.length - 1]! : tokens[Math.max(index - 1, 0)]!;
-      if (previous !== activeToken) pick(previous);
-    } else if (key === 'ArrowRight' && activeToken !== null) {
+      const previous = picked === null ? tokens[tokens.length - 1]! : tokens[Math.max(index - 1, 0)]!;
+      if (previous !== picked) pick(previous);
+    } else if (key === 'ArrowRight' && picked !== null) {
       event.preventDefault();
       const next = tokens[index + 1];
       if (next === undefined) {
         setPicked(null);
         input.setSelectionRange(0, 0);
       } else pick(next);
-    } else if (key === 'Escape' && activeToken !== null) {
+    } else if (key === 'Escape' && picked !== null) {
       event.preventDefault();
       setPicked(null);
       input.setSelectionRange(0, 0);
@@ -512,11 +544,22 @@ export function TagInput({
   };
 
   // Only leaving the whole field commits: moving between the input and remove buttons does not.
+  // Leaving mid-composition keeps the provisional text as the draft instead of committing it.
   const handleFieldBlur = (event: FocusEvent<HTMLDivElement>) => {
     const next = event.relatedTarget;
     if (next instanceof Node && event.currentTarget.contains(next)) return;
     setPicked(null);
-    if (commitOnBlur && editable) commit();
+    if (commitOnBlur && editable && !composing.current) commit();
+  };
+
+  const handleCompositionStart = (event: CompositionEvent<HTMLInputElement>) => {
+    composing.current = true;
+    onCompositionStart?.(event);
+  };
+
+  const handleCompositionEnd = (event: CompositionEvent<HTMLInputElement>) => {
+    composing.current = false;
+    onCompositionEnd?.(event);
   };
 
   const handleRemoveClick = (token: string) => {
@@ -529,7 +572,7 @@ export function TagInput({
     ariaLabelledByProp === undefined
       ? undefined
       : [isRenderable(label) && labelId, ariaLabelledByProp].filter(Boolean).join(' ');
-  const describedBy = [field.describedBy, activeToken !== null && pickedId].filter(Boolean).join(' ') || undefined;
+  const describedBy = [field.describedBy, picked !== null && pickedId].filter(Boolean).join(' ') || undefined;
 
   return (
     <FieldRoot data-ui="tag-input" dir={dir} className={className} sx={sx} part={slotProps?.root}>
@@ -560,14 +603,14 @@ export function TagInput({
             {tokens.map((token) => (
               <li
                 key={token}
-                data-picked={token === activeToken ? '' : undefined}
+                data-picked={token === picked ? '' : undefined}
                 data-duplicate={token === duplicateOf ? '' : undefined}
                 data-readonly={readOnly ? '' : undefined}
                 data-enter={mounted.current ? '' : undefined}
                 className={slotProps?.token?.className}
                 css={[tokenStyle, tokenSizeStyles[size], slotProps?.token?.css]}
               >
-                <span id={token === activeToken ? pickedId : undefined} css={tokenTextStyle}>
+                <span id={token === picked ? pickedId : undefined} css={tokenTextStyle}>
                   {token}
                 </span>
                 {!readOnly && (
@@ -605,6 +648,8 @@ export function TagInput({
           aria-invalid={field.ariaInvalid}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
           onBlur={onBlur}
           className={slotProps?.input?.className}
           css={[inputStyle, slotProps?.input?.css]}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fireEvent, fn, waitFor } from 'storybook/test';
+import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -38,7 +38,9 @@ const meta = {
           '',
           '**Blur.** With `commitOnBlur` the draft commits only when focus leaves the whole field; moving to a remove button does not commit.',
           '',
-          '**Keyboard.** Enter or comma: commit the draft (an empty Enter keeps native form submission). Backspace at caret 0: pick the last token; Backspace or Delete again: remove it. ArrowLeft at caret 0 or while picked: pick the previous token (stops at the first). ArrowRight while picked: pick the next token, or return to the input past the last. Escape: drop the pick. Typing or pasting edits the draft and drops the pick. Tab and Shift+Tab follow DOM order: each remove button, then the input, then the page. IME composition bypasses every shortcut; held keys never remove tokens.',
+          '**Keyboard.** Enter or comma: commit the draft (with an empty draft, Enter submits the form and comma types). Backspace at caret 0: pick the last token; Backspace or Delete again: remove it. ArrowLeft at caret 0 or while picked: pick the previous token (stops at the first). ArrowRight while picked: pick the next token, or return to the input past the last. Escape: drop the pick. Typing or pasting edits the draft and drops the pick. Tab and Shift+Tab follow DOM order: each remove button, then the input, then the page. IME composition bypasses every shortcut and the blur commit; held keys never remove tokens.',
+          '',
+          '**Lists.** `value` and `defaultValue` entries must be unique, nonempty and already normalized; development builds warn about other entries and render the list as given.',
           '',
           '**Forms.** With `name`, each committed token submits as a repeated field in list order; the draft never submits. `required` means at least one committed token.',
         ].join('\n'),
@@ -86,23 +88,67 @@ function DraftControlledField(props: TagInputProps) {
 }
 DraftControlledField.displayName = 'DraftControlledTagInput';
 
+/** External updates arrive while the input keeps focus, so no field exit clears the pick. */
 function ExternalUpdateField(props: TagInputProps) {
   const [value, setValue] = useState<readonly string[]>(['design']);
+  const keepFocus = (event: { preventDefault: () => void }) => event.preventDefault();
   return (
     <>
       <TagInput {...props} value={value} />
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => setValue(['motion', 'type'])}>
+      <button style={FIXTURE_BUTTON} type="button" onMouseDown={keepFocus} onClick={() => setValue(['motion', 'type'])}>
         Replace topics
+      </button>
+      <button style={FIXTURE_BUTTON} type="button" onMouseDown={keepFocus} onClick={() => setValue(['design', 'motion'])}>
+        Restore topics
       </button>
     </>
   );
 }
 ExternalUpdateField.displayName = 'ExternalUpdateTagInput';
 
+/** Holds each requested list until the parent accepts or rejects it. */
+function DelayedField(props: TagInputProps) {
+  const [value, setValue] = useState<readonly string[]>(props.defaultValue ?? []);
+  const [requested, setRequested] = useState<readonly string[] | null>(null);
+  return (
+    <>
+      <TagInput
+        {...props}
+        defaultValue={undefined}
+        value={value}
+        onValueChange={(next) => {
+          props.onValueChange?.(next);
+          setRequested(next);
+        }}
+      />
+      <button style={FIXTURE_BUTTON} type="button" onClick={() => requested && setValue(requested)}>
+        Accept
+      </button>
+      <button style={FIXTURE_BUTTON} type="button" onClick={() => setRequested(null)}>
+        Reject
+      </button>
+    </>
+  );
+}
+DelayedField.displayName = 'DelayedTagInput';
+
 const inputOf = (canvas: { getByRole: (role: 'textbox', options?: object) => HTMLElement }) =>
   canvas.getByRole('textbox') as HTMLInputElement;
 const shellOf = (input: HTMLElement) => input.parentElement!;
 const tokenTexts = (root: HTMLElement) => Array.from(root.querySelectorAll('li'), (li) => li.textContent);
+const pickedTexts = (root: HTMLElement) =>
+  Array.from(root.querySelectorAll('li[data-picked]'), (li) => li.textContent);
+const settle = () => new Promise((resolve) => setTimeout(resolve, 50));
+
+/** Computed value of `property` for a probe styled with `token` inside `parent`. */
+function tokenProbe(parent: HTMLElement, property: 'color' | 'paddingInlineStart', token: string) {
+  const probe = parent.ownerDocument.createElement('span');
+  probe.style[property] = token;
+  parent.append(probe);
+  const computed = getComputedStyle(probe)[property];
+  probe.remove();
+  return computed;
+}
 
 async function expectRing(element: HTMLElement) {
   const style = getComputedStyle(element);
@@ -147,8 +193,11 @@ export const Default: Story = {
 
 export const Empty: Story = {
   play: async ({ canvas }) => {
+    const input = inputOf(canvas);
     await expect(canvas.queryByRole('list')).toBeNull();
-    await expect(canvas.getByRole('textbox')).toHaveAttribute('placeholder', 'Add a topic');
+    await expect(input).toHaveAttribute('placeholder', 'Add a topic');
+    // Placeholder text uses the muted text role (≥ 4.5:1 on the raised surface in both themes).
+    await expect(getComputedStyle(input, '::placeholder').color).toBe(tokenProbe(shellOf(input), 'color', vars.color.textMuted));
   },
 };
 
@@ -216,6 +265,74 @@ export const ControlledReject: Story = {
   },
 };
 
+export const DelayedControlledAnnouncements: Story = {
+  args: { defaultValue: ['design'], onValueChange: fn() },
+  render: (args) => <DelayedField {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const input = inputOf(canvas);
+    const status = canvas.getByRole('status');
+    const valueCalls = args.onValueChange as Spy;
+
+    // Delayed acceptance: nothing is announced until the parent shows the new list.
+    await userEvent.type(input, 'motion{Enter}');
+    await expect(valueCalls).toHaveBeenCalledTimes(1);
+    await expect(valueCalls).toHaveBeenLastCalledWith(['design', 'motion']);
+    await settle();
+    await expect(tokenTexts(canvas.getByRole('list'))).toEqual(['design']);
+    await expect(status).toHaveTextContent('');
+    await userEvent.click(canvas.getByRole('button', { name: 'Accept' }));
+    await expect(tokenTexts(canvas.getByRole('list'))).toEqual(['design', 'motion']);
+    await waitFor(() => expect(status).toHaveTextContent('Added motion'));
+    await expect(valueCalls).toHaveBeenCalledTimes(1);
+
+    // Rejection: the request never turns into a success message.
+    await userEvent.type(input, 'type{Enter}');
+    await expect(valueCalls).toHaveBeenCalledTimes(2);
+    await expect(valueCalls).toHaveBeenLastCalledWith(['design', 'motion', 'type']);
+    await userEvent.click(canvas.getByRole('button', { name: 'Reject' }));
+    await settle();
+    await expect(tokenTexts(canvas.getByRole('list'))).toEqual(['design', 'motion']);
+    await expect(status).toHaveTextContent('Added motion');
+    await expect(status).not.toHaveTextContent('Added type');
+
+    // A delayed removal is announced on acceptance as well.
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove design' }));
+    await expect(valueCalls).toHaveBeenCalledTimes(3);
+    await expect(valueCalls).toHaveBeenLastCalledWith(['motion']);
+    await settle();
+    await expect(status).not.toHaveTextContent('Removed design');
+    await userEvent.click(canvas.getByRole('button', { name: 'Accept' }));
+    await expect(tokenTexts(canvas.getByRole('list'))).toEqual(['motion']);
+    await waitFor(() => expect(status).toHaveTextContent('Removed design'));
+    await expect(valueCalls).toHaveBeenCalledTimes(3);
+  },
+};
+
+export const ControlledEmpty: Story = {
+  args: {
+    value: [],
+    defaultValue: ['seed'],
+    inputValue: '',
+    defaultInputValue: 'seed',
+    onValueChange: fn(),
+    onInputChange: fn(),
+  },
+  play: async ({ canvas, userEvent, args }) => {
+    const input = inputOf(canvas);
+    // `[]` and `''` are controlled values, not fallbacks to the defaults.
+    await expect(canvas.queryByRole('list')).toBeNull();
+    await expect(input).toHaveValue('');
+    await userEvent.type(input, 'x');
+    await expect(args.onInputChange).toHaveBeenCalledTimes(1);
+    await expect(args.onInputChange).toHaveBeenLastCalledWith('x');
+    await expect(input).toHaveValue('');
+    await userEvent.keyboard('{Backspace}{ArrowLeft}{Enter}');
+    await expect(canvas.queryByRole('list')).toBeNull();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(0);
+    await expect(args.onInputChange).toHaveBeenCalledTimes(1);
+  },
+};
+
 export const ControlledDraftReject: Story = {
   args: { inputValue: 'draft', onInputChange: fn(), onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
@@ -238,17 +355,25 @@ export const ControlledDraftReject: Story = {
 };
 
 export const ExternalUpdates: Story = {
-  args: { onValueChange: fn() },
+  args: { onValueChange: fn(), onInputChange: fn() },
   render: (args) => <ExternalUpdateField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     const input = inputOf(canvas);
-    await userEvent.click(input);
-    await userEvent.keyboard('{Backspace}');
-    await expect(canvas.getByRole('listitem')).toHaveAttribute('data-picked');
+    await userEvent.type(input, 'dr{Home}{Backspace}');
+    await expect(pickedTexts(canvas.getByRole('list'))).toEqual(['design']);
+    await expect(input).toHaveAccessibleDescription(expect.stringContaining('design'));
     await userEvent.click(canvas.getByRole('button', { name: 'Replace topics' }));
     await expect(tokenTexts(canvas.getByRole('list'))).toEqual(['motion', 'type']);
-    await expect(input).not.toHaveAttribute('aria-describedby', expect.stringContaining('picked'));
-    for (const item of canvas.getAllByRole('listitem')) await expect(item).not.toHaveAttribute('data-picked');
+    await expect(pickedTexts(canvas.getByRole('list'))).toEqual([]);
+    await expect(input).not.toHaveAccessibleDescription(expect.stringContaining('design'));
+    // The same string coming back later is a fresh, unpicked token; the draft is untouched.
+    await userEvent.click(canvas.getByRole('button', { name: 'Restore topics' }));
+    await expect(tokenTexts(canvas.getByRole('list'))).toEqual(['design', 'motion']);
+    await expect(pickedTexts(canvas.getByRole('list'))).toEqual([]);
+    await expect(input).toHaveAccessibleDescription('Press Enter or comma to add.');
+    await expectInputFocus(input);
+    await expect(input).toHaveValue('dr');
+    await expect(args.onInputChange).toHaveBeenCalledTimes(2);
     await expect(args.onValueChange).toHaveBeenCalledTimes(0);
   },
 };
@@ -500,6 +625,33 @@ export const FocusWithinBlurRegression: Story = {
   },
 };
 
+export const ShiftTabExit: Story = {
+  args: { defaultValue: ['design'], onValueChange: fn() },
+  render: (args) => (
+    <>
+      <button style={FIXTURE_BUTTON} type="button">Before</button>
+      <TagInput {...args} />
+    </>
+  ),
+  play: async ({ canvas, userEvent, args }) => {
+    const input = inputOf(canvas);
+    const before = canvas.getByRole('button', { name: 'Before' });
+    await userEvent.type(input, 'motion');
+    await userEvent.tab({ shift: true });
+    await expectFocus(canvas.getByRole('button', { name: 'Remove design' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(0);
+    // Shift+Tab out of the first remove button leaves the field: one commit, focus stays outside.
+    await userEvent.tab({ shift: true });
+    await expect(input.ownerDocument.activeElement).toBe(before);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['design', 'motion']);
+    await expect(input).toHaveValue('');
+    await settle();
+    await expect(input.ownerDocument.activeElement).toBe(before);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
 export const Keyboard: Story = {
   args: { defaultValue: ['design', 'motion'], onValueChange: fn(), onKeyDown: fn() },
   render: (args) => (
@@ -628,15 +780,99 @@ export const RepeatAndComposition: Story = {
     fireEvent(input, composing);
     await expect(composing.defaultPrevented).toBe(false);
     await expect(args.onValueChange).toHaveBeenCalledTimes(0);
+    const composingComma = new KeyboardEvent('keydown', { key: ',', isComposing: true, bubbles: true, cancelable: true });
+    fireEvent(input, composingComma);
+    await expect(composingComma.defaultPrevented).toBe(false);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(0);
     await userEvent.keyboard('{Enter}');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith(['design', 'motion', 'デザイン']);
 
-    // An empty Enter is left to the page (native form submission).
+    // An empty draft leaves every separator to the page: Enter submits, comma types.
     const emptyEnter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
     fireEvent(input, emptyEnter);
     await expect(emptyEnter.defaultPrevented).toBe(false);
+    const emptyComma = new KeyboardEvent('keydown', { key: ',', bubbles: true, cancelable: true });
+    fireEvent(input, emptyComma);
+    await expect(emptyComma.defaultPrevented).toBe(false);
+    await userEvent.keyboard(',');
+    await expect(input).toHaveValue(',');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const CompositionFieldExit: Story = {
+  args: { onValueChange: fn(), onCompositionStart: fn(), onCompositionEnd: fn() },
+  render: (args) => <><TagInput {...args} /><button style={FIXTURE_BUTTON} type="button">After</button></>,
+  play: async ({ canvas, userEvent, args }) => {
+    const input = inputOf(canvas);
+    const after = canvas.getByRole('button', { name: 'After' });
+    await userEvent.click(input);
+    fireEvent.compositionStart(input);
+    // Separators typed during composition are text.
+    await userEvent.keyboard('でざ,');
+    await expect(input).toHaveValue('でざ,');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(0);
+    // Leaving the field mid-composition keeps the provisional text as the draft.
+    await userEvent.tab();
+    await expect(input.ownerDocument.activeElement).toBe(after);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(0);
+    await expect(input).toHaveValue('でざ,');
+    fireEvent.compositionEnd(input);
+    await expect(args.onCompositionStart).toHaveBeenCalledTimes(1);
+    await expect(args.onCompositionEnd).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(0);
+    // Once composition finishes, a field exit commits once.
+    await userEvent.click(input);
+    await userEvent.tab();
+    await expect(input.ownerDocument.activeElement).toBe(after);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['でざ,']);
+  },
+};
+
+export const PasteWhilePicked: Story = {
+  args: { defaultValue: ['design', 'motion'], onValueChange: fn(), onInputChange: fn() },
+  play: async ({ canvas, userEvent, args }) => {
+    const input = inputOf(canvas);
+    await userEvent.click(input);
+    await userEvent.keyboard('{Backspace}');
+    await expect(pickedTexts(canvas.getByRole('list'))).toEqual(['motion']);
+    // Paste is literal draft text: it drops the pick and never splits on commas.
+    await userEvent.paste('ux, research');
+    await expect(pickedTexts(canvas.getByRole('list'))).toEqual([]);
+    await expect(input).toHaveValue('ux, research');
+    await expect(args.onInputChange).toHaveBeenCalledTimes(1);
+    await expect(args.onInputChange).toHaveBeenLastCalledWith('ux, research');
+    await expect(tokenTexts(canvas.getByRole('list'))).toEqual(['design', 'motion']);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(0);
+  },
+};
+
+export const SelectedTextEditing: Story = {
+  args: { defaultValue: ['design'], onValueChange: fn() },
+  play: async ({ canvas, userEvent, args }) => {
+    const input = inputOf(canvas);
+    const list = canvas.getByRole('list');
+    await userEvent.type(input, 'abc');
+    // A selection starting at 0 is native editing, never a token pick or removal.
+    input.setSelectionRange(0, 3);
+    await userEvent.keyboard('{Backspace}');
+    await expect(input).toHaveValue('');
+    await expect(pickedTexts(list)).toEqual([]);
+    await userEvent.type(input, 'abc');
+    input.setSelectionRange(0, 2);
+    await userEvent.keyboard('{Delete}');
+    await expect(input).toHaveValue('c');
+    await expect(pickedTexts(list)).toEqual([]);
+    input.setSelectionRange(0, 1);
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(pickedTexts(list)).toEqual([]);
+    await expect(input.selectionStart).toBe(0);
+    await expect(input.selectionEnd).toBe(0);
+    await expect(input).toHaveValue('c');
+    await expect(tokenTexts(list)).toEqual(['design']);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(0);
   },
 };
 
@@ -694,12 +930,50 @@ export const FormReset: Story = {
 };
 
 export const ControlledReset: Story = {
-  ...FormReset,
-  args: { name: 'topics', value: ['design'], onValueChange: fn() },
+  args: { name: 'topics', defaultValue: ['design'], commitOnBlur: false, onValueChange: fn(), onInputChange: fn() },
+  render: (args) => (
+    <form onSubmit={(event) => event.preventDefault()}>
+      <ControlledField {...args} />
+      <button style={FIXTURE_BUTTON} type="reset">Reset topics</button>
+    </form>
+  ),
   play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const form = canvasElement.querySelector('form')!;
+    const input = inputOf(canvas);
+    await userEvent.type(input, 'motion{Enter}');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['design', 'motion']);
+    await userEvent.type(input, 'draft');
+    await expect(args.onInputChange).toHaveBeenCalledTimes(12);
     await userEvent.click(canvas.getByRole('button', { name: 'Reset topics' }));
-    await expect(new FormData(canvasElement.querySelector('form')!).getAll('topics')).toEqual(['design']);
-    await expect(args.onValueChange).toHaveBeenCalledTimes(0);
+    // The controlled list keeps the accepted props; the uncontrolled draft returns to its seed.
+    await waitFor(() => expect(input).toHaveValue(''));
+    await expect(tokenTexts(canvas.getByRole('list'))).toEqual(['design', 'motion']);
+    await expect(new FormData(form).getAll('topics')).toEqual(['design', 'motion']);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onInputChange).toHaveBeenCalledTimes(12);
+  },
+};
+
+const INVALID_LIST = Object.freeze(['Design', 'design', ' padded', '']);
+export const InvalidConsumerList: Story = {
+  args: { defaultValue: INVALID_LIST },
+  beforeEach: () => {
+    const warn = spyOn(console, 'warn').mockImplementation(() => {});
+    return () => warn.mockRestore();
+  },
+  render: (args) => (
+    <>
+      <TagInput {...args} />
+      <TagInput {...args} label="Valid topics" defaultValue={['design']} />
+    </>
+  ),
+  play: async ({ canvas }) => {
+    // The supplied (frozen) list renders as given; only the invalid instance warns, once.
+    const [invalid] = canvas.getAllByRole('list');
+    await expect(tokenTexts(invalid!)).toEqual([...INVALID_LIST]);
+    await expect(console.warn).toHaveBeenCalledTimes(1);
+    await expect(console.warn).toHaveBeenLastCalledWith(expect.stringContaining(JSON.stringify(['design', ' padded', ''])));
   },
 };
 
@@ -778,13 +1052,12 @@ export const RefAndStyles: Story = {
     await expect((args.ref as Spy).mock.calls[0]![0]).toBe(input);
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="tag-input"]')!;
     await expect(root).toHaveClass('consumer-root');
-    await expect(getComputedStyle(root).paddingInlineStart).toBe('12px');
-    await expect(getComputedStyle(canvas.getByRole('listitem')).paddingInlineStart).toBe('12px');
-    const probe = canvasElement.ownerDocument.createElement('span');
-    probe.style.color = vars.color.dangerText;
-    root.append(probe);
-    await expect(getComputedStyle(canvas.getByRole('button', { name: 'Delete design' })).color).toBe(getComputedStyle(probe).color);
-    probe.remove();
+    const sxPadding = tokenProbe(root, 'paddingInlineStart', vars.space[3]);
+    await expect(getComputedStyle(root).paddingInlineStart).toBe(sxPadding);
+    await expect(getComputedStyle(canvas.getByRole('listitem')).paddingInlineStart).toBe(sxPadding);
+    await expect(getComputedStyle(canvas.getByRole('button', { name: 'Delete design' })).color).toBe(
+      tokenProbe(root, 'color', vars.color.dangerText),
+    );
     await expect(canvas.getByRole('list', { name: 'Article topics' })).toHaveClass('consumer-list');
   },
 };
@@ -796,11 +1069,31 @@ export const LightTheme: Story = {
 };
 
 export const RTL: Story = {
-  args: { dir: 'rtl', label: 'נושאים', defaultValue: ['עיצוב', 'תנועה'], description: undefined },
-  play: async ({ canvas, canvasElement }) => {
+  args: { dir: 'rtl', label: 'נושאים', defaultValue: ['עיצוב', 'תנועה'], description: undefined, onValueChange: fn() },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
     const root = canvasElement.querySelector('[data-ui="tag-input"]')!;
+    const input = inputOf(canvas);
+    const list = canvas.getByRole('list');
     await expect(root).toHaveAttribute('dir', 'rtl');
-    await expect(getComputedStyle(inputOf(canvas)).direction).toBe('rtl');
+    await expect(getComputedStyle(input).direction).toBe('rtl');
+    // Tokens lay out from the inline start, which is the right edge in RTL.
+    const [first, second] = canvas.getAllByRole('listitem');
+    await expect(first!.getBoundingClientRect().right).toBeGreaterThan(second!.getBoundingClientRect().right);
+
+    // Token traversal follows list order with the same keys as LTR.
+    await userEvent.click(input);
+    await userEvent.keyboard('{Backspace}');
+    await expect(pickedTexts(list)).toEqual(['תנועה']);
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(pickedTexts(list)).toEqual(['עיצוב']);
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(pickedTexts(list)).toEqual(['תנועה']);
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(pickedTexts(list)).toEqual([]);
+    await expectInputFocus(input);
+    await userEvent.tab({ shift: true });
+    await expectFocus(canvas.getByRole('button', { name: 'Remove תנועה' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(0);
   },
 };
 
