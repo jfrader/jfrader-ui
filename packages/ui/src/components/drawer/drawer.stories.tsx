@@ -12,6 +12,10 @@ import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
 import { Drawer, type DrawerContentProps, type DrawerProps, type DrawerSize } from './index';
 
+// An open modal's backdrop spans the whole docs preview, covering the documentation and the
+// other examples; these stories render as link cards in docs instead of inline canvases.
+const docsAsLink = { docs: { story: { inline: false } } } as const;
+
 const TITLE = 'Filters';
 const DESCRIPTION = 'Narrow the issue list by owner and status.';
 const TRIGGER = 'Open filters';
@@ -381,6 +385,7 @@ export const Draggable: Story = {
 };
 
 export const DraggableRejected: Story = {
+  parameters: docsAsLink,
   args: { draggable: true, open: true },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -468,6 +473,7 @@ async function expectPersistentOpen(canvasElement: HTMLElement) {
 }
 
 export const PersistentOpen: Story = {
+  parameters: docsAsLink,
   args: { defaultOpen: true },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -478,6 +484,7 @@ export const PersistentOpen: Story = {
 };
 
 export const PersistentOpenLight: Story = {
+  parameters: docsAsLink,
   args: { defaultOpen: true },
   decorators: [withLightTheme],
   globals: { theme: 'light' },
@@ -490,6 +497,7 @@ export const PersistentOpenLight: Story = {
 };
 
 export const OpenNoDescription: Story = {
+  parameters: docsAsLink,
   args: { defaultOpen: true },
   render: (args) => (
     <>
@@ -528,6 +536,7 @@ export const Controlled: Story = {
 };
 
 export const ControlledReject: Story = {
+  parameters: docsAsLink,
   args: { open: true },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -582,6 +591,7 @@ export const BackdropClick: Story = {
 };
 
 export const NativeFormClose: Story = {
+  parameters: docsAsLink,
   args: { open: true },
   render: (args) => (
     <DrawerExample
@@ -783,6 +793,7 @@ export const TriggerDefaultPrevented: Story = {
 };
 
 export const ExternalARIA: Story = {
+  parameters: docsAsLink,
   args: { defaultOpen: true },
   render: (args) => (
     <>
@@ -959,7 +970,9 @@ export const ReducedMotion: Story = {
   args: { defaultOpen: true, draggable: true },
   render: (args) => <DrawerExample {...args} />,
   parameters: {
+    ...docsAsLink,
     docs: {
+      ...docsAsLink.docs,
       description: {
         story:
           'With the OS setting on, the panel appears without the slide and the header drag is off. The play checks the authored reduced-motion rules and stubs `matchMedia` to drive the drag branch; real media emulation is verified in browser QA.',
@@ -1009,7 +1022,9 @@ export const ForcedColors: Story = {
   args: { defaultOpen: true },
   render: (args) => <DrawerExample {...args} />,
   parameters: {
+    ...docsAsLink,
     docs: {
+      ...docsAsLink.docs,
       description: {
         story:
           'Structural fixture for forced-colors browser QA: the panel trades its shadow for a system-color border. The play runner does not emulate forced colors; it checks the authored rules.',
@@ -1026,6 +1041,7 @@ export const ForcedColors: Story = {
 };
 
 export const PartStyling: Story = {
+  parameters: docsAsLink,
   args: { defaultOpen: true },
   render: (args) => (
     <Drawer {...args}>
