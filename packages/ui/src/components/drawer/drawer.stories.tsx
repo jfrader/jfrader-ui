@@ -1,6 +1,6 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
-import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
+import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -18,6 +18,7 @@ const TRIGGER = 'Open filters';
 const STATUSES = ['Backlog', 'In progress', 'In review', 'Done'];
 const INLINE_CAP_REM: Record<DrawerSize, number> = { sm: 22, md: 30, lg: 38 };
 const COMPACT_QUERY = '(max-width: 40rem)';
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const GUTTER_PX = Number.parseFloat(base.space[3]);
 const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
 
@@ -961,7 +962,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture for reduced-motion browser QA: with the OS setting on, the panel appears without the slide and the header drag is off. The play runner does not emulate media preferences; it checks the authored rules.',
+          'With the OS setting on, the panel appears without the slide and the header drag is off. The play checks the authored reduced-motion rules and stubs `matchMedia` to drive the drag branch; real media emulation is verified in browser QA.',
       },
     },
   },
@@ -970,6 +971,37 @@ export const ReducedMotion: Story = {
     await settle(dialog);
     await expect(findConditionalRule(panel, 'prefers-reduced-motion: reduce')?.style.animationName).toBe('none');
     await expect(findConditionalRule(header, 'prefers-reduced-motion: reduce')?.style.cursor).toBe('auto');
+    // The marker follows the prop alone, so server and client markup match.
+    await expect(header).toHaveAttribute('data-draggable');
+
+    const win = header.ownerDocument.defaultView!;
+    const realMatchMedia = win.matchMedia.bind(win);
+    const init = { pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0 } as const;
+    const start = rect(header).left + 8;
+    const y = rect(header).top + 4;
+    for (const [reduce, translate] of [
+      [true, ''],
+      [false, '40px'],
+    ] as const) {
+      const matchMedia = spyOn(win, 'matchMedia').mockImplementation((query) =>
+        query === REDUCED_MOTION_QUERY
+          ? Object.defineProperty(realMatchMedia(query), 'matches', { value: reduce })
+          : realMatchMedia(query),
+      );
+      try {
+        fireEvent.pointerDown(header, { ...init, clientX: start, clientY: y });
+        await expect(matchMedia).toHaveBeenCalledWith(REDUCED_MOTION_QUERY);
+        await expect(header.hasAttribute('data-dragging')).toBe(!reduce);
+        fireEvent.pointerMove(header, { ...init, clientX: start + 20, clientY: y });
+        fireEvent.pointerMove(header, { ...init, clientX: start + 40, clientY: y });
+        await expect(panel.style.translate).toBe(translate);
+        fireEvent.pointerCancel(header, { ...init, clientX: start + 40, clientY: y });
+        await expectHome(panel);
+        await expect(dialog).toHaveAttribute('open');
+      } finally {
+        matchMedia.mockRestore();
+      }
+    }
   },
 };
 

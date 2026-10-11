@@ -38,7 +38,7 @@ import {
   type SyntheticEvent,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
-import { animate, useReducedMotion, type AnimationPlaybackControls } from 'motion/react';
+import { animate, type AnimationPlaybackControls } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -449,6 +449,9 @@ interface DragSession {
   samples: { position: number; time: number }[];
 }
 
+// Read when a drag starts, not at render: the header markup stays identical on server and client.
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
 const DRAG_AXIS: Record<DrawerSide, 'x' | 'y'> = { 'inline-start': 'x', 'inline-end': 'x', top: 'y', bottom: 'y' };
 
 function edgeSign(side: DrawerSide, rtl: boolean): 1 | -1 {
@@ -462,7 +465,7 @@ function translateFor(session: Pick<DragSession, 'axis' | 'sign'>, offset: numbe
   return offset === 0 ? '' : session.axis === 'x' ? `${distance}px` : `0 ${distance}px`;
 }
 
-/** Header drag-to-dismiss. Handlers are null (no listeners) unless enabled. */
+/** Header drag-to-dismiss. Handlers are null (no listeners) unless enabled; reduced motion ignores presses. */
 function useHeaderDrag(
   enabled: boolean,
   side: DrawerSide,
@@ -482,6 +485,7 @@ function useHeaderDrag(
     if (panelRef.current) panelRef.current.style.translate = '';
   }, [panelRef]);
 
+  // Unmount: stop a running spring and clear the inline offset.
   useEffect(() => reset, [reset]);
 
   const headerGesture = useMemo((): HeaderGestureHandlers | null => {
@@ -526,6 +530,7 @@ function useHeaderDrag(
         const panel = panelRef.current;
         if (!event.isPrimary || event.button !== 0 || !panel) return;
         if (event.target instanceof Element && event.target.closest(NO_DRAG_SELECTOR)) return;
+        if (panel.ownerDocument.defaultView?.matchMedia(REDUCED_MOTION_QUERY).matches) return;
         springRef.current?.stop();
         const axis = DRAG_AXIS[side];
         const sign = edgeSign(side, getComputedStyle(panel).direction === 'rtl');
@@ -581,14 +586,13 @@ function DrawerContent({ ref, className, sx, ...props }: DrawerContentProps) {
 
   const context = useDrawerContext('Content');
   const { setOpen, titleId, descriptionId, hasTitle, hasDescription, side, draggable } = context;
-  const reducedMotion = useReducedMotion();
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const escapeHandledByLayerRef = useRef(false);
   const requestClose = useCallback(() => {
     requestNativeDialogClose(dialogRef.current, setOpen);
   }, [setOpen]);
-  const { headerGesture, reset } = useHeaderDrag(draggable && !reducedMotion, side, panelRef, requestClose);
+  const { headerGesture, reset } = useHeaderDrag(draggable, side, panelRef, requestClose);
 
   // The browser turns an Escape keydown into a native cancel even when a floating layer nested in
   // this drawer closes on it: that keystroke belongs to the layer, so its cancel is dropped.
