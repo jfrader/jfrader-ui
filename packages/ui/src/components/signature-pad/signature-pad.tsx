@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  useEffect,
   useId,
   useImperativeHandle,
   useLayoutEffect,
@@ -156,10 +157,21 @@ export class SignatureExportError extends Error {
   }
 }
 
-function validate(strokes: SignatureStroke[]) {
+// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
+declare const process: { env: { NODE_ENV?: string } };
+
+// Ids only need to be unique within one value; the random part keeps new strokes apart from persisted ones.
+// `getRandomValues` works on insecure origins, unlike `randomUUID`.
+let strokeSequence = 0;
+function strokeId() {
+  const random = new Uint32Array(2);
+  globalThis.crypto?.getRandomValues?.(random);
+  return [++strokeSequence, ...random].map((part) => part.toString(36)).join('-');
+}
+
+function isValid(strokes: SignatureStroke[]) {
   let count = 0;
-  if (!Array.isArray(strokes) || strokes.length > MAX_STROKES)
-    throw new SignatureExportError('invalid', 'Invalid signature strokes.');
+  if (!Array.isArray(strokes) || strokes.length > MAX_STROKES) return false;
   for (const stroke of strokes) {
     if (
       !stroke ||
@@ -171,7 +183,7 @@ function validate(strokes: SignatureStroke[]) {
       !Array.isArray(stroke.points) ||
       !stroke.points.length
     )
-      throw new SignatureExportError('invalid', 'Invalid signature stroke.');
+      return false;
     let last = 0;
     for (const p of stroke.points) {
       if (
@@ -187,11 +199,50 @@ function validate(strokes: SignatureStroke[]) {
         p.time < last ||
         (p.pressure !== null && (!Number.isFinite(p.pressure) || p.pressure < 0 || p.pressure > 1))
       )
-        throw new SignatureExportError('invalid', 'Invalid signature sample.');
+        return false;
       last = p.time;
     }
   }
+  return true;
 }
+function validate(strokes: SignatureStroke[]) {
+  if (!isValid(strokes)) throw new SignatureExportError('invalid', 'Invalid signature strokes.');
+}
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+/** Preview-safe copy of an untrusted value: unknown ink/nib and non-finite samples are skipped, the rest clamped. */
+function drawable(strokes: SignatureStroke[]): SignatureStroke[] {
+  if (isValid(strokes)) return strokes;
+  const result: SignatureStroke[] = [];
+  for (const stroke of Array.isArray(strokes) ? strokes.slice(0, MAX_STROKES) : []) {
+    if (
+      !stroke ||
+      !Object.hasOwn(NIB, stroke.width) ||
+      !Object.hasOwn(PRINT_INK, stroke.color) ||
+      !Array.isArray(stroke.points)
+    )
+      continue;
+    let last = 0;
+    const points: SignaturePoint[] = [];
+    for (const p of stroke.points) {
+      if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
+      if (Number.isFinite(p.time)) last = Math.max(last, p.time);
+      points.push({
+        x: clamp(p.x, 0, PAD_WIDTH),
+        y: clamp(p.y, 0, PAD_HEIGHT),
+        pressure: Number.isFinite(p.pressure) ? clamp(p.pressure!, 0, 1) : null,
+        time: last,
+      });
+    }
+    if (points.length)
+      result.push({
+        ...stroke,
+        startTime: Number.isFinite(stroke.startTime) ? Math.max(0, stroke.startTime) : 0,
+        points,
+      });
+  }
+  return result;
+}
+const pointCount = (strokes: SignatureStroke[]) => strokes.reduce((sum, s) => sum + s.points.length, 0);
 
 type Segment = {
   from: SignaturePoint;
@@ -348,7 +399,7 @@ const canvasStyle = css({
   borderRadius: vars.radius.lg,
   touchAction: 'none',
   '&:focus-visible': focusRingOutset,
-  '&[aria-disabled="true"]': { touchAction: 'auto' },
+  '&[aria-disabled="true"], &[data-readonly]': { touchAction: 'auto' },
   [FORCED_COLORS]: { borderColor: 'CanvasText', color: 'CanvasText' },
 });
 const guideStyle = css({
@@ -486,7 +537,7 @@ export function SignaturePad({
         forced ? computed.color : computed.getPropertyValue(token).trim(),
       ]),
     ) as Record<InkColor, string>;
-    paint(context, strokes, ink);
+    paint(context, drawable(strokes), ink);
   }
   function stopReplay() {
     if (animation.current !== null)
@@ -551,7 +602,7 @@ export function SignaturePad({
   function replay() {
     stopReplay();
     cancelStroke();
-    const strokes = history.current.present;
+    const strokes = drawable(history.current.present);
     const view = canvasRef.current?.ownerDocument.defaultView;
     if (disabled || !strokes.length || !view) return;
     if (view.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -594,8 +645,18 @@ export function SignaturePad({
     animation.current = view.requestAnimationFrame(frame);
   }
 
+  const warnedValue = useRef<SignatureStroke[] | null>(null);
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    if (isValid(current)) warnedValue.current = null;
+    else if (warnedValue.current === null || !equal(warnedValue.current, current)) {
+      warnedValue.current = current;
+      console.warn(
+        'SignaturePad: value contains malformed strokes; invalid samples are skipped when drawing and exports reject with an "invalid" SignatureExportError.',
+      );
+    }
+  }, [current]);
   useLayoutEffect(() => {
-    validate(current);
     if (!equal(current, history.current.present)) {
       cancelStroke();
       stopReplay();
@@ -634,7 +695,9 @@ export function SignaturePad({
   useLayoutEffect(() => {
     const canvas = canvasRef.current!;
     const view = canvas.ownerDocument.defaultView!;
-    const redraw = () => lifecycle.current.draw();
+    const redraw = () => {
+      if (animation.current === null) lifecycle.current.draw();
+    };
     const resize = new ResizeObserver(redraw);
     resize.observe(canvas);
     const theme = new MutationObserver(redraw);
@@ -729,7 +792,7 @@ export function SignaturePad({
       time,
     };
     const previous = points.at(-1);
-    const available = MAX_POINTS - history.current.present.reduce((sum, s) => sum + s.points.length, 0);
+    const available = MAX_POINTS - pointCount(drawable(history.current.present));
     if ((!previous || previous.x !== p.x || previous.y !== p.y) && points.length < available) points.push(p);
   }
   function move(event: ReactPointerEvent<HTMLCanvasElement>) {
@@ -838,6 +901,7 @@ export function SignaturePad({
               tabIndex={disabled ? -1 : (rest.tabIndex ?? 0)}
               aria-roledescription={messages.roleDescription}
               aria-disabled={disabled || undefined}
+              data-readonly={readOnly || undefined}
               aria-invalid={hasContent(error) ? true : rest['aria-invalid']}
               aria-labelledby={
                 [labelledBy, hasContent(label) && `${id}-label`, !rest['aria-label'] && `${id}-state`]
@@ -864,7 +928,7 @@ export function SignaturePad({
                   event.button !== 0 ||
                   active.current ||
                   current.length >= MAX_STROKES ||
-                  current.reduce((sum, s) => sum + s.points.length, 0) >= MAX_POINTS ||
+                  pointCount(drawable(current)) >= MAX_POINTS ||
                   event.currentTarget.clientWidth <= 0 ||
                   event.currentTarget.clientHeight <= 0
                 )
@@ -877,7 +941,7 @@ export function SignaturePad({
                   pointerId: event.pointerId,
                   started: stamp,
                   stroke: {
-                    id: crypto.randomUUID(),
+                    id: strokeId(),
                     points: [],
                     color,
                     width,

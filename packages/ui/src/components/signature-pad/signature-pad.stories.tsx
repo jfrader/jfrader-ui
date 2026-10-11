@@ -1,6 +1,6 @@
 import { act, createRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, within, waitFor } from 'storybook/test';
+import { expect, fn, spyOn, within, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -206,6 +206,7 @@ export const Default: Story = {
   play: async ({ canvasElement, args, userEvent }) => {
     const canvas = pad(canvasElement);
     const scope = within(canvasElement);
+    await expect(getComputedStyle(canvas).touchAction).toBe('none');
     await expect(args.onValueChange).toHaveBeenCalledTimes(0);
     const capture = await gesture(canvas, strokeEvents);
     await expect(capture).toHaveBeenCalledTimes(1);
@@ -419,6 +420,7 @@ export const ReadOnly: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(0);
     await expect(within(canvasElement).getByRole('button', { name: 'Clear' })).toBeDisabled();
     await expect(within(canvasElement).getByRole('button', { name: 'Download PNG' })).toBeEnabled();
+    await expect(getComputedStyle(pad(canvasElement)).touchAction).toBe('auto');
   },
 };
 export const Disabled: Story = {
@@ -427,6 +429,7 @@ export const Disabled: Story = {
     await gesture(pad(canvasElement), strokeEvents);
     await expect(args.onValueChange).toHaveBeenCalledTimes(0);
     await expect(pad(canvasElement)).toHaveAttribute('aria-disabled', 'true');
+    await expect(getComputedStyle(pad(canvasElement)).touchAction).toBe('auto');
   },
 };
 export const Required: Story = {
@@ -522,7 +525,7 @@ export const Keyboard: Story = {
     const undo = scope.getByRole('button', { name: 'Undo' });
     await expect(canvas.ownerDocument.activeElement).toBe(undo);
     await expect(getComputedStyle(undo).outlineStyle).not.toBe('none');
-    await expect(undo.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
+    await expect(undo.getBoundingClientRect().height).toBeGreaterThanOrEqual(31.5);
     await userEvent.keyboard('{Enter}');
     await expect(args.onValueChange).toHaveBeenCalledTimes(8);
     await userEvent.tab();
@@ -545,6 +548,40 @@ export const Replay: Story = {
     await act(async () => canvas.focus());
     await userEvent.keyboard('{Escape}');
     await expect(scope.getByRole('button', { name: 'Replay' })).toBeEnabled();
+  },
+};
+const replayApi = createRef<SignaturePadHandle>();
+export const ReplayIgnoresObservers: Story = {
+  args: { defaultValue: seeded, apiRef: replayApi },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = pad(canvasElement);
+    const view = canvas.ownerDocument.defaultView!;
+    const frames: FrameRequestCallback[] = [];
+    const request = spyOn(view, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const cancel = spyOn(view, 'cancelAnimationFrame').mockImplementation(() => {});
+    const root = canvas.closest<HTMLElement>('[data-ui="signature-pad"]')!;
+    try {
+      await act(async () => replayApi.current!.replay());
+      await expect(frames).toHaveLength(1);
+      await act(async () => frames[0]!(0));
+      const firstFrame = canvas.toDataURL();
+      await expect(firstFrame).not.toBe(canvas.ownerDocument.createElement('canvas').toDataURL());
+      root.style.setProperty('--signature-probe', '1');
+      root.style.inlineSize = '90%';
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await expect(canvas.toDataURL()).toBe(firstFrame);
+    } finally {
+      root.style.removeProperty('--signature-probe');
+      root.style.inlineSize = '';
+      request.mockRestore();
+      cancel.mockRestore();
+    }
+    await act(async () => canvas.focus());
+    await userEvent.keyboard('{Escape}');
+    await expect(within(canvasElement).getByRole('button', { name: 'Replay' })).toBeEnabled();
   },
 };
 const exportApi = createRef<SignaturePadHandle>();
@@ -600,6 +637,73 @@ export const ExportFailure: Story = {
     } finally {
       HTMLCanvasElement.prototype.toBlob = original;
     }
+  },
+};
+export const InsecureOrigin: Story = {
+  beforeEach: () => {
+    const uuid = spyOn(crypto, 'randomUUID').mockImplementation(() => {
+      throw new DOMException('randomUUID requires a secure context', 'SecurityError');
+    });
+    return () => uuid.mockRestore();
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = pad(canvasElement);
+    await gesture(canvas, strokeEvents);
+    await gesture(canvas, strokeEvents);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    const value = (args.onValueChange as ReturnType<typeof fn>).mock.calls[1]![0] as SignatureStroke[];
+    await expect(value).toHaveLength(2);
+    await expect(value[0]!.id).not.toBe(value[1]!.id);
+    await expect(crypto.randomUUID).toHaveBeenCalledTimes(0);
+  },
+};
+const malformed: SignatureStroke[] = [
+  ...seeded,
+  { id: 'empty', color: 'blue', width: 'fine', startTime: NaN, points: [] },
+  {
+    id: 'untrusted',
+    color: 'violet',
+    width: 'bold',
+    startTime: 400,
+    points: [
+      { x: NaN, y: 20, pressure: null, time: 0 },
+      { x: 900, y: -10, pressure: 5, time: Infinity },
+      { x: 300, y: Infinity, pressure: null, time: 30 },
+      { x: 320, y: 60, pressure: null, time: 20 },
+    ],
+  },
+];
+const malformedApi = createRef<SignaturePadHandle>();
+export const MalformedValue: Story = {
+  args: { value: malformed, apiRef: malformedApi, download: true },
+  beforeEach: () => {
+    const warn = spyOn(console, 'warn').mockImplementation(() => {});
+    return () => warn.mockRestore();
+  },
+  play: async ({ canvasElement, args, userEvent }) => {
+    const scope = within(canvasElement);
+    const canvas = pad(canvasElement);
+    await expect(console.warn).toHaveBeenCalledTimes(1);
+    await expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('malformed strokes'));
+    const pixels = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+    await expect(pixels.some((value, i) => i % 4 === 3 && value > 0)).toBe(true);
+    await expect(() => malformedApi.current!.toSvg()).toThrow(
+      expect.objectContaining({ name: 'SignatureExportError', code: 'invalid' }),
+    );
+    await expect(malformedApi.current!.toBlob()).rejects.toMatchObject({ code: 'invalid' });
+    await userEvent.click(scope.getByRole('button', { name: 'Download PNG' }));
+    await waitFor(async () => {
+      await expect(scope.getByRole('status')).toHaveTextContent('Export failed');
+    });
+    await userEvent.click(scope.getByRole('button', { name: 'Replay' }));
+    await waitFor(async () => {
+      await expect(scope.getByRole('status')).toHaveTextContent('Replay complete');
+    });
+    await gesture(canvas, strokeEvents);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    const value = (args.onValueChange as ReturnType<typeof fn>).mock.calls[0]![0] as SignatureStroke[];
+    await expect(value).toHaveLength(malformed.length + 1);
+    await expect(console.warn).toHaveBeenCalledTimes(1);
   },
 };
 export const FalsyGuide: Story = {
