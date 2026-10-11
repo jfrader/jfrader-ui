@@ -112,7 +112,7 @@ export function MetricCard({
   const labelId = `${useId()}-label`;
   const descriptionId = `${useId()}-description`;
   const hasLabel = isRenderable(label) && label !== '';
-  const hasDescription = isRenderable(description);
+  const hasDescription = isRenderable(description) && description !== '';
   const normalizedDelta =
     delta !== undefined && Number.isFinite(delta) ? (delta === 0 ? 0 : delta) : undefined;
   const direction =
@@ -122,10 +122,10 @@ export function MetricCard({
         ? 'up'
         : 'down';
   const Heading = `h${headingLevel}` as const;
-  const formattedValue =
-    value !== null && Number.isFinite(value)
-      ? new Intl.NumberFormat(locale, formatOptions).format(value)
-      : missingValueLabel;
+  const hasFiniteValue = value !== null && Number.isFinite(value);
+  const formattedValue = hasFiniteValue
+    ? new Intl.NumberFormat(locale, formatOptions).format(value)
+    : missingValueLabel;
   const formattedDelta =
     normalizedDelta !== undefined
       ? new Intl.NumberFormat(locale, {
@@ -194,7 +194,7 @@ export function MetricCard({
               css={[valueStyle, slotProps?.value?.css]}
             >
               {formattedValue}
-              {unitLabel ? ` ${unitLabel}` : ''}
+              {hasFiniteValue && unitLabel ? ` ${unitLabel}` : ''}
             </div>
             {hasDescription && (
               <p
