@@ -10,7 +10,9 @@
 // useListNavigation with focusItemOnOpen; FloatingFocusManager's own initial focus is off).
 // Focus return is explicit: only an ACCEPTED Escape or item selection restores focus to the
 // trigger (a rejected controlled dismissal keeps focus inside); Tab-out and outside presses
-// never move focus (returnFocus is off, so no transient trigger focus either).
+// never move focus (returnFocus is off, so no transient trigger focus either). Restoration is
+// skipped when the trigger left the document or became inert (its owner is being removed) or
+// when the command already moved focus elsewhere, so a neighbor or opened surface keeps it.
 // Disabled items stay in the list with aria-disabled="true"; arrows and typeahead skip them.
 // Consumer trigger handlers run before the menu's own; preventDefault() vetoes the open request.
 // The menu is labelled by the trigger; consumer aria-labelledby ids join it and a consumer
@@ -215,10 +217,13 @@ function MenuOverlay({
 
   // A rejected controlled dismissal keeps the menu open, so focus stays inside it.
   useEffect(() => {
-    if (!open && pendingFocusRestoreRef.current) {
-      pendingFocusRestoreRef.current = false;
-      refs.domReference.current?.focus();
-    }
+    if (open || !pendingFocusRestoreRef.current) return;
+    pendingFocusRestoreRef.current = false;
+    const trigger = refs.domReference.current;
+    if (!trigger?.isConnected || trigger.closest('[inert]')) return;
+    const active = trigger.ownerDocument.activeElement;
+    if (active && active !== trigger.ownerDocument.body) return;
+    trigger.focus();
   }, [open, refs]);
 
   const click = useClick(context);

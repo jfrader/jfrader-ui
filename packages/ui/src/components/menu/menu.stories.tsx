@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -344,6 +344,44 @@ export const SelectPreventDefault: Story = {
     // onSelect still runs; the consumer's preventDefault keeps the menu open.
     await expect(onEdit).toHaveBeenCalledTimes(1);
     await expect(bodyOf(canvasElement).getByRole('menu')).toBeVisible();
+  },
+};
+
+function RenameExample(props: MenuProps) {
+  const input = useRef<HTMLInputElement>(null);
+  return (
+    <div style={rowStyle}>
+      <Menu {...props}>
+        <Menu.Trigger>{TRIGGER}</Menu.Trigger>
+        <Menu.Content>
+          <Menu.Item
+            onSelect={() => {
+              onEdit();
+              input.current?.focus();
+            }}
+          >
+            Rename
+          </Menu.Item>
+        </Menu.Content>
+      </Menu>
+      <input ref={input} aria-label="Name" />
+    </div>
+  );
+}
+
+export const SelectMovesFocus: Story = {
+  render: (args) => <RenameExample {...args} />,
+  play: async ({ canvasElement }) => {
+    onEdit.mockClear();
+    const input = within(canvasElement).getByRole('textbox', { name: 'Name' });
+    await focusTrigger(canvasElement);
+    await userEvent.keyboard('{Enter}');
+    await expectFocused(canvasElement, 'Rename');
+    await userEvent.keyboard('{Enter}');
+    await expect(onEdit).toHaveBeenCalledTimes(1);
+    await expectClosed(canvasElement);
+    // The accepted close does not pull focus back from where the command sent it.
+    await expect(canvasElement.ownerDocument.activeElement).toBe(input);
   },
 };
 
