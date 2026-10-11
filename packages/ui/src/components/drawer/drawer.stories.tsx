@@ -381,6 +381,8 @@ export const Draggable: Story = {
 };
 
 export const DraggableRejected: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { draggable: true, open: true },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -468,6 +470,8 @@ async function expectPersistentOpen(canvasElement: HTMLElement) {
 }
 
 export const PersistentOpen: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -478,6 +482,8 @@ export const PersistentOpen: Story = {
 };
 
 export const PersistentOpenLight: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   decorators: [withLightTheme],
   globals: { theme: 'light' },
@@ -490,6 +496,8 @@ export const PersistentOpenLight: Story = {
 };
 
 export const OpenNoDescription: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <>
@@ -528,6 +536,8 @@ export const Controlled: Story = {
 };
 
 export const ControlledReject: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { open: true },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -582,6 +592,8 @@ export const BackdropClick: Story = {
 };
 
 export const NativeFormClose: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { open: true },
   render: (args) => (
     <DrawerExample
@@ -783,6 +795,8 @@ export const TriggerDefaultPrevented: Story = {
 };
 
 export const ExternalARIA: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <>
@@ -958,6 +972,8 @@ export const RTL: Story = {
 export const ReducedMotion: Story = {
   args: { defaultOpen: true, draggable: true },
   render: (args) => <DrawerExample {...args} />,
+  // Excluded from the docs page (see above); the description records why.
+  tags: ['!autodocs'],
   parameters: {
     docs: {
       description: {
@@ -1008,6 +1024,8 @@ export const ReducedMotion: Story = {
 export const ForcedColors: Story = {
   args: { defaultOpen: true },
   render: (args) => <DrawerExample {...args} />,
+  // Excluded from the docs page (see above); the description records why.
+  tags: ['!autodocs'],
   parameters: {
     docs: {
       description: {
@@ -1026,6 +1044,8 @@ export const ForcedColors: Story = {
 };
 
 export const PartStyling: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <Drawer {...args}>

@@ -200,6 +200,8 @@ function NativeCloseExample(props: CommandPaletteProps) {
 NativeCloseExample.displayName = 'NativeCloseExample';
 
 export const RepairNativeClose: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { open: true, onOpenChange: fn() },
   render: (args) => <NativeCloseExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -264,6 +266,8 @@ export const Escape: Story = {
 };
 
 export const RejectedControlled: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { open: true, onOpenChange: fn() },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -293,6 +297,8 @@ export const LightTheme: Story = {
 };
 
 export const Open: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
