@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -260,9 +259,10 @@ const detailsStyle = css({
 const statusStyle = css({ paddingInline: vars.space[3], '&:empty': { padding: 0 } });
 
 /** Read-only JSON tree. Search overlays expansion/pages; clearing restores base state.
- * Roving DOM focus and nested groups follow the TreeView navigation contract. Right opens,
- * Left closes/moves to parent even in RTL. Up/Down clamp; Home/End move; Enter/Space activate;
- * 500ms typeahead; / searches; Ctrl/Cmd+C copies JSON (+Shift copies path).
+ * Each expanded treeitem nests its child role=group; roving DOM focus follows the TreeView
+ * navigation contract. Right opens, Left closes/moves to parent even in RTL. Up/Down clamp;
+ * Home/End move; Enter/Space activate; 500ms typeahead; / searches; Ctrl/Cmd+C copies JSON
+ * (+Shift copies path).
  * Strict JSON only, no getters/cycles/nonfinite numbers. Paged, not virtualized.
  */
 export function JsonViewer({
@@ -302,16 +302,14 @@ export function JsonViewer({
   'aria-describedby': describedBy,
   ...rest
 }: JsonViewerProps) {
-  const id = useId();
   const treeRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
   const lastFocus = useRef<HTMLDivElement | null>(null);
   const suppressFocusSelection = useRef(false);
-  const previousNodes = useRef<Map<string, DataNode> | null>(null);
   const typeahead = useRef({ text: '', time: 0 });
   const nodes = useMemo(() => inspect(data, rootName), [data, rootName]);
-  const format = new Intl.NumberFormat(locale);
+  const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const labels: JsonViewerLabels = {
     tree: 'JSON',
     search: 'Search JSON',
@@ -371,14 +369,15 @@ export function JsonViewer({
     const matches: string[] = [];
     const ancestors = new Set<string>();
     const limits = new Map<string, number>();
+    const needle = query.toLowerCase();
     let truncated = false;
     if (query && nodes)
       for (const node of nodes.values()) {
         if (
-          !node.key.toLowerCase().includes(query.toLowerCase()) &&
+          !node.key.toLowerCase().includes(needle) &&
           (node.type === 'object' ||
             node.type === 'array' ||
-            !primitiveText(node).toLowerCase().includes(query.toLowerCase()))
+            !primitiveText(node).toLowerCase().includes(needle))
         )
           continue;
         if (matches.length === maxMatches) {
@@ -438,23 +437,31 @@ export function JsonViewer({
       stack.push(...children.toReversed());
     }
   }
+  // Paths removed by a data change resolve through the prior data's parents; a vanished selection
+  // keeps resolving from its last recovered path, so recovery survives repeated data changes.
+  const [recovery, setRecovery] = useState({ nodes, previousNodes: nodes, selected, path: selected });
+  const previousNodes = Object.is(recovery.nodes, nodes) ? recovery.previousNodes : recovery.nodes;
   const visiblePaths = new Set(visible.map((row) => row.path));
   const nearestVisible = (path: string): string => {
     let current: string | undefined = path;
     while (current !== undefined) {
       if (visiblePaths.has(current)) return current;
-      current = nodes?.get(current)?.parent ?? previousNodes.current?.get(current)?.parent;
+      current = nodes?.get(current)?.parent ?? previousNodes?.get(current)?.parent;
     }
     return rootName;
   };
   const tabStop = nearestVisible(focused);
-  const recoveredSelection = useRef({ selected, path: selected });
-  const recoveryPath =
-    recoveredSelection.current.selected === selected ? recoveredSelection.current.path : selected;
-  const current = nodes?.get(selected) ?? nodes?.get(nearestVisible(recoveryPath));
+  const current =
+    nodes?.get(selected) ??
+    nodes?.get(nearestVisible(recovery.selected === selected ? recovery.path : selected));
+  const recoveredPath = current?.path ?? rootName;
+  if (
+    !Object.is(recovery.nodes, nodes) ||
+    recovery.selected !== selected ||
+    recovery.path !== recoveredPath
+  )
+    setRecovery({ nodes, previousNodes, selected, path: recoveredPath });
   useLayoutEffect(() => {
-    recoveredSelection.current = { selected, path: current?.path ?? rootName };
-    previousNodes.current = nodes;
     if (!Object.is(paging.data, data)) {
       setPaging({ data, pages: new Map() });
       setOverlay({ query, closed: new Set(), opened: new Set(), pages: new Map() });
@@ -478,7 +485,9 @@ export function JsonViewer({
     const target = rowRefs.current.get(path);
     setFocused(path);
     target?.focus();
-    target?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+    target
+      ?.querySelector(':scope > [data-ui="json-viewer-row"]')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
   };
   const changeExpansion = (paths: readonly string[]) => {
     const unique = [...new Set(paths)];
@@ -656,86 +665,79 @@ export function JsonViewer({
     );
   };
   const rendered = new Map<string, ReactNode>();
-  for (let index = visible.length - 1; index >= 0; index--) {
-    const row = visible[index]!;
+  for (const row of visible.toReversed()) {
     const node = nodes?.get(row.path);
-    const labelId = `${id}-label-${index}`;
-    const groupId = childrenByPath.has(row.path) ? `${id}-group-${index}` : undefined;
+    const children = childrenByPath.get(row.path);
     rendered.set(
       row.path,
-      <div key={row.path} data-ui="json-viewer-node" role="none">
+      <div
+        key={row.path}
+        role="treeitem"
+        data-ui="json-viewer-item"
+        aria-level={row.level}
+        aria-posinset={row.position}
+        aria-setsize={row.setSize}
+        aria-expanded={node && isBranch(node) ? isOpen(row.path) : undefined}
+        aria-selected={node ? selected === row.path : undefined}
+        tabIndex={tabStop === row.path ? 0 : -1}
+        css={itemStyle}
+        ref={(element) => {
+          if (element) rowRefs.current.set(row.path, element);
+          else rowRefs.current.delete(row.path);
+        }}
+        onFocus={(event) => {
+          if (event.target !== event.currentTarget) return;
+          lastFocus.current = event.currentTarget;
+          setFocused(row.path);
+          if (node && !suppressFocusSelection.current) requestSelected(row.path);
+        }}
+        onBlur={(event) => {
+          if (!event.relatedTarget || !treeRef.current?.contains(event.relatedTarget as Node)) {
+            lastFocus.current = null;
+          }
+        }}
+      >
         <div
-          id={`${id}-item-${index}`}
-          role="treeitem"
-          data-ui="json-viewer-item"
-          aria-labelledby={labelId}
-          aria-owns={groupId}
-          aria-level={row.level}
-          aria-posinset={row.position}
-          aria-setsize={row.setSize}
-          aria-expanded={node && isBranch(node) ? isOpen(row.path) : undefined}
-          aria-selected={node ? selected === row.path : undefined}
-          tabIndex={tabStop === row.path ? 0 : -1}
-          css={itemStyle}
-          ref={(element) => {
-            if (element) rowRefs.current.set(row.path, element);
-            else rowRefs.current.delete(row.path);
-          }}
-          onFocus={(event) => {
-            if (event.target !== event.currentTarget) return;
-            lastFocus.current = event.currentTarget;
-            setFocused(row.path);
-            if (node && !suppressFocusSelection.current) requestSelected(row.path);
-          }}
-          onBlur={(event) => {
-            if (!event.relatedTarget || !treeRef.current?.contains(event.relatedTarget as Node)) {
-              lastFocus.current = null;
-            }
-          }}
+          data-ui="json-viewer-row"
+          className={slotProps?.row?.className}
+          css={[rowStyle, slotProps?.row?.css]}
+          style={{ '--json-depth': row.level - 1 } as CSSProperties}
         >
-          <div
-            data-ui="json-viewer-row"
-            className={slotProps?.row?.className}
-            css={[rowStyle, slotProps?.row?.css]}
-            style={{ '--json-depth': row.level - 1 } as CSSProperties}
-          >
-            <span data-ui="json-viewer-caret" aria-hidden="true" css={caretStyle}>
-              {node && isBranch(node) ? (isOpen(row.path) ? '▾' : '▸') : '·'}
-            </span>
-            <span id={labelId} data-ui="json-viewer-label">
-              {row.more !== undefined ? (
-                labels.showMore(row.more)
-              ) : (
-                <>
-                  {highlight(node!.key)}:{' '}
-                  <span
-                    data-ui="json-viewer-value"
-                    className={slotProps?.value?.className}
-                    css={[valueStyle, slotProps?.value?.css]}
-                  >
-                    {node!.type === 'object' || node!.type === 'array'
-                      ? labels.count(node!.children.length)
-                      : node!.type === 'string'
-                        ? highlight(String(node!.value), true)
-                        : highlight(JSON.stringify(node!.value))}
-                  </span>{' '}
-                  <span data-ui="json-viewer-type" css={typeStyle}>
-                    ({node!.type})
-                  </span>
-                </>
-              )}
-            </span>
-          </div>
+          <span data-ui="json-viewer-caret" aria-hidden="true" css={caretStyle}>
+            {node && isBranch(node) ? (isOpen(row.path) ? '▾' : '▸') : '·'}
+          </span>
+          <span data-ui="json-viewer-label">
+            {row.more !== undefined ? (
+              labels.showMore(row.more)
+            ) : (
+              <>
+                {highlight(node!.key)}:{' '}
+                <span
+                  data-ui="json-viewer-value"
+                  className={slotProps?.value?.className}
+                  css={[valueStyle, slotProps?.value?.css]}
+                >
+                  {node!.type === 'object' || node!.type === 'array'
+                    ? labels.count(node!.children.length)
+                    : node!.type === 'string'
+                      ? highlight(String(node!.value), true)
+                      : highlight(JSON.stringify(node!.value))}
+                </span>{' '}
+                <span data-ui="json-viewer-type" css={typeStyle}>
+                  ({node!.type})
+                </span>
+              </>
+            )}
+          </span>
         </div>
-        {childrenByPath.has(row.path) && (
+        {children && (
           <div
-            id={groupId}
             role="group"
             data-ui="json-viewer-group"
             className={slotProps?.group?.className}
             css={slotProps?.group?.css}
           >
-            {childrenByPath.get(row.path)!.map((child) => rendered.get(child.path))}
+            {children.map((child) => rendered.get(child.path))}
           </div>
         )}
       </div>,
@@ -750,7 +752,7 @@ export function JsonViewer({
       css={slotProps?.action?.css}
       disabled={disabled}
       onClick={run}
-      render={(props) => <button {...props} disabled={disabled} />}
+      render={(props) => <button {...props} type="button" disabled={disabled} />}
     >
       {label}
     </Button>

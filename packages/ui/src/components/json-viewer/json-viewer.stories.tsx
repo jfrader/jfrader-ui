@@ -29,7 +29,7 @@ const meta = {
       source: { code: snippet },
       description: {
         component:
-          'Read-only strict JSON inspector. Cycles, accessors, unsupported values and nonfinite numbers are rejected. Value copy uses pretty JSON, including quoted strings; paths use dot identifiers and JSON-escaped brackets. Expansion, search query and current path each support controlled/default/callback props. Search overlays ancestor expansion and pages; clearing restores base state. Arrays and objects are paged, not virtualized, and are not intended for arbitrary multi-megabyte input. Nested groups and roving DOM focus use the TreeView contract: Up/Down clamp, Right opens/enters, Left closes/parents (also in RTL), Home/End, Enter/Space, 500ms typeahead. / opens search; Ctrl/Cmd+C copies value, +Shift copies path. Environment stories are structural fixtures; actual media emulation and screen-reader checks are separate QA gates.',
+          'Read-only strict JSON inspector. Cycles, accessors, unsupported values and nonfinite numbers are rejected. Value copy uses pretty JSON, including quoted strings; paths use dot identifiers and JSON-escaped brackets. Expansion, search query and current path each support controlled/default/callback props. Search overlays ancestor expansion and pages; clearing restores base state. Arrays and objects are paged, not virtualized, and are not intended for arbitrary multi-megabyte input. Each expanded treeitem nests its child group; roving DOM focus uses the TreeView contract: Up/Down clamp, Right opens/enters, Left closes/parents (also in RTL), Home/End, Enter/Space, 500ms typeahead. / opens search; Ctrl/Cmd+C copies value, +Shift copies path. Environment stories are structural fixtures; actual media emulation and screen-reader checks are separate QA gates.',
       },
     },
     a11y: { test: 'error' },
@@ -62,6 +62,28 @@ async function withClipboard(
   }
 }
 
+const expectNestedGroups = async (canvasElement: HTMLElement) => {
+  await expect(canvasElement.querySelector('[aria-owns], [role="none"]')).toBeNull();
+  const tree = within(canvasElement).getByRole('tree');
+  for (const row of within(canvasElement).getAllByRole('treeitem')) {
+    const level = Number(row.getAttribute('aria-level'));
+    const parent = row.parentElement!;
+    if (level === 1) await expect(parent).toBe(tree);
+    else {
+      await expect(parent).toHaveAttribute('role', 'group');
+      await expect(parent.parentElement).toHaveAttribute('aria-level', String(level - 1));
+    }
+    const group = row.querySelector(':scope > [role="group"]');
+    if (row.getAttribute('aria-expanded') === 'true') {
+      await expect(group).not.toBeNull();
+      await expect(group!.querySelector(':scope > [role="treeitem"]')).toHaveAttribute(
+        'aria-level',
+        String(level + 1),
+      );
+    } else await expect(group).toBeNull();
+  }
+};
+
 export const Default: Story = {
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('tree', { name: 'Webhook payload' })).toBeInTheDocument();
@@ -70,16 +92,9 @@ export const Default: Story = {
     }
     await expect(canvasElement.querySelectorAll('[role="treeitem"][tabindex="0"]')).toHaveLength(1);
     await expect(canvas.getAllByRole('group')).toHaveLength(1);
+    await expectNestedGroups(canvasElement);
     for (const row of canvas.getAllByRole('treeitem')) {
-      const label = row.getAttribute('aria-labelledby')!;
-      await expect(canvasElement.ownerDocument.getElementById(label)).toBeInTheDocument();
-      await expect(row).toHaveAttribute('aria-level');
-      const owned = row.getAttribute('aria-owns');
-      if (owned) {
-        const group = canvasElement.ownerDocument.getElementById(owned)!;
-        await expect(group).toHaveAttribute('role', 'group');
-        await expect(group.querySelector('[role="treeitem"]')).toBeInTheDocument();
-      }
+      await expect(row).not.toHaveAttribute('aria-labelledby');
       await expect(
         row.querySelector('[data-ui="json-viewer-row"]')!.getBoundingClientRect().height,
       ).toBeGreaterThanOrEqual(32);
@@ -109,7 +124,13 @@ export const Sizes: Story = {
     </div>
   ),
 };
-export const Nested: Story = { args: { defaultExpandDepth: 3 } };
+export const Nested: Story = {
+  args: { defaultExpandDepth: 3 },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getAllByRole('group')).toHaveLength(4);
+    await expectNestedGroups(canvasElement);
+  },
+};
 export const SearchExpanded: Story = { args: { defaultQuery: 'writer' } };
 export const AllExpanded: Story = { args: { defaultExpandDepth: 10 } };
 export const Search: Story = {
@@ -527,8 +548,41 @@ export const Replacement: Story = {
     await expect(canvasElement.querySelectorAll('[role="treeitem"][tabindex="0"]')).toHaveLength(1);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenCalledWith('root.branch.leaf');
+    const path = canvasElement.querySelector('[data-ui="json-viewer-path"]');
+    await expect(path).toHaveTextContent(/^root\.branch$/);
+    await userEvent.click(replace);
+    await expect(path).toHaveTextContent(/^root\.branch$/);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onExpandedValueChange).not.toHaveBeenCalled();
     await expect(args.onQueryChange).not.toHaveBeenCalled();
+  },
+};
+const submitSpy = fn();
+export const InsideForm: Story = {
+  args: { defaultQuery: 'writer' },
+  render: (args) => (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        submitSpy();
+      }}
+    >
+      <JsonViewer {...args} />
+    </form>
+  ),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    submitSpy.mockClear();
+    const writeText = fn(async () => {});
+    const buttons = canvas.getAllByRole('button');
+    await expect(buttons).toHaveLength(6);
+    await withClipboard(canvasElement, writeText, async () => {
+      for (const button of buttons) {
+        await expect(button).toHaveAttribute('type', 'button');
+        await userEvent.click(button);
+      }
+    });
+    await expect(writeText).toHaveBeenCalledTimes(2);
+    await expect(submitSpy).not.toHaveBeenCalled();
   },
 };
 const slotRow = css({ minBlockSize: '48px' });
