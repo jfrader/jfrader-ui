@@ -270,7 +270,7 @@ function SelectionRing({
       observer.disconnect();
       stop();
     };
-  }, [root, value, reducedMotion, x, y, width, height]);
+  }, [root, value, content, reducedMotion, x, y, width, height]);
   return (
     <motion.span
       aria-hidden="true"
