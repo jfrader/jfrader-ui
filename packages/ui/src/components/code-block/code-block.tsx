@@ -26,6 +26,10 @@ import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
 import { CopyButton, type CopyButtonProps } from '../copy-button';
 
+/** Tab width for source text; kept as a named constant so it changes in one place. */
+const TAB_SIZE = 2;
+
+
 export interface CodeBlockSlotPartProps {
   className?: string;
   css?: Interpolation<Theme>;
@@ -154,7 +158,7 @@ const sourceTypography = css({
   lineHeight: vars.lineHeight.relaxed,
   fontVariantNumeric: 'tabular-nums',
   whiteSpace: 'pre',
-  tabSize: 2,
+  tabSize: TAB_SIZE,
 });
 const gutterStyle = css({
   flexShrink: 0,
@@ -305,7 +309,7 @@ export function CodeBlock({
     return () => {
       active = false;
     };
-  }, [code, language, hasHighlight]);
+  }, [code, language, hasHighlight, highlight]);
   const highlightedLines =
     hasHighlight && highlighted?.code === code && highlighted.language === language ? highlighted.lines : undefined;
   useLayoutEffect(() => {
