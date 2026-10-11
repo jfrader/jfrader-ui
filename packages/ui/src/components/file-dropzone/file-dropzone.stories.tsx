@@ -609,13 +609,27 @@ export const SurfaceOpensPicker: Story = {
     await expect(args.slotProps?.input?.onClick).toHaveBeenCalledTimes(2);
     await userEvent.click(canvas.getByText('invoice.pdf'));
     await expect(args.slotProps?.input?.onClick).toHaveBeenCalledTimes(2);
+    const list = canvas.getByRole('list', { name: 'Files' });
+    const below = list.getBoundingClientRect();
+    const lastRow = list.lastElementChild!.getBoundingClientRect();
+    const blank = input.ownerDocument.elementFromPoint(
+      below.left + below.width / 2,
+      (lastRow.bottom + below.bottom) / 2,
+    ) as HTMLElement;
+    await expect(blank).toBe(list);
+    await expect(input.closest('label')!.contains(blank)).toBe(false);
+    await userEvent.click(blank);
+    await expect(args.slotProps?.input?.onClick).toHaveBeenCalledTimes(3);
     await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove invoice.pdf' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.slotProps?.input?.onClick).toHaveBeenCalledTimes(3);
   },
   parameters: {
     docs: {
       description: {
         story:
-          'Clicks on the surface reach the native input once through its label; rows placed inside the frame stay outside the label. The real OS picker is a browser QA gate.',
+          'Clicks anywhere on the dashed surface open the native input once: the label forwards its own clicks, the frame forwards the blank area around an inside list, and file rows with their actions never open it. The real OS picker is a browser QA gate.',
       },
     },
   },

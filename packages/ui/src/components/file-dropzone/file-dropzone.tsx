@@ -121,6 +121,7 @@ const targetStyle = css({
   border: `1px dashed ${vars.color.borderControl}`,
   borderRadius: vars.radius.lg,
   backgroundColor: vars.color.surface,
+  cursor: 'pointer',
   transitionProperty: 'background-color, border-color',
   transitionDuration: vars.motion.duration.fast,
   transitionTimingFunction: vars.motion.easeStandard,
@@ -137,7 +138,6 @@ const surfaceStyle = css({
   justifyItems: 'center',
   gap: vars.space[3],
   textAlign: 'center',
-  cursor: 'pointer',
 });
 const inactiveSurfaceStyle = css({ cursor: 'not-allowed' });
 const surfaceDensity: Record<FileDropzoneSize, SerializedStyles> = {
@@ -185,6 +185,7 @@ const itemStyle = css({
   border: `1px solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.md,
   backgroundColor: vars.color.surfaceRaised,
+  cursor: 'default',
 });
 const detailsStyle = css({
   flex: '1 1 10rem',
@@ -219,6 +220,7 @@ const errorStyle = css({
 const instantProgressStyle = css({
   '& > [data-ui="progress-indicator"]': { transitionDuration: '0s' },
 });
+const SURFACE_EXCLUDED = 'label, [data-file-row], a, button, input, select, textarea, [role="button"]';
 const EMPTY: FileDropzoneItem[] = [];
 const DEFAULT_MAX_FILES = 5;
 const MAX_PERCENT = 100;
@@ -737,12 +739,18 @@ export function FileDropzone({
             {...slotProps?.target}
             data-dragging={dragging}
             data-compact={folded}
-            css={[targetStyle, slotProps?.target?.css]}
+            css={[targetStyle, inactive && inactiveSurfaceStyle, slotProps?.target?.css]}
+            onClick={event => {
+              slotProps?.target?.onClick?.(event);
+              const excluded = (event.target as Element).closest(SURFACE_EXCLUDED);
+              if (!event.defaultPrevented && !inactive && !event.currentTarget.contains(excluded))
+                input.current?.click();
+            }}
           >
             <label
               {...slotProps?.label}
               htmlFor={inputId}
-              css={[surfaceStyle, surfaceDensity[size], inactive && inactiveSurfaceStyle, slotProps?.label?.css]}
+              css={[surfaceStyle, surfaceDensity[size], slotProps?.label?.css]}
             >
               <input
                 {...inputProps}
