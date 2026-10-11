@@ -151,7 +151,9 @@ export const Sizes: Story = {
       const overflowRect = overflow.getBoundingClientRect();
       await expect(Math.round(avatarRect.width)).toBe(SIZE_PX[size]);
       await expect(Math.round(avatarRect.height)).toBe(SIZE_PX[size]);
-      await expect(Math.round(overflowRect.width)).toBe(SIZE_PX[size]);
+      // The overflow circle keeps the size token as a minimum but grows to fit its count text,
+      // whose rendered width depends on the environment's font metrics (CI vs local).
+      await expect(overflowRect.width).toBeGreaterThanOrEqual(SIZE_PX[size] - 0.5);
       await expect(Math.round(overflowRect.height)).toBe(SIZE_PX[size]);
     }
   },
