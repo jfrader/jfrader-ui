@@ -85,6 +85,19 @@ async function expectFocusRing(element: HTMLElement) {
   await expect(Math.abs(parseFloat(style.outlineWidth) - 2)).toBeLessThan(1.1);
 }
 
+/** Computed lengths at a fractional devicePixelRatio drift from the authored px value. */
+async function expectPx(value: string, expected: number) {
+  await expect(Math.abs(parseFloat(value) - expected)).toBeLessThan(1.1);
+}
+
+/** Visually hidden yet still in the accessibility tree (not `display: none`, no aria-hidden ancestor). */
+async function expectVisuallyHidden(element: HTMLElement) {
+  const style = getComputedStyle(element);
+  await expect(style.display).not.toBe('none');
+  await expect(style.clipPath).toBe('inset(50%)');
+  await expect(element.closest('[aria-hidden="true"]')).toBeNull();
+}
+
 /** The authored rule inside `condition` that targets one of `element`'s classes (optionally a pseudo-element). */
 function findConditionalRule(element: HTMLElement, condition: string, pseudo = '') {
   for (const sheet of Array.from(element.ownerDocument.styleSheets)) {
@@ -110,8 +123,11 @@ export const Default: Story = {
     await expect(root).toHaveAttribute('data-ui', 'stepper');
     const list = within(root).getByRole('list');
     await expect(list.tagName).toBe('OL');
+    // Explicit roles keep list semantics where `list-style: none` would drop them (WebKit).
+    await expect(list).toHaveAttribute('role', 'list');
     const items = within(list).getAllByRole('listitem');
     await expect(items).toHaveLength(4);
+    for (const item of items) await expect(item).toHaveAttribute('role', 'listitem');
     await expect(states(root)).toEqual(['complete', 'current', 'upcoming', 'upcoming']);
     await expect(root.querySelectorAll('[aria-current="step"]')).toHaveLength(1);
     await expect(items[1]).toHaveAttribute('aria-current', 'step');
@@ -289,14 +305,41 @@ export const Compact: Story = {
     const root = getRoot(canvasElement);
     await expect(root).toHaveAttribute('data-compact');
     for (const label of parts(root, 'label')) await expect(getComputedStyle(label).display).toBe('none');
-    for (const detail of parts(root, 'description')) await expect(getComputedStyle(detail).display).toBe('none');
-    // Names and states stay complete for assistive tech.
-    await expect(canvas.getByRole('button', { name: 'Profile, step 2 of 4, current step' })).toBeInTheDocument();
+    for (const detail of parts(root, 'description')) await expectVisuallyHidden(detail);
+    // Names, states and descriptions stay complete for assistive tech.
+    const current = canvas.getByRole('button', { name: 'Profile, step 2 of 4, current step' });
+    await expect(current).toHaveAccessibleDescription('Name and avatar');
     await expect(canvas.getByRole('button', { name: 'Review, step 4 of 4, upcoming' })).toBeInTheDocument();
     const caption = parts(root, 'caption')[0]!;
     await expect(getComputedStyle(caption).display).toBe('block');
     await expect(caption).toHaveAttribute('aria-hidden', 'true');
     await expect(caption).toHaveTextContent('ProfileName and avatar');
+  },
+};
+
+export const CompactStatic: Story = {
+  args: { compact: true, value: 1 },
+  render: (args) => (
+    <>
+      <Stepper {...args} />
+      <Stepper {...args} details="current" label="Current details" />
+    </>
+  ),
+  parameters: { docs: { source: { code: '<Stepper steps={steps} value={1} compact />' } } },
+  play: async ({ canvasElement }) => {
+    const [all, current] = getRoots(canvasElement);
+    // The caption repeats the current description aria-hidden; the originals stay exposed.
+    for (const root of [all!, current!]) {
+      await expect(parts(root, 'caption')[0]).toHaveAttribute('aria-hidden', 'true');
+      for (const detail of parts(root, 'description')) await expectVisuallyHidden(detail);
+    }
+    await expect(parts(all!, 'description').map((detail) => detail.textContent)).toEqual(
+      STEPS.map((step) => step.description),
+    );
+    const [currentDetail] = parts(current!, 'description');
+    await expect(parts(current!, 'description')).toHaveLength(1);
+    await expect(currentDetail).toHaveTextContent('Name and avatar');
+    await expect(currentDetail!.closest('li')).toHaveAttribute('aria-current', 'step');
   },
 };
 
@@ -316,6 +359,7 @@ export const ResponsiveNarrow: Story = {
     await expect(auto).not.toHaveAttribute('data-compact');
     for (const label of parts(auto!, 'label')) await expect(getComputedStyle(label).display).toBe('none');
     await expect(getComputedStyle(parts(auto!, 'caption')[0]!).display).toBe('block');
+    for (const detail of parts(auto!, 'description')) await expectVisuallyHidden(detail);
     for (const root of [fixed!, vertical!]) {
       for (const label of parts(root, 'label')) await expect(getComputedStyle(label).display).not.toBe('none');
       await expect(getComputedStyle(parts(root, 'caption')[0]!).display).toBe('none');
@@ -782,40 +826,44 @@ export const FalsyDetails: Story = {
   },
 };
 
-const SLOT_OVERRIDE = '3px';
+// Lengths further apart than the DPR tolerance, so precedence stays observable.
+const SLOT_OVERRIDE = 3;
+const CSS_PADDING = 1;
+const SX_PADDING = 6;
+const px = (value: number) => `${value}px`;
 
 export const SlotStyling: Story = {
   args: {
     value: 4,
     compact: true,
-    sx: { paddingBlock: '2px' },
+    sx: { paddingBlock: px(SX_PADDING) },
     slotProps: {
-      root: { css: { paddingInline: SLOT_OVERRIDE } },
-      list: { css: { paddingBlock: SLOT_OVERRIDE } },
-      item: { css: { paddingBlock: SLOT_OVERRIDE } },
-      head: { css: { borderRadius: SLOT_OVERRIDE } },
-      marker: { css: { borderRadius: SLOT_OVERRIDE } },
-      label: { css: { letterSpacing: SLOT_OVERRIDE } },
-      description: { css: { letterSpacing: SLOT_OVERRIDE } },
-      connector: { css: { blockSize: SLOT_OVERRIDE } },
-      caption: { css: { letterSpacing: SLOT_OVERRIDE } },
+      root: { css: { paddingInline: px(SLOT_OVERRIDE) } },
+      list: { css: { paddingBlock: px(SLOT_OVERRIDE) } },
+      item: { css: { paddingBlock: px(SLOT_OVERRIDE) } },
+      head: { css: { borderRadius: px(SLOT_OVERRIDE) } },
+      marker: { css: { borderRadius: px(SLOT_OVERRIDE) } },
+      label: { css: { letterSpacing: px(SLOT_OVERRIDE) } },
+      description: { css: { letterSpacing: px(SLOT_OVERRIDE) } },
+      connector: { css: { blockSize: px(SLOT_OVERRIDE) } },
+      caption: { css: { letterSpacing: px(SLOT_OVERRIDE) } },
     },
   },
-  render: (args) => <Stepper {...args} css={{ paddingBlock: '1px' }} />,
+  render: (args) => <Stepper {...args} css={{ paddingBlock: px(CSS_PADDING) }} />,
   play: async ({ canvasElement }) => {
     const root = getRoot(canvasElement);
     const style = (element: HTMLElement) => getComputedStyle(element);
     // Own styles → slotProps.root → consumer css → sx.
-    await expect(style(root).paddingTop).toBe('2px');
-    await expect(style(root).paddingLeft).toBe(SLOT_OVERRIDE);
-    await expect(style(parts(root, 'list')[0]!).paddingTop).toBe(SLOT_OVERRIDE);
-    await expect(style(parts(root, 'item')[0]!).paddingTop).toBe(SLOT_OVERRIDE);
-    await expect(style(parts(root, 'head')[0]!).borderTopLeftRadius).toBe(SLOT_OVERRIDE);
-    await expect(style(parts(root, 'marker')[0]!).borderTopLeftRadius).toBe(SLOT_OVERRIDE);
-    await expect(style(parts(root, 'label')[0]!).letterSpacing).toBe(SLOT_OVERRIDE);
-    await expect(style(parts(root, 'description')[0]!).letterSpacing).toBe(SLOT_OVERRIDE);
-    await expect(style(parts(root, 'connector')[0]!).height).toBe(SLOT_OVERRIDE);
-    await expect(style(parts(root, 'caption')[0]!).letterSpacing).toBe(SLOT_OVERRIDE);
+    await expectPx(style(root).paddingTop, SX_PADDING);
+    await expectPx(style(root).paddingLeft, SLOT_OVERRIDE);
+    await expectPx(style(parts(root, 'list')[0]!).paddingTop, SLOT_OVERRIDE);
+    await expectPx(style(parts(root, 'item')[0]!).paddingTop, SLOT_OVERRIDE);
+    await expectPx(style(parts(root, 'head')[0]!).borderTopLeftRadius, SLOT_OVERRIDE);
+    await expectPx(style(parts(root, 'marker')[0]!).borderTopLeftRadius, SLOT_OVERRIDE);
+    await expectPx(style(parts(root, 'label')[0]!).letterSpacing, SLOT_OVERRIDE);
+    await expectPx(style(parts(root, 'description')[0]!).letterSpacing, SLOT_OVERRIDE);
+    await expectPx(style(parts(root, 'connector')[0]!).height, SLOT_OVERRIDE);
+    await expectPx(style(parts(root, 'caption')[0]!).letterSpacing, SLOT_OVERRIDE);
   },
 };
 
@@ -891,12 +939,18 @@ export const AnnounceChanges: Story = {
   },
 };
 
-function RemovableStepper(props: StepperProps) {
+function RemovableStepper({ keepFocus = false, ...props }: StepperProps & { keepFocus?: boolean }) {
   const [steps, setSteps] = useState(STEPS);
   return (
     <>
       <Stepper {...props} steps={steps} value={steps.findIndex((step) => step.id === 'review')} />
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => setSteps((current) => current.filter((step) => step.id !== 'profile'))}>
+      <button
+        style={FIXTURE_BUTTON}
+        type="button"
+        // Prevents the click from taking focus, so the update lands while a step is focused.
+        onMouseDown={keepFocus ? (event) => event.preventDefault() : undefined}
+        onClick={() => setSteps((current) => current.filter((step) => step.id !== 'profile'))}
+      >
         Remove profile
       </button>
     </>
@@ -923,5 +977,26 @@ export const ListChanges: Story = {
     await expect(heads.map((head) => head.tabIndex)).toEqual([-1, -1, 0]);
     await userEvent.tab({ shift: true });
     await expectFocusRing(heads[2]!);
+  },
+};
+
+export const ListChangesFocusedRemoval: Story = {
+  args: { interactive: true },
+  render: (args) => <RemovableStepper {...args} keepFocus />,
+  parameters: { docs: { source: { code: USAGE } } },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const root = getRoot(canvasElement);
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}');
+    const profile = canvas.getByRole('button', { name: /^Profile/ });
+    await expect(profile).toHaveFocus();
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove profile' }));
+    await expect(profile.isConnected).toBe(false);
+    // Focus was inside the stepper, so it re-anchors to the current step instead of the body.
+    const heads = parts(root, 'head');
+    await expect(heads.map((head) => head.tabIndex)).toEqual([-1, -1, 0]);
+    await expect(root.ownerDocument.activeElement).toBe(heads[2]);
+    await expect(heads[2]).toHaveAccessibleName('Review, step 3 of 3, current step');
   },
 };

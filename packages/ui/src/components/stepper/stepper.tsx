@@ -18,6 +18,7 @@
 // DOM only percent-encoded.
 import {
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ComponentPropsWithRef,
@@ -218,6 +219,8 @@ const rootSizeStyles: Record<StepperSize, SerializedStyles> = {
   }),
 };
 
+// `list-style: none` makes WebKit drop list semantics (MDN, list-style accessibility concerns), so
+// the list and its items restate their roles explicitly.
 const listStyles: Record<StepperOrientation, SerializedStyles> = {
   horizontal: css({ display: 'flex', margin: 0, padding: 0, listStyle: 'none' }),
   vertical: css({ display: 'flex', flexDirection: 'column', margin: 0, padding: 0, listStyle: 'none' }),
@@ -350,7 +353,8 @@ const descriptionStyle = css({
   color: vars.color.textMuted,
   overflowWrap: 'anywhere',
   '&[data-state="error"]': { color: vars.color.dangerText },
-  ...whenCompact({ '&:not([data-state="error"])': { display: 'none' } }),
+  // The visible caption repeats the current description aria-hidden, so the original stays readable.
+  ...whenCompact({ '&:not([data-state="error"])': visuallyHiddenStyle }),
 });
 
 // Horizontal details align with the label; vertical ones sit beside the connector rail.
@@ -487,6 +491,16 @@ export function Stepper(props: StepperProps) {
       : reachable[0];
 
   const buttons = useRef(new Map<string, HTMLButtonElement>());
+  // Set when a focused step button leaves the DOM; focus returns to the roving stop only if
+  // nothing else took it in the meantime.
+  const focusLost = useRef(false);
+  useLayoutEffect(() => {
+    if (!focusLost.current) return;
+    focusLost.current = false;
+    const tabStopButton = tabStop === undefined ? undefined : buttons.current.get(steps[tabStop]?.id ?? '');
+    const active = tabStopButton?.ownerDocument.activeElement;
+    if (tabStopButton && (!active || active === tabStopButton.ownerDocument.body)) tabStopButton.focus();
+  });
 
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const isRtl = getComputedStyle(event.currentTarget).direction === 'rtl';
@@ -523,6 +537,7 @@ export function Stepper(props: StepperProps) {
 
   const list = (
     <ol
+      role="list"
       data-ui="stepper-list"
       className={slotProps?.list?.className}
       css={[listStyles[orientation], slotProps?.list?.css]}
@@ -567,6 +582,7 @@ export function Stepper(props: StepperProps) {
         return (
           <li
             key={step.id}
+            role="listitem"
             data-ui="stepper-item"
             data-state={status}
             aria-current={isCurrent ? 'step' : undefined}
@@ -578,8 +594,12 @@ export function Stepper(props: StepperProps) {
               <button
                 {...headRest}
                 ref={(node) => {
-                  if (node) buttons.current.set(step.id, node);
-                  else buttons.current.delete(step.id);
+                  if (!node) return;
+                  buttons.current.set(step.id, node);
+                  return () => {
+                    buttons.current.delete(step.id);
+                    if (node.ownerDocument.activeElement === node) focusLost.current = true;
+                  };
                 }}
                 type="button"
                 data-ui="stepper-head"
