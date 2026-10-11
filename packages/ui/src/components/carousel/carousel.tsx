@@ -12,8 +12,9 @@
 // viewport itself, ArrowRight/ArrowLeft step one slide (RTL-aware, no wrap) and Home/End jump
 // to the first/last slide; keys from the slide's own content are never intercepted.
 // Rotation never starts by itself: it needs `interval` plus an explicit Start (or an explicit
-// playing seed). Any focus inside the carousel latches it off until Start is pressed again;
-// hover, drag, an offscreen root, a hidden page and reduced motion pause it.
+// playing seed). Any focus inside the carousel, or a rotation step the parent declines,
+// latches it off until Start is pressed again; hover, drag, an offscreen root, a hidden page and
+// reduced motion pause it.
 // Scrolling is native (scroll-snap); a mouse drag adapter scrolls the viewport and, on release,
 // requests the nearest slide once. A rejected controlled request scrolls back to the accepted
 // slide.
@@ -172,6 +173,9 @@ function chain<E extends SyntheticEvent>(theirs: ((event: E) => void) | undefine
 }
 
 const joinIds = (...ids: (string | undefined)[]) => ids.filter(Boolean).join(' ') || undefined;
+
+const slideKey = (slide: ReactNode, index: number) =>
+  isValidElement(slide) && slide.key !== null ? slide.key : `slide-${index}`;
 
 const rootStyle = css({
   label: 'carousel',
@@ -367,6 +371,8 @@ export function Carousel({
 
   const slides = Children.toArray(children);
   const count = slides.length;
+  // Changes when slides are added, removed, replaced or reordered.
+  const slideIdentity = JSON.stringify(slides.map(slideKey));
   const tabbed = count > 1;
   const [requestedIndex, requestRawIndex] = useControlledState<number>(valueProp, defaultValue, onValueChange);
   const rawIndex = requestedIndex ?? 0;
@@ -381,8 +387,11 @@ export function Carousel({
     defaultPlayingValue ?? autoPlay,
     onPlayingValueChange,
   );
-  // Set by focus, Stop and reduced motion; only an explicit Start clears it.
+  // Set by focus, Stop, reduced motion and a declined rotation request; only an explicit Start
+  // clears it.
   const [stopped, setStopped] = useState(false);
+  // The slide a rotation request left from, until the update it was issued in has rendered.
+  const [rotationFrom, setRotationFrom] = useState<number | null>(null);
   const reducedMotion = useSyncExternalStore(subscribeReducedMotion, readReducedMotion, serverFalse);
   const pageHidden = useSyncExternalStore(subscribeVisibility, readPageHidden, serverFalse);
   const [hovered, setHovered] = useState(false);
@@ -435,12 +444,23 @@ export function Carousel({
     return () => observer.disconnect();
   }, [hasRotation]);
 
-  // One timer per accepted slide: a rejected request leaves `active` unchanged, so no new timer.
+  // One timer per accepted slide.
   useEffect(() => {
     if (!rotating || rotationInterval === undefined) return;
-    const timer = setTimeout(() => requestRawIndex((active + 1) % count), rotationInterval);
+    const timer = setTimeout(() => {
+      setRotationFrom(active);
+      requestRawIndex((active + 1) % count);
+    }, rotationInterval);
     return () => clearTimeout(timer);
   }, [rotating, rotationInterval, active, count, requestRawIndex]);
+
+  // A rotation request the parent did not accept in the same update latches rotation off, so
+  // pause/resume cycles cannot repeat it and the control shows Start.
+  useEffect(() => {
+    if (rotationFrom === null) return;
+    setRotationFrom(null);
+    if (rotationFrom === active) setStopped(true);
+  }, [rotationFrom, active]);
 
   useEffect(() => () => clearTimeout(settleTimerRef.current), []);
 
@@ -477,22 +497,26 @@ export function Carousel({
     return nearest;
   };
 
-  // Accepted index changes, rejected gestures (syncTick) and slide changes re-centre the
-  // accepted slide. Focus left inside a slide that just became inert moves to the viewport.
+  // Accepted index changes, rejected gestures (syncTick) and slide changes (added, removed,
+  // replaced, reordered) re-centre the accepted slide. Focus stranded by the change — inside a
+  // slide that became inert, or dropped to the body with a removed or moved slide — moves to
+  // the viewport; focus elsewhere on the page stays put.
   useLayoutEffect(() => {
     activeRef.current = active;
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const focused = viewport.ownerDocument.activeElement;
+    const { activeElement: focused, body } = viewport.ownerDocument;
     const lastFocus = lastFocusRef.current;
-    const focusInInertSlide = focused !== null && viewport.contains(focused) && focused.closest('[inert]') !== null;
-    const focusLostWithSlide = focused === viewport.ownerDocument.body && lastFocus !== null && !lastFocus.isConnected;
+    const inInertSlide = (element: Element) => viewport.contains(element) && element.closest('[inert]') !== null;
+    const focusInInertSlide = focused !== null && inInertSlide(focused);
+    const focusLostWithSlide =
+      focused === body && lastFocus !== null && (!lastFocus.isConnected || inInertSlide(lastFocus));
     if (focusInInertSlide || focusLostWithSlide) viewport.focus({ preventScroll: true });
     if (!tabListRef.current?.contains(focused)) setFocusedIndicator(null);
     if (dragRef.current?.active) return;
     scrollToSlide(active, firstSyncRef.current || reducedMotion ? 'instant' : 'smooth');
     firstSyncRef.current = false;
-  }, [active, count, syncTick]);
+  }, [active, slideIdentity, syncTick]);
 
   // Re-centre on resize; reads the accepted index through a ref so the observer stays put.
   const hasSlides = count > 0;
@@ -750,7 +774,7 @@ export function Carousel({
                   return (
                     <div
                       {...slideSlot}
-                      key={isValidElement(slide) && slide.key !== null ? slide.key : `slide-${index}`}
+                      key={slideKey(slide, index)}
                       role={tabbed ? 'tabpanel' : undefined}
                       id={panelId(index)}
                       aria-labelledby={joinIds(slideSlot?.['aria-labelledby'], tabbed ? indicatorId(index) : undefined)}
@@ -785,7 +809,7 @@ export function Carousel({
                 {slides.map((slide, index) => (
                   <button
                     {...indicatorSlot}
-                    key={isValidElement(slide) && slide.key !== null ? slide.key : `slide-${index}`}
+                    key={slideKey(slide, index)}
                     type="button"
                     role="tab"
                     id={indicatorId(index)}

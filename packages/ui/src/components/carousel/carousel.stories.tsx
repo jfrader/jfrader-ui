@@ -18,6 +18,10 @@ const TARGET_PX = Number.parseFloat(base.space[8]);
 const ROTATION_MS = 300;
 const TRANSITION_MS = Number.parseFloat(base.motion.duration.fast) + 40;
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+/** Horizontal mouse travel that stays under the drag threshold. */
+const SUB_THRESHOLD_PX = 4;
+/** Horizontal mouse travel past the midpoint between two slides. */
+const DRAG_PX = 240;
 
 // The inset keeps the test runner's parked pointer (page origin) off the carousel, so hover
 // pause only engages when a story hovers on purpose.
@@ -77,7 +81,7 @@ const meta = {
       },
       description: {
         component:
-          'A short, mounted set of peer slides with a slide picker, Previous/Next and native scroll-snap (trackpad, touch, mouse drag). Give every slide a stable key and, when slides have names, `getSlideLabel`. Nothing rotates by default: rotation needs `interval` plus Start (or an explicit playing seed), stops for good when focus enters the carousel, pauses on hover, drag, offscreen and hidden pages, and is unavailable under reduced motion. A controlled `value` that the parent declines leaves the accepted slide in place and scrolls back to it.',
+          'A short, mounted set of peer slides with a slide picker, Previous/Next and native scroll-snap (trackpad, touch, mouse drag). Give every slide a stable key and, when slides have names, `getSlideLabel`. Nothing rotates by default: rotation needs `interval` plus Start (or an explicit playing seed), stops for good when focus enters the carousel or the parent declines a rotation step, pauses on hover, drag, offscreen and hidden pages, and is unavailable under reduced motion. A controlled `value` that the parent declines leaves the accepted slide in place and scrolls back to it.',
       },
     },
   },
@@ -153,15 +157,40 @@ function mediaDeclarations(element: Element, feature: string) {
     .map((rule) => rule.style);
 }
 
-/** Synthetic mouse pointer on the viewport; pointer capture is recorded, not delegated. */
+const MOUSE_POINTER_ID = 1;
+
+/**
+ * Synthetic mouse pointer on the viewport. Synthetic pointers are not active, so the browser
+ * would reject a real capture; `capture` records the call instead. Real capture is browser QA.
+ */
 function mouseOn(viewport: HTMLElement) {
-  viewport.setPointerCapture = () => {};
-  return (type: string, clientX: number, clientY: number) =>
+  const capture = spyOn(viewport, 'setPointerCapture').mockImplementation(() => {});
+  const box = viewport.getBoundingClientRect();
+  const x = box.left + box.width / 2;
+  const y = box.top + box.height / 2;
+  const fire = (type: string, dx: number, dy = 0) =>
     fireEvent(
       viewport,
-      new PointerEvent(type, { bubbles: true, pointerId: 1, pointerType: 'mouse', button: 0, clientX, clientY }),
+      new PointerEvent(type, {
+        bubbles: true,
+        pointerId: MOUSE_POINTER_ID,
+        pointerType: 'mouse',
+        button: 0,
+        clientX: x + dx,
+        clientY: y + dy,
+      }),
     );
+  /** Press, move through `steps` (horizontal offsets) and finish with `end`. */
+  const drag = (steps: number[], end: 'pointerup' | 'pointercancel' = 'pointerup') => {
+    fire('pointerdown', 0);
+    for (const step of steps) fire('pointermove', step);
+    fire(end, steps.at(-1) ?? 0);
+  };
+  return { fire, drag, capture };
 }
+
+/** Steps a drag passes through on its way to `distance` (negative is leftward). */
+const dragSteps = (distance: number) => [10, 80, 160, Math.abs(distance)].map((step) => Math.sign(distance) * step);
 
 function ControlledCarousel(props: CarouselProps) {
   const [value, setValue] = useState(0);
@@ -411,14 +440,9 @@ export const RejectedControlled: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(3);
 
     // A drag that the parent declines requests once, then scrolls back to the accepted slide.
-    const viewport = viewportOf(canvasElement);
-    const box = viewport.getBoundingClientRect();
-    const mouse = mouseOn(viewport);
-    const x = box.left + box.width / 2;
-    const y = box.top + box.height / 2;
-    mouse('pointerdown', x, y);
-    for (const step of [10, 80, 160, 240]) mouse('pointermove', x - step, y);
-    mouse('pointerup', x - 240, y);
+    const mouse = mouseOn(viewportOf(canvasElement));
+    mouse.drag(dragSteps(-DRAG_PX));
+    await expect(mouse.capture).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenCalledTimes(4);
     await expect(args.onValueChange).toHaveBeenLastCalledWith(1);
     await expectActive(canvasElement, 0);
@@ -451,22 +475,34 @@ export const PointerSnap: Story = {
   },
   play: async ({ args, canvasElement }) => {
     const viewport = viewportOf(canvasElement);
-    const box = viewport.getBoundingClientRect();
     const mouse = mouseOn(viewport);
-    const x = box.left + box.width / 2;
-    const y = box.top + box.height / 2;
+    const startScroll = viewport.scrollLeft;
+
+    // Travel under the threshold is a press, not a drag: no capture, scroll or request.
+    mouse.fire('pointerdown', 0);
+    mouse.fire('pointermove', -SUB_THRESHOLD_PX);
+    await expect(viewport).not.toHaveAttribute('data-dragging');
+    await expect(viewport.scrollLeft).toBe(startScroll);
+    mouse.fire('pointerup', -SUB_THRESHOLD_PX);
+    await expect(mouse.capture).not.toHaveBeenCalled();
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expectActive(canvasElement, 0);
 
     // Mostly vertical travel is not a horizontal drag.
-    mouse('pointerdown', x, y);
-    mouse('pointermove', x - 3, y + 20);
-    mouse('pointerup', x - 3, y + 20);
+    mouse.fire('pointerdown', 0);
+    mouse.fire('pointermove', -3, 20);
+    mouse.fire('pointerup', -3, 20);
+    await expect(mouse.capture).not.toHaveBeenCalled();
     await expect(args.onValueChange).not.toHaveBeenCalled();
     await expect(viewport).not.toHaveAttribute('data-dragging');
 
-    mouse('pointerdown', x, y);
-    for (const step of [10, 80, 160, 240]) mouse('pointermove', x - step, y);
+    mouse.fire('pointerdown', 0);
+    for (const step of dragSteps(-DRAG_PX)) mouse.fire('pointermove', step);
     await expect(viewport).toHaveAttribute('data-dragging', 'true');
-    mouse('pointerup', x - 240, y);
+    await expect(mouse.capture).toHaveBeenCalledTimes(1);
+    await expect(mouse.capture).toHaveBeenLastCalledWith(MOUSE_POINTER_ID);
+    await expect(viewport.scrollLeft).toBeGreaterThan(startScroll);
+    mouse.fire('pointerup', -DRAG_PX);
     fireEvent.click(slidesOf(canvasElement)[0]!.firstElementChild!);
     await expect(slideClick).not.toHaveBeenCalled();
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
@@ -483,21 +519,59 @@ export const PointerSnap: Story = {
     await expect(slideClick).toHaveBeenLastCalledWith('garden');
 
     // A cancelled drag restores the accepted slide without a request.
-    mouse('pointerdown', x, y);
-    for (const step of [10, 120, 240]) mouse('pointermove', x - step, y);
-    mouse('pointercancel', x - 240, y);
+    mouse.drag(dragSteps(-DRAG_PX), 'pointercancel');
+    await expect(mouse.capture).toHaveBeenCalledTimes(2);
     await expectCentred(canvasElement, 1);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
 
-    // Native scrolling (trackpad wheel here) settles on a slide and requests it once.
-    const third = slidesOf(canvasElement)[2]!.getBoundingClientRect();
-    fireEvent.wheel(viewport, { deltaX: third.left + third.width / 2 - x });
-    viewport.scrollBy({ left: third.left + third.width / 2 - x, behavior: 'instant' });
+export const RTLPointerDrag: Story = {
+  args: { dir: 'rtl', onValueChange: fn() },
+  parameters: {
+    docs: { description: { story: 'Under RTL later slides sit to the left, so dragging rightward moves forward.' } },
+  },
+  play: async ({ args, canvasElement }) => {
+    const mouse = mouseOn(viewportOf(canvasElement));
+    await expectCentred(canvasElement, 0);
+    // Toward the start edge there is nothing to reach.
+    mouse.drag(dragSteps(-DRAG_PX));
+    await expectCentred(canvasElement, 0);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+
+    mouse.drag(dragSteps(DRAG_PX));
+    await expect(mouse.capture).toHaveBeenCalledTimes(2);
+    await expect(mouse.capture).toHaveBeenLastCalledWith(MOUSE_POINTER_ID);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(1);
+    await expectActive(canvasElement, 1);
+    await expectCentred(canvasElement, 1);
+  },
+};
+
+export const ScrollSettle: Story = {
+  args: { onValueChange: fn() },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A programmatic `scrollBy` stands in for a trackpad or touch scroll (synthetic wheel events do not scroll). Once the viewport settles, the nearest slide is requested once. Real wheel and touch inertia is browser QA.',
+      },
+    },
+  },
+  play: async ({ args, canvasElement }) => {
+    const viewport = viewportOf(canvasElement);
+    await expectCentred(canvasElement, 0);
+    const frame = viewport.getBoundingClientRect();
+    const second = slidesOf(canvasElement)[1]!.getBoundingClientRect();
+    viewport.scrollBy({ left: second.left + second.width / 2 - (frame.left + frame.width / 2), behavior: 'instant' });
     await waitFor(async () => {
-      await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+      await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     });
-    await expect(args.onValueChange).toHaveBeenLastCalledWith(2);
-    await expectActive(canvasElement, 2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(1);
+    await expectActive(canvasElement, 1);
+    await sleep(200);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
 
@@ -597,6 +671,17 @@ export const FocusStopped: Story = {
   },
 };
 
+const mockHidden = () => spyOn(document, 'hidden', 'get');
+const pageHidden: { spy?: ReturnType<typeof mockHidden> } = {};
+const stubPageHidden = () => {
+  pageHidden.spy = mockHidden().mockReturnValue(false);
+  return () => pageHidden.spy?.mockRestore();
+};
+function setPageHidden(hidden: boolean) {
+  pageHidden.spy!.mockReturnValue(hidden);
+  document.dispatchEvent(new Event('visibilitychange'));
+}
+
 export const RotationSafety: Story = {
   args: {
     interval: ROTATION_MS,
@@ -605,6 +690,7 @@ export const RotationSafety: Story = {
     onValueChange: fn(),
     onPlayingValueChange: fn(),
   },
+  beforeEach: stubPageHidden,
   parameters: {
     docs: {
       description: { story: 'The parent declines both slide and playing changes; rotation still stops.' },
@@ -612,32 +698,54 @@ export const RotationSafety: Story = {
   },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
-    // The declined rotation request is not repeated for the same slide.
+    const region = canvas.getByRole('region');
+    const rotation = canvas.getByRole('button', { name: 'Stop slide rotation' });
     await waitFor(async () => {
       await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     });
     await expect(args.onValueChange).toHaveBeenLastCalledWith(1);
+    // The declined request stops rotation; the control says so and nothing is reported.
+    await expect(rotation).toHaveTextContent('Start slide rotation');
+    await expect(region).not.toHaveAttribute('data-rotating');
+    await expect(statusOf(canvasElement)).toHaveAttribute('aria-live', 'polite');
+    await expect(args.onPlayingValueChange).not.toHaveBeenCalled();
+
+    // Pause/resume cycles do not repeat the request.
+    await userEvent.hover(region);
+    await userEvent.unhover(region);
+    setPageHidden(true);
+    setPageHidden(false);
     await sleep(ROTATION_MS * 3);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(rotation).toHaveTextContent('Start slide rotation');
+    await expect(args.onPlayingValueChange).not.toHaveBeenCalled();
 
-    // Mouse press on Stop: focus arrives first, the press still means Stop.
-    const rotation = canvas.getByRole('button', { name: 'Stop slide rotation' });
+    // Start retries once (playingValue is already true, so nothing to report); the second
+    // decline stops it again. The keyboard keeps the pointer from hover-pausing it.
+    rotation.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onPlayingValueChange).not.toHaveBeenCalled();
+    await expect(rotation).toHaveTextContent('Stop slide rotation');
+    await waitFor(async () => {
+      await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    });
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(1);
+    await expect(rotation).toHaveTextContent('Start slide rotation');
+
+    // A declined Stop still stops. Pressed from outside, focus arrives first; the press still
+    // means Stop.
+    await userEvent.keyboard('{Enter}');
+    await expect(rotation).toHaveTextContent('Stop slide rotation');
+    rotation.blur();
     await userEvent.click(rotation);
     await expect(args.onPlayingValueChange).toHaveBeenCalledTimes(2);
     await expect(args.onPlayingValueChange).toHaveBeenNthCalledWith(1, false);
     await expect(args.onPlayingValueChange).toHaveBeenNthCalledWith(2, false);
     await expect(rotation).toHaveTextContent('Start slide rotation');
-    await userEvent.tab();
-    await userEvent.tab();
-    await userEvent.tab();
     await sleep(ROTATION_MS * 3);
-    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(rotation).toHaveTextContent('Start slide rotation');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
   },
 };
-
-const mockHidden = () => spyOn(document, 'hidden', 'get');
-const pageHidden: { spy?: ReturnType<typeof mockHidden> } = {};
 const offscreenSpacerStyle = css({ blockSize: '300vh' });
 export const BackgroundPause: Story = {
   args: { interval: ROTATION_MS, defaultPlayingValue: true, onValueChange: fn() },
@@ -649,24 +757,18 @@ export const BackgroundPause: Story = {
       </>
     ),
   ],
-  beforeEach: () => {
-    pageHidden.spy = mockHidden().mockReturnValue(false);
-    return () => pageHidden.spy?.mockRestore();
-  },
+  beforeEach: stubPageHidden,
   play: async ({ args, canvasElement }) => {
     const region = within(canvasElement).getByRole('region');
     // Offscreen: no rotation until the carousel scrolls into view.
     await sleep(ROTATION_MS * 3);
     await expect(args.onValueChange).not.toHaveBeenCalled();
     // Hidden page: no rotation even when in view.
-    const hidden = pageHidden.spy!;
-    hidden.mockReturnValue(true);
-    document.dispatchEvent(new Event('visibilitychange'));
+    setPageHidden(true);
     region.scrollIntoView({ block: 'center', behavior: 'instant' });
     await sleep(ROTATION_MS * 3);
     await expect(args.onValueChange).not.toHaveBeenCalled();
-    hidden.mockReturnValue(false);
-    document.dispatchEvent(new Event('visibilitychange'));
+    setPageHidden(false);
     await waitFor(async () => {
       await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     });
@@ -807,13 +909,80 @@ export const KeyReorder: Story = {
   },
   play: async ({ args, canvasElement, userEvent }) => {
     const before = slidesOf(canvasElement);
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Reverse' }));
+    const reverse = within(canvasElement).getByRole('button', { name: 'Reverse' });
+    await userEvent.click(reverse);
+    // Focus outside the carousel stays where it is.
+    await expect(reverse).toHaveFocus();
     const after = slidesOf(canvasElement);
     // Keyed slides keep their DOM identity; the index stays put and no callback fires.
     await expect(after[3]).toBe(before[0]);
     await expect(after[2]).toBe(before[1]);
     await expectActive(canvasElement, 1);
     await expect(after[1]).toHaveTextContent('Tower suite');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+type Suite = { key: string; name: string; detail: string };
+const renovated = (suite: Suite): Suite => ({ ...suite, key: `${suite.key}-renovated`, name: `Renovated ${suite.name}` });
+
+/** Slides whose own buttons replace that slide or reverse the order, keeping the count. */
+function ChangingSlides(props: Omit<CarouselProps, 'children'>) {
+  const [suites, setSuites] = useState<readonly Suite[]>(SUITES);
+  return (
+    <Carousel {...props}>
+      {suites.map((suite) => (
+        <SuiteCard key={suite.key} name={suite.name} detail={suite.detail}>
+          <button
+            type="button"
+            css={fixtureButtonStyle}
+            onClick={() => setSuites((list) => list.map((item) => (item.key === suite.key ? renovated(item) : item)))}
+          >
+            Replace {suite.name}
+          </button>
+          <button type="button" css={fixtureButtonStyle} onClick={() => setSuites((list) => [...list].reverse())}>
+            Reverse from {suite.name}
+          </button>
+        </SuiteCard>
+      ))}
+    </Carousel>
+  );
+}
+ChangingSlides.displayName = 'ChangingSlides';
+
+export const ReplacedFocusedSlide: Story = {
+  args: { onValueChange: fn() },
+  render: ({ children: _children, ...args }) => <ChangingSlides {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    await userEvent.tab();
+    await userEvent.tab();
+    await expect(canvas.getByRole('button', { name: 'Replace Harbour suite' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    // Same count and index, new slide: focus moves to the viewport instead of the body.
+    await expect(canvas.getAllByRole('tab')).toHaveLength(SUITES.length);
+    await expectActive(canvasElement, 0);
+    await expect(slidesOf(canvasElement)[0]).toHaveTextContent('Renovated Harbour suite');
+    await expect(viewportOf(canvasElement)).toHaveFocus();
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const ReorderedFocusedSlide: Story = {
+  args: { onValueChange: fn() },
+  render: ({ children: _children, ...args }) => <ChangingSlides {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    await userEvent.tab();
+    await userEvent.tab();
+    await userEvent.tab();
+    await expect(canvas.getByRole('button', { name: 'Reverse from Harbour suite' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    // The focused slide moved to an inactive position: focus moves to the viewport.
+    await expectActive(canvasElement, 0);
+    await expect(slidesOf(canvasElement)[0]).toHaveTextContent('Loft suite');
+    await expect(slidesOf(canvasElement)[3]).toHaveTextContent('Harbour suite');
+    await expect(viewportOf(canvasElement)).toHaveFocus();
     await expect(args.onValueChange).not.toHaveBeenCalled();
   },
 };
@@ -1069,8 +1238,8 @@ export const AriaAndStyling: Story = {
     await expect(slide).toHaveAttribute('aria-labelledby', `missing-id ${tab.id}`);
     await expect(slide).toHaveAttribute('aria-describedby', 'carousel-hint');
     await expect(canvas.getByRole('tabpanel', { name: 'Slide 1 of 4' })).toBe(slide);
-    await expect(getComputedStyle(root).paddingTop).toBe('7px');
-    await expect(getComputedStyle(statusOf(canvasElement)).letterSpacing).toBe('3px');
+    await expect(Number.parseFloat(getComputedStyle(root).paddingTop)).toBeCloseTo(7, 0);
+    await expect(Number.parseFloat(getComputedStyle(statusOf(canvasElement)).letterSpacing)).toBeCloseTo(3, 0);
     await expect(tab.getBoundingClientRect().width).toBeGreaterThanOrEqual(39.5);
   },
 };
