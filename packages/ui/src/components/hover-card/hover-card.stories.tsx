@@ -27,6 +27,11 @@ const IMMEDIATE = 100;
 
 // Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
 const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
+// WCAG 2.5.8 minimum target size, in CSS px.
+const TARGET_MIN = 24;
+// Layout boxes land on fractional pixels (zoom, fractional devicePixelRatio, font metrics);
+// geometry comparisons allow this much sub-pixel drift instead of exact float equality.
+const SUBPIXEL = 0.5;
 
 const TRIGGER = '@maya';
 const JOINED = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(new Date(2024, 2, 1));
@@ -222,7 +227,7 @@ export const HoverBridge: Story = {
     const card = await settled(await expectOpenWithin(canvasElement, OPEN_DELAY + TIMER_MARGIN * 3));
     const t = trigger.getBoundingClientRect();
     const c = card.getBoundingClientRect();
-    await expect(c.top).toBeGreaterThan(t.bottom);
+    await expect(c.top).toBeGreaterThan(t.bottom + SUBPIXEL);
 
     // Walk straight down from the trigger, through the empty offset gap, onto the card.
     const x = Math.max(t.left, c.left) + 4;
@@ -368,7 +373,7 @@ export const AllPlacements: Story = {
         left: t.left - c.right,
         right: c.left - t.right,
       };
-      await expect(gaps[side!]).toBeGreaterThan(0);
+      await expect(gaps[side!]).toBeGreaterThan(SUBPIXEL);
     }
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);
@@ -572,11 +577,13 @@ export const PendingTimerCleanup: Story = {
 export const LinkTrigger: Story = {
   args: { onOpenChange: fn() },
   render: (args) => (
-    <div>
+    <div data-testid="prose">
       Reviewed by{' '}
       <HoverCard {...args}>
         <HoverCard.Trigger
           ref={linkRef}
+          // Block padding on an inline box grows its hit area without growing the line box.
+          sx={{ paddingBlock: vars.space[1] }}
           render={(props) => (
             <a {...props} href="#maya-profile">
               {TRIGGER}
@@ -594,6 +601,13 @@ export const LinkTrigger: Story = {
     const link = within(canvasElement).getByRole('link', { name: TRIGGER });
     await expect(linkRef).toHaveBeenCalledWith(link);
     await expect(link).toHaveAttribute('data-ui', 'hover-card-trigger');
+    const target = link.getBoundingClientRect();
+    await expect(target.width).toBeGreaterThanOrEqual(TARGET_MIN);
+    await expect(target.height).toBeGreaterThanOrEqual(TARGET_MIN);
+    // The padded hit area overflows the prose line instead of pushing it taller.
+    await expect(within(canvasElement).getByTestId('prose').getBoundingClientRect().height).toBeLessThan(
+      target.height - SUBPIXEL,
+    );
     const clicks = recordClicks(canvasElement.ownerDocument);
     try {
       // A click opens the card at once; the card never prevents the link's navigation.
@@ -1000,12 +1014,12 @@ export const LongIdentity: Story = {
     const card = await settled(await findCard(canvasElement));
     const cardRect = card.getBoundingClientRect();
     const rootFontSize = parseFloat(getComputedStyle(card.ownerDocument.documentElement).fontSize);
-    await expect(cardRect.width).toBeLessThanOrEqual(18.5 * rootFontSize + 1);
+    await expect(cardRect.width).toBeLessThanOrEqual(18.5 * rootFontSize + SUBPIXEL);
     // Long identity and formatted stats wrap inside the card instead of overflowing it.
     for (const element of [within(card).getByText(LONG_NAME), ...card.querySelectorAll('dd')]) {
       const rect = element.getBoundingClientRect();
-      await expect(rect.left).toBeGreaterThanOrEqual(cardRect.left);
-      await expect(rect.right).toBeLessThanOrEqual(cardRect.right);
+      await expect(rect.left).toBeGreaterThanOrEqual(cardRect.left - SUBPIXEL);
+      await expect(rect.right).toBeLessThanOrEqual(cardRect.right + SUBPIXEL);
     }
   },
 };
@@ -1041,7 +1055,7 @@ export const LocalizedStats: Story = {
         const expected =
           typeof stat.value === 'number' ? new Intl.NumberFormat(locale).format(stat.value) : stat.value;
         await expect(dd.textContent).toBe(expected);
-        await expect(dd.getBoundingClientRect().right).toBeLessThanOrEqual(dl.getBoundingClientRect().right);
+        await expect(dd.getBoundingClientRect().right).toBeLessThanOrEqual(dl.getBoundingClientRect().right + SUBPIXEL);
       }
     }
   },
@@ -1171,9 +1185,9 @@ export const RTL: Story = {
     // the card extends toward the inline end (left).
     await expect(getComputedStyle(card).direction).toBe('rtl');
     await waitFor(() =>
-      expect(Math.abs(card.getBoundingClientRect().right - trigger.getBoundingClientRect().right)).toBeLessThan(1),
+      expect(Math.abs(card.getBoundingClientRect().right - trigger.getBoundingClientRect().right)).toBeLessThan(SUBPIXEL),
     );
-    await expect(card.getBoundingClientRect().left).toBeLessThan(trigger.getBoundingClientRect().left);
+    await expect(card.getBoundingClientRect().left).toBeLessThan(trigger.getBoundingClientRect().left - SUBPIXEL);
   },
 };
 
