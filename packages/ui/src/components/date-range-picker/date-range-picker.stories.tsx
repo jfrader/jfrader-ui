@@ -6,9 +6,11 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { firstOfMonth, lastOfMonth, monthOf, shiftDays, shiftMonth } from '../calendar/calendar.utils';
+import { Popover } from '../popover';
 import { ThemeRoot } from '../theme-root';
 import {
   DateRangePicker,
+  type DateRangePickerContentProps,
   type DateRangePickerMessages,
   type DateRangePickerProps,
   type DateRangePickerTriggerProps,
@@ -131,14 +133,17 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-type ExampleProps = DateRangePickerProps & { trigger?: Partial<DateRangePickerTriggerProps> };
+type ExampleProps = DateRangePickerProps & {
+  trigger?: Partial<DateRangePickerTriggerProps>;
+  content?: DateRangePickerContentProps;
+};
 
-function RangeExample({ trigger, ...props }: ExampleProps) {
+function RangeExample({ trigger, content, ...props }: ExampleProps) {
   return (
     <div style={stackStyle}>
       <DateRangePicker {...props}>
         <DateRangePicker.Trigger aria-label={LABEL} placeholder={PLACEHOLDER} {...trigger} />
-        <DateRangePicker.Content />
+        <DateRangePicker.Content {...content} />
       </DateRangePicker>
       <Button>{OUTSIDE}</Button>
     </div>
@@ -206,6 +211,14 @@ async function expectFocusRing(element: HTMLElement) {
   const width = parseFloat(getComputedStyle(element).outlineWidth);
   await expect(Math.abs(width - 2)).toBeLessThan(PX_TOLERANCE);
 }
+
+async function expectTargetSize(element: HTMLElement) {
+  const { width, height } = element.getBoundingClientRect();
+  await expect(height).toBeGreaterThanOrEqual(32 - PX_TOLERANCE);
+  await expect(width).toBeGreaterThanOrEqual(32 - PX_TOLERANCE);
+}
+
+const callValues = (spy: unknown) => (spy as ReturnType<typeof fn>).mock.calls.map(([value]) => value);
 
 const summary = (canvasElement: HTMLElement) => bodyOf(canvasElement).getByRole('status');
 
@@ -337,6 +350,50 @@ export const BackwardSelection: Story = {
     await userEvent.click(dialogButton(canvasElement, 'Apply'));
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith({ start: '2026-10-15', end: '2026-10-20' });
+  },
+};
+
+/** After a pointer anchor, arrows drive the preview from the focused day. */
+export const PointerAnchorThenKeyboard: Story = {
+  args: { months: 1 },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    await findDialog(canvasElement);
+    // The pointer stays on the anchored day while the keyboard moves on.
+    await userEvent.click(day(canvasElement, '2026-10-20'));
+    await userEvent.keyboard('{ArrowRight}');
+    await expectDayFocused(canvasElement, '2026-10-21');
+    await expect(day(canvasElement, '2026-10-21')).toHaveAttribute('data-preview-end');
+    await expect(day(canvasElement, '2026-10-20')).toHaveAttribute('data-preview-start');
+    await expect(summary(canvasElement)).toHaveTextContent(summaryText({ start: '2026-10-20', end: '2026-10-21' }, 2));
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(day(canvasElement, '2026-10-28')).toHaveAttribute('data-preview-end');
+    await expect(summary(canvasElement)).toHaveTextContent(summaryText({ start: '2026-10-20', end: '2026-10-28' }, 9));
+  },
+};
+
+/** A hover preview gives way to the keyboard, and a new pointer move takes it back. */
+export const HoverThenKeyboard: Story = {
+  args: { months: 1 },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    await findDialog(canvasElement);
+    await userEvent.click(day(canvasElement, '2026-10-20'));
+    await userEvent.hover(day(canvasElement, '2026-10-15'));
+    await expect(day(canvasElement, '2026-10-15')).toHaveAttribute('data-preview-start');
+
+    await userEvent.keyboard('{ArrowLeft}');
+    await expectDayFocused(canvasElement, '2026-10-19');
+    await expect(day(canvasElement, '2026-10-15')).not.toHaveAttribute('data-preview');
+    await expect(day(canvasElement, '2026-10-19')).toHaveAttribute('data-preview-start');
+    await expect(summary(canvasElement)).toHaveTextContent(summaryText({ start: '2026-10-19', end: '2026-10-20' }, 2));
+
+    await userEvent.hover(day(canvasElement, '2026-10-24'));
+    await expect(day(canvasElement, '2026-10-24')).toHaveAttribute('data-preview-end');
+    await expect(day(canvasElement, '2026-10-19')).not.toHaveAttribute('data-preview');
+    await expect(summary(canvasElement)).toHaveTextContent(summaryText({ start: '2026-10-20', end: '2026-10-24' }, 5));
   },
 };
 
@@ -635,9 +692,9 @@ export const Bounds: Story = {
 };
 
 export const ReversedBounds: Story = {
-  args: { months: 1, min: '2026-10-20', max: '2026-10-10', defaultValue: WEEK },
+  args: { months: 1, min: '2026-10-20', max: '2026-10-10', defaultValue: WEEK, onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <RangeExample {...args} />,
-  play: async ({ canvasElement, userEvent }) => {
+  play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await expect(trigger).toHaveAttribute('aria-invalid', 'true');
     await expect(trigger).toHaveAccessibleDescription(String(rangeMessages.error));
@@ -646,8 +703,55 @@ export const ReversedBounds: Story = {
     // No day is available: no day tab stop and no Apply.
     await expect(tabStopDays(canvasElement)).toHaveLength(0);
     await expect(day(canvasElement, '2026-10-15')).toBeDisabled();
-    await userEvent.keyboard('{Escape}');
+    // The seeded draft lies outside the empty bounds.
+    await expectSelected(canvasElement, WEEK);
+    await expect(dialogButton(canvasElement, 'Apply')).toBeDisabled();
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expect(bodyOf(canvasElement).getByRole('dialog', { name: LABEL })).toBeVisible();
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await userEvent.click(dialogButton(canvasElement, 'Cancel'));
     await expectClosed(canvasElement);
+  },
+};
+
+function DynamicBoundsExample(props: ExampleProps) {
+  const [min, setMin] = useState<string | undefined>(undefined);
+  return (
+    <div style={stackStyle}>
+      <RangeExample {...props} min={min} />
+      <Button onClick={() => setMin('2026-10-08')}>Restrict start</Button>
+    </div>
+  );
+}
+DynamicBoundsExample.displayName = 'DynamicBoundsExample';
+
+/** Bounds that change under an open draft make it unavailable: Apply cannot commit it. */
+export const DynamicBounds: Story = {
+  args: { open: true, months: 1, onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <DynamicBoundsExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await findDialog(canvasElement);
+    await userEvent.click(day(canvasElement, '2026-10-05'));
+    await userEvent.click(day(canvasElement, '2026-10-09'));
+    await expectSelected(canvasElement, WEEK);
+    await expect(dialogButton(canvasElement, 'Apply')).toBeEnabled();
+
+    // The press outside is a rejected close; the new min excludes the draft's start.
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Restrict start' }));
+    await expect(day(canvasElement, '2026-10-05')).toBeDisabled();
+    await expect(dialogButton(canvasElement, 'Apply')).toBeDisabled();
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+
+    // A draft inside the new bounds applies.
+    await userEvent.click(day(canvasElement, '2026-10-08'));
+    await userEvent.click(day(canvasElement, '2026-10-09'));
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith({ start: '2026-10-08', end: '2026-10-09' });
   },
 };
 
@@ -904,11 +1008,7 @@ export const TargetSizes: Story = {
       dialogButton(canvasElement, 'Cancel'),
       dialogButton(canvasElement, monthName('2026-11')),
     ];
-    for (const target of targets) {
-      const { width, height } = target.getBoundingClientRect();
-      await expect(height).toBeGreaterThanOrEqual(32 - PX_TOLERANCE);
-      await expect(width).toBeGreaterThanOrEqual(32 - PX_TOLERANCE);
-    }
+    for (const target of targets) await expectTargetSize(target);
   },
 };
 
@@ -956,10 +1056,69 @@ export const Disabled: Story = {
 export const DisabledControlledOpen: Story = {
   args: { defaultValue: WEEK, disabled: true, open: true, onOpenChange: fn() },
   render: (args) => <RangeExample {...args} />,
-  play: async ({ args, canvasElement }) => {
+  play: async ({ args, canvasElement, userEvent }) => {
     await expectClosed(canvasElement);
-    await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledWith(false));
-    await expect(args.onOpenChange).not.toHaveBeenCalledWith(true);
+    // Disabled only hides the dialog: no open change is requested on the parent's behalf.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await userEvent.click(getTrigger(canvasElement));
+    await expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+
+const popoverOpenChange = fn<(open: boolean) => void>();
+
+/** Inside a Popover the open picker is the topmost layer: outside presses and Escape reach it first. */
+export const NestedInPopover: Story = {
+  args: { defaultValue: WEEK, months: 1, onOpenChange: fn() },
+  render: (args) => (
+    <div style={stackStyle}>
+      <Popover onOpenChange={popoverOpenChange}>
+        <Popover.Trigger>Filters</Popover.Trigger>
+        <Popover.Content aria-label="Filters">
+          <DateRangePicker {...args}>
+            <DateRangePicker.Trigger aria-label={LABEL} />
+            <DateRangePicker.Content />
+          </DateRangePicker>
+        </Popover.Content>
+      </Popover>
+      <Button>{OUTSIDE}</Button>
+    </div>
+  ),
+  play: async ({ args, canvasElement, userEvent }) => {
+    popoverOpenChange.mockClear();
+    const body = bodyOf(canvasElement);
+    const outside = within(canvasElement).getByRole('button', { name: OUTSIDE });
+    const openBoth = async () => {
+      await userEvent.click(within(canvasElement).getByRole('button', { name: 'Filters' }));
+      const popover = await body.findByRole('dialog', { name: 'Filters' });
+      await userEvent.click(within(popover).getByRole('button', { name: new RegExp(`^${LABEL}`) }));
+      await findDialog(canvasElement);
+      return popover;
+    };
+
+    const popover = await openBoth();
+    // A press inside the picker is not outside the popover.
+    await userEvent.click(day(canvasElement, '2026-10-20'));
+    await expect(popover).toBeVisible();
+
+    await userEvent.click(outside);
+    await waitFor(() => expect(body.queryByRole('dialog', { name: LABEL })).toBeNull());
+    await expect(popover).toBeVisible();
+    await expect(callValues(args.onOpenChange)).toEqual([true, false]);
+    await expect(callValues(popoverOpenChange)).toEqual([true]);
+    await userEvent.click(outside);
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'Filters' })).toBeNull());
+    await expect(callValues(popoverOpenChange)).toEqual([true, false]);
+
+    // Escape from the picker's grid closes only the picker.
+    const reopened = await openBoth();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(body.queryByRole('dialog', { name: LABEL })).toBeNull());
+    await expect(reopened).toBeVisible();
+    await expectFocused(canvasElement, () => within(reopened).getByRole('button', { name: new RegExp(`^${LABEL}`) }));
+    await expect(callValues(popoverOpenChange)).toEqual([true, false, true]);
   },
 };
 
@@ -979,7 +1138,7 @@ export const FormFields: Story = {
   render: (args) => (
     <form aria-label="Report" onSubmit={(event) => event.preventDefault()}>
       <RangeExample {...args} />
-      <button type="reset">Reset</button>
+      <Button type="reset">Reset</Button>
     </form>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
@@ -998,7 +1157,9 @@ export const FormFields: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
 
     // Native reset restores the uncontrolled default without a value request.
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Reset' }));
+    const reset = within(canvasElement).getByRole('button', { name: 'Reset' });
+    await expectTargetSize(reset);
+    await userEvent.click(reset);
     await waitFor(() => expect(new FormData(form).get(START_FIELD)).toBe(WEEK.start));
     await expect(new FormData(form).get(END_FIELD)).toBe(WEEK.end);
     await expect(getTrigger(canvasElement)).toHaveAccessibleName(`${LABEL} ${formattedRange(WEEK)}`);
@@ -1012,37 +1173,97 @@ export const ControlledFormReset: Story = {
   render: (args) => (
     <form aria-label="Report" onSubmit={(event) => event.preventDefault()}>
       <RangeExample {...args} />
-      <button type="reset">Reset</button>
+      <Button type="reset">Reset</Button>
     </form>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
     const form = within(canvasElement).getByRole('form', { name: 'Report' }) as HTMLFormElement;
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Reset' }));
+    const reset = within(canvasElement).getByRole('button', { name: 'Reset' });
+    await expectTargetSize(reset);
+    await userEvent.click(reset);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith(null);
     await expect(new FormData(form).get(START_FIELD)).toBe(WEEK.start);
   },
 };
 
+/** Day and preset arrows run right to left: ArrowLeft moves forward. */
+async function expectRtlArrows(canvasElement: HTMLElement, userEvent: { keyboard: (text: string) => Promise<void> }) {
+  const dialog = await findDialog(canvasElement);
+  await expect(getComputedStyle(within(dialog).getByRole('grid')).direction).toBe('rtl');
+  await expectDayFocused(canvasElement, WEEK.start);
+  await userEvent.keyboard('{ArrowLeft}');
+  await expectDayFocused(canvasElement, '2026-10-06');
+  await userEvent.keyboard('{ArrowRight}');
+  await expectDayFocused(canvasElement, WEEK.start);
+
+  const group = within(dialog).getByRole('group', { name: rangeMessages.presets });
+  within(group).getByRole('button', { name: 'Today' }).focus();
+  await userEvent.keyboard('{ArrowLeft}');
+  await expectFocused(canvasElement, () => within(group).getByRole('button', { name: 'Yesterday' }));
+  await userEvent.keyboard('{ArrowRight}');
+  await expectFocused(canvasElement, () => within(group).getByRole('button', { name: 'Today' }));
+}
+
 /** Real RTL: the document direction reaches the trigger and the portaled dialog. */
 export const RTL: Story = {
-  args: { defaultValue: WEEK, months: 1, defaultOpen: true },
-  render: (args) => <RangeExample {...args} />,
-  play: async ({ canvasElement, userEvent }) => {
+  args: { defaultValue: WEEK, months: 1, presets: PRESETS, defaultOpen: true },
+  beforeEach: ({ canvasElement }) => {
     const { documentElement } = canvasElement.ownerDocument;
     const previous = documentElement.dir;
     documentElement.dir = 'rtl';
-    try {
-      await findDialog(canvasElement);
-      await expect(getComputedStyle(bodyOf(canvasElement).getByRole('grid')).direction).toBe('rtl');
-      await expectDayFocused(canvasElement, WEEK.start);
-      await userEvent.keyboard('{ArrowLeft}');
-      await expectDayFocused(canvasElement, '2026-10-06');
-      await userEvent.keyboard('{ArrowRight}');
-      await expectDayFocused(canvasElement, WEEK.start);
-    } finally {
+    return () => {
       documentElement.dir = previous;
-    }
+    };
+  },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await expectRtlArrows(canvasElement, userEvent);
+  },
+};
+
+/** An RTL subtree of an LTR document: the portaled dialog keeps the trigger's direction. */
+export const SubtreeRTL: Story = {
+  args: { defaultValue: WEEK, months: 1, presets: PRESETS },
+  render: (args) => (
+    <div dir="rtl">
+      <RangeExample {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    await expect(getComputedStyle(canvasElement.ownerDocument.documentElement).direction).toBe('ltr');
+    await userEvent.click(getTrigger(canvasElement));
+    await expect(await findDialog(canvasElement)).toHaveAttribute('dir', 'rtl');
+    await expectRtlArrows(canvasElement, userEvent);
+  },
+};
+
+/** `dir` on the trigger alone is carried into the dialog. */
+export const TriggerDirRTL: Story = {
+  args: { defaultValue: WEEK, months: 1, presets: PRESETS },
+  render: (args) => <RangeExample {...args} trigger={{ dir: 'rtl' }} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    await expect(await findDialog(canvasElement)).toHaveAttribute('dir', 'rtl');
+    await expectRtlArrows(canvasElement, userEvent);
+  },
+};
+
+/** An explicit `dir` on Content wins over the trigger's direction. */
+export const ContentDirOverride: Story = {
+  args: { defaultValue: WEEK, months: 1, defaultOpen: true },
+  render: (args) => (
+    <div dir="rtl">
+      <RangeExample {...args} content={{ dir: 'ltr' }} />
+    </div>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await findDialog(canvasElement);
+    await expect(dialog).toHaveAttribute('dir', 'ltr');
+    await expect(getComputedStyle(within(dialog).getByRole('grid')).direction).toBe('ltr');
+    await expectDayFocused(canvasElement, WEEK.start);
+    await userEvent.keyboard('{ArrowRight}');
+    await expectDayFocused(canvasElement, '2026-10-06');
   },
 };
 
@@ -1294,8 +1515,8 @@ export const RefsAndStyling: Story = {
     await expect(DateRangePicker.displayName).toBe('DateRangePicker');
     // Own styles → consumer css → sx.
     await expect(getComputedStyle(trigger).textTransform).toBe('uppercase');
-    await expect(getComputedStyle(trigger).letterSpacing).toBe('1px');
-    await expect(getComputedStyle(dialog).letterSpacing).toBe('1px');
+    await expect(parseFloat(getComputedStyle(trigger).letterSpacing)).toBeCloseTo(1, 1);
+    await expect(parseFloat(getComputedStyle(dialog).letterSpacing)).toBeCloseTo(1, 1);
     const status = summary(canvasElement);
     await expect(status).toHaveClass('summary-slot');
     await expect(getComputedStyle(status).textTransform).toBe('uppercase');

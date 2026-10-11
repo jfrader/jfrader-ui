@@ -9,9 +9,12 @@
 // Transaction: opening seeds a draft from the committed value. The first day activation
 // anchors the draft on that day; while anchored, the hovered or focused day previews the
 // ordered interval (decoration only, never aria-selected); the second activation finishes it,
-// the same day included. Presets replace the draft. Only Apply commits: it requests the value
-// (skipped when structurally unchanged), then the close. Cancel, Escape, outside presses and
-// Tab-out discard the draft once the close is accepted; a rejected close keeps it.
+// the same day included. The last input drives the preview: a keyboard move previews the
+// focused day until the pointer moves over the grid again. Presets replace the draft. Only
+// Apply commits, and only an ordered draft whose endpoints are both available under the
+// current min/max: it requests the value (skipped when structurally unchanged), then the
+// close. Cancel, Escape, outside presses and Tab-out discard the draft once the close is
+// accepted; a rejected close keeps it.
 // Keyboard map, trigger: Enter/ArrowDown on keydown and Space on keyup open the dialog and
 // focus the draft start, else today, else the first enabled day; while open they move focus
 // back into the grid.
@@ -22,6 +25,11 @@
 // presets, month buttons, the day tab stop and the actions, then leaves and closes.
 // Focus return is explicit: accepted Apply, Cancel or Escape restore it to the trigger;
 // outside presses and Tab-out never move focus.
+// Nesting: the picker is an overlay layer; inside another layer (e.g. a Popover) its open
+// dialog is topmost, so Escape and outside presses dismiss the picker first.
+// Direction: the portaled dialog takes the trigger's effective direction (an explicit `dir`
+// on Content wins), so grid and preset arrows follow an RTL subtree of an LTR document.
+// Disabled hides the dialog and blocks opening without requesting any open change.
 // Values are inclusive date-only ranges of 'YYYY-MM-DD' strings, parsed and formatted as UTC
 // Gregorian dates: there is no time or time zone. An invalid or reversed value is shown as
 // empty and invalid, never repaired. `today` makes presets and the today marker deterministic
@@ -48,7 +56,6 @@ import {
 import {
   FloatingFocusManager,
   useClick,
-  useDismiss,
   useInteractions,
   useMergeRefs,
   useRole,
@@ -60,7 +67,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { IsolatedOverlay } from '../../overlay/overlay-layer';
+import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating, type OverlayAvailableSize } from '../../overlay/use-overlay-floating';
 import { isRenderable } from '../../utils/renderable';
@@ -250,6 +257,13 @@ function useDateRangePickerContext(part: string): DateRangePickerContextValue {
 const isValidRange = (range: DateRangeValue | null | undefined): range is DateRangeValue =>
   range != null && isIsoDate(range.start) && isIsoDate(range.end) && range.start <= range.end;
 
+/** An ordered range whose endpoints are both selectable under the bounds. */
+const isAvailableRange = (
+  range: DateRangeValue | null | undefined,
+  min: string | undefined,
+  max: string | undefined,
+): range is DateRangeValue => isValidRange(range) && isWithin(range.start, min, max) && isWithin(range.end, min, max);
+
 const rangesEqual = (a: DateRangeValue | null, b: DateRangeValue | null) =>
   a === b || (a !== null && b !== null && a.start === b.start && a.end === b.end);
 
@@ -438,7 +452,8 @@ const actionsStyle = css({
 
 // ---- Parts.
 
-function DateRangePickerOverlay({
+function DateRangePickerLayer({
+  nodeId,
   value: valueProp,
   defaultValue,
   onValueChange,
@@ -460,7 +475,7 @@ function DateRangePickerOverlay({
   endName,
   messages,
   children,
-}: DateRangePickerProps) {
+}: DateRangePickerProps & { nodeId: string | undefined }) {
   const [committed = null, requestValue, resetToDefault] = useControlledState<DateRangeValue | null>(
     valueProp,
     defaultValue ?? null,
@@ -472,6 +487,8 @@ function DateRangePickerOverlay({
   const [availableSize, setAvailableSize] = useState<OverlayAvailableSize | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const pendingFocusRestoreRef = useRef(false);
+  // Target of the last outside press; focus moving onto it is the same dismissal gesture.
+  const outsidePressTargetRef = useRef<Element | null>(null);
 
   const locale = useMemo(
     () => new Intl.DateTimeFormat(localeProp ?? defaultLocale(), CIVIL_DATE_FORMAT_OPTIONS).resolvedOptions().locale,
@@ -487,24 +504,24 @@ function DateRangePickerOverlay({
   const { refs, floatingStyles, context } = useOverlayFloating({
     open,
     placement: PLACEMENT,
+    nodeId,
     boundary,
     onAvailableSize: (size) =>
       setAvailableSize((current) =>
         current?.width === size.width && current.height === size.height ? current : size,
       ),
-    onOpenChange: (next, _event, reason) => {
+    onOpenChange: (next, event, reason) => {
       if (disabled && next) return;
+      const pressTarget = outsidePressTargetRef.current;
+      outsidePressTargetRef.current = reason === 'outside-press' && event?.target instanceof Element ? event.target : null;
+      // One gesture, one request: an outside press that also moves focus reports focus-out too.
+      const focusedNode = reason === 'focus-out' && event instanceof FocusEvent ? event.relatedTarget : null;
+      if (pressTarget && focusedNode instanceof Node && focusedNode.contains(pressTarget)) return;
       // Escape requests a close; focus is restored only once the close is actually applied.
       if (!next) pendingFocusRestoreRef.current = reason === 'escape-key';
       requestOpenChange(next);
     },
   });
-
-  useEffect(() => {
-    if (!disabled) return;
-    pendingFocusRestoreRef.current = false;
-    if (requestedOpen) requestOpenChange(false);
-  }, [disabled, requestedOpen, requestOpenChange]);
 
   // A rejected controlled close keeps the dialog open, so focus stays inside it.
   useEffect(() => {
@@ -516,9 +533,9 @@ function DateRangePickerOverlay({
 
   // Keyboard opening is handled by the trigger (Space on keyup, focus into the grid).
   const click = useClick(context, { enabled: !disabled, keyboardHandlers: false });
-  const dismiss = useDismiss(context, { escapeKey: true, outsidePress: true });
+  const dismiss = useLayerDismiss(context, 'container');
   const role = useRole(context, { role: 'dialog' });
-  const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
+  const { getReferenceProps, getFloatingProps } = useInteractions([click, ...dismiss, role]);
 
   const displayValue = useMemo(() => (value ? formatRange(formatter, value) : undefined), [formatter, value]);
 
@@ -554,7 +571,7 @@ function DateRangePickerOverlay({
         if (!disabled) requestOpenChange(true);
       },
       apply: (range) => {
-        if (disabled || readOnly) return;
+        if (disabled || readOnly || !isAvailableRange(range, min, max)) return;
         // Value and open are independent requests: a controlled parent decides each axis.
         requestRange(range);
         pendingFocusRestoreRef.current = true;
@@ -613,11 +630,7 @@ function DateRangePickerOverlay({
 }
 
 function DateRangePickerRoot(props: DateRangePickerProps) {
-  return (
-    <IsolatedOverlay>
-      <DateRangePickerOverlay {...props} />
-    </IsolatedOverlay>
-  );
+  return <OverlayLayer>{(nodeId) => <DateRangePickerLayer {...props} nodeId={nodeId} />}</OverlayLayer>;
 }
 
 DateRangePickerRoot.displayName = 'DateRangePicker';
@@ -779,6 +792,7 @@ DateRangePickerContent.displayName = 'DateRangePicker.Content';
 
 function DateRangePickerPanel({
   ref,
+  dir,
   style,
   className,
   sx,
@@ -836,6 +850,7 @@ function DateRangePickerPanel({
   }
 
   const [focusedDate, setFocusedDate] = useState(initialFocus);
+  // The day under a moving pointer; a focus change clears it, so the last input drives the preview.
   const [pointerDate, setPointerDate] = useState<string | null>(null);
   const [focusedPresetId, setFocusedPresetId] = useState<string | null>(null);
   const pendingDayFocusRef = useRef<string | null>(null);
@@ -879,10 +894,13 @@ function DateRangePickerPanel({
     if (day && day.ownerDocument.activeElement !== day) day.focus();
   });
 
+  // Keyboard moves report a destination to focus; a day's own focus event needs no follow-up.
   const handleFocusedDateChange = (date: string) => {
     setFocusedDate(date);
+    setPointerDate(null);
     reveal(date);
-    pendingDayFocusRef.current = date;
+    const active = contentRef.current?.ownerDocument.activeElement;
+    pendingDayFocusRef.current = active instanceof HTMLElement && active.dataset.date === date ? null : date;
   };
 
   const activateDay = (date: string) => {
@@ -896,14 +914,16 @@ function DateRangePickerPanel({
     }
   };
 
-  const handleGridPointerOver = (event: PointerEvent<HTMLTableElement>) => {
+  // pointermove, not pointerover: a day sliding under a resting pointer (month reveal, layout)
+  // must not take the preview back from the keyboard.
+  const handleGridPointerMove = (event: PointerEvent<HTMLTableElement>) => {
     const day = (event.target as HTMLElement).closest<HTMLButtonElement>(DAY);
     setPointerDate(day && !day.disabled ? (day.dataset.date ?? null) : null);
   };
 
   const presetItems = presets.map((preset) => {
     const range = preset.range(today);
-    const enabled = !readOnly && isValidRange(range) && isEnabled(range.start) && isEnabled(range.end);
+    const enabled = !readOnly && isAvailableRange(range, min, max);
     return { preset, range, enabled };
   });
   const presetTabStop =
@@ -927,6 +947,12 @@ function DateRangePickerPanel({
     [contentRef],
   );
   const mergedRef = useMergeRefs([refs.setFloating, ref, setContentNode]);
+  // Read once as the surface mounts: the trigger's effective direction, which the portal would
+  // otherwise lose.
+  const [triggerDirection] = useState(() => {
+    const reference = refs.domReference.current;
+    return reference?.ownerDocument.defaultView?.getComputedStyle(reference).direction;
+  });
 
   const labelling =
     ariaLabelledBy !== undefined || ariaLabel !== undefined
@@ -935,7 +961,7 @@ function DateRangePickerPanel({
         ? { 'aria-labelledby': triggerLabelling.labelledBy }
         : { 'aria-label': triggerLabelling?.label };
   const layout = monthCount === 2 ? 'rail' : 'row';
-  const canApply = !readOnly && draft !== null;
+  const canApply = !readOnly && isAvailableRange(draft, min, max);
 
   return (
     <OverlayPortal>
@@ -951,6 +977,7 @@ function DateRangePickerPanel({
                 ...rest,
               })}
               ref={mergedRef}
+              dir={dir ?? triggerDirection}
               data-ui="date-range-picker-content"
               data-layout={layout}
               style={{
@@ -1014,7 +1041,7 @@ function DateRangePickerPanel({
                     rangeLabels={{ start: messages.start, end: messages.end }}
                   >
                     <Calendar.Header />
-                    <Calendar.Grid onPointerOver={handleGridPointerOver} onPointerLeave={() => setPointerDate(null)} />
+                    <Calendar.Grid onPointerMove={handleGridPointerMove} onPointerLeave={() => setPointerDate(null)} />
                   </Calendar>
                 ))}
               </div>
@@ -1047,7 +1074,7 @@ function DateRangePickerPanel({
                     size="sm"
                     disabled={!canApply}
                     onClick={() => {
-                      if (draft) apply(draft);
+                      if (canApply) apply(draft);
                     }}
                   >
                     {messages.apply}
