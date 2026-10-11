@@ -26,6 +26,7 @@
     "./accordion": { "types": "./src/components/accordion/index.ts", "import": "./src/components/accordion/index.ts" },
     "./alert": { "types": "./src/components/alert/index.ts", "import": "./src/components/alert/index.ts" },
     "./avatar": { "types": "./src/components/avatar/index.ts", "import": "./src/components/avatar/index.ts" },
+    "./avatar-group": { "types": "./src/components/avatar-group/index.ts", "import": "./src/components/avatar-group/index.ts" },
     "./badge": { "types": "./src/components/badge/index.ts", "import": "./src/components/badge/index.ts" },
     "./breadcrumbs": { "types": "./src/components/breadcrumbs/index.ts", "import": "./src/components/breadcrumbs/index.ts" },
     "./button": { "types": "./src/components/button/index.ts", "import": "./src/components/button/index.ts" },

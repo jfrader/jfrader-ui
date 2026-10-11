@@ -1,6 +1,7 @@
 export * from './components/accordion';
 export * from './components/alert';
 export * from './components/avatar';
+export * from './components/avatar-group';
 export * from './components/badge';
 export * from './components/breadcrumbs';
 export * from './components/button';
