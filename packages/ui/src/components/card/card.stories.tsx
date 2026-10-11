@@ -99,7 +99,9 @@ export const Basic: Story = {
     const footer = card.querySelector('[data-ui="card-footer"]') as HTMLElement;
     const [leading, trailing] = within(footer).getAllByRole('button');
     await expect(within(footer).getAllByRole('button')).toHaveLength(2);
-    await expect(getComputedStyle(footer).borderBlockStartWidth).toBe('1px');
+    await expect(getComputedStyle(footer).borderBlockStartStyle).toBe('solid');
+    // Fractional devicePixelRatios device-snap border widths; assert a drawn border, not literal px.
+    await expect(parseFloat(getComputedStyle(footer).borderBlockStartWidth)).toBeGreaterThan(0);
     // Leading content sits on the start edge, actions on the end edge.
     await expect(getComputedStyle(footer).justifyContent).toBe('space-between');
     const footerRect = footer.getBoundingClientRect();
@@ -166,7 +168,8 @@ export const Variants: Story = {
     await expect(getComputedStyle(flat).boxShadow).toBe('none');
     await expect(getComputedStyle(raised).boxShadow).not.toBe('none');
     for (const card of [flat, raised]) {
-      await expect(getComputedStyle(card).borderTopWidth).toBe('1px');
+      await expect(getComputedStyle(card).borderTopStyle).toBe('solid');
+      await expect(parseFloat(getComputedStyle(card).borderTopWidth)).toBeGreaterThan(0);
     }
   },
 };
