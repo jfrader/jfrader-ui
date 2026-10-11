@@ -29,6 +29,10 @@ const RESET_MIN_SIZE = 32;
 /** Matches motion.duration.fast plus a frame. */
 const TRANSITION_MS = 140;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/** Computed lengths can carry sub-pixel rounding; half a pixel still tells 1px/2px/3px overrides apart. */
+const PX_TOLERANCE = 0.5;
+const expectPx = (value: string, px: number) =>
+  expect(Math.abs(Number.parseFloat(value) - px)).toBeLessThan(PX_TOLERANCE);
 
 const frameStyle = css({
   inlineSize: '36rem',
@@ -563,6 +567,73 @@ export const LostCaptureEndsDrag: Story = {
   },
 };
 
+export const ReleaseOutsideFrame: Story = {
+  args: { defaultValue: 50 },
+  play: async ({ canvas, canvasElement, args }) => {
+    const slider = canvas.getByRole('slider');
+    const frame = part(canvasElement, 'image-compare-frame');
+    const outside = frame.ownerDocument.body;
+    const pointer = pointerOn(frame);
+    // Press near the edge, leave before the drag threshold, release outside: the gesture ends there.
+    pointer.fire('pointerdown', 0.99);
+    pointer.fire('pointerup', 1.2, 0.8, { target: outside });
+    // Re-entering with the button up is hover, not a drag.
+    pointer.fire('pointermove', 0.5);
+    pointer.fire('pointermove', 0.3);
+    await expect(pointer.captured.size).toBe(0);
+    await expect(part(canvasElement, 'image-compare-handle')).not.toHaveAttribute('data-dragging');
+    await expect(slider).toHaveAttribute('aria-valuenow', '50');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onValueCommit).not.toHaveBeenCalled();
+    // A fresh press is accepted.
+    pointer.fire('pointerdown', 0.3);
+    pointer.fire('pointerup', 0.3);
+    await expect(slider).toHaveAttribute('aria-valuenow', '30');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(1);
+    await expect(args.onValueCommit).toHaveBeenCalledWith(30);
+    // An outside cancel ends a pending gesture the same way.
+    pointer.fire('pointerdown', 0.99);
+    pointer.fire('pointercancel', 1.2, 0.8, { target: outside });
+    pointer.fire('pointermove', 0.6);
+    pointer.fire('pointerup', 0.6);
+    await expect(slider).toHaveAttribute('aria-valuenow', '30');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+const preventPointerUp = fn((event: { preventDefault: () => void }) => event.preventDefault());
+export const PreventedPointerUp: Story = {
+  args: { defaultValue: 50, slotProps: { frame: { onPointerUp: preventPointerUp } } },
+  play: async ({ canvas, canvasElement, args }) => {
+    const slider = canvas.getByRole('slider');
+    const handle = part(canvasElement, 'image-compare-handle');
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    const vetoes = preventPointerUp.mock.calls.length;
+    // A prevented tap requests and commits nothing.
+    pointer.fire('pointerdown', 0.2);
+    pointer.fire('pointerup', 0.2);
+    await expect(slider).toHaveAttribute('aria-valuenow', '50');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onValueCommit).not.toHaveBeenCalled();
+    // A prevented drag release keeps the requests already made but does not commit.
+    pointer.fire('pointerdown', 0.5);
+    pointer.fire('pointermove', 0.7);
+    await expect(pointer.captured.has(POINTER_ID)).toBe(true);
+    pointer.fire('pointerup', 0.7);
+    await expect(preventPointerUp).toHaveBeenCalledTimes(vetoes + 2);
+    await expect(slider).toHaveAttribute('aria-valuenow', '70');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(70);
+    await expect(args.onValueCommit).not.toHaveBeenCalled();
+    // Ownership is released either way.
+    await expect(pointer.captured.size).toBe(0);
+    await expect(handle).not.toHaveAttribute('data-dragging');
+    pointer.fire('pointermove', 0.9);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
 export const ParentAcceptsDuringDrag: Story = {
   render: (args) => {
     const [value, setValue] = useState(40);
@@ -608,13 +679,14 @@ export const ResizeDuringDrag: Story = {
       </>
     );
   },
-  play: async ({ canvas, canvasElement, userEvent, args }) => {
+  play: async ({ canvas, canvasElement, args }) => {
     const frame = part(canvasElement, 'image-compare-frame');
     const pointer = pointerOn(frame);
     pointer.fire('pointerdown', 0.5);
     pointer.fire('pointermove', 0.25);
     await expect(canvas.getByRole('slider')).toHaveAttribute('aria-valuenow', '25');
-    await userEvent.click(canvas.getByRole('button', { name: 'Shrink' }));
+    // A click event alone: the mouse is mid-drag, so no second press can happen.
+    fireEvent.click(canvas.getByRole('button', { name: 'Shrink' }));
     await waitFor(() => expect(frame.getBoundingClientRect().width).toBeLessThan(300));
     // The same ratio of the new rect maps to the same value.
     pointer.fire('pointermove', 0.75);
@@ -962,15 +1034,15 @@ export const SlotStylingAndRefs: Story = {
     await expect(rootRef.mock.calls.at(-1)?.[0]).toBe(root);
     await expect(frameRef.mock.calls.at(-1)?.[0]).toBe(frame);
     await expect(handleRef.mock.calls.at(-1)?.[0]).toBe(handle);
-    await expect(getComputedStyle(root).paddingBlockStart).toBe('7px');
+    await expectPx(getComputedStyle(root).paddingBlockStart, 7);
     await expect(Math.abs(Number.parseFloat(getComputedStyle(frame).borderTopLeftRadius) - 3)).toBeLessThan(1.1);
     await expect(Math.abs(Number.parseFloat(getComputedStyle(handle).borderTopLeftRadius) - 8)).toBeLessThan(1.1);
     await expect(Math.abs(part(canvasElement, 'image-compare-divider').getBoundingClientRect().width - 6)).toBeLessThan(
       1.1,
     );
-    await expect(getComputedStyle(part(canvasElement, 'image-compare-before-label')).letterSpacing).toBe('2px');
-    await expect(getComputedStyle(part(canvasElement, 'image-compare-after-label')).letterSpacing).toBe('3px');
-    await expect(getComputedStyle(canvas.getByRole('button')).letterSpacing).toBe('1px');
+    await expectPx(getComputedStyle(part(canvasElement, 'image-compare-before-label')).letterSpacing, 2);
+    await expectPx(getComputedStyle(part(canvasElement, 'image-compare-after-label')).letterSpacing, 3);
+    await expectPx(getComputedStyle(canvas.getByRole('button')).letterSpacing, 1);
   },
 };
 

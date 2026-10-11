@@ -280,6 +280,8 @@ interface Gesture {
   initial: number;
   candidate: number;
   frame: HTMLDivElement;
+  /** Removes the owner-document listeners that end the gesture when it is released outside the frame. */
+  unlisten: () => void;
 }
 
 export function ImageCompare({
@@ -345,6 +347,7 @@ export function ImageCompare({
     const drag = gesture.current;
     if (!drag) return;
     gesture.current = null;
+    drag.unlisten();
     setDragging(false);
     if (drag.frame.hasPointerCapture(drag.pointerId)) drag.frame.releasePointerCapture(drag.pointerId);
     if (complete && drag.dragging && drag.candidate !== drag.initial) onValueCommit?.(drag.candidate);
@@ -382,6 +385,14 @@ export function ImageCompare({
     const onHandle = handle?.contains(target) ?? false;
     const interactive = target.closest(INTERACTIVE_SELECTOR);
     if (!onHandle && interactive && event.currentTarget.contains(interactive)) return;
+    const frame = event.currentTarget;
+    const doc = frame.ownerDocument;
+    // Before capture, a release or cancel outside the frame never reaches it; abandon the gesture there.
+    const endOutside = (outside: globalThis.PointerEvent) => {
+      if (outside.pointerId === gesture.current?.pointerId && !frame.contains(outside.target as Node)) finish(false);
+    };
+    doc.addEventListener('pointerup', endOutside, true);
+    doc.addEventListener('pointercancel', endOutside, true);
     gesture.current = {
       pointerId: event.pointerId,
       mouse: event.pointerType === 'mouse',
@@ -392,7 +403,11 @@ export function ImageCompare({
       dragging: false,
       initial: value,
       candidate: value,
-      frame: event.currentTarget,
+      frame,
+      unlisten: () => {
+        doc.removeEventListener('pointerup', endOutside, true);
+        doc.removeEventListener('pointercancel', endOutside, true);
+      },
     };
     // Keeps the pressed handle focused (mousedown would otherwise move focus to the frame's ancestor).
     event.preventDefault();
@@ -426,12 +441,14 @@ export function ImageCompare({
   const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
     const drag = gesture.current;
     if (!drag || event.pointerId !== drag.pointerId) return;
+    // A prevented release still ends the gesture but requests and commits nothing.
+    const vetoed = event.defaultPrevented;
     if (!drag.dragging && !drag.onHandle) {
       finish(false);
-      requestAndCommit(percentAt(mainAxis(event)));
+      if (!vetoed) requestAndCommit(percentAt(mainAxis(event)));
       return;
     }
-    finish(true);
+    finish(!vetoed);
   };
   const handlePointerAbort = (event: PointerEvent<HTMLDivElement>) => {
     if (gesture.current?.pointerId === event.pointerId) finish(false);
