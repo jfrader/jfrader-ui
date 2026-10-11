@@ -57,7 +57,7 @@ const listStyle = css({
   position: 'relative',
   blockSize: 'var(--toast-stack-height, 0px)',
   pointerEvents: 'auto',
-  transitionProperty: 'height',
+  transitionProperty: 'block-size',
   transitionDuration: vars.motion.duration.base,
   transitionTimingFunction: vars.motion.easeStandard,
   [REDUCED_MOTION]: { transitionDuration: '0s' },
@@ -67,11 +67,11 @@ const itemStyle = css({
   insetInline: 0,
   insetBlockEnd: 'var(--toast-stack-offset, 0px)',
   zIndex: 'var(--toast-stack-order)',
-  transitionProperty: 'opacity, transform, inset-block-end',
+  transitionProperty: 'opacity, inset-block-end',
   transitionDuration: vars.motion.duration.base,
   transitionTimingFunction: vars.motion.easeStandard,
   '&[data-stack-visible="false"]': { visibility: 'hidden' },
-  [REDUCED_MOTION]: { transitionDuration: '0s', transform: 'none' },
+  [REDUCED_MOTION]: { transitionDuration: '0s' },
 });
 const toggleStyle = css({ pointerEvents: 'auto', justifySelf: 'end', minBlockSize: vars.space[8] });
 
@@ -167,7 +167,7 @@ function ToastStackContent({
       document.removeEventListener('pointerdown', outside);
       document.removeEventListener('keydown', keyboard);
     };
-  }, [hotkey, contained, toasts]);
+  }, [hotkey, toasts]);
 
   let height = '0px';
   const offsets = new Map<string, string>();

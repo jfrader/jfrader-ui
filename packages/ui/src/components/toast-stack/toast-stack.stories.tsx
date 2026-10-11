@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor, within } from 'storybook/test';
+import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
@@ -106,6 +106,21 @@ function Harness({
   );
 }
 const bodyOf = (element: HTMLElement) => within(element.ownerDocument.body);
+/** Declarations authored for `element` inside `@media` rules whose condition includes `feature`. */
+function mediaDeclarations(element: Element, feature: string) {
+  const sheets = Array.from(element.ownerDocument.styleSheets).flatMap((sheet) => {
+    try {
+      return Array.from(sheet.cssRules);
+    } catch {
+      return [];
+    }
+  });
+  return sheets
+    .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText.includes(feature))
+    .flatMap((rule) => Array.from(rule.cssRules))
+    .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule && element.matches(rule.selectorText))
+    .map((rule) => rule.style);
+}
 async function settled(element: HTMLElement) {
   await sleep(280);
   await waitFor(async () => {
@@ -214,11 +229,18 @@ export const HoverAndTouchExpansion: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
+    const list = region.querySelector<HTMLElement>('[data-ui="toast-stack-list"]')!;
+    const collapsedHeight = list.getBoundingClientRect().height;
     await userEvent.hover(region);
     await expect(region).toHaveAttribute('data-expanded', 'true');
+    // The list's block size animates between collapsed and expanded instead of snapping.
+    await waitFor(async () => {
+      await expect(list.getAnimations().length).toBeGreaterThan(0);
+    });
     await within(region).findByText('Profile saved');
     await settled(region);
     await expect(within(region).getByText('Profile saved')).toBeVisible();
+    await expect(list.getBoundingClientRect().height).toBeGreaterThan(collapsedHeight);
     await userEvent.unhover(region);
     await expect(region).toHaveAttribute('data-expanded', 'false');
     await userEvent.click(within(region).getByRole('button', { name: 'Expand notifications' }));
@@ -381,8 +403,50 @@ export const RTL: Story = {
   args: { dir: 'rtl', position: 'bottom-start', variant: 'list' },
   render: (args) => <Harness {...args} />,
 };
-export const ReducedMotion: Story = { ...PersistentStack };
-export const ForcedColors: Story = { ...PersistentStack };
+export const ReducedMotion: Story = {
+  ...PersistentStack,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Structural check of the authored reduced-motion rules; it does not emulate the media preference. Browser QA verifies instant settling.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    const list = region.querySelector('[data-ui="toast-stack-list"]')!;
+    await expect(mediaDeclarations(list, 'prefers-reduced-motion')).toContainEqual(
+      expect.objectContaining({ transitionDuration: '0s' }),
+    );
+    await expect(mediaDeclarations(list.firstElementChild!, 'prefers-reduced-motion')).toContainEqual(
+      expect.objectContaining({ transitionDuration: '0s' }),
+    );
+    const toast = region.querySelector('[data-ui="toast"]')!;
+    await expect(mediaDeclarations(toast, 'prefers-reduced-motion')).toContainEqual(
+      expect.objectContaining({ transitionDuration: '0s', transform: 'none' }),
+    );
+  },
+};
+export const ForcedColors: Story = {
+  ...PersistentStack,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Structural check of the authored forced-colors surface; it does not emulate forced colors. Browser QA verifies the rendered outlines.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    await expect(mediaDeclarations(region.querySelector('[data-ui="toast"]')!, 'forced-colors')).toContainEqual(
+      expect.objectContaining({ backgroundColor: 'canvas', color: 'canvastext', borderColor: 'canvastext' }),
+    );
+  },
+};
 export const NarrowLongCopy: Story = {
   args: { variant: 'list', sx: { inlineSize: '18rem' } },
   render: (args) => (
@@ -518,5 +582,105 @@ export const EditableHotkey: Story = {
     await userEvent.keyboard('{Alt>}t{/Alt}');
     await expect(canvasElement.ownerDocument.activeElement).toBe(input);
     await expect(region).toHaveAttribute('data-expanded', 'false');
+  },
+};
+
+const LIFETIME_MS = 1000;
+function LifetimeControls() {
+  const api = useToast();
+  const id = useRef('');
+  return (
+    <div style={{ display: 'flex', gap: vars.space[2], flexWrap: 'wrap' }}>
+      <Button onClick={() => (id.current = api.toast({ title: 'Syncing files', duration: LIFETIME_MS }))}>
+        Notify timed
+      </Button>
+      <Button onClick={() => api.update(id.current, { title: 'Syncing 3 files' })}>Rename</Button>
+      <Button onClick={() => api.update(id.current, { duration: LIFETIME_MS * 2 })}>Extend</Button>
+    </div>
+  );
+}
+export const UpdateLifetime: Story = {
+  name: 'Update restarts the lifetime only when the duration changes',
+  render: (args) => (
+    <Toast>
+      <LifetimeControls />
+      <ToastStack {...args} />
+    </Toast>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    const open = () => region.querySelectorAll('[data-state="open"]');
+    // Title-only update: the countdown keeps its elapsed time.
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Notify timed' }));
+    await settled(region);
+    await sleep(500);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Rename' }));
+    await expect(await within(region).findByText('Syncing 3 files')).toBeVisible();
+    await sleep(400);
+    await waitFor(
+      async () => {
+        await expect(open()).toHaveLength(0);
+      },
+      { timeout: 300 },
+    );
+    // Duration update: the countdown restarts from the new duration.
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Notify timed' }));
+    await settled(region);
+    await sleep(500);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Extend' }));
+    await sleep(LIFETIME_MS - 500);
+    await expect(open()).toHaveLength(1);
+    await waitFor(
+      async () => {
+        await expect(open()).toHaveLength(0);
+      },
+      { timeout: LIFETIME_MS * 2 },
+    );
+  },
+};
+
+class ProviderBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
+  state: { error: string | null } = { error: null };
+  static getDerivedStateFromError(error: Error) {
+    return { error: error.message };
+  }
+  render() {
+    return this.state.error ? <div role="alert">{this.state.error}</div> : this.props.children;
+  }
+}
+export const MissingProvider: Story = {
+  beforeEach: () => {
+    const error = spyOn(console, 'error').mockImplementation(() => {});
+    return () => error.mockRestore();
+  },
+  render: (args) => (
+    <ProviderBoundary>
+      <ToastStack {...args} />
+    </ProviderBoundary>
+  ),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('alert')).toHaveTextContent(
+      'Toast.Stack must be rendered inside <Toast.Provider>.',
+    );
+  },
+};
+
+export const SecondRendererWarning: Story = {
+  beforeEach: () => {
+    const warn = spyOn(console, 'warn').mockImplementation(() => {});
+    return () => warn.mockRestore();
+  },
+  render: (args) => (
+    <Toast>
+      <ToastStack {...args} />
+      <Toast.Viewport />
+    </Toast>
+  ),
+  play: async ({ canvasElement }) => {
+    await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await waitFor(async () => {
+      await expect(console.warn).toHaveBeenCalledTimes(1);
+    });
+    await expect(console.warn).toHaveBeenCalledWith('Mount only one Toast queue renderer per provider.');
   },
 };

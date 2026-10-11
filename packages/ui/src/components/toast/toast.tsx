@@ -76,7 +76,10 @@ export interface ToastViewportProps extends ComponentPropsWithRef<'div'>, SxProp
 export interface ToastApi {
   toast: (options: ToastOptions) => string;
   dismiss: (id: string) => void;
-  /** Patches an open toast in place and restarts its duration. Unknown or closing ids are ignored. */
+  /**
+   * Patches an open toast in place; only a changed duration restarts the countdown.
+   * Unknown or closing ids are ignored.
+   */
   update: (id: string, patch: Partial<ToastOptions>) => void;
 }
 
@@ -86,7 +89,6 @@ interface ToastRecord {
   id: string;
   options: ToastOptions;
   state: ToastState;
-  revision: number;
 }
 
 interface ToastQueueContextValue {
@@ -284,7 +286,6 @@ function ToastProvider({
           duration: options.duration === undefined ? (options.loading ? null : duration) : options.duration,
         },
         state: 'open',
-        revision: 0,
       };
       const current = queueRef.current;
       const next = [...current, record].slice(-limit);
@@ -307,7 +308,7 @@ function ToastProvider({
         if (patch.duration !== undefined) options.duration = patch.duration;
         else if (patch.loading !== undefined) options.duration = patch.loading ? null : duration;
         else options.duration = record.options.duration;
-        return { ...record, options, revision: record.revision + 1 };
+        return { ...record, options };
       });
       queueRef.current = next;
       setToasts(next);
@@ -449,7 +450,7 @@ export function ToastItem({
 
   useEffect(() => {
     remainingRef.current = duration ?? 0;
-  }, [record.revision, duration]);
+  }, [duration]);
 
   useEffect(() => {
     if (!exposed || populated) return;
@@ -476,7 +477,7 @@ export function ToastItem({
       clearTimeout(timer);
       remainingRef.current -= performance.now() - startedAt;
     };
-  }, [timerRunning, dismiss, id, record.revision]);
+  }, [timerRunning, dismiss, id, duration]);
 
   // Exit: wait for the closing transition, then remove. With reduced motion (0s) or no
   // Web Animations support there is nothing to wait for and removal is immediate.
