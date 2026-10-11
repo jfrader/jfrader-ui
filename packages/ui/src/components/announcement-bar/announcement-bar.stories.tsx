@@ -215,6 +215,18 @@ export const NarrowLongContent: Story = {
       await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
   },
 };
+export const CenteredFlexParent: Story = {
+  render: (args) => (
+    <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <AnnouncementBar {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const { width, height } = within(canvasElement).getByRole('region').getBoundingClientRect();
+    await expect(width).toBeGreaterThanOrEqual(239);
+    await expect(height).toBeLessThan(200);
+  },
+};
 export const Empty: Story = {
   args: { messages: [] },
   play: async ({ canvasElement }) => {

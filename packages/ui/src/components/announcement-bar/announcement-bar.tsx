@@ -90,6 +90,8 @@ export interface AnnouncementBarProps
 }
 
 const DEFAULT_INTERVAL = 6000;
+const WIDE_MIN = '35rem';
+const TONE_RULE = '3px';
 const MAX_TIMEOUT = 2147483647;
 const DEFAULT_LABELS: AnnouncementBarLabels = {
   previous: 'Previous announcement',
@@ -112,8 +114,6 @@ const progress = keyframes({
   to: { strokeDashoffset: 100 },
 });
 const rootStyle = css({
-  containerType: 'inline-size',
-  containerName: 'announcement-bar',
   display: 'grid',
   gridTemplateRows: '1fr',
   opacity: 1,
@@ -123,7 +123,7 @@ const rootStyle = css({
   fontSize: vars.textSize.sm,
   lineHeight: vars.lineHeight.base,
   borderBlock: `1px solid ${vars.color.borderControl}`,
-  borderInlineStart: `3px solid var(--announcement-tone)`,
+  borderInlineStart: `${TONE_RULE} solid var(--announcement-tone)`,
   transitionProperty: 'grid-template-rows, opacity',
   transitionDuration: vars.motion.duration.slow,
   transitionTimingFunction: vars.motion.easeStandard,
@@ -152,35 +152,33 @@ const shellStyle = css({
   minBlockSize: 0,
   '&[data-closing="true"]': { overflow: 'hidden' },
 });
+// Wide/narrow switch from the bar's own width, without size containment (which would drop the
+// bar's intrinsic width in shrink-to-fit parents). Flex percentages resolve against the layout's
+// content box, so the threshold is WIDE_MIN minus the tone rule and padding. Wide: the side groups
+// share free space equally around the max-content copy. Narrow: the side caps collapse to their
+// fit-content and the copy claims a full line, giving start-aligned rows in DOM order (rotation,
+// copy, navigation/dismiss) rather than copy first. An empty group stays as the wide mirror spacer;
+// its basis and margins cancel the gap, so when narrow it shares the copy's line instead of a row.
+const layoutGap = vars.space[3];
+const layoutInner = `(${WIDE_MIN} - ${TONE_RULE} - 2 * ${vars.space[4]})`;
 const layoutStyle = css({
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 3fr) minmax(0, 1fr)',
-  gap: vars.space[3],
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: layoutGap,
   alignItems: 'center',
   padding: vars.space[4],
-  '@container announcement-bar (max-width: 35rem)': {
-    gridTemplateColumns: 'minmax(0, 1fr)',
-    '& > [data-ui="announcement-bar-content"]': {
-      gridColumn: 1,
-      gridRow: 1,
-      textAlign: 'start',
-    },
-  },
 });
 const contentStyle = css({
-  gridColumn: 2,
-  minInlineSize: 0,
-  textAlign: 'center',
+  flex: '0 1 auto',
+  minInlineSize: `min(100%, calc((${layoutInner} - 100%) * 999))`,
 });
 const slideStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
-  justifyContent: 'center',
   alignItems: 'center',
   gap: vars.space[3],
   minInlineSize: 0,
   animation: `${swap} ${vars.motion.duration.base} ${vars.motion.easeStandard}`,
-  '@container announcement-bar (max-width: 35rem)': { justifyContent: 'start' },
   [REDUCED_MOTION]: { animation: 'none' },
 });
 const messageStyle = css({ overflowWrap: 'anywhere', minInlineSize: 0 });
@@ -189,12 +187,14 @@ const directionalStyle = css({
   '&:dir(rtl)': { transform: 'scaleX(-1)' },
 });
 const controlsStyle = css({
+  flex: '1 1 0',
   display: 'flex',
   flexWrap: 'wrap',
   gap: vars.space[2],
   justifyContent: 'end',
-  minInlineSize: 0,
-  '@container announcement-bar (max-width: 35rem)': { justifyContent: 'start' },
+  minInlineSize: 'fit-content',
+  maxInlineSize: `calc((100% - ${layoutInner}) * 999)`,
+  '&:empty': { flexBasis: layoutGap, marginInline: `calc(-0.5 * ${layoutGap})` },
 });
 const controlStyle = css({
   minBlockSize: vars.space[8],
