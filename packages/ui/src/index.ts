@@ -17,6 +17,7 @@ export * from './components/copy-button';
 export * from './components/date-picker';
 export * from './components/dialog';
 export * from './components/divider';
+export * from './components/drawer';
 export * from './components/empty-state';
 export * from './components/flex';
 export * from './components/hover-card';
