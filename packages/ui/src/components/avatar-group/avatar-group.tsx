@@ -123,20 +123,24 @@ const overflowBaseStyle = css({
   },
 });
 
+// The size token is a minimum: longer formatted counts widen the circle into a pill.
 const overflowSizeStyles: Record<AvatarSize, SerializedStyles> = {
   sm: css({
-    inlineSize: vars.space[6],
+    minInlineSize: vars.space[6],
     blockSize: vars.space[6],
+    paddingInline: `calc(${vars.space[1]} / 2)`,
     fontSize: vars.textSize.xs,
   }),
   md: css({
-    inlineSize: vars.space[8],
+    minInlineSize: vars.space[8],
     blockSize: vars.space[8],
+    paddingInline: vars.space[1],
     fontSize: vars.textSize.sm,
   }),
   lg: css({
-    inlineSize: vars.space[10],
+    minInlineSize: vars.space[10],
     blockSize: vars.space[10],
+    paddingInline: vars.space[1],
     fontSize: vars.textSize.md,
   }),
 };
@@ -175,10 +179,9 @@ export function AvatarGroup({
   const overflowLabel = getOverflowLabel(hiddenCount, formattedHidden);
   const summaryLabel = getSummaryLabel(totalCount, formattedTotal);
 
-  const explicitLabelledBy = rest['aria-labelledby'];
-  const explicitLabel = rest['aria-label'];
-  const resolvedAriaLabel =
-    explicitLabelledBy !== undefined ? undefined : (explicitLabel ?? label);
+  // A consumer aria-label is always kept; only the fallback `label` yields to aria-labelledby.
+  const hasLabelledBy = Boolean(rest['aria-labelledby']?.trim());
+  const resolvedAriaLabel = rest['aria-label'] ?? (hasLabelledBy ? undefined : label);
 
   const externalDescribedBy = rest['aria-describedby'];
   const ariaDescribedBy = [externalDescribedBy, summaryId].filter(Boolean).join(' ');
