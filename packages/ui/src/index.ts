@@ -33,6 +33,7 @@ export * from './components/json-viewer';
 export * from './components/kbd';
 export * from './components/menu';
 export * from './components/metric-card';
+export * from './components/multi-select';
 export * from './components/navigation';
 export * from './components/pagination';
 export * from './components/password-field';
