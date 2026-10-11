@@ -194,6 +194,7 @@ function DeferredOpenField(props: InlineEditProps) {
       <button style={FIXTURE_BUTTON} type="button">
         Elsewhere
       </button>
+      <p>Release notes</p>
     </>
   );
 }
@@ -260,7 +261,9 @@ function FrameField(props: InlineEditProps) {
         createPortal(
           <>
             <InlineEdit {...props} />
-            <button type="button">After</button>
+            <button style={FIXTURE_BUTTON} type="button">
+              After
+            </button>
           </>,
           body,
         )}
@@ -468,7 +471,11 @@ export const LeaveInFrame: Story = {
     await expect(inFrame.getByRole('textbox')).toHaveValue('Zeus');
 
     // Focus moving past the widget in the frame is.
-    inFrame.getByRole('button', { name: 'After' }).focus();
+    const after = inFrame.getByRole('button', { name: 'After' });
+    const box = after.getBoundingClientRect();
+    await expect(box.width).toBeGreaterThanOrEqual(24);
+    await expect(box.height).toBeGreaterThanOrEqual(24);
+    after.focus();
     await expect(args.onSave).toHaveBeenCalledTimes(1);
     await expect(args.onSave).toHaveBeenLastCalledWith('Zeus');
     await expect(args.onValueChange).toHaveBeenLastCalledWith('Zeus');
@@ -600,10 +607,16 @@ export const ExternalError: Story = {
 };
 
 export const Saving: Story = {
-  args: { onSave: fn(() => new Promise<void>(() => {})) },
-  play: async ({ canvas, canvasElement, userEvent }) => {
+  args: { onSave: fn(() => new Promise<void>(() => {})), normalize: fn((next: string) => next) },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{Enter}Zeus{Enter}');
+    await expect(args.normalize).toHaveBeenCalledTimes(1);
+    // Blocked saves never reach normalize or onSave.
+    await userEvent.keyboard('{Enter}');
+    await userEvent.click(canvas.getByRole('button', { name: 'Save' }));
+    await expect(args.normalize).toHaveBeenCalledTimes(1);
+    await expect(args.onSave).toHaveBeenCalledTimes(1);
     await expect(rootOf(canvasElement)).toHaveAttribute('aria-busy', 'true');
     await expect(canvas.getByRole('textbox')).toHaveAttribute('readonly');
     await expect(canvas.getByRole('button', { name: 'Save' })).toHaveAttribute('aria-disabled', 'true');
@@ -849,6 +862,38 @@ export const DeferredOpen: Story = {
     await expect(canvas.getByRole('textbox')).toBeVisible();
     await expect(elsewhere.ownerDocument.activeElement).toBe(elsewhere);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(3);
+  },
+};
+
+export const DeferredAfterOutsidePress: Story = {
+  args: { onOpenChange: fn() },
+  render: (args) => <DeferredOpenField {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const apply = canvas.getByRole('button', { name: 'Apply request' });
+    const outside = canvas.getByText('Release notes');
+    const page = outside.ownerDocument;
+    // A press on plain content outside drops focus to the page; a later open leaves it there.
+    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
+    await userEvent.click(outside);
+    await expect(page.activeElement).toBe(page.body);
+    await userEvent.click(apply);
+    const editor = canvas.getByRole('textbox');
+    await expect(editor).toBeVisible();
+    await expect(page.activeElement).toBe(page.body);
+
+    // A later close leaves it there too.
+    await userEvent.click(editor);
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await userEvent.click(outside);
+    // Leaving with the unchanged draft repeats the close request.
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(3);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await userEvent.click(apply);
+    await expect(canvas.queryByRole('textbox')).toBeNull();
+    await expect(page.activeElement).toBe(page.body);
+    await expect(args.onSave).not.toHaveBeenCalled();
   },
 };
 

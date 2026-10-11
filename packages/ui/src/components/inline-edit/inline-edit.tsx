@@ -523,8 +523,8 @@ export function InlineEdit({
   }, [committed]);
 
   // An intent waits for its transition: the parent may accept the open or close request later.
-  // It applies only while focus is still unclaimed (inside the widget or dropped with a removed
-  // part), so a late acceptance never pulls focus back from wherever the user went.
+  // It applies only if the user has not departed (below) and focus is still unclaimed (inside the
+  // widget or dropped with a removed part), so a late acceptance never pulls focus back.
   useLayoutEffect(() => {
     if (focusIntent === null || (focusIntent === 'trigger') === isOpen) return;
     setFocusIntent(null);
@@ -539,6 +539,25 @@ export function InlineEdit({
     if (focusIntent === 'select') control.select();
     else control.setSelectionRange(control.value.length, control.value.length);
   }, [focusIntent, isOpen]);
+
+  // Departing the widget drops a pending intent: focus landing outside, or a press outside that
+  // may move focus, even onto plain content. A part removed by the accepted transition drops focus
+  // without either, so it keeps the intent.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (focusIntent === null || !root) return;
+    const { ownerDocument } = root;
+    const handleDeparture = (event: Event) => {
+      if (event.defaultPrevented || event.composedPath().includes(root)) return;
+      setFocusIntent(null);
+    };
+    ownerDocument.addEventListener('mousedown', handleDeparture);
+    ownerDocument.addEventListener('focusin', handleDeparture);
+    return () => {
+      ownerDocument.removeEventListener('mousedown', handleDeparture);
+      ownerDocument.removeEventListener('focusin', handleDeparture);
+    };
+  }, [focusIntent]);
 
   // A native reset of the editor's form discards the draft; it never saves.
   useEffect(() => {
@@ -603,9 +622,11 @@ export function InlineEdit({
     requestOpen(false);
   };
 
-  // The one gate for every persistence attempt: editor saves and Retry.
-  const submit = (next: string, returnFocus: boolean) => {
+  // The one gate for every persistence attempt: editor saves and Retry. `prepare` runs past the
+  // gate only, so a blocked attempt never reaches consumer code.
+  const submit = (prepare: () => string, returnFocus: boolean) => {
     if (!editable || saving || runRef.current !== null) return;
+    const next = prepare();
     if (next === committed) {
       setInvalid(null);
       setPhase('idle');
@@ -623,7 +644,7 @@ export function InlineEdit({
     persist(next, returnFocus);
   };
 
-  const save = (returnFocus: boolean) => submit(normalize(draft), returnFocus);
+  const save = (returnFocus: boolean) => submit(() => normalize(draft), returnFocus);
 
   /** Returns whether the cancel was handled. */
   const cancel = () => {
@@ -638,7 +659,7 @@ export function InlineEdit({
 
   // The failed draft was normalized when it was first saved.
   const retry = () => {
-    if (failedDraft !== null) submit(failedDraft, true);
+    if (failedDraft !== null) submit(() => failedDraft, true);
   };
 
   const handleTriggerClick = () => {
