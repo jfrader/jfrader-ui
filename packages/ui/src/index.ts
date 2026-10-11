@@ -59,6 +59,7 @@ export * from './components/textarea';
 export { ThemeProvider, useTheme, type ThemeProviderProps } from './components/theme-provider/theme-provider';
 export * from './components/theme-root';
 export * from './components/time-picker';
+export * from './components/timeline';
 export * from './components/toast';
 export * from './components/toast-stack';
 export * from './components/toggle-group';
