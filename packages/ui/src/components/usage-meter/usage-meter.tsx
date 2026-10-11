@@ -196,9 +196,11 @@ const limitStyle = css({
   borderInlineStart: `2px solid ${vars.color.text}`,
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
+/** Minimum legend column width: roughly one short label plus the swatch before wrapping to one column. */
+const LEGEND_COLUMN_MIN = '12rem';
 const legendStyle = css({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
+  gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${LEGEND_COLUMN_MIN}), 1fr))`,
   gap: vars.space[2],
   padding: 0,
   margin: 0,
@@ -395,6 +397,17 @@ export function UsageMeter({
       console.warn('UsageMeter: segment ids must be nonempty and unique.');
     }
   }, [segments]);
+  useEffect(() => {
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      valid &&
+      !hasLabel &&
+      !ariaLabel &&
+      !labelledBy
+    ) {
+      console.warn('UsageMeter: the meter needs an accessible name (label, ariaLabel, or labelledBy).');
+    }
+  }, [valid, hasLabel, ariaLabel, labelledBy]);
   useLayoutEffect(() => {
     const removed = removedFocus.current;
     removedFocus.current = null;
