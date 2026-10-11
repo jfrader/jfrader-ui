@@ -1,6 +1,6 @@
 import { StrictMode, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fireEvent, fn, waitFor } from 'storybook/test';
+import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ScrollArea, type ScrollAreaProps } from './index';
@@ -78,6 +78,51 @@ const overflowReady = async (element: HTMLElement, axis = 'block') => {
     await expect(track(element, axis).hidden).toBe(false);
   });
 };
+// Fractional devicePixelRatio and subpixel layout shift computed lengths; compare within a pixel.
+const PX_TOLERANCE = 1.1;
+const expectLength = async (actual: string | number, expected: string | number) => {
+  const difference = parseFloat(String(actual)) - parseFloat(String(expected));
+  await expect(Math.abs(difference)).toBeLessThan(PX_TOLERANCE);
+};
+/** Story-only: the computed value an authored length (a token or rem) resolves to on a throwaway probe. */
+const resolveLength = (document: Document, property: string, value: string) => {
+  const probe = document.createElement('div');
+  probe.style.setProperty(property, value);
+  document.body.append(probe);
+  const resolved = getComputedStyle(probe).getPropertyValue(property);
+  probe.remove();
+  return resolved;
+};
+/**
+ * Story-only: the declarations authored inside `@media (<condition>)` whose selector targets `element`
+ * (pseudo-element rules are keyed by their pseudo). Reads the CSSOM; it does not activate the media query.
+ */
+const mediaRules = (element: Element, condition: string) => {
+  const found: { pseudo: string; style: CSSStyleDeclaration }[] = [];
+  for (const sheet of Array.from(element.ownerDocument.styleSheets)) {
+    for (const rule of Array.from(sheet.cssRules)) {
+      if (!('conditionText' in rule) || !String(rule.conditionText).includes(condition)) continue;
+      for (const inner of Array.from((rule as CSSMediaRule).cssRules)) {
+        if (!('selectorText' in inner)) continue;
+        const styleRule = inner as CSSStyleRule;
+        for (const selector of styleRule.selectorText.split(',')) {
+          const [base = '', pseudo = ''] = selector.trim().split('::');
+          if (element.matches(base)) found.push({ pseudo, style: styleRule.style });
+        }
+      }
+    }
+  }
+  return found;
+};
+const mediaValue = (element: Element, condition: string, property: string, pseudo = '') =>
+  mediaRules(element, condition)
+    .filter((rule) => rule.pseudo === pseudo)
+    .map((rule) => rule.style.getPropertyValue(property))
+    .filter(Boolean)
+    .at(-1);
+const FORCED_COLORS_QUERY = 'forced-colors: active';
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+const TRACK_PAGE_FRACTION = 0.9;
 
 export const Default: Story = {
   render: (args) => (
@@ -234,70 +279,197 @@ export const RTL: Story = {
     });
   },
 };
+// Structural check: asserts the authored forced-colors fallback rules against the unemulated computed
+// baseline. Real media emulation is verified in browser QA.
 export const ForcedColors: Story = {
   ...Default,
-  args: { scrollbars: 'native' },
   parameters: {
     docs: {
       description: {
-        story:
-          'Native fallback structure. Media-query behavior is verified separately with browser emulation.',
+        story: 'Replacement bars and edge fades. Real forced-colors rendering is verified in browser QA.',
       },
     },
   },
-  play: NativeBars.play,
+  play: async ({ canvasElement }) => {
+    await overflowReady(canvasElement);
+    const node = viewport(canvasElement);
+    const computed = getComputedStyle(node);
+    await expect(computed.maskImage).toContain('linear-gradient');
+    await expect(computed.scrollbarWidth).toBe('none');
+    await expect(mediaValue(node, FORCED_COLORS_QUERY, 'mask-image')).toBe('none');
+    await expect(mediaValue(node, FORCED_COLORS_QUERY, 'scrollbar-width')).toBe('auto');
+    await expect(mediaValue(node, FORCED_COLORS_QUERY, 'display', '-webkit-scrollbar')).toBe('block');
+    for (const axis of ['block', 'inline'])
+      await expect(mediaValue(track(canvasElement, axis), FORCED_COLORS_QUERY, 'display')).toBe('none');
+  },
 };
+// Stubs matchMedia to drive the track-press behavior branch and reads the reduced-motion transition
+// rules from the CSSOM. Real media emulation is verified in browser QA.
 export const ReducedMotion: Story = {
   ...Default,
+  args: { scrollbars: 'always' },
   parameters: {
     docs: {
       description: {
-        story: 'Scrolling structure; this story does not emulate the reduced-motion preference.',
+        story: 'Track presses page the viewport. Real reduced-motion rendering is verified in browser QA.',
       },
     },
   },
+  play: async ({ canvasElement, userEvent }) => {
+    await overflowReady(canvasElement);
+    const node = viewport(canvasElement);
+    const win = node.ownerDocument.defaultView!;
+    await expect(mediaValue(track(canvasElement), REDUCED_MOTION_QUERY, 'transition')).toContain('none');
+    await expect(mediaValue(thumb(canvasElement), REDUCED_MOTION_QUERY, 'transition', 'after')).toContain(
+      'none',
+    );
+    const page = Math.min(node.scrollHeight - node.clientHeight, TRACK_PAGE_FRACTION * node.clientHeight);
+    const realMatchMedia = win.matchMedia.bind(win);
+    const scrollTo = spyOn(node, 'scrollTo');
+    for (const [reduce, behavior] of [
+      [false, 'smooth'],
+      [true, 'auto'],
+    ] as const) {
+      const matchMedia = spyOn(win, 'matchMedia').mockImplementation((query) =>
+        query === REDUCED_MOTION_QUERY
+          ? Object.defineProperty(realMatchMedia(query), 'matches', { value: reduce })
+          : realMatchMedia(query),
+      );
+      try {
+        node.scrollTo({ top: 0, behavior: 'instant' });
+        scrollTo.mockClear();
+        const bounds = thumb(canvasElement).getBoundingClientRect();
+        await userEvent.pointer({
+          keys: '[MouseLeft]',
+          target: track(canvasElement),
+          coords: { clientX: bounds.left + bounds.width / 2, clientY: bounds.bottom + bounds.height / 2 },
+        });
+        await expect(matchMedia).toHaveBeenCalledWith(REDUCED_MOTION_QUERY);
+        await expect(scrollTo).toHaveBeenCalledTimes(1);
+        await expect(scrollTo).toHaveBeenLastCalledWith(
+          expect.objectContaining({ behavior, top: expect.closeTo(page, 0) }),
+        );
+        await waitFor(async () => {
+          await expectLength(node.scrollTop, page);
+        });
+      } finally {
+        matchMedia.mockRestore();
+      }
+    }
+    scrollTo.mockRestore();
+  },
 };
+const NATIVE_KEYS = ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' ', 'Escape'] as const;
+const insideActivation = fn();
+// The play userEvent dispatches untrusted keydowns, which never run the browser's native scroll, so the
+// keyboard loop proves the component leaves each key's default action alone and keeps focus. Offset and
+// clamp assertions drive the viewport through scrollTo; real key-scroll offsets are verified in browser QA.
 export const KeyboardNavigation: Story = {
+  args: { onEdgeChange: fn() },
   render: (args) => (
     <>
       <button>Before</button>
       <ScrollArea {...args}>
         <Items />
-        <button>Inside</button>
+        <button onClick={insideActivation}>Inside</button>
         <textarea aria-label="Notes" defaultValue="Notes" />
       </ScrollArea>
       <button>After</button>
     </>
   ),
-  play: async ({ canvas, canvasElement, userEvent }) => {
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    insideActivation.mockClear();
+    await overflowReady(canvasElement);
     const node = viewport(canvasElement);
+    const document = node.ownerDocument;
     await userEvent.click(canvas.getByRole('button', { name: 'Before' }));
     await userEvent.tab();
-    await expect(node.ownerDocument.activeElement).toBe(node);
+    await expect(document.activeElement).toBe(node);
     await expect(getComputedStyle(node).outlineStyle).not.toBe('none');
     await expect(getComputedStyle(node).maskImage).toBe('none');
-    await userEvent.keyboard('{ArrowDown}{ArrowUp}{PageDown}{PageUp}{End}{Home} {Shift>} {/Shift}{Escape}');
-    await expect(node.ownerDocument.activeElement).toBe(node);
-    node.scrollTop = node.scrollHeight;
-    await waitFor(async () => {
-      await expect(node.scrollTop).toBeGreaterThan(0);
-      await expect(node.style.getPropertyValue('--fade-bottom')).toBe('0px');
-    });
+
+    const keydowns: KeyboardEvent[] = [];
+    const record = (event: KeyboardEvent) => keydowns.push(event);
+    document.addEventListener('keydown', record);
+    try {
+      for (const key of NATIVE_KEYS) {
+        keydowns.length = 0;
+        await userEvent.keyboard(key === ' ' ? ' ' : `{${key}}`);
+        await expect(keydowns.map((event) => event.key)).toEqual([key]);
+        await expect(keydowns[0]!.defaultPrevented).toBe(false);
+        await expect(document.activeElement).toBe(node);
+      }
+      keydowns.length = 0;
+      await userEvent.keyboard('{Shift>} {/Shift}');
+      await expect(keydowns.map((event) => [event.key, event.shiftKey, event.defaultPrevented])).toEqual([
+        ['Shift', true, false],
+        [' ', true, false],
+      ]);
+      await expect(document.activeElement).toBe(node);
+    } finally {
+      document.removeEventListener('keydown', record);
+    }
+
+    const maximum = node.scrollHeight - node.clientHeight;
+    const edgeReports = () => (args.onEdgeChange as ReturnType<typeof fn>).mock.calls.length;
+    const nextFrame = () =>
+      new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const expectBoundary = async (offset: number, edges: { top: boolean; bottom: boolean }) => {
+      await waitFor(async () => {
+        await expectLength(node.scrollTop, offset);
+        await expect(args.onEdgeChange).toHaveBeenLastCalledWith({ ...edges, left: false, right: false });
+      });
+      await expect(node.style.getPropertyValue('--fade-top')).toBe(
+        edges.top ? 'var(--scroll-area-fade)' : '0px',
+      );
+      await expect(node.style.getPropertyValue('--fade-bottom')).toBe(
+        edges.bottom ? 'var(--scroll-area-fade)' : '0px',
+      );
+    };
+    node.scrollTo({ top: maximum });
+    await expectBoundary(maximum, { top: true, bottom: false });
+    const thumbTravel =
+      track(canvasElement).getBoundingClientRect().height -
+      thumb(canvasElement).getBoundingClientRect().height;
+    await expectLength(thumb(canvasElement).style.getPropertyValue('--thumb-position'), thumbTravel);
+    const atEnd = node.scrollTop;
+    const reportsAtEnd = edgeReports();
+    node.scrollTo({ top: maximum * 2 });
+    await userEvent.keyboard('{End}');
+    await expect(node.scrollTop).toBe(atEnd);
+    await nextFrame();
+    await expect(edgeReports()).toBe(reportsAtEnd);
+    node.scrollTo({ top: -maximum });
+    await expectBoundary(0, { top: false, bottom: true });
+    await expect(thumb(canvasElement).style.getPropertyValue('--thumb-position')).toBe('0px');
+    const startReports = edgeReports();
+    node.scrollTo({ top: 0 });
+    await userEvent.keyboard('{Home}');
+    await expect(node.scrollTop).toBe(0);
+    await nextFrame();
+    await expect(edgeReports()).toBe(startReports);
+    await expect(document.activeElement).toBe(node);
+
     await userEvent.tab();
-    await expect(node.ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'Inside' }));
+    const inside = canvas.getByRole('button', { name: 'Inside' });
+    await expect(document.activeElement).toBe(inside);
+    await userEvent.keyboard(' ');
+    await expect(insideActivation).toHaveBeenCalledTimes(1);
+    await expect(document.activeElement).toBe(inside);
     await userEvent.tab();
-    await expect(node.ownerDocument.activeElement).toBe(canvas.getByRole('textbox'));
+    await expect(document.activeElement).toBe(canvas.getByRole('textbox'));
     await userEvent.keyboard('{ArrowLeft}');
     await userEvent.type(canvas.getByRole('textbox'), ' saved');
     await expect(canvas.getByRole('textbox')).toHaveValue('Notes saved');
     await userEvent.tab();
-    await expect(node.ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'After' }));
+    await expect(document.activeElement).toBe(canvas.getByRole('button', { name: 'After' }));
     await userEvent.tab({ shift: true });
     await userEvent.tab({ shift: true });
     await userEvent.tab({ shift: true });
-    await expect(node.ownerDocument.activeElement).toBe(node);
+    await expect(document.activeElement).toBe(node);
     await userEvent.tab({ shift: true });
-    await expect(node.ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'Before' }));
+    await expect(document.activeElement).toBe(canvas.getByRole('button', { name: 'Before' }));
+    await expect(insideActivation).toHaveBeenCalledTimes(1);
   },
 };
 const rootAttachment = fn((_node: HTMLDivElement | null) => {});
@@ -341,8 +513,15 @@ export const RefsAndSlots: Story = {
     await expect(node).toHaveAttribute('aria-label', 'Activity');
     await expect(node).toHaveAttribute('aria-labelledby', 'external-title missing-title');
     await expect(node).toHaveAttribute('aria-describedby', 'external-description');
-    await expect(getComputedStyle(node).paddingInlineStart).toBe('12px');
-    await expect(getComputedStyle(thumb(canvasElement)).borderRadius).toBe('8px');
+    const { ownerDocument } = node;
+    await expectLength(
+      getComputedStyle(node).paddingInlineStart,
+      resolveLength(ownerDocument, 'padding-inline-start', vars.space[3]),
+    );
+    await expectLength(
+      getComputedStyle(thumb(canvasElement)).borderTopLeftRadius,
+      resolveLength(ownerDocument, 'border-top-left-radius', vars.radius.sm),
+    );
     await expect(getComputedStyle(track(canvasElement)).backgroundColor).toBe(
       getComputedStyle(canvasElement.querySelector('#external-description')!).backgroundColor,
     );
@@ -474,12 +653,17 @@ export const RTLWheel: Story = {
   },
 };
 
+const PARENT_BLOCK_SIZE = '12rem';
 export const ParentConstrained: Story = {
-  args: { maxBlockSize: undefined, sx: { blockSize: '12rem' } },
+  args: { maxBlockSize: undefined, sx: { blockSize: PARENT_BLOCK_SIZE } },
   render: Default.render,
   play: async ({ canvasElement }) => {
     await overflowReady(canvasElement);
-    await expect(viewport(canvasElement).getBoundingClientRect().height).toBe(192);
+    const node = viewport(canvasElement);
+    await expectLength(
+      node.getBoundingClientRect().height,
+      resolveLength(node.ownerDocument, 'block-size', PARENT_BLOCK_SIZE),
+    );
   },
 };
 
