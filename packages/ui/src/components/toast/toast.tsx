@@ -22,6 +22,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -29,17 +30,19 @@ import {
   type FocusEvent,
   type MouseEvent,
   type ReactNode,
+  type CSSProperties,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
-import { REDUCED_MOTION } from '../../styling/media';
+import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { ThemeBoundary, useThemeScope } from '../../styling/theme-scope';
 import { isRenderable } from '../../utils/renderable';
 import { Button } from '../button';
+import { Spinner } from '../spinner';
 
-export type ToastTone = 'neutral' | 'success' | 'danger';
+export type ToastTone = 'neutral' | 'success' | 'danger' | 'info' | 'warning';
 
 export interface ToastAction {
   label: string;
@@ -54,6 +57,8 @@ export interface ToastOptions {
   /** Milliseconds before auto-dismiss; `null` persists until dismissed. Defaults to the provider's. */
   duration?: number | null;
   action?: ToastAction;
+  /** Decorative spinner; an omitted duration persists while loading. */
+  loading?: boolean;
 }
 
 export interface ToastProviderProps {
@@ -71,6 +76,11 @@ export interface ToastViewportProps extends ComponentPropsWithRef<'div'>, SxProp
 export interface ToastApi {
   toast: (options: ToastOptions) => string;
   dismiss: (id: string) => void;
+  /**
+   * Patches an open toast in place; only a changed duration restarts the countdown.
+   * Unknown or closing ids are ignored.
+   */
+  update: (id: string, patch: Partial<ToastOptions>) => void;
 }
 
 type ToastState = 'open' | 'closing';
@@ -87,6 +97,7 @@ interface ToastQueueContextValue {
   remove: (id: string) => void;
   registerRoot: (id: string, root: HTMLDivElement | null) => void;
   dismissLabel: string;
+  registerRenderer: () => () => void;
 }
 
 const DEFAULT_MAX = 4;
@@ -94,7 +105,7 @@ const DEFAULT_DURATION_MS = 5000;
 const DEFAULT_DISMISS_LABEL = 'Dismiss';
 /** Delay between mounting an empty live region and filling it, so the fill is announced. */
 const ANNOUNCE_DELAY_MS = 100;
-const VIEWPORT_INLINE_SIZE = 'min(380px, calc(100vw - 32px))';
+export const TOAST_VIEWPORT_INLINE_SIZE = 'min(380px, calc(100vw - 32px))';
 const TONE_STRIPE_WIDTH = '3px';
 
 const ToastApiContext = createContext<ToastApi | null>(null);
@@ -110,7 +121,7 @@ const viewportStyle = css({
   display: 'flex',
   flexDirection: 'column',
   gap: vars.space[2],
-  inlineSize: VIEWPORT_INLINE_SIZE,
+  inlineSize: TOAST_VIEWPORT_INLINE_SIZE,
   margin: 0,
   paddingInlineEnd: vars.space[4],
   paddingBlockEnd: vars.space[4],
@@ -136,7 +147,7 @@ const toastStyle = css({
   transitionDuration: vars.motion.duration.base,
   transitionTimingFunction: vars.motion.easeStandard,
   // The empty frame before the live region fills (see ANNOUNCE_DELAY_MS) stays invisible.
-  '&[data-populated="false"]': { opacity: 0 },
+  '&[data-populated="false"][data-exposed="true"]': { opacity: 0 },
   '&[data-state="closing"]': {
     opacity: 0,
     transform: `translateY(${vars.space[2]})`,
@@ -144,7 +155,9 @@ const toastStyle = css({
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',
+    transform: 'none',
   },
+  [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText' },
 });
 
 // Tone is a decorative stripe; meaning is carried by the role (alert vs status) and the text.
@@ -153,6 +166,8 @@ const toneStyles: Record<ToastTone, SerializedStyles> = {
   neutral: css({ borderInlineStart: `${TONE_STRIPE_WIDTH} solid ${vars.color.borderStrong}` }),
   success: css({ borderInlineStart: `${TONE_STRIPE_WIDTH} solid ${vars.color.success}` }),
   danger: css({ borderInlineStart: `${TONE_STRIPE_WIDTH} solid ${vars.color.danger}` }),
+  info: css({ borderInlineStart: `${TONE_STRIPE_WIDTH} solid ${vars.color.info}` }),
+  warning: css({ borderInlineStart: `${TONE_STRIPE_WIDTH} solid ${vars.color.warning}` }),
 };
 
 const bodyStyle = css({
@@ -191,7 +206,7 @@ const actionRowStyle = css({
   gap: vars.space[2],
 });
 
-function useToastQueueContext(part: string): ToastQueueContextValue {
+export function useToastQueueContext(part: string): ToastQueueContextValue {
   const context = useContext(ToastQueueContext);
   if (!context) throw new Error(`Toast.${part} must be rendered inside <Toast.Provider>.`);
   return context;
@@ -214,6 +229,16 @@ function ToastProvider({
   const [toasts, setToasts] = useState<ToastRecord[]>([]);
   const queueRef = useRef<ToastRecord[]>([]);
   const rootsRef = useRef(new Map<string, HTMLDivElement>());
+  const pendingFocusRef = useRef<{ container: Element; ids: Set<string> } | null>(null);
+  const rendererCount = useRef(0);
+  const registerRenderer = useCallback(() => {
+    rendererCount.current += 1;
+    if (process.env.NODE_ENV !== 'production' && rendererCount.current > 1)
+      console.warn('Mount only one Toast queue renderer per provider.');
+    return () => {
+      rendererCount.current -= 1;
+    };
+  }, []);
   // An empty stack is not a usable limit, so zero/negative values are clamped.
   const limit = Math.max(1, Math.floor(Number.isFinite(max) ? max : DEFAULT_MAX));
 
@@ -225,19 +250,29 @@ function ToastProvider({
   const continueFocus = useCallback((departing: ToastRecord[], surviving: ToastRecord[]) => {
     // Continue only focus inside departing content, before inert/removal can drop it.
     // Use DOM order, skip other closing toasts, and leave focus alone if no toast survives.
-    const survivorRoots = new Set(
-      surviving.filter((record) => record.state === 'open').map((record) => rootsRef.current.get(record.id)),
-    );
     for (const record of departing) {
       const root = rootsRef.current.get(record.id);
       if (!root?.contains(root.ownerDocument.activeElement)) continue;
-      const next = Array.from(
-        root.parentElement?.querySelectorAll<HTMLDivElement>('[data-ui="toast"]') ?? [],
-      ).find((element) => survivorRoots.has(element));
-      next?.querySelector<HTMLButtonElement>('[data-toast-dismiss]')?.focus();
+      const container =
+        root.closest('[data-ui="toast-stack-list"], [data-ui="toast-viewport"]') ?? root.parentElement;
+      if (container)
+        pendingFocusRef.current = {
+          container,
+          ids: new Set(surviving.filter((item) => item.state === 'open').map((item) => item.id)),
+        };
       break;
     }
   }, []);
+
+  useLayoutEffect(() => {
+    const pending = pendingFocusRef.current;
+    if (!pending) return;
+    pendingFocusRef.current = null;
+    Array.from(pending.container.querySelectorAll<HTMLDivElement>('[data-ui="toast"]'))
+      .find((root) => pending.ids.has(root.dataset.toastId!))
+      ?.querySelector<HTMLButtonElement>('[data-toast-dismiss]')
+      ?.focus();
+  }, [toasts]);
 
   const toast = useCallback(
     (options: ToastOptions) => {
@@ -246,17 +281,39 @@ function ToastProvider({
       // Resolve the provider default once; later provider changes do not retime this toast.
       const record: ToastRecord = {
         id,
-        options: { ...options, duration: options.duration === undefined ? duration : options.duration },
+        options: {
+          ...options,
+          duration: options.duration === undefined ? (options.loading ? null : duration) : options.duration,
+        },
         state: 'open',
       };
       const current = queueRef.current;
       const next = [...current, record].slice(-limit);
-      continueFocus(current.filter((item) => !next.includes(item)), next);
+      continueFocus(
+        current.filter((item) => !next.includes(item)),
+        next,
+      );
       queueRef.current = next;
       setToasts(next);
       return id;
     },
     [idPrefix, limit, duration, continueFocus],
+  );
+
+  const update = useCallback(
+    (id: string, patch: Partial<ToastOptions>) => {
+      const next = queueRef.current.map((record) => {
+        if (record.id !== id || record.state !== 'open') return record;
+        const options = { ...record.options, ...patch };
+        if (patch.duration !== undefined) options.duration = patch.duration;
+        else if (patch.loading !== undefined) options.duration = patch.loading ? null : duration;
+        else options.duration = record.options.duration;
+        return { ...record, options };
+      });
+      queueRef.current = next;
+      setToasts(next);
+    },
+    [duration],
   );
 
   const dismiss = useCallback(
@@ -279,7 +336,10 @@ function ToastProvider({
     (id: string) => {
       const current = queueRef.current;
       const next = current.filter((record) => record.id !== id);
-      continueFocus(current.filter((record) => record.id === id), next);
+      continueFocus(
+        current.filter((record) => record.id === id),
+        next,
+      );
       queueRef.current = next;
       setToasts(next);
     },
@@ -287,10 +347,10 @@ function ToastProvider({
   );
 
   // Two contexts: `useToast` consumers get a value that stays stable while the queue changes.
-  const api = useMemo(() => ({ toast, dismiss }), [toast, dismiss]);
+  const api = useMemo(() => ({ toast, dismiss, update }), [toast, dismiss, update]);
   const queue = useMemo(
-    () => ({ toasts, dismiss, remove, registerRoot, dismissLabel }),
-    [toasts, dismiss, remove, registerRoot, dismissLabel],
+    () => ({ toasts, dismiss, remove, registerRoot, dismissLabel, registerRenderer }),
+    [toasts, dismiss, remove, registerRoot, dismissLabel, registerRenderer],
   );
 
   return (
@@ -303,7 +363,24 @@ function ToastProvider({
 ToastProvider.displayName = 'Toast.Provider';
 
 function ToastViewport({ ref, className, sx, ...props }: ToastViewportProps) {
-  const { toasts } = useToastQueueContext('Viewport');
+  const { toasts, registerRenderer } = useToastQueueContext('Viewport');
+  useEffect(registerRenderer, [registerRenderer]);
+  return (
+    <ToastPortal>
+      <WithSx className={className} styles={viewportStyle} sx={sx}>
+        {(className) => (
+          <div {...props} ref={ref} data-ui="toast-viewport" className={className}>
+            {toasts.map((record) => (
+              <ToastItem key={record.id} record={record} />
+            ))}
+          </div>
+        )}
+      </WithSx>
+    </ToastPortal>
+  );
+}
+
+export function ToastPortal({ children, contained = false }: { children: ReactNode; contained?: boolean }) {
   // The local anchor selects the host document (including iframe/other-document mounts),
   // not the global realm's document. It also renders on the server; the portal waits for mount.
   const anchorRef = useRef<HTMLSpanElement>(null);
@@ -319,31 +396,33 @@ function ToastViewport({ ref, className, sx, ...props }: ToastViewportProps) {
   return (
     <>
       <span hidden ref={anchorRef} />
-      {portalRoot &&
-        createPortal(
-          <ThemeBoundary>
-            <WithSx className={className} styles={viewportStyle} sx={sx}>
-              {(className) => (
-                <div {...props} ref={ref} data-ui="toast-viewport" className={className}>
-                  {toasts.map((record) => (
-                    <ToastItem key={record.id} record={record} />
-                  ))}
-                </div>
-              )}
-            </WithSx>
-          </ThemeBoundary>,
-          portalRoot,
-        )}
+      {contained
+        ? children
+        : portalRoot && createPortal(<ThemeBoundary>{children}</ThemeBoundary>, portalRoot)}
     </>
   );
 }
 
 ToastViewport.displayName = 'Toast.Viewport';
 
-function ToastItem({ record }: { record: ToastRecord }) {
+export function ToastItem({
+  record,
+  exposed = true,
+  paused = false,
+  style,
+  className,
+  escapeDismiss = false,
+}: {
+  record: ToastRecord;
+  exposed?: boolean;
+  paused?: boolean;
+  style?: CSSProperties;
+  className?: string;
+  escapeDismiss?: boolean;
+}) {
   const { dismiss, remove, registerRoot, dismissLabel } = useToastQueueContext('Viewport');
   const { id, options, state } = record;
-  const { title, description, tone = 'neutral', action } = options;
+  const { title, description, tone = 'neutral', action, loading } = options;
   const duration = options.duration;
 
   const rootRef = useRef<HTMLDivElement>(null);
@@ -358,15 +437,38 @@ function ToastItem({ record }: { record: ToastRecord }) {
   const [pointerInside, setPointerInside] = useState(false);
   const [focusInside, setFocusInside] = useState(false);
   const remainingRef = useRef(duration ?? 0);
+  const [documentHidden, setDocumentHidden] = useState(false);
 
   useEffect(() => {
+    const document = rootRef.current?.ownerDocument;
+    if (!document) return;
+    const sync = () => setDocumentHidden(document.hidden);
+    sync();
+    document.addEventListener('visibilitychange', sync);
+    return () => document.removeEventListener('visibilitychange', sync);
+  }, []);
+
+  useEffect(() => {
+    remainingRef.current = duration ?? 0;
+  }, [duration]);
+
+  useEffect(() => {
+    if (!exposed || populated) return;
     const timer = setTimeout(() => setPopulated(true), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(timer);
-  }, []);
+  }, [exposed, populated]);
 
   // Auto-dismiss counts down only while visible, open and not paused. Pausing
   // runs the cleanup, which banks the elapsed time; resuming continues from what is left.
-  const timerRunning = populated && state === 'open' && duration !== null && !pointerInside && !focusInside;
+  const timerRunning =
+    populated &&
+    exposed &&
+    !paused &&
+    !documentHidden &&
+    state === 'open' &&
+    duration !== null &&
+    !pointerInside &&
+    !focusInside;
   useEffect(() => {
     if (!timerRunning) return;
     const startedAt = performance.now();
@@ -375,7 +477,7 @@ function ToastItem({ record }: { record: ToastRecord }) {
       clearTimeout(timer);
       remainingRef.current -= performance.now() - startedAt;
     };
-  }, [timerRunning, dismiss, id]);
+  }, [timerRunning, dismiss, id, duration]);
 
   // Exit: wait for the closing transition, then remove. With reduced motion (0s) or no
   // Web Animations support there is nothing to wait for and removal is immediate.
@@ -405,11 +507,23 @@ function ToastItem({ record }: { record: ToastRecord }) {
   return (
     <div
       ref={setRoot}
-      inert={state === 'closing'}
+      inert={state === 'closing' || !exposed}
+      aria-hidden={state === 'closing' || !exposed ? true : undefined}
+      data-toast-id={id}
+      style={style}
+      className={className}
+      onKeyDown={(event) => {
+        if (escapeDismiss && event.key === 'Escape' && !event.defaultPrevented) {
+          event.preventDefault();
+          event.stopPropagation();
+          dismiss(id);
+        }
+      }}
       data-ui="toast"
       data-tone={tone}
       data-state={state}
       data-populated={populated}
+      data-exposed={exposed}
       onPointerEnter={() => setPointerInside(true)}
       onPointerLeave={() => setPointerInside(false)}
       onFocus={handleFocus}
@@ -424,7 +538,8 @@ function ToastItem({ record }: { record: ToastRecord }) {
           </>
         )}
       </div>
-      {populated && (
+      {loading && <Spinner aria-hidden="true" label="" size="sm" />}
+      {(populated || (escapeDismiss && exposed)) && (
         <div css={actionsStyle}>
           <Button
             variant="ghost"
