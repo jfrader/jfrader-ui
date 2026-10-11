@@ -4,10 +4,6 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { withLightTheme } from '../../testing/story-decorators';
 import { CommandPalette, type CommandPaletteProps } from './index';
 
-// An open modal's backdrop spans the whole docs preview, covering the documentation and the
-// other examples; these stories render as link cards in docs instead of inline canvases.
-const docsAsLink = { docs: { story: { inline: false } } } as const;
-
 const LABEL = 'Command palette';
 const TRIGGER = 'Open commands';
 
@@ -204,7 +200,8 @@ function NativeCloseExample(props: CommandPaletteProps) {
 NativeCloseExample.displayName = 'NativeCloseExample';
 
 export const RepairNativeClose: Story = {
-  parameters: docsAsLink,
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { open: true, onOpenChange: fn() },
   render: (args) => <NativeCloseExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -269,7 +266,8 @@ export const Escape: Story = {
 };
 
 export const RejectedControlled: Story = {
-  parameters: docsAsLink,
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { open: true, onOpenChange: fn() },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -299,7 +297,8 @@ export const LightTheme: Story = {
 };
 
 export const Open: Story = {
-  parameters: docsAsLink,
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
