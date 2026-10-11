@@ -292,6 +292,10 @@ export function Slider(props: SliderProps) {
     className,
     sx,
     onKeyDown,
+    'aria-label': ariaLabelProp,
+    'aria-labelledby': ariaLabelledByProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-invalid': ariaInvalidProp,
     ...rest
   } = props;
   const range = type === 'range';
@@ -336,11 +340,11 @@ export function Slider(props: SliderProps) {
   };
   const [seed] = useState(() => normalize(defaultValue ?? (range ? [min, max] : min)));
   const notify = (next: SliderValue) => {
-    if (props.type === 'range') props.onValueChange?.(next as readonly [number, number]);
+    if (range) props.onValueChange?.(next as readonly [number, number]);
     else props.onValueChange?.(next as number);
   };
   const commit = (next: SliderValue) => {
-    if (props.type === 'range') props.onValueCommit?.(next as readonly [number, number]);
+    if (range) props.onValueCommit?.(next as readonly [number, number]);
     else props.onValueCommit?.(next as number);
   };
   const [state, requestChange, reset] = useControlledState<SliderValue>(value, seed, notify);
@@ -382,7 +386,7 @@ export function Slider(props: SliderProps) {
   };
   useEffect(() => {
     if (disabled) finish(false);
-  });
+  }, [disabled]);
   useEffect(
     () => () => {
       const drag = gesture.current;
@@ -638,20 +642,20 @@ export function Slider(props: SliderProps) {
                       aria-orientation="horizontal"
                       aria-disabled={disabled}
                       aria-invalid={
-                        hasError || invalid ? true : (part?.['aria-invalid'] ?? rest['aria-invalid'])
+                        hasError || invalid ? true : (part?.['aria-invalid'] ?? ariaInvalidProp)
                       }
                       aria-valuemin={low}
                       aria-valuemax={high}
                       aria-valuenow={n}
                       aria-valuetext={format(n)}
-                      aria-label={part?.['aria-label'] ?? (range ? thumbLabels?.[index] : rest['aria-label'])}
+                      aria-label={part?.['aria-label'] ?? (range ? thumbLabels?.[index] : ariaLabelProp)}
                       aria-labelledby={ids(
-                        rest['aria-labelledby'],
+                        ariaLabelledByProp,
                         part?.['aria-labelledby'],
                         range ? `${id}-name-${index}` : hasLabel && `${id}-label`,
                       )}
                       aria-describedby={ids(
-                        rest['aria-describedby'],
+                        ariaDescribedByProp,
                         part?.['aria-describedby'],
                         hasDescription && `${id}-description`,
                         hasError && `${id}-error`,
