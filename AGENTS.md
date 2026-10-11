@@ -20,6 +20,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 | `pnpm og:image` | Regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
 | `pnpm test` | Generate tokens and run Storybook Vitest browser tests |
 | `pnpm typecheck` | Typecheck every package |
+| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook <file>` | Run one story file (fast loop) |
 
 ## Styling rules
 
@@ -44,11 +45,19 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 - Put `data-ui="<name>"` on every component root.
 - Callbacks receive values for state changes (`onValueChange`, `onCheckedChange`); native event
   callbacks (`onChange`, `onClick`, `onCancel`) keep their native event signature.
+- Use `useId()` for all internal id relationships (`aria-*` wiring); never list keys or counters.
+- Ref-composition helpers preserve function-ref cleanup (StrictMode attach/cleanup cycles tested).
+
+## React 19 notes
+
+- RSC boundary: client components start with the `'use client'` prologue at file top; props crossing the boundary are serializable; no server-only imports.
+- Forms: `action`/`formAction` are preserved through props; React resets uncontrolled fields after a successful Action; `useActionState` receives the previous state.
+- StrictMode: effects double-invoke on mount, so listeners and scroll locks clean up idempotently. The JSX spelling is `autoFocus`.
 
 ## Dependency allowlist
 
 - `@emotion/react`, `@emotion/styled` (re-exported as the app-facing `styled`; components never use it) and `@floating-ui/react` (Popover, Tooltip, Menu) are installed now.
-- `motion` is approved but only installed when a component actually needs it.
+- `motion` (v14.x, imported as `motion/react`) is approved but only installed when a component actually needs animation; use `MotionConfig reducedMotion="user"` + `useReducedMotion()` and keep an explicit reduced-motion branch.
 - `lucide-react` is approved for consumer apps and examples (e.g. `apps/pilot`); `@jfrader/ui` itself must not depend on it.
 - Any other dependency requires updating this file first.
 
@@ -64,7 +73,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 - [ ] Focus behavior verified by a keyboard play test.
 - [ ] Reduced motion respected.
 - [ ] Dark and light stories.
-- [ ] axe clean (a11y test gate is `error`).
+- [ ] axe clean (a11y gate is `error`, WCAG 2.0–2.2 AA + best-practice ruleset).
 - [ ] Exported from the package index.
 - [ ] Docs via autodocs.
 

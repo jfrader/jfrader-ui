@@ -101,7 +101,7 @@ export type ThemeOverrides = {
 };
 
 /*
- * Light theme pairs with the dark default: Arc-style white/gray structure with the
+ * Light theme pairs with the dark default: white/gray structure with the
  * same violet accent family (fill #7747ff with white text; violet-as-text #5f2ee0).
  * All text pairs AA-checked (>=4.5:1).
  */

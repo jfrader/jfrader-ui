@@ -68,7 +68,11 @@ const preview: Preview = {
         color: /(background|color)$/i,
       },
     },
-    a11y: { test: 'error' },
+    // WCAG 2.0–2.2 AA plus best-practice rules; `test: 'error'` fails the run on violations.
+    a11y: {
+      test: 'error',
+      options: { runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'] },
+    },
     docs: {
       container: ThemedDocsContainer,
       // Snippets use Storybook's default (the story's rendered usage with its arg values).

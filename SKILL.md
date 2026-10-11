@@ -70,6 +70,18 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   the visual root.
 - **State is never conveyed by color alone** (thumb position, glyphs, text changes accompany color).
 - **Forced colors**: focus and states use real outlines/borders, never shadow-only cues.
+- **Ref callbacks preserve cleanup.** A ref-composition helper must pass through the cleanup function a
+  function ref returns; never return the assignment expression implicitly. StrictMode attach/cleanup
+  cycles are part of the contract (test them).
+- **Accessibility relationships use `useId()`** — never list keys or hand-rolled counters. Instance ids
+  stay unique across multiple React roots via distinct `identifierPrefix`; SSR and hydration must produce
+  matching ids.
+- **`useEffectEvent` is effect-local.** Stable since React 19.2; it reads the latest committed values for
+  one effect. It is not a general stable-callback escape hatch, and it cannot be used unconditionally
+  while the package peer floor is `^19.0.0` — guard it if used.
+- **Accordion-like disclosures:** heading level should follow page hierarchy (make it configurable when
+  building disclosure patterns); region semantics on panels are optional — avoid landmark proliferation
+  with many expanded panels at once.
 
 ### Styling and code
 
@@ -106,6 +118,21 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - **No deep descendant-chain styling.** Direct relations from the component's own DOM are fine
   (`input:checked + span`, `&[data-indeterminate] input + span svg`); avoid unrelated descendant
   selectors and tag-only chains beyond one level.
+- **Emotion JSX runtime.** Automatic JSX with `jsxImportSource: '@emotion/react'` is required (Babel
+  plugin not used); `css()` returns serialized styles, not a class-name string.
+- **Emotion labels.** `label: 'component-name'` on `css()` aids class names in dev — never `:label`.
+
+### Motion (the `motion` library, only when a component needs it)
+
+- Import from `motion/react` (never `framer-motion`). Current major is 14.x; React ≥18.2 required, we are
+  on 19.3.
+- Reduced motion: mount `<MotionConfig reducedMotion="user">` where motion runs and read
+  `useReducedMotion()` when behavior must change. The default policy is `"never"`. Automatic reduction
+  disables transform/layout animations but not every opacity/color animation — keep explicit
+  reduced-motion branches where the lifecycle must still complete.
+- Prefer `layout` for measured layout animation and `layoutId` for shared elements; springs via
+  `transition={{ type: 'spring', … }}` or `useSpring()`. Change layout through styles/classes; never let
+  CSS transitions and motion own the same property.
 
 ### Performance (author-level)
 
@@ -205,12 +232,12 @@ Pitfalls this pattern exists to avoid:
 | Button | native `button`, `aria-busy` while loading (`aria-disabled`, stays focusable) | Enter, Space activate once; `disabled` blocks | focus-visible ring; loading keeps focus |
 | TextField | native `input`; label `htmlFor`, `aria-describedby` = description + error, `aria-invalid`; error `role="alert"` | native editing, Tab in/out | ring on the input (border + outline) |
 | Checkbox | native `input[type=checkbox]`; `aria-checked="mixed"` while indeterminate | Space toggles once; label click toggles | ring on the visual box via `input:focus-visible + span` |
-| Switch | native checkbox `role="switch"`; binary only, never mixed | Space toggles once | ring on the track |
-| Tabs | `tablist`/`tab`/`tabpanel` with `aria-controls`/`aria-labelledby`/`aria-selected`; roving tabindex on the **focused** tab (falls back to selected, then first enabled) | horizontal/vertical arrows (RTL-aware), Home/End; `auto` activation selects on focus, `manual` needs Enter/Space; Tab exits into the active panel | the focused tab carries the ring (it may be unselected in manual mode); panels keep state while hidden |
+| Switch | native checkbox `role="switch"`; binary only, never mixed; accessible label must not change with its state | Space toggles once | ring on the track |
+| Tabs | `tablist`/`tab`/`tabpanel` with `aria-controls`/`aria-labelledby`/`aria-selected`; roving tabindex on the **focused** tab (falls back to selected, then first enabled) | horizontal/vertical arrows (RTL-aware), Home/End; `auto` activation selects on focus, `manual` needs Enter/Space; Tab exits into the active panel | the focused tab carries the ring (it may be unselected in manual mode); panels keep state while hidden. Caveats: auto activation requires negligible panel latency; keeping focus on an unselected tab in manual mode is an intentional variation from the APG default; non-focusable panels belong to the tab sequence |
 | Dialog | native `<dialog>.showModal()` + `aria-modal`; `aria-labelledby`/`describedby` merged from Title/Description when present (`withDescription={false}` opts out) | Escape closes via one Root-owned path; backdrop click only when it targets the dialog element | focus moves inside on open, returns to the invoker on close or unmount; background inert via top layer |
 | Popover | `role="dialog"` (non-modal) via `useRole`; trigger `aria-haspopup="dialog"`/`aria-expanded`/`aria-controls`; name via `aria-labelledby` (preferred) or `aria-label` | Enter/Space toggle; Escape closes; outside press closes | non-modal focus management preserves page tab order (`modal={false}`, no initial focus, `returnFocus={false}`, no trap); Escape returns focus to the trigger only after an accepted close; outside press never moves focus |
-| Tooltip | `role="tooltip"`; trigger `aria-describedby` (merged with consumer ids) while open | hover (open/close delays), focus-visible opens; Escape closes | never focusable or interactive; hoverable per WCAG 1.4.13 (the content keeps it open); focus stays on the trigger |
-| Menu | `menu`/`menuitem` (`aria-disabled` for disabled), menu labelled by the trigger; trigger `aria-haspopup="menu"`/`aria-expanded`/`aria-controls` | Enter/Space/ArrowDown open on first enabled item, ArrowUp on last; arrows wrap and skip disabled; Home/End; typeahead (500ms reset); Escape closes; Tab out of the content closes (Shift+Tab from the first item returns to the trigger, where the menu stays open and Tab re-enters) | `FloatingFocusManager modal={false}` (`returnFocus` off); pointer open also focuses the first item; an accepted Escape/selection restores focus to the trigger explicitly — outside press and Tab-out never move focus |
+| Tooltip | `role="tooltip"`; trigger `aria-describedby` (merged with consumer ids) while open | hover (open/close delays), focus-visible opens; Escape closes | never focusable or interactive; hoverable per WCAG 1.4.13 (the content keeps it open); focus stays on the trigger. (APG Tooltip remains a work-in-progress pattern without task-force consensus.) |
+| Menu | `menu`/`menuitem` (`aria-disabled` for disabled), menu labelled by the trigger; trigger `aria-haspopup="menu"`/`aria-expanded`/`aria-controls` | Enter/Space/ArrowDown open on first enabled item, ArrowUp on last; arrows wrap and skip disabled (**intentional APG deviation**: APG keeps disabled items focusable but non-activatable; ours are skipped and stay in the list so pointer users still see them); Home/End; typeahead (`resetMs: 500` is our configured value; upstream default is 750ms); Escape closes; Tab out of the content closes (**intentional APG deviation**: APG closes on Shift+Tab too; Shift+Tab from the first item returns to the trigger, where the menu stays open and Tab re-enters — revisit on screen-reader feedback) | `FloatingFocusManager modal={false}` (`returnFocus` off); pointer open also focuses the first item; an accepted Escape/selection restores focus to the trigger explicitly — outside press and Tab-out never move focus |
 | Toast | text-only `status`/`alert` live region with explicit `aria-atomic`; interactive controls sit outside it; imperative queue via `useToast()` | Tab between controls; Enter/Space activate | appearing never moves focus; hover/focus pauses auto-dismiss; removing a focused toast continues focus to the next toast's dismiss button; closing toasts are inert |
 | Accordion | `h3` heading wrapping a native button (`aria-expanded`/`aria-controls`); panel is `role="region"` + `aria-labelledby`, kept mounted, `hidden` when closed | Enter/Space toggle; ArrowUp/Down wrap between enabled headers; Home/End | focus ring on the trigger; disabled triggers (Item or Trigger) are skipped and non-activatable |
 | Select | select-only combobox: `role="combobox"` trigger + portaled `listbox` with **virtual focus** (`aria-activedescendant`; DOM focus never leaves the trigger) | Enter/Space/ArrowDown open on the selected/first enabled option; arrows + Home/End move the highlight; typeahead (500ms buffer, continues across opening); Enter/Space select; Escape closes without selecting; Tab closes | never moves DOM focus; `value` and `open` are independent controlled axes; hidden input carries the form value |
@@ -220,7 +247,14 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
 - **Modal dialog:** top layer or equivalent inert background; focus contained; Escape closes; focus
   returns on close. Native `<dialog>` lifecycle: every native close (`<form method="dialog">`,
   `.close()` through the `ref`) is reconciled into `onOpenChange`; only lock scroll after `showModal()`
-  succeeds; a consumer `preventDefault()` on `cancel` vetoes closure.
+  succeeds.
+- **Dialog cancel semantics:** `onCancel` is the *close request* (cancelable) and `onClose` the
+  *completed closure*. React bubbles both, unlike native DOM — nested handlers must check the
+  originating dialog (`event.target === dialogElement`). A consumer `preventDefault()` on `cancel`
+  vetoes closure only when the event is cancelable; platform close requests can be noncancelable
+  (CloseWatcher safeguards), so never promise a veto for every path and always reconcile `close`.
+  `requestClose()` must be feature-detected; a plain `.close()` fallback does **not** dispatch a
+  native `cancel`, so provide equivalent veto semantics or document the difference.
 - **Non-modal popover:** preserve the page tab order across the portal with non-modal focus
   management (`FloatingFocusManager modal={false} initialFocus={-1} returnFocus={false}`), but no
   trap and no initial focus; Escape returns focus to the trigger only after an accepted close; a
@@ -230,29 +264,45 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
   open while the pointer rests on it (never `pointer-events: none`), with generous timing.
 - **Menu:** opening moves focus to the first item (or the typeahead match); arrows move, typeahead
   jumps, Home/End optional; Escape closes and returns focus to the trigger; Tab out of the content
-  closes and lets focus move on (Shift+Tab from the first item returns to the trigger with the menu
-  still open); disabled items are skipped by arrows but remain in the list.
+  closes and lets focus move on. Two **intentional APG deviations** (keep the behavior; revisit on
+  screen-reader feedback): (1) APG closes the menu on both `Tab` and `Shift+Tab`; we keep it open
+  when Shift+Tab leaves from the first item, so focus lands on the trigger and Tab re-enters;
+  (2) APG keeps disabled items focusable but non-activatable; ours are skipped by arrows and stay in
+  the list, so pointer users still see them.
 - **Nesting:** only the topmost layer handles Escape/outside-dismiss; opening a child layer keeps the
   parent intact.
+- **Nested overlays and the top layer:** a body portal does not enter the native top layer; render
+  child overlays inside the active modal's DOM/top-layer subtree so they are neither inert nor
+  obscured.
 - **With `@floating-ui/react`:** use its interaction prop getters and `useRole`/`FloatingFocusManager`
   deliberately (`modal={false}` for tooltips/popovers, deliberate initial focus for menus); scope
   focus reads and scroll locks to the floating element's `ownerDocument`; disable positioning
-  middleware when the surface is closed.
-- **Initial focus:** put native `autofocus` on the intended descendant; the browser's dialog
-  focus algorithm honors it (there is no universal "first input" guarantee).
-- **Platform adoption notes (docs verified 2026-10-10):** use `dialog.requestClose()` for close
+  middleware when the surface is closed. Native `menu`/`listbox` roles need explicit item roles
+  through the getters. Keep `FloatingPortal` (via `OverlayPortal`) with its default
+  `preserveTabOrder` — the focus manager depends on it; a bare custom portal is not a substitute.
+- **Initial focus:** the JSX spelling is `autoFocus` on the intended descendant; the browser's dialog
+  focus algorithm honors the attribute (there is no universal "first input" guarantee). React calls
+  `focus()` on mount instead of rendering the attribute, so inside a native `<dialog>` that mounts
+  closed, set the `autofocus` attribute through a ref (see CommandPalette).
+- **Platform adoption notes (docs verified 2026-10-11):** use `dialog.requestClose()` for close
   affordances so they share cancel semantics (Baseline since May 2025; fall back to a state close
-  on older Safari). `closedby` is *not* Baseline (Safari preview) — keep manual backdrop handling.
-  `@starting-style` entry transitions are Baseline, but top-layer **exit** animation (transitioning
-  `display`/`overlay`) is not — ship exit transitions only with per-browser testing. `:user-invalid`
-  is Widely Available for post-interaction native validation. `field-sizing: content` (Baseline
-  June 2026) is the right tool if a future Textarea autosizes. CSS anchor positioning's core is
-  interoperable but the feature group is not Baseline — `@floating-ui/react` remains the choice.
-  `color-mix()` / relative colors / `light-dark()` are available for token derivation, but
-  `data-theme` + tokens stays the theming contract. Platform close requests can be noncancelable
-  (CloseWatcher safeguards): never promise a veto for every path; always reconcile `close`.
+  on older Safari — see the cancel-semantics bullet). `closedby` is *not* Baseline (Safari preview) —
+  keep manual backdrop handling. `@starting-style` entry transitions and `transition-behavior`
+  (`allow-discrete`, Baseline since August 2024) are available; the limited-availability part of
+  top-layer **exit** animation is the `overlay` property — ship exit transitions only with
+  per-browser testing. `:user-invalid` is Widely Available for post-interaction native validation.
+  `field-sizing: content` (Baseline June 2026) is the right tool if a future Textarea autosizes.
+  CSS anchor positioning reaches Baseline per property (`anchor-name` / `position-area` /
+  `position-try` January 2026; `position-anchor` September 2026); `@floating-ui/react` remains the
+  choice for behavior and support. `color-mix()` (since May 2023) and `light-dark()` (since May 2024)
+  are available for token derivation, but `light-dark()` follows `color-scheme`, not `data-theme` —
+  tokens stay the theming contract.
 
 ## 7. Testing requirements (definition of done, expanded)
+
+Stories are CSF3 (`satisfies Meta` / `StoryObj`). Storybook's CSF Next factory API
+(`definePreview` → `meta.story`) exists in preview; this repo stays on CSF3 unless a migration is
+explicitly approved.
 
 Per component (all in the colocated stories file):
 
@@ -269,9 +319,30 @@ Per component (all in the colocated stories file):
    (form-closed dialogs), dimension assertions (`getBoundingClientRect`) where size is contract.
 5. **Timing**: before reading computed styles, wait for the component's transition duration (current
    tokens: 120/160/240ms) or disable motion in the test; never assert a mid-transition value.
-6. **Axe**: the global `a11y: { test: 'error' }` gate must pass for every story; open/error/selected
-   states need their own stories or the gate never sees them.
-7. **Build**: `pnpm typecheck`, `pnpm test`, `pnpm build` green.
+6. **Axe**: the global gate must pass for every story. It is `test: 'error'` with the WCAG 2.0–2.2 AA
+   + best-practice ruleset (`apps/storybook/.storybook/preview.tsx`). It runs after play completes,
+   on the state present at the end — that is why persistent-open/state stories exist; open, error,
+   selected or other states closed or replaced before play ends need their own story. axe-core
+   detects ~57% of WCAG issues on average; a green gate is not accessibility verification.
+7. **Play mechanics**: use `canvas` and the play-context `userEvent`; import `expect`, `fn` and
+   helpers from `storybook/test`; await every `userEvent` call and instrumented assertion; spies
+   belong in args via `fn()`.
+8. **Focus assertions are regression assertions**: a non-`none` computed outline does not prove
+   visible focus; Focus Appearance (2.4.13) is AAA and has no axe rule. Manual checks also cover
+   Focus Not Obscured (sticky/overlay content must not wholly hide the focused control).
+9. **Target size**: axe `target-size` checks unobscured size **and** spacing (WCAG 2.5.8, 24×24 CSS
+   px); our 32px+ main-axis policy is stricter library policy, not the normative requirement.
+10. **Retries stay 0**: keep Vitest's default whole-test retries at zero for regression gates;
+    `findBy*` retries are query-level retries and do not prove a failure was fixed.
+11. **Scoped runs**: `pnpm --filter @jfrader/storybook exec vitest run --project=storybook <file>`
+    (append `-t '<regex>'` to narrow). Full `pnpm test` before finishing.
+12. **Snippets**: default `source.type: 'auto'` produces dynamic snippets when the story renders with
+    args; prefer args-based render functions, and use story-level `parameters.docs.source.code` for
+    complex examples (GURI-2129 pattern: usage snippet, never the play block).
+13. **Standalone Testing Library** (only for future non-Storybook tests): RTL 16.3.3 supports React
+    19 and needs `@testing-library/dom` as peer; use `act` from `react` for manual update flows;
+    never suppress act warnings.
+14. **Build**: `pnpm typecheck`, `pnpm test`, `pnpm build` green.
 
 Manual gates before calling a component 1.0 (record what was and wasn't tested):
 
@@ -279,7 +350,8 @@ Manual gates before calling a component 1.0 (record what was and wasn't tested):
 - Screen-reader smoke test (NVDA+Firefox or VoiceOver+Safari): name, state, description, error,
   modal title and containment.
 - Forced-colors, reduced-motion and RTL spot checks.
-- axe finds roughly half of real issues; never present a passing axe run as accessibility verification.
+- axe finds ~57% of WCAG issues on average; never present a passing axe run as accessibility
+  verification.
 
 ## 8. Review checklist (use for every batch)
 
