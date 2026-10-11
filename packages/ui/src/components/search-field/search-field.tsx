@@ -60,10 +60,11 @@ const iconStyle = css({
   color: vars.color.textMuted, '& > svg': { inlineSize: '100%', blockSize: '100%' },
 });
 const controlStyle = css({
-  flex: '1 1 0%', minInlineSize: 0, blockSize: 'var(--search-control-size)', paddingInline: vars.space[2],
-  border: 0, borderRadius: vars.radius.sm, backgroundColor: 'transparent', fontSize: 'inherit',
-  opacity: 1, lineHeight: vars.lineHeight.base,
-  '&:disabled': { opacity: 1 },
+  flex: '1 1 0%', minInlineSize: 0, blockSize: 'var(--search-control-size)', margin: 0, paddingInline: vars.space[2],
+  border: 0, outline: 'none', backgroundColor: 'transparent', color: vars.color.text,
+  fontFamily: vars.font.sans, fontSize: 'inherit', lineHeight: vars.lineHeight.base,
+  '&::placeholder': { color: vars.color.textSubtle },
+  '&:disabled': { cursor: 'not-allowed' },
   '&::-webkit-search-cancel-button, &::-webkit-search-decoration': { appearance: 'none', display: 'none' },
   '@media (pointer: coarse)': { fontSize: vars.textSize.md },
 });
@@ -194,7 +195,7 @@ export function SearchField({
               aria-describedby={field.describedBy}
               aria-invalid={field.ariaInvalid}
               className={slotProps?.control?.className}
-              css={[inputControlStyle, controlStyle, slotProps?.control?.css]}
+              css={[controlStyle, slotProps?.control?.css]}
               onChange={(event) => {
                 onChange?.(event);
                 if (!disabled && !readOnly) requestChange(event.currentTarget.value);

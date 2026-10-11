@@ -51,11 +51,17 @@ function RefField(props: SearchFieldProps) {
 }
 RefField.displayName = 'RefSearchField';
 
-async function expectFocus(element: HTMLElement) {
+async function expectFocus(element: HTMLElement, ring: HTMLElement = element) {
   await expect(element.ownerDocument.activeElement).toBe(element);
-  await expect(getComputedStyle(element).outlineStyle).not.toBe('none');
+  await expect(getComputedStyle(ring).outlineStyle).not.toBe('none');
   // Fractional devicePixelRatios device-snap outline widths (authored 2px computes ~1.49px).
-  await expect(parseFloat(getComputedStyle(element).outlineWidth)).toBeGreaterThan(1);
+  await expect(parseFloat(getComputedStyle(ring).outlineWidth)).toBeGreaterThan(1);
+}
+
+// The shell is the visible control: it carries the ring, never the bare input inside it.
+async function expectInputFocus(input: HTMLElement) {
+  await expectFocus(input, input.parentElement!);
+  await expect(getComputedStyle(input).outlineStyle).toBe('none');
 }
 
 export const Default: Story = {
@@ -198,7 +204,7 @@ export const Keyboard: Story = {
     await userEvent.tab();
     await expect(canvas.getByRole('button', { name: 'Before' }).ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'Before' }));
     await userEvent.tab();
-    await expectFocus(input);
+    await expectInputFocus(input);
     await userEvent.tab();
     await expectFocus(canvas.getByRole('button', { name: 'Clear search' }));
     await userEvent.tab();
@@ -206,17 +212,17 @@ export const Keyboard: Story = {
     await userEvent.tab({ shift: true });
     await expectFocus(canvas.getByRole('button', { name: 'Clear search' }));
     await userEvent.tab({ shift: true });
-    await expectFocus(input);
+    await expectInputFocus(input);
     await userEvent.tab();
     await userEvent.keyboard('{Enter}');
-    await expectFocus(input);
+    await expectInputFocus(input);
     await expect(input).toHaveValue('');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onChange).toHaveBeenCalledTimes(0);
     await userEvent.keyboard('x');
     await userEvent.tab();
     await userEvent.keyboard(' ');
-    await expectFocus(input);
+    await expectInputFocus(input);
     await expect(args.onValueChange).toHaveBeenCalledTimes(3);
     await userEvent.keyboard('y{Home}');
     await expect((input as HTMLInputElement).selectionStart).toBe(0);
@@ -238,7 +244,7 @@ export const Keyboard: Story = {
     await userEvent.tab();
     await expect(input.ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'After' }));
     await userEvent.tab({ shift: true });
-    await expectFocus(input);
+    await expectInputFocus(input);
   },
 };
 export const CompositionAndVeto: Story = {
