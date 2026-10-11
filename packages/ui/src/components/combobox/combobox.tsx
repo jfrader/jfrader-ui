@@ -65,6 +65,7 @@ import {
   listboxSurfaceStyle,
 } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import {
@@ -203,7 +204,7 @@ const emptyStyle = css({
   color: vars.color.textMuted,
 });
 
-function ComboboxRoot({
+function ComboboxOverlay({
   value: valueProp,
   defaultValue,
   onValueChange,
@@ -354,6 +355,14 @@ function ComboboxRoot({
       {children}
       {name !== undefined && <input type="hidden" name={name} value={selectedValue ?? ''} disabled={inputDisabled} />}
     </ComboboxContext.Provider>
+  );
+}
+
+function ComboboxRoot(props: ComboboxProps) {
+  return (
+    <IsolatedOverlay>
+      <ComboboxOverlay {...props} />
+    </IsolatedOverlay>
   );
 }
 

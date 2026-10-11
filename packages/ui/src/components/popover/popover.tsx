@@ -24,7 +24,6 @@ import {
 import {
   FloatingFocusManager,
   useClick,
-  useDismiss,
   useInteractions,
   useMergeRefs,
   useRole,
@@ -36,7 +35,7 @@ import { css } from '../../styling/css';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
-import { CONTAINER_LAYER_DISMISS, OverlayLayer } from '../../overlay/overlay-layer';
+import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -112,9 +111,9 @@ function PopoverLayer({
   }, [open, refs]);
 
   const click = useClick(context);
-  const dismiss = useDismiss(context, CONTAINER_LAYER_DISMISS);
+  const dismiss = useLayerDismiss(context, 'container');
   const role = useRole(context, { role: 'dialog' });
-  const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
+  const { getReferenceProps, getFloatingProps } = useInteractions([click, ...dismiss, role]);
 
   const value = useMemo(
     () => ({ open, refs, floatingContext: context, floatingStyles, getReferenceProps, getFloatingProps }),

@@ -35,7 +35,6 @@ import {
   type RefCallback,
 } from 'react';
 import {
-  useDismiss,
   useFocus,
   useHover,
   useInteractions,
@@ -52,7 +51,7 @@ import { REDUCED_MOTION } from '../../styling/media';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
-import { LEAF_LAYER_DISMISS, OverlayLayer } from '../../overlay/overlay-layer';
+import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { isRenderable } from '../../utils/renderable';
@@ -403,10 +402,10 @@ function HoverCardLayer({
     handleClose: safePolygon(),
   });
   const focus = useFocus(context, { visibleOnly: true });
-  const dismiss = useDismiss(context, LEAF_LAYER_DISMISS);
+  const dismiss = useLayerDismiss(context, 'leaf');
   const role = useRole(context, { role: 'tooltip' });
   const press = usePressToOpen(open, requestOpenChange);
-  const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, dismiss, role, press]);
+  const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, ...dismiss, role, press]);
 
   const side = resolvedPlacement.split('-')[0] as Side;
   const contextValue = useMemo(

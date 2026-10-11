@@ -57,6 +57,7 @@ import {
 } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import {
@@ -170,7 +171,7 @@ const valueStyle = css({
   },
 });
 
-function SelectRoot({
+function SelectOverlay({
   value: valueProp,
   defaultValue,
   onValueChange,
@@ -315,6 +316,14 @@ function SelectRoot({
       {children}
       {name !== undefined && <input type="hidden" name={name} value={selectedValue ?? ''} disabled={disabled} />}
     </SelectContext.Provider>
+  );
+}
+
+function SelectRoot(props: SelectProps) {
+  return (
+    <IsolatedOverlay>
+      <SelectOverlay {...props} />
+    </IsolatedOverlay>
   );
 }
 

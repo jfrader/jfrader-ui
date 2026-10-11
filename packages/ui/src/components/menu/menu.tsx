@@ -45,6 +45,7 @@ import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbo
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useCollectionIndexRegistration, useCollectionListItem } from '../../utils/collection-registry';
@@ -137,7 +138,7 @@ const separatorStyle = css({
   backgroundColor: vars.color.border,
 });
 
-function MenuRoot({
+function MenuOverlay({
   open: openProp,
   defaultOpen = false,
   onOpenChange,
@@ -228,6 +229,14 @@ function MenuRoot({
   );
 
   return <MenuContext.Provider value={value}>{children}</MenuContext.Provider>;
+}
+
+function MenuRoot(props: MenuProps) {
+  return (
+    <IsolatedOverlay>
+      <MenuOverlay {...props} />
+    </IsolatedOverlay>
+  );
 }
 
 MenuRoot.displayName = 'Menu';
