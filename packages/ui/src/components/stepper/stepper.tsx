@@ -310,10 +310,15 @@ const markerStyle = css({
     backgroundColor: vars.color.accent,
     color: vars.color.accentContrast,
   },
+  // Beyond color, the current marker gains a detached halo ring and a heavier numeral. The halo
+  // sits inside the head's padding, so the head's focus ring still draws outside it.
   '&[data-state="current"]': {
     borderColor: vars.color.accent,
     backgroundColor: vars.color.accentSoft,
     color: vars.color.text,
+    fontWeight: vars.fontWeight.semibold,
+    outline: `${CONNECTOR_THICKNESS} solid ${vars.color.accent}`,
+    outlineOffset: CONNECTOR_THICKNESS,
   },
   '&[data-state="error"]': {
     borderColor: vars.color.dangerText,
@@ -323,7 +328,7 @@ const markerStyle = css({
   [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: {
     borderColor: 'CanvasText',
-    '&[data-state="current"], &[data-state="error"]': { borderColor: 'Highlight' },
+    '&[data-state="current"], &[data-state="error"]': { borderColor: 'Highlight', outlineColor: 'Highlight' },
     '&[data-state="complete"]': {
       forcedColorAdjust: 'none',
       borderColor: 'Highlight',
@@ -340,6 +345,7 @@ const labelStyle = css({
   minInlineSize: 0,
   fontWeight: vars.fontWeight.medium,
   overflowWrap: 'anywhere',
+  '&[data-state="current"]': { fontWeight: vars.fontWeight.semibold },
   '&[data-state="upcoming"]': { color: vars.color.textMuted },
   '&[data-state="error"]': { color: vars.color.dangerText },
   ...whenCompact({ '&:not([data-state="error"])': { display: 'none' } }),

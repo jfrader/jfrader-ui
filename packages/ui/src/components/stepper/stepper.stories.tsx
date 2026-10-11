@@ -90,6 +90,27 @@ async function expectPx(value: string, expected: number) {
   await expect(Math.abs(parseFloat(value) - expected)).toBeLessThan(1.1);
 }
 
+/** The current step differs from an upcoming one beyond color: a halo ring and heavier text. */
+async function expectCurrentCue(root: HTMLElement) {
+  const index = states(root).indexOf('current');
+  const [current, upcoming] = [index, index + 1].map((i) => parts(root, 'marker')[i]!);
+  const [currentStyle, upcomingStyle] = [current!, upcoming!].map((marker) => getComputedStyle(marker));
+  await expect(upcomingStyle!.outlineStyle).toBe('none');
+  await expect(currentStyle!.outlineStyle).toBe('solid');
+  await expectPx(currentStyle!.outlineWidth, 2);
+  await expectPx(currentStyle!.outlineOffset, 2);
+  await expect(parseFloat(currentStyle!.fontWeight)).toBeGreaterThan(parseFloat(upcomingStyle!.fontWeight));
+  const [currentLabel, upcomingLabel] = [index, index + 1].map((i) => getComputedStyle(parts(root, 'label')[i]!));
+  await expect(parseFloat(currentLabel!.fontWeight)).toBeGreaterThan(parseFloat(upcomingLabel!.fontWeight));
+  // The halo stays inside the head, clear of the head's own focus ring.
+  const halo = current!.getBoundingClientRect();
+  const head = parts(root, 'head')[index]!.getBoundingClientRect();
+  const reach = parseFloat(currentStyle!.outlineWidth) + parseFloat(currentStyle!.outlineOffset);
+  await expect(halo.left - reach).toBeGreaterThanOrEqual(head.left - 1);
+  await expect(halo.top - reach).toBeGreaterThanOrEqual(head.top - 1);
+  await expect(halo.bottom + reach).toBeLessThanOrEqual(head.bottom + 1);
+}
+
 /** Visually hidden yet still in the accessibility tree (not `display: none`, no aria-hidden ancestor). */
 async function expectVisuallyHidden(element: HTMLElement) {
   const style = getComputedStyle(element);
@@ -138,6 +159,7 @@ export const Default: Story = {
     const markers = parts(root, 'marker');
     await expect(markers[0]!.querySelector('svg')).not.toBeNull();
     await expect(markers.slice(1).map((marker) => marker.dataset.numeral)).toEqual(['2', '3', '4']);
+    await expectCurrentCue(root);
     await expect(parts(root, 'connector').map((connector) => connector.dataset.state)).toEqual([
       'complete',
       'upcoming',
@@ -538,8 +560,10 @@ export const LightTheme: Story = {
   globals: { theme: 'light' },
   decorators: [withLightTheme],
   play: async ({ canvasElement }) => {
-    const [complete] = parts(getRoot(canvasElement), 'marker');
+    const root = getRoot(canvasElement);
+    const [complete] = parts(root, 'marker');
     await expectThemedSurface(complete!, 'light', vars.color.accent);
+    await expectCurrentCue(root);
   },
 };
 
@@ -599,6 +623,9 @@ export const ForcedColors: Story = {
     await expect(markers[0]!.querySelector('svg')).not.toBeNull();
     await expect(markers[2]!.querySelector('svg')).not.toBeNull();
     await expect(getComputedStyle(markers[2]!).boxShadow).toBe('none');
+    // The current halo is an outline, so it stays a visible shape with system colors.
+    const currentRule = findConditionalRule(markers[0]!, 'forced-colors: active', '[data-state="current"]');
+    await expect(currentRule?.style.outlineColor.toLowerCase()).toBe('highlight');
   },
 };
 
