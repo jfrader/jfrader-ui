@@ -78,6 +78,7 @@
     "./spinner": { "types": "./src/components/spinner/index.ts", "import": "./src/components/spinner/index.ts" },
     "./stack": { "types": "./src/components/stack/index.ts", "import": "./src/components/stack/index.ts" },
     "./stepper": { "types": "./src/components/stepper/index.ts", "import": "./src/components/stepper/index.ts" },
+    "./swipe-actions": { "types": "./src/components/swipe-actions/index.ts", "import": "./src/components/swipe-actions/index.ts" },
     "./switch": { "types": "./src/components/switch/index.ts", "import": "./src/components/switch/index.ts" },
     "./tabs": { "types": "./src/components/tabs/index.ts", "import": "./src/components/tabs/index.ts" },
     "./tag-input": { "types": "./src/components/tag-input/index.ts", "import": "./src/components/tag-input/index.ts" },

@@ -52,6 +52,7 @@ export * from './components/sortable-data-table';
 export * from './components/spinner';
 export * from './components/stack';
 export * from './components/stepper';
+export * from './components/swipe-actions';
 export * from './components/switch';
 export * from './components/tabs';
 export * from './components/tag-input';
