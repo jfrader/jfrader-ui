@@ -6,6 +6,10 @@ import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { SearchField, type SearchFieldProps } from './index';
 
+// Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
+const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
+
+
 const sizes = ['sm', 'md', 'lg'] as const;
 const heights = { sm: 32, md: 40, lg: 48 };
 const stackStyle = css({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 320px)' });
@@ -31,19 +35,19 @@ ControlledField.displayName = 'ControlledSearchField';
 
 function ExternalUpdateField(props: SearchFieldProps) {
   const [value, setValue] = useState('first');
-  return <><SearchField {...props} value={value} /><button type="button" onClick={() => setValue('second')}>Update query</button></>;
+  return <><SearchField {...props} value={value} /><button style={FIXTURE_BUTTON} type="button" onClick={() => setValue('second')}>Update query</button></>;
 }
 ExternalUpdateField.displayName = 'ExternalUpdateSearchField';
 
 function DefaultUpdateField(props: SearchFieldProps) {
   const [seed, setSeed] = useState('first');
-  return <><SearchField {...props} defaultValue={seed} /><button type="button" onClick={() => setSeed('second')}>Update default</button></>;
+  return <><SearchField {...props} defaultValue={seed} /><button style={FIXTURE_BUTTON} type="button" onClick={() => setSeed('second')}>Update default</button></>;
 }
 DefaultUpdateField.displayName = 'DefaultUpdateSearchField';
 
 function RefField(props: SearchFieldProps) {
   const ref = useRef<HTMLInputElement>(null);
-  return <><SearchField {...props} ref={ref} /><button type="button" onClick={() => ref.current?.focus()}>Focus query</button></>;
+  return <><SearchField {...props} ref={ref} /><button style={FIXTURE_BUTTON} type="button" onClick={() => ref.current?.focus()}>Focus query</button></>;
 }
 RefField.displayName = 'RefSearchField';
 
@@ -188,7 +192,7 @@ export const DefaultDoesNotReseed: Story = {
 };
 export const Keyboard: Story = {
   args: { defaultValue: 'Ada', onValueChange: fn(), onChange: fn() },
-  render: (args) => <><button type="button">Before</button><SearchField {...args} /><button type="button">After</button></>,
+  render: (args) => <><button style={FIXTURE_BUTTON} type="button">Before</button><SearchField {...args} /><button style={FIXTURE_BUTTON} type="button">After</button></>,
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
     await userEvent.tab();
@@ -275,7 +279,7 @@ export const FalsyNodes: Story = {
 };
 export const FormReset: Story = {
   args: { defaultValue: 'Ada', name: 'query', onValueChange: fn(), onChange: fn() },
-  render: (args) => <form onSubmit={(event) => event.preventDefault()}><SearchField {...args} /><button type="reset">Reset query</button></form>,
+  render: (args) => <form onSubmit={(event) => event.preventDefault()}><SearchField {...args} /><button style={FIXTURE_BUTTON} type="reset">Reset query</button></form>,
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox') as HTMLInputElement;
     await expect(new FormData(input.form!).getAll('query')).toEqual(['Ada']);
@@ -297,7 +301,7 @@ export const ControlledReset: Story = {
 };
 export const FormSubmission: Story = {
   args: { defaultValue: 'Ada', onValueChange: fn(), onFormSubmit: fn() },
-  render: ({ onFormSubmit, ...args }) => <form onSubmit={(event) => { event.preventDefault(); onFormSubmit?.(event); }}><SearchField {...args} /><button type="submit">Search</button></form>,
+  render: ({ onFormSubmit, ...args }) => <form onSubmit={(event) => { event.preventDefault(); onFormSubmit?.(event); }}><SearchField {...args} /><button style={FIXTURE_BUTTON} type="submit">Search</button></form>,
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
     await userEvent.click(input);
@@ -316,7 +320,7 @@ export const FormSubmission: Story = {
 };
 export const CancelledReset: Story = {
   args: { defaultValue: 'Ada', onValueChange: fn() },
-  render: (args) => <form onReset={(event) => event.preventDefault()}><SearchField {...args} /><button type="reset">Reset query</button></form>,
+  render: (args) => <form onReset={(event) => event.preventDefault()}><SearchField {...args} /><button style={FIXTURE_BUTTON} type="reset">Reset query</button></form>,
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
     await userEvent.type(input, 'x');
