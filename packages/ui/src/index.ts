@@ -54,6 +54,7 @@ export * from './components/toast';
 export * from './components/toast-stack';
 export * from './components/toggle-group';
 export * from './components/tooltip';
+export * from './components/tree-view';
 export { styled } from './styling/styled';
 export type { SxProps } from './styling/sx';
 export { theme, type JfraderTheme } from './styling/theme';
