@@ -7,6 +7,10 @@ import { expectThemedSurface } from '../../testing/theme-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Stepper, type StepperProps, type StepperStep } from './index';
 
+// Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
+const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
+
+
 const STEPS: readonly StepperStep[] = [
   { id: 'account', label: 'Account', description: 'Email and password' },
   { id: 'profile', label: 'Profile', description: 'Name and avatar' },
@@ -200,9 +204,9 @@ export const Static: Story = {
   args: { value: 2 },
   render: (args) => (
     <>
-      <button type="button">Before</button>
+      <button style={FIXTURE_BUTTON} type="button">Before</button>
       <Stepper {...args} />
-      <button type="button">After</button>
+      <button style={FIXTURE_BUTTON} type="button">After</button>
     </>
   ),
   parameters: { docs: { source: { code: '<Stepper steps={steps} value={2} />' } } },
@@ -558,9 +562,9 @@ export const Keyboard: Story = {
   args: { interactive: true, defaultValue: 2, onValueChange: fn() },
   render: (args) => (
     <>
-      <button type="button">Before</button>
+      <button style={FIXTURE_BUTTON} type="button">Before</button>
       <Stepper {...args} />
-      <button type="button">After</button>
+      <button style={FIXTURE_BUTTON} type="button">After</button>
     </>
   ),
   parameters: { docs: { source: { code: USAGE } } },
@@ -839,7 +843,7 @@ function AnnouncedStepper(props: StepperProps) {
   const [value, setValue] = useState(0);
   return (
     <>
-      <button type="button" onClick={() => setValue((current) => current + 1)}>
+      <button style={FIXTURE_BUTTON} type="button" onClick={() => setValue((current) => current + 1)}>
         Next
       </button>
       <Stepper
@@ -892,7 +896,7 @@ function RemovableStepper(props: StepperProps) {
   return (
     <>
       <Stepper {...props} steps={steps} value={steps.findIndex((step) => step.id === 'review')} />
-      <button type="button" onClick={() => setSteps((current) => current.filter((step) => step.id !== 'profile'))}>
+      <button style={FIXTURE_BUTTON} type="button" onClick={() => setSteps((current) => current.filter((step) => step.id !== 'profile'))}>
         Remove profile
       </button>
     </>
