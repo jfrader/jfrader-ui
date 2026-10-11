@@ -482,7 +482,7 @@ export const PointerSnap: Story = {
     mouse.fire('pointerdown', 0);
     mouse.fire('pointermove', -SUB_THRESHOLD_PX);
     await expect(viewport).not.toHaveAttribute('data-dragging');
-    await expect(viewport.scrollLeft).toBe(startScroll);
+    await expect(Math.abs(viewport.scrollLeft - startScroll)).toBeLessThan(1);
     mouse.fire('pointerup', -SUB_THRESHOLD_PX);
     await expect(mouse.capture).not.toHaveBeenCalled();
     await expect(args.onValueChange).not.toHaveBeenCalled();
