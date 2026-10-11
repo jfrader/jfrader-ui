@@ -44,6 +44,7 @@ export * from './components/text-field';
 export * from './components/textarea';
 export { ThemeProvider, useTheme, type ThemeProviderProps } from './components/theme-provider/theme-provider';
 export * from './components/theme-root';
+export * from './components/time-picker';
 export * from './components/toast';
 export * from './components/toggle-group';
 export * from './components/tooltip';

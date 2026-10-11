@@ -39,6 +39,7 @@ React components styled with Emotion and themed through the CSS custom propertie
 | `@jfrader/ui/text-field` | `TextField` |
 | `@jfrader/ui/textarea` | `Textarea` |
 | `@jfrader/ui/theme-root` | `ThemeRoot` |
+| `@jfrader/ui/time-picker` | `TimePicker` |
 | `@jfrader/ui/toast` | `Toast`, `useToast` |
 | `@jfrader/ui/toggle-group` | `ToggleGroup` |
 | `@jfrader/ui/tooltip` | `Tooltip` |
