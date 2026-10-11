@@ -242,11 +242,10 @@ export const FalsySlots: Story = {
   ),
   play: async ({ canvasElement }) => {
     for (const [index, root] of roots(canvasElement).entries()) {
-      const present = index >= 2;
       await expect(root.querySelector('[data-ui="metric-card-label"]') !== null).toBe(index === 2);
-      await expect(root.querySelector('[data-ui="metric-card-description"]') !== null).toBe(present);
+      await expect(root.querySelector('[data-ui="metric-card-description"]') !== null).toBe(index === 2);
       await expect(root.getAttribute('aria-describedby')?.split(' ')).toEqual(
-        present ? ['unresolved-context', part(root, 'description').id] : ['unresolved-context'],
+        index === 2 ? ['unresolved-context', part(root, 'description').id] : ['unresolved-context'],
       );
       await expect(root.getAttribute('aria-labelledby')?.split(' ')).toEqual(
         index === 2 ? ['unresolved-label', part(root, 'label').id] : ['unresolved-label'],
