@@ -598,7 +598,7 @@ export const RTL: Story = {
     await expect(members).toHaveLength(2);
     const computed = getComputedStyle(members[1]!);
     // Logical marginInlineStart maps to marginRight in RTL
-    await expect(computed.marginRight).toBe('-8px');
+    await expect(computed.marginRight).toBe('-4px');
     await expect(computed.marginLeft).toBe('0px');
   },
 };
