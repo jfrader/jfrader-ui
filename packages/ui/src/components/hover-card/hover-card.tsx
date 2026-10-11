@@ -7,7 +7,8 @@
 // Space activate the trigger natively and open the card once, without blocking the trigger's
 // own action (links still navigate); Escape closes, keeps focus where it was and does not
 // reopen until the pointer leaves or focus moves; Tab away closes without moving focus.
-// Arrows, Home and End are never intercepted.
+// Arrows, Home and End are never intercepted. Inside another overlay layer (e.g. a Popover),
+// the open card is topmost: the first Escape or outside press closes only the card.
 // Pointer: hover opens after `openDelay`; the card is hoverable per WCAG 1.4.13 (a safe
 // polygon and the close delay bridge the gap, never `pointer-events: none`). A touch tap on a
 // button trigger toggles the card; touch never opens it through emulated hover.
@@ -51,6 +52,7 @@ import { REDUCED_MOTION } from '../../styling/media';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { LEAF_LAYER_DISMISS, OverlayLayer } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { isRenderable } from '../../utils/renderable';
@@ -120,10 +122,14 @@ export interface HoverCardStat {
   value: string | number;
 }
 
-export interface HoverCardProfilePartProps {
-  className?: string;
-  css?: Interpolation<Theme>;
-}
+/**
+ * Native attributes for an internal Profile slot element (e.g. `id`, `aria-describedby`,
+ * `title`), plus `css` applied after the slot's own styles.
+ */
+export type HoverCardProfilePartProps<Element extends 'div' | 'dl' | 'span' = 'div'> = Omit<
+  ComponentPropsWithRef<Element>,
+  'children'
+> & { css?: Interpolation<Theme> };
 
 export interface HoverCardProfileProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   /** Visible full identity; also the avatar's initials source. */
@@ -140,10 +146,11 @@ export interface HoverCardProfileProps extends Omit<ComponentPropsWithRef<'div'>
   /** Locale for numeric stats; defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
   slotProps?: {
-    avatar?: HoverCardProfilePartProps;
+    /** The avatar stays decorative: `aria-hidden` is not configurable. */
+    avatar?: Omit<HoverCardProfilePartProps<'span'>, 'aria-hidden'>;
     identity?: HoverCardProfilePartProps;
     bio?: HoverCardProfilePartProps;
-    stats?: HoverCardProfilePartProps;
+    stats?: HoverCardProfilePartProps<'dl'>;
     meta?: HoverCardProfilePartProps;
   };
 }
@@ -327,7 +334,8 @@ function HoverCardGroup({
 
 HoverCardGroup.displayName = 'HoverCard.Group';
 
-function HoverCardRoot({
+function HoverCardLayer({
+  nodeId,
   open: openProp,
   defaultOpen,
   onOpenChange,
@@ -336,7 +344,7 @@ function HoverCardRoot({
   openDelay = DEFAULT_OPEN_DELAY_MS,
   closeDelay = DEFAULT_CLOSE_DELAY_MS,
   children,
-}: HoverCardProps) {
+}: HoverCardProps & { nodeId: string | undefined }) {
   const group = useContext(HoverCardGroupContext);
   if (group) {
     if (openProp !== undefined || defaultOpen !== undefined || onOpenChange !== undefined) {
@@ -370,6 +378,7 @@ function HoverCardRoot({
   const floating = useOverlayFloating({
     open,
     placement,
+    nodeId,
     onOpenChange: (next, event, reason) => {
       if (!next && (reason === 'hover' || reason === 'safe-polygon')) {
         if (hasVisibleFocus(floating.refs.domReference.current)) return;
@@ -394,7 +403,7 @@ function HoverCardRoot({
     handleClose: safePolygon(),
   });
   const focus = useFocus(context, { visibleOnly: true });
-  const dismiss = useDismiss(context, { escapeKey: true, outsidePress: true });
+  const dismiss = useDismiss(context, LEAF_LAYER_DISMISS);
   const role = useRole(context, { role: 'tooltip' });
   const press = usePressToOpen(open, requestOpenChange);
   const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, dismiss, role, press]);
@@ -406,6 +415,10 @@ function HoverCardRoot({
   );
 
   return <HoverCardContext.Provider value={contextValue}>{children}</HoverCardContext.Provider>;
+}
+
+function HoverCardRoot(props: HoverCardProps) {
+  return <OverlayLayer>{(nodeId) => <HoverCardLayer {...props} nodeId={nodeId} />}</OverlayLayer>;
 }
 
 HoverCardRoot.displayName = 'HoverCard';
@@ -577,25 +590,21 @@ function HoverCardProfile({
         <div {...rest} ref={ref} data-ui="hover-card-profile" className={className}>
           <div css={headerStyle}>
             {/* Decorative: the visible name beside it is the one identity announcement. */}
-            <span
-              aria-hidden="true"
-              className={slotProps?.avatar?.className}
-              css={[avatarStyle, slotProps?.avatar?.css]}
-            >
+            <span {...slotProps?.avatar} aria-hidden="true" css={[avatarStyle, slotProps?.avatar?.css]}>
               {isRenderable(avatar) ? avatar : <Avatar name={name} src={src} size="lg" />}
             </span>
-            <div className={slotProps?.identity?.className} css={[identityStyle, slotProps?.identity?.css]}>
+            <div {...slotProps?.identity} css={[identityStyle, slotProps?.identity?.css]}>
               <div css={nameStyle}>{name}</div>
               {isRenderable(subtitle) && <div css={mutedStyle}>{subtitle}</div>}
             </div>
           </div>
           {isRenderable(bio) && (
-            <div className={slotProps?.bio?.className} css={[mutedStyle, slotProps?.bio?.css]}>
+            <div {...slotProps?.bio} css={[mutedStyle, slotProps?.bio?.css]}>
               {bio}
             </div>
           )}
           {stats.length > 0 && (
-            <dl className={slotProps?.stats?.className} css={[statsStyle, slotProps?.stats?.css]}>
+            <dl {...slotProps?.stats} css={[statsStyle, slotProps?.stats?.css]}>
               {stats.map((stat) => (
                 <div key={stat.id} css={statStyle}>
                   <dt css={statLabelStyle}>{stat.label}</dt>
@@ -607,7 +616,7 @@ function HoverCardProfile({
             </dl>
           )}
           {isRenderable(meta) && (
-            <div className={slotProps?.meta?.className} css={[metaStyle, slotProps?.meta?.css]}>
+            <div {...slotProps?.meta} css={[metaStyle, slotProps?.meta?.css]}>
               {meta}
             </div>
           )}

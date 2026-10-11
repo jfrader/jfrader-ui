@@ -6,6 +6,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Dialog } from '../dialog';
+import { Popover } from '../popover';
 import { ThemeRoot } from '../theme-root';
 import {
   HoverCard,
@@ -139,6 +140,15 @@ async function expectFocus(element: HTMLElement) {
   await expect(parseFloat(getComputedStyle(element).outlineWidth)).toBeGreaterThan(1);
 }
 
+/**
+ * Geometry reads wait for the card's entry animation (token-timed opacity and offset) to finish,
+ * so they measure its resting box rather than a frame mid-translation. Reduced motion has none.
+ */
+async function settled(card: HTMLElement) {
+  await Promise.all(card.getAnimations().map((animation) => animation.finished));
+  return card;
+}
+
 /** Tooltip contract: never focusable and no interactive descendants. */
 async function expectReadOnly(card: HTMLElement) {
   await expect(card).toHaveAttribute('role', 'tooltip');
@@ -193,25 +203,103 @@ export const Default: Story = {
   },
 };
 
+const PROFILE_SLOTS = ['avatar', 'identity', 'bio', 'stats', 'meta'] as const;
+
+/** Native description hooks every Profile slot forwards to its element. */
+const slotHooks = (slot: (typeof PROFILE_SLOTS)[number]) => ({
+  id: `probe-${slot}-id`,
+  'aria-describedby': 'profile-note',
+  title: `${slot} title`,
+});
+
+export const HoverBridge: Story = {
+  args: { onOpenChange: fn() },
+  render: (args) => <ProfileExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const document = canvasElement.ownerDocument;
+    const trigger = getTrigger(canvasElement);
+    await userEvent.hover(trigger);
+    const card = await settled(await expectOpenWithin(canvasElement, OPEN_DELAY + TIMER_MARGIN * 3));
+    const t = trigger.getBoundingClientRect();
+    const c = card.getBoundingClientRect();
+    await expect(c.top).toBeGreaterThan(t.bottom);
+
+    // Walk straight down from the trigger, through the empty offset gap, onto the card.
+    const x = Math.max(t.left, c.left) + 4;
+    const point = (y: number) => ({ target: document.elementFromPoint(x, y)!, coords: { clientX: x, clientY: y } });
+    const gapY = (t.bottom + c.top) / 2;
+    await userEvent.pointer([point(t.bottom - 2), point(gapY)]);
+    await expect(point(gapY).target).not.toBe(trigger);
+    await expect(card.contains(point(gapY).target)).toBe(false);
+    // Resting in the gap past the close delay keeps the card open.
+    await sleep(CLOSE_DELAY + TIMER_MARGIN);
+    await expect(card).toBeVisible();
+
+    await userEvent.pointer(point(c.top + 8));
+    await sleep(CLOSE_DELAY + TIMER_MARGIN);
+    await expect(card).toBeVisible();
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+  },
+};
+
+// Nondefault timings, apart from the defaults and from each other.
+const SLOW_OPEN = 900;
+const SLOW_CLOSE = 600;
+
+export const CustomDelays: Story = {
+  args: { onOpenChange: fn(), openDelay: SLOW_OPEN, closeDelay: SLOW_CLOSE },
+  render: (args) => <ProfileExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await userEvent.hover(trigger);
+    // Past the default open delay but before the configured one: still closed.
+    await sleep(SLOW_OPEN - TIMER_MARGIN);
+    await expect(queryCards(canvasElement)).toHaveLength(0);
+    await expectOpenWithin(canvasElement, TIMER_MARGIN * 3);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+
+    // Past the default close delay but before the configured one: still open.
+    await userEvent.unhover(trigger);
+    await sleep(SLOW_CLOSE - TIMER_MARGIN);
+    await expect(queryCards(canvasElement)).toHaveLength(1);
+    await expectClosed(canvasElement);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+  },
+};
+
 export const Profile: Story = {
   render: () => (
-    <HoverCard.Profile
-      {...PROFILE}
-      className="probe-profile"
-      css={{ rowGap: '10px' }}
-      sx={{ rowGap: '14px' }}
-      slotProps={{
-        avatar: { className: 'probe-avatar', css: { paddingInlineEnd: '3px' } },
-        identity: { className: 'probe-identity', css: { letterSpacing: '1px' } },
-        bio: { className: 'probe-bio', css: { fontStyle: 'italic' } },
-        stats: { className: 'probe-stats', css: { columnGap: '30px' } },
-        meta: { className: 'probe-meta', css: { textDecorationLine: 'underline' } },
-      }}
-    />
+    <div style={{ display: 'grid', gap: vars.space[3] }}>
+      <HoverCard.Profile
+        {...PROFILE}
+        className="probe-profile"
+        css={{ rowGap: '10px' }}
+        sx={{ rowGap: '14px' }}
+        slotProps={{
+          avatar: { ...slotHooks('avatar'), className: 'probe-avatar', css: { paddingInlineEnd: '3px' } },
+          identity: { ...slotHooks('identity'), className: 'probe-identity', css: { letterSpacing: '1px' } },
+          bio: { ...slotHooks('bio'), className: 'probe-bio', css: { fontStyle: 'italic' } },
+          stats: { ...slotHooks('stats'), className: 'probe-stats', css: { columnGap: '30px' } },
+          meta: { ...slotHooks('meta'), className: 'probe-meta', css: { textDecorationLine: 'underline' } },
+        }}
+      />
+      <span id="profile-note">From the review thread</span>
+    </div>
   ),
   play: async ({ canvasElement }) => {
     const profile = canvasElement.querySelector<HTMLElement>('[data-ui="hover-card-profile"]')!;
     const part = (name: string) => profile.querySelector<HTMLElement>(`.probe-${name}`)!;
+    // Native attributes reach each slot's own element.
+    for (const slot of PROFILE_SLOTS) {
+      const hooks = slotHooks(slot);
+      await expect(part(slot)).toHaveAttribute('id', hooks.id);
+      await expect(part(slot)).toHaveAttribute('aria-describedby', hooks['aria-describedby']);
+      await expect(part(slot)).toHaveAttribute('title', hooks.title);
+    }
+    await expect(part('bio')).toHaveAccessibleDescription('From the review thread');
+    await expect(part('stats').tagName).toBe('DL');
     await expect(profile).toHaveClass('probe-profile');
     // Own styles → consumer css → sx.
     await expect(getComputedStyle(profile).rowGap).toBe('14px');
@@ -269,7 +357,7 @@ export const AllPlacements: Story = {
       await userEvent.tab();
       const trigger = getTrigger(canvasElement, placement);
       await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
-      const card = await expectOpenWithin(canvasElement, IMMEDIATE);
+      const card = await settled(await expectOpenWithin(canvasElement, IMMEDIATE));
       // Flip may change the side near viewport edges; the resolved side must match geometry.
       const side = card.dataset.side;
       const t = trigger.getBoundingClientRect();
@@ -650,6 +738,94 @@ export const OutsidePress: Story = {
   },
 };
 
+const popoverOpenChange = fn<(open: boolean) => void>();
+
+function PopoverHost(props: HoverCardProps) {
+  return (
+    <div style={rowStyle}>
+      <Popover defaultOpen onOpenChange={popoverOpenChange}>
+        <Popover.Trigger>Review</Popover.Trigger>
+        <Popover.Content aria-label="Review">
+          <div style={rowStyle}>
+            <span>Requested by</span>
+            <HoverCard {...props}>
+              <HoverCard.Trigger>{TRIGGER}</HoverCard.Trigger>
+              <HoverCard.Content>
+                <HoverCard.Profile {...PROFILE} />
+              </HoverCard.Content>
+            </HoverCard>
+            <Button>Approve</Button>
+          </div>
+        </Popover.Content>
+      </Popover>
+      <Button>Outside</Button>
+    </div>
+  );
+}
+PopoverHost.displayName = 'PopoverHost';
+
+/** Both layers open, keyboard focus inside the popover but away from the card's trigger. */
+async function openNestedLayers(canvasElement: HTMLElement) {
+  popoverOpenChange.mockClear();
+  const body = bodyOf(canvasElement);
+  const popover = await body.findByRole('dialog', { name: 'Review' });
+  await findCard(canvasElement);
+  const approve = within(popover).getByRole('button', { name: 'Approve' });
+  approve.focus();
+  await expect(canvasElement.ownerDocument.activeElement).toBe(approve);
+  return { popover, approve };
+}
+
+export const InsidePopoverEscape: Story = {
+  args: { defaultOpen: true, onOpenChange: fn() },
+  render: (args) => <PopoverHost {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const { popover, approve } = await openNestedLayers(canvasElement);
+
+    // The first Escape belongs to the topmost layer: only the card closes.
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expect(callValues(args.onOpenChange)).toEqual([false]);
+    await expect(popoverOpenChange).not.toHaveBeenCalled();
+    await expect(popover).toBeVisible();
+    await expect(canvasElement.ownerDocument.activeElement).toBe(approve);
+
+    // The next Escape reaches the popover.
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull());
+    await expect(callValues(popoverOpenChange)).toEqual([false]);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const InsidePopoverOutsidePress: Story = {
+  args: { defaultOpen: true, onOpenChange: fn() },
+  render: (args) => <PopoverHost {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const { popover } = await openNestedLayers(canvasElement);
+    const outside = within(canvasElement).getByRole('button', { name: 'Outside' });
+
+    // A press on the card is inside both layers: neither closes.
+    await userEvent.click(await findCard(canvasElement));
+    await expect(queryCards(canvasElement)).toHaveLength(1);
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await expect(popoverOpenChange).not.toHaveBeenCalled();
+
+    // The first outside press belongs to the topmost layer: only the card closes.
+    await userEvent.click(outside);
+    await expectClosed(canvasElement);
+    await expect(callValues(args.onOpenChange)).toEqual([false]);
+    await expect(popoverOpenChange).not.toHaveBeenCalled();
+    await expect(popover).toBeVisible();
+
+    // The next outside press reaches the popover.
+    await userEvent.click(outside);
+    await waitFor(() => expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull());
+    await expect(callValues(popoverOpenChange)).toEqual([false]);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+  },
+};
+
 function ControlledRejectExample(props: HoverCardProps) {
   const [open, setOpen] = useState(true);
   return (
@@ -672,7 +848,8 @@ export const ControlledReject: Story = {
   render: (args) => <ControlledRejectExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
-    const card = await findCard(canvasElement);
+    // Visibility reads include opacity, so they wait for the entry animation.
+    const card = await settled(await findCard(canvasElement));
     // Mounting open and focusing an open card request nothing.
     await userEvent.tab();
     await expectFocus(trigger);
@@ -820,7 +997,7 @@ export const LongIdentity: Story = {
     </HoverCard>
   ),
   play: async ({ canvasElement }) => {
-    const card = await findCard(canvasElement);
+    const card = await settled(await findCard(canvasElement));
     const cardRect = card.getBoundingClientRect();
     const rootFontSize = parseFloat(getComputedStyle(card.ownerDocument.documentElement).fontSize);
     await expect(cardRect.width).toBeLessThanOrEqual(18.5 * rootFontSize + 1);
@@ -988,7 +1165,7 @@ export const RTL: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const card = await findCard(canvasElement);
+    const card = await settled(await findCard(canvasElement));
     const trigger = getTrigger(canvasElement);
     // bottom-start resolves against the trigger's direction: right edges align under RTL and
     // the card extends toward the inline end (left).

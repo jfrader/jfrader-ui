@@ -18,6 +18,8 @@ export interface OverlayFloatingOptions {
   open: boolean;
   onOpenChange: (open: boolean, event?: Event, reason?: OpenChangeReason) => void;
   placement: Placement;
+  /** Node id from `OverlayLayer`, for overlays that take part in nested dismissal. */
+  nodeId?: string;
 }
 
 /**
@@ -28,11 +30,13 @@ export function useOverlayFloating({
   open,
   onOpenChange,
   placement,
+  nodeId,
 }: OverlayFloatingOptions): UseFloatingReturn<HTMLButtonElement> {
   return useFloating<HTMLButtonElement>({
     open,
     onOpenChange,
     placement,
+    nodeId,
     middleware: [offset(ANCHOR_GAP), flip({ padding: VIEWPORT_PADDING }), shift({ padding: VIEWPORT_PADDING })],
     whileElementsMounted: autoUpdate,
   });
