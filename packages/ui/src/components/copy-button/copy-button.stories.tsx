@@ -26,7 +26,7 @@ const rowStyle = {
   gap: vars.space[3],
 } satisfies CSSProperties;
 
-const narrowStyle = { ...rowStyle, maxInlineSize: '14rem' } satisfies CSSProperties;
+const narrowStyle = { ...rowStyle, maxInlineSize: '9rem' } satisfies CSSProperties;
 
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ marginInlineStart: vars.space[2] });
@@ -37,6 +37,7 @@ type WriteText = (text: string) => Promise<void>;
 /** Story-only: replaces the canvas navigator's clipboard for the duration of `run`. */
 async function withClipboard(canvasElement: HTMLElement, writeText: WriteText | null, run: () => Promise<void>) {
   const navigator = canvasElement.ownerDocument.defaultView!.navigator;
+  const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
   Object.defineProperty(navigator, 'clipboard', {
     configurable: true,
     value: writeText === null ? undefined : { writeText },
@@ -44,7 +45,8 @@ async function withClipboard(canvasElement: HTMLElement, writeText: WriteText | 
   try {
     await run();
   } finally {
-    delete (navigator as { clipboard?: Clipboard }).clipboard;
+    if (original) Object.defineProperty(navigator, 'clipboard', original);
+    else delete (navigator as { clipboard?: Clipboard }).clipboard;
   }
 }
 
@@ -107,6 +109,26 @@ function ControlledCopyButton(args: CopyButtonProps) {
   );
 }
 ControlledCopyButton.displayName = 'ControlledCopyButton';
+
+function ExternallyClearedCopyButton(args: CopyButtonProps) {
+  const [value, setValue] = useState<CopyButtonValue>('idle');
+  return (
+    <div style={rowStyle}>
+      <CopyButton
+        {...args}
+        value={value}
+        onValueChange={(next) => {
+          args.onValueChange?.(next);
+          setValue(next);
+        }}
+      />
+      <button type="button" onClick={() => setValue('idle')}>
+        Clear
+      </button>
+    </div>
+  );
+}
+ExternallyClearedCopyButton.displayName = 'ExternallyClearedCopyButton';
 
 function ChangingTextCopyButton(args: CopyButtonProps) {
   const [text, setText] = useState(args.text);
@@ -409,6 +431,7 @@ export const PendingLock: Story = {
       await focusFirst(canvasElement);
       await userEvent.keyboard('{Enter}');
       await userEvent.keyboard('{Enter}');
+      await userEvent.keyboard('[Space]');
       await userEvent.click(button);
       await expect(writeText).toHaveBeenCalledTimes(1);
       await expect(button).toHaveAttribute('aria-busy', 'true');
@@ -423,6 +446,27 @@ export const PendingLock: Story = {
       await expect(button).not.toHaveAttribute('aria-busy');
       await expect(button).not.toHaveAttribute('aria-disabled');
       await expect(args.onCopyError).not.toHaveBeenCalled();
+    });
+  },
+};
+
+export const SameTickDuplicates: Story = {
+  args: { onClick: fn() },
+  play: async ({ args, canvasElement }) => {
+    const write = deferred();
+    const writeText = fn<WriteText>(() => write.promise);
+    await withClipboard(canvasElement, writeText, async () => {
+      const button = getButton(canvasElement);
+      // Three activations dispatched in one task, before any await.
+      button.click();
+      button.click();
+      button.click();
+      await expect(writeText).toHaveBeenCalledTimes(1);
+      await expect(args.onClick).toHaveBeenCalledTimes(1);
+      await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+      write.resolve();
+      await waitFor(() => expect(args.onCopied).toHaveBeenCalledTimes(1));
+      await expect(args.onValueChange).toHaveBeenCalledTimes(2);
     });
   },
 };
@@ -472,6 +516,25 @@ export const ControlledReject: Story = {
   },
 };
 
+export const ExternalIdleCancelsReset: Story = {
+  args: { resetAfterMs: SHORT_RESET_MS },
+  render: (args) => <ExternallyClearedCopyButton {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const writeText = fn<WriteText>(async () => {});
+    await withClipboard(canvasElement, writeText, async () => {
+      const button = getButton(canvasElement);
+      await userEvent.click(button);
+      await waitFor(() => expect(button).toHaveAttribute('data-state', 'copied'));
+      await userEvent.click(within(canvasElement).getByRole('button', { name: 'Clear' }));
+      await expect(button).toHaveAttribute('data-state', 'idle');
+      await wait(SHORT_RESET_MS + SETTLE_MS);
+      await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+      await expect(args.onValueChange).toHaveBeenNthCalledWith(1, 'pending');
+      await expect(args.onValueChange).toHaveBeenNthCalledWith(2, 'copied');
+    });
+  },
+};
+
 export const AriaMerge: Story = {
   args: { iconOnly: true, 'aria-label': 'Copy API key', 'aria-describedby': 'copy-hint' },
   render: (args) => (
@@ -491,6 +554,33 @@ export const AriaMerge: Story = {
       // The status text never joins the name.
       await expect(button).toHaveAccessibleName('Copy API key');
       await expect(button.contains(getStatus(canvasElement))).toBe(false);
+    });
+  },
+};
+
+export const ExternalAriaPreserved: Story = {
+  args: { iconOnly: true, 'aria-labelledby': 'copy-key-label', 'aria-invalid': true },
+  render: (args) => (
+    <div style={rowStyle}>
+      <span id="copy-key-label">Copy expired key</span>
+      <CopyButton {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const write = deferred();
+    const writeText = fn<WriteText>(() => write.promise);
+    await withClipboard(canvasElement, writeText, async () => {
+      const button = getButton(canvasElement, 'Copy expired key');
+      await expect(button).toHaveAttribute('aria-labelledby', 'copy-key-label');
+      await expect(button).toHaveAttribute('aria-invalid', 'true');
+      await userEvent.click(button);
+      await expect(button).toHaveAttribute('aria-busy', 'true');
+      await expect(button).toHaveAttribute('aria-labelledby', 'copy-key-label');
+      await expect(button).toHaveAttribute('aria-invalid', 'true');
+      write.resolve();
+      await waitFor(() => expect(button).toHaveAttribute('data-state', 'copied'));
+      await expect(button).toHaveAccessibleName('Copy expired key');
+      await expect(button).toHaveAttribute('aria-invalid', 'true');
     });
   },
 };
@@ -520,6 +610,134 @@ export const SynchronousThrow: Story = {
       await waitFor(() => expect(args.onCopyError).toHaveBeenCalledTimes(1));
       await expect(args.onCopyError).toHaveBeenLastCalledWith(failure);
       await expect(args.onCopied).not.toHaveBeenCalled();
+    });
+  },
+};
+
+export const RepeatedUnavailable: Story = {
+  args: { resetAfterMs: 0 },
+  play: async ({ args, canvasElement }) => {
+    await withClipboard(canvasElement, null, async () => {
+      const button = getButton(canvasElement);
+      await userEvent.click(button);
+      await waitFor(() => expect(args.onCopyError).toHaveBeenCalledTimes(1));
+      // A retry from the error face fails synchronously again and must not stick in pending.
+      await userEvent.click(button);
+      await waitFor(() => expect(args.onCopyError).toHaveBeenCalledTimes(2));
+      await expect(button).toHaveAttribute('data-state', 'error');
+      await expect(button).not.toHaveAttribute('aria-busy');
+      await expect(button).not.toHaveAttribute('aria-disabled');
+      await expect(args.onValueChange).toHaveBeenCalledTimes(4);
+      await expect(args.onValueChange).toHaveBeenNthCalledWith(3, 'pending');
+      await expect(args.onValueChange).toHaveBeenNthCalledWith(4, 'error');
+      await expect(getStatus(canvasElement)).toHaveTextContent('Could not copy');
+    });
+  },
+};
+
+export const RepeatedSynchronousThrow: Story = {
+  args: { resetAfterMs: 0 },
+  play: async ({ args, canvasElement }) => {
+    const writeText = fn<WriteText>(() => {
+      throw new TypeError('blocked');
+    });
+    await withClipboard(canvasElement, writeText, async () => {
+      const button = getButton(canvasElement);
+      await userEvent.click(button);
+      await userEvent.click(button);
+      await waitFor(() => expect(args.onCopyError).toHaveBeenCalledTimes(2));
+      await expect(writeText).toHaveBeenCalledTimes(2);
+      await expect(button).toHaveAttribute('data-state', 'error');
+      await expect(button).not.toHaveAttribute('aria-busy');
+      await expect(args.onValueChange).toHaveBeenCalledTimes(4);
+      await expect(args.onValueChange).toHaveBeenLastCalledWith('error');
+    });
+  },
+};
+
+export const RetryFromDefaultError: Story = {
+  args: { defaultValue: 'error', resetAfterMs: 0 },
+  play: async ({ args, canvasElement }) => {
+    const failure = new TypeError('blocked');
+    const writeText = fn<WriteText>(() => {
+      throw failure;
+    });
+    await withClipboard(canvasElement, writeText, async () => {
+      const button = getButton(canvasElement);
+      await expect(button).toHaveAttribute('data-state', 'error');
+      await userEvent.click(button);
+      await waitFor(() => expect(args.onCopyError).toHaveBeenCalledTimes(1));
+      await expect(args.onCopyError).toHaveBeenLastCalledWith(failure);
+      await expect(button).toHaveAttribute('data-state', 'error');
+      await expect(button).not.toHaveAttribute('aria-busy');
+      await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+      await expect(args.onValueChange).toHaveBeenNthCalledWith(1, 'pending');
+      await expect(args.onValueChange).toHaveBeenNthCalledWith(2, 'error');
+
+      writeText.mockImplementation(async () => {});
+      await userEvent.click(button);
+      await waitFor(() => expect(button).toHaveAttribute('data-state', 'copied'));
+      await expect(args.onCopied).toHaveBeenCalledTimes(1);
+    });
+  },
+};
+
+export const ControlledSynchronousFailure: Story = {
+  args: { resetAfterMs: 0 },
+  render: (args) => <ControlledCopyButton {...args} />,
+  play: async ({ args, canvasElement }) => {
+    await withClipboard(canvasElement, null, async () => {
+      const button = getButton(canvasElement);
+      await userEvent.click(button);
+      await userEvent.click(button);
+      await waitFor(() => expect(args.onCopyError).toHaveBeenCalledTimes(2));
+      await expect(button).toHaveAttribute('data-state', 'error');
+      await expect(button).not.toHaveAttribute('aria-busy');
+      await expect(args.onValueChange).toHaveBeenCalledTimes(4);
+      await expect(args.onValueChange).toHaveBeenLastCalledWith('error');
+    });
+  },
+};
+
+export const ThrowingThenable: Story = {
+  play: async ({ args, canvasElement }) => {
+    const failure = new Error('broken thenable');
+    const writeText = fn(() => ({
+      then() {
+        throw failure;
+      },
+    })) as unknown as WriteText;
+    await withClipboard(canvasElement, writeText, async () => {
+      const button = getButton(canvasElement);
+      await userEvent.click(button);
+      await waitFor(() => expect(args.onCopyError).toHaveBeenCalledTimes(1));
+      await expect(args.onCopyError).toHaveBeenLastCalledWith(failure);
+      await expect(args.onCopied).not.toHaveBeenCalled();
+      await expect(button).toHaveAttribute('data-state', 'error');
+    });
+  },
+};
+
+export const RejectingThenable: Story = {
+  play: async ({ args, canvasElement }) => {
+    const failure = new Error('rejected thenable');
+    // Settles more than once and both ways; only the first settlement counts.
+    const writeText = fn(() => ({
+      then(_onFulfilled: () => void, onRejected: (reason: unknown) => void) {
+        onRejected(failure);
+        onRejected(new Error('second rejection'));
+        _onFulfilled();
+      },
+    })) as unknown as WriteText;
+    await withClipboard(canvasElement, writeText, async () => {
+      const button = getButton(canvasElement);
+      await userEvent.click(button);
+      await waitFor(() => expect(args.onCopyError).toHaveBeenCalledTimes(1));
+      await wait(SETTLE_MS);
+      await expect(args.onCopyError).toHaveBeenCalledTimes(1);
+      await expect(args.onCopyError).toHaveBeenLastCalledWith(failure);
+      await expect(args.onCopied).not.toHaveBeenCalled();
+      await expect(button).toHaveAttribute('data-state', 'error');
     });
   },
 };
@@ -657,11 +875,34 @@ export const LongLabels: Story = {
     await withClipboard(canvasElement, writeText, async () => {
       const button = getButton(canvasElement, 'Copiar el comando de instalación');
       const container = button.parentElement!;
-      const before = button.getBoundingClientRect().width;
-      await expect(before).toBeLessThanOrEqual(container.getBoundingClientRect().width);
+      const faces = Array.from(button.querySelectorAll<HTMLElement>('[data-ui="copy-button-label"] > span'));
+      const expectFullyVisible = async () => {
+        const box = button.getBoundingClientRect();
+        await expect(box.width).toBeLessThanOrEqual(container.getBoundingClientRect().width);
+        await expect(box.height).toBeGreaterThanOrEqual(SIZE_PX.sm);
+        await expect(button.scrollHeight).toBeLessThanOrEqual(button.clientHeight);
+        await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth);
+        // Every face's text, measured from its glyph boxes, lies inside the button.
+        for (const face of faces) {
+          const range = face.ownerDocument.createRange();
+          range.selectNodeContents(face);
+          const text = range.getBoundingClientRect();
+          await expect(text.top).toBeGreaterThanOrEqual(box.top);
+          await expect(text.bottom).toBeLessThanOrEqual(box.bottom);
+          await expect(text.left).toBeGreaterThanOrEqual(box.left);
+          await expect(text.right).toBeLessThanOrEqual(box.right);
+        }
+      };
+      await expect(faces).toHaveLength(4);
+      // The narrow row forces the longest label onto several lines.
+      await expect(button.getBoundingClientRect().height).toBeGreaterThan(SIZE_PX.sm);
+      await expectFullyVisible();
+      const before = button.getBoundingClientRect();
       await userEvent.click(button);
       await waitFor(() => expect(button).toHaveAttribute('data-state', 'copied'));
-      await expect(button.getBoundingClientRect().width).toBe(before);
+      await expectFullyVisible();
+      await expect(button.getBoundingClientRect().width).toBe(before.width);
+      await expect(button.getBoundingClientRect().height).toBe(before.height);
     });
   },
 };
@@ -693,6 +934,8 @@ export const RightToLeft: Story = {
   },
 };
 
+// The test runner cannot emulate media features, so the ReducedMotion and ForcedColors stories
+// check the stylesheet rules that apply under them; manual spot checks cover the rendering.
 export const ReducedMotion: Story = {
   args: { value: 'pending' },
   play: async ({ canvasElement }) => {
@@ -708,8 +951,12 @@ export const ReducedMotion: Story = {
 export const ForcedColors: Story = {
   args: { value: 'copied', iconOnly: true },
   play: async ({ canvasElement }) => {
-    const glyph = getButton(canvasElement).querySelector('[data-ui="copy-button-icon"] > [data-active]')!;
+    const button = getButton(canvasElement);
+    const glyph = button.querySelector('[data-ui="copy-button-icon"] > [data-active]')!;
     await expect(mediaRuleSets(glyph, 'forced-colors: active', 'color', 'buttontext')).toBe(true);
+    // A real border, not a shadow, outlines the button once forced colors repaint it.
+    await expect(getComputedStyle(button).borderTopStyle).toBe('solid');
+    await expect(getComputedStyle(button).borderTopWidth).toBe('1px');
   },
 };
 

@@ -5,10 +5,12 @@
 //
 // The write happens inside the activation handler (no permission preflight), so the browser sees
 // the user gesture. A missing Clipboard API (insecure context, old browser) and a rejected or
-// throwing write all end in the `error` face; nothing is left as an unhandled rejection.
+// throwing write all end in the `error` face, from any starting face; nothing is left as an
+// unhandled rejection.
 //
 // Every face's label sits in the same grid cell, so the button keeps the widest label's width and
-// switching faces never shifts the row.
+// switching faces never shifts the row. In a narrow row the labels wrap together and the button
+// grows in height instead of truncating.
 import {
   useEffect,
   useRef,
@@ -18,6 +20,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react';
+import { flushSync } from 'react-dom';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { loadingRing } from '../../styling/loading-ring';
@@ -85,6 +88,19 @@ const rootStyle = css({
   maxInlineSize: '100%',
 });
 
+// Labelled buttons wrap long labels and grow from the size's height instead of truncating.
+const wrappingStyle = css({
+  whiteSpace: 'normal',
+  blockSize: 'auto',
+  paddingBlock: vars.space[1],
+});
+
+const minBlockStyles: Record<ButtonSize, SerializedStyles> = {
+  sm: css({ minBlockSize: vars.space[8] }),
+  md: css({ minBlockSize: vars.space[10] }),
+  lg: css({ minBlockSize: vars.space[12] }),
+};
+
 // Icon-only buttons are square at every size.
 const iconOnlyStyles: Record<ButtonSize, SerializedStyles> = {
   sm: css({ inlineSize: vars.space[8], paddingInline: 0 }),
@@ -120,8 +136,7 @@ const faceStyle = css({
 });
 
 const labelFaceStyle = css({
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
+  overflowWrap: 'anywhere',
 });
 
 const iconFaceStyle = css({
@@ -268,12 +283,16 @@ export function CopyButton({
     if (event.defaultPrevented) return;
 
     const captured = text;
+    const clipboard = event.currentTarget.ownerDocument.defaultView?.navigator.clipboard;
     const request = {};
     inFlightRef.current = request;
-    setInFlight(true);
-    requestChange('pending');
+    // Commit `pending` now: requests dedupe against the committed face, so a synchronous failure
+    // requested from an uncommitted `pending` would be dropped when the face was already `error`.
+    flushSync(() => {
+      setInFlight(true);
+      requestChange('pending');
+    });
 
-    const clipboard = event.currentTarget.ownerDocument.defaultView?.navigator.clipboard;
     if (typeof clipboard?.writeText !== 'function') {
       settle(request, { ok: false, error: new Error('Clipboard API is unavailable') });
       return;
@@ -319,7 +338,7 @@ export function CopyButton({
         aria-disabled={isPending || isAriaTrue(rest['aria-disabled']) ? true : rest['aria-disabled']}
         onClick={handleClick}
         className={className}
-        css={[rootStyle, iconOnly && iconOnlyStyles[size], cssProp]}
+        css={[rootStyle, iconOnly ? iconOnlyStyles[size] : [wrappingStyle, minBlockStyles[size]], cssProp]}
         sx={sx}
         render={(buttonProps) => <button {...buttonProps} type="button" disabled={disabled} />}
       >
