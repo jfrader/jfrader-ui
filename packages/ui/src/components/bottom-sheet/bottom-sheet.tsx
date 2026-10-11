@@ -87,8 +87,17 @@ const FLICK_VELOCITY = 320;
 const SAMPLE_WINDOW_MS = 80;
 const STRETCH_LIMIT = 120;
 const TOUCH_SLOP = 8;
-const NO_DRAG =
-  'button:not([data-ui="bottom-sheet-handle"]), a[href], input, select, textarea, label, [contenteditable]:not([contenteditable="false"])';
+const NO_DRAG = [
+  'button:not([data-ui="bottom-sheet-handle"])',
+  'a[href]',
+  'input',
+  'select',
+  'textarea',
+  'label',
+  '[contenteditable]:not([contenteditable="false"])',
+  '[data-ui="bottom-sheet-title"]',
+  '[data-ui="bottom-sheet-description"]',
+].join(', ');
 const NO_TOUCH_HANDOFF =
   'button, a[href], input, select, textarea, [contenteditable]:not([contenteditable="false"])';
 
@@ -137,10 +146,10 @@ const headerStyle = css({
   gap: vars.space[2],
   paddingInline: vars.space[6],
   paddingBlock: vars.space[2],
-  touchAction: 'none',
   '& > [data-ui="bottom-sheet-handle"]': {
     gridColumn: '1 / -1',
     justifySelf: 'center',
+    touchAction: 'none',
   },
   '& > [data-ui="bottom-sheet-close"]': { gridColumn: 2, gridRow: 2 },
 });
@@ -330,9 +339,13 @@ function SheetRoot({
   const id = useId();
   const [hasTitle, setHasTitle] = useState(false);
   const [hasDescription, setHasDescription] = useState(false);
-  const valueText =
-    getValueText?.(detents[value]!, value) ??
-    new Intl.NumberFormat(locale, { style: 'percent' }).format(detents[value]!);
+  const valueText = useMemo(() => {
+    const fraction = originalDetents.current[value]!;
+    return (
+      getValueText?.(fraction, value) ??
+      new Intl.NumberFormat(locale, { style: 'percent' }).format(fraction)
+    );
+  }, [getValueText, locale, value]);
   const context = useMemo(
     () => ({
       ...native,
@@ -742,6 +755,9 @@ function BottomSheetContent({ ref, sx, className, ...props }: BottomSheetContent
         tree && getDeepestNode(tree.nodesRef.current, context.floating.context.nodeId);
       childPress.current = Boolean(deepest && deepest.id !== context.floating.context.nodeId);
     },
+    // Escape never reaches the native cancel key path: capture prevents it and the floating
+    // useDismiss routes it to requestClose(), whose native cancelable `cancel` still lets a
+    // consumer veto. Only the topmost layer reacts, and an active drag consumes Escape first.
     onKeyDownCapture: (event: KeyboardEvent<HTMLDialogElement>) => {
       onKeyDownCapture?.(event);
       if (event.key !== 'Escape' || event.defaultPrevented || event.nativeEvent.isComposing) return;

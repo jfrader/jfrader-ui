@@ -341,6 +341,8 @@ export const KeyboardNavigation: Story = {
     await expect(getComputedStyle(trigger).outlineStyle).not.toBe('none');
     await userEvent.keyboard('{Enter}');
     await expect(canvasElement.ownerDocument.activeElement).toBe(panelIn(canvasElement));
+    await expect(panelIn(canvasElement).matches(':focus-visible')).toBe(true);
+    await expect(getComputedStyle(panelIn(canvasElement)).outlineStyle).not.toBe('none');
     await userEvent.tab();
     const handle = canvas.getByRole('button', { name: 'Resize sheet' });
     await expect(canvasElement.ownerDocument.activeElement).toBe(handle);
@@ -445,6 +447,15 @@ export const GestureCancel: Story = {
     pointer(header, 'pointerdown', 500, 110, 2, false);
     pointer(header, 'pointerup', 500, 120);
     await settled(canvasElement, 0.45);
+    const title = canvasElement.querySelector('[data-ui="bottom-sheet-title"]')!;
+    pointer(title, 'pointerdown', 100, 0);
+    pointer(title, 'pointermove', 500, 100);
+    pointer(title, 'pointerup', 500, 120);
+    await settled(canvasElement, 0.45);
+    await expect(getComputedStyle(header).touchAction).toBe('auto');
+    await expect(
+      getComputedStyle(canvasElement.querySelector('[data-ui="bottom-sheet-handle"]')!).touchAction,
+    ).toBe('none');
     pointer(header, 'pointerdown', 100, 0);
     pointer(header, 'pointermove', 500, 100);
     await userEvent.keyboard('{Escape}');
