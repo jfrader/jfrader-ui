@@ -2,7 +2,7 @@
 
 A from-scratch React component system styled with Emotion and themed through CSS custom properties, with Storybook 10 as the workbench.
 
-Status: 30 components — reviewed, tested (265 browser tests + axe gate) and story-documented. M1 + M2 complete; see PLAN.md for the inventory.
+Status: reviewed, tested (Storybook browser tests + axe gate) and story-documented. M1 + M2 complete; see PLAN.md for the inventory.
 
 ## Packages
 
