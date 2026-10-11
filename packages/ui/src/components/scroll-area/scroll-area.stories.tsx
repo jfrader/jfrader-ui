@@ -78,12 +78,21 @@ const overflowReady = async (element: HTMLElement, axis = 'block') => {
     await expect(track(element, axis).hidden).toBe(false);
   });
 };
-// Fractional devicePixelRatio and subpixel layout shift computed lengths; compare within a pixel.
+// Fractional devicePixelRatio and subpixel layout shift computed lengths and scroll offsets; compare
+// equalities within a pixel and bounds within half a pixel.
 const PX_TOLERANCE = 1.1;
+const SUBPIXEL_TOLERANCE = 0.5;
 const expectLength = async (actual: string | number, expected: string | number) => {
   const difference = parseFloat(String(actual)) - parseFloat(String(expected));
   await expect(Math.abs(difference)).toBeLessThan(PX_TOLERANCE);
 };
+const expectAtMost = async (actual: number, bound: number) => {
+  await expect(actual).toBeLessThanOrEqual(bound + SUBPIXEL_TOLERANCE);
+};
+const expectAtLeast = async (actual: number, bound: number) => {
+  await expect(actual).toBeGreaterThanOrEqual(bound - SUBPIXEL_TOLERANCE);
+};
+const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
 /** Story-only: the computed value an authored length (a token or rem) resolves to on a throwaway probe. */
 const resolveLength = (document: Document, property: string, value: string) => {
   const probe = document.createElement('div');
@@ -137,8 +146,8 @@ export const Default: Story = {
       'var(--scroll-area-fade)',
     );
     const bounds = track(canvasElement).getBoundingClientRect();
-    await expect(bounds.width).toBeGreaterThanOrEqual(24);
-    await expect(thumb(canvasElement).getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await expectAtLeast(bounds.width, 24);
+    await expectAtLeast(thumb(canvasElement).getBoundingClientRect().height, 32);
   },
 };
 export const HorizontalSnap: Story = {
@@ -165,7 +174,8 @@ export const BothAxes: Story = {
   play: async ({ canvasElement }) => {
     await overflowReady(canvasElement);
     await overflowReady(canvasElement, 'inline');
-    await expect(track(canvasElement).getBoundingClientRect().bottom).toBeLessThanOrEqual(
+    await expectAtMost(
+      track(canvasElement).getBoundingClientRect().bottom,
       track(canvasElement, 'inline').getBoundingClientRect().top,
     );
   },
@@ -205,8 +215,8 @@ export const ShortTrack: Story = {
   play: async ({ canvasElement }) => {
     await overflowReady(canvasElement);
     const height = track(canvasElement).getBoundingClientRect().height;
-    await expect(thumb(canvasElement).getBoundingClientRect().height).toBeLessThanOrEqual(height);
-    await expect(thumb(canvasElement).style.getPropertyValue('--thumb-position')).toBe('0px');
+    await expectAtMost(thumb(canvasElement).getBoundingClientRect().height, height);
+    await expectLength(thumb(canvasElement).style.getPropertyValue('--thumb-position'), 0);
   },
 };
 export const Empty: Story = {
@@ -231,7 +241,9 @@ function DynamicExample(args: ScrollAreaProps) {
   const [count, setCount] = useState(1);
   return (
     <>
-      <button onClick={() => setCount(count === 1 ? 30 : 1)}>Toggle content</button>
+      <button style={FIXTURE_BUTTON} type="button" onClick={() => setCount(count === 1 ? 30 : 1)}>
+        Toggle content
+      </button>
       <ScrollArea {...args}>
         <Items count={count} />
       </ScrollArea>
@@ -275,7 +287,7 @@ export const RTL: Story = {
         left: false,
         right: true,
       });
-      await expect(thumb(canvasElement, 'inline').style.getPropertyValue('--thumb-position')).toBe('0px');
+      await expectLength(thumb(canvasElement, 'inline').style.getPropertyValue('--thumb-position'), 0);
     });
   },
 };
@@ -304,14 +316,18 @@ export const ForcedColors: Story = {
   },
 };
 // Stubs matchMedia to drive the track-press behavior branch and reads the reduced-motion transition
-// rules from the CSSOM. Real media emulation is verified in browser QA.
+// rules from the CSSOM. Reduced motion covers the component's own motion: bar transitions and the
+// track-press scrollTo. Keyboard and wheel scrolling stay native, so their animation follows the
+// browser's smooth-scrolling setting, not prefers-reduced-motion. Real media emulation is verified in
+// browser QA.
 export const ReducedMotion: Story = {
   ...Default,
   args: { scrollbars: 'always' },
   parameters: {
     docs: {
       description: {
-        story: 'Track presses page the viewport. Real reduced-motion rendering is verified in browser QA.',
+        story:
+          'Track presses page the viewport, instantly under reduced motion. Keyboard and wheel scrolling animation is browser-owned.',
       },
     },
   },
@@ -319,6 +335,7 @@ export const ReducedMotion: Story = {
     await overflowReady(canvasElement);
     const node = viewport(canvasElement);
     const win = node.ownerDocument.defaultView!;
+    await expect(getComputedStyle(node).scrollBehavior).toBe('auto');
     await expect(mediaValue(track(canvasElement), REDUCED_MOTION_QUERY, 'transition')).toContain('none');
     await expect(mediaValue(thumb(canvasElement), REDUCED_MOTION_QUERY, 'transition', 'after')).toContain(
       'none',
@@ -368,13 +385,19 @@ export const KeyboardNavigation: Story = {
   args: { onEdgeChange: fn() },
   render: (args) => (
     <>
-      <button>Before</button>
+      <button style={FIXTURE_BUTTON} type="button">
+        Before
+      </button>
       <ScrollArea {...args}>
         <Items />
-        <button onClick={insideActivation}>Inside</button>
+        <button style={FIXTURE_BUTTON} type="button" onClick={insideActivation}>
+          Inside
+        </button>
         <textarea aria-label="Notes" defaultValue="Notes" />
       </ScrollArea>
-      <button>After</button>
+      <button style={FIXTURE_BUTTON} type="button">
+        After
+      </button>
     </>
   ),
   play: async ({ args, canvas, canvasElement, userEvent }) => {
@@ -441,7 +464,7 @@ export const KeyboardNavigation: Story = {
     await expect(edgeReports()).toBe(reportsAtEnd);
     node.scrollTo({ top: -maximum });
     await expectBoundary(0, { top: false, bottom: true });
-    await expect(thumb(canvasElement).style.getPropertyValue('--thumb-position')).toBe('0px');
+    await expectLength(thumb(canvasElement).style.getPropertyValue('--thumb-position'), 0);
     const startReports = edgeReports();
     node.scrollTo({ top: 0 });
     await userEvent.keyboard('{Home}');
@@ -623,19 +646,26 @@ export const PointerInteraction: Story = {
   },
 };
 
+// React registers wheel listeners as passive, so a cancelling wheel handler attaches natively.
+const vetoWheel = fn((event: WheelEvent) => event.preventDefault());
+const attachWheelVeto = (node: HTMLDivElement | null) => {
+  node?.addEventListener('wheel', vetoWheel, { passive: false });
+  return () => node?.removeEventListener('wheel', vetoWheel);
+};
 export const WheelVeto: Story = {
   ...WheelConversion,
   args: {
     orientation: 'horizontal',
     wheelToHorizontal: true,
-    slotProps: { viewport: { 'aria-label': 'Activity', onWheel: fn((event) => event.preventDefault()) } },
+    slotProps: { viewport: { 'aria-label': 'Activity', ref: attachWheelVeto } },
   },
-  play: async ({ canvasElement, args }) => {
+  play: async ({ canvasElement }) => {
+    vetoWheel.mockClear();
     await overflowReady(canvasElement, 'inline');
     const node = viewport(canvasElement);
     await expect(fireEvent.wheel(node, { deltaY: 100, cancelable: true })).toBe(false);
     await expect(node.scrollLeft).toBe(0);
-    await expect(args.slotProps?.viewport?.onWheel).toHaveBeenCalledTimes(1);
+    await expect(vetoWheel).toHaveBeenCalledTimes(1);
   },
 };
 
@@ -646,9 +676,9 @@ export const RTLWheel: Story = {
     await overflowReady(canvasElement, 'inline');
     const node = viewport(canvasElement);
     await expect(fireEvent.wheel(node, { deltaY: 100, cancelable: true })).toBe(false);
-    await expect(node.scrollLeft).toBe(-100);
+    await expectLength(node.scrollLeft, -100);
     await expect(fireEvent.wheel(node, { deltaY: -100, cancelable: true })).toBe(false);
-    await expect(node.scrollLeft).toBe(0);
+    await expectLength(node.scrollLeft, 0);
     await expect(fireEvent.wheel(node, { deltaY: -100, cancelable: true })).toBe(true);
   },
 };
@@ -671,7 +701,9 @@ function UnmountExample(args: ScrollAreaProps) {
   const [mounted, setMounted] = useState(true);
   return (
     <StrictMode>
-      <button onClick={() => setMounted(false)}>Remove panel</button>
+      <button style={FIXTURE_BUTTON} type="button" onClick={() => setMounted(false)}>
+        Remove panel
+      </button>
       {mounted && (
         <ScrollArea {...args}>
           <Items />
