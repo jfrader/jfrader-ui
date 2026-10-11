@@ -1,0 +1,787 @@
+import { StrictMode, useId, useState, type ReactNode } from 'react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, fn, waitFor } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
+import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
+import { ThemeRoot } from '../theme-root';
+import { RadioCards, type RadioCardsProps } from './index';
+
+const usage = `<RadioCards name="shipping" defaultValue="standard" layout="list" required>
+  <RadioCards.Label>Shipping speed</RadioCards.Label>
+  <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
+  <RadioCards.Item value="express" label="Express" />
+</RadioCards>`;
+const fixtureStyle = css({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '44rem' });
+const buttonStyle = css({
+  minBlockSize: vars.space[8],
+  minInlineSize: vars.space[8],
+  padding: vars.space[2],
+});
+const overrides = {
+  control: { css: css({ borderRadius: vars.radius.sm }) },
+  indicator: { css: css({ inlineSize: vars.space[6], blockSize: vars.space[6] }) },
+  icon: { css: css({ fontSize: vars.textSize['2xl'] }) },
+  label: { css: css({ fontWeight: vars.fontWeight.semibold }) },
+  description: { css: css({ fontSize: vars.textSize.xs }) },
+  meta: { css: css({ fontWeight: vars.fontWeight.semibold }) },
+};
+function DeliveryIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 6h12v12H3zM15 10h3l3 4v4h-6M6 18v2m12-2v2" />
+    </svg>
+  );
+}
+function Example({ disabledOption = false, ...args }: RadioCardsProps & { disabledOption?: boolean }) {
+  return (
+    <RadioCards {...args}>
+      <RadioCards.Label>Shipping speed</RadioCards.Label>
+      <RadioCards.Description>Choose a delivery option.</RadioCards.Description>
+      <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
+      <RadioCards.Item
+        value="express"
+        label="Express"
+        description="1–2 business days"
+        disabled={disabledOption}
+        disabledReason="Unavailable at this address"
+      />
+      <RadioCards.Item value="pickup" label="Pickup" description="Collect at the store" />
+    </RadioCards>
+  );
+}
+const meta = {
+  title: 'Inputs/RadioCards',
+  component: RadioCards,
+  tags: ['autodocs'],
+  args: { defaultValue: 'standard', onValueChange: fn() },
+  render: (args) => <Example {...args} />,
+  parameters: {
+    docs: {
+      source: { code: usage },
+      description: {
+        component:
+          'Single-choice option cards backed by native radios for validation and form submission. Tab enters the checked enabled radio; without a selection, Tab enters the first and Shift+Tab the last enabled radio. Arrows select in DOM order, wrap and skip disabled options; horizontal arrows reverse in RTL. Home/End select the first/last option; Enter selects without submitting and Space keeps native radio behavior. Controlled requests remain unchecked until accepted. Form reset restores defaultValue without a callback. Values must be unique. Item content must not contain links or buttons. Metadata is supplementary; format numbers and currency with Intl. Reduced motion snaps the decorative ring; the border and dot always show the accepted selection.',
+      },
+    },
+  },
+} satisfies Meta<typeof RadioCards>;
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+async function assertFocus(input: HTMLElement) {
+  await expect(input.ownerDocument.activeElement).toBe(input);
+  const style = getComputedStyle(input.nextElementSibling!);
+  await expect(style.outlineStyle).not.toBe('none');
+  await expect(parseFloat(style.outlineWidth)).toBeGreaterThan(0);
+}
+async function assertContrast(group: HTMLElement) {
+  const context = group.ownerDocument.createElement('canvas').getContext('2d')!;
+  const channels = () => Array.from(context.getImageData(0, 0, 1, 1).data).slice(0, 3);
+  const luminance = (rgb: number[]) =>
+    rgb
+      .map((channel) => {
+        const value = channel / 255;
+        return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+      })
+      .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index]!, 0);
+  for (const input of group.querySelectorAll('input')) {
+    const card = input.nextElementSibling as HTMLElement;
+    const layers: string[] = [];
+    for (let element: HTMLElement | null = card; element; element = element.parentElement)
+      layers.unshift(getComputedStyle(element).backgroundColor);
+    context.clearRect(0, 0, 1, 1);
+    for (const color of layers) {
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+    }
+    const background = luminance(channels());
+    const ratio = (color: string) => {
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      const foreground = luminance(channels());
+      return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+    };
+    await expect(ratio(getComputedStyle(card).color)).toBeGreaterThanOrEqual(4.5);
+    const description = card.querySelector('[data-ui="radio-cards-item-description"]');
+    if (description) await expect(ratio(getComputedStyle(description).color)).toBeGreaterThanOrEqual(4.5);
+    await expect(ratio(getComputedStyle(card).borderColor)).toBeGreaterThanOrEqual(3);
+    const indicator = card.querySelector('[data-ui="radio-cards-indicator"]')!;
+    await expect(ratio(getComputedStyle(indicator).borderColor)).toBeGreaterThanOrEqual(3);
+    if (input.checked)
+      await expect(ratio(getComputedStyle(indicator, '::after').backgroundColor)).toBeGreaterThanOrEqual(3);
+  }
+}
+async function assertRing(group: HTMLElement, input: HTMLElement) {
+  await waitFor(async () => {
+    const ring = group.querySelector<HTMLElement>('[data-ui="radio-cards-ring"]')!;
+    const card = input.nextElementSibling!.getBoundingClientRect();
+    const bounds = ring.getBoundingClientRect();
+    await expect(ring.hidden).toBe(false);
+    await expect(Math.abs(bounds.left - card.left)).toBeLessThan(1.1);
+    await expect(Math.abs(bounds.top - card.top)).toBeLessThan(1.1);
+    await expect(Math.abs(bounds.width - card.width)).toBeLessThan(1.1);
+    await expect(Math.abs(bounds.height - card.height)).toBeLessThan(1.1);
+  });
+}
+export const DefaultGrid: Story = {
+  play: async ({ canvas, args, userEvent }) => {
+    const group = canvas.getByRole('radiogroup', { name: 'Shipping speed' });
+    const radios = canvas.getAllByRole('radio') as HTMLInputElement[];
+    await expect(radios[0]!.type).toBe('radio');
+    await expect(new Set(radios.map((radio) => radio.name)).size).toBe(1);
+    await expect(radios[0]).toBeChecked();
+    await assertContrast(group);
+    await expect(radios[0]!.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await userEvent.click(radios[1]!);
+    await expect(radios[1]).toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('express');
+    await assertRing(group, radios[1]!);
+    await userEvent.click(radios[1]!);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+export const List: Story = { args: { layout: 'list' } };
+export const Sizes: Story = {
+  render: (args) => (
+    <div css={fixtureStyle}>
+      <Example {...args} size="sm" />
+      <Example {...args} size="md" />
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    for (const radio of canvas.getAllByRole('radio'))
+      await expect(radio.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+  },
+};
+export const DescriptionsMeta: Story = {
+  render: (args) => (
+    <RadioCards {...args} layout="list">
+      <RadioCards.Label>Shipping speed</RadioCards.Label>
+      <RadioCards.Item
+        value="standard"
+        label="Standard"
+        description="4–6 business days"
+        meta={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(0)}
+      />
+      <RadioCards.Item
+        value="express"
+        label="Express"
+        description="1–2 business days"
+        meta={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(12)}
+      />
+    </RadioCards>
+  ),
+};
+export const Icons: Story = {
+  render: (args) => (
+    <RadioCards {...args} aria-label="Delivery">
+      <RadioCards.Item value="standard" label="Standard" icon={<DeliveryIcon />} />
+      <RadioCards.Item value="express" label="Express" icon={<DeliveryIcon />} />
+    </RadioCards>
+  ),
+};
+export const DisabledReason: Story = {
+  render: (args) => <Example {...args} disabledOption />,
+  play: async ({ canvas, userEvent, args }) => {
+    const disabled = canvas.getByRole('radio', { name: 'Express' });
+    await expect(disabled).toBeDisabled();
+    await expect(disabled).toHaveAccessibleDescription('Unavailable at this address');
+    await userEvent.click(disabled);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+export const Disabled: Story = {
+  args: { disabled: true },
+  play: async ({ canvas, userEvent, args }) => {
+    for (const radio of canvas.getAllByRole('radio')) await expect(radio).toBeDisabled();
+    await userEvent.click(canvas.getByRole('radio', { name: 'Pickup' }));
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(canvas.getByRole('radio', { name: 'Standard' })).toBeChecked();
+  },
+};
+export const Required: Story = { args: { required: true, defaultValue: undefined } };
+export const InvalidError: Story = {
+  args: { invalid: true, error: 'Choose a delivery option.', defaultValue: undefined },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('radiogroup')).toHaveAttribute('aria-invalid', 'true');
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Choose a delivery option.');
+    for (const radio of canvas.getAllByRole('radio'))
+      await expect(radio).toHaveAttribute('aria-invalid', 'true');
+  },
+};
+export const ConsumerInvalid: Story = {
+  args: { 'aria-invalid': 'grammar' },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('radiogroup')).toHaveAttribute('aria-invalid', 'grammar');
+  },
+};
+export const Empty: Story = { render: (args) => <RadioCards {...args} aria-label="Shipping speed" /> };
+export const AllDisabled: Story = {
+  render: (args) => (
+    <RadioCards {...args} aria-label="Shipping speed">
+      <RadioCards.Item value="standard" label="Standard" disabled />
+      <RadioCards.Item value="express" label="Express" disabled />
+    </RadioCards>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.tab();
+    const group = canvas.getByRole('radiogroup');
+    await expect(group.contains(group.ownerDocument.activeElement)).toBe(false);
+  },
+};
+export const NoSelection: Story = {
+  args: { defaultValue: undefined },
+  render: (args) => (
+    <div css={fixtureStyle}>
+      <button css={buttonStyle}>Before</button>
+      <Example {...args} />
+      <button css={buttonStyle}>After</button>
+    </div>
+  ),
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.tab();
+    await expect(canvas.getByRole('button', { name: 'Before' })).toHaveFocus();
+    await userEvent.tab();
+    await assertFocus(canvas.getByRole('radio', { name: 'Standard' }));
+    await userEvent.tab();
+    await expect(canvas.getByRole('button', { name: 'After' })).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    await assertFocus(canvas.getByRole('radio', { name: 'Pickup' }));
+    await userEvent.keyboard('[Space]');
+    await expect(canvas.getByRole('radio', { name: 'Pickup' })).toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('pickup');
+  },
+};
+export const Keyboard: Story = {
+  render: (args) => (
+    <div css={fixtureStyle}>
+      <Example {...args} disabledOption />
+      <button css={buttonStyle}>After</button>
+    </div>
+  ),
+  play: async ({ canvas, userEvent, args }) => {
+    const first = canvas.getByRole('radio', { name: 'Standard' });
+    const last = canvas.getByRole('radio', { name: 'Pickup' });
+    await userEvent.tab();
+    await assertFocus(first);
+    const steps = [
+      ['{ArrowRight}', last, 'pickup'],
+      ['{ArrowRight}', first, 'standard'],
+      ['{ArrowLeft}', last, 'pickup'],
+      ['{ArrowDown}', first, 'standard'],
+      ['{ArrowUp}', last, 'pickup'],
+      ['{Home}', first, 'standard'],
+      ['{End}', last, 'pickup'],
+    ] as const;
+    for (const [index, [key, input, value]] of steps.entries()) {
+      await userEvent.keyboard(key);
+      await assertFocus(input);
+      await expect(input).toBeChecked();
+      await expect(args.onValueChange).toHaveBeenCalledTimes(index + 1);
+      await expect(args.onValueChange).toHaveBeenNthCalledWith(index + 1, value);
+    }
+    await userEvent.keyboard('{Enter}[Space]');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(steps.length);
+    await userEvent.tab();
+    await expect(canvas.getByRole('button')).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    await assertFocus(last);
+  },
+};
+function RejectedExample(args: RadioCardsProps) {
+  const [value, setValue] = useState('standard');
+  return (
+    <form css={fixtureStyle}>
+      <Example {...args} name="shipping" value={value} />
+      <button type="button" css={buttonStyle} onClick={() => setValue('pickup')}>
+        Update value
+      </button>
+      <button type="reset" css={buttonStyle}>
+        Reset
+      </button>
+    </form>
+  );
+}
+export const ControlledRejects: Story = {
+  render: (args) => <RejectedExample {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const first = canvas.getByRole('radio', { name: 'Standard' }) as HTMLInputElement;
+    const next = canvas.getByRole('radio', { name: 'Express' });
+    const group = canvas.getByRole('radiogroup');
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowRight}');
+    await assertFocus(next);
+    await expect(next).not.toBeChecked();
+    await expect(first.checked).toBe(true);
+    await assertRing(group, first);
+    await expect(new FormData(first.form!).get('shipping')).toBe('standard');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('express');
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('express');
+    await userEvent.keyboard('[Space]');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+    await expect(next).not.toBeChecked();
+    await userEvent.click(canvas.getByRole('button', { name: 'Update value' }));
+    await expect(canvas.getByRole('radio', { name: 'Pickup' })).toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await expect(canvas.getByRole('radio', { name: 'Pickup' })).toBeChecked();
+    await expect(new FormData(first.form!).get('shipping')).toBe('pickup');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+  },
+};
+export const NativeForm: Story = {
+  args: { defaultValue: undefined, required: true },
+  render: (args) => (
+    <form css={fixtureStyle}>
+      <RadioCards {...args} name="shipping" aria-label="Shipping speed">
+        <RadioCards.Item value="" label="Pickup" />
+        <RadioCards.Item value="express" label="Express" />
+        <RadioCards.Item value="disabled" label="Unavailable" disabled />
+      </RadioCards>
+      <button type="reset" css={buttonStyle}>
+        Reset
+      </button>
+    </form>
+  ),
+  play: async ({ canvas, userEvent, args }) => {
+    const pickup = canvas.getByRole('radio', { name: 'Pickup' }) as HTMLInputElement;
+    const form = pickup.form!;
+    await expect(form.checkValidity()).toBe(false);
+    await expect(pickup.required).toBe(true);
+    await expect(canvas.getByRole('radiogroup')).toHaveAttribute('aria-required', 'true');
+    await userEvent.click(pickup);
+    await expect(form.checkValidity()).toBe(true);
+    await expect(new FormData(form).get('shipping')).toBe('');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('');
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await expect(pickup).not.toBeChecked();
+    await expect(form.checkValidity()).toBe(false);
+    await expect(new FormData(form).has('shipping')).toBe(false);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await userEvent.click(canvas.getByRole('radio', { name: 'Unavailable' }));
+    await expect(new FormData(form).has('shipping')).toBe(false);
+  },
+};
+export const ResetToDefault: Story = {
+  render: (args) => (
+    <form css={fixtureStyle}>
+      <Example {...args} name="shipping" />
+      <button type="reset" css={buttonStyle}>
+        Reset
+      </button>
+    </form>
+  ),
+  play: async ({ canvas, args, userEvent }) => {
+    await userEvent.click(canvas.getByRole('radio', { name: 'Pickup' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await expect(canvas.getByRole('radio', { name: 'Standard' })).toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('pickup');
+  },
+};
+function AriaExample(args: RadioCardsProps) {
+  const id = useId();
+  return (
+    <div css={fixtureStyle}>
+      <span id={`${id}-name`}>Delivery</span>
+      <span id={`${id}-detail`}>External detail</span>
+      <RadioCards
+        {...args}
+        aria-label="Fallback group"
+        aria-labelledby={`${id}-name`}
+        aria-describedby={`${id}-detail`}
+        aria-invalid="grammar"
+        error="Try again"
+      >
+        <RadioCards.Label>Shipping speed</RadioCards.Label>
+        <RadioCards.Description>Internal detail</RadioCards.Description>
+        <RadioCards.Item
+          value="standard"
+          label="Standard"
+          description="4–6 business days"
+          aria-label="Fallback item"
+          aria-labelledby={`${id}-name`}
+          aria-describedby={`${id}-detail`}
+        />
+        <RadioCards.Item
+          value="express"
+          label="Express"
+          aria-label="Express fallback"
+          aria-labelledby={`${id}-missing`}
+        />
+      </RadioCards>
+    </div>
+  );
+}
+export const ExternalAria: Story = {
+  render: (args) => <AriaExample {...args} />,
+  play: async ({ canvas }) => {
+    const group = canvas.getByRole('radiogroup', { name: 'Delivery Shipping speed' });
+    await expect(group).toHaveAttribute('aria-label', 'Fallback group');
+    await expect(group.getAttribute('aria-labelledby')!.split(' ')).toHaveLength(2);
+    await expect(group).toHaveAccessibleDescription('External detail Internal detail Try again');
+    const radio = canvas.getByRole('radio', { name: 'Delivery' });
+    await expect(radio).toHaveAttribute('aria-label', 'Fallback item');
+    await expect(radio).toHaveAccessibleDescription('External detail 4–6 business days');
+    const unresolved = canvas.getByRole('radio', { name: 'Express fallback' });
+    await expect(unresolved.getAttribute('aria-labelledby')).toContain('-missing');
+    await expect(unresolved).toHaveAttribute('aria-label', 'Express fallback');
+    await expect(group).toHaveAttribute('aria-invalid', 'true');
+  },
+};
+const falsy: ReactNode[] = [false, null, 0, ''];
+export const FalsyContent: Story = {
+  render: (args) => (
+    <div css={fixtureStyle}>
+      {falsy.map((content, index) => (
+        <RadioCards {...args} key={index} aria-label={`Content ${index}`} error={content}>
+          <RadioCards.Label>{content}</RadioCards.Label>
+          <RadioCards.Description>{content}</RadioCards.Description>
+          <RadioCards.Item
+            value="standard"
+            aria-label={`Option ${index}`}
+            label={content}
+            description={content}
+            meta={content}
+            icon={content}
+          />
+          <RadioCards.Item
+            value="disabled"
+            aria-label={`Disabled ${index}`}
+            label="Unavailable"
+            description="Description"
+            disabled
+            disabledReason={content}
+          />
+        </RadioCards>
+      ))}
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    for (const [index, group] of canvas.getAllByRole('radiogroup').entries()) {
+      const present = index >= 2;
+      for (const part of ['label', 'description', 'error'])
+        await expect(group.querySelector(`[data-ui="radio-cards-${part}"]`) !== null).toBe(present);
+      const input = group.querySelector<HTMLInputElement>('input')!;
+      for (const part of ['item-label', 'item-description', 'meta', 'icon'])
+        await expect(input.parentElement!.querySelector(`[data-ui="radio-cards-${part}"]`) !== null).toBe(
+          present,
+        );
+      await expect(input.hasAttribute('aria-describedby')).toBe(present);
+      for (const element of [group, input]) {
+        for (const id of element.getAttribute('aria-describedby')?.split(' ') ?? [])
+          await expect(element.ownerDocument.getElementById(id)).not.toBeNull();
+      }
+      const reason = group.querySelectorAll('input')[1]!;
+      await expect(reason).toHaveAccessibleDescription(index === 2 ? '0' : index === 3 ? '' : 'Description');
+    }
+  },
+};
+export const LongContent: Story = {
+  render: (args) => (
+    <div css={fixtureStyle} style={{ maxWidth: '18rem' }}>
+      <RadioCards {...args} layout="list" aria-label="Shipping speed">
+        <RadioCards.Item
+          value="standard"
+          label="International tracked delivery with signature confirmation"
+          description="Delivery times depend on customs processing and the destination address."
+          meta={new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(1234567890.12)}
+        />
+      </RadioCards>
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    const card = canvas.getByRole('radio').nextElementSibling as HTMLElement;
+    await expect(card.scrollWidth).toBeLessThanOrEqual(card.clientWidth + 1);
+    for (const part of ['item-label', 'item-description', 'meta']) {
+      const rect = card.querySelector(`[data-ui="radio-cards-${part}"]`)!.getBoundingClientRect();
+      const bounds = card.getBoundingClientRect();
+      await expect(rect.right).toBeLessThanOrEqual(bounds.right + 1);
+      await expect(rect.left).toBeGreaterThanOrEqual(bounds.left - 1);
+    }
+  },
+};
+function ResizeExample(args: RadioCardsProps) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div css={fixtureStyle}>
+      <RadioCards {...args} aria-label="Shipping speed" layout="list">
+        <RadioCards.Item
+          value="standard"
+          label="Standard"
+          description={
+            expanded
+              ? 'Tracked delivery. Delivery times depend on customs processing and the destination address. Contact the store to arrange a delivery date.'
+              : '4–6 days'
+          }
+        />
+        <RadioCards.Item value="express" label="Express" />
+      </RadioCards>
+      <button css={buttonStyle} onClick={() => setExpanded((current) => !current)}>
+        Change content
+      </button>
+    </div>
+  );
+}
+export const ResizeSelectedCard: Story = {
+  render: (args) => <ResizeExample {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const group = canvas.getByRole('radiogroup');
+    const selected = canvas.getByRole('radio', { name: 'Standard' });
+    await assertRing(group, selected);
+    const before = selected.nextElementSibling!.getBoundingClientRect().height;
+    await userEvent.click(canvas.getByRole('button'));
+    await expect(selected.nextElementSibling!.getBoundingClientRect().height).toBeGreaterThan(before);
+    await assertRing(group, selected);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+export const MultipleInstances: Story = {
+  render: (args) => (
+    <div css={fixtureStyle}>
+      <Example {...args} />
+      <Example {...args} />
+    </div>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const radios = canvas.getAllByRole('radio') as HTMLInputElement[];
+    await expect(radios[0]!.name).not.toBe(radios[3]!.name);
+    await userEvent.click(radios[1]!);
+    await expect(radios[1]).toBeChecked();
+    await expect(radios[3]).toBeChecked();
+    const ids = canvas
+      .getAllByRole('radiogroup')
+      .flatMap((group) => Array.from(group.querySelectorAll('[id]')).map((element) => element.id));
+    await expect(new Set(ids).size).toBe(ids.length);
+  },
+};
+export const RTL: Story = {
+  args: { dir: 'rtl' },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowRight}');
+    const last = canvas.getByRole('radio', { name: 'Pickup' });
+    await assertFocus(last);
+    await expect(last).toBeChecked();
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(canvas.getByRole('radio', { name: 'Standard' })).toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(1, 'pickup');
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, 'standard');
+  },
+};
+export const LightTheme: Story = {
+  decorators: [withLightTheme],
+  play: async ({ canvas }) => {
+    await assertContrast(canvas.getByRole('radiogroup'));
+  },
+};
+export const ScopedTheme: Story = {
+  render: (args) => (
+    <ThemeRoot theme="light" sx={{ backgroundColor: vars.color.bg, padding: vars.space[4] }}>
+      <Example {...args} />
+    </ThemeRoot>
+  ),
+};
+export const ReducedMotion: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Structural selection check. Use the browser reduced-motion preference to verify immediate ring and dot updates.',
+      },
+    },
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('radio', { name: 'Express' }));
+    await assertRing(canvas.getByRole('radiogroup'), canvas.getByRole('radio', { name: 'Express' }));
+  },
+};
+export const ForcedColors: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Structural border and indicator check. Windows high-contrast mode or browser forced-colors emulation is required for environment proof.',
+      },
+    },
+  },
+  play: async ({ canvas }) => {
+    const control = canvas.getByRole('radio', { name: 'Standard' }).nextElementSibling!;
+    await expect(getComputedStyle(control).borderTopStyle).toBe('solid');
+    await expect(parseFloat(getComputedStyle(control).borderTopWidth)).toBeGreaterThan(0);
+    await expect(control.querySelector('[data-ui="radio-cards-indicator"]')).not.toBeNull();
+  },
+};
+export const SlotStyling: Story = {
+  render: (args) => (
+    <RadioCards {...args} aria-label="Shipping">
+      <RadioCards.Item
+        value="standard"
+        label="Standard"
+        description="4–6 days"
+        icon={<DeliveryIcon />}
+        meta="Free"
+        slotProps={overrides}
+      />
+    </RadioCards>
+  ),
+  play: async ({ canvas }) => {
+    const control = canvas.getByRole('radio').nextElementSibling!;
+    const style = getComputedStyle(control);
+    await expect(Math.abs(parseFloat(style.borderTopLeftRadius) - 8)).toBeLessThan(1.1);
+    await expect(
+      Math.abs(
+        control.querySelector('[data-ui="radio-cards-indicator"]')!.getBoundingClientRect().width - 26,
+      ),
+    ).toBeLessThan(1.1);
+    await expect(
+      getComputedStyle(control.querySelector('[data-ui="radio-cards-item-label"]')!).fontWeight,
+    ).toBe('600');
+    await expect(getComputedStyle(control.querySelector('[data-ui="radio-cards-meta"]')!).fontWeight).toBe(
+      '600',
+    );
+    await expect(
+      parseFloat(
+        getComputedStyle(control.querySelector('[data-ui="radio-cards-item-description"]')!).fontSize,
+      ),
+    ).toBeLessThan(parseFloat(style.fontSize));
+    await expect(
+      parseFloat(getComputedStyle(control.querySelector('[data-ui="radio-cards-icon"]')!).fontSize),
+    ).toBeGreaterThan(parseFloat(style.fontSize));
+  },
+};
+const inputRef = fn();
+const rootRef = fn();
+const labelRef = fn();
+const descriptionRef = fn();
+export const Refs: Story = {
+  render: (args) => (
+    <StrictMode>
+      <RadioCards {...args} ref={rootRef}>
+        <RadioCards.Label ref={labelRef}>Shipping</RadioCards.Label>
+        <RadioCards.Description ref={descriptionRef}>Delivery options</RadioCards.Description>
+        <RadioCards.Item ref={inputRef} value="standard" label="Standard" />
+      </RadioCards>
+    </StrictMode>
+  ),
+  play: async ({ canvas }) => {
+    await expect(inputRef).toHaveBeenCalledWith(canvas.getByRole('radio'));
+    await expect(rootRef).toHaveBeenCalledWith(canvas.getByRole('radiogroup'));
+    await expect(labelRef).toHaveBeenCalledWith(canvas.getByText('Shipping'));
+    await expect(descriptionRef).toHaveBeenCalledWith(canvas.getByText('Delivery options'));
+  },
+};
+
+const nativeChange = fn();
+const nativeKey = fn();
+const nativeSubmit = fn();
+export const NativeEvents: Story = {
+  args: { defaultValue: undefined },
+  render: (args) => (
+    <form
+      css={fixtureStyle}
+      onSubmit={(event) => {
+        event.preventDefault();
+        nativeSubmit();
+      }}
+    >
+      <RadioCards {...args} aria-label="Shipping">
+        <RadioCards.Item value="standard" label="Standard" onChange={nativeChange} onKeyDown={nativeKey} />
+        <RadioCards.Item value="express" label="Express" onKeyDown={(event) => event.preventDefault()} />
+      </RadioCards>
+    </form>
+  ),
+  play: async ({ canvas, userEvent, args }) => {
+    const first = canvas.getByRole('radio', { name: 'Standard' });
+    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
+    await expect(first).toBeChecked();
+    await expect(nativeChange).toHaveBeenCalledTimes(1);
+    await expect(nativeChange.mock.calls[0]![0].target).toBe(first);
+    await expect(nativeKey).toHaveBeenCalledTimes(1);
+    await expect(nativeKey.mock.calls[0]![0].key).toBe('Enter');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('standard');
+    await expect(nativeSubmit).not.toHaveBeenCalled();
+    await userEvent.keyboard('{ArrowRight}');
+    const next = canvas.getByRole('radio', { name: 'Express' });
+    await expect(next).toHaveFocus();
+    await userEvent.keyboard('{Home}');
+    await expect(next).toHaveFocus();
+    await expect(next).toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('express');
+  },
+};
+function AcceptedExample(args: RadioCardsProps) {
+  const [value, setValue] = useState('standard');
+  return (
+    <Example
+      {...args}
+      value={value}
+      onValueChange={(next) => {
+        args.onValueChange?.(next);
+        setValue(next);
+      }}
+    />
+  );
+}
+export const Controlled: Story = {
+  render: (args) => <AcceptedExample {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('radio', { name: 'Express' }));
+    await expect(canvas.getByRole('radio', { name: 'Express' })).toBeChecked();
+    await expect(canvas.getByRole('radio', { name: 'Standard' })).not.toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('express');
+  },
+};
+function RemovedExample(args: RadioCardsProps) {
+  const [state, setState] = useState<'enabled' | 'disabled' | 'removed'>('enabled');
+  return (
+    <div css={fixtureStyle}>
+      <button css={buttonStyle} onClick={() => setState('disabled')}>
+        Disable selected
+      </button>
+      <button css={buttonStyle} onClick={() => setState('removed')}>
+        Remove selected
+      </button>
+      <RadioCards {...args} aria-label="Shipping">
+        {state !== 'removed' && (
+          <RadioCards.Item value="standard" label="Standard" disabled={state === 'disabled'} />
+        )}
+        <RadioCards.Item value="express" label="Express" />
+        <RadioCards.Item value="pickup" label="Pickup" />
+      </RadioCards>
+      <button css={buttonStyle}>After</button>
+    </div>
+  );
+}
+export const RemovedSelection: Story = {
+  render: (args) => <RemovedExample {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Disable selected' }));
+    await expect(canvas.getByRole('radio', { name: 'Standard' })).toBeDisabled();
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove selected' }));
+    await expect(canvas.queryByRole('radio', { name: 'Standard' })).toBeNull();
+    await userEvent.tab();
+    await assertFocus(canvas.getByRole('radio', { name: 'Express' }));
+    await userEvent.tab();
+    await expect(canvas.getByRole('button', { name: 'After' })).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    await assertFocus(canvas.getByRole('radio', { name: 'Pickup' }));
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(
+      canvas.getByRole('radiogroup').querySelector<HTMLElement>('[data-ui="radio-cards-ring"]')!.hidden,
+    ).toBe(true);
+  },
+};
