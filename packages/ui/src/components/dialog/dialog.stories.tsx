@@ -157,6 +157,8 @@ export const Default: Story = {
 };
 
 export const Open: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <DialogExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -189,6 +191,8 @@ export const Controlled: Story = {
 };
 
 export const ControlledRejectedDismissal: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { onOpenChange: fn() },
   render: (args) => <DialogExample {...args} open />,
   play: async ({ args, canvasElement }) => {
@@ -234,6 +238,8 @@ export const NativeClose: Story = {
 };
 
 export const ControlledRejectedNativeClose: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { onOpenChange: fn() },
   render: (args) => <FormDialog {...args} open />,
   play: async ({ args, canvasElement }) => {
@@ -324,6 +330,8 @@ export const TriggerAsButton: Story = {
 };
 
 export const TriggerAsButtonOpen: Story = {
+  // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <ComposedDialog {...args} />,
   play: async ({ canvasElement }) => {

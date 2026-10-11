@@ -52,6 +52,7 @@ Replace `pending` with `pass YYYY-MM-DD <browser/AT>` or `fail: GURI-N (<issue t
 | text-field | pending; auto: Tab, typing | pending | pending | pending | error alert announcement; reduced motion pending |
 | textarea | pending; auto: Tab, Enter | pending | pending | pending | `autoResize` in Firefox and Safari; reduced motion pending |
 | theme-root | n/a (non-interactive) | pending | pending | pending | |
+| time-picker | pending; auto: Tab, Enter/Space/ArrowDown open, arrows, Home/End, typeahead, Enter, Escape, Tab closes | pending | pending | pending | virtual focus; reduced motion pending |
 | toast | pending; auto: Tab, Shift+Tab, focus continues to next dismiss on removal | pending | pending | pending | live region announcement; reduced motion pending |
 | toggle-group | pending; auto: Tab, Shift+Tab, arrows, Home/End, Enter, Space | pending | pending | pending; auto: `KeyboardRtl` story asserts ArrowLeft/ArrowRight swap | forced-colors CSS present; reduced motion pending |
 | tooltip | pending; auto: Tab focus opens, Escape closes | pending | pending | pending | |

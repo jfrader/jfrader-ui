@@ -110,7 +110,7 @@ function OverlaysScene() {
 
 const meta = {
   title: 'Showcase/Overlays',
-  tags: ['!autodocs'],
+  tags: ['!autodocs', 'dev'],
   parameters: {
     layout: 'fullscreen',
     controls: { disable: true },

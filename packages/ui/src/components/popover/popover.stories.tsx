@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -259,5 +259,90 @@ export const LightTheme: Story = {
     await expectThemedSurface(popover, 'light');
     await userEvent.click(trigger);
     await expectClosed(canvasElement, trigger);
+  },
+};
+
+const outerOpenChange = fn<(open: boolean) => void>();
+const innerOpenChange = fn<(open: boolean) => void>();
+const callValues = (spy: unknown) => (spy as Mock).mock.calls.map(([value]) => value);
+
+function NestedPopovers() {
+  return (
+    <Popover onOpenChange={outerOpenChange}>
+      <Popover.Trigger>{TRIGGER}</Popover.Trigger>
+      <Popover.Content aria-label={HEADING}>
+        <div style={actionsStyle}>
+          <Button size="sm">Copy link</Button>
+          <Popover onOpenChange={innerOpenChange}>
+            <Popover.Trigger>Link settings</Popover.Trigger>
+            <Popover.Content aria-label="Link settings">
+              <Button size="sm">Expire link</Button>
+            </Popover.Content>
+          </Popover>
+        </div>
+      </Popover.Content>
+    </Popover>
+  );
+}
+NestedPopovers.displayName = 'NestedPopovers';
+
+/** Opens the outer popover, then the inner one from its trigger inside the outer content. */
+async function openNestedPopovers(canvasElement: HTMLElement) {
+  outerOpenChange.mockClear();
+  innerOpenChange.mockClear();
+  const { trigger, popover: outer } = await openPopover(canvasElement);
+  const innerTrigger = within(outer).getByRole('button', { name: 'Link settings' });
+  await userEvent.click(innerTrigger);
+  const inner = await bodyOf(canvasElement).findByRole('dialog', { name: 'Link settings' });
+  await expect(callValues(outerOpenChange)).toEqual([true]);
+  await expect(callValues(innerOpenChange)).toEqual([true]);
+  return { trigger, outer, innerTrigger, inner };
+}
+
+/** First Escape closes only the inner popover; the second closes the outer one. */
+async function expectEscapeClosesTopmostFirst(
+  canvasElement: HTMLElement,
+  { trigger, outer, innerTrigger, inner }: Awaited<ReturnType<typeof openNestedPopovers>>,
+) {
+  const { ownerDocument } = canvasElement;
+  await userEvent.keyboard('{Escape}');
+  await waitFor(() => expect(inner).not.toBeInTheDocument());
+  await expect(callValues(innerOpenChange)).toEqual([true, false]);
+  await expect(callValues(outerOpenChange)).toEqual([true]);
+  await expect(outer).toBeVisible();
+  await expect(innerTrigger).toHaveAttribute('aria-expanded', 'false');
+  await waitFor(() => expect(ownerDocument.activeElement).toBe(innerTrigger));
+
+  await userEvent.keyboard('{Escape}');
+  await expectClosed(canvasElement, trigger);
+  await expect(callValues(outerOpenChange)).toEqual([true, false]);
+  await expect(callValues(innerOpenChange)).toEqual([true, false]);
+  await waitFor(() => expect(ownerDocument.activeElement).toBe(trigger));
+}
+
+export const NestedEscapeFromParent: Story = {
+  render: () => <NestedPopovers />,
+  play: async ({ canvasElement }) => {
+    const layers = await openNestedPopovers(canvasElement);
+    // Focus on a control that belongs to the outer popover only.
+    const copy = within(layers.outer).getByRole('button', { name: 'Copy link' });
+    await userEvent.tab({ shift: true });
+    await expect(canvasElement.ownerDocument.activeElement).toBe(copy);
+    await expect(layers.inner).toBeVisible();
+
+    await expectEscapeClosesTopmostFirst(canvasElement, layers);
+  },
+};
+
+export const NestedEscapeFromChild: Story = {
+  render: () => <NestedPopovers />,
+  play: async ({ canvasElement }) => {
+    const layers = await openNestedPopovers(canvasElement);
+    const expire = within(layers.inner).getByRole('button', { name: 'Expire link' });
+    await userEvent.click(expire);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(expire);
+    await expect(callValues(innerOpenChange)).toEqual([true]);
+
+    await expectEscapeClosesTopmostFirst(canvasElement, layers);
   },
 };

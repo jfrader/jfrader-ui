@@ -7,6 +7,8 @@
 // order across the portal — there is no initial focus and no trap. Escape returns focus to
 // the trigger only after the close is actually accepted (a rejected controlled dismissal
 // keeps focus where it was); an outside press closes without moving focus.
+// Nesting: the popover is an overlay layer; while a nested layer (e.g. a HoverCard inside the
+// content) is open, Escape and outside presses dismiss that layer first.
 // Naming: role="dialog" needs an accessible name — prefer `aria-labelledby` pointing at a
 // visible heading inside the content; use `aria-label` only when no visible label exists.
 import {
@@ -22,7 +24,6 @@ import {
 import {
   FloatingFocusManager,
   useClick,
-  useDismiss,
   useInteractions,
   useMergeRefs,
   useRole,
@@ -34,6 +35,7 @@ import { css } from '../../styling/css';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -78,19 +80,21 @@ const contentStyle = css({
   fontSize: vars.textSize.sm,
 });
 
-function PopoverRoot({
+function PopoverLayer({
+  nodeId,
   open: openProp,
   defaultOpen = false,
   onOpenChange,
   placement = 'bottom',
   children,
-}: PopoverProps) {
+}: PopoverProps & { nodeId: string | undefined }) {
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const pendingFocusRestoreRef = useRef(false);
 
   const { refs, floatingStyles, context } = useOverlayFloating({
     open,
     placement,
+    nodeId,
     onOpenChange: (next, _event, reason) => {
       // Escape requests a close; focus is restored only once the close is actually applied.
       if (!next) pendingFocusRestoreRef.current = reason === 'escape-key';
@@ -107,9 +111,9 @@ function PopoverRoot({
   }, [open, refs]);
 
   const click = useClick(context);
-  const dismiss = useDismiss(context, { escapeKey: true, outsidePress: true });
+  const dismiss = useLayerDismiss(context, 'container');
   const role = useRole(context, { role: 'dialog' });
-  const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
+  const { getReferenceProps, getFloatingProps } = useInteractions([click, ...dismiss, role]);
 
   const value = useMemo(
     () => ({ open, refs, floatingContext: context, floatingStyles, getReferenceProps, getFloatingProps }),
@@ -117,6 +121,10 @@ function PopoverRoot({
   );
 
   return <PopoverContext.Provider value={value}>{children}</PopoverContext.Provider>;
+}
+
+function PopoverRoot(props: PopoverProps) {
+  return <OverlayLayer>{(nodeId) => <PopoverLayer {...props} nodeId={nodeId} />}</OverlayLayer>;
 }
 
 PopoverRoot.displayName = 'Popover';

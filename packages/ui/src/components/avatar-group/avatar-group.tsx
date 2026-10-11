@@ -75,6 +75,8 @@ const rootStyle = css({
   verticalAlign: 'middle',
 });
 
+// Overlap is a maximum-safe -4px: deeper overlaps clip the initials of the covered circle
+// (verified in-browser at DPR 4: -8px cut GH by 2.3px and MH by 3.7px at md).
 const memberStyle = css({
   position: 'relative',
   display: 'inline-flex',
@@ -84,7 +86,7 @@ const memberStyle = css({
   borderRadius: vars.radius.full,
   verticalAlign: 'middle',
   '&:not(:first-of-type)': {
-    marginInlineStart: `calc(-1 * ${vars.space[2]})`,
+    marginInlineStart: `calc(-1 * ${vars.space[1]})`,
   },
 });
 
@@ -114,7 +116,7 @@ const overflowBaseStyle = css({
   verticalAlign: 'middle',
   border: `2px solid ${vars.color.surface}`,
   '&:not(:first-of-type)': {
-    marginInlineStart: `calc(-1 * ${vars.space[2]})`,
+    marginInlineStart: `calc(-1 * ${vars.space[1]})`,
   },
   [FORCED_COLORS]: {
     borderColor: 'Canvas',

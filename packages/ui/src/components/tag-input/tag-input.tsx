@@ -150,11 +150,6 @@ const shellStyle = css({
   minInlineSize: 0,
   borderRadius: vars.radius.sm,
   cursor: 'text',
-  '&:has(> input:focus-visible)': {
-    outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
-    borderColor: vars.color.focusRing,
-  },
   '&[data-invalid]:not(:has(> input:focus-visible))': { borderColor: vars.color.dangerBorder },
   '&[data-disabled]': { opacity: 0.55, cursor: 'not-allowed' },
   [FORCED_COLORS]: { borderColor: 'CanvasText' },

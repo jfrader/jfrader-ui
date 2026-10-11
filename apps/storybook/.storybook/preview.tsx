@@ -85,7 +85,9 @@ const preview: Preview = {
       },
     },
   },
-  tags: ['autodocs', 'test'],
+  // `!dev` follows the official Docs-only stories recipe: every story stays in its component's
+  // docs page (inline, anchored) and out of the sidebar, so the tree navigates by component.
+  tags: ['autodocs', 'test', '!dev'],
 };
 
 export default preview;

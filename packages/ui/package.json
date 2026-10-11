@@ -33,6 +33,9 @@
     "./calendar": { "types": "./src/components/calendar/index.ts", "import": "./src/components/calendar/index.ts" },
     "./card": { "types": "./src/components/card/index.ts", "import": "./src/components/card/index.ts" },
     "./checkbox": { "types": "./src/components/checkbox/index.ts", "import": "./src/components/checkbox/index.ts" },
+    "./chip-group": { "types": "./src/components/chip-group/index.ts", "import": "./src/components/chip-group/index.ts" },
+    "./code-block": { "types": "./src/components/code-block/index.ts", "import": "./src/components/code-block/index.ts" },
+    "./code-block/shiki": { "types": "./src/components/code-block/shiki.ts", "import": "./src/components/code-block/shiki.ts" },
     "./combobox": { "types": "./src/components/combobox/index.ts", "import": "./src/components/combobox/index.ts" },
     "./command-palette": { "types": "./src/components/command-palette/index.ts", "import": "./src/components/command-palette/index.ts" },
     "./container": { "types": "./src/components/container/index.ts", "import": "./src/components/container/index.ts" },
@@ -40,9 +43,13 @@
     "./date-picker": { "types": "./src/components/date-picker/index.ts", "import": "./src/components/date-picker/index.ts" },
     "./dialog": { "types": "./src/components/dialog/index.ts", "import": "./src/components/dialog/index.ts" },
     "./divider": { "types": "./src/components/divider/index.ts", "import": "./src/components/divider/index.ts" },
+    "./drawer": { "types": "./src/components/drawer/index.ts", "import": "./src/components/drawer/index.ts" },
     "./empty-state": { "types": "./src/components/empty-state/index.ts", "import": "./src/components/empty-state/index.ts" },
+    "./filter-toolbar": { "types": "./src/components/filter-toolbar/index.ts", "import": "./src/components/filter-toolbar/index.ts" },
     "./flex": { "types": "./src/components/flex/index.ts", "import": "./src/components/flex/index.ts" },
     "./inline-edit": { "types": "./src/components/inline-edit/index.ts", "import": "./src/components/inline-edit/index.ts" },
+    "./hover-card": { "types": "./src/components/hover-card/index.ts", "import": "./src/components/hover-card/index.ts" },
+    "./json-viewer": { "types": "./src/components/json-viewer/index.ts", "import": "./src/components/json-viewer/index.ts" },
     "./kbd": { "types": "./src/components/kbd/index.ts", "import": "./src/components/kbd/index.ts" },
     "./menu": { "types": "./src/components/menu/index.ts", "import": "./src/components/menu/index.ts" },
     "./metric-card": { "types": "./src/components/metric-card/index.ts", "import": "./src/components/metric-card/index.ts" },
@@ -60,6 +67,7 @@
     "./select": { "types": "./src/components/select/index.ts", "import": "./src/components/select/index.ts" },
     "./skeleton": { "types": "./src/components/skeleton/index.ts", "import": "./src/components/skeleton/index.ts" },
     "./slider": { "types": "./src/components/slider/index.ts", "import": "./src/components/slider/index.ts" },
+    "./sortable-data-table": { "types": "./src/components/sortable-data-table/index.ts", "import": "./src/components/sortable-data-table/index.ts" },
     "./spinner": { "types": "./src/components/spinner/index.ts", "import": "./src/components/spinner/index.ts" },
     "./stack": { "types": "./src/components/stack/index.ts", "import": "./src/components/stack/index.ts" },
     "./stepper": { "types": "./src/components/stepper/index.ts", "import": "./src/components/stepper/index.ts" },
@@ -69,7 +77,9 @@
     "./text-field": { "types": "./src/components/text-field/index.ts", "import": "./src/components/text-field/index.ts" },
     "./textarea": { "types": "./src/components/textarea/index.ts", "import": "./src/components/textarea/index.ts" },
     "./theme-root": { "types": "./src/components/theme-root/index.ts", "import": "./src/components/theme-root/index.ts" },
+    "./time-picker": { "types": "./src/components/time-picker/index.ts", "import": "./src/components/time-picker/index.ts" },
     "./toast": { "types": "./src/components/toast/index.ts", "import": "./src/components/toast/index.ts" },
+    "./toast-stack": { "types": "./src/components/toast-stack/index.ts", "import": "./src/components/toast-stack/index.ts" },
     "./toggle-group": { "types": "./src/components/toggle-group/index.ts", "import": "./src/components/toggle-group/index.ts" },
     "./tooltip": { "types": "./src/components/tooltip/index.ts", "import": "./src/components/tooltip/index.ts" }
   },
@@ -91,7 +101,13 @@
   },
   "peerDependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "shiki": "^4.4.3"
+  },
+  "peerDependenciesMeta": {
+    "shiki": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@storybook/react-vite": "^10.6.1",
@@ -100,6 +116,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "shiki": "^4.4.3",
     "storybook": "^10.6.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.4"

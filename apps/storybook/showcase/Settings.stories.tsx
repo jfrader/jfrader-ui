@@ -141,7 +141,7 @@ function SettingsScene() {
 
 const meta = {
   title: 'Showcase/Settings',
-  tags: ['!autodocs'],
+  tags: ['!autodocs', 'dev'],
   parameters: {
     layout: 'fullscreen',
     controls: { disable: true },

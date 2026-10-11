@@ -51,6 +51,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { isRenderable } from '../../utils/renderable';
@@ -212,7 +213,7 @@ const popupStyle = css({
 
 // ---- Parts.
 
-function DatePickerRoot({
+function DatePickerOverlay({
   value: valueProp,
   defaultValue,
   onValueChange,
@@ -341,6 +342,14 @@ function DatePickerRoot({
       {children}
       {name !== undefined && <input type="hidden" name={name} value={value ?? ''} disabled={disabled} />}
     </DatePickerContext.Provider>
+  );
+}
+
+function DatePickerRoot(props: DatePickerProps) {
+  return (
+    <IsolatedOverlay>
+      <DatePickerOverlay {...props} />
+    </IsolatedOverlay>
   );
 }
 

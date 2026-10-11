@@ -36,7 +36,16 @@ export const vars = {
     "info": "var(--ui-color-info)",
     "infoSoft": "var(--ui-color-info-soft)",
     "focusRing": "var(--ui-color-focus-ring)",
-    "scrim": "var(--ui-color-scrim)"
+    "scrim": "var(--ui-color-scrim)",
+    "syntaxKeyword": "var(--ui-color-syntax-keyword)",
+    "syntaxString": "var(--ui-color-syntax-string)",
+    "syntaxConstant": "var(--ui-color-syntax-constant)",
+    "syntaxFunction": "var(--ui-color-syntax-function)",
+    "syntaxType": "var(--ui-color-syntax-type)",
+    "syntaxTag": "var(--ui-color-syntax-tag)",
+    "syntaxProperty": "var(--ui-color-syntax-property)",
+    "syntaxComment": "var(--ui-color-syntax-comment)",
+    "syntaxPunctuation": "var(--ui-color-syntax-punctuation)"
   },
   "shadow": {
     "raised": "var(--ui-shadow-raised)",

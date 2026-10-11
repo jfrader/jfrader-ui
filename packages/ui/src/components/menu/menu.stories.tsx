@@ -1,11 +1,12 @@
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
+import { Popover } from '../popover';
 import { Menu, type MenuProps } from './index';
 
 const TRIGGER = 'Options';
@@ -74,6 +75,8 @@ ControlledMenu.displayName = 'ControlledMenu';
 function bodyOf(canvasElement: HTMLElement) {
   return within(canvasElement.ownerDocument.body);
 }
+
+const callValues = (spy: unknown) => (spy as Mock).mock.calls.map(([value]) => value);
 
 function getTrigger(canvasElement: HTMLElement) {
   return within(canvasElement).getByRole('button', { name: TRIGGER });
@@ -366,5 +369,97 @@ export const LightTheme: Story = {
     await expectThemedSurface(menu, 'light');
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);
+  },
+};
+
+export const TriggerRole: Story = {
+  render: (args) => <MenuExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    // A native button: no explicit role overrides it, open or closed.
+    await expect(trigger).not.toHaveAttribute('role');
+    await userEvent.click(trigger);
+    await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
+    await expect(trigger).not.toHaveAttribute('role');
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  },
+};
+
+const popoverOpenChange = fn<(open: boolean) => void>();
+
+function PopoverHost(props: MenuProps) {
+  return (
+    <Popover defaultOpen onOpenChange={popoverOpenChange}>
+      <Popover.Trigger>Project</Popover.Trigger>
+      <Popover.Content aria-label="Project">
+        <MenuExample {...props} />
+      </Popover.Content>
+    </Popover>
+  );
+}
+PopoverHost.displayName = 'PopoverHost';
+
+/** The menu sits in an open popover's content; it is not inside any menu. */
+async function findHostedMenuTrigger(canvasElement: HTMLElement) {
+  popoverOpenChange.mockClear();
+  const popover = await bodyOf(canvasElement).findByRole('dialog', { name: 'Project' });
+  return { popover, trigger: within(popover).getByRole('button', { name: TRIGGER }) };
+}
+
+async function expectHostedMenuClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
+  await waitFor(() => expect(bodyOf(canvasElement).queryByRole('menu')).toBeNull());
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+}
+
+export const InsidePopover: Story = {
+  args: { onOpenChange: fn() },
+  render: (args) => <PopoverHost {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    onEdit.mockClear();
+    const { popover, trigger } = await findHostedMenuTrigger(canvasElement);
+    await expect(trigger).not.toHaveAttribute('role');
+    await expect(within(popover).queryByRole('menuitem')).toBeNull();
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+
+    // Pointer open focuses the first item; selecting closes the menu only.
+    await userEvent.click(trigger);
+    const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
+    await expect(trigger).not.toHaveAttribute('role');
+    await expect(trigger).toHaveAttribute('aria-controls', menu.id);
+    await expectFocused(canvasElement, 'Edit');
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Edit' }));
+    await expect(onEdit).toHaveBeenCalledTimes(1);
+    await expectHostedMenuClosed(canvasElement, trigger);
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(trigger));
+
+    // Keyboard open, arrows, then Escape: the menu closes and focus returns to its trigger.
+    await userEvent.keyboard('{Enter}');
+    await expectFocused(canvasElement, 'Edit');
+    await userEvent.keyboard('{ArrowDown}');
+    await expectFocused(canvasElement, 'Delete');
+    await userEvent.keyboard('{Escape}');
+    await expectHostedMenuClosed(canvasElement, trigger);
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(trigger));
+    await expect(callValues(args.onOpenChange)).toEqual([true, false, true, false]);
+    await expect(popoverOpenChange).not.toHaveBeenCalled();
+    await expect(popover).toBeVisible();
+
+    // Tab from the last item closes the menu and moves on inside the popover.
+    await userEvent.keyboard('{Enter}');
+    await expectFocused(canvasElement, 'Edit');
+    await userEvent.keyboard('{ArrowUp}');
+    await expectFocused(canvasElement, 'Delete');
+    await userEvent.tab();
+    await expectHostedMenuClosed(canvasElement, trigger);
+    await waitFor(() =>
+      expect(canvasElement.ownerDocument.activeElement).toBe(within(popover).getByRole('button', { name: 'After' })),
+    );
+    await expect(callValues(args.onOpenChange)).toEqual([true, false, true, false, true, false]);
+    await expect(popoverOpenChange).not.toHaveBeenCalled();
+
+    // With the menu closed, Escape reaches the popover.
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull());
+    await expect(callValues(popoverOpenChange)).toEqual([false]);
   },
 };
