@@ -3,6 +3,7 @@ import {
   flip,
   offset,
   shift,
+  size,
   useFloating,
   type OpenChangeReason,
   type Placement,
@@ -20,6 +21,15 @@ export interface OverlayFloatingOptions {
   placement: Placement;
   /** Node id from `OverlayLayer`, for overlays that take part in nested dismissal. */
   nodeId?: string;
+  /** Collision boundary for flip/shift/size. Defaults to the clipping ancestors (and viewport). */
+  boundary?: Element | null;
+  /** Receives the space left for the surface inside the boundary after each positioning pass. */
+  onAvailableSize?: (size: OverlayAvailableSize) => void;
+}
+
+export interface OverlayAvailableSize {
+  width: number;
+  height: number;
 }
 
 /**
@@ -31,13 +41,26 @@ export function useOverlayFloating({
   onOpenChange,
   placement,
   nodeId,
+  boundary,
+  onAvailableSize,
 }: OverlayFloatingOptions): UseFloatingReturn<HTMLButtonElement> {
+  const detectOverflow = { padding: VIEWPORT_PADDING, ...(boundary ? { boundary } : {}) };
   return useFloating<HTMLButtonElement>({
     open,
     onOpenChange,
     placement,
     nodeId,
-    middleware: [offset(ANCHOR_GAP), flip({ padding: VIEWPORT_PADDING }), shift({ padding: VIEWPORT_PADDING })],
+    middleware: [
+      offset(ANCHOR_GAP),
+      flip(detectOverflow),
+      shift(detectOverflow),
+      onAvailableSize &&
+        size({
+          ...detectOverflow,
+          apply: ({ availableWidth, availableHeight }) =>
+            onAvailableSize({ width: availableWidth, height: availableHeight }),
+        }),
+    ],
     whileElementsMounted: autoUpdate,
   });
 }

@@ -1,5 +1,5 @@
-// Nesting for floating overlays (Popover, HoverCard). Each layer registers a node in one shared
-// floating tree, so a layer opened inside another one is its child: Escape and outside presses
+// Nesting for floating overlays (Popover, HoverCard, DateRangePicker). Each layer registers a
+// node in one shared floating tree, so a layer opened inside another one is its child: Escape and outside presses
 // reach only the topmost open layer, and a press inside a child is not outside its parent.
 // The first layer creates the tree; nested layers join it through React context, across portals.
 // Overlays that do not take part (Menu, Select, …) render inside `IsolatedOverlay`, so the
@@ -19,8 +19,9 @@ import {
 import { getDeepestNode } from '@floating-ui/react/utils';
 
 /**
- * `container`: a layer that hosts other layers (Popover). Escape and outside press are ignored
- * by the layer itself while a child layer is open.
+ * `container`: a layer whose content holds focus and may host other layers (Popover,
+ * DateRangePicker). Escape and outside press are ignored by the layer itself while a child
+ * layer is open.
  * `leaf`: a layer that hosts none (HoverCard). Focus usually stays outside it (e.g. in the
  * parent's content, whose own key handling stops the event from bubbling), so Escape is
  * handled in the capture phase and stops at its target once the leaf closes.
