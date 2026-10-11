@@ -34,6 +34,7 @@ export * from './components/spinner';
 export * from './components/stack';
 export * from './components/switch';
 export * from './components/tabs';
+export * from './components/tag-input';
 export * from './components/text-field';
 export * from './components/textarea';
 export { ThemeProvider, useTheme, type ThemeProviderProps } from './components/theme-provider/theme-provider';
