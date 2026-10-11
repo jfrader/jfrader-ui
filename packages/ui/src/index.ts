@@ -11,6 +11,7 @@ export * from './components/checkbox';
 export * from './components/command-palette';
 export * from './components/combobox';
 export * from './components/container';
+export * from './components/copy-button';
 export * from './components/date-picker';
 export * from './components/dialog';
 export * from './components/divider';
