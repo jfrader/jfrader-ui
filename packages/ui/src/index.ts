@@ -22,6 +22,7 @@ export * from './components/dialog';
 export * from './components/divider';
 export * from './components/drawer';
 export * from './components/empty-state';
+export * from './components/expandable-card';
 export * from './components/filter-toolbar';
 export * from './components/flex';
 export * from './components/inline-edit';
