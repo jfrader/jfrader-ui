@@ -28,6 +28,7 @@
     "./avatar": { "types": "./src/components/avatar/index.ts", "import": "./src/components/avatar/index.ts" },
     "./avatar-group": { "types": "./src/components/avatar-group/index.ts", "import": "./src/components/avatar-group/index.ts" },
     "./badge": { "types": "./src/components/badge/index.ts", "import": "./src/components/badge/index.ts" },
+    "./bottom-sheet": { "types": "./src/components/bottom-sheet/index.ts", "import": "./src/components/bottom-sheet/index.ts" },
     "./breadcrumbs": { "types": "./src/components/breadcrumbs/index.ts", "import": "./src/components/breadcrumbs/index.ts" },
     "./button": { "types": "./src/components/button/index.ts", "import": "./src/components/button/index.ts" },
     "./calendar": { "types": "./src/components/calendar/index.ts", "import": "./src/components/calendar/index.ts" },
