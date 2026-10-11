@@ -45,7 +45,7 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
 import { REDUCED_MOTION } from '../../styling/media';
@@ -53,7 +53,7 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
-import { useOverlayFloating } from '../../overlay/use-overlay-floating';
+import { useOverlayFloating, type OverlayFloatingOptions } from '../../overlay/use-overlay-floating';
 import { useCollectionIndexRegistration, useCollectionListItem } from '../../utils/collection-registry';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -77,10 +77,20 @@ export interface MenuItemProps extends Omit<ComponentPropsWithRef<'button'>, 'on
 }
 export interface MenuSeparatorProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
+export type MenuItemTone = 'neutral' | 'danger';
+
+/** Positioning options a family may set on the shared controller; Menu keeps the defaults. */
+export type MenuPositioning = Pick<OverlayFloatingOptions, 'strategy' | 'gap' | 'transform' | 'onAvailableSize'>;
+
+export interface MenuControllerProps extends MenuProps {
+  positioning?: MenuPositioning;
+}
+
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
 interface MenuContextValue {
   open: boolean;
+  requestOpen: () => void;
   requestClose: (restoreFocus?: boolean) => void;
   activeIndex: number | null;
   refs: OverlayFloating['refs'];
@@ -104,19 +114,27 @@ export interface MenuPartIdentity {
   styles?: Interpolation<Theme>;
 }
 
+/** Item behavior a family may change: the part name in usage errors, the item role and whether
+ * selection closes the menu. */
+export interface MenuItemPartBehavior {
+  part?: string;
+  itemRole?: 'menuitem' | 'menuitemcheckbox';
+  closeOnSelect?: boolean;
+}
+
 const MenuContext = createContext<MenuContextValue | null>(null);
 // Set by the content part: items may only render inside it (they register with its FloatingList).
 const MenuContentContext = createContext(false);
 
-function useMenuContext(family: string, part: string): MenuContextValue {
+export function useMenuContext(family: string, part: string): MenuContextValue {
   const context = useContext(MenuContext);
   if (!context) throw new Error(`${family}.${part} must be rendered inside <${family}>.`);
   return context;
 }
 
-function useMenuItemContext(family: string): MenuContextValue {
-  const context = useMenuContext(family, 'Item');
-  if (!useContext(MenuContentContext)) throw new Error(`${family}.Item must be rendered inside <${family}.Content>.`);
+function useMenuItemContext(family: string, part: string): MenuContextValue {
+  const context = useMenuContext(family, part);
+  if (!useContext(MenuContentContext)) throw new Error(`${family}.${part} must be rendered inside <${family}.Content>.`);
   return context;
 }
 
@@ -128,7 +146,7 @@ const isHandlerKey = (key: string) => /^on[A-Z]/.test(key);
  * Runs each consumer handler before the matching interaction handler; a consumer
  * `preventDefault()` vetoes the internal request (open, toggle, navigation).
  */
-function consumerHandlersFirst(
+export function consumerHandlersFirst(
   props: HTMLProps<Element>,
   getProps: (userProps: HTMLProps<Element>) => Record<string, unknown>,
 ) {
@@ -189,14 +207,25 @@ const separatorStyle = css({
 export const menuItemStyles = [itemStyle, listboxItemStateStyle];
 /** Own styles of a menu separator. */
 export const menuSeparatorStyles = separatorStyle;
+/** Command tones for families whose items carry one (SplitButton, ContextMenu). */
+export const menuItemToneStyles: Record<MenuItemTone, SerializedStyles> = {
+  neutral: css({}),
+  danger: css({
+    color: vars.color.dangerText,
+    '&:hover:not([aria-disabled="true"]), &[data-active]:not([aria-disabled="true"])': {
+      backgroundColor: vars.color.dangerSoft,
+    },
+  }),
+};
 
 function MenuOverlay({
   open: openProp,
   defaultOpen = false,
   onOpenChange,
   placement = 'bottom-start',
+  positioning,
   children,
-}: MenuProps) {
+}: MenuControllerProps) {
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const elementsRef = useRef<Array<HTMLElement | null>>([]);
@@ -206,6 +235,7 @@ function MenuOverlay({
   const pendingFocusRestoreRef = useRef(false);
 
   const { refs, floatingStyles, context } = useOverlayFloating({
+    ...positioning,
     open,
     placement,
     onOpenChange: (next, _event, reason) => {
@@ -255,6 +285,7 @@ function MenuOverlay({
   const value = useMemo(
     () => ({
       open,
+      requestOpen: () => requestOpenChange(true),
       requestClose: (restoreFocus = false) => {
         if (restoreFocus) pendingFocusRestoreRef.current = true;
         requestOpenChange(false);
@@ -286,12 +317,17 @@ function MenuOverlay({
   return <MenuContext.Provider value={value}>{children}</MenuContext.Provider>;
 }
 
-function MenuRoot(props: MenuProps) {
+/** The shared menu controller (state, positioning, navigation, dismissal, focus return). */
+export function MenuController(props: MenuControllerProps) {
   return (
     <IsolatedOverlay>
       <MenuOverlay {...props} />
     </IsolatedOverlay>
   );
+}
+
+function MenuRoot(props: MenuProps) {
+  return <MenuController {...props} />;
 }
 
 MenuRoot.displayName = 'Menu';
@@ -340,8 +376,9 @@ export function MenuContentPart({
   sx,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
+  defaultLabelledBy,
   ...rest
-}: MenuContentProps & MenuPartIdentity) {
+}: MenuContentProps & MenuPartIdentity & { defaultLabelledBy?: string }) {
   const { open, refs, floatingContext, floatingStyles, elementsRef, labelsRef, getFloatingProps } =
     useMenuContext(family, 'Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
@@ -349,8 +386,9 @@ export function MenuContentPart({
   if (!open) return null;
 
   const floatingProps = getFloatingProps(rest);
-  // The trigger names the menu; consumer ids join it, and a consumer aria-label replaces it.
-  const triggerLabel = floatingProps['aria-labelledby'] as string | undefined;
+  // The trigger (or the family's own default) names the menu; consumer ids join it, and a
+  // consumer aria-label replaces it.
+  const triggerLabel = defaultLabelledBy ?? (floatingProps['aria-labelledby'] as string | undefined);
   const labelledBy =
     ariaLabelledBy !== undefined ? joinIds(ariaLabelledBy, triggerLabel) : ariaLabel !== undefined ? undefined : triggerLabel;
 
@@ -401,12 +439,15 @@ export function MenuItemPart({
   ref,
   onSelect,
   disabled = false,
+  part = 'Item',
+  itemRole = 'menuitem',
+  closeOnSelect = true,
   onClick,
   className,
   sx,
   ...rest
-}: MenuItemProps & MenuPartIdentity) {
-  const { activeIndex, requestClose, disabledIndices, getItemProps } = useMenuItemContext(family);
+}: MenuItemProps & MenuPartIdentity & MenuItemPartBehavior) {
+  const { activeIndex, requestClose, disabledIndices, getItemProps } = useMenuItemContext(family, part);
   // A null label removes disabled items from typeahead; undefined falls back to textContent.
   const { ref: listItemRef, index } = useCollectionListItem({ label: disabled ? null : undefined });
   const mergedRef = useMergeRefs([listItemRef, ref]);
@@ -419,7 +460,7 @@ export function MenuItemPart({
     if (disabled) return;
     onClick?.(event);
     onSelect?.();
-    if (!event.defaultPrevented) requestClose(true);
+    if (closeOnSelect && !event.defaultPrevented) requestClose(true);
   };
 
   return (
@@ -429,7 +470,7 @@ export function MenuItemPart({
           type="button"
           {...getItemProps({ ...rest, onClick: handleClick })}
           ref={mergedRef}
-          role="menuitem"
+          role={itemRole}
           tabIndex={isActive ? 0 : -1}
           aria-disabled={disabled || undefined}
           data-active={isActive || undefined}
