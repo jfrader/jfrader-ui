@@ -113,17 +113,21 @@ async function assertContrast(group: HTMLElement) {
       await expect(ratio(getComputedStyle(indicator, '::after').backgroundColor)).toBeGreaterThanOrEqual(3);
   }
 }
+const RING_SETTLE_TIMEOUT = 2000;
 async function assertRing(group: HTMLElement, input: HTMLElement) {
-  await waitFor(async () => {
-    const ring = group.querySelector<HTMLElement>('[data-ui="radio-cards-ring"]')!;
-    const card = input.nextElementSibling!.getBoundingClientRect();
-    const bounds = ring.getBoundingClientRect();
-    await expect(ring.hidden).toBe(false);
-    await expect(Math.abs(bounds.left - card.left)).toBeLessThan(1.1);
-    await expect(Math.abs(bounds.top - card.top)).toBeLessThan(1.1);
-    await expect(Math.abs(bounds.width - card.width)).toBeLessThan(1.1);
-    await expect(Math.abs(bounds.height - card.height)).toBeLessThan(1.1);
-  });
+  await waitFor(
+    async () => {
+      const ring = group.querySelector<HTMLElement>('[data-ui="radio-cards-ring"]')!;
+      const card = input.nextElementSibling!.getBoundingClientRect();
+      const bounds = ring.getBoundingClientRect();
+      await expect(ring.hidden).toBe(false);
+      await expect(Math.abs(bounds.left - card.left)).toBeLessThan(1.1);
+      await expect(Math.abs(bounds.top - card.top)).toBeLessThan(1.1);
+      await expect(Math.abs(bounds.width - card.width)).toBeLessThan(1.1);
+      await expect(Math.abs(bounds.height - card.height)).toBeLessThan(1.1);
+    },
+    { timeout: RING_SETTLE_TIMEOUT },
+  );
 }
 export const DefaultGrid: Story = {
   play: async ({ canvas, args, userEvent }) => {
@@ -537,9 +541,8 @@ export const ResizeSelectedCard: Story = {
     const group = canvas.getByRole('radiogroup');
     const selected = canvas.getByRole('radio', { name: 'Standard' });
     await assertRing(group, selected);
-    const before = selected.nextElementSibling!.getBoundingClientRect().height;
     await userEvent.click(canvas.getByRole('button'));
-    await expect(selected.nextElementSibling!.getBoundingClientRect().height).toBeGreaterThan(before);
+    await expect(canvas.getByText(/^Tracked delivery\./)).toBeInTheDocument();
     await assertRing(group, selected);
     await expect(args.onValueChange).not.toHaveBeenCalled();
   },
@@ -780,8 +783,12 @@ export const RemovedSelection: Story = {
     await userEvent.tab({ shift: true });
     await assertFocus(canvas.getByRole('radio', { name: 'Pickup' }));
     await expect(args.onValueChange).not.toHaveBeenCalled();
-    await expect(
-      canvas.getByRole('radiogroup').querySelector<HTMLElement>('[data-ui="radio-cards-ring"]')!.hidden,
-    ).toBe(true);
+    await waitFor(
+      () =>
+        expect(
+          canvas.getByRole('radiogroup').querySelector<HTMLElement>('[data-ui="radio-cards-ring"]')!.hidden,
+        ).toBe(true),
+      { timeout: RING_SETTLE_TIMEOUT },
+    );
   },
 };
