@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
@@ -7,14 +7,16 @@ const srcDir = path.join(import.meta.dirname, 'src');
 const componentsDir = path.join(srcDir, 'components');
 
 const pkg = JSON.parse(readFileSync(path.join(import.meta.dirname, 'package.json'), 'utf8'));
+// Optional peers (shiki) are external too: only their opt-in subpath imports them.
 const externalPackages = [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.peerDependencies ?? {})];
 
-// One entry per exports-map subpath so `dist/<name>.js` can back `@jfrader/ui/<name>`.
+// One entry per exports-map subpath so `dist/<name>.js` can back `@jfrader/ui/<name>`:
+// `./<component>` builds from its index, `./<component>/<module>` from the module beside it.
 const componentEntries = Object.fromEntries(
-  readdirSync(componentsDir, { withFileTypes: true })
-    // Internal folders (e.g. field/) have no index.ts and no subpath.
-    .filter((entry) => entry.isDirectory() && existsSync(path.join(componentsDir, entry.name, 'index.ts')))
-    .map((entry) => [entry.name, path.join(componentsDir, entry.name, 'index.ts')]),
+  Object.keys(pkg.exports)
+    .filter((subpath) => subpath !== '.')
+    .map((subpath) => subpath.slice('./'.length))
+    .map((name) => [name, path.join(componentsDir, name.includes('/') ? `${name}.ts` : `${name}/index.ts`)]),
 );
 
 export default defineConfig({

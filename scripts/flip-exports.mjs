@@ -10,10 +10,13 @@ import { isDeepStrictEqual } from 'node:util';
 const LAYOUTS = ['src', 'dist'];
 const packagesDir = path.join(import.meta.dirname, '..', 'packages');
 
+// `./<component>` maps to the component's index; `./<component>/<module>` to an opt-in module
+// beside it (e.g. `./code-block/shiki`).
 const uiLayouts = (subpath) => {
   const name = subpath === '.' ? 'index' : subpath.slice('./'.length);
-  const source = subpath === '.' ? './src/index.ts' : `./src/components/${name}/index.ts`;
-  const types = subpath === '.' ? './dist/types/index.d.ts' : `./dist/types/components/${name}/index.d.ts`;
+  const module = name.includes('/') ? name : `${name}/index`;
+  const source = subpath === '.' ? './src/index.ts' : `./src/components/${module}.ts`;
+  const types = subpath === '.' ? './dist/types/index.d.ts' : `./dist/types/components/${module}.d.ts`;
   return {
     src: { types: source, import: source },
     dist: { types, import: `./dist/${name}.js` },

@@ -1,15 +1,62 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor, within } from 'storybook/test';
+import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
-import { CodeBlock, type CodeBlockProps } from './index';
+import { CodeBlock, type CodeBlockProps, type CodeHighlightLines, type CodeHighlightLoader } from './index';
+import { loadShikiHighlight } from './shiki';
 
 const SOURCE = 'export const answer = 42;\nconsole.log(answer);\n';
 const LONG_SOURCE = `${SOURCE}\nexport function double(value: number) {\n\treturn value * 2;\n}\n`;
 const MIXED_SOURCE = '\tconst title = "café ✓ 𝔘 שלום";\r\n  console.log(title);\r\n';
+const SAMPLES = {
+  TypeScript: `// Resolve the user's preferred theme.
+export type Theme = 'dark' | 'light';
+
+export function preferredTheme(media: MediaQueryList): Theme {
+  const stored = localStorage.getItem('theme');
+  if (stored === 'dark' || stored === 'light') return stored;
+  return media.matches ? 'dark' : 'light';
+}
+`,
+  JavaScript: `import { readFile } from 'node:fs/promises';
+
+const manifest = JSON.parse(await readFile('package.json', 'utf8'));
+console.log(\`\${manifest.name}@\${manifest.version}\`);
+`,
+  JSON: `{
+  "name": "@jfrader/ui",
+  "private": false,
+  "version": "0.4.0",
+  "keywords": ["react", "design-system"]
+}
+`,
+  CSS: `.card:hover {
+  border-color: var(--ui-color-border-strong);
+  padding-inline: 16px;
+  transition: border-color 160ms ease;
+}
+`,
+  Bash: `# Install and start the workbench
+pnpm install --frozen-lockfile
+pnpm dev --port 6006 && echo "ready"
+`,
+  HTML: `<section class="hero" aria-labelledby="title">
+  <h1 id="title">Hello</h1>
+  <a href="/docs">Read the docs</a>
+</section>
+`,
+} as const;
+const SAMPLE_FILENAMES: Record<keyof typeof SAMPLES, string> = {
+  TypeScript: 'theme.ts',
+  JavaScript: 'version.mjs',
+  JSON: 'package.json',
+  CSS: 'card.css',
+  Bash: 'setup.sh',
+  HTML: 'hero.html',
+};
 const meta = {
   title: 'Data display/CodeBlock',
   component: CodeBlock,
@@ -19,10 +66,12 @@ const meta = {
     docs: {
       description: {
         component:
-          'Plain-text source with optional language metadata, not syntax highlighting. Copy always uses the full source. maxLines limits displayed logical lines. Tab reaches copy, source, then disclosure; Enter and Space activate the native buttons. Source scrolling uses native keyboard behavior.',
+          'Source with optional language metadata and opt-in syntax highlighting. Plain text by default; pass a `highlight` loader to tokenize it. `@jfrader/ui/code-block/shiki` exports `loadShikiHighlight` (requires the optional `shiki` peer) for JavaScript, TypeScript, JSON, CSS, Bash and HTML; other languages stay plain. Copy always uses the full source. maxLines limits displayed logical lines. Tab reaches copy, source, then disclosure; Enter and Space activate the native buttons. Source scrolling uses native keyboard behavior.',
       },
       source: {
-        code: `<CodeBlock code={'export const answer = 42;\\nconsole.log(answer);'} filename="answer.ts" language="TypeScript" maxLines={1} lineNumbers locale="en-GB" />`,
+        code: `import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
+
+<CodeBlock code={source} filename="answer.ts" language="ts" highlight={loadShikiHighlight} maxLines={12} lineNumbers />`,
       },
     },
   },
@@ -63,6 +112,7 @@ export const Default: Story = {
     await expect(source(canvasElement).firstElementChild?.tagName).toBe('CODE');
     await expect(source(canvasElement).textContent).toBe(args.code);
     await expect(source(canvasElement)).toHaveAccessibleName('Selectable source code');
+    await expect(root).not.toHaveAttribute('data-highlighted');
   },
 };
 export const WithoutFilename: Story = { args: { filename: undefined } };
@@ -464,5 +514,160 @@ export const KeyboardCopyScrollToggle: Story = {
       await userEvent.tab({ shift: true });
       await expectFocused(copy);
     });
+  },
+};
+
+async function expectHighlighted(block: HTMLElement, code: string) {
+  await waitFor(() => expect(block).toHaveAttribute('data-highlighted'), { timeout: 5000 });
+  await expect(block.querySelector('pre')!.textContent).toBe(code);
+}
+function deferredLoader() {
+  let resolve: (lines: CodeHighlightLines | null) => void = () => {};
+  const loader = fn<CodeHighlightLoader>(
+    () =>
+      new Promise<CodeHighlightLines | null>((settle) => {
+        resolve = settle;
+      }),
+  );
+  return { loader, resolve: (lines: CodeHighlightLines | null) => resolve(lines) };
+}
+
+export const Highlighted: Story = {
+  args: {
+    code: SAMPLES.TypeScript,
+    filename: 'theme.ts',
+    language: 'TypeScript',
+    lineNumbers: true,
+    highlight: loadShikiHighlight,
+  },
+  play: async ({ args, canvasElement }) => {
+    const root = canvasElement.querySelector('section')!;
+    await expectHighlighted(root, args.code);
+    const keyword = Array.from(root.querySelectorAll<HTMLElement>('code span')).find((span) => span.textContent === 'export');
+    await expect(keyword?.style.color).toBe(vars.color.syntaxKeyword);
+    await expect(getComputedStyle(source(canvasElement)).whiteSpace).toBe('pre');
+  },
+};
+export const HighlightedLight: Story = {
+  args: Highlighted.args,
+  globals: { theme: 'light' },
+  decorators: [withLightTheme],
+  play: Highlighted.play,
+};
+export const HighlightedLanguages: Story = {
+  args: { highlight: loadShikiHighlight, lineNumbers: true },
+  render: (args) => (
+    <div style={{ display: 'grid', gap: vars.space[4] }}>
+      {(Object.keys(SAMPLES) as (keyof typeof SAMPLES)[]).map((language) => (
+        <CodeBlock
+          {...args}
+          key={language}
+          code={SAMPLES[language]}
+          language={language}
+          filename={SAMPLE_FILENAMES[language]}
+        />
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const blocks = Array.from(canvasElement.querySelectorAll('section'));
+    await expect(blocks).toHaveLength(Object.keys(SAMPLES).length);
+    for (const [index, code] of Object.values(SAMPLES).entries()) await expectHighlighted(blocks[index]!, code);
+  },
+};
+export const HighlightedCollapsed: Story = {
+  args: { ...Highlighted.args, maxLines: 4 },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    const root = canvasElement.querySelector('section')!;
+    const firstLines = SAMPLES.TypeScript.split('\n').slice(0, 4).join('\n') + '\n';
+    await expectHighlighted(root, firstLines);
+    await expect(gutter(canvasElement)?.textContent).toBe('1\n2\n3\n4');
+    await userEvent.click(canvas.getByRole('button', { name: 'Show all 8 lines' }));
+    await expect(source(canvasElement).textContent).toBe(args.code);
+    await expect(root).toHaveAttribute('data-highlighted');
+  },
+};
+export const HighlightUnknownLanguage: Story = {
+  args: { language: 'COBOL', highlight: fn(loadShikiHighlight) },
+  play: async ({ args, canvasElement }) => {
+    await waitFor(() => expect(args.highlight).toHaveBeenCalledTimes(1));
+    await expect(args.highlight).toHaveBeenLastCalledWith({ code: SOURCE, language: 'COBOL' });
+    await expect(await (args.highlight as Mock<CodeHighlightLoader>).mock.results[0]?.value).toBeNull();
+    await expect(canvasElement.querySelector('section')).not.toHaveAttribute('data-highlighted');
+    await expect(source(canvasElement).textContent).toBe(SOURCE);
+  },
+};
+const rejectingLoader: CodeHighlightLoader = () => Promise.reject(new Error('grammar unavailable'));
+const throwingLoader: CodeHighlightLoader = () => {
+  throw new Error('highlighter missing');
+};
+export const HighlightFailure: Story = {
+  args: { language: 'ts' },
+  beforeEach: () => {
+    const warn = spyOn(console, 'warn').mockImplementation(() => {});
+    return () => warn.mockRestore();
+  },
+  render: (args) => (
+    <>
+      <CodeBlock {...args} filename="rejected.ts" highlight={rejectingLoader} />
+      <CodeBlock {...args} filename="thrown.ts" highlight={throwingLoader} />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(console.warn).toHaveBeenCalledTimes(2));
+    await expect(console.warn).toHaveBeenCalledWith(
+      'CodeBlock: highlighting failed; showing plain text.',
+      new Error('grammar unavailable'),
+    );
+    await expect(console.warn).toHaveBeenCalledWith(
+      'CodeBlock: highlighting failed; showing plain text.',
+      new Error('highlighter missing'),
+    );
+    for (const block of Array.from(canvasElement.querySelectorAll('section'))) {
+      await expect(block).not.toHaveAttribute('data-highlighted');
+      await expect(block.querySelector('pre')!.textContent).toBe(SOURCE);
+    }
+  },
+};
+function PendingExample(args: CodeBlockProps) {
+  const [loader] = useState(deferredLoader);
+  return (
+    <>
+      <Button onClick={() => loader.resolve([[{ content: 'export', color: vars.color.syntaxKeyword }]])}>Resolve</Button>
+      <CodeBlock {...args} highlight={loader.loader} />
+    </>
+  );
+}
+export const HighlightPending: Story = {
+  args: { language: 'ts', lineNumbers: true },
+  render: (args) => <PendingExample {...args} />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const root = canvasElement.querySelector('section')!;
+    const before = source(canvasElement).getBoundingClientRect();
+    await expect(root).not.toHaveAttribute('data-highlighted');
+    await expect(source(canvasElement).textContent).toBe(SOURCE);
+    await userEvent.click(canvas.getByRole('button', { name: 'Resolve' }));
+    await waitFor(() => expect(root).toHaveAttribute('data-highlighted'));
+    const after = source(canvasElement).getBoundingClientRect();
+    await expect([after.width, after.height]).toEqual([before.width, before.height]);
+    await expect(source(canvasElement).textContent).toBe(SOURCE);
+  },
+};
+export const HighlightTokenMismatch: Story = {
+  args: {
+    code: 'one\r\ntwo\nthree',
+    lineNumbers: true,
+    highlight: () => [
+      [{ content: 'one', color: vars.color.syntaxKeyword, fontStyle: 'italic' }],
+      [{ content: 'TWO', color: vars.color.syntaxString }],
+    ],
+  },
+  play: async ({ args, canvasElement }) => {
+    const root = canvasElement.querySelector('section')!;
+    await expectHighlighted(root, args.code);
+    const spans = root.querySelectorAll<HTMLElement>('code span');
+    await expect(spans).toHaveLength(1);
+    await expect(spans[0]!.textContent).toBe('one');
+    await expect(spans[0]!.style.fontStyle).toBe('italic');
   },
 };

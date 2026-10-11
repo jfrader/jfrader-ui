@@ -35,6 +35,7 @@
     "./checkbox": { "types": "./src/components/checkbox/index.ts", "import": "./src/components/checkbox/index.ts" },
     "./chip-group": { "types": "./src/components/chip-group/index.ts", "import": "./src/components/chip-group/index.ts" },
     "./code-block": { "types": "./src/components/code-block/index.ts", "import": "./src/components/code-block/index.ts" },
+    "./code-block/shiki": { "types": "./src/components/code-block/shiki.ts", "import": "./src/components/code-block/shiki.ts" },
     "./combobox": { "types": "./src/components/combobox/index.ts", "import": "./src/components/combobox/index.ts" },
     "./command-palette": { "types": "./src/components/command-palette/index.ts", "import": "./src/components/command-palette/index.ts" },
     "./container": { "types": "./src/components/container/index.ts", "import": "./src/components/container/index.ts" },
@@ -98,7 +99,13 @@
   },
   "peerDependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "shiki": "^4.4.3"
+  },
+  "peerDependenciesMeta": {
+    "shiki": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@storybook/react-vite": "^10.6.1",
@@ -107,6 +114,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "shiki": "^4.4.3",
     "storybook": "^10.6.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.4"
