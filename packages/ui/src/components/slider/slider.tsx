@@ -340,11 +340,12 @@ export function Slider(props: SliderProps) {
   };
   const [seed] = useState(() => normalize(defaultValue ?? (range ? [min, max] : min)));
   const notify = (next: SliderValue) => {
-    if (range) props.onValueChange?.(next as readonly [number, number]);
+    // `props.type === 'range'` (not the `range` alias) is required for the discriminant narrowing.
+    if (props.type === 'range') props.onValueChange?.(next as readonly [number, number]);
     else props.onValueChange?.(next as number);
   };
   const commit = (next: SliderValue) => {
-    if (range) props.onValueCommit?.(next as readonly [number, number]);
+    if (props.type === 'range') props.onValueCommit?.(next as readonly [number, number]);
     else props.onValueCommit?.(next as number);
   };
   const [state, requestChange, reset] = useControlledState<SliderValue>(value, seed, notify);
