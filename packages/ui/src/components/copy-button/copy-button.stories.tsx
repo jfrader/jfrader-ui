@@ -956,7 +956,8 @@ export const ForcedColors: Story = {
     await expect(mediaRuleSets(glyph, 'forced-colors: active', 'color', 'buttontext')).toBe(true);
     // A real border, not a shadow, outlines the button once forced colors repaint it.
     await expect(getComputedStyle(button).borderTopStyle).toBe('solid');
-    await expect(getComputedStyle(button).borderTopWidth).toBe('1px');
+    // Fractional devicePixelRatios compute authored 1px as e.g. 0.74419px; assert a drawn border, not literal px.
+    await expect(parseFloat(getComputedStyle(button).borderTopWidth)).toBeGreaterThan(0);
   },
 };
 
