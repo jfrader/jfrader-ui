@@ -26,6 +26,7 @@ export * from './components/select';
 export * from './components/skeleton';
 export * from './components/spinner';
 export * from './components/stack';
+export * from './components/stepper';
 export * from './components/switch';
 export * from './components/tabs';
 export * from './components/text-field';

@@ -1,0 +1,923 @@
+import { useState, type ReactNode } from 'react';
+import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
+import { expect, fn, waitFor, within } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
+import { css } from '../../styling/css';
+import { expectThemedSurface } from '../../testing/theme-assertions';
+import { withLightTheme } from '../../testing/story-decorators';
+import { Stepper, type StepperProps, type StepperStep } from './index';
+
+const STEPS: readonly StepperStep[] = [
+  { id: 'account', label: 'Account', description: 'Email and password' },
+  { id: 'profile', label: 'Profile', description: 'Name and avatar' },
+  { id: 'security', label: 'Security', description: 'Two-factor setup' },
+  { id: 'review', label: 'Review', description: 'Confirm and submit' },
+];
+
+const USAGE = `<Stepper steps={steps} interactive value={currentStep}
+  onValueChange={setCurrentStep} label="Checkout" />
+// Render and validate current-step content in the app, not inside Stepper.`;
+
+const frameStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space[4],
+  inlineSize: '40rem',
+  maxInlineSize: '100%',
+});
+
+const meta = {
+  title: 'Navigation/Stepper',
+  component: Stepper,
+  args: { steps: STEPS },
+  argTypes: {
+    orientation: { control: 'radio', options: ['horizontal', 'vertical'] },
+    size: { control: 'radio', options: ['sm', 'md'] },
+    details: { control: 'radio', options: ['all', 'current'] },
+  },
+  decorators: [
+    (Story) => (
+      <div css={frameStyle}>
+        <Story />
+      </div>
+    ),
+  ],
+} satisfies Meta<typeof Stepper>;
+
+export default meta;
+
+type Story = Omit<StoryObj<StepperProps>, 'render' | 'play'> & {
+  render?: (args: StepperProps) => ReactNode;
+  play?: (context: StoryContext<StepperProps>) => Promise<void>;
+};
+
+function ControlledStepper(props: StepperProps) {
+  const [value, setValue] = useState(props.value ?? 0);
+  return (
+    <Stepper
+      {...props}
+      value={value}
+      onValueChange={(next) => {
+        setValue(next);
+        props.onValueChange?.(next);
+      }}
+    />
+  );
+}
+ControlledStepper.displayName = 'ControlledStepper';
+
+const getRoots = (canvasElement: HTMLElement) =>
+  Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="stepper"]'));
+const getRoot = (canvasElement: HTMLElement) => getRoots(canvasElement)[0]!;
+const parts = (root: HTMLElement, part: string) =>
+  Array.from(root.querySelectorAll<HTMLElement>(`[data-ui="stepper-${part}"]`));
+const states = (root: HTMLElement) => parts(root, 'item').map((item) => item.dataset.state);
+
+/** Focus landed on `element` in its own document and draws the 2px ring (DPR-tolerant). */
+async function expectFocusRing(element: HTMLElement) {
+  await expect(element.ownerDocument.activeElement).toBe(element);
+  const style = getComputedStyle(element);
+  await expect(style.outlineStyle).not.toBe('none');
+  await expect(Math.abs(parseFloat(style.outlineWidth) - 2)).toBeLessThan(1.1);
+}
+
+/** The authored rule inside `condition` that targets one of `element`'s classes (optionally a pseudo-element). */
+function findConditionalRule(element: HTMLElement, condition: string, pseudo = '') {
+  for (const sheet of Array.from(element.ownerDocument.styleSheets)) {
+    for (const rule of Array.from(sheet.cssRules)) {
+      if (!(rule instanceof CSSMediaRule) || !rule.conditionText.includes(condition)) continue;
+      for (const inner of Array.from(rule.cssRules)) {
+        if (!(inner instanceof CSSStyleRule)) continue;
+        const matches = Array.from(element.classList).some((name) =>
+          inner.selectorText.split(',').some((selector) => selector.trim().startsWith(`.${name}${pseudo}`)),
+        );
+        if (matches) return inner;
+      }
+    }
+  }
+  return undefined;
+}
+
+export const Default: Story = {
+  args: { value: 1 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const root = canvas.getByRole('group', { name: 'Progress' });
+    await expect(root).toHaveAttribute('data-ui', 'stepper');
+    const list = within(root).getByRole('list');
+    await expect(list.tagName).toBe('OL');
+    const items = within(list).getAllByRole('listitem');
+    await expect(items).toHaveLength(4);
+    await expect(states(root)).toEqual(['complete', 'current', 'upcoming', 'upcoming']);
+    await expect(root.querySelectorAll('[aria-current="step"]')).toHaveLength(1);
+    await expect(items[1]).toHaveAttribute('aria-current', 'step');
+    await expect(items[0]).toHaveAccessibleName('Account, step 1 of 4, completed');
+    await expect(items[1]).toHaveAccessibleName('Profile, step 2 of 4, current step');
+    await expect(items[2]).toHaveAccessibleName('Security, step 3 of 4, upcoming');
+    // Status is never color alone: a check glyph, then numerals.
+    const markers = parts(root, 'marker');
+    await expect(markers[0]!.querySelector('svg')).not.toBeNull();
+    await expect(markers.slice(1).map((marker) => marker.dataset.numeral)).toEqual(['2', '3', '4']);
+    await expect(parts(root, 'connector').map((connector) => connector.dataset.state)).toEqual([
+      'complete',
+      'upcoming',
+      'upcoming',
+    ]);
+    await expect(canvas.queryAllByRole('button')).toHaveLength(0);
+    // The current-step caption only shows when compact.
+    await expect(getComputedStyle(parts(root, 'caption')[0]!).display).toBe('none');
+  },
+};
+
+export const Horizontal: Story = {
+  args: { value: 2, orientation: 'horizontal', responsive: false },
+  play: async ({ canvasElement }) => {
+    const root = getRoot(canvasElement);
+    await expect(root).toHaveAttribute('data-orientation', 'horizontal');
+    const [first, second] = parts(root, 'marker').map((marker) => marker.getBoundingClientRect());
+    await expect(Math.abs(first!.top - second!.top)).toBeLessThan(1);
+    await expect(second!.left).toBeGreaterThan(first!.right);
+    for (const connector of parts(root, 'connector')) {
+      await expect(connector.getBoundingClientRect().width).toBeGreaterThan(0);
+    }
+    for (const label of parts(root, 'label')) await expect(getComputedStyle(label).display).not.toBe('none');
+  },
+};
+
+export const Vertical: Story = {
+  args: { orientation: 'vertical', interactive: true, defaultValue: 2, onValueChange: fn() },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const root = within(canvasElement).getByRole('navigation', { name: 'Progress' });
+    await expect(root).toHaveAttribute('data-orientation', 'vertical');
+    const [first, second] = parts(root, 'marker').map((marker) => marker.getBoundingClientRect());
+    await expect(second!.top).toBeGreaterThan(first!.bottom);
+    await expect(Math.abs(first!.left - second!.left)).toBeLessThan(1);
+    const heads = parts(root, 'head');
+    await userEvent.tab();
+    await expectFocusRing(heads[2]!);
+    await userEvent.keyboard('{ArrowUp}');
+    await expectFocusRing(heads[1]!);
+    // Horizontal arrows belong to the page in a vertical stepper.
+    await userEvent.keyboard('{ArrowLeft}{ArrowRight}');
+    await expectFocusRing(heads[1]!);
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    await expectFocusRing(heads[2]!);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+async function expectSizes(root: HTMLElement, markerSize: number) {
+  for (const marker of parts(root, 'marker')) {
+    const rect = marker.getBoundingClientRect();
+    await expect(Math.round(rect.width)).toBe(markerSize);
+    await expect(Math.round(rect.height)).toBe(markerSize);
+  }
+  for (const head of parts(root, 'head')) {
+    const rect = head.getBoundingClientRect();
+    await expect(rect.width).toBeGreaterThanOrEqual(32);
+    await expect(rect.height).toBeGreaterThanOrEqual(32);
+  }
+}
+
+export const Small: Story = {
+  args: { size: 'sm', interactive: true, defaultValue: 2 },
+  play: async ({ canvasElement }) => {
+    const root = getRoot(canvasElement);
+    await expect(root).toHaveAttribute('data-size', 'sm');
+    // Small markers, but every target keeps the 32px floor.
+    await expectSizes(root, 24);
+  },
+};
+
+export const Medium: Story = {
+  args: { size: 'md', interactive: true, defaultValue: 2 },
+  play: async ({ canvasElement }) => {
+    await expectSizes(getRoot(canvasElement), 32);
+  },
+};
+
+export const Static: Story = {
+  args: { value: 2 },
+  render: (args) => (
+    <>
+      <button type="button">Before</button>
+      <Stepper {...args} />
+      <button type="button">After</button>
+    </>
+  ),
+  parameters: { docs: { source: { code: '<Stepper steps={steps} value={2} />' } } },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const root = getRoot(canvasElement);
+    await expect(root.tagName).toBe('DIV');
+    await expect(root).toHaveAttribute('role', 'group');
+    for (const head of parts(root, 'head')) {
+      await expect(head.tagName).toBe('SPAN');
+      await expect(head).not.toHaveAttribute('tabindex');
+    }
+    await userEvent.tab();
+    await expect(canvas.getByRole('button', { name: 'Before' })).toHaveFocus();
+    await userEvent.tab();
+    await expect(canvas.getByRole('button', { name: 'After' })).toHaveFocus();
+  },
+};
+
+export const Interactive: Story = {
+  args: { interactive: true, defaultValue: 2, onValueChange: fn() },
+  parameters: { docs: { source: { code: USAGE } } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const root = canvas.getByRole('navigation', { name: 'Progress' });
+    await expect(root.tagName).toBe('NAV');
+    await expect(root).not.toHaveAttribute('role');
+    const heads = canvas.getAllByRole('button');
+    await expect(heads).toHaveLength(4);
+    await expect(heads[0]).toHaveAccessibleName('Account, step 1 of 4, completed');
+    await expect(heads[0]).not.toHaveAttribute('aria-disabled');
+    await expect(heads[1]).not.toHaveAttribute('aria-disabled');
+    await expect(heads[2]).toHaveAttribute('aria-disabled', 'true');
+    await expect(heads[2]).toHaveAttribute('aria-current', 'step');
+    await expect(heads[3]).toHaveAttribute('aria-disabled', 'true');
+    await expect(heads.map((head) => head.tabIndex)).toEqual([-1, -1, 0, -1]);
+    // The current and upcoming steps reject activation.
+    await userEvent.click(heads[2]!);
+    await userEvent.click(heads[3]!);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    // Backward selection is accepted once and focus stays on the same button.
+    const account = heads[0]!;
+    await userEvent.click(account);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(0);
+    await expect(states(root)).toEqual(['current', 'upcoming', 'upcoming', 'upcoming']);
+    await expect(canvas.getAllByRole('button')[0]).toBe(account);
+    await expect(account.ownerDocument.activeElement).toBe(account);
+    await expect(account).toHaveAttribute('aria-current', 'step');
+    await expect(account).toHaveAttribute('aria-disabled', 'true');
+    await expect(account.tabIndex).toBe(0);
+    await userEvent.click(account);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const DetailsCurrent: Story = {
+  args: {
+    details: 'current',
+    value: 2,
+    interactive: true,
+    steps: [{ ...STEPS[0]!, error: 'Email bounced' }, ...STEPS.slice(1)],
+  },
+  play: async ({ canvasElement }) => {
+    const root = getRoot(canvasElement);
+    const details = parts(root, 'description');
+    // The current description plus every error; other descriptions are not rendered.
+    await expect(details.map((detail) => detail.textContent)).toEqual(['Email bounced', 'Two-factor setup']);
+    const heads = parts(root, 'head');
+    await expect(heads[1]).not.toHaveAttribute('aria-describedby');
+    await expect(heads[2]).toHaveAccessibleDescription('Two-factor setup');
+    await expect(heads[0]).toHaveAccessibleDescription('Email bounced');
+  },
+};
+
+export const Compact: Story = {
+  args: { compact: true, interactive: true, value: 1 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const root = getRoot(canvasElement);
+    await expect(root).toHaveAttribute('data-compact');
+    for (const label of parts(root, 'label')) await expect(getComputedStyle(label).display).toBe('none');
+    for (const detail of parts(root, 'description')) await expect(getComputedStyle(detail).display).toBe('none');
+    // Names and states stay complete for assistive tech.
+    await expect(canvas.getByRole('button', { name: 'Profile, step 2 of 4, current step' })).toBeInTheDocument();
+    await expect(canvas.getByRole('button', { name: 'Review, step 4 of 4, upcoming' })).toBeInTheDocument();
+    const caption = parts(root, 'caption')[0]!;
+    await expect(getComputedStyle(caption).display).toBe('block');
+    await expect(caption).toHaveAttribute('aria-hidden', 'true');
+    await expect(caption).toHaveTextContent('ProfileName and avatar');
+  },
+};
+
+export const ResponsiveNarrow: Story = {
+  args: { value: 1 },
+  render: (args) => (
+    <div style={{ inlineSize: '20rem' }}>
+      <Stepper {...args} />
+      <Stepper {...args} responsive={false} label="Fixed" />
+      <Stepper {...args} orientation="vertical" label="Vertical" />
+    </div>
+  ),
+  parameters: { docs: { source: { code: '<Stepper steps={steps} value={1} />' } } },
+  play: async ({ canvasElement }) => {
+    const [auto, fixed, vertical] = getRoots(canvasElement);
+    // Below 30rem a responsive horizontal stepper folds to markers plus a caption.
+    await expect(auto).not.toHaveAttribute('data-compact');
+    for (const label of parts(auto!, 'label')) await expect(getComputedStyle(label).display).toBe('none');
+    await expect(getComputedStyle(parts(auto!, 'caption')[0]!).display).toBe('block');
+    for (const root of [fixed!, vertical!]) {
+      for (const label of parts(root, 'label')) await expect(getComputedStyle(label).display).not.toBe('none');
+      await expect(getComputedStyle(parts(root, 'caption')[0]!).display).toBe('none');
+    }
+    for (const root of [auto!, fixed!, vertical!]) await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+  },
+};
+
+const PROFILE_ERROR: StepperStep = { ...STEPS[1]!, error: 'Handle is already taken' };
+
+export const ErrorCurrent: Story = {
+  args: { interactive: true, value: 1, steps: [STEPS[0]!, PROFILE_ERROR, ...STEPS.slice(2)] },
+  play: async ({ canvasElement }) => {
+    const root = getRoot(canvasElement);
+    const item = parts(root, 'item')[1]!;
+    const head = within(item).getByRole('button');
+    await expect(item).toHaveAttribute('data-state', 'error');
+    await expect(item).toHaveAttribute('aria-current', 'step');
+    await expect(head).toHaveAttribute('aria-current', 'step');
+    await expect(head).toHaveAccessibleName('Profile, step 2 of 4, error');
+    await expect(head).toHaveAccessibleDescription('Handle is already taken');
+    await expect(parts(item, 'marker')[0]!.querySelector('svg')).not.toBeNull();
+    // Error text is a description, not an interrupting alert.
+    await expect(within(root).queryByRole('alert')).toBeNull();
+  },
+};
+
+export const ErrorCompleted: Story = {
+  args: {
+    interactive: true,
+    compact: true,
+    value: 2,
+    onValueChange: fn(),
+    steps: [STEPS[0]!, PROFILE_ERROR, ...STEPS.slice(2)],
+  },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const root = getRoot(canvasElement);
+    const item = parts(root, 'item')[1]!;
+    await expect(item).toHaveAttribute('data-state', 'error');
+    // Compact never hides a non-current error or its step label.
+    await expect(getComputedStyle(parts(item, 'label')[0]!).display).not.toBe('none');
+    const detail = parts(item, 'description')[0]!;
+    await expect(getComputedStyle(detail).display).not.toBe('none');
+    await expect(detail).toHaveTextContent('Handle is already taken');
+    // A completed step with an error can still be revisited.
+    const head = within(item).getByRole('button');
+    await expect(head).not.toHaveAttribute('aria-disabled');
+    await userEvent.click(head);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(1);
+  },
+};
+
+export const AllComplete: Story = {
+  args: { interactive: true, value: 4, completeLabel: 'Account ready', onValueChange: fn() },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const root = getRoot(canvasElement);
+    await expect(root.querySelectorAll('[aria-current]')).toHaveLength(0);
+    await expect(states(root)).toEqual(['complete', 'complete', 'complete', 'complete']);
+    for (const connector of parts(root, 'connector')) await expect(connector).toHaveAttribute('data-state', 'complete');
+    const caption = parts(root, 'caption')[0]!;
+    await expect(caption).toHaveTextContent('Account ready');
+    await expect(caption).not.toHaveAttribute('aria-hidden');
+    await expect(getComputedStyle(caption).display).toBe('block');
+    const heads = parts(root, 'head');
+    await userEvent.tab();
+    await expectFocusRing(heads[0]!);
+    await userEvent.keyboard('{End}');
+    await expectFocusRing(heads[3]!);
+    await userEvent.keyboard('{ArrowLeft}{Enter}');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(2);
+  },
+};
+
+export const FirstStep: Story = {
+  args: { interactive: true, value: 0, onValueChange: fn() },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const root = getRoot(canvasElement);
+    await expect(states(root)).toEqual(['current', 'upcoming', 'upcoming', 'upcoming']);
+    const heads = parts(root, 'head');
+    await userEvent.tab();
+    await expectFocusRing(heads[0]!);
+    await userEvent.keyboard('{ArrowRight}{End}');
+    await expectFocusRing(heads[0]!);
+    await userEvent.keyboard('{Enter} ');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const Empty: Story = {
+  args: { steps: [], interactive: true },
+  play: async ({ canvasElement }) => {
+    const root = within(canvasElement).getByRole('navigation', { name: 'Progress' });
+    await expect(parts(root, 'item')).toHaveLength(0);
+    await expect(root.querySelectorAll('[aria-current], button')).toHaveLength(0);
+    // No complete caption for an empty flow.
+    await expect(parts(root, 'caption')).toHaveLength(0);
+  },
+};
+
+export const OneStep: Story = {
+  args: { steps: [{ id: 'confirm', label: 'Confirm', description: 'One last look' }], value: 0 },
+  play: async ({ canvasElement }) => {
+    const root = getRoot(canvasElement);
+    const [item] = parts(root, 'item');
+    await expect(item).toHaveAttribute('aria-current', 'step');
+    await expect(parts(root, 'connector')).toHaveLength(0);
+    await expect(getComputedStyle(item!).gridTemplateColumns).not.toBe('none');
+    await expect(item!.getBoundingClientRect().width).toBeGreaterThan(0);
+  },
+};
+
+export const DisabledCompleted: Story = {
+  args: {
+    interactive: true,
+    defaultValue: 2,
+    onValueChange: fn(),
+    steps: [STEPS[0]!, { ...STEPS[1]!, disabled: true }, ...STEPS.slice(2)],
+  },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const heads = parts(getRoot(canvasElement), 'head');
+    await expect(heads[1]).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(heads[1]!);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.tab({ shift: true });
+    await userEvent.tab();
+    await expectFocusRing(heads[2]!);
+    await userEvent.keyboard('{ArrowLeft}');
+    await expectFocusRing(heads[0]!);
+    await userEvent.keyboard('{ArrowRight}');
+    await expectFocusRing(heads[2]!);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const LongLabels: Story = {
+  args: {
+    value: 1,
+    locale: 'ar-EG',
+    steps: [
+      {
+        id: 'verification',
+        label: 'International compliance verification and identity confirmation',
+        description: 'Government-issued documents with multi-factor validation',
+      },
+      { id: 'keys', label: 'Cryptographic key exchange', description: 'HardwareKeySynchronizationAndMutualVerification' },
+      { id: 'done', label: 'Done' },
+    ],
+  },
+  render: (args) => (
+    <div style={{ inlineSize: '320px' }}>
+      <Stepper {...args} responsive={false} />
+      <Stepper {...args} orientation="vertical" label="Vertical" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const root of getRoots(canvasElement)) {
+      await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+      const bounds = root.getBoundingClientRect();
+      for (const text of [...parts(root, 'label'), ...parts(root, 'description')]) {
+        const rect = text.getBoundingClientRect();
+        await expect(rect.right).toBeLessThanOrEqual(bounds.right + 0.5);
+        await expect(rect.left).toBeGreaterThanOrEqual(bounds.left - 0.5);
+      }
+      // Intl numerals size their marker instead of overflowing it.
+      const numeral = parts(root, 'marker')[2]!;
+      await expect(numeral).toHaveAttribute('data-numeral', '٣');
+      await expect(numeral.scrollWidth).toBeLessThanOrEqual(numeral.clientWidth);
+    }
+  },
+};
+
+export const LightTheme: Story = {
+  args: { interactive: true, value: 2 },
+  globals: { theme: 'light' },
+  decorators: [withLightTheme],
+  play: async ({ canvasElement }) => {
+    const [complete] = parts(getRoot(canvasElement), 'marker');
+    await expectThemedSurface(complete!, 'light', vars.color.accent);
+  },
+};
+
+export const RTL: Story = {
+  args: { interactive: true, defaultValue: 2, dir: 'rtl', responsive: false },
+  play: async ({ canvasElement, userEvent }) => {
+    const root = getRoot(canvasElement);
+    const [first, second] = parts(root, 'marker').map((marker) => marker.getBoundingClientRect());
+    await expect(first!.left).toBeGreaterThan(second!.right);
+    // The connector fill grows from the inline start, the right edge under RTL.
+    const connector = parts(root, 'connector')[0]!;
+    const originX = parseFloat(getComputedStyle(connector, '::after').transformOrigin);
+    await expect(Math.abs(originX - connector.getBoundingClientRect().width)).toBeLessThan(1);
+    const heads = parts(root, 'head');
+    await userEvent.tab();
+    await expectFocusRing(heads[2]!);
+    await userEvent.keyboard('{ArrowRight}');
+    await expectFocusRing(heads[1]!);
+    await userEvent.keyboard('{ArrowLeft}');
+    await expectFocusRing(heads[2]!);
+  },
+};
+
+export const ReducedMotion: Story = {
+  args: { value: 2 },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Spot-check fixture: toggle the OS reduced-motion setting and change steps. Connector and marker transitions drop to 0s.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    // The runner does not emulate the media feature; this checks the authored override.
+    const root = getRoot(canvasElement);
+    const connectorRule = findConditionalRule(parts(root, 'connector')[0]!, 'prefers-reduced-motion: reduce', '::after');
+    await expect(connectorRule?.style.transitionDuration).toBe('0s');
+    const markerRule = findConditionalRule(parts(root, 'marker')[0]!, 'prefers-reduced-motion: reduce');
+    await expect(markerRule?.style.transitionDuration).toBe('0s');
+  },
+};
+
+export const ForcedColors: Story = {
+  args: { value: 2, steps: [STEPS[0]!, STEPS[1]!, { ...STEPS[2]!, error: 'Code expired' }, STEPS[3]!] },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Spot-check fixture for forced-colors mode: system-color marker boundaries, check and error glyphs.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    // The runner does not emulate forced colors; this checks the authored rules and glyph shapes.
+    const root = getRoot(canvasElement);
+    const markers = parts(root, 'marker');
+    await expect(findConditionalRule(markers[0]!, 'forced-colors: active')?.style.borderColor.toLowerCase()).toBe('canvastext');
+    await expect(markers[0]!.querySelector('svg')).not.toBeNull();
+    await expect(markers[2]!.querySelector('svg')).not.toBeNull();
+    await expect(getComputedStyle(markers[2]!).boxShadow).toBe('none');
+  },
+};
+
+export const Keyboard: Story = {
+  args: { interactive: true, defaultValue: 2, onValueChange: fn() },
+  render: (args) => (
+    <>
+      <button type="button">Before</button>
+      <Stepper {...args} />
+      <button type="button">After</button>
+    </>
+  ),
+  parameters: { docs: { source: { code: USAGE } } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const root = getRoot(canvasElement);
+    const heads = parts(root, 'head');
+    const prevented: string[] = [];
+    const recordPrevented = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) prevented.push(event.key);
+    };
+    root.ownerDocument.addEventListener('keydown', recordPrevented);
+    try {
+      await userEvent.tab();
+      await userEvent.tab();
+      await expectFocusRing(heads[2]!);
+      await userEvent.keyboard('{ArrowLeft}');
+      await expectFocusRing(heads[1]!);
+      await userEvent.keyboard('{ArrowLeft}{ArrowLeft}');
+      await expectFocusRing(heads[0]!);
+      await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}');
+      await expectFocusRing(heads[2]!);
+      // Vertical arrows stay with the page in a horizontal stepper.
+      await userEvent.keyboard('{ArrowUp}{ArrowDown}');
+      await expectFocusRing(heads[2]!);
+      await expect(prevented).not.toContain('ArrowUp');
+      await expect(prevented).not.toContain('ArrowDown');
+      await userEvent.keyboard('{Home}');
+      await expectFocusRing(heads[0]!);
+      await userEvent.keyboard('{End}');
+      await expectFocusRing(heads[2]!);
+      await userEvent.keyboard('{Escape}');
+      await expect(prevented).not.toContain('Escape');
+      await userEvent.keyboard('{Home}');
+      await expect(args.onValueChange).not.toHaveBeenCalled();
+      // One tab stop that remembers the focused step.
+      await userEvent.tab();
+      await expect(canvas.getByRole('button', { name: 'After' })).toHaveFocus();
+      await userEvent.tab({ shift: true });
+      await expectFocusRing(heads[0]!);
+      await userEvent.tab({ shift: true });
+      await expect(canvas.getByRole('button', { name: 'Before' })).toHaveFocus();
+      await userEvent.tab();
+      await expectFocusRing(heads[0]!);
+      await userEvent.keyboard('{Enter}');
+      await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+      await expect(args.onValueChange).toHaveBeenCalledWith(0);
+      await expect(states(root)).toEqual(['current', 'upcoming', 'upcoming', 'upcoming']);
+      await expectFocusRing(heads[0]!);
+      await userEvent.keyboard('{Enter} ');
+      await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    } finally {
+      root.ownerDocument.removeEventListener('keydown', recordPrevented);
+    }
+  },
+};
+
+export const ControlledRejected: Story = {
+  args: { interactive: true, value: 2, onValueChange: fn() },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const root = getRoot(canvasElement);
+    const heads = parts(root, 'head');
+    await userEvent.click(heads[0]!);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(0);
+    // The parent did not accept: the current step is unchanged and focus stays put.
+    await expect(states(root)).toEqual(['complete', 'complete', 'current', 'upcoming']);
+    await expect(heads[2]).toHaveAttribute('aria-current', 'step');
+    await expectFocusRing(heads[0]!);
+    await expect(heads[0]!.tabIndex).toBe(0);
+    await userEvent.keyboard(' ');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(0);
+    await expect(states(root)).toEqual(['complete', 'complete', 'current', 'upcoming']);
+  },
+};
+
+export const ControlledAccepted: Story = {
+  args: { interactive: true, value: 3, onValueChange: fn() },
+  render: (args) => <ControlledStepper {...args} />,
+  parameters: { docs: { source: { code: USAGE } } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const root = getRoot(canvasElement);
+    const heads = parts(root, 'head');
+    await userEvent.click(heads[1]!);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(1);
+    await expect(states(root)).toEqual(['complete', 'current', 'upcoming', 'upcoming']);
+    await expect(parts(root, 'head')[1]).toBe(heads[1]);
+    await expectFocusRing(heads[1]!);
+  },
+};
+
+export const Normalization: Story = {
+  args: { onValueChange: fn() },
+  render: (args) => (
+    <>
+      <Stepper {...args} value={Number.NaN} label="NaN" />
+      <Stepper {...args} value={1.8} label="Fraction" />
+      <Stepper {...args} value={-3} label="Negative" />
+      <Stepper {...args} value={99} label="Past the end" />
+      <Stepper {...args} defaultValue={Number.POSITIVE_INFINITY} label="Infinite default" />
+    </>
+  ),
+  play: async ({ args, canvasElement }) => {
+    const [nan, fraction, negative, past, infinite] = getRoots(canvasElement);
+    await expect(states(nan!)[0]).toBe('current');
+    await expect(states(fraction!)[1]).toBe('current');
+    await expect(states(negative!)[0]).toBe('current');
+    await expect(states(past!)).toEqual(['complete', 'complete', 'complete', 'complete']);
+    await expect(states(infinite!)[0]).toBe('current');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const ExternalAria: Story = {
+  args: { interactive: true, value: 1 },
+  render: (args) => (
+    <>
+      <p id="stepper-heading">Checkout</p>
+      <p id="stepper-alt-heading">Order</p>
+      <p id="stepper-note">Steps can be revisited.</p>
+      <p id="stepper-head-note">Opens the step again.</p>
+      <Stepper
+        {...args}
+        aria-label="Checkout progress"
+        aria-labelledby="stepper-heading"
+        aria-describedby="stepper-note"
+        slotProps={{ head: { 'aria-describedby': 'stepper-head-note' } }}
+      />
+      <Stepper {...args} aria-labelledby="stepper-alt-heading" />
+      <Stepper {...args} label="Unresolved" slotProps={{ head: { 'aria-describedby': 'stepper-missing' } }} />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const [both, labelledOnly, unresolved] = getRoots(canvasElement);
+    // Consumer label and labelledby both survive; labelledby wins the computed name.
+    await expect(both).toHaveAttribute('aria-label', 'Checkout progress');
+    await expect(both).toHaveAttribute('aria-labelledby', 'stepper-heading');
+    await expect(both).toHaveAccessibleName('Checkout');
+    await expect(both).toHaveAccessibleDescription('Steps can be revisited.');
+    const head = parts(both!, 'head')[0]!;
+    const detailId = parts(both!, 'description')[0]!.id;
+    await expect(head.getAttribute('aria-describedby')).toBe(`stepper-head-note ${detailId}`);
+    await expect(head).toHaveAccessibleDescription('Opens the step again. Email and password');
+    // With only labelledby, the internal fallback name is dropped.
+    await expect(labelledOnly).not.toHaveAttribute('aria-label');
+    await expect(labelledOnly).toHaveAccessibleName('Order');
+    // An unresolved consumer id is kept; the internal one still resolves.
+    const unresolvedHead = parts(unresolved!, 'head')[0]!;
+    const unresolvedDetail = parts(unresolved!, 'description')[0]!;
+    await expect(unresolvedHead.getAttribute('aria-describedby')).toBe(`stepper-missing ${unresolvedDetail.id}`);
+    await expect(unresolvedHead).toHaveAccessibleDescription('Email and password');
+  },
+};
+
+const ICON_STEPS: readonly StepperStep[] = [
+  { id: 'zero', label: 'Zero', icon: 0 },
+  { id: 'empty', label: 'Empty', icon: '' },
+  { id: 'false', label: 'False', icon: false },
+  { id: 'null', label: 'Null', icon: null },
+];
+
+export const FalsyDetails: Story = {
+  args: {
+    interactive: true,
+    value: 4,
+    steps: [
+      { id: 'zero', label: 'Zero', description: 0 },
+      { id: 'empty', label: 'Empty', description: '' },
+      { id: 'false', label: 'False', description: false, error: false },
+      { id: 'null', label: 'Null', description: null, error: null },
+      { id: 'zero-error', label: 'Zero error', error: 0 },
+    ],
+  },
+  render: (args) => (
+    <>
+      <Stepper {...args} />
+      <Stepper steps={ICON_STEPS} value={0} label="Icons" />
+      <Stepper steps={STEPS} value={4} completeLabel={0} label="Zero caption" />
+      <Stepper steps={STEPS} value={4} completeLabel={false} label="False caption" />
+      <Stepper steps={STEPS} value={4} completeLabel={null} label="Null caption" />
+      <Stepper steps={STEPS} value={4} completeLabel="" label="Empty caption" />
+    </>
+  ),
+  parameters: { docs: { source: { code: '<Stepper steps={[{ id: "a", label: "A", description: 0 }]} />' } } },
+  play: async ({ canvasElement }) => {
+    const [stepper, icons, zeroCaption, falseCaption, nullCaption, emptyCaption] = getRoots(canvasElement);
+    const items = parts(stepper!, 'item');
+    const detail = (item: HTMLElement) => parts(item, 'description')[0];
+    const head = (item: HTMLElement) => parts(item, 'head')[0]!;
+    const marker = (item: HTMLElement) => parts(item, 'marker')[0]!;
+    // 0 and '' are content.
+    await expect(detail(items[0]!)).toHaveTextContent('0');
+    await expect(detail(items[1]!)).toBeDefined();
+    await expect(head(items[1]!)).toHaveAttribute('aria-describedby', detail(items[1]!)!.id);
+    // false and null render nothing and leave no relationship behind.
+    for (const item of [items[2]!, items[3]!]) {
+      await expect(detail(item)).toBeUndefined();
+      await expect(head(item)).not.toHaveAttribute('aria-describedby');
+      await expect(item).toHaveAttribute('data-state', 'complete');
+      await expect(marker(item).querySelector('svg')).not.toBeNull();
+    }
+    // Icons: 0 and '' replace the numeral; false and null fall back to it.
+    const iconMarkers = parts(icons!, 'marker');
+    await expect(iconMarkers.map((item) => item.textContent)).toEqual(['0', '', '', '']);
+    await expect(iconMarkers.map((item) => item.dataset.numeral)).toEqual([undefined, undefined, '3', '4']);
+    // error={0} is an error.
+    await expect(items[4]).toHaveAttribute('data-state', 'error');
+    await expect(head(items[4]!)).toHaveAccessibleDescription('0');
+    await expect(parts(zeroCaption!, 'caption')[0]).toHaveTextContent('0');
+    await expect(parts(emptyCaption!, 'caption')).toHaveLength(1);
+    await expect(parts(falseCaption!, 'caption')).toHaveLength(0);
+    await expect(parts(nullCaption!, 'caption')).toHaveLength(0);
+  },
+};
+
+const SLOT_OVERRIDE = '3px';
+
+export const SlotStyling: Story = {
+  args: {
+    value: 4,
+    compact: true,
+    sx: { paddingBlock: '2px' },
+    slotProps: {
+      root: { css: { paddingInline: SLOT_OVERRIDE } },
+      list: { css: { paddingBlock: SLOT_OVERRIDE } },
+      item: { css: { paddingBlock: SLOT_OVERRIDE } },
+      head: { css: { borderRadius: SLOT_OVERRIDE } },
+      marker: { css: { borderRadius: SLOT_OVERRIDE } },
+      label: { css: { letterSpacing: SLOT_OVERRIDE } },
+      description: { css: { letterSpacing: SLOT_OVERRIDE } },
+      connector: { css: { blockSize: SLOT_OVERRIDE } },
+      caption: { css: { letterSpacing: SLOT_OVERRIDE } },
+    },
+  },
+  render: (args) => <Stepper {...args} css={{ paddingBlock: '1px' }} />,
+  play: async ({ canvasElement }) => {
+    const root = getRoot(canvasElement);
+    const style = (element: HTMLElement) => getComputedStyle(element);
+    // Own styles → slotProps.root → consumer css → sx.
+    await expect(style(root).paddingTop).toBe('2px');
+    await expect(style(root).paddingLeft).toBe(SLOT_OVERRIDE);
+    await expect(style(parts(root, 'list')[0]!).paddingTop).toBe(SLOT_OVERRIDE);
+    await expect(style(parts(root, 'item')[0]!).paddingTop).toBe(SLOT_OVERRIDE);
+    await expect(style(parts(root, 'head')[0]!).borderTopLeftRadius).toBe(SLOT_OVERRIDE);
+    await expect(style(parts(root, 'marker')[0]!).borderTopLeftRadius).toBe(SLOT_OVERRIDE);
+    await expect(style(parts(root, 'label')[0]!).letterSpacing).toBe(SLOT_OVERRIDE);
+    await expect(style(parts(root, 'description')[0]!).letterSpacing).toBe(SLOT_OVERRIDE);
+    await expect(style(parts(root, 'connector')[0]!).height).toBe(SLOT_OVERRIDE);
+    await expect(style(parts(root, 'caption')[0]!).letterSpacing).toBe(SLOT_OVERRIDE);
+  },
+};
+
+const staticRef = fn();
+const interactiveRef = fn();
+
+export const RefTarget: Story = {
+  render: () => (
+    <>
+      <Stepper ref={staticRef} steps={STEPS} value={1} label="Static" />
+      <Stepper ref={interactiveRef} steps={STEPS} value={1} interactive label="Interactive" />
+    </>
+  ),
+  parameters: { docs: { source: { code: '<Stepper ref={navRef} steps={steps} interactive />' } } },
+  play: async ({ canvasElement }) => {
+    const [staticRoot, interactiveRoot] = getRoots(canvasElement);
+    await expect(staticRoot!.tagName).toBe('DIV');
+    await expect(interactiveRoot!.tagName).toBe('NAV');
+    await expect(staticRef).toHaveBeenLastCalledWith(staticRoot);
+    await expect(interactiveRef).toHaveBeenLastCalledWith(interactiveRoot);
+  },
+};
+
+function AnnouncedStepper(props: StepperProps) {
+  const [value, setValue] = useState(0);
+  return (
+    <>
+      <button type="button" onClick={() => setValue((current) => current + 1)}>
+        Next
+      </button>
+      <Stepper
+        {...props}
+        value={value}
+        onValueChange={(next) => {
+          setValue(next);
+          props.onValueChange?.(next);
+        }}
+      />
+    </>
+  );
+}
+AnnouncedStepper.displayName = 'AnnouncedStepper';
+
+export const AnnounceChanges: Story = {
+  args: { interactive: true, announceChanges: true, locale: 'en-US', onValueChange: fn() },
+  render: (args) => (
+    <>
+      <AnnouncedStepper {...args} />
+      <Stepper steps={STEPS} value={1} label="Silent" />
+    </>
+  ),
+  parameters: { docs: { source: { code: '<Stepper steps={steps} value={step} announceChanges />' } } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const [announced, silent] = getRoots(canvasElement);
+    await expect(parts(silent!, 'live')).toHaveLength(0);
+    const live = parts(announced!, 'live')[0]!;
+    await expect(live).toHaveAttribute('aria-live', 'polite');
+    await expect(live).toHaveTextContent('');
+    // External changes announce without emitting onValueChange.
+    await userEvent.click(canvas.getByRole('button', { name: 'Next' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Next' }));
+    await waitFor(() => expect(live).toHaveTextContent('Step 3 of 4: Security'));
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    // Focus movement is not announced; an accepted selection is.
+    const heads = parts(announced!, 'head');
+    await userEvent.click(heads[1]!);
+    await waitFor(() => expect(live).toHaveTextContent('Step 2 of 4: Profile'));
+    await userEvent.keyboard('{ArrowLeft}');
+    await expectFocusRing(heads[0]!);
+    await expect(live).toHaveTextContent('Step 2 of 4: Profile');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+function RemovableStepper(props: StepperProps) {
+  const [steps, setSteps] = useState(STEPS);
+  return (
+    <>
+      <Stepper {...props} steps={steps} value={steps.findIndex((step) => step.id === 'review')} />
+      <button type="button" onClick={() => setSteps((current) => current.filter((step) => step.id !== 'profile'))}>
+        Remove profile
+      </button>
+    </>
+  );
+}
+RemovableStepper.displayName = 'RemovableStepper';
+
+export const ListChanges: Story = {
+  args: { interactive: true },
+  render: (args) => <RemovableStepper {...args} />,
+  parameters: { docs: { source: { code: USAGE } } },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const root = getRoot(canvasElement);
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}');
+    await expectFocusRing(canvas.getByRole('button', { name: /^Profile/ }));
+    const remove = canvas.getByRole('button', { name: 'Remove profile' });
+    await userEvent.click(remove);
+    await expect(canvas.queryByRole('button', { name: /^Profile/ })).toBeNull();
+    // The removed step's tab stop moves to the current step without stealing focus.
+    await expect(remove).toHaveFocus();
+    const heads = parts(root, 'head');
+    await expect(heads.map((head) => head.tabIndex)).toEqual([-1, -1, 0]);
+    await userEvent.tab({ shift: true });
+    await expectFocusRing(heads[2]!);
+  },
+};
