@@ -19,6 +19,7 @@ export * from './components/dialog';
 export * from './components/divider';
 export * from './components/empty-state';
 export * from './components/flex';
+export * from './components/hover-card';
 export * from './components/json-viewer';
 export * from './components/kbd';
 export * from './components/menu';

@@ -44,6 +44,7 @@
     "./divider": { "types": "./src/components/divider/index.ts", "import": "./src/components/divider/index.ts" },
     "./empty-state": { "types": "./src/components/empty-state/index.ts", "import": "./src/components/empty-state/index.ts" },
     "./flex": { "types": "./src/components/flex/index.ts", "import": "./src/components/flex/index.ts" },
+    "./hover-card": { "types": "./src/components/hover-card/index.ts", "import": "./src/components/hover-card/index.ts" },
     "./json-viewer": { "types": "./src/components/json-viewer/index.ts", "import": "./src/components/json-viewer/index.ts" },
     "./kbd": { "types": "./src/components/kbd/index.ts", "import": "./src/components/kbd/index.ts" },
     "./menu": { "types": "./src/components/menu/index.ts", "import": "./src/components/menu/index.ts" },

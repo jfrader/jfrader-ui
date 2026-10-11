@@ -43,6 +43,7 @@ import { listboxItemStyle } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import {
   omitNativeOpen,
   useNativeDialog,
@@ -155,7 +156,7 @@ const setNativeAutofocus = (element: HTMLInputElement | null) => {
   element?.setAttribute('autofocus', '');
 };
 
-function CommandPaletteRoot({
+function CommandPaletteOverlay({
   open: openProp,
   defaultOpen = false,
   onOpenChange,
@@ -301,6 +302,14 @@ function CommandPaletteRoot({
   );
 
   return <CommandPaletteContext.Provider value={context}>{children}</CommandPaletteContext.Provider>;
+}
+
+function CommandPaletteRoot(props: CommandPaletteProps) {
+  return (
+    <IsolatedOverlay>
+      <CommandPaletteOverlay {...props} />
+    </IsolatedOverlay>
+  );
 }
 
 CommandPaletteRoot.displayName = 'CommandPalette';

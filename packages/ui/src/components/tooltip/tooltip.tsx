@@ -27,6 +27,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -81,7 +82,7 @@ const contentStyle = css({
   lineHeight: vars.lineHeight.base,
 });
 
-function TooltipRoot({
+function TooltipOverlay({
   open: openProp,
   defaultOpen = false,
   onOpenChange,
@@ -108,6 +109,14 @@ function TooltipRoot({
   );
 
   return <TooltipContext.Provider value={value}>{children}</TooltipContext.Provider>;
+}
+
+function TooltipRoot(props: TooltipProps) {
+  return (
+    <IsolatedOverlay>
+      <TooltipOverlay {...props} />
+    </IsolatedOverlay>
+  );
 }
 
 TooltipRoot.displayName = 'Tooltip';
