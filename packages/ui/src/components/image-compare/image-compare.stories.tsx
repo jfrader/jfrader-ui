@@ -1,0 +1,1017 @@
+import { useState, type ReactNode } from 'react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
+import { css } from '../../styling/css';
+import { withLightTheme } from '../../testing/story-decorators';
+import { ImageCompare } from './index';
+
+// Procedural noise photos: the images draw their own pixels, so the fixtures need no color literals
+// and no network. The two seeds and color matrices give clearly different Before/After pixels.
+const noisePhoto = (seed: number, matrix: string) =>
+  `data:image/svg+xml,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">' +
+      `<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" seed="${seed}"/>` +
+      `<feColorMatrix values="${matrix}"/></filter>` +
+      '<rect width="300" height="200" filter="url(#n)"/></svg>',
+  )}`;
+const RAW_SRC = noisePhoto(3, '1.8 0 0 0 -0.3  0 1.4 0 0 -0.2  0 0 0.6 0 0  0 0 0 0 1');
+const EDIT_SRC = noisePhoto(11, '0.4 0.4 0.4 0 0  0.4 0.4 0.4 0 0.05  0.6 0.6 0.6 0 0.1  0 0 0 0 1');
+const BROKEN_SRC = 'data:image/png;base64,broken';
+
+const beforeImage = <img src={RAW_SRC} alt="Original portrait" width={300} height={200} />;
+const afterImage = <img src={EDIT_SRC} alt="Retouched portrait" width={300} height={200} />;
+
+/** Outline and its offset (2px + 2px) drawn outside the handle. */
+const FOCUS_RING_EXTENT = 4;
+const HANDLE_SIZE = 40;
+const RESET_MIN_SIZE = 32;
+/** Matches motion.duration.fast plus a frame. */
+const TRANSITION_MS = 140;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const frameStyle = css({
+  inlineSize: '36rem',
+  maxInlineSize: '100%',
+  display: 'grid',
+  gap: vars.space[6],
+  padding: vars.space[4],
+});
+const narrowStyle = css({ inlineSize: '14rem', maxInlineSize: '100%' });
+const statusStyle = css({
+  display: 'grid',
+  placeItems: 'center',
+  blockSize: '100%',
+  padding: vars.space[4],
+  boxSizing: 'border-box',
+  color: vars.color.text,
+  background: vars.color.surface,
+  fontSize: vars.textSize.sm,
+});
+const fixtureButtonStyle = css({
+  minBlockSize: vars.space[8],
+  minInlineSize: vars.space[8],
+  paddingInline: vars.space[3],
+});
+
+const SOURCE = `<ImageCompare
+  before={<img src="/raw.jpg" alt="Original portrait" />}
+  after={<img src="/edit.jpg" alt="Retouched portrait" />}
+  label="Portrait comparison"
+/>`;
+
+const meta = {
+  title: 'Data display/ImageCompare',
+  component: ImageCompare,
+  tags: ['autodocs'],
+  args: {
+    before: beforeImage,
+    after: afterImage,
+    label: 'Portrait comparison',
+    locale: 'en-GB',
+    onValueChange: fn(),
+    onValueCommit: fn(),
+  },
+  decorators: [
+    (Story) => (
+      <div css={frameStyle}>
+        <Story />
+      </div>
+    ),
+  ],
+  parameters: {
+    docs: {
+      source: { code: SOURCE },
+      description: {
+        component: [
+          'Two aligned, identically cropped images split by a draggable divider. The divider is an APG slider: `value` is the percentage of **Before** visible, measured from inline-start (horizontal) or the top (vertical). 0 shows only After, 100 only Before; the clip, `aria-valuenow` and `aria-valuetext` always read the same accepted value.',
+          'Keyboard: arrows move one `step` (horizontal Left/Right follow the physical direction in RTL; Up always increases), Shift+arrows and PageUp/PageDown move `largeStep`, Home/End go to 0/100. The Center divider button and a double-click on the handle request 50.',
+          'Pointer: tap the frame to jump, or drag anywhere on it. On touch, a drag starts only along the reveal axis, so a vertical swipe over a horizontal comparison keeps scrolling the page.',
+          'Both images stay mounted: give each a meaningful, different `alt`. Captions are decorative and describe the slider. Name the slider with `label` or `slotProps.handle` ARIA; a root `aria-label` names the wrapper, not the slider. Do not put interactive content inside the images. Captions, `label`, `valueText` and `resetLabel` are caller-localized; percentages use `Intl.NumberFormat`.',
+          'Touch screen-reader operation of sliders needs real-device testing.',
+        ].join('\n\n'),
+      },
+    },
+  },
+} satisfies Meta<typeof ImageCompare>;
+export default meta;
+type Story = StoryObj<typeof ImageCompare>;
+
+const part = (root: Element, name: string) => root.querySelector<HTMLElement>(`[data-ui="${name}"]`)!;
+
+/** Which layer is visible (hit-testable through the clip) at `ratio` along the reveal axis. */
+function layerAt(root: Element, ratio: number, vertical = false) {
+  const box = part(root, 'image-compare-frame').getBoundingClientRect();
+  const x = vertical ? box.left + box.width * 0.8 : box.left + box.width * ratio;
+  const y = vertical ? box.top + box.height * ratio : box.top + box.height * 0.8;
+  const hit = root.ownerDocument.elementFromPoint(x, y);
+  return hit?.closest('[data-ui="image-compare-before"]')
+    ? 'before'
+    : hit?.closest('[data-ui="image-compare-after"]')
+      ? 'after'
+      : null;
+}
+
+/** Divider center as a fraction of the frame along the reveal axis (physical left/top origin). */
+function dividerRatio(root: Element, vertical = false) {
+  const frame = part(root, 'image-compare-frame').getBoundingClientRect();
+  const divider = part(root, 'image-compare-divider').getBoundingClientRect();
+  return vertical
+    ? (divider.top + divider.height / 2 - frame.top) / frame.height
+    : (divider.left + divider.width / 2 - frame.left) / frame.width;
+}
+
+async function expectFocusRing(element: HTMLElement) {
+  await expect(element.ownerDocument.activeElement).toBe(element);
+  const style = getComputedStyle(element);
+  await expect(style.outlineStyle).not.toBe('none');
+  await expect(Math.abs(Number.parseFloat(style.outlineWidth) - 2)).toBeLessThan(1.1);
+}
+
+const POINTER_ID = 1;
+
+/**
+ * Synthetic pointer on the frame. Synthetic pointers are not active, so the browser would reject
+ * a real capture; the stubs record it instead. Real capture and touch panning are browser QA.
+ */
+function pointerOn(frame: HTMLElement, pointerType = 'mouse') {
+  const captured = new Set<number>();
+  spyOn(frame, 'setPointerCapture').mockImplementation((pointerId) => void captured.add(pointerId));
+  spyOn(frame, 'hasPointerCapture').mockImplementation((pointerId) => captured.has(pointerId));
+  spyOn(frame, 'releasePointerCapture').mockImplementation((pointerId) => void captured.delete(pointerId));
+  const fire = (
+    type: string,
+    x: number,
+    y = 0.8,
+    options: { pointerId?: number; isPrimary?: boolean; button?: number; target?: Element } = {},
+  ) => {
+    const box = frame.getBoundingClientRect();
+    return fireEvent(
+      options.target ?? frame,
+      new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: options.pointerId ?? POINTER_ID,
+        pointerType,
+        isPrimary: options.isPrimary ?? true,
+        button: options.button ?? 0,
+        clientX: box.left + box.width * x,
+        clientY: box.top + box.height * y,
+      }),
+    );
+  };
+  return { fire, captured };
+}
+
+export const Default: Story = {
+  play: async ({ canvas, canvasElement }) => {
+    const slider = canvas.getByRole('slider', { name: 'Portrait comparison' });
+    await expect(slider).toHaveAttribute('aria-valuemin', '0');
+    await expect(slider).toHaveAttribute('aria-valuemax', '100');
+    await expect(slider).toHaveAttribute('aria-valuenow', '50');
+    await expect(slider).toHaveAttribute('aria-valuetext', '50% Before visible');
+    await expect(slider).toHaveAttribute('aria-orientation', 'horizontal');
+    await expect(slider).toHaveAccessibleDescription('Before After');
+    await expect(canvas.getByRole('img', { name: 'Original portrait' })).toBeInTheDocument();
+    await expect(canvas.getByRole('img', { name: 'Retouched portrait' })).toBeInTheDocument();
+    await expect(canvas.queryByText('Before')?.closest('[aria-hidden="true"]')).not.toBeNull();
+    await expect(canvas.queryByText('After')?.closest('[aria-hidden="true"]')).not.toBeNull();
+    // Captions are chips sized by their text, not stretched like the images.
+    const frameBox = part(canvasElement, 'image-compare-frame').getBoundingClientRect();
+    for (const name of ['image-compare-before-label', 'image-compare-after-label']) {
+      const caption = part(canvasElement, name).getBoundingClientRect();
+      await expect(caption.height).toBeLessThan(frameBox.height / 4);
+      await expect(caption.width).toBeLessThan(frameBox.width / 4);
+    }
+    const frame = part(canvasElement, 'image-compare-frame').getBoundingClientRect();
+    await expect(Math.abs(frame.width / frame.height - 3 / 2)).toBeLessThan(0.02);
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.5)).toBeLessThan(0.01);
+    await expect(layerAt(canvasElement, 0.25)).toBe('before');
+    await expect(layerAt(canvasElement, 0.75)).toBe('after');
+  },
+};
+
+export const Horizontal: Story = { args: { orientation: 'horizontal', defaultValue: 35 } };
+
+export const Vertical: Story = {
+  args: { orientation: 'vertical', defaultValue: 30 },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const slider = canvas.getByRole('slider');
+    await expect(slider).toHaveAttribute('aria-orientation', 'vertical');
+    await expect(Math.abs(dividerRatio(canvasElement, true) - 0.3)).toBeLessThan(0.01);
+    await expect(layerAt(canvasElement, 0.15, true)).toBe('before');
+    await expect(layerAt(canvasElement, 0.6, true)).toBe('after');
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowUp}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '31');
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '29');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+    const frame = part(canvasElement, 'image-compare-frame');
+    await expect(getComputedStyle(frame).touchAction).toBe('pan-x');
+  },
+};
+
+export const LabelsHidden: Story = {
+  args: { labels: false },
+  play: async ({ canvas, canvasElement }) => {
+    const slider = canvas.getByRole('slider');
+    await expect(slider).not.toHaveAttribute('aria-describedby');
+    await expect(canvasElement.querySelector('[data-ui$="-label"]')).toBeNull();
+  },
+};
+
+export const CustomLabels: Story = {
+  args: {
+    labels: ['Original', 'Retouched'],
+    valueText: (_value, percent) => `${percent} original visible`,
+    defaultValue: 40,
+  },
+  play: async ({ canvas }) => {
+    const slider = canvas.getByRole('slider');
+    await expect(slider).toHaveAccessibleDescription('Original Retouched');
+    await expect(slider).toHaveAttribute('aria-valuetext', '40% original visible');
+  },
+};
+
+export const LocalizedPercent: Story = {
+  args: {
+    locale: 'ar-EG',
+    labels: ['قبل', 'بعد'],
+    label: 'مقارنة الصور',
+    resetLabel: 'توسيط الفاصل',
+    valueText: (_value, percent) => `${percent} من الصورة الأصلية`,
+    defaultValue: 25,
+    dir: 'rtl',
+    lang: 'ar',
+  },
+  play: async ({ canvas }) => {
+    const percent = new Intl.NumberFormat('ar-EG', { style: 'percent' }).format(0.25);
+    await expect(canvas.getByRole('slider', { name: 'مقارنة الصور' })).toHaveAttribute(
+      'aria-valuetext',
+      `${percent} من الصورة الأصلية`,
+    );
+    await expect(canvas.getByRole('button', { name: 'توسيط الفاصل' })).toBeInTheDocument();
+  },
+};
+
+export const CustomAspectRatio: Story = {
+  args: { aspectRatio: '1 / 1' },
+  play: async ({ canvasElement }) => {
+    const frame = part(canvasElement, 'image-compare-frame').getBoundingClientRect();
+    await expect(Math.abs(frame.width - frame.height)).toBeLessThan(1.1);
+  },
+};
+
+export const Controlled: Story = {
+  render: (args) => {
+    const [value, setValue] = useState(20);
+    return (
+      <>
+        <ImageCompare
+          {...args}
+          value={value}
+          onValueChange={(next) => {
+            args.onValueChange?.(next);
+            setValue(next);
+          }}
+        />
+        <output>{value}</output>
+      </>
+    );
+  },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const slider = canvas.getByRole('slider');
+    await userEvent.tab();
+    await userEvent.keyboard('{End}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '100');
+    await expect(layerAt(canvasElement, 0.95)).toBe('before');
+    await userEvent.keyboard('{Home}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '0');
+    await expect(layerAt(canvasElement, 0.05)).toBe('after');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(2);
+    await expect(canvasElement.querySelector('output')).toHaveTextContent('0');
+  },
+};
+
+export const RejectedControlled: Story = {
+  args: { value: 40 },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const slider = canvas.getByRole('slider');
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}{End}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '40');
+    await expect(slider).toHaveAttribute('aria-valuetext', '40% Before visible');
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.4)).toBeLessThan(0.01);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(1, 41);
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, 41);
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(3, 100);
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(3);
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    pointer.fire('pointerdown', 0.4);
+    pointer.fire('pointermove', 0.7);
+    pointer.fire('pointerup', 0.7);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(70);
+    await expect(args.onValueCommit).toHaveBeenLastCalledWith(70);
+    await expect(slider).toHaveAttribute('aria-valuenow', '40');
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.4)).toBeLessThan(0.01);
+  },
+};
+
+export const Endpoints: Story = {
+  render: (args) => (
+    <>
+      <ImageCompare {...args} defaultValue={0} label="All After" />
+      <ImageCompare {...args} defaultValue={100} label="All Before" />
+    </>
+  ),
+  play: async ({ canvas, canvasElement }) => {
+    const [none, all] = canvasElement.querySelectorAll('[data-ui="image-compare"]');
+    await expect(canvas.getByRole('slider', { name: 'All After' })).toHaveAttribute('aria-valuenow', '0');
+    await expect(canvas.getByRole('slider', { name: 'All Before' })).toHaveAttribute('aria-valuenow', '100');
+    await expect(layerAt(none!, 0.02)).toBe('after');
+    await expect(layerAt(all!, 0.98)).toBe('before');
+    // The handle stays reachable and its focus ring stays inside the frame at both ends.
+    for (const root of [none!, all!]) {
+      const frame = part(root, 'image-compare-frame').getBoundingClientRect();
+      const handle = part(root, 'image-compare-handle').getBoundingClientRect();
+      await expect(handle.left - FOCUS_RING_EXTENT).toBeGreaterThanOrEqual(frame.left - 1.1);
+      await expect(handle.right + FOCUS_RING_EXTENT).toBeLessThanOrEqual(frame.right + 1.1);
+    }
+  },
+};
+
+export const Steps: Story = {
+  args: { step: 5, largeStep: 25, defaultValue: 50 },
+  play: async ({ canvas, userEvent, args }) => {
+    const slider = canvas.getByRole('slider');
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '55');
+    await userEvent.keyboard('{PageDown}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '30');
+    await userEvent.keyboard('{Shift>}{ArrowUp}{/Shift}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '55');
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(3);
+  },
+};
+
+export const FractionalStep: Story = {
+  args: { step: 0.1, defaultValue: 0 },
+  play: async ({ canvas, userEvent }) => {
+    const slider = canvas.getByRole('slider');
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '0.3');
+    await expect(slider).toHaveAttribute('aria-valuetext', '0.3% Before visible');
+  },
+};
+
+export const InvalidSteps: Story = {
+  args: { step: 0, largeStep: Number.NaN, defaultValue: 50 },
+  play: async ({ canvas, userEvent }) => {
+    const slider = canvas.getByRole('slider');
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '51');
+    await userEvent.keyboard('{PageUp}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '61');
+  },
+};
+
+export const Disabled: Story = {
+  args: { disabled: true, defaultValue: 30 },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const slider = canvas.getByRole('slider');
+    await expect(slider).toHaveAttribute('aria-disabled', 'true');
+    await expect(slider).toHaveAttribute('tabindex', '0');
+    await expect(canvas.getByRole('button', { name: 'Center divider' })).toBeDisabled();
+    await userEvent.tab();
+    await expect(slider.ownerDocument.activeElement).toBe(slider);
+    await userEvent.keyboard('{ArrowRight}{Home}{End}{PageUp}');
+    await userEvent.dblClick(slider);
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    pointer.fire('pointerdown', 0.8);
+    pointer.fire('pointermove', 0.9);
+    pointer.fire('pointerup', 0.9);
+    await expect(pointer.captured.size).toBe(0);
+    await expect(slider).toHaveAttribute('aria-valuenow', '30');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onValueCommit).not.toHaveBeenCalled();
+  },
+};
+
+export const KeyboardAdjustment: Story = {
+  args: { defaultValue: 50 },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const slider = canvas.getByRole('slider');
+    const reset = canvas.getByRole('button', { name: 'Center divider' });
+    await userEvent.tab();
+    await expectFocusRing(slider);
+    const moves = [
+      ['{ArrowRight}', 51],
+      ['{ArrowLeft}', 50],
+      ['{ArrowUp}', 51],
+      ['{ArrowDown}', 50],
+      ['{Shift>}{ArrowRight}{/Shift}', 60],
+      ['{Shift>}{ArrowLeft}{/Shift}', 50],
+      ['{Shift>}{ArrowUp}{/Shift}', 60],
+      ['{Shift>}{ArrowDown}{/Shift}', 50],
+      ['{PageUp}', 60],
+      ['{PageDown}', 50],
+      ['{Home}', 0],
+      ['{End}', 100],
+    ] as const;
+    for (const [key, n] of moves) {
+      await userEvent.keyboard(key);
+      await expect(slider).toHaveAttribute('aria-valuenow', String(n));
+      await expect(slider).toHaveAttribute('aria-valuetext', `${n}% Before visible`);
+      await expect(Math.abs(dividerRatio(canvasElement) - n / 100)).toBeLessThan(0.02);
+    }
+    // Bounds and unrelated keys request nothing.
+    await userEvent.keyboard('{End}{ArrowRight}{PageUp}{Enter} ');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(moves.length);
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(moves.length);
+    for (let index = 0; index < moves.length; index++) {
+      await expect(args.onValueChange).toHaveBeenNthCalledWith(index + 1, moves[index]![1]);
+      await expect(args.onValueCommit).toHaveBeenNthCalledWith(index + 1, moves[index]![1]);
+    }
+    await userEvent.tab();
+    await expectFocusRing(reset);
+    await userEvent.keyboard('{Enter}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '50');
+    await userEvent.keyboard(' ');
+    await expect(reset.ownerDocument.activeElement).toBe(reset);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(moves.length + 1);
+    await expect(args.onValueCommit).toHaveBeenLastCalledWith(50);
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(moves.length + 1);
+    await userEvent.tab({ shift: true });
+    await expect(slider.ownerDocument.activeElement).toBe(slider);
+    await userEvent.tab({ shift: true });
+    await expect(slider.ownerDocument.activeElement).not.toBe(slider);
+  },
+};
+
+export const DoubleClickReset: Story = {
+  args: { defaultValue: 20 },
+  play: async ({ canvas, userEvent, args }) => {
+    const slider = canvas.getByRole('slider');
+    await userEvent.dblClick(slider);
+    await expect(slider).toHaveAttribute('aria-valuenow', '50');
+    await expect(slider.ownerDocument.activeElement).toBe(slider);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(1);
+    await expect(args.onValueCommit).toHaveBeenCalledWith(50);
+  },
+};
+
+export const PointerInteraction: Story = {
+  args: { defaultValue: 50 },
+  play: async ({ canvas, canvasElement, args }) => {
+    const slider = canvas.getByRole('slider');
+    const frame = part(canvasElement, 'image-compare-frame');
+    const pointer = pointerOn(frame);
+    // Frame tap jumps to the pointer and focuses the handle.
+    pointer.fire('pointerdown', 0.2);
+    await expect(slider.ownerDocument.activeElement).toBe(slider);
+    pointer.fire('pointerup', 0.2);
+    await expect(slider).toHaveAttribute('aria-valuenow', '20');
+    await expect(layerAt(canvasElement, 0.1)).toBe('before');
+    await expect(layerAt(canvasElement, 0.3)).toBe('after');
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(1);
+    await expect(args.onValueCommit).toHaveBeenLastCalledWith(20);
+    // Non-primary and secondary-button presses are ignored.
+    pointer.fire('pointerdown', 0.9, 0.8, { pointerId: 2, isPrimary: false });
+    pointer.fire('pointerup', 0.9, 0.8, { pointerId: 2, isPrimary: false });
+    pointer.fire('pointerdown', 0.9, 0.8, { button: 2 });
+    pointer.fire('pointerup', 0.9, 0.8, { button: 2 });
+    await expect(slider).toHaveAttribute('aria-valuenow', '20');
+    // Handle drag keeps the grab offset: pressing 2% right of the divider does not jump.
+    const handle = part(canvasElement, 'image-compare-handle');
+    pointer.fire('pointerdown', 0.22, 0.5, { target: handle });
+    pointer.fire('pointermove', 0.22, 0.5);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    pointer.fire('pointermove', 0.52, 0.5);
+    await expect(pointer.captured.has(POINTER_ID)).toBe(true);
+    await expect(handle).toHaveAttribute('data-dragging');
+    await expect(slider).toHaveAttribute('aria-valuenow', '50');
+    pointer.fire('pointermove', 1.4, 0.5);
+    await expect(slider).toHaveAttribute('aria-valuenow', '100');
+    pointer.fire('pointermove', 1.5, 0.5);
+    pointer.fire('pointerup', 1.5, 0.5);
+    pointer.fire('lostpointercapture', 1.5, 0.5);
+    await expect(pointer.captured.size).toBe(0);
+    await expect(handle).not.toHaveAttribute('data-dragging');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, 50);
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(3, 100);
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(2);
+    await expect(args.onValueCommit).toHaveBeenLastCalledWith(100);
+    // A tap on the handle itself requests nothing.
+    pointer.fire('pointerdown', 0.98, 0.5, { target: handle });
+    pointer.fire('pointerup', 0.98, 0.5, { target: handle });
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(2);
+  },
+};
+
+export const TouchAxisLock: Story = {
+  args: { defaultValue: 50 },
+  play: async ({ canvas, canvasElement, args }) => {
+    const slider = canvas.getByRole('slider');
+    const frame = part(canvasElement, 'image-compare-frame');
+    await expect(getComputedStyle(frame).touchAction).toBe('pan-y');
+    const pointer = pointerOn(frame, 'touch');
+    // A mostly vertical swipe belongs to page scrolling: no capture, no request, no commit.
+    pointer.fire('pointerdown', 0.3, 0.3);
+    pointer.fire('pointermove', 0.31, 0.6);
+    pointer.fire('pointermove', 0.6, 0.6);
+    pointer.fire('pointerup', 0.6, 0.6);
+    await expect(pointer.captured.size).toBe(0);
+    await expect(slider).toHaveAttribute('aria-valuenow', '50');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onValueCommit).not.toHaveBeenCalled();
+    // Main-axis intent captures, then a cancel ends it without a commit.
+    pointer.fire('pointerdown', 0.3, 0.3);
+    pointer.fire('pointermove', 0.4, 0.31);
+    await expect(pointer.captured.has(POINTER_ID)).toBe(true);
+    await expect(slider).toHaveAttribute('aria-valuenow', '40');
+    pointer.fire('pointercancel', 0.4, 0.31);
+    await expect(pointer.captured.size).toBe(0);
+    pointer.fire('pointermove', 0.9, 0.31);
+    pointer.fire('pointerup', 0.9, 0.31);
+    await expect(slider).toHaveAttribute('aria-valuenow', '40');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueCommit).not.toHaveBeenCalled();
+  },
+};
+
+export const LostCaptureEndsDrag: Story = {
+  args: { defaultValue: 50 },
+  play: async ({ canvasElement, args }) => {
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    pointer.fire('pointerdown', 0.5);
+    pointer.fire('pointermove', 0.6);
+    pointer.fire('lostpointercapture', 0.6);
+    pointer.fire('pointermove', 0.9);
+    pointer.fire('pointerup', 0.9);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(60);
+    await expect(args.onValueCommit).not.toHaveBeenCalled();
+    await expect(part(canvasElement, 'image-compare-handle')).not.toHaveAttribute('data-dragging');
+  },
+};
+
+export const ParentAcceptsDuringDrag: Story = {
+  render: (args) => {
+    const [value, setValue] = useState(40);
+    return (
+      <ImageCompare
+        {...args}
+        value={value}
+        onValueChange={(next) => {
+          args.onValueChange?.(next);
+          // The parent accepts a different value than requested.
+          setValue(Math.min(next, 60));
+        }}
+      />
+    );
+  },
+  play: async ({ canvas, canvasElement, args }) => {
+    const slider = canvas.getByRole('slider');
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    pointer.fire('pointerdown', 0.4);
+    pointer.fire('pointermove', 0.8);
+    await expect(slider).toHaveAttribute('aria-valuenow', '60');
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.6)).toBeLessThan(0.01);
+    pointer.fire('pointermove', 0.5);
+    await expect(slider).toHaveAttribute('aria-valuenow', '50');
+    pointer.fire('pointerup', 0.5);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(1);
+    await expect(args.onValueCommit).toHaveBeenCalledWith(50);
+  },
+};
+
+export const ResizeDuringDrag: Story = {
+  render: (args) => {
+    const [wide, setWide] = useState(true);
+    return (
+      <>
+        <button type="button" css={fixtureButtonStyle} onClick={() => setWide(false)}>
+          Shrink
+        </button>
+        <div style={{ inlineSize: wide ? '32rem' : '16rem' }}>
+          <ImageCompare {...args} />
+        </div>
+      </>
+    );
+  },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const frame = part(canvasElement, 'image-compare-frame');
+    const pointer = pointerOn(frame);
+    pointer.fire('pointerdown', 0.5);
+    pointer.fire('pointermove', 0.25);
+    await expect(canvas.getByRole('slider')).toHaveAttribute('aria-valuenow', '25');
+    await userEvent.click(canvas.getByRole('button', { name: 'Shrink' }));
+    await waitFor(() => expect(frame.getBoundingClientRect().width).toBeLessThan(300));
+    // The same ratio of the new rect maps to the same value.
+    pointer.fire('pointermove', 0.75);
+    await expect(canvas.getByRole('slider')).toHaveAttribute('aria-valuenow', '75');
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.75)).toBeLessThan(0.02);
+    pointer.fire('pointerup', 0.75);
+    await expect(args.onValueCommit).toHaveBeenCalledWith(75);
+  },
+};
+
+export const OrientationChangeDuringDrag: Story = {
+  render: (args) => {
+    const [vertical, setVertical] = useState(false);
+    return (
+      <ImageCompare
+        {...args}
+        orientation={vertical ? 'vertical' : 'horizontal'}
+        onValueChange={(next) => {
+          args.onValueChange?.(next);
+          setVertical(true);
+        }}
+      />
+    );
+  },
+  play: async ({ canvas, canvasElement, args }) => {
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    pointer.fire('pointerdown', 0.5);
+    pointer.fire('pointermove', 0.7);
+    await expect(canvas.getByRole('slider')).toHaveAttribute('aria-orientation', 'vertical');
+    await expect(pointer.captured.size).toBe(0);
+    pointer.fire('pointermove', 0.9, 0.9);
+    pointer.fire('pointerup', 0.9, 0.9);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueCommit).not.toHaveBeenCalled();
+    await expect(part(canvasElement, 'image-compare-handle')).not.toHaveAttribute('data-dragging');
+  },
+};
+
+export const DisableDuringDrag: Story = {
+  render: (args) => {
+    const [disabled, setDisabled] = useState(false);
+    return (
+      <ImageCompare
+        {...args}
+        disabled={disabled}
+        onValueChange={(next) => {
+          args.onValueChange?.(next);
+          setDisabled(true);
+        }}
+      />
+    );
+  },
+  play: async ({ canvasElement, args }) => {
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    pointer.fire('pointerdown', 0.5);
+    pointer.fire('pointermove', 0.7);
+    await expect(pointer.captured.size).toBe(0);
+    pointer.fire('pointerup', 0.7);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueCommit).not.toHaveBeenCalled();
+  },
+};
+
+export const InteractiveDescendantIgnored: Story = {
+  args: {
+    after: (
+      <div css={statusStyle}>
+        <button type="button" css={fixtureButtonStyle}>
+          Retry
+        </button>
+      </div>
+    ),
+  },
+  play: async ({ canvas, canvasElement, args }) => {
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    const retry = canvas.getByRole('button', { name: 'Retry' });
+    const box = retry.getBoundingClientRect();
+    const frame = part(canvasElement, 'image-compare-frame').getBoundingClientRect();
+    const x = (box.left + box.width / 2 - frame.left) / frame.width;
+    const y = (box.top + box.height / 2 - frame.top) / frame.height;
+    pointer.fire('pointerdown', x, y, { target: retry });
+    pointer.fire('pointerup', x, y, { target: retry });
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onValueCommit).not.toHaveBeenCalled();
+  },
+};
+
+export const ImageLoading: Story = {
+  args: {
+    after: (
+      <div role="status" css={statusStyle}>
+        Loading retouched portrait…
+      </div>
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(canvas.getByRole('status')).toHaveTextContent('Loading retouched portrait…');
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(canvas.getByRole('slider')).toHaveAttribute('aria-valuenow', '49');
+  },
+};
+
+function BrokenAfter() {
+  const [failed, setFailed] = useState(false);
+  return failed ? (
+    <div role="alert" css={statusStyle}>
+      Retouched portrait failed to load
+    </div>
+  ) : (
+    <img src={BROKEN_SRC} alt="Retouched portrait" onError={() => setFailed(true)} />
+  );
+}
+export const ImageError: Story = {
+  args: { after: <BrokenAfter /> },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByRole('alert')).toHaveTextContent('Retouched portrait failed to load');
+    await userEvent.tab();
+    await userEvent.keyboard('{End}');
+    await expect(canvas.getByRole('slider')).toHaveAttribute('aria-valuenow', '100');
+  },
+};
+
+export const Narrow: Story = {
+  args: {
+    labels: ['Original exposure before retouching', 'Retouched with lifted shadows'],
+    resetLabel: 'Center the comparison divider between both images',
+  },
+  render: (args) => (
+    <div css={narrowStyle}>
+      <ImageCompare {...args} />
+    </div>
+  ),
+  play: async ({ canvas, canvasElement }) => {
+    const root = part(canvasElement, 'image-compare');
+    const frame = part(canvasElement, 'image-compare-frame').getBoundingClientRect();
+    await expect(root.scrollWidth - root.clientWidth).toBeLessThan(1.1);
+    const reset = canvas.getByRole('button').getBoundingClientRect();
+    await expect(reset.right).toBeLessThanOrEqual(root.getBoundingClientRect().right + 1.1);
+    await expect(reset.height).toBeGreaterThanOrEqual(RESET_MIN_SIZE - 0.5);
+    for (const name of ['image-compare-before-label', 'image-compare-after-label']) {
+      const caption = part(canvasElement, name).getBoundingClientRect();
+      await expect(caption.left).toBeGreaterThanOrEqual(frame.left - 1.1);
+      await expect(caption.right).toBeLessThanOrEqual(frame.right + 1.1);
+    }
+  },
+};
+
+export const Dimensions: Story = {
+  play: async ({ canvas }) => {
+    const handle = canvas.getByRole('slider').getBoundingClientRect();
+    await expect(Math.abs(handle.width - HANDLE_SIZE)).toBeLessThan(1.1);
+    await expect(Math.abs(handle.height - HANDLE_SIZE)).toBeLessThan(1.1);
+    const reset = canvas.getByRole('button', { name: 'Center divider' }).getBoundingClientRect();
+    await expect(reset.height).toBeGreaterThanOrEqual(RESET_MIN_SIZE - 0.5);
+  },
+};
+
+export const RTL: Story = {
+  args: { dir: 'rtl', defaultValue: 30 },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const slider = canvas.getByRole('slider');
+    // Before sits at inline-start, which is the right edge in RTL.
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.7)).toBeLessThan(0.01);
+    await expect(layerAt(canvasElement, 0.9)).toBe('before');
+    await expect(layerAt(canvasElement, 0.4)).toBe('after');
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '31');
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '29');
+    await userEvent.keyboard('{ArrowUp}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '30');
+    await userEvent.keyboard('{Home}');
+    await expect(layerAt(canvasElement, 0.98)).toBe('after');
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    pointer.fire('pointerdown', 0.25);
+    pointer.fire('pointerup', 0.25);
+    await expect(slider).toHaveAttribute('aria-valuenow', '75');
+    await expect(args.onValueCommit).toHaveBeenLastCalledWith(75);
+  },
+};
+
+export const Dark: Story = {};
+export const LightTheme: Story = { decorators: [withLightTheme] };
+
+export const ReducedMotion: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Structural check of the authored reduced-motion rule; it does not emulate the preference. Browser QA verifies the rendered handle.',
+      },
+    },
+  },
+  play: async ({ canvas }) => {
+    const handle = canvas.getByRole('slider');
+    await expect(mediaDeclarations(handle, 'prefers-reduced-motion')).toContainEqual(
+      expect.objectContaining({ transitionDuration: '0s' }),
+    );
+  },
+};
+
+export const ForcedColors: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Structural check of the authored forced-colors rules; it does not emulate forced colors. Browser QA verifies the rendered frame and handle.',
+      },
+    },
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(mediaDeclarations(canvas.getByRole('slider'), 'forced-colors')).toContainEqual(
+      expect.objectContaining({ borderColor: 'canvastext', boxShadow: 'none' }),
+    );
+    await expect(mediaDeclarations(part(canvasElement, 'image-compare-divider'), 'forced-colors')).toContainEqual(
+      expect.objectContaining({ backgroundColor: 'canvastext' }),
+    );
+  },
+};
+
+/** Declarations authored for `element` inside `@media` rules whose condition includes `feature`. */
+function mediaDeclarations(element: Element, feature: string) {
+  return Array.from(element.ownerDocument.styleSheets)
+    .flatMap((sheet) => {
+      try {
+        return Array.from(sheet.cssRules);
+      } catch {
+        return [];
+      }
+    })
+    .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText.includes(feature))
+    .flatMap((rule) => Array.from(rule.cssRules))
+    .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule && element.matches(rule.selectorText))
+    .map((rule) => rule.style);
+}
+
+export const AriaMerge: Story = {
+  args: {
+    'aria-label': 'Wrapper name',
+    slotProps: {
+      handle: {
+        'aria-labelledby': 'compare-heading missing-reference',
+        'aria-describedby': 'compare-hint',
+      },
+    },
+  },
+  render: (args) => (
+    <>
+      <h2 id="compare-heading">Retouch review</h2>
+      <p id="compare-hint">Drag to compare</p>
+      <ImageCompare {...args} role="group" />
+    </>
+  ),
+  play: async ({ canvas, canvasElement }) => {
+    const slider = canvas.getByRole('slider');
+    await expect(slider).toHaveAttribute('aria-labelledby', 'compare-heading missing-reference');
+    await expect(slider).toHaveAttribute('aria-label', 'Portrait comparison');
+    await expect(slider).toHaveAccessibleName('Retouch review');
+    await expect(slider).toHaveAccessibleDescription('Drag to compare Before After');
+    await expect(part(canvasElement, 'image-compare')).toHaveAttribute('aria-label', 'Wrapper name');
+  },
+};
+
+export const UnresolvedLabelledBy: Story = {
+  args: { slotProps: { handle: { 'aria-labelledby': 'missing-reference', 'aria-label': 'Handle name' } } },
+  play: async ({ canvas }) => {
+    const slider = canvas.getByRole('slider');
+    await expect(slider).toHaveAttribute('aria-labelledby', 'missing-reference');
+    await expect(slider).toHaveAccessibleName('Handle name');
+  },
+};
+
+const falsyNodes: ReactNode[] = [false, null, 0, ''];
+export const FalsyContent: Story = {
+  render: (args) => (
+    <>
+      {falsyNodes.map((node, index) => (
+        <ImageCompare
+          {...args}
+          key={index}
+          before={node}
+          after={node}
+          labels={index % 2 === 0 ? false : ['', '']}
+          label={`Comparison ${index}`}
+        />
+      ))}
+    </>
+  ),
+  play: async ({ canvas, canvasElement }) => {
+    const sliders = canvas.getAllByRole('slider');
+    await expect(sliders).toHaveLength(falsyNodes.length);
+    for (const slider of sliders) await expect(slider).not.toHaveAttribute('aria-describedby');
+    await expect(canvasElement.querySelector('[data-ui$="-label"]')).toBeNull();
+    const befores = canvasElement.querySelectorAll('[data-ui="image-compare-before"]');
+    await expect(befores[0]).toBeEmptyDOMElement();
+    await expect(befores[1]).toBeEmptyDOMElement();
+    await expect(befores[2]).toHaveTextContent('0');
+    await expect(befores[3]).toBeEmptyDOMElement();
+  },
+};
+
+export const OutOfRangeValues: Story = {
+  render: (args) => (
+    <>
+      <ImageCompare {...args} defaultValue={-20} label="Negative" />
+      <ImageCompare {...args} value={140} label="Over" />
+      <ImageCompare {...args} defaultValue={Number.NaN} label="Not a number" />
+      <ImageCompare {...args} value={Number.POSITIVE_INFINITY} label="Infinite" />
+    </>
+  ),
+  play: async ({ canvas, userEvent, args }) => {
+    await expect(canvas.getByRole('slider', { name: 'Negative' })).toHaveAttribute('aria-valuenow', '0');
+    await expect(canvas.getByRole('slider', { name: 'Over' })).toHaveAttribute('aria-valuenow', '100');
+    await expect(canvas.getByRole('slider', { name: 'Not a number' })).toHaveAttribute('aria-valuenow', '50');
+    await expect(canvas.getByRole('slider', { name: 'Infinite' })).toHaveAttribute('aria-valuenow', '50');
+    // The clamped value is the accepted value: End on 100 is a no-op.
+    canvas.getByRole('slider', { name: 'Over' }).focus();
+    await userEvent.keyboard('{End}{ArrowUp}');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+const rootRef = fn();
+const handleRef = fn();
+const frameRef = fn();
+export const SlotStylingAndRefs: Story = {
+  args: {
+    ref: rootRef,
+    sx: { paddingBlock: '7px' },
+    slotProps: {
+      frame: { ref: frameRef, css: { borderRadius: '3px' } },
+      handle: { ref: handleRef, css: { borderRadius: vars.radius.sm } },
+      divider: { css: { inlineSize: '6px' } },
+      beforeLabel: { css: { letterSpacing: '2px' } },
+      afterLabel: { css: { letterSpacing: '3px' } },
+      resetButton: { variant: 'ghost', css: { letterSpacing: '1px' } },
+    },
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const root = part(canvasElement, 'image-compare');
+    const frame = part(canvasElement, 'image-compare-frame');
+    const handle = canvas.getByRole('slider');
+    await expect(rootRef.mock.calls.at(-1)?.[0]).toBe(root);
+    await expect(frameRef.mock.calls.at(-1)?.[0]).toBe(frame);
+    await expect(handleRef.mock.calls.at(-1)?.[0]).toBe(handle);
+    await expect(getComputedStyle(root).paddingBlockStart).toBe('7px');
+    await expect(Math.abs(Number.parseFloat(getComputedStyle(frame).borderTopLeftRadius) - 3)).toBeLessThan(1.1);
+    await expect(Math.abs(Number.parseFloat(getComputedStyle(handle).borderTopLeftRadius) - 8)).toBeLessThan(1.1);
+    await expect(Math.abs(part(canvasElement, 'image-compare-divider').getBoundingClientRect().width - 6)).toBeLessThan(
+      1.1,
+    );
+    await expect(getComputedStyle(part(canvasElement, 'image-compare-before-label')).letterSpacing).toBe('2px');
+    await expect(getComputedStyle(part(canvasElement, 'image-compare-after-label')).letterSpacing).toBe('3px');
+    await expect(getComputedStyle(canvas.getByRole('button')).letterSpacing).toBe('1px');
+  },
+};
+
+export const PreventedHandlers: Story = {
+  args: {
+    defaultValue: 30,
+    onKeyDown: (event) => {
+      if (event.key === 'Home') event.preventDefault();
+    },
+    slotProps: {
+      handle: {
+        onKeyDown: (event) => {
+          if (event.key === 'End') event.preventDefault();
+        },
+        onDoubleClick: (event) => event.preventDefault(),
+      },
+      frame: { onPointerDown: (event) => event.preventDefault() },
+      resetButton: { onClick: (event) => event.preventDefault() },
+    },
+  },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const slider = canvas.getByRole('slider');
+    await userEvent.tab();
+    await userEvent.keyboard('{Home}{End}');
+    await userEvent.dblClick(slider);
+    await userEvent.click(canvas.getByRole('button', { name: 'Center divider' }));
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    pointer.fire('pointerdown', 0.8);
+    pointer.fire('pointerup', 0.8);
+    await expect(slider).toHaveAttribute('aria-valuenow', '30');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onValueCommit).not.toHaveBeenCalled();
+    slider.focus();
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const WithoutReset: Story = {
+  args: { showReset: false },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole('button')).toBeNull();
+  },
+};
