@@ -12,6 +12,9 @@
 // trigger (a rejected controlled dismissal keeps focus inside); Tab-out and outside presses
 // never move focus (returnFocus is off, so no transient trigger focus either).
 // Disabled items stay in the list with aria-disabled="true"; arrows and typeahead skip them.
+// Consumer trigger handlers run before the menu's own; preventDefault() vetoes the open request.
+// The menu is labelled by the trigger; consumer aria-labelledby ids join it and a consumer
+// aria-label replaces it.
 import {
   createContext,
   useContext,
@@ -21,6 +24,7 @@ import {
   useState,
   type ComponentPropsWithRef,
   type CSSProperties,
+  type HTMLProps,
   type MouseEvent,
   type MutableRefObject,
   type ReactNode,
@@ -39,7 +43,7 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
 import { REDUCED_MOTION } from '../../styling/media';
@@ -88,21 +92,62 @@ interface MenuContextValue {
   getItemProps: UseInteractionsReturn['getItemProps'];
 }
 
+/**
+ * Private seam for component families built on the menu controller (Menu, SplitButton): the
+ * family names usage errors, `marker` is the part's data-ui and `styles` its own styles.
+ */
+export interface MenuPartIdentity {
+  family: string;
+  marker: string;
+  styles?: Interpolation<Theme>;
+}
+
 const MenuContext = createContext<MenuContextValue | null>(null);
-// Set by Menu.Content: items may only render inside it (they register with its FloatingList).
+// Set by the content part: items may only render inside it (they register with its FloatingList).
 const MenuContentContext = createContext(false);
 
-function useMenuContext(part: string): MenuContextValue {
+function useMenuContext(family: string, part: string): MenuContextValue {
   const context = useContext(MenuContext);
-  if (!context) throw new Error(`Menu.${part} must be rendered inside <Menu>.`);
+  if (!context) throw new Error(`${family}.${part} must be rendered inside <${family}>.`);
   return context;
 }
 
-function useMenuItemContext(): MenuContextValue {
-  const context = useMenuContext('Item');
-  if (!useContext(MenuContentContext)) throw new Error('Menu.Item must be rendered inside <Menu.Content>.');
+function useMenuItemContext(family: string): MenuContextValue {
+  const context = useMenuContext(family, 'Item');
+  if (!useContext(MenuContentContext)) throw new Error(`${family}.Item must be rendered inside <${family}.Content>.`);
   return context;
 }
+
+type EventHandler = (event: { defaultPrevented: boolean }) => unknown;
+
+const isHandlerKey = (key: string) => /^on[A-Z]/.test(key);
+
+/**
+ * Runs each consumer handler before the matching interaction handler; a consumer
+ * `preventDefault()` vetoes the internal request (open, toggle, navigation).
+ */
+function consumerHandlersFirst(
+  props: HTMLProps<Element>,
+  getProps: (userProps: HTMLProps<Element>) => Record<string, unknown>,
+) {
+  const consumer: Record<string, EventHandler> = {};
+  const attributes: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(props)) {
+    if (isHandlerKey(key) && typeof value === 'function') consumer[key] = value as EventHandler;
+    else attributes[key] = value;
+  }
+  const merged = getProps(attributes as HTMLProps<Element>);
+  for (const [key, handler] of Object.entries(consumer)) {
+    const internal = merged[key] as EventHandler | undefined;
+    merged[key] = (event: { defaultPrevented: boolean }) => {
+      handler(event);
+      if (!event.defaultPrevented) internal?.(event);
+    };
+  }
+  return merged;
+}
+
+const joinIds = (...ids: Array<string | undefined>) => ids.filter(Boolean).join(' ') || undefined;
 
 const itemStyle = css({
   appearance: 'none',
@@ -137,6 +182,11 @@ const separatorStyle = css({
   marginBlock: vars.space[1],
   backgroundColor: vars.color.border,
 });
+
+/** Own styles of a menu item, for families that layer their own item styles on top. */
+export const menuItemStyles = [itemStyle, listboxItemStateStyle];
+/** Own styles of a menu separator. */
+export const menuSeparatorStyles = separatorStyle;
 
 function MenuOverlay({
   open: openProp,
@@ -241,18 +291,26 @@ function MenuRoot(props: MenuProps) {
 
 MenuRoot.displayName = 'Menu';
 
-function MenuTrigger({ ref, className, sx, ...props }: MenuTriggerProps) {
-  const { refs, getReferenceProps } = useMenuContext('Trigger');
+export function MenuTriggerPart({
+  family,
+  marker,
+  styles,
+  ref,
+  className,
+  sx,
+  ...props
+}: MenuTriggerProps & MenuPartIdentity) {
+  const { refs, getReferenceProps } = useMenuContext(family, 'Trigger');
   const mergedRef = useMergeRefs([refs.setReference, ref]);
 
   return (
-    <WithSx className={className} styles={triggerStyle} sx={sx}>
+    <WithSx className={className} styles={styles} sx={sx}>
       {(className) => (
         <button
           type="button"
-          {...getReferenceProps(props)}
+          {...consumerHandlersFirst(props, getReferenceProps)}
           ref={mergedRef}
-          data-ui="menu-trigger"
+          data-ui={marker}
           className={className}
         />
       )}
@@ -260,14 +318,36 @@ function MenuTrigger({ ref, className, sx, ...props }: MenuTriggerProps) {
   );
 }
 
+function MenuTrigger(props: MenuTriggerProps) {
+  return <MenuTriggerPart {...props} family="Menu" marker="menu-trigger" styles={triggerStyle} />;
+}
+
 MenuTrigger.displayName = 'Menu.Trigger';
 
-function MenuContent({ ref, style, children, className, sx, ...rest }: MenuContentProps) {
+export function MenuContentPart({
+  family,
+  marker,
+  styles,
+  ref,
+  style,
+  children,
+  className,
+  sx,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
+  ...rest
+}: MenuContentProps & MenuPartIdentity) {
   const { open, refs, floatingContext, floatingStyles, elementsRef, labelsRef, getFloatingProps } =
-    useMenuContext('Content');
+    useMenuContext(family, 'Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
 
   if (!open) return null;
+
+  const floatingProps = getFloatingProps(rest);
+  // The trigger names the menu; consumer ids join it, and a consumer aria-label replaces it.
+  const triggerLabel = floatingProps['aria-labelledby'] as string | undefined;
+  const labelledBy =
+    ariaLabelledBy !== undefined ? joinIds(ariaLabelledBy, triggerLabel) : ariaLabel !== undefined ? undefined : triggerLabel;
 
   return (
     <OverlayPortal>
@@ -281,12 +361,14 @@ function MenuContent({ ref, style, children, className, sx, ...rest }: MenuConte
         returnFocus={false}
         restoreFocus
       >
-        <WithSx className={className} styles={listboxSurfaceStyle} sx={sx}>
+        <WithSx className={className} styles={styles} sx={sx}>
           {(className) => (
             <div
-              {...getFloatingProps(rest)}
+              {...floatingProps}
+              aria-label={ariaLabel}
+              aria-labelledby={labelledBy}
               ref={mergedRef}
-              data-ui="menu"
+              data-ui={marker}
               style={{ ...style, ...floatingStyles }}
               className={className}
             >
@@ -301,10 +383,25 @@ function MenuContent({ ref, style, children, className, sx, ...rest }: MenuConte
   );
 }
 
+function MenuContent(props: MenuContentProps) {
+  return <MenuContentPart {...props} family="Menu" marker="menu" styles={listboxSurfaceStyle} />;
+}
+
 MenuContent.displayName = 'Menu.Content';
 
-function MenuItem({ ref, onSelect, disabled = false, onClick, className, sx, ...rest }: MenuItemProps) {
-  const { activeIndex, requestClose, disabledIndices, getItemProps } = useMenuItemContext();
+export function MenuItemPart({
+  family,
+  marker,
+  styles,
+  ref,
+  onSelect,
+  disabled = false,
+  onClick,
+  className,
+  sx,
+  ...rest
+}: MenuItemProps & MenuPartIdentity) {
+  const { activeIndex, requestClose, disabledIndices, getItemProps } = useMenuItemContext(family);
   // A null label removes disabled items from typeahead; undefined falls back to textContent.
   const { ref: listItemRef, index } = useCollectionListItem({ label: disabled ? null : undefined });
   const mergedRef = useMergeRefs([listItemRef, ref]);
@@ -321,7 +418,7 @@ function MenuItem({ ref, onSelect, disabled = false, onClick, className, sx, ...
   };
 
   return (
-    <WithSx className={className} styles={[itemStyle, listboxItemStateStyle]} sx={sx}>
+    <WithSx className={className} styles={styles} sx={sx}>
       {(className) => (
         <button
           type="button"
@@ -331,7 +428,7 @@ function MenuItem({ ref, onSelect, disabled = false, onClick, className, sx, ...
           tabIndex={isActive ? 0 : -1}
           aria-disabled={disabled || undefined}
           data-active={isActive || undefined}
-          data-ui="menu-item"
+          data-ui={marker}
           className={className}
         />
       )}
@@ -339,14 +436,29 @@ function MenuItem({ ref, onSelect, disabled = false, onClick, className, sx, ...
   );
 }
 
+function MenuItem(props: MenuItemProps) {
+  return <MenuItemPart {...props} family="Menu" marker="menu-item" styles={menuItemStyles} />;
+}
+
 MenuItem.displayName = 'Menu.Item';
 
-function MenuSeparator({ ref, className, sx, ...props }: MenuSeparatorProps) {
+export function MenuSeparatorPart({
+  marker,
+  styles,
+  ref,
+  className,
+  sx,
+  ...props
+}: MenuSeparatorProps & Omit<MenuPartIdentity, 'family'>) {
   return (
-    <WithSx className={className} styles={separatorStyle} sx={sx}>
-      {(className) => <div {...props} ref={ref} role="separator" data-ui="menu-separator" className={className} />}
+    <WithSx className={className} styles={styles} sx={sx}>
+      {(className) => <div {...props} ref={ref} role="separator" data-ui={marker} className={className} />}
     </WithSx>
   );
+}
+
+function MenuSeparator(props: MenuSeparatorProps) {
+  return <MenuSeparatorPart {...props} marker="menu-separator" styles={separatorStyle} />;
 }
 
 MenuSeparator.displayName = 'Menu.Separator';
