@@ -139,6 +139,12 @@ const innerStyle = css({
   borderBlockStart: `1px solid ${vars.color.border}`,
   fontSize: vars.textSize.sm,
   overflowWrap: 'anywhere',
+  // Intrinsically sized details (form controls, media) shrink to the available inline size instead
+  // of overflowing the clipped panel; zero specificity so consumer styles still win.
+  '& :where(input, select, textarea, img, video, canvas, svg, iframe)': {
+    maxInlineSize: '100%',
+    boxSizing: 'border-box',
+  },
   '[data-size="sm"] &': { padding: vars.space[3] },
 });
 function validCap(value: number | undefined) {

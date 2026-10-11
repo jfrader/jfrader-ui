@@ -8,6 +8,10 @@ import { Popover } from '../popover';
 import { ExpandableCard, type ExpandableCardProps } from './index';
 
 const frameStyle = css({ inlineSize: 'min(100%, 640px)', minInlineSize: 0 });
+// Definite parent widths: the centered story frame is otherwise shrink-to-fit around the card.
+const morphParentStyle = css({ inlineSize: '640px', maxInlineSize: '100%' });
+const narrowParentStyle = css({ inlineSize: '200px' });
+const GEOMETRY_TOLERANCE = 1.5;
 const fixtureStyle = css({
   minBlockSize: vars.space[8],
   padding: vars.space[2],
@@ -81,6 +85,20 @@ async function settled(panel: HTMLElement, open: boolean) {
     { timeout: 4000 },
   );
 }
+/** Waits until `measure()` is within tolerance of `expected()` and has stopped moving between samples. */
+async function settledAt(measure: () => number, expected: () => number) {
+  let previous = Number.NaN;
+  await waitFor(
+    async () => {
+      const current = measure();
+      const moving = Math.abs(current - previous);
+      previous = current;
+      await expect(Math.abs(current - expected())).toBeLessThan(GEOMETRY_TOLERANCE);
+      await expect(moving).toBeLessThan(0.1);
+    },
+    { timeout: 4000, interval: 50 },
+  );
+}
 export const Default: Story = {
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: /^Studio plan/ });
@@ -127,27 +145,44 @@ export const Disabled: Story = {
 };
 export const WidthMorph: Story = {
   args: { collapsedInlineSize: 320, expandedInlineSize: 600 },
+  decorators: [
+    (Story) => (
+      <div css={morphParentStyle}>
+        <Story />
+      </div>
+    ),
+  ],
   play: async ({ canvas, userEvent }) => {
     const trigger = canvas.getByRole('button');
     const article = trigger.closest('article')!;
-    await waitFor(async () => {
-      await expect(Math.abs(article.getBoundingClientRect().width - 320)).toBeLessThan(1.5);
-    });
+    const room = () => article.parentElement!.getBoundingClientRect().width;
+    const width = () => article.getBoundingClientRect().width;
+    await settledAt(width, () => Math.min(320, room()));
     await userEvent.click(trigger);
-    await waitFor(
-      async () => {
-        await expect(
-          Math.abs(
-            article.getBoundingClientRect().width -
-              Math.min(600, article.parentElement!.getBoundingClientRect().width),
-          ),
-        ).toBeLessThan(1.5);
-      },
-      { timeout: 4000 },
-    );
-    await expect(article.getBoundingClientRect().width).toBeLessThanOrEqual(
-      article.parentElement!.getBoundingClientRect().width + 1.5,
-    );
+    await settledAt(width, () => Math.min(600, room()));
+    await expect(width()).toBeLessThanOrEqual(room() + GEOMETRY_TOLERANCE);
+  },
+};
+export const NarrowParent: Story = {
+  decorators: [
+    (Story) => (
+      <div css={narrowParentStyle}>
+        <Story />
+      </div>
+    ),
+  ],
+  play: async ({ canvas, userEvent }) => {
+    const trigger = canvas.getByRole('button');
+    await userEvent.click(trigger);
+    const panel = canvas.getByRole('region');
+    await settled(panel, true);
+    const inner = panel.firstElementChild as HTMLElement;
+    const bounds = panel.getBoundingClientRect();
+    for (const element of [panel, inner])
+      await expect(element.scrollWidth).toBeLessThanOrEqual(element.clientWidth + GEOMETRY_TOLERANCE);
+    const input = canvas.getByRole('textbox').getBoundingClientRect();
+    await expect(input.left).toBeGreaterThanOrEqual(bounds.left - GEOMETRY_TOLERANCE);
+    await expect(input.right).toBeLessThanOrEqual(bounds.right + GEOMETRY_TOLERANCE);
   },
 };
 export const FillParent: Story = {
