@@ -43,6 +43,7 @@ Replace `pending` with `pass YYYY-MM-DD <browser/AT>` or `fail: GURI-N (<issue t
 | popover | pending; auto: Tab, Enter, Escape, focus return | pending | pending | pending | |
 | progress | n/a (non-interactive) | pending | pending | pending | forced-colors CSS present; indeterminate slide uses `:dir(rtl)`; reduced motion pending |
 | radio-group | pending; auto: Tab, Shift+Tab, arrows | pending | pending | pending | forced-colors CSS present; arrows under RTL untested; reduced motion pending |
+| search-field | pending; auto: Tab, typing, Escape clears nonempty, Enter submits form | pending | pending | pending | reduced motion pending |
 | select | pending; auto: Tab, ArrowUp/Down, Home/End, Enter, Space, Escape | pending | pending | pending | virtual focus announcements; reduced motion pending |
 | skeleton | n/a (non-interactive) | pending | pending | pending | shimmer reverses via `:dir(rtl)`; reduced motion pending |
 | spinner | n/a (non-interactive) | pending | pending | pending | live region announcement; reduced motion pending |

@@ -344,8 +344,8 @@ export const RTL: Story = {
   args: { dir: 'rtl', label: 'Buscar miembros', defaultValue: 'Ada' },
   play: async ({ canvas }) => { await expect(getComputedStyle(canvas.getByRole('searchbox')).direction).toBe('rtl'); },
 };
-export const ForcedColors: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Inspect with the browser forced-colors setting enabled.' } } } };
-export const ReducedMotion: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Inspect with the browser reduced-motion setting enabled.' } } } };
+export const ForcedColors: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Manual check: enable the forced-colors setting in the browser (see docs/qa-gates.md). Not automated here.' } } } };
+export const ReducedMotion: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Manual check: enable prefers-reduced-motion: reduce in the browser (see docs/qa-gates.md). Not automated here.' } } } };
 export const CustomIcons: Story = {
   args: { defaultValue: 'Ada', searchIcon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>, clearIcon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 12h12" /></svg> },
 };

@@ -80,7 +80,6 @@ const clearStyle = css({
   '&:hover:not(:disabled)': { backgroundColor: vars.color.surfaceHover, color: vars.color.text },
   '&:focus-visible': focusRingInset,
   '&:disabled': { cursor: 'not-allowed' },
-  '& > svg': { inlineSize: vars.space[4], blockSize: vars.space[4] },
   '&[data-enter]': { '@starting-style': { opacity: 0, transform: 'scale(0.9)' } },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',
