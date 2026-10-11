@@ -196,8 +196,15 @@ export function ChipGroup({
       selected.includes(option.value) ||
       pins.includes(option.value),
   );
-  const hiddenCount = options.length - visible.length;
-  const hasOverflow = maxVisible !== undefined && options.length > maxVisible;
+  /** Options past the cutoff that a collapsed view hides; equals the hidden count while collapsed. */
+  const hiddenCount = options.filter(
+    (option, index) =>
+      maxVisible !== undefined &&
+      index >= maxVisible &&
+      !selected.includes(option.value) &&
+      (expanded || !pins.includes(option.value)),
+  ).length;
+  const hasOverflow = hiddenCount > 0;
   const rootRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -300,6 +307,7 @@ export function ChipGroup({
                             if (!pressed) requestValue(option.value);
                             else if (allowEmpty) requestValue('');
                           } else {
+                            /** Rebuilt from options, so unknown controlled values stay in the prop but are not emitted. */
                             const next = options
                               .filter((entry) =>
                                 entry.value === option.value ? !pressed : selected.includes(entry.value),
@@ -403,7 +411,12 @@ function HeightFrame({
     previousHeight.current = next;
     const controls =
       previous !== null && previous !== next && !reduced
-        ? animate(frame, { height: [previous, next] }, LAYOUT_SPRING)
+        ? animate(previous, next, {
+            ...LAYOUT_SPRING,
+            onUpdate: (height) => {
+              frame.style.height = `${height}px`;
+            },
+          })
         : undefined;
     let active = true;
     void controls?.then(() => {

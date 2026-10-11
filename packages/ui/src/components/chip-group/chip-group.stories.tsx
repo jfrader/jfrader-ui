@@ -1,6 +1,7 @@
 import { StrictMode, useState, type ReactNode } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within, waitFor } from 'storybook/test';
+import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
@@ -14,6 +15,7 @@ const OPTIONS = [
   { value: 'testing', label: 'Testing' },
   { value: 'delivery', label: 'Delivery' },
 ];
+const SIZE_PX = { sm: Number.parseFloat(base.space[8]), md: Number.parseFloat(base.space[10]) };
 const OVERFLOW = { maxVisible: 2, moreLabel: (count: string) => `+${count} more`, lessLabel: 'Show less' };
 const meta = {
   title: 'Inputs/ChipGroup',
@@ -87,10 +89,10 @@ export const Sizes: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const groups = within(canvasElement).getAllByRole('group');
-    for (const [index, group] of groups.entries()) {
+    const heights = [SIZE_PX.sm, SIZE_PX.md];
+    for (const [index, group] of within(canvasElement).getAllByRole('group').entries()) {
       for (const button of within(group).getAllByRole('button'))
-        await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(index === 0 ? 31 : 39);
+        await expect(button.getBoundingClientRect().height).toBeCloseTo(heights[index]!, 1);
     }
   },
 };
@@ -127,6 +129,17 @@ export const SelectedBeyondCutoff: Story = {
     await userEvent.click(canvas.getByRole('button', { name: '+3 more' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Show less' }));
     await expect(canvas.queryByRole('button', { name: 'Delivery' })).not.toBeInTheDocument();
+  },
+};
+export const AllPinnedNoOverflow: Story = {
+  args: { ...OVERFLOW, defaultValue: OPTIONS.slice(OVERFLOW.maxVisible).map((option) => option.value) },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByRole('button')).toHaveLength(OPTIONS.length);
+    await expect(canvas.queryByRole('button', { expanded: false })).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: 'Delivery' }));
+    await expect(canvas.getByRole('button', { name: 'Delivery' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(canvas.queryByRole('button', { expanded: false })).not.toBeInTheDocument();
   },
 };
 export const WrappedLongLabels: Story = {
@@ -491,6 +504,46 @@ export const RapidToggle: Story = {
       await expect((canvas.getByRole('group').firstElementChild as HTMLElement).style.height).toBe('auto');
     });
     await expect(canvas.getAllByRole('button').filter((button) => button.tabIndex === 0)).toHaveLength(1);
+  },
+};
+function heightFrameParts(group: HTMLElement) {
+  const frame = group.firstElementChild as HTMLElement;
+  return { frame, row: frame.firstElementChild as HTMLElement };
+}
+async function expectFrameReleased(frame: HTMLElement, row: HTMLElement) {
+  await new Promise(requestAnimationFrame);
+  await waitFor(async () => {
+    await expect(frame.style.height).toBe('auto');
+    await expect(frame.getBoundingClientRect().height).toBeCloseTo(row.getBoundingClientRect().height, 1);
+  });
+}
+export const ResizeRelease: Story = {
+  args: { ...OVERFLOW },
+  render: (args) => (
+    <div style={{ inlineSize: '24rem' }}>
+      <ChipGroup {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const group = canvas.getByRole('group');
+    const container = group.parentElement!;
+    const { frame, row } = heightFrameParts(group);
+    await userEvent.click(canvas.getByRole('button', { name: '+4 more' }));
+    await new Promise(requestAnimationFrame);
+    await expect(frame.style.height).toMatch(/px$/);
+    const expandedHeight = row.getBoundingClientRect().height;
+    container.style.inlineSize = '10rem';
+    await expectFrameReleased(frame, row);
+    await expect(row.getBoundingClientRect().height).toBeGreaterThan(expandedHeight);
+    const narrowHeight = row.getBoundingClientRect().height;
+    for (const button of within(group).getAllByRole('button')) button.style.fontSize = `calc(${vars.textSize.md} * 2)`;
+    await waitFor(async () => {
+      await expect(row.getBoundingClientRect().height).toBeGreaterThan(narrowHeight);
+    });
+    await expectFrameReleased(frame, row);
+    await userEvent.click(canvas.getByRole('button', { name: 'Show less' }));
+    await expectFrameReleased(frame, row);
   },
 };
 export const LightTheme: Story = {
