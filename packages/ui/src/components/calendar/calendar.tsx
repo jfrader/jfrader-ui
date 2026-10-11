@@ -20,8 +20,18 @@
 // Native Date + Intl.DateTimeFormat: Temporal is not Baseline (MDN, checked 2026-10-10).
 // The week start comes from Intl.Locale#getWeekInfo (Baseline 2026), the older `weekInfo`
 // accessor, or Sunday when the engine exposes neither.
-// "Today" is read at render time; server-rendered output can disagree with the client across
-// midnight or time zones.
+// "Today" is read at render time unless `today` is supplied; server-rendered output can disagree
+// with the client across midnight or time zones.
+// Range mode (`selectionRange` defined, even null) is the APG multi-selection variant of the
+// grid: it sets aria-multiselectable, every enabled gridcell reports aria-selected true/false
+// for the inclusive interval, and the endpoint day buttons are described by `rangeLabels`.
+// `previewRange` decorates a tentative interval (data-preview*) and never sets aria-selected.
+// Activation in range mode only reports `onDayActivate`; the parent owns the interval.
+// `tabStopDate` hands roving focus to the parent (several grids sharing one tab stop): the
+// grid's only tab stop is exactly that date when it is shown and enabled, else none. Keyboard
+// moves then report their destination through `onFocusedDateChange` (across months too) and
+// neither request visibleMonth nor move DOM focus: the parent reveals the month, passes the
+// new tabStopDate and focuses the matching day.
 import {
   createContext,
   useContext,
@@ -37,6 +47,7 @@ import {
 } from 'react';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useLatestCallback } from '../../utils/use-latest-callback';
 import {
   cellStyle,
   dayStyle,
@@ -75,6 +86,18 @@ import {
 /** Day of the week as counted by `Date#getUTCDay`: 0 is Sunday, 6 is Saturday. */
 export type CalendarWeekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
+/** Inclusive interval of 'YYYY-MM-DD' dates, start ≤ end. */
+export interface CalendarRange {
+  start: string;
+  end: string;
+}
+
+/** Descriptions read on the first and last day of `selectionRange`. */
+export interface CalendarRangeLabels {
+  start: string;
+  end: string;
+}
+
 export interface CalendarProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
   /** Selected date, 'YYYY-MM-DD'. */
   value?: string;
@@ -92,6 +115,20 @@ export interface CalendarProps extends Omit<ComponentPropsWithRef<'div'>, 'defau
   locale?: string;
   /** Defaults to the locale's week start. */
   firstDayOfWeek?: CalendarWeekday;
+  /** 'YYYY-MM-DD' marked as today. Defaults to the local civil date at render time. */
+  today?: string;
+  /** Range mode: the selected interval (null for none). Replaces `value` as the selection. */
+  selectionRange?: CalendarRange | null;
+  /** Tentative interval, decorated but not selected. */
+  previewRange?: CalendarRange | null;
+  /** Parent-owned roving tab stop; null or a date outside the shown month leaves no day tab stop. */
+  tabStopDate?: string | null;
+  /** Every native day activation (click, Enter, Space), including the selected day. */
+  onDayActivate?: (date: string) => void;
+  /** A day received focus, or a keyboard move chose its destination (possibly in another month). */
+  onFocusedDateChange?: (date: string) => void;
+  /** Range mode: endpoint descriptions for screen readers. */
+  rangeLabels?: CalendarRangeLabels;
 }
 
 /** The header renders its own month buttons and label. */
@@ -106,6 +143,12 @@ interface FocusTarget {
 
 interface CalendarContextValue {
   value: string | undefined;
+  selectionRange: CalendarRange | null | undefined;
+  previewRange: CalendarRange | null | undefined;
+  tabStopDate: string | null | undefined;
+  onDayActivate: (date: string) => void;
+  onFocusedDateChange: (date: string) => void;
+  rangeLabelIds: CalendarRangeLabels | undefined;
   visibleMonth: string;
   today: string;
   min: string | undefined;
@@ -129,6 +172,9 @@ function useCalendarContext(part: string): CalendarContextValue {
   return context;
 }
 
+const isInRange = (date: string, range: CalendarRange | null | undefined) =>
+  range != null && date >= range.start && date <= range.end;
+
 const PREVIOUS_GLYPH = '‹';
 const NEXT_GLYPH = '›';
 
@@ -146,14 +192,32 @@ function CalendarRoot({
   max: maxProp,
   locale: localeProp,
   firstDayOfWeek: firstDayOfWeekProp,
+  today: todayProp,
+  selectionRange,
+  previewRange,
+  tabStopDate,
+  onDayActivate: onDayActivateProp,
+  onFocusedDateChange: onFocusedDateChangeProp,
+  rangeLabels,
   className,
   sx,
+  children,
   ...rest
 }: CalendarProps) {
-  const labelId = `${useId()}-label`;
+  const baseId = useId();
+  const labelId = `${baseId}-label`;
+  const hasRangeLabels = rangeLabels !== undefined;
+  const rangeLabelIds = useMemo(
+    () => (hasRangeLabels ? { start: `${baseId}-range-start`, end: `${baseId}-range-end` } : undefined),
+    [baseId, hasRangeLabels],
+  );
+  const onDayActivate = useLatestCallback(onDayActivateProp);
+  const onFocusedDateChange = useLatestCallback(onFocusedDateChangeProp);
   // Today follows the user's local civil day, not the UTC day used for arithmetic.
   const now = new Date();
-  const today = isoFromDate(dateFromParts(now.getFullYear(), now.getMonth(), now.getDate()));
+  const today = isIsoDate(todayProp)
+    ? todayProp
+    : isoFromDate(dateFromParts(now.getFullYear(), now.getMonth(), now.getDate()));
   const locale = useMemo(
     () => new Intl.DateTimeFormat(localeProp ?? defaultLocale(), CIVIL_DATE_FORMAT_OPTIONS).resolvedOptions().locale,
     [localeProp],
@@ -179,6 +243,12 @@ function CalendarRoot({
   const context = useMemo<CalendarContextValue>(
     () => ({
       value,
+      selectionRange,
+      previewRange,
+      tabStopDate,
+      onDayActivate,
+      onFocusedDateChange,
+      rangeLabelIds,
       visibleMonth,
       today,
       min,
@@ -195,6 +265,12 @@ function CalendarRoot({
     }),
     [
       value,
+      selectionRange,
+      previewRange,
+      tabStopDate,
+      onDayActivate,
+      onFocusedDateChange,
+      rangeLabelIds,
       visibleMonth,
       today,
       min,
@@ -212,7 +288,21 @@ function CalendarRoot({
   return (
     <CalendarContext.Provider value={context}>
       <WithSx className={className} styles={rootStyle} sx={sx}>
-        {(className) => <div {...rest} ref={ref} data-ui="calendar" className={className} />}
+        {(className) => (
+          <div {...rest} ref={ref} data-ui="calendar" className={className}>
+            {children}
+            {rangeLabels && rangeLabelIds && (
+              <>
+                <span id={rangeLabelIds.start} hidden>
+                  {rangeLabels.start}
+                </span>
+                <span id={rangeLabelIds.end} hidden>
+                  {rangeLabels.end}
+                </span>
+              </>
+            )}
+          </div>
+        )}
       </WithSx>
     </CalendarContext.Provider>
   );
@@ -285,28 +375,62 @@ interface DayProps {
 }
 
 function Day({ date, isTabStop }: DayProps) {
-  const { value, today, min, max, formatters, setFocus, requestValue } = useCalendarContext('Grid');
-  const isSelected = value === date;
+  const {
+    value,
+    selectionRange,
+    previewRange,
+    rangeLabelIds,
+    today,
+    min,
+    max,
+    formatters,
+    setFocus,
+    requestValue,
+    onDayActivate,
+    onFocusedDateChange,
+  } = useCalendarContext('Grid');
+  const isRangeMode = selectionRange !== undefined;
+  const isEnabled = isWithin(date, min, max);
+  const isSelected = isRangeMode ? isInRange(date, selectionRange) : value === date;
+  const isRangeStart = selectionRange?.start === date;
+  const isRangeEnd = selectionRange?.end === date;
   const isToday = today === date;
   const civilDate = dateFromIso(date);
+  const describedBy =
+    [isRangeStart ? rangeLabelIds?.start : undefined, isRangeEnd ? rangeLabelIds?.end : undefined]
+      .filter(Boolean)
+      .join(' ') || undefined;
+  // Range mode exposes the selection state of every selectable day (APG multi-selection).
+  const ariaSelected = isSelected ? true : isRangeMode && isEnabled ? false : undefined;
 
   return (
-    <td role="gridcell" aria-selected={isSelected || undefined} css={cellStyle}>
+    <td role="gridcell" aria-selected={ariaSelected} css={cellStyle}>
       <button
         type="button"
         data-ui="calendar-day"
         data-date={date}
         data-today={isToday || undefined}
-        data-selected={isSelected || undefined}
+        data-selected={(!isRangeMode && isSelected) || undefined}
+        data-in-range={(isRangeMode && isSelected) || undefined}
+        data-range-start={isRangeStart || undefined}
+        data-range-end={isRangeEnd || undefined}
+        data-preview={isInRange(date, previewRange) || undefined}
+        data-preview-start={previewRange?.start === date || undefined}
+        data-preview-end={previewRange?.end === date || undefined}
         aria-current={isToday ? 'date' : undefined}
         aria-label={formatters.date.format(civilDate)}
+        aria-describedby={describedBy}
         tabIndex={isTabStop ? 0 : -1}
-        disabled={!isWithin(date, min, max)}
-        onFocus={() => setFocus({ date, fallback: date })}
+        disabled={!isEnabled}
+        onFocus={() => {
+          setFocus({ date, fallback: date });
+          onFocusedDateChange(date);
+        }}
         onClick={() => {
           // Safari does not focus buttons on click: move the tab stop explicitly.
           setFocus({ date, fallback: date });
-          requestValue(date);
+          if (!isRangeMode) requestValue(date);
+          onDayActivate(date);
         }}
         css={dayStyle}
       >
@@ -327,6 +451,8 @@ function CalendarGrid({
 }: CalendarGridProps) {
   const {
     value,
+    selectionRange,
+    tabStopDate,
     visibleMonth,
     today,
     min,
@@ -336,6 +462,7 @@ function CalendarGrid({
     focus,
     setFocus,
     requestVisibleMonth,
+    onFocusedDateChange,
     labelId,
     hasHeader,
   } = useCalendarContext('Grid');
@@ -347,10 +474,16 @@ function CalendarGrid({
   const first = firstOfMonth(visibleMonth);
   const dayCount = dateFromIso(lastOfMonth(visibleMonth)).getUTCDate();
   const days = Array.from({ length: dayCount }, (_, index) => shiftDays(first, index));
-  const isFocusable = (date: string | undefined): date is string =>
-    date !== undefined && days.includes(date) && isWithin(date, min, max);
-  const tabStop =
-    [focus?.date, focus?.fallback, value, today].find(isFocusable) ?? days.find((day) => isWithin(day, min, max));
+  const isFocusable = (date: string | null | undefined): date is string =>
+    date != null && days.includes(date) && isWithin(date, min, max);
+  const isParentFocus = tabStopDate !== undefined;
+  const tabStop = isParentFocus
+    ? isFocusable(tabStopDate)
+      ? tabStopDate
+      : undefined
+    : ([focus?.date, focus?.fallback, selectionRange === undefined ? value : selectionRange?.start, today].find(
+        isFocusable,
+      ) ?? days.find((day) => isWithin(day, min, max)));
 
   const cells: Array<string | null> = [...Array<null>(weekColumn(first, firstDayOfWeek)).fill(null), ...days];
   const weeks = Array.from({ length: Math.ceil(cells.length / DAYS_PER_WEEK) }, (_, week) =>
@@ -378,6 +511,10 @@ function CalendarGrid({
     event.preventDefault();
     const target = clampDate(move(from, { firstDayOfWeek, shiftKey: event.shiftKey }), min, max);
     if (target === from) return;
+    if (isParentFocus) {
+      onFocusedDateChange(target);
+      return;
+    }
     setFocus({ date: target, fallback: from });
     focusPendingRef.current = true;
     if (monthOf(target) !== visibleMonth) requestVisibleMonth(monthOf(target));
@@ -393,6 +530,7 @@ function CalendarGrid({
           {...rest}
           ref={gridRef}
           role="grid"
+          aria-multiselectable={selectionRange !== undefined || undefined}
           aria-labelledby={ariaLabelledBy}
           aria-label={ariaLabelledBy === undefined ? (ariaLabelProp ?? monthLabel) : ariaLabelProp}
           data-ui="calendar-grid"

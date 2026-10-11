@@ -437,3 +437,60 @@ export const LightTheme: Story = {
     await expectSelected(canvasElement, 'October 12, 2026');
   },
 };
+
+/** Range mode: multi-selection semantics, endpoint descriptions, preview without selection. */
+export const RangeSelection: Story = {
+  args: {
+    visibleMonth: '2026-10',
+    today: '2026-10-11',
+    selectionRange: { start: '2026-10-12', end: '2026-10-14' },
+    previewRange: { start: '2026-10-14', end: '2026-10-16' },
+    rangeLabels: { start: 'Start date', end: 'End date' },
+    onDayActivate: fn(),
+    onValueChange: fn(),
+  },
+  render: (args) => <CalendarExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const grid = within(canvasElement).getByRole('grid', { name: 'October 2026' });
+    await expect(grid).toHaveAttribute('aria-multiselectable', 'true');
+    const selected = within(canvasElement)
+      .getAllByRole('gridcell')
+      .filter((cell) => cell.getAttribute('aria-selected') === 'true');
+    await expect(selected).toHaveLength(3);
+    // Every other selectable day reports aria-selected="false"; the preview never selects.
+    await expect(day(canvasElement, 'October 16, 2026').closest('td')).toHaveAttribute('aria-selected', 'false');
+    await expect(day(canvasElement, 'October 16, 2026')).toHaveAttribute('data-preview-end');
+    await expect(day(canvasElement, 'October 12, 2026')).toHaveAccessibleDescription('Start date');
+    await expect(day(canvasElement, 'October 14, 2026')).toHaveAccessibleDescription('End date');
+    await expect(day(canvasElement, 'October 11, 2026')).toHaveAttribute('aria-current', 'date');
+
+    // Activation only reports; the selection stays with the parent.
+    await userEvent.click(day(canvasElement, 'October 20, 2026'));
+    await expect(args.onDayActivate).toHaveBeenCalledTimes(1);
+    await expect(args.onDayActivate).toHaveBeenLastCalledWith('2026-10-20');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(day(canvasElement, 'October 20, 2026').closest('td')).toHaveAttribute('aria-selected', 'false');
+  },
+};
+
+/** A parent-owned tab stop is exact: null leaves no day tab stop; moves only report. */
+export const ParentTabStop: Story = {
+  args: { visibleMonth: '2026-10', tabStopDate: '2026-10-30', onFocusedDateChange: fn(), onVisibleMonthChange: fn() },
+  render: (args) => (
+    <>
+      <CalendarExample {...args} />
+      <CalendarExample {...args} visibleMonth="2026-11" tabStopDate={null} aria-label="Second" />
+    </>
+  ),
+  play: async ({ args, canvasElement, userEvent }) => {
+    const tabStops = canvasElement.querySelectorAll('[data-ui="calendar-day"][tabindex="0"]');
+    await expect(Array.from(tabStops)).toEqual([day(canvasElement, 'October 30, 2026')]);
+    await userEvent.click(day(canvasElement, 'October 30, 2026'));
+    await expect(args.onFocusedDateChange).toHaveBeenLastCalledWith('2026-10-30');
+    await userEvent.keyboard('{ArrowDown}');
+    // The destination lies in the next month: reported, no month request, focus unchanged.
+    await expect(args.onFocusedDateChange).toHaveBeenLastCalledWith('2026-11-06');
+    await expect(args.onVisibleMonthChange).not.toHaveBeenCalled();
+    await expect(day(canvasElement, 'October 30, 2026')).toHaveFocus();
+  },
+};

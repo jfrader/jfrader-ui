@@ -1,0 +1,1303 @@
+import { useState, type CSSProperties, type ReactNode } from 'react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, fn, waitFor, within } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
+import { withLightTheme } from '../../testing/story-decorators';
+import { expectThemedSurface } from '../../testing/theme-assertions';
+import { Button } from '../button';
+import { firstOfMonth, lastOfMonth, monthOf, shiftDays, shiftMonth } from '../calendar/calendar.utils';
+import { ThemeRoot } from '../theme-root';
+import {
+  DateRangePicker,
+  type DateRangePickerMessages,
+  type DateRangePickerProps,
+  type DateRangePickerTriggerProps,
+  type DateRangePreset,
+  type DateRangeValue,
+} from './index';
+
+const LOCALE = 'en-GB';
+const LABEL = 'Report period';
+const PLACEHOLDER = 'Choose dates';
+const OUTSIDE = 'After';
+const TODAY = '2026-10-11';
+const START_FIELD = 'from';
+const END_FIELD = 'to';
+const WEEK: DateRangeValue = { start: '2026-10-05', end: '2026-10-09' };
+// Tolerance for computed geometry (fractional device pixel ratios round borders and boxes).
+const PX_TOLERANCE = 1.1;
+
+const RANGE_FORMAT = new Intl.DateTimeFormat(LOCALE, { dateStyle: 'medium', calendar: 'gregory', timeZone: 'UTC' });
+const DAY_FORMAT = new Intl.DateTimeFormat(LOCALE, { dateStyle: 'long', calendar: 'gregory', timeZone: 'UTC' });
+const MONTH_FORMAT = new Intl.DateTimeFormat(LOCALE, {
+  month: 'long',
+  year: 'numeric',
+  calendar: 'gregory',
+  timeZone: 'UTC',
+});
+const PLURAL = new Intl.PluralRules(LOCALE);
+const DAY_UNITS: Partial<Record<Intl.LDMLPluralRule, string>> & { other: string } = { one: 'day', other: 'days' };
+
+const rangeMessages: DateRangePickerMessages = {
+  apply: 'Apply',
+  cancel: 'Cancel',
+  empty: 'No dates selected',
+  start: 'Start date',
+  end: 'End date',
+  presets: 'Quick ranges',
+  error: 'Choose a valid period',
+  required: 'required',
+  summary: ({ range, days, formattedDays }) =>
+    `${range} · ${formattedDays} ${DAY_UNITS[PLURAL.select(days)] ?? DAY_UNITS.other}`,
+};
+
+// ---- Preset recipes: date-only arithmetic on 'YYYY-MM-DD' strings.
+
+const lastDays =
+  (count: number) =>
+  (today: string): DateRangeValue => ({ start: shiftDays(today, 1 - count), end: today });
+
+const wholeMonth = (month: string): DateRangeValue => ({ start: firstOfMonth(month), end: lastOfMonth(month) });
+
+function quarterOf(today: string): DateRangeValue {
+  const monthIndex = Number(today.slice(5, 7)) - 1;
+  const first = shiftMonth(monthOf(today), -(monthIndex % 3));
+  return { start: firstOfMonth(first), end: lastOfMonth(shiftMonth(first, 2)) };
+}
+
+const PRESETS: DateRangePreset[] = [
+  { id: 'today', label: 'Today', range: (today) => ({ start: today, end: today }) },
+  { id: 'yesterday', label: 'Yesterday', range: (today) => lastDays(1)(shiftDays(today, -1)) },
+  { id: 'last-7', label: 'Last 7 days', range: lastDays(7) },
+  { id: 'last-30', label: 'Last 30 days', range: lastDays(30) },
+  { id: 'this-month', label: 'This month', range: (today) => wholeMonth(monthOf(today)) },
+  { id: 'last-month', label: 'Last month', range: (today) => wholeMonth(shiftMonth(monthOf(today), -1)) },
+  { id: 'this-quarter', label: 'This quarter', range: quarterOf },
+  { id: 'year-to-date', label: 'Year to date', range: (today) => ({ start: `${today.slice(0, 4)}-01-01`, end: today }) },
+];
+
+const FALSY_NODES = [0, '', false, null] as const;
+
+// Ref spies: the plays compare the received argument with the rendered element.
+const triggerRef = fn();
+const contentRef = fn();
+
+const stackStyle = {
+  display: 'grid',
+  justifyItems: 'start',
+  gap: vars.space[4],
+} satisfies CSSProperties;
+
+const USAGE = `const rangeMessages = {
+  apply: 'Apply',
+  cancel: 'Cancel',
+  empty: 'No dates selected',
+  start: 'Start date',
+  end: 'End date',
+  summary: ({ range, days, formattedDays }) =>
+    \`\${range} · \${formattedDays} \${new Intl.PluralRules('en-GB').select(days) === 'one' ? 'day' : 'days'}\`,
+};
+
+<DateRangePicker locale="en-GB" messages={rangeMessages}>
+  <DateRangePicker.Trigger aria-label="Report period" placeholder="Choose dates" />
+  <DateRangePicker.Content />
+</DateRangePicker>`;
+
+const meta = {
+  title: 'Pickers/DateRangePicker',
+  component: DateRangePicker,
+  tags: ['autodocs'],
+  args: { locale: LOCALE, today: TODAY, messages: rangeMessages },
+  parameters: {
+    // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
+    // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
+    // aria-hidden element is still checked.
+    a11y: {
+      config: {
+        rules: [{ id: 'aria-hidden-focus', selector: '[aria-hidden="true"]:not([data-floating-ui-focus-guard])' }],
+      },
+    },
+    docs: {
+      description: {
+        component:
+          'Choose an inclusive range of civil dates for reports, bookings and leave. Values are `{ start, end }` with `YYYY-MM-DD` strings: no time or time zone. Selection happens in a draft: the first day anchors it, the hovered or focused day previews the interval, the second day finishes it, and only Apply commits (`onValueChange`, then `onOpenChange(false)`). Cancel, Escape, outside presses and Tab-out discard the draft. Presets are consumer-labelled; `range(today)` returns the preset interval and out-of-bounds presets stay visible but disabled. `months="auto"` shows two months when the boundary leaves 712px. All copy comes from `messages`, including a plural-aware `summary`; dates and numbers go through Intl in `locale`. Supply `today` (and `locale`) for deterministic server rendering. Required is exposed in the trigger name through `messages.required`; the hidden fields do not enforce native validation. Screen-reader, forced-colors and reduced-motion checks remain manual gates.',
+      },
+      source: { code: USAGE },
+    },
+  },
+} satisfies Meta<typeof DateRangePicker>;
+
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+type ExampleProps = DateRangePickerProps & { trigger?: Partial<DateRangePickerTriggerProps> };
+
+function RangeExample({ trigger, ...props }: ExampleProps) {
+  return (
+    <div style={stackStyle}>
+      <DateRangePicker {...props}>
+        <DateRangePicker.Trigger aria-label={LABEL} placeholder={PLACEHOLDER} {...trigger} />
+        <DateRangePicker.Content />
+      </DateRangePicker>
+      <Button>{OUTSIDE}</Button>
+    </div>
+  );
+}
+RangeExample.displayName = 'RangeExample';
+
+// ---- Helpers.
+
+function civil(iso: string) {
+  const [year = 0, month = 1, day = 1] = iso.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+const formattedRange = ({ start, end }: DateRangeValue) => RANGE_FORMAT.formatRange(civil(start), civil(end));
+const dayName = (iso: string) => DAY_FORMAT.format(civil(iso));
+const monthName = (month: string) => MONTH_FORMAT.format(civil(`${month}-01`));
+
+/** Portaled content lives in the story document's body, outside the canvas. */
+const bodyOf = (canvasElement: HTMLElement) => within(canvasElement.ownerDocument.body);
+
+const getTrigger = (canvasElement: HTMLElement, name: string | RegExp = new RegExp(`^${LABEL}`)) =>
+  within(canvasElement).getByRole('button', { name });
+
+const findDialog = (canvasElement: HTMLElement, name = LABEL) => bodyOf(canvasElement).findByRole('dialog', { name });
+
+const day = (canvasElement: HTMLElement, iso: string) => bodyOf(canvasElement).getByRole('button', { name: dayName(iso) });
+
+const dialogButton = (canvasElement: HTMLElement, name: string) => bodyOf(canvasElement).getByRole('button', { name });
+
+async function expectFocused(canvasElement: HTMLElement, element: () => HTMLElement) {
+  await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(element()));
+}
+
+async function expectDayFocused(canvasElement: HTMLElement, iso: string) {
+  await expectFocused(canvasElement, () => day(canvasElement, iso));
+}
+
+async function expectClosed(canvasElement: HTMLElement) {
+  await waitFor(() => expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull());
+  await expect(getTrigger(canvasElement)).toHaveAttribute('aria-expanded', 'false');
+  await expect(getTrigger(canvasElement)).not.toHaveAttribute('aria-controls');
+}
+
+/** The selected gridcells hold exactly the days from `start` to `end`. */
+async function expectSelected(canvasElement: HTMLElement, range: DateRangeValue | null) {
+  const selected = bodyOf(canvasElement)
+    .getAllByRole('gridcell')
+    .filter((cell) => cell.getAttribute('aria-selected') === 'true')
+    .map((cell) => cell.querySelector<HTMLElement>('[data-date]')?.dataset.date);
+  const expected: string[] = [];
+  for (let date = range?.start; range && date !== undefined && date <= range.end; date = shiftDays(date, 1)) {
+    expected.push(date);
+  }
+  await expect(selected).toEqual(expected);
+}
+
+const tabStopDays = (canvasElement: HTMLElement) =>
+  bodyOf(canvasElement)
+    .getAllByRole('gridcell')
+    .flatMap((cell) => Array.from(cell.querySelectorAll<HTMLElement>('[data-date][tabindex="0"]')));
+
+async function expectFocusRing(element: HTMLElement) {
+  await waitFor(() => expect(getComputedStyle(element).outlineStyle).not.toBe('none'));
+  const width = parseFloat(getComputedStyle(element).outlineWidth);
+  await expect(Math.abs(width - 2)).toBeLessThan(PX_TOLERANCE);
+}
+
+const summary = (canvasElement: HTMLElement) => bodyOf(canvasElement).getByRole('status');
+
+const summaryText = ({ start, end }: DateRangeValue, days: number) =>
+  `${formattedRange({ start, end })} · ${days} ${days === 1 ? 'day' : 'days'}`;
+
+// ---- Stories.
+
+export const Default: Story = {
+  args: { defaultValue: WEEK, onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  parameters: { docs: { source: { code: USAGE } } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger.tagName).toBe('BUTTON');
+    await expect(trigger).toHaveAccessibleName(`${LABEL} ${formattedRange(WEEK)}`);
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).not.toHaveAttribute('aria-controls');
+
+    await userEvent.tab();
+    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+    await expectFocusRing(trigger);
+
+    // ArrowDown opens and focuses the committed start.
+    await userEvent.keyboard('{ArrowDown}');
+    const dialog = await findDialog(canvasElement);
+    await expect(canvasElement.contains(dialog)).toBe(false);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(trigger).toHaveAttribute('aria-controls', dialog.id);
+    await expectDayFocused(canvasElement, WEEK.start);
+    await expectFocusRing(day(canvasElement, WEEK.start));
+    await expectSelected(canvasElement, WEEK);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+
+    // First activation anchors; the focused day previews without being selected.
+    await userEvent.keyboard('{ArrowRight}{Enter}');
+    await expectSelected(canvasElement, { start: '2026-10-06', end: '2026-10-06' });
+    await userEvent.keyboard('{ArrowDown}');
+    await expectDayFocused(canvasElement, '2026-10-13');
+    await expect(day(canvasElement, '2026-10-13')).toHaveAttribute('data-preview');
+    await expect(day(canvasElement, '2026-10-13').closest('td')).toHaveAttribute('aria-selected', 'false');
+    await expect(summary(canvasElement)).toHaveTextContent(summaryText({ start: '2026-10-06', end: '2026-10-13' }, 8));
+
+    // Second activation finishes the draft; nothing is committed before Apply.
+    await userEvent.keyboard('{Enter}');
+    const draft = { start: '2026-10-06', end: '2026-10-13' };
+    await expectSelected(canvasElement, draft);
+    await expect(day(canvasElement, draft.start)).toHaveAccessibleDescription(rangeMessages.start);
+    await expect(day(canvasElement, draft.end)).toHaveAccessibleDescription(rangeMessages.end);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(trigger).toHaveAccessibleName(`${LABEL} ${formattedRange(WEEK)}`);
+
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expectClosed(canvasElement);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(draft);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    // Value request first, then the close request.
+    const valueOrder = (args.onValueChange as ReturnType<typeof fn>).mock.invocationCallOrder[0] ?? 0;
+    const closeOrder = (args.onOpenChange as ReturnType<typeof fn>).mock.invocationCallOrder[1] ?? 0;
+    await expect(valueOrder).toBeLessThan(closeOrder);
+    await expectFocused(canvasElement, () => getTrigger(canvasElement));
+    await expect(getTrigger(canvasElement)).toHaveAccessibleName(`${LABEL} ${formattedRange(draft)}`);
+
+    // Applying the unchanged range closes without a value request.
+    await userEvent.keyboard('{Enter}');
+    await findDialog(canvasElement);
+    await expectDayFocused(canvasElement, draft.start);
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expectClosed(canvasElement);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(4);
+  },
+};
+
+export const SameDay: Story = {
+  args: { defaultValue: { start: '2026-10-14', end: '2026-10-14' }, onValueChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    // Equal endpoints format as one date.
+    await expect(trigger).toHaveAccessibleName(`${LABEL} ${RANGE_FORMAT.format(civil('2026-10-14'))}`);
+
+    await userEvent.click(trigger);
+    await findDialog(canvasElement);
+    await expectSelected(canvasElement, { start: '2026-10-14', end: '2026-10-14' });
+    await expect(summary(canvasElement)).toHaveTextContent(summaryText({ start: '2026-10-14', end: '2026-10-14' }, 1));
+
+    // An anchor alone applies as a same-day range.
+    await userEvent.click(day(canvasElement, '2026-10-20'));
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expectClosed(canvasElement);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith({ start: '2026-10-20', end: '2026-10-20' });
+
+    // Activating the same day twice finishes a same-day range too.
+    await userEvent.click(getTrigger(canvasElement));
+    await findDialog(canvasElement);
+    await userEvent.click(day(canvasElement, '2026-10-22'));
+    await userEvent.click(day(canvasElement, '2026-10-22'));
+    await expectSelected(canvasElement, { start: '2026-10-22', end: '2026-10-22' });
+    await userEvent.click(day(canvasElement, '2026-10-23'));
+    // The finished range was replaced by a new anchor.
+    await expectSelected(canvasElement, { start: '2026-10-23', end: '2026-10-23' });
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const BackwardSelection: Story = {
+  args: { onValueChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    await findDialog(canvasElement);
+    // Nothing committed: today is focused.
+    await expectDayFocused(canvasElement, TODAY);
+    await userEvent.click(day(canvasElement, '2026-10-20'));
+    await userEvent.hover(day(canvasElement, '2026-10-15'));
+    await expect(day(canvasElement, '2026-10-15')).toHaveAttribute('data-preview-start');
+    await expect(day(canvasElement, '2026-10-20')).toHaveAttribute('data-preview-end');
+    await userEvent.click(day(canvasElement, '2026-10-15'));
+    // The endpoints are ordered; the consumer never sees a reversed range.
+    await expectSelected(canvasElement, { start: '2026-10-15', end: '2026-10-20' });
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith({ start: '2026-10-15', end: '2026-10-20' });
+  },
+};
+
+export const Empty: Story = {
+  args: { value: null, onValueChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveAccessibleName(`${LABEL} ${PLACEHOLDER}`);
+    await userEvent.click(trigger);
+    await findDialog(canvasElement);
+    await expectSelected(canvasElement, null);
+    await expect(summary(canvasElement)).toHaveTextContent(String(rangeMessages.empty));
+    // No draft: Apply is unavailable.
+    await expect(dialogButton(canvasElement, 'Apply')).toBeDisabled();
+    await userEvent.click(dialogButton(canvasElement, 'Cancel'));
+    await expectClosed(canvasElement);
+    await expectFocused(canvasElement, () => getTrigger(canvasElement));
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+function ControlledExample({ onValueChange, onOpenChange, ...props }: ExampleProps) {
+  const [value, setValue] = useState<DateRangeValue | null>(WEEK);
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={stackStyle}>
+      <RangeExample
+        {...props}
+        value={value}
+        open={open}
+        onValueChange={(next) => {
+          onValueChange?.(next);
+          setValue(next);
+        }}
+        onOpenChange={(next) => {
+          onOpenChange?.(next);
+          setOpen(next);
+        }}
+      />
+      <Button onClick={() => setValue({ start: '2026-11-02', end: '2026-11-06' })}>Next month week</Button>
+    </div>
+  );
+}
+ControlledExample.displayName = 'ControlledExample';
+
+export const Controlled: Story = {
+  args: { onValueChange: fn(), onOpenChange: fn(), months: 1 },
+  render: (args) => <ControlledExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    await findDialog(canvasElement);
+    await userEvent.click(day(canvasElement, '2026-10-12'));
+    await userEvent.click(day(canvasElement, '2026-10-16'));
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expectClosed(canvasElement);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith({ start: '2026-10-12', end: '2026-10-16' });
+    await expect(getTrigger(canvasElement)).toHaveAccessibleName(
+      `${LABEL} ${formattedRange({ start: '2026-10-12', end: '2026-10-16' })}`,
+    );
+
+    // An external value update never notifies.
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Next month week' }));
+    await expect(getTrigger(canvasElement)).toHaveAccessibleName(
+      `${LABEL} ${formattedRange({ start: '2026-11-02', end: '2026-11-06' })}`,
+    );
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+  },
+};
+
+function RebaseExample(props: ExampleProps) {
+  const [value, setValue] = useState<DateRangeValue | null>(WEEK);
+  return (
+    <div style={stackStyle}>
+      <RangeExample {...props} value={value} />
+      <Button onClick={() => setValue({ start: '2026-10-19', end: '2026-10-23' })}>Next week</Button>
+    </div>
+  );
+}
+RebaseExample.displayName = 'RebaseExample';
+
+/** A fixed `open` keeps the dialog while the parent replaces the value: the draft rebases silently. */
+export const ExternalRebase: Story = {
+  args: { open: true, months: 1, onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <RebaseExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await findDialog(canvasElement);
+    await userEvent.click(day(canvasElement, '2026-10-27'));
+    await expectSelected(canvasElement, { start: '2026-10-27', end: '2026-10-27' });
+
+    // The outside press requests a close that the fixed `open` rejects.
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Next week' }));
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await expect(bodyOf(canvasElement).getByRole('dialog', { name: LABEL })).toBeVisible();
+    // The new value replaced the draft and cleared the anchor, without a value request.
+    await expectSelected(canvasElement, { start: '2026-10-19', end: '2026-10-23' });
+    await userEvent.hover(day(canvasElement, '2026-10-29'));
+    await expect(day(canvasElement, '2026-10-29')).not.toHaveAttribute('data-preview');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+/** Fixed `value` and `open` reject Apply and every close: label, draft and focus stay. */
+export const ControlledRejects: Story = {
+  args: { value: WEEK, open: true, months: 1, onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await findDialog(canvasElement);
+    await expectDayFocused(canvasElement, WEEK.start);
+    await userEvent.keyboard('{ArrowDown}{Enter}{ArrowDown}{Enter}');
+    const draft = { start: '2026-10-12', end: '2026-10-19' };
+    await expectSelected(canvasElement, draft);
+
+    const apply = dialogButton(canvasElement, 'Apply');
+    await userEvent.click(apply);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(draft);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await expect(bodyOf(canvasElement).getByRole('dialog', { name: LABEL })).toBeVisible();
+    await expect(getTrigger(canvasElement)).toHaveAccessibleName(`${LABEL} ${formattedRange(WEEK)}`);
+    await expectSelected(canvasElement, draft);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(apply);
+
+    // A rejected Escape keeps the draft and the focus.
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expectSelected(canvasElement, draft);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(apply);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const EscapeDiscards: Story = {
+  args: { defaultValue: WEEK, months: 1, onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
+    await findDialog(canvasElement);
+    await expectDayFocused(canvasElement, WEEK.start);
+    await userEvent.keyboard('{PageDown}{Enter}{ArrowRight}{Enter}');
+    await expectSelected(canvasElement, { start: '2026-11-05', end: '2026-11-06' });
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expectFocused(canvasElement, () => getTrigger(canvasElement));
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+
+    // The next open starts from the committed value again.
+    await userEvent.keyboard('{ArrowDown}');
+    await findDialog(canvasElement);
+    await expectDayFocused(canvasElement, WEEK.start);
+    await expectSelected(canvasElement, WEEK);
+  },
+};
+
+export const SpaceAndEnter: Story = {
+  args: { defaultValue: WEEK, months: 1, onValueChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await userEvent.tab();
+    // Space opens on keyup, so the keyup never activates the focused day.
+    await userEvent.keyboard('[Space]');
+    await findDialog(canvasElement);
+    await expectDayFocused(canvasElement, WEEK.start);
+    await expectSelected(canvasElement, WEEK);
+
+    // Enter activates exactly once: the day is anchored, so the next focus previews.
+    await userEvent.keyboard('{ArrowRight}{Enter}{ArrowRight}');
+    await expectSelected(canvasElement, { start: '2026-10-06', end: '2026-10-06' });
+    await expect(day(canvasElement, '2026-10-07')).toHaveAttribute('data-preview');
+    // Space activates exactly once too: it finishes the range.
+    await userEvent.keyboard('[Space]');
+    await expectSelected(canvasElement, { start: '2026-10-06', end: '2026-10-07' });
+    await expect(day(canvasElement, '2026-10-08')).not.toHaveAttribute('data-preview');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const OutsideAndTabOut: Story = {
+  args: { defaultValue: WEEK, months: 1, onValueChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const { ownerDocument } = canvasElement;
+    const outside = within(canvasElement).getByRole('button', { name: OUTSIDE });
+
+    await userEvent.click(getTrigger(canvasElement));
+    await findDialog(canvasElement);
+    await userEvent.click(day(canvasElement, '2026-10-20'));
+    await userEvent.click(outside);
+    await expectClosed(canvasElement);
+    // The press lands on its own target; the trigger is never focused.
+    await expect(ownerDocument.activeElement).toBe(outside);
+
+    // Tab walks the day, the actions, then leaves and closes without moving focus back.
+    await userEvent.tab({ shift: true });
+    await userEvent.keyboard('{ArrowDown}');
+    await findDialog(canvasElement);
+    await expectDayFocused(canvasElement, WEEK.start);
+    await userEvent.tab();
+    await expectFocused(canvasElement, () => dialogButton(canvasElement, 'Cancel'));
+    await userEvent.tab();
+    await expectFocused(canvasElement, () => dialogButton(canvasElement, 'Apply'));
+    await expectFocusRing(dialogButton(canvasElement, 'Apply'));
+    await userEvent.tab();
+    await expectClosed(canvasElement);
+    await expectFocused(canvasElement, () => outside);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(getTrigger(canvasElement)).toHaveAccessibleName(`${LABEL} ${formattedRange(WEEK)}`);
+  },
+};
+
+export const CustomPresets: Story = {
+  args: { presets: PRESETS, months: 1, onValueChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    const dialog = await findDialog(canvasElement);
+    const group = within(dialog).getByRole('group', { name: rangeMessages.presets });
+    const preset = (name: string) => within(group).getByRole('button', { name });
+    const tabStops = within(group)
+      .getAllByRole('button')
+      .filter((button) => button.tabIndex === 0);
+    await expect(tabStops).toEqual([preset('Today')]);
+
+    // Shift+Tab from the day walks the month buttons back to the single preset tab stop.
+    await expectDayFocused(canvasElement, TODAY);
+    await userEvent.tab({ shift: true });
+    await userEvent.tab({ shift: true });
+    await userEvent.tab({ shift: true });
+    await expectFocused(canvasElement, () => preset('Today'));
+    await expectFocusRing(preset('Today'));
+
+    // The one-month row moves with inline arrows, wraps, and supports Home/End.
+    await userEvent.keyboard('{ArrowRight}');
+    await expectFocused(canvasElement, () => preset('Yesterday'));
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}');
+    await expectFocused(canvasElement, () => preset('Year to date'));
+    await userEvent.keyboard('{Home}');
+    await expectFocused(canvasElement, () => preset('Today'));
+    await userEvent.keyboard('{End}');
+    await expectFocused(canvasElement, () => preset('Year to date'));
+
+    // Activation picks the draft only and reveals its start month.
+    await userEvent.keyboard('{Home}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}{Enter}');
+    await expectFocused(canvasElement, () => preset('Last month'));
+    await expect(bodyOf(canvasElement).getByRole('grid', { name: monthName('2026-09') })).toBeVisible();
+    await expectSelected(canvasElement, { start: '2026-09-01', end: '2026-09-30' });
+    await expect(preset('Last month')).toHaveAttribute('aria-pressed', 'true');
+    await expect(preset('This month')).toHaveAttribute('aria-pressed', 'false');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+
+    await userEvent.click(preset('Last 7 days'));
+    await expect(bodyOf(canvasElement).getByRole('grid', { name: monthName('2026-10') })).toBeVisible();
+    await expectSelected(canvasElement, { start: '2026-10-05', end: TODAY });
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith({ start: '2026-10-05', end: TODAY });
+  },
+};
+
+export const Bounds: Story = {
+  args: { presets: PRESETS, months: 1, min: '2026-10-03', max: '2026-10-24', onValueChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    const dialog = await findDialog(canvasElement);
+    const group = within(dialog).getByRole('group', { name: rangeMessages.presets });
+    const preset = (name: string) => within(group).getByRole('button', { name });
+
+    await expect(day(canvasElement, '2026-10-02')).toBeDisabled();
+    await expect(day(canvasElement, '2026-10-25')).toBeDisabled();
+    await expect(day(canvasElement, '2026-10-02').closest('td')).not.toHaveAttribute('aria-selected');
+
+    // Moves clamp into min/max.
+    await expectDayFocused(canvasElement, TODAY);
+    await userEvent.keyboard('{PageDown}');
+    await expectDayFocused(canvasElement, '2026-10-24');
+    await userEvent.keyboard('{Shift>}{PageUp}{/Shift}');
+    await expectDayFocused(canvasElement, '2026-10-03');
+
+    // Out-of-bounds presets stay visible but unavailable; nothing is clamped into a partial range.
+    await expect(preset('Last 30 days')).toHaveAttribute('aria-disabled', 'true');
+    await expect(preset('This month')).toHaveAttribute('aria-disabled', 'true');
+    await expect(preset('Last 7 days')).not.toHaveAttribute('aria-disabled');
+    await userEvent.click(preset('Last 30 days'));
+    await expectSelected(canvasElement, null);
+    await userEvent.click(day(canvasElement, '2026-10-02'));
+    await expectSelected(canvasElement, null);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const ReversedBounds: Story = {
+  args: { months: 1, min: '2026-10-20', max: '2026-10-10', defaultValue: WEEK },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveAttribute('aria-invalid', 'true');
+    await expect(trigger).toHaveAccessibleDescription(String(rangeMessages.error));
+    await userEvent.click(trigger);
+    await findDialog(canvasElement);
+    // No day is available: no day tab stop and no Apply.
+    await expect(tabStopDays(canvasElement)).toHaveLength(0);
+    await expect(day(canvasElement, '2026-10-15')).toBeDisabled();
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+  },
+};
+
+export const InvalidValue: Story = {
+  // Reversed endpoints are shown as empty and invalid, never swapped.
+  args: { value: { start: '2026-10-09', end: '2026-10-05' }, months: 1, onValueChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveAccessibleName(`${LABEL} ${PLACEHOLDER}`);
+    await expect(trigger).toHaveAttribute('aria-invalid', 'true');
+    const alert = within(canvasElement).getByRole('alert');
+    await expect(alert).toHaveTextContent(String(rangeMessages.error));
+    await expect(trigger.getAttribute('aria-describedby')).toBe(alert.id);
+    await userEvent.click(trigger);
+    await findDialog(canvasElement);
+    await expectSelected(canvasElement, null);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const Invalid: Story = {
+  args: { months: 1 },
+  render: (args) => <RangeExample {...args} trigger={{ 'aria-invalid': true }} />,
+  play: async ({ canvasElement }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveAttribute('aria-invalid', 'true');
+    await expect(trigger).toHaveAccessibleDescription(String(rangeMessages.error));
+  },
+};
+
+export const OpenInvalid: Story = {
+  ...Invalid,
+  args: { ...Invalid.args, defaultOpen: true, presets: PRESETS },
+  play: async ({ canvasElement }) => {
+    // Persistent open error state for the axe gate.
+    await findDialog(canvasElement);
+    await expect(getTrigger(canvasElement)).toHaveAttribute('aria-invalid', 'true');
+    await expect(within(canvasElement).getByRole('alert')).toHaveTextContent(String(rangeMessages.error));
+  },
+};
+
+export const KeyboardTwoMonths: Story = {
+  args: { months: 2, defaultValue: { start: '2026-10-28', end: '2026-10-30' } },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const grid = (month: string) => bodyOf(canvasElement).getByRole('grid', { name: monthName(month) });
+    await userEvent.click(getTrigger(canvasElement));
+    await findDialog(canvasElement);
+    await expect(grid('2026-10')).toHaveAttribute('aria-multiselectable', 'true');
+    await expect(grid('2026-11')).toHaveAttribute('aria-multiselectable', 'true');
+    await expectDayFocused(canvasElement, '2026-10-28');
+    // One day tab stop across both months.
+    await expect(tabStopDays(canvasElement)).toEqual([day(canvasElement, '2026-10-28')]);
+
+    // A move into the other shown month focuses it there without sliding the months.
+    await userEvent.keyboard('{ArrowDown}');
+    await expectDayFocused(canvasElement, '2026-11-04');
+    await expect(grid('2026-10')).toBeVisible();
+    await expect(tabStopDays(canvasElement)).toEqual([day(canvasElement, '2026-11-04')]);
+    await userEvent.keyboard('{ArrowUp}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}');
+    await expectDayFocused(canvasElement, '2026-11-01');
+
+    // Home/End: the en-GB week runs Monday to Sunday.
+    await userEvent.keyboard('{Home}');
+    await expectDayFocused(canvasElement, '2026-10-26');
+    await userEvent.keyboard('{End}');
+    await expectDayFocused(canvasElement, '2026-11-01');
+
+    // Past the shown months the target is revealed.
+    await userEvent.keyboard('{PageDown}{PageDown}');
+    await expectDayFocused(canvasElement, '2027-01-01');
+    await expect(grid('2026-12')).toBeVisible();
+    await expect(grid('2027-01')).toBeVisible();
+    await userEvent.keyboard('{Shift>}{PageUp}{/Shift}');
+    await expectDayFocused(canvasElement, '2026-01-01');
+    await expect(grid('2026-01')).toBeVisible();
+    await expect(grid('2026-02')).toBeVisible();
+    await expect(tabStopDays(canvasElement)).toHaveLength(1);
+
+    // Header buttons move both months together.
+    await userEvent.click(bodyOf(canvasElement).getAllByRole('button', { name: monthName('2026-03') })[0]!);
+    await expect(grid('2026-02')).toBeVisible();
+    await expect(grid('2026-03')).toBeVisible();
+  },
+};
+
+export const LeapDay: Story = {
+  args: { months: 1, defaultValue: { start: '2028-02-29', end: '2028-02-29' } },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    await findDialog(canvasElement);
+    await expectDayFocused(canvasElement, '2028-02-29');
+    await userEvent.keyboard('{Shift>}{PageDown}{/Shift}');
+    await expectDayFocused(canvasElement, '2029-02-28');
+    await userEvent.keyboard('{Shift>}{PageUp}{/Shift}');
+    await expectDayFocused(canvasElement, '2028-02-28');
+    await userEvent.keyboard('{ArrowRight}');
+    await expectDayFocused(canvasElement, '2028-02-29');
+    await userEvent.keyboard('{ArrowRight}');
+    await expectDayFocused(canvasElement, '2028-03-01');
+  },
+};
+
+export const MonthsOne: Story = {
+  args: { months: 1, presets: PRESETS, defaultValue: WEEK, defaultOpen: true },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    await expect(within(dialog).getAllByRole('grid')).toHaveLength(1);
+    await expect(dialog).toHaveAttribute('data-layout', 'row');
+  },
+};
+
+export const MonthsTwo: Story = {
+  args: { months: 2, presets: PRESETS, defaultValue: WEEK, defaultOpen: true },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    await expect(within(dialog).getAllByRole('grid')).toHaveLength(2);
+    await expect(dialog).toHaveAttribute('data-layout', 'rail');
+    await expect(bodyOf(canvasElement).getByRole('grid', { name: monthName('2026-10') })).toBeVisible();
+    await expect(bodyOf(canvasElement).getByRole('grid', { name: monthName('2026-11') })).toBeVisible();
+  },
+};
+
+const boundaryStyle = (inlineSize: string, blockSize = 'auto') =>
+  ({
+    inlineSize,
+    blockSize,
+    overflow: 'hidden',
+    padding: vars.space[2],
+    border: `1px dashed ${vars.color.borderControl}`,
+  }) satisfies CSSProperties;
+
+function BoundaryExample({ inlineSize, blockSize, ...props }: ExampleProps & { inlineSize: string; blockSize?: string }) {
+  const [boundary, setBoundary] = useState<HTMLDivElement | null>(null);
+  return (
+    <div ref={setBoundary} data-boundary="" style={boundaryStyle(inlineSize, blockSize)}>
+      {boundary && <RangeExample {...props} boundary={boundary} />}
+    </div>
+  );
+}
+BoundaryExample.displayName = 'BoundaryExample';
+
+/**
+ * `months="auto"` reads the width Floating UI leaves inside the boundary. This story checks
+ * the rule against the measured width; a wide viewport shows two months, a narrow one one.
+ */
+export const MonthsAuto: Story = {
+  args: { defaultValue: WEEK, presets: PRESETS, defaultOpen: true },
+  render: (args) => <BoundaryExample {...args} inlineSize="min(900px, 100%)" />,
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    const boundary = canvasElement.querySelector<HTMLElement>('[data-boundary]')!;
+    const viewportWidth = canvasElement.ownerDocument.documentElement.clientWidth;
+    const width = Math.min(boundary.getBoundingClientRect().width, viewportWidth);
+    // Floating UI subtracts its 8px padding from both edges.
+    const expected = width - 16 >= 712 ? 2 : 1;
+    await waitFor(() => expect(within(dialog).getAllByRole('grid')).toHaveLength(expected));
+  },
+};
+
+export const Narrow: Story = {
+  args: { defaultValue: WEEK, presets: PRESETS, defaultOpen: true },
+  render: (args) => <BoundaryExample {...args} inlineSize="360px" />,
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    await waitFor(() => expect(within(dialog).getAllByRole('grid')).toHaveLength(1));
+    await expect(dialog).toHaveAttribute('data-layout', 'row');
+    // Presets scroll in their row; days keep their 32px minimum.
+    await expect(day(canvasElement, WEEK.start).getBoundingClientRect().width).toBeGreaterThanOrEqual(32 - PX_TOLERANCE);
+  },
+};
+
+/** Two forced months in a narrow boundary stack instead of shrinking the days. */
+export const NarrowForcedTwoMonths: Story = {
+  args: { defaultValue: WEEK, months: 2, defaultOpen: true },
+  render: (args) => <BoundaryExample {...args} inlineSize="360px" />,
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    const [first, second] = within(dialog).getAllByRole('grid');
+    await waitFor(() =>
+      expect(second!.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+        first!.getBoundingClientRect().bottom - PX_TOLERANCE,
+      ),
+    );
+    await expect(day(canvasElement, WEEK.start).getBoundingClientRect().width).toBeGreaterThanOrEqual(32 - PX_TOLERANCE);
+  },
+};
+
+/** A short boundary caps the dialog height; the dialog scrolls internally. */
+export const ShortViewport: Story = {
+  args: { defaultValue: WEEK, months: 1, presets: PRESETS, defaultOpen: true },
+  render: (args) => <BoundaryExample {...args} inlineSize="420px" blockSize="320px" />,
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    const boundary = canvasElement.querySelector<HTMLElement>('[data-boundary]')!.getBoundingClientRect();
+    await waitFor(() => expect(dialog.getBoundingClientRect().height).toBeLessThanOrEqual(boundary.height + PX_TOLERANCE));
+    await expect(getComputedStyle(dialog).overflowY).toBe('auto');
+    await expect(dialog.scrollHeight).toBeGreaterThan(dialog.clientHeight);
+  },
+};
+
+export const Sizes: Story = {
+  args: { defaultValue: WEEK },
+  render: (args) => (
+    <div style={stackStyle}>
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <DateRangePicker key={size} {...args}>
+          <DateRangePicker.Trigger aria-label={`${LABEL} ${size}`} size={size} />
+          <DateRangePicker.Content />
+        </DateRangePicker>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const minimums = { sm: 32, md: 40, lg: 48 };
+    for (const [size, minimum] of Object.entries(minimums)) {
+      const trigger = getTrigger(canvasElement, new RegExp(`^${LABEL} ${size}`));
+      await expect(trigger).toHaveAttribute('data-size', size);
+      await expect(trigger.getBoundingClientRect().height).toBeGreaterThanOrEqual(minimum - PX_TOLERANCE);
+    }
+  },
+};
+
+export const LongLocaleValue: Story = {
+  // The trigger grows with the formatted text; no fixed width truncates it.
+  args: { locale: 'ta-IN', defaultValue: { start: '2026-09-28', end: '2027-01-30' } },
+  render: (args) => (
+    <DateRangePicker {...args}>
+      <DateRangePicker.Trigger aria-label={LABEL} />
+      <DateRangePicker.Content />
+    </DateRangePicker>
+  ),
+  play: async ({ canvasElement }) => {
+    const trigger = getTrigger(canvasElement);
+    const text = trigger.querySelector<HTMLElement>('span')!;
+    await expect(trigger.scrollWidth).toBeLessThanOrEqual(trigger.clientWidth + PX_TOLERANCE);
+    await expect(text.getBoundingClientRect().right).toBeLessThanOrEqual(trigger.getBoundingClientRect().right + PX_TOLERANCE);
+  },
+};
+
+export const TargetSizes: Story = {
+  args: { defaultValue: WEEK, months: 1, presets: PRESETS, defaultOpen: true },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    const targets = [
+      day(canvasElement, WEEK.start),
+      within(dialog).getByRole('button', { name: 'Today' }),
+      dialogButton(canvasElement, 'Apply'),
+      dialogButton(canvasElement, 'Cancel'),
+      dialogButton(canvasElement, monthName('2026-11')),
+    ];
+    for (const target of targets) {
+      const { width, height } = target.getBoundingClientRect();
+      await expect(height).toBeGreaterThanOrEqual(32 - PX_TOLERANCE);
+      await expect(width).toBeGreaterThanOrEqual(32 - PX_TOLERANCE);
+    }
+  },
+};
+
+export const ReadOnly: Story = {
+  args: { defaultValue: WEEK, months: 1, readOnly: true, presets: PRESETS, onValueChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveAttribute('data-readonly');
+    await userEvent.click(trigger);
+    const dialog = await findDialog(canvasElement);
+    // Inspectable: navigation works, nothing changes.
+    await expectDayFocused(canvasElement, WEEK.start);
+    await userEvent.keyboard('{ArrowRight}');
+    await expectDayFocused(canvasElement, '2026-10-06');
+    await userEvent.keyboard('{Enter}');
+    await expectSelected(canvasElement, WEEK);
+    await expect(within(dialog).getByRole('button', { name: 'Today' })).toHaveAttribute('aria-disabled', 'true');
+    await expect(dialogButton(canvasElement, 'Apply')).toBeDisabled();
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const Disabled: Story = {
+  args: { defaultValue: WEEK, disabled: true, startName: START_FIELD, endName: END_FIELD, onOpenChange: fn() },
+  render: (args) => (
+    <form aria-label="Report" onSubmit={(event) => event.preventDefault()}>
+      <RangeExample {...args} />
+    </form>
+  ),
+  play: async ({ args, canvasElement, userEvent }) => {
+    const form = within(canvasElement).getByRole('form', { name: 'Report' }) as HTMLFormElement;
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toBeDisabled();
+    await expect(new FormData(form).has(START_FIELD)).toBe(false);
+    await expect(new FormData(form).has(END_FIELD)).toBe(false);
+    await userEvent.click(trigger);
+    await expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+
+export const DisabledControlledOpen: Story = {
+  args: { defaultValue: WEEK, disabled: true, open: true, onOpenChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ args, canvasElement }) => {
+    await expectClosed(canvasElement);
+    await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledWith(false));
+    await expect(args.onOpenChange).not.toHaveBeenCalledWith(true);
+  },
+};
+
+export const Required: Story = {
+  args: { required: true, months: 1 },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveAccessibleName(`${LABEL} ${PLACEHOLDER} ${rangeMessages.required}`);
+    await expect(trigger).toHaveAttribute('data-required');
+    await expect(trigger).not.toHaveAttribute('aria-required');
+  },
+};
+
+export const FormFields: Story = {
+  args: { defaultValue: WEEK, months: 1, startName: START_FIELD, endName: END_FIELD, onValueChange: fn() },
+  render: (args) => (
+    <form aria-label="Report" onSubmit={(event) => event.preventDefault()}>
+      <RangeExample {...args} />
+      <button type="reset">Reset</button>
+    </form>
+  ),
+  play: async ({ args, canvasElement, userEvent }) => {
+    const form = within(canvasElement).getByRole('form', { name: 'Report' }) as HTMLFormElement;
+    await expect(new FormData(form).get(START_FIELD)).toBe(WEEK.start);
+    await expect(new FormData(form).get(END_FIELD)).toBe(WEEK.end);
+
+    await userEvent.click(getTrigger(canvasElement));
+    await findDialog(canvasElement);
+    await userEvent.click(day(canvasElement, '2026-10-19'));
+    await userEvent.click(day(canvasElement, '2026-10-23'));
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expectClosed(canvasElement);
+    await expect(new FormData(form).get(START_FIELD)).toBe('2026-10-19');
+    await expect(new FormData(form).get(END_FIELD)).toBe('2026-10-23');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+
+    // Native reset restores the uncontrolled default without a value request.
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Reset' }));
+    await waitFor(() => expect(new FormData(form).get(START_FIELD)).toBe(WEEK.start));
+    await expect(new FormData(form).get(END_FIELD)).toBe(WEEK.end);
+    await expect(getTrigger(canvasElement)).toHaveAccessibleName(`${LABEL} ${formattedRange(WEEK)}`);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const ControlledFormReset: Story = {
+  // A controlled reset only requests the default; the parent decides.
+  args: { value: WEEK, defaultValue: null, startName: START_FIELD, onValueChange: fn() },
+  render: (args) => (
+    <form aria-label="Report" onSubmit={(event) => event.preventDefault()}>
+      <RangeExample {...args} />
+      <button type="reset">Reset</button>
+    </form>
+  ),
+  play: async ({ args, canvasElement, userEvent }) => {
+    const form = within(canvasElement).getByRole('form', { name: 'Report' }) as HTMLFormElement;
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Reset' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(null);
+    await expect(new FormData(form).get(START_FIELD)).toBe(WEEK.start);
+  },
+};
+
+/** Real RTL: the document direction reaches the trigger and the portaled dialog. */
+export const RTL: Story = {
+  args: { defaultValue: WEEK, months: 1, defaultOpen: true },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const { documentElement } = canvasElement.ownerDocument;
+    const previous = documentElement.dir;
+    documentElement.dir = 'rtl';
+    try {
+      await findDialog(canvasElement);
+      await expect(getComputedStyle(bodyOf(canvasElement).getByRole('grid')).direction).toBe('rtl');
+      await expectDayFocused(canvasElement, WEEK.start);
+      await userEvent.keyboard('{ArrowLeft}');
+      await expectDayFocused(canvasElement, '2026-10-06');
+      await userEvent.keyboard('{ArrowRight}');
+      await expectDayFocused(canvasElement, WEEK.start);
+    } finally {
+      documentElement.dir = previous;
+    }
+  },
+};
+
+export const LocaleWeekStart: Story = {
+  args: { defaultValue: WEEK, months: 1, defaultOpen: true },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement }) => {
+    await findDialog(canvasElement);
+    const headers = bodyOf(canvasElement).getAllByRole('columnheader');
+    // en-GB weeks start on Monday.
+    await expect(headers[0]).toHaveAttribute('abbr', 'Monday');
+  },
+};
+
+export const SundayWeekStart: Story = {
+  args: { defaultValue: WEEK, months: 1, defaultOpen: true, locale: 'en-US' },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await findDialog(canvasElement);
+    await expect(bodyOf(canvasElement).getAllByRole('columnheader')[0]).toHaveAttribute('abbr', 'Sunday');
+    await userEvent.keyboard('{Home}');
+    await expectFocused(canvasElement, () =>
+      bodyOf(canvasElement).getByRole('button', { name: 'October 4, 2026' }),
+    );
+  },
+};
+
+export const SaturdayWeekStart: Story = {
+  args: { defaultValue: WEEK, months: 1, defaultOpen: true, firstDayOfWeek: 6 },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await findDialog(canvasElement);
+    await expect(bodyOf(canvasElement).getAllByRole('columnheader')[0]).toHaveAttribute('abbr', 'Saturday');
+    await userEvent.keyboard('{End}');
+    await expectDayFocused(canvasElement, '2026-10-09');
+  },
+};
+
+export const DraftPreview: Story = {
+  args: { defaultValue: WEEK, months: 1, defaultOpen: true },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    // Ends anchored with a live preview so the axe gate sees the preview state.
+    await findDialog(canvasElement);
+    await expectDayFocused(canvasElement, WEEK.start);
+    await userEvent.keyboard('{ArrowDown}{Enter}{ArrowDown}{ArrowRight}');
+    await expectSelected(canvasElement, { start: '2026-10-12', end: '2026-10-12' });
+    await expect(day(canvasElement, '2026-10-20')).toHaveAttribute('data-preview-end');
+    await expect(summary(canvasElement)).toHaveTextContent(summaryText({ start: '2026-10-12', end: '2026-10-20' }, 9));
+  },
+};
+
+export const PersistentOpen: Story = {
+  args: { defaultValue: WEEK, months: 2, presets: PRESETS, defaultOpen: true },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toHaveAttribute('aria-label', LABEL);
+    await expect(dialog.getAttribute('aria-describedby')).toBe(summary(canvasElement).id);
+    await expectDayFocused(canvasElement, WEEK.start);
+  },
+};
+
+export const LightTheme: Story = {
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  args: { defaultValue: WEEK, months: 1, presets: PRESETS, defaultOpen: true },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    await expectThemedSurface(dialog, 'light');
+  },
+};
+
+function ScopedHost({ children }: { children: ReactNode }) {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return (
+    <ThemeRoot theme="light" portalContainer={host} style={{ padding: vars.space[4], backgroundColor: vars.color.bg }}>
+      {children}
+      <div ref={setHost} data-overlay-host="" />
+    </ThemeRoot>
+  );
+}
+ScopedHost.displayName = 'ScopedHost';
+
+export const ThemeRootPortal: Story = {
+  args: { defaultValue: WEEK, months: 1, defaultOpen: true },
+  render: (args) => (
+    <ScopedHost>
+      <RangeExample {...args} />
+    </ScopedHost>
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    // Portaled into the scope's host, keeping the nearest ThemeRoot's theme.
+    await expect(canvasElement.querySelector('[data-overlay-host]')!.contains(dialog)).toBe(true);
+    await expectThemedSurface(dialog, 'light');
+  },
+};
+
+export const AriaMerge: Story = {
+  args: { defaultValue: WEEK, months: 1, defaultOpen: true },
+  render: (args) => (
+    <div style={stackStyle}>
+      <span id="period-label">Billing period</span>
+      <span id="period-help">Invoices use UTC dates</span>
+      <DateRangePicker {...args}>
+        <DateRangePicker.Trigger
+          aria-labelledby="period-label"
+          aria-describedby="period-help missing-id"
+          aria-invalid
+        />
+        <DateRangePicker.Content aria-describedby="period-help" />
+      </DateRangePicker>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const trigger = within(canvasElement).getByRole('button', { name: /^Billing period/ });
+    const valueId = trigger.querySelector('span')!.id;
+    const alert = within(canvasElement).getByRole('alert');
+    await expect(trigger).toHaveAttribute('aria-labelledby', `period-label ${valueId}`);
+    // Consumer ids (resolved or not) are kept; the error id is appended.
+    await expect(trigger).toHaveAttribute('aria-describedby', `period-help missing-id ${alert.id}`);
+    await expect(trigger).toHaveAccessibleName(`Billing period ${formattedRange(WEEK)}`);
+
+    // The dialog inherits the trigger's label and merges its description with the summary.
+    const dialog = await findDialog(canvasElement, 'Billing period');
+    await expect(dialog).toHaveAttribute('aria-labelledby', 'period-label');
+    await expect(dialog).not.toHaveAttribute('aria-label');
+    await expect(dialog).toHaveAttribute('aria-describedby', `period-help ${summary(canvasElement).id}`);
+  },
+};
+
+export const ContentLabel: Story = {
+  args: { defaultValue: WEEK, months: 1, defaultOpen: true },
+  render: (args) => (
+    <DateRangePicker {...args}>
+      <DateRangePicker.Trigger aria-label={LABEL} />
+      <DateRangePicker.Content aria-label="Pick the billing period" />
+    </DateRangePicker>
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement, 'Pick the billing period');
+    await expect(dialog).not.toHaveAttribute('aria-labelledby');
+  },
+};
+
+export const FalsyContent: Story = {
+  args: { messages: { ...rangeMessages, error: 0, required: '' }, required: true },
+  render: (args) => (
+    <div style={stackStyle}>
+      {FALSY_NODES.map((node, index) => (
+        <DateRangePicker key={`placeholder-${index}`} {...args}>
+          <DateRangePicker.Trigger aria-label={`Placeholder ${index}`} placeholder={node} />
+          <DateRangePicker.Content />
+        </DateRangePicker>
+      ))}
+      {FALSY_NODES.map((node, index) => (
+        <DateRangePicker key={`icon-${index}`} {...args}>
+          <DateRangePicker.Trigger aria-label={`Icon ${index}`} placeholder="" icon={node} />
+          <DateRangePicker.Content />
+        </DateRangePicker>
+      ))}
+      <DateRangePicker {...args} messages={{ ...rangeMessages, error: false }}>
+        <DateRangePicker.Trigger aria-label="No error" aria-invalid />
+        <DateRangePicker.Content />
+      </DateRangePicker>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const triggers = (prefix: string) =>
+      FALSY_NODES.map((_, index) => getTrigger(canvasElement, new RegExp(`^${prefix} ${index}`)));
+    const placeholders = triggers('Placeholder');
+    const icons = triggers('Icon');
+    // 0 renders; '', false and null render no text.
+    await expect(placeholders[0]!.querySelector('[data-placeholder]')).toHaveTextContent('0');
+    for (const trigger of placeholders.slice(1)) {
+      await expect(trigger.querySelector('[data-placeholder]')).toHaveTextContent('');
+    }
+    // The icon wrapper exists for renderable nodes (0 and '') only.
+    await expect(icons[0]!.querySelector('[aria-hidden="true"]')).toHaveTextContent('0');
+    await expect(icons[1]!.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    for (const trigger of icons.slice(2)) {
+      await expect(trigger.querySelector('[aria-hidden="true"]')).toBeNull();
+    }
+    // Every name reference resolves, whatever the content.
+    for (const trigger of [...placeholders, ...icons]) {
+      const ids = trigger.getAttribute('aria-labelledby')!.split(' ');
+      for (const id of ids) await expect(canvasElement.ownerDocument.getElementById(id)).not.toBeNull();
+    }
+    // A falsy error renders no alert and no description.
+    const noError = getTrigger(canvasElement, /^No error/);
+    await expect(noError).toHaveAttribute('aria-invalid', 'true');
+    await expect(noError).not.toHaveAttribute('aria-describedby');
+    // error: 0 is renderable, but none of the other triggers is invalid.
+    await expect(within(canvasElement).queryAllByRole('alert')).toHaveLength(0);
+  },
+};
+
+export const UniqueIds: Story = {
+  args: { defaultValue: WEEK, months: 1 },
+  render: (args) => (
+    <div style={stackStyle}>
+      <DateRangePicker {...args}>
+        <DateRangePicker.Trigger aria-label="First period" />
+        <DateRangePicker.Content />
+      </DateRangePicker>
+      <DateRangePicker {...args}>
+        <DateRangePicker.Trigger aria-label="Second period" />
+        <DateRangePicker.Content />
+      </DateRangePicker>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const first = getTrigger(canvasElement, /^First period/);
+    const second = getTrigger(canvasElement, /^Second period/);
+    await expect(first.id).not.toBe(second.id);
+    await expect(first.getAttribute('aria-labelledby')).not.toBe(second.getAttribute('aria-labelledby'));
+    const ids = Array.from(canvasElement.querySelectorAll('[id]'), (element) => element.id);
+    await expect(new Set(ids).size).toBe(ids.length);
+  },
+};
+
+export const RefsAndStyling: Story = {
+  args: { defaultValue: WEEK, months: 1, defaultOpen: true },
+  render: (args) => (
+    <DateRangePicker {...args}>
+      <DateRangePicker.Trigger
+        aria-label={LABEL}
+        ref={triggerRef}
+        css={{ textTransform: 'lowercase', letterSpacing: '1px' }}
+        sx={{ textTransform: 'uppercase' }}
+      />
+      <DateRangePicker.Content
+        ref={contentRef}
+        sx={{ letterSpacing: '1px' }}
+        slotProps={{ summary: { className: 'summary-slot', css: { textTransform: 'uppercase' } } }}
+      />
+    </DateRangePicker>
+  ),
+  play: async ({ canvasElement }) => {
+    const trigger = getTrigger(canvasElement);
+    const dialog = await findDialog(canvasElement);
+    await expect(triggerRef).toHaveBeenCalledWith(trigger);
+    await expect(contentRef).toHaveBeenCalledWith(dialog);
+    await expect(DateRangePicker.Trigger.displayName).toBe('DateRangePicker.Trigger');
+    await expect(DateRangePicker.Content.displayName).toBe('DateRangePicker.Content');
+    await expect(DateRangePicker.displayName).toBe('DateRangePicker');
+    // Own styles → consumer css → sx.
+    await expect(getComputedStyle(trigger).textTransform).toBe('uppercase');
+    await expect(getComputedStyle(trigger).letterSpacing).toBe('1px');
+    await expect(getComputedStyle(dialog).letterSpacing).toBe('1px');
+    const status = summary(canvasElement);
+    await expect(status).toHaveClass('summary-slot');
+    await expect(getComputedStyle(status).textTransform).toBe('uppercase');
+  },
+};

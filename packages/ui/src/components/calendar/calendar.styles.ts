@@ -107,7 +107,7 @@ export const dayStyle = css({
   cursor: 'pointer',
   transitionProperty: 'background-color, border-color, color',
   ...controlTransition,
-  '&:hover:not(:disabled):not([data-selected])': {
+  '&:hover:not(:disabled):not([data-selected]):not([data-in-range])': {
     backgroundColor: vars.color.surfaceHover,
   },
   '&[data-today]': {
@@ -123,6 +123,25 @@ export const dayStyle = css({
   '&[data-selected]:hover': {
     backgroundColor: vars.color.accentHover,
   },
+  // Range mode: the interior is tinted and outlined, the endpoints are filled; a preview is a
+  // dashed outline, so neither state relies on color alone.
+  '&[data-in-range]': {
+    backgroundColor: vars.color.accentSoft,
+    borderColor: vars.color.accentBorder,
+  },
+  '&[data-preview]:not([data-in-range])': {
+    borderStyle: 'dashed',
+    borderColor: vars.color.accentText,
+  },
+  '&[data-range-start], &[data-range-end]': {
+    backgroundColor: vars.color.accent,
+    borderColor: vars.color.accent,
+    color: vars.color.accentContrast,
+    fontWeight: vars.fontWeight.semibold,
+  },
+  '&[data-range-start]:hover, &[data-range-end]:hover': {
+    backgroundColor: vars.color.accentHover,
+  },
   '&:disabled': {
     opacity: 0.55,
     cursor: 'not-allowed',
@@ -132,7 +151,10 @@ export const dayStyle = css({
     ...focusRingOutset,
   },
   [FORCED_COLORS]: {
-    '&[data-selected]': {
+    '&[data-in-range], &[data-preview]': {
+      borderColor: 'CanvasText',
+    },
+    '&[data-selected], &[data-range-start], &[data-range-end]': {
       forcedColorAdjust: 'none',
       backgroundColor: 'Highlight',
       borderColor: 'Highlight',
