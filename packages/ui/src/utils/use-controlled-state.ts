@@ -5,6 +5,7 @@ import { useLatestCallback } from './use-latest-callback';
  * One state authority for controlled/uncontrolled components.
  * `value === undefined` means uncontrolled; internal state seeds from `defaultValue`.
  * Requests dedupe against the current value and notify only through `onChange`.
+ * `resetToDefault` restores the uncontrolled seed without notifying (native form reset).
  * Do not switch modes during an instance's lifetime (see SKILL.md §5).
  */
 export function useControlledState<T>(
@@ -30,5 +31,9 @@ export function useControlledState<T>(
     [isControlled, notify],
   );
 
-  return [current, requestChange] as const;
+  const resetToDefault = useCallback(() => {
+    if (!isControlled) setInternal(defaultValue);
+  }, [isControlled, defaultValue]);
+
+  return [current, requestChange, resetToDefault] as const;
 }

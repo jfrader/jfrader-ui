@@ -46,6 +46,7 @@
     "./menu": { "types": "./src/components/menu/index.ts", "import": "./src/components/menu/index.ts" },
     "./navigation": { "types": "./src/components/navigation/index.ts", "import": "./src/components/navigation/index.ts" },
     "./pagination": { "types": "./src/components/pagination/index.ts", "import": "./src/components/pagination/index.ts" },
+    "./password-field": { "types": "./src/components/password-field/index.ts", "import": "./src/components/password-field/index.ts" },
     "./pill": { "types": "./src/components/pill/index.ts", "import": "./src/components/pill/index.ts" },
     "./popover": { "types": "./src/components/popover/index.ts", "import": "./src/components/popover/index.ts" },
     "./progress": { "types": "./src/components/progress/index.ts", "import": "./src/components/progress/index.ts" },
