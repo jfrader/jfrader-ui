@@ -39,6 +39,7 @@ export * from './components/segmented-control';
 export * from './components/select';
 export * from './components/skeleton';
 export * from './components/slider';
+export * from './components/sortable-data-table';
 export * from './components/spinner';
 export * from './components/stack';
 export * from './components/stepper';
