@@ -1,0 +1,902 @@
+'use client';
+
+import {
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentPropsWithRef,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
+import { vars } from '@jfrader/tokens/vars';
+import { css, type Interpolation, type Theme } from '../../styling/css';
+import { focusRingInset } from '../../styling/focus-ring';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
+import { useControlledState } from '../../utils/use-controlled-state';
+import { Button } from '../button';
+import { TextField } from '../text-field';
+
+export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValueType = 'object' | 'array' | 'string' | 'number' | 'boolean' | 'null';
+export interface JsonViewerLabels {
+  tree: string;
+  search: string;
+  expandAll: string;
+  collapseAll: string;
+  previousMatch: string;
+  nextMatch: string;
+  copyValue: string;
+  copyPath: string;
+  copied: string;
+  copyFailed: string;
+  invalidData: string;
+  count: (count: number) => string;
+  match: (current: number, total: number, truncated: boolean) => string;
+  showMore: (remaining: number) => string;
+}
+export interface JsonViewerPartProps {
+  className?: string;
+  css?: Interpolation<Theme>;
+}
+export type JsonViewerSlotProps = Partial<
+  Record<
+    'toolbar' | 'search' | 'tree' | 'row' | 'group' | 'value' | 'pathBar' | 'status' | 'action',
+    JsonViewerPartProps
+  >
+>;
+export interface JsonViewerProps
+  extends Omit<ComponentPropsWithRef<'div'>, 'onSelect' | 'onCopy' | 'defaultValue' | 'children'>, SxProps {
+  data: JsonValue;
+  rootName?: string;
+  expandedValue?: readonly string[];
+  defaultExpandedValue?: readonly string[];
+  onExpandedValueChange?: (paths: string[]) => void;
+  defaultExpandDepth?: number;
+  query?: string;
+  defaultQuery?: string;
+  onQueryChange?: (query: string) => void;
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (path: string) => void;
+  onNodeActivate?: (detail: { path: string; value: JsonValue; type: JsonValueType }) => void;
+  searchable?: boolean;
+  copyable?: boolean;
+  showPath?: boolean;
+  pageSize?: number;
+  maxMatches?: number;
+  maxHeight?: CSSProperties['maxHeight'];
+  size?: 'sm' | 'md';
+  locale?: Intl.LocalesArgument;
+  labels?: Partial<JsonViewerLabels>;
+  onCopy?: (detail: { kind: 'value' | 'path'; path: string; text: string }) => void;
+  onCopyError?: (detail: { kind: 'value' | 'path'; path: string; error: unknown }) => void;
+  slotProps?: JsonViewerSlotProps;
+}
+
+interface DataNode {
+  path: string;
+  key: string;
+  parent?: string;
+  value: JsonValue;
+  type: JsonValueType;
+  children: string[];
+  level: number;
+  index: number;
+}
+interface VisibleNode {
+  path: string;
+  parent?: string;
+  level: number;
+  position: number;
+  setSize: number;
+  more?: number;
+}
+const TYPEAHEAD_MS = 500;
+const DEFAULT_PAGE_SIZE = 50;
+const DEFAULT_MAX_MATCHES = 2000;
+const positiveInteger = (value: number, fallback: number) =>
+  Number.isInteger(value) && value > 0 ? value : fallback;
+const isBranch = (node: DataNode) => node.children.length > 0;
+const childPath = (path: string, key: string, array: boolean) =>
+  array
+    ? `${path}[${key}]`
+    : /^[A-Za-z_$][\w$]*$/.test(key)
+      ? `${path}.${key}`
+      : `${path}[${JSON.stringify(key)}]`;
+const primitiveText = (node: DataNode) => (node.type === 'null' ? 'null' : String(node.value));
+
+function inspect(data: JsonValue, rootName: string): Map<string, DataNode> | null {
+  const nodes = new Map<string, DataNode>();
+  const ancestors = new Set<object>();
+  const stack: (
+    | { value: unknown; path: string; key: string; parent?: string; level: number; index: number }
+    | { exit: object }
+  )[] = [{ value: data, path: rootName, key: rootName, level: 1, index: 0 }];
+  try {
+    while (stack.length) {
+      const entry = stack.pop()!;
+      if ('exit' in entry) {
+        ancestors.delete(entry.exit);
+        continue;
+      }
+      const { value } = entry;
+      const type = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+      if (
+        !['null', 'array', 'object', 'string', 'number', 'boolean'].includes(type) ||
+        (type === 'number' && !Number.isFinite(value))
+      )
+        return null;
+      const node: DataNode = {
+        ...entry,
+        value: value as JsonValue,
+        type: type as JsonValueType,
+        children: [],
+      };
+      nodes.set(node.path, node);
+      if (value === null || typeof value !== 'object') continue;
+      if (ancestors.has(value) || Object.getOwnPropertySymbols(value).length) return null;
+      const array = Array.isArray(value);
+      if (array && Object.getPrototypeOf(value) !== Array.prototype) return null;
+      if (
+        !array &&
+        Object.getPrototypeOf(value) !== Object.prototype &&
+        Object.getPrototypeOf(value) !== null
+      )
+        return null;
+      const descriptors = Object.getOwnPropertyDescriptors(value);
+      const keys = Object.keys(descriptors).filter((key) => !array || key !== 'length');
+      if (array && (keys.length !== value.length || keys.some((key, index) => key !== String(index))))
+        return null;
+      if (keys.some((key) => !('value' in descriptors[key]!) || !descriptors[key]!.enumerable)) return null;
+      ancestors.add(value);
+      stack.push({ exit: value });
+      node.children = keys.map((key) => childPath(node.path, key, array));
+      for (let index = keys.length - 1; index >= 0; index--) {
+        const key = keys[index]!;
+        stack.push({
+          value: descriptors[key]!.value,
+          path: node.children[index]!,
+          key,
+          parent: node.path,
+          level: node.level + 1,
+          index,
+        });
+      }
+    }
+    return nodes;
+  } catch {
+    return null;
+  }
+}
+
+const rootStyle = css({
+  minInlineSize: 0,
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.md,
+  background: vars.color.surface,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  lineHeight: vars.lineHeight.base,
+  overflow: 'hidden',
+});
+const toolbarStyle = css({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[2],
+  padding: vars.space[3],
+  borderBlockEnd: `1px solid ${vars.color.border}`,
+});
+const searchStyle = css({ flex: '1 1 12rem', minInlineSize: 0 });
+const treeStyle = css({
+  overflow: 'auto',
+  maxBlockSize: 'var(--json-max-height)',
+  padding: vars.space[2],
+  fontFamily: vars.font.mono,
+  '--json-indent': vars.space[4],
+  '@media (max-width: 40rem)': { '--json-indent': vars.space[3] },
+});
+const itemStyle = css({ outline: 'none', '&:focus-visible > [data-ui="json-viewer-row"]': focusRingInset });
+const rowStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space[2],
+  minBlockSize: 'var(--json-row-height)',
+  paddingInline: vars.space[2],
+  paddingInlineStart: 'calc(var(--json-depth) * var(--json-indent) + var(--ui-space-2))',
+  borderInlineStart: '2px solid transparent',
+  borderRadius: vars.radius.sm,
+  cursor: 'pointer',
+  whiteSpace: 'pre',
+  minInlineSize: 'max-content',
+  transitionProperty: 'background-color',
+  transitionDuration: vars.motion.duration.fast,
+  transitionTimingFunction: vars.motion.easeStandard,
+  '&:hover': { background: vars.color.surfaceHover },
+  '[aria-selected="true"] > &': {
+    borderInlineStartColor: vars.color.accentText,
+    background: vars.color.surfaceHover,
+  },
+  [REDUCED_MOTION]: { transitionDuration: '0s' },
+  [FORCED_COLORS]: {
+    color: 'CanvasText',
+    '[aria-selected="true"] > &': { borderInlineStartColor: 'Highlight' },
+  },
+});
+const caretStyle = css({
+  display: 'inline-block',
+  inlineSize: vars.space[4],
+  color: vars.color.textMuted,
+  '&:dir(rtl)': { transform: 'scaleX(-1)' },
+});
+const valueStyle = css({ color: vars.color.text });
+const typeStyle = css({ color: vars.color.textMuted, fontSize: vars.textSize.xs });
+const markStyle = css({
+  color: vars.color.accentText,
+  background: 'transparent',
+  textDecoration: 'underline',
+  fontWeight: vars.fontWeight.medium,
+  [FORCED_COLORS]: { color: 'Highlight' },
+});
+const pathStyle = css({
+  padding: vars.space[3],
+  borderBlockStart: `1px solid ${vars.color.border}`,
+  overflowWrap: 'anywhere',
+  minInlineSize: 0,
+});
+const detailsStyle = css({
+  margin: 0,
+  whiteSpace: 'pre-wrap',
+  fontFamily: vars.font.mono,
+  maxBlockSize: 'var(--json-max-height)',
+  overflow: 'auto',
+  '&:focus-visible': focusRingInset,
+});
+const statusStyle = css({ paddingInline: vars.space[3], '&:empty': { padding: 0 } });
+
+/** Read-only JSON tree. Search overlays expansion/pages; clearing restores base state.
+ * Roving DOM focus and nested groups follow the TreeView navigation contract. Right opens,
+ * Left closes/moves to parent even in RTL. Up/Down clamp; Home/End move; Enter/Space activate;
+ * 500ms typeahead; / searches; Ctrl/Cmd+C copies JSON (+Shift copies path).
+ * Strict JSON only, no getters/cycles/nonfinite numbers. Paged, not virtualized.
+ */
+export function JsonViewer({
+  data,
+  rootName = 'root',
+  expandedValue,
+  defaultExpandedValue,
+  onExpandedValueChange,
+  defaultExpandDepth = 1,
+  query: queryProp,
+  defaultQuery = '',
+  onQueryChange,
+  value: valueProp,
+  defaultValue,
+  onValueChange,
+  onNodeActivate,
+  searchable = true,
+  copyable = true,
+  showPath = true,
+  pageSize: pageSizeProp = DEFAULT_PAGE_SIZE,
+  maxMatches: maxMatchesProp = DEFAULT_MAX_MATCHES,
+  maxHeight = '26rem',
+  size = 'md',
+  locale,
+  labels: labelProps,
+  onCopy,
+  onCopyError,
+  slotProps,
+  ref,
+  className,
+  sx,
+  style,
+  onKeyDown,
+  onClick,
+  'aria-label': ariaLabel,
+  'aria-labelledby': labelledBy,
+  'aria-describedby': describedBy,
+  ...rest
+}: JsonViewerProps) {
+  const id = useId();
+  const treeRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const rowRefs = useRef(new Map<string, HTMLDivElement>());
+  const lastFocus = useRef<HTMLDivElement | null>(null);
+  const suppressFocusSelection = useRef(false);
+  const previousNodes = useRef<Map<string, DataNode> | null>(null);
+  const typeahead = useRef({ text: '', time: 0 });
+  const nodes = useMemo(() => inspect(data, rootName), [data, rootName]);
+  const format = new Intl.NumberFormat(locale);
+  const labels: JsonViewerLabels = {
+    tree: 'JSON',
+    search: 'Search JSON',
+    expandAll: 'Expand all',
+    collapseAll: 'Collapse all',
+    previousMatch: 'Previous match',
+    nextMatch: 'Next match',
+    copyValue: 'Copy value',
+    copyPath: 'Copy path',
+    copied: 'Copied',
+    copyFailed: 'Copy failed',
+    invalidData: 'Invalid JSON data',
+    count: (count) => format.format(count),
+    match: (current, total, truncated) =>
+      `${format.format(current)} / ${format.format(total)}${truncated ? '+' : ''}`,
+    showMore: (remaining) => `Show more (${format.format(remaining)} remaining)`,
+    ...labelProps,
+  };
+  const pageSize = positiveInteger(pageSizeProp, DEFAULT_PAGE_SIZE);
+  const maxMatches = positiveInteger(maxMatchesProp, DEFAULT_MAX_MATCHES);
+  const [seed] = useState(
+    () =>
+      defaultExpandedValue ??
+      [...(nodes?.values() ?? [])]
+        .filter((node) => isBranch(node) && node.level <= Math.max(0, Math.floor(defaultExpandDepth)))
+        .map((node) => node.path),
+  );
+  const [expanded = [], requestExpanded] = useControlledState<readonly string[]>(
+    expandedValue,
+    seed,
+    (paths) => onExpandedValueChange?.([...paths]),
+  );
+  const [query = '', requestQuery] = useControlledState(queryProp, defaultQuery, onQueryChange);
+  const [selected = rootName, requestSelected] = useControlledState(
+    valueProp,
+    defaultValue ?? rootName,
+    onValueChange,
+  );
+  const [focused, setFocused] = useState(valueProp ?? defaultValue ?? rootName);
+  const [paging, setPaging] = useState<{ data: JsonValue; pages: Map<string, number> }>({
+    data,
+    pages: new Map(),
+  });
+  const [overlay, setOverlay] = useState<{
+    query: string;
+    closed: Set<string>;
+    opened: Set<string>;
+    pages: Map<string, number>;
+  }>({ query, closed: new Set(), opened: new Set(), pages: new Map() });
+  const [status, setStatus] = useState('');
+  const pages = Object.is(paging.data, data) ? paging.pages : new Map<string, number>();
+  const searchOverlay =
+    overlay.query === query
+      ? overlay
+      : { query, closed: new Set<string>(), opened: new Set<string>(), pages: new Map<string, number>() };
+  const search = useMemo(() => {
+    const matches: string[] = [];
+    const ancestors = new Set<string>();
+    const limits = new Map<string, number>();
+    let truncated = false;
+    if (query && nodes)
+      for (const node of nodes.values()) {
+        if (
+          !node.key.toLowerCase().includes(query.toLowerCase()) &&
+          (node.type === 'object' ||
+            node.type === 'array' ||
+            !primitiveText(node).toLowerCase().includes(query.toLowerCase()))
+        )
+          continue;
+        if (matches.length === maxMatches) {
+          truncated = true;
+          break;
+        }
+        matches.push(node.path);
+        let child = node;
+        while (child.parent !== undefined) {
+          ancestors.add(child.parent);
+          limits.set(child.parent, Math.max(limits.get(child.parent) ?? 0, child.index + 1));
+          child = nodes.get(child.parent)!;
+        }
+      }
+    return { matches, ancestors, limits, truncated };
+  }, [nodes, query, maxMatches]);
+  const isOpen = (path: string) =>
+    !searchOverlay.closed.has(path) &&
+    (expanded.includes(path) || search.ancestors.has(path) || searchOverlay.opened.has(path));
+  const visible: VisibleNode[] = [];
+  const childrenByPath = new Map<string, VisibleNode[]>();
+  if (nodes) {
+    const stack: VisibleNode[] = [{ path: rootName, level: 1, position: 1, setSize: 1 }];
+    while (stack.length) {
+      const row = stack.pop()!;
+      visible.push(row);
+      if (row.more !== undefined) continue;
+      const node = nodes.get(row.path)!;
+      if (!isOpen(row.path) || !isBranch(node)) continue;
+      const loaded = Math.min(
+        node.children.length,
+        Math.max(
+          pages.get(row.path) ?? pageSize,
+          search.limits.get(row.path) ?? 0,
+          query ? (searchOverlay.pages.get(row.path) ?? 0) : 0,
+        ),
+      );
+      const more = node.children.length - loaded;
+      const setSize = loaded + (more ? 1 : 0);
+      const children: VisibleNode[] = node.children.slice(0, loaded).map((path, index) => ({
+        path,
+        parent: row.path,
+        level: row.level + 1,
+        position: index + 1,
+        setSize,
+      }));
+      if (more)
+        children.push({
+          path: `${row.path}\u0000more`,
+          parent: row.path,
+          level: row.level + 1,
+          position: setSize,
+          setSize,
+          more,
+        });
+      childrenByPath.set(row.path, children);
+      stack.push(...children.toReversed());
+    }
+  }
+  const visiblePaths = new Set(visible.map((row) => row.path));
+  const nearestVisible = (path: string): string => {
+    let current: string | undefined = path;
+    while (current !== undefined) {
+      if (visiblePaths.has(current)) return current;
+      current = nodes?.get(current)?.parent ?? previousNodes.current?.get(current)?.parent;
+    }
+    return rootName;
+  };
+  const tabStop = nearestVisible(focused);
+  const recoveredSelection = useRef({ selected, path: selected });
+  const recoveryPath =
+    recoveredSelection.current.selected === selected ? recoveredSelection.current.path : selected;
+  const current = nodes?.get(selected) ?? nodes?.get(nearestVisible(recoveryPath));
+  useLayoutEffect(() => {
+    recoveredSelection.current = { selected, path: current?.path ?? rootName };
+    previousNodes.current = nodes;
+    if (!Object.is(paging.data, data)) {
+      setPaging({ data, pages: new Map() });
+      setOverlay({ query, closed: new Set(), opened: new Set(), pages: new Map() });
+    }
+    if (focused === tabStop) return;
+    const previous = lastFocus.current;
+    const document = treeRef.current?.ownerDocument;
+    const ownedFocus =
+      previous &&
+      document &&
+      (document.activeElement === previous ||
+        (!previous.isConnected && document.activeElement === document.body));
+    setFocused(tabStop);
+    if (ownedFocus) {
+      suppressFocusSelection.current = true;
+      rowRefs.current.get(tabStop)?.focus();
+      suppressFocusSelection.current = false;
+    }
+  });
+  const moveFocus = (path: string) => {
+    const target = rowRefs.current.get(path);
+    setFocused(path);
+    target?.focus();
+    target?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+  };
+  const changeExpansion = (paths: readonly string[]) => {
+    const unique = [...new Set(paths)];
+    if (unique.length !== new Set(expanded).size || unique.some((path) => !expanded.includes(path)))
+      requestExpanded(unique);
+  };
+  const toggle = (path: string) => {
+    if (query) {
+      const closed = new Set(searchOverlay.closed);
+      const opened = new Set(searchOverlay.opened);
+      if (isOpen(path)) {
+        closed.add(path);
+        opened.delete(path);
+      } else {
+        closed.delete(path);
+        opened.add(path);
+      }
+      setOverlay({ ...searchOverlay, closed, opened });
+    } else changeExpansion(isOpen(path) ? expanded.filter((item) => item !== path) : [...expanded, path]);
+  };
+  const loadPage = (row: VisibleNode) => {
+    const parent = row.parent!;
+    const children = childrenByPath.get(parent)!;
+    const loaded = children.length - 1;
+    const next = Math.min(nodes!.get(parent)!.children.length, loaded + pageSize);
+    if (query) setOverlay({ ...searchOverlay, pages: new Map(searchOverlay.pages).set(parent, next) });
+    else setPaging({ data, pages: new Map(pages).set(parent, next) });
+    const firstNew = nodes!.get(parent)!.children[loaded]!;
+    requestSelected(firstNew);
+    setFocused(firstNew);
+    lastFocus.current = rowRefs.current.get(row.path) ?? null;
+    pendingFocus.current = firstNew;
+  };
+  const pendingFocus = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (pendingFocus.current !== null) {
+      suppressFocusSelection.current = true;
+      rowRefs.current.get(pendingFocus.current)?.focus();
+      suppressFocusSelection.current = false;
+      pendingFocus.current = null;
+    }
+  });
+  const activate = (row: VisibleNode) => {
+    if (row.more !== undefined) {
+      loadPage(row);
+      return;
+    }
+    const node = nodes!.get(row.path)!;
+    if (isBranch(node)) toggle(row.path);
+    else onNodeActivate?.({ path: node.path, value: node.value, type: node.type });
+  };
+  const copy = async (kind: 'value' | 'path', path = current?.path) => {
+    if (!copyable || path === undefined || !nodes?.has(path)) return;
+    try {
+      const text = kind === 'path' ? path : JSON.stringify(nodes.get(path)!.value, null, 2);
+      const clipboard = treeRef.current?.ownerDocument.defaultView?.navigator.clipboard;
+      if (!clipboard) throw new Error('Clipboard API unavailable');
+      await clipboard.writeText(text);
+      setStatus(labels.copied);
+      onCopy?.({ kind, path, text });
+    } catch (error) {
+      setStatus(labels.copyFailed);
+      onCopyError?.({ kind, path, error });
+    }
+  };
+  const navigateMatch = (direction: number, focus: boolean) => {
+    if (!search.matches.length) return;
+    const index = search.matches.indexOf(selected);
+    const nextIndex =
+      index < 0
+        ? direction > 0
+          ? 0
+          : search.matches.length - 1
+        : (index + direction + search.matches.length) % search.matches.length;
+    const next = search.matches[nextIndex]!;
+    setOverlay({ ...searchOverlay, closed: new Set() });
+    requestSelected(next);
+    if (focus) {
+      setFocused(next);
+      pendingFocus.current = next;
+    }
+  };
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    onKeyDown?.(event);
+    if (event.defaultPrevented) return;
+    if (event.target === searchRef.current) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        navigateMatch(event.shiftKey ? -1 : 1, false);
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        requestQuery('');
+      }
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        moveFocus(tabStop);
+      }
+      return;
+    }
+    const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
+    if (!item || !treeRef.current?.contains(item) || event.target !== item) return;
+    const index = visible.findIndex((row) => rowRefs.current.get(row.path) === item);
+    const row = visible[index];
+    if (!row) return;
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'c') {
+      if (copyable && row.more === undefined && !item.ownerDocument.getSelection()?.toString()) {
+        event.preventDefault();
+        void copy(event.shiftKey ? 'path' : 'value', row.path);
+      }
+      return;
+    }
+    if (event.ctrlKey || event.metaKey || event.altKey || event.nativeEvent.isComposing) return;
+    const node = nodes?.get(row.path);
+    const actions: Record<string, () => void> = {
+      ArrowDown: () => moveFocus(visible[Math.min(index + 1, visible.length - 1)]!.path),
+      ArrowUp: () => moveFocus(visible[Math.max(index - 1, 0)]!.path),
+      Home: () => moveFocus(visible[0]!.path),
+      End: () => moveFocus(visible[visible.length - 1]!.path),
+      ArrowRight: () => {
+        if (node && isBranch(node)) {
+          if (!isOpen(row.path)) toggle(row.path);
+          else moveFocus(childrenByPath.get(row.path)![0]!.path);
+        }
+      },
+      ArrowLeft: () => {
+        if (node && isBranch(node) && isOpen(row.path)) toggle(row.path);
+        else if (row.parent) moveFocus(row.parent);
+      },
+      Enter: () => activate(row),
+      ' ': () => activate(row),
+      '/': () => {
+        if (searchable) searchRef.current?.focus();
+      },
+    };
+    if (actions[event.key] && (event.key !== '/' || searchable)) {
+      event.preventDefault();
+      actions[event.key]!();
+      return;
+    }
+    if ([...event.key].length === 1) {
+      const now = Date.now();
+      const buffered =
+        now - typeahead.current.time < TYPEAHEAD_MS ? typeahead.current.text + event.key : event.key;
+      typeahead.current = { text: buffered, time: now };
+      const text = [...buffered].every((letter) => letter === buffered[0]) ? buffered[0]! : buffered;
+      const candidate = [...visible.slice(index + 1), ...visible.slice(0, index + 1)].find((candidate) =>
+        nodes?.get(candidate.path)?.key.toLocaleLowerCase(locale).startsWith(text.toLocaleLowerCase(locale)),
+      );
+      if (candidate) {
+        event.preventDefault();
+        moveFocus(candidate.path);
+      }
+    }
+  };
+  const highlight = (text: string, quoted = false): ReactNode => {
+    const index = query ? text.toLowerCase().indexOf(query.toLowerCase()) : -1;
+    const encode = (value: string) => (quoted ? JSON.stringify(value).slice(1, -1) : value);
+    return index < 0 ? (
+      quoted ? (
+        JSON.stringify(text)
+      ) : (
+        text
+      )
+    ) : (
+      <>
+        {quoted && '"'}
+        {encode(text.slice(0, index))}
+        <mark data-ui="json-viewer-match" css={markStyle}>
+          {encode(text.slice(index, index + query.length))}
+        </mark>
+        {encode(text.slice(index + query.length))}
+        {quoted && '"'}
+      </>
+    );
+  };
+  const rendered = new Map<string, ReactNode>();
+  for (let index = visible.length - 1; index >= 0; index--) {
+    const row = visible[index]!;
+    const node = nodes?.get(row.path);
+    const labelId = `${id}-label-${index}`;
+    const groupId = childrenByPath.has(row.path) ? `${id}-group-${index}` : undefined;
+    rendered.set(
+      row.path,
+      <div key={row.path} data-ui="json-viewer-node" role="none">
+        <div
+          id={`${id}-item-${index}`}
+          role="treeitem"
+          data-ui="json-viewer-item"
+          aria-labelledby={labelId}
+          aria-owns={groupId}
+          aria-level={row.level}
+          aria-posinset={row.position}
+          aria-setsize={row.setSize}
+          aria-expanded={node && isBranch(node) ? isOpen(row.path) : undefined}
+          aria-selected={node ? selected === row.path : undefined}
+          tabIndex={tabStop === row.path ? 0 : -1}
+          css={itemStyle}
+          ref={(element) => {
+            if (element) rowRefs.current.set(row.path, element);
+            else rowRefs.current.delete(row.path);
+          }}
+          onFocus={(event) => {
+            if (event.target !== event.currentTarget) return;
+            lastFocus.current = event.currentTarget;
+            setFocused(row.path);
+            if (node && !suppressFocusSelection.current) requestSelected(row.path);
+          }}
+          onBlur={(event) => {
+            if (!event.relatedTarget || !treeRef.current?.contains(event.relatedTarget as Node)) {
+              lastFocus.current = null;
+            }
+          }}
+        >
+          <div
+            data-ui="json-viewer-row"
+            className={slotProps?.row?.className}
+            css={[rowStyle, slotProps?.row?.css]}
+            style={{ '--json-depth': row.level - 1 } as CSSProperties}
+          >
+            <span data-ui="json-viewer-caret" aria-hidden="true" css={caretStyle}>
+              {node && isBranch(node) ? (isOpen(row.path) ? '▾' : '▸') : '·'}
+            </span>
+            <span id={labelId} data-ui="json-viewer-label">
+              {row.more !== undefined ? (
+                labels.showMore(row.more)
+              ) : (
+                <>
+                  {highlight(node!.key)}:{' '}
+                  <span
+                    data-ui="json-viewer-value"
+                    className={slotProps?.value?.className}
+                    css={[valueStyle, slotProps?.value?.css]}
+                  >
+                    {node!.type === 'object' || node!.type === 'array'
+                      ? labels.count(node!.children.length)
+                      : node!.type === 'string'
+                        ? highlight(String(node!.value), true)
+                        : highlight(JSON.stringify(node!.value))}
+                  </span>{' '}
+                  <span data-ui="json-viewer-type" css={typeStyle}>
+                    ({node!.type})
+                  </span>
+                </>
+              )}
+            </span>
+          </div>
+        </div>
+        {childrenByPath.has(row.path) && (
+          <div
+            id={groupId}
+            role="group"
+            data-ui="json-viewer-group"
+            className={slotProps?.group?.className}
+            css={slotProps?.group?.css}
+          >
+            {childrenByPath.get(row.path)!.map((child) => rendered.get(child.path))}
+          </div>
+        )}
+      </div>,
+    );
+  }
+  const action = (label: string, run: () => void, disabled = false) => (
+    <Button
+      data-ui="json-viewer-action"
+      size="sm"
+      variant="outline"
+      className={slotProps?.action?.className}
+      css={slotProps?.action?.css}
+      disabled={disabled}
+      onClick={run}
+      render={(props) => <button {...props} disabled={disabled} />}
+    >
+      {label}
+    </Button>
+  );
+  return (
+    <WithSx className={className} styles={rootStyle} sx={sx}>
+      {(className) => (
+        <div
+          {...rest}
+          ref={ref}
+          data-ui="json-viewer"
+          className={className}
+          style={
+            {
+              '--json-max-height': typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
+              '--json-row-height': size === 'sm' ? vars.space[8] : vars.space[10],
+              ...style,
+            } as CSSProperties
+          }
+          onKeyDown={handleKeyDown}
+          onClick={(event) => {
+            onClick?.(event);
+            if (event.defaultPrevented) return;
+            const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
+            if (!item || !treeRef.current?.contains(item)) return;
+            const row = visible.find((row) => rowRefs.current.get(row.path) === item);
+            if (row) {
+              moveFocus(row.path);
+              activate(row);
+            }
+          }}
+        >
+          {!nodes ? (
+            <div
+              role="group"
+              data-ui="json-viewer-invalid"
+              aria-label={ariaLabel ?? labels.tree}
+              aria-labelledby={labelledBy}
+              aria-describedby={describedBy}
+            >
+              {labels.invalidData}
+            </div>
+          ) : (
+            <>
+              <div
+                data-ui="json-viewer-toolbar"
+                className={slotProps?.toolbar?.className}
+                css={[toolbarStyle, slotProps?.toolbar?.css]}
+              >
+                {searchable && (
+                  <>
+                    <TextField
+                      data-ui="json-viewer-search"
+                      ref={searchRef}
+                      aria-label={labels.search}
+                      value={query}
+                      onValueChange={requestQuery}
+                      size="sm"
+                      className={slotProps?.search?.className}
+                      sx={[searchStyle, slotProps?.search?.css]}
+                    />
+                    <span
+                      data-ui="json-viewer-match-status"
+                      role="status"
+                      aria-live="polite"
+                      aria-atomic="true"
+                    >
+                      {query
+                        ? labels.match(
+                            Math.max(0, search.matches.indexOf(selected) + 1),
+                            search.matches.length,
+                            search.truncated,
+                          )
+                        : ''}
+                    </span>
+                    {action(labels.previousMatch, () => navigateMatch(-1, true), !search.matches.length)}
+                    {action(labels.nextMatch, () => navigateMatch(1, true), !search.matches.length)}
+                  </>
+                )}
+                {action(labels.expandAll, () => {
+                  setOverlay({ ...searchOverlay, closed: new Set() });
+                  changeExpansion([...nodes.values()].filter(isBranch).map((node) => node.path));
+                })}
+                {action(labels.collapseAll, () => {
+                  setOverlay({ ...searchOverlay, closed: new Set(search.ancestors) });
+                  changeExpansion(isBranch(nodes.get(rootName)!) ? [rootName] : []);
+                })}
+                {copyable && (
+                  <>
+                    {action(labels.copyValue, () => {
+                      void copy('value');
+                    })}
+                    {action(labels.copyPath, () => {
+                      void copy('path');
+                    })}
+                  </>
+                )}
+              </div>
+              <div
+                ref={treeRef}
+                role="tree"
+                data-ui="json-viewer-tree"
+                aria-label={ariaLabel ?? (labelledBy ? undefined : labels.tree)}
+                aria-labelledby={labelledBy}
+                aria-describedby={describedBy}
+                className={slotProps?.tree?.className}
+                css={[treeStyle, slotProps?.tree?.css]}
+              >
+                {rendered.get(rootName)}
+              </div>
+              {showPath && current && (
+                <div
+                  data-ui="json-viewer-path-bar"
+                  className={slotProps?.pathBar?.className}
+                  css={[pathStyle, slotProps?.pathBar?.css]}
+                >
+                  <code data-ui="json-viewer-path">{current.path}</code>{' '}
+                  <span data-ui="json-viewer-current-type">({current.type})</span>
+                  <pre data-ui="json-viewer-details" tabIndex={0} css={detailsStyle}>
+                    {serializeDetails(current.value)}
+                  </pre>
+                </div>
+              )}
+            </>
+          )}
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            data-ui="json-viewer-status"
+            className={slotProps?.status?.className}
+            css={[statusStyle, slotProps?.status?.css]}
+          >
+            {status}
+          </div>
+        </div>
+      )}
+    </WithSx>
+  );
+}
+JsonViewer.displayName = 'JsonViewer';
+
+function serializeDetails(value: JsonValue) {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return '…';
+  }
+}
