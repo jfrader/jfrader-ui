@@ -44,6 +44,7 @@
     "./divider": { "types": "./src/components/divider/index.ts", "import": "./src/components/divider/index.ts" },
     "./drawer": { "types": "./src/components/drawer/index.ts", "import": "./src/components/drawer/index.ts" },
     "./empty-state": { "types": "./src/components/empty-state/index.ts", "import": "./src/components/empty-state/index.ts" },
+    "./filter-toolbar": { "types": "./src/components/filter-toolbar/index.ts", "import": "./src/components/filter-toolbar/index.ts" },
     "./flex": { "types": "./src/components/flex/index.ts", "import": "./src/components/flex/index.ts" },
     "./hover-card": { "types": "./src/components/hover-card/index.ts", "import": "./src/components/hover-card/index.ts" },
     "./json-viewer": { "types": "./src/components/json-viewer/index.ts", "import": "./src/components/json-viewer/index.ts" },
