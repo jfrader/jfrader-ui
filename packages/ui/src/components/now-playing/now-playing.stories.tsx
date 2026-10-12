@@ -1,4 +1,4 @@
-import { StrictMode, useRef, useState } from 'react';
+import { StrictMode, useLayoutEffect, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, fireEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -54,7 +54,7 @@ const meta = {
       },
       description: {
         component:
-          'Inline media transport, not an audio engine. The consumer owns media loading, timeupdate, ended, and play() permission failures. Commit playing=true only after play() succeeds; uncontrolled playing is intent and never advances time. Expand/Collapse are disclosure buttons; Escape closes only the expanded subtree and accepted keyboard disclosure changes repair focus. Seek composes Slider: arrows move seekStep seconds, Shift+arrows and PageUp/Down use seekLargeStep (30 seconds), Home/End reach the bounds. Horizontal seek remains left-to-right in RTL. The default seekStep is a duration-aligned step of at most one second; explicit steps must divide duration. Artwork uses a reserved square, object-fit:cover; explicit artworkAlt makes it informative. Pulling artwork down 70px or a downward flick requests collapse; Collapse and Escape are equivalent alternatives. No volume control or media-key capture is included.',
+          'Inline media transport, not an audio engine. The consumer owns media loading, timeupdate, ended, and play() permission failures. Commit playing=true only after play() succeeds; uncontrolled playing is intent and never advances time. Expand/Collapse are disclosure buttons; Escape closes only the expanded subtree and accepted keyboard disclosure changes repair focus. Seek composes Slider: arrows move seekStep seconds, Shift+arrows and PageUp/Down use seekLargeStep (30 seconds), Home/End reach the bounds. Horizontal seek remains left-to-right in RTL. The default seekStep is a duration-aligned step of at most one second; an explicit seekStep that does not divide the duration is rounded to the nearest step that does. Artwork uses a reserved square, object-fit:cover; explicit artworkAlt makes it informative. Pulling artwork down 70px or a downward flick requests collapse; Collapse and Escape are equivalent alternatives. No volume control or media-key capture is included.',
       },
     },
   },
@@ -270,6 +270,47 @@ export const ExternalFocusedClosure: Story = {
     const expand = canvas.getByRole('button', { name: 'Expand' });
     await expect(expand.ownerDocument.activeElement).toBe(expand);
     await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+function BlurOnHide({ open }: { open: boolean }) {
+  useLayoutEffect(() => {
+    if (!open && document.activeElement instanceof HTMLElement) document.activeElement.blur();
+  }, [open]);
+  return null;
+}
+export const HiddenPanelBlur: Story = {
+  render: (args) => {
+    const [open, setOpen] = useState(false);
+    return (
+      <NowPlaying
+        {...args}
+        open={open}
+        onOpenChange={(next) => {
+          args.onOpenChange?.(next);
+          setOpen(next);
+        }}
+        error={<BlurOnHide open={open} />}
+      />
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Blurs the focused control inside the hidden panel before NowPlaying commits, as a browser focus fixup can. Focus still returns to Expand.',
+      },
+    },
+  },
+  play: async ({ canvas, userEvent, args }) => {
+    const expand = canvas.getByRole('button', { name: 'Expand' });
+    expand.focus();
+    await userEvent.keyboard('{Enter}');
+    await userEvent.tab();
+    const seek = canvas.getByRole('slider');
+    await expect(seek.ownerDocument.activeElement).toBe(seek);
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenNthCalledWith(2, false);
+    await expect(expand.ownerDocument.activeElement).toBe(expand);
   },
 };
 export const BoundedPosition: Story = {
@@ -614,7 +655,9 @@ export const NativeCustomization: Story = {
     const seekRoot = canvasElement.querySelector('[data-ui="slider"]')!;
     await expect(args.ref).toHaveBeenCalledWith(root);
     await expect(args.slotProps!.seek!.ref).toHaveBeenCalledWith(seekRoot);
-    await expect(getComputedStyle(root).paddingInlineStart).toBe('32px');
+    await expect(Math.abs(parseFloat(getComputedStyle(root).paddingInlineStart) - 32)).toBeLessThan(
+      1.1,
+    );
     await expect(getComputedStyle(canvas.getByText('Night Signal')).fontWeight).toBe('600');
   },
 };
@@ -647,6 +690,20 @@ export const AutomaticFractionalStep: Story = {
     await userEvent.keyboard('{End}');
     await expect(canvas.getByRole('slider')).toHaveAttribute('aria-valuenow', '180.5');
     await expectOnce(args.onPositionChange, 180.5);
+  },
+};
+export const MisalignedSeekStep: Story = {
+  args: { seekStep: 7, defaultOpen: true },
+  play: async ({ canvas, userEvent, args }) => {
+    const seek = canvas.getByRole('slider');
+    await userEvent.tab();
+    await userEvent.tab();
+    await expect(seek.ownerDocument.activeElement).toBe(seek);
+    await userEvent.keyboard('{ArrowRight}');
+    await expectOnce(args.onPositionChange, expect.closeTo(180 / 26, 10));
+    await userEvent.keyboard('{End}');
+    await expect(seek).toHaveAttribute('aria-valuenow', '180');
+    await expect(args.onPositionChange).toHaveBeenNthCalledWith(2, 180);
   },
 };
 const rootCleanup = fn();

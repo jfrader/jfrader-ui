@@ -46,7 +46,21 @@ export interface NowPlayingSlotProps {
   collapse?: Omit<ButtonProps, 'sx' | 'render'>;
   seek?: Omit<
     Extract<SliderProps, { type?: 'single' }>,
-    'sx' | 'type' | 'value' | 'defaultValue' | 'onValueChange' | 'label'
+    | 'sx'
+    | 'type'
+    | 'value'
+    | 'defaultValue'
+    | 'onValueChange'
+    | 'label'
+    | 'dir'
+    | 'min'
+    | 'max'
+    | 'step'
+    | 'largeStep'
+    | 'locale'
+    | 'formatValue'
+    | 'formatOptions'
+    | 'showValue'
   >;
   waveform?: Part<'div'>;
   controls?: Part<'div'>;
@@ -91,7 +105,11 @@ export interface NowPlayingProps
   label?: string;
   labels?: Partial<NowPlayingLabels>;
   locale?: Intl.LocalesArgument;
-  /** Seconds per arrow step. Must divide the known duration, as required by Slider. */
+  /**
+   * Seconds per arrow step. Slider requires the duration to be a whole number of steps, so a
+   * step that does not divide it is rounded to the nearest one that does (180s with 7 → 180/26).
+   * Defaults to the largest step of at most one second that divides the duration.
+   */
   seekStep?: number;
   seekLargeStep?: number;
   slotProps?: NowPlayingSlotProps;
@@ -238,6 +256,12 @@ function formatDuration(value: number, locale?: Intl.LocalesArgument) {
         }).format(n),
       ),
   );
+}
+function seekLattice(duration: number, step?: number) {
+  if (step === undefined || !Number.isFinite(step) || step <= 0)
+    return duration / Math.ceil(duration);
+  const count = Math.max(1, Math.round(duration / step));
+  return count * step === duration ? step : duration / count;
 }
 function joinIds(...ids: (string | false | undefined)[]) {
   return ids.filter(Boolean).join(' ') || undefined;
@@ -531,7 +555,10 @@ function NowPlayingRoot({
                       slotProps?.full?.onFocusCapture?.(e);
                     }}
                     onBlurCapture={(e) => {
-                      if (!full.current?.contains(e.relatedTarget as Node | null))
+                      if (
+                        !e.currentTarget.hidden &&
+                        !e.currentTarget.contains(e.relatedTarget as Node | null)
+                      )
                         focusInFull.current = false;
                       slotProps?.full?.onBlurCapture?.(e);
                     }}
@@ -576,7 +603,7 @@ function NowPlayingRoot({
                       }
                       min={0}
                       max={duration ?? 1}
-                      step={duration === null ? 1 : (seekStep ?? duration / Math.ceil(duration))}
+                      step={duration === null ? 1 : seekLattice(duration, seekStep)}
                       largeStep={seekLargeStep}
                       value={duration === null ? 0 : bounded}
                       disabled={busy || duration === null || slotProps?.seek?.disabled}
