@@ -8,5 +8,6 @@
 
 ### Improved
 
+- `ToastStack` keeps a `contained` stack inside its host when consumer styles add padding to it.
 - `EditableDetails` uses aligned headings, quieter labels and separators only between rows. Nested sections no longer stack empty divider lines.
 - Storybook groups `EditableDetails` form and picker examples under one Showcase entry.

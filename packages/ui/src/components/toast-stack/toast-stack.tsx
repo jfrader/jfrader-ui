@@ -33,6 +33,7 @@ export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
 
 const NARROW_VIEWPORT = '@media (max-width: 30rem)';
 const rootStyle = css({
+  boxSizing: 'border-box',
   position: 'fixed',
   insetBlockEnd: vars.space[4],
   insetInlineEnd: vars.space[4],
