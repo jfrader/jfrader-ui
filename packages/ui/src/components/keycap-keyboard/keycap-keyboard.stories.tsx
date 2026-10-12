@@ -22,7 +22,8 @@ const meta = {
   args: { onValueChange: fn() },
   parameters: {
     docs: { source: { code: snippet }, description: { component:
-      'Decorative physical-key illustration composed of Kbd caps. It has no tab stops or keyboard role. Text and focus remain in an explicitly supplied native input; password inputs, composition and modifier shortcuts are not observed. Supply meaningful shortcut text or Kbd.Group outside the hidden board. Built-in rows depict illustrative ANSI geometry, not an OS keyboard mapping.' } },
+      'Show a keyboard illustration with keys that respond to input.' },
+      usage: '- The board uses Kbd caps and is decorative, hidden from assistive technology, with no tab stops or keyboard role.\n- Supply a native input for text and focus. Password inputs, composition and modifier shortcuts are not observed.\n- Supply shortcut text or Kbd.Group outside the board. Built-in rows illustrate ANSI geometry; they do not map an OS keyboard.' },
   },
   render: (args) => <TypingExample {...args} />,
 } satisfies Meta<typeof KeycapKeyboard>;

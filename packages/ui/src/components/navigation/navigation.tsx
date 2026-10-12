@@ -50,7 +50,7 @@ export interface NavigationItemProps extends AnchorHTMLAttributes<HTMLElement>, 
   /** Marks the current page (aria-current="page"). */
   active?: boolean;
   disabled?: boolean;
-  /** Decorative leading icon, hidden from assistive tech. */
+  /** Leading icon, hidden from assistive technology. */
   icon?: ReactNode;
 }
 

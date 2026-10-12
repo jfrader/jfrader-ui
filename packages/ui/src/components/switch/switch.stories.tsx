@@ -17,6 +17,11 @@ const stackStyle = {
 const meta = {
   title: 'Inputs/Switch',
   component: Switch,
+  parameters: {
+    docs: {
+      description: { component: 'Turn a setting on or off.' },
+    },
+  },
   args: { label: 'Airplane mode', size: 'md' },
   argTypes: {
     size: { control: 'radio', options: SIZES },

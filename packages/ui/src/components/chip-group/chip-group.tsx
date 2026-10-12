@@ -139,8 +139,8 @@ const revealStyle = css({
 });
 const checkGlyphStyle = css({ inlineSize: vars.space[4], blockSize: vars.space[4], flexShrink: 0 });
 
-/** Clearable pressed-button filters. Arrows (horizontal RTL-aware), Home/End move focus only;
- * Enter/Space toggle. Multiple values are emitted in option order, not activation order. */
+/** Choose and clear filters. Arrows and Home/End move focus; horizontal arrows reverse in RTL.
+ * Enter/Space toggle selection. Multiple values are reported in option order. */
 export function ChipGroup({
   ref,
   options,

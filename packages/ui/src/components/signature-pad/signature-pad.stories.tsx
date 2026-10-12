@@ -93,8 +93,18 @@ const meta = {
     docs: {
       description: {
         component:
-          'Pointer handwriting uses normalized 600×260 samples, round midpoint-quadratic segments, and pressure-based widths, not speed-derived taper. Cancelled gestures are discarded. This drawing is not identity verification or legal consent evidence. A consuming form must offer a typed-name or upload alternative. Canvas shortcuts: Mod+Z undo, Shift+Mod+Z or Mod+Y redo, Delete/Backspace clear, Escape cancel/stop. Native radios and buttons remain keyboard-operable. PNG and SVG are transparent, optionally cropped, and use fixed print ink; guides and signer text are excluded. `ref` reaches the canvas, `apiRef` exposes actions and exports. Native form reset requests the initial strokes. Forced-colors, reduced-motion, pen hardware and screen-reader behavior require separate manual checks.',
+          'Draw a signature with a pointer, undo strokes and export the drawing as PNG or SVG.',
       },
+      usage: `### Input and keyboard
+- Forms must offer a typed-name or upload alternative. A drawing does not verify identity or establish legal consent.
+- Samples use normalized 600×260 coordinates, midpoint-quadratic segments and round caps. Pressure changes width; speed does not taper strokes. Cancelled gestures are discarded.
+- On the canvas: Mod+Z undoes; Shift+Mod+Z or Mod+Y redoes; Delete/Backspace clears; Escape cancels or stops.
+- Native radios and buttons also work with the keyboard. Form reset requests the initial strokes.
+
+### Exports and checks
+- PNG and SVG have transparent backgrounds, optional cropping and fixed print ink. Guides and signer text are excluded.
+- ref reaches the canvas; apiRef exposes actions and exports.
+- Forced colors, reduced motion, pen hardware and screen-reader behavior need separate manual checks.`,
       source: {
         code: '<SignaturePad label="Signature" messages={messages} value={strokes} onValueChange={setStrokes} apiRef={signatureApi} />',
       },
@@ -557,7 +567,7 @@ export const ReplayIgnoresObservers: Story = {
     docs: {
       description: {
         story:
-          'Regression: resize and style mutations during replay must not repaint the full signature over the playback frame. The test drives replay frames by hand, asserts the canvas keeps the mid-replay pixels after its own ResizeObserver and MutationObserver have seen the mutations, and asserts the replay is still live (its pending frame is only cancelled by Escape). Only frames requested synchronously by `replay()` and by the replay frame itself are attributed to the component; any frame the host page schedules meanwhile passes through to the browser and is not counted.',
+          'Resizing or changing styles during replay must keep the current frame. The test advances frames by hand, checks pixels after ResizeObserver and MutationObserver run, and checks that replay continues until Escape cancels its pending frame. It counts only frames requested synchronously by `replay()` or a replay frame; host-page frames run in the browser without being counted.',
       },
     },
   },
@@ -1005,7 +1015,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture for a separate forced-colors browser pass; this play test does not emulate system colors.',
+          'Enable forced colors in a browser to check this story. This test does not emulate system colors.',
       },
     },
   },
@@ -1016,7 +1026,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Replay fixture for a separate reduced-motion browser pass; the test uses the runner’s actual media preference.',
+          'Enable reduced motion in a browser to check replay. The test uses the runner’s media preference.',
       },
     },
   },

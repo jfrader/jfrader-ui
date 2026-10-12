@@ -104,7 +104,7 @@ export type UserMenuItemTone = MenuItemTone;
 export interface UserMenuUser {
   name: string;
   email: string;
-  /** Plan or role label shown next to the email; `0` renders. */
+  /** Plan or role shown next to the email. `0` renders. */
   plan?: ReactNode;
   avatarSrc?: string;
 }
@@ -157,14 +157,13 @@ export type UserMenuContentProps = UserMenuContentBaseProps &
 export interface UserMenuIdentityProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
 export interface UserMenuItemProps extends Omit<ComponentPropsWithRef<'button'>, 'onSelect'>, SxProps {
-  /** Called once when the item is activated. The menu then closes unless a click handler called
-   * `event.preventDefault()`. */
+  /** Called once on activation. The menu closes unless a click handler called `event.preventDefault()`. */
   onSelect?: () => void;
   disabled?: boolean;
   tone?: UserMenuItemTone;
   /** Decorative icon before the label. */
   icon?: ReactNode;
-  /** Shortcut hint keys, shown as decoration only; no shortcut is registered. */
+  /** Displays shortcut keys without registering a shortcut. */
   keys?: readonly string[];
 }
 

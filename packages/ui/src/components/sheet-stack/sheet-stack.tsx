@@ -74,59 +74,62 @@ type ResolvedVariant = Exclude<SheetStackVariant, 'auto'>;
 export type SheetStackHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface SheetStackProps {
-  /** Open sheet keys, bottom first. */
+  /** Controls the open panel keys, bottom first. */
   value?: readonly string[];
+  /** Sets the initial uncontrolled stack, bottom first. Defaults to `[]`. */
   defaultValue?: readonly string[];
+  /** Requests a changed ordered stack. Controlled panels change only when `value` updates. */
   onValueChange?: (value: string[]) => void;
-  /** `auto` lays out as a sheet below `breakpoint` and as a centered dialog at or above it. */
+  /** Sets the layout. Defaults to `'auto'`: a sheet below `breakpoint`, a centered dialog at or above it. */
   variant?: SheetStackVariant;
-  /** Layer inline size in CSS px where `auto` switches to the dialog layout. */
+  /** Sets the layer width in CSS pixels where `'auto'` switches to a dialog. Defaults to the `sheetStackBreakpoint` token. */
   breakpoint?: number;
-  /** Draws the layer inside the nearest positioned ancestor; modality stays document-wide. */
+  /** Draws inside the nearest positioned ancestor. Modality stays document-wide, without a page scroll lock. Defaults to `false`. */
   contained?: boolean;
   children: ReactNode;
 }
 
 export interface SheetStackTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
-  /** Key of the sheet this trigger pushes. */
+  /** Opens this panel key. An open key removes the panels above it. */
   value: string;
 }
 
 export interface SheetStackContentProps extends Omit<ComponentPropsWithRef<'div'>, 'onCancel'>, SxProps {
-  /** Stable key, unique within the stack. */
+  /** Identifies this panel. Keep the key stable and unique within the stack. */
   value: string;
-  /** False refuses Escape, backdrop and drag dismissal; Back and Close still work. */
+  /** Allows Escape, backdrop, and drag dismissal. Defaults to `true`. When `false`, Back and Close still work. */
   dismissible?: boolean;
-  /** Dismissal request (Escape, backdrop, drag) on this sheet while on top; `preventDefault()` vetoes it. */
+  /** Receives Escape, backdrop, or drag dismissal requests while this panel is on top. Call `preventDefault()` to keep it open. */
   onCancel?: (event: Event) => void;
-  /** Set false to keep structured content out of the sheet's accessible description. */
+  /** Includes `Description` in the accessible description. Defaults to `true`. Use `false` for structured content. */
   withDescription?: boolean;
 }
 
 export interface SheetStackTitleProps extends ComponentPropsWithRef<'h2'>, SxProps {
+  /** Sets the heading level. Defaults to `2`. */
   level?: SheetStackHeadingLevel;
 }
 export interface SheetStackDescriptionProps extends ComponentPropsWithRef<'p'>, SxProps {}
 export interface SheetStackFooterProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface SheetStackBackProps extends Omit<ComponentPropsWithRef<'button'>, 'aria-label'>, SxProps {
-  /** Localized accessible name, e.g. "Back to Settings". */
+  /** Names the Back button for assistive technology. Supply a localized name, such as "Back to Settings". */
   label: string;
 }
 export interface SheetStackCloseProps extends Omit<ComponentPropsWithRef<'button'>, 'aria-label'>, SxProps {
-  /** Localized accessible name, e.g. "Close all". */
+  /** Names the Close button for assistive technology. Supply a localized name, such as "Close all". */
   label: string;
 }
 
 export interface SheetStackActions {
   /** The open keys, bottom first. */
   value: readonly string[];
-  /** Opens `key` on top; an open key truncates the stack back to it. */
+  /** Requests opening `key` on top. An open key removes the panels above it. */
   push: (key: string) => void;
-  /** Closes the top sheet. */
+  /** Requests closing the top panel. Does nothing on an empty stack. */
   pop: () => void;
-  /** Truncates the stack back to the open `key`. */
+  /** Requests removing the panels above an open `key`. A closed key is ignored with a development warning. */
   popTo: (key: string) => void;
-  /** Closes every sheet. */
+  /** Requests closing every panel. Does nothing on an empty stack. */
   close: () => void;
 }
 
@@ -179,7 +182,7 @@ function useSheetContentContext(part: string): SheetContentContextValue {
   return context;
 }
 
-/** The stack's state and actions; throws outside `<SheetStack>`. */
+/** Returns the stack's state and actions. Throws outside `<SheetStack>`. */
 export function useSheetStack(): SheetStackActions {
   const { value, push, pop, popTo, close } = useSheetStackContext('useSheetStack');
   return useMemo(() => ({ value, push, pop, popTo, close }), [value, push, pop, popTo, close]);

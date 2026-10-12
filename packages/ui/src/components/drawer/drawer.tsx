@@ -84,8 +84,8 @@ export interface DrawerContentProps extends Omit<ComponentPropsWithRef<'dialog'>
 }
 export interface DrawerPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
   /**
-   * `contrast` (default) wears the dark theme plus the elevated-charcoal overrides on any page theme;
-   * `default` keeps whatever theme is in scope.
+   * `contrast` (default) uses the dark palette with a charcoal surface on any page theme.
+   * `default` keeps the enclosing theme.
    */
   appearance?: SurfaceAppearance;
 }

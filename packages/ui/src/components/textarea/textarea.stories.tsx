@@ -19,6 +19,11 @@ const stackStyle = css({
 const meta = {
   title: 'Inputs/Textarea',
   component: Textarea,
+  parameters: {
+    docs: {
+      description: { component: 'Write text across multiple lines in a field with a label and error message.' },
+    },
+  },
   args: { label: 'Message', placeholder: 'Write a message', size: 'md' },
   argTypes: {
     size: { control: 'radio', options: SIZES },
@@ -237,4 +242,3 @@ export const Rtl: Story = {
     await expect(textarea).toHaveAttribute('dir', 'rtl');
   },
 };
-

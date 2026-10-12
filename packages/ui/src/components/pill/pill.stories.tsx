@@ -24,6 +24,11 @@ const proseStyle = {
 const meta = {
   title: 'Data display/Pill',
   component: Pill,
+  parameters: {
+    docs: {
+      description: { component: 'Show a status or category beside other content.' },
+    },
+  },
   args: { children: 'Draft', tone: 'neutral' },
   argTypes: {
     tone: { control: 'select', options: TONES },

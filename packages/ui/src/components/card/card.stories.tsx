@@ -40,6 +40,7 @@ const fixtureButtonStyle = {
 const meta = {
   title: 'Data display/Card',
   component: Card,
+  parameters: { docs: { description: { component: 'Group content with a heading, description, and actions.' } } },
   args: { variant: 'raised' },
   argTypes: {
     variant: { control: 'radio', options: VARIANTS },
@@ -453,7 +454,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture for a browser forced-colors check. This story does not emulate the media query.',
+          'Enable forced colors in the browser to check this example. The story does not set the preference.',
       },
     },
   },
@@ -477,4 +478,3 @@ export const ForcedColors: Story = {
     }
   },
 };
-

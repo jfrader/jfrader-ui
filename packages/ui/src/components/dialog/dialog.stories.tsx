@@ -29,6 +29,7 @@ const footerStyle = {
 const meta = {
   title: 'Surfaces/Dialog',
   component: Dialog,
+  parameters: { docs: { description: { component: 'Open a dialog to show content or ask for a decision.' } } },
 } satisfies Meta<typeof Dialog>;
 
 export default meta;

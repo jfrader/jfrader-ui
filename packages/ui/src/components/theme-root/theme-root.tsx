@@ -13,25 +13,24 @@ import { ThemeProvider } from '../theme-provider/theme-provider';
 export type { ThemeName };
 
 export interface ThemeRootProps extends ComponentPropsWithRef<'div'>, SxProps {
-  /** The named palette the scope wears; `tokens` are declared over it. */
+  /** Base palette for this scope. `tokens` overrides its values. */
   theme?: ThemeName;
   /**
-   * Token overrides for this scope (`createTheme()` builds them from an accent), declared as inline
-   * custom properties on the root. Omitted: a root naming the enclosing root's theme keeps that
-   * root's tokens; a root naming another theme drops them.
+   * Token overrides, applied as inline custom properties. Use `createTheme()` to derive them from
+   * an accent. Omit to inherit the enclosing root's tokens when the themes match; otherwise none carry over.
    */
   tokens?: ThemeTokens;
   /**
-   * Where overlays inside this root portal to. Omitted: the enclosing ThemeRoot's container, else
-   * the default (`body`). `null`: overlays wait until the host element is set.
+   * Container for this root's overlays. Omit to inherit the enclosing container or use `body`.
+   * With `null`, overlays wait until the host element is set.
    */
   portalContainer?: HTMLElement | null;
   children?: ReactNode;
 }
 
 // Mounts the token theme too, so `styled` callbacks and `useTheme()` work anywhere below.
-// Overlays read the scope from context to carry this theme through their portals. Naming a theme
-// also clears any contrast appearance: the root redeclares the whole palette locally.
+// Overlays read the scope from context to carry this theme through their portals. Naming a different
+// theme also clears any contrast appearance: the root redeclares the whole palette locally.
 export function ThemeRoot({
   ref,
   theme = 'dark',

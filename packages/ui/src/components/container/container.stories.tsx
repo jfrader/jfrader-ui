@@ -62,7 +62,10 @@ const proseStyle = {
 const meta = {
   title: 'Layout/Container',
   component: Container,
-  parameters: { layout: 'fullscreen' },
+  parameters: {
+    layout: 'fullscreen',
+    docs: { description: { component: 'Center page content and limit its width. Set the space on either side.' } },
+  },
   argTypes: {
     size: { control: 'radio', options: SIZES },
     paddingInline: { control: 'select', options: LAYOUT_SPACES },

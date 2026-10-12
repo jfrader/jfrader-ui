@@ -48,8 +48,17 @@ const meta = {
     docs: {
       description: {
         component:
-          'Joined peer commands in a named native group, not a toolbar or selection widget. Tab and Shift+Tab visit every enabled action. Orientation-matched arrows wrap, Home/End move to the ends, and RTL reverses horizontal arrows. Enter/Space activate native buttons; links retain native Enter/Space behavior. The optional menu inherits Menu keyboard and accepted-close focus behavior. Use ToggleGroup for persistent selection; give at most one Item solid accent emphasis. Icon-only actions require a localized label or ARIA name. Numbers in Label are formatted by the consumer with Intl.',
+          'Place related actions together, with an optional menu for more commands.',
       },
+      usage: `- This is a named native group, not a toolbar or selection widget. Use ToggleGroup for persistent selection.
+- Give at most one Item solid accent emphasis.
+- Icon-only actions need a translated label or ARIA name. Format numbers in Label with Intl.
+- The menu uses Menu keyboard controls. Accepted Escape or selection returns focus to the trigger; outside press and Tab-out do not.
+
+### Keyboard
+- Tab/Shift+Tab visit every enabled action.
+- Arrows matching the orientation wrap. Home/End move to the ends; horizontal arrows reverse in RTL.
+- Enter/Space activate buttons. Links keep their native Enter/Space behavior.`,
       source: {
         code: '<ButtonGroup aria-label="Document actions">\n  <ButtonGroup.Item>Share</ButtonGroup.Item>\n  <ButtonGroup.Item>Duplicate</ButtonGroup.Item>\n  <ButtonGroup.Item>Archive</ButtonGroup.Item>\n</ButtonGroup>',
       },
@@ -676,7 +685,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture for reduced-motion browser QA. This play does not emulate the media preference.',
+          'Enable reduced motion in the browser to check this example. The play does not set the preference.',
       },
     },
   },
@@ -685,7 +694,7 @@ export const ForcedColors: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Structural fixture for forced-colors browser QA. This play does not emulate forced colors.',
+        story: 'Enable forced colors in the browser to check this example. The play does not set the preference.',
       },
     },
   },

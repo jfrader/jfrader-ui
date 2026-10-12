@@ -208,8 +208,9 @@ const meta = {
     docs: {
       description: {
         component:
-          'Secondary actions for one object, opened at the pointer with a context click or below the object with Shift+F10 or the ContextMenu key. The Target is a labelled context area that keeps its own children interactive; a plain click on it does nothing unless `openOnClick` is set for inert objects. Add a visible `ContextMenu.Trigger` inside the Target so touch and pointer users can find the menu. Disabled items stay visible and are skipped by arrows and typeahead, as in Menu. There are no submenus. Scrolling outside the menu or resizing the window closes it.',
+          'Open actions for an item with a context click, Shift+F10, the ContextMenu key, or a menu button.',
       },
+      usage: '- `Target` needs a label and keeps its children interactive. A click opens nothing unless `openOnClick` is set; use it only for objects without interactive children.\n- Add a visible `ContextMenu.Trigger` inside the Target for touch and pointer users.\n- Context clicks open at the pointer; keyboard requests open below the Target.\n- Arrows and typeahead skip disabled items, which stay visible as in Menu. Submenus are not supported.\n- Scrolling outside the menu or resizing the window closes it.',
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
@@ -1632,7 +1633,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored reduced-motion rules; it does not emulate the preference. Browser QA covers the rendered behavior.',
+          'Checks CSS rules without emulating reduced motion. Enable reduced motion in the browser to check rendering.',
       },
     },
   },
@@ -1656,7 +1657,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored forced-colors rules; it does not emulate forced colors. Browser QA verifies the rendered result.',
+          'Checks CSS rules without emulating forced colors. Enable forced colors in the browser to check rendering.',
       },
     },
   },

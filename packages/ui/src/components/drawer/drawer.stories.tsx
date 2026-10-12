@@ -42,8 +42,9 @@ const meta = {
     docs: {
       description: {
         component:
-          'Modal edge surface for filters, settings, long forms and record details. Built on the native modal dialog: the page behind is inert, Tab/Shift+Tab stay inside, Escape, Close and backdrop clicks request close through one cancelable path, and focus returns to the invoker. `side` attaches the panel to `inline-start`, `inline-end` (default), `top` or `bottom`; inline sides follow text direction. `size` caps inline panels; top/bottom panels span the viewport and cap their height. The Body scrolls while Header and Footer stay visible. Optional `draggable` lets the header pull the panel toward its edge to dismiss; reduced motion turns it off, and Close/Escape always remain. Modal only. The panel slides in from its edge and back out before the dialog closes; reduced motion opens and closes instantly. Floating overlays inside the drawer need a `ThemeRoot portalContainer` host inside it; an open nested overlay takes the Escape first. Close needs visible text or a localized `aria-label`.',
+          'Open a panel from the edge of the page to show settings, filters or details.',
       },
+      usage: '- Modal only: the page behind is inert, Tab/Shift+Tab stay inside, and closing returns focus to the invoker. Escape, Close and backdrop clicks share the cancelable close request.\n- `side` accepts `inline-start`, `inline-end` (default), `top` or `bottom`. Inline sides follow text direction. `size` caps inline panels; top/bottom panels span the viewport and cap their height.\n- Body scrolls while Header and Footer stay visible.\n- `draggable` lets the header pull the panel toward its edge to dismiss. Close and Escape remain available.\n- The panel slides in and finishes sliding out before the dialog closes. Reduced motion disables dragging and opens/closes instantly.\n- Floating overlays need a `ThemeRoot portalContainer` host inside the drawer. A nested overlay handles Escape first.\n- Give Close visible text or a localized `aria-label`.',
       source: {
         code: `<Drawer>
   <Drawer.Trigger>Filters</Drawer.Trigger>
@@ -1269,7 +1270,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'With the OS setting on, the panel opens and closes without the slide and the header drag is off. The play stubs `matchMedia` to drive the reduced branch; real media emulation is verified in browser QA.',
+          'Reduced motion removes sliding and header dragging. This test mocks `matchMedia`; check rendering with browser media emulation.',
       },
     },
   },
@@ -1337,7 +1338,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture for forced-colors browser QA: the panel trades its shadow for a system-color border. The play runner does not emulate forced colors; it checks the authored rules.',
+          'Forced colors replaces the shadow with a system-color border. The test checks CSS rules without emulating forced colors.',
       },
     },
   },

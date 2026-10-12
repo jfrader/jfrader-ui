@@ -42,7 +42,7 @@ interface SummarizeOptions {
   formatAmount?: (amount: number) => string;
 }
 
-/** Summarizes `total` against `limit`; nonpositive or nonfinite limits are `unavailable`. */
+/** Compares `total` with `limit`. Limits at or below 0, or nonfinite limits, are `unavailable`. */
 export function summarizeUsage(
   total: number,
   limit: number,

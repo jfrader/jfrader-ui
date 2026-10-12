@@ -29,22 +29,32 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component: [
-          'Native text input that commits short strings into an ordered, named list of removable tokens. Use it for free-form keywords or application-validated recipients; use a select-style control for a fixed set of choices.',
-          '',
-          '**Two state axes.** `value`/`defaultValue`/`onValueChange` own the committed tokens; `inputValue`/`defaultInputValue`/`onInputChange` own the draft. A commit requests the new list first and an empty draft second; a parent may accept or reject each independently.',
-          '',
-          '**Commit rules.** The draft goes through `normalize` (trim by default). Empty results are ignored. A duplicate is compared with `Intl.Collator` (`sensitivity: "accent"`: case-insensitive, accents distinct) under `locale`. `maxTokens` and `validateToken` reject additions; every rejection keeps the draft and is announced. Without `","` in `separators`, commas are ordinary token text.',
-          '',
-          '**Blur.** With `commitOnBlur` the draft commits only when focus leaves the whole field; moving to a remove button does not commit.',
-          '',
-          '**Keyboard.** Enter or comma: commit the draft (with an empty draft, Enter submits the form and comma types). Backspace at caret 0: pick the last token; Backspace or Delete again: remove it. ArrowLeft at caret 0 or while picked: pick the previous token (stops at the first). ArrowRight while picked: pick the next token, or return to the input past the last. Escape: drop the pick. Typing or pasting edits the draft and drops the pick. Tab and Shift+Tab follow DOM order: each remove button, then the input, then the page. IME composition bypasses every shortcut and the blur commit; held keys never remove tokens.',
-          '',
-          '**Lists.** `value` and `defaultValue` entries must be unique, nonempty and already normalized; development builds warn about other entries and render the list as given.',
-          '',
-          '**Forms.** With `name`, each committed token submits as a repeated field in list order; the draft never submits. `required` means at least one committed token.',
-        ].join('\n'),
+        component: 'Type tags or recipients, add them to a list and remove them.',
       },
+      usage: `- Use a select-style control when choices come from a fixed set.
+
+### Values
+- \`value\` / \`defaultValue\` / \`onValueChange\` manage the token list. \`inputValue\` / \`defaultInputValue\` / \`onInputChange\` manage the draft.
+- Adding a token requests the new list first, then an empty draft. You can accept or reject each request separately.
+- List entries must be unique, nonempty and normalized. Other entries trigger development warnings and still render as supplied.
+- \`normalize\` trims whitespace by default. Empty results are ignored.
+- Duplicate comparison uses \`Intl.Collator\` with \`sensitivity: "accent"\` under \`locale\`: case is ignored; accents are distinct.
+- \`maxTokens\` and \`validateToken\` reject additions. Rejections keep the draft and are announced.
+- Without \`","\` in \`separators\`, commas remain part of the text.
+- \`commitOnBlur\` adds the draft only when focus leaves the whole field, not when moving to a remove button.
+
+### Keyboard
+- Enter or comma adds the draft. With an empty draft, Enter submits the form and comma types.
+- Backspace at caret 0 picks the last token. Backspace or Delete again removes it.
+- ArrowLeft at caret 0 or with a token picked moves to the previous token, stopping at the first.
+- ArrowRight with a token picked moves to the next token, then returns to the input after the last.
+- Escape clears the pick. Typing or pasting edits the draft and clears the pick.
+- Tab and Shift+Tab follow DOM order: remove buttons, input, then page.
+- IME composition bypasses shortcuts and blur commits. Held keys do not remove tokens.
+
+### Forms
+- With \`name\`, tokens submit as repeated fields in list order. The draft does not submit.
+- \`required\` requires at least one token.`,
       source: { code: usage },
     },
   },
@@ -1119,10 +1129,10 @@ export const RTL: Story = {
 
 export const ForcedColors: Story = {
   args: { defaultValue: ['design', 'motion'] },
-  parameters: { docs: { description: { story: 'Manual check: enable the forced-colors setting in the browser (see docs/qa-gates.md). Not automated here.' } } },
+  parameters: { docs: { description: { story: 'Enable forced colors in the browser to check rendering (see docs/qa-gates.md). This check is manual.' } } },
 };
 
 export const ReducedMotion: Story = {
   args: { defaultValue: ['design', 'motion'] },
-  parameters: { docs: { description: { story: 'Manual check: enable prefers-reduced-motion: reduce in the browser (see docs/qa-gates.md). Not automated here.' } } },
+  parameters: { docs: { description: { story: 'Enable prefers-reduced-motion: reduce in the browser (see docs/qa-gates.md). This check is manual.' } } },
 };

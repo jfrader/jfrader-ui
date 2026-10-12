@@ -61,8 +61,18 @@ const meta = {
       source: { code: usage },
       description: {
         component:
-          'Single-choice option cards backed by native radios for validation and form submission. Tab enters the checked enabled radio; without a selection, Tab enters the first and Shift+Tab the last enabled radio. Arrows select in DOM order, wrap and skip disabled options; horizontal arrows reverse in RTL. Home/End select the first/last option; Enter selects without submitting and Space keeps native radio behavior. Controlled requests remain unchecked until accepted. Form reset restores defaultValue without a callback. Values must be unique. Item content must not contain links or buttons. Metadata is supplementary; format numbers and currency with Intl. Reduced motion snaps the decorative ring; the border and dot always show the accepted selection.',
+          'Choose one option from cards that can include a description and supporting details.',
       },
+      usage: `### Keyboard
+- Native radios provide validation and form submission. Tab enters the checked enabled radio. Without a selection, Tab enters the first enabled radio and Shift+Tab the last.
+- Arrows select in DOM order, wrap and skip disabled options. Horizontal arrows reverse in RTL.
+- Home/End select the first/last option. Enter selects without submitting; Space follows native radio behavior.
+
+### Values and content
+- Controlled requests stay unchecked until accepted. Form reset restores defaultValue without a callback.
+- Values must be unique. Do not put links or buttons inside items.
+- Metadata supplements the choice; format numbers and currency with Intl.
+- Reduced motion removes ring animation. The border and dot show the accepted selection.`,
     },
   },
 } satisfies Meta<typeof RadioCards>;
@@ -612,7 +622,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural selection check. Use the browser reduced-motion preference to verify immediate ring and dot updates.',
+          'Checks selection. Enable reduced motion in the browser to check that the ring and dot update without animation.',
       },
     },
   },
@@ -626,7 +636,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural border and indicator check. Windows high-contrast mode or browser forced-colors emulation is required for environment proof.',
+          'Checks the border and indicator. Check rendering with Windows high-contrast mode or browser forced-colors emulation.',
       },
     },
   },

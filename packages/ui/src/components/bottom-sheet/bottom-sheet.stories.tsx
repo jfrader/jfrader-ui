@@ -35,8 +35,19 @@ const meta = {
       source: { code: USAGE },
       description: {
         component:
-          'Modal-only bottom sheet with stable ascending fractional detents and an independent numeric index axis (`value/defaultValue/onValueChange`). Native dialog contains focus and makes the background inert even at peek height. The panel rises from below to its detent on open and sinks back before the dialog closes. Up/Down on Handle select adjacent detents, Home/End select tallest/smallest, Enter/Space toggle the extremes. Escape cancels a drag first, otherwise dismisses only the topmost layer. Body PageDown/Space expands before scrolling; reverse reading keys scroll natively. Supply localized Handle/Close names and optional getValueText/locale (Intl percent by default). Detent contents require remount to change. Floating children need a stable ThemeRoot portalContainer host inside Content, not a body portal. Reduced motion opens, closes and jumps to accepted detents without spring travel. Mobile keyboard/touch and screen-reader verification remain manual gates.',
+          'Open content from the bottom of the screen. Drag the handle or use the keyboard to change its height.',
       },
+      usage: `- The sheet is always modal. Its native dialog contains focus and blocks the background, even at peek height.
+- Detents are stable, ascending fractions. \`value/defaultValue/onValueChange\` manages their numeric index independently of open state. Remount to change detent values.
+- The panel rises to its detent on open and slides down before the dialog closes. Reduced motion skips spring travel on open, close, and accepted height changes.
+- Supply translated Handle/Close names. \`getValueText\` and \`locale\` customize height text; the default uses Intl percentages.
+- Floating children need a stable ThemeRoot \`portalContainer\` inside Content. Do not portal them to the body.
+- Mobile keyboard, touch, and screen-reader behavior still need manual verification.
+
+### Keyboard
+- On Handle, Up/Down choose adjacent detents, Home/End choose tallest/smallest, and Enter/Space switch between the extremes.
+- Escape cancels a drag first; otherwise it dismisses only the topmost layer.
+- In Body, PageDown/Space expands before scrolling. Reverse reading keys scroll natively.`,
     },
   },
 } satisfies Meta<typeof BottomSheet>;
@@ -910,7 +921,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural check. Set prefers-reduced-motion: reduce in browser QA to verify instant detent settlement; this story does not emulate the media feature.',
+          'Enable reduced motion in the browser. Height changes should settle without animation; this story does not set the preference.',
       },
     },
   },
@@ -928,7 +939,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural border and grabber check; activate forced colors in browser QA for system-color evidence.',
+          'Enable forced colors in the browser to check system colors on the border and grabber.',
       },
     },
   },

@@ -40,6 +40,11 @@ const frameStyle = css({
 const meta = {
   title: 'Inputs/ToggleGroup',
   component: ToggleGroup,
+  parameters: {
+    docs: {
+      description: { component: 'Choose one or more options from a group of toggle buttons.' },
+    },
+  },
   argTypes: {
     type: { control: 'radio', options: ['single', 'multiple'] },
     orientation: { control: 'radio', options: ['horizontal', 'vertical'] },

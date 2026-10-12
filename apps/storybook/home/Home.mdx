@@ -53,7 +53,7 @@ createRoot(document.getElementById('root')!).render(
     <header className="home-hero">
       <Pill tone="accent">30+ components</Pill>
       <h1 className="home-wordmark">jfrader ui</h1>
-      <p className="home-lede">Accessible React components for dark and light interfaces, themed with CSS custom properties.</p>
+      <p className="home-lede">React components for your app. Switch between dark and light themes with CSS custom properties.</p>
       <div className="home-actions">
         <a className="home-cta" data-tone="accent" href="./?path=/story/showcase-appshell--default" target="_top">View the showcase</a>
         <a className="home-cta" data-tone="neutral" href="./?path=/docs/inputs-button--docs" target="_top">Browse components</a>
@@ -74,18 +74,18 @@ createRoot(document.getElementById('root')!).render(
     </section>
 
     <section className="home-section" aria-labelledby="home-features">
-      <h2 id="home-features" className="home-heading">Features</h2>
+      <h2 id="home-features" className="home-heading">Using the library</h2>
       <div className="home-features">
         <Card>
           <Card.Header>
-            <Card.Title>Token theming</Card.Title>
+            <Card.Title>Themes</Card.Title>
             <Card.Description>Colors, spacing and type are <code className="home-code">--ui-*</code> custom properties.</Card.Description>
           </Card.Header>
           <Card.Content>Set <code className="home-code">data-theme="light"</code> on <code className="home-code">&lt;html&gt;</code> to switch themes.</Card.Content>
         </Card>
         <Card>
           <Card.Header>
-            <Card.Title>Accessibility first</Card.Title>
+            <Card.Title>Accessibility</Card.Title>
             <Card.Description>Keyboard maps follow the WAI-ARIA APG.</Card.Description>
           </Card.Header>
           <Card.Content>Every story runs axe; a violation fails <code className="home-code">pnpm test</code>.</Card.Content>
@@ -99,7 +99,7 @@ createRoot(document.getElementById('root')!).render(
         </Card>
         <Card>
           <Card.Header>
-            <Card.Title>Storybook workbench</Card.Title>
+            <Card.Title>Storybook</Card.Title>
             <Card.Description>Stories, autodocs and browser tests in one place.</Card.Description>
           </Card.Header>
           <Card.Content>Run <code className="home-code">pnpm dev</code> to open it on port 6006.</Card.Content>

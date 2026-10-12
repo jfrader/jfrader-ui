@@ -163,8 +163,16 @@ const meta = {
     docs: {
       description: {
         component:
-          '`createTheme({ base, accent, tokens })` derives the accent family for the `dark` or `light` base; pass the result to `ThemeRoot` as `tokens` with the same `theme`. Explicit `tokens` win over derived values.',
+          'Set an accent color for a section of your app.',
       },
+      usage: `### Setup
+- Call \`createTheme({ base, accent, tokens })\` to derive an accent family for the \`dark\` or \`light\` base.
+- Pass the result to \`ThemeRoot\` as \`tokens\`, with \`theme\` matching \`base\`.
+- Explicit \`tokens\` override derived values.
+
+### Contrast
+- Check text and focus-ring contrast with your chosen accent. Some colors need explicit overrides.
+- See [Custom palettes](https://github.com/jfrader/jfrader-ui/blob/master/docs/consuming-jfrader-ui.md#custom-palettes) for color formats, contrast limits, and document-level themes.`,
     },
   },
   args: { theme: 'dark' },

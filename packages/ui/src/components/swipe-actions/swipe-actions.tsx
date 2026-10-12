@@ -43,8 +43,7 @@ export interface SwipeAction {
   tone?: 'neutral' | 'accent' | 'danger';
   disabled?: boolean;
   onSelect: () => void;
-  /** Caller intent that this command keeps its row. Every command closes the rail and the row
-   * never deletes data itself, so this is metadata for the caller's `onSelect`. */
+  /** Caller metadata indicating the row should stay. Commands close the rail but never delete data. */
   keepRow?: boolean;
 }
 type Slot = { className?: string; css?: Interpolation<Theme> };

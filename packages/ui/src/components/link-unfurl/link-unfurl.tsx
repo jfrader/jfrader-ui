@@ -51,16 +51,16 @@ import { Button } from '../button';
 export type LinkUnfurlPreviewStatus = 'pending' | 'ready' | 'none' | 'error';
 
 export interface LinkUnfurlPreview {
-  /** The detected link this record belongs to (from `onPreviewRequest`'s context). */
+  /** Identifies the link from the `onPreviewRequest` context. */
   linkId: string;
-  /** The request this record answers; records for any other request id are ignored. */
+  /** Identifies the request being answered. Other request ids are ignored. */
   requestId: string;
   url: string;
   status: LinkUnfurlPreviewStatus;
   site?: string;
   title?: string;
   description?: ReactNode;
-  /** Informative image; `alt` describes it, or pass `''` when the image adds nothing. */
+  /** Shows a preview image. Describe it with `alt`, or use `''` if it adds no information. */
   image?: { src: string; alt: string };
   /** Decorative site icon URL. */
   favicon?: string;
@@ -116,7 +116,7 @@ export interface LinkUnfurlSlotProps {
   > &
     SlotStyle;
   lane?: PartProps<'div'>;
-  /** Handlers that the item's layout animation owns are not accepted. */
+  /** Styles the preview item. Animation and drag handlers are reserved for its layout animation. */
   chip?: Omit<PartProps<'div'>, 'onAnimationStart' | 'onDrag' | 'onDragStart' | 'onDragEnd'>;
   card?: Omit<PartProps<'div'>, 'hidden' | 'inert'>;
   title?: Omit<PartProps<'a'>, 'href'>;
@@ -129,23 +129,33 @@ export interface LinkUnfurlSlotProps {
 
 export interface LinkUnfurlProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>, SxProps {
-  /** Visible label of the message field. */
+  /** Labels the message field. */
   label: string;
+  /** Controls the draft text. */
   value?: string;
+  /** Sets the initial uncontrolled text. Defaults to `''`. */
   defaultValue?: string;
+  /** Requests new draft text. Controlled text changes only when `value` updates. */
   onValueChange?: (text: string) => void;
+  /** Supplies preview records matching the current link and request ids. Defaults to `[]`. */
   previews?: LinkUnfurlPreview[];
+  /** Requests metadata after user actions. Fetch in your app and use the supplied abort signal. */
   onPreviewRequest?: (url: string, context: LinkUnfurlPreviewRequestContext) => void;
+  /** Controls which link ids have open previews, independently of `value`. */
   expanded?: string[];
+  /** Sets the initially open link ids. Defaults to `[]`. */
   defaultExpanded?: string[];
+  /** Requests open link ids. Controlled previews change only when `expanded` updates. */
   onExpandedChange?: (ids: string[]) => void;
+  /** Adds buttons that insert URLs at the selection. Defaults to `[]`. */
   suggestions?: LinkUnfurlSuggestion[];
-  /** Enables sending; a returned promise keeps the composer pending until it settles. */
+  /** Enables sending. A returned promise keeps the composer pending until it settles. */
   onSend?: (message: LinkUnfurlMessage) => void | Promise<unknown>;
+  /** Replaces the default English labels and keyboard hint. */
   labels?: Partial<LinkUnfurlLabels>;
   /** Locale for the joined status announcements. */
   locale?: Intl.LocalesArgument;
-  /** `'none'` commits every change without animation, on top of the user's reduced-motion setting. */
+  /** Sets animation behavior. Defaults to `'auto'`, respecting reduced motion. `'none'` disables animation. */
   motion?: 'auto' | 'none';
   slotProps?: LinkUnfurlSlotProps;
 }

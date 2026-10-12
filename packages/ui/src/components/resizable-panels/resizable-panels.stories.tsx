@@ -68,8 +68,22 @@ const meta = {
       },
       description: {
         component:
-          'Side-by-side panes separated by draggable, focusable separators (WAI-ARIA window splitter, horizontal only). The parent gives the group a definite block size. Children are `ResizablePanels.Panel` elements with stable, unique `value`s and an `aria-label` or `aria-labelledby`; change the set or order by remounting the group with a new `key`. `value`/`defaultValue` hold one weight per panel; callbacks receive percentages of the usable width (group minus separators) totalling 100, so the layout can be persisted and passed back. A zero share collapses a `collapsible` panel; its content stays mounted but inert. `minSize`/`maxSize` are pixels: when the minima do not fit they shrink together, and space beyond every maximum stays empty. Keyboard on a separator: Left/Right move it 16px (Shift: 64px) in screen direction; at a limit the next press collapses a collapsible pane and a press back restores it; Home/End go to the smallest/largest open size; Enter collapses or restores; Ctrl/Meta+Home or a double click resets the initial layout; Escape cancels a drag. Cancelling a drag requests the layout from before it and does not commit. Separator value text is an `Intl` percentage; pass `getValueText` for localized state wording. There is no vertical mode; on small screens render one pane at a time with Tabs instead.',
+          'Resize or collapse side-by-side panels by dragging a separator or using the keyboard.',
       },
+      usage: `### Layout and values
+- Uses the WAI-ARIA window splitter pattern, horizontally only. Give the group a definite block size. On small screens, use Tabs to show one pane at a time.
+- Children must be ResizablePanels.Panel elements with stable, unique values and aria-label or aria-labelledby. Remount with a new key when changing the panel set or order.
+- value/defaultValue hold one weight per panel. Callbacks return percentages totalling 100 of the usable width (group minus separators); these can be saved and passed back.
+- A zero share collapses a collapsible panel. Its content stays mounted but inert.
+- minSize/maxSize are pixels. Minima shrink together when they do not fit; space beyond every maximum stays empty.
+- Separator value text uses an Intl percentage. Supply getValueText to translate state wording.
+
+### Keyboard and gestures
+- Left/Right move the separator 16px in screen direction; Shift increases this to 64px.
+- At a limit, the next press collapses a collapsible pane; a press back restores it.
+- Home/End reach the smallest/largest open size. Enter collapses or restores.
+- Ctrl/Meta+Home or double click resets the initial layout.
+- Escape cancels a drag, requests the pre-drag layout and does not commit.`,
     },
   },
 } satisfies Meta<typeof ResizablePanels>;
@@ -847,7 +861,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture. Enable reduced motion in browser QA to check that releases, collapses and resets land without a spring and that drags past a limit stop without rubber-banding.',
+          'Enable reduced motion in the browser. Check that releases, collapses and resets finish without a spring, and dragging past a limit stops without rubber-banding.',
       },
     },
   },

@@ -155,15 +155,32 @@ const meta = {
     docs: {
       source: { code: source },
       description: {
-        component: [
-          'A plain-text message composer that previews the HTTP(S) addresses in its draft. The field is a native textarea, so paste, undo, IME and mobile editing stay native; each detected address gets a preview item beside the field instead of an inline token.',
-          'Server boundary: the component never fetches. `onPreviewRequest(url, { linkId, requestId, signal })` fires from user actions only (paste, typing past an address, blur, a suggestion, Retry). Answer by adding `previews` records with the same `linkId` and `requestId`; records for an older request id are ignored, and Retry always issues a new one.',
-          'Aborts: the signal aborts when its address is removed or edited, when Retry replaces the request, when a successful send clears the draft, and when the composer unmounts.',
-          'Addresses: complete whitespace-delimited absolute `http`/`https` addresses that `URL` accepts. Pasted text and blur scan everything; while typing, an address waits for the following whitespace. Duplicate addresses are separate links; Remove deletes exactly that occurrence. Addresses that arrive with `value`/`defaultValue` wait for Retry.',
-          'Expansion: `expanded`/`defaultExpanded`/`onExpandedChange` hold the open link ids. To open a preview as it resolves, commit the ready record and its id in the same update.',
-          'Keyboard: Enter sends, Shift+Enter adds a line, Alt+Enter opens or closes the preview at the caret, Enter on a title link navigates. Sending is pending while `onSend` returns an unsettled promise; the field turns read-only and Remove and suggestions go inactive without losing focus.',
-        ].join('\n\n'),
+        component: 'Write a plain-text message and preview the links in your draft.',
       },
+      usage: `### Previews
+- Fetch metadata in your app. LinkUnfurl never fetches.
+- \`onPreviewRequest(url, { linkId, requestId, signal })\` runs only after user actions: paste, typing past an address, blur, suggestions, or Retry. Add \`previews\` records with matching \`linkId\` and \`requestId\`. Older request ids are ignored. Retry creates a new request id.
+- The signal aborts when the address disappears through removal or editing, Retry replaces the request, a successful send clears the draft, or the composer unmounts.
+
+### Values
+- Control text with \`value\` and \`onValueChange\`, or start with \`defaultValue\` (empty by default).
+- Control open link ids separately with \`expanded\` and \`onExpandedChange\`, or start with \`defaultExpanded\` (none by default). Rejected controlled requests keep the committed text and visibility.
+- To open a preview as it resolves, commit its ready record and link id in the same update.
+
+### Limits
+- Addresses must be complete, whitespace-delimited absolute HTTP(S) URLs accepted by \`URL\`. Paste and blur scan all text. While typing, the address at the caret waits for following whitespace.
+- Duplicate addresses have separate link ids. Remove deletes only that occurrence. Addresses supplied through \`value\` or \`defaultValue\` wait for Retry.
+- The native textarea keeps paste, undo, IME, and mobile editing. Preview items appear beside the field, not as inline tokens.
+
+### Keyboard
+- Tab follows the field, preview actions, suggestions, and Send. Press Enter on a title link to navigate.
+- With \`onSend\`, Enter sends once. It does not send during IME composition or a pending send. Shift+Enter adds a line.
+- Alt+Enter toggles a ready preview when the caret is inside or at the end of its address. It never inserts a line, even without a preview at the caret. Escape is left to the page.
+
+### Sending
+- Provide \`onSend\` to enable Send for text containing more than whitespace. It receives the text and current matching preview records.
+- A returned promise keeps sending pending until it settles. The field becomes read-only. Remove and suggestions become inactive but stay focusable.
+- Success requests empty text, then no expanded ids. Failure keeps the draft and shows \`labels.error\` as an alert.`,
     },
   },
 } satisfies Meta<typeof LinkUnfurl>;
@@ -522,7 +539,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural check of `motion="none"`: no loading sweep and no layout travel. The operating-system reduced-motion branch needs browser media emulation.',
+          'Use `motion="none"` to stop the loading sweep and layout animation. To try the operating-system setting, emulate reduced motion in the browser.',
       },
     },
   },

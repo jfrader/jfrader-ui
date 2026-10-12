@@ -106,8 +106,8 @@ export interface NowPlayingProps
   labels?: Partial<NowPlayingLabels>;
   locale?: Intl.LocalesArgument;
   /**
-   * Seconds per arrow step. Slider requires the duration to be a whole number of steps, so a
-   * step that does not divide it is rounded to the nearest one that does (180s with 7 → 180/26).
+   * Seconds per arrow step. Duration must be a whole number of steps.
+   * A step that does not divide it is rounded to the nearest one that does (180s with 7 → 180/26).
    * Defaults to the largest step of at most one second that divides the duration.
    */
   seekStep?: number;

@@ -85,7 +85,7 @@ export interface CommandPaletteProps {
   onOpenChange?: (open: boolean) => void;
   /** Accessible name of the dialog, input and listbox. */
   label?: string;
-  /** Decides whether an item's label (or keywords) matches the query. Case-insensitive substring by default. */
+  /** Matches an item's label or keywords to the query. Defaults to a case-insensitive substring match. */
   filter?: (text: string, query: string) => boolean;
   /** Rendered by CommandPalette.Empty when nothing matches. */
   emptyMessage?: ReactNode;

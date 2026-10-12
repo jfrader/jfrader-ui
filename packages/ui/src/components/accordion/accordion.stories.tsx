@@ -25,6 +25,7 @@ const frameStyle = css({
 const meta = {
   title: 'Surfaces/Accordion',
   component: Accordion,
+  parameters: { docs: { description: { component: 'Open and close sections of content.' } } },
   argTypes: {
     type: { control: 'radio', options: ['single', 'multiple'] },
     collapsible: { control: 'boolean' },

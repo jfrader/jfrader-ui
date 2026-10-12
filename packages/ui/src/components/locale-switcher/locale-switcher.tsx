@@ -46,7 +46,7 @@ const SELECTED_GLYPH = '✓';
 export type LocaleSwitcherVariant = 'menu' | 'swap' | 'inline';
 export type LocaleSwitcherSize = 'sm' | 'md' | 'lg';
 
-/** Props an option's `render` callback spreads onto the link it returns. */
+/** Spread these props onto the link returned by an option's `render` callback. */
 export interface LocaleSwitcherLinkProps extends Omit<ComponentPropsWithRef<'a'>, 'href' | 'children'> {
   href: string;
   children: ReactNode;
@@ -55,12 +55,12 @@ export interface LocaleSwitcherLinkProps extends Omit<ComponentPropsWithRef<'a'>
 
 export interface LocaleSwitcherOption {
   value: string;
-  /** The language's native name ("Español", "English"). */
+  /** Labels the language with its native name, such as "Español" or "English". */
   label: ReactNode;
-  /** BCP 47 tag of the label and of the linked page; rendered as `lang` and `hreflang`. */
+  /** Sets the label and linked page's BCP 47 language tag through `lang` and `hreflang`. */
   lang?: string;
   href: string;
-  /** Replaces the native <a> (e.g. with a router link). Spread ALL supplied props onto it. */
+  /** Replaces the native `<a>` with a router link. Spread every supplied prop onto it. */
   render?: (props: LocaleSwitcherLinkProps) => ReactNode;
 }
 
@@ -71,25 +71,29 @@ export interface LocaleSwitcherSlotProps {
   trigger?: Omit<ComponentPropsWithoutRef<'button'>, 'children' | 'className' | 'aria-labelledby'> & SlotStyle;
   /** Menu variant's popup. */
   content?: Omit<ComponentPropsWithoutRef<'div'>, 'children' | 'className'> & SlotStyle;
-  /** Every option element (menu items, the swap link, inline links and the current label). */
+  /** Styles every option: menu items, the swap link, inline links, and the current label. */
   option?: SlotStyle;
 }
 
 export interface LocaleSwitcherProps extends Omit<ComponentPropsWithRef<'nav'>, 'children'>, SxProps {
   options: readonly LocaleSwitcherOption[];
-  /** The current option's value. */
+  /** Identifies the current language option. */
   value: string;
+  /** Sets the link layout. Defaults to `'menu'`. */
   variant?: LocaleSwitcherVariant;
+  /** Sets the text and menu trigger size. Defaults to `'md'`. */
   size?: LocaleSwitcherSize;
-  /** Menu: names the trigger's action ("Change language"); read before the current label. */
+  /** Names the menu trigger's action, such as "Change language". Read before the current label. */
   triggerLabel?: string;
-  /** Inline: accessible name of the navigation landmark. */
+  /** Names the navigation landmark in the inline variant. */
   label?: string;
-  /** Menu: decorative icon before the current label; `null` removes it. */
+  /** Shows a decorative icon before the menu's current label. Defaults to a globe. `null` removes it. */
   icon?: ReactNode;
-  /** Menu open state. */
+  /** Controls whether the menu is open. */
   open?: boolean;
+  /** Sets the menu's initial uncontrolled open state. */
   defaultOpen?: boolean;
+  /** Requests a menu open-state change. */
   onOpenChange?: (open: boolean) => void;
   placement?: Placement;
   slotProps?: LocaleSwitcherSlotProps;

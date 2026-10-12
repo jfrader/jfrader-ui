@@ -54,8 +54,13 @@ const meta = {
       source: { code: usage },
       description: {
         component:
-          'Secret entry for sign-in, confirmation, tokens and API keys. One native input switches between `password` and `text`, so value, selection, focus and password managers survive a reveal. The reveal is a native toggle button with a stable name, `aria-pressed` for its state and `aria-controls` for the input. Keyboard: native editing; Tab moves input → reveal → page; Enter or Space on the reveal toggles once and never submits; Enter in the input submits the form natively; Escape does nothing. `value` and `revealed` are independent controlled/uncontrolled axes; a native form reset restores the uncontrolled ones without callbacks. Use TextField for ordinary text.',
+          'Enter a password, token or API key and toggle whether it is visible.',
       },
+      usage: `- One native input switches between password and text, preserving value, selection, focus and password-manager support.
+- The reveal button keeps its name. aria-pressed exposes its state; aria-controls points to the input.
+- Tab moves from input to reveal to page. Enter or Space on reveal toggles once without submitting. Enter in the input submits the form; Escape does nothing. Text editing follows browser behavior.
+- value and revealed support controlled and uncontrolled state independently. Form reset restores uncontrolled state without callbacks.
+- Use TextField for other text.`,
     },
   },
 } satisfies Meta<typeof PasswordField>;
@@ -593,7 +598,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Enable reduced motion in browser rendering settings to inspect the slash snapping and the press scale being removed. State and ARIA update in the same commit as the click.',
+          'Enable reduced motion in the browser to check that the slash changes without animation and pressing does not scale the button. State and ARIA update with the click.',
       },
     },
   },
@@ -610,7 +615,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Enable forced colors in browser rendering settings to inspect the control border, the focus outlines and the pressed toggle.',
+          'Enable forced colors in the browser to check the border, focus outlines and pressed toggle.',
       },
     },
   },

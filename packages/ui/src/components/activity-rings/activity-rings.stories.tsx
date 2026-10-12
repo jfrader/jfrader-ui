@@ -108,8 +108,17 @@ const meta = {
     docs: {
       description: {
         component:
-          'Concentric goal rings that present the UsageMeter model: each ring is one metric value against its goal (shared validity, over-goal and Intl percent formatting). The SVG is decorative; the legend states each exact amount, goal and percentage, and an unknown value reads as "No data", never zero. Above 100% an inset second lap is drawn; from 200% the second lap stays full while the text keeps the exact total. Optional native radio day picker (one Tab stop, browser arrow keys, Home/End to the first/last day) and opt-in toggle-button legend (Enter/Space isolate one ring). `days` wins over `values`. `onRingClose` reports a same-day value that rises to its goal; mount, remount and day switches never report.',
+          'Track progress toward goals with rings. Choose a day or select a ring to view one metric.',
       },
+      usage: `- Each ring compares a metric with its goal using the UsageMeter value rules and Intl percentage formatting.
+- The SVG is decorative. The legend gives the amount, goal, and percentage; unknown values show "No data", not zero.
+- Above 100%, a second lap appears inside the ring. At 200% and above, both laps stay full; the text shows the exact total.
+- \`days\` takes precedence over \`values\`.
+- \`onRingClose\` fires when a value rises to its goal on the same day. Mounting, remounting, and changing days do not fire it.
+
+### Keyboard
+- The day picker has one Tab stop. Arrow keys move between days; Home/End choose the first/last day.
+- With the legend toggle buttons enabled, Enter/Space isolate one ring.`,
       source: {
         code: [
           '<ActivityRings metrics={goals} days={week} locale="en-GB"',
@@ -954,7 +963,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture with a second lap. Enable prefers-reduced-motion in browser QA to verify ring fills draw at their final length without a sweep and isolation dimming has no transition.',
+          'Enable reduced motion in the browser. Rings should show their final fill without a sweep, and isolation dimming should have no transition. This example includes a second lap.',
       },
     },
   },
@@ -966,7 +975,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural isolated fixture. Enable forced colors in browser QA to check CanvasText ring fills, alternating dashed tracks, the numbered legend and Highlight selection borders.',
+          'Enable forced colors in the browser. Check CanvasText ring fills, alternating dashed tracks, the numbered legend, and Highlight borders on the isolated ring.',
       },
     },
   },

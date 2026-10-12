@@ -20,6 +20,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 | `pnpm og:image` | Regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
 | `pnpm test` | Generate tokens and run Storybook Vitest browser tests |
 | `pnpm typecheck` | Typecheck every package |
+| `pnpm verify:docs` | Check component introductions (also runs before the Storybook build) |
 | `pnpm --filter @jfrader/storybook exec vitest run --project=storybook <file>` | Run one story file (fast loop) |
 
 ## Styling rules
@@ -77,7 +78,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 - [ ] Dark and light stories.
 - [ ] axe clean (a11y gate is `error`, WCAG 2.0–2.2 AA + best-practice ruleset).
 - [ ] Exported from the package index.
-- [ ] Docs via autodocs.
+- [ ] Docs via autodocs; follow the documentation writing spec in `SKILL.md`.
 
 ## Accessibility
 
@@ -90,6 +91,6 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 Work in this repo is tracked in Linear: project **`jfrader-ui`** in the `Gurisitosgames` workspace (team `GURI`, key `GURI`). Follow the shared `linear-workflow` skill (one project per repo; states Backlog → Todo → In Progress → Done).
 
 - Epic: **GURI-1961 — Ship jfrader-ui v1: hardening refactors + remaining components**; children carry the migrated plan/backlog. `PLAN.md` is a pointer; do not grow it back into a plan document.
-- New work → a Backlog issue in this project first, then an issue worktree at `~/Workspace/Worktrees/jfrader-ui-GURI-N` on branch `jfrader/guri-N-…` from `origin/master` (base remote is now the private GitHub repo).
+- New work → a Backlog issue in this project first, then an issue worktree at `~/Workspace/Worktrees/jfrader-ui-GURI-N` on branch `jfrader/guri-N-…` from `origin/master`.
 - `gitBranchName` comes from the Linear issue. Commits/PRs reference the id (`Refs GURI-N`, `Fixes GURI-N`); after merge, reconcile the issue (closing comment, attachments to the issue, state `Done`).
 - Repo files stay the source of truth for code and conventions; Linear carries intent and progress.

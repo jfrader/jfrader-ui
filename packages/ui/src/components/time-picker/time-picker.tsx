@@ -51,7 +51,7 @@ export interface TimePickerProps
   minuteStep?: TimePickerMinuteStep;
   min?: string;
   max?: string;
-  /** Supply a locale for deterministic server rendering. */
+  /** Supply a locale so server and client text match. */
   locale?: string;
   hourCycle?: TimePickerHourCycle;
   label?: ReactNode;
@@ -60,7 +60,7 @@ export interface TimePickerProps
   placeholder?: ReactNode;
   size?: TimePickerSize;
   readOnly?: boolean;
-  /** Semantic only: the hidden form field does not enforce native required validation. */
+  /** Announces required state; the hidden form field does not enforce browser validation. */
   required?: boolean;
   icon?: ReactNode;
   slotProps?: TimePickerSlotProps;

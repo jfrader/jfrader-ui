@@ -23,6 +23,7 @@ const stackStyle = css({
 const meta = {
   title: 'Feedback/Alert',
   component: Alert,
+  parameters: { docs: { description: { component: 'Show a message about an update, a problem, or an action to take.' } } },
   args: { tone: 'info', title: TONE_COPY.info.title, children: TONE_COPY.info.body },
   argTypes: {
     tone: { control: 'radio', options: TONES },

@@ -11,16 +11,14 @@ import { collectStyles, createEmotionRegistry } from './registry';
 const DEFAULT_CACHE_KEY = 'css';
 
 export interface EmotionRegistryProps {
-  /** Emotion cache key: the class name prefix and the `data-emotion` attribute value. */
+  /** Sets the Emotion class name prefix and `data-emotion` cache key. Defaults to `'css'`. */
   cacheKey?: string;
   children?: ReactNode;
 }
 
 /**
- * Emotion SSR registry for the App Router: one shared cache and a flush that only
- * sends the styles inserted since the last pass, so the server and client trees
- * match on hydration. Without it, Emotion inserts <style> nodes inline during SSR
- * and the hydration diff mismatches.
+ * Shares one Emotion cache and emits new styles on each App Router server render pass.
+ * Without it, Emotion inserts inline `<style>` nodes during SSR that cause hydration mismatches.
  */
 export function EmotionRegistry({ cacheKey = DEFAULT_CACHE_KEY, children }: EmotionRegistryProps) {
   const [{ cache, flush }] = useState(() => createEmotionRegistry(cacheKey));

@@ -62,6 +62,12 @@ async function expectMarkerAt(marker: HTMLElement, x: number, y: number) {
 const meta = {
   title: 'Data display/Badge',
   component: Badge,
+  parameters: {
+    docs: {
+      description: { component: 'Add a count or dot to an icon or control.' },
+      usage: '- The count does not join the control’s accessible name. If the control has an `aria-label`, include the count, for example `Inbox, 3 unread`.\n- When the control is named by its text, the count is read after its name.',
+    },
+  },
   args: { children: <Square />, badgeContent: 4 },
   argTypes: {
     variant: { control: 'radio', options: ['standard', 'dot'] },

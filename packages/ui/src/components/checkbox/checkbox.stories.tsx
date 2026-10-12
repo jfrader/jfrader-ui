@@ -17,6 +17,7 @@ const stackStyle = {
 const meta = {
   title: 'Inputs/Checkbox',
   component: Checkbox,
+  parameters: { docs: { description: { component: 'Turn an option on or off, or show that only some items are selected.' } } },
   args: { label: 'Email me updates', size: 'md' },
   argTypes: {
     size: { control: 'radio', options: SIZES },

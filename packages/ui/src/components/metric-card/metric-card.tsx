@@ -22,7 +22,7 @@ export interface MetricCardProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
   description?: ReactNode;
   headingLevel?: CardHeadingLevel;
   variant?: CardVariant;
-  /** Pin the locale for matching server and client output. */
+  /** Set locale to match server and client output. */
   locale?: Intl.LocalesArgument;
   /** Percent values are fractions; currency formatting requires a currency code. Invalid options throw. */
   formatOptions?: Intl.NumberFormatOptions;
@@ -83,7 +83,7 @@ const descriptionStyle = css({
   color: vars.color.textMuted,
 });
 
-/** Read-only heading and numeric summary; Tab skips it. No live region or animated value copies. */
+/** Show a heading and number. Read-only; Tab skips it. No live region or value animation. */
 export function MetricCard({
   ref,
   label,

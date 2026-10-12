@@ -78,8 +78,13 @@ const meta = {
       source: { code: snippet },
       description: {
         component:
-          'A select-only combobox with a persistent multiple-selection listbox. Enter and Space toggle the highlighted option; Escape and Tab close without changing selection. Clear preserves disabled selections. Named fields submit repeated form entries, with a separate native validation input for required selection.',
+          'Choose more than one option from a list without closing it after each choice.',
       },
+      usage: `- The select-only combobox uses virtual focus and a listbox that stays open when options are toggled.
+- Arrows and Home/End move the highlight. Prefix typeahead keeps a 500ms buffer.
+- Enter and Space toggle the highlighted option. Escape and Tab close without changing selection.
+- Clear keeps disabled selections.
+- Named fields submit repeated form entries. A separate native input validates required selection.`,
     },
   },
 } satisfies Meta<typeof MultiSelect>;
@@ -581,7 +586,7 @@ export const ReducedMotion: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Structural fixture. Enable reduced motion in the browser to inspect the animation override.',
+        story: 'Enable reduced motion in the browser to check that animation is removed.',
       },
     },
   },
@@ -592,7 +597,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture. Enable forced colors in the browser to inspect borders, checks, and the active outline.',
+          'Enable forced colors in the browser to check borders, check marks and the highlight outline.',
       },
     },
   },

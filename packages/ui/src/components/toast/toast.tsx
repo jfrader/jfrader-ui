@@ -57,7 +57,7 @@ export interface ToastOptions {
   title?: ReactNode;
   description?: ReactNode;
   tone?: ToastTone;
-  /** Milliseconds before auto-dismiss; `null` persists until dismissed. Defaults to the provider's. */
+  /** Milliseconds before dismissal. `null` keeps the toast open; omitted uses the provider's delay. */
   duration?: number | null;
   action?: ToastAction;
   /** Decorative spinner; an omitted duration persists while loading. */
@@ -66,9 +66,9 @@ export interface ToastOptions {
 
 export interface ToastProviderProps {
   children?: ReactNode;
-  /** Maximum toasts kept; adding past it removes the oldest immediately. */
+  /** Maximum toasts kept. Adding beyond this count removes the oldest immediately. */
   max?: number;
-  /** Default delay, captured at enqueue time; changes do not retime existing toasts. */
+  /** Default delay when a toast is added. Changes do not affect existing toasts. */
   duration?: number;
   /** Accessible label for each toast's close button. */
   dismissLabel?: string;

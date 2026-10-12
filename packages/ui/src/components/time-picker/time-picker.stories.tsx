@@ -21,8 +21,17 @@ const meta = {
     docs: {
       description: {
         component:
-          'Choose a civil time, stored as HH:mm. Pair with DatePicker and resolve the timestamp, time zone and DST in the application. Supply locale for deterministic SSR. Select owns virtual focus: arrows wrap, Home/End jump, printable keys search, Enter/Space commit, Escape and Tab dismiss. Off-step values display without rounding. minuteStep=1 mounts all 1,440 options; profile before using it in dense forms. Required is exposed to assistive technology; the hidden field does not enforce native constraint validation. Screen-reader and OS forced-colors/reduced-motion checks remain manual gates.',
+          'Choose a time of day, stored as HH:mm.',
       },
+      usage: `- Pair with DatePicker and resolve the timestamp, time zone and daylight-saving changes in your app.
+- Supply \`locale\` for matching server and client output.
+- Values between steps display without rounding. \`minuteStep=1\` mounts all 1,440 options; measure performance before using it across many fields.
+- \`required\` is announced to assistive technology. The hidden field does not enforce browser constraint validation.
+- Check screen readers, forced colors and reduced motion manually.
+
+### Keyboard
+- Focus stays on the Select trigger. Arrows wrap, Home and End jump, and typing searches.
+- Enter or Space selects. Escape or Tab closes.`,
       source: {
         code: '<TimePicker label="Start time" locale="en-GB" minuteStep={30}\n  value={time} onValueChange={setTime} placeholder="Choose a time" />',
       },
@@ -668,7 +677,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural check only. Enable OS forced colors to verify Canvas/CanvasText boundaries and Highlight outlines.',
+          'Enable forced colors to check Canvas/CanvasText borders and Highlight outlines. This story checks structure only.',
       },
     },
   },
@@ -679,7 +688,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural check only. Enable prefers-reduced-motion to verify zero-duration transitions; selection and scrolling are immediate in either mode.',
+          'Enable reduced motion to check that transitions take 0s. This story checks structure only; selection and scrolling are always immediate.',
       },
     },
   },

@@ -26,6 +26,11 @@ const rowStyle = {
 const meta = {
   title: 'Feedback/Toast',
   component: Toast,
+  parameters: {
+    docs: {
+      description: { component: 'Show messages when actions succeed, fail or need attention.' },
+    },
+  },
 } satisfies Meta<typeof Toast>;
 
 export default meta;

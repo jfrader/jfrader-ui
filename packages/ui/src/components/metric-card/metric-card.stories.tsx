@@ -28,8 +28,13 @@ const meta = {
     docs: {
       description: {
         component:
-          'Read-only heading and numeric summary, not an APG widget. Tab and Shift+Tab skip the card. Values update immediately without live announcements. Percent inputs are fractions. Currency formatting requires a currency code; invalid Intl options throw. Nonzero deltas always show a sign, even with signDisplay="never". Pin locale for deterministic server/client output.',
+          'Show a number with a heading and a change from a previous value.',
       },
+      usage: `- The card is read-only, not an APG widget. Tab and Shift+Tab skip it.
+- Values update without animation or live announcements.
+- Percent inputs are fractions. Currency formatting requires a currency code; invalid Intl options throw.
+- Nonzero deltas always show a sign, even with signDisplay="never".
+- Set locale to match server and client output.`,
       source: {
         code: '<MetricCard label="Revenue" value={42000} locale="en-GB" formatOptions={{ style: "currency", currency: "GBP" }} delta={0.12} deltaFormatOptions={{ style: "percent" }} deltaTone="success" description="Last 30 days" />',
       },
@@ -369,7 +374,7 @@ export const ReducedMotion: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Structural check of the static baseline; this story does not emulate a media preference.',
+        story: 'Checks the card without animation. This story does not emulate a media preference.',
       },
     },
   },
@@ -383,7 +388,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural check of signed text, direction glyph and border. Forced-colors emulation belongs to browser QA.',
+          'Checks the sign, direction glyph and border. Enable forced colors in a browser to check their rendering.',
       },
     },
   },

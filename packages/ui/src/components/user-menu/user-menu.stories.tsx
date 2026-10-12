@@ -204,8 +204,12 @@ const meta = {
     docs: {
       description: {
         component:
-          "The account entry point: the person's identity, account commands, appearance and presence preferences and sign out, behind an avatar button. On wide viewports it is a menu anchored to the Trigger; below `compactBreakpoint` (default 640px) `variant=\"adaptive\"` content becomes a modal bottom sheet with a Close button, contained focus, an inert page and a drag handle. The Trigger's `aria-label` names the menu; the Identity name names the sheet. Theme and status groups only report the chosen value through `onValueChange`: connect them to your theme and presence services yourself (map `available` to the Avatar's `online` status for the Trigger). Sign out accepts a promise: while it is pending the item is busy, fulfillment closes the menu, and a rejection keeps it open with `errorMessage` announced as an alert so the person can retry.",
+          'Open account actions, change appearance or presence, and sign out from an avatar button.',
       },
+      usage: `- With \`variant="adaptive"\`, content opens beside Trigger on wider screens. Below \`compactBreakpoint\` (640px by default), it opens as a modal bottom sheet with a Close button and drag handle. Focus stays inside; the page outside is inert.
+- Trigger's \`aria-label\` names the menu. Identity's name names the sheet.
+- Theme and status groups report values through \`onValueChange\`. Connect them to your app's theme and presence services. Map \`available\` to Avatar's \`online\` status on Trigger.
+- Sign out can return a promise. The item stays busy until it settles. Success closes the menu; failure keeps it open and announces \`errorMessage\` as an alert for retry.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
@@ -1562,7 +1566,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored reduced-motion rules; it does not emulate the preference. The handle gesture branch is covered by SheetHandle with a stubbed media query. Browser QA covers the rendered behavior.',
+          'Enable reduced motion to check behavior in the browser. This story checks CSS rules only. SheetHandle checks handle gestures with a stubbed media query.',
       },
     },
   },
@@ -1587,7 +1591,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored forced-colors rules; it does not emulate forced colors. Browser QA verifies the rendered result.',
+          'Enable forced colors to check rendering in the browser. This story checks CSS rules only.',
       },
     },
   },

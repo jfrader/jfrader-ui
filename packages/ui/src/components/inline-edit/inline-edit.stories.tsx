@@ -37,24 +37,23 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component: [
-          'Renames one independently persisted value in place: a project name, a title, a one-field description. The resting value is a native button; editing swaps it for a native input (or a textarea with `multiline`). Use TextField or Textarea in multi-field forms, or wherever editing should always be visible.',
-          '',
-          '**Persistence before commitment.** Saving a changed draft calls `onSave(next)`. Only after it resolves does the widget request `onValueChange(next)` and then `onOpenChange(false)`. The trigger always shows the persisted value: a controlled `value` that the parent does not update keeps the old text, and there is no optimistic display. Apps that want optimism own it outside the widget. An unchanged draft closes without calling `onSave`.',
-          '',
-          '**Failure.** A rejected or throwing `onSave` keeps the editor open with the draft and a status message; Enter or Save tries again. If the parent closed the editor while the save was pending, a Retry button resaves the failed draft.',
-          '',
-          '**Stale saves.** While a save is pending the editor is read-only and Save/Cancel are inert. A `value` update from elsewhere, or unmounting, drops the pending save: its settlement requests nothing.',
-          '',
-          '**Validation.** `normalize` turns the draft into the saved value (nothing is trimmed by default). `validate` returns a message to block the save; an `error` prop also blocks it.',
-          '',
-          '**Keyboard.** Enter or Space on the value: open the editor with the text selected (a pointer click puts the caret at the end). Enter: save (never submits a surrounding form). Shift+Enter with `multiline`: newline. Escape: cancel. Tab and Shift+Tab move natively through the editor, Save, Cancel and the page. With `saveOnBlur` (default) focus leaving the whole widget saves; moving between the editor and its actions or switching windows does not. IME composition bypasses Enter, Escape and the leave save.',
-          '',
-          '**Focus.** A keyboard or button save/cancel returns focus to the value after the close is accepted. A leave save never moves focus, and neither does a close made by the parent.',
-          '',
-          '**Headings.** The root is a `div`; never place it inside `h1`–`h6`. Render the document heading separately (see HeadingContext) and use `variant="title"` for the typography.',
-        ].join('\n'),
+        component: 'Edit and save a value in place, such as a project name or title.',
       },
+      usage: `- The value is a button; editing replaces it with an input or, with \`multiline\`, a textarea. Use TextField or Textarea for multi-field forms or fields that should stay editable.
+
+### Saving
+- A changed draft calls \`onSave(next)\`. After it resolves, the widget requests \`onValueChange(next)\`, then \`onOpenChange(false)\`. An unchanged draft closes without calling \`onSave\`.
+- The trigger shows the persisted value. Controlled values keep their old text until the parent updates them. Implement optimistic updates outside the widget.
+- A thrown or rejected save keeps the draft open with a status message. Enter or Save retries. If the parent closed the editor during the save, Retry resaves the failed draft.
+- During a save, the editor is read-only and Save/Cancel are inert. An external \`value\` update or unmount discards the pending save; its result requests nothing.
+- \`normalize\` converts the draft; nothing is trimmed by default. A message from \`validate\`, or an \`error\` prop, blocks saving.
+
+### Keyboard and focus
+- Enter or Space opens with the text selected. A pointer click places the caret at the end.
+- Enter saves without submitting a surrounding form. Shift+Enter inserts a newline with \`multiline\`. Escape cancels. Tab/Shift+Tab follow the editor, Save, Cancel and page order.
+- \`saveOnBlur\` defaults to saving when focus leaves the widget. Moving between its controls or switching windows does not save. IME composition bypasses Enter, Escape and leave-to-save.
+- Keyboard or button save/cancel returns focus to the value after an accepted close. Leaving or a parent-driven close does not move focus.
+- The root is a \`div\`; do not put it inside \`h1\`–\`h6\`. Render the heading separately (see HeadingContext) and use \`variant="title"\` for typography.`,
       source: { code: usage },
     },
   },
@@ -526,7 +525,7 @@ export const Multiline: Story = {
     docs: {
       description: {
         story:
-          'Opening swaps the value for a native input or textarea, so the row height and wrapping change immediately, with no size animation. A multiline editor grows with its content.',
+          'Opening replaces the value with an input or textarea. Height and wrapping change without animation. A multiline editor grows with its content.',
       },
     },
   },
@@ -582,7 +581,7 @@ export const Open: Story = {
     docs: {
       description: {
         story:
-          'The accessible name changes with the mode: the value button is named "Edit Project name: Apollo" (`messages.edit({ label, value })`), the editor is named "Project name" (`label`).',
+          'The value button uses "Edit Project name: Apollo" (`messages.edit({ label, value })`). The editor uses "Project name" (`label`).',
       },
     },
   },

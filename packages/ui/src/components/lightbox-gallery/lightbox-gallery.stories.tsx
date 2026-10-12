@@ -58,14 +58,20 @@ const meta = {
     docs: {
       source: { code: '<LightboxGallery images={photos} label="Trip photos" minColumnWidth={180} />' },
       description: {
-        component: [
-          'A row-major masonry list and full-screen native image dialog. Supply unique image IDs, meaningful alt text and positive intrinsic dimensions. Images support srcSet and sizes; paginate large collections in the consumer. There is no virtualization or image-provider integration.',
-          'Selection (value/defaultValue/onValueChange) and visibility (open/defaultOpen/onOpenChange) are independent. Controlled requests commit only when accepted. null means no selection; an invalid ID exposes an unavailable state and does not open a modal. Navigation stops at each end.',
-          'Tab traverses launch buttons in reading order. In the stage, Left/Right select images in the effective direction, Home/End select the endpoints, plus/minus change zoom, and 0 resets it. Zoomed arrows pan. All gestures have explicit buttons: swipe selects, downward drag closes, pinch and Ctrl+wheel zoom, double-click toggles zoom, and zoomed drag pans. Escape closes even when zoomed, returning focus to the original launcher.',
-          'Native showModal owns focus containment and scroll locking. Close uses requestClose when supported, including cancel veto; older engines use the shared state-close fallback without cancel dispatch. Native close/form closure reconcile visibility. Viewer ARIA relationships merge external IDs and the title/caption; viewer.withDescription=false opts structured captions out. Floating children must remain inside the native dialog subtree.',
-          'Motion follows the user’s reduced-motion setting. Forced-colors and ReducedMotion stories are structural fixtures; effective environment behavior needs browser media emulation. Screen-reader and physical multi-touch device verification remain separate manual gates.',
-        ].join('\n\n'),
+        component: 'Browse an image gallery, open a photo, and zoom or move through the collection.',
       },
+      usage: `- Images appear in a row-major masonry list and open in a full-screen native dialog. Supply unique IDs, meaningful alt text and positive intrinsic dimensions. \`srcSet\` and \`sizes\` are supported. Paginate large collections; there is no virtualization or image-provider integration.
+- Selection (\`value/defaultValue/onValueChange\`) and visibility (\`open/defaultOpen/onOpenChange\`) are independent. Controlled requests take effect only when accepted. \`null\` means no selection; an invalid ID shows an unavailable state without opening a modal. Navigation stops at each end.
+
+### Keyboard and gestures
+- Tab follows launcher reading order. Left/Right select in the effective direction; Home/End select endpoints. Plus/minus zoom; 0 resets. When zoomed, arrows pan.
+- Swipe selects, downward drag closes, pinch and Ctrl+wheel zoom, double-click toggles zoom, and zoomed drag pans. Buttons provide alternatives to every gesture.
+- Escape closes even when zoomed and returns focus to the original launcher.
+
+### Dialog and accessibility
+- Native \`showModal\` contains focus and locks scrolling. Close uses \`requestClose\` with cancel veto where supported. Older engines use a state-close fallback without dispatching cancel. Native close and form closure update visibility.
+- Viewer ARIA merges external IDs with the title/caption. Set \`viewer.withDescription=false\` to exclude structured captions. Keep floating children inside the dialog subtree.
+- Motion respects reduced motion. Forced-colors and ReducedMotion stories require browser media emulation to check rendering. Test screen readers and multi-touch devices manually.`,
     },
   },
 } satisfies Meta<typeof LightboxGallery>;
@@ -919,7 +925,7 @@ export const LiveReducedMotionPreference: Story = {
     docs: {
       description: {
         story:
-          'Regression harness for a live media-preference change. The mocked preference tests behavior, not browser media-query styles.',
+          'Mocks a media-preference change to test behavior. Browser media-query styles need a separate check.',
       },
     },
   },

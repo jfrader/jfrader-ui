@@ -21,6 +21,11 @@ const accentStyle = {
 const meta = {
   title: 'Feedback/Spinner',
   component: Spinner,
+  parameters: {
+    docs: {
+      description: { component: 'Show that an action is loading.' },
+    },
+  },
   tags: ['autodocs'],
   args: { size: 'md', label: 'Loading' },
   argTypes: {

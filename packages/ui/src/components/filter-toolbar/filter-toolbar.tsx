@@ -157,8 +157,8 @@ const statusStyle = css({
 });
 type PendingFocus = { source: HTMLButtonElement; removedId?: string; neighbors: readonly string[] };
 
-/** A named group with native Tab order. Enter/Space activate remove and clear buttons;
- * the shell does not intercept editing keys or promise roving toolbar navigation. */
+/** Group filters with a name and native Tab order. Enter/Space activate remove and clear buttons.
+ * Editing keys pass through. Roving toolbar navigation is not supported. */
 function FilterToolbarRoot({
   ref, value: valueProp, defaultValue = EMPTY, onValueChange, disabled = false,
   label = 'Filters', messages: messagesProp, className, sx, children,

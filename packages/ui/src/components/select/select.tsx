@@ -82,7 +82,7 @@ export interface SelectProps {
   onOpenChange?: (open: boolean) => void;
   placement?: Placement;
   disabled?: boolean;
-  /** Renders a hidden input so the value takes part in native form submission. */
+  /** Adds a hidden input to submit the value with a native form. */
   name?: string;
   children?: ReactNode;
 }

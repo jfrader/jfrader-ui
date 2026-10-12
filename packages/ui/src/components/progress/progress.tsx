@@ -22,7 +22,7 @@ export interface ProgressProps extends Omit<ComponentPropsWithRef<'div'>, 'child
   max?: number;
   /** Accessible name, rendered visually hidden. */
   label?: ReactNode;
-  /** Human-readable value for assistive tech (aria-valuetext). */
+  /** Value text for assistive technology (aria-valuetext). */
   getValueLabel?: (value: number, max: number) => string;
   slotProps?: {
     indicator?: ProgressPartProps;

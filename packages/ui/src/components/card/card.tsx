@@ -32,7 +32,10 @@ export interface CardSlotProps {
 
 export interface CardProps extends ComponentPropsWithRef<'div'>, SxProps {
   variant?: CardVariant;
-  /** `contrast` paints the dark theme's own palette for this card on any page theme. */
+  /**
+   * `contrast` uses the dark palette with a charcoal surface on any page theme.
+   * Omit this prop or use `default` to keep the enclosing theme.
+   */
   appearance?: SurfaceAppearance;
   slotProps?: CardSlotProps;
 }

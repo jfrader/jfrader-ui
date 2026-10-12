@@ -67,8 +67,24 @@ const meta = {
       source: { code: usage },
       description: {
         component:
-          'Links to the current page in other languages. Options are real links labelled with native names, each with `lang`, `hreflang` and `dir="auto"`; the current one carries `aria-current`. `menu` (default) is a menu button whose items are the links: its trigger shows the current language and needs a localized `triggerLabel` naming the action. `swap` is one link to the other language of a two-language site. `inline` is a labelled navigation list where the current language is plain text. Pass an option `render` to use a router link.',
+          'Open the current page in another language.',
       },
+      usage: `### Options and variants
+- Supply native-name labels, page URLs, and language tags in \`options\`. Each link gets \`lang\`, \`hreflang\`, and \`dir="auto"\`. The current option gets \`aria-current\`.
+- \`value\` identifies the current language. Navigation follows the option's URL, rather than changing a local selection. An unmatched value warns in development.
+- \`menu\` is the default. Its trigger shows the current language. Supply a localized \`triggerLabel\` naming the action, such as "Change language". Assistive technology reads it before the current label, and it names the menu.
+- \`swap\` shows one link to the other language on a two-language site. Other option counts warn in development and use the first noncurrent option. With no noncurrent option, it renders no link.
+- \`inline\` lists all options in a navigation landmark. Supply its accessible name with \`label\`. The current language is plain text, not a tab stop.
+- Use an option's \`render\` callback for router links. Spread every supplied prop, including the ref and event handlers, onto the returned link.
+
+### Menu state
+- Control the menu with \`open\` and \`onOpenChange\`, or set its initial state with \`defaultOpen\`.
+
+### Keyboard
+- On the menu trigger, Enter, Space, or ArrowDown opens on the first item. ArrowUp opens on the last.
+- In the menu, arrows move and wrap. Home and End jump to the first and last items. Type a native name to move to its option.
+- Enter follows the focused link. Space clicks it. Escape closes and returns focus to the trigger. Tab closes and lets focus move on.
+- Inline and swap links follow native Tab order.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive).

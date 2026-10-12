@@ -11,6 +11,7 @@ const TRIGGER = 'Open commands';
 const meta = {
   title: 'Surfaces/CommandPalette',
   component: CommandPalette,
+  parameters: { docs: { description: { component: 'Search for a command and run it from a dialog.' } } },
 } satisfies Meta<typeof CommandPalette>;
 
 export default meta;

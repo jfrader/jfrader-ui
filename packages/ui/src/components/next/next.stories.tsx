@@ -30,8 +30,17 @@ const meta = {
     docs: {
       description: {
         component:
-          '`@jfrader/ui/next` exports `EmotionRegistry` for the Next.js App Router (requires the optional `next` and `@emotion/cache` peers). It streams the Emotion styles of each server render pass as `<style data-emotion>` tags and mounts `ThemeProvider`. Wrap the root layout body with it. `cacheKey` sets the class name prefix (default `css`).',
+          'Include Emotion styles in server-rendered pages with the Next.js App Router.',
       },
+      usage: `### Setup
+- Import \`EmotionRegistry\` from \`@jfrader/ui/next\`. Install the optional \`next\` and \`@emotion/cache\` peers.
+- Wrap the root layout body contents with \`EmotionRegistry\`. It mounts \`ThemeProvider\` and shares one Emotion cache.
+- Each server render pass emits newly inserted styles as \`<style data-emotion>\` tags. Without the registry, Emotion inserts inline style nodes during SSR that cause hydration mismatches.
+- \`cacheKey\` sets the class name prefix and \`data-emotion\` cache key. It defaults to \`css\`.
+
+### Limits
+- The adapter is for the App Router. Apps that do not import \`@jfrader/ui/next\` do not load or need to install Next.js.
+- These examples use the underlying cache. \`EmotionRegistry\` itself requires Next's server renderer.`,
       source: {
         code: `// app/layout.tsx
 import { EmotionRegistry } from '@jfrader/ui/next';

@@ -61,14 +61,23 @@ const meta = {
     docs: {
       source: { code: SOURCE },
       description: {
-        component: [
-          'A fixed square-thumbnail media browsing core with independent controlled density, favorites, current photo and viewer visibility. Storage, pagination and formatted details belong to the consumer. This is a moderate collection, not a virtualized library or a masonry layout.',
-          'Density is the preferred column count. A narrow container reduces effective columns to keep cells usable without requesting a different density. Steps are normalized to unique descending positive integers; invalid values use the nearest configured step. If the default 3 is absent, the first step seeds density.',
-          'Native list and button semantics: Tab reaches every open/favorite action. Arrows move one cell or row (Left/Right follow RTL), PageUp/PageDown move three rows, Home/End reach the ends. Plus/minus change thumbnail size around the focused photo. A two-finger pinch requests a discrete density step on release.',
-          'The native dialog uses the shared modal lifecycle. Unzoomed stage arrows/Home/End select slides without wrapping; the filmstrip remains a native range. Zoom/pan, previous/next, favorite and Close buttons provide gesture equivalents. Escape returns focus to the launch tile or nearest surviving tile. Zoomed stage arrows pan; plus/minus magnify the image, not the grid.',
-          'Favorite IDs outside the current page are retained. Controlled requests do not visually commit until accepted. Use labels for translated action/status text and locale for Intl-formatted counts. Give every photo a unique stable ID and finite positive intrinsic dimensions.',
-        ].join('\n\n'),
+        component: 'Browse photos, change thumbnail size, mark favorites and open a photo to zoom or move through the collection.',
       },
+      usage: `### Collection and density
+- Density, favorites, current photo and viewer visibility have independent controlled state. Requests take effect only when accepted.
+- The caller handles storage, pagination and formatted details. Use for moderate collections; thumbnails are square, with no virtualization or masonry layout.
+- Density sets the preferred column count. Narrow containers use fewer columns without requesting a density change.
+- Steps become unique positive integers in descending order. Invalid values use the nearest configured step. If the default 3 is absent, the first step seeds density.
+- Favorite IDs outside the current page are kept. Give each photo a stable, unique ID and finite positive intrinsic dimensions.
+- Use labels to translate actions/status and locale for Intl-formatted counts.
+
+### Keyboard and gestures
+- The grid uses native lists and buttons. Tab reaches every open/favorite action.
+- Arrows move one cell or row; Left/Right follow RTL. PageUp/PageDown move three rows; Home/End reach the ends.
+- Plus/minus change thumbnail size around the focused photo. A two-finger pinch requests one density step on release.
+- The viewer uses a native modal dialog. Unzoomed stage arrows and Home/End select slides without wrapping; the filmstrip is a native range.
+- Zoomed stage arrows pan; plus/minus magnify the image instead of resizing the grid.
+- Zoom/pan, previous/next, favorite and Close buttons provide alternatives to gestures. Escape returns focus to the launch tile or nearest remaining tile.`,
     },
   },
 } satisfies Meta<typeof PhotoGrid>;
@@ -249,7 +258,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural interaction check. Use browser reduced-motion emulation to verify the environment-specific animation branch.',
+          'Checks interactions. Enable reduced motion in the browser to check the animation behavior.',
       },
     },
   },
@@ -265,7 +274,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural favorite and focus check. Forced-colors computed styles require browser media emulation.',
+          'Checks favorites and focus. Enable forced colors in the browser to check computed styles.',
       },
     },
   },

@@ -45,8 +45,32 @@ const meta = {
     docs: {
       description: {
         component:
-          'Layered drill-down sheets for short settings flows and pickers. Each Trigger pushes a sheet on top; parents stay mounted behind it (their form state is kept), inert and hidden from assistive technology, peeking above the top sheet. `value` is the bottom-first list of open keys. Back pops one sheet, Close clears the stack, Escape and backdrop clicks pop the top sheet only, and focus returns to the exact control that opened the popped sheet. `variant="auto"` lays out as a bottom sheet below `breakpoint` and as a centered dialog at or above it, measured on the layer, without changing focus or state. By default the stack is one native modal dialog over the viewport (page inert, scroll locked). `contained` draws the layer inside the nearest positioned ancestor, but it stays modal for the whole document: everything outside the layer is inert while a sheet is open; the page keeps its scroll. On a sheet layout the handle drags the top sheet down to dismiss it (pointer only; body content never starts a drag; `data-sheet-no-drag` on a Content opts it out); reduced motion turns the drag and depth motion off. There are no snap points. Platform close requests that cannot be canceled close the whole stack. Back and Close need a localized `label`. Floating overlays inside a sheet need a `ThemeRoot portalContainer` host inside it; an open nested overlay takes the Escape first.',
+          'Open settings or pickers in stacked panels, then go back one panel at a time.',
       },
+      usage: `### Values
+- Each \`Trigger\` pushes its matching \`Content\` onto the stack. Pushing an open key returns to that panel and removes the panels above it.
+- \`value\` lists open keys from bottom to top. Control it with \`onValueChange\`, or use \`defaultValue\` (empty by default). Rejected requests keep the committed stack.
+- Unknown and duplicate keys are ignored with a development warning. Requests that leave the ordered stack unchanged do not call \`onValueChange\`.
+- Parents stay mounted behind the top panel, keeping form state. They peek above it but are inert and hidden from assistive technology. Popped panels unmount.
+- \`useSheetStack\` exposes \`push\`, \`pop\`, \`popTo\`, and \`close\`. Call it inside \`SheetStack\`.
+
+### Keyboard and focus
+- Enter or Space on Trigger opens its panel. Tab and Shift+Tab stay inside the top panel.
+- Back pops one panel. Close clears the stack. Give both a localized \`label\`.
+- Escape closes an open child overlay first. Otherwise, Escape or a backdrop click requests one pop.
+- New panels focus an \`autoFocus\` element, then the heading, then Back, then the panel. Popping returns focus to the exact control that opened the child. If that control is gone, focus falls back to the parent's heading, Back, or panel. Closing the stack returns focus to the outer invoker.
+
+### Layout
+- \`variant="auto"\` is the default. It uses a bottom sheet below \`breakpoint\` and a centered dialog at or above it. The breakpoint measures the layer's inline size in CSS pixels. Resizing changes layout without replacing the DOM or changing focus or value.
+- By default, one native modal dialog covers the viewport, makes the page inert, and locks page scroll after \`showModal()\` succeeds.
+- \`contained\` draws the layer inside the nearest positioned ancestor. It remains document-wide modal: everything outside it is inert until close, and focus stays in the layer. Page scroll is not locked.
+
+### Dismissal and limits
+- In sheet layout, drag the top panel's handle downward to dismiss it. This is pointer-only. Body content never starts a drag. Add \`data-sheet-no-drag\` to \`Content\` to disable dragging. There are no snap points.
+- Reduced motion disables dragging, entry animation, and depth motion. Back and Close still work. Closing is immediate, with no top-panel exit animation.
+- \`dismissible={false}\` refuses Escape, backdrop, and drag dismissal. \`onCancel\` can veto those requests with \`preventDefault()\`. Back and Close still work.
+- A platform close that cannot be canceled closes the native shell and requests an empty stack. If a controlled parent rejects it, the closed shell releases its scroll lock. The next explicit open request reopens it.
+- Floating overlays inside a panel need a \`ThemeRoot portalContainer\` host inside that panel.`,
       source: {
         code: `<SheetStack>
   <SheetStack.Trigger value="settings">Settings</SheetStack.Trigger>
@@ -1310,6 +1334,7 @@ export const RTL: Story = {
 };
 
 export const ReducedMotion: Story = {
+  // Play checks authored rules and stubs matchMedia for dragging. Real media emulation needs browser QA.
   tags: ['!autodocs'],
   args: { variant: 'sheet', defaultValue: ['settings', 'account'] },
   render: (args) => <Levels {...args} />,
@@ -1317,7 +1342,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'With the OS setting on, sheets appear without lift or depth motion and the handle drag is off; Back and Close keep working. The play checks the authored reduced-motion rules and stubs `matchMedia` to drive the drag branch; real media emulation is verified in browser QA.',
+          'Enable reduced motion to remove entry and depth animation and disable handle dragging. Back and Close still work. Try the setting with browser media emulation.',
       },
     },
   },
@@ -1352,6 +1377,7 @@ export const ReducedMotion: Story = {
 };
 
 export const ForcedColors: Story = {
+  // Play checks authored rules only. The runner does not emulate forced colors.
   tags: ['!autodocs'],
   args: { defaultValue: ['settings', 'account'] },
   render: (args) => <Levels {...args} />,
@@ -1359,7 +1385,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture for forced-colors browser QA: panels trade their shadow for a system-color border and actions keep a visible boundary. The play runner does not emulate forced colors; it checks the authored rules.',
+          'Emulate forced colors in the browser to see system-color panel borders instead of shadows and borders around actions.',
       },
     },
   },

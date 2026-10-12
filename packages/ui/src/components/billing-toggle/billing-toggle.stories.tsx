@@ -51,8 +51,19 @@ const meta = {
       source: { code: usage },
       description: {
         component:
-          'A pricing composition over SegmentedControl: one named radiogroup, consumer-owned labels, savings and prices. Arrow keys select and wrap past disabled periods; horizontal arrows reverse in RTL. Home/End select endpoints; Enter/Space activate once. Tab enters the focused enabled item and exits to the page. Controlled requests commit only when the parent updates value. Price requires a finite amount and ISO currency; previousLabel is required for a visible previous price. Pin locale for SSR. No form field or automatic price calculation. The composed selector retains SegmentedControl data-ui markers; each Item is wrapped in data-ui="billing-toggle-item". List ref reaches the radiogroup; Item ref reaches its button. Badges must be noninteractive.',
+          'Choose a billing period and show its price, savings, or a previous price.',
       },
+      usage: `- Supply labels, savings, and prices. The component does not calculate prices or create a form field.
+- Controlled changes take effect when the parent updates \`value\`.
+- Price needs a finite amount and an ISO currency. Supply \`previousLabel\` when showing a previous price. Set \`locale\` for SSR.
+- Badges must not contain controls.
+- The selector keeps SegmentedControl data-ui markers. Each Item has a wrapper with \`data-ui="billing-toggle-item"\`.
+- List ref targets the radiogroup; Item ref targets its button.
+
+### Keyboard
+- Arrow keys select and wrap, skipping disabled periods. Horizontal arrows reverse in RTL.
+- Home/End select the first/last enabled period. Enter/Space activate once.
+- Tab enters the focused enabled item, then leaves the group.`,
     },
   },
 } satisfies Meta<typeof BillingToggle>;
@@ -583,7 +594,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural interaction check. Enable reduced motion in browser rendering settings to inspect instant selection and price changes; this play does not emulate media.',
+          'Enable reduced motion in the browser to check that selection and prices change without animation. This play does not set the preference.',
       },
     },
   },
@@ -594,7 +605,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural selected-state check. Enable forced colors in browser rendering settings to inspect real selected borders, savings borders and the focus outline; this story does not emulate media.',
+          'Enable forced colors in the browser to check selection borders, savings borders, and the focus outline. This story does not set the preference.',
       },
     },
   },

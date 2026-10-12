@@ -20,6 +20,7 @@ const proseStyle = {
 const meta = {
   title: 'Data display/Kbd',
   component: Kbd,
+  parameters: { docs: { description: { component: 'Show a keyboard key or a combination of keys in text.' } } },
   args: { children: 'Esc' },
 } satisfies Meta<typeof Kbd>;
 

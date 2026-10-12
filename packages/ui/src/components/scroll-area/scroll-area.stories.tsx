@@ -14,8 +14,11 @@ const meta = {
     docs: {
       description: {
         component:
-          'Native scrolling for constrained panels. Constrain the viewport with maxBlockSize or a sized parent. This component does not virtualize content. Tab enters and leaves the viewport; arrows, PageUp/PageDown, Home/End and Space retain browser scrolling behavior. Name the viewport through slotProps.viewport.',
+          'Scroll content within a panel with a height limit.',
       },
+      usage: `- Limit the viewport with maxBlockSize or a sized parent. Content is not virtualized.
+- Name the viewport through slotProps.viewport.
+- Tab enters and leaves the viewport. Arrows, PageUp/PageDown, Home/End and Space follow browser scrolling behavior.`,
       source: {
         code: '<ScrollArea maxBlockSize="16rem" slotProps={{ viewport: { "aria-label": "Activity" } }}><ActivityList /></ScrollArea>',
       },
@@ -298,7 +301,7 @@ export const ForcedColors: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Replacement bars and edge fades. Real forced-colors rendering is verified in browser QA.',
+        story: 'Shows replacement bars and edge fades. Check forced-colors rendering in a browser.',
       },
     },
   },
@@ -327,7 +330,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Track presses page the viewport, instantly under reduced motion. Keyboard and wheel scrolling animation is browser-owned.',
+          'Pressing a track scrolls one page, without animation under reduced motion. The browser controls keyboard and wheel scrolling animation.',
       },
     },
   },

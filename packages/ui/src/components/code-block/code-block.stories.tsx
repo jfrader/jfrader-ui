@@ -66,8 +66,15 @@ const meta = {
     docs: {
       description: {
         component:
-          'Source with optional language metadata and opt-in syntax highlighting. Plain text by default; pass a `highlight` loader to tokenize it. `@jfrader/ui/code-block/shiki` exports `loadShikiHighlight` (requires the optional `shiki` peer) for JavaScript, TypeScript, JSON, CSS, Bash and HTML; other languages stay plain. Copy always uses the full source. maxLines limits displayed logical lines. Tab reaches copy, source, then disclosure; Enter and Space activate the native buttons. Source scrolling uses native keyboard behavior.',
+          'Display code, copy it, and expand hidden lines. Add a language label or syntax highlighting when needed.',
       },
+      usage: `- Code is plain text by default. Pass a \`highlight\` loader to tokenize it.
+- \`@jfrader/ui/code-block/shiki\` exports \`loadShikiHighlight\` and requires the optional \`shiki\` peer. It supports JavaScript, TypeScript, JSON, CSS, Bash, and HTML; other languages stay plain.
+- Copy uses the full source. \`maxLines\` limits the displayed logical lines.
+
+### Keyboard
+- Tab reaches copy, source, then disclosure. Enter/Space activate the buttons.
+- Source scrolling uses native keyboard behavior.`,
       source: {
         code: `import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
 
@@ -445,7 +452,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural check only. Enable forced colors in the browser to inspect system text, borders and focus outlines.',
+          'Enable forced colors in the browser to check system text, borders, and focus outlines. This story does not set the preference.',
       },
     },
   },
@@ -462,7 +469,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Disclosure is instantaneous. This story does not emulate a reduced-motion preference; CopyButton owns its feedback motion.',
+          'Disclosure has no animation. CopyButton handles its own feedback motion. This story does not enable reduced motion.',
       },
     },
   },
