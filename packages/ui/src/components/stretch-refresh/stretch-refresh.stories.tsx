@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
+import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -8,6 +9,7 @@ import { Button } from '../button';
 import { StretchRefresh, type StretchRefreshProps } from './index';
 
 type Item = { id: string; title: string };
+const TARGET = Number.parseFloat(base.space[8]);
 const ITEMS = [
   { id: 'review', title: 'Mira reviewed the launch checklist' },
   { id: 'draft', title: 'Owen saved a new draft' },
@@ -54,7 +56,7 @@ const meta = {
       source: { code: SOURCE },
       description: {
         component:
-          'Refresh a sized, scrollable feed by pulling downward from its top or activating the persistent native Refresh button. Enter and Space activate once; Tab and Shift+Tab navigate the button, scroll region and item controls. Arrows and Page keys scroll normally; Escape cancels a pull. The button follows the APG button pattern; there is no special pull-to-refresh ARIA pattern. Wheel gestures are not intercepted. Consumers update items before resolving onRefresh and own fetching and cancellation. Controlled refreshing accepts requests in the interaction commit; later external true is display-only. Reduced motion keeps the threshold and status without displacement. Names and descriptions on slotProps.feed merge with the heading and subtitle. Nontext headings require a consumer accessible name. Real touch negotiation and screen-reader announcements require device QA.',
+          'Refresh a sized, scrollable feed by pulling downward from its top or activating the persistent native Refresh button. Enter and Space activate once; Tab and Shift+Tab navigate the button, scroll region and item controls. Arrows and Page keys scroll normally; Escape cancels a pull. The button follows the APG button pattern; there is no special pull-to-refresh ARIA pattern. Wheel gestures are not intercepted. Consumers update items before resolving onRefresh and own fetching and cancellation. Controlled refreshing accepts requests in the interaction commit; later external true is display-only. Reduced motion keeps the threshold and status without displacement. aria-labelledby and aria-describedby on slotProps.feed merge with the heading and subtitle; an aria-label alone replaces the heading as the feed name. The progress line springs home with the sheet. Nontext headings require a consumer accessible name. Real touch negotiation and screen-reader announcements require device QA.',
       },
     },
   },
@@ -63,6 +65,8 @@ export default meta;
 type Story = StoryObj<typeof StretchRefresh<Item>>;
 const part = (root: HTMLElement, name: string) =>
   root.querySelector<HTMLElement>(`[data-ui="stretch-refresh-${name}"]`)!;
+const scale = (element: HTMLElement) => new DOMMatrix(getComputedStyle(element).transform).a;
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 const frame = () =>
   new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
@@ -146,6 +150,7 @@ export const Busy: Story = {
   play: async ({ canvas, args, userEvent }) => {
     await expect(canvas.getByRole('list')).toHaveAttribute('aria-busy', 'true');
     await expect(canvas.getByRole('status')).toHaveTextContent('Refreshing');
+    await expect(scale(part(canvas.getByRole('region'), 'line'))).toBe(1);
     await userEvent.click(canvas.getByRole('button'));
     await expect(args.onRefresh).not.toHaveBeenCalled();
   },
@@ -362,7 +367,7 @@ export const KeyboardRefresh: Story = {
     await userEvent.tab();
     await expect(button.ownerDocument.activeElement).toBe(button);
     await expect(getComputedStyle(button).outlineStyle).not.toBe('none');
-    await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
+    await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(TARGET);
     await userEvent.keyboard('{Enter}');
     await waitFor(async () => {
       await expect(canvas.getByRole('status')).toHaveTextContent('Updated');
@@ -385,13 +390,26 @@ export const Threshold: Story = {
   args: { threshold: 40 },
   play: async ({ canvas, canvasElement, args }) => {
     const feed = canvas.getByRole('region');
+    const line = part(feed, 'line');
     const fire = pointer(feed);
+    await expect(scale(line)).toBe(0);
     fire('pointerdown', 0);
     fire('pointermove', 20);
+    await nextFrame();
+    const pulled = scale(line);
+    await expect(pulled).toBeGreaterThan(0);
+    await expect(pulled).toBeLessThan(1);
     fire('pointerup', 20);
+    await nextFrame();
+    await expect(scale(line)).toBeGreaterThan(0);
+    await waitFor(async () => {
+      await expect(scale(line)).toBe(0);
+    });
     await expect(args.onRefresh).not.toHaveBeenCalled();
     fire('pointerdown', 0);
     fire('pointermove', 80);
+    await nextFrame();
+    await expect(scale(line)).toBe(1);
     await expect(canvasElement.querySelector('[data-ui="stretch-refresh"]')).toHaveAttribute(
       'data-state',
       'armed',
@@ -465,7 +483,6 @@ export const AriaMerge: Story = {
     subtitle: 'Latest updates',
     slotProps: {
       feed: {
-        'aria-label': 'Custom activity',
         'aria-labelledby': 'external-heading missing-heading',
         'aria-describedby': 'external-description missing-description',
         css: overrideStyle,
@@ -481,7 +498,7 @@ export const AriaMerge: Story = {
   ),
   play: async ({ canvas, canvasElement }) => {
     const feed = canvas.getByRole('region');
-    await expect(feed).toHaveAttribute('aria-label', 'Custom activity');
+    await expect(feed).toHaveAccessibleName('Team Activity');
     await expect(feed.getAttribute('aria-labelledby')).toContain(
       'external-heading missing-heading',
     );
@@ -492,9 +509,31 @@ export const AriaMerge: Story = {
     await expect(feed.getAttribute('aria-describedby')).toContain(
       part(canvasElement, 'subtitle').id,
     );
-    await expect(Math.abs(parseFloat(getComputedStyle(feed).paddingInlineStart) - 32)).toBeLessThan(
-      1.1,
-    );
+    await expect(
+      Math.abs(parseFloat(getComputedStyle(feed).paddingInlineStart) - TARGET),
+    ).toBeLessThan(1.1);
+  },
+};
+export const FeedAriaLabel: Story = {
+  args: { slotProps: { feed: { 'aria-label': 'Custom activity' } } },
+  play: async ({ canvas }) => {
+    const feed = canvas.getByRole('region');
+    await expect(feed).toHaveAttribute('aria-label', 'Custom activity');
+    await expect(feed).not.toHaveAttribute('aria-labelledby');
+    await expect(feed).toHaveAccessibleName('Custom activity');
+  },
+};
+export const FeedAriaLabelWithLabelledBy: Story = {
+  args: {
+    slotProps: {
+      feed: { 'aria-label': 'Custom activity', 'aria-labelledby': 'external-heading' },
+    },
+  },
+  render: AriaMerge.render,
+  play: async ({ canvas }) => {
+    const feed = canvas.getByRole('region');
+    await expect(feed).toHaveAttribute('aria-label', 'Custom activity');
+    await expect(feed).toHaveAccessibleName('Team Activity');
   },
 };
 export const FalsySlots: Story = {

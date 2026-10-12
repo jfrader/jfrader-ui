@@ -7,7 +7,6 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
-  type CSSProperties,
   type PointerEvent,
   type ReactNode,
 } from 'react';
@@ -70,7 +69,6 @@ export interface StretchRefreshProps<T>
   threshold?: number;
   emptyContent?: ReactNode;
   labels?: StretchRefreshLabels;
-  locale?: Intl.LocalesArgument;
   slotProps?: StretchRefreshSlotProps<T>;
 }
 
@@ -158,19 +156,15 @@ const indicatorStyle = css({
   padding: vars.space[2],
   fontSize: vars.textSize.sm,
   color: vars.color.accentText,
-  '&::after': {
-    content: '""',
-    display: 'block',
-    marginBlockStart: vars.space[1],
-    blockSize: vars.space[1],
-    background: vars.color.accentText,
-    transform: 'scaleX(var(--stretch-refresh-progress, 0))',
-    transformOrigin: 'center',
-  },
-  [FORCED_COLORS]: {
-    color: 'CanvasText',
-    '&::after': { background: 'CanvasText', outline: '1px solid CanvasText' },
-  },
+  [FORCED_COLORS]: { color: 'CanvasText' },
+});
+const lineStyle = css({
+  display: 'block',
+  marginBlockStart: vars.space[1],
+  blockSize: vars.space[1],
+  background: vars.color.accentText,
+  transformOrigin: 'center',
+  [FORCED_COLORS]: { background: 'CanvasText', outline: '1px solid CanvasText' },
 });
 const listStyle = css({ listStyle: 'none', padding: 0, margin: 0 });
 const itemStyle = css({
@@ -214,7 +208,6 @@ export function StretchRefresh<T>({
   threshold: thresholdProp = DEFAULT_THRESHOLD,
   emptyContent,
   labels,
-  locale: _locale,
   slotProps,
   ref,
   className,
@@ -242,6 +235,7 @@ export function StretchRefresh<T>({
   const pending = useRef(false);
   const acceptanceFrame = useRef<number | undefined>(undefined);
   const y = useMotionValue(0);
+  const progress = useMotionValue(0);
   const opacity = useMotionValue(1);
   const reduced = useReducedMotion();
 
@@ -283,10 +277,11 @@ export function StretchRefresh<T>({
       changeBusy(true);
     }
   };
+  // A controlled request starts work when the parent commits refreshing=true; disabling drops it.
   useLayoutEffect(() => {
     if (disabled) pending.current = false;
     if (pending.current && busy && !disabled) run();
-  });
+  }, [busy, disabled]);
   const finish = (complete: boolean) => {
     const drag = gesture.current;
     if (!drag) return;
@@ -294,8 +289,10 @@ export function StretchRefresh<T>({
     drag.cleanup();
     if (drag.node.hasPointerCapture(drag.pointer)) drag.node.releasePointerCapture(drag.pointer);
     setDistance(0);
-    if (reduced || drag.node.ownerDocument.hidden) y.jump(0);
-    else animate(y, 0, SPRING);
+    for (const value of [y, progress]) {
+      if (reduced || drag.node.ownerDocument.hidden) value.jump(0);
+      else animate(value, 0, SPRING);
+    }
     if (complete && drag.locked && drag.distance >= threshold) request();
   };
   useEffect(() => {
@@ -309,11 +306,14 @@ export function StretchRefresh<T>({
       if (acceptanceFrame.current !== undefined)
         view?.cancelAnimationFrame(acceptanceFrame.current);
       y.stop();
+      progress.stop();
     };
-  }, [y]);
+  }, [y, progress]);
   useEffect(() => {
-    if (reduced) y.jump(0);
-  }, [reduced, y]);
+    if (!reduced) return;
+    y.jump(0);
+    progress.jump(0);
+  }, [reduced, y, progress]);
   useEffect(() => {
     if (!result || reduced || feed.current?.ownerDocument.hidden) {
       opacity.jump(1);
@@ -334,12 +334,13 @@ export function StretchRefresh<T>({
       if (doc?.hidden) {
         finish(false);
         y.jump(0);
+        progress.jump(0);
         opacity.jump(1);
       }
     };
     doc?.addEventListener('visibilitychange', hide);
     return () => doc?.removeEventListener('visibilitychange', hide);
-  }, [y, opacity]);
+  }, [y, progress, opacity]);
   useEffect(() => {
     if (process.env.NODE_ENV === 'production') return;
     const keys = items.map(getKey);
@@ -367,6 +368,8 @@ export function StretchRefresh<T>({
     setDistance(drag.distance);
     y.stop();
     y.set(reduced ? 0 : drag.distance);
+    progress.stop();
+    progress.set(reduced ? 0 : Math.min(1, drag.distance / threshold));
   };
   const down = (event: PointerEvent<HTMLDivElement>) => {
     const node = event.currentTarget;
@@ -386,6 +389,8 @@ export function StretchRefresh<T>({
       node.ownerDocument.getSelection()?.toString()
     )
       return;
+    // Unlike image-compare and swipe-actions, mouse pointerdown keeps its default so text in the feed
+    // stays selectable and clicking the feed focuses it for keyboard scrolling.
     const doc = node.ownerDocument;
     const outside = (e: globalThis.PointerEvent) => {
       if (gesture.current?.pointer === e.pointerId && !node.contains(e.target as Node))
@@ -437,6 +442,8 @@ export function StretchRefresh<T>({
   const titleId = slotProps?.title?.id ?? `${id}-title`;
   const subtitleId = slotProps?.subtitle?.id ?? `${id}-subtitle`;
   const feedSlot = slotProps?.feed;
+  const feedLabelledBy =
+    feedSlot?.['aria-labelledby'] || !feedSlot?.['aria-label'] ? titleId : undefined;
   const status = result?.message ?? (busy ? copy.refreshing : '');
   return (
     <MotionConfig reducedMotion="user">
@@ -507,8 +514,7 @@ export function StretchRefresh<T>({
               role="region"
               tabIndex={feedSlot?.tabIndex ?? 0}
               data-ui="stretch-refresh-feed"
-              aria-label={feedSlot?.['aria-label']}
-              aria-labelledby={ids(feedSlot?.['aria-labelledby'], titleId)}
+              aria-labelledby={ids(feedSlot?.['aria-labelledby'], feedLabelledBy)}
               aria-describedby={ids(
                 feedSlot?.['aria-describedby'],
                 subtitlePresent ? subtitleId : undefined,
@@ -541,15 +547,13 @@ export function StretchRefresh<T>({
                 aria-hidden="true"
                 data-ui="stretch-refresh-indicator"
                 css={[indicatorStyle, slotProps?.indicator?.css]}
-                style={
-                  {
-                    ...slotProps?.indicator?.style,
-                    '--stretch-refresh-progress':
-                      reduced || busy ? 1 : Math.min(1, distance / threshold),
-                  } as CSSProperties
-                }
               >
                 {indicatorText}
+                <motion.span
+                  data-ui="stretch-refresh-line"
+                  css={lineStyle}
+                  style={{ scaleX: busy ? 1 : progress }}
+                />
               </div>
               <motion.div style={{ y }}>
                 <ul
