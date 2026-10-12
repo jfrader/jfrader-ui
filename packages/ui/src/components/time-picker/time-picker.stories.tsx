@@ -8,7 +8,7 @@ import { ThemeRoot } from '../theme-root';
 import { TimePicker, type TimePickerProps, type TimePickerMinuteStep } from './index';
 
 const meta = {
-  title: 'Inputs/TimePicker',
+  title: 'Pickers/TimePicker',
   component: TimePicker,
   tags: ['autodocs'],
   args: {

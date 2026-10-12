@@ -156,14 +156,13 @@ function IsolationExample() {
 IsolationExample.displayName = 'IsolationExample';
 
 const meta = {
-  title: 'Theming/Custom accent',
+  title: 'Foundations/Custom accent',
   component: ThemeRoot,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
-        component:
-          'Set an accent color for a section of your app.',
+        component: 'Set an accent color for a section of your app.',
       },
       usage: `### Setup
 - Call \`createTheme({ base, accent, tokens })\` to derive an accent family for the \`dark\` or \`light\` base.

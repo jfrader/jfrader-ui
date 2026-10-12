@@ -27,7 +27,7 @@ const lazyNode: readonly TreeNode[] = [{ id: 'remote', label: 'Remote', hasChild
 const usage =
   '<TreeView label="Files" nodes={[{ id: "app", label: "Application", children: [{ id: "page", label: "Page" }] }]} defaultOpen={["app"]} />';
 const meta = {
-  title: 'Components/TreeView',
+  title: 'Data display/TreeView',
   component: TreeView,
   tags: ['autodocs'],
   args: { nodes, label: 'Files', onValueChange: fn(), onOpenChange: fn() },

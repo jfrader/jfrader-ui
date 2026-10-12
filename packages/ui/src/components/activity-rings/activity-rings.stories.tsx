@@ -84,7 +84,7 @@ async function expectDrawn(stroke: Element, laps: number) {
 }
 
 const meta = {
-  title: 'Data Display/ActivityRings',
+  title: 'Data display/ActivityRings',
   // The real component documents the props; stories render through the flattened adapter.
   component: ActivityRings as ComponentType<RingsArgs>,
   tags: ['autodocs'],

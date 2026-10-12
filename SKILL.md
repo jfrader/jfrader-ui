@@ -185,6 +185,7 @@ src/components/<kebab-case>/
 src/utils/                  # shared non-styling helpers (renderable, use-controlled-state)
 src/overlay/                # internal modules (overlay portal, scroll lock, future focus/top-layer helpers) — not exported
 src/styling/                # styling modules (see list below); only styled, theme and SxProps are exported
+src/testing/                # story-only assertions (see list below)
 ```
 
 Shared styling modules in `src/styling/` (reuse before writing a local copy):
@@ -211,10 +212,22 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `layout-style` — `flexLayoutStyles` (Flex, Stack) and the layout space scale (Container).
 - `motion-timings` — `motionDurationMs`, the numeric side of the duration tokens for Motion and timers.
 
+Shared story assertions in `src/testing/` (reuse before writing a local copy):
+
+- [motion-assertions.ts](packages/ui/src/testing/motion-assertions.ts):
+  `settleMotion`, `expectEntranceMotion`, `expectRetainedExit`.
+  `settleMotion` excludes infinite animations.
+- [theme-assertions.ts](packages/ui/src/testing/theme-assertions.ts):
+  `expectThemedSurface`, `expectContrastSurface`.
+- [geometry-assertions.ts](packages/ui/src/testing/geometry-assertions.ts):
+  `expectInside`, `expectAligned`, `expectMirrored`, `expectNoOverlap`, `expectMirroredDirection`.
+  Measures transformed viewport rectangular boxes, not curved silhouettes; failures include measures.
+
 - PascalCase components, `<Name>Props` types, explicit public exports; helpers stay private.
 - Storybook groups components by the `storySort` order in `apps/storybook/.storybook/preview.tsx` (`Home`,
-  `Foundations`, `Inputs`, `Pickers`, `Data display`, `Feedback`, `Navigation`, `Surfaces`, `Layout`,
-  `Games`, `Showcase`). A new section is added there and to this list in the same change.
+  `Foundations`, `Inputs`, `Pickers`, `Data display`, `Data`, `Media`, `Feedback`, `Navigation`,
+  `Surfaces`, `Layout`, `Actions`, `Games`, `Showcase`). A new section is added there
+  and to this list in the same change.
 - Story files for the same component within a section share one `title`, even when integration
   fixtures live in separate files. Keep their export names unique and their existing docs/sidebar tags.
 - React 19 ref-as-prop: components are plain functions reading `ref` from props typed with
@@ -342,6 +355,22 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
 Stories are CSF3 (`satisfies Meta` / `StoryObj`). Storybook's CSF Next factory API
 (`definePreview` → `meta.story`) exists in preview; this repo stays on CSF3 unless a migration is
 explicitly approved.
+
+Use the shared assertions listed in [section 4](#4-file-and-naming-conventions) for motion,
+theme and geometry play tests. For browser measurements, use
+[measure-geometry.mjs](apps/storybook/scripts/measure-geometry.mjs) with Storybook running.
+It is a check: contract violations or measurement errors return a nonzero exit code.
+Example from the GameTable alignment measurements, run from `apps/storybook`:
+
+```sh
+node scripts/measure-geometry.mjs games-gametable--desktop-dark \
+  --surface '[data-ui="theme-root"]:nth-child(2) [data-game-surface]' \
+  --items '[data-ui="theme-root"]:nth-child(2) [data-ui="game-table-seat"]' \
+  --viewport 1440x900 --base-url http://localhost:6019
+```
+
+When porting geometry, keep fixtures with source paths and commit provenance, independent of the port.
+Compare against them; see [GameTable fixtures](packages/ui/src/components/game-table/reference-fixtures.ts).
 
 Per component (all in the colocated stories file):
 

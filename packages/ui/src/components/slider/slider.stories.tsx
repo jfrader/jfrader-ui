@@ -21,7 +21,7 @@ const buttonStyle = css({
   padding: vars.space[2],
 });
 const meta = {
-  title: 'Forms/Slider',
+  title: 'Inputs/Slider',
   component: Slider,
   tags: ['autodocs'],
   args: { label: 'Volume', defaultValue: 40, locale: 'en-GB', onValueChange: fn(), onValueCommit: fn() },
