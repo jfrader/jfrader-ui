@@ -43,7 +43,7 @@ const frameStyle = css({
 });
 const narrowStyle = css({ inlineSize: '8rem', maxInlineSize: '100%' });
 const meta = {
-  title: 'Data display/LightboxGallery',
+  title: 'Media/LightboxGallery',
   component: LightboxGallery,
   tags: ['autodocs'],
   args: { images, label: 'Trip photos', locale: 'en-GB', onValueChange: fn(), onOpenChange: fn() },
@@ -65,8 +65,8 @@ const meta = {
 
 ### Keyboard and gestures
 - Tab follows launcher reading order. Left/Right select in the effective direction; Home/End select endpoints. Plus/minus zoom; 0 resets. When zoomed, arrows pan.
-- Swipe selects, downward drag closes, pinch and Ctrl+wheel zoom, double-click toggles zoom, and zoomed drag pans. Buttons provide alternatives to every gesture.
-- Escape closes even when zoomed and returns focus to the original launcher.
+- Momentum swipes select, resistant downward drag closes, pinch and Ctrl+wheel zoom, double-click and touch double-tap zoom around the pointer, and zoomed drag pans. On narrow screens, use the thumbnail strip to select images and arrows to pan.
+- Commands work throughout the viewer, except in editable fields. Escape closes even when zoomed and returns focus to the current image's tile.
 
 ### Dialog and accessibility
 - Native \`showModal\` contains focus and locks scrolling. Close uses \`requestClose\` with cancel veto where supported. Older engines use a state-close fallback without dispatching cancel. Native close and form closure update visibility.
@@ -199,14 +199,14 @@ export const PersistentImageError: Story = {
     await expect(within(stage(canvasElement)).getByText('Image unavailable')).toBeVisible();
   },
 };
-export const NarrowOneColumn: Story = {
+export const NarrowTwoColumns: Story = {
   render: (args) => (
     <div css={narrowStyle}>
       <LightboxGallery {...args} />
     </div>
   ),
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await expect(canvas.getByRole('region')).toHaveAttribute('data-columns', '1');
+    await expect(canvas.getByRole('region')).toHaveAttribute('data-columns', '2');
     await userEvent.click(tiles(canvasElement)[1]!);
     const dialog = await canvas.findByRole('dialog');
     for (const button of within(dialog).getAllByRole('button')) {
@@ -273,13 +273,15 @@ async function playMotionFromTile({ canvas, canvasElement, userEvent }: Paramete
   const header = (await canvas.findByRole('heading', { name: 'Trip photos — Forest' })).parentElement!;
   await expectEntranceMotion(header);
   await current(canvasElement, 'Tall forest trees');
+  await userEvent.keyboard('{ArrowRight}');
+  await current(canvasElement, 'Still lake water');
 
   await userEvent.click(within(dialog).getByRole('button', { name: 'Close viewer' }));
   await expect(dialog).toHaveAttribute('data-state', 'closing');
   // The image flies home after the native close, so it stays put while the chrome fades.
   await expect(imageLayer(canvasElement)).toHaveAttribute('data-exit', 'home');
   await expectRetainedExit(header, () => !dialog.hasAttribute('open'));
-  await expect(invoker.ownerDocument.activeElement).toBe(invoker);
+  await expect(invoker.ownerDocument.activeElement).toBe(tiles(canvasElement)[2]);
 }
 export const Motion: Story = { tags: ['!autodocs'], play: playMotionFromTile };
 export const MotionLight: Story = {
@@ -288,17 +290,17 @@ export const MotionLight: Story = {
   globals: { theme: 'light' },
   play: playMotionFromTile,
 };
-export const MotionWithoutLauncher: Story = {
+export const MotionDefaultOpenReturn: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement, args, userEvent }) => {
     const dialog = viewer(canvasElement);
     await expectEntranceMotion(imageLayer(canvasElement));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Close viewer' }));
-    // No launcher to fly home to: the image fades out with the viewer.
     const layer = imageLayer(canvasElement);
-    await expect(layer).toHaveAttribute('data-exit', 'fade');
-    await expectRetainedExit(layer, () => !dialog.hasAttribute('open'));
+    await expect(layer).toHaveAttribute('data-exit', 'home');
+    await expectRetainedExit(dialog.querySelector('h2')!.parentElement!, () => !dialog.hasAttribute('open'));
+    await expect(dialog.ownerDocument.activeElement).toBe(tiles(canvasElement)[0]);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
   },
 };
@@ -332,8 +334,6 @@ export const KeyboardPlay: Story = {
       (args.onOpenChange as ReturnType<typeof fn>).mock.invocationCallOrder[0]!,
     );
     await focusVisible(canvas.getByRole('button', { name: 'Close viewer' }));
-    await userEvent.tab();
-    await focusVisible(stage(canvasElement));
     await userEvent.keyboard('{ArrowLeft}');
     await current(canvasElement, 'Coastal cliffs');
     await expect(canvas.getByRole('button', { name: 'Previous image' })).toBeDisabled();
@@ -360,12 +360,16 @@ export const KeyboardPlay: Story = {
     await userEvent.keyboard(' ');
     await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
     await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
+    await userEvent.keyboard('0');
+    await userEvent.click(canvas.getByRole('button', { name: 'Forest, 2 / 4' }));
+    await userEvent.keyboard('{ArrowRight}');
+    await current(canvasElement, 'Still lake water');
     await userEvent.keyboard('{Escape}');
     cancel(viewer(canvasElement));
     await waitFor(async () => {
       await expect(dialog).not.toHaveAttribute('open');
     });
-    await expect(invoker.ownerDocument.activeElement).toBe(invoker);
+    await expect(invoker.ownerDocument.activeElement).toBe(tiles(canvasElement)[2]);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
   },
@@ -820,6 +824,14 @@ export const DownwardDismiss: Story = {
     const capture = spyOn(surface, 'setPointerCapture').mockImplementation(() => {});
     fireEvent.pointerDown(surface, { pointerId: 1, button: 0, clientX: 100, clientY: 0 });
     fireEvent.pointerMove(surface, { pointerId: 1, clientX: 100, clientY: surface.clientHeight * 0.5 });
+    if (surface.dataset.reducedMotion !== 'true') {
+      await waitFor(async () => {
+        const transform = getComputedStyle(imageLayer(canvasElement).firstElementChild!).transform;
+        const offset = new DOMMatrixReadOnly(transform).m42;
+        await expect(offset).toBeGreaterThan(0);
+        await expect(offset).toBeLessThan(surface.clientHeight * 0.5);
+      });
+    }
     fireEvent.pointerUp(surface, { pointerId: 1, clientX: 100, clientY: surface.clientHeight * 0.5 });
     await waitFor(async () => {
       await expect(viewer(canvasElement)).not.toHaveAttribute('open');
@@ -827,6 +839,87 @@ export const DownwardDismiss: Story = {
     await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
     await expect(tiles(canvasElement)[1]!.ownerDocument.activeElement).toBe(tiles(canvasElement)[1]);
     capture.mockRestore();
+  },
+};
+
+export const PointerAnchoredZoom: Story = {
+  tags: ['!autodocs'],
+  args: { defaultOpen: true, defaultValue: 'lake' },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await current(canvasElement, 'Still lake water');
+    const surface = stage(canvasElement);
+    const box = surface.getBoundingClientRect();
+    const point = { clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 + 40 };
+    fireEvent.doubleClick(surface, point);
+    await expect(surface).toHaveAttribute('data-zoom', '2');
+    await waitFor(async () => {
+      const transform = new DOMMatrixReadOnly(getComputedStyle(imageLayer(canvasElement).firstElementChild!).transform);
+      await expect(transform.m42).toBeCloseTo(-40, 0);
+    });
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset zoom' }));
+    const capture = spyOn(surface, 'setPointerCapture').mockImplementation(() => {});
+    for (const pointerId of [1, 2]) {
+      fireEvent.pointerDown(surface, { ...point, pointerId, pointerType: 'touch', button: 0 });
+      fireEvent.pointerUp(surface, { ...point, pointerId, pointerType: 'touch' });
+    }
+    await expect(surface).toHaveAttribute('data-zoom', '2');
+    await waitFor(async () => {
+      const transform = new DOMMatrixReadOnly(getComputedStyle(imageLayer(canvasElement).firstElementChild!).transform);
+      await expect(transform.m42).toBeCloseTo(-40, 0);
+    });
+    capture.mockRestore();
+  },
+};
+
+export const MomentumSwipe: Story = {
+  tags: ['!autodocs'],
+  args: { defaultOpen: true },
+  play: async ({ canvasElement, args }) => {
+    await current(canvasElement, 'Coastal cliffs');
+    const surface = stage(canvasElement);
+    const capture = spyOn(surface, 'setPointerCapture').mockImplementation(() => {});
+    const dispatch = (type: string, clientX: number, time: number) => {
+      const event = new PointerEvent(type, { bubbles: true, pointerId: 1, button: 0, clientX, clientY: 100 });
+      Object.defineProperty(event, 'timeStamp', { value: time });
+      fireEvent(surface, event);
+    };
+    dispatch('pointerdown', 200, 1000);
+    dispatch('pointermove', 170, 1016);
+    dispatch('pointerup', 170, 1017);
+    await current(canvasElement, 'Tall forest trees');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    capture.mockRestore();
+  },
+};
+
+export const ViewerKeyboardScope: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    slotProps: { stage: { onKeyDown: (event) => event.preventDefault() } },
+  },
+  play: async ({ canvasElement, args, userEvent }) => {
+    await current(canvasElement, 'Coastal cliffs');
+    const dialog = viewer(canvasElement);
+    stage(canvasElement).focus();
+    await userEvent.keyboard('{ArrowRight}+');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
+    const input = dialog.ownerDocument.createElement('input');
+    input.setAttribute('aria-label', 'Photo note');
+    dialog.append(input);
+    input.focus();
+    await userEvent.keyboard('+{ArrowRight}');
+    await expect(input).toHaveValue('+');
+    await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    input.remove();
+    const child = dialog.ownerDocument.createElement('dialog');
+    dialog.append(child);
+    fireEvent.keyDown(child, { key: 'ArrowRight' });
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    child.remove();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close viewer' }));
   },
 };
 

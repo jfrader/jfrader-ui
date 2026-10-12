@@ -26,6 +26,7 @@ import {
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { motionDurationMs } from '../../styling/motion-timings';
 import {
   enterTransition as enter,
   exitTransition as exit,
@@ -114,6 +115,9 @@ const PAN_PROGRESS = 0.1;
 const DISMISS_PROGRESS = 0.25;
 const SWIPE_PROGRESS = 0.2;
 const DISMISS_VELOCITY = 800;
+const DOUBLE_TAP_DISTANCE = 24;
+const DOUBLE_TAP_MS = motionDurationMs.slow * 1.5;
+const NARROW_VIEWER = '@media (width < 640px)';
 const DRAG_SLOP = 8;
 const WHEEL_ZOOM_RATE = 0.002;
 const FLIGHT_SPRING = { type: 'spring', stiffness: 360, damping: 36 } as const;
@@ -147,7 +151,7 @@ const rootStyle = css({
 });
 const gridStyle = css({
   display: 'grid',
-  gridTemplateColumns: 'repeat(var(--lightbox-columns, 1), minmax(0, 1fr))',
+   gridTemplateColumns: 'repeat(var(--lightbox-columns, 2), minmax(0, 1fr))',
   gridAutoRows: '1px',
   gap: 'var(--lightbox-gap)',
   padding: 0,
@@ -259,14 +263,25 @@ const actionStyle = css({
   minBlockSize: vars.space[8],
   overflowWrap: 'anywhere',
 });
+const desktopActionStyle = css({ [NARROW_VIEWER]: { display: 'none' } });
+const actionTextStyle = css({ [NARROW_VIEWER]: { display: 'none' } });
+const actionGlyphStyle = css({ display: 'none', [NARROW_VIEWER]: { display: 'inline' } });
 const captionStyle = css({
   margin: 0,
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
   overflowWrap: 'anywhere',
 });
-const stripStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
+const stripStyle = css({
+  display: 'flex',
+  gap: vars.space[2],
+  overflowX: 'auto',
+  padding: vars.space[1],
+  minInlineSize: 0,
+});
 const thumbStyle = css({
+  position: 'relative',
+  flexShrink: 0,
   ...focusRingOutset,
   outline: 'none',
   inlineSize: vars.space[12],
@@ -394,6 +409,7 @@ interface ViewerProps {
   select: (id: string | null) => void;
   restore: () => void;
   launch: React.RefObject<HTMLButtonElement | null>;
+  home: () => HTMLButtonElement | undefined;
   labels: LightboxGalleryLabels;
   locale?: Intl.LocalesArgument;
   maxZoom: number;
@@ -410,6 +426,7 @@ function Viewer({
   select,
   restore,
   launch,
+  home,
   labels,
   locale,
   maxZoom,
@@ -429,7 +446,7 @@ function Viewer({
   const { withDescription = true, ...viewerSlot } = omitNativeOpen(slots?.viewer ?? {});
   const lastStageBox = useRef<DOMRect | null>(null);
   const completeClose = () => {
-    const target = launch.current;
+    const target = home();
     const box = lastStageBox.current;
     if (!reduced && image && target?.isConnected && box?.width && bounds.width && bounds.height) {
       const to = target.getBoundingClientRect();
@@ -479,13 +496,19 @@ function Viewer({
     originY: number;
     x: number;
     y: number;
-    time: number;
     zoom: number;
     distance?: number;
     focalX: number;
     focalY: number;
     pinched: boolean;
+    lastX: number;
+    lastY: number;
+    lastTime: number;
+    velocityX: number;
+    velocityY: number;
   } | null>(null);
+  const lastTap = useRef<{ x: number; y: number; time: number } | null>(null);
+  const touchZoomTime = useRef(-Infinity);
   const suppressClick = useRef(false);
   const titleId = slots?.title?.id ?? `${id}-title`;
   const captionId = slots?.caption?.id ?? `${id}-caption`;
@@ -499,11 +522,15 @@ function Viewer({
     y: Math.max(0, (bounds.height * value - (stageRef.current?.clientHeight ?? 0)) / 2),
   });
   const pan = (nextX: number, nextY: number, value = scale.get()) => {
+    x.stop();
+    y.stop();
     const limit = limits(value);
     x.set(clamp(nextX, -limit.x, limit.x));
     y.set(clamp(nextY, -limit.y, limit.y));
   };
   const setZoom = (next: number, focalX = 0, focalY = 0) => {
+    x.stop();
+    y.stop();
     const value = clamp(next, 1, maxZoom);
     const ratio = value / scale.get();
     const nextX = focalX - (focalX - x.get()) * ratio;
@@ -511,6 +538,28 @@ function Viewer({
     scale.set(value);
     setZoomState(value);
     pan(nextX, nextY, value);
+  };
+  const toggleZoomAt = (clientX: number, clientY: number) => {
+    const box = stageRef.current?.getBoundingClientRect();
+    if (box)
+      setZoom(
+        scale.get() > 1 ? 1 : 2,
+        clientX - box.left - box.width / 2,
+        clientY - box.top - box.height / 2,
+      );
+  };
+  const settlePan = (velocityX = 0, velocityY = 0) => {
+    const limit = limits();
+    const horizon = motionDurationMs.base / 1000;
+    const targetX = clamp(x.get() + velocityX * horizon, -limit.x, limit.x);
+    const targetY = clamp(y.get() + velocityY * horizon, -limit.y, limit.y);
+    if (reduced) {
+      x.jump(targetX);
+      y.jump(targetY);
+    } else {
+      animate(x, targetX, { ...FLIGHT_SPRING, velocity: velocityX });
+      animate(y, targetY, { ...FLIGHT_SPRING, velocity: velocityY });
+    }
   };
   const navigate = (next: number) => {
     const target = images[next];
@@ -565,6 +614,7 @@ function Viewer({
     scale.jump(1);
     pointers.current.clear();
     gesture.current = null;
+    lastTap.current = null;
   }, [selected, controller.open, x, y, scale]);
 
   useEffect(() => {
@@ -599,8 +649,8 @@ function Viewer({
   }, [controller.open, controller.repairToken, reduced, flightX, flightY, flightScale]);
 
   useEffect(() => {
-    if (controller.open) setHomeward(!reduced && !!launch.current?.isConnected);
-  }, [controller.open, reduced, launch]);
+    if (controller.open) setHomeward(!reduced && !!home()?.isConnected);
+  }, [controller.open, reduced, selected, images]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -619,8 +669,14 @@ function Viewer({
     return () => stage.removeEventListener('wheel', wheel);
   }, [controller.open, image, maxZoom]);
 
-  const keyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.defaultPrevented || event.target !== event.currentTarget || !image) return;
+  const keyDown = (event: KeyboardEvent<HTMLDialogElement>) => {
+    const target = event.target;
+    if (event.defaultPrevented || !controller.open || !image || !(target instanceof Element)) return;
+    if (
+      target.closest('dialog') !== event.currentTarget ||
+      target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')
+    )
+      return;
     const rtl = event.currentTarget.matches(':dir(rtl)') ? -1 : 1;
     const deltas: Record<string, [number, number]> = {
       ArrowLeft: [1, 0],
@@ -632,8 +688,8 @@ function Viewer({
     if (zoom > 1 && delta) {
       event.preventDefault();
       pan(
-        x.get() + delta[0] * event.currentTarget.clientWidth * PAN_PROGRESS,
-        y.get() + delta[1] * event.currentTarget.clientHeight * PAN_PROGRESS,
+        x.get() + delta[0] * (stageRef.current?.clientWidth ?? 0) * PAN_PROGRESS,
+        y.get() + delta[1] * (stageRef.current?.clientHeight ?? 0) * PAN_PROGRESS,
       );
       return;
     }
@@ -664,11 +720,14 @@ function Viewer({
     pointers.current.clear();
     gesture.current = null;
     scale.set(zoom);
-    pan(x.get(), y.get(), zoom);
+    lastTap.current = null;
+    settlePan();
   };
   const pointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.defaultPrevented || !image || event.button !== 0) return;
     if (!pointers.current.size) suppressClick.current = false;
+    x.stop();
+    y.stop();
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     event.currentTarget.setPointerCapture(event.pointerId);
     const points = [...pointers.current.values()];
@@ -678,7 +737,11 @@ function Viewer({
       originY: event.clientY,
       x: x.get(),
       y: y.get(),
-      time: event.timeStamp,
+      lastX: event.clientX,
+      lastY: event.clientY,
+      lastTime: event.timeStamp,
+      velocityX: 0,
+      velocityY: 0,
       zoom: scale.get(),
       pinched: points.length > 1,
       distance:
@@ -696,6 +759,12 @@ function Viewer({
     const points = [...pointers.current.values()];
     const dx = event.clientX - drag.originX;
     const dy = event.clientY - drag.originY;
+    const elapsed = Math.max(1, event.timeStamp - drag.lastTime);
+    drag.velocityX = ((event.clientX - drag.lastX) / elapsed) * 1000;
+    drag.velocityY = ((event.clientY - drag.lastY) / elapsed) * 1000;
+    drag.lastX = event.clientX;
+    drag.lastY = event.clientY;
+    drag.lastTime = event.timeStamp;
     if (Math.hypot(dx, dy) > DRAG_SLOP || points.length > 1) suppressClick.current = true;
     if (points.length === 2 && drag.distance) {
       const next = clamp(
@@ -711,8 +780,10 @@ function Viewer({
       );
     } else if (drag.zoom > 1) pan(drag.x + dx, drag.y + dy);
     else if (!reduced && !drag.pinched) {
-      x.set(dx);
-      y.set(dy);
+      const horizontal = Math.abs(dx) > Math.abs(dy);
+      const extent = Math.max(1, event.currentTarget.clientHeight);
+      x.set(horizontal ? dx : 0);
+      y.set(horizontal ? 0 : dy > 0 ? dy / (1 + dy / extent) : dy / (1 + Math.abs(dy) / DRAG_SLOP));
     }
   };
   const pointerUp = (event: PointerEvent<HTMLDivElement>) => {
@@ -725,24 +796,58 @@ function Viewer({
       return;
     }
     gesture.current = null;
+    const idle = event.timeStamp - drag.lastTime > motionDurationMs.fast;
+    const velocityX = idle ? 0 : drag.velocityX;
+    const velocityY = idle ? 0 : drag.velocityY;
+    if (!event.defaultPrevented && !suppressClick.current && event.pointerType === 'touch') {
+      const previous = lastTap.current;
+      if (
+        previous &&
+        event.timeStamp - previous.time <= DOUBLE_TAP_MS &&
+        Math.hypot(event.clientX - previous.x, event.clientY - previous.y) <= DOUBLE_TAP_DISTANCE
+      ) {
+        event.preventDefault();
+        touchZoomTime.current = event.timeStamp;
+        lastTap.current = null;
+        toggleZoomAt(event.clientX, event.clientY);
+        return;
+      }
+      lastTap.current = { x: event.clientX, y: event.clientY, time: event.timeStamp };
+    } else lastTap.current = null;
     if (!event.defaultPrevented && drag.zoom === 1) {
       const dx = event.clientX - drag.originX;
       const dy = event.clientY - drag.originY;
-      const velocity = (dy / Math.max(1, event.timeStamp - drag.time)) * 1000;
       if (
         dy > 0 &&
         Math.abs(dy) > Math.abs(dx) &&
-        (dy > event.currentTarget.clientHeight * DISMISS_PROGRESS || velocity > DISMISS_VELOCITY)
+        (dy > event.currentTarget.clientHeight * DISMISS_PROGRESS ||
+          (dy > DRAG_SLOP && velocityY > DISMISS_VELOCITY))
       )
         controller.requestClose();
-      else if (Math.abs(dx) > event.currentTarget.clientWidth * SWIPE_PROGRESS && Math.abs(dx) > Math.abs(dy))
-        navigate(index + (dx < 0 ? 1 : -1) * (event.currentTarget.matches(':dir(rtl)') ? -1 : 1));
+      else if (Math.abs(dx) > DRAG_SLOP && Math.abs(dx) > Math.abs(dy)) {
+        const projected = dx + (velocityX * motionDurationMs.base) / 1000;
+        if (Math.abs(projected) > event.currentTarget.clientWidth * SWIPE_PROGRESS)
+          navigate(index + (projected < 0 ? 1 : -1) * (event.currentTarget.matches(':dir(rtl)') ? -1 : 1));
+      }
     }
-    pan(x.get(), y.get());
+    settlePan(drag.zoom > 1 ? velocityX : 0, drag.zoom > 1 ? velocityY : 0);
   };
-  const action = (name: string, handler: () => void, disabled = false) => (
-    <Button size="sm" css={actionStyle} disabled={disabled} onClick={handler}>
-      {name}
+  const action = (
+    name: string,
+    handler: () => void,
+    disabled = false,
+    responsiveStyle?: Interpolation<Theme>,
+    glyph?: string,
+  ) => (
+    <Button size="sm" css={[actionStyle, responsiveStyle]} aria-label={name} disabled={disabled} onClick={handler}>
+      {glyph ? (
+        <>
+          <span css={actionTextStyle}>{name}</span>
+          <span aria-hidden="true" css={actionGlyphStyle}>{glyph}</span>
+        </>
+      ) : (
+        name
+      )}
     </Button>
   );
   return (
@@ -755,6 +860,10 @@ function Viewer({
       aria-labelledby={joinIds(viewerSlot['aria-labelledby'], titleId)}
       aria-describedby={joinIds(viewerSlot['aria-describedby'], withDescription && !!hasCaption && captionId)}
       css={[viewerStyle, viewerSlot.css]}
+      onKeyDown={(event) => {
+        viewerSlot.onKeyDown?.(event);
+        keyDown(event);
+      }}
       onCancel={(event) => {
         if (event.target === event.currentTarget) native.onCancel(event);
       }}
@@ -791,7 +900,6 @@ function Viewer({
           css={[stageStyle, slots?.stage?.css]}
           onKeyDown={(event) => {
             slots?.stage?.onKeyDown?.(event);
-            keyDown(event);
           }}
           onPointerDown={(event) => {
             slots?.stage?.onPointerDown?.(event);
@@ -822,7 +930,12 @@ function Viewer({
           }}
           onDoubleClick={(event) => {
             slots?.stage?.onDoubleClick?.(event);
-            if (!event.defaultPrevented && !suppressClick.current) setZoom(zoom > 1 ? 1 : 2);
+            if (
+              !event.defaultPrevented &&
+              !suppressClick.current &&
+              event.timeStamp - touchZoomTime.current > DOUBLE_TAP_MS
+            )
+              toggleZoomAt(event.clientX, event.clientY);
           }}
         >
           {phase !== 'closed' && image && (
@@ -849,39 +962,47 @@ function Viewer({
           )}
         </div>
         <div {...slots?.controls} css={[controlsStyle, slots?.controls?.css]}>
-          {action(labels.previous, () => navigate(index - 1), index <= 0)}
-          {action(labels.next, () => navigate(index + 1), index >= images.length - 1)}
+          {action(labels.previous, () => navigate(index - 1), index <= 0, desktopActionStyle)}
+          {action(labels.next, () => navigate(index + 1), index >= images.length - 1, desktopActionStyle)}
           <Button
             size="sm"
             css={actionStyle}
             aria-pressed={zoom > 1}
+            aria-label={labels.zoom}
             disabled={maxZoom === 1}
             onClick={() => setZoom(zoom > 1 ? 1 : 2)}
           >
-            {labels.zoom}
+            <span css={actionTextStyle}>{labels.zoom}</span>
+            <span aria-hidden="true" css={actionGlyphStyle}>
+              ⌕
+            </span>
           </Button>
-          {action(labels.zoomIn, () => setZoom(zoom + ZOOM_STEP), zoom >= maxZoom)}
-          {action(labels.zoomOut, () => setZoom(zoom - ZOOM_STEP), zoom <= 1)}
-          {action(labels.reset, () => setZoom(1), zoom === 1)}
+          {action(labels.zoomIn, () => setZoom(zoom + ZOOM_STEP), zoom >= maxZoom, undefined, '+')}
+          {action(labels.zoomOut, () => setZoom(zoom - ZOOM_STEP), zoom <= 1, undefined, '−')}
+          {action(labels.reset, () => setZoom(1), zoom === 1, undefined, '↺')}
           {action(
             labels.panLeft,
             () => pan(x.get() + (stageRef.current?.clientWidth ?? 0) * PAN_PROGRESS, y.get()),
             zoom === 1,
+            desktopActionStyle,
           )}
           {action(
             labels.panRight,
             () => pan(x.get() - (stageRef.current?.clientWidth ?? 0) * PAN_PROGRESS, y.get()),
             zoom === 1,
+            desktopActionStyle,
           )}
           {action(
             labels.panUp,
             () => pan(x.get(), y.get() + (stageRef.current?.clientHeight ?? 0) * PAN_PROGRESS),
             zoom === 1,
+            desktopActionStyle,
           )}
           {action(
             labels.panDown,
             () => pan(x.get(), y.get() - (stageRef.current?.clientHeight ?? 0) * PAN_PROGRESS),
             zoom === 1,
+            desktopActionStyle,
           )}
           <span css={statusStyle}>{zoomText}</span>
         </div>
@@ -963,7 +1084,7 @@ export function LightboxGallery({
   const tiles = useRef(new Map<string, HTMLButtonElement>());
   const invoker = useRef<HTMLButtonElement | null>(null);
   const labels = { ...defaults, ...labelOverrides };
-  const [geometry, setGeometry] = useState({ columns: 1, width: MIN_COLUMN_WIDTH, gap: 0 });
+  const [geometry, setGeometry] = useState({ columns: 2, width: MIN_COLUMN_WIDTH, gap: 0 });
   const width = validPositive(minColumnWidth, MIN_COLUMN_WIDTH);
   const zoomLimit = Math.max(1, validPositive(maxZoom, MAX_ZOOM));
   const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
@@ -988,7 +1109,7 @@ export function LightboxGallery({
     if (!grid) return;
     const measure = () => {
       const spacing = Number.parseFloat(getComputedStyle(grid).columnGap) || 0;
-      const columns = Math.max(1, Math.floor((grid.clientWidth + spacing) / (width + spacing)));
+      const columns = Math.max(2, Math.floor((grid.clientWidth + spacing) / (width + spacing)));
       setGeometry({
         columns,
         width: Math.max(0, (grid.clientWidth - spacing * (columns - 1)) / columns),
@@ -1002,9 +1123,7 @@ export function LightboxGallery({
   }, [width, gap, images.length === 0]);
 
   const restore = () => {
-    const target = invoker.current?.isConnected
-      ? invoker.current
-      : (tiles.current.get(selected ?? '') ?? rootRef.current);
+    const target = tiles.current.get(selected ?? '') ?? rootRef.current;
     target?.focus({ preventScroll: true });
   };
 
@@ -1101,6 +1220,7 @@ export function LightboxGallery({
               select={select}
               restore={restore}
               launch={invoker}
+              home={() => tiles.current.get(selected ?? '')}
               labels={labels}
               locale={locale}
               maxZoom={zoomLimit}
