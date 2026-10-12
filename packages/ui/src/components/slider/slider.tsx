@@ -367,7 +367,9 @@ export function Slider(props: SliderProps) {
   const [active, setActive] = useState<number | null>(null);
   const [strain, setStrain] = useState(0);
   const bounds = (index: number) =>
-    range ? [index === 0 ? min : values[0]! + gap, index === 0 ? values[1]! - gap : max] : [min, max];
+    range
+      ? [index === 0 ? min : snap(values[0]! + gap), index === 0 ? snap(values[1]! - gap) : max]
+      : [min, max];
   const candidate = (index: number, raw: number): SliderValue => {
     const [low, high] = bounds(index);
     const next = snap(Math.max(low!, Math.min(high!, raw)));
