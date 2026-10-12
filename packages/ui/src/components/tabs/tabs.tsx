@@ -25,7 +25,7 @@ import {
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
-import { REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { partId } from '../../utils/part-id';
 import { findByValue, moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
@@ -127,6 +127,10 @@ const tabStyle = css({
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',
+  },
+  [FORCED_COLORS]: {
+    borderColor: 'Canvas',
+    '&[aria-selected="true"]': { borderColor: 'Highlight' },
   },
 });
 
@@ -234,7 +238,7 @@ function TabsList({ ref, onKeyDown, className, sx, ...rest }: TabsListProps) {
 
 TabsList.displayName = 'Tabs.List';
 
-function TabsTab({ ref, value, disabled, onClick, onFocus, className, sx, ...rest }: TabsTabProps) {
+function TabsTab({ ref, value, disabled, onClick, onFocus, onPointerDown, className, sx, ...rest }: TabsTabProps) {
   const {
     value: selectedValue,
     setValue,
@@ -258,7 +262,7 @@ function TabsTab({ ref, value, disabled, onClick, onFocus, className, sx, ...res
     // Auto activation normally requests selection from the focus event. A click on a tab
     // that was already focused (repeat click after a rejected controlled request, or Enter
     // on a focused tab) must still issue exactly one request.
-    if (activation === 'auto' && focusAlreadyRequested) return;
+    if (activation === 'auto' && focusAlreadyRequested && event.detail !== 0) return;
     setValue(value);
   };
 
@@ -288,6 +292,10 @@ function TabsTab({ ref, value, disabled, onClick, onFocus, className, sx, ...res
           disabled={disabled}
           onClick={handleClick}
           onFocus={handleFocus}
+          onPointerDown={(event) => {
+            focusRequestRef.current = false;
+            onPointerDown?.(event);
+          }}
           className={className}
         />
       )}
