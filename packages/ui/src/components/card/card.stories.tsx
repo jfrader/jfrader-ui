@@ -298,3 +298,70 @@ export const LightTheme: Story = {
     await expect(within(canvasElement).getAllByRole('heading', { level: 3 })).toHaveLength(VARIANTS.length + 1);
   },
 };
+
+export const RTL: Story = {
+  render: (args) => (
+    <div dir="rtl">
+      <PlanCard {...args} dir="rtl" />
+      <Card {...args} dir="rtl">
+        <Card.Header>
+          <Card.Title>الحساب</Card.Title>
+        </Card.Header>
+        <Card.Footer>
+          <Button tone="accent">حفظ</Button>
+        </Card.Footer>
+      </Card>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const [planCard, singleCard] = getCards(canvasElement);
+    if (!planCard || !singleCard) throw new Error('Expected plan and single-action cards');
+
+    await expect(planCard).toHaveAttribute('dir', 'rtl');
+    await expect(getComputedStyle(planCard).direction).toBe('rtl');
+
+    // Two-action footer: in RTL, the first button sits on the right (start) and the second on the left (end).
+    const planFooter = planCard.querySelector('[data-ui="card-footer"]') as HTMLElement;
+    const [cancelBtn, upgradeBtn] = within(planFooter).getAllByRole('button');
+    const planFooterRect = planFooter.getBoundingClientRect();
+    await expect(cancelBtn!.getBoundingClientRect().right).toBeCloseTo(planFooterRect.right, 0);
+    await expect(upgradeBtn!.getBoundingClientRect().left).toBeCloseTo(planFooterRect.left, 0);
+
+    // Single-action footer: marginInlineStart: 'auto' pins the lone button to the inline end (left in RTL).
+    const singleFooter = singleCard.querySelector('[data-ui="card-footer"]') as HTMLElement;
+    const saveBtn = within(singleFooter).getByRole('button', { name: 'حفظ' });
+    const singleFooterRect = singleFooter.getBoundingClientRect();
+    await expect(saveBtn.getBoundingClientRect().left).toBeCloseTo(singleFooterRect.left, 0);
+  },
+};
+
+export const ForcedColors: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Structural fixture for a browser forced-colors check. This story does not emulate the media query.',
+      },
+    },
+  },
+  render: (args) => (
+    <>
+      {VARIANTS.map((variant) => (
+        <PlanCard {...args} key={variant} variant={variant} />
+      ))}
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const cards = getCards(canvasElement);
+    await expect(cards).toHaveLength(VARIANTS.length);
+    for (const card of cards) {
+      // Both flat and raised variants maintain physical borders (>0px) when shadows are suppressed.
+      await expect(getComputedStyle(card).borderTopStyle).toBe('solid');
+      await expect(parseFloat(getComputedStyle(card).borderTopWidth)).toBeGreaterThan(0);
+      const footer = card.querySelector('[data-ui="card-footer"]') as HTMLElement;
+      await expect(getComputedStyle(footer).borderBlockStartStyle).toBe('solid');
+      await expect(parseFloat(getComputedStyle(footer).borderBlockStartWidth)).toBeGreaterThan(0);
+    }
+  },
+};
+
