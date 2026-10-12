@@ -126,11 +126,11 @@ export const base = {
     gameCardMd: '72px',
     gameCardLg: '112px',
     gameCardPerspective: '28rem',
-    // Layer inline size at which SheetStack's auto variant switches from sheet to centered dialog.
-    sheetStackBreakpoint: '640px',
+    // Layer inline size at which DialogStack's auto variant switches from sheet to centered dialog.
+    dialogStackBreakpoint: '640px',
     // How much of each parent panel shows above the active one.
-    sheetStackSheetPeek: '10px',
-    sheetStackDialogPeek: '14px',
+    dialogStackSheetPeek: '10px',
+    dialogStackDialogPeek: '14px',
   },
 } as const;
 

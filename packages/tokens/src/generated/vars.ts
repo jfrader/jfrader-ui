@@ -120,8 +120,8 @@ export const vars = {
     "gameCardMd": "var(--ui-size-game-card-md)",
     "gameCardLg": "var(--ui-size-game-card-lg)",
     "gameCardPerspective": "var(--ui-size-game-card-perspective)",
-    "sheetStackBreakpoint": "var(--ui-size-sheet-stack-breakpoint)",
-    "sheetStackSheetPeek": "var(--ui-size-sheet-stack-sheet-peek)",
-    "sheetStackDialogPeek": "var(--ui-size-sheet-stack-dialog-peek)"
+    "dialogStackBreakpoint": "var(--ui-size-dialog-stack-breakpoint)",
+    "dialogStackSheetPeek": "var(--ui-size-dialog-stack-sheet-peek)",
+    "dialogStackDialogPeek": "var(--ui-size-dialog-stack-dialog-peek)"
   }
 } as const;

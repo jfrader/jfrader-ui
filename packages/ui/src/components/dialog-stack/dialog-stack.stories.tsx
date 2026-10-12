@@ -10,13 +10,13 @@ import { Dialog } from '../dialog';
 import { Popover } from '../popover';
 import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
-import { SheetStack, useSheetStack, type SheetStackContentProps, type SheetStackProps } from './index';
+import { DialogStack, useDialogStack, type DialogStackContentProps, type DialogStackProps } from './index';
 
 const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-const SHEET_PEEK = Number.parseFloat(base.size.sheetStackSheetPeek);
-const DIALOG_PEEK = Number.parseFloat(base.size.sheetStackDialogPeek);
-const BREAKPOINT = Number.parseFloat(base.size.sheetStackBreakpoint);
+const SHEET_PEEK = Number.parseFloat(base.size.dialogStackSheetPeek);
+const DIALOG_PEEK = Number.parseFloat(base.size.dialogStackDialogPeek);
+const BREAKPOINT = Number.parseFloat(base.size.dialogStackBreakpoint);
 
 const headerStyle = {
   display: 'flex',
@@ -37,8 +37,8 @@ const containerStyle = {
 } satisfies CSSProperties;
 
 const meta = {
-  title: 'Surfaces/SheetStack',
-  component: SheetStack,
+  title: 'Surfaces/DialogStack',
+  component: DialogStack,
   tags: ['autodocs'],
   args: { onValueChange: fn(), children: null },
   parameters: {
@@ -52,7 +52,7 @@ const meta = {
 - \`value\` lists open keys from bottom to top. Control it with \`onValueChange\`, or use \`defaultValue\` (empty by default). Rejected requests keep the committed stack.
 - Unknown and duplicate keys are ignored with a development warning. Requests that leave the ordered stack unchanged do not call \`onValueChange\`.
 - Parents stay mounted behind the top panel, keeping form state. They peek above it but are inert and hidden from assistive technology. Popped panels unmount.
-- \`useSheetStack\` exposes \`push\`, \`pop\`, \`popTo\`, and \`close\`. Call it inside \`SheetStack\`.
+- \`useDialogStack\` exposes \`push\`, \`pop\`, \`popTo\`, and \`close\`. Call it inside \`DialogStack\`.
 
 ### Keyboard and focus
 - Enter or Space on Trigger opens its panel. Tab and Shift+Tab stay inside the top panel.
@@ -72,36 +72,36 @@ const meta = {
 - A platform close that cannot be canceled closes the native shell and requests an empty stack. If a controlled parent rejects it, the closed shell releases its scroll lock. The next explicit open request reopens it.
 - Floating overlays inside a panel need a \`ThemeRoot portalContainer\` host inside that panel.`,
       source: {
-        code: `<SheetStack>
-  <SheetStack.Trigger value="settings">Settings</SheetStack.Trigger>
-  <SheetStack.Content value="settings">
-    <SheetStack.Close label="Close settings" />
-    <SheetStack.Title>Settings</SheetStack.Title>
-    <SheetStack.Trigger value="account">Account</SheetStack.Trigger>
-  </SheetStack.Content>
-  <SheetStack.Content value="account">
-    <SheetStack.Back label="Back to Settings" />
-    <SheetStack.Title>Account</SheetStack.Title>
+        code: `<DialogStack>
+  <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+  <DialogStack.Content value="settings">
+    <DialogStack.Close label="Close settings" />
+    <DialogStack.Title>Settings</DialogStack.Title>
+    <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
+  </DialogStack.Content>
+  <DialogStack.Content value="account">
+    <DialogStack.Back label="Back to Settings" />
+    <DialogStack.Title>Account</DialogStack.Title>
     <AccountForm />
-    <SheetStack.Footer>
-      <SheetStack.Close label="Done">Done</SheetStack.Close>
-    </SheetStack.Footer>
-  </SheetStack.Content>
-</SheetStack>`,
+    <DialogStack.Footer>
+      <DialogStack.Close label="Done">Done</DialogStack.Close>
+    </DialogStack.Footer>
+  </DialogStack.Content>
+</DialogStack>`,
       },
     },
   },
-} satisfies Meta<typeof SheetStack>;
+} satisfies Meta<typeof DialogStack>;
 
 export default meta;
 
-type Story = Omit<StoryObj<SheetStackProps>, 'render' | 'play'> & {
-  render?: (args: SheetStackProps) => ReactNode;
-  play?: (context: StoryContext<SheetStackProps>) => Promise<void>;
+type Story = Omit<StoryObj<DialogStackProps>, 'render' | 'play'> & {
+  render?: (args: DialogStackProps) => ReactNode;
+  play?: (context: StoryContext<DialogStackProps>) => Promise<void>;
 };
 
-interface LevelsProps extends Omit<SheetStackProps, 'children'> {
-  contentProps?: Partial<Record<string, Partial<SheetStackContentProps>>>;
+interface LevelsProps extends Omit<DialogStackProps, 'children'> {
+  contentProps?: Partial<Record<string, Partial<DialogStackContentProps>>>;
   body?: ReactNode;
   footer?: boolean;
 }
@@ -109,41 +109,41 @@ interface LevelsProps extends Omit<SheetStackProps, 'children'> {
 /** Three levels: Settings → Account → Password. */
 function Levels({ contentProps = {}, body, footer = false, ...props }: LevelsProps) {
   return (
-    <SheetStack {...props}>
-      <SheetStack.Trigger value="settings">Settings</SheetStack.Trigger>
-      <SheetStack.Content value="settings" {...contentProps.settings}>
+    <DialogStack {...props}>
+      <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+      <DialogStack.Content value="settings" {...contentProps.settings}>
         <div style={headerStyle}>
-          <SheetStack.Title>Settings</SheetStack.Title>
-          <SheetStack.Close label="Close all" />
+          <DialogStack.Title>Settings</DialogStack.Title>
+          <DialogStack.Close label="Close all" />
         </div>
-        <SheetStack.Description>Manage your workspace preferences.</SheetStack.Description>
+        <DialogStack.Description>Manage your workspace preferences.</DialogStack.Description>
         <TextField label="Workspace name" />
-        <SheetStack.Trigger value="account">Account</SheetStack.Trigger>
+        <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
         {body}
-      </SheetStack.Content>
-      <SheetStack.Content value="account" {...contentProps.account}>
+      </DialogStack.Content>
+      <DialogStack.Content value="account" {...contentProps.account}>
         <div style={headerStyle}>
-          <SheetStack.Back label="Back to Settings" />
-          <SheetStack.Close label="Close all" />
+          <DialogStack.Back label="Back to Settings" />
+          <DialogStack.Close label="Close all" />
         </div>
-        <SheetStack.Title>Account</SheetStack.Title>
-        <SheetStack.Description>Sign-in details for this workspace.</SheetStack.Description>
-        <SheetStack.Trigger value="password">Change password</SheetStack.Trigger>
+        <DialogStack.Title>Account</DialogStack.Title>
+        <DialogStack.Description>Sign-in details for this workspace.</DialogStack.Description>
+        <DialogStack.Trigger value="password">Change password</DialogStack.Trigger>
         {footer && (
-          <SheetStack.Footer>
-            <SheetStack.Close label="Done">Done</SheetStack.Close>
-          </SheetStack.Footer>
+          <DialogStack.Footer>
+            <DialogStack.Close label="Done">Done</DialogStack.Close>
+          </DialogStack.Footer>
         )}
-      </SheetStack.Content>
-      <SheetStack.Content value="password" {...contentProps.password}>
+      </DialogStack.Content>
+      <DialogStack.Content value="password" {...contentProps.password}>
         <div style={headerStyle}>
-          <SheetStack.Back label="Back to Account" />
-          <SheetStack.Close label="Close all" />
+          <DialogStack.Back label="Back to Account" />
+          <DialogStack.Close label="Close all" />
         </div>
-        <SheetStack.Title>Change password</SheetStack.Title>
+        <DialogStack.Title>Change password</DialogStack.Title>
         <TextField label="New password" type="password" />
-      </SheetStack.Content>
-    </SheetStack>
+      </DialogStack.Content>
+    </DialogStack>
   );
 }
 Levels.displayName = 'Levels';
@@ -164,19 +164,19 @@ function ControlledLevels({ value: initial = [], ...props }: LevelsProps) {
 ControlledLevels.displayName = 'ControlledLevels';
 
 function layer(canvasElement: HTMLElement) {
-  return canvasElement.querySelector<HTMLElement>('[data-ui="sheet-stack-layer"]')!;
+  return canvasElement.querySelector<HTMLElement>('[data-ui="dialog-stack-layer"]')!;
 }
 
 function panels(canvasElement: HTMLElement) {
-  return Array.from(layer(canvasElement).querySelectorAll<HTMLElement>('[data-ui="sheet-stack"]'));
+  return Array.from(layer(canvasElement).querySelectorAll<HTMLElement>('[data-ui="dialog-stack"]'));
 }
 
 function activePanel(canvasElement: HTMLElement) {
-  return layer(canvasElement).querySelector<HTMLElement>('[data-ui="sheet-stack"][data-state="active"]');
+  return layer(canvasElement).querySelector<HTMLElement>('[data-ui="dialog-stack"][data-state="active"]');
 }
 
 function panelTitled(canvasElement: HTMLElement, title: string) {
-  return panels(canvasElement).find((panel) => panel.querySelector('[data-ui="sheet-stack-title"]')?.textContent === title)!;
+  return panels(canvasElement).find((panel) => panel.querySelector('[data-ui="dialog-stack-title"]')?.textContent === title)!;
 }
 
 function rect(element: Element) {
@@ -205,7 +205,7 @@ async function expectFocusRing(element: HTMLElement) {
 
 async function expectActive(canvasElement: HTMLElement, title: string) {
   await waitFor(() =>
-    expect(activePanel(canvasElement)?.querySelector('[data-ui="sheet-stack-title"]')).toHaveTextContent(title),
+    expect(activePanel(canvasElement)?.querySelector('[data-ui="dialog-stack-title"]')).toHaveTextContent(title),
   );
 }
 
@@ -374,7 +374,7 @@ export const DialogLayout: Story = {
     // Centered on both axes, with the handle hidden.
     await expect(Math.abs((rect(active).top + rect(active).bottom) / 2 - rect(shell).height / 2)).toBeLessThan(1);
     await expect(Math.abs((rect(active).left + rect(active).right) / 2 - rect(shell).width / 2)).toBeLessThan(1);
-    await expect(getComputedStyle(active.querySelector('[data-ui="sheet-stack-handle"]')!).display).toBe('none');
+    await expect(getComputedStyle(active.querySelector('[data-ui="dialog-stack-handle"]')!).display).toBe('none');
     await expectPeeks(canvasElement, DIALOG_PEEK);
   },
 };
@@ -469,7 +469,7 @@ export const Contained: Story = {
     await waitFor(() => expect(within(panel).getByRole('button', { name: 'Account' })).toHaveFocus());
 
     // The scrim is the backdrop: a press there pops too.
-    fireEvent.click(canvasElement.querySelector('[data-ui="sheet-stack-scrim"]')!);
+    fireEvent.click(canvasElement.querySelector('[data-ui="dialog-stack-scrim"]')!);
     await waitFor(() => expect(panels(canvasElement)).toHaveLength(0));
     await expect(layer(canvasElement)).toHaveAttribute('hidden');
     await waitFor(() => expect(trigger).toHaveFocus());
@@ -497,7 +497,7 @@ export const Nondismissible: Story = {
     await expect(shell).toHaveAttribute('open');
     await expect(activePanel(canvasElement)).toBe(active);
     await expect(heading).toHaveFocus();
-    await expect(active.querySelector('[data-ui="sheet-stack-handle"]')).not.toHaveAttribute('data-draggable');
+    await expect(active.querySelector('[data-ui="dialog-stack-handle"]')).not.toHaveAttribute('data-draggable');
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
 
     // Back stays explicit.
@@ -528,10 +528,10 @@ export const Footer: Story = {
     const shell = layer(canvasElement);
     await waitFor(() => expect(shell).toHaveAttribute('open'));
     const active = activePanel(canvasElement)!;
-    const footer = active.querySelector<HTMLElement>('[data-ui="sheet-stack-footer"]')!;
+    const footer = active.querySelector<HTMLElement>('[data-ui="dialog-stack-footer"]')!;
     await settle(shell);
     // Pinned to the panel's bottom edge.
-    await expect(Math.abs(rect(footer).bottom - rect(active.querySelector('[data-ui="sheet-stack-body"]')!).bottom)).toBeLessThan(1);
+    await expect(Math.abs(rect(footer).bottom - rect(active.querySelector('[data-ui="dialog-stack-body"]')!).bottom)).toBeLessThan(1);
     await expect(within(footer).getByRole('button', { name: 'Done' })).toBeVisible();
   },
 };
@@ -546,7 +546,7 @@ export const LongBody: Story = {
     await settle(shell);
     // The parent's long body is capped by the layer and scrolls inside.
     const settings = panelTitled(canvasElement, 'Settings');
-    const body = settings.querySelector<HTMLElement>('[data-ui="sheet-stack-body"]')!;
+    const body = settings.querySelector<HTMLElement>('[data-ui="dialog-stack-body"]')!;
     await expect(rect(settings).height).toBeLessThanOrEqual(rect(shell).height);
     await expect(body.scrollHeight).toBeGreaterThan(body.clientHeight);
   },
@@ -556,23 +556,23 @@ export const LongBodyFooter: Story = {
   tags: ['!autodocs'],
   args: { defaultValue: ['settings'] },
   render: (args) => (
-    <SheetStack {...args}>
-      <SheetStack.Content value="settings">
-        <SheetStack.Title>Notifications</SheetStack.Title>
+    <DialogStack {...args}>
+      <DialogStack.Content value="settings">
+        <DialogStack.Title>Notifications</DialogStack.Title>
         <LongCopy />
-        <SheetStack.Footer>
-          <SheetStack.Close label="Save notifications">Save</SheetStack.Close>
-        </SheetStack.Footer>
-      </SheetStack.Content>
-    </SheetStack>
+        <DialogStack.Footer>
+          <DialogStack.Close label="Save notifications">Save</DialogStack.Close>
+        </DialogStack.Footer>
+      </DialogStack.Content>
+    </DialogStack>
   ),
   play: async ({ canvasElement }) => {
     const shell = layer(canvasElement);
     await waitFor(() => expect(shell).toHaveAttribute('open'));
     await settle(shell);
     const active = activePanel(canvasElement)!;
-    const body = active.querySelector<HTMLElement>('[data-ui="sheet-stack-body"]')!;
-    const footer = active.querySelector<HTMLElement>('[data-ui="sheet-stack-footer"]')!;
+    const body = active.querySelector<HTMLElement>('[data-ui="dialog-stack-body"]')!;
+    const footer = active.querySelector<HTMLElement>('[data-ui="dialog-stack-footer"]')!;
     // The body scrolls; the footer and the heading's container stay inside the panel.
     await expect(body.scrollHeight).toBeGreaterThan(body.clientHeight);
     await expect(rect(footer).bottom).toBeLessThanOrEqual(rect(active).bottom + 1);
@@ -584,10 +584,10 @@ export const LongBodyFooter: Story = {
 
 export const EmptyBody: Story = {
   render: (args) => (
-    <SheetStack {...args}>
-      <SheetStack.Trigger value="empty">Open empty</SheetStack.Trigger>
-      <SheetStack.Content value="empty" aria-label="Empty sheet" />
-    </SheetStack>
+    <DialogStack {...args}>
+      <DialogStack.Trigger value="empty">Open empty</DialogStack.Trigger>
+      <DialogStack.Content value="empty" aria-label="Empty sheet" />
+    </DialogStack>
   ),
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -812,38 +812,38 @@ export const FalsyContent: Story = {
   render: (args) => (
     <>
       {FALSY_CONTENT.map((value) => (
-        <SheetStack key={String(value)} {...args} contained defaultValue={['sheet']}>
+        <DialogStack key={String(value)} {...args} contained defaultValue={['sheet']}>
           <div style={{ ...containerStyle, blockSize: '160px', inlineSize: '200px' }} data-value={JSON.stringify(value)}>
-            <SheetStack.Content value="sheet" aria-label={`Sheet ${JSON.stringify(value)}`}>
-              <SheetStack.Title>{value}</SheetStack.Title>
-              <SheetStack.Description>{value}</SheetStack.Description>
-              <SheetStack.Footer>{value}</SheetStack.Footer>
-            </SheetStack.Content>
+            <DialogStack.Content value="sheet" aria-label={`Sheet ${JSON.stringify(value)}`}>
+              <DialogStack.Title>{value}</DialogStack.Title>
+              <DialogStack.Description>{value}</DialogStack.Description>
+              <DialogStack.Footer>{value}</DialogStack.Footer>
+            </DialogStack.Content>
           </div>
-        </SheetStack>
+        </DialogStack>
       ))}
     </>
   ),
   play: async ({ canvasElement }) => {
     const all = await waitFor(() => {
-      const found = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="sheet-stack"]'));
+      const found = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="dialog-stack"]'));
       expect(found).toHaveLength(FALSY_CONTENT.length);
       return found;
     });
     const byLabel = (label: string) => all.find((panel) => panel.getAttribute('aria-label') === label)!;
     // 0 is content: Title and Description render and wire up; the Footer keeps it.
     const zeroPanel = byLabel('Sheet 0');
-    const title = zeroPanel.querySelector('[data-ui="sheet-stack-title"]')!;
-    const description = zeroPanel.querySelector('[data-ui="sheet-stack-description"]')!;
+    const title = zeroPanel.querySelector('[data-ui="dialog-stack-title"]')!;
+    const description = zeroPanel.querySelector('[data-ui="dialog-stack-description"]')!;
     await expect(title).toHaveTextContent('0');
     await expect(description).toHaveTextContent('0');
-    await expect(zeroPanel.querySelector('[data-ui="sheet-stack-footer"]')).toHaveTextContent('0');
+    await expect(zeroPanel.querySelector('[data-ui="dialog-stack-footer"]')).toHaveTextContent('0');
     await waitFor(() => expect(zeroPanel).toHaveAttribute('aria-labelledby', title.id));
     await expect(zeroPanel).toHaveAttribute('aria-describedby', description.id);
     // false, null and '' render no Title/Description and leave no relationship behind.
     for (const label of ['Sheet false', 'Sheet null', 'Sheet ""']) {
       const panel = byLabel(label);
-      await expect(panel.querySelector('[data-ui="sheet-stack-title"], [data-ui="sheet-stack-description"]')).toBeNull();
+      await expect(panel.querySelector('[data-ui="dialog-stack-title"], [data-ui="dialog-stack-description"]')).toBeNull();
       await expect(panel).not.toHaveAttribute('aria-labelledby');
       await expect(panel).not.toHaveAttribute('aria-describedby');
     }
@@ -852,7 +852,7 @@ export const FalsyContent: Story = {
 
 /** Exercises the hook actions; buttons sit inside the sheet so they stay operable. */
 function HookControls() {
-  const { value, push, pop, popTo, close } = useSheetStack();
+  const { value, push, pop, popTo, close } = useDialogStack();
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] }}>
       <output>{value.join(' > ')}</output>
@@ -885,23 +885,23 @@ function HookControls() {
 }
 HookControls.displayName = 'HookControls';
 
-function HookFixture(props: Omit<SheetStackProps, 'children'>) {
+function HookFixture(props: Omit<DialogStackProps, 'children'>) {
   return (
-    <SheetStack {...props}>
+    <DialogStack {...props}>
       {['settings', 'account', 'password'].map((key) => (
-        <SheetStack.Content key={key} value={key}>
-          <SheetStack.Title>{key}</SheetStack.Title>
+        <DialogStack.Content key={key} value={key}>
+          <DialogStack.Title>{key}</DialogStack.Title>
           <HookControls />
-        </SheetStack.Content>
+        </DialogStack.Content>
       ))}
       <HookOutside />
-    </SheetStack>
+    </DialogStack>
   );
 }
 HookFixture.displayName = 'HookFixture';
 
 function HookOutside() {
-  const { pop, push } = useSheetStack();
+  const { pop, push } = useDialogStack();
   return (
     <div style={{ display: 'flex', gap: vars.space[2] }}>
       <button type="button" style={FIXTURE_BUTTON} onClick={() => push('settings')}>
@@ -981,24 +981,24 @@ export const NormalizedDefault: Story = {
   },
 };
 
-function RemovableFixture(props: Omit<SheetStackProps, 'children'>) {
+function RemovableFixture(props: Omit<DialogStackProps, 'children'>) {
   const [mounted, setMounted] = useState(true);
   return (
-    <SheetStack {...props}>
-      <SheetStack.Trigger value="settings">Settings</SheetStack.Trigger>
-      <SheetStack.Content value="settings">
-        <SheetStack.Title>Settings</SheetStack.Title>
-        <SheetStack.Trigger value="account">Account</SheetStack.Trigger>
-      </SheetStack.Content>
+    <DialogStack {...props}>
+      <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+      <DialogStack.Content value="settings">
+        <DialogStack.Title>Settings</DialogStack.Title>
+        <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
+      </DialogStack.Content>
       {mounted && (
-        <SheetStack.Content value="account">
-          <SheetStack.Title>Account</SheetStack.Title>
+        <DialogStack.Content value="account">
+          <DialogStack.Title>Account</DialogStack.Title>
           <button type="button" style={FIXTURE_BUTTON} onClick={() => setMounted(false)}>
             Remove sheet
           </button>
-        </SheetStack.Content>
+        </DialogStack.Content>
       )}
-    </SheetStack>
+    </DialogStack>
   );
 }
 RemovableFixture.displayName = 'RemovableFixture';
@@ -1100,14 +1100,14 @@ export const KeyboardNavigation: Story = {
 
 export const TriggerDefaultPrevented: Story = {
   render: (args) => (
-    <SheetStack {...args}>
-      <SheetStack.Trigger value="settings" onClick={(event) => event.preventDefault()}>
+    <DialogStack {...args}>
+      <DialogStack.Trigger value="settings" onClick={(event) => event.preventDefault()}>
         Settings
-      </SheetStack.Trigger>
-      <SheetStack.Content value="settings">
-        <SheetStack.Title>Settings</SheetStack.Title>
-      </SheetStack.Content>
-    </SheetStack>
+      </DialogStack.Trigger>
+      <DialogStack.Content value="settings">
+        <DialogStack.Title>Settings</DialogStack.Title>
+      </DialogStack.Content>
+    </DialogStack>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Settings' }));
@@ -1120,16 +1120,16 @@ export const ActionsDefaultPrevented: Story = {
   tags: ['!autodocs'],
   args: { defaultValue: ['settings', 'account'] },
   render: (args) => (
-    <SheetStack {...args}>
-      <SheetStack.Content value="settings">
-        <SheetStack.Title>Settings</SheetStack.Title>
-      </SheetStack.Content>
-      <SheetStack.Content value="account">
-        <SheetStack.Back label="Back to Settings" onClick={(event) => event.preventDefault()} />
-        <SheetStack.Title>Account</SheetStack.Title>
-        <SheetStack.Close label="Close all" onClick={(event) => event.preventDefault()} />
-      </SheetStack.Content>
-    </SheetStack>
+    <DialogStack {...args}>
+      <DialogStack.Content value="settings">
+        <DialogStack.Title>Settings</DialogStack.Title>
+      </DialogStack.Content>
+      <DialogStack.Content value="account">
+        <DialogStack.Back label="Back to Settings" onClick={(event) => event.preventDefault()} />
+        <DialogStack.Title>Account</DialogStack.Title>
+        <DialogStack.Close label="Close all" onClick={(event) => event.preventDefault()} />
+      </DialogStack.Content>
+    </DialogStack>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
     const shell = layer(canvasElement);
@@ -1171,14 +1171,14 @@ export const Drag: Story = {
     await waitFor(() => expect(shell).toHaveAttribute('open'));
     await settle(shell);
     const account = activePanel(canvasElement)!;
-    const handle = account.querySelector<HTMLElement>('[data-ui="sheet-stack-handle"]')!;
+    const handle = account.querySelector<HTMLElement>('[data-ui="dialog-stack-handle"]')!;
     await expect(handle).toHaveAttribute('data-draggable');
     await expect(rect(handle).height).toBeGreaterThanOrEqual(32 - 0.5);
     const top = rect(handle).top + 4;
     const height = rect(account).height;
 
     // Body content never starts a drag.
-    const body = account.querySelector<HTMLElement>('[data-ui="sheet-stack-body"]')!;
+    const body = account.querySelector<HTMLElement>('[data-ui="dialog-stack-body"]')!;
     fireEvent.pointerDown(body, { pointerId: 1, isPrimary: true, button: 0, clientY: top + 40 });
     fireEvent.pointerMove(body, { pointerId: 1, isPrimary: true, clientY: top + 200 });
     fireEvent.pointerUp(body, { pointerId: 1, isPrimary: true, clientY: top + 200 });
@@ -1204,7 +1204,7 @@ export const Drag: Story = {
 
     // A short fling pops too.
     const settings = activePanel(canvasElement)!;
-    const settingsHandle = settings.querySelector<HTMLElement>('[data-ui="sheet-stack-handle"]')!;
+    const settingsHandle = settings.querySelector<HTMLElement>('[data-ui="dialog-stack-handle"]')!;
     const start = rect(settingsHandle).top + 4;
     await drag(settingsHandle, [start, start + 10, start + 40]);
     await waitFor(() => expect(panels(canvasElement)).toHaveLength(0));
@@ -1216,12 +1216,12 @@ export const Drag: Story = {
 export const NoDrag: Story = {
   tags: ['!autodocs'],
   args: { variant: 'sheet', defaultValue: ['settings'] },
-  render: (args) => <Levels {...args} contentProps={{ settings: { 'data-sheet-no-drag': '' } as Partial<SheetStackContentProps> }} />,
+  render: (args) => <Levels {...args} contentProps={{ settings: { 'data-sheet-no-drag': '' } as Partial<DialogStackContentProps> }} />,
   play: async ({ args, canvasElement }) => {
     const shell = layer(canvasElement);
     await waitFor(() => expect(shell).toHaveAttribute('open'));
     const panel = activePanel(canvasElement)!;
-    const handle = panel.querySelector<HTMLElement>('[data-ui="sheet-stack-handle"]')!;
+    const handle = panel.querySelector<HTMLElement>('[data-ui="dialog-stack-handle"]')!;
     await expect(handle).not.toHaveAttribute('data-draggable');
     const top = rect(handle).top + 4;
     await drag(handle, [top, top + 200, top + 400]);
@@ -1350,7 +1350,7 @@ export const ReducedMotion: Story = {
     const shell = layer(canvasElement);
     await waitFor(() => expect(shell).toHaveAttribute('open'));
     const panel = activePanel(canvasElement)!;
-    const handle = panel.querySelector<HTMLElement>('[data-ui="sheet-stack-handle"]')!;
+    const handle = panel.querySelector<HTMLElement>('[data-ui="dialog-stack-handle"]')!;
     const rule = findConditionalRule(panel, 'prefers-reduced-motion: reduce');
     await expect(rule?.style.animationName).toBe('none');
     await expect(rule?.style.transitionDuration).toBe('0s');
@@ -1400,7 +1400,7 @@ export const ForcedColors: Story = {
   },
 };
 
-function UnmountFixture(props: Omit<SheetStackProps, 'children'>) {
+function UnmountFixture(props: Omit<DialogStackProps, 'children'>) {
   const [mounted, setMounted] = useState(true);
   return (
     <>
@@ -1408,15 +1408,15 @@ function UnmountFixture(props: Omit<SheetStackProps, 'children'>) {
         Mount
       </button>
       {mounted && (
-        <SheetStack {...props}>
-          <SheetStack.Trigger value="settings">Settings</SheetStack.Trigger>
-          <SheetStack.Content value="settings">
-            <SheetStack.Title>Settings</SheetStack.Title>
+        <DialogStack {...props}>
+          <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+          <DialogStack.Content value="settings">
+            <DialogStack.Title>Settings</DialogStack.Title>
             <button type="button" style={FIXTURE_BUTTON} onClick={() => setMounted(false)}>
               Remove stack
             </button>
-          </SheetStack.Content>
-        </SheetStack>
+          </DialogStack.Content>
+        </DialogStack>
       )}
     </>
   );
@@ -1495,21 +1495,21 @@ export const PartStyling: Story = {
   tags: ['!autodocs'],
   args: { defaultValue: ['settings'] },
   render: (args) => (
-    <SheetStack {...args}>
-      <SheetStack.Trigger value="settings" sx={{ minInlineSize: '11rem' }}>
+    <DialogStack {...args}>
+      <DialogStack.Trigger value="settings" sx={{ minInlineSize: '11rem' }}>
         Settings
-      </SheetStack.Trigger>
-      <SheetStack.Content value="settings" ref={panelRef} sx={{ borderStartStartRadius: 0 }}>
-        <SheetStack.Back label="Back" sx={{ minInlineSize: vars.space[12] }} />
-        <SheetStack.Title level={3} sx={{ fontSize: vars.textSize.xl }}>
+      </DialogStack.Trigger>
+      <DialogStack.Content value="settings" ref={panelRef} sx={{ borderStartStartRadius: 0 }}>
+        <DialogStack.Back label="Back" sx={{ minInlineSize: vars.space[12] }} />
+        <DialogStack.Title level={3} sx={{ fontSize: vars.textSize.xl }}>
           Settings
-        </SheetStack.Title>
-        <SheetStack.Description sx={{ fontStyle: 'italic' }}>Workspace preferences.</SheetStack.Description>
-        <SheetStack.Footer sx={{ justifyContent: 'flex-start' }}>
-          <SheetStack.Close label="Close settings" sx={{ minInlineSize: vars.space[10] }} />
-        </SheetStack.Footer>
-      </SheetStack.Content>
-    </SheetStack>
+        </DialogStack.Title>
+        <DialogStack.Description sx={{ fontStyle: 'italic' }}>Workspace preferences.</DialogStack.Description>
+        <DialogStack.Footer sx={{ justifyContent: 'flex-start' }}>
+          <DialogStack.Close label="Close settings" sx={{ minInlineSize: vars.space[10] }} />
+        </DialogStack.Footer>
+      </DialogStack.Content>
+    </DialogStack>
   ),
   play: async ({ canvasElement }) => {
     const shell = layer(canvasElement);
@@ -1523,7 +1523,7 @@ export const PartStyling: Story = {
     const remPx = Number.parseFloat(getComputedStyle(canvasElement.ownerDocument.documentElement).fontSize);
     await expect(Number.parseFloat(getComputedStyle(heading).fontSize)).toBeCloseTo(Number.parseFloat(base.textSize.xl) * remPx, 1);
     await expect(getComputedStyle(within(panel).getByText('Workspace preferences.')).fontStyle).toBe('italic');
-    await expect(getComputedStyle(panel.querySelector('[data-ui="sheet-stack-footer"]')!).justifyContent).toBe('flex-start');
+    await expect(getComputedStyle(panel.querySelector('[data-ui="dialog-stack-footer"]')!).justifyContent).toBe('flex-start');
     const back = within(panel).getByRole('button', { name: 'Back' });
     const close = within(panel).getByRole('button', { name: 'Close settings' });
     await expect(rect(back).width).toBeGreaterThanOrEqual(Number.parseFloat(base.space[12]) - 0.5);
@@ -1531,28 +1531,28 @@ export const PartStyling: Story = {
     // Controls keep the 32px main-axis target.
     await expect(rect(back).height).toBeGreaterThanOrEqual(Number.parseFloat(base.space[8]) - 0.5);
     await expect(rect(close).height).toBeGreaterThanOrEqual(Number.parseFloat(base.space[8]) - 0.5);
-    await expect(SheetStack.Content.displayName).toBe('SheetStack.Content');
-    await expect(SheetStack.Back.displayName).toBe('SheetStack.Back');
+    await expect(DialogStack.Content.displayName).toBe('DialogStack.Content');
+    await expect(DialogStack.Back.displayName).toBe('DialogStack.Back');
   },
 };
 
-function DisconnectedInvokerFixture(props: Omit<SheetStackProps, 'children'>) {
+function DisconnectedInvokerFixture(props: Omit<DialogStackProps, 'children'>) {
   const [linked, setLinked] = useState(true);
   return (
-    <SheetStack {...props}>
-      <SheetStack.Trigger value="settings">Settings</SheetStack.Trigger>
-      <SheetStack.Content value="settings">
-        <SheetStack.Title>Settings</SheetStack.Title>
-        {linked && <SheetStack.Trigger value="account">Account</SheetStack.Trigger>}
-      </SheetStack.Content>
-      <SheetStack.Content value="account">
-        <SheetStack.Back label="Back to Settings" />
-        <SheetStack.Title>Account</SheetStack.Title>
+    <DialogStack {...props}>
+      <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+      <DialogStack.Content value="settings">
+        <DialogStack.Title>Settings</DialogStack.Title>
+        {linked && <DialogStack.Trigger value="account">Account</DialogStack.Trigger>}
+      </DialogStack.Content>
+      <DialogStack.Content value="account">
+        <DialogStack.Back label="Back to Settings" />
+        <DialogStack.Title>Account</DialogStack.Title>
         <button type="button" style={FIXTURE_BUTTON} onClick={() => setLinked(false)}>
           Unlink account
         </button>
-      </SheetStack.Content>
-    </SheetStack>
+      </DialogStack.Content>
+    </DialogStack>
   );
 }
 DisconnectedInvokerFixture.displayName = 'DisconnectedInvokerFixture';
@@ -1584,7 +1584,7 @@ export const ControlledRejectDrag: Story = {
     await waitFor(() => expect(shell).toHaveAttribute('open'));
     await settle(shell);
     const account = activePanel(canvasElement)!;
-    const handle = account.querySelector<HTMLElement>('[data-ui="sheet-stack-handle"]')!;
+    const handle = account.querySelector<HTMLElement>('[data-ui="dialog-stack-handle"]')!;
     const top = rect(handle).top + 4;
     const height = rect(account).height;
     // A dismissing drag asks once; the parent keeps the stack, so the panel springs home.
