@@ -44,7 +44,7 @@ const stillStyle = css({
   '& > [data-ui="flip-game-card-rotator"]': {
     transform: 'none',
     transition: 'none',
-    '& > [data-ui="flip-game-card-back"]': { transform: 'none' },
+    '& > [aria-hidden="true"]': { visibility: 'hidden' },
   },
 });
 
@@ -67,11 +67,14 @@ const faceStyle = css({
   position: 'absolute',
   inset: 0,
   backfaceVisibility: 'hidden',
-  '&[aria-hidden="true"]': { visibility: 'hidden' },
   '& > [data-ui="game-card"]': { inlineSize: '100%', blockSize: '100%' },
 });
 
-const backStyle = css({ transform: 'rotateY(180deg)' });
+const backStyle = css({
+  transform: 'rotateY(180deg)',
+  '&[data-reduced-motion="true"]': { transform: 'none' },
+  [REDUCED_MOTION]: { transform: 'none' },
+});
 
 export function FlipGameCard({
   ref,
@@ -119,6 +122,7 @@ export function FlipGameCard({
               </div>
               <div
                 data-ui="flip-game-card-back"
+                data-reduced-motion={(mounted && reducedMotion) || undefined}
                 inert={!flipped}
                 aria-hidden={!flipped || undefined}
                 className={slotProps?.back?.className}

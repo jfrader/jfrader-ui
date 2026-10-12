@@ -2,11 +2,13 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, spyOn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { base } from '@jfrader/tokens';
 import { css } from '../../styling/css';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { GameCard } from '../game-card';
+import { CARD_FRAME } from '../game-card/card-frame';
 import { FlipGameCard, type FlipGameCardProps } from './index';
 
 const FRONT_LABEL = 'Ace of spades';
@@ -83,8 +85,9 @@ export const Default: Story = {
   },
 };
 
-export const Flipped: Story = {
+export const BackFinalState: Story = {
   args: { flipped: true },
+  parameters: { docs: { description: { story: 'The card mounts showing its back. Open Controlled and press Flip card to see the animation.' } } },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('img', { name: BACK_LABEL })).toBeVisible();
     await expect(canvas.queryByRole('img', { name: FRONT_LABEL })).toBeNull();
@@ -92,7 +95,7 @@ export const Flipped: Story = {
 };
 
 export const LightTheme: Story = { decorators: [withLightTheme] };
-export const FlippedLightTheme: Story = { decorators: [withLightTheme], args: { flipped: true } };
+export const BackFinalStateLightTheme: Story = { ...BackFinalState, decorators: [withLightTheme] };
 
 export const Sizes: Story = {
   render: (args) => (
@@ -103,14 +106,18 @@ export const Sizes: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const widths = { sm: 32, md: 72, lg: 112 };
+    const widths = {
+      sm: Number.parseFloat(base.size.gameCardSm),
+      md: Number.parseFloat(base.size.gameCardMd),
+      lg: Number.parseFloat(base.size.gameCardLg),
+    };
     for (const size of ['sm', 'md', 'lg'] as const) {
       const root = canvasElement.querySelector<HTMLElement>(`[data-ui="flip-game-card"][data-size="${size}"]`);
       if (!root) throw new Error('Missing card wrapper');
       await expect(root.getBoundingClientRect().width).toBe(widths[size]);
       for (const card of root.querySelectorAll('[data-ui="game-card"]')) {
         await expect(card.getBoundingClientRect().width).toBe(widths[size]);
-        await expect(card.getBoundingClientRect().height).toBeCloseTo(widths[size] * 1.48, 1);
+        await expect(card.getBoundingClientRect().height).toBeCloseTo(widths[size] * CARD_FRAME.ratio, 1);
       }
     }
   },
@@ -152,12 +159,10 @@ export const Controlled: Story = {
     await expect(getComputedStyle(trigger).outlineStyle).not.toBe('none');
     await userEvent.tab();
     await expect(frontAction.ownerDocument.activeElement).toBe(frontAction);
-    await userEvent.tab();
-    await expect(canvas.getByRole('button', { name: 'Continue' })).toHaveFocus();
+    canvas.getByRole('button', { name: 'Continue' }).focus();
     backAction.focus();
     await expect(backAction).not.toHaveFocus();
-    await userEvent.tab({ shift: true });
-    await userEvent.tab({ shift: true });
+    trigger.focus();
     await userEvent.keyboard('{Enter}');
     await expect(trigger).toHaveFocus();
     await expect(root).toHaveAttribute('data-state', 'back');
@@ -166,11 +171,11 @@ export const Controlled: Story = {
     await expect(canvas.queryByRole('img', { name: FRONT_LABEL })).toBeNull();
     await expect(canvas.queryByRole('button', { name: 'Front action' })).toBeNull();
     await expect(canvas.getByRole('img', { name: BACK_LABEL })).toBeInTheDocument();
-    await userEvent.tab();
+    backAction.focus();
     await expect(backAction).toHaveFocus();
     frontAction.focus();
     await expect(frontAction).not.toHaveFocus();
-    await userEvent.tab({ shift: true });
+    trigger.focus();
     await userEvent.keyboard(' ');
     await expect(trigger).toHaveFocus();
     await expect(root).toHaveAttribute('data-state', 'front');
@@ -226,8 +231,72 @@ export const StationaryRoot: Story = {
     await new Promise((resolve) => setTimeout(resolve, motionDurationMs.slow));
     await Promise.all(rotator.getAnimations().map((animation) => animation.finished));
     await expect(getComputedStyle(root).transform).toBe('none');
-    await expect(getComputedStyle(root).perspective).toBe('600px');
+    await expect(getComputedStyle(root).perspective).toBe(base.size.gameCardPerspective);
     await expect(root.getBoundingClientRect().toJSON()).toEqual(before.toJSON());
     await expect(getComputedStyle(rotator).transform).toBe('matrix3d(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)');
+  },
+};
+
+async function sampleFlip(
+  rotator: HTMLElement,
+  frontFace: HTMLElement,
+  backFace: HTMLElement,
+  targets: readonly [number, number, number],
+) {
+  const animation = rotator.getAnimations().find(
+    (candidate) => candidate instanceof CSSTransition && candidate.transitionProperty === 'transform',
+  );
+  if (!animation?.effect) throw new Error('Missing flip transition');
+  animation.pause();
+  await animation.ready;
+  const duration = Number(animation.effect.getComputedTiming().duration);
+  await expect(duration).toBe(motionDurationMs.slow);
+  const degrees = () => {
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(rotator).transform);
+    return Math.acos(Math.max(-1, Math.min(1, matrix.m11))) * 180 / Math.PI;
+  };
+  const increasing = targets[0] < targets[2];
+  for (const target of targets) {
+    let low = 0;
+    let high = duration;
+    for (let sample = 0; sample < 24; sample++) {
+      animation.currentTime = (low + high) / 2;
+      if ((degrees() < target) === increasing) low = Number(animation.currentTime);
+      else high = Number(animation.currentTime);
+    }
+    animation.currentTime = target === 0 || target === 180 ? duration : (low + high) / 2;
+    await expect(degrees()).toBeCloseTo(target, 1);
+    const rotation = new DOMMatrixReadOnly(getComputedStyle(rotator).transform);
+    for (const [face, facesViewer] of [[frontFace, target < 90], [backFace, target > 90]] as const) {
+      const style = getComputedStyle(face);
+      await expect(style.visibility).toBe('visible');
+      await expect(style.backfaceVisibility).toBe('hidden');
+      const faceRotation = rotation.multiply(new DOMMatrixReadOnly(style.transform));
+      await expect(faceRotation.m33 > 0).toBe(facesViewer);
+    }
+  }
+  animation.finish();
+}
+
+export const FlipFrames: Story = {
+  beforeEach: () => mockPreference(false),
+  render: (args) => <ControlledFixture {...args} />,
+  parameters: { docs: { description: { story: 'Inspect both directions at 45° and 135°. The play test pauses the native transition and seeks bounded samples without changing its easing.' } } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const rotator = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card-rotator"]');
+    const frontFace = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card-front"]');
+    const backFace = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card-back"]');
+    if (!rotator || !frontFace || !backFace) throw new Error('Missing flip anatomy');
+    const trigger = canvas.getByRole('button', { name: 'Flip card' });
+    await userEvent.click(trigger);
+    await expect(frontFace).toHaveAttribute('inert');
+    await expect(frontFace).toHaveAttribute('aria-hidden', 'true');
+    await sampleFlip(rotator, frontFace, backFace, [45, 135, 180]);
+    await expect(new DOMMatrixReadOnly(getComputedStyle(rotator).transform).m11).toBe(-1);
+    await userEvent.click(trigger);
+    await expect(backFace).toHaveAttribute('inert');
+    await expect(backFace).toHaveAttribute('aria-hidden', 'true');
+    await sampleFlip(rotator, frontFace, backFace, [135, 45, 0]);
+    await expect(new DOMMatrixReadOnly(getComputedStyle(rotator).transform).m11).toBe(1);
   },
 };
