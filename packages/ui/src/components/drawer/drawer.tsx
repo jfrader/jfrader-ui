@@ -39,15 +39,15 @@ import {
   type RefObject,
   type SyntheticEvent,
 } from 'react';
-import { useMergeRefs } from '@floating-ui/react';
 import { animate, type AnimationPlaybackControls } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type SerializedStyles } from '../../styling/css';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { modalShellReset, raisedSurface, surfaceAttributes, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
+import { modalShellReset, type SurfaceAppearance } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { AppearanceScope, themeScopeStyle, useSurfaceAppearance, useSurfaceStyle } from '../../styling/theme-scope';
+import type { SurfacePartProps, SurfaceRootCustomization } from '../surface';
+import { SurfaceRoot } from '../surface/surface-root';
 import { triggerStyle } from '../../styling/trigger-style';
 import {
   omitNativeOpen,
@@ -82,12 +82,13 @@ export interface DrawerContentProps extends Omit<ComponentPropsWithRef<'dialog'>
   /** Set false to keep structured content out of the drawer's accessible description. */
   withDescription?: boolean;
 }
-export interface DrawerPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
+export interface DrawerPanelProps extends SurfacePartProps, SxProps, SurfaceRootCustomization {
   /**
    * `contrast` (default) uses the dark palette with a charcoal surface on any page theme.
-   * `default` keeps the enclosing theme.
+   * `default` inherits the enclosing appearance, including contrast.
    */
   appearance?: SurfaceAppearance;
+  css?: Interpolation<Theme>;
 }
 export interface DrawerHeaderProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface DrawerBodyProps extends ComponentPropsWithRef<'div'>, SxProps {}
@@ -118,6 +119,7 @@ type HeaderGestureHandlers = Pick<
 interface DrawerSurfaceValue {
   requestClose: () => void;
   panelRef: RefObject<HTMLDivElement | null>;
+  dialogRef: RefObject<HTMLDialogElement | null>;
   headerGesture: HeaderGestureHandlers | null;
 }
 
@@ -159,6 +161,7 @@ const BLOCK_SIZE_CAP = '32rem';
 const VIEWPORT_GUTTER = vars.space[3];
 const COMPACT_VIEWPORT = '@media (max-width: 40rem)';
 const PART_PADDING = vars.space[6];
+const PANEL_MOTION_STYLE_KEYS = ['translate'] as const;
 const COMPACT_PART_PADDING = vars.space[5];
 const SAFE_AREA = {
   top: 'env(safe-area-inset-top, 0px)',
@@ -189,13 +192,11 @@ const dialogSideStyles: Record<DrawerSide, SerializedStyles> = {
 };
 
 const panelStyle = css({
-  ...raisedSurface,
   display: 'flex',
   flexDirection: 'column',
   minBlockSize: 0,
   borderWidth: 0,
-  boxShadow: vars.shadow.floating,
-  [FORCED_COLORS]: { boxShadow: 'none', borderColor: 'CanvasText' },
+  borderRadius: 0,
 });
 
 const inlinePanel = {
@@ -705,7 +706,7 @@ function DrawerContent({ ref, className, sx, ...props }: DrawerContentProps) {
     },
   };
 
-  const surface = useMemo(() => ({ requestClose, panelRef, headerGesture }), [requestClose, headerGesture]);
+  const surface = useMemo(() => ({ requestClose, panelRef, dialogRef, headerGesture }), [requestClose, headerGesture]);
 
   const labelledBy = [ariaLabelledByProp, hasTitle && titleId].filter(Boolean).join(' ') || undefined;
   const describedBy =
@@ -734,34 +735,23 @@ function DrawerContent({ ref, className, sx, ...props }: DrawerContentProps) {
 
 DrawerContent.displayName = 'Drawer.Content';
 
-function DrawerPanel({ ref, className, appearance = 'contrast', style, sx, ...props }: DrawerPanelProps) {
+function DrawerPanel(props: DrawerPanelProps) {
   const { side, size } = useDrawerContext('Panel');
-  const panelRef = useContext(DrawerSurfaceContext)?.panelRef;
-  const mergedRef = useMergeRefs([panelRef, ref]);
+  const surface = useContext(DrawerSurfaceContext);
+  if (!surface) throw new Error('Drawer.Panel must be rendered inside <Drawer.Content>.');
   const inline = side === 'inline-start' || side === 'inline-end';
-  const surfaceAppearance = useSurfaceAppearance(appearance);
-  const ownTheme = surfaceTheme(appearance);
-  const surfaceStyle = useSurfaceStyle(ownTheme, style);
-
   return (
-    <AppearanceScope theme={ownTheme} appearance={surfaceAppearance}>
-      <WithSx
-        className={className}
-        styles={[panelStyle, panelSideStyles[side], inline && panelSizeStyles[size], ownTheme && themeScopeStyle]}
-        sx={sx}
-      >
-        {(className) => (
-          <div
-            {...props}
-            ref={mergedRef}
-            data-ui="drawer-panel"
-            {...surfaceAttributes(appearance)}
-            className={className}
-            style={surfaceStyle}
-          />
-        )}
-      </WithSx>
-    </AppearanceScope>
+    <SurfaceRoot
+      {...props}
+      owner="Drawer.Panel"
+      marker="drawer-panel"
+      variant="floating"
+      defaultAppearance="contrast"
+      internalRef={surface.panelRef}
+      containerRef={surface.dialogRef}
+      reservedStyleKeys={PANEL_MOTION_STYLE_KEYS}
+      structure={[panelStyle, panelSideStyles[side], inline && panelSizeStyles[size]]}
+    />
   );
 }
 

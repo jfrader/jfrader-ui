@@ -207,14 +207,20 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `loading-ring` — spinning ring and its reduced-motion pulse (Button, Spinner).
 - `surface` — `raisedSurface` panel, the surface appearance helpers and `modalShellReset` for native
   `<dialog>` shells.
-- `components/surface/surface-root` — private root seam shared by Surface and Card: separates
+- `components/surface/surface-root` — private root seam shared by Surface, Card, Drawer.Panel,
+  BottomSheet.Panel, Dialog.Panel and DialogStack.Content: separates
   default material from retained host structure, resolves inherited appearance once, carries
   same-theme tokens, merges root props and style lanes, composes refs with cleanup, and diagnoses
-  missing/non-div refs and changed replacement identity. Both adopt only `slots.root`; Card's
+  missing/non-div refs, roots outside their owning shell/stage and changed replacement identity.
+  Each adopts only `slots.root`; Card's
   header/title/description/content/footer remain styling-only `slotProps`. Replacements own
   material, forward all received props to one div, and apply their styles before the supplied
   className. Declare component types outside render; first-render inline functions cannot be
   reliably diagnosed. Scope/style updates must preserve the root and descendant identity.
+  Native Content refs/styles/events remain on the dialog shell. Plain Dialog.Content children
+  get one default Dialog.Panel; explicit composition accepts one direct Panel through fragments,
+  without substantive siblings. DialogStack keeps its stage-directed portal inside a declaration-site
+  ThemeBoundary. Host motion/measurement inline styles are reserved from ordinary root props.
 - `trigger-style` — overlay trigger button (Dialog, Popover, Menu).
 - `listbox-style` — popup surface, item and option fragments (Menu, Select, Combobox, CommandPalette).
 - `input-control` — text-input control skin (TextField, Textarea).

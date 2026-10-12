@@ -14,8 +14,13 @@
 //
 // Lifecycle contract (Root owns logical `open`, Content owns native state): see
 // `overlay/use-native-dialog.ts`.
+'use client';
+
 import {
+  Children,
+  Fragment,
   createContext,
+  isValidElement,
   useCallback,
   useContext,
   useEffect,
@@ -29,13 +34,16 @@ import {
   type MouseEventHandler,
   type ReactNode,
   type Ref,
+  type RefObject,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
 import { MODAL_ENTER_SCALE, modalBackdropMotion, modalPanelMotion } from '../../styling/overlay-motion';
-import { modalShellReset, raisedSurface } from '../../styling/surface';
+import { modalShellReset } from '../../styling/surface';
+import type { DrawerPanelProps } from '../drawer';
+import { SurfaceRoot } from '../surface/surface-root';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { styledDialogTransition } from '../../overlay/exit-motion';
@@ -80,6 +88,10 @@ export interface DialogContentProps extends Omit<ComponentPropsWithRef<'dialog'>
   /** Set false to keep structured content out of the dialog's accessible description. */
   withDescription?: boolean;
 }
+export interface DialogPanelProps extends DrawerPanelProps {
+  /** Inherit appearance by default; `contrast` establishes fixed charcoal. */
+  appearance?: DrawerPanelProps['appearance'];
+}
 export interface DialogTitleProps extends ComponentPropsWithRef<'h2'>, SxProps {}
 export interface DialogDescriptionProps extends ComponentPropsWithRef<'p'>, SxProps {}
 export interface DialogCloseProps extends ComponentPropsWithRef<'button'>, SxProps {
@@ -110,6 +122,12 @@ interface DialogContextValue extends NativeDialogController {
 const DialogContext = createContext<DialogContextValue | null>(null);
 // Provided by Content so Close/backdrop share one dismissal path.
 const DialogRequestCloseContext = createContext<(() => void) | null>(null);
+const DialogPanelContext = createContext<{
+  dialogRef: RefObject<HTMLDialogElement | null>;
+  panelRef: RefObject<HTMLDivElement | null>;
+} | null>(null);
+
+declare const process: { env: { NODE_ENV?: string } };
 
 function useDialogContext(part: string): DialogContextValue {
   const context = useContext(DialogContext);
@@ -120,9 +138,6 @@ function useDialogContext(part: string): DialogContextValue {
 const dialogStyle = css(modalShellReset, modalBackdropMotion);
 
 const panelStyle = css({
-  ...raisedSurface,
-  borderRadius: vars.radius.lg,
-  boxShadow: vars.shadow.floating,
   padding: vars.space[5],
   minInlineSize: 'min(320px, 100%)',
   maxInlineSize: 'min(560px, calc(100vw - 32px))',
@@ -254,6 +269,8 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
   const context = useDialogContext('Content');
   const { setOpen, titleId, descriptionId, hasTitle, hasDescription } = context;
   const dialogRef = useRef<HTMLDialogElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const panelContext = useMemo(() => ({ dialogRef, panelRef }), []);
   const requestClose = useCallback(() => {
     requestNativeDialogClose(dialogRef.current, setOpen);
   }, [setOpen]);
@@ -283,7 +300,9 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
           className={className}
         >
           <DialogRequestCloseContext.Provider value={requestClose}>
-            <div css={panelStyle}>{children}</div>
+            <DialogPanelContext.Provider value={panelContext}>
+              {dialogPanelChildren(children)}
+            </DialogPanelContext.Provider>
           </DialogRequestCloseContext.Provider>
         </dialog>
       )}
@@ -292,6 +311,42 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
 }
 
 DialogContent.displayName = 'Dialog.Content';
+
+function directChildren(children: ReactNode): ReactNode[] {
+  return Children.toArray(children).flatMap((child) =>
+    isValidElement<{ children?: ReactNode }>(child) && child.type === Fragment
+      ? directChildren(child.props.children)
+      : [child],
+  ).filter((child) => typeof child !== 'string' || child.trim() !== '');
+}
+
+function dialogPanelChildren(children: ReactNode) {
+  const direct = directChildren(children);
+  const panels = direct.filter((child) => isValidElement(child) && child.type === DialogPanel);
+  if (panels.length === 0) return <DialogPanel>{children}</DialogPanel>;
+  if (process.env.NODE_ENV !== 'production' && (panels.length !== 1 || direct.length !== 1)) {
+    console.warn('Dialog.Content: use one direct Dialog.Panel child, optionally inside fragments, without substantive siblings.');
+  }
+  return children;
+}
+
+function DialogPanel(props: DialogPanelProps) {
+  const context = useContext(DialogPanelContext);
+  if (!context) throw new Error('Dialog.Panel must be rendered inside <Dialog.Content>.');
+  return (
+    <SurfaceRoot
+      {...props}
+      owner="Dialog.Panel"
+      marker="dialog-panel"
+      variant="floating"
+      structure={panelStyle}
+      internalRef={context.panelRef}
+      containerRef={context.dialogRef}
+    />
+  );
+}
+
+DialogPanel.displayName = 'Dialog.Panel';
 
 function DialogTitle({ ref, className, sx, ...props }: DialogTitleProps) {
   const { titleId, setHasTitle } = useDialogContext('Title');
@@ -364,6 +419,7 @@ DialogClose.displayName = 'Dialog.Close';
 export const Dialog = Object.assign(DialogRoot, {
   Trigger: DialogTrigger,
   Content: DialogContent,
+  Panel: DialogPanel,
   Title: DialogTitle,
   Description: DialogDescription,
   Close: DialogClose,

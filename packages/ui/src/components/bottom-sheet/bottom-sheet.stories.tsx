@@ -3,9 +3,15 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectContrastSurface } from '../../testing/theme-assertions';
+import { OverlayPortal } from '../../overlay/overlay-portal';
+import { Surface, type SurfacePartProps } from '../surface';
+import { Card } from '../card';
+import { css } from '../../styling/css';
+import { WithSx } from '../../styling/sx';
 import { ThemeRoot } from '../theme-root';
 import { Popover } from '../popover';
-import { BottomSheet, type BottomSheetContentProps, type BottomSheetProps } from './index';
+import { BottomSheet, type BottomSheetContentProps, type BottomSheetPanelProps, type BottomSheetProps } from './index';
 
 const TITLE = 'Trip details';
 const TRIGGER = 'Open trip';
@@ -47,27 +53,115 @@ const meta = {
 ### Keyboard
 - On Handle, Up/Down choose adjacent detents, Home/End choose tallest/smallest, and Enter/Space switch between the extremes.
 - Escape cancels a drag first; otherwise it dismisses only the topmost layer.
-- In Body, PageDown/Space expands before scrolling. Reverse reading keys scroll natively.`,
+- In Body, PageDown/Space expands before scrolling. Reverse reading keys scroll natively.
+
+### Panel material
+Panel inherits appearance; appearance="contrast" uses fixed charcoal and carries it to descendant portals. component is sugar for slots.root; only root is adopted, slots.root wins. slotProps.root accepts div props and css, not sx. Declare adapters outside render, render one div, and forward every supplied prop and ref. Apply material before className. Changing the adapter type remounts children and resets focus and uncontrolled inputs.
+
+Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry → slot css/classes → consumer css/classes → sx. Host IDs, ref registration, transform and measured height stay authoritative. Select composed panels with [data-ui~="bottom-sheet-panel"].`,
     },
   },
 } satisfies Meta<typeof BottomSheet>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, borderRadius: vars.radius.full, boxShadow: 'none' });
+function SheetPaper({ className, ...props }: SurfacePartProps) {
+  return <WithSx styles={adapterMaterial} className={className}>{(classes) => <div {...props} className={classes} />}</WithSx>;
+}
+
+function rootAdapterStory(component: BottomSheetPanelProps['component']): Story {
+  return {
+    tags: ['!autodocs'],
+    render: (args) => <BottomSheet {...args} defaultOpen><Parts panelProps={{
+      component,
+      slotProps: { root: {
+        id: 'displaced-panel-id', className: 'panel-slot',
+        ref: (node) => { if (node) node.dataset.rootRef = 'slot'; },
+        style: { transform: 'none' },
+      } },
+    }} /></BottomSheet>,
+    play: async ({ canvas, canvasElement, userEvent }) => {
+      const shell = canvasElement.querySelector('dialog')!;
+      const panel = shell.querySelector<HTMLElement>('[data-ui~="bottom-sheet-panel"]')!;
+      await expect(panel).toHaveAttribute('data-root-ref', 'slot');
+      await expect(panel.id).not.toBe('displaced-panel-id');
+      await expect(panel).toHaveClass('panel-slot');
+      await expect(panel.querySelector('[data-ui~="bottom-sheet-panel"]')).toBeNull();
+      await expect(getComputedStyle(panel).borderEndStartRadius).toBe('0px');
+      await userEvent.click(canvas.getByRole('button', { name: 'Resize sheet' }));
+      await userEvent.keyboard('{End}');
+      await expect(canvas.getByRole('button', { name: 'Resize sheet' })).toHaveAttribute('aria-expanded', 'false');
+      await userEvent.keyboard('{Home}');
+      await expect(canvas.getByRole('button', { name: 'Resize sheet' })).toHaveAttribute('aria-expanded', 'true');
+      await waitFor(() => expect(Number.parseFloat(panel.style.getPropertyValue('--sheet-height'))).toBeGreaterThan(0));
+      await expect(panel.style.transform).not.toBe('none');
+      await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+      await waitFor(() => expect(shell).not.toHaveAttribute('open'));
+      await userEvent.click(canvas.getByRole('button', { name: TRIGGER }));
+      await waitFor(() => expect(shell).toHaveAttribute('open'));
+      await expect(shell.querySelector('[data-ui~="bottom-sheet-panel"]')).toBe(panel);
+      if (component === SheetPaper) await expect(getComputedStyle(panel).borderTopStyle).toBe('dashed');
+    },
+  };
+}
+
+export const SurfaceAdapter = rootAdapterStory(Surface);
+export const CardAdapter = rootAdapterStory(Card);
+export const IndependentMaterialAdapter = rootAdapterStory(SheetPaper);
+export const SurfaceAdapterLight: Story = { ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
+
+function ContrastPortalFixture({ theme = 'light', ...props }: BottomSheetProps & { theme?: 'dark' | 'light' }) {
+  const [panel, setPanel] = useState<HTMLDivElement | null>(null);
+  return <ThemeRoot theme={theme} portalContainer={panel}>
+    <BottomSheet {...props} defaultOpen>
+      <BottomSheet.Content><BottomSheet.Panel appearance="contrast" ref={setPanel}>
+        <BottomSheet.Header><BottomSheet.Title>Trip details</BottomSheet.Title><BottomSheet.Close>Close</BottomSheet.Close></BottomSheet.Header>
+        <BottomSheet.Body tabIndex={0}>
+          <Surface appearance="default" data-testid="inherited-sheet-surface">Departure information</Surface>
+          <OverlayPortal><Surface data-testid="sheet-contrast-portal">Platform information</Surface></OverlayPortal>
+        </BottomSheet.Body>
+      </BottomSheet.Panel></BottomSheet.Content>
+    </BottomSheet>
+  </ThemeRoot>;
+}
+
+export const BottomSheetContrastPortal: Story = {
+  globals: { theme: 'light' },
+  tags: ['!autodocs'],
+  render: (args) => <ContrastPortalFixture {...args} />,
+  play: async ({ canvas, canvasElement }) => {
+    const panel = canvasElement.querySelector<HTMLElement>('[data-ui~="bottom-sheet-panel"]')!;
+    await expect(panel).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(panel, 'light');
+    const portal = await within(panel).findByTestId('sheet-contrast-portal');
+    await expect(portal.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
+    await expect(getComputedStyle(portal).backgroundColor).toBe(getComputedStyle(panel).backgroundColor);
+    await expect(getComputedStyle(canvas.getByTestId('inherited-sheet-surface')).backgroundColor).toBe(getComputedStyle(panel).backgroundColor);
+  },
+};
+export const BottomSheetContrastPortalDark: Story = {
+  ...BottomSheetContrastPortal,
+  globals: { theme: 'dark' },
+  render: (args) => <ContrastPortalFixture {...args} theme="dark" />,
+};
+
 function Parts({
   long = false,
   contentProps,
+  panelProps,
   children,
 }: {
   long?: boolean;
   contentProps?: BottomSheetContentProps;
+  panelProps?: BottomSheetPanelProps;
   children?: ReactNode;
 }) {
   return (
     <>
       <BottomSheet.Trigger>{TRIGGER}</BottomSheet.Trigger>
       <BottomSheet.Content {...contentProps}>
-        <BottomSheet.Panel>
+        <BottomSheet.Panel {...panelProps}>
           <BottomSheet.Header>
             <BottomSheet.Handle aria-label="Resize sheet" />
             <BottomSheet.Title>{TITLE}</BottomSheet.Title>
@@ -930,6 +1024,9 @@ export const ReducedMotion: Story = {
     await settled(canvasElement, 0.92);
   },
 };
+export const AdapterDrag: Story = { ...DragSettleAndDismiss, render: (args) => <BottomSheet {...args}><Parts panelProps={{ component: SheetPaper }} /></BottomSheet> };
+export const AdapterKeyboard: Story = { ...KeyboardNavigation, render: (args) => <BottomSheet {...args}><Parts panelProps={{ component: SheetPaper }} /></BottomSheet> };
+export const AdapterReducedMotion: Story = { ...ReducedMotion, render: (args) => <BottomSheet {...args}><Parts panelProps={{ component: SheetPaper }} /></BottomSheet> };
 export const ForcedColors: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],

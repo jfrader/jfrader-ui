@@ -10,6 +10,10 @@ import { Dialog } from '../dialog';
 import { Popover } from '../popover';
 import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
+import { Surface, type SurfacePartProps } from '../surface';
+import { Card } from '../card';
+import { css } from '../../styling/css';
+import { WithSx } from '../../styling/sx';
 import { DialogStack, useDialogStack, type DialogStackContentProps, type DialogStackProps } from './index';
 
 const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
@@ -70,7 +74,14 @@ const meta = {
 - Reduced motion disables dragging, entry animation, and depth motion. Back and Close still work. Closing is immediate, with no top-panel exit animation.
 - \`dismissible={false}\` refuses Escape, backdrop, and drag dismissal. \`onCancel\` can veto those requests with \`preventDefault()\`. Back and Close still work.
 - A platform close that cannot be canceled closes the native shell and requests an empty stack. If a controlled parent rejects it, the closed shell releases its scroll lock. The next explicit open request reopens it.
-- Floating overlays inside a panel need a \`ThemeRoot portalContainer\` host inside that panel.`,
+- Floating overlays inside a panel need a \`ThemeRoot portalContainer\` host inside that panel.
+
+### Panel material
+Content inherits appearance; appearance="contrast" uses fixed charcoal. Declaration-site theme and tokens cross the internal stage portal, which remains inside the modal layer.
+
+component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and css, not sx. Declare adapters outside render, render one div, forward every supplied prop/ref, and apply material before className. Changing the adapter type remounts the panel and resets focus and uncontrolled input state.
+
+Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry/motion → slot css/classes → consumer css/classes → sx. Generated handle/body, IDs, active/parent state, inertness, native dismissal and depth variables stay authoritative. Select composed panels with [data-ui~="dialog-stack"].`,
       source: {
         code: `<DialogStack>
   <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
@@ -99,6 +110,81 @@ type Story = Omit<StoryObj<DialogStackProps>, 'render' | 'play'> & {
   render?: (args: DialogStackProps) => ReactNode;
   play?: (context: StoryContext<DialogStackProps>) => Promise<void>;
 };
+
+function DeclarationScopeFixture({ contained = false, ...props }: DialogStackProps) {
+  return <div style={containerStyle}>
+    <DialogStack {...props} contained={contained} defaultValue={['scope']} variant="dialog">
+      <ThemeRoot theme="light" tokens={{ radius: { lg: '3rem' } }}>
+        <DialogStack.Content value="scope" data-testid="declaration-panel">
+          <DialogStack.Title>Account settings</DialogStack.Title>
+          <DialogStack.Close label="Close settings" />
+        </DialogStack.Content>
+      </ThemeRoot>
+    </DialogStack>
+  </div>;
+}
+
+export const StackDeclarationScopePortal: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <DeclarationScopeFixture {...args} />,
+  play: async ({ canvasElement }) => {
+    const panel = await within(canvasElement.ownerDocument.body).findByTestId('declaration-panel');
+    await expect(panel.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-theme', 'light');
+    await expectThemedSurface(panel, 'light');
+    await expect(getComputedStyle(panel).borderRadius).toBe('48px');
+    await expect(panel.closest('[data-ui="dialog-stack-stage"]')).not.toBeNull();
+  },
+};
+
+export const StackDeclarationScopeContained: Story = {
+  ...StackDeclarationScopePortal,
+  args: { contained: true, children: null },
+};
+
+const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
+function StackPaper({ className, ...props }: SurfacePartProps) {
+  return <WithSx styles={adapterMaterial} className={className}>{(classes) => <div {...props} className={classes} />}</WithSx>;
+}
+
+function rootAdapterStory(component: DialogStackContentProps['component']): Story {
+  const customization: Partial<DialogStackContentProps> = {
+    component,
+    slotProps: { root: {
+      'data-state': 'wrong', inert: true, className: 'panel-slot',
+      ref: (node) => { if (node) node.dataset.rootRef = 'slot'; },
+      style: { '--dialog-stack-depth': 99 } as CSSProperties,
+    } },
+  };
+  return {
+    tags: ['!autodocs'],
+    render: (args) => <Levels {...args} defaultValue={['settings']} contentProps={{ settings: customization, account: customization }} />,
+    play: async ({ canvasElement, userEvent }) => {
+      const body = within(canvasElement.ownerDocument.body);
+      const shell = canvasElement.querySelector('dialog')!;
+      const panel = shell.querySelector<HTMLElement>('[data-ui~="dialog-stack"]')!;
+      await expect(panel).toHaveAttribute('data-root-ref', 'slot');
+      await expect(panel).toHaveAttribute('data-state', 'active');
+      await expect(panel).not.toHaveAttribute('inert');
+      await expect(panel.style.getPropertyValue('--dialog-stack-depth')).toBe('0');
+      await expect(panel.querySelectorAll('[data-ui="dialog-stack-handle"]')).toHaveLength(1);
+      await expect(panel.querySelectorAll('[data-ui="dialog-stack-body"]')).toHaveLength(1);
+      const trigger = body.getByRole('button', { name: 'Account' });
+      await userEvent.click(trigger);
+      await waitFor(() => expect(panel).toHaveAttribute('inert'));
+      await expect(panel).toHaveAttribute('aria-hidden', 'true');
+      await userEvent.click(body.getByRole('button', { name: 'Back to Settings' }));
+      await waitFor(() => expect(panel).not.toHaveAttribute('inert'));
+      await expect(trigger).toHaveFocus();
+      await expect(shell.querySelector('[data-ui~="dialog-stack"]')).toBe(panel);
+      if (component === StackPaper) await expect(getComputedStyle(panel).borderTopStyle).toBe('dashed');
+    },
+  };
+}
+
+export const SurfaceAdapter = rootAdapterStory(Surface);
+export const CardAdapter = rootAdapterStory(Card);
+export const IndependentMaterialAdapter = rootAdapterStory(StackPaper);
+export const SurfaceAdapterLight: Story = { ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
 
 interface LevelsProps extends Omit<DialogStackProps, 'children'> {
   contentProps?: Partial<Record<string, Partial<DialogStackContentProps>>>;
@@ -1596,3 +1682,7 @@ export const ControlledRejectDrag: Story = {
     await expect(panelTitled(canvasElement, 'Settings').inert).toBe(true);
   },
 };
+
+export const AdapterDrag: Story = { ...Drag, render: (args) => <Levels {...args} contentProps={{ settings: { component: StackPaper }, account: { component: StackPaper } }} /> };
+export const AdapterRejectedDrag: Story = { ...ControlledRejectDrag, render: (args) => <Levels {...args} contentProps={{ settings: { component: StackPaper }, account: { component: StackPaper } }} /> };
+export const AdapterReducedMotion: Story = { ...ReducedMotion, render: (args) => <Levels {...args} contentProps={{ settings: { component: StackPaper }, account: { component: StackPaper } }} /> };

@@ -59,7 +59,10 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { modalShellReset, raisedSurface } from '../../styling/surface';
+import { modalShellReset } from '../../styling/surface';
+import { ThemeBoundary } from '../../styling/theme-scope';
+import type { DrawerPanelProps } from '../drawer';
+import { SurfaceRoot } from '../surface/surface-root';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-dialog';
@@ -94,7 +97,9 @@ export interface DialogStackTriggerProps extends ComponentPropsWithRef<'button'>
   value: string;
 }
 
-export interface DialogStackContentProps extends Omit<ComponentPropsWithRef<'div'>, 'onCancel'>, SxProps {
+export interface DialogStackContentProps extends Omit<DrawerPanelProps, 'onCancel'> {
+  /** Inherit appearance by default; `contrast` establishes fixed charcoal. */
+  appearance?: DrawerPanelProps['appearance'];
   /** Identifies this panel. Keep the key stable and unique within the stack. */
   value: string;
   /** Allows Escape, backdrop, and drag dismissal. Defaults to `true`. When `false`, Back and Close still work. */
@@ -219,6 +224,7 @@ const DEPTH_SCALE_STEP = 0.05;
 const DEPTH = 'var(--dialog-stack-depth, 0)';
 const INDEX = 'var(--dialog-stack-index, 0)';
 const ACTIVE_SIZE = 'var(--dialog-stack-active-size, 0px)';
+const PANEL_MOTION_STYLE_KEYS = ['translate'] as const;
 
 const sheetEntry = keyframes({ from: { opacity: 0, transform: 'translateY(100%)' } });
 const dialogEntry = keyframes({ from: { opacity: 0, transform: 'scale(0.96)' } });
@@ -257,13 +263,11 @@ const stageStyle = css({
 });
 
 const panelStyle = css({
-  ...raisedSurface,
   position: 'absolute',
   zIndex: INDEX,
   display: 'flex',
   flexDirection: 'column',
   minBlockSize: 0,
-  boxShadow: vars.shadow.floating,
   pointerEvents: 'auto',
   overflow: 'hidden',
   '&:focus-visible': { ...focusRingInset },
@@ -275,10 +279,6 @@ const panelStyle = css({
   animationTimingFunction: vars.motion.easeStandard,
   animationFillMode: 'backwards',
   [REDUCED_MOTION]: { animation: 'none', transitionDuration: '0s' },
-  [FORCED_COLORS]: {
-    boxShadow: 'none',
-    borderColor: 'CanvasText',
-  },
 });
 
 /** Each level down the stack leaves one more peek of room, never below the panel minimum. */
@@ -290,6 +290,7 @@ function depthCappedBlockSize(gap: string, peek: string) {
 // so a consumer `sx` merged after them overrides them.
 const panelVariantStyles: Record<ResolvedVariant, SerializedStyles> = {
   sheet: css({
+    borderRadius: 0,
     insetInline: 0,
     insetBlockEnd: 0,
     marginInline: 'auto',
@@ -964,21 +965,21 @@ function useHandleDrag(enabled: boolean, panelRef: RefObject<HTMLDivElement | nu
   }, [enabled, panelRef, dismissTop]);
 }
 
-function DialogStackContent({ ref, value, className, sx, ...props }: DialogStackContentProps) {
+function DialogStackContent({
+  ref, value, className, sx, component, slots, slotProps, css: consumerCss, appearance,
+  dismissible = true, onCancel, withDescription = true, ...props
+}: DialogStackContentProps) {
+  const selected = { ...props, ...slotProps?.root };
   const {
     children,
-    dismissible = true,
-    onCancel,
-    withDescription = true,
     onKeyDown,
     onKeyDownCapture,
     onKeyUp,
-    style,
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
     'aria-describedby': ariaDescribedBy,
     ...rest
-  } = props;
+  } = selected;
   const root = useDialogStackContext('Content');
   const { contained, variant, stage, register, unregister, setNaming, dismissTop, escapeOwnedByChildRef } = root;
   const baseId = useId();
@@ -1030,7 +1031,9 @@ function DialogStackContent({ ref, value, className, sx, ...props }: DialogStack
     },
     [entry],
   );
-  const panelRefs = useMergeRefs([panelRef, ref, setPanel]);
+  const panelRefs = useMergeRefs([panelRef, setPanel]);
+  const stageRef = useRef<HTMLElement | null>(stage);
+  stageRef.current = stage;
 
   const gesture = useHandleDrag(isTop && dismissible && !('data-sheet-no-drag' in rest), panelRef, dismissTop);
 
@@ -1063,54 +1066,67 @@ function DialogStackContent({ ref, value, className, sx, ...props }: DialogStack
 
   const dialogRole = contained && isTop;
   const panelStyleVars = {
-    ...style,
     '--dialog-stack-index': index,
     '--dialog-stack-depth': depth,
   } as CSSProperties;
 
   return createPortal(
-    <SheetContentContext.Provider value={contentContext}>
-      <WithSx
-        className={className}
-        styles={[panelStyle, panelVariantStyles[variant], !isTop && parentStyles[variant]]}
-        sx={sx}
-      >
-        {(className) => (
-          <div
-            {...rest}
-            ref={panelRefs}
-            data-ui="dialog-stack"
-            data-state={isTop ? 'active' : 'parent'}
-            data-variant={variant}
-            data-depth={depth}
-            role={dialogRole ? 'dialog' : undefined}
-            aria-modal={dialogRole ? 'true' : undefined}
-            aria-label={dialogRole ? ariaLabel : undefined}
-            aria-labelledby={dialogRole ? labelledBy : undefined}
-            aria-describedby={dialogRole ? describedBy : undefined}
-            aria-hidden={isTop ? undefined : 'true'}
-            inert={!isTop}
-            tabIndex={-1}
-            style={panelStyleVars}
-            onKeyDownCapture={handleKeyDownCapture}
-            onKeyDown={handleKeyDown}
-            onKeyUp={handleKeyUp}
-            className={className}
-          >
-            <div
-              {...gesture}
-              data-ui="dialog-stack-handle"
-              data-draggable={gesture ? '' : undefined}
-              aria-hidden="true"
-              css={handleStyle}
-            />
-            <div data-ui="dialog-stack-body" css={scrollerStyle}>
-              {children}
-            </div>
-          </div>
-        )}
-      </WithSx>
-    </SheetContentContext.Provider>,
+    <ThemeBoundary>
+      <SheetContentContext.Provider value={contentContext}>
+        <SurfaceRoot
+          {...rest}
+          ref={ref}
+          component={component}
+          slots={slots}
+          slotProps={slotProps}
+          appearance={appearance}
+          css={consumerCss}
+          owner="DialogStack.Content"
+          marker="dialog-stack"
+          variant="floating"
+          className={className}
+          structure={[panelStyle, panelVariantStyles[variant], !isTop && parentStyles[variant]]}
+          sx={sx}
+          internalRef={panelRefs}
+          containerRef={stageRef}
+          style={props.style}
+          reservedStyle={panelStyleVars}
+          reservedStyleKeys={PANEL_MOTION_STYLE_KEYS}
+          attributes={{
+            'data-state': isTop ? 'active' : 'parent',
+            'data-variant': variant,
+            'data-depth': depth,
+            role: dialogRole ? 'dialog' : undefined,
+            'aria-modal': dialogRole ? 'true' : undefined,
+            'aria-label': dialogRole ? ariaLabel : undefined,
+            'aria-labelledby': dialogRole ? labelledBy : undefined,
+            'aria-describedby': dialogRole ? describedBy : undefined,
+            'aria-hidden': isTop ? undefined : 'true',
+            inert: !isTop,
+            tabIndex: -1,
+            onKeyDownCapture: handleKeyDownCapture,
+            onKeyDown: handleKeyDown,
+            onKeyUp: handleKeyUp,
+          }}
+          wrapChildren={(body) => (
+            <>
+              <div
+                {...gesture}
+                data-ui="dialog-stack-handle"
+                data-draggable={gesture ? '' : undefined}
+                aria-hidden="true"
+                css={handleStyle}
+              />
+              <div data-ui="dialog-stack-body" css={scrollerStyle}>
+                {body}
+              </div>
+            </>
+          )}
+        >
+          {children}
+        </SurfaceRoot>
+      </SheetContentContext.Provider>
+    </ThemeBoundary>,
     stage,
   );
 }

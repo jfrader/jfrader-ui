@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode, type Ref, type RefObject } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
-import { raisedSurface, surfaceTheme } from '../../styling/surface';
+import { raisedSurface, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
 import {
   AppearanceScope,
   themeColorSchemeStyle,
@@ -50,6 +50,11 @@ interface SurfaceRootProps extends SurfaceProps {
   structure?: Interpolation<Theme>;
   attributes?: SurfacePartProps;
   wrapChildren?: (children: ReactNode) => ReactNode;
+  internalRef?: Ref<HTMLDivElement>;
+  containerRef?: RefObject<HTMLElement | null>;
+  defaultAppearance?: SurfaceAppearance;
+  reservedStyle?: CSSProperties;
+  reservedStyleKeys?: readonly string[];
 }
 
 export function SurfaceRoot({
@@ -59,6 +64,11 @@ export function SurfaceRoot({
   structure,
   attributes,
   wrapChildren,
+  internalRef,
+  containerRef,
+  defaultAppearance = 'default',
+  reservedStyle,
+  reservedStyleKeys,
   appearance: appearanceProp,
   component,
   slots,
@@ -69,7 +79,7 @@ export function SurfaceRoot({
   style,
   ...host
 }: SurfaceRootProps) {
-  const appearance = resolveSurfaceValue(owner, 'appearance', appearanceProp, appearances, 'default');
+  const appearance = resolveSurfaceValue(owner, 'appearance', appearanceProp, appearances, defaultAppearance);
   const effectiveAppearance = useSurfaceAppearance(appearance);
   const parent = useThemeScope();
   const ownTheme = surfaceTheme(appearance);
@@ -80,11 +90,15 @@ export function SurfaceRoot({
   const declaredAppearance = ownTheme || merged['data-appearance'] === effectiveAppearance
     ? effectiveAppearance
     : undefined;
-  const rootStyle = useSurfaceStyle(declaredTheme ?? null, { ...style, ...slotStyle });
+  const mergedStyle = { ...style, ...slotStyle };
+  const consumerStyle = reservedStyleKeys
+    ? Object.fromEntries(Object.entries(mergedStyle).filter(([key]) => !reservedStyleKeys.includes(key)))
+    : mergedStyle;
+  const rootStyle = useSurfaceStyle(declaredTheme ?? null, { ...consumerStyle, ...reservedStyle });
   const Root = slots?.root ?? component ?? 'div';
   const previousRoot = useRef(Root);
   const node = useRef<HTMLDivElement>(null);
-  const ref = useMergeRefs([node, merged.ref]);
+  const ref = useMergeRefs([node, internalRef, merged.ref]);
 
   if (process.env.NODE_ENV !== 'production') {
     if (previousRoot.current !== Root) {
@@ -102,6 +116,8 @@ export function SurfaceRoot({
       const Div = node.current?.ownerDocument?.defaultView?.HTMLDivElement;
       if (!Div || !(node.current instanceof Div)) {
         console.warn(`${owner}: root must forward its ref to one HTMLDivElement. Missing or non-div root registration.`);
+      } else if (containerRef && !containerRef.current?.contains(node.current)) {
+        console.warn(`${owner}: root must remain inside its owning shell or stage.`);
       }
     }
   });

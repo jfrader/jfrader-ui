@@ -36,7 +36,9 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { modalShellReset, raisedSurface } from '../../styling/surface';
+import { modalShellReset } from '../../styling/surface';
+import type { DrawerPanelProps } from '../drawer';
+import { SurfaceRoot } from '../surface/surface-root';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
@@ -70,7 +72,10 @@ export interface BottomSheetContentProps
   extends Omit<ComponentPropsWithRef<'dialog'>, 'open'>, SxProps {
   withDescription?: boolean;
 }
-export interface BottomSheetPanelProps extends ComponentPropsWithRef<'div'>, SxProps {}
+export interface BottomSheetPanelProps extends DrawerPanelProps {
+  /** Inherit appearance by default; `contrast` establishes fixed charcoal. */
+  appearance?: DrawerPanelProps['appearance'];
+}
 export interface BottomSheetHeaderProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface BottomSheetBodyProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface BottomSheetFooterProps extends ComponentPropsWithRef<'div'>, SxProps {}
@@ -126,7 +131,6 @@ const scrimStyle = css({
   opacity: 'var(--sheet-scrim, 1)',
 });
 const panelStyle = css({
-  ...raisedSurface,
   position: 'absolute',
   insetBlockStart: 0,
   insetInline: 0,
@@ -137,13 +141,13 @@ const panelStyle = css({
   display: 'flex',
   flexDirection: 'column',
   minBlockSize: 0,
+  borderRadius: 0,
   borderStartStartRadius: vars.radius.lg,
   borderStartEndRadius: vars.radius.lg,
-  boxShadow: vars.shadow.floating,
   paddingBlockEnd: 'env(safe-area-inset-bottom, 0px)',
   '&:focus-visible': focusRingOutset,
-  [FORCED_COLORS]: { boxShadow: 'none', borderColor: 'CanvasText' },
 });
+const PANEL_MOTION_STYLE_KEYS = ['transform', '--sheet-height'] as const;
 const headerStyle = css({
   flexShrink: 0,
   display: 'grid',
@@ -258,8 +262,9 @@ type Gesture = Pick<
   ComponentPropsWithRef<'div'>,
   'onPointerDown' | 'onPointerMove' | 'onPointerUp' | 'onPointerCancel' | 'onLostPointerCapture'
 >;
-interface SurfaceContext {
+interface SheetSurfaceValue {
   panelRef: RefObject<HTMLDivElement | null>;
+  dialogRef: RefObject<HTMLDialogElement | null>;
   bodyRef: RefObject<HTMLDivElement | null>;
   gesture: Gesture;
   cancelDrag: () => boolean;
@@ -269,7 +274,7 @@ interface SurfaceContext {
   reset: () => void;
 }
 const Context = createContext<SheetContext | null>(null);
-const Surface = createContext<SurfaceContext | null>(null);
+const SheetSurfaceContext = createContext<SheetSurfaceValue | null>(null);
 function useSheet(part: string) {
   const context = useContext(Context);
   if (!context) throw new Error(`BottomSheet.${part} must be rendered inside <BottomSheet>.`);
@@ -739,7 +744,7 @@ function useSheetSurface(context: SheetContext, dialogRef: RefObject<HTMLDialogE
       body.removeEventListener('touchcancel', cancel);
     };
   }, [cancelDrag]);
-  return { panelRef, bodyRef, gesture, cancelDrag, suppressClick, transition, reset };
+  return { panelRef, dialogRef, bodyRef, gesture, cancelDrag, suppressClick, transition, reset };
 }
 
 function BottomSheetContent({ ref, sx, className, ...props }: BottomSheetContentProps) {
@@ -839,7 +844,7 @@ function BottomSheetContent({ ref, sx, className, ...props }: BottomSheetContent
           }
         >
           <div css={scrimStyle} aria-hidden="true" />
-          <Surface.Provider value={surface}>{children}</Surface.Provider>
+          <SheetSurfaceContext.Provider value={surface}>{children}</SheetSurfaceContext.Provider>
           <span css={hiddenStyle} role="status" aria-live="polite" aria-atomic="true">
             {announcement}
           </span>
@@ -854,42 +859,41 @@ function BottomSheetContent({ ref, sx, className, ...props }: BottomSheetContent
 BottomSheetContent.displayName = 'BottomSheet.Content';
 
 function BottomSheetPanel({
-  ref,
-  sx,
-  className,
   autoFocus = true,
   ...props
 }: BottomSheetPanelProps) {
   const context = useSheet('Panel');
-  const surface = useContext(Surface);
+  const surface = useContext(SheetSurfaceContext);
+  if (!surface) throw new Error('BottomSheet.Panel must be rendered inside <BottomSheet.Content>.');
+  const selectedAutoFocus = props.slotProps?.root?.autoFocus ?? autoFocus;
   const autofocusRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (autoFocus && node && !node.querySelector('[autofocus]'))
+      if (selectedAutoFocus && node && !node.querySelector('[autofocus]'))
         node.setAttribute('autofocus', '');
     },
-    [autoFocus],
+    [selectedAutoFocus],
   );
-  const merged = useMergeRefs([ref, surface?.panelRef, autofocusRef]);
+  const merged = useMergeRefs([surface.panelRef, autofocusRef]);
   return (
-    <WithSx className={className} styles={panelStyle} sx={sx}>
-      {(className) => (
-        <div
-          tabIndex={-1}
-          {...props}
-          ref={merged}
-          id={context.panelId}
-          data-ui="bottom-sheet-panel"
-          className={className}
-        />
-      )}
-    </WithSx>
+    <SurfaceRoot
+      tabIndex={-1}
+      {...props}
+      owner="BottomSheet.Panel"
+      marker="bottom-sheet-panel"
+      variant="floating"
+      structure={panelStyle}
+      internalRef={merged}
+      containerRef={surface.dialogRef}
+      reservedStyleKeys={PANEL_MOTION_STYLE_KEYS}
+      attributes={{ id: context.panelId }}
+    />
   );
 }
 BottomSheetPanel.displayName = 'BottomSheet.Panel';
 
 function BottomSheetHeader({ ref, sx, className, ...props }: BottomSheetHeaderProps) {
   useSheet('Header');
-  const surface = useContext(Surface);
+  const surface = useContext(SheetSurfaceContext);
   const gesture = Object.fromEntries(
     Object.entries(surface?.gesture ?? {}).map(([key, handler]) => [
       key,
@@ -924,7 +928,7 @@ function BottomSheetBody({
   ...props
 }: BottomSheetBodyProps) {
   const context = useSheet('Body');
-  const surface = useContext(Surface);
+  const surface = useContext(SheetSurfaceContext);
   const merged = useMergeRefs([ref, surface?.bodyRef]);
   const focusFrame = useRef<{ window: Window; id: number } | null>(null);
   useEffect(
@@ -1058,7 +1062,7 @@ function BottomSheetHandle({
   ...props
 }: BottomSheetHandleProps) {
   const context = useSheet('Handle');
-  const surface = useContext(Surface);
+  const surface = useContext(SheetSurfaceContext);
   const last = context.detents.length - 1;
   return (
     <WithSx className={className} styles={[controlStyle, handleStyle]} sx={sx}>
