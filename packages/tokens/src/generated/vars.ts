@@ -103,9 +103,11 @@ export const vars = {
     "duration": {
       "fast": "var(--ui-motion-duration-fast)",
       "base": "var(--ui-motion-duration-base)",
-      "slow": "var(--ui-motion-duration-slow)"
+      "slow": "var(--ui-motion-duration-slow)",
+      "presence": "var(--ui-motion-duration-presence)"
     },
-    "easeStandard": "var(--ui-motion-ease-standard)"
+    "easeStandard": "var(--ui-motion-ease-standard)",
+    "easePresence": "var(--ui-motion-ease-presence)"
   },
   "size": {
     "emblemSm": "var(--ui-size-emblem-sm)",
@@ -115,6 +117,7 @@ export const vars = {
     "gameCardSm": "var(--ui-size-game-card-sm)",
     "gameCardMd": "var(--ui-size-game-card-md)",
     "gameCardLg": "var(--ui-size-game-card-lg)",
+    "gameCardPerspective": "var(--ui-size-game-card-perspective)",
     "sheetStackBreakpoint": "var(--ui-size-sheet-stack-breakpoint)",
     "sheetStackSheetPeek": "var(--ui-size-sheet-stack-sheet-peek)",
     "sheetStackDialogPeek": "var(--ui-size-sheet-stack-dialog-peek)"

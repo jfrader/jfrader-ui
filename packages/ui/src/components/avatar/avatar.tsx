@@ -4,9 +4,9 @@
 // and text for AT; the name stays unchanged when a broken photo falls back to initials. Not interactive.
 import { useState, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { FORCED_COLORS } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { getInitials } from '../../utils/initials';
 
 export type AvatarSize = 'sm' | 'md' | 'lg';
@@ -25,6 +25,8 @@ export interface AvatarProps
   src?: string;
   size?: AvatarSize;
   status?: AvatarStatus;
+  /** Pulse the presence ring only when `status="online"`. Defaults to `false`. */
+  pulse?: boolean;
   /** Spoken status word; defaults to the `status` value. Pass a translated word for other locales. */
   statusLabel?: string;
   slotProps?: {
@@ -77,6 +79,8 @@ const statusStyle = css({
   insetInlineEnd: 0,
   inlineSize: '25%',
   blockSize: '25%',
+  // Let clicks and hover pass through the decorative dot and expanding ring.
+  pointerEvents: 'none',
   '&::before': {
     content: '""',
     position: 'absolute',
@@ -119,12 +123,43 @@ const statusForcedColorsStyle = css({
   },
 });
 
+const presenceRipple = keyframes({
+  from: { transform: 'scale(.8)', opacity: 1 },
+  to: { transform: 'scale(2.4)', opacity: 0 },
+});
+
+const hiddenPresenceRing = {
+  '&[data-status="online"][data-pulse]::after': {
+    content: 'none',
+    display: 'none',
+    animation: 'none',
+  },
+} as const;
+
+const statusPulseStyle = css({
+  '&[data-status="online"][data-pulse]::after': {
+    content: '""',
+    position: 'absolute',
+    insetBlockStart: 0,
+    insetInlineStart: 0,
+    inlineSize: '100%',
+    blockSize: '100%',
+    borderRadius: vars.radius.full,
+    color: vars.color.success,
+    border: '1px solid currentColor',
+    animation: `${presenceRipple} ${vars.motion.duration.presence} infinite ${vars.motion.easePresence}`,
+  },
+  [REDUCED_MOTION]: hiddenPresenceRing,
+  [FORCED_COLORS]: hiddenPresenceRing,
+});
+
 export function Avatar({
   ref,
   name,
   src,
   size = 'md',
   status,
+  pulse = false,
   statusLabel,
   slotProps,
   className,
@@ -158,8 +193,9 @@ export function Avatar({
             <span
               aria-hidden="true"
               data-status={status}
+              data-pulse={pulse && status === 'online' ? '' : undefined}
               className={slotProps?.status?.className}
-              css={[statusStyle, statusToneStyles[status], statusForcedColorsStyle, slotProps?.status?.css]}
+              css={[statusStyle, statusToneStyles[status], statusForcedColorsStyle, statusPulseStyle, slotProps?.status?.css]}
             />
           )}
         </span>

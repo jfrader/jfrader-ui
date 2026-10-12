@@ -107,8 +107,10 @@ export const base = {
       fast: '120ms',
       base: '160ms',
       slow: '240ms',
+      presence: '1200ms',
     },
     easeStandard: 'cubic-bezier(0.2, 0.6, 0.2, 1)',
+    easePresence: 'ease-in-out',
   },
   // Component structural sizes; theme-independent, so light shares them.
   size: {
@@ -121,6 +123,7 @@ export const base = {
     gameCardSm: '32px',
     gameCardMd: '72px',
     gameCardLg: '112px',
+    gameCardPerspective: '600px',
     // Layer inline size at which SheetStack's auto variant switches from sheet to centered dialog.
     sheetStackBreakpoint: '640px',
     // How much of each parent panel shows above the active one.
