@@ -287,6 +287,8 @@ export const InitiallyCollapsed: Story = {
       'data-side',
       'start',
     );
+    const restore = separator.querySelector<HTMLElement>('[data-ui="resizable-panels-restore"]')!;
+    await expect(getComputedStyle(restore, '::before').forcedColorAdjust).toBe('none');
     await expect(canvas.queryByRole('button', { name: 'Hide' })).toBeNull();
     const hide = folders!.querySelector('button')!;
     hide.focus();
@@ -702,6 +704,7 @@ export const ExternalARIA: Story = {
       separator: {
         'aria-labelledby': 'resize-label missing-reference',
         'aria-describedby': 'resize-help',
+        'aria-controls': 'mail-heading',
       },
     },
   },
@@ -738,6 +741,10 @@ export const ExternalARIA: Story = {
     await expect(separator).not.toHaveAttribute('aria-label');
     await expect(separator).toHaveAccessibleName('Resize Folders');
     await expect(separator).toHaveAttribute('aria-describedby', 'resize-help');
+    await expect(separator.getAttribute('aria-controls')?.split(' ')).toEqual([
+      'mail-heading',
+      canvas.getByRole('group', { name: 'Folders' }).id,
+    ]);
     await expect(separator).toHaveAccessibleDescription('Resize with arrow keys');
     await expect(canvas.getByRole('group', { name: 'Folders' })).toBeInTheDocument();
   },

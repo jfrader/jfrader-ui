@@ -204,6 +204,7 @@ const restoreStyle = css({
   '&::before': {
     content: '""',
     borderBlock: `${vars.space[1]} solid transparent`,
+    forcedColorAdjust: 'none',
   },
   '&[data-side="start"]::before': { borderInlineStart: `${vars.space[1]} solid currentColor` },
   '&[data-side="end"]::before': { borderInlineEnd: `${vars.space[1]} solid currentColor` },
@@ -822,7 +823,7 @@ function ResizablePanelsRoot({
         role="separator"
         tabIndex={disabled ? -1 : 0}
         aria-orientation="vertical"
-        aria-controls={primary.id}
+        aria-controls={[slot?.['aria-controls'], primary.id].filter(Boolean).join(' ')}
         aria-valuenow={now}
         aria-valuemin={min}
         aria-valuemax={max}
