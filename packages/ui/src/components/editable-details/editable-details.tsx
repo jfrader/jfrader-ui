@@ -80,17 +80,17 @@ interface DisclosureScope {
 const DisclosureContext = createContext<DisclosureScope>({ visible: true, triggers: [] });
 
 const rootStyle = css({
-  label: 'editable-details', display: 'grid', gap: vars.space[4], minInlineSize: 0,
+  label: 'editable-details', display: 'grid', gap: vars.space[6], minInlineSize: 0,
   maxInlineSize: '100%', fontFamily: vars.font.sans, color: vars.color.text,
   lineHeight: vars.lineHeight.base, textAlign: 'start', overflowWrap: 'anywhere',
 });
-const sectionStyle = css({ minInlineSize: 0, borderBlockEnd: `1px solid ${vars.color.border}` });
+const sectionStyle = css({ minInlineSize: 0 });
 const headingStyle = css({ margin: 0, font: 'inherit' });
 const triggerStyle = css({
   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: vars.space[3],
   inlineSize: '100%', minInlineSize: 0, minBlockSize: vars.space[10],
-  paddingBlock: vars.space[2], paddingInline: vars.space[2], border: 0,
-  background: 'transparent', color: 'inherit', font: 'inherit', fontWeight: vars.fontWeight.medium,
+  paddingBlock: vars.space[2], paddingInlineStart: 0, paddingInlineEnd: vars.space[2], border: 0,
+  background: 'transparent', color: 'inherit', font: 'inherit', fontWeight: vars.fontWeight.semibold,
   textAlign: 'start', overflowWrap: 'anywhere', cursor: 'pointer',
   '&::after': disclosureCaret,
   '&[aria-expanded="true"]::after': { transform: 'rotate(90deg)' },
@@ -99,13 +99,14 @@ const triggerStyle = css({
   [REDUCED_MOTION]: { '&::after': { transitionDuration: '0s' } },
   [FORCED_COLORS]: { '&::after': { forcedColorAdjust: 'none', borderInlineStartColor: 'ButtonText' } },
 });
-const panelStyle = css({ display: 'grid', gap: vars.space[3], minInlineSize: 0, paddingBlock: vars.space[3], '&[hidden]': { display: 'none' } });
+const panelStyle = css({ display: 'grid', gap: vars.space[4], minInlineSize: 0, paddingBlockStart: vars.space[2], '&[hidden]': { display: 'none' } });
 const listStyle = css({ margin: 0, minInlineSize: 0 });
 const itemStyle = css({
   display: 'flex', flexWrap: 'wrap', gap: vars.space[2], minInlineSize: 0,
-  paddingBlock: vars.space[3], borderBlockEnd: `1px solid ${vars.color.border}`,
+  paddingBlock: vars.space[3],
+  '&:where(:not(:last-child))': { borderBlockEnd: `1px solid ${vars.color.border}` },
 });
-const labelStyle = css({ flex: '1 1 10rem', minInlineSize: 0, fontWeight: vars.fontWeight.medium });
+const labelStyle = css({ flex: '1 1 10rem', minInlineSize: 0, color: vars.color.textMuted, fontWeight: vars.fontWeight.regular });
 const descriptionStyle = css({ flex: '2 1 16rem', minInlineSize: 0, margin: 0 });
 const summaryStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'start', gap: vars.space[2], minInlineSize: 0 });
 const valueStyle = css({ flex: '1 1 8rem', minInlineSize: 0 });

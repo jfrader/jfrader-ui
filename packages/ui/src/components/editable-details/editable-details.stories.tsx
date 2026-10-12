@@ -81,6 +81,48 @@ export const Light: Story = { render: () => <DetailsFixture />, decorators: [wit
 export const Rtl: Story = { render: () => <div dir="rtl"><DetailsFixture /></div> };
 export const Narrow: Story = { render: () => <div style={{ inlineSize: '220px' }}><DetailsFixture /></div> };
 
+export const SeparatorRhythm: Story = {
+  render: () => <EditableDetails>
+    <EditableDetails.Section title="Identity" defaultOpen headingLevel={2}>
+      <EditableDetails.List>
+        <EditableDetails.Item label="Project">Apollo</EditableDetails.Item>
+        <EditableDetails.Item label="Owner">Flight operations</EditableDetails.Item>
+      </EditableDetails.List>
+    </EditableDetails.Section>
+    <EditableDetails.Section title="Delivery" defaultOpen headingLevel={2}>
+      <EditableDetails.Section title="Notifications" defaultOpen>
+        <EditableDetails.List><EditableDetails.Item label="Email">Enabled</EditableDetails.Item></EditableDetails.List>
+      </EditableDetails.Section>
+      <EditableDetails.Section title="Empty section" defaultOpen />
+    </EditableDetails.Section>
+    <EditableDetails.List>
+      <EditableDetails.Item label="Revision">3</EditableDetails.Item>
+      <EditableDetails.Item label="Archived">No</EditableDetails.Item>
+    </EditableDetails.List>
+  </EditableDetails>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    for (const list of canvasElement.querySelectorAll('dl')) {
+      const rows = Array.from(list.children);
+      for (const [index, row] of rows.entries()) {
+        const style = getComputedStyle(row);
+        await expect(style.borderBlockStartWidth).toBe('0px');
+        await expect(style.borderBlockEndWidth).toBe(index === rows.length - 1 ? '0px' : '1px');
+      }
+    }
+    for (const section of canvasElement.querySelectorAll('section')) {
+      await expect(getComputedStyle(section).borderBlockEndWidth).toBe('0px');
+    }
+    const heading = canvas.getByRole('button', { name: 'Identity' });
+    const label = canvas.getByText('Project');
+    await expect(getComputedStyle(heading).paddingInlineStart).toBe('0px');
+    await expect(heading.getBoundingClientRect().left).toBe(label.getBoundingClientRect().left);
+    await expect(Number(getComputedStyle(heading).fontWeight)).toBeGreaterThan(Number(getComputedStyle(label).fontWeight));
+    await userEvent.click(canvas.getByRole('button', { name: 'Delivery' }));
+    await expect(canvas.getByRole('button', { name: 'Delivery' })).toHaveAttribute('aria-expanded', 'false');
+    await expect(canvas.queryByRole('button', { name: 'Notifications' })).not.toBeInTheDocument();
+  },
+};
+
 function ControlledFixture({ onItemOpenChange }: Pick<StoryArgs, 'onItemOpenChange'>) {
   const [open, setOpen] = useState(false);
   const [requested, setRequested] = useState(false);

@@ -227,7 +227,7 @@ function ContactRow() {
 }
 function InlineTitleRow() {
   const [value, setValue] = useState('Northwind Core');
-  return <EditableDetails.Item label="Display title"><InlineEdit label="Display title" value={value} onValueChange={setValue} onSave={() => {}} /></EditableDetails.Item>;
+  return <EditableDetails.Item label="Display title"><InlineEdit label="Display title" variant="body" size="sm" value={value} onValueChange={setValue} onSave={() => {}} /></EditableDetails.Item>;
 }
 
 interface PendingResponse { resolve: () => void; reject: () => void }
