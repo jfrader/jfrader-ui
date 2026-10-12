@@ -213,8 +213,9 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 
 - PascalCase components, `<Name>Props` types, explicit public exports; helpers stay private.
 - Storybook groups components by the `storySort` order in `apps/storybook/.storybook/preview.tsx` (`Home`,
-  `Foundations`, `Inputs`, `Pickers`, `Data display`, `Feedback`, `Navigation`, `Surfaces`, `Layout`,
-  `Games`, `Showcase`). A new section is added there and to this list in the same change.
+  `Foundations`, `Inputs`, `Pickers`, `Data display`, `Data`, `Media`, `Feedback`, `Navigation`,
+  `Surfaces`, `Layout`, `Actions`, `Games`, `Showcase`). A new section is added there
+  and to this list in the same change.
 - React 19 ref-as-prop: components are plain functions reading `ref` from props typed with
   `ComponentPropsWithRef<'el'>`; never `forwardRef`. Every public component and compound part sets a
   dotted `displayName` (`Dialog.Trigger`) so DevTools and Storybook code panels show the public name.

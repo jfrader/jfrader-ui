@@ -82,8 +82,21 @@ const preview: Preview = {
     options: {
       storySort: {
         order: [
-          'Home', 'Foundations', ['Getting started', 'Theming', 'Styling', '*'],
-          'Inputs', 'Pickers', 'Data display', 'Feedback', 'Navigation', 'Surfaces', 'Layout', 'Games', 'Showcase',
+          'Home',
+          'Foundations',
+          ['Getting started', 'Theming', 'Styling', 'Theme', 'Custom accent', 'Next.js', '*'],
+          'Inputs',
+          'Pickers',
+          'Data display',
+          'Data',
+          'Media',
+          'Feedback',
+          'Navigation',
+          'Surfaces',
+          'Layout',
+          'Actions',
+          'Games',
+          'Showcase',
         ],
       },
     },
