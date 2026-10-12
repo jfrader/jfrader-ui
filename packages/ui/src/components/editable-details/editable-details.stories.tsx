@@ -415,3 +415,31 @@ export const SurvivingAncestorFocus: Story = {
     await expect(canvas.getByRole('button', { name: 'Surviving section' })).toHaveFocus();
   },
 };
+
+function RevokedRequestFixture({ onItemOpenChange }: Pick<StoryArgs, 'onItemOpenChange'>) {
+  const [capable, setCapable] = useState(true);
+  const [open, setOpen] = useState(false);
+  return <>
+    <EditableDetails><EditableDetails.List>
+      <EditableDetails.Item label="Permission" open={open} onOpenChange={onItemOpenChange}
+        renderEditor={capable ? (props) => <DraftEditor {...props} /> : undefined}>Apollo</EditableDetails.Item>
+    </EditableDetails.List></EditableDetails>
+    <Button onMouseDown={(event) => event.preventDefault()} onClick={() => setCapable(!capable)}>Change permission</Button>
+    <Button onMouseDown={(event) => event.preventDefault()} onClick={() => setOpen(true)}>Open externally</Button>
+  </>;
+}
+
+export const RevokedRequestDropsFocusIntent: Story = {
+  render: (args) => <RevokedRequestFixture {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Permission' }));
+    await expect(canvas.queryByRole('textbox')).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: 'Change permission' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Change permission' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Open externally' }));
+    await expect(canvas.getByRole('textbox')).toBeVisible();
+    await expect(canvas.getByRole('textbox')).not.toHaveFocus();
+    await expect(canvas.getByRole('group')).not.toHaveFocus();
+    await expect(args.onItemOpenChange).toHaveBeenCalledTimes(1);
+  },
+};

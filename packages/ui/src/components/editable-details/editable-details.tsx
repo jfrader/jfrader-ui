@@ -330,9 +330,12 @@ function EditableDetailsItem({
   acceptedClose.current = !open && !!renderEditor;
   const id = useId();
   useLayoutEffect(() => {
-    if (wasCapable.current && !renderEditor) resetOpen();
+    if (wasCapable.current && !renderEditor) {
+      memory.intent.current = false;
+      resetOpen();
+    }
     wasCapable.current = !!renderEditor;
-  }, [renderEditor, resetOpen]);
+  }, [renderEditor, resetOpen, memory.intent]);
   const recoverRemovedRow = useCallback<RefCallback<HTMLDivElement>>((node) => {
     root.current = node;
     return () => {
