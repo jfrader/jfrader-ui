@@ -48,6 +48,7 @@ export function TextField({
   sx,
   required,
   id: idProp,
+  dir,
   'aria-describedby': ariaDescribedByProp,
   'aria-invalid': ariaInvalidProp,
   ...rest
@@ -66,7 +67,7 @@ export function TextField({
   };
 
   return (
-    <FieldRoot data-ui="text-field" className={className} sx={sx} part={slotProps?.root}>
+    <FieldRoot data-ui="text-field" dir={dir} className={className} sx={sx} part={slotProps?.root}>
       <FieldLabel htmlFor={field.id} required={required} part={slotProps?.label}>
         {label}
       </FieldLabel>
@@ -74,6 +75,7 @@ export function TextField({
         {...rest}
         ref={ref}
         id={field.id}
+        dir={dir}
         required={required}
         aria-describedby={field.describedBy}
         aria-invalid={field.ariaInvalid}
