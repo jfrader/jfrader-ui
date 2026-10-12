@@ -291,7 +291,8 @@ const staticChipStyle = css({
   fontVariantNumeric: 'tabular-nums',
 });
 
-const iconButtonStyle = css({ paddingInline: vars.space[2] });
+// Spec: controls maintain >=32px on the main axis; the icon-only buttons only carried padding.
+const iconButtonStyle = css({ minInlineSize: vars.space[8], paddingInline: vars.space[2] });
 
 const pickerStyle = css({
   display: 'flex',
