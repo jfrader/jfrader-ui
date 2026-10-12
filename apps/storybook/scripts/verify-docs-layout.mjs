@@ -8,7 +8,6 @@ const cases = [
   { id: 'inputs-mentioninput--docs', primary: '[data-ui="mention-input"]' },
   { id: 'showcase-editabledetails--docs', primary: '[data-ui="editable-details"]' },
 ];
-<<<<<<< HEAD
 const editableDetails = {
   title: 'Showcase/EditableDetails',
   id: 'showcase-editabledetails',
@@ -19,11 +18,9 @@ const editableDetails = {
   ],
   pickers: ['portaled-picker', 'picker-focus-moved-away', 'modal-picker', 'open-picker', 'open-modal'],
 };
-=======
 // A stack that leaves its story block pins its toasts to the viewport, so every example of the
 // docs page piles into one corner. Stacks with toasts must stay inside their own block.
 const containmentCases = ['feedback-toaststack--docs'];
->>>>>>> origin/master
 const guides = [
   { id: 'foundations-getting-started--docs', title: 'Getting started' },
   { id: 'foundations-theming--docs', title: 'Theming' },
