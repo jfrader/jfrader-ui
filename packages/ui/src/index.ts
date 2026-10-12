@@ -27,6 +27,7 @@ export * from './components/expandable-card';
 export * from './components/file-dropzone';
 export * from './components/filter-toolbar';
 export * from './components/flex';
+export * from './components/hold-to-confirm';
 export * from './components/image-compare';
 export * from './components/inline-edit';
 export * from './components/hover-card';
