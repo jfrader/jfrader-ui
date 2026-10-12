@@ -427,12 +427,15 @@ const popoverOpenChange = fn<(open: boolean) => void>();
 
 function PopoverHost(props: MenuProps) {
   return (
-    <Popover defaultOpen onOpenChange={popoverOpenChange}>
-      <Popover.Trigger>Project</Popover.Trigger>
-      <Popover.Content aria-label="Project">
-        <MenuExample {...props} />
-      </Popover.Content>
-    </Popover>
+    <div style={rowStyle}>
+      <Popover defaultOpen onOpenChange={popoverOpenChange}>
+        <Popover.Trigger>Project</Popover.Trigger>
+        <Popover.Content aria-label="Project">
+          <MenuExample {...props} />
+        </Popover.Content>
+      </Popover>
+      <Button>Outside</Button>
+    </div>
   );
 }
 PopoverHost.displayName = 'PopoverHost';
@@ -495,7 +498,17 @@ export const InsidePopover: Story = {
     await expect(callValues(args.onOpenChange)).toEqual([true, false, true, false, true, false]);
     await expect(popoverOpenChange).not.toHaveBeenCalled();
 
+    // A press outside both surfaces closes the menu, its topmost child layer, only.
+    await userEvent.click(trigger);
+    await expectFocused(canvasElement, 'Edit');
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Outside' }));
+    await expectHostedMenuClosed(canvasElement, trigger);
+    await expect(popoverOpenChange).not.toHaveBeenCalled();
+    await expect(popover).toBeVisible();
+    await expect(callValues(args.onOpenChange)).toEqual([true, false, true, false, true, false, true, false]);
+
     // With the menu closed, Escape reaches the popover.
+    within(popover).getByRole('button', { name: 'After' }).focus();
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull());
     await expect(callValues(popoverOpenChange)).toEqual([false]);

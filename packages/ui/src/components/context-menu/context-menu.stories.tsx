@@ -1,6 +1,7 @@
-import { Component, useState, type CSSProperties, type ReactNode } from 'react';
+import { Component, useCallback, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor, within, type Mock } from 'storybook/test';
+import { expect, fireEvent, fn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -19,6 +20,8 @@ const VIEWPORT_PADDING = 8;
 const SETTLE_MS = 240;
 // Longer than the menu's 500ms typeahead buffer.
 const TYPEAHEAD_RESET_WAIT_MS = 600;
+// A viewport smaller than the menu's preferred size in both axes, in px.
+const TINY_VIEWPORT = { width: 200, height: 180 };
 
 const rowStyle = {
   display: 'flex',
@@ -45,6 +48,18 @@ const targetBoxStyle = {
   color: vars.color.text,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
+} satisfies CSSProperties;
+
+const smallTargetStyle = {
+  ...targetBoxStyle,
+  inlineSize: '8rem',
+  minBlockSize: '3rem',
+} satisfies CSSProperties;
+
+const frameBoxStyle = {
+  inlineSize: '20rem',
+  blockSize: '12rem',
+  border: `1px solid ${vars.color.border}`,
 } satisfies CSSProperties;
 
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
@@ -140,6 +155,27 @@ async function expectFocusRing(element: Element) {
 }
 
 const near = (actual: number, expected: number) => Math.abs(actual - expected) < TOLERANCE_PX;
+
+/** A length (e.g. a token reference) resolved to px in `element`'s document, on a throwaway probe. */
+function resolvedPx(element: Element, length: string) {
+  const probe = element.ownerDocument.createElement('div');
+  probe.style.inlineSize = length;
+  element.ownerDocument.body.append(probe);
+  const px = probe.getBoundingClientRect().width;
+  probe.remove();
+  return px;
+}
+
+/** Every edge of `element` inside `view`'s viewport, keeping the collision padding. */
+async function expectInsideViewport(element: Element, view: Window) {
+  await waitFor(() => {
+    const rect = element.getBoundingClientRect();
+    expect(rect.left).toBeGreaterThanOrEqual(VIEWPORT_PADDING - TOLERANCE_PX);
+    expect(rect.top).toBeGreaterThanOrEqual(VIEWPORT_PADDING - TOLERANCE_PX);
+    expect(rect.right).toBeLessThanOrEqual(view.innerWidth - VIEWPORT_PADDING + TOLERANCE_PX);
+    expect(rect.bottom).toBeLessThanOrEqual(view.innerHeight - VIEWPORT_PADDING + TOLERANCE_PX);
+  });
+}
 
 /** The computed transform-origin in px. */
 function originOf(element: Element) {
@@ -850,13 +886,7 @@ export const ViewportCorners: Story = {
       await contextClick(userEvent, target, corner.x, corner.y);
       const menu = await findMenu(canvasElement);
       // Flip and shift keep the menu inside the viewport's collision padding.
-      await waitFor(() => {
-        const rect = menu.getBoundingClientRect();
-        expect(rect.left).toBeGreaterThanOrEqual(VIEWPORT_PADDING - TOLERANCE_PX);
-        expect(rect.top).toBeGreaterThanOrEqual(VIEWPORT_PADDING - TOLERANCE_PX);
-        expect(rect.right).toBeLessThanOrEqual(innerWidth - VIEWPORT_PADDING + TOLERANCE_PX);
-        expect(rect.bottom).toBeLessThanOrEqual(innerHeight - VIEWPORT_PADDING + TOLERANCE_PX);
-      });
+      await expectInsideViewport(menu, view);
       // The entry scale still grows from the pointer after collision correction (measured once
       // the scale settled).
       await wait(SETTLE_MS);
@@ -904,6 +934,125 @@ export const ScrollCloses: Story = {
     target.removeEventListener('focus', targetFocus);
     await expect(targetFocus).not.toHaveBeenCalled();
     await expect(callValues(args.onOpenChange)).toEqual([true, false]);
+  },
+};
+
+/** Renders `children` into a same-origin frame: another document and another JS realm. */
+function FrameHost({ children }: { children: ReactNode }) {
+  const [body, setBody] = useState<HTMLElement | null>(null);
+  const attach = useCallback((frame: HTMLIFrameElement | null) => setBody(frame?.contentDocument?.body ?? null), []);
+  return (
+    <>
+      <iframe ref={attach} title="Embedded file view" style={frameBoxStyle} />
+      {body && createPortal(<ScopedHost>{children}</ScopedHost>, body)}
+    </>
+  );
+}
+FrameHost.displayName = 'FrameHost';
+
+export const ScrollInFrame: Story = {
+  render: (args) => (
+    <FrameHost>
+      <FileMenu {...args} />
+    </FrameHost>
+  ),
+  play: async ({ args, canvasElement }) => {
+    const frameDocument = canvasElement.querySelector('iframe')!.contentDocument!;
+    const frameView = frameDocument.defaultView!;
+    const target = await waitFor(() => within(frameDocument.body).getByRole('group', { name: TARGET }));
+    // The new frame resizes once while it is laid out; open after that.
+    await wait(SETTLE_MS);
+    const box = target.getBoundingClientRect();
+    const point = { clientX: box.left + 20, clientY: box.top + 20 };
+    target.dispatchEvent(new frameView.MouseEvent('contextmenu', { bubbles: true, cancelable: true, ...point }));
+    const menu = await waitFor(() => within(frameDocument.body).getByRole('menu', { name: TARGET }));
+    await expect(callValues(args.onOpenChange)).toEqual([true]);
+    // The menu's nodes belong to the frame's realm, not to this one.
+    await expect(menu).toBeInstanceOf(frameView.Node);
+    await expect(menu instanceof canvasElement.ownerDocument.defaultView!.Node).toBe(false);
+
+    // Scrolling inside the menu keeps it open.
+    menu.dispatchEvent(new frameView.Event('scroll'));
+    within(menu).getAllByRole('menuitem')[0]!.dispatchEvent(new frameView.Event('scroll'));
+    await expect(callValues(args.onOpenChange)).toEqual([true]);
+    await expect(within(frameDocument.body).getByRole('menu')).toBe(menu);
+
+    // Scrolling the frame's document asks once to close it.
+    frameDocument.dispatchEvent(new frameView.Event('scroll'));
+    frameDocument.dispatchEvent(new frameView.Event('scroll'));
+    await waitFor(() => expect(within(frameDocument.body).queryByRole('menu')).toBeNull());
+    await expect(callValues(args.onOpenChange)).toEqual([true, false]);
+  },
+};
+
+/** Accepts every request except the first close. */
+function RejectFirstClose(args: StoryArgs) {
+  const [open, setOpen] = useState(false);
+  const rejected = useRef(false);
+  return (
+    <FileRow
+      {...args}
+      open={open}
+      onOpenChange={(next) => {
+        args.onOpenChange?.(next);
+        if (!next && !rejected.current) {
+          rejected.current = true;
+          return;
+        }
+        setOpen(next);
+      }}
+    />
+  );
+}
+RejectFirstClose.displayName = 'RejectFirstClose';
+
+export const RejectedEscapeThenScroll: Story = {
+  render: (args) => <RejectFirstClose {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const document = canvasElement.ownerDocument;
+    const target = getTarget(canvasElement);
+    const after = getAfter(canvasElement);
+    const targetFocus = fn();
+    await userEvent.tab();
+    await userEvent.keyboard('{ContextMenu}');
+    await expectItemFocused(canvasElement, 'Copy link');
+
+    // The parent rejects Escape: the menu stays and keeps focus.
+    await userEvent.keyboard('{Escape}');
+    await expect(callValues(args.onOpenChange)).toEqual([true, false]);
+    await expect(bodyOf(canvasElement).getByRole('menu')).toBeVisible();
+    await expectItemFocused(canvasElement, 'Copy link');
+
+    // An accepted scroll dismissal afterwards never focuses the invoker, not even transiently.
+    target.addEventListener('focus', targetFocus);
+    document.dispatchEvent(new Event('scroll'));
+    await expectClosed(canvasElement);
+    await wait(SETTLE_MS);
+    target.removeEventListener('focus', targetFocus);
+    await expect(targetFocus).not.toHaveBeenCalled();
+    await expect(document.activeElement).not.toBe(target);
+    await expect(callValues(args.onOpenChange)).toEqual([true, false, false]);
+
+    // The next closes decide afresh: an outside press leaves focus where it landed...
+    target.focus();
+    await userEvent.keyboard('{ContextMenu}');
+    await expectItemFocused(canvasElement, 'Copy link');
+    target.addEventListener('focus', targetFocus);
+    await userEvent.click(after);
+    await expectClosed(canvasElement);
+    await wait(SETTLE_MS);
+    target.removeEventListener('focus', targetFocus);
+    await expect(targetFocus).not.toHaveBeenCalled();
+    await expectActive(canvasElement, after);
+
+    // ...and an accepted Escape still returns focus to the invoker.
+    target.focus();
+    await userEvent.keyboard('{ContextMenu}');
+    await expectItemFocused(canvasElement, 'Copy link');
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expectActive(canvasElement, target);
+    await expect(callValues(args.onOpenChange)).toEqual([true, false, false, true, false, true, false]);
   },
 };
 
@@ -968,6 +1117,96 @@ export const RejectedClose: Story = {
     // The menu stays and keeps focus.
     await expect(bodyOf(canvasElement).getByRole('menu')).toBe(menu);
     await expectItemFocused(canvasElement, 'Copy link');
+  },
+};
+
+const externalCompactChange = fn();
+
+/** Owns both controlled values; the buttons change them without any request from the menu. */
+function ExternallyControlled(args: StoryArgs) {
+  const [open, setOpen] = useState(false);
+  const [compact, setCompact] = useState(false);
+  return (
+    <div style={rowStyle}>
+      <ViewOptions
+        {...args}
+        open={open}
+        onOpenChange={(next) => {
+          args.onOpenChange?.(next);
+          setOpen(next);
+        }}
+        value={compact}
+        onValueChange={(next) => {
+          externalCompactChange(next);
+          setCompact(next);
+        }}
+      />
+      <Button onClick={() => setOpen((current) => !current)}>Toggle menu</Button>
+      <Button onClick={() => setCompact((current) => !current)}>Toggle compact</Button>
+    </div>
+  );
+}
+ExternallyControlled.displayName = 'ExternallyControlled';
+
+export const ControlledExternalUpdates: Story = {
+  render: (args) => <ExternallyControlled {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    externalCompactChange.mockClear();
+    const canvas = within(canvasElement);
+    const target = getTarget(canvasElement, 'Board view options');
+    // Programmatic clicks: app-driven updates, not presses outside the menu.
+    const toggleMenu = () => fireEvent.click(canvas.getByRole('button', { name: 'Toggle menu' }));
+    const toggleCompact = () => fireEvent.click(canvas.getByRole('button', { name: 'Toggle compact' }));
+    const glyph = (item: HTMLElement) => item.querySelector('[data-ui="context-menu-check"]')!;
+    const targetFocus = fn();
+
+    // An external open shows the menu below the Target and focuses the first item; no request fires.
+    toggleMenu();
+    const menu = await findMenu(canvasElement, 'Board view options');
+    await expect(target).toHaveAttribute('aria-expanded', 'true');
+    await expect(target).toHaveAttribute('aria-controls', menu.id);
+    await expectItemFocused(canvasElement, 'Show avatars', 'menuitemcheckbox');
+    await waitFor(() => expect(near(menu.getBoundingClientRect().top, target.getBoundingClientRect().bottom + ANCHOR_GAP)).toBe(true));
+
+    // An external value change updates state, glyph and ARIA without a callback or moving focus.
+    const compact = within(menu).getByRole('menuitemcheckbox', { name: 'Compact rows' });
+    await expect(compact).toHaveAttribute('aria-checked', 'false');
+    toggleCompact();
+    await waitFor(() => expect(compact).toHaveAttribute('aria-checked', 'true'));
+    await expect(glyph(compact)).toHaveAttribute('data-state', 'checked');
+    await expect(getComputedStyle(glyph(compact).querySelector('svg')!).visibility).toBe('visible');
+    await expect(externalCompactChange).not.toHaveBeenCalled();
+    await expectItemFocused(canvasElement, 'Show avatars', 'menuitemcheckbox');
+
+    // The user's own toggle starts from the external value.
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    await expectItemFocused(canvasElement, 'Compact rows', 'menuitemcheckbox');
+    await userEvent.keyboard('{Enter}');
+    await expect(callValues(externalCompactChange)).toEqual([false]);
+    await expect(compact).toHaveAttribute('aria-checked', 'false');
+    await expect(glyph(compact)).toHaveAttribute('data-state', 'unchecked');
+
+    // An external close removes the menu and never focuses the invoker.
+    target.addEventListener('focus', targetFocus);
+    toggleMenu();
+    await expectClosed(canvasElement, target);
+    await wait(SETTLE_MS);
+    target.removeEventListener('focus', targetFocus);
+    await expect(targetFocus).not.toHaveBeenCalled();
+    await expect(target).not.toHaveAttribute('aria-controls');
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+
+    // Reopened externally, the menu shows the current value; an accepted Escape still returns focus.
+    toggleCompact();
+    toggleMenu();
+    const reopened = await findMenu(canvasElement, 'Board view options');
+    await expect(within(reopened).getByRole('menuitemcheckbox', { name: 'Compact rows' })).toHaveAttribute('aria-checked', 'true');
+    await expectItemFocused(canvasElement, 'Show avatars', 'menuitemcheckbox');
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement, target);
+    await expectActive(canvasElement, target);
+    await expect(callValues(args.onOpenChange)).toEqual([false]);
+    await expect(callValues(externalCompactChange)).toEqual([false]);
   },
 };
 
@@ -1092,12 +1331,15 @@ const popoverOpenChange = fn();
 
 export const InsidePopover: Story = {
   render: (args) => (
-    <Popover defaultOpen onOpenChange={popoverOpenChange}>
-      <Popover.Trigger>Project</Popover.Trigger>
-      <Popover.Content aria-label="Project">
-        <FileMenu {...args} />
-      </Popover.Content>
-    </Popover>
+    <div style={rowStyle}>
+      <Popover defaultOpen onOpenChange={popoverOpenChange}>
+        <Popover.Trigger>Project</Popover.Trigger>
+        <Popover.Content aria-label="Project">
+          <FileMenu {...args} />
+        </Popover.Content>
+      </Popover>
+      <Button>Outside</Button>
+    </div>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
     popoverOpenChange.mockClear();
@@ -1115,6 +1357,19 @@ export const InsidePopover: Story = {
     await expect(popoverOpenChange).not.toHaveBeenCalled();
     await expect(popover).toBeVisible();
 
+    // Escape with focus back in the popover's content (Shift+Tab keeps the menu open) still
+    // closes only the menu, its topmost child layer.
+    await userEvent.keyboard('{ContextMenu}');
+    await expectItemFocused(canvasElement, 'Copy link');
+    await userEvent.tab({ shift: true });
+    await expectActive(canvasElement, target);
+    await expect(bodyOf(canvasElement).getByRole('menu')).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement, target);
+    await expectActive(canvasElement, target);
+    await expect(popoverOpenChange).not.toHaveBeenCalled();
+    await expect(popover).toBeVisible();
+
     // A press inside the popover outside the menu closes the menu only.
     const box = target.getBoundingClientRect();
     await contextClick(userEvent, target, box.left + 20, box.top + 20);
@@ -1122,7 +1377,15 @@ export const InsidePopover: Story = {
     await userEvent.click(popover);
     await expectClosed(canvasElement, target);
     await expect(popoverOpenChange).not.toHaveBeenCalled();
-    await expect(callValues(args.onOpenChange)).toEqual([true, false, true, false]);
+
+    // A press outside both surfaces closes the menu only, too.
+    await contextClick(userEvent, target, box.left + 20, box.top + 20);
+    await findMenu(canvasElement);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Outside' }));
+    await expectClosed(canvasElement, target);
+    await expect(popoverOpenChange).not.toHaveBeenCalled();
+    await expect(popover).toBeVisible();
+    await expect(callValues(args.onOpenChange)).toEqual([true, false, true, false, true, false, true, false]);
 
     // With the menu closed, Escape reaches the popover.
     target.focus();
@@ -1318,7 +1581,9 @@ export const SxPrecedence: Story = {
     for (const [className, element] of parts) {
       await expect(element).toHaveClass(className);
       // own → css → sx: sx wins the shared property, css keeps the rest.
-      await expect(getComputedStyle(element).marginInlineStart).toBe('8px');
+      const margin = parseFloat(getComputedStyle(element).marginInlineStart);
+      await expect(near(margin, resolvedPx(element, vars.space[2]))).toBe(true);
+      await expect(near(margin, resolvedPx(element, vars.space[1]))).toBe(false);
       await expect(getComputedStyle(element).letterSpacing).not.toBe('normal');
     }
   },
@@ -1410,5 +1675,73 @@ export const ForcedColors: Story = {
     await expect(getComputedStyle(menu).borderTopStyle).toBe('solid');
     await expect(getComputedStyle(check).borderTopStyle).toBe('solid');
     await expectFocusRing(item);
+  },
+};
+
+// Last in the file: the runner restores the default viewport before the next story, and that
+// resize would reach a menu the next story opens on mount.
+export const TinyViewport: Story = {
+  parameters: {
+    viewport: {
+      options: {
+        tiny: {
+          name: 'Tiny',
+          styles: { width: `${TINY_VIEWPORT.width}px`, height: `${TINY_VIEWPORT.height}px` },
+          type: 'mobile',
+        },
+      },
+    },
+  },
+  globals: { viewport: { value: 'tiny', isRotated: false } },
+  render: ({ onOpenChild: _onOpenChild, onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
+    <ContextMenu {...args}>
+      <ContextMenu.Target aria-label={TARGET} style={smallTargetStyle}>
+        report.pdf
+      </ContextMenu.Target>
+      <ContextMenu.Content>
+        <ContextMenu.Item onSelect={onCopy}>
+          Copiar el enlace público de este informe trimestral al portapapeles
+        </ContextMenu.Item>
+        {Array.from({ length: 8 }, (_, index) => (
+          <ContextMenu.Item key={index}>{`Move to folder ${index + 1}`}</ContextMenu.Item>
+        ))}
+      </ContextMenu.Content>
+    </ContextMenu>
+  ),
+  play: async ({ args, canvasElement, userEvent }) => {
+    const view = canvasElement.ownerDocument.defaultView!;
+    // The story really renders in a viewport smaller than the menu's preferred size.
+    await expect(view.innerWidth).toBe(TINY_VIEWPORT.width);
+    await expect(view.innerHeight).toBe(TINY_VIEWPORT.height);
+    const rootFontSize = parseFloat(getComputedStyle(canvasElement.ownerDocument.documentElement).fontSize);
+    await expect(13 * rootFontSize).toBeGreaterThan(view.innerWidth - 2 * VIEWPORT_PADDING);
+
+    const target = getTarget(canvasElement);
+    const box = target.getBoundingClientRect();
+    await contextClick(userEvent, target, box.left + box.width / 2, box.top + box.height / 2);
+    const menu = await findMenu(canvasElement);
+    // Clamped inside the visible area, with the collision padding kept on every edge.
+    await expectInsideViewport(menu, view);
+    // The rest of the items scroll inside the menu.
+    await expect(menu.scrollHeight).toBeGreaterThan(menu.clientHeight);
+    // The long label wraps inside its item.
+    const long = within(menu).getByRole('menuitem', { name: /Copiar el enlace/ });
+    const label = long.lastElementChild!.getBoundingClientRect();
+    await expect(label.right).toBeLessThanOrEqual(long.getBoundingClientRect().right + TOLERANCE_PX);
+
+    // The last item is reachable and scrolled into the visible part of the menu.
+    await userEvent.keyboard('{End}');
+    await expectItemFocused(canvasElement, 'Move to folder 8');
+    await waitFor(() => {
+      const item = canvasElement.ownerDocument.activeElement!.getBoundingClientRect();
+      const visible = menu.getBoundingClientRect();
+      expect(item.top).toBeGreaterThanOrEqual(visible.top - TOLERANCE_PX);
+      expect(item.bottom).toBeLessThanOrEqual(visible.bottom + TOLERANCE_PX);
+    });
+    await userEvent.keyboard('{Home}{Enter}');
+    await expect(args.onCopy).toHaveBeenCalledTimes(1);
+    await expectClosed(canvasElement);
+    await expectActive(canvasElement, target);
+    await expect(callValues(args.onOpenChange)).toEqual([true, false]);
   },
 };

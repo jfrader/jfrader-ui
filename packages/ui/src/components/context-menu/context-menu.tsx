@@ -42,6 +42,7 @@ import {
   type SyntheticEvent,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { isEventTargetWithin } from '@floating-ui/react/utils';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes } from '../../styling/css';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
@@ -305,8 +306,8 @@ function ContextMenuScope({
     let requested = false;
     const handleChange = (event: Event) => {
       if (requested) return;
-      const floating = refs.floating.current;
-      if (event.type === 'scroll' && floating && event.target instanceof Node && floating.contains(event.target)) return;
+      // Event-path containment, so menu nodes from another realm (a same-origin iframe) still count.
+      if (event.type === 'scroll' && isEventTargetWithin(event, refs.floating.current)) return;
       requested = true;
       dismissOnViewportChange();
     };

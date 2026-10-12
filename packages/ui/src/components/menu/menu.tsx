@@ -10,10 +10,14 @@
 // useListNavigation with focusItemOnOpen; FloatingFocusManager's own initial focus is off).
 // Focus return is explicit: only an ACCEPTED Escape or item selection restores focus to the
 // trigger (a rejected controlled dismissal keeps focus inside); Tab-out and outside presses
-// never move focus (returnFocus is off, so no transient trigger focus either). Restoration is
-// skipped when the trigger left the document or became inert (its owner is being removed) or
-// when the command already moved focus elsewhere, so a neighbor or opened surface keeps it.
+// never move focus (returnFocus is off, so no transient trigger focus either). Every open or
+// close request decides restoration afresh, so a rejected Escape never leaks into a later close.
+// Restoration is skipped when the trigger left the document or became inert (its owner is being
+// removed) or when the command already moved focus elsewhere, so a neighbor or opened surface
+// keeps it.
 // Disabled items stay in the list with aria-disabled="true"; arrows and typeahead skip them.
+// The menu is an overlay layer: opened inside another layer (Popover, …) it is that layer's child,
+// so Escape and outside presses dismiss the menu alone.
 // Consumer trigger handlers run before the menu's own; preventDefault() vetoes the open request.
 // The menu is labelled by the trigger; consumer aria-labelledby ids join it and a consumer
 // aria-label replaces it.
@@ -35,7 +39,6 @@ import {
   FloatingFocusManager,
   FloatingList,
   useClick,
-  useDismiss,
   useInteractions,
   useListNavigation,
   useMergeRefs,
@@ -51,7 +54,7 @@ import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbo
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
-import { IsolatedOverlay } from '../../overlay/overlay-layer';
+import { LayerContent, MenuLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating, type OverlayFloatingOptions } from '../../overlay/use-overlay-floating';
 import { useCollectionIndexRegistration, useCollectionListItem } from '../../utils/collection-registry';
@@ -90,6 +93,7 @@ type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
 interface MenuContextValue {
   open: boolean;
+  nodeId: string | undefined;
   requestOpen: () => void;
   requestClose: (restoreFocus?: boolean) => void;
   activeIndex: number | null;
@@ -224,8 +228,9 @@ function MenuOverlay({
   onOpenChange,
   placement = 'bottom-start',
   positioning,
+  nodeId,
   children,
-}: MenuControllerProps) {
+}: MenuControllerProps & { nodeId: string | undefined }) {
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const elementsRef = useRef<Array<HTMLElement | null>>([]);
@@ -238,9 +243,10 @@ function MenuOverlay({
     ...positioning,
     open,
     placement,
+    nodeId,
     onOpenChange: (next, _event, reason) => {
       // Escape requests a close; focus is restored only once the close is actually applied.
-      if (!next) pendingFocusRestoreRef.current = reason === 'escape-key';
+      pendingFocusRestoreRef.current = !next && reason === 'escape-key';
       requestOpenChange(next);
     },
   });
@@ -258,7 +264,7 @@ function MenuOverlay({
 
   const click = useClick(context);
   const role = useRole(context, { role: 'menu' });
-  const dismiss = useDismiss(context, { escapeKey: true, outsidePress: true });
+  const dismiss = useLayerDismiss(context, 'container');
   const listNavigation = useListNavigation(context, {
     listRef: elementsRef,
     activeIndex,
@@ -277,7 +283,7 @@ function MenuOverlay({
   const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
     click,
     role,
-    dismiss,
+    ...dismiss,
     listNavigation,
     typeahead,
   ]);
@@ -285,9 +291,13 @@ function MenuOverlay({
   const value = useMemo(
     () => ({
       open,
-      requestOpen: () => requestOpenChange(true),
+      nodeId,
+      requestOpen: () => {
+        pendingFocusRestoreRef.current = false;
+        requestOpenChange(true);
+      },
       requestClose: (restoreFocus = false) => {
-        if (restoreFocus) pendingFocusRestoreRef.current = true;
+        pendingFocusRestoreRef.current = restoreFocus;
         requestOpenChange(false);
       },
       activeIndex,
@@ -303,6 +313,7 @@ function MenuOverlay({
     }),
     [
       open,
+      nodeId,
       requestOpenChange,
       activeIndex,
       refs,
@@ -319,11 +330,7 @@ function MenuOverlay({
 
 /** The shared menu controller (state, positioning, navigation, dismissal, focus return). */
 export function MenuController(props: MenuControllerProps) {
-  return (
-    <IsolatedOverlay>
-      <MenuOverlay {...props} />
-    </IsolatedOverlay>
-  );
+  return <MenuLayer>{(nodeId) => <MenuOverlay {...props} nodeId={nodeId} />}</MenuLayer>;
 }
 
 function MenuRoot(props: MenuProps) {
@@ -379,7 +386,7 @@ export function MenuContentPart({
   defaultLabelledBy,
   ...rest
 }: MenuContentProps & MenuPartIdentity & { defaultLabelledBy?: string }) {
-  const { open, refs, floatingContext, floatingStyles, elementsRef, labelsRef, getFloatingProps } =
+  const { open, nodeId, refs, floatingContext, floatingStyles, elementsRef, labelsRef, getFloatingProps } =
     useMenuContext(family, 'Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
 
@@ -416,7 +423,9 @@ export function MenuContentPart({
               className={className}
             >
               <FloatingList elementsRef={elementsRef} labelsRef={labelsRef}>
-                <MenuContentContext.Provider value>{children}</MenuContentContext.Provider>
+                <MenuContentContext.Provider value>
+                  <LayerContent nodeId={nodeId}>{children}</LayerContent>
+                </MenuContentContext.Provider>
               </FloatingList>
             </div>
           )}
