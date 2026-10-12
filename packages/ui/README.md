@@ -24,6 +24,7 @@ React components styled with Emotion and themed through the CSS custom propertie
 | `@jfrader/ui/divider` | `Divider` |
 | `@jfrader/ui/emblem` | `Emblem` |
 | `@jfrader/ui/flex` | `Flex` |
+| `@jfrader/ui/flip-game-card` | `FlipGameCard` |
 | `@jfrader/ui/game-card` | `GameCard` |
 | `@jfrader/ui/kbd` | `Kbd` |
 | `@jfrader/ui/menu` | `Menu` |
