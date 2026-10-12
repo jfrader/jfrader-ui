@@ -191,6 +191,27 @@ export const RejectedControlled: Story = {
   },
 };
 
+export const RejectedKeyboardRetry: Story = {
+  args: { onValueChange: fn() },
+  render: (args) => <TabsExample {...args} value="one" />,
+  play: async ({ args, canvas, userEvent }) => {
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowRight}');
+    const security = canvas.getByRole('tab', { name: 'Security' });
+    await expect(security).toHaveFocus();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await userEvent.keyboard(' ');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(4);
+    await userEvent.click(canvas.getByRole('tab', { name: 'Billing' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(5);
+    await expect(canvas.getByRole('tab', { name: 'Account' })).toHaveAttribute('aria-selected', 'true');
+  },
+};
+
 export const Vertical: Story = {
   args: { defaultValue: 'one', orientation: 'vertical' },
   render: (args) => <TabsExample {...args} />,
@@ -311,5 +332,20 @@ export const LightTheme: Story = {
   render: (args) => <TabsExample {...args} />,
   play: async ({ canvasElement }) => {
     await expectSelected(canvasElement, 1);
+  },
+};
+
+export const RTL: Story = {
+  args: { defaultValue: 'one', dir: 'rtl' },
+  render: (args) => <TabsExample {...args} />,
+  play: async ({ canvas, userEvent }) => {
+    const tabs = canvas.getAllByRole('tab');
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(tabs[1]).toHaveFocus();
+    await expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(tabs[0]).toHaveFocus();
+    await expect(getComputedStyle(tabs[0]!).direction).toBe('rtl');
   },
 };
