@@ -213,7 +213,9 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 function drawable(strokes: SignatureStroke[]): SignatureStroke[] {
   if (isValid(strokes)) return strokes;
   const result: SignatureStroke[] = [];
+  let count = 0;
   for (const stroke of Array.isArray(strokes) ? strokes.slice(0, MAX_STROKES) : []) {
+    if (count >= MAX_POINTS) break;
     if (
       !stroke ||
       !Object.hasOwn(NIB, stroke.width) ||
@@ -224,6 +226,8 @@ function drawable(strokes: SignatureStroke[]): SignatureStroke[] {
     let last = 0;
     const points: SignaturePoint[] = [];
     for (const p of stroke.points) {
+      if (count >= MAX_POINTS) break;
+      count++;
       if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
       if (Number.isFinite(p.time)) last = Math.max(last, p.time);
       points.push({
@@ -910,6 +914,7 @@ export function SignaturePad({
               }
               aria-describedby={[
                 describedBy,
+                `${id}-state`,
                 `${id}-shortcuts`,
                 required && `${id}-required`,
                 hasContent(description) && `${id}-description`,

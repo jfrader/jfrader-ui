@@ -767,6 +767,28 @@ export const MalformedValue: Story = {
     await expect(console.warn).toHaveBeenCalledTimes(1);
   },
 };
+export const MalformedPointBudget: Story = {
+  args: {
+    value: [
+      {
+        ...seeded[0]!,
+        points: [
+          ...Array.from({ length: 100000 }, () => ({ x: NaN, y: 0, pressure: null, time: 0 })),
+          { x: 120, y: 120, pressure: null, time: 0 },
+        ],
+      },
+    ],
+  },
+  beforeEach: () => {
+    const warn = spyOn(console, 'warn').mockImplementation(() => {});
+    return () => warn.mockRestore();
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = pad(canvasElement);
+    const pixels = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+    await expect(pixels.some((value, i) => i % 4 === 3 && value > 0)).toBe(false);
+  },
+};
 export const FalsyGuide: Story = {
   render: (args) => (
     <>
@@ -816,6 +838,12 @@ export const ExternalAria: Story = {
     await expect(canvas.getAttribute('aria-labelledby')).toContain('-label');
     await expect(canvas.getAttribute('aria-describedby')).toContain('outside-help missing-help');
     await expect(canvas.getAttribute('aria-describedby')).toContain('-error');
+    const state = canvas.ownerDocument.getElementById(
+      canvas.getAttribute('aria-describedby')!.split(' ').find((id) => id.endsWith('-state'))!,
+    );
+    await expect(state).toHaveTextContent(messages.empty);
+    await gesture(canvas, strokeEvents);
+    await expect(state).toHaveTextContent(messages.signed);
   },
 };
 export const NativeReset: Story = {
