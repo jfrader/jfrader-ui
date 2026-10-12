@@ -11,6 +11,7 @@ export * from './components/button';
 export * from './components/button-group';
 export * from './components/calendar';
 export * from './components/card';
+export * from './components/card-flights';
 export * from './components/carousel';
 export * from './components/chat-thread';
 export * from './components/checkbox';
