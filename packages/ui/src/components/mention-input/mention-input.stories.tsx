@@ -153,13 +153,56 @@ const openPlay: Story['play'] = async ({ canvas, userEvent }) => {
   });
 };
 
-export const Default: Story = {};
+function resolvedBorderColor(scope: Element, color: string): string {
+  const probe = scope.ownerDocument.createElement('span');
+  probe.style.borderColor = color;
+  scope.append(probe);
+  const resolved = getComputedStyle(probe).borderTopColor;
+  probe.remove();
+  return resolved;
+}
+const boundaryPlay: Story['play'] = async ({ canvas }) => {
+  const input = canvas.getByRole('textbox', { name: 'Comment' });
+  const shell = input.parentElement!;
+  const mirror = shell.querySelector('[aria-hidden=true]')!;
+  const inputStyles = getComputedStyle(input);
+  const mirrorStyles = getComputedStyle(mirror);
+  await expect(inputStyles.borderTopStyle).toBe('solid');
+  await expect(inputStyles.borderTopColor).not.toBe('rgba(0, 0, 0, 0)');
+  // The runner's real pointer can rest on the field; hover swaps the boundary to its hover token.
+  await waitFor(async () => {
+    const boundary = input.matches(':hover') ? vars.color.textSubtle : vars.color.borderControl;
+    await expect(inputStyles.borderTopColor).toBe(resolvedBorderColor(shell, boundary));
+  });
+  await expect(mirrorStyles.borderTopWidth).toBe(inputStyles.borderTopWidth);
+  await expect(mirrorStyles.borderTopLeftRadius).toBe(inputStyles.borderTopLeftRadius);
+  await expect(getComputedStyle(shell).borderTopLeftRadius).toBe(inputStyles.borderTopLeftRadius);
+};
+
+export const Default: Story = { play: boundaryPlay };
 export const People: Story = { args: { channels: undefined } };
 export const Channels: Story = { args: { people: undefined } };
 export const Both: Story = {};
 export const Metadata: Story = {
-  args: { defaultValue: { text: '@', mentions: [] }, defaultOpen: true },
-  play: openPlay,
+  args: {
+    defaultValue: { text: '@', mentions: [] },
+    defaultOpen: true,
+    channels: [...channels, { id: 'random', name: 'random', members: 42000 }],
+  },
+  play: async (context) => {
+    await openPlay(context);
+    const { canvas, userEvent } = context;
+    const body = within(canvas.getByRole('textbox').ownerDocument.body);
+    await expect(within(body.getByRole('option', { name: /Ada/ })).getByText('Engineer')).toBeVisible();
+    await expect(within(body.getByRole('option', { name: /René/ })).getByText('Researcher')).toBeVisible();
+    await userEvent.keyboard('{Backspace}#');
+    const list = await body.findByRole('listbox', { name: 'Channels' });
+    await expect(within(list).getAllByRole('option')).toHaveLength(3);
+    await expect(within(list).getByRole('option', { name: /general/ })).toHaveTextContent('Team updates');
+    await expect(within(list).getByRole('option', { name: /random/ })).toHaveTextContent(
+      new Intl.NumberFormat().format(42000),
+    );
+  },
 };
 export const Controlled: Story = {
   render: (args) => <ControlledField {...args} />,
@@ -568,6 +611,7 @@ export const LightTheme: Story = {
   args: { defaultValue: TOKEN_VALUE },
   globals: { theme: 'light' },
   decorators: [withLightTheme],
+  play: boundaryPlay,
 };
 export const ScopedThemePortal: Story = {
   args: { defaultValue: { text: '@', mentions: [] }, open: true },

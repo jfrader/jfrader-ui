@@ -275,7 +275,6 @@ const metricsStyle = css({
   whiteSpace: 'pre-wrap',
   overflowWrap: 'break-word',
   tabSize: 4,
-  border: '1px solid transparent',
 });
 const rootLayoutStyle = css({ minInlineSize: 0, maxInlineSize: '100%', overflowWrap: 'anywhere' });
 const sizeStyles: Record<'sm' | 'md' | 'lg', SerializedStyles> = {
@@ -287,6 +286,7 @@ const shellStyle = css({ position: 'relative', minInlineSize: 0, borderRadius: v
 const inputStyle = css({
   display: 'block',
   resize: 'none',
+  borderRadius: vars.radius.sm,
   minBlockSize: vars.space[8],
   backgroundColor: 'transparent',
   color: 'transparent',
@@ -304,6 +304,8 @@ const mirrorStyle = css({
   inset: 0,
   pointerEvents: 'none',
   overflow: 'hidden',
+  // Reserves the textarea's control border so both layers lay text out on the same box.
+  border: '1px solid transparent',
   borderRadius: vars.radius.sm,
   color: vars.color.text,
   backgroundColor: vars.color.surface,
