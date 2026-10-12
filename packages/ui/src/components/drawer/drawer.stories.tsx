@@ -579,7 +579,8 @@ export const LightTheme: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
     await expect(canvasElement.contains(dialog)).toBe(true);
-    // The panel paints the contrast palette by default: the dark family on a light page.
+    // The panel wears the dark theme plus the elevated-charcoal overrides, on a light page.
+    await expect(panel).toHaveAttribute('data-theme', 'dark');
     await expect(panel).toHaveAttribute('data-appearance', 'contrast');
     await expectContrastSurface(panel, 'light');
     await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
@@ -593,7 +594,7 @@ export const ContrastPanelDark: Story = {
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
-    // On a dark page the panel is elevated charcoal; the palette values are the same as on a light page.
+    // On a dark page the panel keeps its charcoal elevation above the page; same values as on light.
     await expect(panel).toHaveAttribute('data-appearance', 'contrast');
     await expectContrastSurface(panel, 'dark');
     await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
@@ -609,8 +610,9 @@ export const DefaultAppearance: Story = {
   render: (args) => <DrawerExample {...args} panelProps={{ appearance: 'default' }} />,
   play: async ({ canvasElement, userEvent }) => {
     const { panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
-    // Opting out restores the page theme's own surface.
-    await expect(panel).toHaveAttribute('data-appearance', 'default');
+    // Opting out names no appearance, so the panel inherits the page's own surface.
+    await expect(panel).not.toHaveAttribute('data-theme');
+    await expect(panel).not.toHaveAttribute('data-appearance');
     await expectThemedSurface(panel, 'light');
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);
@@ -1160,10 +1162,40 @@ export const ContrastSelectPanel: Story = {
     await expect(dialog).toHaveAttribute('open');
     await expectContrastSurface(panel, 'light');
 
-    // The drawer closes with its own affordance here: with a Select inside, its Escape cancel is dropped
-    // while the Select's portal stays mounted — tracked as GURI-2293, not this surface work.
-    await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+    // The second belongs to the drawer, even though the select keeps its popup mounted (GURI-2293).
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(dialog);
+    await userEvent.keyboard('{/Escape}');
     await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const SelectEscape: Story = {
+  render: (args) => <DrawerExample {...args} body={<NestedSelectBody />} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const { dialog, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
+
+    // With the select closed, Escape is the drawer's: its mounted-but-hidden popup is not a layer.
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(dialog);
+    await userEvent.keyboard('{/Escape}');
+    await expectClosed(canvasElement, trigger);
+
+    // With the select open, that Escape belongs to the select and the drawer stays.
+    const reopened = await openDrawer({ canvasElement, userEvent });
+    await userEvent.click(canvas.getByRole('combobox', { name: 'Status' }));
+    await within(reopened.dialog).findByRole('listbox', { name: 'Status' });
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(reopened.dialog);
+    await userEvent.keyboard('{/Escape}');
+    await waitFor(() => expect(within(reopened.dialog).queryByRole('listbox')).toBeNull());
+    await expect(reopened.dialog).toHaveAttribute('open');
+
+    // The next Escape closes the drawer.
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(reopened.dialog);
+    await userEvent.keyboard('{/Escape}');
+    await expectClosed(canvasElement, reopened.trigger);
   },
 };
 

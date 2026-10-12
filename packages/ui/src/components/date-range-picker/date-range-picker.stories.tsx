@@ -1437,7 +1437,7 @@ export const ThemeRootPortal: Story = {
   ),
   play: async ({ canvasElement }) => {
     const dialog = await findDialog(canvasElement);
-    // Portaled into the scope's host, keeping the nearest scope's theme and appearance.
+    // Portaled into the scope's host, keeping the nearest ThemeRoot's theme.
     await expect(canvasElement.querySelector('[data-overlay-host]')!.contains(dialog)).toBe(true);
     await expectThemedSurface(dialog, 'light');
   },

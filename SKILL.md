@@ -108,16 +108,15 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - **Dynamic values** (progress, coordinates) go through inline CSS custom properties or `style`
   attributes, never through generated per-value classes.
 - **Theming has two paths.** Apps set `data-theme` on `<html>`; `ThemeRoot` themes a scoped subtree
-  (embedded widgets). A surface may also opt into `appearance="contrast"`, the dark family on any page
-  theme (Drawer.Panel by default, Card and ThemeRoot on request). Components read tokens only and never
-  pick a theme themselves. The Emotion theme (`theme`, mounted by `ThemeProvider` and by `ThemeRoot`) is
-  the token object itself, so it never changes between dark and light. Consumer setup lives in
-  `docs/consuming-jfrader-ui.md`.
+  (embedded widgets). A surface may also wear `appearance="contrast"`: the dark theme with the eight
+  charcoal overrides, on any page (Drawer.Panel by default). Components read tokens only and never pick a theme themselves. The Emotion
+  theme (`theme`, mounted by `ThemeProvider` and by `ThemeRoot`) is the token object itself, so it
+  never changes between dark and light. Consumer setup lives in `docs/consuming-jfrader-ui.md`.
 - **Portaled content goes through the theme scope.** Floating overlays portal with `OverlayPortal`
   (`src/overlay/overlay-portal.tsx`), never a bare `FloatingPortal`; a custom `createPortal` wraps
   its content in `ThemeBoundary` and honors `useThemeScope()?.portalContainer` (see Toast). This
-  re-applies the nearest scope's named theme and appearance inside the portal and routes it to the
-  root's `portalContainer`. Native `<dialog>` is not portaled and needs neither.
+  re-applies the nearest scope's theme and appearance inside the portal and routes it to the root's
+  `portalContainer`. Native `<dialog>` is not portaled and needs neither.
 - **No deep descendant-chain styling.** Direct relations from the component's own DOM are fine
   (`input:checked + span`, `&[data-indeterminate] input + span svg`); avoid unrelated descendant
   selectors and tag-only chains beyond one level.
@@ -190,8 +189,8 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `disclosure-caret` — inline-end caret for an `&::after`; rotation and reduced motion stay local.
 - `icon-wrapper` — sizes a decorative icon to the surrounding font size.
 - `loading-ring` — spinning ring and its reduced-motion pulse (Button, Spinner).
-- `surface` — `raisedSurface` panel, `contrastSurfaceStyle` for the contrast appearance, and
-  `modalShellReset` for native `<dialog>` shells.
+- `surface` — `raisedSurface` panel, the surface appearance helpers and `modalShellReset` for native
+  `<dialog>` shells.
 - `trigger-style` — overlay trigger button (Dialog, Popover, Menu).
 - `listbox-style` — popup surface, item and option fragments (Menu, Select, Combobox, CommandPalette).
 - `input-control` — text-input control skin (TextField, Textarea).

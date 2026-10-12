@@ -120,23 +120,24 @@ To switch at runtime, set `document.documentElement.dataset.theme` and store the
 
 ### Contrast surfaces
 
-A surface can use the dark palette on either page theme: a dark panel on a light page, or a raised charcoal panel on a dark page. `Drawer.Panel` does this by default. Set `appearance="contrast"` on `Card` or `ThemeRoot` to use it there.
+A contrast surface uses the dark palette with a charcoal background on either page theme. `Drawer.Panel` uses it by default. Set `appearance="contrast"` on `Card` to use it there.
 
 ```tsx
-<Card appearance="contrast">{/* … */}</Card>
-<Card appearance="default">{/* back to the theme's own palette */}</Card>
+<Card appearance="contrast">{/* dark palette, charcoal background */}</Card>
+<Card>{/* enclosing palette */}</Card>
 ```
 
-- The palette sets text, borders, control boundaries, wells and native `color-scheme` inside the surface. You do not need per-component overrides.
-- A Select, Menu or Popover opened inside a contrast surface keeps the dark palette when its content is portaled elsewhere on the page.
-- Without `appearance`, a nested surface keeps the enclosing surface's appearance. `appearance="default"` returns it to the theme's own palette.
-- A nested `ThemeRoot` keeps the enclosing palette unless it specifies one. For an overlay host inside a drawer, set only `portalContainer`.
+- The palette sets text, borders, control boundaries, wells and native `color-scheme` inside the surface.
+- A Select, Menu or Popover opened inside a contrast surface keeps its palette through portals.
+- Omit `appearance` on a nested Card to inherit the enclosing palette. `appearance="default"` keeps the enclosing theme; it does not restore the outer page theme.
+- To switch a section inside a contrast surface to light, wrap it in `ThemeRoot theme="light"`.
+- For an overlay host, give `ThemeRoot` the enclosing theme and set `portalContainer`. Keeping the same theme preserves the appearance for its overlays.
 
 <a id="scoped-theming-and-overlays"></a>
 
 ### Themes in overlays
 
-Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast portal their content to `body`. Inside a `ThemeRoot`, that content takes the nearest `ThemeRoot`'s `theme` and `appearance`, and follows them when they change while open. Dialog renders in place and inherits them directly.
+Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast portal their content to `body`. They keep the nearest scope's theme and appearance, including changes made while open. Dialog renders in place and inherits them directly.
 
 Only the named theme and appearance carry over. CSS you set on an element around the overlay, such as overriding a `--ui-*` variable on a wrapper, does not reach portaled content.
 

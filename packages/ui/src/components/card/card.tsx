@@ -8,8 +8,8 @@
 import { createContext, useContext, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { contrastSurfaceStyle, raisedSurface } from '../../styling/surface';
-import { AppearanceScope, useSurfaceAppearance, type AppearanceName } from '../../styling/theme-scope';
+import { raisedSurface, surfaceAttributes, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
+import { AppearanceScope, themeScopeStyle, useSurfaceAppearance } from '../../styling/theme-scope';
 import { WithSx, type SxProps } from '../../styling/sx';
 
 export type CardVariant = 'flat' | 'raised';
@@ -33,10 +33,10 @@ export interface CardSlotProps {
 export interface CardProps extends ComponentPropsWithRef<'div'>, SxProps {
   variant?: CardVariant;
   /**
-   * `contrast` uses the dark palette on any page theme. Omit this prop to inherit the surrounding
-   * surface's palette. `default` uses the theme's palette.
+   * `contrast` uses the dark palette with a charcoal surface on any page theme.
+   * Omit this prop or use `default` to keep the enclosing theme.
    */
-  appearance?: AppearanceName;
+  appearance?: SurfaceAppearance;
   slotProps?: CardSlotProps;
 }
 
@@ -112,13 +112,14 @@ const footerStyle = css({
 
 function CardRoot({ ref, variant = 'raised', appearance, slotProps, className, sx, ...rest }: CardProps) {
   const surfaceAppearance = useSurfaceAppearance(appearance);
+  const ownTheme = surfaceTheme(appearance ?? 'default');
 
   return (
     <CardSlotContext.Provider value={slotProps}>
-      <AppearanceScope appearance={surfaceAppearance}>
+      <AppearanceScope theme={ownTheme} appearance={surfaceAppearance}>
         <WithSx
           className={joinClassNames(slotProps?.root?.className, className)}
-          styles={[rootStyle, variantStyles[variant], contrastSurfaceStyle, slotProps?.root?.css]}
+          styles={[rootStyle, variantStyles[variant], ownTheme && themeScopeStyle, slotProps?.root?.css]}
           sx={sx}
         >
           {(className) => (
@@ -127,7 +128,7 @@ function CardRoot({ ref, variant = 'raised', appearance, slotProps, className, s
               ref={ref}
               data-ui="card"
               data-variant={variant}
-              data-appearance={surfaceAppearance}
+              {...surfaceAttributes(appearance ?? 'default')}
               className={className}
             />
           )}
