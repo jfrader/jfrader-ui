@@ -286,16 +286,6 @@ export function ElasticSlider(props: ElasticSliderProps) {
     latchRef.current = next;
     setLatched(next);
   };
-  const vibrate = (pointerType: string) => {
-    if (!haptics || reduced || pointerType !== 'touch') return;
-    const navigator = slider.controlRef.current?.ownerDocument.defaultView?.navigator;
-    if (typeof navigator?.vibrate !== 'function') return;
-    try {
-      navigator.vibrate(HAPTIC_PULSE_MS);
-    } catch {
-      // Vibration is optional feedback; a refusing platform changes nothing.
-    }
-  };
   const slider = useSliderInteraction({
     component: 'ElasticSlider',
     range: false,
@@ -333,6 +323,17 @@ export function ElasticSlider(props: ElasticSliderProps) {
       setLatch(null);
     },
   });
+  // Declared after the interaction engine so the closure reads in dependency order.
+  const vibrate = (pointerType: string) => {
+    if (!haptics || reduced || pointerType !== 'touch') return;
+    const navigator = slider.controlRef.current?.ownerDocument.defaultView?.navigator;
+    if (typeof navigator?.vibrate !== 'function') return;
+    try {
+      navigator.vibrate(HAPTIC_PULSE_MS);
+    } catch {
+      // Vibration is optional feedback; a refusing platform changes nothing.
+    }
+  };
   const { id, controlRef, current, percent } = slider;
   const n = current as number;
   const { format } = useSliderFormat(locale, formatOptions, formatValue);
