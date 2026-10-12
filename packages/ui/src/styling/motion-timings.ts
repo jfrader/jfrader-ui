@@ -3,17 +3,26 @@
 // moves both and no component writes its own literal.
 import { base } from '@jfrader/tokens';
 
-/** Parses a `120ms` token, and says so loudly if a duration stops being milliseconds. */
-const milliseconds = (value: string) => {
-  const parsed = Number.parseFloat(value);
-  if (!Number.isFinite(parsed) || !value.trim().endsWith('ms')) {
-    throw new Error(`Motion timings need a duration token in ms, received "${value}".`);
+/**
+ * Parses a `120ms` token into a number. A token that is missing or stops being milliseconds resolves
+ * to `0` — no animation, and the state still completes — because a design system cannot take the page
+ * down over a configuration mistake. Exported for the Foundations/Motion page to prove the fallback;
+ * the report is loud in development and silent in production.
+ */
+export function resolveMotionDurationMs(name: string, value: unknown): number {
+  const parsed = typeof value === 'string' ? Number.parseFloat(value) : Number.NaN;
+  if (Number.isFinite(parsed) && typeof value === 'string' && value.trim().endsWith('ms')) return parsed;
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.error(
+      `@jfrader/ui: motion duration "${name}" must be a token in ms, received ${JSON.stringify(value)}; using 0.`,
+    );
   }
-  return parsed;
-};
+  return 0;
+}
 
 export const motionDurationMs = {
-  fast: milliseconds(base.motion.duration.fast),
-  base: milliseconds(base.motion.duration.base),
-  slow: milliseconds(base.motion.duration.slow),
+  fast: resolveMotionDurationMs('duration.fast', base.motion.duration.fast),
+  base: resolveMotionDurationMs('duration.base', base.motion.duration.base),
+  slow: resolveMotionDurationMs('duration.slow', base.motion.duration.slow),
 } as const;
