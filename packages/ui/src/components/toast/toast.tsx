@@ -42,6 +42,9 @@ import { isRenderable } from '../../utils/renderable';
 import { Button } from '../button';
 import { Spinner } from '../spinner';
 
+// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
+declare const process: { env: { NODE_ENV?: string } };
+
 export type ToastTone = 'neutral' | 'success' | 'danger' | 'info' | 'warning';
 
 export interface ToastAction {
