@@ -90,6 +90,7 @@
     "./radio-cards": { "types": "./src/components/radio-cards/index.ts", "import": "./src/components/radio-cards/index.ts" },
     "./radio-group": { "types": "./src/components/radio-group/index.ts", "import": "./src/components/radio-group/index.ts" },
     "./resizable-panels": { "types": "./src/components/resizable-panels/index.ts", "import": "./src/components/resizable-panels/index.ts" },
+    "./scene": { "types": "./src/components/scene/index.ts", "import": "./src/components/scene/index.ts" },
     "./scroll-area": { "types": "./src/components/scroll-area/index.ts", "import": "./src/components/scroll-area/index.ts" },
     "./search-field": { "types": "./src/components/search-field/index.ts", "import": "./src/components/search-field/index.ts" },
     "./segmented-control": { "types": "./src/components/segmented-control/index.ts", "import": "./src/components/segmented-control/index.ts" },
