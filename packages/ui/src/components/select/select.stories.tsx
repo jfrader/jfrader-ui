@@ -182,6 +182,39 @@ export const Placeholder: Story = {
   },
 };
 
+export const ScrollableRtl: Story = {
+  args: { defaultOpen: true, defaultValue: 'project-0' },
+  render: (args) => (
+    <div style={{ inlineSize: 240 }}>
+      <Select {...args}>
+        <Select.Trigger dir="rtl" aria-label={LABEL}>
+          <Select.Value placeholder={PLACEHOLDER} />
+        </Select.Trigger>
+        <Select.Content dir="rtl">
+          {Array.from({ length: 20 }, (_, index) => (
+            <Select.Item key={index} value={`project-${index}`} disabled={index === 1}>
+              {`Project ${index + 1}: review the latest changes before publishing`}
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select>
+    </div>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger.getBoundingClientRect().width).toBeLessThanOrEqual(240);
+    await userEvent.click(trigger);
+    await userEvent.keyboard('{ArrowDown}{End}');
+    const listbox = await bodyOf(canvasElement).findByRole('listbox');
+    await expect(getComputedStyle(listbox).direction).toBe('rtl');
+    await expect(listbox.scrollHeight).toBeGreaterThan(listbox.clientHeight);
+    await expect(listbox.getBoundingClientRect().height).toBeLessThanOrEqual(280);
+    await expectActive(canvasElement, 'Project 20: review the latest changes before publishing');
+    const last = getOption(canvasElement, 'Project 20: review the latest changes before publishing');
+    await expect(last.getBoundingClientRect().bottom).toBeLessThanOrEqual(listbox.getBoundingClientRect().bottom);
+  },
+};
+
 export const Controlled: Story = {
   args: { onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <ControlledSelect {...args} />,

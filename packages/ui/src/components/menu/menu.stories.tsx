@@ -136,6 +136,34 @@ export const Open: Story = {
   },
 };
 
+export const ScrollableRtl: Story = {
+  args: { defaultOpen: true },
+  render: (args) => (
+    <Menu {...args}>
+      <Menu.Trigger dir="rtl">Options</Menu.Trigger>
+      <Menu.Content dir="rtl">
+        {Array.from({ length: 20 }, (_, index) => (
+          <Menu.Item key={index} disabled={index === 1}>
+            {`Project ${index + 1}: review the latest changes before publishing`}
+          </Menu.Item>
+        ))}
+      </Menu.Content>
+    </Menu>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const menu = await bodyOf(canvasElement).findByRole('menu');
+    await expect(getComputedStyle(menu).direction).toBe('rtl');
+    await expect(menu.scrollHeight).toBeGreaterThan(menu.clientHeight);
+    await expect(menu.getBoundingClientRect().height).toBeLessThanOrEqual(280);
+    await userEvent.keyboard('{End}');
+    const last = within(menu).getAllByRole('menuitem').at(-1)!;
+    await waitFor(() => expect(last).toHaveFocus());
+    await expect(last.getBoundingClientRect().bottom).toBeLessThanOrEqual(menu.getBoundingClientRect().bottom);
+    await userEvent.keyboard('{Home}');
+    await expectFocused(canvasElement, 'Project 1: review the latest changes before publishing');
+  },
+};
+
 export const Controlled: Story = {
   args: { onOpenChange: fn() },
   render: (args) => <ControlledMenu {...args} />,
