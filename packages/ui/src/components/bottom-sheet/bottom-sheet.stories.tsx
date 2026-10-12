@@ -531,14 +531,23 @@ function NativeCloseExample({ mode, ...args }: BottomSheetProps & { mode: 'form'
     </BottomSheet>
   );
 }
+// close() and <form method="dialog"> flip `open` synchronously but notify from the queued
+// `close` event, so wait for the notification itself, then assert its exact count.
+async function nativeClosed(
+  canvasElement: HTMLElement,
+  onOpenChange: BottomSheetProps['onOpenChange'],
+  calls: number,
+) {
+  await waitFor(async () => {
+    await expect(onOpenChange).toHaveBeenCalledTimes(calls);
+  });
+  await expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  await expect(dialogIn(canvasElement).open).toBe(false);
+}
 const nativeClosePlay: Story['play'] = async ({ canvas, canvasElement, args, userEvent }) => {
   await userEvent.click(canvas.getByRole('button', { name: TRIGGER }));
   await userEvent.click(canvas.getByRole('button', { name: 'Complete' }));
-  await waitFor(async () => {
-    await expect(dialogIn(canvasElement).open).toBe(false);
-  });
-  await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
-  await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+  await nativeClosed(canvasElement, args.onOpenChange, 2);
   await expect(canvasElement.ownerDocument.activeElement).toBe(
     canvas.getByRole('button', { name: TRIGGER }),
   );
@@ -852,13 +861,11 @@ export const NativeRejectedRepair: Story = {
   render: (args) => <NativeCloseExample {...args} mode="ref" />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Complete' }));
-    await waitFor(async () => {
-      await expect(dialogIn(canvasElement).open).toBe(false);
-    });
-    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
-    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await nativeClosed(canvasElement, args.onOpenChange, 1);
     await userEvent.click(canvas.getByRole('button', { name: TRIGGER }));
-    await expect(dialogIn(canvasElement).open).toBe(true);
+    await waitFor(async () => {
+      await expect(dialogIn(canvasElement).open).toBe(true);
+    });
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
   },
 };
