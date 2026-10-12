@@ -125,6 +125,7 @@
     "./toggle-subscription": { "types": "./src/components/toggle-subscription/index.ts", "import": "./src/components/toggle-subscription/index.ts" },
     "./tooltip": { "types": "./src/components/tooltip/index.ts", "import": "./src/components/tooltip/index.ts" },
     "./tree-view": { "types": "./src/components/tree-view/index.ts", "import": "./src/components/tree-view/index.ts" },
+    "./trick-stacks": { "types": "./src/components/trick-stacks/index.ts", "import": "./src/components/trick-stacks/index.ts" },
     "./typewriter-terminal": { "types": "./src/components/typewriter-terminal/index.ts", "import": "./src/components/typewriter-terminal/index.ts" },
     "./usage-meter": { "types": "./src/components/usage-meter/index.ts", "import": "./src/components/usage-meter/index.ts" },
     "./user-menu": { "types": "./src/components/user-menu/index.ts", "import": "./src/components/user-menu/index.ts" }

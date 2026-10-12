@@ -1,0 +1,530 @@
+{
+  "provenance": {
+    "source": "trucoshi-client-private/packages/core/src/board/trickLayout.ts",
+    "sourceCommit": "0e7991ce09be3ea26a6db16b59030ffb84fd4709",
+    "sourceSha256": "8a5c9bd97ad0ef336aa36a0a4587e91d163bb7132dddafa72bc196ede0bde735",
+    "method": "Expected values evaluated directly from the read-only reference with tsx; synthetic poker card identities. Match revelation projected into explicit caller-owned data."
+  },
+  "offsets": [
+    {
+      "input": {
+        "index": 0,
+        "total": 1,
+        "open": false,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": 0,
+        "xPx": 0,
+        "y": 0
+      },
+      "yIsNegativeZero": false
+    },
+    {
+      "input": {
+        "index": 0,
+        "total": 1,
+        "open": true,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": 0,
+        "xPx": 0,
+        "y": 0
+      },
+      "yIsNegativeZero": true
+    },
+    {
+      "input": {
+        "index": 0,
+        "total": 2,
+        "open": false,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": 0,
+        "xPx": -2,
+        "y": 0.75
+      },
+      "yIsNegativeZero": false
+    },
+    {
+      "input": {
+        "index": 0,
+        "total": 2,
+        "open": true,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": -0.26,
+        "xPx": 0,
+        "y": -2
+      },
+      "yIsNegativeZero": false
+    },
+    {
+      "input": {
+        "index": 1,
+        "total": 2,
+        "open": false,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": 0,
+        "xPx": 2,
+        "y": 0.75
+      },
+      "yIsNegativeZero": false
+    },
+    {
+      "input": {
+        "index": 1,
+        "total": 2,
+        "open": true,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": 0.26,
+        "xPx": 0,
+        "y": -2
+      },
+      "yIsNegativeZero": false
+    },
+    {
+      "input": {
+        "index": 0,
+        "total": 3,
+        "open": false,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": 0,
+        "xPx": -4,
+        "y": 1.5
+      },
+      "yIsNegativeZero": false
+    },
+    {
+      "input": {
+        "index": 0,
+        "total": 3,
+        "open": true,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": -0.52,
+        "xPx": 0,
+        "y": -4
+      },
+      "yIsNegativeZero": false
+    },
+    {
+      "input": {
+        "index": 1,
+        "total": 3,
+        "open": false,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": 0,
+        "xPx": 0,
+        "y": 0
+      },
+      "yIsNegativeZero": false
+    },
+    {
+      "input": {
+        "index": 1,
+        "total": 3,
+        "open": true,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": 0,
+        "xPx": 0,
+        "y": 0
+      },
+      "yIsNegativeZero": true
+    },
+    {
+      "input": {
+        "index": 2,
+        "total": 3,
+        "open": false,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": 0,
+        "xPx": 4,
+        "y": 1.5
+      },
+      "yIsNegativeZero": false
+    },
+    {
+      "input": {
+        "index": 2,
+        "total": 3,
+        "open": true,
+        "openSpreadRatio": 0.52
+      },
+      "expected": {
+        "xCardWidths": 0.52,
+        "xPx": 0,
+        "y": -4
+      },
+      "yIsNegativeZero": false
+    }
+  ],
+  "stable": [
+    {
+      "seed": "0-North-spades-A",
+      "rotation": -3.132,
+      "jitter": {
+        "x": -2.3120000000000003,
+        "y": 2.84
+      }
+    },
+    {
+      "seed": "0-North-spades-A:inspected",
+      "rotation": 5.136000000000001,
+      "jitter": {
+        "x": -0.1280000000000001,
+        "y": -2.08
+      }
+    },
+    {
+      "seed": "1-North-hearts-Q",
+      "rotation": -4.404,
+      "jitter": {
+        "x": 3.3200000000000003,
+        "y": -3.2880000000000003
+      }
+    },
+    {
+      "seed": "1-North-hearts-Q:inspected",
+      "rotation": -1.896,
+      "jitter": {
+        "x": 0.7679999999999998,
+        "y": -0.5760000000000001
+      }
+    },
+    {
+      "seed": "2-North-clubs-K",
+      "rotation": -4.752,
+      "jitter": {
+        "x": -1.056,
+        "y": -2.176
+      }
+    },
+    {
+      "seed": "2-North-clubs-K:inspected",
+      "rotation": -4.74,
+      "jitter": {
+        "x": 3.752,
+        "y": 2.008
+      }
+    },
+    {
+      "seed": "2-south-hearts-Q",
+      "rotation": -3.936,
+      "jitter": {
+        "x": -2.816,
+        "y": -1.1360000000000001
+      }
+    },
+    {
+      "seed": "negative-hash-overflow-0123456789",
+      "rotation": 3.2279999999999998,
+      "jitter": {
+        "x": -0.2959999999999998,
+        "y": 3.6319999999999997
+      }
+    },
+    {
+      "seed": "",
+      "rotation": -6,
+      "jitter": {
+        "x": -4,
+        "y": -4
+      }
+    }
+  ],
+  "positions": [
+    {
+      "input": {
+        "geometry": {
+          "angleDeg": 0,
+          "cos": 1,
+          "sin": 0,
+          "sideStrength": 1
+        },
+        "centerShiftXPercent": -1.2,
+        "centerShiftYPercent": 1.8,
+        "playerSpreadXPercent": 42,
+        "playerSpreadYPercent": 39,
+        "spreadBoost": 2,
+        "sideVerticalSpreadBoost": 7
+      },
+      "expected": {
+        "x": 92.8,
+        "y": 51.8
+      }
+    },
+    {
+      "input": {
+        "geometry": {
+          "angleDeg": 30,
+          "cos": 0.8660254037844387,
+          "sin": 0.49999999999999994,
+          "sideStrength": 0.8660254037844387
+        },
+        "centerShiftXPercent": -1.2,
+        "centerShiftYPercent": 1.8,
+        "playerSpreadXPercent": 42,
+        "playerSpreadYPercent": 39,
+        "spreadBoost": 2,
+        "sideVerticalSpreadBoost": 7
+      },
+      "expected": {
+        "x": 86.9051177665153,
+        "y": 75.33108891324554
+      }
+    },
+    {
+      "input": {
+        "geometry": {
+          "angleDeg": 90,
+          "cos": 6.123233995736766e-17,
+          "sin": 1,
+          "sideStrength": 6.123233995736766e-17
+        },
+        "centerShiftXPercent": -1.2,
+        "centerShiftYPercent": 1.8,
+        "playerSpreadXPercent": 42,
+        "playerSpreadYPercent": 39,
+        "spreadBoost": 2,
+        "sideVerticalSpreadBoost": 7
+      },
+      "expected": {
+        "x": 48.8,
+        "y": 92.8
+      }
+    },
+    {
+      "input": {
+        "geometry": {
+          "angleDeg": 150,
+          "cos": -0.8660254037844387,
+          "sin": 0.49999999999999994,
+          "sideStrength": 0.8660254037844387
+        },
+        "centerShiftXPercent": -1.2,
+        "centerShiftYPercent": 1.8,
+        "playerSpreadXPercent": 42,
+        "playerSpreadYPercent": 39,
+        "spreadBoost": 2,
+        "sideVerticalSpreadBoost": 7
+      },
+      "expected": {
+        "x": 10.694882233484691,
+        "y": 75.33108891324554
+      }
+    },
+    {
+      "input": {
+        "geometry": {
+          "angleDeg": 210,
+          "cos": -0.8660254037844386,
+          "sin": -0.5000000000000001,
+          "sideStrength": 0.8660254037844386
+        },
+        "centerShiftXPercent": -1.2,
+        "centerShiftYPercent": 1.8,
+        "playerSpreadXPercent": 42,
+        "playerSpreadYPercent": 39,
+        "spreadBoost": 2,
+        "sideVerticalSpreadBoost": 7
+      },
+      "expected": {
+        "x": 10.694882233484698,
+        "y": 28.268911086754457
+      }
+    },
+    {
+      "input": {
+        "geometry": {
+          "angleDeg": 270,
+          "cos": -1.8369701987210297e-16,
+          "sin": -1,
+          "sideStrength": 1.8369701987210297e-16
+        },
+        "centerShiftXPercent": -1.2,
+        "centerShiftYPercent": 1.8,
+        "playerSpreadXPercent": 42,
+        "playerSpreadYPercent": 39,
+        "spreadBoost": 2,
+        "sideVerticalSpreadBoost": 7
+      },
+      "expected": {
+        "x": 48.79999999999999,
+        "y": 10.799999999999997
+      }
+    },
+    {
+      "input": {
+        "geometry": {
+          "angleDeg": 330,
+          "cos": 0.8660254037844384,
+          "sin": -0.5000000000000004,
+          "sideStrength": 0.8660254037844384
+        },
+        "centerShiftXPercent": -1.2,
+        "centerShiftYPercent": 1.8,
+        "playerSpreadXPercent": 42,
+        "playerSpreadYPercent": 39,
+        "spreadBoost": 2,
+        "sideVerticalSpreadBoost": 7
+      },
+      "expected": {
+        "x": 86.90511776651529,
+        "y": 28.268911086754443
+      }
+    }
+  ],
+  "order": {
+    "rounds": [
+      [
+        {
+          "player": {
+            "key": "north",
+            "idx": 0
+          },
+          "card": "spades-A",
+          "key": "n-a"
+        },
+        {
+          "player": {
+            "key": "south",
+            "idx": 1
+          },
+          "card": "hearts-Q",
+          "key": "s-q"
+        }
+      ],
+      [
+        {
+          "player": {
+            "key": "south",
+            "idx": 1
+          },
+          "card": "clubs-K",
+          "key": "s-k"
+        },
+        {
+          "player": {
+            "key": "north",
+            "idx": 0
+          },
+          "card": "diamonds-J",
+          "key": "n-j"
+        }
+      ]
+    ],
+    "expected": {
+      "0-north-spades-A": 1,
+      "0-south-hearts-Q": 2,
+      "1-south-clubs-K": 3,
+      "1-north-diamonds-J": 4
+    }
+  },
+  "grouping": {
+    "rounds": [
+      [
+        {
+          "player": {
+            "key": "north",
+            "idx": 0
+          },
+          "card": "spades-A",
+          "key": "n-a"
+        },
+        {
+          "player": {
+            "key": "south",
+            "idx": 1
+          },
+          "card": "hearts-Q",
+          "key": "s-q"
+        }
+      ],
+      [
+        {
+          "player": {
+            "key": "south",
+            "idx": 1
+          },
+          "card": "clubs-K",
+          "key": "s-k"
+        },
+        {
+          "player": {
+            "key": "north",
+            "idx": 0
+          },
+          "card": "diamonds-J",
+          "key": "n-j"
+        }
+      ]
+    ],
+    "revealed": {
+      "north": [
+        "spades-A",
+        "clubs-10",
+        "hearts-9"
+      ],
+      "south": [
+        "clubs-K"
+      ]
+    },
+    "expectedCards": {
+      "north": [
+        {
+          "roundIdx": 0,
+          "card": "spades-A"
+        },
+        {
+          "roundIdx": 1,
+          "card": "diamonds-J"
+        },
+        {
+          "roundIdx": 3,
+          "card": "clubs-10"
+        }
+      ],
+      "south": [
+        {
+          "roundIdx": 0,
+          "card": "hearts-Q"
+        },
+        {
+          "roundIdx": 1,
+          "card": "clubs-K"
+        }
+      ]
+    },
+    "expectedRevealedKeys": [
+      "north",
+      "south"
+    ]
+  },
+  "constants": {
+    "openScale": 1.45,
+    "openSpreadRatio": 0.52,
+    "zIndex": {
+      "closed": 40,
+      "open": 240,
+      "card": 20,
+      "openCard": 280
+    }
+  }
+}

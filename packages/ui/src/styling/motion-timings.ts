@@ -33,4 +33,5 @@ export const motionDurationMs = {
   cardDealStagger: resolveMotionDurationMs('duration.cardDealStagger', base.motion.duration.cardDealStagger),
   cardPlayOwn: resolveMotionDurationMs('duration.cardPlayOwn', base.motion.duration.cardPlayOwn),
   cardPlay: resolveMotionDurationMs('duration.cardPlay', base.motion.duration.cardPlay),
+  trickStack: resolveMotionDurationMs('duration.trickStack', base.motion.duration.trickStack),
 } as const;
