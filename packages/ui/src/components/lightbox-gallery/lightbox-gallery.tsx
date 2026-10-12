@@ -1,0 +1,1110 @@
+'use client';
+
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentPropsWithRef,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from 'react';
+import { useMergeRefs } from '@floating-ui/react';
+import { animate, MotionConfig, motion, useMotionValue, useReducedMotion } from 'motion/react';
+import { vars } from '@jfrader/tokens/vars';
+import {
+  omitNativeOpen,
+  useNativeDialog,
+  useNativeDialogRoot,
+  type NativeDialogController,
+} from '../../overlay/use-native-dialog';
+import { css, type Interpolation, type Theme } from '../../styling/css';
+import { focusRingOutset } from '../../styling/focus-ring';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
+import { isRenderable } from '../../utils/renderable';
+import { useControlledState } from '../../utils/use-controlled-state';
+import { Button } from '../button';
+
+export interface LightboxGalleryImage {
+  id: string;
+  src: string;
+  width: number;
+  height: number;
+  alt: string;
+  title?: string;
+  caption?: ReactNode;
+  srcSet?: string;
+  sizes?: string;
+}
+
+type Slot<Tag extends keyof React.JSX.IntrinsicElements> = Omit<ComponentPropsWithRef<Tag>, 'children'> & {
+  css?: Interpolation<Theme>;
+};
+
+export interface LightboxGallerySlotProps {
+  grid?: Slot<'ul'>;
+  tile?: Omit<Slot<'button'>, 'type'>;
+  image?: Omit<Slot<'img'>, 'src' | 'srcSet' | 'sizes' | 'alt' | 'width' | 'height'>;
+  viewer?: Omit<Slot<'dialog'>, 'open'> & { withDescription?: boolean };
+  stage?: Slot<'div'>;
+  title?: Slot<'h2'>;
+  caption?: Slot<'p'>;
+  thumbnails?: Slot<'div'>;
+  controls?: Slot<'div'>;
+  status?: Slot<'div'>;
+}
+
+export interface LightboxGalleryLabels {
+  open: string;
+  close: string;
+  previous: string;
+  next: string;
+  zoom: string;
+  zoomIn: string;
+  zoomOut: string;
+  reset: string;
+  panLeft: string;
+  panRight: string;
+  panUp: string;
+  panDown: string;
+  empty: string;
+  unavailable: string;
+  imageUnavailable: string;
+  loading: string;
+  thumbnails: string;
+  position: (position: string, total: string) => string;
+  zoomPercent: (percent: string) => string;
+}
+
+export interface LightboxGalleryProps
+  extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>,
+    SxProps {
+  images: readonly LightboxGalleryImage[];
+  label: string;
+  minColumnWidth?: number;
+  gap?: keyof typeof vars.space;
+  value?: string | null;
+  defaultValue?: string | null;
+  onValueChange?: (id: string | null) => void;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  maxZoom?: number;
+  labels?: Partial<LightboxGalleryLabels>;
+  locale?: Intl.LocalesArgument;
+  slotProps?: LightboxGallerySlotProps;
+}
+
+const MIN_COLUMN_WIDTH = 150;
+const MAX_ZOOM = 4;
+const ZOOM_STEP = 0.5;
+const PAN_PROGRESS = 0.1;
+const DISMISS_PROGRESS = 0.25;
+const SWIPE_PROGRESS = 0.2;
+const DISMISS_VELOCITY = 800;
+const DRAG_SLOP = 8;
+const WHEEL_ZOOM_RATE = 0.002;
+const FLIGHT_SPRING = { type: 'spring', stiffness: 360, damping: 36 } as const;
+const defaults: LightboxGalleryLabels = {
+  open: 'Open image',
+  close: 'Close viewer',
+  previous: 'Previous image',
+  next: 'Next image',
+  zoom: 'Toggle zoom',
+  zoomIn: 'Zoom in',
+  zoomOut: 'Zoom out',
+  reset: 'Reset zoom',
+  panLeft: 'Pan left',
+  panRight: 'Pan right',
+  panUp: 'Pan up',
+  panDown: 'Pan down',
+  empty: 'No images',
+  unavailable: 'Image unavailable',
+  imageUnavailable: 'Image unavailable',
+  loading: 'Loading image',
+  thumbnails: 'Choose image',
+  position: (position, total) => `${position} / ${total}`,
+  zoomPercent: (percent) => percent,
+};
+const rootStyle = css({
+  label: 'lightbox-gallery',
+  minInlineSize: 0,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  '&:focus-visible': focusRingOutset,
+});
+const gridStyle = css({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(var(--lightbox-columns, 1), minmax(0, 1fr))',
+  gridAutoRows: '1px',
+  gap: 'var(--lightbox-gap)',
+  padding: 0,
+  margin: 0,
+  listStyle: 'none',
+});
+const tileStyle = css({
+  position: 'relative',
+  display: 'block',
+  inlineSize: '100%',
+  minBlockSize: vars.space[8],
+  padding: 0,
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.md,
+  background: 'transparent',
+  cursor: 'pointer',
+  overflow: 'hidden',
+  '&:focus-visible': focusRingOutset,
+});
+const imageStyle = css({
+  position: 'relative',
+  display: 'block',
+  inlineSize: '100%',
+  blockSize: '100%',
+  objectFit: 'contain',
+  userSelect: 'none',
+});
+const viewerStyle = css({
+  boxSizing: 'border-box',
+  inlineSize: '100%',
+  maxInlineSize: '100%',
+  blockSize: '100dvh',
+  maxBlockSize: '100dvh',
+  margin: 0,
+  border: `1px solid ${vars.color.borderControl}`,
+  background: vars.color.bg,
+  color: vars.color.text,
+  padding: `max(${vars.space[4]}, env(safe-area-inset-top)) max(${vars.space[4]}, env(safe-area-inset-right)) max(${vars.space[4]}, env(safe-area-inset-bottom)) max(${vars.space[4]}, env(safe-area-inset-left))`,
+  overflow: 'auto',
+  fontFamily: vars.font.sans,
+  '&::backdrop': { background: vars.color.scrim },
+  [FORCED_COLORS]: { boxShadow: 'none' },
+});
+const contentStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space[3],
+  minBlockSize: '100%',
+});
+const headerStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: vars.space[3],
+});
+const titleStyle = css({ margin: 0, fontSize: vars.textSize.lg, overflowWrap: 'anywhere' });
+const stageStyle = css({
+  position: 'relative',
+  display: 'grid',
+  placeItems: 'center',
+  flex: '1 0 auto',
+  blockSize: '50dvh',
+  minBlockSize: vars.space[12],
+  overflow: 'hidden',
+  touchAction: 'none',
+  borderRadius: vars.radius.md,
+  '&:focus-visible': focusRingOutset,
+});
+const viewerImageStyle = css({
+  position: 'absolute',
+  pointerEvents: 'none',
+  display: 'grid',
+  placeItems: 'center',
+});
+const controlsStyle = css({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: vars.space[2],
+  alignItems: 'center',
+  background: vars.color.bg,
+});
+const actionStyle = css({
+  whiteSpace: 'normal',
+  blockSize: 'auto',
+  minBlockSize: vars.space[8],
+  overflowWrap: 'anywhere',
+});
+const captionStyle = css({
+  margin: 0,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+  overflowWrap: 'anywhere',
+});
+const stripStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
+const thumbStyle = css({
+  ...focusRingOutset,
+  outline: 'none',
+  inlineSize: vars.space[12],
+  blockSize: vars.space[12],
+  padding: 0,
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.md,
+  background: 'transparent',
+  '&:focus-visible': focusRingOutset,
+  '&[aria-current="true"]': { outline: `2px solid ${vars.color.accentText}`, outlineOffset: '2px' },
+  [FORCED_COLORS]: { '&[aria-current="true"]': { outlineColor: 'Highlight' } },
+});
+const fallbackStyle = css({
+  position: 'absolute',
+  inset: 0,
+  display: 'grid',
+  placeItems: 'center',
+  padding: vars.space[3],
+  color: vars.color.textMuted,
+  textAlign: 'center',
+  overflowWrap: 'anywhere',
+});
+const statusStyle = css({
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+  overflowWrap: 'anywhere',
+});
+const loadingStyle = css({
+  opacity: 0,
+  transitionProperty: 'opacity',
+  transitionDuration: vars.motion.duration.base,
+  '&[data-image-state="loaded"]': { opacity: 1 },
+  [REDUCED_MOTION]: { transitionDuration: '0s' },
+});
+const returnFlightStyle = css({
+  position: 'fixed',
+  pointerEvents: 'none',
+  transformOrigin: 'top left',
+  zIndex: 1,
+  overflow: 'hidden',
+  borderRadius: vars.radius.md,
+});
+
+interface ReturnFlight {
+  image: LightboxGalleryImage;
+  from: { left: number; top: number; width: number; height: number };
+  to: { left: number; top: number; width: number; height: number };
+}
+
+function joinIds(...ids: (string | undefined | false)[]) {
+  return ids.filter(Boolean).join(' ') || undefined;
+}
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+function validPositive(value: number, fallback: number) {
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function GalleryImage({
+  image,
+  decorative = false,
+  labels,
+  slot,
+}: {
+  image: LightboxGalleryImage;
+  decorative?: boolean;
+  labels: LightboxGalleryLabels;
+  slot?: LightboxGallerySlotProps['image'];
+}) {
+  const [state, setState] = useState<'loading' | 'loaded' | 'error'>(image.src ? 'loading' : 'error');
+  const { onLoad, onError, ...rest } = slot ?? {};
+  return (
+    <>
+      {state !== 'loaded' && (
+        <span css={fallbackStyle} aria-hidden={decorative || undefined} data-image-state={state}>
+          {decorative ? '▧' : state === 'error' ? labels.imageUnavailable : labels.loading}
+        </span>
+      )}
+      {state !== 'error' && (
+        <img
+          {...rest}
+          css={[imageStyle, loadingStyle, slot?.css]}
+          src={image.src}
+          srcSet={image.srcSet}
+          sizes={image.sizes}
+          alt={decorative ? '' : image.alt}
+          aria-hidden={decorative || rest['aria-hidden']}
+          width={image.width}
+          height={image.height}
+          loading={decorative ? 'lazy' : 'eager'}
+          decoding="async"
+          draggable={false}
+          data-image-state={state}
+          onLoad={(event) => {
+            onLoad?.(event);
+            setState('loaded');
+          }}
+          onError={(event) => {
+            onError?.(event);
+            setState('error');
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function Tile({
+  ref,
+  register,
+  ...props
+}: ComponentPropsWithRef<'button'> & {
+  register: (element: HTMLButtonElement | null) => void | (() => void);
+}) {
+  const merged = useMergeRefs([ref, register]);
+  return <button {...props} ref={merged} />;
+}
+
+interface ViewerProps {
+  images: readonly LightboxGalleryImage[];
+  selected: string | null | undefined;
+  label: string;
+  controller: NativeDialogController;
+  select: (id: string | null) => void;
+  restore: () => void;
+  launch: React.RefObject<HTMLButtonElement | null>;
+  labels: LightboxGalleryLabels;
+  locale?: Intl.LocalesArgument;
+  maxZoom: number;
+  slots?: LightboxGallerySlotProps;
+  returnFlight: (flight: ReturnFlight) => void;
+  reduced: boolean;
+}
+
+function Viewer({
+  images,
+  selected,
+  label,
+  controller,
+  select,
+  restore,
+  launch,
+  labels,
+  locale,
+  maxZoom,
+  slots,
+  returnFlight,
+  reduced,
+}: ViewerProps) {
+  const id = useId();
+  const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const percentFormat = useMemo(
+    () => new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }),
+    [locale],
+  );
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const stageMerged = useMergeRefs([stageRef, slots?.stage?.ref]);
+  const { withDescription = true, ...viewerSlot } = omitNativeOpen(slots?.viewer ?? {});
+  const lastStageBox = useRef<DOMRect | null>(null);
+  const completeClose = () => {
+    const target = launch.current;
+    const box = lastStageBox.current;
+    if (!reduced && image && target?.isConnected && box?.width && bounds.width && bounds.height) {
+      const to = target.getBoundingClientRect();
+      if (to.width && to.height)
+        returnFlight({
+          image,
+          from: {
+            left: box.left + (box.width - bounds.width) / 2,
+            top: box.top + (box.height - bounds.height) / 2,
+            ...bounds,
+          },
+          to,
+        });
+    }
+    restore();
+  };
+  const native = useNativeDialog(
+    controller,
+    {
+      onCancel: viewerSlot.onCancel,
+      onClick: viewerSlot.onClick,
+      onClose: (event) => {
+        viewerSlot.onClose?.(event);
+        completeClose();
+      },
+    },
+    viewerSlot.ref,
+    dialogRef,
+  );
+  const index = images.findIndex((image) => image.id === selected);
+  const image = images[index];
+  const [zoom, setZoomState] = useState(1);
+  const [bounds, setBounds] = useState({ width: 0, height: 0 });
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const scale = useMotionValue(1);
+  const flightX = useMotionValue(0);
+  const flightY = useMotionValue(0);
+  const flightScale = useMotionValue(1);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const gesture = useRef<{
+    originX: number;
+    originY: number;
+    x: number;
+    y: number;
+    time: number;
+    zoom: number;
+    distance?: number;
+    focalX: number;
+    focalY: number;
+    pinched: boolean;
+  } | null>(null);
+  const suppressClick = useRef(false);
+  const titleId = slots?.title?.id ?? `${id}-title`;
+  const captionId = slots?.caption?.id ?? `${id}-caption`;
+  const hasCaption = image && isRenderable(image.caption) && image.caption !== '';
+  const position = image
+    ? labels.position(format.format(index + 1), format.format(images.length))
+    : labels.unavailable;
+  const zoomText = labels.zoomPercent(percentFormat.format(zoom));
+  const limits = (value = scale.get()) => ({
+    x: Math.max(0, (bounds.width * value - (stageRef.current?.clientWidth ?? 0)) / 2),
+    y: Math.max(0, (bounds.height * value - (stageRef.current?.clientHeight ?? 0)) / 2),
+  });
+  const pan = (nextX: number, nextY: number, value = scale.get()) => {
+    const limit = limits(value);
+    x.set(clamp(nextX, -limit.x, limit.x));
+    y.set(clamp(nextY, -limit.y, limit.y));
+  };
+  const setZoom = (next: number, focalX = 0, focalY = 0) => {
+    const value = clamp(next, 1, maxZoom);
+    const ratio = value / scale.get();
+    const nextX = focalX - (focalX - x.get()) * ratio;
+    const nextY = focalY - (focalY - y.get()) * ratio;
+    scale.set(value);
+    setZoomState(value);
+    pan(nextX, nextY, value);
+  };
+  const navigate = (next: number) => {
+    const target = images[next];
+    if (target) select(target.id);
+  };
+
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || !image || !controller.open) return;
+    const measure = () => {
+      if (stage.clientWidth && stage.clientHeight) lastStageBox.current = stage.getBoundingClientRect();
+      const ratio = Math.min(stage.clientWidth / image.width, stage.clientHeight / image.height);
+      const width = image.width * ratio;
+      const height = image.height * ratio;
+      setBounds({ width, height });
+      x.set(
+        clamp(
+          x.get(),
+          -Math.max(0, (width * scale.get() - stage.clientWidth) / 2),
+          Math.max(0, (width * scale.get() - stage.clientWidth) / 2),
+        ),
+      );
+      y.set(
+        clamp(
+          y.get(),
+          -Math.max(0, (height * scale.get() - stage.clientHeight) / 2),
+          Math.max(0, (height * scale.get() - stage.clientHeight) / 2),
+        ),
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(stage);
+    const dialog = dialogRef.current;
+    const rememberPosition = () => {
+      lastStageBox.current = stage.getBoundingClientRect();
+    };
+    dialog?.addEventListener('scroll', rememberPosition);
+    const viewport = stage.ownerDocument.defaultView?.visualViewport;
+    viewport?.addEventListener('resize', measure);
+    return () => {
+      observer.disconnect();
+      dialog?.removeEventListener('scroll', rememberPosition);
+      viewport?.removeEventListener('resize', measure);
+    };
+  }, [controller.open, image, x, y, scale]);
+
+  useEffect(() => {
+    setZoomState(1);
+    x.jump(0);
+    y.jump(0);
+    scale.jump(1);
+    pointers.current.clear();
+    gesture.current = null;
+  }, [selected, controller.open, x, y, scale]);
+
+  useEffect(() => {
+    if (scale.get() > maxZoom) setZoom(maxZoom);
+  }, [maxZoom]);
+
+  useEffect(() => {
+    flightX.jump(0);
+    flightY.jump(0);
+    flightScale.jump(1);
+    if (
+      !controller.open ||
+      reduced ||
+      !launch.current?.isConnected ||
+      launch.current.dataset.imageId !== selected
+    )
+      return;
+    const stage = stageRef.current;
+    const box = stage?.getBoundingClientRect();
+    const start = launch.current.getBoundingClientRect();
+    if (!box?.width || !box.height || !start.width || !image) return;
+    const ratio = Math.min(box.width / image.width, box.height / image.height);
+    flightX.set(start.left + start.width / 2 - box.left - box.width / 2);
+    flightY.set(start.top + start.height / 2 - box.top - box.height / 2);
+    flightScale.set(start.width / (image.width * ratio));
+    const animations = [
+      animate(flightX, 0, FLIGHT_SPRING),
+      animate(flightY, 0, FLIGHT_SPRING),
+      animate(flightScale, 1, FLIGHT_SPRING),
+    ];
+    return () => animations.forEach((animation) => animation.stop());
+  }, [controller.open, controller.repairToken, reduced, flightX, flightY, flightScale]);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || !controller.open || !image) return;
+    const wheel = (event: WheelEvent) => {
+      if (!event.ctrlKey || event.defaultPrevented) return;
+      event.preventDefault();
+      const box = stage.getBoundingClientRect();
+      setZoom(
+        scale.get() * Math.exp(-event.deltaY * WHEEL_ZOOM_RATE),
+        event.clientX - box.left - box.width / 2,
+        event.clientY - box.top - box.height / 2,
+      );
+    };
+    stage.addEventListener('wheel', wheel, { passive: false });
+    return () => stage.removeEventListener('wheel', wheel);
+  }, [controller.open, image, maxZoom]);
+
+  const keyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.defaultPrevented || event.target !== event.currentTarget || !image) return;
+    const rtl = event.currentTarget.matches(':dir(rtl)') ? -1 : 1;
+    const deltas: Record<string, [number, number]> = {
+      ArrowLeft: [1, 0],
+      ArrowRight: [-1, 0],
+      ArrowUp: [0, 1],
+      ArrowDown: [0, -1],
+    };
+    const delta = deltas[event.key];
+    if (zoom > 1 && delta) {
+      event.preventDefault();
+      pan(
+        x.get() + delta[0] * event.currentTarget.clientWidth * PAN_PROGRESS,
+        y.get() + delta[1] * event.currentTarget.clientHeight * PAN_PROGRESS,
+      );
+      return;
+    }
+    const targets: Record<string, number> = {
+      ArrowLeft: index - rtl,
+      ArrowRight: index + rtl,
+      Home: 0,
+      End: images.length - 1,
+    };
+    if (targets[event.key] !== undefined && (zoom === 1 || event.key === 'Home' || event.key === 'End')) {
+      event.preventDefault();
+      navigate(targets[event.key]!);
+    }
+    if (event.key === '+' || event.key === '=') {
+      event.preventDefault();
+      setZoom(zoom + ZOOM_STEP);
+    }
+    if (event.key === '-') {
+      event.preventDefault();
+      setZoom(zoom - ZOOM_STEP);
+    }
+    if (event.key === '0') {
+      event.preventDefault();
+      setZoom(1);
+    }
+  };
+  const cancelGesture = () => {
+    pointers.current.clear();
+    gesture.current = null;
+    scale.set(zoom);
+    pan(x.get(), y.get(), zoom);
+  };
+  const pointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.defaultPrevented || !image || event.button !== 0) return;
+    if (!pointers.current.size) suppressClick.current = false;
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const points = [...pointers.current.values()];
+    const box = event.currentTarget.getBoundingClientRect();
+    gesture.current = {
+      originX: event.clientX,
+      originY: event.clientY,
+      x: x.get(),
+      y: y.get(),
+      time: event.timeStamp,
+      zoom: scale.get(),
+      pinched: points.length > 1,
+      distance:
+        points.length === 2
+          ? Math.hypot(points[1]!.x - points[0]!.x, points[1]!.y - points[0]!.y)
+          : undefined,
+      focalX: points.reduce((sum, point) => sum + point.x, 0) / points.length - box.left - box.width / 2,
+      focalY: points.reduce((sum, point) => sum + point.y, 0) / points.length - box.top - box.height / 2,
+    };
+  };
+  const pointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const drag = gesture.current;
+    if (event.defaultPrevented || !drag || !pointers.current.has(event.pointerId)) return;
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const points = [...pointers.current.values()];
+    const dx = event.clientX - drag.originX;
+    const dy = event.clientY - drag.originY;
+    if (Math.hypot(dx, dy) > DRAG_SLOP || points.length > 1) suppressClick.current = true;
+    if (points.length === 2 && drag.distance) {
+      const next = clamp(
+        (drag.zoom * Math.hypot(points[1]!.x - points[0]!.x, points[1]!.y - points[0]!.y)) / drag.distance,
+        1,
+        maxZoom,
+      );
+      scale.set(next);
+      pan(
+        drag.focalX - ((drag.focalX - drag.x) * next) / drag.zoom,
+        drag.focalY - ((drag.focalY - drag.y) * next) / drag.zoom,
+        next,
+      );
+    } else if (drag.zoom > 1) pan(drag.x + dx, drag.y + dy);
+    else if (!reduced && !drag.pinched) {
+      x.set(dx);
+      y.set(dy);
+    }
+  };
+  const pointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    const drag = gesture.current;
+    pointers.current.delete(event.pointerId);
+    if (!drag) return;
+    if (drag.pinched) {
+      setZoomState(scale.get());
+      if (!pointers.current.size) gesture.current = null;
+      return;
+    }
+    gesture.current = null;
+    if (!event.defaultPrevented && drag.zoom === 1) {
+      const dx = event.clientX - drag.originX;
+      const dy = event.clientY - drag.originY;
+      const velocity = (dy / Math.max(1, event.timeStamp - drag.time)) * 1000;
+      if (
+        dy > 0 &&
+        Math.abs(dy) > Math.abs(dx) &&
+        (dy > event.currentTarget.clientHeight * DISMISS_PROGRESS || velocity > DISMISS_VELOCITY)
+      )
+        controller.requestClose();
+      else if (Math.abs(dx) > event.currentTarget.clientWidth * SWIPE_PROGRESS && Math.abs(dx) > Math.abs(dy))
+        navigate(index + (dx < 0 ? 1 : -1) * (event.currentTarget.matches(':dir(rtl)') ? -1 : 1));
+    }
+    pan(x.get(), y.get());
+  };
+  const action = (name: string, handler: () => void, disabled = false) => (
+    <Button size="sm" css={actionStyle} disabled={disabled} onClick={handler}>
+      {name}
+    </Button>
+  );
+  return (
+    <dialog
+      {...viewerSlot}
+      {...native}
+      data-ui="lightbox-gallery-viewer"
+      aria-modal="true"
+      aria-label={viewerSlot['aria-label'] ?? label}
+      aria-labelledby={joinIds(viewerSlot['aria-labelledby'], titleId)}
+      aria-describedby={joinIds(viewerSlot['aria-describedby'], withDescription && !!hasCaption && captionId)}
+      css={[viewerStyle, viewerSlot.css]}
+      onCancel={(event) => {
+        if (event.target === event.currentTarget) native.onCancel(event);
+      }}
+      onClose={(event) => {
+        if (event.target === event.currentTarget) native.onClose(event);
+      }}
+    >
+      <div css={contentStyle}>
+        <div css={headerStyle}>
+          <h2 {...slots?.title} id={titleId} css={[titleStyle, slots?.title?.css]}>
+            {label}
+            {image?.title ? ` — ${image.title}` : ''}
+          </h2>
+          <Button
+            size="sm"
+            css={actionStyle}
+            ref={(element) => {
+              element?.setAttribute('autofocus', '');
+            }}
+            onClick={controller.requestClose}
+          >
+            {labels.close}
+          </Button>
+        </div>
+        <div
+          {...slots?.stage}
+          ref={stageMerged}
+          role="group"
+          aria-label={slots?.stage?.['aria-label'] ?? image?.alt ?? labels.unavailable}
+          tabIndex={0}
+          data-ui="lightbox-gallery-stage"
+          data-zoom={zoom}
+          data-reduced-motion={reduced}
+          css={[stageStyle, slots?.stage?.css]}
+          onKeyDown={(event) => {
+            slots?.stage?.onKeyDown?.(event);
+            keyDown(event);
+          }}
+          onPointerDown={(event) => {
+            slots?.stage?.onPointerDown?.(event);
+            pointerDown(event);
+          }}
+          onPointerMove={(event) => {
+            slots?.stage?.onPointerMove?.(event);
+            pointerMove(event);
+          }}
+          onPointerUp={(event) => {
+            slots?.stage?.onPointerUp?.(event);
+            pointerUp(event);
+          }}
+          onPointerCancel={(event) => {
+            slots?.stage?.onPointerCancel?.(event);
+            cancelGesture();
+          }}
+          onLostPointerCapture={(event) => {
+            slots?.stage?.onLostPointerCapture?.(event);
+            if (pointers.current.has(event.pointerId)) cancelGesture();
+          }}
+          onClick={(event) => {
+            if (suppressClick.current) {
+              event.preventDefault();
+              event.stopPropagation();
+              suppressClick.current = false;
+            } else slots?.stage?.onClick?.(event);
+          }}
+          onDoubleClick={(event) => {
+            slots?.stage?.onDoubleClick?.(event);
+            if (!event.defaultPrevented && !suppressClick.current) setZoom(zoom > 1 ? 1 : 2);
+          }}
+        >
+          {controller.open && image && (
+            <motion.div
+              css={viewerImageStyle}
+              style={{
+                width: bounds.width,
+                height: bounds.height,
+                x: flightX,
+                y: flightY,
+                scale: flightScale,
+              }}
+            >
+              <motion.div css={imageStyle} style={{ x, y, scale }}>
+                <GalleryImage
+                  key={`${image.id}\u0000${image.src}\u0000${image.srcSet ?? ''}`}
+                  image={image}
+                  labels={labels}
+                  slot={slots?.image}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </div>
+        <div {...slots?.controls} css={[controlsStyle, slots?.controls?.css]}>
+          {action(labels.previous, () => navigate(index - 1), index <= 0)}
+          {action(labels.next, () => navigate(index + 1), index >= images.length - 1)}
+          <Button
+            size="sm"
+            css={actionStyle}
+            aria-pressed={zoom > 1}
+            disabled={maxZoom === 1}
+            onClick={() => setZoom(zoom > 1 ? 1 : 2)}
+          >
+            {labels.zoom}
+          </Button>
+          {action(labels.zoomIn, () => setZoom(zoom + ZOOM_STEP), zoom >= maxZoom)}
+          {action(labels.zoomOut, () => setZoom(zoom - ZOOM_STEP), zoom <= 1)}
+          {action(labels.reset, () => setZoom(1), zoom === 1)}
+          {action(
+            labels.panLeft,
+            () => pan(x.get() + (stageRef.current?.clientWidth ?? 0) * PAN_PROGRESS, y.get()),
+            zoom === 1,
+          )}
+          {action(
+            labels.panRight,
+            () => pan(x.get() - (stageRef.current?.clientWidth ?? 0) * PAN_PROGRESS, y.get()),
+            zoom === 1,
+          )}
+          {action(
+            labels.panUp,
+            () => pan(x.get(), y.get() + (stageRef.current?.clientHeight ?? 0) * PAN_PROGRESS),
+            zoom === 1,
+          )}
+          {action(
+            labels.panDown,
+            () => pan(x.get(), y.get() - (stageRef.current?.clientHeight ?? 0) * PAN_PROGRESS),
+            zoom === 1,
+          )}
+          <span css={statusStyle}>{zoomText}</span>
+        </div>
+        {hasCaption && (
+          <p {...slots?.caption} id={captionId} css={[captionStyle, slots?.caption?.css]}>
+            {image.caption}
+          </p>
+        )}
+        <div
+          {...slots?.thumbnails}
+          role="group"
+          aria-label={slots?.thumbnails?.['aria-label'] ?? labels.thumbnails}
+          css={[stripStyle, slots?.thumbnails?.css]}
+        >
+          {images.map((item, itemIndex) => (
+            <button
+              key={item.id}
+              type="button"
+              aria-current={item.id === selected ? 'true' : undefined}
+              aria-label={`${item.title || item.alt}, ${labels.position(format.format(itemIndex + 1), format.format(images.length))}`}
+              css={thumbStyle}
+              onClick={() => select(item.id)}
+            >
+              <GalleryImage key={`${item.id}\u0000${item.src}`} image={item} decorative labels={labels} />
+            </button>
+          ))}
+        </div>
+        <div
+          {...slots?.status}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          css={[statusStyle, slots?.status?.css]}
+        >
+          {position}
+        </div>
+      </div>
+    </dialog>
+  );
+}
+
+export function LightboxGallery({
+  ref,
+  images,
+  label,
+  minColumnWidth = MIN_COLUMN_WIDTH,
+  gap = '2',
+  value,
+  defaultValue,
+  onValueChange,
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
+  maxZoom = MAX_ZOOM,
+  labels: labelOverrides,
+  locale,
+  slotProps,
+  className,
+  sx,
+  ...rest
+}: LightboxGalleryProps) {
+  const [selected, select] = useControlledState<string | null>(
+    value,
+    defaultValue === undefined ? (images[0]?.id ?? null) : defaultValue,
+    onValueChange,
+  );
+  const [open, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
+  const [pendingLaunch, setPendingLaunch] = useState<string | null>(null);
+  const [returnFlight, setReturnFlight] = useState<ReturnFlight | null>(null);
+  const initialReduced = useReducedMotion();
+  const [reduced, setReduced] = useState(initialReduced ?? false);
+  const validSelection = images.some((image) => image.id === selected);
+  const effectiveOpen = !!open && validSelection && (pendingLaunch === null || pendingLaunch === selected);
+  const lifecycle = useNativeDialogRoot(effectiveOpen, requestOpen);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const gridRef = useRef<HTMLUListElement | null>(null);
+  const mergedRoot = useMergeRefs([ref, rootRef]);
+  const mergedGrid = useMergeRefs([slotProps?.grid?.ref, gridRef]);
+  const tiles = useRef(new Map<string, HTMLButtonElement>());
+  const invoker = useRef<HTMLButtonElement | null>(null);
+  const labels = { ...defaults, ...labelOverrides };
+  const [geometry, setGeometry] = useState({ columns: 1, width: MIN_COLUMN_WIDTH, gap: 0 });
+  const width = validPositive(minColumnWidth, MIN_COLUMN_WIDTH);
+  const zoomLimit = Math.max(1, validPositive(maxZoom, MAX_ZOOM));
+  const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+
+  useEffect(() => {
+    const query = rootRef.current?.ownerDocument.defaultView?.matchMedia(
+      REDUCED_MOTION.replace('@media ', ''),
+    );
+    if (!query) return;
+    const update = () => setReduced(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (pendingLaunch === selected) setPendingLaunch(null);
+  }, [pendingLaunch, selected]);
+
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const measure = () => {
+      const spacing = Number.parseFloat(getComputedStyle(grid).columnGap) || 0;
+      const columns = Math.max(1, Math.floor((grid.clientWidth + spacing) / (width + spacing)));
+      setGeometry({
+        columns,
+        width: Math.max(0, (grid.clientWidth - spacing * (columns - 1)) / columns),
+        gap: spacing,
+      });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }, [width, gap, images.length === 0]);
+
+  const restore = () => {
+    const target = invoker.current?.isConnected
+      ? invoker.current
+      : (tiles.current.get(selected ?? '') ?? rootRef.current);
+    target?.focus({ preventScroll: true });
+  };
+
+  return (
+    <MotionConfig reducedMotion="user">
+      <WithSx className={className} styles={rootStyle} sx={sx}>
+        {(rootClass) => (
+          <div
+            {...rest}
+            ref={mergedRoot}
+            data-ui="lightbox-gallery"
+            className={rootClass}
+            role="region"
+            tabIndex={rest.tabIndex ?? -1}
+            aria-label={rest['aria-label'] ?? label}
+            data-columns={geometry.columns}
+          >
+            {images.length ? (
+              <ul
+                {...slotProps?.grid}
+                ref={mergedGrid}
+                css={[gridStyle, slotProps?.grid?.css]}
+                style={
+                  {
+                    ...slotProps?.grid?.style,
+                    '--lightbox-columns': geometry.columns,
+                    '--lightbox-gap': vars.space[gap],
+                  } as CSSProperties
+                }
+              >
+                {images.map((image, index) => {
+                  const height = (geometry.width * image.height) / image.width;
+                  const span = Math.max(1, Math.ceil((height + geometry.gap) / (1 + geometry.gap)));
+                  return (
+                    <li key={image.id} style={{ gridRowEnd: `span ${span}`, minInlineSize: 0 }}>
+                      <Tile
+                        {...slotProps?.tile}
+                        register={(node) => {
+                          if (node) tiles.current.set(image.id, node);
+                          return () => {
+                            tiles.current.delete(image.id);
+                          };
+                        }}
+                        data-ui="lightbox-gallery-tile"
+                        data-image-id={image.id}
+                        type="button"
+                        aria-haspopup="dialog"
+                        aria-expanded={effectiveOpen && image.id === selected}
+                        aria-label={
+                          slotProps?.tile?.['aria-label'] ??
+                          `${image.title || image.alt}, ${labels.position(format.format(index + 1), format.format(images.length))}, ${labels.open}`
+                        }
+                        css={[tileStyle, slotProps?.tile?.css]}
+                        style={{
+                          ...slotProps?.tile?.style,
+                          aspectRatio: `${image.width} / ${image.height}`,
+                          blockSize: '100%',
+                        }}
+                        onClick={(event) => {
+                          slotProps?.tile?.onClick?.(event);
+                          if (!event.defaultPrevented) {
+                            invoker.current = event.currentTarget;
+                            setPendingLaunch(image.id);
+                            select(image.id);
+                            lifecycle.setOpen(true);
+                          }
+                        }}
+                      >
+                        <GalleryImage
+                          key={`${image.id}\u0000${image.src}\u0000${image.srcSet ?? ''}`}
+                          image={image}
+                          decorative
+                          labels={labels}
+                          slot={slotProps?.image}
+                        />
+                      </Tile>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p css={captionStyle}>{labels.empty}</p>
+            )}
+            {!!open && images.length > 0 && !validSelection && (
+              <p role="status" css={statusStyle}>
+                {labels.unavailable}
+              </p>
+            )}
+            <Viewer
+              images={images}
+              selected={selected}
+              label={label}
+              controller={{ ...lifecycle, open: effectiveOpen }}
+              select={select}
+              restore={restore}
+              launch={invoker}
+              labels={labels}
+              locale={locale}
+              maxZoom={zoomLimit}
+              slots={slotProps}
+              returnFlight={setReturnFlight}
+              reduced={reduced}
+            />
+            {returnFlight && !reduced && !effectiveOpen && (
+              <motion.div
+                key={returnFlight.image.id}
+                aria-hidden="true"
+                inert
+                css={returnFlightStyle}
+                style={{
+                  left: returnFlight.from.left,
+                  top: returnFlight.from.top,
+                  width: returnFlight.from.width,
+                  height: returnFlight.from.height,
+                }}
+                initial={{ x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1 }}
+                animate={{
+                  x: returnFlight.to.left - returnFlight.from.left,
+                  y: returnFlight.to.top - returnFlight.from.top,
+                  scaleX: returnFlight.to.width / returnFlight.from.width,
+                  scaleY: returnFlight.to.height / returnFlight.from.height,
+                  opacity: 0,
+                }}
+                transition={FLIGHT_SPRING}
+                onAnimationComplete={() => setReturnFlight(null)}
+              >
+                <img
+                  src={returnFlight.image.src}
+                  srcSet={returnFlight.image.srcSet}
+                  sizes={returnFlight.image.sizes}
+                  alt=""
+                  css={imageStyle}
+                />
+              </motion.div>
+            )}
+          </div>
+        )}
+      </WithSx>
+    </MotionConfig>
+  );
+}
+
+LightboxGallery.displayName = 'LightboxGallery';

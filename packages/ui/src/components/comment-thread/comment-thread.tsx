@@ -19,8 +19,8 @@
 // continues on the nearest surviving comment's actions, then the composer. Updates from the
 // parent never take focus, and new comments from others are announced in a text-only status.
 // Clock: the caller owns `now` (epoch ms); the component keeps no timer.
-// Shared core: data model, tree operations and Intl live in `thread-core.ts`; the message shell,
-// reactions and composer in `thread-parts.tsx`. Only nesting, disclosure, edit/delete/resolve and
+// Shared core: data model, tree operations and Intl live in `../thread/thread-core.ts`; the message shell,
+// reactions and composer in `../thread/thread-parts.tsx`. Only nesting, disclosure, edit/delete/resolve and
 // the comments card are specific to this file.
 import {
   useEffect,
@@ -64,7 +64,7 @@ import {
   type ThreadFormatters,
   type ThreadIndex,
   type ThreadReaction,
-} from './thread-core';
+} from '../thread/thread-core';
 import {
   ThreadComposer,
   ThreadMessageView,
@@ -75,9 +75,9 @@ import {
   type ThreadReactionLabels,
   type ThreadSize,
   type ThreadTextareaProps,
-} from './thread-parts';
+} from '../thread/thread-parts';
 
-export type { ThreadComment } from './thread-core';
+export type { ThreadComment } from '../thread/thread-core';
 export type CommentAuthor = ThreadAuthor;
 export type CommentReaction = ThreadReaction;
 export type CommentThreadSize = ThreadSize;
