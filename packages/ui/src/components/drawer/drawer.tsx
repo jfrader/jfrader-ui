@@ -12,8 +12,10 @@
 // one close request, so a consumer preventDefault on `cancel` vetoes all of them.
 //
 // Modal only: the native top layer cannot be clipped to a container, so there is no
-// contained or nonmodal mode. Exit is immediate — the native dialog closes without an exit
-// animation; the Panel animates in only after a successful open.
+// contained or nonmodal mode. The Panel slides in from its edge after a successful open and back
+// out before the native close (the drawer stays modal until then); reduced motion is instant. The
+// shell clips instead of hiding overflow: a hidden-overflow dialog is still a scroll container,
+// and showModal()'s focus scroll would offset the sliding Panel back into view.
 //
 // Optional header drag (`draggable`): the primary pointer pulls the Panel toward its edge 1:1,
 // opposing travel is resisted, and release either requests close (past a third of the panel or
@@ -40,7 +42,7 @@ import {
 import { useMergeRefs } from '@floating-ui/react';
 import { animate, type AnimationPlaybackControls } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type SerializedStyles } from '../../styling/css';
+import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { modalShellReset, raisedSurface, surfaceAttributes, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
@@ -53,7 +55,9 @@ import {
   useNativeDialog,
   useNativeDialogRoot,
   type NativeDialogController,
+  type NativeDialogTransition,
 } from '../../overlay/use-native-dialog';
+import { PRESENCE_SPRING } from '../../overlay/presence-spring';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -159,13 +163,6 @@ const SAFE_AREA = {
   bottom: 'env(safe-area-inset-bottom, 0px)',
 } as const;
 
-const entry = keyframes({
-  from: {
-    opacity: 0,
-    transform: 'translate(var(--drawer-entry-x, 0), var(--drawer-entry-y, 0))',
-  },
-});
-
 const dialogStyle = css({
   ...modalShellReset,
   position: 'fixed',
@@ -175,7 +172,9 @@ const dialogStyle = css({
   blockSize: '100%',
   maxInlineSize: 'none',
   maxBlockSize: 'none',
-  overflow: 'hidden',
+  overflow: 'clip',
+  // The Panel's travel toward its edge fades the scrim (1 at rest).
+  '&::backdrop': { opacity: 'var(--drawer-presence, 1)' },
   // The UA hides a closed dialog with display:none; only the open shell lays out.
   '&[open]': { display: 'flex' },
 });
@@ -194,11 +193,6 @@ const panelStyle = css({
   minBlockSize: 0,
   borderWidth: 0,
   boxShadow: vars.shadow.floating,
-  animationName: entry,
-  animationDuration: vars.motion.duration.base,
-  animationTimingFunction: vars.motion.easeStandard,
-  animationFillMode: 'backwards',
-  [REDUCED_MOTION]: { animation: 'none' },
   [FORCED_COLORS]: { boxShadow: 'none', borderColor: 'CanvasText' },
 });
 
@@ -213,8 +207,6 @@ const panelSideStyles: Record<DrawerSide, SerializedStyles> = {
     borderInlineEndWidth: '1px',
     borderStartEndRadius: vars.radius.lg,
     borderEndEndRadius: vars.radius.lg,
-    '--drawer-entry-x': '-100%',
-    '&:dir(rtl)': { '--drawer-entry-x': '100%' },
     [FORCED_COLORS]: { borderInlineEndWidth: '2px' },
   }),
   'inline-end': css({
@@ -222,8 +214,6 @@ const panelSideStyles: Record<DrawerSide, SerializedStyles> = {
     borderInlineStartWidth: '1px',
     borderStartStartRadius: vars.radius.lg,
     borderEndStartRadius: vars.radius.lg,
-    '--drawer-entry-x': '100%',
-    '&:dir(rtl)': { '--drawer-entry-x': '-100%' },
     [FORCED_COLORS]: { borderInlineStartWidth: '2px' },
   }),
   top: css({
@@ -233,7 +223,6 @@ const panelSideStyles: Record<DrawerSide, SerializedStyles> = {
     borderBlockEndWidth: '1px',
     borderEndStartRadius: vars.radius.lg,
     borderEndEndRadius: vars.radius.lg,
-    '--drawer-entry-y': '-100%',
     [FORCED_COLORS]: { borderBlockEndWidth: '2px' },
   }),
   bottom: css({
@@ -242,7 +231,6 @@ const panelSideStyles: Record<DrawerSide, SerializedStyles> = {
     borderBlockStartWidth: '1px',
     borderStartStartRadius: vars.radius.lg,
     borderStartEndRadius: vars.radius.lg,
-    '--drawer-entry-y': '100%',
     [FORCED_COLORS]: { borderBlockStartWidth: '2px' },
   }),
 };
@@ -445,21 +433,26 @@ function DrawerTrigger({ ref, onClick, className, sx, ...rest }: DrawerTriggerPr
 
 DrawerTrigger.displayName = 'Drawer.Trigger';
 
-interface DragSession {
-  pointerId: number;
+/** The Panel's travel axis, the direction of its edge and the distance that hides it. */
+interface EdgeGeometry {
   axis: 'x' | 'y';
   /** +1 when positive client travel moves toward the panel's edge. */
   sign: 1 | -1;
-  start: number;
   extent: number;
+}
+
+interface DragSession extends EdgeGeometry {
+  pointerId: number;
+  header: HTMLElement;
+  start: number;
   offset: number;
   samples: { position: number; time: number }[];
 }
 
-// Read when a drag starts, not at render: the header markup stays identical on server and client.
+// Read when motion starts, not at render: the markup stays identical on server and client.
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
-const DRAG_AXIS: Record<DrawerSide, 'x' | 'y'> = { 'inline-start': 'x', 'inline-end': 'x', top: 'y', bottom: 'y' };
+const EDGE_AXIS: Record<DrawerSide, 'x' | 'y'> = { 'inline-start': 'x', 'inline-end': 'x', top: 'y', bottom: 'y' };
 
 function edgeSign(side: DrawerSide, rtl: boolean): 1 | -1 {
   if (side === 'top') return -1;
@@ -467,48 +460,122 @@ function edgeSign(side: DrawerSide, rtl: boolean): 1 | -1 {
   return (side === 'inline-end') !== rtl ? 1 : -1;
 }
 
-function translateFor(session: Pick<DragSession, 'axis' | 'sign'>, offset: number) {
-  const distance = offset * session.sign;
-  return offset === 0 ? '' : session.axis === 'x' ? `${distance}px` : `0 ${distance}px`;
+function edgeGeometry(panel: HTMLElement, side: DrawerSide): EdgeGeometry {
+  const axis = EDGE_AXIS[side];
+  const rect = panel.getBoundingClientRect();
+  return {
+    axis,
+    sign: edgeSign(side, getComputedStyle(panel).direction === 'rtl'),
+    extent: axis === 'x' ? rect.width : rect.height,
+  };
 }
 
-/** Header drag-to-dismiss. Handlers are null (no listeners) unless enabled; reduced motion ignores presses. */
-function useHeaderDrag(
-  enabled: boolean,
+function prefersReducedMotion(element: Element) {
+  return element.ownerDocument.defaultView?.matchMedia(REDUCED_MOTION_QUERY).matches ?? false;
+}
+
+function translateFor(geometry: Pick<EdgeGeometry, 'axis' | 'sign'>, offset: number) {
+  const distance = offset * geometry.sign;
+  return offset === 0 ? '' : geometry.axis === 'x' ? `${distance}px` : `0 ${distance}px`;
+}
+
+/**
+ * The Panel's offset toward its edge, owned by one animation at a time: the entrance (edge → rest),
+ * the exit (current → edge) and the optional header drag. The scrim fades with the offset. Reduced
+ * motion skips the animations and ignores drags; gesture handlers are null unless `draggable`.
+ */
+function usePanelMotion(
+  draggable: boolean,
   side: DrawerSide,
+  dialogRef: RefObject<HTMLDialogElement | null>,
   panelRef: RefObject<HTMLDivElement | null>,
   requestClose: () => void,
 ) {
   const sessionRef = useRef<DragSession | null>(null);
-  const springRef = useRef<AnimationPlaybackControls | null>(null);
-  // Current panel offset toward the edge, so grabbing a panel mid-spring continues from there.
+  const animationRef = useRef<AnimationPlaybackControls | null>(null);
+  // Current offset, so a grab, a reopen or an exit continues from where the Panel is.
   const offsetRef = useRef(0);
+  // A dismissing fling hands its velocity to the exit.
+  const releaseVelocityRef = useRef(0);
+  const exitingRef = useRef(false);
+
+  const moveTo = useCallback(
+    (geometry: EdgeGeometry, offset: number) => {
+      offsetRef.current = offset;
+      if (panelRef.current) panelRef.current.style.translate = translateFor(geometry, offset);
+      const presence = 1 - Math.min(1, Math.max(0, offset / Math.max(1, geometry.extent)));
+      if (presence === 1) dialogRef.current?.style.removeProperty('--drawer-presence');
+      else dialogRef.current?.style.setProperty('--drawer-presence', String(presence));
+    },
+    [dialogRef, panelRef],
+  );
+
+  const slide = useCallback(
+    (geometry: EdgeGeometry, to: number, spring: typeof PRESENCE_SPRING | typeof RELEASE_SPRING, velocity = 0) => {
+      animationRef.current?.stop();
+      animationRef.current = animate(offsetRef.current, to, {
+        ...spring,
+        velocity,
+        onUpdate: (offset) => moveTo(geometry, offset),
+      });
+      return animationRef.current;
+    },
+    [moveTo],
+  );
 
   const reset = useCallback(() => {
-    springRef.current?.stop();
-    springRef.current = null;
+    animationRef.current?.stop();
+    animationRef.current = null;
+    sessionRef.current?.header.removeAttribute('data-dragging');
     sessionRef.current = null;
+    releaseVelocityRef.current = 0;
+    exitingRef.current = false;
     offsetRef.current = 0;
     if (panelRef.current) panelRef.current.style.translate = '';
-  }, [panelRef]);
+    dialogRef.current?.style.removeProperty('--drawer-presence');
+  }, [dialogRef, panelRef]);
 
-  // Unmount: stop a running spring and clear the inline offset.
+  // Unmount: stop a running animation and clear the inline offset.
   useEffect(() => reset, [reset]);
 
-  const headerGesture = useMemo((): HeaderGestureHandlers | null => {
-    if (!enabled) return null;
+  const transition = useMemo(
+    (): NativeDialogTransition => ({
+      enter: () => {
+        const panel = panelRef.current;
+        exitingRef.current = false;
+        releaseVelocityRef.current = 0;
+        if (!panel || prefersReducedMotion(panel)) {
+          reset();
+          return;
+        }
+        const geometry = edgeGeometry(panel, side);
+        // A fresh open starts past the edge; a reopen during the exit turns back from where it is.
+        if (offsetRef.current <= 0) moveTo(geometry, geometry.extent);
+        slide(geometry, 0, PRESENCE_SPRING);
+      },
+      exit: () => {
+        const panel = panelRef.current;
+        if (!panel || prefersReducedMotion(panel)) return undefined;
+        sessionRef.current?.header.removeAttribute('data-dragging');
+        sessionRef.current = null;
+        exitingRef.current = true;
+        const geometry = edgeGeometry(panel, side);
+        const velocity = releaseVelocityRef.current;
+        releaseVelocityRef.current = 0;
+        return slide(geometry, geometry.extent, PRESENCE_SPRING, velocity).finished;
+      },
+    }),
+    [side, panelRef, moveTo, slide, reset],
+  );
 
-    const moveTo = (panel: HTMLElement, session: DragSession, offset: number) => {
-      offsetRef.current = offset;
-      panel.style.translate = translateFor(session, offset);
-    };
+  const headerGesture = useMemo((): HeaderGestureHandlers | null => {
+    if (!draggable) return null;
 
     const finish = (event: PointerEvent<HTMLDivElement>, release: boolean) => {
       const session = sessionRef.current;
-      const panel = panelRef.current;
       if (!session || session.pointerId !== event.pointerId) return;
       sessionRef.current = null;
-      event.currentTarget.removeAttribute('data-dragging');
+      session.header.removeAttribute('data-dragging');
       // Velocity over the last moments before release: a drag that paused before letting go is not a fling.
       const position = session.axis === 'x' ? event.clientX : event.clientY;
       const samples = [...session.samples, { position, time: event.timeStamp }].filter(
@@ -519,37 +586,30 @@ function useHeaderDrag(
       const elapsed = first && last ? (last.time - first.time) / 1000 : 0;
       const velocity =
         first && last && elapsed > 0 ? ((last.position - first.position) * session.sign) / elapsed : 0;
-      // Accepted: the native close hides the panel at once and Content resets the offset.
+      // Accepted: the exit takes over from here with the release velocity.
       // Rejected (or not a dismissal): the drawer stays open and the panel springs home.
       if (release && (session.offset >= session.extent * DISMISS_FRACTION || velocity >= FLING_VELOCITY)) {
+        releaseVelocityRef.current = velocity;
         requestClose();
       }
-      if (!panel || session.offset === 0) return;
-      springRef.current = animate(session.offset, 0, {
-        ...RELEASE_SPRING,
-        velocity,
-        onUpdate: (offset) => moveTo(panel, session, offset),
-      });
+      if (session.offset !== 0 && !exitingRef.current) slide(session, 0, RELEASE_SPRING, velocity);
     };
 
     return {
       onPointerDown: (event) => {
         const panel = panelRef.current;
-        if (!event.isPrimary || event.button !== 0 || !panel) return;
+        if (!event.isPrimary || event.button !== 0 || !panel || exitingRef.current) return;
         if (event.target instanceof Element && event.target.closest(NO_DRAG_SELECTOR)) return;
-        if (panel.ownerDocument.defaultView?.matchMedia(REDUCED_MOTION_QUERY).matches) return;
-        springRef.current?.stop();
-        const axis = DRAG_AXIS[side];
-        const sign = edgeSign(side, getComputedStyle(panel).direction === 'rtl');
-        const rect = panel.getBoundingClientRect();
-        const position = axis === 'x' ? event.clientX : event.clientY;
+        if (prefersReducedMotion(panel)) return;
+        animationRef.current?.stop();
+        const geometry = edgeGeometry(panel, side);
+        const position = geometry.axis === 'x' ? event.clientX : event.clientY;
         const offset = offsetRef.current;
         sessionRef.current = {
+          ...geometry,
           pointerId: event.pointerId,
-          axis,
-          sign,
-          start: position - offset * sign,
-          extent: axis === 'x' ? rect.width : rect.height,
+          header: event.currentTarget,
+          start: position - offset * geometry.sign,
           offset,
           samples: [{ position, time: event.timeStamp }],
         };
@@ -558,23 +618,22 @@ function useHeaderDrag(
       },
       onPointerMove: (event) => {
         const session = sessionRef.current;
-        const panel = panelRef.current;
-        if (!session || session.pointerId !== event.pointerId || !panel) return;
+        if (!session || session.pointerId !== event.pointerId) return;
         const position = session.axis === 'x' ? event.clientX : event.clientY;
         const travel = (position - session.start) * session.sign;
         session.offset = travel >= 0 ? travel : travel * OPPOSING_RESISTANCE;
         session.samples = [...session.samples, { position, time: event.timeStamp }].filter(
           (sample) => event.timeStamp - sample.time <= VELOCITY_WINDOW_MS,
         );
-        moveTo(panel, session, session.offset);
+        moveTo(session, session.offset);
       },
       onPointerUp: (event) => finish(event, true),
       onPointerCancel: (event) => finish(event, false),
       onLostPointerCapture: (event) => finish(event, false),
     };
-  }, [enabled, side, panelRef, requestClose]);
+  }, [draggable, side, panelRef, requestClose, moveTo, slide]);
 
-  return { headerGesture, reset };
+  return { headerGesture, reset, transition };
 }
 
 function DrawerContent({ ref, className, sx, ...props }: DrawerContentProps) {
@@ -599,7 +658,7 @@ function DrawerContent({ ref, className, sx, ...props }: DrawerContentProps) {
   const requestClose = useCallback(() => {
     requestNativeDialogClose(dialogRef.current, setOpen);
   }, [setOpen]);
-  const { headerGesture, reset } = useHeaderDrag(draggable, side, panelRef, requestClose);
+  const { headerGesture, reset, transition } = usePanelMotion(draggable, side, dialogRef, panelRef, requestClose);
 
   // The browser turns an Escape keydown into a native cancel even when a floating layer nested in
   // this drawer closes on it: that keystroke belongs to the layer, so its cancel is dropped.
@@ -620,6 +679,7 @@ function DrawerContent({ ref, className, sx, ...props }: DrawerContentProps) {
     { onCancel: handleCancel, onClick, onClose: handleClose },
     ref,
     dialogRef,
+    transition,
   );
   // React bubbles cancel/close from nested native dialogs; only this drawer's own events drive it.
   const ownEvent =

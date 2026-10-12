@@ -42,7 +42,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Modal edge surface for filters, settings, long forms and record details. Built on the native modal dialog: the page behind is inert, Tab/Shift+Tab stay inside, Escape, Close and backdrop clicks request close through one cancelable path, and focus returns to the invoker. `side` attaches the panel to `inline-start`, `inline-end` (default), `top` or `bottom`; inline sides follow text direction. `size` caps inline panels; top/bottom panels span the viewport and cap their height. The Body scrolls while Header and Footer stay visible. Optional `draggable` lets the header pull the panel toward its edge to dismiss; reduced motion turns it off, and Close/Escape always remain. Modal only; closing is immediate (no exit animation). Floating overlays inside the drawer need a `ThemeRoot portalContainer` host inside it; an open nested overlay takes the Escape first. Close needs visible text or a localized `aria-label`.',
+          'Modal edge surface for filters, settings, long forms and record details. Built on the native modal dialog: the page behind is inert, Tab/Shift+Tab stay inside, Escape, Close and backdrop clicks request close through one cancelable path, and focus returns to the invoker. `side` attaches the panel to `inline-start`, `inline-end` (default), `top` or `bottom`; inline sides follow text direction. `size` caps inline panels; top/bottom panels span the viewport and cap their height. The Body scrolls while Header and Footer stay visible. Optional `draggable` lets the header pull the panel toward its edge to dismiss; reduced motion turns it off, and Close/Escape always remain. Modal only. The panel slides in from its edge and back out before the dialog closes; reduced motion opens and closes instantly. Floating overlays inside the drawer need a `ThemeRoot portalContainer` host inside it; an open nested overlay takes the Escape first. Close needs visible text or a localized `aria-label`.',
       },
       source: {
         code: `<Drawer>
@@ -137,8 +137,50 @@ function parts(canvasElement: HTMLElement) {
   };
 }
 
-async function settle(element: HTMLElement) {
-  await Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished));
+/** The panel rests once its animated offset clears. */
+async function settle(dialog: HTMLElement) {
+  const panel = dialog.querySelector<HTMLElement>('[data-ui="drawer-panel"]')!;
+  await waitFor(() => expect(panel.style.translate).toBe(''), { timeout: 2000 });
+  await expect(dialog.style.getPropertyValue('--drawer-presence')).toBe('');
+}
+
+interface MotionFrame {
+  open: boolean;
+  left: number;
+  top: number;
+  presence: number;
+  /** The shell's scroll offset; any scroll would cancel the panel's travel on screen. */
+  scroll: number;
+}
+
+/** One reading per animation frame, from `start()` until `done` holds or the time runs out. */
+async function sampleFrames(dialog: HTMLDialogElement, start: () => void, done: (frame: MotionFrame) => boolean) {
+  const view = dialog.ownerDocument.defaultView!;
+  const panel = dialog.querySelector<HTMLElement>('[data-ui="drawer-panel"]')!;
+  const read = (): MotionFrame => ({
+    open: dialog.open,
+    left: rect(panel).left,
+    top: rect(panel).top,
+    presence: Number.parseFloat(dialog.style.getPropertyValue('--drawer-presence') || '1'),
+    scroll: Math.abs(dialog.scrollLeft) + Math.abs(dialog.scrollTop),
+  });
+  const frames: MotionFrame[] = [];
+  const startedAt = view.performance.now();
+  start();
+  await new Promise<void>((resolve) => {
+    const tick = () => {
+      const frame = read();
+      frames.push(frame);
+      if (done(frame) || view.performance.now() - startedAt > 2000) resolve();
+      else view.requestAnimationFrame(tick);
+    };
+    view.requestAnimationFrame(tick);
+  });
+  return frames;
+}
+
+function isMonotonic(values: number[], direction: 1 | -1) {
+  return values.every((value, index) => index === 0 || (value - values[index - 1]!) * direction >= -0.01);
 }
 
 async function openDrawer({ canvasElement, userEvent }: Pick<StoryContext<DrawerProps>, 'canvasElement' | 'userEvent'>) {
@@ -157,9 +199,10 @@ function requestEscape(dialog: HTMLElement) {
 
 async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
   await waitFor(() => expect(within(canvasElement).queryByRole('dialog')).toBeNull());
-  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  // Native closure reconciles on the queued `close` event.
+  await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'false'));
   await expect(trigger).toHaveFocus();
-  await expect(canvasElement.ownerDocument.documentElement.style.overflow).toBe('');
+  await waitFor(() => expect(canvasElement.ownerDocument.documentElement.style.overflow).toBe(''));
 }
 
 async function expectFocusRing(element: HTMLElement) {
@@ -298,6 +341,79 @@ export const Bottom: Story = {
   },
 };
 
+/** Frame-sampled entrance and exit: the panel really travels along its axis toward and away from its edge. */
+const motionStory = (side: 'inline-end' | 'bottom'): Story => ({
+  args: { side },
+  render: (args) => <DrawerExample {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const { dialog, panel } = parts(canvasElement);
+    const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
+    const position = (frame: MotionFrame) => (side === 'bottom' ? frame.top : frame.left);
+    const extent = () => (side === 'bottom' ? rect(panel).height : rect(panel).width);
+
+    // Entrance: from past the edge to rest, one step per frame; the scrim fades in alongside.
+    // Focus moving into the panel mid-slide must not scroll the shell to reveal it.
+    trigger.focus();
+    const done = within(dialog).getByRole('button', { name: 'Done', hidden: true });
+    const entrance = await sampleFrames(
+      dialog,
+      () => {
+        trigger.click();
+        canvasElement.ownerDocument.defaultView!.requestAnimationFrame(() => done.focus());
+      },
+      () => panel.style.translate === '',
+    );
+    await expect(entrance.every((frame) => frame.scroll === 0)).toBe(true);
+    const rest = position(entrance.at(-1)!);
+    await expect(rest).toBeCloseTo(side === 'bottom' ? rect(dialog).bottom - extent() : rect(dialog).right - extent(), 0);
+    await expect(position(entrance[0]!)).toBeGreaterThan(rest + extent() / 2);
+    await expect(new Set(entrance.map(position)).size).toBeGreaterThan(2);
+    await expect(isMonotonic(entrance.map(position), -1)).toBe(true);
+    await expect(entrance[0]!.presence).toBeLessThan(0.5);
+    await expect(isMonotonic(entrance.map((frame) => frame.presence), 1)).toBe(true);
+    await expect(entrance.at(-1)!.presence).toBe(1);
+
+    // Exit: the dialog stays open while the panel slides back out, then closes.
+    const close = within(dialog).getAllByRole('button', { name: 'Close' })[0]!;
+    const exit = await sampleFrames(dialog, () => close.click(), (frame) => !frame.open);
+    const retained = exit.filter((frame) => frame.open);
+    await expect(retained.length).toBeGreaterThan(1);
+    await expect(retained.every((frame) => frame.scroll === 0)).toBe(true);
+    await expect(new Set(retained.map(position)).size).toBeGreaterThan(1);
+    await expect(isMonotonic(retained.map(position), 1)).toBe(true);
+    await expect(position(retained.at(-1)!)).toBeGreaterThan(rest);
+    await expect(isMonotonic(retained.map((frame) => frame.presence), -1)).toBe(true);
+    await expect(exit.at(-1)!.open).toBe(false);
+    await expectClosed(canvasElement, trigger);
+    await expectHome(panel);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+  },
+});
+
+export const SlideMotion: Story = motionStory('inline-end');
+export const SlideMotionBottom: Story = motionStory('bottom');
+
+export const ReopenDuringExit: Story = {
+  render: (args) => <DrawerExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const { dialog, panel, trigger } = await openDrawer({ canvasElement, userEvent });
+    const rest = rect(panel).left;
+    fireEvent.click(within(dialog).getAllByRole('button', { name: 'Close' })[0]!);
+    await waitFor(() => expect(rect(panel).left).toBeGreaterThan(rest + 1));
+    await expect(dialog).toHaveAttribute('open');
+    // Mid-exit the logical state is already closed; a programmatic reopen turns the panel back.
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(trigger);
+    await settle(dialog);
+    await expect(dialog).toHaveAttribute('open');
+    await expect(rect(panel).left).toBeCloseTo(rest, 0);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(3);
+    for (const [index, open] of [true, false, true].entries()) {
+      await expect(args.onOpenChange).toHaveBeenNthCalledWith(index + 1, open);
+    }
+  },
+};
+
 const sizeStory = (size: DrawerSize): Story => ({
   args: { size },
   render: (args) => <DrawerExample {...args} />,
@@ -375,7 +491,7 @@ export const Draggable: Story = {
     await expectClosed(canvasElement, trigger);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
-    await expect(panel.style.translate).toBe('');
+    await expectHome(panel);
 
     // A short fast flick toward the edge dismisses too.
     await userEvent.click(trigger);
@@ -782,7 +898,7 @@ export const KeyboardNavigation: Story = {
 
     // Focus stays inside the modal in both directions.
     const close = within(dialog).getByRole('button', { name: 'Close' });
-    const done = within(dialog).getByRole('button', { name: 'Done' });
+    const done = within(dialog).getByRole('button', { name: 'Done', hidden: true });
     close.focus();
     await userEvent.tab();
     await expect(doc.activeElement).toBe(within(dialog).getByRole('textbox', { name: 'Owner' }));
@@ -1088,10 +1204,14 @@ export const RTL: Story = {
     </div>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
-    const { dialog, panel, header, trigger } = await openDrawer({ canvasElement, userEvent });
-    // Inline-end follows the effective direction: the left edge in RTL.
+    const { dialog, panel } = parts(canvasElement);
+    const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
+    await userEvent.click(trigger);
+    // Inline-end follows the effective direction: the panel enters past the left edge.
+    await expect(Number.parseFloat(panel.style.translate)).toBeLessThan(0);
+    await settle(dialog);
+    const { header } = parts(canvasElement);
     await expect(rect(panel).left).toBeCloseTo(rect(dialog).left, 0);
-    await expect(getComputedStyle(panel).getPropertyValue('--drawer-entry-x').trim()).toBe('-100%');
     await expect(Number.parseFloat(getComputedStyle(panel).borderRightWidth)).toBeGreaterThan(0);
 
     // Dragging rightward moves away from the edge: resisted.
@@ -1119,14 +1239,13 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'With the OS setting on, the panel appears without the slide and the header drag is off. The play checks the authored reduced-motion rules and stubs `matchMedia` to drive the drag branch; real media emulation is verified in browser QA.',
+          'With the OS setting on, the panel opens and closes without the slide and the header drag is off. The play stubs `matchMedia` to drive the reduced branch; real media emulation is verified in browser QA.',
       },
     },
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel, header } = parts(canvasElement);
     await settle(dialog);
-    await expect(findConditionalRule(panel, 'prefers-reduced-motion: reduce')?.style.animationName).toBe('none');
     await expect(findConditionalRule(header, 'prefers-reduced-motion: reduce')?.style.cursor).toBe('auto');
     // The marker follows the prop alone, so server and client markup match.
     await expect(header).toHaveAttribute('data-draggable');
@@ -1158,6 +1277,23 @@ export const ReducedMotion: Story = {
       } finally {
         matchMedia.mockRestore();
       }
+    }
+
+    // Reduced: the close is not retained for an exit and the reopen starts at rest.
+    const reduced = spyOn(win, 'matchMedia').mockImplementation((query) =>
+      query === REDUCED_MOTION_QUERY
+        ? Object.defineProperty(realMatchMedia(query), 'matches', { value: true })
+        : realMatchMedia(query),
+    );
+    try {
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+      await expect(dialog).not.toHaveAttribute('open');
+      await userEvent.click(within(canvasElement).getByRole('button', { name: TRIGGER }));
+      await expect(dialog).toHaveAttribute('open');
+      await expect(panel.style.translate).toBe('');
+      await expect(dialog.style.getPropertyValue('--drawer-presence')).toBe('');
+    } finally {
+      reduced.mockRestore();
     }
   },
 };

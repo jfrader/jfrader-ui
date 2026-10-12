@@ -566,6 +566,7 @@ export const ThemeGroup: Story = {
     await expect(option('System')).toHaveAttribute('aria-checked', 'true');
     await expect(within(group).getAllByRole('menuitemradio', { checked: true })).toHaveLength(1);
 
+    await expectFocused(canvasElement, 'Profile');
     await userEvent.keyboard('{ArrowDown}{ArrowDown}');
     await expectFocused(canvasElement, 'Light', 'menuitemradio');
     await expectFocusRing(option('Light'));
@@ -784,6 +785,7 @@ export const SignOutErrorRetry: Story = {
     const trigger = getTrigger(canvasElement);
     await userEvent.click(trigger);
     await findMenu(canvasElement);
+    await expectFocused(canvasElement, 'Profile');
     await userEvent.keyboard('{End}{Enter}');
     await bodyOf(canvasElement).findByRole('menuitem', { name: PENDING_LABEL });
 
@@ -819,6 +821,7 @@ export const SignOutSyncOutcomes: Story = {
     const trigger = getTrigger(canvasElement);
     await userEvent.click(trigger);
     await findMenu(canvasElement);
+    await expectFocused(canvasElement, 'Profile');
     await userEvent.keyboard('{End}{Enter}');
     // A synchronous throw is handled like a rejection.
     await waitFor(() => expect(bodyOf(canvasElement).getByRole('alert')).toHaveTextContent(ERROR_MESSAGE));
@@ -840,6 +843,7 @@ export const SignOutPendingAcrossReopen: Story = {
     const trigger = getTrigger(canvasElement);
     await userEvent.click(trigger);
     await findMenu(canvasElement);
+    await expectFocused(canvasElement, 'Profile');
     await userEvent.keyboard('{End}{Enter}');
     await bodyOf(canvasElement).findByRole('menuitem', { name: PENDING_LABEL });
 
@@ -881,6 +885,7 @@ export const SignOutSettlesAfterUnmount: Story = {
     try {
       await userEvent.click(getTrigger(canvasElement));
       await findMenu(canvasElement);
+      await expectFocused(canvasElement, 'Profile');
       await userEvent.keyboard('{End}{Enter}');
       await bodyOf(canvasElement).findByRole('menuitem', { name: PENDING_LABEL });
       const remove = within(canvasElement).getByRole('button', { name: 'Remove menu' });
@@ -905,6 +910,7 @@ export const SignOutPendingOpen: Story = {
     // Persistent busy state for the axe gate.
     (args.onSignOut as Mock).mockImplementation(() => new Promise(() => {}));
     await findMenu(canvasElement);
+    await expectFocused(canvasElement, 'Profile');
     await userEvent.keyboard('{End}{Enter}');
     const busy = await bodyOf(canvasElement).findByRole('menuitem', { name: PENDING_LABEL });
     await expect(busy).toHaveAttribute('aria-busy', 'true');
@@ -919,6 +925,7 @@ export const SignOutErrorOpen: Story = {
     // Persistent error state for the axe gate.
     (args.onSignOut as Mock).mockImplementation(() => Promise.reject(new Error('offline')));
     await findMenu(canvasElement);
+    await expectFocused(canvasElement, 'Profile');
     await userEvent.keyboard('{End}{Enter}');
     await waitFor(() => expect(bodyOf(canvasElement).getByRole('alert')).toHaveTextContent(ERROR_MESSAGE));
   },
@@ -961,6 +968,8 @@ export const OpenDesktop: Story = {
 };
 
 export const OpenSheet: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, variant: 'sheet' },
   play: async ({ canvasElement }) => {
     // Persistent sheet state for the axe gate.
@@ -1050,6 +1059,8 @@ export const Sheet: Story = {
 };
 
 export const SheetRejectedClose: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { open: true, variant: 'sheet' },
   play: async ({ args, canvasElement, userEvent }) => {
     const doc = canvasElement.ownerDocument;
@@ -1154,6 +1165,7 @@ export const CompactBreakpointChange: Story = {
     await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
     await userEvent.click(trigger);
     await findMenu(canvasElement);
+    await expectFocused(canvasElement, 'Profile');
     await userEvent.keyboard('{ArrowDown}');
     await expectFocused(canvasElement, 'Settings');
     const settings = doc.activeElement;
@@ -1219,6 +1231,8 @@ export const LightTheme: Story = {
 };
 
 export const LightThemeSheet: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   args: { defaultOpen: true, variant: 'sheet' },
   play: async ({ canvasElement }) => {
@@ -1267,6 +1281,8 @@ export const ExternalAria: Story = {
 };
 
 export const ExternalAriaSheet: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <div style={rowStyle}>
@@ -1353,6 +1369,7 @@ export const RTL: Story = {
     await findMenu(canvasElement);
     // The portaled surface takes the Trigger's direction.
     await expect(shellOf(canvasElement)).toHaveAttribute('dir', 'rtl');
+    await expectFocused(canvasElement, 'Profile');
     await userEvent.keyboard('{ArrowDown}{ArrowDown}');
     await expectFocused(canvasElement, 'Light', 'menuitemradio');
     // ArrowLeft moves forward in RTL, ArrowRight back; no selection.
@@ -1539,6 +1556,8 @@ export const UsageErrors: Story = {
 };
 
 export const ReducedMotion: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   parameters: {
     docs: {
       description: {
@@ -1576,6 +1595,7 @@ export const ForcedColors: Story = {
     await userEvent.tab();
     await userEvent.keyboard('{Enter}');
     await findMenu(canvasElement);
+    await expectFocused(canvasElement, 'Profile');
     await userEvent.keyboard('{ArrowDown}{ArrowDown}');
     await expectFocused(canvasElement, 'Light', 'menuitemradio');
     const shell = shellOf(canvasElement)!;
