@@ -5,10 +5,8 @@ import { DecoratorHelpers } from '@storybook/addon-themes';
 import { GLOBALS_UPDATED, SET_GLOBALS } from 'storybook/internal/core-events';
 import '@jfrader/tokens/tokens.css';
 import './preview.css';
+import { DEFAULT_THEME, THEMES } from './document-theme';
 import { lightTheme, theme } from './theme';
-
-const THEMES = ['dark', 'light'];
-const DEFAULT_THEME = 'dark';
 
 const { initializeThemeState } = DecoratorHelpers;
 
