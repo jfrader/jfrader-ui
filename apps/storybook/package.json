@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && pnpm verify:docs:examples",
     "verify:docs": "node --test scripts/verify-docs.test.mjs && node scripts/verify-docs.mjs",
     "verify:docs:layout": "node scripts/verify-docs-layout.mjs",
-    "verify:docs:examples": "node scripts/verify-guide-examples.mjs"
+    "verify:docs:examples": "node scripts/verify-guide-examples.mjs",
+    "verify:game-card": "node scripts/verify-game-card-edge.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
