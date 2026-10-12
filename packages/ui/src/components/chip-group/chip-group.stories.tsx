@@ -179,6 +179,11 @@ export const DisabledOption: Story = {
     options: OPTIONS.map((option) => ({ ...option, disabled: option.value === 'code' })),
     defaultValue: ['code'],
   },
+  play: async ({ canvasElement }) => {
+    const disabled = within(canvasElement).getByRole('button', { name: 'Code' });
+    await expect(disabled).toBeDisabled();
+    await expect(getComputedStyle(disabled).borderTopStyle).toBe('dashed');
+  },
 };
 export const EmptyOptions: Story = {
   args: { options: [] },

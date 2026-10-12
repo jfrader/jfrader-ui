@@ -581,6 +581,19 @@ export const RTL: Story = {
     await expect(args.onValueChange).toHaveBeenNthCalledWith(2, 'standard');
   },
 };
+export const ItemDirection: Story = {
+  render: (args) => (
+    <RadioCards {...args} aria-label="Shipping">
+      <RadioCards.Item value="standard" label="Standard" description="4–6 business days" dir="rtl" />
+      <RadioCards.Item value="express" label="Express" />
+    </RadioCards>
+  ),
+  play: async ({ canvas }) => {
+    const input = canvas.getByRole('radio', { name: 'Standard' });
+    await expect(input.parentElement).toHaveAttribute('dir', 'rtl');
+    await expect(getComputedStyle(input.nextElementSibling!).direction).toBe('rtl');
+  },
+};
 export const LightTheme: Story = {
   decorators: [withLightTheme],
   play: async ({ canvas }) => {

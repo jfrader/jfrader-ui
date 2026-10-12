@@ -429,6 +429,7 @@ function RadioCardsItem({
   meta,
   icon,
   disabledReason,
+  dir,
   disabled: disabledProp,
   required: requiredProp,
   onChange,
@@ -451,6 +452,7 @@ function RadioCardsItem({
     <WithSx className={className} styles={[choiceRootStateStyle, itemStyle]} sx={sx}>
       {(className) => (
         <label
+          dir={dir}
           data-ui="radio-cards-item"
           data-state={context.value === value ? 'checked' : 'unchecked'}
           className={className}
