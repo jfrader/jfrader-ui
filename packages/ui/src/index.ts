@@ -104,6 +104,7 @@ export * from './components/tree-view';
 export * from './components/typewriter-terminal';
 export * from './components/usage-meter';
 export * from './components/user-menu';
+export * from './components/voice-orb';
 export { styled } from './styling/styled';
 export type { SxProps } from './styling/sx';
 export { theme, type JfraderTheme } from './styling/theme';
