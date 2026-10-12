@@ -15,6 +15,8 @@
 // - An optional transition animates the surface in after showModal() and out before the native
 //   close: a logical close keeps the dialog open (modal, scroll-locked) until `exit` settles.
 //   Reopening during the exit re-enters from where the surface is; a native close ends it.
+// - While the exit runs the dialog renders `data-state="closing"` (styles key their exit on it)
+//   and absorbs further close requests: the accepted one is in progress.
 // - A `close` event that arrives after the dialog reopened is stale and ignored.
 // - If Content unmounts while open (removal is not a close), focus returns to the invoking
 //   element when it is still connected.
@@ -60,6 +62,8 @@ export interface NativeDialogTransition {
   /** Runs on a logical close; the native close waits for the promise. Return nothing to close at once. */
   exit: (dialog: HTMLDialogElement) => Promise<unknown> | undefined;
 }
+
+export type NativeDialogState = 'open' | 'closing' | 'closed';
 
 export function requestNativeDialogClose(dialog: HTMLDialogElement | null, setOpen: (open: boolean) => void) {
   if (dialog && dialog.open && typeof dialog.requestClose === 'function') {
@@ -199,6 +203,11 @@ export function useNativeDialog(
   const isOwnEvent = (event: SyntheticEvent<HTMLDialogElement>) => event.target === dialogRef.current;
 
   const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
+    // Already closing: the accepted request is in progress.
+    if (!open) {
+      event.preventDefault();
+      return;
+    }
     onCancel?.(event);
     if (!isOwnEvent(event)) return;
     const vetoed = event.defaultPrevented;
@@ -211,7 +220,7 @@ export function useNativeDialog(
   // Backdrop clicks target the dialog element itself; clicks inside the panel do not.
   const handleClick = (event: MouseEvent<HTMLDialogElement>) => {
     onClick?.(event);
-    if (event.target === dialogRef.current && !event.defaultPrevented) requestClose();
+    if (open && event.target === dialogRef.current && !event.defaultPrevented) requestClose();
   };
 
   const handleClose = (event: SyntheticEvent<HTMLDialogElement>) => {
@@ -230,5 +239,7 @@ export function useNativeDialog(
     if (open) setOpen(false);
   };
 
-  return { ref, onCancel: handleCancel, onClick: handleClick, onClose: handleClose };
+  const state: NativeDialogState = open ? 'open' : isNativeOpen ? 'closing' : 'closed';
+
+  return { ref, onCancel: handleCancel, onClick: handleClick, onClose: handleClose, 'data-state': state };
 }
