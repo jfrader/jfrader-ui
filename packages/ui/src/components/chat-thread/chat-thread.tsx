@@ -838,12 +838,27 @@ function ChatThreadRoot({
                 const sameDay = epoch !== null && previousEpoch !== null && dayKeyFormat.format(epoch) === dayKeyFormat.format(previousEpoch);
                 const grouped = sameDay && previous?.authorId === message.authorId && epoch! - previousEpoch! >= 0 && epoch! - previousEpoch! <= (Number.isFinite(groupWindow) && groupWindow >= 0 ? groupWindow : GROUP_WINDOW);
                 const own = message.authorId === currentUserId;
+                const author = people.get(message.authorId) ?? { id: message.authorId, name: labels.unknownAuthor };
+                const actionName = (action: string) => formatters.facts.format([
+                  action,
+                  author.name,
+                  epoch === null ? labels.invalidTime : formatters.full.format(epoch),
+                  ...(message.text ? [message.text] : []),
+                ]);
+                const reactionLabels: ThreadReactionLabels = {
+                  ...labels,
+                  addReaction: actionName(labels.addReaction),
+                  closeReactions: actionName(labels.closeReactions),
+                  reactions: actionName(labels.reactions),
+                  reactWith: (emoji) => actionName(labels.reactWith(emoji)),
+                  reactionCount: (emoji, count, mine) => actionName(labels.reactionCount(emoji, count, mine)),
+                };
                 const readers = Object.entries(readBy ?? {}).filter(([id, last]) => id !== currentUserId && people.has(id) && last === message.id).map(([id]) => people.get(id)!.name);
                 return <li key={message.id} data-ui={`${UI}-message`} data-message-id={message.id} data-own={own} data-grouped={grouped} className={slotProps?.message?.className} css={[messageStyle, entering.has(message.id) && message.status !== 'failed' && fadeStyle, slotProps?.message?.css]}>
                   {!sameDay ? <h3 data-ui={`${UI}-day`} css={dateStyle}>{epoch === null ? labels.invalidTime : dateFormat.format(epoch)}</h3> : null}
                   <ThreadMessageView
                     ui={UI}
-                    author={people.get(message.authorId) ?? { id: message.authorId, name: labels.unknownAuthor }}
+                    author={author}
                     epoch={epoch}
                     now={validEpoch(now) ? now : null}
                     formatters={formatters}
@@ -864,7 +879,7 @@ function ChatThreadRoot({
                       offered={uniqueBy(reactions, (emoji) => emoji)}
                       currentUserId={currentUserId}
                       formatters={formatters}
-                      labels={labels}
+                      labels={reactionLabels}
                       readOnly={false}
                       disabled={disabled}
                       pickerOpen={picker === message.id}
@@ -877,7 +892,7 @@ function ChatThreadRoot({
                     <div className={slotProps?.receipt?.className} data-ui={`${UI}-receipt`} css={[receiptStyle, rowStyle, slotProps?.receipt?.css]}>
                       {message.status ? <span key={message.status} data-state={message.status} css={[message.status !== 'failed' && fadeStyle, message.status === 'failed' && errorStyle]}>{labels[message.status]}</span> : null}
                       {readers.length ? <span>{labels.readBy(formatters.people.format(readers))}</span> : null}
-                      {message.status === 'failed' && onRetry ? <Button size="sm" variant="outline" disabled={disabled} loading={retrying === message.id} onClick={() => { void retry(message.id); }}>{labels.retry}</Button> : null}
+                      {message.status === 'failed' && onRetry ? <Button size="sm" variant="outline" aria-label={actionName(labels.retry)} disabled={disabled} loading={retrying === message.id} onClick={() => { void retry(message.id); }}>{labels.retry}</Button> : null}
                     </div>
                   </ThreadMessageView>
                 </li>;
