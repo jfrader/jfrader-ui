@@ -60,6 +60,10 @@ export const base = {
     raised: '0 1px 2px rgba(0, 0, 0, 0.4)',
     overlay: '0 8px 24px rgba(0, 0, 0, 0.5)',
     floating: '0 16px 48px rgba(0, 0, 0, 0.55)',
+    cardFlight: '0 10px 14px rgba(0, 0, 0, 0.3)',
+  },
+  zIndex: {
+    cardFlight: '1000',
   },
   radius: {
     sm: '8px',
@@ -109,6 +113,10 @@ export const base = {
       slow: '240ms',
       presence: '1200ms',
       cardFlip: '300ms',
+      cardDeal: '380ms',
+      cardDealStagger: '70ms',
+      cardPlayOwn: '400ms',
+      cardPlay: '520ms',
     },
     easeStandard: 'cubic-bezier(0.2, 0.6, 0.2, 1)',
     easePresence: 'ease-in-out',
@@ -126,11 +134,11 @@ export const base = {
     gameCardMd: '72px',
     gameCardLg: '112px',
     gameCardPerspective: '28rem',
-    // Layer inline size at which SheetStack's auto variant switches from sheet to centered dialog.
-    sheetStackBreakpoint: '640px',
+    // Layer inline size at which DialogStack's auto variant switches from sheet to centered dialog.
+    dialogStackBreakpoint: '640px',
     // How much of each parent panel shows above the active one.
-    sheetStackSheetPeek: '10px',
-    sheetStackDialogPeek: '14px',
+    dialogStackSheetPeek: '10px',
+    dialogStackDialogPeek: '14px',
   },
 } as const;
 
@@ -208,6 +216,7 @@ export const light = {
     raised: '0 1px 2px oklch(0% 0 0 / 0.05)',
     overlay: '0 6px 18px oklch(0% 0 0 / 0.08), 0 1px 3px oklch(0% 0 0 / 0.04)',
     floating: '0 20px 48px oklch(0% 0 0 / 0.12), 0 3px 10px oklch(0% 0 0 / 0.05)',
+    cardFlight: '0 10px 14px rgba(0, 0, 0, 0.3)',
   },
 } as const satisfies ThemeOverrides;
 

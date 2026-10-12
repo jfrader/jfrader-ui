@@ -2,18 +2,25 @@
 
 // Semantics: one `role="img"` root per card, named by `label`; the rank mark, the suit glyph and the
 // suit watermarks are presentational children, so a screen reader hears the playing card once, in the
-// consumer's own words. A face-down card renders no rank or suit data at all, and carries none in its
-// attributes either: hiding a face visually does not keep information out of the DOM.
+// consumer's own words. A face-down card omits built-in rank, suit and deck data; consumer artwork
+// remains visible, so consumers must keep private values out of their own art.
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
+import { Pattern, type PatternVariant } from '../pattern';
 import { CARD_FACE, CARD_FRAME } from './card-frame';
 import { RANK_MARKS, SUIT_GLYPHS, SUIT_INK, type GameCardValue } from './decks';
 
 export type GameCardSize = 'sm' | 'md' | 'lg';
 export type GameCardFace = 'emoji' | 'back';
+
+/** Conventional backs by deck. Pass the matching value as `backPattern` because hidden cards do not infer a deck. */
+export const CARD_BACK_PATTERNS = {
+  spanish: 'diagonal',
+  french: 'checks',
+} as const satisfies Record<GameCardValue['deck'], PatternVariant>;
 
 export interface GameCardPartProps {
   className?: string;
@@ -32,13 +39,15 @@ export interface GameCardProps
   value?: GameCardValue;
   /** Defaults to `emoji` with a value and `back` without one. */
   face?: GameCardFace;
+  /** Back tile, defaulting to poker's `checks`. Pass `backPattern="diagonal"` for Spanish cards because hidden cards do not infer a deck. */
+  backPattern?: PatternVariant;
   /** Card width: `sm` 32px, `md` 72px, `lg` 112px. */
   size?: GameCardSize;
   /** Replaces the printed rank mark; the suit glyph stays. */
   rankLabel?: string;
   /** Draws the card as worn: out of play, or waiting. */
   dimmed?: boolean;
-  /** Your own art for the face — an image, an SVG, anything. Replaces the emoji print. */
+  /** Your own art — an image, an SVG, anything. Replaces the emoji print or back pattern. */
   children?: ReactNode;
   slotProps?: {
     face?: GameCardPartProps;
@@ -69,6 +78,8 @@ const paperStyle = css({
 });
 
 const dimmedStyle = css({ opacity: 0.55 });
+
+const backMaterialStyle = css({ backgroundColor: vars.color.cardRed });
 
 const layerStyle = css({
   position: 'absolute',
@@ -124,19 +135,6 @@ const suitInkStyles: Record<'red' | 'ink', SerializedStyles> = {
   ink: css({ color: vars.color.cardInk }),
 };
 
-// No artwork ships with the library: the back is a surface and a lattice drawn with gradients.
-const backStyle = css({
-  backgroundColor: vars.color.surfaceRaised,
-  backgroundImage: `repeating-linear-gradient(45deg, ${vars.color.surfaceHover} 0 2px, transparent 2px 6px), repeating-linear-gradient(-45deg, ${vars.color.surfaceHover} 0 2px, transparent 2px 6px)`,
-  '&::after': {
-    content: '""',
-    position: 'absolute',
-    inset: '8%',
-    border: `1px solid ${vars.color.borderControl}`,
-    borderRadius: 'inherit',
-  },
-});
-
 const sizeStyles: Record<GameCardSize, SerializedStyles> = {
   sm: css({ '--game-card-width': vars.size.gameCardSm }),
   md: css({ '--game-card-width': vars.size.gameCardMd }),
@@ -148,6 +146,7 @@ export function GameCard({
   label,
   value,
   face,
+  backPattern = CARD_BACK_PATTERNS.french,
   size = 'md',
   rankLabel,
   dimmed = false,
@@ -159,9 +158,14 @@ export function GameCard({
 }: GameCardProps) {
   const resolvedFace: GameCardFace = face ?? (value === undefined ? 'back' : 'emoji');
   const hidden = resolvedFace === 'back' || value === undefined;
+  const artProps = hidden ? slotProps?.back : slotProps?.face;
 
   return (
-    <WithSx className={className} styles={[rootStyle, paperStyle, sizeStyles[size], dimmed && dimmedStyle]} sx={sx}>
+    <WithSx
+      className={className}
+      styles={[rootStyle, paperStyle, hidden && backMaterialStyle, sizeStyles[size], dimmed && dimmedStyle]}
+      sx={sx}
+    >
       {(rootClass) => (
         <div
           {...rest}
@@ -173,21 +177,23 @@ export function GameCard({
           data-deck={hidden ? undefined : value.deck}
           className={rootClass}
         >
-          {hidden ? (
+          {isRenderable(children) ? (
+            <span
+              data-ui="game-card-art"
+              aria-hidden="true"
+              className={artProps?.className}
+              css={[layerStyle, artStyle, hidden && backMaterialStyle, artProps?.css]}
+            >
+              {children}
+            </span>
+          ) : hidden ? (
             <span
               data-ui="game-card-back"
               aria-hidden="true"
               className={slotProps?.back?.className}
-              css={[layerStyle, backStyle, slotProps?.back?.css]}
-            />
-          ) : isRenderable(children) ? (
-            <span
-              data-ui="game-card-art"
-              aria-hidden="true"
-              className={slotProps?.face?.className}
-              css={[layerStyle, artStyle, slotProps?.face?.css]}
+              css={[layerStyle, backMaterialStyle, slotProps?.back?.css]}
             >
-              {children}
+              <Pattern variant={backPattern} tone="card" />
             </span>
           ) : (
             <PrintedFace value={value} rankLabel={rankLabel} slotProps={slotProps} />

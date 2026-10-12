@@ -69,11 +69,11 @@ import { useControlledState } from '../../utils/use-controlled-state';
 // Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
 declare const process: { env: { NODE_ENV?: string } };
 
-export type SheetStackVariant = 'auto' | 'sheet' | 'dialog';
-type ResolvedVariant = Exclude<SheetStackVariant, 'auto'>;
-export type SheetStackHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
+export type DialogStackVariant = 'auto' | 'sheet' | 'dialog';
+type ResolvedVariant = Exclude<DialogStackVariant, 'auto'>;
+export type DialogStackHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
-export interface SheetStackProps {
+export interface DialogStackProps {
   /** Controls the open panel keys, bottom first. */
   value?: readonly string[];
   /** Sets the initial uncontrolled stack, bottom first. Defaults to `[]`. */
@@ -81,20 +81,20 @@ export interface SheetStackProps {
   /** Requests a changed ordered stack. Controlled panels change only when `value` updates. */
   onValueChange?: (value: string[]) => void;
   /** Sets the layout. Defaults to `'auto'`: a sheet below `breakpoint`, a centered dialog at or above it. */
-  variant?: SheetStackVariant;
-  /** Sets the layer width in CSS pixels where `'auto'` switches to a dialog. Defaults to the `sheetStackBreakpoint` token. */
+  variant?: DialogStackVariant;
+  /** Sets the layer width in CSS pixels where `'auto'` switches to a dialog. Defaults to the `dialogStackBreakpoint` token. */
   breakpoint?: number;
   /** Draws inside the nearest positioned ancestor. Modality stays document-wide, without a page scroll lock. Defaults to `false`. */
   contained?: boolean;
   children: ReactNode;
 }
 
-export interface SheetStackTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
+export interface DialogStackTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   /** Opens this panel key. An open key removes the panels above it. */
   value: string;
 }
 
-export interface SheetStackContentProps extends Omit<ComponentPropsWithRef<'div'>, 'onCancel'>, SxProps {
+export interface DialogStackContentProps extends Omit<ComponentPropsWithRef<'div'>, 'onCancel'>, SxProps {
   /** Identifies this panel. Keep the key stable and unique within the stack. */
   value: string;
   /** Allows Escape, backdrop, and drag dismissal. Defaults to `true`. When `false`, Back and Close still work. */
@@ -105,22 +105,22 @@ export interface SheetStackContentProps extends Omit<ComponentPropsWithRef<'div'
   withDescription?: boolean;
 }
 
-export interface SheetStackTitleProps extends ComponentPropsWithRef<'h2'>, SxProps {
+export interface DialogStackTitleProps extends ComponentPropsWithRef<'h2'>, SxProps {
   /** Sets the heading level. Defaults to `2`. */
-  level?: SheetStackHeadingLevel;
+  level?: DialogStackHeadingLevel;
 }
-export interface SheetStackDescriptionProps extends ComponentPropsWithRef<'p'>, SxProps {}
-export interface SheetStackFooterProps extends ComponentPropsWithRef<'div'>, SxProps {}
-export interface SheetStackBackProps extends Omit<ComponentPropsWithRef<'button'>, 'aria-label'>, SxProps {
+export interface DialogStackDescriptionProps extends ComponentPropsWithRef<'p'>, SxProps {}
+export interface DialogStackFooterProps extends ComponentPropsWithRef<'div'>, SxProps {}
+export interface DialogStackBackProps extends Omit<ComponentPropsWithRef<'button'>, 'aria-label'>, SxProps {
   /** Names the Back button for assistive technology. Supply a localized name, such as "Back to Settings". */
   label: string;
 }
-export interface SheetStackCloseProps extends Omit<ComponentPropsWithRef<'button'>, 'aria-label'>, SxProps {
+export interface DialogStackCloseProps extends Omit<ComponentPropsWithRef<'button'>, 'aria-label'>, SxProps {
   /** Names the Close button for assistive technology. Supply a localized name, such as "Close all". */
   label: string;
 }
 
-export interface SheetStackActions {
+export interface DialogStackActions {
   /** The open keys, bottom first. */
   value: readonly string[];
   /** Requests opening `key` on top. An open key removes the panels above it. */
@@ -146,7 +146,7 @@ interface SheetEntry {
   panel: HTMLDivElement | null;
 }
 
-interface SheetStackContextValue extends SheetStackActions {
+interface DialogStackContextValue extends DialogStackActions {
   contained: boolean;
   variant: ResolvedVariant;
   stage: HTMLDivElement | null;
@@ -167,24 +167,24 @@ interface SheetContentContextValue {
   setHasDescription: (present: boolean) => void;
 }
 
-const SheetStackContext = createContext<SheetStackContextValue | null>(null);
+const DialogStackContext = createContext<DialogStackContextValue | null>(null);
 const SheetContentContext = createContext<SheetContentContextValue | null>(null);
 
-function useSheetStackContext(part: string): SheetStackContextValue {
-  const context = useContext(SheetStackContext);
-  if (!context) throw new Error(`SheetStack.${part} must be rendered inside <SheetStack>.`);
+function useDialogStackContext(part: string): DialogStackContextValue {
+  const context = useContext(DialogStackContext);
+  if (!context) throw new Error(`DialogStack.${part} must be rendered inside <DialogStack>.`);
   return context;
 }
 
 function useSheetContentContext(part: string): SheetContentContextValue {
   const context = useContext(SheetContentContext);
-  if (!context) throw new Error(`SheetStack.${part} must be rendered inside <SheetStack.Content>.`);
+  if (!context) throw new Error(`DialogStack.${part} must be rendered inside <DialogStack.Content>.`);
   return context;
 }
 
-/** Returns the stack's state and actions. Throws outside `<SheetStack>`. */
-export function useSheetStack(): SheetStackActions {
-  const { value, push, pop, popTo, close } = useSheetStackContext('useSheetStack');
+/** Returns the stack's state and actions. Throws outside `<DialogStack>`. */
+export function useDialogStack(): DialogStackActions {
+  const { value, push, pop, popTo, close } = useDialogStackContext('useDialogStack');
   return useMemo(() => ({ value, push, pop, popTo, close }), [value, push, pop, popTo, close]);
 }
 
@@ -206,7 +206,7 @@ const NO_DRAG_SELECTOR = '[data-sheet-no-drag]';
 // Child overlays that own an Escape: open floating portals and native dialogs inside the panel.
 const CHILD_LAYER_SELECTOR = '[data-floating-ui-portal]:not(:empty), dialog[open]';
 
-const DEFAULT_BREAKPOINT = Number.parseFloat(base.size.sheetStackBreakpoint);
+const DEFAULT_BREAKPOINT = Number.parseFloat(base.size.dialogStackBreakpoint);
 const EMPTY_STACK: readonly string[] = [];
 
 // Structural sizes.
@@ -216,9 +216,9 @@ const DIALOG_INLINE_CAP = '32rem';
 // No depth shrinks a panel below this, so its header and actions stay reachable.
 const PANEL_MIN_BLOCK = '12rem';
 const DEPTH_SCALE_STEP = 0.05;
-const DEPTH = 'var(--sheet-stack-depth, 0)';
-const INDEX = 'var(--sheet-stack-index, 0)';
-const ACTIVE_SIZE = 'var(--sheet-stack-active-size, 0px)';
+const DEPTH = 'var(--dialog-stack-depth, 0)';
+const INDEX = 'var(--dialog-stack-index, 0)';
+const ACTIVE_SIZE = 'var(--dialog-stack-active-size, 0px)';
 
 const sheetEntry = keyframes({ from: { opacity: 0, transform: 'translateY(100%)' } });
 const dialogEntry = keyframes({ from: { opacity: 0, transform: 'scale(0.96)' } });
@@ -294,8 +294,8 @@ const panelVariantStyles: Record<ResolvedVariant, SerializedStyles> = {
     insetBlockEnd: 0,
     marginInline: 'auto',
     inlineSize: '100%',
-    maxInlineSize: vars.size.sheetStackBreakpoint,
-    maxBlockSize: depthCappedBlockSize(SHEET_TOP_GAP, vars.size.sheetStackSheetPeek),
+    maxInlineSize: vars.size.dialogStackBreakpoint,
+    maxBlockSize: depthCappedBlockSize(SHEET_TOP_GAP, vars.size.dialogStackSheetPeek),
     borderBlockEndWidth: 0,
     borderStartStartRadius: vars.radius.xl,
     borderStartEndRadius: vars.radius.xl,
@@ -308,7 +308,7 @@ const panelVariantStyles: Record<ResolvedVariant, SerializedStyles> = {
     margin: 'auto',
     inlineSize: `min(${DIALOG_INLINE_CAP}, calc(100% - 2 * ${LAYER_GUTTER}))`,
     blockSize: 'fit-content',
-    maxBlockSize: depthCappedBlockSize(`2 * ${LAYER_GUTTER}`, vars.size.sheetStackDialogPeek),
+    maxBlockSize: depthCappedBlockSize(`2 * ${LAYER_GUTTER}`, vars.size.dialogStackDialogPeek),
     borderRadius: vars.radius.lg,
     animationName: dialogEntry,
   }),
@@ -319,13 +319,13 @@ const parentScale = `scale(calc(1 - ${DEPTH} * ${DEPTH_SCALE_STEP}))`;
 const parentStyles: Record<ResolvedVariant, SerializedStyles> = {
   sheet: css({
     animationName: 'none',
-    minBlockSize: `calc(${ACTIVE_SIZE} + ${DEPTH} * ${vars.size.sheetStackSheetPeek})`,
+    minBlockSize: `calc(${ACTIVE_SIZE} + ${DEPTH} * ${vars.size.dialogStackSheetPeek})`,
     transform: parentScale,
   }),
   dialog: css({
     animationName: 'none',
     minBlockSize: ACTIVE_SIZE,
-    transform: `translateY(calc(-1 * ${DEPTH} * ${vars.size.sheetStackDialogPeek})) ${parentScale}`,
+    transform: `translateY(calc(-1 * ${DEPTH} * ${vars.size.dialogStackDialogPeek})) ${parentScale}`,
   }),
 };
 
@@ -365,7 +365,7 @@ const scrollerStyle = css({
   // Below the handle: just enough room for a focus ring.
   '[data-variant="sheet"] > &': { paddingBlockStart: vars.space[1] },
   // Without a Footer the content keeps its bottom padding; the Footer brings its own.
-  '&:not(:has(> [data-ui~="sheet-stack-footer"]))': { paddingBlockEnd: vars.space[5] },
+  '&:not(:has(> [data-ui~="dialog-stack-footer"]))': { paddingBlockEnd: vars.space[5] },
 });
 
 const footerStyle = css({
@@ -451,7 +451,7 @@ function joinIds(...ids: (string | false | undefined)[]) {
 }
 
 function warn(message: string) {
-  if (process.env.NODE_ENV !== 'production') console.warn(`SheetStack: ${message}`);
+  if (process.env.NODE_ENV !== 'production') console.warn(`DialogStack: ${message}`);
 }
 
 /** Known keys only, first occurrence wins. */
@@ -481,7 +481,7 @@ function layerWidth(layer: HTMLElement) {
 function useResolvedVariant(
   layer: HTMLElement | null,
   open: boolean,
-  variant: SheetStackVariant,
+  variant: DialogStackVariant,
   breakpoint: number,
 ): ResolvedVariant {
   const [wide, setWide] = useState(false);
@@ -502,7 +502,7 @@ function useResolvedVariant(
   return variant === 'auto' ? (wide ? 'dialog' : 'sheet') : variant;
 }
 
-function SheetStackRoot({
+function DialogStackRoot({
   value: valueProp,
   defaultValue,
   onValueChange,
@@ -510,7 +510,7 @@ function SheetStackRoot({
   breakpoint = DEFAULT_BREAKPOINT,
   contained = false,
   children,
-}: SheetStackProps) {
+}: DialogStackProps) {
   const [raw = EMPTY_STACK, requestValue] = useControlledState<readonly string[]>(
     valueProp,
     defaultValue ?? EMPTY_STACK,
@@ -636,7 +636,7 @@ function SheetStackRoot({
   useSheetFocus(stack, entriesRef, pendingInvokerRef, contained);
 
   const context = useMemo(
-    (): SheetStackContextValue => ({
+    (): DialogStackContextValue => ({
       value: stack,
       push,
       pop,
@@ -657,18 +657,18 @@ function SheetStackRoot({
   );
 
   return (
-    <SheetStackContext.Provider value={context}>
+    <DialogStackContext.Provider value={context}>
       {children}
       {contained ? (
         <ContainedLayer open={open} variant={resolvedVariant} />
       ) : (
         <ViewportLayer native={{ ...native, open }} naming={naming} variant={resolvedVariant} />
       )}
-    </SheetStackContext.Provider>
+    </DialogStackContext.Provider>
   );
 }
 
-SheetStackRoot.displayName = 'SheetStack';
+DialogStackRoot.displayName = 'DialogStack';
 
 /**
  * Focus follows accepted stack changes. A push focuses the new top (an autoFocus element, else
@@ -746,8 +746,8 @@ function useSheetFocus(
 
 function fallbackTarget(panel: HTMLElement): HTMLElement {
   return (
-    panel.querySelector<HTMLElement>('[data-ui~="sheet-stack-title"]') ??
-    panel.querySelector<HTMLElement>('[data-ui~="sheet-stack-back"]:not(:disabled)') ??
+    panel.querySelector<HTMLElement>('[data-ui~="dialog-stack-title"]') ??
+    panel.querySelector<HTMLElement>('[data-ui~="dialog-stack-back"]:not(:disabled)') ??
     panel
   );
 }
@@ -759,7 +759,7 @@ interface ViewportLayerProps {
 }
 
 function ViewportLayer({ native, naming, variant }: ViewportLayerProps) {
-  const { setStage, setLayer, dismissTop, escapeOwnedByChildRef } = useSheetStackContext('Layer');
+  const { setStage, setLayer, dismissTop, escapeOwnedByChildRef } = useDialogStackContext('Layer');
   const shellRef = useRef<HTMLDialogElement | null>(null);
 
   // Escape arrives as the shell's native cancel. It never reaches the shared close path: an
@@ -787,7 +787,7 @@ function ViewportLayer({ native, naming, variant }: ViewportLayerProps) {
     <dialog
       {...dialogProps}
       ref={ref}
-      data-ui="sheet-stack-layer"
+      data-ui="dialog-stack-layer"
       data-variant={variant}
       aria-modal="true"
       aria-label={naming.label}
@@ -795,15 +795,15 @@ function ViewportLayer({ native, naming, variant }: ViewportLayerProps) {
       aria-describedby={naming.describedBy}
       css={shellStyle}
     >
-      <div ref={setStage} data-ui="sheet-stack-stage" css={stageStyle} />
+      <div ref={setStage} data-ui="dialog-stack-stage" css={stageStyle} />
     </dialog>
   );
 }
 
-ViewportLayer.displayName = 'SheetStack.Layer';
+ViewportLayer.displayName = 'DialogStack.Layer';
 
 function ContainedLayer({ open, variant }: { open: boolean; variant: ResolvedVariant }) {
-  const { setStage, setLayer, dismissTop } = useSheetStackContext('Layer');
+  const { setStage, setLayer, dismissTop } = useDialogStackContext('Layer');
   const [element, setElement] = useState<HTMLDivElement | null>(null);
   const { context } = useFloating({ open, elements: { floating: element } });
   const ref = useMergeRefs<HTMLDivElement>([setElement, setLayer]);
@@ -811,14 +811,14 @@ function ContainedLayer({ open, variant }: { open: boolean; variant: ResolvedVar
   const layer = (
     <div
       ref={ref}
-      data-ui="sheet-stack-layer"
+      data-ui="dialog-stack-layer"
       data-contained=""
       data-variant={variant}
       hidden={!open}
       css={containedLayerStyle}
     >
-      <div data-ui="sheet-stack-scrim" aria-hidden="true" css={scrimStyle} onClick={dismissTop} />
-      <div ref={setStage} data-ui="sheet-stack-stage" css={stageStyle} />
+      <div data-ui="dialog-stack-scrim" aria-hidden="true" css={scrimStyle} onClick={dismissTop} />
+      <div ref={setStage} data-ui="dialog-stack-stage" css={stageStyle} />
     </div>
   );
 
@@ -839,10 +839,10 @@ function ContainedLayer({ open, variant }: { open: boolean; variant: ResolvedVar
   );
 }
 
-ContainedLayer.displayName = 'SheetStack.Layer';
+ContainedLayer.displayName = 'DialogStack.Layer';
 
-function SheetStackTrigger({ ref, value, onClick, className, sx, ...rest }: SheetStackTriggerProps) {
-  const { value: stack, push } = useSheetStackContext('Trigger');
+function DialogStackTrigger({ ref, value, onClick, className, sx, ...rest }: DialogStackTriggerProps) {
+  const { value: stack, push } = useDialogStackContext('Trigger');
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     onClick?.(event);
@@ -856,7 +856,7 @@ function SheetStackTrigger({ ref, value, onClick, className, sx, ...rest }: Shee
           type="button"
           {...rest}
           ref={ref}
-          data-ui="sheet-stack-trigger"
+          data-ui="dialog-stack-trigger"
           aria-haspopup="dialog"
           aria-expanded={stack.includes(value)}
           onClick={handleClick}
@@ -867,7 +867,7 @@ function SheetStackTrigger({ ref, value, onClick, className, sx, ...rest }: Shee
   );
 }
 
-SheetStackTrigger.displayName = 'SheetStack.Trigger';
+DialogStackTrigger.displayName = 'DialogStack.Trigger';
 
 interface DragSession {
   pointerId: number;
@@ -964,7 +964,7 @@ function useHandleDrag(enabled: boolean, panelRef: RefObject<HTMLDivElement | nu
   }, [enabled, panelRef, dismissTop]);
 }
 
-function SheetStackContent({ ref, value, className, sx, ...props }: SheetStackContentProps) {
+function DialogStackContent({ ref, value, className, sx, ...props }: DialogStackContentProps) {
   const {
     children,
     dismissible = true,
@@ -979,7 +979,7 @@ function SheetStackContent({ ref, value, className, sx, ...props }: SheetStackCo
     'aria-describedby': ariaDescribedBy,
     ...rest
   } = props;
-  const root = useSheetStackContext('Content');
+  const root = useDialogStackContext('Content');
   const { contained, variant, stage, register, unregister, setNaming, dismissTop, escapeOwnedByChildRef } = root;
   const baseId = useId();
   const titleId = `${baseId}-title`;
@@ -1018,7 +1018,7 @@ function SheetStackContent({ ref, value, className, sx, ...props }: SheetStackCo
     const view = panel?.ownerDocument.defaultView;
     if (!isTop || !panel || !stage || !view || typeof view.ResizeObserver === 'undefined') return;
     const observer = new view.ResizeObserver(() => {
-      stage.style.setProperty('--sheet-stack-active-size', `${panel.offsetHeight}px`);
+      stage.style.setProperty('--dialog-stack-active-size', `${panel.offsetHeight}px`);
     });
     observer.observe(panel);
     return () => observer.disconnect();
@@ -1064,8 +1064,8 @@ function SheetStackContent({ ref, value, className, sx, ...props }: SheetStackCo
   const dialogRole = contained && isTop;
   const panelStyleVars = {
     ...style,
-    '--sheet-stack-index': index,
-    '--sheet-stack-depth': depth,
+    '--dialog-stack-index': index,
+    '--dialog-stack-depth': depth,
   } as CSSProperties;
 
   return createPortal(
@@ -1079,7 +1079,7 @@ function SheetStackContent({ ref, value, className, sx, ...props }: SheetStackCo
           <div
             {...rest}
             ref={panelRefs}
-            data-ui="sheet-stack"
+            data-ui="dialog-stack"
             data-state={isTop ? 'active' : 'parent'}
             data-variant={variant}
             data-depth={depth}
@@ -1099,12 +1099,12 @@ function SheetStackContent({ ref, value, className, sx, ...props }: SheetStackCo
           >
             <div
               {...gesture}
-              data-ui="sheet-stack-handle"
+              data-ui="dialog-stack-handle"
               data-draggable={gesture ? '' : undefined}
               aria-hidden="true"
               css={handleStyle}
             />
-            <div data-ui="sheet-stack-body" css={scrollerStyle}>
+            <div data-ui="dialog-stack-body" css={scrollerStyle}>
               {children}
             </div>
           </div>
@@ -1115,9 +1115,9 @@ function SheetStackContent({ ref, value, className, sx, ...props }: SheetStackCo
   );
 }
 
-SheetStackContent.displayName = 'SheetStack.Content';
+DialogStackContent.displayName = 'DialogStack.Content';
 
-function SheetStackTitle({ ref, level = 2, className, sx, children, ...props }: SheetStackTitleProps) {
+function DialogStackTitle({ ref, level = 2, className, sx, children, ...props }: DialogStackTitleProps) {
   const { titleId, setHasTitle } = useSheetContentContext('Title');
   const present = hasText(children);
 
@@ -1138,7 +1138,7 @@ function SheetStackTitle({ ref, level = 2, className, sx, children, ...props }: 
           {...props}
           ref={ref}
           id={titleId}
-          data-ui="sheet-stack-title"
+          data-ui="dialog-stack-title"
           className={className}
         >
           {children}
@@ -1148,9 +1148,9 @@ function SheetStackTitle({ ref, level = 2, className, sx, children, ...props }: 
   );
 }
 
-SheetStackTitle.displayName = 'SheetStack.Title';
+DialogStackTitle.displayName = 'DialogStack.Title';
 
-function SheetStackDescription({ ref, className, sx, children, ...props }: SheetStackDescriptionProps) {
+function DialogStackDescription({ ref, className, sx, children, ...props }: DialogStackDescriptionProps) {
   const { descriptionId, setHasDescription } = useSheetContentContext('Description');
   const present = hasText(children);
 
@@ -1165,7 +1165,7 @@ function SheetStackDescription({ ref, className, sx, children, ...props }: Sheet
   return (
     <WithSx className={className} styles={descriptionStyle} sx={sx}>
       {(className) => (
-        <p {...props} ref={ref} id={descriptionId} data-ui="sheet-stack-description" className={className}>
+        <p {...props} ref={ref} id={descriptionId} data-ui="dialog-stack-description" className={className}>
           {children}
         </p>
       )}
@@ -1173,18 +1173,18 @@ function SheetStackDescription({ ref, className, sx, children, ...props }: Sheet
   );
 }
 
-SheetStackDescription.displayName = 'SheetStack.Description';
+DialogStackDescription.displayName = 'DialogStack.Description';
 
-function SheetStackFooter({ ref, className, sx, ...props }: SheetStackFooterProps) {
+function DialogStackFooter({ ref, className, sx, ...props }: DialogStackFooterProps) {
   useSheetContentContext('Footer');
   return (
     <WithSx className={className} styles={footerStyle} sx={sx}>
-      {(className) => <div {...props} ref={ref} data-ui="sheet-stack-footer" className={className} />}
+      {(className) => <div {...props} ref={ref} data-ui="dialog-stack-footer" className={className} />}
     </WithSx>
   );
 }
 
-SheetStackFooter.displayName = 'SheetStack.Footer';
+DialogStackFooter.displayName = 'DialogStack.Footer';
 
 function BackIcon() {
   return (
@@ -1202,8 +1202,8 @@ function CloseIcon() {
   );
 }
 
-function SheetStackBack({ ref, label, onClick, className, sx, children, ...rest }: SheetStackBackProps) {
-  const { pop } = useSheetStackContext('Back');
+function DialogStackBack({ ref, label, onClick, className, sx, children, ...rest }: DialogStackBackProps) {
+  const { pop } = useDialogStackContext('Back');
   useSheetContentContext('Back');
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
@@ -1219,7 +1219,7 @@ function SheetStackBack({ ref, label, onClick, className, sx, children, ...rest 
           {...rest}
           ref={ref}
           aria-label={label}
-          data-ui="sheet-stack-back"
+          data-ui="dialog-stack-back"
           onClick={handleClick}
           className={className}
         >
@@ -1231,10 +1231,10 @@ function SheetStackBack({ ref, label, onClick, className, sx, children, ...rest 
   );
 }
 
-SheetStackBack.displayName = 'SheetStack.Back';
+DialogStackBack.displayName = 'DialogStack.Back';
 
-function SheetStackClose({ ref, label, onClick, className, sx, children, ...rest }: SheetStackCloseProps) {
-  const { close } = useSheetStackContext('Close');
+function DialogStackClose({ ref, label, onClick, className, sx, children, ...rest }: DialogStackCloseProps) {
+  const { close } = useDialogStackContext('Close');
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     onClick?.(event);
@@ -1249,7 +1249,7 @@ function SheetStackClose({ ref, label, onClick, className, sx, children, ...rest
           {...rest}
           ref={ref}
           aria-label={label}
-          data-ui="sheet-stack-close"
+          data-ui="dialog-stack-close"
           onClick={handleClick}
           className={className}
         >
@@ -1260,14 +1260,14 @@ function SheetStackClose({ ref, label, onClick, className, sx, children, ...rest
   );
 }
 
-SheetStackClose.displayName = 'SheetStack.Close';
+DialogStackClose.displayName = 'DialogStack.Close';
 
-export const SheetStack = Object.assign(SheetStackRoot, {
-  Trigger: SheetStackTrigger,
-  Content: SheetStackContent,
-  Title: SheetStackTitle,
-  Description: SheetStackDescription,
-  Footer: SheetStackFooter,
-  Back: SheetStackBack,
-  Close: SheetStackClose,
+export const DialogStack = Object.assign(DialogStackRoot, {
+  Trigger: DialogStackTrigger,
+  Content: DialogStackContent,
+  Title: DialogStackTitle,
+  Description: DialogStackDescription,
+  Footer: DialogStackFooter,
+  Back: DialogStackBack,
+  Close: DialogStackClose,
 });

@@ -56,7 +56,11 @@ export const vars = {
   "shadow": {
     "raised": "var(--ui-shadow-raised)",
     "overlay": "var(--ui-shadow-overlay)",
-    "floating": "var(--ui-shadow-floating)"
+    "floating": "var(--ui-shadow-floating)",
+    "cardFlight": "var(--ui-shadow-card-flight)"
+  },
+  "zIndex": {
+    "cardFlight": "var(--ui-z-index-card-flight)"
   },
   "radius": {
     "sm": "var(--ui-radius-sm)",
@@ -105,7 +109,11 @@ export const vars = {
       "base": "var(--ui-motion-duration-base)",
       "slow": "var(--ui-motion-duration-slow)",
       "presence": "var(--ui-motion-duration-presence)",
-      "cardFlip": "var(--ui-motion-duration-card-flip)"
+      "cardFlip": "var(--ui-motion-duration-card-flip)",
+      "cardDeal": "var(--ui-motion-duration-card-deal)",
+      "cardDealStagger": "var(--ui-motion-duration-card-deal-stagger)",
+      "cardPlayOwn": "var(--ui-motion-duration-card-play-own)",
+      "cardPlay": "var(--ui-motion-duration-card-play)"
     },
     "easeStandard": "var(--ui-motion-ease-standard)",
     "easePresence": "var(--ui-motion-ease-presence)",
@@ -120,8 +128,8 @@ export const vars = {
     "gameCardMd": "var(--ui-size-game-card-md)",
     "gameCardLg": "var(--ui-size-game-card-lg)",
     "gameCardPerspective": "var(--ui-size-game-card-perspective)",
-    "sheetStackBreakpoint": "var(--ui-size-sheet-stack-breakpoint)",
-    "sheetStackSheetPeek": "var(--ui-size-sheet-stack-sheet-peek)",
-    "sheetStackDialogPeek": "var(--ui-size-sheet-stack-dialog-peek)"
+    "dialogStackBreakpoint": "var(--ui-size-dialog-stack-breakpoint)",
+    "dialogStackSheetPeek": "var(--ui-size-dialog-stack-sheet-peek)",
+    "dialogStackDialogPeek": "var(--ui-size-dialog-stack-dialog-peek)"
   }
 } as const;

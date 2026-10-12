@@ -9,32 +9,47 @@ import { REDUCED_MOTION } from '../../styling/media';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
+import { sceneSource } from '../scene';
 import { LightboxGallery, type LightboxGalleryImage } from './index';
 
-const source = (width: number, height: number, seed: number) =>
-  `data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.006" numOctaves="3" seed="${seed}"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>`,
-  )}`;
 const images: LightboxGalleryImage[] = [
   {
-    id: 'coast',
+    id: 'hills',
+    src: sceneSource('trip-highland-pass', { variant: 'landscape' }),
     width: 800,
     height: 500,
-    alt: 'Coastal cliffs',
-    title: 'Coast',
-    caption: 'The north shore.',
+    alt: 'Layered hills beneath a low sun',
+    title: 'Highland pass',
+    caption: 'The last light on the hills.',
   },
   {
-    id: 'forest',
+    id: 'dunes',
+    src: sceneSource('trip-dune-walk', { variant: 'dunes' }),
     width: 500,
     height: 750,
-    alt: 'Tall forest trees',
-    title: 'Forest',
-    caption: 'An afternoon walk.',
+    alt: 'Sun above warm sand dunes',
+    title: 'Dune walk',
+    caption: 'A quiet afternoon beyond the trail.',
   },
-  { id: 'lake', width: 600, height: 600, alt: 'Still lake water', title: 'Lake', caption: 'Before sunrise.' },
-  { id: 'ridge', width: 900, height: 400, alt: 'Mountain ridge', title: 'Ridge' },
-].map((image, index) => ({ ...image, src: source(image.width, image.height, index + 1) }));
+  {
+    id: 'dusk',
+    src: sceneSource('trip-last-light', { variant: 'dusk' }),
+    width: 600,
+    height: 600,
+    alt: 'Moon above violet hills at dusk',
+    title: 'Blue hour',
+    caption: 'The moon rose before we headed home.',
+  },
+  {
+    id: 'tide',
+    src: sceneSource('trip-tidal-bay', { variant: 'tide' }),
+    width: 900,
+    height: 400,
+    alt: 'Sun over blue tidal water',
+    title: 'Tidal bay',
+    caption: 'One final stop along the shore.',
+  },
+];
 const frameStyle = css({
   inlineSize: '48rem',
   maxInlineSize: '100%',
@@ -43,7 +58,7 @@ const frameStyle = css({
 });
 const narrowStyle = css({ inlineSize: '8rem', maxInlineSize: '100%' });
 const meta = {
-  title: 'Data display/LightboxGallery',
+  title: 'Media/LightboxGallery',
   component: LightboxGallery,
   tags: ['autodocs'],
   args: { images, label: 'Trip photos', locale: 'en-GB', onValueChange: fn(), onOpenChange: fn() },
@@ -65,8 +80,8 @@ const meta = {
 
 ### Keyboard and gestures
 - Tab follows launcher reading order. Left/Right select in the effective direction; Home/End select endpoints. Plus/minus zoom; 0 resets. When zoomed, arrows pan.
-- Swipe selects, downward drag closes, pinch and Ctrl+wheel zoom, double-click toggles zoom, and zoomed drag pans. Buttons provide alternatives to every gesture.
-- Escape closes even when zoomed and returns focus to the original launcher.
+- Momentum swipes select, resistant downward drag closes, pinch and Ctrl+wheel zoom, double-click and touch double-tap zoom around the pointer, and zoomed drag pans. On narrow screens, use the thumbnail strip to select images and arrows to pan.
+- Commands work throughout the viewer, except in editable fields. Escape closes even when zoomed and returns focus to the current image's tile.
 
 ### Dialog and accessibility
 - Native \`showModal\` contains focus and locks scrolling. Close uses \`requestClose\` with cancel veto where supported. Older engines use a state-close fallback without dispatching cancel. Native close and form closure update visibility.
@@ -96,6 +111,7 @@ async function current(element: HTMLElement, alt: string) {
     await expect(image).toHaveAttribute('data-image-state', 'loaded');
   });
   await expect(within(dialog).getAllByRole('img')).toHaveLength(1);
+  await expect(getComputedStyle(image).objectFit).toBe('cover');
 }
 const imageLayer = (element: HTMLElement) => stage(element).firstElementChild as HTMLElement;
 /** Persistent-open fixtures: the axe gate and visibility checks read the settled entrance. */
@@ -118,6 +134,7 @@ export const DefaultMixedRatios: Story = {
       );
     });
     for (const [index, tile] of tiles(canvasElement).entries()) {
+      await expect(getComputedStyle(tile.querySelector('img')!).objectFit).toBe('cover');
       await expect(tile).toHaveAccessibleName(`${images[index]!.title}, ${index + 1} / 4, Open image`);
       const box = tile.getBoundingClientRect();
       await expect(box.width).toBeGreaterThanOrEqual(32 - 1.1);
@@ -137,14 +154,17 @@ export const TitlesCaptions: Story = {
 export const PersistentViewer: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
-  args: { defaultOpen: true, defaultValue: 'forest' },
+  args: { defaultOpen: true, defaultValue: 'dunes' },
   play: async ({ canvas, canvasElement }) => {
-    await expect(await canvas.findByRole('dialog', { name: 'Trip photos — Forest' })).toBeVisible();
-    await current(canvasElement, 'Tall forest trees');
+    await expect(await canvas.findByRole('dialog', { name: 'Trip photos — Dune walk' })).toBeVisible();
+    await current(canvasElement, 'Sun above warm sand dunes');
     await expect(within(viewer(canvasElement)).getByRole('status')).toHaveTextContent('2 / 4');
     await expect(
-      within(viewer(canvasElement)).getByRole('button', { name: 'Forest, 2 / 4' }),
+      within(viewer(canvasElement)).getByRole('button', { name: 'Dune walk, 2 / 4' }),
     ).toHaveAttribute('aria-current', 'true');
+    await expect(
+      getComputedStyle(within(viewer(canvasElement)).getByRole('button', { name: 'Dune walk, 2 / 4' })).overflow,
+    ).toBe('hidden');
   },
 };
 export const PersistentZoomed: Story = {
@@ -166,9 +186,9 @@ export const SingleImage: Story = {
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await expect(await canvas.findByRole('button', { name: 'Previous image' })).toBeDisabled();
     await expect(canvas.getByRole('button', { name: 'Next image' })).toBeDisabled();
-    await userEvent.click(canvas.getByRole('button', { name: 'Coast, 1 / 1' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Highland pass, 1 / 1' }));
     await expect(args.onValueChange).not.toHaveBeenCalled();
-    await current(canvasElement, 'Coastal cliffs');
+    await current(canvasElement, 'Layered hills beneath a low sun');
   },
 };
 export const Empty: Story = {
@@ -199,14 +219,14 @@ export const PersistentImageError: Story = {
     await expect(within(stage(canvasElement)).getByText('Image unavailable')).toBeVisible();
   },
 };
-export const NarrowOneColumn: Story = {
+export const NarrowTwoColumns: Story = {
   render: (args) => (
     <div css={narrowStyle}>
       <LightboxGallery {...args} />
     </div>
   ),
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await expect(canvas.getByRole('region')).toHaveAttribute('data-columns', '1');
+    await expect(canvas.getByRole('region')).toHaveAttribute('data-columns', '2');
     await userEvent.click(tiles(canvasElement)[1]!);
     const dialog = await canvas.findByRole('dialog');
     for (const button of within(dialog).getAllByRole('button')) {
@@ -270,16 +290,18 @@ async function playMotionFromTile({ canvas, canvasElement, userEvent }: Paramete
   const invoker = tiles(canvasElement)[1]!;
   await userEvent.click(invoker);
   const dialog = viewer(canvasElement);
-  const header = (await canvas.findByRole('heading', { name: 'Trip photos — Forest' })).parentElement!;
+  const header = (await canvas.findByRole('heading', { name: 'Trip photos — Dune walk' })).parentElement!;
   await expectEntranceMotion(header);
-  await current(canvasElement, 'Tall forest trees');
+  await current(canvasElement, 'Sun above warm sand dunes');
+  await userEvent.keyboard('{ArrowRight}');
+  await current(canvasElement, 'Moon above violet hills at dusk');
 
   await userEvent.click(within(dialog).getByRole('button', { name: 'Close viewer' }));
   await expect(dialog).toHaveAttribute('data-state', 'closing');
   // The image flies home after the native close, so it stays put while the chrome fades.
   await expect(imageLayer(canvasElement)).toHaveAttribute('data-exit', 'home');
   await expectRetainedExit(header, () => !dialog.hasAttribute('open'));
-  await expect(invoker.ownerDocument.activeElement).toBe(invoker);
+  await expect(invoker.ownerDocument.activeElement).toBe(tiles(canvasElement)[2]);
 }
 export const Motion: Story = { tags: ['!autodocs'], play: playMotionFromTile };
 export const MotionLight: Story = {
@@ -288,31 +310,31 @@ export const MotionLight: Story = {
   globals: { theme: 'light' },
   play: playMotionFromTile,
 };
-export const MotionWithoutLauncher: Story = {
+export const MotionDefaultOpenReturn: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement, args, userEvent }) => {
     const dialog = viewer(canvasElement);
     await expectEntranceMotion(imageLayer(canvasElement));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Close viewer' }));
-    // No launcher to fly home to: the image fades out with the viewer.
     const layer = imageLayer(canvasElement);
-    await expect(layer).toHaveAttribute('data-exit', 'fade');
-    await expectRetainedExit(layer, () => !dialog.hasAttribute('open'));
+    await expect(layer).toHaveAttribute('data-exit', 'home');
+    await expectRetainedExit(dialog.querySelector('h2')!.parentElement!, () => !dialog.hasAttribute('open'));
+    await expect(dialog.ownerDocument.activeElement).toBe(tiles(canvasElement)[0]);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
   },
 };
 export const RTL: Story = {
-  args: { dir: 'rtl', defaultValue: 'forest' },
+  args: { dir: 'rtl', defaultValue: 'dunes' },
   play: async ({ canvasElement, args, userEvent }) => {
     await userEvent.click(tiles(canvasElement)[1]!);
     await userEvent.tab();
     await focusVisible(stage(canvasElement));
     await userEvent.keyboard('{ArrowLeft}');
-    await current(canvasElement, 'Still lake water');
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('lake');
+    await current(canvasElement, 'Moon above violet hills at dusk');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('dusk');
     await userEvent.keyboard('{ArrowRight}');
-    await current(canvasElement, 'Tall forest trees');
+    await current(canvasElement, 'Sun above warm sand dunes');
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
   },
 };
@@ -325,29 +347,27 @@ export const KeyboardPlay: Story = {
     await userEvent.keyboard('{Enter}');
     const dialog = await canvas.findByRole('dialog');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('forest');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('dunes');
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
     await expect((args.onValueChange as ReturnType<typeof fn>).mock.invocationCallOrder[0]).toBeLessThan(
       (args.onOpenChange as ReturnType<typeof fn>).mock.invocationCallOrder[0]!,
     );
     await focusVisible(canvas.getByRole('button', { name: 'Close viewer' }));
-    await userEvent.tab();
-    await focusVisible(stage(canvasElement));
     await userEvent.keyboard('{ArrowLeft}');
-    await current(canvasElement, 'Coastal cliffs');
+    await current(canvasElement, 'Layered hills beneath a low sun');
     await expect(canvas.getByRole('button', { name: 'Previous image' })).toBeDisabled();
     await userEvent.keyboard('{ArrowLeft}');
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
     await userEvent.keyboard('{End}');
-    await current(canvasElement, 'Mountain ridge');
+    await current(canvasElement, 'Sun over blue tidal water');
     await expect(canvas.getByRole('button', { name: 'Next image' })).toBeDisabled();
     await userEvent.keyboard('{ArrowRight}');
     await expect(args.onValueChange).toHaveBeenCalledTimes(3);
     await userEvent.keyboard('{Home}');
-    await current(canvasElement, 'Coastal cliffs');
+    await current(canvasElement, 'Layered hills beneath a low sun');
     await userEvent.keyboard('{ArrowRight}');
-    await current(canvasElement, 'Tall forest trees');
+    await current(canvasElement, 'Sun above warm sand dunes');
     await userEvent.keyboard('+');
     await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1.5');
     await userEvent.keyboard('{ArrowLeft}{ArrowRight}{ArrowUp}{ArrowDown}');
@@ -360,19 +380,23 @@ export const KeyboardPlay: Story = {
     await userEvent.keyboard(' ');
     await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
     await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
+    await userEvent.keyboard('0');
+    await userEvent.click(canvas.getByRole('button', { name: 'Dune walk, 2 / 4' }));
+    await userEvent.keyboard('{ArrowRight}');
+    await current(canvasElement, 'Moon above violet hills at dusk');
     await userEvent.keyboard('{Escape}');
     cancel(viewer(canvasElement));
     await waitFor(async () => {
       await expect(dialog).not.toHaveAttribute('open');
     });
-    await expect(invoker.ownerDocument.activeElement).toBe(invoker);
+    await expect(invoker.ownerDocument.activeElement).toBe(tiles(canvasElement)[2]);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
   },
 };
 export const Controlled: Story = {
   render: (args) => {
-    const [value, setValue] = useState<string | null>('coast');
+    const [value, setValue] = useState<string | null>('hills');
     const [open, setOpen] = useState(false);
     return (
       <LightboxGallery
@@ -392,11 +416,11 @@ export const Controlled: Story = {
   },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.click(tiles(canvasElement)[1]!);
-    await current(canvasElement, 'Tall forest trees');
+    await current(canvasElement, 'Sun above warm sand dunes');
     await userEvent.click(canvas.getByRole('button', { name: 'Next image' }));
-    await current(canvasElement, 'Still lake water');
+    await current(canvasElement, 'Moon above violet hills at dusk');
     await userEvent.click(canvas.getByRole('button', { name: 'Previous image' }));
-    await current(canvasElement, 'Tall forest trees');
+    await current(canvasElement, 'Sun above warm sand dunes');
     await expect(args.onValueChange).toHaveBeenCalledTimes(3);
     await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
     await waitFor(async () => {
@@ -406,11 +430,11 @@ export const Controlled: Story = {
   },
 };
 export const ControlledRejected: Story = {
-  args: { value: 'coast', open: false },
+  args: { value: 'hills', open: false },
   play: async ({ canvasElement, args, userEvent }) => {
     await userEvent.click(tiles(canvasElement)[1]!);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('forest');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('dunes');
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
     await expect(viewer(canvasElement)).not.toHaveAttribute('open');
@@ -418,14 +442,14 @@ export const ControlledRejected: Story = {
   },
 };
 export const RejectedSelection: Story = {
-  args: { value: 'coast' },
+  args: { value: 'hills' },
   play: async ({ canvasElement, args, userEvent }) => {
     await userEvent.click(tiles(canvasElement)[1]!);
     await expect(viewer(canvasElement)).not.toHaveAttribute('open');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await userEvent.click(tiles(canvasElement)[0]!);
-    await current(canvasElement, 'Coastal cliffs');
+    await current(canvasElement, 'Layered hills beneath a low sun');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
   },
@@ -433,16 +457,16 @@ export const RejectedSelection: Story = {
 export const RejectedNavigation: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
-  args: { value: 'forest', open: true },
+  args: { value: 'dunes', open: true },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Next image' }));
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('lake');
-    await current(canvasElement, 'Tall forest trees');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('dusk');
+    await current(canvasElement, 'Sun above warm sand dunes');
     await userEvent.click(canvas.getByRole('button', { name: 'Previous image' }));
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('coast');
-    await current(canvasElement, 'Tall forest trees');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('hills');
+    await current(canvasElement, 'Sun above warm sand dunes');
   },
 };
 export const InvalidSelection: Story = {
@@ -460,18 +484,18 @@ export const ExternalAcceptedChanges: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => {
-    const [value, setValue] = useState<string | null>('coast');
+    const [value, setValue] = useState<string | null>('hills');
     return (
       <LightboxGallery
         {...args}
         value={value}
-        slotProps={{ controls: { onClick: () => setValue('lake') } }}
+        slotProps={{ controls: { onClick: () => setValue('dusk') } }}
       />
     );
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Zoom in' }));
-    await current(canvasElement, 'Still lake water');
+    await current(canvasElement, 'Moon above violet hills at dusk');
     await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
   },
 };
@@ -504,7 +528,7 @@ export const ExternalAria: Story = {
     });
     const dialog = viewer(canvasElement);
     const title = dialog.querySelector('h2')!;
-    const caption = within(dialog).getByText('The north shore.');
+    const caption = within(dialog).getByText('The last light on the hills.');
     await expect(dialog).toHaveAttribute('aria-label', 'Consumer viewer');
     await expect(dialog).toHaveAttribute('aria-labelledby', `external-name unresolved ${title.id}`);
     await expect(dialog).toHaveAttribute('aria-describedby', `external-description ${caption.id}`);
@@ -613,7 +637,7 @@ export const CancelVeto: Story = {
 export const RejectedNativeCloseRepair: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
-  args: { value: 'coast', open: true },
+  args: { value: 'hills', open: true },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const dialog = (await canvas.findByRole('dialog')) as HTMLDialogElement;
     dialog.close();
@@ -673,7 +697,7 @@ export const SlotStyles: Story = {
     const dialog = await canvas.findByRole('dialog');
     await expect(getComputedStyle(dialog).borderStyle).toBe('dashed');
     await expect(getComputedStyle(dialog.querySelector('h2')!).fontStyle).toBe('italic');
-    await expect(getComputedStyle(within(dialog).getByText('The north shore.')).fontWeight).toBe('600');
+    await expect(getComputedStyle(within(dialog).getByText('The last light on the hills.')).fontWeight).toBe('600');
     await expect(getComputedStyle(stage(canvasElement)).outlineStyle).not.toBe('hidden');
   },
 };
@@ -710,7 +734,7 @@ export const GestureAlternatives: Story = {
     fireEvent.pointerUp(surface, { pointerId: 1, clientX: box.width * 0.1, clientY: 100 });
     fireEvent.click(surface);
     await expect(args.slotProps!.stage!.onClick).not.toHaveBeenCalled();
-    await current(canvasElement, 'Tall forest trees');
+    await current(canvasElement, 'Sun above warm sand dunes');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await userEvent.click(canvas.getByRole('button', { name: 'Toggle zoom' }));
     await expect(surface).toHaveAttribute('data-zoom', '2');
@@ -774,7 +798,7 @@ export const MissingInvokerReturn: Story = {
         images={items}
         slotProps={{
           controls: {
-            onClick: () => setItems((current) => current.filter((image) => image.id !== 'coast')),
+            onClick: () => setItems((current) => current.filter((image) => image.id !== 'hills')),
           },
         }}
       />
@@ -783,7 +807,7 @@ export const MissingInvokerReturn: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(tiles(canvasElement)[0]!);
     await userEvent.click(await canvas.findByRole('button', { name: 'Next image' }));
-    await current(canvasElement, 'Tall forest trees');
+    await current(canvasElement, 'Sun above warm sand dunes');
     await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
     await waitFor(async () => {
       await expect(viewer(canvasElement)).not.toHaveAttribute('open');
@@ -820,6 +844,14 @@ export const DownwardDismiss: Story = {
     const capture = spyOn(surface, 'setPointerCapture').mockImplementation(() => {});
     fireEvent.pointerDown(surface, { pointerId: 1, button: 0, clientX: 100, clientY: 0 });
     fireEvent.pointerMove(surface, { pointerId: 1, clientX: 100, clientY: surface.clientHeight * 0.5 });
+    if (surface.dataset.reducedMotion !== 'true') {
+      await waitFor(async () => {
+        const transform = getComputedStyle(imageLayer(canvasElement).firstElementChild!).transform;
+        const offset = new DOMMatrixReadOnly(transform).m42;
+        await expect(offset).toBeGreaterThan(0);
+        await expect(offset).toBeLessThan(surface.clientHeight * 0.5);
+      });
+    }
     fireEvent.pointerUp(surface, { pointerId: 1, clientX: 100, clientY: surface.clientHeight * 0.5 });
     await waitFor(async () => {
       await expect(viewer(canvasElement)).not.toHaveAttribute('open');
@@ -827,6 +859,87 @@ export const DownwardDismiss: Story = {
     await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
     await expect(tiles(canvasElement)[1]!.ownerDocument.activeElement).toBe(tiles(canvasElement)[1]);
     capture.mockRestore();
+  },
+};
+
+export const PointerAnchoredZoom: Story = {
+  tags: ['!autodocs'],
+  args: { defaultOpen: true, defaultValue: 'dusk' },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await current(canvasElement, 'Moon above violet hills at dusk');
+    const surface = stage(canvasElement);
+    const box = surface.getBoundingClientRect();
+    const point = { clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 + 40 };
+    fireEvent.doubleClick(surface, point);
+    await expect(surface).toHaveAttribute('data-zoom', '2');
+    await waitFor(async () => {
+      const transform = new DOMMatrixReadOnly(getComputedStyle(imageLayer(canvasElement).firstElementChild!).transform);
+      await expect(transform.m42).toBeCloseTo(-40, 0);
+    });
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset zoom' }));
+    const capture = spyOn(surface, 'setPointerCapture').mockImplementation(() => {});
+    for (const pointerId of [1, 2]) {
+      fireEvent.pointerDown(surface, { ...point, pointerId, pointerType: 'touch', button: 0 });
+      fireEvent.pointerUp(surface, { ...point, pointerId, pointerType: 'touch' });
+    }
+    await expect(surface).toHaveAttribute('data-zoom', '2');
+    await waitFor(async () => {
+      const transform = new DOMMatrixReadOnly(getComputedStyle(imageLayer(canvasElement).firstElementChild!).transform);
+      await expect(transform.m42).toBeCloseTo(-40, 0);
+    });
+    capture.mockRestore();
+  },
+};
+
+export const MomentumSwipe: Story = {
+  tags: ['!autodocs'],
+  args: { defaultOpen: true },
+  play: async ({ canvasElement, args }) => {
+    await current(canvasElement, 'Layered hills beneath a low sun');
+    const surface = stage(canvasElement);
+    const capture = spyOn(surface, 'setPointerCapture').mockImplementation(() => {});
+    const dispatch = (type: string, clientX: number, time: number) => {
+      const event = new PointerEvent(type, { bubbles: true, pointerId: 1, button: 0, clientX, clientY: 100 });
+      Object.defineProperty(event, 'timeStamp', { value: time });
+      fireEvent(surface, event);
+    };
+    dispatch('pointerdown', 200, 1000);
+    dispatch('pointermove', 170, 1016);
+    dispatch('pointerup', 170, 1017);
+    await current(canvasElement, 'Sun above warm sand dunes');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    capture.mockRestore();
+  },
+};
+
+export const ViewerKeyboardScope: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    slotProps: { stage: { onKeyDown: (event) => event.preventDefault() } },
+  },
+  play: async ({ canvasElement, args, userEvent }) => {
+    await current(canvasElement, 'Layered hills beneath a low sun');
+    const dialog = viewer(canvasElement);
+    stage(canvasElement).focus();
+    await userEvent.keyboard('{ArrowRight}+');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
+    const input = dialog.ownerDocument.createElement('input');
+    input.setAttribute('aria-label', 'Photo note');
+    dialog.append(input);
+    input.focus();
+    await userEvent.keyboard('+{ArrowRight}');
+    await expect(input).toHaveValue('+');
+    await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    input.remove();
+    const child = dialog.ownerDocument.createElement('dialog');
+    dialog.append(child);
+    fireEvent.keyDown(child, { key: 'ArrowRight' });
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    child.remove();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close viewer' }));
   },
 };
 
@@ -845,7 +958,7 @@ export const ReplacedImageSource: Story = {
     );
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await current(canvasElement, 'Coastal cliffs');
+    await current(canvasElement, 'Layered hills beneath a low sun');
     const old = within(viewer(canvasElement)).getByRole('img');
     await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
     await expect(within(stage(canvasElement)).getByText('Image unavailable')).toBeVisible();

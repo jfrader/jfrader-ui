@@ -9,6 +9,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -20,9 +21,11 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
+import { animate, MotionConfig, useMotionValue, useReducedMotion } from 'motion/react';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
@@ -99,9 +102,25 @@ const DEFAULT_LABELS = ['Before', 'After'] as const;
 const DEFAULT_LABEL = 'Image comparison';
 const DEFAULT_RESET_LABEL = 'Center divider';
 const DEFAULT_ASPECT_RATIO = '3 / 2';
-const PERCENT_FORMAT: Intl.NumberFormatOptions = { style: 'percent', maximumFractionDigits: 2 };
+const PERCENT_FORMAT: Intl.NumberFormatOptions = {
+  style: 'percent',
+  maximumFractionDigits: 2,
+};
 /** Significant digits kept when stepping, so 0.1 increments do not accumulate float noise. */
 const VALUE_PRECISION = 12;
+const SETTLE_SECONDS = motionDurationMs.slow / 1000;
+const SETTLE_FREQUENCY = (2 * Math.PI) / SETTLE_SECONDS;
+const SETTLE_SPRING = {
+  type: 'spring',
+  stiffness: SETTLE_FREQUENCY ** 2,
+  damping: 2 * 0.8 * SETTLE_FREQUENCY,
+  mass: 1,
+} as const;
+const MAX_RELEASE_VELOCITY = 120;
+const VELOCITY_IDLE_MS = motionDurationMs.fast;
+const MAX_STRETCH = 0.35;
+const STRETCH_SPEED = 300;
+const EDGE_COMPRESSION = 0.82;
 /** Custom properties read by the styles; values arrive through inline style, never generated classes. */
 const VALUE_VAR = '--image-compare-value';
 const SLOP_VAR = '--image-compare-slop';
@@ -177,10 +196,19 @@ const captionStyle = css({
   pointerEvents: 'none',
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
-const beforeCaptionStyle = css({ insetBlockStart: vars.space[3], insetInlineStart: vars.space[3] });
+const beforeCaptionStyle = css({
+  insetBlockStart: vars.space[3],
+  insetInlineStart: vars.space[3],
+});
 const afterCaptionStyles: Record<ImageCompareOrientation, SerializedStyles> = {
-  horizontal: css({ insetBlockStart: vars.space[3], insetInlineEnd: vars.space[3] }),
-  vertical: css({ insetBlockEnd: vars.space[3], insetInlineStart: vars.space[3] }),
+  horizontal: css({
+    insetBlockStart: vars.space[3],
+    insetInlineEnd: vars.space[3],
+  }),
+  vertical: css({
+    insetBlockEnd: vars.space[3],
+    insetInlineStart: vars.space[3],
+  }),
 };
 // A light line between dark edges (or the reverse in light theme) stays visible on any photo.
 const dividerStyle = css({
@@ -188,7 +216,11 @@ const dividerStyle = css({
   boxSizing: 'border-box',
   background: vars.color.text,
   pointerEvents: 'none',
-  [FORCED_COLORS]: { forcedColorAdjust: 'none', background: 'CanvasText', borderColor: 'Canvas' },
+  [FORCED_COLORS]: {
+    forcedColorAdjust: 'none',
+    background: 'CanvasText',
+    borderColor: 'Canvas',
+  },
 });
 const dividerOrientationStyles: Record<ImageCompareOrientation, SerializedStyles> = {
   horizontal: css({
@@ -244,14 +276,20 @@ const handleStyle = css({
   },
 });
 const handleOrientationStyles: Record<ImageCompareOrientation, SerializedStyles> = {
-  horizontal: css({ insetBlockStart: `calc(50% - ${HALF_HANDLE})`, insetInlineStart: HANDLE_OFFSET }),
-  vertical: css({ insetInlineStart: `calc(50% - ${HALF_HANDLE})`, insetBlockStart: HANDLE_OFFSET }),
+  horizontal: css({
+    insetBlockStart: `calc(50% - ${HALF_HANDLE})`,
+    insetInlineStart: HANDLE_OFFSET,
+  }),
+  vertical: css({
+    insetInlineStart: `calc(50% - ${HALF_HANDLE})`,
+    insetBlockStart: HANDLE_OFFSET,
+  }),
 };
-const gripStyle = css({ inlineSize: vars.space[5], blockSize: vars.space[5], pointerEvents: 'none' });
-const gripOrientationStyles: Record<ImageCompareOrientation, SerializedStyles | undefined> = {
-  horizontal: undefined,
-  vertical: css({ transform: 'rotate(90deg)' }),
-};
+const gripStyle = css({
+  inlineSize: vars.space[5],
+  blockSize: vars.space[5],
+  pointerEvents: 'none',
+});
 const resetStyle = css({
   justifySelf: 'end',
   maxInlineSize: '100%',
@@ -286,6 +324,8 @@ interface Gesture {
   dragging: boolean;
   initial: number;
   candidate: number;
+  sampledAt: number;
+  velocity: number;
   frame: HTMLDivElement;
   /** Removes the owner-document listeners that end the gesture when it is released outside the frame. */
   unlisten: () => void;
@@ -320,8 +360,16 @@ export function ImageCompare({
   const step = positive(stepProp, DEFAULT_STEP);
   const largeStep = positive(largeStepProp, DEFAULT_LARGE_STEP);
   const [seed] = useState(() => accepted(defaultValue));
-  const [state, requestChange] = useControlledState<number>(valueProp, seed, onValueChange);
+  const syncingDrag = useRef(false);
+  const [state, requestChange] = useControlledState<number>(valueProp, seed, (next) => {
+    if (!syncingDrag.current) onValueChange?.(next);
+  });
   const value = accepted(state);
+  const position = useMotionValue(value);
+  const acceptedValue = useMotionValue(value);
+  const stretch = useMotionValue(1);
+  const angle = useMotionValue(orientation === 'vertical' ? 90 : 0);
+  const reducedMotion = useReducedMotion();
   const percentFormat = useMemo(() => new Intl.NumberFormat(locale, PERCENT_FORMAT), [locale]);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const handleRef = useRef<HTMLDivElement | null>(null);
@@ -330,6 +378,114 @@ export function ImageCompare({
   const gesture = useRef<Gesture | null>(null);
   const [dragging, setDragging] = useState(false);
   const horizontal = orientation === 'horizontal';
+
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+    const handle = handleRef.current;
+    if (!frame || !handle) return;
+    const paintPosition = (next: number) => frame.style.setProperty(VALUE_VAR, `${clamp(next)}%`);
+    const paintValue = (next: number) => {
+      handle.setAttribute('aria-valuenow', String(next));
+      handle.setAttribute('aria-valuetext', valueText(next, percentFormat.format(next / MAX)));
+    };
+    const paintCapsule = () => {
+      handle.style.transform = horizontal
+        ? `scale(${stretch.get()}, ${1 / Math.sqrt(stretch.get())})`
+        : `scale(${1 / Math.sqrt(stretch.get())}, ${stretch.get()})`;
+    };
+    const paintAngle = (next: number) => {
+      const grip = handle.querySelector('svg');
+      if (grip) grip.style.transform = `rotate(${next}deg)`;
+    };
+    let captionGeometry: {
+      element: HTMLElement;
+      before: boolean;
+      edge: number;
+      size: number;
+    }[] = [];
+    let axisSize = 0;
+    const paintCaptions = () => {
+      if (axisSize <= 0) return;
+      const divider = (clamp(position.get()) / MAX) * axisSize;
+      for (const caption of captionGeometry) {
+        const clearance = caption.before ? divider - caption.edge : caption.edge - divider;
+        caption.element.style.opacity = String(Math.min(1, Math.max(0, clearance / caption.size)));
+      }
+    };
+    const measureCaptions = () => {
+      const rect = frame.getBoundingClientRect();
+      axisSize = horizontal ? rect.width : rect.height;
+      const reversed = horizontal && frame.matches(':dir(rtl)');
+      captionGeometry = [];
+      for (const side of ['before', 'after'] as const) {
+        const caption = frame.querySelector<HTMLElement>(`[data-ui="image-compare-${side}-label"]`);
+        if (!caption || axisSize <= 0) continue;
+        const box = caption.getBoundingClientRect();
+        const farEdge = horizontal ? (reversed ? rect.right - box.left : box.right - rect.left) : box.bottom - rect.top;
+        const nearEdge = horizontal ? (reversed ? rect.right - box.right : box.left - rect.left) : box.top - rect.top;
+        if (farEdge <= nearEdge) continue;
+        captionGeometry.push({
+          element: caption,
+          before: side === 'before',
+          edge: side === 'before' ? farEdge : nearEdge,
+          size: farEdge - nearEdge,
+        });
+      }
+      paintCaptions();
+    };
+    paintPosition(position.get());
+    paintValue(acceptedValue.get());
+    paintCapsule();
+    paintAngle(angle.get());
+    measureCaptions();
+    const unsubscribers = [
+      position.on('change', (next) => {
+        paintPosition(next);
+        paintCaptions();
+      }),
+      acceptedValue.on('change', paintValue),
+      stretch.on('change', paintCapsule),
+      angle.on('change', paintAngle),
+    ];
+    const observer = new ResizeObserver(measureCaptions);
+    observer.observe(frame);
+    frame.querySelectorAll('[data-ui$="-label"]').forEach((caption) => observer.observe(caption));
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+      observer.disconnect();
+    };
+  }, [horizontal, position, acceptedValue, stretch, angle, percentFormat, valueText, labels]);
+
+  useLayoutEffect(() => {
+    if ((valueProp !== undefined || !gesture.current) && acceptedValue.get() !== value) {
+      acceptedValue.set(value);
+      position.jump(value);
+    }
+  }, [value, valueProp, acceptedValue, position]);
+
+  useEffect(() => {
+    const target = horizontal ? 0 : 90;
+    if (reducedMotion) {
+      position.jump(acceptedValue.get());
+      angle.jump(target);
+      stretch.jump(1);
+      return;
+    }
+    const swing = animate(angle, target, {
+      type: 'spring',
+      duration: SETTLE_SECONDS,
+      bounce: 0.3,
+    });
+    return () => swing.stop();
+  }, [horizontal, reducedMotion, angle, stretch, position, acceptedValue]);
+  useEffect(
+    () => () => {
+      position.stop();
+      stretch.stop();
+      angle.stop();
+    },
+    [position, stretch, angle],
+  );
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'production') return;
@@ -343,8 +499,13 @@ export function ImageCompare({
   }, [valueProp, defaultValue]);
 
   const request = (next: number) => {
-    if (next === value) return false;
-    requestChange(next);
+    if (next === acceptedValue.get()) return false;
+    if (valueProp === undefined) {
+      acceptedValue.set(next);
+      position.jump(next);
+      if (gesture.current?.dragging) onValueChange?.(next);
+      else requestChange(next);
+    } else requestChange(next);
     return true;
   };
   const requestAndCommit = (next: number) => {
@@ -356,6 +517,30 @@ export function ImageCompare({
     gesture.current = null;
     drag.unlisten();
     setDragging(false);
+    if (valueProp === undefined && drag.dragging) {
+      syncingDrag.current = true;
+      requestChange(acceptedValue.get());
+      syncingDrag.current = false;
+    }
+    if (reducedMotion) {
+      position.jump(acceptedValue.get());
+      stretch.jump(1);
+    } else {
+      const velocity =
+        complete && acceptedValue.get() === drag.candidate && performance.now() - drag.sampledAt < VELOCITY_IDLE_MS
+          ? Math.max(-MAX_RELEASE_VELOCITY, Math.min(MAX_RELEASE_VELOCITY, drag.velocity))
+          : 0;
+      animate(position, acceptedValue.get(), { ...SETTLE_SPRING, velocity });
+      if (complete && drag.dragging && (acceptedValue.get() === MIN || acceptedValue.get() === MAX)) {
+        animate(stretch, [1, EDGE_COMPRESSION, 1], { duration: SETTLE_SECONDS });
+      } else {
+        animate(stretch, 1, {
+          type: 'spring',
+          duration: SETTLE_SECONDS,
+          bounce: 0.3,
+        });
+      }
+    }
     if (drag.frame.hasPointerCapture(drag.pointerId)) drag.frame.releasePointerCapture(drag.pointerId);
     if (complete && drag.dragging && drag.candidate !== drag.initial) onValueCommit?.(drag.candidate);
   };
@@ -405,11 +590,13 @@ export function ImageCompare({
       mouse: event.pointerType === 'mouse',
       originX: event.clientX,
       originY: event.clientY,
-      offset: onHandle ? mainAxis(event) - clientAt(value) : 0,
+      offset: onHandle ? mainAxis(event) - clientAt(acceptedValue.get()) : 0,
       onHandle,
       dragging: false,
-      initial: value,
-      candidate: value,
+      initial: acceptedValue.get(),
+      candidate: acceptedValue.get(),
+      sampledAt: performance.now(),
+      velocity: 0,
       frame,
       unlisten: () => {
         doc.removeEventListener('pointerup', endOutside, true);
@@ -440,6 +627,19 @@ export function ImageCompare({
       setDragging(true);
     }
     const next = percentAt(mainAxis(event) - drag.offset);
+    const now = performance.now();
+    const elapsed = now - drag.sampledAt;
+    drag.velocity = elapsed > 0 ? ((next - drag.candidate) / elapsed) * 1000 : 0;
+    drag.sampledAt = now;
+    if (!reducedMotion) {
+      if ((next === MIN || next === MAX) && next !== drag.candidate) {
+        animate(stretch, [1, EDGE_COMPRESSION, 1], {
+          duration: SETTLE_SECONDS,
+        });
+      } else if (next !== MIN && next !== MAX) {
+        stretch.jump(1 + Math.min(MAX_STRETCH, Math.abs(drag.velocity) / STRETCH_SPEED));
+      }
+    }
     if (next !== drag.candidate) {
       drag.candidate = next;
       request(next);
@@ -463,6 +663,7 @@ export function ImageCompare({
 
   const handleKey = (event: KeyboardEvent<HTMLDivElement>) => {
     if (disabled || event.defaultPrevented) return;
+    const value = acceptedValue.get();
     const amount = event.shiftKey ? largeStep : step;
     const physical = horizontal && rtl() ? -1 : 1;
     const targets: Record<string, number> = {
@@ -495,58 +696,56 @@ export function ImageCompare({
   const formatted = percentFormat.format(value / MAX);
 
   return (
-    <WithSx className={className} styles={rootStyle} sx={sx}>
-      {(rootClass) => (
-        <div
-          {...rest}
-          ref={ref}
-          className={rootClass}
-          data-ui="image-compare"
-          data-orientation={orientation}
-          data-disabled={disabled || undefined}
-          onKeyDown={(event) => {
-            onKeyDown?.(event);
-            if (event.target === handleRef.current) handleKey(event);
-          }}
-        >
+    <MotionConfig reducedMotion="user">
+      <WithSx className={className} styles={rootStyle} sx={sx}>
+        {(rootClass) => (
           <div
-            {...frameSlot}
-            ref={mergedFrameRef}
-            data-ui="image-compare-frame"
+            {...rest}
+            ref={ref}
+            className={rootClass}
+            data-ui="image-compare"
+            data-orientation={orientation}
             data-disabled={disabled || undefined}
-            css={[frameStyle, frameOrientationStyles[orientation], frameSlot?.css]}
-            style={frameStyleVars}
-            onPointerDown={(event) => {
-              frameSlot?.onPointerDown?.(event);
-              handlePointerDown(event);
-            }}
-            onPointerMove={(event) => {
-              frameSlot?.onPointerMove?.(event);
-              if (!event.defaultPrevented) handlePointerMove(event);
-            }}
-            onPointerUp={(event) => {
-              frameSlot?.onPointerUp?.(event);
-              handlePointerUp(event);
-            }}
-            onPointerCancel={(event) => {
-              frameSlot?.onPointerCancel?.(event);
-              handlePointerAbort(event);
-            }}
-            onLostPointerCapture={(event) => {
-              frameSlot?.onLostPointerCapture?.(event);
-              handlePointerAbort(event);
-            }}
-            onDragStart={(event) => {
-              frameSlot?.onDragStart?.(event);
-              event.preventDefault();
+            onKeyDown={(event) => {
+              onKeyDown?.(event);
+              if (event.target === handleRef.current) handleKey(event);
             }}
           >
             <div
-              {...slotProps?.after}
-              data-ui="image-compare-after"
-              css={[layerStyle, slotProps?.after?.css]}
+              {...frameSlot}
+              ref={mergedFrameRef}
+              data-ui="image-compare-frame"
+              data-disabled={disabled || undefined}
+              css={[frameStyle, frameOrientationStyles[orientation], frameSlot?.css]}
+              style={frameStyleVars}
+              onPointerDown={(event) => {
+                frameSlot?.onPointerDown?.(event);
+                handlePointerDown(event);
+              }}
+              onPointerMove={(event) => {
+                frameSlot?.onPointerMove?.(event);
+                if (!event.defaultPrevented) handlePointerMove(event);
+              }}
+              onPointerUp={(event) => {
+                frameSlot?.onPointerUp?.(event);
+                handlePointerUp(event);
+              }}
+              onPointerCancel={(event) => {
+                frameSlot?.onPointerCancel?.(event);
+                handlePointerAbort(event);
+              }}
+              onLostPointerCapture={(event) => {
+                frameSlot?.onLostPointerCapture?.(event);
+                handlePointerAbort(event);
+              }}
+              onDragStart={(event) => {
+                frameSlot?.onDragStart?.(event);
+                event.preventDefault();
+              }}
             >
-              {after}
+              <div {...slotProps?.after} data-ui="image-compare-after" css={[layerStyle, slotProps?.after?.css]}>
+                {after}
+              </div>
               {afterCaptionId && (
                 <span
                   {...slotProps?.afterLabel}
@@ -558,13 +757,13 @@ export function ImageCompare({
                   {captions[1]}
                 </span>
               )}
-            </div>
-            <div
-              {...slotProps?.before}
-              data-ui="image-compare-before"
-              css={[layerStyle, beforeOrientationStyles[orientation], slotProps?.before?.css]}
-            >
-              {before}
+              <div
+                {...slotProps?.before}
+                data-ui="image-compare-before"
+                css={[layerStyle, beforeOrientationStyles[orientation], slotProps?.before?.css]}
+              >
+                {before}
+              </div>
               {beforeCaptionId && (
                 <span
                   {...slotProps?.beforeLabel}
@@ -576,67 +775,67 @@ export function ImageCompare({
                   {captions[0]}
                 </span>
               )}
-            </div>
-            <div
-              {...slotProps?.divider}
-              aria-hidden="true"
-              data-ui="image-compare-divider"
-              css={[dividerStyle, dividerOrientationStyles[orientation], slotProps?.divider?.css]}
-            />
-            <div
-              {...handleSlot}
-              ref={mergedHandleRef}
-              role="slider"
-              tabIndex={0}
-              data-ui="image-compare-handle"
-              data-dragging={dragging || undefined}
-              aria-orientation={orientation}
-              aria-disabled={disabled || undefined}
-              aria-valuemin={MIN}
-              aria-valuemax={MAX}
-              aria-valuenow={value}
-              aria-valuetext={valueText(value, formatted)}
-              aria-label={handleSlot?.['aria-label'] ?? label}
-              aria-describedby={ids(handleSlot?.['aria-describedby'], beforeCaptionId, afterCaptionId)}
-              css={[handleStyle, handleOrientationStyles[orientation], handleSlot?.css]}
-              onDoubleClick={(event) => {
-                handleSlot?.onDoubleClick?.(event);
-                if (!event.defaultPrevented) reset();
-              }}
-            >
-              <svg
+              <div
+                {...slotProps?.divider}
                 aria-hidden="true"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                css={[gripStyle, gripOrientationStyles[orientation]]}
+                data-ui="image-compare-divider"
+                css={[dividerStyle, dividerOrientationStyles[orientation], slotProps?.divider?.css]}
+              />
+              <div
+                {...handleSlot}
+                ref={mergedHandleRef}
+                role="slider"
+                tabIndex={0}
+                data-ui="image-compare-handle"
+                data-dragging={dragging || undefined}
+                aria-orientation={orientation}
+                aria-disabled={disabled || undefined}
+                aria-valuemin={MIN}
+                aria-valuemax={MAX}
+                aria-valuenow={value}
+                aria-valuetext={valueText(value, formatted)}
+                aria-label={handleSlot?.['aria-label'] ?? label}
+                aria-describedby={ids(handleSlot?.['aria-describedby'], beforeCaptionId, afterCaptionId)}
+                css={[handleStyle, handleOrientationStyles[orientation], handleSlot?.css]}
+                onDoubleClick={(event) => {
+                  handleSlot?.onDoubleClick?.(event);
+                  if (!event.defaultPrevented) reset();
+                }}
               >
-                <path d="M9 6l-6 6 6 6M15 6l6 6-6 6" />
-              </svg>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  css={gripStyle}
+                >
+                  <path d="M9 6l-6 6 6 6M15 6l6 6-6 6" />
+                </svg>
+              </div>
             </div>
+            {showReset && (
+              <Button
+                size="sm"
+                variant="outline"
+                {...resetSlot}
+                type="button"
+                disabled={disabled}
+                css={[resetStyle, resetSlot?.css]}
+                onClick={(event) => {
+                  resetSlot?.onClick?.(event);
+                  if (!event.defaultPrevented) reset();
+                }}
+              >
+                {resetLabel}
+              </Button>
+            )}
           </div>
-          {showReset && (
-            <Button
-              size="sm"
-              variant="outline"
-              {...resetSlot}
-              type="button"
-              disabled={disabled}
-              css={[resetStyle, resetSlot?.css]}
-              onClick={(event) => {
-                resetSlot?.onClick?.(event);
-                if (!event.defaultPrevented) reset();
-              }}
-            >
-              {resetLabel}
-            </Button>
-          )}
-        </div>
-      )}
-    </WithSx>
+        )}
+      </WithSx>
+    </MotionConfig>
   );
 }
 

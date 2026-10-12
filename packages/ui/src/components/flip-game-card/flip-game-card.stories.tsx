@@ -7,7 +7,7 @@ import { css } from '../../styling/css';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
-import { GameCard } from '../game-card';
+import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { FlipGameCard, type FlipGameCardProps } from './index';
 
@@ -98,17 +98,24 @@ export const Default: Story = {
   },
 };
 
-export const BackFinalState: Story = {
-  args: { flipped: true },
-  parameters: { docs: { description: { story: 'The card mounts showing its back. Open Controlled and press Flip card to see the animation.' } } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole('img', { name: BACK_LABEL })).toBeVisible();
-    await expect(canvas.queryByRole('img', { name: FRONT_LABEL })).toBeNull();
-  },
-};
-
 export const LightTheme: Story = { decorators: [withLightTheme] };
-export const BackFinalStateLightTheme: Story = { ...BackFinalState, decorators: [withLightTheme] };
+
+const patternFaces: Story['render'] = (args) => (
+  <div style={{ display: 'flex', gap: vars.space[4] }}>
+    {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => (
+      <FlipGameCard {...args} key={deck} data-test-pattern={pattern}
+        front={<GameCard label={`${deck} face`} value={deck === 'spanish' ? { deck: 'spanish', suit: 'oros', rank: 1 } : { deck: 'french', suit: 'spades', rank: 'A' }} />}
+        back={<GameCard label={`${deck} back`} backPattern={pattern} />} />
+    ))}
+  </div>
+);
+
+/** Both card faces with their deck's back kept mounted. */
+export const PatternFronts: Story = { render: patternFaces };
+/** Spanish diagonal backs and poker checks in flip frames. */
+export const PatternBacks: Story = { render: patternFaces, args: { flipped: true } };
+export const PatternFrontsLightTheme: Story = { ...PatternFronts, decorators: [withLightTheme] };
+export const PatternBacksLightTheme: Story = { ...PatternBacks, decorators: [withLightTheme] };
 
 export const Sizes: Story = {
   render: (args) => (
@@ -152,6 +159,32 @@ function ControlledFixture(args: FlipGameCardProps) {
     </div>
   );
 }
+
+const flipToFinalState: NonNullable<Story['play']> = async ({ args, canvas, canvasElement, userEvent }) => {
+  const root = canvasElement.querySelector('[data-ui="flip-game-card"]');
+  const rotator = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card-rotator"]');
+  if (!root || !rotator) throw new Error('Missing flip anatomy');
+  await userEvent.click(canvas.getByRole('button', { name: 'Flip card' }));
+  await new Promise((resolve) => setTimeout(resolve, motionDurationMs.slow));
+  await Promise.all(rotator.getAnimations().map((animation) => animation.finished));
+  await expect(root).toHaveAttribute('data-state', args.flipped ? 'front' : 'back');
+  await expect(canvas.getByRole('img', { name: args.flipped ? FRONT_LABEL : BACK_LABEL })).toBeVisible();
+};
+
+/** Flip from the front and leave the controlled card face down. */
+export const BackFinalState: Story = {
+  render: (args) => <ControlledFixture {...args} />,
+  play: flipToFinalState,
+};
+
+/** Flip from the back and leave the controlled card face up. */
+export const FrontFinalState: Story = {
+  args: { flipped: true },
+  render: (args) => <ControlledFixture {...args} />,
+  play: flipToFinalState,
+};
+
+export const BackFinalStateLightTheme: Story = { ...BackFinalState, decorators: [withLightTheme] };
 
 export const Controlled: Story = {
   render: (args) => <ControlledFixture {...args} />,

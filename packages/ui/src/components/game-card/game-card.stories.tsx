@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { GameCard, type GameCardSize, type GameCardSuit, type GameCardValue } from './index';
+import { CARD_BACK_PATTERNS, GameCard, type GameCardSize, type GameCardSuit, type GameCardValue } from './index';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly GameCardSize[];
 const SIZE_PX = { sm: 32, md: 72, lg: 112 } as const;
@@ -79,8 +79,9 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component: 'Draw a playing card, face up from a French or Spanish deck, or face down.',
+        component: 'Show a French or Spanish playing card with a red-and-paper back or your own artwork.',
       },
+      usage: 'Omit `value` or set `face="back"` to hide built-in rank and suit data. Pass `backPattern={CARD_BACK_PATTERNS.spanish}` for Spanish backs; poker defaults to `checks`, and `children` replaces either face’s artwork.',
     },
   },
 } satisfies Meta<typeof GameCard>;
@@ -88,6 +89,30 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+/** Spanish diagonal backs and poker checks beside their faces. */
+export const BackPatterns: Story = {
+  render: () => (
+    <div style={rowStyle}>
+      {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => (
+        <div key={deck} style={rowStyle}>
+          <GameCard data-test-pattern={pattern} value={deck === 'spanish' ? ACE_OF_OROS : QUEEN_OF_HEARTS} label={`${deck} face`} backPattern={pattern} />
+          <GameCard data-test-pattern={pattern} label={`${deck} back`} backPattern={pattern} />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const pattern of Object.values(CARD_BACK_PATTERNS)) {
+      const card = canvasElement.querySelector(`[data-face="back"][data-test-pattern="${pattern}"]`);
+      if (!card) throw new Error('Missing patterned back');
+      await expect(card.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', pattern);
+      await expect(card).not.toHaveAttribute('data-deck');
+    }
+  },
+};
+
+export const BackPatternsLightTheme: Story = { ...BackPatterns, decorators: [withLightTheme] };
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {
@@ -154,25 +179,33 @@ export const SpanishDeck: Story = {
 };
 
 export const FaceDown: Story = {
-  args: { label: BACK_LABEL, value: QUEEN_OF_HEARTS, face: 'back', rankLabel: 'SECRET-RANK', children: 'SECRET-ART' },
+  args: { label: BACK_LABEL, value: QUEEN_OF_HEARTS, face: 'back', rankLabel: 'SECRET-RANK' },
   render: (args) => (
     <div style={rowStyle}>
       <GameCard {...args} />
       {/* A card with no value is face down: the caller cannot leak what it does not pass. */}
       <GameCard label={BACK_LABEL} />
+      <GameCard label={BACK_LABEL} face="back" value={ACE_OF_OROS} />
     </div>
   ),
   play: async ({ canvasElement }) => {
     const backs = within(canvasElement).getAllByRole('img', { name: BACK_LABEL });
-    await expect(backs).toHaveLength(2);
+    await expect(backs).toHaveLength(3);
     for (const back of backs) {
       await expect(back).toHaveAttribute('data-face', 'back');
       await expect(back).not.toHaveAttribute('data-deck');
       await expect(back.textContent).toBe('');
+      const paint = back.querySelector('[data-ui="game-card-back"]');
+      if (paint === null) throw new Error('Missing back paint');
+      await expect(getComputedStyle(back).backgroundColor).toBe(getComputedStyle(paint).backgroundColor);
+      await expect(getComputedStyle(paint).backgroundColor).toBe('rgb(200, 16, 46)');
+      await expect(getComputedStyle(paint).backgroundImage).toBe('none');
+      await expect(paint.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', CARD_BACK_PATTERNS.french);
+      await expect(getComputedStyle(paint, '::after').content).toBe('none');
       const attributes = [back, ...back.querySelectorAll('*')]
         .flatMap((element) => Array.from(element.attributes, (attribute) => attribute.value))
         .join(' ');
-      for (const secret of ['french', 'hearts', 'Q', EXPECTED_SUITS.hearts, 'SECRET-RANK', 'SECRET-ART']) {
+      for (const secret of ['french', 'hearts', 'spanish', 'oros', 'Q', EXPECTED_SUITS.hearts, 'SECRET-RANK']) {
         await expect(attributes).not.toContain(secret);
       }
     }
@@ -223,6 +256,8 @@ export const OptionalArt: Story = {
       <GameCard {...args} label="False art" children={false} />
       <GameCard {...args} label="True art" children={true} />
       <GameCard {...args} label="Zero art" children={0} />
+      <GameCard label="Zero back art" face="back" children={0} />
+      <GameCard label="False back art" face="back" children={false} />
     </div>
   ),
   play: async ({ canvasElement }) => {
@@ -235,6 +270,10 @@ export const OptionalArt: Story = {
     const zero = canvas.getByRole('img', { name: 'Zero art' });
     await expect(zero.querySelector('[data-ui="game-card-art"]')).toHaveTextContent('0');
     await expect(zero.querySelector('[data-ui="game-card-print"]')).toBeNull();
+    const zeroBack = canvas.getByRole('img', { name: 'Zero back art' });
+    await expect(zeroBack.querySelector('[data-ui="game-card-art"]')).toHaveTextContent('0');
+    await expect(zeroBack.querySelector('[data-ui="pattern"]')).toBeNull();
+    await expect(canvas.getByRole('img', { name: 'False back art' }).querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', CARD_BACK_PATTERNS.french);
   },
 };
 
@@ -257,6 +296,27 @@ export const CustomArt: Story = {
     await expect(card).not.toHaveTextContent(EXPECTED_SUITS.hearts);
   },
 };
+
+/** Custom artwork replaces the pattern even when the card is face down. */
+export const CustomBackArt: Story = {
+  args: { label: BACK_LABEL, face: 'back', backPattern: CARD_BACK_PATTERNS.spanish },
+  render: (args) => (
+    <GameCard {...args}>
+      <svg viewBox="0 0 40 60" aria-hidden="true">
+        <rect width="40" height="60" fill={vars.color.cardRed} />
+        <circle cx="20" cy="30" r="12" fill={vars.color.cardFace} />
+      </svg>
+    </GameCard>
+  ),
+  play: async ({ canvasElement }) => {
+    const card = within(canvasElement).getByRole('img', { name: BACK_LABEL });
+    await expect(card.querySelector('[data-ui="game-card-art"] svg')).not.toBeNull();
+    await expect(card.querySelector('[data-ui="pattern"]')).toBeNull();
+    await expect(card).not.toHaveAttribute('data-deck');
+  },
+};
+
+export const CustomBackArtLightTheme: Story = { ...CustomBackArt, decorators: [withLightTheme] };
 
 export const RankLabelAndDimmed: Story = {
   render: (args) => (
@@ -285,5 +345,9 @@ export const LightTheme: Story = {
     // A card is its own material: the paper face reads the same in both themes.
     const card = within(canvasElement).getByRole('img', { name: 'Q of hearts' });
     await expect(getComputedStyle(card).backgroundColor).toBe('rgb(244, 244, 245)');
+    const back = within(canvasElement).getByRole('img', { name: BACK_LABEL });
+    const paint = back.querySelector('[data-ui="game-card-back"]');
+    if (paint === null) throw new Error('Missing back paint');
+    await expect(getComputedStyle(back).backgroundColor).toBe(getComputedStyle(paint).backgroundColor);
   },
 };
