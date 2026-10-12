@@ -27,7 +27,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 - Import `css` and `keyframes` only from `packages/ui/src/styling/css.ts`. Never import them from `@emotion/react` directly. Never use `styled()` inside the library.
 - Compose styles with arrays (`[base, sizeStyles[size]]`). Public part roots pass them to `WithSx` (`styles`) with the part's `className` and `sx`, and render the `className` it returns; internal elements use the `css` prop.
 - Every public visual part root accepts `sx` (`SxProps`), an alias of `css` that applies after it: own styles → `slotProps` → consumer `css` → consumer `sx`. Context/provider components render no DOM and take no `sx`. Parts reachable only through `slotProps` do not get `sx`.
-- App-facing styling API: `styled`, `ThemeProvider`, `useTheme`, `theme` (the token object; `ThemeRoot` mounts the provider).
+- App-facing styling API: `styled`, `ThemeProvider`, `useTheme`, `theme` (the token object; `ThemeRoot` mounts the provider) and `createTheme` (accent-family overrides for `ThemeRoot tokens`).
 - Define styles as module-level `css()` constants. Never build style objects per render.
 - Express state through attributes and pseudo-classes: `:hover`, `[aria-disabled="true"]`, `[data-state]`, `:focus-visible`.
 - Use logical properties (`marginInline`, `paddingBlock`, `insetInlineStart`, …) so layouts work in RTL.

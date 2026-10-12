@@ -117,6 +117,24 @@ html[data-theme='light'] {
 
 To switch at runtime, set `document.documentElement.dataset.theme` and store the value under the same `localStorage` key.
 
+### Custom palettes
+
+`createTheme` derives an accent family from one hex color; `ThemeRoot tokens` declares it over the named palette for that subtree.
+
+```tsx
+import { createTheme, ThemeRoot } from '@jfrader/ui';
+
+const brand = createTheme({ base: 'dark', accent: '#7c3aed' });
+
+<ThemeRoot theme="dark" tokens={brand}>{/* brand accent in here */}</ThemeRoot>;
+```
+
+- `createTheme({ base, accent, tokens })` returns the override map. `accent` derives `accentHover`, `accentText`, `accentSoft`, `accentSoftHover`, `accentBorder`, `accentContrast` (the text color on the accent, whichever candidate measures the higher WCAG contrast) and `focusRing` (the stock themes set the ring to their accent). `tokens` deep-merges your own values over the derived ones and wins per token path. `base` picks the derivation; pass the root's `theme`.
+- On light, `accentText` caps its lightness to stay AA on the white surface. On dark it is the accent as given, so a very dark accent is not readable as text.
+- The overrides are declared as inline custom properties on the scope root: the palette switch still works with no re-render, and overlays portaled inside the scope carry them.
+- Mid-brightness accents (relative luminance around 0.17–0.22) reach under 4.5:1 against both text candidates (near-black and white); pick a darker or lighter accent, or set `accentContrast` yourself.
+- `accent` takes `#rgb` or `#rrggbb` (the contrast pick reads the color in JS). Anything else throws.
+
 ### Contrast surfaces
 
 A surface can wear the dark theme — plus the handful of roles the elevated charcoal panel changes — whatever the page theme is: dark panel on a light page, charcoal elevation on a dark page. `Drawer.Panel` does it by default; `Card` opts in with `appearance="contrast"`.
