@@ -111,6 +111,10 @@ export const base = {
     emblemMd: '32px',
     emblemLg: '40px',
     emblemXl: '56px',
+    // Game card width. The frame keeps the 1.48 height ratio and a width/13 corner it came with.
+    gameCardSm: '32px',
+    gameCardMd: '72px',
+    gameCardLg: '112px',
     // Layer inline size at which SheetStack's auto variant switches from sheet to centered dialog.
     sheetStackBreakpoint: '640px',
     // How much of each parent panel shows above the active one.
