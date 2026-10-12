@@ -10,6 +10,7 @@ export * from './components/button';
 export * from './components/calendar';
 export * from './components/card';
 export * from './components/carousel';
+export * from './components/chat-thread';
 export * from './components/checkbox';
 export * from './components/chip-group';
 export * from './components/code-block';

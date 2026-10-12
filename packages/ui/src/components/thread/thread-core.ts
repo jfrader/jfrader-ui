@@ -2,8 +2,8 @@
 // thread surface. CommentThread renders it as nested comments; a conversation surface reuses the
 // same messages, reactions, timestamps, composer and message shell (`thread-parts.tsx`) over a flat
 // list (`maxDepth` 0) with its own layout and grouping. Nothing here knows about comment-only
-// concepts (resolution, reply disclosure, the comments card), which keeps that seam clean. When the
-// second surface lands, the `thread-*` modules move to a shared internal folder unchanged.
+// concepts (resolution, reply disclosure, the comments card), which keeps that seam clean. Both
+// surfaces share this internal folder without exposing implementation parts as public exports.
 
 export interface ThreadAuthor {
   /** Stable identity: ownership, reactions and mention candidates compare it. */
