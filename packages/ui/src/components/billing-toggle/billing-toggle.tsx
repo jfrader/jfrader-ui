@@ -14,6 +14,7 @@ import {
   type SetStateAction,
 } from 'react';
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'motion/react';
+import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
@@ -96,6 +97,7 @@ const rootStyle = css({
   color: vars.color.text,
 });
 const listStyle = css({ minInlineSize: 0, maxInlineSize: '100%' });
+const itemStyle = css({ display: 'contents' });
 const labelStyle = css({
   fontSize: vars.textSize.sm,
   fontWeight: vars.fontWeight.medium,
@@ -152,10 +154,11 @@ const visualStyle = css({
 const priceCellStyle = css({ gridArea: '1 / 1', minInlineSize: 0 });
 const previousStyle = css({ color: vars.color.textMuted, minInlineSize: 0 });
 const periodStyle = css({ color: vars.color.textMuted, minInlineSize: 0 });
+const PRICE_SPRING_VISUAL_DURATION = Number.parseFloat(base.motion.duration.slow) / 1000; // '240ms' -> 0.24s
 const PRICE_SPRING = {
   type: 'spring',
   bounce: 0,
-  visualDuration: 0.24,
+  visualDuration: PRICE_SPRING_VISUAL_DURATION,
 } as const;
 
 function PriceSurface({
@@ -309,46 +312,47 @@ function BillingToggleItem({
     context.value === rest.value && activeBadge !== undefined ? activeBadge : badge;
   const hasBadge = isRenderable(currentBadge) && currentBadge !== '';
   return (
-    <WithSx className={className} sx={sx}>
-      {(className) => (
-        <SegmentedControl.Item
-          {...rest}
-          data-billing-part="item"
-          className={className}
-          accessory={
-            hasBadge ? (
+    <span data-ui="billing-toggle-item" css={itemStyle}>
+      <WithSx className={className} sx={sx}>
+        {(className) => (
+          <SegmentedControl.Item
+            {...rest}
+            className={className}
+            accessory={
+              hasBadge ? (
+                <span
+                  {...slotProps?.badge}
+                  data-ui="billing-toggle-badge"
+                  css={[badgeStyle, toneStyles[context.tone], slotProps?.badge?.css]}
+                >
+                  {isRenderable(badge) && badge !== '' && (
+                    <span aria-hidden="true" css={[badgeCellStyle, sizerStyle]}>
+                      {badge}
+                    </span>
+                  )}
+                  {isRenderable(activeBadge) && activeBadge !== '' && (
+                    <span aria-hidden="true" css={[badgeCellStyle, sizerStyle]}>
+                      {activeBadge}
+                    </span>
+                  )}
+                  <span css={badgeCellStyle}>{currentBadge}</span>
+                </span>
+              ) : undefined
+            }
+          >
+            {isRenderable(children) && children !== '' && (
               <span
-                {...slotProps?.badge}
-                data-ui="billing-toggle-badge"
-                css={[badgeStyle, toneStyles[context.tone], slotProps?.badge?.css]}
+                {...slotProps?.label}
+                data-ui="billing-toggle-item-label"
+                css={slotProps?.label?.css}
               >
-                {isRenderable(badge) && badge !== '' && (
-                  <span aria-hidden="true" css={[badgeCellStyle, sizerStyle]}>
-                    {badge}
-                  </span>
-                )}
-                {isRenderable(activeBadge) && activeBadge !== '' && (
-                  <span aria-hidden="true" css={[badgeCellStyle, sizerStyle]}>
-                    {activeBadge}
-                  </span>
-                )}
-                <span css={badgeCellStyle}>{currentBadge}</span>
+                {children}
               </span>
-            ) : undefined
-          }
-        >
-          {isRenderable(children) && children !== '' && (
-            <span
-              {...slotProps?.label}
-              data-ui="billing-toggle-item-label"
-              css={slotProps?.label?.css}
-            >
-              {children}
-            </span>
-          )}
-        </SegmentedControl.Item>
-      )}
-    </WithSx>
+            )}
+          </SegmentedControl.Item>
+        )}
+      </WithSx>
+    </span>
   );
 }
 BillingToggleItem.displayName = 'BillingToggle.Item';
@@ -369,13 +373,21 @@ function BillingTogglePrice({
 }: BillingTogglePriceProps) {
   const { locale } = useBilling();
   const reducedMotion = useReducedMotion();
-  const previousId = useId();
   if (!Number.isFinite(amount)) throw new RangeError('BillingToggle.Price amount must be finite.');
-  const formatter = new Intl.NumberFormat(localeProp ?? locale, {
-    ...formatOptions,
-    style: 'currency',
+  const locales = localeProp ?? locale;
+  const formatKey = JSON.stringify([
+    Intl.getCanonicalLocales(locales === undefined ? [] : [locales].flat().map(String)),
     currency,
-  });
+    formatOptions ?? {},
+  ]);
+  const formatter = useMemo(() => {
+    const [tags, currency, options] = JSON.parse(formatKey) as [
+      string[],
+      string,
+      BillingTogglePriceProps['formatOptions'],
+    ];
+    return new Intl.NumberFormat(tags, { ...options, style: 'currency', currency });
+  }, [formatKey]);
   const formatted = formatter.format(amount);
   const hasPrevious = was !== undefined && Number.isFinite(was) && was > amount;
   if (hasPrevious && !previousLabel)
@@ -416,14 +428,9 @@ function BillingTogglePrice({
             <del
               {...slotProps?.previous}
               data-ui="billing-toggle-previous"
-              aria-describedby={[slotProps?.previous?.['aria-describedby'], previousId]
-                .filter(Boolean)
-                .join(' ')}
               css={[previousStyle, slotProps?.previous?.css]}
             >
-              <span id={previousId} css={visuallyHiddenStyle}>
-                {previousLabel}
-              </span>
+              <span css={visuallyHiddenStyle}>{previousLabel}</span>
               {formatter.format(was)}
             </del>
           )}

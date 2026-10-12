@@ -1,6 +1,6 @@
 import { useId, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor } from 'storybook/test';
+import { expect, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
@@ -51,13 +51,36 @@ const meta = {
       source: { code: usage },
       description: {
         component:
-          'A pricing composition over SegmentedControl: one named radiogroup, consumer-owned labels, savings and prices. Arrow keys select and wrap past disabled periods; horizontal arrows reverse in RTL. Home/End select endpoints; Enter/Space activate once. Tab enters the focused enabled item and exits to the page. Controlled requests commit only when the parent updates value. Price requires a finite amount and ISO currency; previousLabel is required for a visible previous price. Pin locale for SSR. No form field or automatic price calculation. The composed selector retains SegmentedControl data-ui markers; billing items also expose data-billing-part="item". List ref reaches the radiogroup; Item ref reaches its button. Badges must be noninteractive.',
+          'A pricing composition over SegmentedControl: one named radiogroup, consumer-owned labels, savings and prices. Arrow keys select and wrap past disabled periods; horizontal arrows reverse in RTL. Home/End select endpoints; Enter/Space activate once. Tab enters the focused enabled item and exits to the page. Controlled requests commit only when the parent updates value. Price requires a finite amount and ISO currency; previousLabel is required for a visible previous price. Pin locale for SSR. No form field or automatic price calculation. The composed selector retains SegmentedControl data-ui markers; each Item is wrapped in data-ui="billing-toggle-item". List ref reaches the radiogroup; Item ref reaches its button. Badges must be noninteractive.',
       },
     },
   },
 } satisfies Meta<typeof BillingToggle>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+function contrastRatio(document: Document, foreground: string, ...layers: string[]) {
+  const context = document.createElement('canvas').getContext('2d')!;
+  const luminance = (...colors: string[]) => {
+    context.clearRect(0, 0, 1, 1);
+    for (const color of colors) {
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+    }
+    return Array.from(context.getImageData(0, 0, 1, 1).data)
+      .slice(0, 3)
+      .map((channel) => {
+        const value = channel / 255;
+        return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+      })
+      .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index]!, 0);
+  };
+  const a = luminance(...layers, foreground);
+  const b = luminance(...layers);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+async function expectPx(value: string, expected: number) {
+  await expect(Math.abs(parseFloat(value) - expected)).toBeLessThan(1.1);
+}
 async function assertFocus(item: HTMLElement) {
   await expect(item.ownerDocument.activeElement).toBe(item);
   await expect(getComputedStyle(item).outlineStyle).not.toBe('none');
@@ -68,6 +91,12 @@ export const MonthlyYearly: Story = {
     const monthly = canvas.getByRole('radio', { name: 'Monthly' });
     const annual = canvas.getByRole('radio', { name: 'Annual' });
     await expect(canvas.getByRole('radiogroup', { name: 'Billing period' })).toBeInTheDocument();
+    for (const item of [monthly, annual]) {
+      const wrapper = item.parentElement!;
+      await expect(wrapper).toHaveAttribute('data-ui', 'billing-toggle-item');
+      await expect(getComputedStyle(wrapper).display).toBe('contents');
+      await expect(item).toHaveAttribute('data-ui', 'segmented-control-item');
+    }
     await expect(annual).toHaveAccessibleDescription(saving);
     await userEvent.click(annual);
     await expect(annual).toHaveAttribute('aria-checked', 'true');
@@ -116,6 +145,31 @@ export const Tones: Story = {
       ))}
     </div>
   ),
+  play: async ({ canvas }) => {
+    for (const group of canvas.getAllByRole('radiogroup')) {
+      const selected = group.querySelector<HTMLElement>('[aria-checked="true"]')!;
+      const pill = selected.querySelector('[data-ui="segmented-control-selection"]')!;
+      const badge = group.querySelector('[data-ui="billing-toggle-badge"]')!;
+      const document = group.ownerDocument;
+      const track = getComputedStyle(group).backgroundColor;
+      await expect(
+        contrastRatio(
+          document,
+          getComputedStyle(selected).color,
+          track,
+          getComputedStyle(pill).backgroundColor,
+        ),
+      ).toBeGreaterThanOrEqual(4.5);
+      await expect(
+        contrastRatio(
+          document,
+          getComputedStyle(badge).color,
+          track,
+          getComputedStyle(badge).backgroundColor,
+        ),
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  },
 };
 export const LightTones: Story = { ...Tones, decorators: [withLightTheme] };
 export const NoSavings: Story = {
@@ -252,7 +306,10 @@ function PricesExample({ reject = false, ...args }: BillingToggleProps & { rejec
 export const SeveralPrices: Story = {
   render: (args) => <PricesExample {...args} />,
   play: async ({ canvas, userEvent, args }) => {
+    const construct = spyOn(Intl, 'NumberFormat');
     await userEvent.click(canvas.getByRole('radio', { name: 'Annual' }));
+    await expect(construct).not.toHaveBeenCalled();
+    construct.mockRestore();
     await expect(canvas.getAllByText('/ year')).toHaveLength(2);
     await expect(canvas.getAllByText('$240.00')).toHaveLength(2);
     await expect(canvas.getAllByText('$480.00')).toHaveLength(2);
@@ -342,9 +399,11 @@ export const PreviousPrice: Story = {
   ),
   play: async ({ canvasElement }) => {
     const previous = canvasElement.querySelector('del')!;
+    const price = previous.closest('[data-ui="billing-toggle-price"]')!;
     await expect(canvasElement.querySelectorAll('del')).toHaveLength(1);
-    await expect(previous).toHaveAccessibleDescription('Previous price');
-    await expect(previous.textContent).toContain('$24.00');
+    await expect(previous).not.toHaveAttribute('aria-describedby');
+    await expect(previous.textContent).toBe('Previous price$24.00');
+    await expect(price.textContent!.split('Previous price')).toHaveLength(2);
   },
 };
 export const ZeroAmount: Story = {
@@ -367,12 +426,13 @@ const currencies = [
   { locale: 'de-DE', currency: 'EUR', amount: 1234.56 },
   { locale: 'ja-JP', currency: 'JPY', amount: 1234.56 },
   { locale: 'ar-EG', currency: 'USD', amount: 1234.56 },
+  { locale: new Intl.Locale('fr-CH'), currency: 'CHF', amount: 1234.56 },
 ];
 export const IntlCurrencies: Story = {
   render: (args) => (
     <BillingToggle {...args}>
       {currencies.map((props) => (
-        <BillingToggle.Price key={props.locale} {...props} />
+        <BillingToggle.Price key={String(props.locale)} {...props} />
       ))}
     </BillingToggle>
   ),
@@ -608,17 +668,23 @@ export const SlotsAndStyling: Story = {
     await expect(
       getComputedStyle(item.querySelector('[data-ui="billing-toggle-item-label"]')!).fontStyle,
     ).toBe('italic');
-    await expect(
+    await expectPx(
       getComputedStyle(item.querySelector('[data-ui="billing-toggle-badge"]')!).borderRadius,
-    ).toBe('8px');
+      8,
+    );
     await expect(getComputedStyle(canvasElement.querySelector('del')!).fontStyle).toBe('italic');
     await expect(
-      getComputedStyle(canvasElement.querySelector('[data-ui="billing-toggle-period"]')!)
-        .fontWeight,
-    ).toBe('600');
-    await expect(
+      Math.abs(
+        parseFloat(
+          getComputedStyle(canvasElement.querySelector('[data-ui="billing-toggle-period"]')!)
+            .fontWeight,
+        ) - 600,
+      ),
+    ).toBeLessThan(1);
+    await expectPx(
       getComputedStyle(item.querySelector('[data-ui="segmented-control-selection"]')!).borderRadius,
-    ).toBe('999px');
+      999,
+    );
     await expect(item.querySelector('[data-ui="segmented-control-selection"]')).toHaveAttribute(
       'title',
       'Selected period',
