@@ -70,6 +70,8 @@ const paperStyle = css({
 
 const dimmedStyle = css({ opacity: 0.55 });
 
+const backMaterialStyle = css({ backgroundColor: vars.color.surfaceRaised });
+
 const layerStyle = css({
   position: 'absolute',
   inset: 0,
@@ -161,7 +163,11 @@ export function GameCard({
   const hidden = resolvedFace === 'back' || value === undefined;
 
   return (
-    <WithSx className={className} styles={[rootStyle, paperStyle, sizeStyles[size], dimmed && dimmedStyle]} sx={sx}>
+    <WithSx
+      className={className}
+      styles={[rootStyle, paperStyle, hidden && backMaterialStyle, sizeStyles[size], dimmed && dimmedStyle]}
+      sx={sx}
+    >
       {(rootClass) => (
         <div
           {...rest}
