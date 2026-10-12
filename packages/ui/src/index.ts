@@ -14,6 +14,7 @@ export * from './components/chip-group';
 export * from './components/code-block';
 export * from './components/command-palette';
 export * from './components/combobox';
+export * from './components/comment-thread';
 export * from './components/container';
 export * from './components/copy-button';
 export * from './components/countdown';
