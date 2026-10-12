@@ -47,7 +47,7 @@ import {
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
-import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
+import { listboxItemStateStyle, listboxScrollStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
@@ -158,6 +158,7 @@ const itemStyle = css({
   alignItems: 'center',
   inlineSize: '100%',
   minBlockSize: '32px',
+  flexShrink: 0,
   border: 0,
   borderRadius: vars.radius.sm,
   backgroundColor: 'transparent',
@@ -389,7 +390,7 @@ export function MenuContentPart({
 }
 
 function MenuContent(props: MenuContentProps) {
-  return <MenuContentPart {...props} family="Menu" marker="menu" styles={listboxSurfaceStyle} />;
+  return <MenuContentPart {...props} family="Menu" marker="menu" styles={[listboxSurfaceStyle, listboxScrollStyle]} />;
 }
 
 MenuContent.displayName = 'Menu.Content';
