@@ -39,6 +39,7 @@ export * from './components/filter-toolbar';
 export * from './components/flex';
 export * from './components/flip-game-card';
 export * from './components/game-card';
+export * from './components/game-hand';
 export * from './components/game-table';
 export * from './components/hold-to-confirm';
 export * from './components/image-compare';

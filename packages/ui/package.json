@@ -65,6 +65,7 @@
     "./flex": { "types": "./src/components/flex/index.ts", "import": "./src/components/flex/index.ts" },
     "./flip-game-card": { "types": "./src/components/flip-game-card/index.ts", "import": "./src/components/flip-game-card/index.ts" },
     "./game-card": { "types": "./src/components/game-card/index.ts", "import": "./src/components/game-card/index.ts" },
+    "./game-hand": { "types": "./src/components/game-hand/index.ts", "import": "./src/components/game-hand/index.ts" },
     "./game-table": { "types": "./src/components/game-table/index.ts", "import": "./src/components/game-table/index.ts" },
     "./hold-to-confirm": { "types": "./src/components/hold-to-confirm/index.ts", "import": "./src/components/hold-to-confirm/index.ts" },
     "./image-compare": { "types": "./src/components/image-compare/index.ts", "import": "./src/components/image-compare/index.ts" },
