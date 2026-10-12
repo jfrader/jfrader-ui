@@ -123,11 +123,12 @@ A surface can paint the dark family whatever the page theme is: dark panel on a 
 
 ```tsx
 <Card appearance="contrast">{/* … */}</Card>
-<Drawer.Panel appearance="default">{/* back to the page theme */}</Drawer.Panel>
+<Card appearance="default">{/* back to the theme's own palette */}</Card>
 ```
 
 - Text, borders, control boundaries, wells and native `color-scheme` inside the surface come from the palette; nothing to override per component.
 - The palette crosses portals: a Select, Menu or Popover opened inside a contrast surface stays dark, on the page it is opened from.
+- Omitted, `appearance` inherits: a surface nested inside a contrast one stays contrast. `appearance="default"` returns that surface to the theme's own palette.
 - A nested `ThemeRoot` keeps the enclosing palette unless it names one, so an overlay host inside a drawer needs only `portalContainer`.
 
 ### Scoped theming and overlays

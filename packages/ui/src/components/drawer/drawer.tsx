@@ -45,7 +45,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { contrastSurfaceStyle, modalShellReset, raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { AppearanceScope, type AppearanceName } from '../../styling/theme-scope';
+import { AppearanceScope, useSurfaceAppearance, type AppearanceName } from '../../styling/theme-scope';
 import { triggerStyle } from '../../styling/trigger-style';
 import {
   omitNativeOpen,
@@ -79,7 +79,10 @@ export interface DrawerContentProps extends Omit<ComponentPropsWithRef<'dialog'>
   withDescription?: boolean;
 }
 export interface DrawerPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
-  /** `contrast` (default) paints the dark family for the edge surface on any page theme. */
+  /**
+   * `contrast` (default) paints the dark family for the edge surface on any page theme;
+   * `default` returns to the theme's own palette.
+   */
   appearance?: AppearanceName;
 }
 export interface DrawerHeaderProps extends ComponentPropsWithRef<'div'>, SxProps {}
@@ -674,16 +677,23 @@ function DrawerPanel({ ref, className, appearance = 'contrast', sx, ...props }: 
   const panelRef = useContext(DrawerSurfaceContext)?.panelRef;
   const mergedRef = useMergeRefs([panelRef, ref]);
   const inline = side === 'inline-start' || side === 'inline-end';
+  const surfaceAppearance = useSurfaceAppearance(appearance);
 
   return (
-    <AppearanceScope appearance={appearance}>
+    <AppearanceScope appearance={surfaceAppearance}>
       <WithSx
         className={className}
         styles={[panelStyle, panelSideStyles[side], inline && panelSizeStyles[size], contrastSurfaceStyle]}
         sx={sx}
       >
         {(className) => (
-          <div {...props} ref={mergedRef} data-ui="drawer-panel" data-appearance={appearance} className={className} />
+          <div
+            {...props}
+            ref={mergedRef}
+            data-ui="drawer-panel"
+            data-appearance={surfaceAppearance}
+            className={className}
+          />
         )}
       </WithSx>
     </AppearanceScope>

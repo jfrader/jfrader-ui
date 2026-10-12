@@ -280,6 +280,7 @@ export const ContrastScope: Story = {
     await expectContrastSurface(scopeRoot, 'light', vars.color.surface);
 
     // A nested root keeps the enclosing palette; naming `default` returns to the page theme's surface.
+    await expect(nested.closest('[data-ui="theme-root"]')).toHaveAttribute('data-appearance', 'contrast');
     await expect(nested.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-theme', 'light');
     await expectContrastSurface(nested, 'light');
     await expect(page.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'default');

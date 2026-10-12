@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
@@ -8,6 +8,7 @@ import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-
 import { Checkbox } from '../checkbox';
 import { Dialog } from '../dialog';
 import { Popover } from '../popover';
+import { Select } from '../select';
 import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
 import { Drawer, type DrawerContentProps, type DrawerPanelProps, type DrawerProps, type DrawerSize } from './index';
@@ -25,6 +26,11 @@ const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px
 const fieldStackStyle = {
   display: 'grid',
   gap: vars.space[4],
+} satisfies CSSProperties;
+
+const fieldLabelStyle = {
+  margin: 0,
+  fontSize: vars.textSize.sm,
 } satisfies CSSProperties;
 
 const meta = {
@@ -459,6 +465,8 @@ export const LightTheme: Story = {
     // The panel paints the contrast palette by default: the dark family on a light page.
     await expect(panel).toHaveAttribute('data-appearance', 'contrast');
     await expectContrastSurface(panel, 'light');
+    await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
+    await expect(getComputedStyle(panel).colorScheme).toBe('dark');
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);
   },
@@ -471,6 +479,8 @@ export const ContrastPanelDark: Story = {
     // On a dark page the panel is elevated charcoal; the palette values are the same as on a light page.
     await expect(panel).toHaveAttribute('data-appearance', 'contrast');
     await expectContrastSurface(panel, 'dark');
+    await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
+    await expect(getComputedStyle(panel).colorScheme).toBe('dark');
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);
   },
@@ -979,6 +989,63 @@ export const ContrastScopedPopover: Story = {
     await userEvent.keyboard('{Escape>}');
     requestEscape(dialog);
     await userEvent.keyboard('{/Escape}');
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+function NestedSelectBody() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  const labelId = useId();
+  return (
+    <div style={fieldStackStyle}>
+      <TextField label="Owner" />
+      <ThemeRoot portalContainer={host}>
+        <p id={labelId} style={fieldLabelStyle}>
+          Status
+        </p>
+        <Select>
+          <Select.Trigger aria-labelledby={labelId} style={FIXTURE_BUTTON}>
+            <Select.Value placeholder="Choose a status" />
+          </Select.Trigger>
+          <Select.Content>
+            {STATUSES.map((status) => (
+              <Select.Item key={status} value={status}>
+                {status}
+              </Select.Item>
+            ))}
+          </Select.Content>
+        </Select>
+        <div ref={setHost} />
+      </ThemeRoot>
+    </div>
+  );
+}
+NestedSelectBody.displayName = 'NestedSelectBody';
+
+export const ContrastSelectPanel: Story = {
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  render: (args) => <DrawerExample {...args} body={<NestedSelectBody />} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const { dialog, canvas, panel, trigger } = await openDrawer({ canvasElement, userEvent });
+    await userEvent.click(canvas.getByRole('combobox', { name: 'Status' }));
+    const listbox = await within(dialog).findByRole('listbox', { name: 'Status' });
+
+    // The open select keeps the panel palette: boundary, popup and panel agree on a light page.
+    await expect(listbox.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(listbox, 'light');
+    await expectContrastSurface(panel, 'light');
+    await expectContrastSurface(canvas.getByRole('textbox', { name: 'Owner' }), 'light');
+
+    // The first Escape belongs to the open select; the drawer stays open on the same palette.
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(within(dialog).queryByRole('listbox')).toBeNull());
+    await expect(dialog).toHaveAttribute('open');
+    await expectContrastSurface(panel, 'light');
+
+    // The drawer closes with its own affordance here: with a Select inside, its Escape cancel is dropped
+    // while the Select's portal stays mounted — tracked as GURI-2293, not this surface work.
+    await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);
   },
 };

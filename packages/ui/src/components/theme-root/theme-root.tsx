@@ -4,6 +4,7 @@ import { contrastSurfaceStyle } from '../../styling/surface';
 import {
   ThemeScopeContext,
   themeScopeStyle,
+  useSurfaceAppearance,
   type AppearanceName,
   type ThemeName,
 } from '../../styling/theme-scope';
@@ -15,7 +16,7 @@ export interface ThemeRootProps extends ComponentPropsWithRef<'div'>, SxProps {
   theme?: ThemeName;
   /**
    * `contrast` paints the dark family for this subtree on any page theme. Omitted: the enclosing
-   * scope's appearance, else `default`.
+   * scope's appearance, else the theme's own. `default` returns to the theme's own palette.
    */
   appearance?: AppearanceName;
   /**
@@ -43,7 +44,7 @@ export function ThemeRoot({
   const resolvedContainer = portalContainer === undefined ? parent?.portalContainer : portalContainer;
   // A nested root keeps the enclosing palette unless it names one, so an overlay host inside a
   // contrast surface stays contrast without repeating the prop.
-  const resolvedAppearance = appearance ?? parent?.appearance ?? 'default';
+  const resolvedAppearance = useSurfaceAppearance(appearance);
   const scope = useMemo(
     () => ({ theme, appearance: resolvedAppearance, portalContainer: resolvedContainer }),
     [theme, resolvedAppearance, resolvedContainer],

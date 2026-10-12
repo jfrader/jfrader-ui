@@ -1,4 +1,4 @@
-// Named-theme scope shared by ThemeRoot and portaled content. Token variables are scoped by
+// Named-theme scope shared by scope roots and portaled content. Token variables are scoped by
 // `[data-theme]` and `[data-appearance]` and inherit through DOM parents, so content portaled out of
 // a scope root (to the body or a `portalContainer`) loses both. Scope roots publish what they set
 // through context; ThemeBoundary re-applies it inside the portal exactly like the root does. Only the
@@ -10,7 +10,7 @@ import { contrastSurfaceStyle } from './surface';
 
 export type ThemeName = 'dark' | 'light';
 
-/** Surface palette in scope: `contrast` paints the dark family on any page theme. */
+/** Surface palette in scope: `contrast` paints the dark family on any page theme, `default` its own. */
 export type AppearanceName = 'default' | 'contrast';
 
 export interface ThemeScope {
@@ -28,6 +28,15 @@ export function useThemeScope(): ThemeScope | null {
   return useContext(ThemeScopeContext);
 }
 
+/**
+ * The appearance a surface paints: its own value, else the enclosing scope's, else the theme's own.
+ * `undefined` inherits, so a surface nested in a contrast one stays contrast unless it says otherwise.
+ */
+export function useSurfaceAppearance(appearance?: AppearanceName): AppearanceName {
+  const parent = useContext(ThemeScopeContext);
+  return appearance ?? parent?.appearance ?? 'default';
+}
+
 /** What a scope root sets besides the attributes: inherited text color and native `color-scheme`. */
 export const themeScopeStyle = css({
   color: vars.color.text,
@@ -42,8 +51,8 @@ export const themeScopeStyle = css({
 const boundaryStyle = css({ display: 'contents' });
 
 /**
- * Publishes an `appearance` to descendants (portaled overlays included) without rendering a box.
- * Merges over the enclosing scope, so the theme and `portalContainer` keep flowing.
+ * Publishes a surface's resolved appearance to descendants (portaled overlays included) without
+ * rendering a box, and only when it changes the enclosing scope.
  */
 export function AppearanceScope({ appearance, children }: { appearance: AppearanceName; children?: ReactNode }) {
   const parent = useContext(ThemeScopeContext);

@@ -9,7 +9,7 @@ import { createContext, useContext, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { contrastSurfaceStyle, raisedSurface } from '../../styling/surface';
-import { AppearanceScope, type AppearanceName } from '../../styling/theme-scope';
+import { AppearanceScope, useSurfaceAppearance, type AppearanceName } from '../../styling/theme-scope';
 import { WithSx, type SxProps } from '../../styling/sx';
 
 export type CardVariant = 'flat' | 'raised';
@@ -32,7 +32,10 @@ export interface CardSlotProps {
 
 export interface CardProps extends ComponentPropsWithRef<'div'>, SxProps {
   variant?: CardVariant;
-  /** `contrast` paints the dark family for this card on any page theme. */
+  /**
+   * `contrast` paints the dark family for this card on any page theme; omitted, the card keeps the
+   * enclosing surface's palette. `default` returns to the theme's own palette.
+   */
   appearance?: AppearanceName;
   slotProps?: CardSlotProps;
 }
@@ -107,17 +110,26 @@ const footerStyle = css({
   '& > :only-child': { marginInlineStart: 'auto' },
 });
 
-function CardRoot({ ref, variant = 'raised', appearance = 'default', slotProps, className, sx, ...rest }: CardProps) {
+function CardRoot({ ref, variant = 'raised', appearance, slotProps, className, sx, ...rest }: CardProps) {
+  const surfaceAppearance = useSurfaceAppearance(appearance);
+
   return (
     <CardSlotContext.Provider value={slotProps}>
-      <AppearanceScope appearance={appearance}>
+      <AppearanceScope appearance={surfaceAppearance}>
         <WithSx
           className={joinClassNames(slotProps?.root?.className, className)}
           styles={[rootStyle, variantStyles[variant], contrastSurfaceStyle, slotProps?.root?.css]}
           sx={sx}
         >
           {(className) => (
-            <div {...rest} ref={ref} data-ui="card" data-variant={variant} data-appearance={appearance} className={className} />
+            <div
+              {...rest}
+              ref={ref}
+              data-ui="card"
+              data-variant={variant}
+              data-appearance={surfaceAppearance}
+              className={className}
+            />
           )}
         </WithSx>
       </AppearanceScope>
