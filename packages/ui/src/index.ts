@@ -38,6 +38,7 @@ export * from './components/filter-toolbar';
 export * from './components/flex';
 export * from './components/hold-to-confirm';
 export * from './components/image-compare';
+export * from './components/in-view-title';
 export * from './components/inline-edit';
 export * from './components/hover-card';
 export * from './components/json-viewer';
