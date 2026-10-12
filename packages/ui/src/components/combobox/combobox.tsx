@@ -149,6 +149,7 @@ interface ComboboxContextValue {
   listId: string;
   setListId: Dispatch<SetStateAction<string>>;
   setInputDisabled: Dispatch<SetStateAction<boolean>>;
+  setInputForm: Dispatch<SetStateAction<string | undefined>>;
   open: boolean;
   selectedValue: string | null;
   activeIndex: number | null;
@@ -219,6 +220,7 @@ function ComboboxOverlay({
   const baseId = useId();
   const [listId, setListId] = useState(`${baseId}-listbox`);
   const [inputDisabled, setInputDisabled] = useState(false);
+  const [inputForm, setInputForm] = useState<string>();
   const [selectedValue = null, requestValueChange] = useControlledState<string | null>(
     valueProp,
     defaultValue ?? null,
@@ -285,6 +287,7 @@ function ComboboxOverlay({
       listId,
       setListId,
       setInputDisabled,
+      setInputForm,
       open,
       selectedValue,
       activeIndex,
@@ -353,7 +356,9 @@ function ComboboxOverlay({
   return (
     <ComboboxContext.Provider value={value}>
       {children}
-      {name !== undefined && <input type="hidden" name={name} value={selectedValue ?? ''} disabled={inputDisabled} />}
+      {name !== undefined && (
+        <input type="hidden" name={name} form={inputForm} value={selectedValue ?? ''} disabled={inputDisabled} />
+      )}
     </ComboboxContext.Provider>
   );
 }
@@ -404,6 +409,7 @@ function ComboboxInput({
     requestOpenChange,
     setInputLabelling,
     setInputDisabled,
+    setInputForm,
   } = useComboboxContext('Input');
   // The floating reference is typed for button triggers; any element positions the same.
   const mergedRef = useMergeRefs([refs.setReference as (node: Element | null) => void, ref]);
@@ -441,6 +447,11 @@ function ComboboxInput({
     setInputDisabled(disabled);
     return () => setInputDisabled(false);
   }, [disabled, setInputDisabled]);
+
+  useLayoutEffect(() => {
+    setInputForm(rest.form);
+    return () => setInputForm(undefined);
+  }, [rest.form, setInputForm]);
 
   // Selections made from the list (pointer) write the label through this handle.
   useLayoutEffect(() => {
@@ -503,9 +514,22 @@ function ComboboxInput({
     if (open) requestOpenChange(false);
   };
 
+  const referenceProps = getReferenceProps({
+    ...rest,
+    onKeyDown: handleKeyDown,
+    onBlur: handleBlur,
+  }) as ComponentPropsWithRef<'input'>;
+
   return (
     <TextField
-      {...getReferenceProps({ ...rest, onKeyDown: handleKeyDown, onBlur: handleBlur })}
+      {...referenceProps}
+      onKeyDown={(event) => {
+        if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) {
+          onKeyDown?.(event);
+          return;
+        }
+        referenceProps.onKeyDown?.(event);
+      }}
       ref={mergedRef}
       id={id}
       label={hasLabel ? <span id={labelId}>{label}</span> : label}

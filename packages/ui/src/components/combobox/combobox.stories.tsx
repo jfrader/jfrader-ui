@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -171,6 +171,44 @@ export const Clear: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith(null);
     await expectClosed(canvasElement);
+  },
+};
+
+export const Composition: Story = {
+  args: { onValueChange: fn(), onInputChange: fn() },
+  render: (args) => <ComboboxExample {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const input = await focusInput(canvasElement);
+    await userEvent.keyboard('ap');
+    await expectActive(canvasElement, 'Apple');
+    await fireEvent.compositionStart(input);
+    for (const key of ['Enter', 'ArrowDown', 'End', 'Escape']) {
+      await fireEvent.keyDown(input, { key, isComposing: true });
+      await expectActive(canvasElement, 'Apple');
+      await expect(input).toHaveValue('ap');
+    }
+    await fireEvent.compositionEnd(input);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('apple');
+    await expectClosed(canvasElement);
+  },
+};
+
+export const ExternalForm: Story = {
+  render: (args) => (
+    <>
+      <form id="combobox-order" aria-label="Order" />
+      <ComboboxExample {...args} name="fruit" defaultValue="apple" inputProps={{ form: 'combobox-order' }} />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const form = within(canvasElement).getByRole('form', { name: 'Order' }) as HTMLFormElement;
+    await expect(new FormData(form).get('fruit')).toBe('apple');
+    await focusInput(canvasElement);
+    await userEvent.keyboard('{ArrowDown}{End}{Enter}');
+    await expect(new FormData(form).get('fruit')).toBe('cherry');
   },
 };
 
