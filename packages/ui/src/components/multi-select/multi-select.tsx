@@ -95,6 +95,7 @@ interface OptionRecord {
 }
 interface TriggerName {
   id: string;
+  form?: string;
   labelledBy?: string;
   label?: string;
 }
@@ -127,6 +128,7 @@ const chipStyle = css({
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   minInlineSize: 0,
+  [FORCED_COLORS]: { border: '1px solid CanvasText' },
 });
 const textStyle = css({
   fontFamily: vars.font.sans,
@@ -148,6 +150,7 @@ const panelStyle = css({
   },
 });
 const optionStyle = css({
+  overflowWrap: 'anywhere',
   [FORCED_COLORS]: { '&[data-active]': { outlineColor: 'Highlight' } },
 });
 const clearStyle = css({
@@ -393,10 +396,18 @@ function MultiSelectOverlay(props: MultiSelectProps) {
       </span>
       {props.name !== undefined &&
         model.selected.map((value) => (
-          <input key={value} type="hidden" name={props.name} value={value} disabled={model.disabled} />
+          <input
+            key={value}
+            type="hidden"
+            name={props.name}
+            value={value}
+            disabled={model.disabled}
+            form={model.triggerName?.form}
+          />
         ))}
       <input
         ref={model.proxyRef}
+        form={model.triggerName?.form}
         type="text"
         css={visuallyHiddenStyle}
         tabIndex={-1}
@@ -449,12 +460,12 @@ function MultiSelectTrigger({
   const buffer = useRef({ text: '', time: 0 });
   const heldToggle = useRef(false);
   useLayoutEffect(() => {
-    m.setTriggerName({ id, labelledBy, label });
+    m.setTriggerName({ id, labelledBy, label, form: rest.form });
     const trigger = m.refs.domReference.current;
     if (trigger)
       m.setDirection(trigger.ownerDocument.defaultView?.getComputedStyle(trigger).direction ?? 'ltr');
     return () => m.setTriggerName(null);
-  }, [id, labelledBy, label, m.setTriggerName]);
+  }, [id, labelledBy, label, rest.form, m.setTriggerName]);
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     onKeyDown?.(event);
     if (event.defaultPrevented || m.disabled || disabledProp || event.nativeEvent.isComposing) return;
