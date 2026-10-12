@@ -39,7 +39,7 @@ import {
   useMergeRefs,
   type UseInteractionsReturn,
 } from '@floating-ui/react';
-import { listboxItemStyle } from '../../styling/listbox-style';
+import { listboxItemStateStyle, listboxItemStyle } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -114,6 +114,7 @@ export interface CommandPaletteItemProps extends Omit<ComponentPropsWithRef<'div
 interface ItemRecord {
   index: number;
   label: string;
+  disabled: boolean;
   keywords: string | undefined;
   groupId: string | null;
 }
@@ -208,7 +209,7 @@ function CommandPaletteOverlay({
         (record.keywords !== undefined && filter(record.keywords, query));
       if (!matches) return;
       values.add(value);
-      indices.push(record.index);
+      if (!record.disabled) indices.push(record.index);
       if (record.groupId !== null) groups.add(record.groupId);
     });
     indices.sort((a, b) => a - b);
@@ -239,7 +240,7 @@ function CommandPaletteOverlay({
   });
   const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([listNavigation]);
 
-  const matchCount = matchedIndices.length;
+  const matchCount = matchedValues.size;
   const announcement = queryChanged ? formatResultCount(matchCount) : '';
 
   const context = useMemo<CommandPaletteContextValue>(
@@ -536,6 +537,7 @@ function CommandPaletteItem({
   value,
   onSelect,
   keywords,
+  'aria-disabled': ariaDisabled,
   onClick,
   children,
   className,
@@ -545,10 +547,12 @@ function CommandPaletteItem({
   const { baseId, activeIndex, matchedValues, getItemProps, setOpen, registration } =
     useCommandPaletteContext('Item');
   const groupId = useContext(CommandPaletteGroupContext);
+  const disabled = ariaDisabled === true || ariaDisabled === 'true';
   const elementRef = useRef<HTMLDivElement | null>(null);
   const { ref: listItemRef, index } = useCollectionItem(value, registration, elementRef, (itemIndex, label) => ({
     index: itemIndex,
     label,
+    disabled,
     keywords,
     groupId,
   }));
@@ -557,18 +561,19 @@ function CommandPaletteItem({
 
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     onClick?.(event);
-    if (event.defaultPrevented) return;
+    if (event.defaultPrevented || disabled) return;
     onSelect?.();
     setOpen(false);
   };
 
   return (
-    <WithSx className={className} styles={[listboxItemStyle, itemStyle]} sx={sx}>
+    <WithSx className={className} styles={[listboxItemStyle, listboxItemStateStyle, itemStyle]} sx={sx}>
       {(className) => (
         <div
           {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
           ref={mergedRef}
           role="option"
+          aria-disabled={ariaDisabled}
           aria-selected={isActive}
           hidden={!matchedValues.has(value)}
           data-active={isActive || undefined}
