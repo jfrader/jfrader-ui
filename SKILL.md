@@ -422,6 +422,10 @@ MentionInput's introduction: “Write a message and mention people with @ or cha
   Put a warning that changes how someone uses an example beside that example or prop too.
 - Describe each story's difference or the action to try. Skip “This story demonstrates” and
   test-result narration. Story JSDoc appears in the docs; keep test rationale in code comments.
+- Docs pages render every story of a component at once. Keep an overlay whose initial state covers
+  the page out of that page: render it inside its own demo surface (`contained` with a positioned
+  host), or exclude the story with `tags: ['!autodocs']` when the overlay has no contained mode.
+  `pnpm --filter @jfrader/storybook verify:docs:layout` checks the rendered pages.
 - Prop JSDoc starts with what the prop changes. Add a default, unit, or exception when needed.
   Keep API names exact and use backticks around them.
 - Prefer “Press Escape to close” to “Escape dismissal is supported”. Address the reader as
