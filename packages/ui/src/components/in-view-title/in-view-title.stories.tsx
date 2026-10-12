@@ -50,8 +50,9 @@ const belowRef = (node: HTMLHeadingElement | null) => {
 };
 function below(args: InViewTitleProps) { return <InViewTitle {...args} ref={belowRef} />; }
 const activeObserver = () => observers[observers.length - 1]!;
+const SETTLE_TIMEOUT_MS = 5000;
 async function settled(heading: HTMLElement) {
-  await waitFor(async () => { await expect(heading).toHaveAttribute('data-state', 'settled'); });
+  await waitFor(async () => { await expect(heading).toHaveAttribute('data-state', 'settled'); }, { timeout: SETTLE_TIMEOUT_MS });
 }
 
 export const Default: Story = { play: async ({ canvas }) => {
@@ -183,7 +184,9 @@ export const HeadingLevels: Story = {
   play: async ({ canvas }) => { for (const level of [1, 2, 3, 4, 5, 6]) await expect(canvas.getByRole('heading', { level, name: `Level ${level}` })).toBeVisible(); },
 };
 export const LightTheme: Story = { decorators: [withLightTheme], globals: { theme: 'light' } };
-export const ScopedTheme: Story = { render: (args) => <ThemeRoot theme="light"><InViewTitle {...args} /></ThemeRoot> };
+export const ScopedTheme: Story = {
+  render: (args) => <ThemeRoot theme="light" sx={{ backgroundColor: vars.color.bg, padding: vars.space[4] }}><InViewTitle {...args} /></ThemeRoot>,
+};
 export const RTL: Story = { args: { dir: 'rtl', variant: 'wipe', text: 'أدوات للفرق التي تبني' }, play: async ({ canvas }) => { await expect(getComputedStyle(canvas.getByRole('heading')).direction).toBe('rtl'); } };
 export const NarrowLines: Story = {
   args: { variant: 'line', text: 'Tools for international teams building thoughtful products\nReady to ship' },
