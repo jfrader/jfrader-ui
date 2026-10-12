@@ -15,7 +15,7 @@
 
 ### Changed
 
-- Face-down GameCards use red-and-paper diagonal stripes in both themes.
+- GameCard backs use red-and-paper `Pattern` tiles: poker checks by default, or Spanish diagonals via `backPattern={CARD_BACK_PATTERNS.spanish}`. Custom artwork replaces either face.
 
 ### Fixed
 
