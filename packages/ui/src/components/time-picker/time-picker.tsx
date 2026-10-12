@@ -370,7 +370,6 @@ export function TimePicker({
             onOpenChange={(next) => {
               if (!locked && (times.length > 0 || !next)) requestOpen(next);
             }}
-            name={name}
             disabled={effectiveDisabled}
           >
             <Select.Trigger
@@ -467,6 +466,15 @@ export function TimePicker({
               ))}
             </Select.Content>
           </Select>
+          {name !== undefined && (
+            <input
+              type="hidden"
+              name={name}
+              value={value}
+              disabled={effectiveDisabled}
+              form={rest.form ?? control?.form}
+            />
+          )}
           {isRenderable(description) && (
             <span
               {...slotProps?.description}
