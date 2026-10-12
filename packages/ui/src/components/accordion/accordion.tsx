@@ -24,7 +24,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
-import { REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -160,6 +160,13 @@ const triggerStyle = css({
   },
   '&:focus-visible': {
     ...focusRingInset,
+  },
+  [FORCED_COLORS]: {
+    '&::after': {
+      forcedColorAdjust: 'none',
+      borderInlineStartColor: 'ButtonText',
+    },
+    '&:disabled::after': { borderInlineStartColor: 'GrayText' },
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',
