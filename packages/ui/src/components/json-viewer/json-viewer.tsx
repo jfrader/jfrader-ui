@@ -309,7 +309,10 @@ const caretStyle = css({
   '&[data-state]::after': disclosureCaret,
   '&[data-state="open"]::after': { transform: 'rotate(90deg)' },
   '&[data-state="open"]:dir(rtl)::after': { transform: 'rotate(-90deg)' },
-  [REDUCED_MOTION]: { '&::after': { transitionDuration: '0s' } },
+  [REDUCED_MOTION]: { '&[data-state]::after': { transitionDuration: '0s' } },
+  [FORCED_COLORS]: {
+    '&[data-state]::after': { forcedColorAdjust: 'none', color: 'CanvasText' },
+  },
 });
 // JSON text runs resolve their own direction so RTL layouts keep keys, values and counts readable.
 const ownDirection = { unicodeBidi: 'plaintext' } as const;
