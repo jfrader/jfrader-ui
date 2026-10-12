@@ -1,9 +1,13 @@
 {
   "provenance": {
     "source": "trucoshi-client-private/packages/core/src/board/trickLayout.ts",
-    "sourceCommit": "0e7991ce09be3ea26a6db16b59030ffb84fd4709",
+    "sharingCommit": "3e79b7ce6b94f72200904578749a276a17291c1b",
+    "sharingSha256": "ec43050a5ac6f52611125de059acfba352276258fc9d287b40ea9f721c2f0fcf",
+    "fixtureCommit": "c25081897fe544c5b244b954fbe70271770ca964",
+    "repositoryHeadAtVerification": "282aad6261a6b51ab818d8fb27d3bb46c0ad3040",
+    "fixtureState": "Committed blob extracted with git show; reference working-tree file is clean and byte-identical.",
     "sourceSha256": "8a5c9bd97ad0ef336aa36a0a4587e91d163bb7132dddafa72bc196ede0bde735",
-    "method": "Expected values evaluated directly from the read-only reference with tsx; synthetic poker card identities. Match revelation projected into explicit caller-owned data."
+    "method": "git log --follow -- packages/core/src/board/trickLayout.ts verified the sharing commit. git show c25081897fe544c5b244b954fbe70271770ca964:packages/core/src/board/trickLayout.ts produced the pinned fixture source, evaluated with tsx. Sharing-to-fixture diff only appends TRICK_STACK; helper numbers are unchanged. Synthetic poker identities; match revelation projected into caller-owned data."
   },
   "offsets": [
     {

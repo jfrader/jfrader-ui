@@ -119,7 +119,8 @@ export const vars = {
     "easeStandard": "var(--ui-motion-ease-standard)",
     "easePresence": "var(--ui-motion-ease-presence)",
     "easeCardFlip": "var(--ui-motion-ease-card-flip)",
-    "easeTrickStack": "var(--ui-motion-ease-trick-stack)"
+    "easeTrickStack": "var(--ui-motion-ease-trick-stack)",
+    "easeTrickStackShadow": "var(--ui-motion-ease-trick-stack-shadow)"
   },
   "size": {
     "emblemSm": "var(--ui-size-emblem-sm)",

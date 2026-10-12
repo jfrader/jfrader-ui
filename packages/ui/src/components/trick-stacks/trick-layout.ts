@@ -21,16 +21,21 @@ export interface TrickSeatGeometry {
 export const TRICK_STACK = {
   openScale: 1.45,
   openSpreadRatio: 0.52,
+  // trickLayout.ts/getPlayerTableCards caps played and revealed cards at three (not a viewport preset).
   maxCards: 3,
   zIndex: { closed: 40, open: 240, card: 20, openCard: 280 },
 } as const;
 
+// Manual-placement compatibility only. Automatic placement does not consume board presets.
+// Base fields: trucoshi-client-private/packages/core/src/board/config/defaults.ts/DEFAULT_MATCH_CENTER_BASE.
 export const DEFAULT_TRICK_LAYOUT = {
   centerShiftXPercent: -1.2,
   centerShiftYPercent: 1.8,
   playerSpreadXPercent: 42,
   playerSpreadYPercent: 39,
+  // Neutral adapter value, not a complete match profile: layoutModel.ts supplies this from each profile.
   spreadBoost: 0,
+  // Base is zero; MATCH_CENTER_OVERRIDES_BY_PLAYER_COUNT[6] is 7, desktop overrides it to 20.
   sideVerticalSpreadBoost: 0,
   maxJitterPx: 4,
   maxRotationOffsetDeg: 6,

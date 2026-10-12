@@ -123,6 +123,7 @@ export const base = {
     easePresence: 'ease-in-out',
     easeCardFlip: 'ease',
     easeTrickStack: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+    easeTrickStackShadow: 'ease',
   },
   // Component structural sizes; theme-independent, so light shares them.
   size: {
