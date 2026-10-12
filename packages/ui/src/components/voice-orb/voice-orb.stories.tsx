@@ -96,12 +96,72 @@ export const LiveControls: Story = {
   play: async ({ canvasElement }) => {
     const timer = within(canvasElement).getByRole('timer');
     await expect(timer).toHaveAttribute('aria-live', 'off');
-    await expect(timer).toHaveTextContent(
-      new Intl.DurationFormat('en-US', { style: 'digital' }).format({ hours: 1, minutes: 1, seconds: 1 }),
+    await expect(timer).toHaveTextContent('1:01:01');
+    await expect(timer).toHaveAccessibleName('1 hour, 1 minute, 1 second');
+  },
+};
+export const DurationFormatMissing: Story = {
+  beforeEach: () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, 'DurationFormat');
+    Object.defineProperty(Intl, 'DurationFormat', {
+      value: undefined,
+      configurable: true,
+    });
+    return () => {
+      if (descriptor) Object.defineProperty(Intl, 'DurationFormat', descriptor);
+      else Reflect.deleteProperty(Intl, 'DurationFormat');
+    };
+  },
+  render: (args) => (
+    <>
+      {[
+        { locale: 'en-US', elapsed: 3661 },
+        { locale: 'fi', elapsed: 3723 },
+        { locale: 'en-US', elapsed: 108_065 },
+      ].map(({ locale, elapsed }) => (
+        <VoiceOrb {...args} key={`${locale}-${elapsed}`} locale={locale} elapsed={elapsed} defaultActive>
+          <VoiceOrb.Controls aria-label={`${locale} ${elapsed}`} />
+        </VoiceOrb>
+      ))}
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(Reflect.get(Intl, 'DurationFormat')).toBeUndefined();
+    const timer = (name: string) =>
+      within(within(canvasElement).getByRole('group', { name })).getByRole('timer');
+    await expect(timer('en-US 3661')).toHaveTextContent('1:01:01');
+    await expect(timer('en-US 3661')).toHaveAccessibleName(
+      new Intl.ListFormat('en-US', { style: 'long', type: 'conjunction' }).format(
+        ['hour', 'minute', 'second'].map((unit) =>
+          new Intl.NumberFormat('en-US', { style: 'unit', unit, unitDisplay: 'long' }).format(1),
+        ),
+      ),
     );
-    await expect(timer).toHaveAccessibleName(
-      new Intl.DurationFormat('en-US', { style: 'long' }).format({ hours: 1, minutes: 1, seconds: 1 }),
-    );
+    await expect(timer('fi 3723')).toHaveTextContent('1.02.03');
+    await expect(timer('en-US 108065')).toHaveTextContent('30:01:05');
+    await expect(timer('en-US 108065')).toHaveAccessibleName('30 hours, 1 minute, and 5 seconds');
+  },
+};
+function InlineCallbacks({ onStart }: { onStart: (renders: number) => void }) {
+  const [renders, setRenders] = useState(0);
+  return (
+    <>
+      <Button onClick={() => setRenders(renders + 1)}>Rerender</Button>
+      <VoiceOrb state="idle" onStart={() => onStart(renders)}>
+        <VoiceOrb.Controls />
+      </VoiceOrb>
+    </>
+  );
+}
+export const LatestStartCallback: Story = {
+  render: (args) => <InlineCallbacks onStart={args.onStart as (renders: number) => void} />,
+  play: async ({ canvasElement, args, userEvent }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Rerender' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Rerender' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Start voice session' }));
+    await expect(args.onStart).toHaveBeenCalledTimes(1);
+    await expect(args.onStart).toHaveBeenCalledWith(2);
   },
 };
 export const AllVisualSizes: Story = {
@@ -423,6 +483,10 @@ export const ExternalAria: Story = {
     const ids = [];
     for (const root of roots) {
       await expect(root).toHaveAttribute('aria-labelledby', 'orb-label unresolved-label');
+      const visual = root.querySelector('[data-ui="voice-orb-visual"]')!;
+      await expect(visual).toHaveAttribute('aria-labelledby', 'orb-label unresolved-label');
+      await expect(visual).not.toHaveAttribute('aria-label');
+      await expect(visual).toHaveAccessibleName('Assistant session');
       const error = root.querySelector('[role="alert"]')!;
       ids.push(error.id);
       await expect(root.getAttribute('aria-describedby')).toBe(
@@ -535,7 +599,7 @@ export const RefAndStyling: Story = {
       <VoiceOrb.Status sx={{ fontWeight: vars.fontWeight.semibold }} />
       <VoiceOrb.Transcript text="Hello" sx={{ opacity: 0.9 }} />
       <VoiceOrb.Controls
-        sx={{ opacity: 0.75 }}
+        sx={{ opacity: 0.75, gap: vars.space[6] }}
         slotProps={{ start: { css: { paddingInline: vars.space[8] } } }}
       />
     </VoiceOrb>
@@ -549,7 +613,10 @@ export const RefAndStyling: Story = {
     await expect(getComputedStyle(root.querySelector('[data-ui="voice-orb-transcript"]')!).opacity).toBe(
       '0.9',
     );
-    await expect(getComputedStyle(within(canvasElement).getByRole('group')).opacity).toBe('0.75');
+    const group = within(canvasElement).getByRole('group');
+    await expect(getComputedStyle(group).opacity).toBe('0.75');
+    await expect(getComputedStyle(group.firstElementChild!).columnGap).toBe(getComputedStyle(group).columnGap);
+    await expect(getComputedStyle(group.firstElementChild!).columnGap).not.toBe('normal');
     await expect(
       Math.abs(
         parseFloat(getComputedStyle(within(canvasElement).getByRole('button')).paddingInlineStart) - 32,

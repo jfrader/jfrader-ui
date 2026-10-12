@@ -1,4 +1,3 @@
-/// <reference lib="es2025.intl" />
 'use client';
 
 import {
@@ -22,6 +21,7 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useLatestCallback } from '../../utils/use-latest-callback';
 import { isRenderable } from '../../utils/renderable';
 import { Button, type ButtonProps } from '../button';
 
@@ -97,6 +97,13 @@ const DEFAULT_LABELS: VoiceOrbLabels = {
 const GEOMETRY = { sm: '9rem', md: '13rem', lg: '17rem' };
 const MAX_DPR = 2;
 const SPRING = { stiffness: 170, damping: 26 };
+const SECOND_MS = 1000;
+const ELAPSED_UNITS = { hours: 'hour', minutes: 'minute', seconds: 'second' } as const;
+type ElapsedDuration = Record<keyof typeof ELAPSED_UNITS, number>;
+type DurationFormatter = new (
+  locale?: Intl.LocalesArgument,
+  options?: { style: 'digital' | 'long' },
+) => { format(duration: ElapsedDuration): string };
 const STATE_ENERGY: Record<VoiceOrbState, number> = {
   idle: 0,
   connecting: 0.2,
@@ -173,6 +180,14 @@ const controlsStyle = css({
   gap: vars.space[3],
   minInlineSize: 0,
 });
+const layoutStyle = css({
+  display: 'flex',
+  flexWrap: 'inherit',
+  alignItems: 'inherit',
+  justifyContent: 'inherit',
+  gap: 'inherit',
+  minInlineSize: 0,
+});
 const controlStyle = css({
   minBlockSize: vars.space[10],
   blockSize: 'auto',
@@ -215,6 +230,51 @@ function stateLabel(context: OrbContext) {
     ? (context.labels.muted ?? DEFAULT_LABELS.muted!)
     : context.labels.state[context.state];
 }
+/**
+ * Digital and long elapsed-time formatters. Without `Intl.DurationFormat`, the digital form
+ * takes its separators and digits from `Intl.DateTimeFormat` parts (hours from `NumberFormat`
+ * so they can pass 23) and the long form joins `NumberFormat` units with a `ListFormat`
+ * conjunction.
+ */
+function elapsedFormatters(locale: Intl.LocalesArgument | undefined) {
+  const DurationFormat = (Intl as typeof Intl & { DurationFormat?: DurationFormatter }).DurationFormat;
+  if (typeof DurationFormat === 'function') {
+    const digital = new DurationFormat(locale, { style: 'digital' });
+    const spoken = new DurationFormat(locale, { style: 'long' });
+    return {
+      digital: (duration: ElapsedDuration) => digital.format(duration),
+      spoken: (duration: ElapsedDuration) => spoken.format(duration),
+    };
+  }
+  const clock = new Intl.DateTimeFormat(locale, {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+    timeZone: 'UTC',
+  });
+  const hours = new Intl.NumberFormat(locale, { useGrouping: false });
+  const units = (Object.keys(ELAPSED_UNITS) as (keyof ElapsedDuration)[]).map((key) => ({
+    key,
+    format: new Intl.NumberFormat(locale, {
+      style: 'unit',
+      unit: ELAPSED_UNITS[key],
+      unitDisplay: 'long',
+    }),
+  }));
+  const list = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' });
+  return {
+    digital: (duration: ElapsedDuration) =>
+      clock
+        .formatToParts((duration.minutes * 60 + duration.seconds) * SECOND_MS)
+        .map((part) => (part.type === 'hour' ? hours.format(duration.hours) : part.value))
+        .join(''),
+    spoken: (duration: ElapsedDuration) =>
+      list.format(
+        units.filter(({ key }) => duration[key] > 0).map(({ key, format }) => format.format(duration[key])),
+      ),
+  };
+}
 function normalize(value: number | MotionValue<number>) {
   const number = typeof value === 'number' ? value : value.get();
   return Number.isFinite(number) ? Math.max(0, Math.min(1, number)) : 0;
@@ -246,6 +306,8 @@ function VoiceOrbRoot({
   const [muted = false, requestMuted] = useControlledState(mutedProp, defaultMuted, onMutedChange);
   const errorId = useId();
   const hasError = isRenderable(error);
+  const notifyStart = useLatestCallback(onStart);
+  const notifyEnd = useLatestCallback(onEnd);
   const context = useMemo<OrbContext>(
     () => ({
       state,
@@ -259,12 +321,12 @@ function VoiceOrbRoot({
       start: () => {
         if (active || state === 'connecting') return;
         requestActive(true);
-        onStart?.();
+        notifyStart();
       },
       end: () => {
         if (!active) return;
         requestActive(false);
-        onEnd?.();
+        notifyEnd();
       },
       mute: () => {
         if (state !== 'connecting') requestMuted(!muted);
@@ -281,8 +343,8 @@ function VoiceOrbRoot({
       locale,
       requestActive,
       requestMuted,
-      onStart,
-      onEnd,
+      notifyStart,
+      notifyEnd,
     ],
   );
   return (
@@ -468,7 +530,10 @@ function VoiceOrbVisual({
           {...rest}
           ref={ref}
           role="img"
-          aria-label={rest['aria-label'] ?? label ?? stateLabel(context)}
+          aria-label={
+            rest['aria-label'] ??
+            (rest['aria-labelledby'] ? undefined : (label ?? stateLabel(context)))
+          }
           data-ui="voice-orb-visual"
           data-state={context.state}
           className={className}
@@ -586,12 +651,7 @@ function VoiceOrbControls({
     minutes: Math.floor((seconds % 3600) / 60),
     seconds: seconds % 60,
   };
-  const digital = new Intl.DurationFormat(context.locale, {
-    style: 'digital',
-  }).format(duration);
-  const spoken = new Intl.DurationFormat(context.locale, {
-    style: 'long',
-  }).format(duration);
+  const formatters = useMemo(() => elapsedFormatters(context.locale), [context.locale]);
   return (
     <WithSx className={className} styles={controlsStyle} sx={sx}>
       {(className) => (
@@ -613,7 +673,7 @@ function VoiceOrbControls({
               target === startRef.current ? 'start' : target instanceof HTMLButtonElement ? 'live' : null;
           }}
         >
-          <motion.div layout transition={SPRING} css={controlsStyle}>
+          <motion.div layout transition={SPRING} css={layoutStyle}>
             {showLive ? (
               <>
                 <Button
@@ -635,10 +695,10 @@ function VoiceOrbControls({
                   {...slotProps?.timer}
                   role="timer"
                   aria-live="off"
-                  aria-label={slotProps?.timer?.['aria-label'] ?? spoken}
+                  aria-label={slotProps?.timer?.['aria-label'] ?? formatters.spoken(duration)}
                   css={[timerStyle, slotProps?.timer?.css]}
                 >
-                  {digital}
+                  {formatters.digital(duration)}
                 </span>
                 <Button
                   variant="outline"
