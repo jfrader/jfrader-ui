@@ -79,6 +79,8 @@ const tiles = (root: HTMLElement) =>
   Array.from(root.querySelectorAll<HTMLButtonElement>('[data-ui="photo-grid-photo"]'));
 const favorites = (root: HTMLElement) =>
   Array.from(root.querySelectorAll<HTMLButtonElement>('[data-ui="photo-grid-favorite"]'));
+const status = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-ui="photo-grid"] > [role="status"]')!;
 async function focused(element: HTMLElement) {
   await expect(element.ownerDocument.activeElement).toBe(element);
   await expect(getComputedStyle(element).outlineStyle).not.toBe('none');
@@ -90,10 +92,12 @@ export const Default: Story = {
     await expect(canvas.getByRole('region', { name: 'September' })).toBeInTheDocument();
     await expect(canvas.getByRole('list', { name: 'September' })).toBeInTheDocument();
     await expect(tiles(canvasElement)).toHaveLength(8);
-    for (const tile of tiles(canvasElement)) {
+    for (const [index, tile] of tiles(canvasElement).entries()) {
       const image = tile.querySelector('img')!;
       await expect(image).toHaveAttribute('loading', 'lazy');
-      await expect(image).toHaveAttribute('alt', tile.getAttribute('aria-label'));
+      await expect(image).toHaveAttribute('alt', '');
+      await expect(image).not.toHaveAttribute('aria-hidden');
+      await expect(tile).toHaveAccessibleName(`Landscape ${index + 1}`);
       const box = tile.getBoundingClientRect();
       await expect(Math.abs(box.width - box.height)).toBeLessThan(1.1);
       await expect(box.width).toBeGreaterThanOrEqual(32);
@@ -282,6 +286,31 @@ export const ControlledRejected: Story = {
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
     await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument();
+    await expect(status(canvasElement)).toHaveTextContent('');
+  },
+};
+export const LiveStatus: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const region = status(canvasElement);
+    const announced: string[] = [];
+    const observer = new MutationObserver(() => announced.push(region.textContent ?? ''));
+    observer.observe(region, { childList: true, characterData: true, subtree: true });
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Smaller thumbnails' }));
+      await userEvent.click(favorites(canvasElement)[0]!);
+      await userEvent.click(tiles(canvasElement)[1]!);
+      await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
+      await userEvent.click(canvas.getByRole('button', { name: 'Reset zoom' }));
+      await userEvent.click(canvas.getByRole('button', { name: 'Next photo' }));
+      await expect(announced).toEqual([
+        '5 columns',
+        'Remove Landscape 1 from favorites',
+        'Landscape 2, 2 / 8',
+        'Landscape 3, 3 / 8',
+      ]);
+    } finally {
+      observer.disconnect();
+    }
   },
 };
 export const ControlledValueRejected: Story = {
@@ -336,7 +365,14 @@ export const MultipleInstances: Story = {
     );
   },
 };
-export const PersistentViewer: Story = { args: { defaultOpen: true, defaultValue: 'photo-2' } };
+export const PersistentViewer: Story = {
+  args: { defaultOpen: true, defaultValue: 'photo-2' },
+  play: async ({ canvas }) => {
+    const dialog = canvas.getByRole('dialog');
+    await expect(dialog).toHaveAccessibleName('Landscape 3');
+    await expect(dialog.querySelector('[data-ui="photo-grid-stage"] img')).toHaveAttribute('alt', '');
+  },
+};
 export const PersistentFavorite: Story = { args: { defaultOpen: true, defaultFavorites: ['photo-0'] } };
 export const PersistentImageZoom: Story = {
   args: { defaultOpen: true },

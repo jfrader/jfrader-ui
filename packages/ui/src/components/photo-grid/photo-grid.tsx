@@ -118,6 +118,12 @@ const ZOOM_STEP = 0.5;
 const MAX_ZOOM = 3;
 const PAN_STEP = 40;
 const DISMISS_DISTANCE = 100;
+/**
+ * Narrowest tile, in `space[12]` units, before narrow containers drop effective columns. The unit is
+ * read back as px: space tokens are authored in px, and a custom property resolves var() but not calc().
+ */
+const MIN_CELL_VAR = '--photo-grid-min-cell-unit';
+const MIN_CELL_UNITS = 2;
 const SPRING = { type: 'spring', stiffness: 360, damping: 36 } as const;
 const favoritePop = keyframes({ from: { transform: 'scale(0.85)' }, to: { transform: 'scale(1)' } });
 const captionFade = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
@@ -199,7 +205,7 @@ const listStyle = css({
   padding: 0,
   margin: 0,
   listStyle: 'none',
-  '--photo-grid-min-cell': `calc(${vars.space[12]} * 2)`,
+  [MIN_CELL_VAR]: vars.space[12],
   touchAction: 'pan-y',
 });
 const itemStyle = css({ display: 'grid', gap: vars.space[2], minInlineSize: 0 });
@@ -341,8 +347,7 @@ function PhotoImage({
       src={photo.src}
       srcSet={photo.srcSet}
       sizes={photo.sizes}
-      alt={photo.alt}
-      aria-hidden={!full || undefined}
+      alt=""
       width={photo.width}
       height={photo.height}
       loading={full ? 'eager' : 'lazy'}
@@ -815,9 +820,13 @@ export function PhotoGrid({
     if (!list) return;
     const measure = () => {
       const style = getComputedStyle(list);
-      const minimum = Number.parseFloat(style.getPropertyValue('--ui-space-12')) * 2 || 96;
+      const minimum = Number.parseFloat(style.getPropertyValue(MIN_CELL_VAR)) * MIN_CELL_UNITS;
       const gap = Number.parseFloat(style.columnGap) || 0;
-      setAvailableColumns(Math.max(1, Math.floor((list.clientWidth + gap) / (minimum + gap))));
+      setAvailableColumns(
+        minimum > 0
+          ? Math.max(1, Math.floor((list.clientWidth + gap) / (minimum + gap)))
+          : Number.POSITIVE_INFINITY,
+      );
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -899,7 +908,7 @@ export function PhotoGrid({
       if (changed) setStatus(labels.favorite(changed.title, favorites.has(changed.id)));
     }
     lastAccepted.current = { density, selected, favorites };
-  });
+  }, [density, selected, favoriteState, open]);
 
   const toggleFavorite = (photoId: string) => {
     const next = new Set(favorites);
