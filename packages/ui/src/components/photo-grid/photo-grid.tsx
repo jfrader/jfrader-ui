@@ -12,7 +12,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
-import { LayoutGroup, MotionConfig, motion, useMotionValue, useReducedMotion } from 'motion/react';
+import { LayoutGroup, MotionConfig, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import {
   useNativeDialog,
@@ -198,6 +198,11 @@ const actionStyle = css({
     '&[aria-pressed="true"]': { borderColor: 'Highlight', outline: '1px solid Highlight' },
   },
 });
+const responsiveNavStyle = css({
+  [ '@media (max-width: 640px), (hover: none)' ]: {
+    display: 'none',
+  },
+});
 const listStyle = css({
   display: 'grid',
   gridTemplateColumns: 'repeat(var(--photo-grid-columns), minmax(0, 1fr))',
@@ -243,27 +248,46 @@ const favoriteStyle = css({
 const imageBoxStyle = css({ inlineSize: '100%', blockSize: '100%', borderRadius: 'inherit' });
 const viewerStyle = css({
   boxSizing: 'border-box',
-  inlineSize: `calc(100% - ${vars.space[8]})`,
+  inlineSize: '100%',
+  blockSize: '100dvh',
   maxInlineSize: '100%',
-  maxBlockSize: `calc(100dvh - ${vars.space[8]})`,
-  overflow: 'auto',
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.lg,
-  padding: vars.space[4],
+  maxBlockSize: '100dvh',
+  overflow: 'hidden',
+  border: 'none',
+  borderRadius: 0,
+  padding: 0,
+  margin: 0,
   background: vars.color.surfaceRaised,
   color: vars.color.text,
-  boxShadow: vars.shadow.floating,
   fontFamily: vars.font.sans,
-  '&::backdrop': { background: vars.color.scrim },
+  position: 'fixed',
+  inset: 0,
+  '&[open]': { display: 'flex' },
+  flexDirection: 'column',
+  '&::backdrop': {
+    background: vars.color.scrim,
+    backdropFilter: 'blur(12px)',
+    [ '@media (prefers-reduced-transparency: reduce)' ]: {
+      backdropFilter: 'none',
+    },
+  },
 });
-const viewerContentStyle = css({ display: 'grid', gap: vars.space[3] });
+const viewerContentStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  flex: '1 1 0',
+  minBlockSize: 0,
+  gap: vars.space[3],
+  padding: vars.space[4],
+  overflow: 'hidden',
+});
 const stageStyle = css({
   position: 'relative',
   display: 'grid',
   placeItems: 'center',
-  blockSize: 'min(55dvh, 40rem)',
+  flex: '1 1 0',
+  minBlockSize: 0,
   overflow: 'hidden',
-  borderRadius: vars.radius.md,
   background: vars.color.surfaceInset,
   touchAction: 'none',
   '&:focus-visible': focusRingOutset,
@@ -281,11 +305,38 @@ const filmstripStyle = css({
   minBlockSize: vars.space[8],
   accentColor: vars.color.accent,
   '&:focus-visible': focusRingOutset,
+  [ '@media (max-width: 640px), (hover: none)' ]: {
+    minBlockSize: vars.space[4],
+  },
 });
 const statusStyle = css({
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
   overflowWrap: 'anywhere',
+});
+const countStyle = css({
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+  whiteSpace: 'nowrap',
+});
+const densityReadoutStyle = css({
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+  paddingInline: vars.space[2],
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.sm,
+  [FORCED_COLORS]: {
+    borderColor: 'ButtonText',
+  },
+});
+const filmstripWrapperStyle = css({
+  display: 'grid',
+  gap: vars.space[1],
+});
+const headerLeftStyle = css({
+  display: 'flex',
+  alignItems: 'baseline',
+  gap: vars.space[2],
 });
 const detailStyle = css({
   margin: 0,
@@ -528,8 +579,8 @@ function PhotoViewer({
       setZoom(zoom - ZOOM_STEP);
     }
   };
-  const renderAction = (label: string, action: () => void, disabled = false) => (
-    <button type="button" css={actionStyle} disabled={disabled} onClick={action}>
+  const renderAction = (label: string, action: () => void, disabled = false, pressed = false, extraCss?: Interpolation<Theme>) => (
+    <button type="button" css={[actionStyle, extraCss]} disabled={disabled} aria-pressed={pressed || undefined} onClick={action}>
       {label}
     </button>
   );
@@ -626,7 +677,7 @@ function PhotoViewer({
                 if (
                   !event.defaultPrevented &&
                   drag &&
-                  Math.abs(event.clientY - drag.originY) > DISMISS_DISTANCE
+                  event.clientY - drag.originY > DISMISS_DISTANCE
                 )
                   lifecycle.requestClose();
                 else if (
@@ -677,11 +728,11 @@ function PhotoViewer({
           )}
         </div>
         <div {...slots?.controls} css={[controlsStyle, slots?.controls?.css]}>
-          {renderAction(labels.previous, () => navigate(index - 1), index <= 0)}
-          {renderAction(labels.next, () => navigate(index + 1), index < 0 || index >= photos.length - 1)}
-          {renderAction(labels.zoomIn, () => setZoom(zoom + ZOOM_STEP), !photo || zoom >= MAX_ZOOM)}
-          {renderAction(labels.zoomOut, () => setZoom(zoom - ZOOM_STEP), !photo || zoom <= 1)}
-          {renderAction(labels.resetZoom, () => setZoom(1), !photo || zoom === 1)}
+          {renderAction(labels.previous, () => navigate(index - 1), index <= 0, false, responsiveNavStyle)}
+          {renderAction(labels.next, () => navigate(index + 1), index < 0 || index >= photos.length - 1, false, responsiveNavStyle)}
+          {renderAction(labels.zoomIn, () => setZoom(zoom + ZOOM_STEP), !photo || zoom >= MAX_ZOOM, zoom >= MAX_ZOOM)}
+          {renderAction(labels.zoomOut, () => setZoom(zoom - ZOOM_STEP), !photo || zoom <= 1, zoom <= 1)}
+          {renderAction(labels.resetZoom, () => setZoom(1), !photo || zoom === 1, zoom === 1)}
           {zoom > 1 && (
             <>
               {renderAction(labels.panLeft, () => pan(PAN_STEP, 0))}
@@ -691,23 +742,25 @@ function PhotoViewer({
             </>
           )}
         </div>
-        <input
-          {...slots?.filmstrip}
-          type="range"
-          data-ui="photo-grid-filmstrip"
-          min={0}
-          max={Math.max(0, photos.length - 1)}
-          step={1}
-          value={Math.max(0, index)}
-          disabled={photos.length < 2 || !photo}
-          aria-label={slots?.filmstrip?.['aria-label'] ?? labels.filmstrip}
-          aria-valuetext={position}
-          css={[filmstripStyle, slots?.filmstrip?.css]}
-          onChange={(event) => {
-            slots?.filmstrip?.onChange?.(event);
-            if (!event.defaultPrevented) navigate(event.currentTarget.valueAsNumber);
-          }}
-        />
+        <div css={filmstripWrapperStyle}>
+          <input
+            {...slots?.filmstrip}
+            type="range"
+            data-ui="photo-grid-filmstrip"
+            min={0}
+            max={Math.max(0, photos.length - 1)}
+            step={1}
+            value={Math.max(0, index)}
+            disabled={photos.length < 2 || !photo}
+            aria-label={slots?.filmstrip?.['aria-label'] ?? labels.filmstrip}
+            aria-valuetext={position}
+            css={[filmstripStyle, slots?.filmstrip?.css]}
+            onChange={(event) => {
+              slots?.filmstrip?.onChange?.(event);
+              if (!event.defaultPrevented) navigate(event.currentTarget.valueAsNumber);
+            }}
+          />
+        </div>
         {photo && (
           <button
             {...slots?.favorite}
@@ -789,13 +842,15 @@ export function PhotoGrid({
   const focused = useRef<{ id: string; index: number; kind: 'photo' | 'favorite' } | null>(null);
   const invoker = useRef<string | null>(null);
   const anchor = useRef<{ id: string; top: number; density: number } | null>(null);
-  const [availableColumns, setAvailableColumns] = useState(density);
-  const columns = Math.min(density, availableColumns);
+  const columns = density;
   const reduced = useReducedMotion();
   const [visible, setVisible] = useState(true);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ distance: number; ratio: number; focalId: string | null } | null>(null);
   const preview = useMotionValue(1);
+  const previewOriginX = useMotionValue('50%');
+  const previewOriginY = useMotionValue('50%');
+  const previewOrigin = useTransform([previewOriginX, previewOriginY], ([ox, oy]) => `${ox} ${oy}`);
   const densityIndex = steps.indexOf(density);
   const [status, setStatus] = useState('');
   const lastAccepted = useRef({ density, selected, favorites });
@@ -814,25 +869,6 @@ export function PhotoGrid({
       seen.add(photo.id);
     }
   }
-
-  useLayoutEffect(() => {
-    const list = listRef.current;
-    if (!list) return;
-    const measure = () => {
-      const style = getComputedStyle(list);
-      const minimum = Number.parseFloat(style.getPropertyValue(MIN_CELL_VAR)) * MIN_CELL_UNITS;
-      const gap = Number.parseFloat(style.columnGap) || 0;
-      setAvailableColumns(
-        minimum > 0
-          ? Math.max(1, Math.floor((list.clientWidth + gap) / (minimum + gap)))
-          : Number.POSITIVE_INFINITY,
-      );
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(list);
-    return () => observer.disconnect();
-  }, [photos.length === 0]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -860,6 +896,8 @@ export function PhotoGrid({
       pointers.current.delete(event.pointerId);
       pinch.current = null;
       preview.set(1);
+      previewOriginX.set('50%');
+      previewOriginY.set('50%');
     };
     doc.addEventListener('pointerup', abortOutside, true);
     doc.addEventListener('pointercancel', abortOutside, true);
@@ -878,7 +916,7 @@ export function PhotoGrid({
       button.focus({ preventScroll: true });
       scrollBy(rootRef.current, button.getBoundingClientRect().top - pending.top);
     }
-  }, [density, columns]);
+  }, [density]);
 
   useLayoutEffect(() => {
     const current = focused.current;
@@ -965,6 +1003,19 @@ export function PhotoGrid({
     )?.focus({ preventScroll: true });
   };
 
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      const dir = event.deltaY < 0 ? 1 : -1; // wheel up -> larger thumbnails (lower column count, matching pinch)
+      changeDensity(dir);
+    };
+    root.addEventListener('wheel', onWheel, { passive: false });
+    return () => root.removeEventListener('wheel', onWheel);
+  }, [changeDensity]);
+
   return (
     <MotionConfig reducedMotion="user">
       <LayoutGroup id={id}>
@@ -987,13 +1038,18 @@ export function PhotoGrid({
                 role={slotProps?.header?.role ?? 'presentation'}
                 css={[headerStyle, slotProps?.header?.css]}
               >
-                <h2
-                  {...slotProps?.title}
-                  id={slotProps?.title?.id ?? `${id}-title`}
-                  css={[titleStyle, slotProps?.title?.css]}
-                >
-                  {title}
-                </h2>
+                <div css={headerLeftStyle}>
+                  <h2
+                    {...slotProps?.title}
+                    id={slotProps?.title?.id ?? `${id}-title`}
+                    css={[titleStyle, slotProps?.title?.css]}
+                  >
+                    {title}
+                  </h2>
+                  <span css={countStyle} aria-label={`${photos.length} photos`}>
+                    {format.format(photos.length)} photos
+                  </span>
+                </div>
                 <div
                   {...slotProps?.density}
                   role="group"
@@ -1016,10 +1072,13 @@ export function PhotoGrid({
                   >
                     {labels.smaller}
                   </button>
+                  <span css={densityReadoutStyle} aria-label={labels.columns(format.format(density))}>
+                    {density}
+                  </span>
                 </div>
               </header>
               {photos.length ? (
-                <motion.div style={{ scale: preview }}>
+                <motion.div style={{ scale: preview, transformOrigin: previewOrigin }}>
                   <ul
                     {...slotProps?.list}
                     ref={listMergedRef}
@@ -1042,6 +1101,11 @@ export function PhotoGrid({
                           ratio: 1,
                           focalId: item?.dataset.photoId ?? focused.current?.id ?? null,
                         };
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        const cx = (points[0]!.x + points[1]!.x) / 2;
+                        const cy = (points[0]!.y + points[1]!.y) / 2;
+                        previewOriginX.set(((cx - rect.left) / rect.width * 100).toFixed(1) + '%');
+                        previewOriginY.set(((cy - rect.top) / rect.height * 100).toFixed(1) + '%');
                         event.currentTarget.setPointerCapture(event.pointerId);
                       }
                     }}
@@ -1063,6 +1127,8 @@ export function PhotoGrid({
                       pointers.current.delete(event.pointerId);
                       pinch.current = null;
                       preview.set(1);
+                      previewOriginX.set('50%');
+                      previewOriginY.set('50%');
                       if (!event.defaultPrevented && drag && Math.abs(drag.ratio - 1) >= PINCH_THRESHOLD)
                         changeDensity(drag.ratio > 1 ? 1 : -1, drag.focalId ?? undefined);
                     }}
@@ -1071,12 +1137,16 @@ export function PhotoGrid({
                       pointers.current.clear();
                       pinch.current = null;
                       preview.set(1);
+                      previewOriginX.set('50%');
+                      previewOriginY.set('50%');
                     }}
                     onLostPointerCapture={(event) => {
                       slotProps?.list?.onLostPointerCapture?.(event);
                       pointers.current.clear();
                       pinch.current = null;
                       preview.set(1);
+                      previewOriginX.set('50%');
+                      previewOriginY.set('50%');
                     }}
                   >
                     {photos.map((photo, index) => (
