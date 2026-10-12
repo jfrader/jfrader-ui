@@ -176,6 +176,8 @@ export const Default: Story = {
   },
 };
 export const SingleDetent: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { detents: [0.6], defaultOpen: true },
   render,
   play: async ({ canvas, canvasElement, args, userEvent }) => {
@@ -188,6 +190,8 @@ export const SingleDetent: Story = {
   },
 };
 export const ThreeDetents: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { detents: [0.3, 0.6, 0.9], defaultOpen: true },
   render,
   play: async ({ canvas, canvasElement, args, userEvent }) => {
@@ -204,6 +208,8 @@ export const ThreeDetents: Story = {
   },
 };
 export const LongContent: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <BottomSheet {...args}>
@@ -222,22 +228,33 @@ export const LongContent: Story = {
   },
 };
 export const LightTheme: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render,
   decorators: [withLightTheme],
   globals: { theme: 'light' },
 };
-export const PersistentPeek: Story = { args: { defaultOpen: true }, render };
+export const PersistentPeek: Story = { 
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
+args: { defaultOpen: true }, render };
 export const PersistentExpanded: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: 1 },
   render,
 };
 export const PersistentLight: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   ...PersistentExpanded,
   decorators: [withLightTheme],
   globals: { theme: 'light' },
 };
 export const NoDescription: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <BottomSheet {...args}>
@@ -288,6 +305,8 @@ export const Controlled: Story = {
   },
 };
 export const ControlledRejectDetent: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, value: 0 },
   render: (args) => (
     <BottomSheet {...args}>
@@ -314,6 +333,8 @@ export const ControlledRejectDetent: Story = {
   },
 };
 export const ControlledRejectClose: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { open: true },
   render,
   play: async ({ canvas, canvasElement, args, userEvent }) => {
@@ -387,6 +408,8 @@ export const KeyboardNavigation: Story = {
   },
 };
 export const BodyReadingKeys: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render,
   play: async ({ canvasElement, args, userEvent }) => {
@@ -403,6 +426,8 @@ export const BodyReadingKeys: Story = {
 };
 
 export const DragSettleAndDismiss: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, detents: [0.3, 0.6, 0.9] },
   render,
   play: async ({ canvasElement, args }) => {
@@ -432,6 +457,8 @@ export const DragSettleAndDismiss: Story = {
   },
 };
 export const GestureCancel: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render,
   play: async ({ canvasElement, args, userEvent }) => {
@@ -474,6 +501,8 @@ export const GestureCancel: Story = {
   },
 };
 export const TouchHandoff: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <BottomSheet {...args}>
@@ -502,6 +531,8 @@ export const TouchHandoff: Story = {
   },
 };
 export const DynamicViewport: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render,
   play: async ({ canvasElement, args }) => {
@@ -563,6 +594,8 @@ export const RefClose: Story = {
   play: nativeClosePlay,
 };
 export const CancelVeto: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <BottomSheet {...args}>
@@ -613,6 +646,8 @@ export const UnmountOpen: Story = {
 };
 
 export const ExternalARIA: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <BottomSheet {...args}>
@@ -672,6 +707,8 @@ function FalsyExample(args: BottomSheetProps) {
   );
 }
 export const FalsyContent: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: FalsyExample,
   play: async ({ canvas, canvasElement, userEvent }) => {
@@ -753,6 +790,8 @@ export const NestedOverlay: Story = {
   },
 };
 export const RTL: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <BottomSheet {...args}>
@@ -765,6 +804,8 @@ export const RTL: Story = {
   },
 };
 export const ReducedMotion: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render,
   parameters: {
@@ -781,6 +822,8 @@ export const ReducedMotion: Story = {
   },
 };
 export const ForcedColors: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render,
   parameters: {
@@ -798,6 +841,8 @@ export const ForcedColors: Story = {
   },
 };
 export const StylingAndRefs: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <BottomSheet {...args}>
@@ -838,6 +883,8 @@ function ExternalValueExample(args: BottomSheetProps) {
   );
 }
 export const ExternalValue: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, locale: 'de-DE' },
   render: ExternalValueExample,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -857,6 +904,8 @@ export const ExternalValue: Story = {
   },
 };
 export const NativeRejectedRepair: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { open: true },
   render: (args) => <NativeCloseExample {...args} mode="ref" />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {

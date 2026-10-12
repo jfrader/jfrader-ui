@@ -1148,6 +1148,8 @@ function DialogHost(props: HoverCardProps) {
 DialogHost.displayName = 'DialogHost';
 
 export const InsideNativeDialog: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   render: (args) => <DialogHost {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const dialog = within(canvasElement).getByRole('dialog') as HTMLDialogElement;

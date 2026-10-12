@@ -1022,6 +1022,8 @@ export const ReducedMotion: Story = {
   },
 };
 export const InsideDialog: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   render: (args) => (
     <Dialog defaultOpen>
       <Dialog.Content>

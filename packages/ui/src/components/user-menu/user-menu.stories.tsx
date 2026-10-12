@@ -961,6 +961,8 @@ export const OpenDesktop: Story = {
 };
 
 export const OpenSheet: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, variant: 'sheet' },
   play: async ({ canvasElement }) => {
     // Persistent sheet state for the axe gate.
@@ -1050,6 +1052,8 @@ export const Sheet: Story = {
 };
 
 export const SheetRejectedClose: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { open: true, variant: 'sheet' },
   play: async ({ args, canvasElement, userEvent }) => {
     const doc = canvasElement.ownerDocument;
@@ -1219,6 +1223,8 @@ export const LightTheme: Story = {
 };
 
 export const LightThemeSheet: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   args: { defaultOpen: true, variant: 'sheet' },
   play: async ({ canvasElement }) => {
@@ -1267,6 +1273,8 @@ export const ExternalAria: Story = {
 };
 
 export const ExternalAriaSheet: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <div style={rowStyle}>
@@ -1539,6 +1547,8 @@ export const UsageErrors: Story = {
 };
 
 export const ReducedMotion: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   parameters: {
     docs: {
       description: {
