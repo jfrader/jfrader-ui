@@ -9,7 +9,7 @@ import { createContext, useContext, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { raisedSurface, surfaceAttributes, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
-import { AppearanceScope, themeScopeStyle, useSurfaceAppearance } from '../../styling/theme-scope';
+import { AppearanceScope, themeScopeStyle, useSurfaceAppearance, useSurfaceStyle } from '../../styling/theme-scope';
 import { WithSx, type SxProps } from '../../styling/sx';
 
 export type CardVariant = 'flat' | 'raised';
@@ -107,9 +107,10 @@ const footerStyle = css({
   '& > :only-child': { marginInlineStart: 'auto' },
 });
 
-function CardRoot({ ref, variant = 'raised', appearance, slotProps, className, sx, ...rest }: CardProps) {
+function CardRoot({ ref, variant = 'raised', appearance, slotProps, className, style, sx, ...rest }: CardProps) {
   const surfaceAppearance = useSurfaceAppearance(appearance);
   const ownTheme = surfaceTheme(appearance ?? 'default');
+  const surfaceStyle = useSurfaceStyle(ownTheme, style);
 
   return (
     <CardSlotContext.Provider value={slotProps}>
@@ -127,6 +128,7 @@ function CardRoot({ ref, variant = 'raised', appearance, slotProps, className, s
               data-variant={variant}
               {...surfaceAttributes(appearance ?? 'default')}
               className={className}
+              style={surfaceStyle}
             />
           )}
         </WithSx>

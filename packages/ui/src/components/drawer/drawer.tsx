@@ -47,7 +47,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { modalShellReset, raisedSurface, surfaceAttributes, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { AppearanceScope, themeScopeStyle, useSurfaceAppearance } from '../../styling/theme-scope';
+import { AppearanceScope, themeScopeStyle, useSurfaceAppearance, useSurfaceStyle } from '../../styling/theme-scope';
 import { triggerStyle } from '../../styling/trigger-style';
 import {
   omitNativeOpen,
@@ -734,13 +734,14 @@ function DrawerContent({ ref, className, sx, ...props }: DrawerContentProps) {
 
 DrawerContent.displayName = 'Drawer.Content';
 
-function DrawerPanel({ ref, className, appearance = 'contrast', sx, ...props }: DrawerPanelProps) {
+function DrawerPanel({ ref, className, appearance = 'contrast', style, sx, ...props }: DrawerPanelProps) {
   const { side, size } = useDrawerContext('Panel');
   const panelRef = useContext(DrawerSurfaceContext)?.panelRef;
   const mergedRef = useMergeRefs([panelRef, ref]);
   const inline = side === 'inline-start' || side === 'inline-end';
   const surfaceAppearance = useSurfaceAppearance(appearance);
   const ownTheme = surfaceTheme(appearance);
+  const surfaceStyle = useSurfaceStyle(ownTheme, style);
 
   return (
     <AppearanceScope theme={ownTheme} appearance={surfaceAppearance}>
@@ -756,6 +757,7 @@ function DrawerPanel({ ref, className, appearance = 'contrast', sx, ...props }: 
             data-ui="drawer-panel"
             {...surfaceAttributes(appearance)}
             className={className}
+            style={surfaceStyle}
           />
         )}
       </WithSx>
