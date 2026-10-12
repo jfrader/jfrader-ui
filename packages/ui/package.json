@@ -64,6 +64,7 @@
     "./flex": { "types": "./src/components/flex/index.ts", "import": "./src/components/flex/index.ts" },
     "./hold-to-confirm": { "types": "./src/components/hold-to-confirm/index.ts", "import": "./src/components/hold-to-confirm/index.ts" },
     "./image-compare": { "types": "./src/components/image-compare/index.ts", "import": "./src/components/image-compare/index.ts" },
+    "./in-view-title": { "types": "./src/components/in-view-title/index.ts", "import": "./src/components/in-view-title/index.ts" },
     "./inline-edit": { "types": "./src/components/inline-edit/index.ts", "import": "./src/components/inline-edit/index.ts" },
     "./hover-card": { "types": "./src/components/hover-card/index.ts", "import": "./src/components/hover-card/index.ts" },
     "./json-viewer": { "types": "./src/components/json-viewer/index.ts", "import": "./src/components/json-viewer/index.ts" },
