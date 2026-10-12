@@ -7,6 +7,7 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - @jfrader/tokens (packages/tokens): typed token source, generated CSS vars and typed var() references
 - @jfrader/ui (packages/ui): React components
 - @jfrader/storybook (apps/storybook): Storybook workbench, docs and browser tests
+- @jfrader/pilot (apps/pilot): reference Vite consumer app
 
 ## Key paths
 
@@ -21,6 +22,8 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - Storybook config: apps/storybook/.storybook/
 - Agent conventions: AGENTS.md
 - Component authoring + maintenance guide: SKILL.md
+- Consumer setup: docs/consuming-jfrader-ui.md
+- Automated and manual QA gates: docs/qa-gates.md
 
 ## Commands
 
@@ -29,6 +32,7 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - pnpm build: generate tokens and build static Storybook
 - pnpm test: generate tokens and run Storybook browser tests
 - pnpm typecheck: generate tokens and typecheck every package
+- pnpm verify:exports: validate UI source subpath exports and their target files
 
 ## The rule that matters most
 

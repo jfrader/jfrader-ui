@@ -2,7 +2,16 @@
 
 Run before marking a component 1.0. Start Storybook with `pnpm dev` and open each story at `http://localhost:6006`.
 
-`pnpm test` runs story play tests and the axe gate in headless Chromium only.
+## Automated gates
+
+| Command | Gate |
+| --- | --- |
+| `pnpm typecheck` | Generate tokens and typecheck every workspace package, including `apps/pilot`. |
+| `pnpm test` | Generate tokens and run Storybook play tests in headless Chromium; axe fails on WCAG 2.0–2.2 A/AA + best-practice violations (`a11y.test: 'error'`). |
+| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --maxWorkers=2 <story-file>` | Scoped story run with the same axe gate. |
+| `pnpm verify:exports` | Check every public UI component folder has a subpath export and every source export target exists; this does not validate built artifacts or root-index coverage. |
+
+The source export check is `scripts/verify-exports.mjs`, not a Storybook test. Built export targets are validated by `scripts/flip-exports.mjs dist` after building the packages (see [packing packages](../README.md#packing-packages)). A passing axe gate does not replace the manual checks below.
 
 ## Gates
 
@@ -57,3 +66,67 @@ Replace `pending` with `pass YYYY-MM-DD <browser/AT>` or `fail: GURI-N (<issue t
 | toast | pending; auto: Tab, Shift+Tab, focus continues to next dismiss on removal | pending | pending | pending | live region announcement; reduced motion pending |
 | toggle-group | pending; auto: Tab, Shift+Tab, arrows, Home/End, Enter, Space | pending | pending | pending; auto: `KeyboardRtl` story asserts ArrowLeft/ArrowRight swap | forced-colors CSS present; reduced motion pending |
 | tooltip | pending; auto: Tab focus opens, Escape closes | pending | pending | pending | |
+
+### Additional story-documented surfaces
+
+These surfaces also have colocated stories included in `pnpm test`. No manual results or per-key coverage are recorded here yet; `pending` is not a failing automated result.
+
+| component | keyboard | SR | forced-colors | RTL | notes |
+| --- | --- | --- | --- | --- | --- |
+| activity-rings | pending | pending | pending | pending | reduced motion pending |
+| announcement-bar | pending | pending | pending | pending | reduced motion pending |
+| avatar-group | pending | pending | pending | pending | reduced motion pending |
+| billing-toggle | pending | pending | pending | pending | reduced motion pending |
+| bottom-sheet | pending | pending | pending | pending | reduced motion pending |
+| button-group | pending | pending | pending | pending | reduced motion pending |
+| carousel | pending | pending | pending | pending | reduced motion pending |
+| chat-thread | pending | pending | pending | pending | reduced motion pending |
+| chip-group | pending | pending | pending | pending | reduced motion pending |
+| code-block | pending | pending | pending | pending | reduced motion pending |
+| comment-thread | pending | pending | pending | pending | reduced motion pending |
+| container | pending | pending | pending | pending | reduced motion pending |
+| context-menu | pending | pending | pending | pending | reduced motion pending |
+| copy-button | pending | pending | pending | pending | reduced motion pending |
+| countdown | pending | pending | pending | pending | reduced motion pending |
+| date-range-picker | pending | pending | pending | pending | reduced motion pending |
+| drawer | pending | pending | pending | pending | reduced motion pending |
+| elastic-slider | pending | pending | pending | pending | reduced motion pending |
+| empty-state | pending | pending | pending | pending | reduced motion pending |
+| expandable-card | pending | pending | pending | pending | reduced motion pending |
+| expanding-search | pending | pending | pending | pending | reduced motion pending |
+| file-dropzone | pending | pending | pending | pending | reduced motion pending |
+| filter-toolbar | pending | pending | pending | pending | reduced motion pending |
+| flex | pending | pending | pending | pending | reduced motion pending |
+| hold-to-confirm | pending | pending | pending | pending | reduced motion pending |
+| hover-card | pending | pending | pending | pending | reduced motion pending |
+| image-compare | pending | pending | pending | pending | reduced motion pending |
+| inline-edit | pending | pending | pending | pending | reduced motion pending |
+| json-viewer | pending | pending | pending | pending | reduced motion pending |
+| keycap-keyboard | pending | pending | pending | pending | reduced motion pending |
+| lightbox-gallery | pending | pending | pending | pending | reduced motion pending |
+| mention-input | pending | pending | pending | pending | reduced motion pending |
+| metric-card | pending | pending | pending | pending | reduced motion pending |
+| multi-select | pending | pending | pending | pending | reduced motion pending |
+| now-playing | pending | pending | pending | pending | reduced motion pending |
+| password-field | pending | pending | pending | pending | reduced motion pending |
+| photo-grid | pending | pending | pending | pending | reduced motion pending |
+| radio-cards | pending | pending | pending | pending | reduced motion pending |
+| resizable-panels | pending | pending | pending | pending | reduced motion pending |
+| scroll-area | pending | pending | pending | pending | reduced motion pending |
+| segmented-control | pending | pending | pending | pending | reduced motion pending |
+| shortcut-recorder | pending | pending | pending | pending | reduced motion pending |
+| signature-pad | pending | pending | pending | pending | reduced motion pending |
+| slider | pending | pending | pending | pending | reduced motion pending |
+| sortable-data-table | pending | pending | pending | pending | reduced motion pending |
+| split-button | pending | pending | pending | pending | reduced motion pending |
+| stack | pending | pending | pending | pending | reduced motion pending |
+| stepper | pending | pending | pending | pending | reduced motion pending |
+| stretch-refresh | pending | pending | pending | pending | reduced motion pending |
+| swipe-actions | pending | pending | pending | pending | reduced motion pending |
+| tag-input | pending | pending | pending | pending | reduced motion pending |
+| theme-switch | pending | pending | pending | pending | reduced motion pending |
+| timeline | pending | pending | pending | pending | reduced motion pending |
+| toast-stack | pending | pending | pending | pending | reduced motion pending |
+| tree-view | pending | pending | pending | pending | reduced motion pending |
+| usage-meter | pending | pending | pending | pending | reduced motion pending |
+| user-menu | pending | pending | pending | pending | reduced motion pending |
