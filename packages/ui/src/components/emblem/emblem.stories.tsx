@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { Emblem, type EmblemPattern, type EmblemShape, type EmblemSize } from './index';
 
 // Club palettes are consumer data, not tokens: an app passes its own colors in.
@@ -86,6 +87,12 @@ export const Shapes: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
+    const emblems = within(canvasElement).getAllByRole('img');
+    await expectAligned(emblems, 'center-y');
+    for (const [index, emblem] of emblems.entries()) {
+      await expectInside(plateOf(canvasElement, `${SHAPES[index]} club`), emblem);
+      for (const other of emblems.slice(index + 1)) await expectNoOverlap(emblem, other);
+    }
     for (const shape of SHAPES) {
       const style = getComputedStyle(plateOf(canvasElement, `${shape} club`));
       const clipped = shape === 'shield' || shape === 'hexagon';
