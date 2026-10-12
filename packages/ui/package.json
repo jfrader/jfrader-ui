@@ -32,6 +32,7 @@
     "./bottom-sheet": { "types": "./src/components/bottom-sheet/index.ts", "import": "./src/components/bottom-sheet/index.ts" },
     "./breadcrumbs": { "types": "./src/components/breadcrumbs/index.ts", "import": "./src/components/breadcrumbs/index.ts" },
     "./button": { "types": "./src/components/button/index.ts", "import": "./src/components/button/index.ts" },
+    "./button-group": { "types": "./src/components/button-group/index.ts", "import": "./src/components/button-group/index.ts" },
     "./calendar": { "types": "./src/components/calendar/index.ts", "import": "./src/components/calendar/index.ts" },
     "./card": { "types": "./src/components/card/index.ts", "import": "./src/components/card/index.ts" },
     "./carousel": { "types": "./src/components/carousel/index.ts", "import": "./src/components/carousel/index.ts" },

@@ -7,6 +7,7 @@ export * from './components/badge';
 export * from './components/bottom-sheet';
 export * from './components/breadcrumbs';
 export * from './components/button';
+export * from './components/button-group';
 export * from './components/calendar';
 export * from './components/card';
 export * from './components/carousel';
