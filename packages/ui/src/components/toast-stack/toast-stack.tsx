@@ -190,6 +190,20 @@ function ToastStackContent({
       ? `calc(${sum}px + ${open.length - 1} * ${vars.space[2]})`
       : `calc(${heights[open[0]!.id] ?? 0}px + ${Math.min(open.length, limit) - 1} * ${vars.space[3]})`;
   const overflow = Math.max(0, open.length - limit);
+  const newestId = open[0]?.id;
+  useEffect(() => {
+    const root = rootRef.current;
+    const list = listRef.current;
+    if (!root || !list || focused) return;
+    let cancelled = false;
+    const animations = typeof list.getAnimations === 'function' ? list.getAnimations() : [];
+    void Promise.allSettled(animations.map((animation) => animation.finished)).then(() => {
+      if (!cancelled) root.scrollTop = root.scrollHeight;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [height, newestId, expanded, focused]);
   return (
     <WithSx className={className} styles={rootStyle} sx={sx}>
       {(className) => (
