@@ -112,6 +112,33 @@ export const Open: Story = {
   },
 };
 
+export const RTL: Story = {
+  args: { defaultOpen: true },
+  render: (args) => (
+    <div dir="rtl">
+      <TooltipExample {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const tooltip = await bodyOf(canvasElement).findByRole('tooltip');
+    await expect(getComputedStyle(tooltip).direction).toBe('rtl');
+  },
+};
+
+export const LongContent: Story = {
+  args: { defaultOpen: true },
+  render: (args) => (
+    <Tooltip {...args}>
+      <Tooltip.Trigger>{TRIGGER}</Tooltip.Trigger>
+      <Tooltip.Content>{'clipboard'.repeat(40)}</Tooltip.Content>
+    </Tooltip>
+  ),
+  play: async ({ canvasElement }) => {
+    const tooltip = await bodyOf(canvasElement).findByRole('tooltip');
+    await expect(tooltip.scrollWidth).toBeLessThanOrEqual(tooltip.clientWidth);
+  },
+};
+
 export const FocusOpens: Story = {
   render: (args) => <TooltipExample {...args} />,
   play: async ({ canvasElement }) => {
