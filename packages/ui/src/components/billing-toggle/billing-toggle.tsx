@@ -371,9 +371,10 @@ function BillingTogglePrice({
   sx,
   ...rest
 }: BillingTogglePriceProps) {
+  // Validate before any hooks: keeps hook order stable even if the guard ever changes.
+  if (!Number.isFinite(amount)) throw new RangeError('BillingToggle.Price amount must be finite.');
   const { locale } = useBilling();
   const reducedMotion = useReducedMotion();
-  if (!Number.isFinite(amount)) throw new RangeError('BillingToggle.Price amount must be finite.');
   const locales = localeProp ?? locale;
   const formatKey = JSON.stringify([
     Intl.getCanonicalLocales(locales === undefined ? [] : [locales].flat().map(String)),
