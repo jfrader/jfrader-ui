@@ -11,6 +11,8 @@ import {
   type KeyboardEvent,
   type PointerEvent,
   type ReactNode,
+  type RefCallback,
+  type RefObject,
 } from 'react';
 import type { Interpolation, Theme } from '../../styling/css';
 import { isRenderable } from '../../utils/renderable';
@@ -97,7 +99,33 @@ export interface SliderInteractionOptions {
   onGestureEnd?: (completed: boolean) => void;
 }
 
-export function useSliderInteraction(options: SliderInteractionOptions) {
+export interface SliderInteraction {
+  id: string;
+  controlRef: RefObject<HTMLDivElement | null>;
+  current: SliderValue;
+  values: number[] | readonly [number, number];
+  active: number | null;
+  bounds: (index: number) => number[];
+  percent: (n: number) => number;
+  normalizeMarks: (marks: readonly SliderMark[]) => { value: number; label?: ReactNode }[];
+  /** Handlers for the pointer-capture control; consumer slot handlers run first and may veto. */
+  controlHandlers: (part: SliderPart<'div'> | undefined) => {
+    ref: RefCallback<HTMLDivElement>;
+    onPointerDown: (e: PointerEvent<HTMLDivElement>) => void;
+    onPointerMove: (e: PointerEvent<HTMLDivElement>) => void;
+    onPointerUp: (e: PointerEvent<HTMLDivElement>) => void;
+    onPointerCancel: (e: PointerEvent<HTMLDivElement>) => void;
+    onLostPointerCapture: (e: PointerEvent<HTMLDivElement>) => void;
+  };
+  /** Root `onKeyDown` tail: routes movement keys from a thumb inside this control. */
+  handleRootKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
+  /** Activation of a mark shortcut: one change + commit for a changed request, nothing otherwise. */
+  selectMark: (markValue: number) => void;
+  /** Remembers the last focused thumb for equidistant range presses. */
+  noteFocus: (index: number) => void;
+}
+
+export function useSliderInteraction(options: SliderInteractionOptions): SliderInteraction {
   const {
     component,
     range,
