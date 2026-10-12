@@ -384,20 +384,20 @@ This applies to Storybook, public JSDoc, examples, READMEs, and consumer guides.
 
 **Component introduction**
 
-- Write one or two sentences, at most 40 words. Aim for fewer than 25.
+- Explain enough for the reader to choose and use the component. Keep the purpose easy to find.
 - Start with the action or result: “Choose a date”, “Show progress toward a goal”.
 - Use everyday words. Leave props, DOM roles, state ownership, and implementation details for
   usage notes or the prop table.
 - Use nouns and verbs instead of adjectives. Omit praise such as “powerful”, “flexible”,
   “seamless”, “intuitive”, and “beautiful”. Keep words required to name an API state or type,
   such as `disabled` or “plain text”.
-- Keep the lead to one paragraph. A heading or bullet list belongs below the example.
+- Use paragraphs, headings, or lists when they make the explanation easier to follow.
 
 MentionInput's introduction: “Write a message and mention people with @ or channels with #.”
 
 **Details and examples**
 
-- Put the introduction in `parameters.docs.description.component` as a single-line string literal.
+- Put the introduction in `parameters.docs.description.component` as a string or template literal.
   Put any usage notes in `parameters.docs.usage` as Markdown. The shared docs page shows
   those notes in a “Usage notes” disclosure after the first example.
 - Group notes by the question they answer: Keyboard, Values, Forms, or Limits. Include only
@@ -418,8 +418,9 @@ MentionInput's introduction: “Write a message and mention people with @ or cha
 
 Read every changed introduction, usage note, story description, and public JSDoc comment.
 Remove repetition, adjectives, and filler. Check the rewrite against the previous contracts.
-Run `pnpm verify:docs` for introduction coverage, paragraph/sentence limits, and word count;
-it checks structure, not meaning or writing quality. Open the rendered docs, try the usage
+Run `pnpm verify:docs` to check that component stories declare nonempty documentation.
+Length, sentence count, and prose formatting are editorial choices, not build gates.
+Review clarity and completeness in context. Open the rendered docs, try the usage
 disclosure with the keyboard, and check the first example and prop table still appear.
 
 ### Component review

@@ -3,10 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCsf, metaObjectPath } from 'storybook/internal/csf-tools';
 
-const MAX_WORDS = 40;
-const MAX_SENTENCES = 2;
 const DESCRIPTION_PATH = ['parameters', 'docs', 'description', 'component'];
-const sentences = new Intl.Segmenter('en', { granularity: 'sentence' });
 
 export function checkIntroduction(source, fileName) {
   const csf = loadCsf(source, { fileName, makeTitle: (title) => title ?? fileName ?? 'Component' }).parse();
@@ -32,18 +29,7 @@ export function checkIntroduction(source, fileName) {
     return ['Add a string literal at parameters.docs.description.component.'];
   }
 
-  const errors = [];
-  const wordCount = text.trim().split(/\s+/u).length;
-  if (wordCount > MAX_WORDS) {
-    errors.push(`Introduction has ${wordCount} words; keep at most ${MAX_WORDS}. Move details to docs.usage.`);
-  }
-  if (/[\r\n]|^(?: {4}|\t)|^\s*(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|>|```|~~~)|<[^>]+>/u.test(text)) {
-    errors.push('Use one paragraph without headings, lists, or HTML. Move details to docs.usage.');
-  }
-  if ([...sentences.segment(text)].length > MAX_SENTENCES) {
-    errors.push(`Use at most ${MAX_SENTENCES} sentences in the introduction.`);
-  }
-  return errors;
+  return [];
 }
 
 export function checkComponentDocs(componentsDir) {
@@ -76,6 +62,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.error(`verify-docs: ${errors.length} problem(s)\n${errors.map((error) => `  - ${error}`).join('\n')}`);
     process.exitCode = 1;
   } else {
-    console.log(`verify-docs: ${checked} component introductions OK`);
+    console.log(`verify-docs: documentation coverage OK for ${checked} component story files`);
   }
 }

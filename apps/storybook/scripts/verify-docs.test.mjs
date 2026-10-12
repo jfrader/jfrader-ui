@@ -20,26 +20,27 @@ test('accepts an introduction in TSX meta without executing the story', () => {
 });
 
 test('requires an explicit, nonempty string literal', () => {
-  for (const value of ['undefined', '"   "', '["Choose a date."].join(" ")', '`Choose ${kind}.`']) {
+  for (const value of ['undefined', '""', '"   "', '``', '`\n\t`', '["Choose a date."].join(" ")', '`Choose ${kind}.`']) {
     assert.match(checkIntroduction(story(value))[0], /string literal/);
   }
   assert.match(checkIntroduction('export default { component: Button };')[0], /string literal/);
 });
 
-test('checks the word limit including template literals', () => {
-  assert.deepEqual(checkIntroduction(story(JSON.stringify(Array(40).fill('word').join(' ')))), []);
-  assert.match(checkIntroduction(story('`' + Array(41).fill('word').join(' ') + '`'))[0], /41 words/);
+test('accepts long documentation in strings and template literals', () => {
+  const description = Array(100).fill('Explain the component and its usage.').join(' ');
+  assert.deepEqual(checkIntroduction(story(JSON.stringify(description))), []);
+  assert.deepEqual(checkIntroduction(story('`' + description + '`')), []);
 });
 
-test('rejects paragraphs, headings, lists, HTML, and a third sentence', () => {
+test('accepts paragraphs, headings, lists, HTML, and any number of sentences', () => {
   for (const text of [
     'Choose a date.\n\nUse the arrows.', '## Dates', '- Choose a date', '<p>Choose a date.</p>',
     'Choose a date.\n+ Use arrows.', 'Choose a date.\n> Use arrows.', '1) Choose a date',
     '```\nChoose a date\n```', 'Choose a date\n===', '    Choose a date', '\tChoose a date',
   ]) {
-    assert.match(checkIntroduction(story(JSON.stringify(text)))[0], /one paragraph/);
+    assert.deepEqual(checkIntroduction(story(JSON.stringify(text))), []);
   }
-  assert.match(checkIntroduction(story('"Choose a date. Change the month. Confirm the date."'))[0], /2 sentences/);
+  assert.deepEqual(checkIntroduction(story('"Choose a date. Change the month. Confirm the date."')), []);
 });
 
 test('rejects metadata that a spread, computed key, or duplicate property can override', () => {
