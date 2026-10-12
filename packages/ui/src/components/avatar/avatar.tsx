@@ -79,6 +79,8 @@ const statusStyle = css({
   insetInlineEnd: 0,
   inlineSize: '25%',
   blockSize: '25%',
+  // Let clicks and hover pass through the decorative dot and expanding ring.
+  pointerEvents: 'none',
   '&::before': {
     content: '""',
     position: 'absolute',

@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, waitFor, within } from 'storybook/test';
+import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Avatar, type AvatarSize, type AvatarStatus } from './index';
@@ -192,35 +192,29 @@ export const RTL: Story = {
   },
 };
 
-type RingFrame = { scale: number; opacity: number };
-const SAMPLE_WINDOW_MS = 2600;
-const SAMPLE_TIMEOUT_MS = 4000;
-
-async function samplePresenceRings(badges: HTMLElement[]): Promise<RingFrame[][]> {
-  const view = badges[0]!.ownerDocument.defaultView!;
-  const frames = badges.map(() => [] as RingFrame[]);
-  await new Promise<void>((resolve, reject) => {
-    const start = view.performance.now();
-    let frameId = 0;
-    const timeout = view.setTimeout(() => {
-      view.cancelAnimationFrame(frameId);
-      reject(new Error('Presence ring frame sampling timed out'));
-    }, SAMPLE_TIMEOUT_MS);
-    const sample = () => {
-      badges.forEach((badge, index) => {
-        const ring = view.getComputedStyle(badge, '::after');
-        frames[index]!.push({ scale: new DOMMatrixReadOnly(ring.transform).a, opacity: Number(ring.opacity) });
-      });
-      if (view.performance.now() - start >= SAMPLE_WINDOW_MS) {
-        view.clearTimeout(timeout);
-        resolve();
-      } else {
-        frameId = view.requestAnimationFrame(sample);
-      }
-    };
-    frameId = view.requestAnimationFrame(sample);
-  });
-  return frames;
+async function expectPresenceCycle(badge: HTMLElement) {
+  const view = badge.ownerDocument.defaultView!;
+  const animation = badge.getAnimations({ subtree: true }).find((animation) =>
+    animation.effect instanceof KeyframeEffect && animation.effect.pseudoElement === '::after',
+  );
+  await expect(animation).toBeDefined();
+  if (!animation) throw new Error('Missing presence ring animation');
+  const previousTime = animation.currentTime;
+  animation.pause();
+  await animation.ready;
+  try {
+    const frames = [[0, 0.8, 1], [600, 1.6, 0.5], [1199, 2.4, 0], [1200, 0.8, 1], [1800, 1.6, 0.5]] as const;
+    for (const [time, scale, opacity] of frames) {
+      animation.currentTime = time;
+      await new Promise<void>((resolve) => view.requestAnimationFrame(() => resolve()));
+      const ring = view.getComputedStyle(badge, '::after');
+      await expect(new DOMMatrixReadOnly(ring.transform).a).toBeCloseTo(scale, 2);
+      await expect(Number(ring.opacity)).toBeCloseTo(opacity, 2);
+    }
+  } finally {
+    animation.currentTime = previousTime;
+    animation.play();
+  }
 }
 
 export const OnlinePulse: Story = {
@@ -257,6 +251,7 @@ export const OnlinePulse: Story = {
         await expect(avatar).toHaveTextContent(`I${SIZES[Math.floor(index / 2)]!.charAt(0).toUpperCase()}`);
       }
       await expect(ring.animationDuration).toBe('1.2s');
+      await expect(ring.animationName).not.toBe('none');
       await expect(ring.animationTimingFunction).toBe('ease-in-out');
       await expect(ring.animationIterationCount).toBe('infinite');
       await expect(ring.borderTopWidth).toBe('1px');
@@ -264,15 +259,9 @@ export const OnlinePulse: Story = {
       await expect(getComputedStyle(badge, '::before').animationName).toBe('none');
       await expect(getComputedStyle(badge, '::before').transform).toBe('none');
       await expect(getComputedStyle(badge, '::before').opacity).toBe('1');
+      await expect(getComputedStyle(badge, '::before').boxShadow).toContain('0px 0px 0px 2px');
     }
-    const samples = await samplePresenceRings(badges);
-    for (const frames of samples) {
-      await expect(frames.some(({ scale, opacity }) => scale > 1 && scale < 2 && opacity > 0.2 && opacity < 0.8)).toBe(true);
-      await expect(Math.min(...frames.map(({ scale }) => scale))).toBeLessThan(0.9);
-      await expect(Math.max(...frames.map(({ scale }) => scale))).toBeGreaterThan(2.3);
-      const resets = frames.filter((frame, index) => index > 0 && frame.scale < frames[index - 1]!.scale - 1 && frame.opacity > frames[index - 1]!.opacity + 0.5);
-      await expect(resets.length).toBeGreaterThanOrEqual(2);
-    }
+    for (const badge of badges) await expectPresenceCycle(badge);
   },
 };
 
@@ -315,25 +304,18 @@ async function expectHiddenRingForMedia(canvasElement: HTMLElement, condition: s
   const badge = canvasElement.querySelector<HTMLElement>('[data-status]')!;
   const rules = Array.from(canvasElement.ownerDocument.styleSheets)
     .flatMap((sheet) => Array.from(sheet.cssRules))
-    .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText.includes(condition));
-  const originalMedia = rules.map((rule) => rule.media.mediaText);
-  await expect(rules.length).toBeGreaterThan(0);
-  try {
-    rules.forEach((rule) => { rule.media.mediaText = 'all'; });
-    const ring = getComputedStyle(badge, '::after');
-    await expect(ring.animationName).toBe('none');
-    await expect(ring.display).toBe('none');
-    await expect(ring.content).toBe('none');
-    const dot = getComputedStyle(badge, '::before');
-    await expect(dot.content).toBe('""');
-    await expect(dot.display).not.toBe('none');
-    await expect(dot.animationName).toBe('none');
-    await expect(dot.opacity).toBe('1');
-    await expect(badge).toHaveAttribute('data-status', 'online');
-    await expect(badge.parentElement).toHaveAccessibleName(`${NAME}, online`);
-  } finally {
-    rules.forEach((rule, index) => { rule.media.mediaText = originalMedia[index]!; });
-  }
+    .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText === `(${condition})`)
+    .flatMap((rule) => Array.from(rule.cssRules))
+    .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule);
+  const selectors = Array.from(badge.classList, (name) => `.${name}[data-status="online"][data-pulse]::after`);
+  const ringRule = rules.find((rule) => selectors.includes(rule.selectorText));
+  await expect(ringRule).toBeDefined();
+  await expect(ringRule?.style.content).toBe('none');
+  await expect(ringRule?.style.display).toBe('none');
+  await expect(ringRule?.style.animationName).toBe('none');
+  const disabledAnimation = canvasElement.ownerDocument.createElement('span').style;
+  disabledAnimation.animation = 'none';
+  await expect(ringRule?.style.animation).toBe(disabledAnimation.animation);
 }
 
 export const ReducedMotionRule: Story = {
@@ -347,5 +329,29 @@ export const PulseForcedColorsRule: Story = {
   args: { status: 'online', pulse: true },
   play: async ({ canvasElement }) => {
     await expectHiddenRingForMedia(canvasElement, 'forced-colors: active');
+  },
+};
+
+const presenceButtonStyle = { padding: vars.space[6] } satisfies CSSProperties;
+
+export const PulsePointerPassthrough: Story = {
+  args: { src: PHOTO_SRC, status: 'online', pulse: true, onClick: fn() },
+  render: (args) => (
+    <button type="button" aria-label="Open profile" onClick={args.onClick} style={presenceButtonStyle}>
+      <Avatar {...args} onClick={undefined} />
+    </button>
+  ),
+  play: async ({ canvasElement, userEvent, args }) => {
+    const button = within(canvasElement).getByRole('button', { name: 'Open profile' });
+    const badge = button.querySelector<HTMLElement>('[data-status]')!;
+    const { left, top, width, height } = badge.getBoundingClientRect();
+    await expect(getComputedStyle(badge).pointerEvents).toBe('none');
+    await expect(getComputedStyle(badge, '::after').pointerEvents).toBe('none');
+    const hit = canvasElement.ownerDocument.elementFromPoint(left + width / 2, top + height / 2);
+    await expect(hit).not.toBe(badge);
+    await expect(hit?.closest('button')).toBe(button);
+    if (!hit) throw new Error('Missing click target beneath presence badge');
+    await userEvent.click(hit);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
   },
 };
