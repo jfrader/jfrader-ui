@@ -1,5 +1,7 @@
-import type { ComponentPropsWithoutRef } from 'react';
-import { Markdown } from '@storybook/addon-docs/blocks';
+import { isValidElement, useMemo, type ComponentPropsWithoutRef } from 'react';
+import { Markdown, Unstyled } from '@storybook/addon-docs/blocks';
+import { CodeBlock, TypewriterTerminal } from '@jfrader/ui';
+import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
 import './guide.css';
 
 const guidePaths: Record<string, string> = {
@@ -14,8 +16,44 @@ function GuideLink({ href, ...props }: ComponentPropsWithoutRef<'a'>) {
   return <a {...props} href={page ? `./?path=/docs/${page}--docs` : href} target={target} />;
 }
 
-const markdownOptions = { overrides: { a: GuideLink } };
+const shellLanguages = new Set(['sh', 'shell', 'bash', 'shellscript']);
+const terminalSlots = { screen: { className: 'guide-terminal-screen' } };
+const completedPosition = Number.MAX_SAFE_INTEGER;
+
+function GuideTerminal({ code }: { code: string }) {
+  const steps = useMemo(() => [{ command: code }], [code]);
+  return (
+    <TypewriterTerminal
+      steps={steps}
+      title="Terminal"
+      label="Setup commands"
+      cwd=""
+      defaultValue={completedPosition}
+      defaultPaused
+      slotProps={terminalSlots}
+    />
+  );
+}
+
+function GuideCode({ children, ...props }: ComponentPropsWithoutRef<'pre'>) {
+  if (!isValidElement<ComponentPropsWithoutRef<'code'>>(children) || typeof children.props.children !== 'string') {
+    return <pre {...props}>{children}</pre>;
+  }
+  const code = children.props.children;
+  const language = children.props.className?.match(/\blang(?:uage)?-(\S+)/)?.[1];
+  return (
+    <Unstyled className="guide-example">
+      {language && shellLanguages.has(language.toLowerCase()) ? (
+        <GuideTerminal code={code} />
+      ) : (
+        <CodeBlock role="group" code={code} language={language} highlight={loadShikiHighlight} />
+      )}
+    </Unstyled>
+  );
+}
+
+const markdownOptions = { overrides: { a: GuideLink, pre: GuideCode } };
 
 export function Guide({ children }: { children: string }) {
-  return <div className="foundation-guide"><Markdown options={markdownOptions}>{children}</Markdown></div>;
+  return <article className="foundation-guide"><Markdown options={markdownOptions}>{children}</Markdown></article>;
 }

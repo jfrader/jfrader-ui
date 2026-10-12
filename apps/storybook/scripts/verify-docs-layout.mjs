@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { preview } from 'vite';
@@ -8,9 +9,9 @@ const cases = [
   { id: 'inputs-mentioninput--docs', primary: '[data-ui="mention-input"]' },
 ];
 const guides = [
-  { id: 'foundations-getting-started--docs', title: 'Getting started' },
-  { id: 'foundations-theming--docs', title: 'Theming' },
-  { id: 'foundations-styling--docs', title: 'Styling' },
+  { id: 'foundations-getting-started--docs', title: 'Getting started', source: 'consuming-jfrader-ui.md' },
+  { id: 'foundations-theming--docs', title: 'Theming', source: 'theming.md' },
+  { id: 'foundations-styling--docs', title: 'Styling', source: 'styling.md' },
 ];
 const viewports = [{ width: 390, height: 844 }, { width: 1440, height: 1000 }];
 const server = process.env.STORYBOOK_URL ? null : await preview({
@@ -53,15 +54,33 @@ try {
   }
 
   const index = await (await fetch(new URL('index.json', baseURL))).json();
-  for (const { id, title } of guides) {
+  for (const { id, title, source } of guides) {
+    const markdown = readFileSync(new URL(`../../../docs/${source}`, import.meta.url), 'utf8');
+    const examples = [...markdown.matchAll(/^```(\w*)\n([\s\S]*?)^```/gm)];
     assert.ok(index.entries[id], `${id}: guide is indexed`);
     assert.ok(index.entries[id].tags.includes('dev'), `${id}: guide is visible in the sidebar`);
-    for (const viewport of viewports) {
+    for (const { viewport, theme } of viewports.flatMap((viewport) =>
+      ['dark', 'light'].map((theme) => ({ viewport, theme })))) {
       await page.setViewportSize(viewport);
-      await page.goto(new URL(`iframe.html?id=${id}&viewMode=docs`, baseURL).href);
+      await page.goto(new URL(`iframe.html?id=${id}&viewMode=docs&globals=theme:${theme}`, baseURL).href);
       await page.getByRole('heading', { name: title, exact: true }).waitFor();
       await page.evaluate(() => document.fonts.ready);
-      assert.ok(await page.locator('.foundation-guide pre').count(), `${id}: examples are rendered`);
+      const rendered = page.locator('.foundation-guide .guide-example');
+      assert.equal(await rendered.count(), examples.length, `${id}: every Markdown fence uses a component`);
+      for (const [index, [, language, code]] of examples.entries()) {
+        const example = rendered.nth(index);
+        if (language === 'sh') {
+          const terminal = example.locator('[data-ui="typewriter-terminal"]');
+          assert.ok((await terminal.locator('[data-ui="typewriter-terminal-screen"]').textContent()).endsWith(code),
+            `${id}: command ${index} is immediately readable`);
+          const seek = terminal.getByRole('slider');
+          assert.equal(await seek.inputValue(), await seek.getAttribute('max'), `${id}: command ${index} starts at the end`);
+        } else {
+          const block = example.locator('[data-ui="code-block"]');
+          if (language !== 'ini') await example.locator('[data-ui="code-block"][data-highlighted]').waitFor();
+          assert.equal(await block.locator('code').textContent(), code, `${id}: example ${index} preserves its source`);
+        }
+      }
       const dimensions = await page.evaluate(() => ({
         width: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -82,7 +101,7 @@ try {
         }
         assert.ok(!href?.includes('.md'), `${id}: Markdown file link was not mapped to Storybook`);
       }
-      console.log(`verify-docs-layout: ${id} at ${viewport.width}px OK`);
+      console.log(`verify-docs-layout: ${id} at ${viewport.width}px ${theme} OK`);
     }
   }
 

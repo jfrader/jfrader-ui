@@ -48,6 +48,18 @@ pnpm dev --port 6006 && echo "ready"
   <a href="/docs">Read the docs</a>
 </section>
 `,
+  JSX: `<button type="button" onClick={() => handleClick(id)}>
+  {label}
+</button>
+`,
+  TSX: `interface Props {
+  count: number;
+}
+
+export const Counter = ({ count }: Props) => (
+  <span className="count">{count}</span>
+);
+`,
 } as const;
 const SAMPLE_FILENAMES: Record<keyof typeof SAMPLES, string> = {
   TypeScript: 'theme.ts',
@@ -56,6 +68,8 @@ const SAMPLE_FILENAMES: Record<keyof typeof SAMPLES, string> = {
   CSS: 'card.css',
   Bash: 'setup.sh',
   HTML: 'hero.html',
+  JSX: 'button.jsx',
+  TSX: 'counter.tsx',
 };
 const meta = {
   title: 'Data display/CodeBlock',
@@ -69,7 +83,7 @@ const meta = {
           'Display code, copy it, and expand hidden lines. Add a language label or syntax highlighting when needed.',
       },
       usage: `- Code is plain text by default. Pass a \`highlight\` loader to tokenize it.
-- \`@jfrader/ui/code-block/shiki\` exports \`loadShikiHighlight\` and requires the optional \`shiki\` peer. It supports JavaScript, TypeScript, JSON, CSS, Bash, and HTML; other languages stay plain.
+- \`@jfrader/ui/code-block/shiki\` exports \`loadShikiHighlight\` and requires the optional \`shiki\` peer. It supports JavaScript, TypeScript, JSX, TSX, JSON, CSS, Bash, and HTML; other languages stay plain.
 - Copy uses the full source. \`maxLines\` limits the displayed logical lines.
 
 ### Keyboard
@@ -560,6 +574,68 @@ export const HighlightedLight: Story = {
   globals: { theme: 'light' },
   decorators: [withLightTheme],
   play: Highlighted.play,
+};
+export const HighlightedJsx: Story = {
+  args: {
+    code: SAMPLES.JSX,
+    filename: SAMPLE_FILENAMES.JSX,
+    language: 'jsx',
+    lineNumbers: true,
+    highlight: loadShikiHighlight,
+  },
+  play: async ({ args, canvasElement }) => {
+    const root = canvasElement.querySelector('section')!;
+    await expectHighlighted(root, args.code);
+    const spans = Array.from(root.querySelectorAll<HTMLElement>('code span'));
+    const tag = spans.find((span) => span.textContent === 'button');
+    const attribute = spans.find((span) => span.textContent === 'onClick');
+    const expressionKeyword = spans.find((span) => span.textContent === '=>');
+    const expressionFn = spans.find((span) => span.textContent === 'handleClick');
+    const expressionBrace = spans.find((span) => span.textContent === '{');
+    await expect(tag?.style.color).toBe(vars.color.syntaxTag);
+    await expect(attribute?.style.color).toBe(vars.color.syntaxProperty);
+    await expect(expressionKeyword?.style.color).toBe(vars.color.syntaxKeyword);
+    await expect(expressionFn?.style.color).toBe(vars.color.syntaxFunction);
+    await expect(expressionBrace?.style.color).toBe(vars.color.syntaxPunctuation);
+    await expect(source(canvasElement).textContent).toBe(args.code);
+  },
+};
+export const HighlightedJsxLight: Story = {
+  args: HighlightedJsx.args,
+  globals: { theme: 'light' },
+  decorators: [withLightTheme],
+  play: HighlightedJsx.play,
+};
+export const HighlightedTsx: Story = {
+  args: {
+    code: SAMPLES.TSX,
+    filename: SAMPLE_FILENAMES.TSX,
+    language: 'tsx',
+    lineNumbers: true,
+    highlight: loadShikiHighlight,
+  },
+  play: async ({ args, canvasElement }) => {
+    const root = canvasElement.querySelector('section')!;
+    await expectHighlighted(root, args.code);
+    const spans = Array.from(root.querySelectorAll<HTMLElement>('code span'));
+    const keyword = spans.find((span) => span.textContent === 'export');
+    const type = spans.find((span) => span.textContent === 'Props');
+    const tag = spans.find((span) => span.textContent === 'span');
+    const attribute = spans.find((span) => span.textContent === 'className');
+    const expressionWrap = spans.find((span) => span.textContent === '>{');
+    await expect(keyword?.style.color).toBe(vars.color.syntaxKeyword);
+    await expect(type?.style.color).toBe(vars.color.syntaxType);
+    await expect(tag?.style.color).toBe(vars.color.syntaxTag);
+    await expect(attribute?.style.color).toBe(vars.color.syntaxProperty);
+    await expect(expressionWrap?.style.color).toBe(vars.color.syntaxPunctuation);
+    await expect(source(canvasElement).textContent).toBe(args.code);
+  },
+};
+export const HighlightedTsxLight: Story = {
+  args: HighlightedTsx.args,
+  globals: { theme: 'light' },
+  decorators: [withLightTheme],
+  play: HighlightedTsx.play,
 };
 export const HighlightedLanguages: Story = {
   args: { highlight: loadShikiHighlight, lineNumbers: true },

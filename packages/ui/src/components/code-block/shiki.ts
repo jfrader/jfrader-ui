@@ -63,6 +63,8 @@ const theme: ThemeRegistration = {
 const grammars = {
   javascript: () => import('shiki/langs/javascript.mjs'),
   typescript: () => import('shiki/langs/typescript.mjs'),
+  jsx: () => import('shiki/langs/jsx.mjs'),
+  tsx: () => import('shiki/langs/tsx.mjs'),
   json: () => import('shiki/langs/json.mjs'),
   css: () => import('shiki/langs/css.mjs'),
   shellscript: () => import('shiki/langs/shellscript.mjs'),
@@ -79,6 +81,8 @@ const ALIASES = new Map<string, Grammar>([
   ['ts', 'typescript'],
   ['mts', 'typescript'],
   ['cts', 'typescript'],
+  ['jsx', 'jsx'],
+  ['tsx', 'tsx'],
   ['json', 'json'],
   ['css', 'css'],
   ['bash', 'shellscript'],
@@ -114,7 +118,7 @@ function loadGrammar(core: HighlighterCore, grammar: Grammar) {
   return loading;
 }
 
-/** Highlights js/ts/json/css/bash/html with shiki; any other language resolves to `null` (plain text). */
+/** Highlights js/ts/jsx/tsx/json/css/bash/html with shiki; any other language resolves to `null` (plain text). */
 export const loadShikiHighlight: CodeHighlightLoader = async ({ code, language }) => {
   const grammar = language === undefined ? undefined : ALIASES.get(language.trim().toLowerCase());
   if (!grammar) return null;
