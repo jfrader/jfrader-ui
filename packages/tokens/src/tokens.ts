@@ -106,6 +106,11 @@ export const base = {
   },
   // Component structural sizes; theme-independent, so light shares them.
   size: {
+    // Emblem plate: the square side for circle, squircle and hexagon; the shield is 8:7 on top of it.
+    emblemSm: '24px',
+    emblemMd: '32px',
+    emblemLg: '40px',
+    emblemXl: '56px',
     // Layer inline size at which SheetStack's auto variant switches from sheet to centered dialog.
     sheetStackBreakpoint: '640px',
     // How much of each parent panel shows above the active one.
