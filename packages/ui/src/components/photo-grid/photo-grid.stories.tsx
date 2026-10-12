@@ -173,6 +173,8 @@ export const Empty: Story = {
   },
 };
 export const SinglePhoto: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { photos: photos.slice(0, 1), defaultOpen: true },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('dialog', { name: 'Landscape 1' })).toBeVisible();
@@ -314,6 +316,8 @@ export const LiveStatus: Story = {
   },
 };
 export const ControlledValueRejected: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { open: true, value: 'photo-0' },
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Next photo' }));
@@ -366,6 +370,8 @@ export const MultipleInstances: Story = {
   },
 };
 export const PersistentViewer: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: 'photo-2' },
   play: async ({ canvas }) => {
     const dialog = canvas.getByRole('dialog');
@@ -373,8 +379,13 @@ export const PersistentViewer: Story = {
     await expect(dialog.querySelector('[data-ui="photo-grid-stage"] img')).toHaveAttribute('alt', '');
   },
 };
-export const PersistentFavorite: Story = { args: { defaultOpen: true, defaultFavorites: ['photo-0'] } };
+export const PersistentFavorite: Story = { 
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
+args: { defaultOpen: true, defaultFavorites: ['photo-0'] } };
 export const PersistentImageZoom: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
@@ -382,7 +393,10 @@ export const PersistentImageZoom: Story = {
     await expect(canvas.getByRole('button', { name: 'Pan left' })).toBeVisible();
   },
 };
-export const PersistentUnavailable: Story = { args: { defaultOpen: true, value: 'missing' } };
+export const PersistentUnavailable: Story = { 
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
+args: { defaultOpen: true, value: 'missing' } };
 export const KeyboardPlay: Story = {
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const buttons = tiles(canvasElement);
@@ -457,6 +471,8 @@ export const KeyboardPlay: Story = {
   },
 };
 export const FalsyDetails: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     photos: photos.slice(0, 4).map((photo, index) => ({ ...photo, detail: [false, null, 0, ''][index] })),
@@ -503,6 +519,8 @@ export const NativeLifecycle: Story = {
   },
 };
 export const CancelVeto: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, slotProps: { viewer: { onCancel: fn((event) => event.preventDefault()) } } },
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
@@ -578,6 +596,8 @@ export const ControlledAxes: Story = {
 };
 
 export const RejectedNativeCloseRepair: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { open: true, value: 'photo-0' },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const dialog = canvas.getByRole('dialog') as HTMLDialogElement;
@@ -671,6 +691,8 @@ export const CallbackOrder: Story = {
 };
 
 export const FormClosure: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, slotProps: { viewer: { onClose: fn() } } },
   play: async ({ canvas, args, userEvent }) => {
     const dialog = canvas.getByRole('dialog') as HTMLDialogElement;
@@ -776,6 +798,8 @@ export const PinchDensity: Story = {
 };
 
 export const ViewerGestures: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvas, args, userEvent }) => {
     let stage = canvas.getByRole('group', { name: 'Landscape 1' });
@@ -810,6 +834,8 @@ export const ViewerGestures: Story = {
 };
 
 export const ViewerExternalAria: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     slotProps: {
