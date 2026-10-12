@@ -118,12 +118,14 @@ export interface MenuPartIdentity {
   styles?: Interpolation<Theme>;
 }
 
-/** Item behavior a family may change: the part name in usage errors, the item role and whether
- * selection closes the menu. */
+/** Item behavior a family may change: the part name in usage errors, the item role, whether
+ * selection closes the menu, and `busy` (an item that stays focusable and navigable but ignores
+ * activation, exposed as aria-busy and aria-disabled). */
 export interface MenuItemPartBehavior {
   part?: string;
-  itemRole?: 'menuitem' | 'menuitemcheckbox';
+  itemRole?: 'menuitem' | 'menuitemcheckbox' | 'menuitemradio';
   closeOnSelect?: boolean;
+  busy?: boolean;
 }
 
 const MenuContext = createContext<MenuContextValue | null>(null);
@@ -171,7 +173,7 @@ export function consumerHandlersFirst(
   return merged;
 }
 
-const joinIds = (...ids: Array<string | undefined>) => ids.filter(Boolean).join(' ') || undefined;
+export const joinIds = (...ids: Array<string | undefined>) => ids.filter(Boolean).join(' ') || undefined;
 
 const itemStyle = css({
   appearance: 'none',
@@ -223,6 +225,17 @@ export const menuItemToneStyles: Record<MenuItemTone, SerializedStyles> = {
   }),
 };
 
+/**
+ * Returns focus to a closed overlay's trigger, unless the trigger left the document or became
+ * inert (its owner is being removed) or something else already holds focus.
+ */
+export function restoreTriggerFocus(trigger: HTMLElement | null) {
+  if (!trigger?.isConnected || trigger.closest('[inert]')) return;
+  const active = trigger.ownerDocument.activeElement;
+  if (active && active !== trigger.ownerDocument.body) return;
+  trigger.focus();
+}
+
 function MenuOverlay({
   open: openProp,
   defaultOpen = false,
@@ -256,11 +269,7 @@ function MenuOverlay({
   useEffect(() => {
     if (open || !pendingFocusRestoreRef.current) return;
     pendingFocusRestoreRef.current = false;
-    const trigger = refs.domReference.current;
-    if (!trigger?.isConnected || trigger.closest('[inert]')) return;
-    const active = trigger.ownerDocument.activeElement;
-    if (active && active !== trigger.ownerDocument.body) return;
-    trigger.focus();
+    restoreTriggerFocus(refs.domReference.current);
   }, [open, refs]);
 
   const click = useClick(context);
@@ -387,8 +396,7 @@ export function MenuContentPart({
   defaultLabelledBy,
   ...rest
 }: MenuContentProps & MenuPartIdentity & { defaultLabelledBy?: string }) {
-  const { open, nodeId, refs, floatingContext, floatingStyles, elementsRef, labelsRef, getFloatingProps } =
-    useMenuContext(family, 'Content');
+  const { open, refs, floatingContext, floatingStyles, getFloatingProps } = useMenuContext(family, 'Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
 
   if (!open) return null;
@@ -423,16 +431,28 @@ export function MenuContentPart({
               style={{ ...style, ...floatingStyles }}
               className={className}
             >
-              <FloatingList elementsRef={elementsRef} labelsRef={labelsRef}>
-                <MenuContentContext.Provider value>
-                  <LayerContent nodeId={nodeId}>{children}</LayerContent>
-                </MenuContentContext.Provider>
-              </FloatingList>
+              <MenuCollection family={family}>{children}</MenuCollection>
             </div>
           )}
         </WithSx>
       </FloatingFocusManager>
     </OverlayPortal>
+  );
+}
+
+/**
+ * The menu's item collection: items rendered inside register with its list navigation and
+ * typeahead, and layers opened inside nest under the menu. Families that build their own surface
+ * around the menu element (UserMenu) render it inside the element carrying the floating props.
+ */
+export function MenuCollection({ family, children }: { family: string; children?: ReactNode }) {
+  const { nodeId, elementsRef, labelsRef } = useMenuContext(family, 'Content');
+  return (
+    <FloatingList elementsRef={elementsRef} labelsRef={labelsRef}>
+      <MenuContentContext.Provider value>
+        <LayerContent nodeId={nodeId}>{children}</LayerContent>
+      </MenuContentContext.Provider>
+    </FloatingList>
   );
 }
 
@@ -452,6 +472,7 @@ export function MenuItemPart({
   part = 'Item',
   itemRole = 'menuitem',
   closeOnSelect = true,
+  busy = false,
   onClick,
   className,
   sx,
@@ -467,7 +488,7 @@ export function MenuItemPart({
   useCollectionIndexRegistration(index, disabled, disabledIndices);
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
+    if (disabled || busy) return;
     onClick?.(event);
     onSelect?.();
     if (closeOnSelect && !event.defaultPrevented) requestClose(true);
@@ -482,7 +503,8 @@ export function MenuItemPart({
           ref={mergedRef}
           role={itemRole}
           tabIndex={isActive ? 0 : -1}
-          aria-disabled={disabled || undefined}
+          aria-disabled={disabled || busy || undefined}
+          aria-busy={busy || undefined}
           data-active={isActive || undefined}
           data-ui={marker}
           className={className}

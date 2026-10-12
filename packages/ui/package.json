@@ -105,7 +105,8 @@
     "./toggle-group": { "types": "./src/components/toggle-group/index.ts", "import": "./src/components/toggle-group/index.ts" },
     "./tooltip": { "types": "./src/components/tooltip/index.ts", "import": "./src/components/tooltip/index.ts" },
     "./tree-view": { "types": "./src/components/tree-view/index.ts", "import": "./src/components/tree-view/index.ts" },
-    "./usage-meter": { "types": "./src/components/usage-meter/index.ts", "import": "./src/components/usage-meter/index.ts" }
+    "./usage-meter": { "types": "./src/components/usage-meter/index.ts", "import": "./src/components/usage-meter/index.ts" },
+    "./user-menu": { "types": "./src/components/user-menu/index.ts", "import": "./src/components/user-menu/index.ts" }
   },
   "publishConfig": {
     "access": "public"
