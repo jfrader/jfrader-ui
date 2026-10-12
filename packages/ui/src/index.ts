@@ -29,6 +29,7 @@ export * from './components/date-range-picker';
 export * from './components/dialog';
 export * from './components/divider';
 export * from './components/drawer';
+export * from './components/editable-details';
 export * from './components/elastic-slider';
 export * from './components/empty-state';
 export * from './components/expandable-card';
