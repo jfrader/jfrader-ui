@@ -253,3 +253,27 @@ export const LightTheme: Story = {
     await expect(within(canvasElement).getByText('jfrader-ui')).toHaveAttribute('aria-current', 'page');
   },
 };
+
+export const NarrowTrail: Story = {
+  args: { dir: 'rtl', 'aria-label': 'Location' },
+  render: (args) => (
+    <div style={{ inlineSize: '180px' }}>
+      <Breadcrumbs {...args}>
+        <Breadcrumbs.Item href="/">Home</Breadcrumbs.Item>
+        <Breadcrumbs.Item href="/projects">AnUnbrokenProjectLabelThatMustFitTheAvailableWidth</Breadcrumbs.Item>
+        <Breadcrumbs.Item>Current page</Breadcrumbs.Item>
+      </Breadcrumbs>
+    </div>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const nav = within(canvasElement).getByRole('navigation', { name: 'Location' });
+    await expect(nav).toHaveAttribute('dir', 'rtl');
+    await expect(nav.scrollWidth).toBeLessThanOrEqual(nav.clientWidth);
+    for (const link of within(nav).getAllByRole('link')) {
+      await expect(link.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+      await userEvent.tab();
+      await expect(link.ownerDocument.activeElement).toBe(link);
+      await expect(getComputedStyle(link).outlineWidth).toBe('2px');
+    }
+  },
+};

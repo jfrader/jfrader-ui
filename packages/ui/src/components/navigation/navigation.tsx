@@ -59,6 +59,8 @@ const LABEL_TRACKING = '0.06em';
 
 const rootStyle = css({
   display: 'grid',
+  minInlineSize: 0,
+  overflowWrap: 'anywhere',
   gap: vars.space[4],
   fontFamily: vars.font.sans,
 });
@@ -120,6 +122,12 @@ const summaryStyle = css({
       transitionDuration: '0s',
     },
   },
+  [FORCED_COLORS]: {
+    '&::after': {
+      forcedColorAdjust: 'none',
+      color: 'ButtonText',
+    },
+  },
 });
 
 const listStyle = css({
@@ -175,7 +183,9 @@ const itemStyle = css({
 function NavigationRoot({ ref, label = 'Main', className, sx, ...rest }: NavigationProps) {
   return (
     <WithSx className={className} styles={rootStyle} sx={sx}>
-      {(className) => <nav {...rest} ref={ref} aria-label={label} data-ui="navigation" className={className} />}
+      {(className) => (
+        <nav {...rest} ref={ref} aria-label={rest['aria-label'] ?? label} data-ui="navigation" className={className} />
+      )}
     </WithSx>
   );
 }
@@ -247,6 +257,7 @@ function NavigationItem({
   sx,
   ...rest
 }: NavigationItemProps) {
+  const isDisabled = disabled || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true';
   const content = (
     <>
       {isRenderable(icon) && (
@@ -258,10 +269,10 @@ function NavigationItem({
     </>
   );
   const state = {
-    'aria-current': active ? ('page' as const) : undefined,
-    'aria-disabled': disabled || undefined,
-    tabIndex: disabled ? -1 : rest.tabIndex,
-    onClick: disabled
+    'aria-current': active ? ('page' as const) : rest['aria-current'],
+    'aria-disabled': isDisabled || rest['aria-disabled'],
+    tabIndex: isDisabled ? -1 : rest.tabIndex,
+    onClick: isDisabled
       ? (event: MouseEvent<HTMLElement>) => {
           event.preventDefault();
         }
@@ -277,8 +288,8 @@ function NavigationItem({
               {...rest}
               {...state}
               ref={ref as Ref<HTMLAnchorElement>}
-              href={disabled ? undefined : href}
-              role={disabled ? 'link' : undefined}
+              href={isDisabled ? undefined : href}
+              role={isDisabled ? 'link' : undefined}
               data-ui="navigation-item"
               className={className}
             >
