@@ -7,9 +7,10 @@
 // anatomy from one place; a part's own className/css still merges last.
 import { createContext, useContext, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { raisedSurface, surfaceAttributes, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
-import { AppearanceScope, themeScopeStyle, useSurfaceAppearance, useSurfaceStyle } from '../../styling/theme-scope';
+import { css, type Interpolation, type Theme } from '../../styling/css';
+import type { SurfaceAppearance } from '../../styling/surface';
+import type { SurfacePartProps, SurfaceRootCustomization, SurfaceRootSlotProps } from '../surface';
+import { SurfaceRoot, resolveSurfaceValue } from '../surface/surface-root';
 import { WithSx, type SxProps } from '../../styling/sx';
 
 export type CardVariant = 'flat' | 'raised';
@@ -22,7 +23,7 @@ export interface CardPartProps {
 }
 
 export interface CardSlotProps {
-  root?: CardPartProps;
+  root?: SurfaceRootSlotProps;
   header?: CardPartProps;
   title?: CardPartProps;
   description?: CardPartProps;
@@ -30,14 +31,15 @@ export interface CardSlotProps {
   footer?: CardPartProps;
 }
 
-export interface CardProps extends ComponentPropsWithRef<'div'>, SxProps {
+export interface CardProps extends SurfacePartProps, SxProps, Omit<SurfaceRootCustomization, 'slotProps'> {
   variant?: CardVariant;
   /**
    * `contrast` uses the dark palette with a charcoal surface on any page theme.
-   * Omit this prop or use `default` to keep the enclosing theme.
+   * Omit this prop or use `default` to inherit the enclosing appearance, including contrast.
    */
   appearance?: SurfaceAppearance;
   slotProps?: CardSlotProps;
+  css?: Interpolation<Theme>;
 }
 
 export type CardHeaderProps = ComponentPropsWithRef<'div'> & SxProps;
@@ -60,17 +62,12 @@ function joinClassNames(...names: (string | undefined)[]) {
 
 // Precedence: base → variant → slotProps.root.css → consumer css → consumer sx.
 const rootStyle = css({
-  ...raisedSurface,
   minInlineSize: 0,
-  borderRadius: vars.radius.lg,
   paddingBlock: vars.space[4],
   paddingInline: vars.space[5],
 });
 
-const variantStyles: Record<CardVariant, SerializedStyles> = {
-  flat: css({ boxShadow: 'none' }),
-  raised: css({ boxShadow: vars.shadow.raised }),
-};
+const variants = ['flat', 'raised'] as const;
 
 const headerStyle = css({
   display: 'grid',
@@ -110,33 +107,19 @@ const footerStyle = css({
   '& > :only-child': { marginInlineStart: 'auto' },
 });
 
-function CardRoot({ ref, variant = 'raised', appearance, slotProps, className, style, sx, ...rest }: CardProps) {
-  const surfaceAppearance = useSurfaceAppearance(appearance);
-  const ownTheme = surfaceTheme(appearance ?? 'default');
-  const surfaceStyle = useSurfaceStyle(ownTheme, style);
-
+function CardRoot({ variant: variantProp, slotProps, ...props }: CardProps) {
+  const variant = resolveSurfaceValue('Card', 'variant', variantProp, variants, 'raised');
   return (
-    <CardSlotContext.Provider value={slotProps}>
-      <AppearanceScope theme={ownTheme} appearance={surfaceAppearance}>
-        <WithSx
-          className={joinClassNames(slotProps?.root?.className, className)}
-          styles={[rootStyle, variantStyles[variant], ownTheme && themeScopeStyle, slotProps?.root?.css]}
-          sx={sx}
-        >
-          {(className) => (
-            <div
-              {...rest}
-              ref={ref}
-              data-ui="card"
-              data-variant={variant}
-              {...surfaceAttributes(appearance ?? 'default')}
-              className={className}
-              style={surfaceStyle}
-            />
-          )}
-        </WithSx>
-      </AppearanceScope>
-    </CardSlotContext.Provider>
+    <SurfaceRoot
+      {...props}
+      slotProps={slotProps}
+      owner="Card"
+      marker="card"
+      variant={variant}
+      structure={rootStyle}
+      attributes={{ 'data-variant': props['data-variant'] ?? variant }}
+      wrapChildren={(children) => <CardSlotContext.Provider value={slotProps}>{children}</CardSlotContext.Provider>}
+    />
   );
 }
 

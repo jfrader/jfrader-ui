@@ -109,6 +109,7 @@
     "./stack": { "types": "./src/components/stack/index.ts", "import": "./src/components/stack/index.ts" },
     "./stepper": { "types": "./src/components/stepper/index.ts", "import": "./src/components/stepper/index.ts" },
     "./stretch-refresh": { "types": "./src/components/stretch-refresh/index.ts", "import": "./src/components/stretch-refresh/index.ts" },
+    "./surface": { "types": "./src/components/surface/index.ts", "import": "./src/components/surface/index.ts" },
     "./swipe-actions": { "types": "./src/components/swipe-actions/index.ts", "import": "./src/components/swipe-actions/index.ts" },
     "./switch": { "types": "./src/components/switch/index.ts", "import": "./src/components/switch/index.ts" },
     "./tabs": { "types": "./src/components/tabs/index.ts", "import": "./src/components/tabs/index.ts" },

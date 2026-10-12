@@ -1,13 +1,20 @@
 import type { CSSProperties, SyntheticEvent } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fireEvent, fn, spyOn, userEvent, waitFor, within } from 'storybook/test';
+import { renderToString } from 'react-dom/server';
 import { vars } from '@jfrader/tokens/vars';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
-import { Dialog, type DialogProps } from './index';
+import { ThemeRoot } from '../theme-root';
+import { Surface, type SurfacePartProps } from '../surface';
+import { Card } from '../card';
+import { css } from '../../styling/css';
+import { WithSx } from '../../styling/sx';
+import { OverlayPortal } from '../../overlay/overlay-portal';
+import { Dialog, type DialogPanelProps, type DialogProps } from './index';
 
 const TITLE = 'Edit profile';
 const DESCRIPTION = 'Update your display name and avatar.';
@@ -29,12 +36,126 @@ const footerStyle = {
 const meta = {
   title: 'Surfaces/Dialog',
   component: Dialog,
-  parameters: { docs: { description: { component: 'Open a dialog to show content or ask for a decision.' } } },
+  parameters: { docs: {
+    description: { component: 'Open a dialog to show content or ask for a decision.' },
+    usage: `### Panel and shell
+Plain Dialog.Content children get one default Dialog.Panel. For contrast or custom material, supply one direct Dialog.Panel child; fragments and whitespace are allowed, other substantive siblings are not. Put providers inside Panel or outside Content. Panel outside Content throws.
+
+Dialog.Content ref, css, sx and native callbacks target the real dialog shell. Dialog.Panel ref targets its div. Panel has inherited appearance by default; appearance="contrast" establishes fixed charcoal. Panel keeps padding, size limits and enter/exit motion.
+
+### Root replacement
+On Panel, component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and css (no sx). Declare adapters outside render, render one div, and forward all supplied props and ref. Apply material before the supplied className. A changed component identity remounts children and loses focus and uncontrolled input state.
+
+Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → panel structure → slot css/classes → consumer css/classes → sx. Use [data-ui~="dialog-panel"] for composed roots.
+
+### Keyboard
+Tab and Shift+Tab stay inside. Escape and Close request closure through the shell; onCancel can veto cancelable requests. Accepted closure restores focus after exit motion. Reduced motion makes entry and exit instant.`,
+  } },
 } satisfies Meta<typeof Dialog>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
+const shellStyleOverride = css({ outlineOffset: vars.space[3] });
+function DialogPaper({ className, ...props }: SurfacePartProps) {
+  return <WithSx styles={adapterMaterial} className={className}>{(classes) => <div {...props} className={classes} />}</WithSx>;
+}
+
+function rootAdapterStory(component: DialogPanelProps['component']): Story {
+  return {
+    tags: ['!autodocs'],
+    render: (args) => <Dialog {...args} defaultOpen>
+      <Dialog.Trigger>Open adapter</Dialog.Trigger>
+      <Dialog.Content sx={shellStyleOverride}
+        ref={(node) => { if (node) node.dataset.shellRef = node.tagName; }}
+        onCancel={(event) => { event.currentTarget.dataset.cancelReceived = 'true'; }}>
+        <Dialog.Panel component={component} slotProps={{ root: {
+          className: 'panel-slot',
+          ref: (node) => { if (node) node.dataset.rootRef = node.tagName; },
+        } }}>
+          <Dialog.Title>Adapter export</Dialog.Title>
+          <input aria-label="Export draft" defaultValue="Keep me" />
+          <Dialog.Close>Close adapter</Dialog.Close>
+        </Dialog.Panel>
+      </Dialog.Content>
+    </Dialog>,
+    play: async ({ canvas, canvasElement, userEvent }) => {
+      const shell = canvasElement.querySelector('dialog')!;
+      const panel = shell.querySelector<HTMLElement>('[data-ui~="dialog-panel"]')!;
+      await expect(shell).toHaveAttribute('data-shell-ref', 'DIALOG');
+      await expect(panel).toHaveAttribute('data-root-ref', 'DIV');
+      await expect(panel).toHaveClass('panel-slot');
+      await expect(shell.querySelectorAll('[data-ui~="dialog-panel"]')).toHaveLength(1);
+      await expect(getComputedStyle(shell).outlineOffset).not.toBe(getComputedStyle(panel).outlineOffset);
+      const input = canvas.getByRole('textbox', { name: 'Export draft' });
+      await userEvent.type(input, ' edited');
+      fireEvent(shell, new Event('cancel', { cancelable: true }));
+      await waitFor(() => expect(shell).not.toHaveAttribute('open'));
+      await expect(shell).toHaveAttribute('data-cancel-received', 'true');
+      await userEvent.click(canvas.getByRole('button', { name: 'Open adapter' }));
+      await waitFor(() => expect(shell).toHaveAttribute('open'));
+      await expect(canvas.getByRole('textbox', { name: 'Export draft' })).toBe(input);
+      await expect(input).toHaveValue('Keep me edited');
+      if (component === DialogPaper) await expect(getComputedStyle(panel).borderTopStyle).toBe('dashed');
+    },
+  };
+}
+
+export const SurfaceAdapter = rootAdapterStory(Surface);
+export const CardAdapter = rootAdapterStory(Card);
+export const IndependentMaterialAdapter = rootAdapterStory(DialogPaper);
+export const SurfaceAdapterLight: Story = { ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
+
+export const PanelComposition: Story = {
+  render: (args) => <DialogExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const shell = canvasElement.querySelector('dialog')!;
+    await expect(shell.querySelectorAll('[data-ui~="dialog-panel"]')).toHaveLength(1);
+    await expect(() => renderToString(<Dialog.Panel />)).toThrow('Dialog.Panel must be rendered inside <Dialog.Content>.');
+    const warning = spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      renderToString(<Dialog><Dialog.Content><Dialog.Panel>One</Dialog.Panel><Dialog.Panel>Two</Dialog.Panel></Dialog.Content></Dialog>);
+      await expect(warning).toHaveBeenCalledWith(expect.stringContaining('one direct Dialog.Panel child'));
+    } finally { warning.mockRestore(); }
+  },
+};
+
+function ContrastPanelFixture({ theme = 'light', ...props }: DialogProps & { theme?: 'dark' | 'light' }) {
+  const [panel, setPanel] = useState<HTMLDivElement | null>(null);
+  return <ThemeRoot theme={theme} portalContainer={panel}>
+    <Dialog {...props} defaultOpen>
+      <Dialog.Content><><Dialog.Panel appearance="contrast" ref={setPanel}>
+        <Dialog.Title>Export profile</Dialog.Title>
+        <Surface appearance="default" data-testid="dialog-inherited">Profile details</Surface>
+        <OverlayPortal><Surface data-testid="dialog-contrast-portal">Export details</Surface></OverlayPortal>
+        <Dialog.Close>Close export</Dialog.Close>
+      </Dialog.Panel></></Dialog.Content>
+    </Dialog>
+  </ThemeRoot>;
+}
+
+export const DialogContrastPanel: Story = {
+  globals: { theme: 'light' },
+  tags: ['!autodocs'],
+  render: (args) => <ContrastPanelFixture {...args} />,
+  play: async ({ canvasElement }) => {
+    const shell = canvasElement.querySelector('dialog')!;
+    const panels = shell.querySelectorAll('[data-ui~="dialog-panel"]');
+    await expect(panels).toHaveLength(1);
+    const panel = panels[0]!;
+    await expect(panel).toHaveAttribute('data-appearance', 'contrast');
+    const portal = await within(panel as HTMLElement).findByTestId('dialog-contrast-portal');
+    await expect(portal.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
+    await expect(getComputedStyle(portal).backgroundColor).toBe(getComputedStyle(panel).backgroundColor);
+  },
+};
+export const DialogContrastPanelDark: Story = {
+  ...DialogContrastPanel,
+  globals: { theme: 'dark' },
+  render: (args) => <ContrastPanelFixture {...args} theme="dark" />,
+};
 
 function DialogExample(props: DialogProps) {
   return (

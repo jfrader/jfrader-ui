@@ -18,7 +18,7 @@ const lightSurfaceStyle = css({
 });
 
 /** Story-only: renders the story on a scoped light `ThemeRoot` surface, whatever the page theme. */
-export const withLightTheme: Decorator = (Story) => (
+export const withLightTheme = <TArgs,>(Story: Parameters<Decorator<TArgs>>[0]) => (
   <ThemeRoot theme="light" data-story-theme-scope="" css={lightSurfaceStyle}>
     <Story />
   </ThemeRoot>

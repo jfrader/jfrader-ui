@@ -4,12 +4,16 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { WithSx } from '../../styling/sx';
+import { useThemeScope } from '../../styling/theme-scope';
+import { OverlayPortal } from '../../overlay/overlay-portal';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
 import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
+import { Surface, type SurfacePartProps } from '../surface';
 import { Card, type CardProps, type CardVariant } from './index';
 
 const VARIANTS = ['flat', 'raised'] as const satisfies readonly CardVariant[];
@@ -40,7 +44,21 @@ const fixtureButtonStyle = {
 const meta = {
   title: 'Data display/Card',
   component: Card,
-  parameters: { docs: { description: { component: 'Group content with a heading, description, and actions.' } } },
+  parameters: { docs: {
+    description: { component: 'Group content with a heading, description, and actions.' },
+    usage: `### Root replacement
+Use component or slots.root to replace the panel material while keeping Card spacing and anatomy. They are equivalent; slots.root wins when both are supplied. Declare a div-rendering adapter outside render and forward its ref and all received props. Apply adapter styles before the supplied className. A changed component identity remounts the panel and resets focus and uncontrolled inputs.
+
+| Part | Replacement | Props |
+| --- | --- | --- |
+| root | component or slots.root | slotProps.root: div props and css |
+| header, title, description, content, footer | Not replaceable | Existing styling-only slotProps |
+
+Root slot props win ordinary conflicts, including children and callbacks. className combines, and style shallow-merges with slot values last. Style order: own → slot → consumer css → consumer sx. Select composed Card roots with [data-ui~="card"].
+
+### Appearance
+Omitted appearance and default inherit the enclosing appearance, including contrast. Contrast uses fixed charcoal on either page theme. Use ThemeRoot to change the named theme.`,
+  } },
   args: { variant: 'raised' },
   argTypes: {
     variant: { control: 'radio', options: VARIANTS },
@@ -57,6 +75,26 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+function AppearanceProbe() {
+  const scope = useThemeScope();
+  return <span data-testid="appearance-probe">{scope?.appearance}</span>;
+}
+
+export const CardDefaultUnderContrast: Story = {
+  render: (args) => (
+    <Card appearance="contrast">
+      <Card {...args} appearance="default"><AppearanceProbe />
+        <OverlayPortal><div data-testid="card-contrast-portal">Portal content</div></OverlayPortal>
+      </Card>
+    </Card>
+  ),
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getByTestId('appearance-probe')).toHaveTextContent('contrast');
+    const portal = await within(canvasElement.ownerDocument.body).findByTestId('card-contrast-portal');
+    await expect(portal.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
+  },
+};
 
 function PlanCard(props: CardProps) {
   return (
@@ -478,3 +516,34 @@ export const ForcedColors: Story = {
     }
   },
 };
+
+const paperMaterial = css({ backgroundColor: vars.color.bg, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
+function IndependentCardPaper({ className, ...props }: SurfacePartProps) {
+  return <WithSx styles={paperMaterial} className={className}>{(classes) => <div {...props} className={classes} />}</WithSx>;
+}
+
+/** Root adapters retain Card spacing and its anatomy slot styles. */
+export const RootAdapters: Story = {
+  render: (args) => <>{[undefined, Surface, Card, IndependentCardPaper].map((component, index) =>
+    <Card {...args} key={index} component={component} data-testid={`card-adapter-${index}`}
+      slotProps={{ title: { css: slotTitleOverrideStyle }, root: { className: 'root-slot' } }}>
+      <Card.Title>Adapter {index}</Card.Title><Card.Content>Panel contents</Card.Content>
+    </Card>)}</>,
+  play: async ({ canvas }) => {
+    const reference = canvas.getByTestId('card-adapter-0');
+    for (const index of [0, 1, 2, 3]) {
+      const root = canvas.getByTestId(`card-adapter-${index}`);
+      await expect(root.tagName).toBe('DIV');
+      await expect(root).toHaveClass('root-slot');
+      await expect(root).toHaveAttribute('data-variant', 'raised');
+      await expect(getComputedStyle(root).padding).toBe(getComputedStyle(reference).padding);
+      await expect(getComputedStyle(within(root).getByRole('heading')).textTransform).toBe('uppercase');
+      await expect(root.querySelector('[data-ui~="card"]')).toBeNull();
+    }
+    await expect(canvas.getByTestId('card-adapter-1')).toHaveAttribute('data-ui', 'surface card');
+    await expect(getComputedStyle(canvas.getByTestId('card-adapter-3')).borderTopStyle).toBe('dashed');
+    await expect(getComputedStyle(canvas.getByTestId('card-adapter-3')).boxShadow).toBe('none');
+  },
+};
+
+export const RootAdaptersLight: Story = { ...RootAdapters, decorators: [withLightTheme], globals: { theme: 'light' } };

@@ -5,6 +5,8 @@
 ### Added
 
 - `CodeBlock`'s optional Shiki adapter highlights JSX and TSX with their own grammars.
+- `Surface`: panel material with flat, raised and floating shadows, inherited or contrast appearance, and div-root replacement through `component` or `slots.root`. Card supports the same root replacement and native root `slotProps`.
+- Drawer.Panel, BottomSheet.Panel and DialogStack.Content support div-root material replacement. Dialog.Panel adds the same customization while plain Dialog.Content children keep their default panel.
 - `Pattern`: decorative SVG tiles (`stripes`, `diagonal`, `checks`, `dots`, `waves`, `chevron`) with continuous tile edges, token inks, tile sizes and scaling, including custom flipped-card artwork. Forced colors hides the pattern and preserves the enclosing surface and border.
 - `GameHand`: card fans with keyboard selection and an explicit play action, plus count-only hidden opponent hands.
 - `CardFlightsProvider` deals and plays cards between measured board slots, with themed overlays, interruptible flights and immediate reduced-motion landing.
@@ -24,4 +26,7 @@
 
 ### Fixed
 
+- Card with `appearance="default"` inside a contrast parent keeps that appearance in descendant portals.
+- BottomSheet and Dialog panels can publish contrast appearance to descendant portals. DialogStack panels retain declaration-site themes and scoped tokens through the stage portal.
+- Drawer panels keep square attached corners on replacement material; BottomSheet panels keep square lower corners.
 - Face-down GameCards no longer show a pale strip or pale corners through their ink border.

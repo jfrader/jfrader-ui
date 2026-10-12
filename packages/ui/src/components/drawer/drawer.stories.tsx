@@ -11,6 +11,10 @@ import { Popover } from '../popover';
 import { Select } from '../select';
 import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
+import { Surface, type SurfacePartProps } from '../surface';
+import { Card } from '../card';
+import { css } from '../../styling/css';
+import { WithSx } from '../../styling/sx';
 import { Drawer, type DrawerContentProps, type DrawerPanelProps, type DrawerProps, type DrawerSize } from './index';
 
 const TITLE = 'Filters';
@@ -28,6 +32,58 @@ const fieldStackStyle = {
   gap: vars.space[4],
 } satisfies CSSProperties;
 
+const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, borderRadius: vars.radius.full, boxShadow: 'none' });
+function DrawerPaper({ className, ...props }: SurfacePartProps) {
+  return <WithSx styles={adapterMaterial} className={className}>{(classes) => <div {...props} className={classes} />}</WithSx>;
+}
+
+function rootAdapterStory(component: DrawerPanelProps['component']): Story {
+  return {
+    tags: ['!autodocs'],
+    render: (args) => <DrawerExample {...args} panelProps={{
+      component,
+      ref: (node) => { if (node) node.dataset.rootRef = 'host'; },
+      onClick: (event) => { event.currentTarget.dataset.callback = 'host'; },
+      style: { paddingInlineStart: vars.space[1] },
+      slotProps: { root: {
+        ref: (node) => { if (node) node.dataset.rootRef = 'slot'; },
+        className: 'panel-slot', 'data-origin': 'slot',
+        onClick: (event) => { event.currentTarget.dataset.callback = 'slot'; },
+        style: { paddingInlineStart: vars.space[2] },
+      } },
+    }} />,
+    play: async ({ canvas, canvasElement, userEvent }) => {
+      await userEvent.click(canvas.getByRole('button', { name: TRIGGER }));
+      const shell = canvasElement.querySelector('dialog')!;
+      const panel = shell.querySelector<HTMLElement>('[data-ui~="drawer-panel"]')!;
+      await settle(shell);
+      await expect(panel).toHaveAttribute('data-root-ref', 'slot');
+      await expect(panel).toHaveClass('panel-slot');
+      await expect(panel).toHaveAttribute('data-appearance', 'contrast');
+      await expect(panel.style.paddingInlineStart).toBe(vars.space[2]);
+      await expect(getComputedStyle(panel).borderStartEndRadius).toBe('0px');
+      await expect(panel.querySelector('[data-ui~="drawer-panel"]')).toBeNull();
+      await userEvent.click(canvas.getByRole('heading', { name: TITLE }));
+      await expect(panel).toHaveAttribute('data-callback', 'slot');
+      await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+      await expectClosed(canvasElement, canvas.getByRole('button', { name: TRIGGER }));
+      await userEvent.click(canvas.getByRole('button', { name: TRIGGER }));
+      await waitFor(() => expect(shell).toHaveAttribute('open'));
+      await settle(shell);
+      await expect(shell.querySelector('[data-ui~="drawer-panel"]')).toBe(panel);
+      if (component === DrawerPaper) {
+        await expect(getComputedStyle(panel).borderInlineStartStyle).toBe('dashed');
+        await expect(getComputedStyle(panel).boxShadow).toBe('none');
+      }
+    },
+  };
+}
+
+export const SurfaceAdapter = rootAdapterStory(Surface);
+export const CardAdapter = rootAdapterStory(Card);
+export const IndependentMaterialAdapter = rootAdapterStory(DrawerPaper);
+export const SurfaceAdapterLight: Story = { ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
+
 const fieldLabelStyle = {
   margin: 0,
   fontSize: vars.textSize.sm,
@@ -44,7 +100,12 @@ const meta = {
         component:
           'Open a panel from the edge of the page to show settings, filters or details.',
       },
-      usage: '- Modal only: the page behind is inert, Tab/Shift+Tab stay inside, and closing returns focus to the invoker. Escape, Close and backdrop clicks share the cancelable close request.\n- `side` accepts `inline-start`, `inline-end` (default), `top` or `bottom`. Inline sides follow text direction. `size` caps inline panels; top/bottom panels span the viewport and cap their height.\n- Body scrolls while Header and Footer stay visible.\n- `draggable` lets the header pull the panel toward its edge to dismiss. Close and Escape remain available.\n- The panel slides in and finishes sliding out before the dialog closes. Reduced motion disables dragging and opens/closes instantly.\n- Floating overlays need a `ThemeRoot portalContainer` host inside the drawer. A nested overlay handles Escape first.\n- Give Close visible text or a localized `aria-label`.',
+      usage: '- Modal only: the page behind is inert, Tab/Shift+Tab stay inside, and closing returns focus to the invoker. Escape, Close and backdrop clicks share the cancelable close request.\n- `side` accepts `inline-start`, `inline-end` (default), `top` or `bottom`. Inline sides follow text direction. `size` caps inline panels; top/bottom panels span the viewport and cap their height.\n- Body scrolls while Header and Footer stay visible.\n- `draggable` lets the header pull the panel toward its edge to dismiss. Close and Escape remain available.\n- The panel slides in and finishes sliding out before the dialog closes. Reduced motion disables dragging and opens/closes instantly.\n- Floating overlays need a `ThemeRoot portalContainer` host inside the drawer. A nested overlay handles Escape first.\n- Give Close visible text or a localized `aria-label`.' + `
+
+### Panel material
+Panel defaults to contrast; appearance="default" inherits the enclosing appearance. component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and css, not sx. Declare adapters outside render, render one div, forward every supplied prop/ref, and apply material before className. Changing the adapter type remounts children and resets focus and uncontrolled inputs.
+
+Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry → slot css/classes → consumer css/classes → sx. Content stays the native dialog shell. Panel's registered div keeps attached-edge corners, size caps and motion; its translate is host-owned. Select composed panels with [data-ui~="drawer-panel"].`,
       source: {
         code: `<Drawer>
   <Drawer.Trigger>Filters</Drawer.Trigger>
@@ -140,7 +201,7 @@ function parts(canvasElement: HTMLElement) {
 
 /** The panel rests once its animated offset clears. */
 async function settle(dialog: HTMLElement) {
-  const panel = dialog.querySelector<HTMLElement>('[data-ui="drawer-panel"]')!;
+  const panel = dialog.querySelector<HTMLElement>('[data-ui~="drawer-panel"]')!;
   await waitFor(() => expect(panel.style.translate).toBe(''), { timeout: 2000 });
   await expect(dialog.style.getPropertyValue('--drawer-presence')).toBe('');
 }
@@ -1390,3 +1451,10 @@ export const PartStyling: Story = {
     await expect(Drawer.Panel.displayName).toBe('Drawer.Panel');
   },
 };
+
+export const AdapterDrag: Story = { ...Draggable, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
+export const AdapterRejectedDrag: Story = { ...DraggableRejected, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
+export const AdapterReducedMotion: Story = { ...ReducedMotion, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
+export const AdapterInlineStart: Story = { ...InlineStart, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
+export const AdapterTop: Story = { ...Top, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
+export const AdapterBottom: Story = { ...Bottom, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
