@@ -37,6 +37,7 @@
     "./calendar": { "types": "./src/components/calendar/index.ts", "import": "./src/components/calendar/index.ts" },
     "./card": { "types": "./src/components/card/index.ts", "import": "./src/components/card/index.ts" },
     "./carousel": { "types": "./src/components/carousel/index.ts", "import": "./src/components/carousel/index.ts" },
+    "./chat-thread": { "types": "./src/components/chat-thread/index.ts", "import": "./src/components/chat-thread/index.ts" },
     "./checkbox": { "types": "./src/components/checkbox/index.ts", "import": "./src/components/checkbox/index.ts" },
     "./chip-group": { "types": "./src/components/chip-group/index.ts", "import": "./src/components/chip-group/index.ts" },
     "./code-block": { "types": "./src/components/code-block/index.ts", "import": "./src/components/code-block/index.ts" },

@@ -23,9 +23,10 @@ import {
   type FocusEvent,
   type KeyboardEvent,
   type ReactNode,
+  type ReactElement,
   type SyntheticEvent,
 } from 'react';
-import { autoUpdate, flip, offset, shift, useFloating, useMergeRefs } from '@floating-ui/react';
+import { autoUpdate, flip, offset, shift, useDismiss, useFloating, useInteractions, useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
@@ -255,6 +256,8 @@ export interface ThreadReactionsProps {
   onToggle: (emoji: string) => void;
   pickerId: string;
   part?: ThreadPartProps;
+  overlay?: boolean;
+  counts?: ReadonlyMap<string, number>;
 }
 
 const reactionsStyle = css({
@@ -339,6 +342,8 @@ export function ThreadReactions({
   onToggle,
   pickerId,
   part,
+  overlay = false,
+  counts,
 }: ThreadReactionsProps) {
   const addRef = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
@@ -346,6 +351,16 @@ export function ThreadReactions({
   const emojiQuery = { itemSelector: '[data-part="emoji"]', ownerSelector: `[data-ui="${ui(owner, 'picker')}"]` };
   const canPick = !readOnly && offered.length > 0;
   const showPicker = canPick && pickerOpen;
+  const { refs, context, floatingStyles } = useFloating({
+    open: overlay && showPicker,
+    onOpenChange: onPickerOpenChange,
+    placement: 'bottom-start',
+    middleware: [offset(SUGGESTION_GAP), flip(), shift({ padding: VIEWPORT_PADDING })],
+    whileElementsMounted: autoUpdate,
+  });
+  const dismiss = useDismiss(context, { enabled: overlay, escapeKey: false });
+  const { getFloatingProps } = useInteractions([dismiss]);
+  const addRefs = useMergeRefs([addRef, refs.setReference]);
 
   useLayoutEffect(() => {
     if (pickerOpen || !restoreFocus.current) return;
@@ -374,11 +389,12 @@ export function ThreadReactions({
     <div data-ui={ui(owner, 'reactions')} className={part?.className} css={[reactionsStyle, part?.css]}>
       {reactions.map(({ emoji, users }) => {
         const mine = users.includes(currentUserId);
-        const name = labels.reactionCount(emoji, users.length, mine);
+        const count = counts?.get(emoji) ?? users.length;
+        const name = labels.reactionCount(emoji, count, mine);
         const content = (
           <>
             <span aria-hidden="true">{emoji}</span>
-            <span aria-hidden="true">{formatters.number.format(users.length)}</span>
+            <span aria-hidden="true">{formatters.number.format(count)}</span>
           </>
         );
         return readOnly ? (
@@ -404,7 +420,7 @@ export function ThreadReactions({
       })}
       {canPick ? (
         <Button
-          ref={addRef}
+            ref={addRefs}
           variant="ghost"
           size="sm"
           aria-label={labels.addReaction}
@@ -419,12 +435,22 @@ export function ThreadReactions({
         </Button>
       ) : null}
       {showPicker ? (
+        <ThreadPickerOverlay overlay={overlay}>
         <div
+          {...(overlay ? getFloatingProps() : {})}
+          ref={overlay ? refs.setFloating : undefined}
+          style={overlay ? floatingStyles : undefined}
+          dir={overlay && addRef.current ? addRef.current.ownerDocument.defaultView?.getComputedStyle(addRef.current).direction : undefined}
           id={pickerId}
           role="group"
           aria-label={labels.reactions}
           data-ui={ui(owner, 'picker')}
           onKeyDown={handlePickerKeyDown}
+          onBlur={(event) => {
+            if (overlay && !event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== addRef.current) {
+              onPickerOpenChange(false);
+            }
+          }}
           css={pickerStyle}
         >
           {offered.map((emoji, index) => (
@@ -451,9 +477,17 @@ export function ThreadReactions({
             {closeGlyph}
           </Button>
         </div>
+        </ThreadPickerOverlay>
       ) : null}
     </div>
   );
+}
+
+function ThreadPickerOverlay({ overlay, children }: {
+  overlay: boolean;
+  children: ReactElement;
+}) {
+  return overlay ? <OverlayPortal>{children}</OverlayPortal> : children;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -490,6 +524,9 @@ export interface ThreadComposerProps {
   part?: ThreadPartProps;
   /** Distinguishes composers inside one thread (`data-composer`). */
   kind: string;
+  submitOnEnter?: boolean;
+  allowEmpty?: boolean;
+  lockWhilePending?: boolean;
 }
 
 interface Mention {
@@ -590,6 +627,9 @@ export function ThreadComposer({
   submitProps,
   part,
   kind,
+  submitOnEnter = false,
+  allowEmpty = false,
+  lockWhilePending = false,
 }: ThreadComposerProps) {
   const baseId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -636,7 +676,7 @@ export function ThreadComposer({
 
   const submit = () => {
     const text = draft.trim();
-    if (disabled || pending || text === '' || !containerRef.current) return;
+    if (disabled || pending || (!allowEmpty && text === '') || !containerRef.current) return;
     onSubmit(text, containerRef.current);
   };
 
@@ -679,7 +719,7 @@ export function ThreadComposer({
         return;
       }
     }
-    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
+    if (event.key === 'Enter' && (submitOnEnter ? plain : (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey)) {
       event.preventDefault();
       submit();
       return;
@@ -691,7 +731,7 @@ export function ThreadComposer({
     }
   };
 
-  const empty = draft.trim() === '';
+  const empty = !allowEmpty && draft.trim() === '';
   const showAvatar = author !== undefined;
 
   return (
@@ -720,6 +760,7 @@ export function ThreadComposer({
           ref={fieldRefs}
           value={draft}
           disabled={disabled || textareaProps?.disabled}
+          readOnly={(lockWhilePending && pending) || textareaProps?.readOnly}
           aria-autocomplete="list"
           aria-controls={open ? listId : textareaProps?.['aria-controls']}
           aria-activedescendant={open ? optionId(candidates[activeIndex]!) : undefined}
