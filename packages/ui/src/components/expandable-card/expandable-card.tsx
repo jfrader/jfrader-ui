@@ -117,7 +117,14 @@ const triggerStyle = css({
     padding: vars.space[3],
   },
   [REDUCED_MOTION]: { '&::after': { transitionDuration: '0s' } },
-  [FORCED_COLORS]: { '&:focus-visible': { outlineColor: 'Highlight' } },
+  [FORCED_COLORS]: {
+    '&:focus-visible': { outlineColor: 'Highlight' },
+    '&::after': {
+      forcedColorAdjust: 'none',
+      borderInlineStartColor: 'ButtonText',
+    },
+    '&:disabled::after': { borderInlineStartColor: 'GrayText' },
+  },
 });
 const titleStyle = css({
   fontSize: vars.textSize.md,
