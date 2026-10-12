@@ -90,6 +90,7 @@
     "./text-field": { "types": "./src/components/text-field/index.ts", "import": "./src/components/text-field/index.ts" },
     "./textarea": { "types": "./src/components/textarea/index.ts", "import": "./src/components/textarea/index.ts" },
     "./theme-root": { "types": "./src/components/theme-root/index.ts", "import": "./src/components/theme-root/index.ts" },
+    "./theme-switch": { "types": "./src/components/theme-switch/index.ts", "import": "./src/components/theme-switch/index.ts" },
     "./time-picker": { "types": "./src/components/time-picker/index.ts", "import": "./src/components/time-picker/index.ts" },
     "./timeline": { "types": "./src/components/timeline/index.ts", "import": "./src/components/timeline/index.ts" },
     "./toast": { "types": "./src/components/toast/index.ts", "import": "./src/components/toast/index.ts" },
