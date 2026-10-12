@@ -463,6 +463,28 @@ export const NarrowLongCopy: Story = {
     />
   ),
 };
+export const ScrollableQueue: Story = {
+  args: { variant: 'list', contained: true },
+  render: (args) => (
+    <div style={{ position: 'relative', blockSize: '12rem' }}>
+      <Harness {...args} initial={messages} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    await expect(region.scrollHeight).toBeGreaterThan(region.clientHeight);
+    const newest = region.querySelector<HTMLElement>('[data-ui="toast"]')!;
+    await waitFor(async () => {
+      await expect(newest.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+        region.getBoundingClientRect().bottom + 1,
+      );
+    });
+    region.scrollTop = 0;
+    await sleep(280);
+    await expect(region.scrollTop).toBe(0);
+  },
+};
 export const LightTheme: Story = {
   ...PersistentStack,
   globals: { theme: 'light' },
