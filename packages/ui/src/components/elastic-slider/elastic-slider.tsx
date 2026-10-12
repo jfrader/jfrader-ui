@@ -232,7 +232,7 @@ const bubbleStyle = css({
   transition: `opacity ${vars.motion.duration.fast} ${vars.motion.easeStandard}`,
   '[data-dragging] > &, [data-slider-thumb]:focus-visible > &': { opacity: 1 },
   [COARSE_POINTER]: { insetBlockEnd: `calc(100% + ${vars.space[4]})` },
-  [REDUCED_MOTION]: { rotate: 'none' },
+  [REDUCED_MOTION]: { rotate: 'none', transitionDuration: '0s' },
   [FORCED_COLORS]: { borderColor: 'CanvasText', boxShadow: 'none' },
 });
 

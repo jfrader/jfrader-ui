@@ -9,7 +9,8 @@ import { ElasticSlider, type ElasticSliderProps } from './index';
 
 const frameStyle = css({
   inlineSize: '30rem',
-  maxInlineSize: '100%',
+  maxInlineSize: `calc(100vw - ${vars.space[8]})`,
+  boxSizing: 'border-box',
   display: 'grid',
   gap: vars.space[8],
   padding: vars.space[4],
@@ -512,6 +513,10 @@ export const NarrowTag: Story = {
       await expect(inner.right).toBeLessThan(outer.right + 1.1);
     }
     await expect(root.scrollWidth - root.clientWidth).toBeLessThan(1.1);
+    const document = root.ownerDocument;
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
+      document.documentElement.clientWidth,
+    );
   },
 };
 export const RTL: Story = {
@@ -543,6 +548,17 @@ export const ScopedTheme: Story = {
 };
 export const ReducedMotion: Story = {
   args: { marks: [50] },
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.tab();
+    const bubble = part(canvasElement, 'elastic-slider-bubble');
+    if (prefersReducedMotion(canvasElement)) {
+      await expect(getComputedStyle(bubble).transitionDuration).toBe('0s');
+      await expect(getComputedStyle(bubble).rotate).toBe('none');
+    }
+    await waitFor(async () => {
+      await expect(Number(getComputedStyle(bubble).opacity)).toBeGreaterThan(0.99);
+    });
+  },
   parameters: {
     docs: {
       description: {
