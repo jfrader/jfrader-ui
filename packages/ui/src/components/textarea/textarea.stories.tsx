@@ -227,3 +227,14 @@ export const LightTheme: Story = {
     await expect(within(canvasElement).getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
   },
 };
+
+export const Rtl: Story = {
+  args: { dir: 'rtl', label: 'الرسالة', description: 'مرئي لجميع أفراد الفريق.' },
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector('[data-ui="textarea"]');
+    const textarea = within(canvasElement).getByLabelText('الرسالة');
+    await expect(root).toHaveAttribute('dir', 'rtl');
+    await expect(textarea).toHaveAttribute('dir', 'rtl');
+  },
+};
+
