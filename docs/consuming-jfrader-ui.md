@@ -119,23 +119,23 @@ To switch at runtime, set `document.documentElement.dataset.theme` and store the
 
 ### Contrast surfaces
 
-A surface can paint the dark family whatever the page theme is: dark panel on a light page, elevated charcoal on a dark page. `Drawer.Panel` does it by default; `Card` and `ThemeRoot` opt in with `appearance="contrast"`.
+A surface can wear the dark theme — plus the handful of roles the elevated charcoal panel changes — whatever the page theme is: dark panel on a light page, charcoal elevation on a dark page. `Drawer.Panel` does it by default; `Card` opts in with `appearance="contrast"`.
 
 ```tsx
-<Card appearance="contrast">{/* … */}</Card>
-<Card appearance="default">{/* back to the theme's own palette */}</Card>
+<Card appearance="contrast">{/* dark theme + charcoal overrides, on any page */}</Card>
+<Card>{/* names no appearance: whatever theme is in scope */}</Card>
 ```
 
-- Text, borders, control boundaries, wells and native `color-scheme` inside the surface come from the palette; nothing to override per component.
-- The palette crosses portals: a Select, Menu or Popover opened inside a contrast surface stays dark, on the page it is opened from.
-- Omitted, `appearance` inherits: a surface nested inside a contrast one stays contrast. `appearance="default"` returns that surface to the theme's own palette.
-- A nested `ThemeRoot` keeps the enclosing palette unless it names one, so an overlay host inside a drawer needs only `portalContainer`.
+- Reused, not recreated: the surface carries `data-theme="dark"` and the library's dark block supplies every role; `data-appearance="contrast"` adds only the eight roles the charcoal panel changes (its elevated surface, hover, wells, three borders, the control boundary and subtle text), each measured for AA on the new fill.
+- The palette crosses portals: a Select, Menu or Popover opened inside a contrast surface keeps it, on the page it is opened from.
+- A surface that names no appearance keeps the enclosing theme, so nesting inherits instead of fighting it.
+- To return to the page palette inside a contrast surface, wrap that subtree in `ThemeRoot theme="light"`: naming a different theme redeclares the whole palette, so the surface treatment does not carry over.
 
 ### Scoped theming and overlays
 
-Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast portal their content to `body`. Inside a `ThemeRoot`, that content takes the nearest `ThemeRoot`'s `theme` and `appearance`, and follows them when they change while open. Dialog renders in place and inherits them directly.
+Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast portal their content to `body`. Inside a `ThemeRoot`, that content takes the nearest `ThemeRoot`'s `theme`, and follows it when the theme changes while open. Dialog renders in place and inherits it directly.
 
-Only the named theme and appearance carry over. CSS you set on an element around the overlay, such as overriding a `--ui-*` variable on a wrapper, does not reach portaled content.
+Only the theme name carries over. CSS you set on an element around the overlay, such as overriding a `--ui-*` variable on a wrapper, does not reach portaled content.
 
 To keep overlays inside a layout boundary (a modal `<dialog>`'s top layer, an embedded widget's own element), give the `ThemeRoot` a `portalContainer`:
 

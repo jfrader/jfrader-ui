@@ -45,9 +45,9 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { contrastSurfaceStyle, modalShellReset, raisedSurface } from '../../styling/surface';
+import { modalShellReset, raisedSurface, surfaceAttributes, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { AppearanceScope, useSurfaceAppearance, type AppearanceName } from '../../styling/theme-scope';
+import { AppearanceScope, themeScopeStyle, useSurfaceAppearance } from '../../styling/theme-scope';
 import { triggerStyle } from '../../styling/trigger-style';
 import {
   omitNativeOpen,
@@ -84,10 +84,10 @@ export interface DrawerContentProps extends Omit<ComponentPropsWithRef<'dialog'>
 }
 export interface DrawerPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
   /**
-   * `contrast` (default) paints the dark family for the edge surface on any page theme;
-   * `default` returns to the theme's own palette.
+   * `contrast` (default) wears the dark theme plus the elevated-charcoal overrides on any page theme;
+   * `default` keeps whatever theme is in scope.
    */
-  appearance?: AppearanceName;
+  appearance?: SurfaceAppearance;
 }
 export interface DrawerHeaderProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface DrawerBodyProps extends ComponentPropsWithRef<'div'>, SxProps {}
@@ -738,12 +738,13 @@ function DrawerPanel({ ref, className, appearance = 'contrast', sx, ...props }: 
   const mergedRef = useMergeRefs([panelRef, ref]);
   const inline = side === 'inline-start' || side === 'inline-end';
   const surfaceAppearance = useSurfaceAppearance(appearance);
+  const ownTheme = surfaceTheme(appearance);
 
   return (
-    <AppearanceScope appearance={surfaceAppearance}>
+    <AppearanceScope theme={ownTheme} appearance={surfaceAppearance}>
       <WithSx
         className={className}
-        styles={[panelStyle, panelSideStyles[side], inline && panelSizeStyles[size], contrastSurfaceStyle]}
+        styles={[panelStyle, panelSideStyles[side], inline && panelSizeStyles[size], ownTheme && themeScopeStyle]}
         sx={sx}
       >
         {(className) => (
@@ -751,7 +752,7 @@ function DrawerPanel({ ref, className, appearance = 'contrast', sx, ...props }: 
             {...props}
             ref={mergedRef}
             data-ui="drawer-panel"
-            data-appearance={surfaceAppearance}
+            {...surfaceAttributes(appearance)}
             className={className}
           />
         )}

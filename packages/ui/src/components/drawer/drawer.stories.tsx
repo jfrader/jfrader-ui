@@ -578,7 +578,8 @@ export const LightTheme: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
     await expect(canvasElement.contains(dialog)).toBe(true);
-    // The panel paints the contrast palette by default: the dark family on a light page.
+    // The panel wears the dark theme plus the elevated-charcoal overrides, on a light page.
+    await expect(panel).toHaveAttribute('data-theme', 'dark');
     await expect(panel).toHaveAttribute('data-appearance', 'contrast');
     await expectContrastSurface(panel, 'light');
     await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
@@ -592,7 +593,7 @@ export const ContrastPanelDark: Story = {
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
-    // On a dark page the panel is elevated charcoal; the palette values are the same as on a light page.
+    // On a dark page the panel keeps its charcoal elevation above the page; same values as on light.
     await expect(panel).toHaveAttribute('data-appearance', 'contrast');
     await expectContrastSurface(panel, 'dark');
     await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
@@ -608,8 +609,9 @@ export const DefaultAppearance: Story = {
   render: (args) => <DrawerExample {...args} panelProps={{ appearance: 'default' }} />,
   play: async ({ canvasElement, userEvent }) => {
     const { panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
-    // Opting out restores the page theme's own surface.
-    await expect(panel).toHaveAttribute('data-appearance', 'default');
+    // Opting out names no appearance, so the panel inherits the page's own surface.
+    await expect(panel).not.toHaveAttribute('data-theme');
+    await expect(panel).not.toHaveAttribute('data-appearance');
     await expectThemedSurface(panel, 'light');
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);

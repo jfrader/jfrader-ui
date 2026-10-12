@@ -1,21 +1,19 @@
-// Named-theme scope shared by scope roots and portaled content. Token variables are scoped by
-// `[data-theme]` and `[data-appearance]` and inherit through DOM parents, so content portaled out of
-// a scope root (to the body or a `portalContainer`) loses both. Scope roots publish what they set
-// through context; ThemeBoundary re-applies it inside the portal exactly like the root does. Only the
-// named axes cross the portal: arbitrary ancestor CSS overrides do not.
+// Named-theme scope shared by theme roots and portaled content. Token variables are scoped by
+// `[data-theme]` (and, for a contrast surface, by `[data-appearance]`) and inherit through DOM
+// parents, so content portaled out of a scope root (to the body or a `portalContainer`) loses both.
+// Scope roots publish what they set through context; ThemeBoundary re-applies it inside the portal
+// exactly like the root does. Only the named axes cross the portal: arbitrary ancestor CSS does not.
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from './css';
-import { contrastSurfaceStyle } from './surface';
 
 export type ThemeName = 'dark' | 'light';
 
-/** Surface palette in scope: `contrast` paints the dark family on any page theme, `default` its own. */
+/** Surface palette in scope: `contrast` adds the elevated-charcoal overrides on the dark theme. */
 export type AppearanceName = 'default' | 'contrast';
 
 export interface ThemeScope {
-  /** Named theme in scope; `undefined` leaves `data-theme` to the page (no ThemeRoot above). */
-  theme?: ThemeName;
+  theme: ThemeName;
   appearance: AppearanceName;
   /** `undefined` keeps default portal routing; `null` holds portals until the host exists. */
   portalContainer: HTMLElement | null | undefined;
@@ -28,22 +26,17 @@ export function useThemeScope(): ThemeScope | null {
   return useContext(ThemeScopeContext);
 }
 
-/**
- * The appearance a surface paints: its own value, else the enclosing scope's, else the theme's own.
- * `undefined` inherits, so a surface nested in a contrast one stays contrast unless it says otherwise.
- */
+/** The appearance a surface wears: its own value, else the enclosing scope's, else the theme's own. */
 export function useSurfaceAppearance(appearance?: AppearanceName): AppearanceName {
   const parent = useContext(ThemeScopeContext);
   return appearance ?? parent?.appearance ?? 'default';
 }
 
-/** What a scope root sets besides the attributes: inherited text color and native `color-scheme`. */
+/** What a `data-theme` scope root sets besides the attribute: inherited text color and color-scheme. */
 export const themeScopeStyle = css({
   color: vars.color.text,
   colorScheme: 'dark',
   '&[data-theme="light"]': { colorScheme: 'light' },
-  // A contrast subtree is the dark family whatever the page theme is; keep this last so it wins.
-  '&[data-appearance="contrast"]': { colorScheme: 'dark' },
 });
 
 // Custom properties and color-scheme inherit through `display: contents`, so the wrapper
@@ -51,20 +44,32 @@ export const themeScopeStyle = css({
 const boundaryStyle = css({ display: 'contents' });
 
 /**
- * Publishes a surface's resolved appearance to descendants (portaled overlays included) without
- * rendering a box, and only when it changes the enclosing scope.
+ * Publishes a surface's theme and appearance to its subtree without taking over the enclosing
+ * `portalContainer`, so overlays opened inside a contrast surface keep its palette through their
+ * portal. `theme: null` keeps the enclosing theme; publishes only when the pair changes the scope.
  */
-export function AppearanceScope({ appearance, children }: { appearance: AppearanceName; children?: ReactNode }) {
+export function AppearanceScope({
+  theme,
+  appearance,
+  children,
+}: {
+  theme: ThemeName | null;
+  appearance: AppearanceName;
+  children?: ReactNode;
+}) {
   const parent = useContext(ThemeScopeContext);
+  const resolvedTheme = theme ?? parent?.theme ?? 'dark';
   const scope = useMemo<ThemeScope>(
-    () => ({ theme: parent?.theme, appearance, portalContainer: parent?.portalContainer }),
-    [parent?.theme, parent?.portalContainer, appearance],
+    () => ({ theme: resolvedTheme, appearance, portalContainer: parent?.portalContainer }),
+    [resolvedTheme, appearance, parent?.portalContainer],
   );
-  if (parent ? parent.appearance === appearance : appearance === 'default') return children;
+  if (parent ? parent.theme === resolvedTheme && parent.appearance === appearance : appearance === 'default') {
+    return children;
+  }
   return <ThemeScopeContext.Provider value={scope}>{children}</ThemeScopeContext.Provider>;
 }
 
-/** Re-applies the nearest scope around portaled content; renders children bare outside one. */
+/** Re-applies the nearest scope (theme and appearance) around portaled content. */
 export function ThemeBoundary({ children }: { children?: ReactNode }) {
   const scope = useThemeScope();
   if (!scope) return children;
@@ -73,7 +78,7 @@ export function ThemeBoundary({ children }: { children?: ReactNode }) {
       data-ui="theme-boundary"
       data-theme={scope.theme}
       data-appearance={scope.appearance}
-      css={[scope.theme && themeScopeStyle, scope.appearance === 'contrast' && contrastSurfaceStyle, boundaryStyle]}
+      css={[themeScopeStyle, boundaryStyle]}
     >
       {children}
     </div>
