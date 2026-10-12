@@ -1,6 +1,6 @@
 {
   "name": "@jfrader/ui",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "React components styled with Emotion and themed through CSS custom properties.",
   "keywords": [
     "react",
