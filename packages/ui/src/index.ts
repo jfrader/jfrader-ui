@@ -46,6 +46,7 @@ export * from './components/menu';
 export * from './components/metric-card';
 export * from './components/multi-select';
 export * from './components/navigation';
+export * from './components/now-playing';
 export * from './components/pagination';
 export * from './components/password-field';
 export * from './components/photo-grid';
