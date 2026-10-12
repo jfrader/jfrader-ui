@@ -70,7 +70,7 @@ const paperStyle = css({
 
 const dimmedStyle = css({ opacity: 0.55 });
 
-const backMaterialStyle = css({ backgroundColor: vars.color.surfaceRaised });
+const backMaterialStyle = css({ backgroundColor: vars.color.cardRed });
 
 const layerStyle = css({
   position: 'absolute',
@@ -126,17 +126,8 @@ const suitInkStyles: Record<'red' | 'ink', SerializedStyles> = {
   ink: css({ color: vars.color.cardInk }),
 };
 
-// No artwork ships with the library: the back is a surface and a lattice drawn with gradients.
 const backStyle = css({
-  backgroundColor: vars.color.surfaceRaised,
-  backgroundImage: `repeating-linear-gradient(45deg, ${vars.color.surfaceHover} 0 2px, transparent 2px 6px), repeating-linear-gradient(-45deg, ${vars.color.surfaceHover} 0 2px, transparent 2px 6px)`,
-  '&::after': {
-    content: '""',
-    position: 'absolute',
-    inset: '8%',
-    border: `1px solid ${vars.color.borderControl}`,
-    borderRadius: 'inherit',
-  },
+  backgroundImage: `repeating-linear-gradient(135deg, ${vars.color.cardRed} 0 12%, ${vars.color.cardFace} 12% 24%)`,
 });
 
 const sizeStyles: Record<GameCardSize, SerializedStyles> = {
@@ -184,7 +175,7 @@ export function GameCard({
               data-ui="game-card-back"
               aria-hidden="true"
               className={slotProps?.back?.className}
-              css={[layerStyle, backStyle, slotProps?.back?.css]}
+              css={[layerStyle, backMaterialStyle, backStyle, slotProps?.back?.css]}
             />
           ) : isRenderable(children) ? (
             <span

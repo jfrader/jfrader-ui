@@ -79,8 +79,9 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component: 'Draw a playing card, face up from a French or Spanish deck, or face down.',
+        component: 'Show a French or Spanish playing card, or its red-and-paper diagonal back.',
       },
+      usage: 'Omit `value` or set `face="back"` to hide the card without exposing its rank or suit.',
     },
   },
 } satisfies Meta<typeof GameCard>;
@@ -172,6 +173,11 @@ export const FaceDown: Story = {
       const paint = back.querySelector('[data-ui="game-card-back"]');
       if (paint === null) throw new Error('Missing back paint');
       await expect(getComputedStyle(back).backgroundColor).toBe(getComputedStyle(paint).backgroundColor);
+      await expect(getComputedStyle(paint).backgroundColor).toBe('rgb(200, 16, 46)');
+      await expect(getComputedStyle(paint).backgroundImage).toContain('repeating-linear-gradient(135deg,');
+      await expect(getComputedStyle(paint).backgroundImage).toContain('12%');
+      await expect(getComputedStyle(paint).backgroundImage).toContain('24%');
+      await expect(getComputedStyle(paint, '::after').content).toBe('none');
       const attributes = [back, ...back.querySelectorAll('*')]
         .flatMap((element) => Array.from(element.attributes, (attribute) => attribute.value))
         .join(' ');
