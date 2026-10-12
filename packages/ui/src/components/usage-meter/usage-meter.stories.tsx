@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, within } from 'storybook/test';
+import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { UsageMeter, type UsageMeterProps, type UsageMeterSelection } from './index';
 
@@ -12,7 +13,8 @@ const usage = [
   { id: 'backups', label: 'Backups', value: 8 },
 ];
 const frameStyle = css({
-  inlineSize: 'min(100%, 36rem)',
+  inlineSize: `min(36rem, calc(100vw - ${vars.space[8]}))`,
+  maxInlineSize: '100%',
   display: 'grid',
   gap: vars.space[4],
 });
@@ -45,12 +47,14 @@ const meta = {
     docs: {
       description: {
         component:
-          'See how much of an allowance is used and pin a category in the legend.',
+          'See how much of an allowance is used. Hover the bar or legend to highlight a category, and tap or click to pin it. Status changes and growing overage are announced by default.',
       },
       usage: `- Supply quota data from your app. Use this meter for an allowance, not task progress.
 - Numeric ARIA values stop at the limit. Value text reports usage, including overage, following the APG meter contract.
 - Translate status and comparison text with \`labels\`, \`getValueLabel\` and \`getItemLabel\`.
 - Supply \`locale\` for server rendering.
+- Status transitions and growing overage are announced by default. Rapid updates are coalesced; set \`announceChanges={false}\` to turn announcements off.
+- Translate “of” and “used” with \`labels.of\` and \`labels.used\`. \`labels.normal\` follows the free amount in the badge.
 
 ### Keyboard
 - The legend has one Tab stop. Arrows follow the text direction; Home and End move to the first and last item.
@@ -72,12 +76,23 @@ export const Default: Story = {
     await expect(meter).toHaveAttribute('aria-valuemin', '0');
     await expect(meter).toHaveAttribute('aria-valuemax', '80');
     await expect(meter).toHaveAttribute('aria-valuenow', '48');
-    await expect(meter).toHaveAttribute('aria-valuetext', '48 of 80, 60%. Within limit');
+    await expect(meter).toHaveAttribute('aria-valuetext', '48 of 80 used, 60%. 32 free');
     await expect(meter).not.toHaveAttribute('tabindex');
-    await expect(canvasElement.querySelector('[aria-live]')).toBeNull();
+    await expect(canvasElement.querySelector('[aria-live]')).toHaveTextContent('');
   },
 };
 export const OneSegment: Story = { args: { segments: usage.slice(0, 1) } };
+export const StorageQuota: Story = {
+  args: {
+    segments: [
+      { id: 'media', label: 'Media', value: 7.2 },
+      { id: 'documents', label: 'Documents', value: 3.4 },
+      { id: 'backups', label: 'Backups', value: 1.8 },
+    ],
+    limit: 15,
+    numberFormatOptions: { style: 'unit', unit: 'gigabyte', maximumFractionDigits: 1 },
+  },
+};
 export const FourSegments: Story = {
   args: { segments: [...usage, { id: 'other', label: 'Other', value: 4 }] },
 };
@@ -109,7 +124,7 @@ export const EmptySegments: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('meter')).toHaveAttribute('aria-valuenow', '0');
     await expect(canvas.getAllByRole('button')).toHaveLength(1);
-    await expect(canvas.getByRole('button')).toHaveAccessibleName('— Remaining 80 100%');
+    await expect(canvas.getByRole('button')).toHaveAccessibleName('— Free 80 100%');
   },
 };
 export const AtThreshold: Story = {
@@ -132,7 +147,7 @@ export const OverLimit: Story = {
     const meter = canvas.getByRole('meter');
     await expect(meter).toHaveAttribute('aria-valuenow', '40');
     await expect(meter).toHaveAttribute('aria-valuemax', '40');
-    await expect(meter).toHaveAttribute('aria-valuetext', '48 of 40, 120%. Over limit: 8');
+    await expect(meter).toHaveAttribute('aria-valuetext', '48 of 40 used, 120%. Over limit: 8');
     await expect(canvasElement.querySelector('[data-ui="usage-meter-overage"]')).not.toBeNull();
     await expect(canvasElement.querySelector('[data-ui="usage-meter-limit"]')).not.toBeNull();
     await expect(canvasElement.querySelector('[data-ui="usage-meter-status"]')).toHaveTextContent(
@@ -140,7 +155,7 @@ export const OverLimit: Story = {
     );
     await userEvent.hover(canvas.getAllByRole('button')[0]!);
     await expect(meter).toHaveAttribute('aria-valuenow', '40');
-    await expect(meter).toHaveAttribute('aria-valuetext', '48 of 40, 120%. Over limit: 8');
+    await expect(meter).toHaveAttribute('aria-valuetext', '48 of 40 used, 120%. Over limit: 8');
     await userEvent.unhover(canvas.getAllByRole('button')[0]!);
   },
 };
@@ -148,6 +163,88 @@ export const Static: Story = {
   args: { interactive: false },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryAllByRole('button')).toHaveLength(0);
+  },
+};
+export const BarInteraction: Story = {
+  play: async ({ canvasElement, userEvent, args }) => {
+    const segments = canvasElement.querySelectorAll<HTMLElement>('[data-ui="usage-meter-segment"]');
+    const items = within(canvasElement).getAllByRole('button');
+    await userEvent.hover(segments[1]!);
+    await expect(segments[1]).toHaveAttribute('data-highlighted', 'true');
+    await expect(items[1]).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(segments[1]!);
+    await expect(items[1]).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.unhover(segments[1]!);
+    await expect(segments[1]).toHaveAttribute('data-highlighted', 'true');
+    await userEvent.click(segments[1]!);
+    await expect(items[1]).toHaveAttribute('aria-pressed', 'false');
+    const free = canvasElement.querySelector<HTMLElement>('[data-ui="usage-meter-remainder"]')!;
+    await userEvent.click(free);
+    await expect(items[3]).toHaveAttribute('aria-pressed', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+    await userEvent.click(items[3]!);
+    await userEvent.keyboard('{Home}{Enter}{Escape}');
+    await expect(items[0]).toHaveAttribute('aria-pressed', 'false');
+  },
+};
+export const AnnouncementsOff: Story = {
+  args: { announceChanges: false },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[aria-live]')).toBeNull();
+  },
+};
+export const AnnouncementCoalescing: Story = {
+  render: (args) => <AnnouncementFixture {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const live = canvasElement.querySelector('[aria-live]');
+    const options = { timeout: motionDurationMs.slow * 8 };
+    await userEvent.click(canvas.getByRole('button', { name: 'Near limit' }));
+    await waitFor(() => expect(live).toHaveTextContent('Near limit · 4 free'), options);
+    await userEvent.click(canvas.getByRole('button', { name: 'Over limit' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Grow overage' }));
+    await expect(live).toHaveTextContent('Near limit · 4 free');
+    await waitFor(() => expect(live).toHaveTextContent('Over limit: 20'), options);
+    await userEvent.click(canvas.getByRole('button', { name: 'Same rounded overage' }));
+    await expect(live).toHaveTextContent('Over limit: 20');
+    await userEvent.click(canvas.getByRole('button', { name: 'Reduce overage' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Regrow overage' }));
+    await waitFor(() => expect(live).toHaveTextContent('Over limit: 10'), options);
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset usage' }));
+    await waitFor(() => expect(live).toHaveTextContent('32 free'), options);
+  },
+};
+function AnnouncementFixture(args: UsageMeterProps) {
+  const [total, setTotal] = useState(48);
+  return (
+    <>
+      {Object.entries({
+        'Near limit': 76,
+        'Over limit': 90,
+        'Grow overage': 100,
+        'Same rounded overage': 100.01,
+        'Reduce overage': 85,
+        'Regrow overage': 90,
+        'Reset usage': 48,
+      }).map(([label, value]) => (
+        <button key={label} css={fixtureStyle} onClick={() => setTotal(value)}>
+          {label}
+        </button>
+      ))}
+      <UsageMeter {...args} segments={[{ id: 'files', label: 'Files', value: total }]} />
+    </>
+  );
+}
+export const BarControlledRejected: Story = {
+  args: { value: { kind: 'segment', id: 'files' } },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const segments = canvasElement.querySelectorAll<HTMLElement>('[data-ui="usage-meter-segment"]');
+    await userEvent.click(segments[1]!);
+    await userEvent.unhover(segments[1]!);
+    await expect(within(canvasElement).getAllByRole('button')[0]).toHaveAttribute('aria-pressed', 'true');
+    await expect(segments[0]).toHaveAttribute('data-highlighted', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith({ kind: 'segment', id: 'photos' });
   },
 };
 export const InteractivePinned: Story = {
@@ -319,13 +416,17 @@ export const QuotaUpdate: Story = {
     await expect(live).toHaveTextContent('');
     await userEvent.click(canvas.getByRole('button', { name: 'Use more' }));
     await expect(canvas.getByRole('meter')).toHaveAttribute('aria-valuenow', '80');
-    await expect(live).toHaveTextContent('Over limit');
+    await waitFor(() => expect(live).toHaveTextContent('Over limit: 10'), {
+      timeout: motionDurationMs.slow * 8,
+    });
     await expect(canvas.getByRole('button', { name: /Over limit 10 13%/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
     await userEvent.click(canvas.getByRole('button', { name: 'Use more' }));
-    await expect(live).toHaveTextContent('Over limit');
+    await waitFor(() => expect(live).toHaveTextContent('Over limit: 52'), {
+      timeout: motionDurationMs.slow * 8,
+    });
     await expect(args.onValueChange).not.toHaveBeenCalled();
   },
 };
@@ -599,7 +700,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Enable reduced motion to check that over-limit geometry transitions take 0s. This story checks structure only.',
+          'Enable reduced motion to jump segment widths and totals to their new values without rolling digits or layout springs.',
       },
     },
   },
