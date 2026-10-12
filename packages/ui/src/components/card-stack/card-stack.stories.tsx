@@ -448,6 +448,7 @@ export const GestureDeck: Story = {
     send('pointerdown', 0);
     send('pointermove', -180);
     send('lostpointercapture', -180);
+    send('pointerup', -180);
     await settled(canvasElement);
     await expect(args.onDecide).not.toHaveBeenCalled();
     send('pointerdown', 0);
