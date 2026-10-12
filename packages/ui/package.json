@@ -75,6 +75,7 @@
     "./metric-card": { "types": "./src/components/metric-card/index.ts", "import": "./src/components/metric-card/index.ts" },
     "./multi-select": { "types": "./src/components/multi-select/index.ts", "import": "./src/components/multi-select/index.ts" },
     "./navigation": { "types": "./src/components/navigation/index.ts", "import": "./src/components/navigation/index.ts" },
+    "./next": { "types": "./src/components/next/index.ts", "import": "./src/components/next/index.ts" },
     "./now-playing": { "types": "./src/components/now-playing/index.ts", "import": "./src/components/now-playing/index.ts" },
     "./pagination": { "types": "./src/components/pagination/index.ts", "import": "./src/components/pagination/index.ts" },
     "./password-field": { "types": "./src/components/password-field/index.ts", "import": "./src/components/password-field/index.ts" },
@@ -135,20 +136,30 @@
     "motion": "^14.1.0"
   },
   "peerDependencies": {
+    "@emotion/cache": "^11.14.0",
+    "next": "^15.0.0 || ^16.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "shiki": "^4.4.3"
   },
   "peerDependenciesMeta": {
+    "@emotion/cache": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    },
     "shiki": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@emotion/cache": "^11.14.0",
     "@storybook/react-vite": "^10.6.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "next": "^16.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "shiki": "^4.4.3",
