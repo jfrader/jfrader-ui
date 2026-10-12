@@ -175,8 +175,8 @@ const MAX_LAPS = 2;
 const TICK_OVERHANG = 1;
 const MAX_STROKE: Record<ActivityRingsSize, number> = { sm: 16, md: 14, lg: 12 };
 const RING_SIZE: Record<ActivityRingsSize, string> = { sm: '7rem', md: '10rem', lg: '14rem' };
-/** Container width from which the legend sits beside the rings instead of below them. */
-const WIDE_LAYOUT = '@container (min-width: 32rem)';
+/** Root width from which the legend sits beside the rings instead of below them. */
+const WIDE_MIN = '32rem';
 /** `motion.easeStandard` (tokens.ts) as cubic-bezier numbers; `motion` cannot consume the CSS string. */
 const EASE_STANDARD = [0.2, 0.6, 0.2, 1] as const;
 const SWEEP = {
@@ -186,7 +186,6 @@ const SWEEP = {
 
 const rootStyle = css({
   label: 'activity-rings',
-  containerType: 'inline-size',
   minInlineSize: 0,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
@@ -194,17 +193,25 @@ const rootStyle = css({
   color: vars.color.text,
   overflowWrap: 'anywhere',
 });
+// Wide/narrow switch from the root's own width, without size containment (which would drop the
+// root's intrinsic width in shrink-to-fit parents). The body's flex basis resolves against the
+// layout width: below WIDE_MIN it overflows the line, so the body wraps under the centered rings
+// and fills the row; from WIDE_MIN it goes negative (floored at zero) and the body fills the space
+// beside the rings. A shrink-to-fit parent sizes the root to the rings plus the unwrapped legend
+// (capped at the parent), so the rings stack there when that sum is under WIDE_MIN.
 const layoutStyle = css({
-  display: 'grid',
+  display: 'flex',
+  flexWrap: 'wrap',
   gap: vars.space[4],
-  justifyItems: 'center',
-  [WIDE_LAYOUT]: {
-    gridTemplateColumns: 'auto minmax(0, 1fr)',
-    alignItems: 'center',
-    justifyItems: 'stretch',
-  },
+  alignItems: 'center',
+  justifyContent: 'center',
 });
-const bodyStyle = css({ display: 'grid', gap: vars.space[3], inlineSize: '100%', minInlineSize: 0 });
+const bodyStyle = css({
+  display: 'grid',
+  gap: vars.space[3],
+  flex: `1 1 calc((${WIDE_MIN} - 100%) * 999)`,
+  minInlineSize: 0,
+});
 const sizeStyles = {
   sm: css({ '--rings-size': RING_SIZE.sm }),
   md: css({ '--rings-size': RING_SIZE.md }),
@@ -212,7 +219,9 @@ const sizeStyles = {
 };
 const svgStyle = css({
   display: 'block',
-  inlineSize: 'min(100%, var(--rings-size))',
+  flex: 'none',
+  inlineSize: 'var(--rings-size)',
+  maxInlineSize: '100%',
   blockSize: 'auto',
   aspectRatio: '1',
   overflow: 'visible',

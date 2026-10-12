@@ -729,6 +729,13 @@ export const Narrow: Story = {
   },
 };
 export const Wide: Story = {
+  decorators: [
+    (Story) => (
+      <div style={{ inlineSize: '40rem', maxInlineSize: '100%' }}>
+        <Story />
+      </div>
+    ),
+  ],
   play: async ({ canvasElement }) => {
     const svg = canvasElement.querySelector('svg')!.getBoundingClientRect();
     const legend = within(canvasElement).getByRole('list').getBoundingClientRect();
@@ -964,3 +971,21 @@ export const ForcedColors: Story = {
     },
   },
 };
+/** Shrink-to-fit parent: the rings keep their content width instead of collapsing. */
+const centered = (Story: ComponentType) => (
+  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+    <Story />
+  </div>
+);
+export const CenteredFlexParent: Story = {
+  decorators: [centered],
+  play: async ({ canvasElement }) => {
+    const region = within(canvasElement).getByRole('region');
+    await expect(region.getBoundingClientRect().width).toBeGreaterThanOrEqual(199);
+    await expect(region.querySelector('svg')!.getBoundingClientRect().width).toBeGreaterThanOrEqual(159);
+    await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth + 1);
+  },
+};
+export const CenteredSizes: Story = { ...Sizes, decorators: [centered] };
+export const CenteredLongIntlUnits: Story = { ...LongIntlUnits, decorators: [centered] };
+export const CenteredRTL: Story = { ...RTL, decorators: [centered] };
