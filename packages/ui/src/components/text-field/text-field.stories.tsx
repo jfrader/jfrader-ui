@@ -176,3 +176,14 @@ export const LightTheme: Story = {
     await expect(within(canvasElement).getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
   },
 };
+
+export const Rtl: Story = {
+  args: { dir: 'rtl', description: 'We only use it to send receipts.' },
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector('[data-ui="text-field"]');
+    const input = within(canvasElement).getByLabelText('Email');
+    await expect(root).toHaveAttribute('dir', 'rtl');
+    await expect(input).toHaveAttribute('dir', 'rtl');
+  },
+};
+
