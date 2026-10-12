@@ -65,6 +65,7 @@
     "./json-viewer": { "types": "./src/components/json-viewer/index.ts", "import": "./src/components/json-viewer/index.ts" },
     "./kbd": { "types": "./src/components/kbd/index.ts", "import": "./src/components/kbd/index.ts" },
     "./keycap-keyboard": { "types": "./src/components/keycap-keyboard/index.ts", "import": "./src/components/keycap-keyboard/index.ts" },
+    "./link-unfurl": { "types": "./src/components/link-unfurl/index.ts", "import": "./src/components/link-unfurl/index.ts" },
     "./mention-input": { "types": "./src/components/mention-input/index.ts", "import": "./src/components/mention-input/index.ts" },
     "./menu": { "types": "./src/components/menu/index.ts", "import": "./src/components/menu/index.ts" },
     "./metric-card": { "types": "./src/components/metric-card/index.ts", "import": "./src/components/metric-card/index.ts" },
