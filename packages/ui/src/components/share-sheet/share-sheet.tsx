@@ -3,6 +3,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ComponentPropsWithRef,
@@ -10,7 +11,15 @@ import {
   type ReactNode,
 } from 'react';
 import { FloatingFocusManager, useInteractions, useMergeRefs } from '@floating-ui/react';
-import { motion, MotionConfig, useReducedMotion } from 'motion/react';
+import {
+  animate,
+  motion,
+  MotionConfig,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+} from 'motion/react';
+import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -120,6 +129,11 @@ const DRAG_DISTANCE = 80;
 const DRAG_MIN_DISTANCE = 24;
 const DRAG_VELOCITY = 0.6;
 const SHAPE_SPRING = { type: 'spring', stiffness: 380, damping: 36 } as const;
+const FACE_FADE = {
+  duration: Number.parseFloat(base.motion.duration.fast) / 1000, // '120ms' -> 0.12s
+  // `motion` cannot consume the CSS cubic-bezier() string.
+  ease: base.motion.easeStandard.match(/[\d.]+/g)!.map(Number) as [number, number, number, number],
+} as const;
 const EMPTY_IDS: readonly string[] = [];
 const DEFAULT_MESSAGES: ShareSheetMessages = {
   trigger: 'Share',
@@ -148,8 +162,7 @@ const rootStyle = css({
 });
 const panelStyle = css({
   ...raisedSurface,
-  position: 'relative',
-  isolation: 'isolate',
+  backgroundColor: 'transparent',
   boxSizing: 'border-box',
   borderRadius: vars.radius.lg,
   inlineSize: `min(var(--share-sheet-width, 24rem), calc(100vw - 2 * ${vars.space[4]}))`,
@@ -166,25 +179,20 @@ const panelStyle = css({
     paddingBlockEnd: `calc(${vars.space[4]} + env(safe-area-inset-bottom, 0px))`,
   },
   [FORCED_COLORS]: {
-    background: 'Canvas',
     color: 'CanvasText',
     border: '1px solid CanvasText',
-    boxShadow: 'none',
   },
-  [REDUCED_MOTION]: { transition: 'none' },
 });
-const shapeStyle = css({
-  ...raisedSurface,
-  position: 'absolute',
-  inset: 0,
-  zIndex: -1,
-  pointerEvents: 'none',
-  borderRadius: vars.radius.lg,
-  boxShadow: vars.shadow.floating,
-  [FORCED_COLORS]: { display: 'none' },
-});
-const triggerBoxStyle = css({ position: 'relative', isolation: 'isolate' });
+// The visible surface. Pre-measurement it wraps the face; once measured, the geometry motion
+// values own inline-size, block-size and radius.
 const shellStyle = css({
+  boxSizing: 'border-box',
+  overflow: 'clip',
+  backgroundColor: vars.color.surfaceRaised,
+  boxShadow: vars.shadow.floating,
+  [FORCED_COLORS]: { background: 'Canvas', boxShadow: 'none' },
+});
+const dialogStyle = css({
   ...modalShellReset,
   position: 'fixed',
   inset: 0,
@@ -237,12 +245,27 @@ const personStyle = css({
   [FORCED_COLORS]: { '&[aria-pressed="true"]': { outline: '2px solid Highlight' } },
 });
 const copyStyle = css({
-  display: 'grid',
   blockSize: 'auto',
   minBlockSize: vars.space[10],
   whiteSpace: 'normal',
-  '& > span': { gridArea: '1 / 1', overflowWrap: 'anywhere' },
-  '& > [aria-hidden="true"]': { visibility: 'hidden' },
+  overflowWrap: 'anywhere',
+});
+// Always laid out so the row keeps its geometry; only visibility changes.
+const copiedStyle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: vars.space[1],
+  overflowWrap: 'anywhere',
+  color: vars.color.text,
+  opacity: 0,
+  visibility: 'hidden',
+  // Visibility flips at once on show and waits out the fade on hide.
+  transitionProperty: 'opacity, visibility',
+  transitionDuration: `${vars.motion.duration.fast}, 0s`,
+  transitionDelay: `0s, ${vars.motion.duration.fast}`,
+  transitionTimingFunction: vars.motion.easeStandard,
+  '&[data-state="visible"]': { opacity: 1, visibility: 'visible', transitionDelay: '0s' },
+  [REDUCED_MOTION]: { transitionDuration: '0s', transitionDelay: '0s' },
 });
 const errorStyle = css({ margin: 0, color: vars.color.dangerText });
 const grabberStyle = css({
@@ -260,6 +283,95 @@ const grabberStyle = css({
   },
   [FORCED_COLORS]: { '&::after': { background: 'CanvasText' } },
 });
+
+interface Geometry {
+  width: number;
+  height: number;
+  radius: number;
+}
+const toLength = (value: number | string) => (typeof value === 'number' ? `${value}px` : value);
+function measureGeometry(element: Element): Geometry {
+  const bounds = element.getBoundingClientRect();
+  const radius = element.ownerDocument.defaultView?.getComputedStyle(element).borderTopLeftRadius;
+  return {
+    width: bounds.width,
+    height: bounds.height,
+    radius: Number.parseFloat(radius ?? '') || 0,
+  };
+}
+/**
+ * The visible surface. Its geometry follows the measured border box of the face inside it; until
+ * the first measurement it simply wraps the face. `origin` is consulted once per mount.
+ */
+function ShareSheetShell({
+  origin,
+  children,
+}: {
+  origin: (target: Geometry) => Geometry | null;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const width = useMotionValue<number | string>('auto');
+  const height = useMotionValue<number | string>('auto');
+  const radius = useMotionValue<number | string>(vars.radius.lg);
+  // Logical sizes have no default unit in `motion`; numeric frames need an explicit px.
+  const inlineSize = useTransform(width, toLength);
+  const blockSize = useTransform(height, toLength);
+  const reduced = useReducedMotion();
+  const consultOrigin = useRef(origin);
+  useLayoutEffect(() => {
+    consultOrigin.current = origin;
+  });
+  useLayoutEffect(() => {
+    const face = ref.current?.firstElementChild;
+    const win = face?.ownerDocument.defaultView;
+    if (!face || !win) return;
+    let live = true;
+    let last: Geometry | null = null;
+    const apply = (next: Geometry, spring: boolean) => {
+      if (
+        last &&
+        next.width === last.width &&
+        next.height === last.height &&
+        next.radius === last.radius
+      )
+        return;
+      last = next;
+      const values = [
+        [width, next.width],
+        [height, next.height],
+        [radius, next.radius],
+      ] as const;
+      for (const [value, target] of values) {
+        if (spring) animate(value, target, SHAPE_SPRING);
+        else value.jump(target);
+      }
+    };
+    const target = measureGeometry(face);
+    const from = consultOrigin.current(target);
+    if (from && !reduced) apply(from, false);
+    apply(target, !reduced);
+    const observer = new win.ResizeObserver(() => {
+      if (live) apply(measureGeometry(face), !reduced);
+    });
+    observer.observe(face);
+    return () => {
+      live = false;
+      observer.disconnect();
+      for (const value of [width, height, radius]) value.stop();
+    };
+  }, [reduced, width, height, radius]);
+  return (
+    <motion.div
+      ref={ref}
+      data-ui="share-sheet-shell"
+      css={shellStyle}
+      style={{ inlineSize, blockSize, borderRadius: radius }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 function ShareSheetLayer({
   nodeId,
@@ -332,7 +444,6 @@ function ShareSheetLayer({
   const restoreFocus = useRef(false);
   const wasOpen = useRef(false);
   const scope = useThemeScope();
-  const reduced = useReducedMotion();
   const validAccess = accessOptions.some((option) => option.value === access && !option.disabled);
   const selectedPeople = people.filter((person) => selected.includes(person.id));
   const native = useNativeDialogRoot(sheet && open, requestOpen);
@@ -375,18 +486,17 @@ function ShareSheetLayer({
   const peopleMergedRef = useMergeRefs([peopleRef, slots.peopleList?.ref]);
   const doneMergedRef = useMergeRefs([doneRef, slots.doneButton?.ref]);
   const panelMergedRef = useMergeRefs([panelRef, contentSlot.ref]);
-  const previousSheet = useRef(sheet);
+  // Last focused control of this open session; a shell migration refocuses its equivalent.
+  const focusedControl = useRef<string | null>(null);
   const migrationTarget = useRef<string | null>(null);
-  if (previousSheet.current !== sheet) {
-    const active = rootRef.current?.ownerDocument.activeElement;
-    migrationTarget.current =
-      active && panelRef.current?.contains(active)
-        ? active.getAttribute('data-share-control')
-        : null;
-    previousSheet.current = sheet;
-  }
+  // Surfaces open at mount start settled; once the sheet has been closed or changes face,
+  // entrances animate.
+  const [faceMotion, setFaceMotion] = useState(false);
+  const sessionShell = useRef(false);
   const latestOpen = useRef(open);
-  latestOpen.current = open;
+  useLayoutEffect(() => {
+    latestOpen.current = open;
+  }, [open]);
   const drag = useRef<{ id: number; y: number; time: number } | null>(null);
 
   useEffect(() => {
@@ -400,6 +510,10 @@ function ShareSheetLayer({
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
+  // Snapshot before the new shell mounts and takes focus.
+  useLayoutEffect(() => {
+    migrationTarget.current = focusedControl.current;
+  }, [sheet]);
   useEffect(() => {
     if (open && !wasOpen.current) {
       setFace('panel');
@@ -417,6 +531,9 @@ function ShareSheetLayer({
       setAccessOpen(false);
       selectedAnnouncement.current = null;
       accessAnnouncement.current = null;
+      focusedControl.current = null;
+      sessionShell.current = false;
+      setFaceMotion(true);
       if (wasOpen.current && (sheet || restoreFocus.current)) triggerRef.current?.focus();
       restoreFocus.current = false;
     }
@@ -531,6 +648,7 @@ function ShareSheetLayer({
           submission.people.map((person) => person.name),
         );
         setSentNames(names);
+        setFaceMotion(true);
         setFace('sent');
         announce(text.sent(names));
       }
@@ -586,297 +704,327 @@ function ShareSheetLayer({
     '--share-sheet-available-height':
       !sheet && availableHeight !== undefined ? `${availableHeight}px` : undefined,
   };
+  // The first shell of an open session enters from the closed geometry (trigger footprint; empty
+  // block size for the sheet). Surfaces open at mount and shell migrations size instantly.
+  const entranceOrigin = (target: Geometry) => {
+    if (sessionShell.current) return null;
+    sessionShell.current = true;
+    const trigger = triggerRef.current;
+    if (!faceMotion) return null;
+    return sheet || !trigger ? { ...target, height: 0 } : measureGeometry(trigger);
+  };
   const surface = (
-    <div
-      {...contentSlot}
-      ref={panelMergedRef}
-      dir={props.dir ?? direction}
-      id={sheet ? undefined : contentId}
-      data-ui="share-sheet-content"
-      data-sheet={sheet || undefined}
-      data-face={face}
-      role={sheet ? undefined : 'dialog'}
-      aria-busy={pending || undefined}
-      aria-labelledby={[slots.content?.['aria-labelledby'], titleId].filter(Boolean).join(' ')}
-      aria-describedby={
-        [slots.content?.['aria-describedby'], error && errorId].filter(Boolean).join(' ') ||
-        undefined
-      }
-      css={[panelStyle, slots.content?.css]}
-      style={contentStyle}
-      onKeyDownCapture={(event) => {
-        slots.content?.onKeyDownCapture?.(event);
-        if (sheet && event.key === 'Escape' && !event.defaultPrevented) event.preventDefault();
-      }}
-    >
-      <motion.div
-        aria-hidden="true"
-        css={shapeStyle}
-        layout={!reduced}
-        layoutId={reduced ? undefined : `${id}-shape`}
-        transition={SHAPE_SPRING}
-      />
-      {sheet && (
-        <div
-          {...slots.grabber}
-          data-ui="share-sheet-grabber"
-          css={[grabberStyle, slots.grabber?.css]}
-          aria-hidden="true"
-          onPointerDown={(event) => {
-            slots.grabber?.onPointerDown?.(event);
-            if (event.defaultPrevented || event.button !== 0 || !event.isPrimary) return;
-            drag.current = { id: event.pointerId, y: event.clientY, time: event.timeStamp };
-            event.currentTarget.setPointerCapture?.(event.pointerId);
-          }}
-          onPointerUp={(event) => {
-            slots.grabber?.onPointerUp?.(event);
-            const start = drag.current;
-            drag.current = null;
-            if (!start || start.id !== event.pointerId || event.defaultPrevented) return;
-            const distance = event.clientY - start.y;
-            const velocity = distance / Math.max(1, event.timeStamp - start.time);
-            if (
-              distance >= DRAG_DISTANCE ||
-              (distance >= DRAG_MIN_DISTANCE && velocity >= DRAG_VELOCITY)
-            )
-              close();
-          }}
-          onPointerCancel={(event) => {
-            slots.grabber?.onPointerCancel?.(event);
-            drag.current = null;
-          }}
-          onLostPointerCapture={(event) => {
-            slots.grabber?.onLostPointerCapture?.(event);
-            drag.current = null;
-          }}
-        />
-      )}
-      <div css={columnStyle}>
-        <h2 {...slots.title} id={titleId} css={[titleStyle, slots.title?.css]}>
-          {text.heading(title)}
-        </h2>
-        {face === 'sent' ? (
-          <>
-            <p>{text.sent(sentNames)}</p>
-            <Button
-              {...slots.doneButton}
-              data-share-control="done"
-              ref={doneMergedRef}
-              onClick={(event) => {
-                slots.doneButton?.onClick?.(event);
-                if (!event.defaultPrevented) close();
-              }}
-            >
-              {text.done}
-            </Button>
-          </>
-        ) : (
-          <>
-            <div css={rowStyle}>
-              <Button
-                {...slots.copyButton}
-                data-share-control="copy"
-                ref={copyMergedRef}
-                css={[copyStyle, slots.copyButton?.css]}
-                disabled={!validAccess || slots.copyButton?.disabled}
-                aria-disabled={copyState === 'pending' || undefined}
-                aria-busy={copyState === 'pending' || undefined}
-                aria-describedby={
-                  [slots.copyButton?.['aria-describedby'], copyState === 'error' && copyErrorId]
-                    .filter(Boolean)
-                    .join(' ') || undefined
-                }
-                onClick={(event) => {
-                  slots.copyButton?.onClick?.(event);
-                  if (!event.defaultPrevented) void copy();
-                }}
-              >
-                <span aria-hidden={copyState === 'copied'}>{text.copy}</span>
-                <span aria-hidden={copyState !== 'copied'}>{text.copied}</span>
-              </Button>
-              <Select
-                value={access}
-                onValueChange={(next) => {
-                  accessAnnouncement.current = {
-                    value: next,
-                    message: accessOptions.find((option) => option.value === next)?.label ?? next,
-                  };
-                  requestAccess(next);
-                }}
-                open={accessOpen}
-                onOpenChange={setAccessOpen}
-                disabled={!accessOptions.some((option) => !option.disabled)}
-              >
-                <Select.Trigger
-                  {...slots.accessControl}
-                  data-share-control="access"
-                  aria-label={slots.accessControl?.['aria-label'] ?? text.sendTo}
-                  onKeyDownCapture={(event) => {
-                    slots.accessControl?.onKeyDownCapture?.(event);
-                    if (
-                      event.defaultPrevented ||
-                      !accessOpen ||
-                      !['ArrowLeft', 'ArrowRight'].includes(event.key)
-                    )
-                      return;
-                    const rtl =
-                      event.currentTarget.ownerDocument.defaultView?.getComputedStyle(
-                        event.currentTarget,
-                      ).direction === 'rtl';
-                    const forward = (event.key === 'ArrowRight') !== rtl;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    event.currentTarget.dispatchEvent(
-                      new KeyboardEvent('keydown', {
-                        key: forward ? 'ArrowDown' : 'ArrowUp',
-                        bubbles: true,
-                      }),
-                    );
+    <ShareSheetShell origin={entranceOrigin}>
+      <div
+        {...contentSlot}
+        ref={panelMergedRef}
+        dir={props.dir ?? direction}
+        id={sheet ? undefined : contentId}
+        data-ui="share-sheet-content"
+        data-sheet={sheet || undefined}
+        data-face={face}
+        role={sheet ? undefined : 'dialog'}
+        aria-busy={pending || undefined}
+        aria-labelledby={[slots.content?.['aria-labelledby'], titleId].filter(Boolean).join(' ')}
+        aria-describedby={
+          [slots.content?.['aria-describedby'], error && errorId].filter(Boolean).join(' ') ||
+          undefined
+        }
+        css={[panelStyle, slots.content?.css]}
+        style={contentStyle}
+        onKeyDownCapture={(event) => {
+          slots.content?.onKeyDownCapture?.(event);
+          if (sheet && event.key === 'Escape' && !event.defaultPrevented) event.preventDefault();
+        }}
+        onFocusCapture={(event) => {
+          slots.content?.onFocusCapture?.(event);
+          focusedControl.current = event.target.getAttribute('data-share-control');
+        }}
+      >
+        {sheet && (
+          <div
+            {...slots.grabber}
+            data-ui="share-sheet-grabber"
+            css={[grabberStyle, slots.grabber?.css]}
+            aria-hidden="true"
+            onPointerDown={(event) => {
+              slots.grabber?.onPointerDown?.(event);
+              if (event.defaultPrevented || event.button !== 0 || !event.isPrimary) return;
+              drag.current = { id: event.pointerId, y: event.clientY, time: event.timeStamp };
+              event.currentTarget.setPointerCapture?.(event.pointerId);
+            }}
+            onPointerUp={(event) => {
+              slots.grabber?.onPointerUp?.(event);
+              const start = drag.current;
+              drag.current = null;
+              if (!start || start.id !== event.pointerId || event.defaultPrevented) return;
+              const distance = event.clientY - start.y;
+              const velocity = distance / Math.max(1, event.timeStamp - start.time);
+              if (
+                distance >= DRAG_DISTANCE ||
+                (distance >= DRAG_MIN_DISTANCE && velocity >= DRAG_VELOCITY)
+              )
+                close();
+            }}
+            onPointerCancel={(event) => {
+              slots.grabber?.onPointerCancel?.(event);
+              drag.current = null;
+            }}
+            onLostPointerCapture={(event) => {
+              slots.grabber?.onLostPointerCapture?.(event);
+              drag.current = null;
+            }}
+          />
+        )}
+        <div css={columnStyle}>
+          <h2 {...slots.title} id={titleId} css={[titleStyle, slots.title?.css]}>
+            {text.heading(title)}
+          </h2>
+          <motion.div
+            key={face}
+            data-ui="share-sheet-face"
+            css={columnStyle}
+            initial={faceMotion ? { opacity: 0 } : false}
+            animate={{ opacity: 1 }}
+            transition={FACE_FADE}
+          >
+            {face === 'sent' ? (
+              <>
+                <p>{text.sent(sentNames)}</p>
+                <Button
+                  {...slots.doneButton}
+                  data-share-control="done"
+                  ref={doneMergedRef}
+                  onClick={(event) => {
+                    slots.doneButton?.onClick?.(event);
+                    if (!event.defaultPrevented) close();
                   }}
                 >
-                  <Select.Value placeholder={text.accessUnavailable} />
-                </Select.Trigger>
-                <Select.Content>
-                  {accessOptions.map((option) => (
-                    <Select.Item key={option.value} value={option.value} disabled={option.disabled}>
-                      {isRenderable(option.icon) && option.icon !== '' && (
-                        <span data-ui="share-sheet-icon" aria-hidden="true">
-                          {option.icon}
-                        </span>
-                      )}
-                      {option.label}
-                      {isRenderable(option.description) && option.description !== '' && (
-                        <span data-ui="share-sheet-access-description">{option.description}</span>
-                      )}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select>
-            </div>
-            {copyState === 'error' && (
-              <p id={copyErrorId} css={errorStyle}>
-                {text.copyFailed}
-              </p>
-            )}
-            {!validAccess && <p>{text.accessUnavailable}</p>}
-            {channels.length > 0 && (
-              <div {...slots.channelList} css={[rowStyle, slots.channelList?.css]}>
-                {channels.map((item) => (
-                  <div key={item.id}>
-                    <Button
-                      variant="outline"
-                      data-share-control={`channel-${item.id}`}
-                      loading={channelStates[item.id] === 'pending'}
-                      aria-describedby={
-                        channelStates[item.id] === 'error' ? channelErrorId(item.id) : undefined
-                      }
-                      disabled={
-                        !validAccess ||
-                        !onChannel ||
-                        item.disabled ||
-                        channelStates[item.id] === 'done'
-                      }
-                      onClick={() => void channel(item)}
+                  {text.done}
+                </Button>
+              </>
+            ) : (
+              <>
+                <div css={rowStyle}>
+                  <Button
+                    {...slots.copyButton}
+                    data-share-control="copy"
+                    ref={copyMergedRef}
+                    css={[copyStyle, slots.copyButton?.css]}
+                    disabled={!validAccess || slots.copyButton?.disabled}
+                    aria-disabled={copyState === 'pending' || undefined}
+                    aria-busy={copyState === 'pending' || undefined}
+                    aria-describedby={
+                      [slots.copyButton?.['aria-describedby'], copyState === 'error' && copyErrorId]
+                        .filter(Boolean)
+                        .join(' ') || undefined
+                    }
+                    onClick={(event) => {
+                      slots.copyButton?.onClick?.(event);
+                      if (!event.defaultPrevented) void copy();
+                    }}
+                  >
+                    {text.copy}
+                  </Button>
+                  <span
+                    data-ui="share-sheet-copied"
+                    data-state={copyState === 'copied' ? 'visible' : 'hidden'}
+                    css={copiedStyle}
+                  >
+                    <span aria-hidden="true">✓</span>
+                    {text.copied}
+                  </span>
+                  <Select
+                    value={validAccess ? access : ''}
+                    onValueChange={(next) => {
+                      accessAnnouncement.current = {
+                        value: next,
+                        message:
+                          accessOptions.find((option) => option.value === next)?.label ?? next,
+                      };
+                      requestAccess(next);
+                    }}
+                    open={accessOpen}
+                    onOpenChange={setAccessOpen}
+                    disabled={!accessOptions.some((option) => !option.disabled)}
+                  >
+                    <Select.Trigger
+                      {...slots.accessControl}
+                      data-share-control="access"
+                      aria-label={slots.accessControl?.['aria-label'] ?? text.sendTo}
+                      onKeyDownCapture={(event) => {
+                        slots.accessControl?.onKeyDownCapture?.(event);
+                        if (
+                          event.defaultPrevented ||
+                          !accessOpen ||
+                          !['ArrowLeft', 'ArrowRight'].includes(event.key)
+                        )
+                          return;
+                        const rtl =
+                          event.currentTarget.ownerDocument.defaultView?.getComputedStyle(
+                            event.currentTarget,
+                          ).direction === 'rtl';
+                        const forward = (event.key === 'ArrowRight') !== rtl;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.currentTarget.dispatchEvent(
+                          new KeyboardEvent('keydown', {
+                            key: forward ? 'ArrowDown' : 'ArrowUp',
+                            bubbles: true,
+                          }),
+                        );
+                      }}
                     >
-                      {isRenderable(item.icon) && item.icon !== '' && (
-                        <span data-ui="share-sheet-icon" aria-hidden="true">
-                          {item.icon}
-                        </span>
-                      )}
-                      {channelStates[item.id] === 'done'
-                        ? (item.doneLabel ?? text.done)
-                        : item.label}
-                    </Button>
-                    {channelStates[item.id] === 'error' && (
-                      <p id={channelErrorId(item.id)} css={errorStyle}>
-                        {text.channelFailed}
-                      </p>
-                    )}
+                      <Select.Value placeholder={text.accessUnavailable} />
+                    </Select.Trigger>
+                    <Select.Content>
+                      {accessOptions.map((option) => (
+                        <Select.Item
+                          key={option.value}
+                          value={option.value}
+                          disabled={option.disabled}
+                        >
+                          {isRenderable(option.icon) && option.icon !== '' && (
+                            <span data-ui="share-sheet-icon" aria-hidden="true">
+                              {option.icon}
+                            </span>
+                          )}
+                          {option.label}
+                          {isRenderable(option.description) && option.description !== '' && (
+                            <span data-ui="share-sheet-access-description">
+                              {option.description}
+                            </span>
+                          )}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select>
+                </div>
+                {copyState === 'error' && (
+                  <p id={copyErrorId} css={errorStyle}>
+                    {text.copyFailed}
+                  </p>
+                )}
+                {channels.length > 0 && (
+                  <div {...slots.channelList} css={[rowStyle, slots.channelList?.css]}>
+                    {channels.map((item) => (
+                      <div key={item.id}>
+                        <Button
+                          variant="outline"
+                          data-share-control={`channel-${item.id}`}
+                          loading={channelStates[item.id] === 'pending'}
+                          aria-describedby={
+                            channelStates[item.id] === 'error' ? channelErrorId(item.id) : undefined
+                          }
+                          disabled={
+                            !validAccess ||
+                            !onChannel ||
+                            item.disabled ||
+                            channelStates[item.id] === 'done'
+                          }
+                          onClick={() => void channel(item)}
+                        >
+                          {isRenderable(item.icon) && item.icon !== '' && (
+                            <span data-ui="share-sheet-icon" aria-hidden="true">
+                              {item.icon}
+                            </span>
+                          )}
+                          {channelStates[item.id] === 'done'
+                            ? (item.doneLabel ?? text.done)
+                            : item.label}
+                        </Button>
+                        {channelStates[item.id] === 'error' && (
+                          <p id={channelErrorId(item.id)} css={errorStyle}>
+                            {text.channelFailed}
+                          </p>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-            {selectedPeople.length > 0 && (
-              <div {...slots.selectedList} css={[rowStyle, slots.selectedList?.css]}>
-                {selectedPeople.map((person) => (
-                  <Button
-                    key={person.id}
-                    size="sm"
-                    variant="outline"
-                    aria-label={text.remove(person.name)}
-                    css={personStyle}
-                    onClick={() => toggle(person)}
+                )}
+                {selectedPeople.length > 0 && (
+                  <div {...slots.selectedList} css={[rowStyle, slots.selectedList?.css]}>
+                    {selectedPeople.map((person) => (
+                      <Button
+                        key={person.id}
+                        size="sm"
+                        variant="outline"
+                        aria-label={text.remove(person.name)}
+                        css={personStyle}
+                        onClick={() => toggle(person)}
+                      >
+                        {person.name} <span aria-hidden="true">×</span>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                <section aria-labelledby={`${id}-recent`}>
+                  <h3 id={`${id}-recent`}>{text.recentPeople}</h3>
+                  <div
+                    {...slots.peopleList}
+                    ref={peopleMergedRef}
+                    css={[peopleStyle, slots.peopleList?.css]}
                   >
-                    {person.name} <span aria-hidden="true">×</span>
-                  </Button>
-                ))}
-              </div>
-            )}
-            <section aria-labelledby={`${id}-recent`}>
-              <h3 id={`${id}-recent`}>{text.recentPeople}</h3>
-              <div
-                {...slots.peopleList}
-                ref={peopleMergedRef}
-                css={[peopleStyle, slots.peopleList?.css]}
-              >
-                {people.map((person) => (
+                    {people.map((person) => (
+                      <Button
+                        key={person.id}
+                        data-share-control={`person-${person.id}`}
+                        variant="outline"
+                        aria-pressed={selected.includes(person.id)}
+                        css={personStyle}
+                        onClick={() => toggle(person)}
+                      >
+                        <span aria-hidden="true">
+                          <Avatar name={person.name} src={person.src} size="sm" />
+                        </span>
+                        {person.name}
+                        {selected.includes(person.id) && <span aria-hidden="true">✓</span>}
+                      </Button>
+                    ))}
+                  </div>
+                </section>
+                {error && (
+                  <p id={errorId} css={errorStyle}>
+                    {error}
+                  </p>
+                )}
+                <div css={rowStyle}>
                   <Button
-                    key={person.id}
-                    data-share-control={`person-${person.id}`}
-                    variant="outline"
-                    aria-pressed={selected.includes(person.id)}
-                    css={personStyle}
-                    onClick={() => toggle(person)}
+                    {...slots.sendButton}
+                    data-share-control="send"
+                    loading={pending}
+                    disabled={!validAccess || !onSend || slots.sendButton?.disabled}
+                    aria-describedby={
+                      [slots.sendButton?.['aria-describedby'], error && errorId]
+                        .filter(Boolean)
+                        .join(' ') || undefined
+                    }
+                    onClick={(event) => {
+                      slots.sendButton?.onClick?.(event);
+                      if (!event.defaultPrevented) void send();
+                    }}
                   >
-                    <span aria-hidden="true">
-                      <Avatar name={person.name} src={person.src} size="sm" />
-                    </span>
-                    {person.name}
-                    {selected.includes(person.id) && <span aria-hidden="true">✓</span>}
+                    {pending ? text.sending : text.send(count, category)}
                   </Button>
-                ))}
-              </div>
-            </section>
-            {error && (
-              <p id={errorId} css={errorStyle}>
-                {error}
-              </p>
+                  <Button variant="ghost" data-share-control="close" onClick={close}>
+                    {text.close}
+                  </Button>
+                </div>
+              </>
             )}
-            <div css={rowStyle}>
-              <Button
-                {...slots.sendButton}
-                data-share-control="send"
-                loading={pending}
-                disabled={!validAccess || !onSend || slots.sendButton?.disabled}
-                aria-describedby={
-                  [slots.sendButton?.['aria-describedby'], error && errorId]
-                    .filter(Boolean)
-                    .join(' ') || undefined
-                }
-                onClick={(event) => {
-                  slots.sendButton?.onClick?.(event);
-                  if (!event.defaultPrevented) void send();
-                }}
-              >
-                {pending ? text.sending : text.send(count, category)}
-              </Button>
-              <Button variant="ghost" data-share-control="close" onClick={close}>
-                {text.close}
-              </Button>
-            </div>
-          </>
-        )}
-        <div
-          {...slots.status}
-          css={[visuallyHiddenStyle, slots.status?.css]}
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {status}
+          </motion.div>
+          <div
+            {...slots.status}
+            css={[visuallyHiddenStyle, slots.status?.css]}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {status}
+          </div>
         </div>
       </div>
-    </div>
+    </ShareSheetShell>
   );
   const dialogScope = {
     theme:
@@ -890,31 +1038,23 @@ function ShareSheetLayer({
     <WithSx className={className} styles={rootStyle} sx={sx}>
       {(rootClass) => (
         <div {...props} ref={rootMergedRef} className={rootClass} data-ui="share-sheet">
-          <div css={triggerBoxStyle}>
-            <motion.div
-              aria-hidden="true"
-              css={shapeStyle}
-              layoutId={reduced ? undefined : `${id}-shape`}
-              transition={SHAPE_SPRING}
-            />
-            <Button
-              {...slots.trigger}
-              ref={triggerMergedRef}
-              aria-haspopup="dialog"
-              aria-expanded={open}
-              aria-controls={contentId}
-              onClick={(event) => {
-                slots.trigger?.onClick?.(event);
-                if (!event.defaultPrevented) {
-                  restoreFocus.current = false;
-                  if (sheet) native.setOpen(true);
-                  else requestOpen(true);
-                }
-              }}
-            >
-              {text.trigger}
-            </Button>
-          </div>
+          <Button
+            {...slots.trigger}
+            ref={triggerMergedRef}
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            aria-controls={contentId}
+            onClick={(event) => {
+              slots.trigger?.onClick?.(event);
+              if (!event.defaultPrevented) {
+                restoreFocus.current = false;
+                if (sheet) native.setOpen(true);
+                else requestOpen(true);
+              }
+            }}
+          >
+            {text.trigger}
+          </Button>
           <dialog
             {...interactions.getFloatingProps({
               ...nativeProps,
@@ -924,7 +1064,7 @@ function ShareSheetLayer({
             })}
             ref={dialogMergedRef}
             id={sheet ? contentId : undefined}
-            css={shellStyle}
+            css={dialogStyle}
             aria-modal="true"
             aria-label={slots.content?.['aria-label']}
             aria-labelledby={[slots.content?.['aria-labelledby'], titleId]

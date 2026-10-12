@@ -53,6 +53,29 @@ type Story = StoryObj<typeof meta>;
 function body(element: HTMLElement) {
   return within(element.ownerDocument.body);
 }
+async function settled(canvasElement: HTMLElement) {
+  const doc = canvasElement.ownerDocument;
+  const shell = doc.querySelector<HTMLElement>('[data-ui="share-sheet-shell"]')!;
+  const panel = doc.querySelector<HTMLElement>('[data-ui="share-sheet-content"]')!;
+  const face = doc.querySelector<HTMLElement>('[data-ui="share-sheet-face"]')!;
+  const win = doc.defaultView!;
+  await waitFor(
+    async () => {
+      const outer = shell.getBoundingClientRect();
+      const inner = panel.getBoundingClientRect();
+      await expect(Math.abs(outer.width - inner.width)).toBeLessThan(1.1);
+      await expect(Math.abs(outer.height - inner.height)).toBeLessThan(1.1);
+      await expect(
+        Math.abs(
+          parseFloat(win.getComputedStyle(shell).borderTopLeftRadius) -
+            parseFloat(win.getComputedStyle(panel).borderTopLeftRadius),
+        ),
+      ).toBeLessThan(1.1);
+      await expect(win.getComputedStyle(face).opacity).toBe('1');
+    },
+    { timeout: 3000 },
+  );
+}
 async function clipboard(
   element: HTMLElement,
   write: ((value: string) => Promise<void>) | undefined,
@@ -87,6 +110,7 @@ export const Default: Story = {
     await expect(copy.ownerDocument.defaultView!.getComputedStyle(copy).outlineStyle).not.toBe(
       'none',
     );
+    await settled(canvasElement);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenCalledWith(true);
     const person = body(canvasElement).getByRole('button', { name: 'Ada Lovelace' });
@@ -149,11 +173,9 @@ export const LongNames: Story = {
     const copy = within(dialog).getByRole('button', {
       name: 'Copy this document’s shareable link',
     });
-    for (const label of copy.querySelectorAll('span')) {
-      await expect(label.getBoundingClientRect().width).toBeLessThanOrEqual(
-        copy.getBoundingClientRect().width + 1.1,
-      );
-    }
+    await expect(copy).toHaveTextContent('Copy this document’s shareable link');
+    const copied = dialog.querySelector<HTMLElement>('[data-ui="share-sheet-copied"]')!;
+    await expect(copied.getBoundingClientRect().width).toBeLessThanOrEqual(dialog.clientWidth);
     await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth + 1.1);
   },
 };
@@ -178,6 +200,8 @@ export const NoAccessOptions: Story = {
     await expect(
       body(canvasElement).getByRole('button', { name: 'Send to 0 people' }),
     ).toBeDisabled();
+    await expect(body(canvasElement).getAllByText('Access unavailable')).toHaveLength(1);
+    await expect(body(canvasElement).getByRole('combobox')).toHaveTextContent('Access unavailable');
   },
 };
 export const MissingControlledAccess: Story = {
@@ -211,6 +235,7 @@ export const Sent: Story = {
     await expect(args.onSend).toHaveBeenCalledTimes(1);
     await expect(args.onSend).toHaveBeenCalledWith({ people: [PEOPLE[0]], access: 'view' });
     await expect(body(canvasElement).getByRole('status')).toHaveTextContent('Sent to Ada Lovelace');
+    await settled(canvasElement);
   },
 };
 export const SendError: Story = {
@@ -279,19 +304,47 @@ export const CopyFeedback: Story = {
   args: { defaultOpen: true },
   play: async ({ canvasElement, userEvent, args }) => {
     const copy = await body(canvasElement).findByRole('button', { name: 'Copy link' });
-    const width = copy.getBoundingClientRect().width;
+    await settled(canvasElement);
+    const access = body(canvasElement).getByRole('combobox', { name: 'Access' });
+    const copied = canvasElement.ownerDocument.querySelector<HTMLElement>(
+      '[data-ui="share-sheet-copied"]',
+    )!;
+    const win = copy.ownerDocument.defaultView!;
+    const geometry = () =>
+      [copy, copied, access].map((element) => {
+        const { left, top, width, height } = element.getBoundingClientRect();
+        return [left, top, width, height];
+      });
+    const before = geometry();
+    await expect(win.getComputedStyle(copied).visibility).toBe('hidden');
     const write = fn(async (_value: string) => {});
     await clipboard(canvasElement, write, async () => {
       await userEvent.click(copy);
       await waitFor(async () => {
-        await expect(copy).toHaveAccessibleName('Copied');
+        await expect(body(canvasElement).getByRole('status').textContent).toBe('Copied');
       });
+      await expect(win.getComputedStyle(copied).visibility).toBe('visible');
+      await expect(copied).toHaveTextContent('✓Copied');
+      await expect(copy).toHaveAccessibleName('Copy link');
+      await expect(copy).toHaveTextContent(/^Copy link$/);
+      await expect(copy).not.toContainElement(copied);
       await expect(write).toHaveBeenCalledTimes(1);
       await expect(write).toHaveBeenCalledWith(args.link);
       await expect(args.onCopy).toHaveBeenCalledTimes(1);
       await expect(args.onCopy).toHaveBeenCalledWith('view');
-      await expect(Math.abs(copy.getBoundingClientRect().width - width)).toBeLessThan(1.1);
-      await expect(body(canvasElement).getByRole('status')).toHaveTextContent('Copied');
+      const after = geometry();
+      for (const [index, box] of before.entries()) {
+        for (const [axis, value] of box.entries()) {
+          await expect(Math.abs(after[index]![axis]! - value)).toBeLessThan(1.1);
+        }
+      }
+      await waitFor(
+        async () => {
+          await expect(win.getComputedStyle(copied).visibility).toBe('hidden');
+        },
+        { timeout: 3000 },
+      );
+      await expect(copy).toHaveAccessibleName('Copy link');
     });
   },
 };
@@ -620,6 +673,7 @@ export const LateSendSettlement: Story = {
       'true',
     );
     await expect(body(canvasElement).getByRole('status')).toBeEmptyDOMElement();
+    await settled(canvasElement);
   },
 };
 export const NativeClose: Story = {
@@ -691,7 +745,48 @@ export const RefAndTargets: Story = {
     await expect(args.ref).toHaveBeenCalledWith(root);
     const dialog = await body(canvasElement).findByRole('dialog');
     for (const button of within(dialog).getAllByRole('button')) {
-      await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
+      await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
     }
+  },
+};
+function MigratingExample(args: ShareSheetProps) {
+  const [presentation, setPresentation] = useState<ShareSheetProps['presentation']>('popover');
+  return (
+    <div
+      onKeyDown={(event) => {
+        if (event.key === 'm')
+          setPresentation((value) => (value === 'popover' ? 'sheet' : 'popover'));
+      }}
+    >
+      <ShareSheet {...args} presentation={presentation} />
+    </div>
+  );
+}
+export const ShellMigration: Story = {
+  args: { defaultOpen: true, defaultValue: ['ada'] },
+  render: (args) => <MigratingExample {...args} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    const send = await body(canvasElement).findByRole('button', { name: 'Send to 1 person' });
+    send.focus();
+    await userEvent.keyboard('m');
+    await waitFor(async () => {
+      await expect(canvasElement.querySelector('dialog')).toHaveAttribute('open');
+    });
+    const moved = body(canvasElement).getByRole('button', { name: 'Send to 1 person' });
+    await waitFor(async () => {
+      await expect(moved.ownerDocument.activeElement).toBe(moved);
+    });
+    await expect(moved).not.toBe(send);
+    await settled(canvasElement);
+    await userEvent.keyboard('m');
+    await waitFor(async () => {
+      await expect(canvasElement.querySelector('dialog')).not.toHaveAttribute('open');
+    });
+    await waitFor(async () => {
+      const back = body(canvasElement).getByRole('button', { name: 'Send to 1 person' });
+      await expect(back.ownerDocument.activeElement).toBe(back);
+    });
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await settled(canvasElement);
   },
 };
