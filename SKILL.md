@@ -215,6 +215,8 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - Storybook groups components by the `storySort` order in `apps/storybook/.storybook/preview.tsx` (`Home`,
   `Foundations`, `Inputs`, `Pickers`, `Data display`, `Feedback`, `Navigation`, `Surfaces`, `Layout`,
   `Games`, `Showcase`). A new section is added there and to this list in the same change.
+- Story files for the same component within a section share one `title`, even when integration
+  fixtures live in separate files. Keep their export names unique and their existing docs/sidebar tags.
 - React 19 ref-as-prop: components are plain functions reading `ref` from props typed with
   `ComponentPropsWithRef<'el'>`; never `forwardRef`. Every public component and compound part sets a
   dotted `displayName` (`Dialog.Trigger`) so DevTools and Storybook code panels show the public name.

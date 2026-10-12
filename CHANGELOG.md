@@ -9,3 +9,4 @@
 ### Improved
 
 - `EditableDetails` uses aligned headings, quieter labels and separators only between rows. Nested sections no longer stack empty divider lines.
+- Storybook groups `EditableDetails` form and picker examples under one Showcase entry.

@@ -110,7 +110,7 @@ function OverlayDetails({ surface = 'popover' }: { surface?: Surface }) {
 }
 
 const meta = {
-  title: 'Showcase/EditableDetails overlays',
+  title: 'Showcase/EditableDetails',
   component: OverlayDetails,
   tags: ['autodocs'],
   parameters: {
