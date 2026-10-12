@@ -10,7 +10,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { Button, ThemeProvider } from '@jfrader/ui';
 import { css, type SerializedStyles } from '../../../packages/ui/src/styling/css';
 import { REDUCED_MOTION } from '../../../packages/ui/src/styling/media';
-import { motionDurationMs } from '../../../packages/ui/src/styling/motion-timings';
+import { motionDurationMs, resolveMotionDurationMs } from '../../../packages/ui/src/styling/motion-timings';
 
 const DURATIONS = ['fast', 'base', 'slow'] as const;
 type Duration = (typeof DURATIONS)[number];
@@ -96,10 +96,17 @@ export const Durations: Story = {
     for (const duration of DURATIONS) {
       // The number Motion receives is the token value, and the CSS applies that same duration.
       await expect(motionDurationMs[duration]).toBe(Number.parseFloat(base.motion.duration[duration]));
+      await expect(getComputedStyle(dot(duration)).transitionDuration).not.toBe('0s');
       // The CSS applies the same token: computed durations come back in seconds.
       await expect(getComputedStyle(dot(duration)).transitionDuration).toBe(`${motionDurationMs[duration] / 1000}s`);
       await expect(dot(duration).dataset.shifted).toBe('false');
     }
+
+    // A missing or malformed duration resolves to 0 instead of taking the page down.
+    for (const malformed of [undefined, null, '120', 'var(--ui-motion-duration-fast)', 'slow']) {
+      await expect(resolveMotionDurationMs('duration.test', malformed)).toBe(0);
+    }
+    await expect(resolveMotionDurationMs('duration.test', '240ms')).toBe(240);
 
     const before = dot('slow').getBoundingClientRect().left;
     await userEvent.click(canvas.getByRole('button', { name: 'Move' }));

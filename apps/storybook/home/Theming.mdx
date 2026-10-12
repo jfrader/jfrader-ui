@@ -1,0 +1,14 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+import { Guide } from './Guide';
+import content from '../../../docs/theming.md?raw';
+import * as ThemeStories from '../../../packages/ui/src/components/theme-root/theme-root.stories';
+
+<Meta title="Foundations/Theming" tags={['dev']} />
+
+<Guide>{content}</Guide>
+
+## Try a scoped theme
+
+Open the example to switch palettes while a popover stays open.
+
+<Canvas of={ThemeStories.LiveThemeChange} />

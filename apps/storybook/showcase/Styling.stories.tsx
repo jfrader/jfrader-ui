@@ -38,7 +38,7 @@ function resolveToken(container: HTMLElement, property: string, value: string) {
 
 const meta = {
   title: 'Foundations/Styling',
-  tags: ['dev'],
+  tags: ['!autodocs'],
   decorators: [
     (Story) => (
       <ThemeProvider>

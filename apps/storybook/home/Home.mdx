@@ -1,4 +1,4 @@
-import { Meta, Source, Unstyled } from '@storybook/addon-docs/blocks';
+import { Meta, Unstyled } from '@storybook/addon-docs/blocks';
 import { Card, Pill } from '@jfrader/ui';
 import './home.css';
 
@@ -17,48 +17,44 @@ export const swatches = [
   'info',
 ];
 
-export const quickStart = `// package.json (inside the workspace)
-"dependencies": {
-  "@emotion/react": "^11.14.0",
-  "@jfrader/tokens": "workspace:*",
-  "@jfrader/ui": "workspace:*"
-}
-
-// vite.config.ts
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
-
-export default defineConfig({
-  plugins: [react({ jsxImportSource: '@emotion/react' })],
-});
-
-// tsconfig.json → compilerOptions
-"jsx": "react-jsx",
-"jsxImportSource": "@emotion/react",
-"moduleResolution": "bundler"
-
-// main.tsx
-import { createRoot } from 'react-dom/client';
-import '@jfrader/tokens/tokens.css';
-import { Button } from '@jfrader/ui';
-
-document.documentElement.dataset.theme = 'dark'; // or 'light'
-
-createRoot(document.getElementById('root')!).render(
-  <Button tone="accent">Save</Button>,
-);`;
-
 <Unstyled>
   <div className="home">
     <header className="home-hero">
-      <Pill tone="accent">30+ components</Pill>
+      <Pill tone="accent">React 19</Pill>
       <h1 className="home-wordmark">jfrader ui</h1>
       <p className="home-lede">React components for your app. Switch between dark and light themes with CSS custom properties.</p>
       <div className="home-actions">
-        <a className="home-cta" data-tone="accent" href="./?path=/story/showcase-appshell--default" target="_top">View the showcase</a>
+        <a className="home-cta" data-tone="accent" href="./?path=/docs/foundations-getting-started--docs" target="_top">Get started</a>
         <a className="home-cta" data-tone="neutral" href="./?path=/docs/inputs-button--docs" target="_top">Browse components</a>
       </div>
     </header>
+
+    <section className="home-section" aria-labelledby="home-guides">
+      <h2 id="home-guides" className="home-heading">Build with jfrader-ui</h2>
+      <div className="home-features">
+        <Card>
+          <Card.Header>
+            <Card.Title><a href="./?path=/docs/foundations-getting-started--docs" target="_top">Getting started</a></Card.Title>
+            <Card.Description>Install the packages and render your first component.</Card.Description>
+          </Card.Header>
+          <Card.Content>React, Vite and Next.js setup, with complete files to copy.</Card.Content>
+        </Card>
+        <Card>
+          <Card.Header>
+            <Card.Title><a href="./?path=/docs/foundations-theming--docs" target="_top">Theming</a></Card.Title>
+            <Card.Description>Choose light or dark, then add your brand colors.</Card.Description>
+          </Card.Header>
+          <Card.Content>Saved preferences, scoped themes, tokens and overlays.</Card.Content>
+        </Card>
+        <Card>
+          <Card.Header>
+            <Card.Title><a href="./?path=/docs/foundations-styling--docs" target="_top">Styling</a></Card.Title>
+            <Card.Description>Change a component, one of its parts, or a reusable wrapper.</Card.Description>
+          </Card.Header>
+          <Card.Content>When to use props, sx, styled, css and slotProps.</Card.Content>
+        </Card>
+      </div>
+    </section>
 
     <section className="home-section" aria-labelledby="home-palette">
       <h2 id="home-palette" className="home-heading">Palette</h2>
@@ -73,43 +69,6 @@ createRoot(document.getElementById('root')!).render(
       </ul>
     </section>
 
-    <section className="home-section" aria-labelledby="home-features">
-      <h2 id="home-features" className="home-heading">Using the library</h2>
-      <div className="home-features">
-        <Card>
-          <Card.Header>
-            <Card.Title>Themes</Card.Title>
-            <Card.Description>Colors, spacing and type are <code className="home-code">--ui-*</code> custom properties.</Card.Description>
-          </Card.Header>
-          <Card.Content>Set <code className="home-code">data-theme="light"</code> on <code className="home-code">&lt;html&gt;</code> to switch themes.</Card.Content>
-        </Card>
-        <Card>
-          <Card.Header>
-            <Card.Title>Accessibility</Card.Title>
-            <Card.Description>Keyboard maps follow the WAI-ARIA APG.</Card.Description>
-          </Card.Header>
-          <Card.Content>Every story runs axe; a violation fails <code className="home-code">pnpm test</code>.</Card.Content>
-        </Card>
-        <Card>
-          <Card.Header>
-            <Card.Title>TypeScript API</Card.Title>
-            <Card.Description>Typed props, compound parts and token references.</Card.Description>
-          </Card.Header>
-          <Card.Content>Visual props are <code className="home-code">variant</code>, <code className="home-code">tone</code> and <code className="home-code">size</code>.</Card.Content>
-        </Card>
-        <Card>
-          <Card.Header>
-            <Card.Title>Storybook</Card.Title>
-            <Card.Description>Stories, autodocs and browser tests in one place.</Card.Description>
-          </Card.Header>
-          <Card.Content>Run <code className="home-code">pnpm dev</code> to open it on port 6006.</Card.Content>
-        </Card>
-      </div>
-    </section>
-
-    <section className="home-section" aria-labelledby="home-quick-start">
-      <h2 id="home-quick-start" className="home-heading">Quick start</h2>
-      <Source code={quickStart} language="tsx" />
-    </section>
+    <p><a href="./?path=/story/showcase-appshell--default" target="_top">View the app showcase</a></p>
   </div>
 </Unstyled>

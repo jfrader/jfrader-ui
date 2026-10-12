@@ -1,0 +1,18 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+import { Guide } from './Guide';
+import content from '../../../docs/styling.md?raw';
+import * as StylingStories from '../showcase/Styling.stories';
+
+<Meta of={StylingStories} tags={['dev']} />
+
+<Guide>{content}</Guide>
+
+## Compare the overrides
+
+The first button uses `sx` over `css`. The second uses `css` alone. The third keeps its default corners.
+
+<Canvas of={StylingStories.SxOverCss} />
+
+## Reusable styles
+
+<Canvas of={StylingStories.StyledWithTheme} />

@@ -82,7 +82,7 @@ const meta = {
 - \`menu\` is the default. Its trigger shows the current language. Supply a localized \`triggerLabel\` naming the action, such as "Change language". Assistive technology reads it before the current label, and it names the menu.
 - \`swap\` shows one link to the other language on a two-language site. Other option counts warn in development and use the first noncurrent option. With no noncurrent option, it renders no link.
 - \`inline\` lists all options in a navigation landmark. Supply its accessible name with \`label\`. The current language is plain text, not a tab stop.
-- \`segmented\` lists all options like \`inline\`, in a bordered pill group. The current language is filled with the accent.
+- \`pills\` lists all options like \`inline\`, in a bordered pill group. The current language is filled with the accent.
 - Set an option's \`ariaLabel\` to its native name when \`label\` is a short code, such as \`ES\`. The visible label is then hidden from assistive tech and the native name is what it reads; interactive parts (links, the menu trigger) take it as their accessible name.
 - Use an option's \`render\` callback for router links. Spread every supplied prop, including the ref and event handlers, onto the returned link.
 
@@ -93,7 +93,7 @@ const meta = {
 - On the menu trigger, Enter, Space, or ArrowDown opens on the first item. ArrowUp opens on the last.
 - In the menu, arrows move and wrap. Home and End jump to the first and last items. Type a native name to move to its option.
 - Enter follows the focused link. Space clicks it. Escape closes and returns focus to the trigger. Tab closes and lets focus move on.
-- Inline, segmented, and swap links follow native Tab order.`,
+- Inline, pills, and swap links follow native Tab order.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive).
@@ -342,12 +342,12 @@ export const Inline: Story = {
 
 export const InlineLightTheme: Story = { ...Inline, decorators: [withLightTheme] };
 
-export const Segmented: Story = {
-  args: { variant: 'segmented', options: SHORT_PAIR },
+export const Pills: Story = {
+  args: { variant: 'pills', options: SHORT_PAIR },
   play: async ({ canvas }) => {
     navigate.mockClear();
     const nav = canvas.getByRole('navigation', { name: NAV_LABEL });
-    await expect(nav).toHaveAttribute('data-variant', 'segmented');
+    await expect(nav).toHaveAttribute('data-variant', 'pills');
     // The visible text is the short code; the name keeps it and adds the native name.
     const options = within(nav)
       .getAllByRole('listitem')
@@ -376,10 +376,10 @@ export const Segmented: Story = {
   },
 };
 
-export const SegmentedLightTheme: Story = { ...Segmented, decorators: [withLightTheme] };
+export const PillsLightTheme: Story = { ...Pills, decorators: [withLightTheme] };
 
-export const SegmentedSizes: Story = {
-  args: { variant: 'segmented', options: SHORT_PAIR },
+export const PillsSizes: Story = {
+  args: { variant: 'pills', options: SHORT_PAIR },
   render: (args) => (
     <div style={stackStyle}>
       {(['sm', 'md', 'lg'] as const).map((size) => (
@@ -433,12 +433,12 @@ export const Semantics: Story = {
       <LocaleSwitcher {...args} />
       <LocaleSwitcher {...args} variant="swap" options={PAIR} />
       <LocaleSwitcher {...args} variant="inline" />
-      <LocaleSwitcher {...args} variant="segmented" label={SECOND_NAV_LABEL} />
+      <LocaleSwitcher {...args} variant="pills" label={SECOND_NAV_LABEL} />
     </div>
   ),
   play: async ({ canvasElement, canvas }) => {
     const roots = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="locale-switcher"]'));
-    await expect(roots.map((root) => root.dataset.variant)).toEqual(['menu', 'swap', 'inline', 'segmented']);
+    await expect(roots.map((root) => root.dataset.variant)).toEqual(['menu', 'swap', 'inline', 'pills']);
     // The menu trigger is the only button; links are never buttons.
     await expect(canvas.getAllByRole('button')).toHaveLength(1);
     await expect(canvasElement.querySelectorAll('select, [role="button"]:not(button)')).toHaveLength(0);
@@ -458,7 +458,7 @@ export const Rtl: Story = {
     <div style={stackStyle}>
       <LocaleSwitcher {...args} />
       <LocaleSwitcher {...args} variant="inline" />
-      <LocaleSwitcher {...args} variant="segmented" label={SECOND_NAV_LABEL} />
+      <LocaleSwitcher {...args} variant="pills" label={SECOND_NAV_LABEL} />
     </div>
   ),
   play: async ({ canvasElement, canvas }) => {

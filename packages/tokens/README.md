@@ -1,6 +1,6 @@
 # @jfrader/tokens
 
-Design tokens for `@jfrader/ui`: CSS custom properties and typed `var()` references.
+Shared design values for `@jfrader/ui`, such as colors, spacing and fonts. The package provides CSS custom properties and typed `var()` references. You can also use them in app CSS without the component library.
 
 ## Usage
 
@@ -21,7 +21,9 @@ import { vars } from '@jfrader/tokens/vars';
 const gap = vars.space[4]; // 'var(--ui-space-4)'
 ```
 
-The raw token values are exported as `base` (dark) and `light` from `@jfrader/tokens`.
+These are references, not resolved values: changing `data-theme` changes what the browser reads. The raw token values are exported as `base` (dark) and `light` from `@jfrader/tokens`.
+
+For app-wide or scoped overrides, see [Theming](https://github.com/jfrader/jfrader-ui/blob/master/docs/theming.md). For using tokens with `sx`, `styled` or CSS, see [Styling](https://github.com/jfrader/jfrader-ui/blob/master/docs/styling.md).
 
 ## Build
 
