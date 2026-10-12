@@ -21,6 +21,8 @@ const RING_TOLERANCE = 1.1;
 const GEOMETRY_TOLERANCE = 1.5;
 const MIN_CONTROL = 32;
 const relative = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
+const fullDate = (timeZone: string) =>
+  new Intl.DateTimeFormat(LOCALE, { timeZone, dateStyle: 'full', timeStyle: 'short' });
 
 const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
 const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
@@ -70,6 +72,10 @@ const fixtureStyle = css({
   font: 'inherit',
 });
 const slotBodyStyle = css({ textDecorationLine: 'underline' });
+// Each overrides a declaration the thread itself sets on that part.
+const slotHeaderStyle = css({ justifyContent: 'flex-start' });
+const slotTitleStyle = css({ overflowWrap: 'normal' });
+const slotReactionStyle = css({ flexWrap: 'nowrap' });
 const consumerCss = css({ outlineStyle: 'dotted' });
 const consumerSx = css({ outlineStyle: 'dashed' });
 
@@ -265,8 +271,7 @@ export const Default: Story = {
     await expect(first).toHaveAccessibleName(`Grace Hopper ${relative.format(-3, 'hour')}`);
     const time = first.querySelector('time')!;
     await expect(time).toHaveAttribute('datetime', new Date(NOW - 3 * HOUR).toISOString());
-    const full = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', dateStyle: 'full', timeStyle: 'short' });
-    await expect(first).toHaveAccessibleDescription(full.format(NOW - 3 * HOUR));
+    await expect(first).toHaveAccessibleDescription(fullDate('UTC').format(NOW - 3 * HOUR));
     await expect(articleOf(canvasElement, 'c2').querySelector('time')).toHaveTextContent(relative.format(-5, 'minute'));
     await expect(articleOf(canvasElement, 'c1r1')).toHaveTextContent('Edited');
     // Replies start expanded and are wired as disclosures.
@@ -349,6 +354,40 @@ export const MaxDepthZero: Story = {
     ]);
     // Existing deeper replies are still shown as given.
     await expect(itemIds(canvasElement)).toContain('c1r1r1');
+  },
+};
+
+/** A chain six comments deep: `deep-0` → `deep-1` → … → `deep-5`. */
+const DEEP_IDS = Array.from({ length: 6 }, (_, depth) => `deep-${depth}`);
+const DEEP_CHAIN = DEEP_IDS.reduceRight<ThreadComment[]>(
+  (replies, id, depth) => [
+    { id, author: depth % 2 ? GRACE : ALAN, body: `Level ${depth}`, createdAt: NOW - HOUR, replies },
+  ],
+  [],
+);
+
+export const DeepNesting: Story = {
+  args: { defaultValue: DEEP_CHAIN },
+  play: async ({ canvasElement }) => {
+    // Trees deeper than maxDepth are shown as given.
+    await expect(itemIds(canvasElement)).toEqual(DEEP_IDS);
+    const repliesOf = (id: string) => item(canvasElement, id).querySelector<HTMLElement>(':scope > ul')!;
+    const indent = (id: string) => getComputedStyle(repliesOf(id)).paddingInlineStart;
+    // Reply lists under depths 0-2 indent; from depth 3 on they stop indenting but stay lists.
+    for (const depth of [0, 1, 2]) {
+      await expect(repliesOf(`deep-${depth}`)).not.toHaveAttribute('data-capped');
+      await expect(Number.parseFloat(indent(`deep-${depth}`))).toBeGreaterThan(0);
+    }
+    for (const depth of [3, 4]) {
+      const list = repliesOf(`deep-${depth}`);
+      await expect(list).toHaveAttribute('data-capped');
+      await expect(list).toHaveAttribute('role', 'list');
+      await expect(indent(`deep-${depth}`)).toBe('0px');
+      await expect(getComputedStyle(list).borderInlineStartStyle).toBe('none');
+    }
+    const left = (id: string) => articleOf(canvasElement, id).getBoundingClientRect().left;
+    await expect(left('deep-3')).toBeGreaterThan(left('deep-2'));
+    await expect(Math.abs(left('deep-5') - left('deep-3'))).toBeLessThan(GEOMETRY_TOLERANCE);
   },
 };
 
@@ -643,6 +682,11 @@ export const RejectedResolve: Story = {
     await expect(part(canvasElement, 'content')).toBeVisible();
     await expect(activeOf(canvasElement)).toBe(resolve);
     await expect(canvas.queryByRole('button', { name: 'Reopen' })).toBeNull();
+    // Repeating a rejected request does not re-send it.
+    await userEvent.dblClick(resolve);
+    await expect(args.onResolvedValueChange).toHaveBeenCalledTimes(1);
+    await expect(part(canvasElement, 'content')).toBeVisible();
+    await expect(activeOf(canvasElement)).toBe(resolve);
   },
 };
 
@@ -840,8 +884,7 @@ export const InvalidInputs: Story = {
   },
   play: async ({ canvasElement }) => {
     await expect(itemIds(canvasElement)).toEqual(['loop']);
-    const full = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', dateStyle: 'full', timeStyle: 'short' });
-    await expect(articleOf(canvasElement, 'loop').querySelector('time')).toHaveTextContent(full.format(NOW));
+    await expect(articleOf(canvasElement, 'loop').querySelector('time')).toHaveTextContent(fullDate('UTC').format(NOW));
     await waitFor(() => expect(console.error).toHaveBeenCalled());
     const message = (console.error as Mock).mock.calls.map(([first]) => String(first)).join('\n');
     for (const fragment of ['now NaN', 'maxDepth -1', 'duplicate comment ids ["loop"]', 'among its own replies'])
@@ -1042,14 +1085,57 @@ export const Localized: Story = {
   },
 };
 
+export const TimeZone: Story = {
+  args: { timeZone: 'Asia/Tokyo' },
+  play: async ({ canvasElement }) => {
+    const first = articleOf(canvasElement, 'c1');
+    const createdAt = NOW - 3 * HOUR;
+    // The full date follows `timeZone`; the relative time and machine-readable value do not.
+    await expect(first).toHaveAccessibleDescription(fullDate('Asia/Tokyo').format(createdAt));
+    await expect(fullDate('Asia/Tokyo').format(createdAt)).not.toBe(fullDate('UTC').format(createdAt));
+    const time = first.querySelector('time')!;
+    await expect(time).toHaveTextContent(relative.format(-3, 'hour'));
+    await expect(time).toHaveAttribute('datetime', new Date(createdAt).toISOString());
+  },
+};
+
 export const SlotStyling: Story = {
-  args: { slotProps: { body: { css: slotBodyStyle } } },
-  render: (args) => <CommentThread {...args} css={consumerCss} sx={consumerSx} />,
-  play: async ({ canvas, canvasElement }) => {
-    const body = part(item(canvasElement, 'c1'), 'body')!;
-    await expect(getComputedStyle(body).textDecorationLine).toBe('underline');
+  args: {
+    slotProps: {
+      body: { css: slotBodyStyle },
+      header: { css: slotHeaderStyle },
+      title: { css: slotTitleStyle },
+      reaction: { css: slotReactionStyle },
+    },
+  },
+  render: (args) => (
+    <div css={stackStyle}>
+      <CommentThread {...args} css={consumerCss} sx={consumerSx} />
+      <CommentThread {...args} title="Plain" slotProps={undefined} />
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    const styled = canvas.getByRole('region', { name: 'Review' });
+    const plain = canvas.getByRole('region', { name: 'Plain' });
+    const header = (root: HTMLElement) => getComputedStyle(root.querySelector('[data-ui="card-header"]')!);
+    const title = (root: HTMLElement) => getComputedStyle(within(root).getByRole('heading'));
+    const reactions = (root: HTMLElement) => getComputedStyle(part(item(root, 'c1'), 'reactions')!);
+    const body = (root: HTMLElement) => getComputedStyle(part(item(root, 'c1'), 'body')!);
+    // The thread's own part styles beat Card's (Card's header is a grid)...
+    await expect(header(plain).display).toBe('flex');
+    await expect(header(plain).justifyContent).toBe('space-between');
+    await expect(title(plain).overflowWrap).toBe('anywhere');
+    await expect(reactions(plain).flexWrap).toBe('wrap');
+    await expect(body(plain).textDecorationLine).toBe('none');
+    // ...and slot styles beat the thread's own.
+    await expect(header(styled).display).toBe('flex');
+    await expect(header(styled).justifyContent).toBe('flex-start');
+    await expect(title(styled).overflowWrap).toBe('normal');
+    await expect(reactions(styled).flexWrap).toBe('nowrap');
+    await expect(body(styled).textDecorationLine).toBe('underline');
     // `sx` wins over `css`, which wins over the root's own styles.
-    await expect(getComputedStyle(canvas.getByRole('region')).outlineStyle).toBe('dashed');
+    await expect(getComputedStyle(styled).outlineStyle).toBe('dashed');
+    await expect(getComputedStyle(plain).outlineStyle).toBe('none');
   },
 };
 

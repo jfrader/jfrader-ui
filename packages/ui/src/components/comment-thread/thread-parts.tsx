@@ -113,7 +113,7 @@ export function ThreadTime({ epoch, now, formatters, invalidLabel, id, fullId, u
       >
         {now === null ? formatters.full.format(epoch) : relativeTime(epoch, now, formatters.relative)}
       </time>
-      <span id={fullId} hidden>
+      <span id={fullId} css={visuallyHiddenStyle}>
         {formatters.full.format(epoch)}
       </span>
     </>

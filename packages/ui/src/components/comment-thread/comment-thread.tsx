@@ -91,6 +91,8 @@ export type CommentThreadEvent =
   | { type: 'delete'; id: string }
   | { type: 'react'; id: string; emoji: string; added: boolean };
 
+// No `actionFailed` label: the thread never learns that a server mutation failed (acknowledgement
+// and errors are consumer-owned), so it has nothing to show it for.
 export interface CommentThreadLabels extends ThreadReactionLabels {
   /** Region name when there is no `title`, `aria-label` or `aria-labelledby`. */
   thread: string;
@@ -139,7 +141,7 @@ type CommentThreadPart =
   | 'body'
   | 'replies'
   | 'actions'
-  | 'reactions'
+  | 'reaction'
   | 'composer'
   | 'resolved'
   | 'status';
@@ -525,6 +527,11 @@ export function CommentThread({
     defaultResolvedValue ?? false,
     onResolvedValueChange,
   );
+  // Like the expanded set below: a request the parent rejected is not re-sent.
+  const lastResolveRequest = useRef<boolean | null>(null);
+  useLayoutEffect(() => {
+    lastResolveRequest.current = null;
+  }, [resolved]);
 
   const [initialExpanded] = useState(() => defaultExpandedValue ?? parentsWithReplies(index));
   const [expanded = EMPTY_IDS, requestExpandedChange] = useControlledState<readonly string[]>(
@@ -772,7 +779,8 @@ export function CommentThread({
   };
 
   const requestResolution = (next: boolean, event: MouseEvent<HTMLButtonElement>) => {
-    if (disabled || readOnly) return;
+    if (disabled || readOnly || next === lastResolveRequest.current) return;
+    lastResolveRequest.current = next;
     const target = next ? 'reopen' : 'resolve';
     focusReturn.current = {
       invoker: event.currentTarget,
@@ -901,7 +909,7 @@ export function CommentThread({
               }
               onToggle={(emoji) => react(id, emoji)}
               pickerId={partId(baseId, 'picker', id)}
-              part={slotProps?.reactions}
+              part={slotProps?.reaction}
             />
           )}
           {deleted || editing || readOnly ? null : confirming ? (
