@@ -109,6 +109,9 @@ export const vars = {
     "emblemMd": "var(--ui-size-emblem-md)",
     "emblemLg": "var(--ui-size-emblem-lg)",
     "emblemXl": "var(--ui-size-emblem-xl)",
+    "gameCardSm": "var(--ui-size-game-card-sm)",
+    "gameCardMd": "var(--ui-size-game-card-md)",
+    "gameCardLg": "var(--ui-size-game-card-lg)",
     "sheetStackBreakpoint": "var(--ui-size-sheet-stack-breakpoint)",
     "sheetStackSheetPeek": "var(--ui-size-sheet-stack-sheet-peek)",
     "sheetStackDialogPeek": "var(--ui-size-sheet-stack-dialog-peek)"
