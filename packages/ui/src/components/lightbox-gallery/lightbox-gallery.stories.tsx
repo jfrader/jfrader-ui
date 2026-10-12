@@ -122,8 +122,15 @@ export const DefaultMixedRatios: Story = {
     }
   },
 };
-export const TitlesCaptions: Story = { args: { defaultOpen: true }, play: settled };
+export const TitlesCaptions: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
+  args: { defaultOpen: true },
+  play: settled,
+};
 export const PersistentViewer: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: 'forest' },
   play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByRole('dialog', { name: 'Trip photos — Forest' })).toBeVisible();
@@ -135,6 +142,8 @@ export const PersistentViewer: Story = {
   },
 };
 export const PersistentZoomed: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Toggle zoom' }));
@@ -145,6 +154,8 @@ export const PersistentZoomed: Story = {
   },
 };
 export const SingleImage: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { images: images.slice(0, 1), defaultOpen: true },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await expect(await canvas.findByRole('button', { name: 'Previous image' })).toBeDisabled();
@@ -173,6 +184,8 @@ export const MissingImage: Story = {
   },
 };
 export const PersistentImageError: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { images: [{ ...images[0]!, src: '' }], defaultOpen: true },
   play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByRole('dialog')).toBeVisible();
@@ -212,12 +225,16 @@ export const ResponsiveSources: Story = {
   },
 };
 export const Light: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   args: { defaultOpen: true },
   play: settled,
 };
 export const ReducedMotion: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   parameters: {
     docs: {
@@ -230,6 +247,8 @@ export const ReducedMotion: Story = {
   play: settled,
 };
 export const ForcedColors: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   parameters: {
     docs: {
@@ -406,6 +425,8 @@ export const RejectedSelection: Story = {
   },
 };
 export const RejectedNavigation: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { value: 'forest', open: true },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Next image' }));
@@ -429,6 +450,8 @@ export const InvalidSelection: Story = {
 };
 export const NullSelection: Story = { ...InvalidSelection, args: { value: null, open: true } };
 export const ExternalAcceptedChanges: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => {
     const [value, setValue] = useState<string | null>('coast');
@@ -447,6 +470,8 @@ export const ExternalAcceptedChanges: Story = {
   },
 };
 export const ExternalAria: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     'aria-label': 'Consumer region',
@@ -484,6 +509,8 @@ export const ExternalAria: Story = {
   },
 };
 export const DescriptionOptOut: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     slotProps: { viewer: { withDescription: false, 'aria-describedby': 'external-description' } },
@@ -499,6 +526,8 @@ export const DescriptionOptOut: Story = {
   },
 };
 export const FalsyCaptions: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: {
     images: [false, null, 0, ''].map((caption, index) => ({ ...images[index]!, caption })),
     defaultOpen: true,
@@ -565,6 +594,8 @@ export const NativeLifecycle: Story = {
   },
 };
 export const CancelVeto: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, slotProps: { viewer: { onCancel: fn((event) => event.preventDefault()) } } },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Close viewer' }));
@@ -574,6 +605,8 @@ export const CancelVeto: Story = {
   },
 };
 export const RejectedNativeCloseRepair: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { value: 'coast', open: true },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const dialog = (await canvas.findByRole('dialog')) as HTMLDialogElement;
@@ -619,6 +652,8 @@ export const UnmountReturn: Story = {
   },
 };
 export const SlotStyles: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     slotProps: {
@@ -637,6 +672,8 @@ export const SlotStyles: Story = {
   },
 };
 export const LocalizedContent: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     locale: 'ar-EG',
@@ -654,6 +691,8 @@ export const LocalizedContent: Story = {
   },
 };
 export const GestureAlternatives: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true, maxZoom: 2, slotProps: { stage: { onClick: fn() } } },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await canvas.findByRole('dialog');
@@ -786,6 +825,8 @@ export const DownwardDismiss: Story = {
 };
 
 export const ReplacedImageSource: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => {
     const [items, setItems] = useState(args.images);
@@ -843,6 +884,8 @@ export const SSRHydration: Story = {
 };
 
 export const LiveReducedMotionPreference: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => {
     const change = useRef<() => void>(() => {});

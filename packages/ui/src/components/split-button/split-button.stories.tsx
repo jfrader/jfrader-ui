@@ -830,7 +830,7 @@ export const ThemeRootPortal: Story = {
   ),
   play: async ({ canvasElement }) => {
     const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
-    // Portaled into the scope's host, keeping the nearest ThemeRoot's theme.
+    // Portaled into the scope's host, keeping the nearest scope's theme and appearance.
     await expect(canvasElement.querySelector('[data-overlay-host]')!.contains(menu)).toBe(true);
     await expectThemedSurface(menu, 'light');
   },

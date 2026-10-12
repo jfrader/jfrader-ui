@@ -1,16 +1,17 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { expectThemedSurface } from '../../testing/theme-assertions';
+import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
 import { Checkbox } from '../checkbox';
 import { Dialog } from '../dialog';
 import { Popover } from '../popover';
+import { Select } from '../select';
 import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
-import { Drawer, type DrawerContentProps, type DrawerProps, type DrawerSize } from './index';
+import { Drawer, type DrawerContentProps, type DrawerPanelProps, type DrawerProps, type DrawerSize } from './index';
 
 const TITLE = 'Filters';
 const DESCRIPTION = 'Narrow the issue list by owner and status.';
@@ -27,6 +28,11 @@ const fieldStackStyle = {
   gap: vars.space[4],
 } satisfies CSSProperties;
 
+const fieldLabelStyle = {
+  margin: 0,
+  fontSize: vars.textSize.sm,
+} satisfies CSSProperties;
+
 const meta = {
   title: 'Surfaces/Drawer',
   component: Drawer,
@@ -36,7 +42,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Modal edge surface for filters, settings, long forms and record details. Built on the native modal dialog: the page behind is inert, Tab/Shift+Tab stay inside, Escape, Close and backdrop clicks request close through one cancelable path, and focus returns to the invoker. `side` attaches the panel to `inline-start`, `inline-end` (default), `top` or `bottom`; inline sides follow text direction. `size` caps inline panels; top/bottom panels span the viewport and cap their height. The Body scrolls while Header and Footer stay visible. Optional `draggable` lets the header pull the panel toward its edge to dismiss; reduced motion turns it off, and Close/Escape always remain. Modal only; closing is immediate (no exit animation). Floating overlays inside the drawer need a `ThemeRoot portalContainer` host inside it; an open nested overlay takes the Escape first. Close needs visible text or a localized `aria-label`.',
+          'Modal edge surface for filters, settings, long forms and record details. Built on the native modal dialog: the page behind is inert, Tab/Shift+Tab stay inside, Escape, Close and backdrop clicks request close through one cancelable path, and focus returns to the invoker. `side` attaches the panel to `inline-start`, `inline-end` (default), `top` or `bottom`; inline sides follow text direction. `size` caps inline panels; top/bottom panels span the viewport and cap their height. The Body scrolls while Header and Footer stay visible. Optional `draggable` lets the header pull the panel toward its edge to dismiss; reduced motion turns it off, and Close/Escape always remain. Modal only. The panel slides in from its edge and back out before the dialog closes; reduced motion opens and closes instantly. Floating overlays inside the drawer need a `ThemeRoot portalContainer` host inside it; an open nested overlay takes the Escape first. Close needs visible text or a localized `aria-label`.',
       },
       source: {
         code: `<Drawer>
@@ -67,6 +73,7 @@ type Story = Omit<StoryObj<DrawerProps>, 'render' | 'play'> & {
 
 interface ExampleProps extends DrawerProps {
   contentProps?: DrawerContentProps;
+  panelProps?: DrawerPanelProps;
   body?: ReactNode;
 }
 
@@ -82,12 +89,12 @@ function FilterFields() {
 }
 FilterFields.displayName = 'FilterFields';
 
-function DrawerExample({ contentProps, body = <FilterFields />, ...props }: ExampleProps) {
+function DrawerExample({ contentProps, panelProps, body = <FilterFields />, ...props }: ExampleProps) {
   return (
     <Drawer {...props}>
       <Drawer.Trigger>{TRIGGER}</Drawer.Trigger>
       <Drawer.Content {...contentProps}>
-        <Drawer.Panel>
+        <Drawer.Panel {...panelProps}>
           <Drawer.Header>
             <Drawer.Title>{TITLE}</Drawer.Title>
             <Drawer.Description>{DESCRIPTION}</Drawer.Description>
@@ -130,8 +137,50 @@ function parts(canvasElement: HTMLElement) {
   };
 }
 
-async function settle(element: HTMLElement) {
-  await Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished));
+/** The panel rests once its animated offset clears. */
+async function settle(dialog: HTMLElement) {
+  const panel = dialog.querySelector<HTMLElement>('[data-ui="drawer-panel"]')!;
+  await waitFor(() => expect(panel.style.translate).toBe(''), { timeout: 2000 });
+  await expect(dialog.style.getPropertyValue('--drawer-presence')).toBe('');
+}
+
+interface MotionFrame {
+  open: boolean;
+  left: number;
+  top: number;
+  presence: number;
+  /** The shell's scroll offset; any scroll would cancel the panel's travel on screen. */
+  scroll: number;
+}
+
+/** One reading per animation frame, from `start()` until `done` holds or the time runs out. */
+async function sampleFrames(dialog: HTMLDialogElement, start: () => void, done: (frame: MotionFrame) => boolean) {
+  const view = dialog.ownerDocument.defaultView!;
+  const panel = dialog.querySelector<HTMLElement>('[data-ui="drawer-panel"]')!;
+  const read = (): MotionFrame => ({
+    open: dialog.open,
+    left: rect(panel).left,
+    top: rect(panel).top,
+    presence: Number.parseFloat(dialog.style.getPropertyValue('--drawer-presence') || '1'),
+    scroll: Math.abs(dialog.scrollLeft) + Math.abs(dialog.scrollTop),
+  });
+  const frames: MotionFrame[] = [];
+  const startedAt = view.performance.now();
+  start();
+  await new Promise<void>((resolve) => {
+    const tick = () => {
+      const frame = read();
+      frames.push(frame);
+      if (done(frame) || view.performance.now() - startedAt > 2000) resolve();
+      else view.requestAnimationFrame(tick);
+    };
+    view.requestAnimationFrame(tick);
+  });
+  return frames;
+}
+
+function isMonotonic(values: number[], direction: 1 | -1) {
+  return values.every((value, index) => index === 0 || (value - values[index - 1]!) * direction >= -0.01);
 }
 
 async function openDrawer({ canvasElement, userEvent }: Pick<StoryContext<DrawerProps>, 'canvasElement' | 'userEvent'>) {
@@ -150,9 +199,10 @@ function requestEscape(dialog: HTMLElement) {
 
 async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
   await waitFor(() => expect(within(canvasElement).queryByRole('dialog')).toBeNull());
-  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  // Native closure reconciles on the queued `close` event.
+  await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'false'));
   await expect(trigger).toHaveFocus();
-  await expect(canvasElement.ownerDocument.documentElement.style.overflow).toBe('');
+  await waitFor(() => expect(canvasElement.ownerDocument.documentElement.style.overflow).toBe(''));
 }
 
 async function expectFocusRing(element: HTMLElement) {
@@ -291,6 +341,79 @@ export const Bottom: Story = {
   },
 };
 
+/** Frame-sampled entrance and exit: the panel really travels along its axis toward and away from its edge. */
+const motionStory = (side: 'inline-end' | 'bottom'): Story => ({
+  args: { side },
+  render: (args) => <DrawerExample {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const { dialog, panel } = parts(canvasElement);
+    const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
+    const position = (frame: MotionFrame) => (side === 'bottom' ? frame.top : frame.left);
+    const extent = () => (side === 'bottom' ? rect(panel).height : rect(panel).width);
+
+    // Entrance: from past the edge to rest, one step per frame; the scrim fades in alongside.
+    // Focus moving into the panel mid-slide must not scroll the shell to reveal it.
+    trigger.focus();
+    const done = within(dialog).getByRole('button', { name: 'Done', hidden: true });
+    const entrance = await sampleFrames(
+      dialog,
+      () => {
+        trigger.click();
+        canvasElement.ownerDocument.defaultView!.requestAnimationFrame(() => done.focus());
+      },
+      () => panel.style.translate === '',
+    );
+    await expect(entrance.every((frame) => frame.scroll === 0)).toBe(true);
+    const rest = position(entrance.at(-1)!);
+    await expect(rest).toBeCloseTo(side === 'bottom' ? rect(dialog).bottom - extent() : rect(dialog).right - extent(), 0);
+    await expect(position(entrance[0]!)).toBeGreaterThan(rest + extent() / 2);
+    await expect(new Set(entrance.map(position)).size).toBeGreaterThan(2);
+    await expect(isMonotonic(entrance.map(position), -1)).toBe(true);
+    await expect(entrance[0]!.presence).toBeLessThan(0.5);
+    await expect(isMonotonic(entrance.map((frame) => frame.presence), 1)).toBe(true);
+    await expect(entrance.at(-1)!.presence).toBe(1);
+
+    // Exit: the dialog stays open while the panel slides back out, then closes.
+    const close = within(dialog).getAllByRole('button', { name: 'Close' })[0]!;
+    const exit = await sampleFrames(dialog, () => close.click(), (frame) => !frame.open);
+    const retained = exit.filter((frame) => frame.open);
+    await expect(retained.length).toBeGreaterThan(1);
+    await expect(retained.every((frame) => frame.scroll === 0)).toBe(true);
+    await expect(new Set(retained.map(position)).size).toBeGreaterThan(1);
+    await expect(isMonotonic(retained.map(position), 1)).toBe(true);
+    await expect(position(retained.at(-1)!)).toBeGreaterThan(rest);
+    await expect(isMonotonic(retained.map((frame) => frame.presence), -1)).toBe(true);
+    await expect(exit.at(-1)!.open).toBe(false);
+    await expectClosed(canvasElement, trigger);
+    await expectHome(panel);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+  },
+});
+
+export const SlideMotion: Story = motionStory('inline-end');
+export const SlideMotionBottom: Story = motionStory('bottom');
+
+export const ReopenDuringExit: Story = {
+  render: (args) => <DrawerExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const { dialog, panel, trigger } = await openDrawer({ canvasElement, userEvent });
+    const rest = rect(panel).left;
+    fireEvent.click(within(dialog).getAllByRole('button', { name: 'Close' })[0]!);
+    await waitFor(() => expect(rect(panel).left).toBeGreaterThan(rest + 1));
+    await expect(dialog).toHaveAttribute('open');
+    // Mid-exit the logical state is already closed; a programmatic reopen turns the panel back.
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(trigger);
+    await settle(dialog);
+    await expect(dialog).toHaveAttribute('open');
+    await expect(rect(panel).left).toBeCloseTo(rest, 0);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(3);
+    for (const [index, open] of [true, false, true].entries()) {
+      await expect(args.onOpenChange).toHaveBeenNthCalledWith(index + 1, open);
+    }
+  },
+};
+
 const sizeStory = (size: DrawerSize): Story => ({
   args: { size },
   render: (args) => <DrawerExample {...args} />,
@@ -368,7 +491,7 @@ export const Draggable: Story = {
     await expectClosed(canvasElement, trigger);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
-    await expect(panel.style.translate).toBe('');
+    await expectHome(panel);
 
     // A short fast flick toward the edge dismisses too.
     await userEvent.click(trigger);
@@ -455,6 +578,38 @@ export const LightTheme: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
     await expect(canvasElement.contains(dialog)).toBe(true);
+    // The panel paints the contrast palette by default: the dark family on a light page.
+    await expect(panel).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(panel, 'light');
+    await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
+    await expect(getComputedStyle(panel).colorScheme).toBe('dark');
+    await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const ContrastPanelDark: Story = {
+  render: (args) => <DrawerExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const { panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
+    // On a dark page the panel is elevated charcoal; the palette values are the same as on a light page.
+    await expect(panel).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(panel, 'dark');
+    await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
+    await expect(getComputedStyle(panel).colorScheme).toBe('dark');
+    await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const DefaultAppearance: Story = {
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  render: (args) => <DrawerExample {...args} panelProps={{ appearance: 'default' }} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const { panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
+    // Opting out restores the page theme's own surface.
+    await expect(panel).toHaveAttribute('data-appearance', 'default');
     await expectThemedSurface(panel, 'light');
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);
@@ -490,7 +645,7 @@ export const PersistentOpenLight: Story = {
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement }) => {
     const dialog = await expectPersistentOpen(canvasElement);
-    await expectThemedSurface(parts(canvasElement).panel, 'light');
+    await expectContrastSurface(parts(canvasElement).panel, 'light');
     await expect(canvasElement.contains(dialog)).toBe(true);
   },
 };
@@ -741,7 +896,7 @@ export const KeyboardNavigation: Story = {
 
     // Focus stays inside the modal in both directions.
     const close = within(dialog).getByRole('button', { name: 'Close' });
-    const done = within(dialog).getByRole('button', { name: 'Done' });
+    const done = within(dialog).getByRole('button', { name: 'Done', hidden: true });
     close.focus();
     await userEvent.tab();
     await expect(doc.activeElement).toBe(within(dialog).getByRole('textbox', { name: 'Owner' }));
@@ -911,6 +1066,106 @@ export const NestedPopover: Story = {
   },
 };
 
+export const ContrastScopedPopover: Story = {
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  render: (args) => (
+    <DrawerExample
+      {...args}
+      body={
+        <div style={fieldStackStyle}>
+          <TextField label="Owner" />
+          <NestedPopoverBody />
+        </div>
+      }
+    />
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const { dialog, canvas, panel, trigger } = await openDrawer({ canvasElement, userEvent });
+    await userEvent.click(canvas.getByRole('button', { name: 'Owner options' }));
+    const popover = await within(dialog).findByRole('dialog', { name: 'Owner options' });
+
+    // The panel's palette crosses the portal: the overlay stays the dark family on a light page.
+    await expect(popover.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(popover, 'light');
+
+    // Controls inside the panel read the same palette, so their own surface comes from the panel.
+    await expect(panel).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(canvas.getByRole('textbox', { name: 'Owner' }), 'light');
+
+    // The first Escape belongs to the open overlay; the panel keeps its palette while the drawer stays.
+    await userEvent.keyboard('{Escape>}');
+    await waitFor(() => expect(within(dialog).queryByRole('dialog', { name: 'Owner options' })).toBeNull());
+    requestEscape(dialog);
+    await userEvent.keyboard('{/Escape}');
+    await expect(dialog).toHaveAttribute('open');
+    await expectContrastSurface(panel, 'light');
+
+    // The next Escape belongs to the drawer.
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(dialog);
+    await userEvent.keyboard('{/Escape}');
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+function NestedSelectBody() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  const labelId = useId();
+  return (
+    <div style={fieldStackStyle}>
+      <TextField label="Owner" />
+      <ThemeRoot portalContainer={host}>
+        <p id={labelId} style={fieldLabelStyle}>
+          Status
+        </p>
+        <Select>
+          <Select.Trigger aria-labelledby={labelId} style={FIXTURE_BUTTON}>
+            <Select.Value placeholder="Choose a status" />
+          </Select.Trigger>
+          <Select.Content>
+            {STATUSES.map((status) => (
+              <Select.Item key={status} value={status}>
+                {status}
+              </Select.Item>
+            ))}
+          </Select.Content>
+        </Select>
+        <div ref={setHost} />
+      </ThemeRoot>
+    </div>
+  );
+}
+NestedSelectBody.displayName = 'NestedSelectBody';
+
+export const ContrastSelectPanel: Story = {
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  render: (args) => <DrawerExample {...args} body={<NestedSelectBody />} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const { dialog, canvas, panel, trigger } = await openDrawer({ canvasElement, userEvent });
+    await userEvent.click(canvas.getByRole('combobox', { name: 'Status' }));
+    const listbox = await within(dialog).findByRole('listbox', { name: 'Status' });
+
+    // The open select keeps the panel palette: boundary, popup and panel agree on a light page.
+    await expect(listbox.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(listbox, 'light');
+    await expectContrastSurface(panel, 'light');
+    await expectContrastSurface(canvas.getByRole('textbox', { name: 'Owner' }), 'light');
+
+    // The first Escape belongs to the open select; the drawer stays open on the same palette.
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(within(dialog).queryByRole('listbox')).toBeNull());
+    await expect(dialog).toHaveAttribute('open');
+    await expectContrastSurface(panel, 'light');
+
+    // The drawer closes with its own affordance here: with a Select inside, its Escape cancel is dropped
+    // while the Select's portal stays mounted — tracked as GURI-2293, not this surface work.
+    await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
 function NestedDialogBody() {
   return (
     <Dialog>
@@ -947,10 +1202,14 @@ export const RTL: Story = {
     </div>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
-    const { dialog, panel, header, trigger } = await openDrawer({ canvasElement, userEvent });
-    // Inline-end follows the effective direction: the left edge in RTL.
+    const { dialog, panel } = parts(canvasElement);
+    const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
+    await userEvent.click(trigger);
+    // Inline-end follows the effective direction: the panel enters past the left edge.
+    await expect(Number.parseFloat(panel.style.translate)).toBeLessThan(0);
+    await settle(dialog);
+    const { header } = parts(canvasElement);
     await expect(rect(panel).left).toBeCloseTo(rect(dialog).left, 0);
-    await expect(getComputedStyle(panel).getPropertyValue('--drawer-entry-x').trim()).toBe('-100%');
     await expect(Number.parseFloat(getComputedStyle(panel).borderRightWidth)).toBeGreaterThan(0);
 
     // Dragging rightward moves away from the edge: resisted.
@@ -978,14 +1237,13 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'With the OS setting on, the panel appears without the slide and the header drag is off. The play checks the authored reduced-motion rules and stubs `matchMedia` to drive the drag branch; real media emulation is verified in browser QA.',
+          'With the OS setting on, the panel opens and closes without the slide and the header drag is off. The play stubs `matchMedia` to drive the reduced branch; real media emulation is verified in browser QA.',
       },
     },
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel, header } = parts(canvasElement);
     await settle(dialog);
-    await expect(findConditionalRule(panel, 'prefers-reduced-motion: reduce')?.style.animationName).toBe('none');
     await expect(findConditionalRule(header, 'prefers-reduced-motion: reduce')?.style.cursor).toBe('auto');
     // The marker follows the prop alone, so server and client markup match.
     await expect(header).toHaveAttribute('data-draggable');
@@ -1017,6 +1275,23 @@ export const ReducedMotion: Story = {
       } finally {
         matchMedia.mockRestore();
       }
+    }
+
+    // Reduced: the close is not retained for an exit and the reopen starts at rest.
+    const reduced = spyOn(win, 'matchMedia').mockImplementation((query) =>
+      query === REDUCED_MOTION_QUERY
+        ? Object.defineProperty(realMatchMedia(query), 'matches', { value: true })
+        : realMatchMedia(query),
+    );
+    try {
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+      await expect(dialog).not.toHaveAttribute('open');
+      await userEvent.click(within(canvasElement).getByRole('button', { name: TRIGGER }));
+      await expect(dialog).toHaveAttribute('open');
+      await expect(panel.style.translate).toBe('');
+      await expect(dialog.style.getPropertyValue('--drawer-presence')).toBe('');
+    } finally {
+      reduced.mockRestore();
     }
   },
 };

@@ -32,7 +32,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 - Express state through attributes and pseudo-classes: `:hover`, `[aria-disabled="true"]`, `[data-state]`, `:focus-visible`.
 - Use logical properties (`marginInline`, `paddingBlock`, `insetInlineStart`, …) so layouts work in RTL.
 - Tokens only: import typed references from `@jfrader/tokens/vars`. Raw hex/rgba values are forbidden outside `packages/tokens`.
-- Portal overlays through `OverlayPortal` (`packages/ui/src/overlay/overlay-portal.tsx`), never a bare `FloatingPortal`; a custom `createPortal` wraps its content in `ThemeBoundary` and honors the scope's `portalContainer` (see Toast). This keeps the nearest `ThemeRoot` theme inside the portal.
+- Portal overlays through `OverlayPortal` (`packages/ui/src/overlay/overlay-portal.tsx`), never a bare `FloatingPortal`; a custom `createPortal` wraps its content in `ThemeBoundary` and honors the scope's `portalContainer` (see Toast). This keeps the nearest scope's theme and appearance (`data-theme` + `data-appearance`) inside the portal.
 
 ## API conventions
 

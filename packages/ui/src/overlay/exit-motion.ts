@@ -1,28 +1,33 @@
-// Retained exits: an overlay that is closing keeps its surface (or native top-layer state) until
-// its exit transitions settle. Reduced motion zeroes those transitions, so there is nothing to
-// wait for and the exit completes on the next microtask.
+// Retained exits for surfaces whose motion is styled: entrances run from `@starting-style`, exits
+// are transitions keyed on `data-state="closing"`. Reduced motion zeroes those transitions, so
+// there is nothing to wait for and the exit completes on the next microtask.
 import { useEffect, useRef, useState } from 'react';
+import type { NativeDialogTransition } from './use-native-dialog';
 
 /**
- * Calls `done` once the finite animations and transitions running on `element` (and, with
- * `subtree`, its descendants and pseudo-elements such as `::backdrop`) have finished or been
- * canceled. Infinite animations (spinners) never hold the exit. Returns a cancel function.
+ * Settles once the finite animations and transitions running on `element` (and, with `subtree`,
+ * its descendants and pseudo-elements such as `::backdrop`) have finished or been canceled.
+ * Infinite animations (spinners) never hold the exit.
  */
-export function afterExitMotion(element: Element, done: () => void, { subtree = true } = {}): () => void {
+export function exitMotionFinished(element: Element, { subtree = true } = {}): Promise<unknown> {
   const running =
     typeof element.getAnimations === 'function'
       ? element
           .getAnimations({ subtree })
           .filter((animation) => Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)))
       : [];
-  let cancelled = false;
-  void Promise.allSettled(running.map((animation) => animation.finished)).then(() => {
-    if (!cancelled) done();
-  });
-  return () => {
-    cancelled = true;
-  };
+  return Promise.allSettled(running.map((animation) => animation.finished));
 }
+
+/**
+ * Native dialog transition for styled motion: `useNativeDialog` renders `data-state="closing"`
+ * before the exit runs, so the exit only waits for the transitions that state started.
+ */
+export const styledDialogTransition: NativeDialogTransition = {
+  // The entrance runs from `@starting-style`; a reopen during the exit reverses the transitions.
+  enter: () => {},
+  exit: (dialog) => exitMotionFinished(dialog),
+};
 
 /**
  * Presence for a floating surface that unmounts when closed: it stays mounted while `closing`
@@ -41,7 +46,13 @@ export function useExitPresence<T extends Element>(open: boolean) {
       setPresent(false);
       return;
     }
-    return afterExitMotion(element, () => setPresent(false));
+    let cancelled = false;
+    void exitMotionFinished(element).then(() => {
+      if (!cancelled) setPresent(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [open, present]);
 
   return { ref, present, closing: present && !open };

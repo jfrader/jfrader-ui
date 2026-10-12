@@ -38,6 +38,7 @@ import { MODAL_ENTER_SCALE, modalBackdropMotion, modalPanelMotion } from '../../
 import { modalShellReset, raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { styledDialogTransition } from '../../overlay/exit-motion';
 import {
   omitNativeOpen,
   requestNativeDialogClose,
@@ -258,9 +259,13 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
   const requestClose = useCallback(() => {
     requestNativeDialogClose(dialogRef.current, setOpen);
   }, [setOpen]);
-  const dialogProps = useNativeDialog({ ...context, requestClose }, { onCancel, onClick, onClose }, ref, dialogRef, {
-    retainExit: true,
-  });
+  const dialogProps = useNativeDialog(
+    { ...context, requestClose },
+    { onCancel, onClick, onClose },
+    ref,
+    dialogRef,
+    styledDialogTransition,
+  );
 
   const labelledBy = [ariaLabelledByProp, hasTitle && titleId].filter(Boolean).join(' ') || undefined;
   const describedBy = [ariaDescribedByProp, withDescription && hasDescription && descriptionId]

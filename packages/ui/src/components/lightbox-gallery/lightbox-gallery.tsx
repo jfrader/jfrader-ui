@@ -16,6 +16,7 @@ import {
 import { useMergeRefs } from '@floating-ui/react';
 import { animate, MotionConfig, motion, useMotionValue, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
+import { styledDialogTransition } from '../../overlay/exit-motion';
 import {
   omitNativeOpen,
   useNativeDialog,
@@ -457,7 +458,7 @@ function Viewer({
     },
     viewerSlot.ref,
     dialogRef,
-    { retainExit: true },
+    styledDialogTransition,
   );
   const phase = native['data-state'];
   // Decided when the viewer opens, so the exit styles never flip mid-transition.

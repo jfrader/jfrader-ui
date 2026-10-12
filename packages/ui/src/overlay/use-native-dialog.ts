@@ -12,12 +12,14 @@
 //   (the Root bumps a repair token).
 // - Scroll lock follows the native (actual) dialog state, only after showModal() succeeds.
 // - Content does not accept a native `open` prop.
+// - An optional transition animates the surface in after showModal() and out before the native
+//   close: a logical close keeps the dialog open (modal, scroll-locked) until `exit` settles.
+//   Reopening during the exit re-enters from where the surface is; a native close ends it.
+// - While the exit runs the dialog renders `data-state="closing"` (styles key their exit on it)
+//   and absorbs further close requests: the accepted one is in progress.
+// - A `close` event that arrives after the dialog reopened is stale and ignored.
 // - If Content unmounts while open (removal is not a close), focus returns to the invoking
 //   element when it is still connected.
-// - With `retainExit`, an accepted close keeps the dialog in the top layer as
-//   `data-state="closing"` until its exit transitions settle, then closes it natively (focus
-//   returns then). Close requests during the exit are absorbed; reopening cancels it. Native
-//   closure (<form method="dialog">, ref .close()) stays immediate.
 import {
   useCallback,
   useEffect,
@@ -31,7 +33,6 @@ import {
   type Ref,
   type SyntheticEvent,
 } from 'react';
-import { afterExitMotion } from './exit-motion';
 import { useScrollLock } from './use-scroll-lock';
 
 /** What Content needs from its Root; both Roots expose it through their context. */
@@ -49,9 +50,12 @@ export interface NativeDialogHandlers {
   onClose?: ReactEventHandler<HTMLDialogElement>;
 }
 
-export interface NativeDialogOptions {
-  /** Keep the dialog open as `data-state="closing"` until its exit transitions finish. */
-  retainExit?: boolean;
+/** Surface motion around the native lifecycle. */
+export interface NativeDialogTransition {
+  /** Runs after showModal() succeeds, and when a reopen interrupts a running exit. */
+  enter: (dialog: HTMLDialogElement) => void;
+  /** Runs on a logical close; the native close waits for the promise. Return nothing to close at once. */
+  exit: (dialog: HTMLDialogElement) => Promise<unknown> | undefined;
 }
 
 export type NativeDialogState = 'open' | 'closing' | 'closed';
@@ -113,7 +117,7 @@ export function useNativeDialog(
   { onCancel, onClick, onClose }: NativeDialogHandlers,
   forwardedRef: Ref<HTMLDialogElement> | undefined,
   contentRef?: MutableRefObject<HTMLDialogElement | null>,
-  { retainExit = false }: NativeDialogOptions = {},
+  transition?: NativeDialogTransition,
 ) {
   const internalDialogRef = useRef<HTMLDialogElement | null>(null);
   const dialogRef = contentRef ?? internalDialogRef;
@@ -121,6 +125,10 @@ export function useNativeDialog(
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
   const [isNativeOpen, setIsNativeOpen] = useState(false);
+  const transitionRef = useRef(transition);
+  transitionRef.current = transition;
+  // Identity of the running exit; a reopen, a native close or unmount replaces it.
+  const exitRef = useRef<object | null>(null);
 
   const ref = useCallback(
     (element: HTMLDialogElement | null) => {
@@ -136,29 +144,48 @@ export function useNativeDialog(
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open && !dialog.open) {
-      restoreFocusRef.current = (dialog.ownerDocument.activeElement as HTMLElement | null) ?? null;
-      wasOpenRef.current = true;
-      try {
-        dialog.showModal();
-      } catch {
-        // Disconnected element or conflicting state (already open nonmodally): nothing to do.
+    const closeNative = () => {
+      dialog.close();
+      wasOpenRef.current = false;
+      setIsNativeOpen(false);
+    };
+    if (open) {
+      const interrupted = exitRef.current !== null;
+      exitRef.current = null;
+      if (!dialog.open) {
+        restoreFocusRef.current = (dialog.ownerDocument.activeElement as HTMLElement | null) ?? null;
+        wasOpenRef.current = true;
+        try {
+          dialog.showModal();
+        } catch {
+          // Disconnected element or conflicting state (already open nonmodally): nothing to do.
+        }
+        setIsNativeOpen(dialog.open);
+        if (dialog.open) transitionRef.current?.enter(dialog);
+      } else if (interrupted) {
+        transitionRef.current?.enter(dialog);
       }
-      setIsNativeOpen(dialog.open);
-    } else if (!open && dialog.open) {
-      const close = () => {
-        dialog.close();
-        wasOpenRef.current = false;
-        setIsNativeOpen(false);
+    } else if (dialog.open && exitRef.current === null) {
+      const exit = transitionRef.current?.exit(dialog);
+      if (!exit) {
+        closeNative();
+        return;
+      }
+      const run = {};
+      exitRef.current = run;
+      const settled = () => {
+        if (exitRef.current !== run) return;
+        exitRef.current = null;
+        if (dialog.open) closeNative();
       };
-      if (!retainExit) close();
-      else return afterExitMotion(dialog, close);
+      exit.then(settled, settled);
     }
-  }, [open, repairToken, retainExit]);
+  }, [open, repairToken]);
 
   // If Content unmounts while open, removal bypasses the native focus return: do it ourselves.
   useEffect(
     () => () => {
+      exitRef.current = null;
       const invoker = restoreFocusRef.current;
       if (wasOpenRef.current && invoker && invoker.isConnected && typeof invoker.focus === 'function') {
         invoker.focus();
@@ -188,6 +215,9 @@ export function useNativeDialog(
   };
 
   const handleClose = (event: SyntheticEvent<HTMLDialogElement>) => {
+    // `close` is dispatched from a queued task: a reopen that landed first already superseded it.
+    if (dialogRef.current?.open) return;
+    exitRef.current = null;
     wasOpenRef.current = false;
     onClose?.(event);
     setIsNativeOpen(false);

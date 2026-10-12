@@ -18,7 +18,7 @@ export const enterTransition = {
 } as const;
 export const exitTransition = { transitionDuration: vars.motion.duration.fast } as const;
 
-/** Panel inside a native <dialog> rendered by `useNativeDialog({ retainExit: true })`. */
+/** Panel inside a native <dialog> rendered with `styledDialogTransition`. */
 export function modalPanelMotion(scale: number) {
   const hidden = { opacity: 0, scale: String(scale), translate: `0 ${vars.space[2]}` };
   return {

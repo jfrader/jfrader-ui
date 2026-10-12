@@ -621,7 +621,10 @@ function SwipeActionsRow({
           }}
           onLostPointerCapture={(event) => {
             onLostPointerCapture?.(event);
-            finish(event.pointerId, true);
+            // Touch implicitly captures to the pressed descendant; taking capture on the row makes
+            // that descendant's lostpointercapture bubble here. Only the row losing its own capture
+            // ends the gesture.
+            if (event.target === event.currentTarget) finish(event.pointerId, true);
           }}
           onClickCapture={(event) => {
             onClickCapture?.(event);

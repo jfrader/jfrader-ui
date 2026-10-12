@@ -117,11 +117,25 @@ html[data-theme='light'] {
 
 To switch at runtime, set `document.documentElement.dataset.theme` and store the value under the same `localStorage` key.
 
+### Contrast surfaces
+
+A surface can paint the dark family whatever the page theme is: dark panel on a light page, elevated charcoal on a dark page. `Drawer.Panel` does it by default; `Card` and `ThemeRoot` opt in with `appearance="contrast"`.
+
+```tsx
+<Card appearance="contrast">{/* … */}</Card>
+<Card appearance="default">{/* back to the theme's own palette */}</Card>
+```
+
+- Text, borders, control boundaries, wells and native `color-scheme` inside the surface come from the palette; nothing to override per component.
+- The palette crosses portals: a Select, Menu or Popover opened inside a contrast surface stays dark, on the page it is opened from.
+- Omitted, `appearance` inherits: a surface nested inside a contrast one stays contrast. `appearance="default"` returns that surface to the theme's own palette.
+- A nested `ThemeRoot` keeps the enclosing palette unless it names one, so an overlay host inside a drawer needs only `portalContainer`.
+
 ### Scoped theming and overlays
 
-Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast portal their content to `body`. Inside a `ThemeRoot`, that content takes the nearest `ThemeRoot`'s `theme`, and follows it when the theme changes while open. Dialog renders in place and inherits it directly.
+Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast portal their content to `body`. Inside a `ThemeRoot`, that content takes the nearest `ThemeRoot`'s `theme` and `appearance`, and follows them when they change while open. Dialog renders in place and inherits them directly.
 
-Only the theme name carries over. CSS you set on an element around the overlay, such as overriding a `--ui-*` variable on a wrapper, does not reach portaled content.
+Only the named theme and appearance carry over. CSS you set on an element around the overlay, such as overriding a `--ui-*` variable on a wrapper, does not reach portaled content.
 
 To keep overlays inside a layout boundary (a modal `<dialog>`'s top layer, an embedded widget's own element), give the `ThemeRoot` a `portalContainer`:
 
