@@ -453,7 +453,7 @@ export const FailedSendReleasesUrls: Story = {
     await expect(createUrl).toHaveBeenCalledTimes(2);
     await expect(revokeUrl).toHaveBeenCalledTimes(1);
     await expect(revokeUrl).toHaveBeenLastCalledWith((createUrl as Mock).mock.results[1]!.value);
-    await expect(canvas.getByRole('button', { name: 'Remove pending.png' })).toBeVisible();
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Remove pending.png' })).toBeVisible());
     await expect(args.onValueChange).toHaveBeenCalledTimes(0);
     await userEvent.click(canvas.getByRole('button', { name: 'Remove pending.png' }));
     await expect(revokeUrl).toHaveBeenCalledTimes(2);
