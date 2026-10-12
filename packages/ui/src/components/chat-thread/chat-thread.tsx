@@ -582,6 +582,8 @@ function ChatThreadRoot({
     timeZone: formatters.full.resolvedOptions().timeZone,
     dateStyle: 'full',
   }), [formatters]);
+  // Day grouping is keyed on a fixed ISO-8601 calendar with Latin digits so separators land on the same
+  // instants for every locale; only the zone varies. Headings still render in the caller's locale and calendar.
   const dayKeyFormat = useMemo(() => new Intl.DateTimeFormat('en-US-u-ca-iso8601-nu-latn', {
     timeZone: formatters.full.resolvedOptions().timeZone,
     year: 'numeric',
@@ -805,7 +807,7 @@ function ChatThreadRoot({
   return <WithSx className={className} styles={[rootStyle, threadSizeStyles[size]]} sx={sx}>
     {(rootClass) => <div {...rest} ref={rootRefs} className={rootClass} data-ui={UI} data-size={size}>
       <div data-ui={`${UI}-viewport`} className={slotProps?.viewport?.className} css={[viewportStyle, slotProps?.viewport?.css]}>
-        <div ref={scrollerRef} role="region" aria-label={labels.conversation} tabIndex={0} data-ui={`${UI}-scroller`} className={slotProps?.scroller?.className} css={[scrollerStyle, slotProps?.scroller?.css]} onScroll={(event) => {
+        <div ref={scrollerRef} tabIndex={0} data-ui={`${UI}-scroller`} className={slotProps?.scroller?.className} css={[scrollerStyle, slotProps?.scroller?.css]} onScroll={(event) => {
           const el = event.currentTarget;
           const nearBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= PIN_THRESHOLD;
           if (nearBottom) jumping.current = false;
@@ -835,7 +837,7 @@ function ChatThreadRoot({
                 const grouped = sameDay && previous?.authorId === message.authorId && epoch! - previousEpoch! >= 0 && epoch! - previousEpoch! <= (Number.isFinite(groupWindow) && groupWindow >= 0 ? groupWindow : GROUP_WINDOW);
                 const own = message.authorId === currentUserId;
                 const readers = Object.entries(readBy ?? {}).filter(([id, last]) => id !== currentUserId && people.has(id) && last === message.id).map(([id]) => people.get(id)!.name);
-                return <li key={message.id} data-ui={`${UI}-message`} data-message-id={message.id} data-own={own} data-grouped={grouped} data-new={entering.has(message.id) ? '' : undefined} className={slotProps?.message?.className} css={[messageStyle, entering.has(message.id) && message.status !== 'failed' && fadeStyle, slotProps?.message?.css]}>
+                return <li key={message.id} data-ui={`${UI}-message`} data-message-id={message.id} data-own={own} data-grouped={grouped} className={slotProps?.message?.className} css={[messageStyle, entering.has(message.id) && message.status !== 'failed' && fadeStyle, slotProps?.message?.css]}>
                   {!sameDay ? <h3 data-ui={`${UI}-day`} css={dateStyle}>{epoch === null ? labels.invalidTime : dateFormat.format(epoch)}</h3> : null}
                   <ThreadMessageView
                     ui={UI}
@@ -886,7 +888,7 @@ function ChatThreadRoot({
       <div aria-hidden="true" css={typingStyle}>{typingText}</div>
       <div role="status" aria-atomic="true" css={visuallyHiddenStyle}>{typingText}</div>
       {composer ? <ChatComposer locale={locale} size={size} labels={labels} {...composerProps} disabled={disabled || composerProps?.disabled} onSend={send} acknowledged={acceptedDraft} onDraftInteraction={abandonProposal} /> : null}
-      <p role="status" aria-atomic="true" css={errorStyle}>{retryError}</p>
+      {retryError ? <p role="status" aria-atomic="true" data-ui={`${UI}-retry-error`} css={errorStyle}>{retryError}</p> : null}
     </div>}
   </WithSx>;
 }

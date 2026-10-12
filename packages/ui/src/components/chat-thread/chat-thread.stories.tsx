@@ -83,8 +83,15 @@ export const Default: Story = {
     const own = item(canvasElement, 'own').querySelector('article')!.getBoundingClientRect();
     const other = item(canvasElement, 'first').querySelector('article')!.getBoundingClientRect();
     await expect(own.right).toBeGreaterThan(other.right);
-    for (const button of canvas.getAllByRole('button')) await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
+    await expect(canvas.queryAllByRole('region')).toHaveLength(0);
+    await expect(part(canvasElement, 'scroller')).not.toHaveAttribute('aria-label');
+    for (const button of canvas.getAllByRole('button')) {
+      const { width, height } = button.getBoundingClientRect();
+      await expect(height).toBeGreaterThanOrEqual(31.5);
+      await expect(width).toBeGreaterThanOrEqual(31.5);
+    }
     await expect(part(canvasElement, 'error')).toHaveTextContent('');
+    await expect(part(canvasElement, 'retry-error')).toBeNull();
   },
 };
 export const Sizes: Story = {
@@ -197,11 +204,25 @@ export const AllDeliveryStates: Story = {
 };
 export const Retry: Story = {
   args: { defaultValue: [{ ...MESSAGES[2]!, status: 'failed' }], onRetry: fn() },
-  play: async ({ args, canvas, userEvent }) => {
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
     await expect(args.onRetry).toHaveBeenCalledTimes(1);
     await expect(args.onRetry).toHaveBeenLastCalledWith('own');
     await expect(canvas.getByText('Failed')).toBeVisible();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(0);
+    await expect(part(canvasElement, 'retry-error')).toBeNull();
+  },
+};
+export const RetryFailure: Story = {
+  args: { defaultValue: [{ ...MESSAGES[2]!, status: 'failed' }], onRetry: fn(() => Promise.reject(new Error('offline'))) },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await expect(part(canvasElement, 'retry-error')).toBeNull();
+    await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+    await expect(args.onRetry).toHaveBeenCalledTimes(1);
+    await expect(args.onRetry).toHaveBeenLastCalledWith('own');
+    await waitFor(() => expect(part(canvasElement, 'retry-error')).toHaveTextContent('Message could not be sent'));
+    await expect(part(canvasElement, 'retry-error')).toHaveAttribute('role', 'status');
+    await expect(canvas.getByRole('log')).not.toHaveTextContent('Message could not be sent');
     await expect(args.onValueChange).toHaveBeenCalledTimes(0);
   },
 };
