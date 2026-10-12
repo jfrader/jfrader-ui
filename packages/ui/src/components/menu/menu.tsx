@@ -16,6 +16,8 @@
 // removed) or when the command already moved focus elsewhere, so a neighbor or opened surface
 // keeps it.
 // Disabled items stay in the list with aria-disabled="true"; arrows and typeahead skip them.
+// Families may render an item as another element (a link): Enter activates it natively and
+// Space clicks it, so the keyboard map above holds.
 // The menu is an overlay layer: opened inside another layer (Popover, …) it is that layer's child,
 // so Escape and outside presses dismiss the menu alone.
 // Consumer trigger handlers run before the menu's own; preventDefault() vetoes the open request.
@@ -30,10 +32,15 @@ import {
   useState,
   type ComponentPropsWithRef,
   type CSSProperties,
+  type HTMLAttributes,
   type HTMLProps,
+  type KeyboardEvent,
+  type KeyboardEventHandler,
   type MouseEvent,
+  type MouseEventHandler,
   type MutableRefObject,
   type ReactNode,
+  type RefCallback,
 } from 'react';
 import {
   FloatingFocusManager,
@@ -118,14 +125,22 @@ export interface MenuPartIdentity {
   styles?: Interpolation<Theme>;
 }
 
+/** Props a menu item's `render` callback spreads onto the element it returns. */
+export interface MenuItemRenderProps extends HTMLAttributes<HTMLElement> {
+  ref: RefCallback<HTMLElement> | null;
+  'data-ui': string;
+}
+
 /** Item behavior a family may change: the part name in usage errors, the item role, whether
- * selection closes the menu, and `busy` (an item that stays focusable and navigable but ignores
- * activation, exposed as aria-busy and aria-disabled). */
+ * selection closes the menu, `busy` (an item that stays focusable and navigable but ignores
+ * activation, exposed as aria-busy and aria-disabled) and `render`, which replaces the native
+ * button (e.g. with an <a href>). */
 export interface MenuItemPartBehavior {
   part?: string;
   itemRole?: 'menuitem' | 'menuitemcheckbox' | 'menuitemradio';
   closeOnSelect?: boolean;
   busy?: boolean;
+  render?: (props: MenuItemRenderProps) => ReactNode;
 }
 
 const MenuContext = createContext<MenuContextValue | null>(null);
@@ -473,7 +488,9 @@ export function MenuItemPart({
   itemRole = 'menuitem',
   closeOnSelect = true,
   busy = false,
+  render,
   onClick,
+  onKeyDown,
   className,
   sx,
   ...rest
@@ -481,35 +498,49 @@ export function MenuItemPart({
   const { activeIndex, requestClose, disabledIndices, getItemProps } = useMenuItemContext(family, part);
   // A null label removes disabled items from typeahead; undefined falls back to textContent.
   const { ref: listItemRef, index } = useCollectionListItem({ label: disabled ? null : undefined });
-  const mergedRef = useMergeRefs([listItemRef, ref]);
+  const mergedRef = useMergeRefs<HTMLElement>([listItemRef, ref]);
   const isActive = index !== -1 && activeIndex === index;
 
   // Layout effect so the registry is current before list navigation picks the initial item.
   useCollectionIndexRegistration(index, disabled, disabledIndices);
 
-  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
-    if (disabled || busy) return;
-    onClick?.(event);
+  const consumerClick: MouseEventHandler<HTMLElement> | undefined = onClick;
+  const handleClick = (event: MouseEvent<HTMLElement>) => {
+    // A rendered link would still navigate without preventDefault().
+    if (disabled || busy) {
+      event.preventDefault();
+      return;
+    }
+    consumerClick?.(event);
     onSelect?.();
     if (closeOnSelect && !event.defaultPrevented) requestClose(true);
   };
 
+  // Native buttons click on Space; a rendered element (a link) does not.
+  const consumerKeyDown: KeyboardEventHandler<HTMLElement> | undefined = onKeyDown;
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    consumerKeyDown?.(event);
+    if (render === undefined || event.defaultPrevented || event.key !== ' ') return;
+    event.preventDefault();
+    event.currentTarget.click();
+  };
+
   return (
     <WithSx className={className} styles={styles} sx={sx}>
-      {(className) => (
-        <button
-          type="button"
-          {...getItemProps({ ...rest, onClick: handleClick })}
-          ref={mergedRef}
-          role={itemRole}
-          tabIndex={isActive ? 0 : -1}
-          aria-disabled={disabled || busy || undefined}
-          aria-busy={busy || undefined}
-          data-active={isActive || undefined}
-          data-ui={marker}
-          className={className}
-        />
-      )}
+      {(className) => {
+        const itemProps = {
+          ...getItemProps({ ...rest, onClick: handleClick, onKeyDown: handleKeyDown }),
+          ref: mergedRef,
+          role: itemRole,
+          tabIndex: isActive ? 0 : -1,
+          'aria-disabled': disabled || busy || undefined,
+          'aria-busy': busy || undefined,
+          'data-active': isActive || undefined,
+          'data-ui': marker,
+          className,
+        };
+        return render ? render(itemProps as MenuItemRenderProps) : <button type="button" {...itemProps} />;
+      }}
     </WithSx>
   );
 }
