@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -876,6 +876,20 @@ export const LeapDay: Story = {
   },
 };
 
+export const TwoMonthsWithoutPresets: Story = {
+  args: { months: 2, defaultOpen: true },
+  render: (args) => <RangeExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    await expect(within(dialog).getAllByRole('grid')).toHaveLength(2);
+    const calendars = dialog.querySelector<HTMLElement>('[data-ui="date-range-picker-calendars"]')!;
+    const footer = dialog.querySelector<HTMLElement>('[data-ui="date-range-picker-footer"]')!;
+    await expect(footer.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      calendars.getBoundingClientRect().bottom - PX_TOLERANCE,
+    );
+  },
+};
+
 export const MonthsOne: Story = {
   args: { months: 1, presets: PRESETS, defaultValue: WEEK, defaultOpen: true },
   render: (args) => <RangeExample {...args} />,
@@ -1184,6 +1198,24 @@ export const FormFields: Story = {
     await expect(getTrigger(canvasElement)).toHaveAccessibleName(`${LABEL} ${formattedRange(WEEK)}`);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
+};
+
+function ExternalFormExample(props: ExampleProps) {
+  const formId = useId();
+  return (
+    <div style={stackStyle}>
+      <form id={formId} aria-label="Report" onSubmit={(event) => event.preventDefault()}>
+        <Button type="reset">Reset</Button>
+      </form>
+      <RangeExample {...props} trigger={{ form: formId }} />
+    </div>
+  );
+}
+ExternalFormExample.displayName = 'ExternalFormExample';
+
+export const ExternalFormFields: Story = {
+  ...FormFields,
+  render: (args) => <ExternalFormExample {...args} />,
 };
 
 export const ControlledFormReset: Story = {
