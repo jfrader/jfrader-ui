@@ -251,7 +251,10 @@ export const Bounds: Story = {
     const options = body(canvasElement).getAllByRole('option');
     await expect(options).toHaveLength(4);
     await expect(options.at(-1)).toHaveAttribute('data-time', '10:00');
-    await userEvent.keyboard('{Home}{ArrowUp}');
+    await new Promise<void>((resolve) => trigger.ownerDocument.defaultView!.requestAnimationFrame(() => resolve()));
+    await userEvent.keyboard('{Home}');
+    await expectActive(trigger, '09:15');
+    await userEvent.keyboard('{ArrowUp}');
     await expectActive(trigger, '10:00');
     await userEvent.keyboard('{Escape}');
   },
