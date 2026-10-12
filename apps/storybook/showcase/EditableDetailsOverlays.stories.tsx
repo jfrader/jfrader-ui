@@ -117,8 +117,13 @@ const meta = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'The app controls Section and overlay state together. `visible` gates portaled or top-layer surfaces. Before collapse, the app checks whether its overlay owns focus, closes the native dialog if present, and focuses the Section trigger only for that owned focus. The editor stays mounted, so its draft survives. Popover disables automatic return focus; a native dialog is closed before its invoker is hidden. No document-global overlay registry is needed.',
+        component: 'Choose a project title in a picker, then collapse the section without losing your draft.',
       },
+      usage: `### Collapse and focus
+- Control the Section and overlay state together. Use \`visible\` to hide portaled or top-layer surfaces when the section is collapsed.
+- Before collapse, check whether the overlay owns focus. Close a native dialog before hiding its invoker, then focus the Section trigger only if the overlay owned focus.
+- The editor stays mounted and retains its draft. Popover does not automatically return focus on unmount.
+- Keep this coordination in the application rather than a document-global overlay registry.`,
       source: { code: '<EditableDetails.Section open={open} onOpenChange={changeSection} triggerRef={triggerRef}>\n  <EditableDetails.List>\n    <EditableDetails.Item label="Title" renderEditor={(editor) => <TitleEditor {...editor} />}>\n      {title}\n    </EditableDetails.Item>\n  </EditableDetails.List>\n</EditableDetails.Section>' },
     },
     a11y: {

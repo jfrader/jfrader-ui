@@ -25,7 +25,25 @@ const meta = {
   tags: ['autodocs'],
   args: { onItemOpenChange: fn(), onSectionOpenChange: fn(), onRefCleanup: fn(), onHydrationError: fn() },
   decorators: [(Story) => <div css={frame}><Story /></div>],
-  parameters: { layout: 'padded', docs: { description: { component: 'Native description lists and disclosures with application-owned editors. Enter and Space toggle disclosure buttons; Tab follows native document order. Section collapse preserves editors. Editors own drafts, validation, persistence and overlays; complete/cancel only request closure. Use InlineEdit for one independently persisted string.' } } },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      description: { component: 'Show grouped details and edit selected values in place with your own forms.' },
+      usage: `### Structure and editing
+- Use Lists for labelled values and Sections for groups of lists or nested sections. Rows use native description-list semantics.
+- Section disclosure and Item editing are independent. Each supports \`open\`, \`defaultOpen\` and \`onOpenChange\`.
+- Supply an editor through \`renderEditor\`. Your editor owns its draft, validation, confirmation, saving and errors. \`complete\` and \`cancel\` only request closure.
+- Collapsing a section keeps mounted editors and drafts. Use \`visible\` to suppress portaled pickers or dialogs, and coordinate their focus before collapse.
+- Use InlineEdit when you only need to edit and save one string.
+
+### Keyboard and forms
+- Press Enter or Space to toggle a section. Tab and Shift+Tab follow the document order. Pickers and editors keep their own keyboard behavior.
+- Attach \`initialFocusRef\` to the field that should receive focus after Edit. The labelled editor group is the fallback.
+- Do not nest a native form editor inside another form. Use form-associated controls or a non-form editor there.
+- Keep React Action drafts in controlled fields: React resets uncontrolled fields after an Action resolves, even when it returns a validation error.`,
+      source: { code: '<EditableDetails>\n  <EditableDetails.Section title="Project" defaultOpen headingLevel={2}>\n    <EditableDetails.List>\n      <EditableDetails.Item label="Name" renderEditor={(editor) => <ProjectNameEditor {...editor} />}>\n        {projectName}\n      </EditableDetails.Item>\n    </EditableDetails.List>\n  </EditableDetails.Section>\n</EditableDetails>' },
+    },
+  },
 } satisfies Meta<StoryArgs>;
 export default meta;
 type Story = StoryObj<typeof meta>;

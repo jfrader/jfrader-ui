@@ -311,7 +311,13 @@ const meta = {
   args: { onActionOpenChange: fn() },
   parameters: {
     layout: 'fullscreen', controls: { disable: true },
-    docs: { description: { component: 'Application-owned native, grouped, React Hook Form and React Action editors. Routing response controls hold a real promise until Resolve or Reject is pressed. Cluster closure is controlled and requires Accept close. Native forms must not be nested inside another form; use form-associated controls there. Controlled Action fields preserve drafts across React form resets.' } },
+    docs: {
+      description: { component: 'Edit project settings with native forms, grouped fields, React Hook Form and React Actions.' },
+      usage: `- Routing saves wait until you press Resolve response or Reject response.
+- Cluster editing stays open until you press Accept close.
+- Do not nest native form editors inside another form. Use form-associated controls there.
+- The React Action example uses controlled fields to preserve drafts across React form resets.`,
+    },
   },
 } satisfies Meta<ActionFixtureProps>;
 export default meta;
