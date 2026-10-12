@@ -28,6 +28,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { css, type SerializedStyles } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { listboxSurfaceStyle, listboxItemStyle, listboxItemStateStyle } from '../../styling/listbox-style';
 import type { SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -293,7 +294,7 @@ const inputStyle = css({
   caretColor: vars.color.text,
   position: 'relative',
   '&::placeholder': { color: vars.color.textMuted },
-  '@media (forced-colors: active)': {
+  [FORCED_COLORS]: {
     color: 'CanvasText',
     caretColor: 'CanvasText',
     backgroundColor: 'Canvas',
@@ -309,7 +310,7 @@ const mirrorStyle = css({
   borderRadius: vars.radius.sm,
   color: vars.color.text,
   backgroundColor: vars.color.surface,
-  '@media (forced-colors: active)': { visibility: 'hidden' },
+  [FORCED_COLORS]: { visibility: 'hidden' },
 });
 const tokenStyle = css({
   color: vars.color.accentText,
@@ -324,14 +325,14 @@ const panelStyle = css({
   transitionTimingFunction: vars.motion.easeStandard,
   '@starting-style': { opacity: 0 },
   opacity: 1,
-  '@media (prefers-reduced-motion: reduce)': { transitionDuration: '0s' },
+  [REDUCED_MOTION]: { transitionDuration: '0s' },
 });
 const listStyle = css({ display: 'grid', minInlineSize: 0 });
 const optionStyle = css({
   overflowWrap: 'anywhere',
   flexDirection: 'column',
   alignItems: 'start',
-  '@media (forced-colors: active)': { '&[aria-selected="true"]': { outline: '2px solid Highlight' } },
+  [FORCED_COLORS]: { '&[aria-selected="true"]': { outline: '2px solid Highlight' } },
 });
 const metadataStyle = css({ color: vars.color.textMuted, fontSize: vars.textSize.sm });
 const suggestionNameStyle = css({ display: 'inline-flex', alignItems: 'center', gap: vars.space[2] });

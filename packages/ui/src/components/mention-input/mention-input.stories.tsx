@@ -578,11 +578,30 @@ export const Composition: Story = {
     await userEvent.click(input);
     await userEvent.type(input, '@a');
     fireEvent.compositionStart(input);
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', isComposing: true });
+    for (const key of [
+      'Enter',
+      'Tab',
+      'ArrowUp',
+      'ArrowDown',
+      'ArrowLeft',
+      'ArrowRight',
+      'Escape',
+      'Backspace',
+      'Delete',
+    ]) {
+      const event = new KeyboardEvent('keydown', { key, code: key, bubbles: true, cancelable: true });
+      fireEvent(input, event);
+      await expect(event.defaultPrevented).toBe(false);
+    }
+    fireEvent.keyDown(input, { key: 'z', ctrlKey: true, isComposing: true });
+    await expect(input).toHaveValue('@a');
+    await expect(input).not.toHaveAttribute('aria-activedescendant');
     await expect(args.onMentionAdd).not.toHaveBeenCalled();
     await expect(args.onSubmit).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     fireEvent.compositionEnd(input);
     await expect(input).toHaveValue('@a');
+    await expect(input).toHaveAttribute('aria-activedescendant');
   },
 };
 export const Helpers: Story = {
@@ -887,6 +906,34 @@ export const CanceledFormReset: Story = {
     await userEvent.keyboard('{End}!');
     await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
     await expect(input).toHaveValue('@Ada #general!');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const ExternalFormReset: Story = {
+  args: { defaultValue: TOKEN_VALUE, name: 'comment', form: 'external-comment-form' },
+  render: (args) => (
+    <>
+      <MentionInput {...args} />
+      <form id="external-comment-form" aria-label="External comment form">
+        <button css={fixtureStyle} type="reset">
+          Reset
+        </button>
+      </form>
+    </>
+  ),
+  play: async ({ canvas, userEvent, args }) => {
+    const input = canvas.getByRole('textbox') as HTMLTextAreaElement;
+    const form = canvas.getByRole('form') as HTMLFormElement;
+    await expect(input.form).toBe(form);
+    await userEvent.click(input);
+    await userEvent.keyboard('{End}!');
+    await expect(new FormData(form).get('comment')).toBe('@Ada #general!');
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await waitFor(async () => {
+      await expect(input).toHaveValue(TOKEN_VALUE.text);
+    });
+    await expect(new FormData(form).get('comment')).toBe(TOKEN_VALUE.text);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
