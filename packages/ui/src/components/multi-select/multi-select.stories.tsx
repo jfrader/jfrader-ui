@@ -193,6 +193,10 @@ export const Disabled: Story = {
     await expect(triggerOf(canvasElement)).toBeDisabled();
     await userEvent.click(body(canvasElement).getByRole('option', { name: 'Feature' }));
     await expect(args.onValueChange).not.toHaveBeenCalled();
+    const list = body(canvasElement).getByRole('listbox', { name: LABEL });
+    await waitFor(async () => {
+      await expect(list.scrollWidth).toBeLessThanOrEqual(list.clientWidth);
+    });
   },
 };
 export const DisabledItems: Story = { args: { defaultOpen: true } };
@@ -753,5 +757,43 @@ export const ClearPointerOrder: Story = {
       args.onOpenChange!.mock.invocationCallOrder[0]!,
     );
     await expect(canvasElement.ownerDocument.activeElement).toBe(triggerOf(canvasElement));
+  },
+};
+
+export const ExternalForm: Story = {
+  args: { name: 'labels', required: true, defaultValue: ['bug'] },
+  render: (args) => (
+    <>
+      <form id="labels-form">
+        <Button type="reset">Reset</Button>
+      </form>
+      <MultiSelect {...args}>
+        <MultiSelect.Trigger form="labels-form" aria-label={LABEL}>
+          <MultiSelect.Value placeholder="Select labels" />
+        </MultiSelect.Trigger>
+        <MultiSelect.Clear />
+        <MultiSelect.Content>
+          <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+          <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+        </MultiSelect.Content>
+      </MultiSelect>
+    </>
+  ),
+  play: async ({ canvasElement, canvas, userEvent, args }) => {
+    const form = canvasElement.querySelector('form')!;
+    await expect(new FormData(form).getAll('labels')).toEqual(['bug']);
+    await userEvent.click(triggerOf(canvasElement));
+    await userEvent.click(body(canvasElement).getByRole('option', { name: 'Feature' }));
+    await expect(new FormData(form).getAll('labels')).toEqual(['bug', 'feature']);
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await waitFor(async () => {
+      await expect(new FormData(form).getAll('labels')).toEqual(['bug']);
+    });
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await userEvent.click(canvas.getByRole('button', { name: 'Clear selection' }));
+    await expect(form.reportValidity()).toBe(false);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(triggerOf(canvasElement));
+    await expect(triggerOf(canvasElement)).toHaveAttribute('aria-invalid', 'true');
   },
 };
