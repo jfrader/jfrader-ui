@@ -66,6 +66,7 @@ export * from './components/spinner';
 export * from './components/split-button';
 export * from './components/stack';
 export * from './components/stepper';
+export * from './components/stretch-refresh';
 export * from './components/swipe-actions';
 export * from './components/switch';
 export * from './components/tabs';
