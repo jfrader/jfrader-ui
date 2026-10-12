@@ -78,6 +78,11 @@ LiveThemeExample.displayName = 'LiveThemeExample';
 const meta = {
   title: 'Foundations/Theme',
   component: ThemeRoot,
+  parameters: {
+    docs: {
+      description: { component: 'Apply a theme to part of a page and its overlays.' },
+    },
+  },
   args: { onClick: fn() },
   argTypes: {
     theme: { control: 'radio', options: THEMES },

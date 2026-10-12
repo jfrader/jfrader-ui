@@ -27,6 +27,13 @@ function indicatorOf(progressbar: HTMLElement) {
 const meta = {
   title: 'Feedback/Progress',
   component: Progress,
+  parameters: {
+    docs: {
+      description: { component: 'Show how much of a task is complete, or show that work is in progress.' },
+      usage: `- \`value\` is in 0..max. Leave it undefined when completion is unknown.
+- \`label\` provides a visually hidden name. \`getValueLabel\` supplies \`aria-valuetext\`.`,
+    },
+  },
   tags: ['autodocs'],
   argTypes: {
     value: { control: { type: 'range', min: 0, max: 100 } },

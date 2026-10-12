@@ -45,8 +45,16 @@ const meta = {
     docs: {
       description: {
         component:
-          'A finite allowance meter, not task progress. The custom segmented track uses the APG meter contract: numeric ARIA saturates at the limit while value text reports actual usage and overage. Quota data belongs to the app. Translate status labels and relational copy with labels, getValueLabel and getItemLabel. The separate toggle-button legend has one Tab stop; arrows (RTL-aware), Home and End move focus, Enter/Space toggle a pin, and Escape clears it. Explicit locale is recommended for SSR.',
+          'See how much of an allowance is used and pin a category in the legend.',
       },
+      usage: `- Supply quota data from your app. Use this meter for an allowance, not task progress.
+- Numeric ARIA values stop at the limit. Value text reports usage, including overage, following the APG meter contract.
+- Translate status and comparison text with \`labels\`, \`getValueLabel\` and \`getItemLabel\`.
+- Supply \`locale\` for server rendering.
+
+### Keyboard
+- The legend has one Tab stop. Arrows follow the text direction; Home and End move to the first and last item.
+- Enter or Space toggles a pin. Escape clears it.`,
       source: {
         code: '<UsageMeter label="Storage" segments={usage} limit={80} locale="en" unitLabel="GB" />',
       },
@@ -591,7 +599,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural over-limit fixture. Enable prefers-reduced-motion in browser QA to verify zero-duration geometry transitions.',
+          'Enable reduced motion to check that over-limit geometry transitions take 0s. This story checks structure only.',
       },
     },
   },
@@ -602,7 +610,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural pinned over-limit fixture. Enable forced colors in browser QA to check system-color boundaries, hatching and focus.',
+          'Enable forced colors to check system-color borders, hatching and focus with an over-limit pin. This story checks structure only.',
       },
     },
   },

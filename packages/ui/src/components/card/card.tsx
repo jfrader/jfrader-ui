@@ -33,8 +33,8 @@ export interface CardSlotProps {
 export interface CardProps extends ComponentPropsWithRef<'div'>, SxProps {
   variant?: CardVariant;
   /**
-   * `contrast` paints the dark family for this card on any page theme; omitted, the card keeps the
-   * enclosing surface's palette. `default` returns to the theme's own palette.
+   * `contrast` uses the dark palette on any page theme. Omit this prop to inherit the surrounding
+   * surface's palette. `default` uses the theme's palette.
    */
   appearance?: AppearanceName;
   slotProps?: CardSlotProps;

@@ -444,10 +444,10 @@ type ActiveStroke = {
   stroke: SignatureStroke;
 };
 
-/** Pointer-only handwriting. Consuming forms must offer typed-name or upload alternatives.
+/** Draw a signature with a pointer. Forms must offer typed-name or upload alternatives.
  * Canvas shortcuts: Mod+Z undo, Shift+Mod+Z/Mod+Y redo, Delete clear, Escape cancel/stop.
  * Samples use 600×260 coordinates; pressure changes round line widths, not speed-based taper.
- * This artifact does not establish identity, consent, or legal validity. */
+ * The drawing does not establish identity, consent or legal validity. */
 export function SignaturePad({
   ref,
   apiRef,

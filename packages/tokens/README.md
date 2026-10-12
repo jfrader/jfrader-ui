@@ -29,7 +29,7 @@ The raw token values are exported as `base` (dark) and `light` from `@jfrader/to
 pnpm --filter @jfrader/tokens build
 ```
 
-Generates `dist/tokens.css` and `src/generated/vars.ts` from `src/tokens.ts`, bundles the runtime entries as `dist/index.js` and `dist/generated/vars.js`, then emits declarations to `dist/types/`. The Vite build preserves the generated CSS in `dist/`.
+The build generates `dist/tokens.css` and `src/generated/vars.ts` from `src/tokens.ts`. It bundles the runtime entries as `dist/index.js` and `dist/generated/vars.js`, then writes declarations to `dist/types/`. Vite keeps the generated CSS in `dist/`.
 
 ## Publishing
 
@@ -48,7 +48,7 @@ gh workflow run publish.yml --repo jfrader/jfrader-ui --ref v0.1.1
 
 npmjs authenticates through the package's trusted publisher for `jfrader/jfrader-ui` → `.github/workflows/publish.yml`, configured on npmjs after the first version is published by hand. GitHub Packages uses the workflow's `GITHUB_TOKEN`. See the [root README](https://github.com/jfrader/jfrader-ui#publishing) for the full release setup.
 
-In the repo, `exports` point at `src/` so the workspace consumes source. `node scripts/flip-exports.mjs dist` validates and switches both packages to the publish layout; `node scripts/flip-exports.mjs src` switches both back. The tokens `prepack` builds tokens and flips only its manifest with `--package tokens`; `postpack` restores only tokens. Each flip validates only the selected package's export targets.
+In the repo, `exports` point at `src/` so workspace apps use the source. `node scripts/flip-exports.mjs dist` validates and switches both packages to the publish layout. `node scripts/flip-exports.mjs src` switches both back. The tokens `prepack` builds tokens and switches only its manifest with `--package tokens`; `postpack` restores only tokens. Each switch validates only the selected package's export targets.
 
 Tokens can be packed alone without UI's `dist/`. The hook builds every target required by tokens' exports. Run from the repo root:
 
@@ -60,9 +60,11 @@ pnpm --filter @jfrader/tokens pack --pack-destination /tmp/opencode
 
 For both published packages, build with `pnpm --filter @jfrader/tokens build && pnpm --filter @jfrader/ui build`. Root `pnpm build` builds Storybook, not the published packages. If packing fails after `prepack`, run `node scripts/flip-exports.mjs src` from the repo root to restore workspace exports.
 
-It must contain only `dist/**`, `base.css`, `package.json`, `README.md` and `LICENSE`.
+The tarball must contain only `dist/**`, `base.css`, `package.json`, `README.md` and `LICENSE`.
 
-### Registry choice / installing
+<a id="registry-choice--installing"></a>
+
+### Registry choice
 
 npmjs needs no authentication; GitHub Packages requires authentication even for public packages. To install from GitHub Packages, add this to `.npmrc`:
 

@@ -84,8 +84,8 @@ export interface DrawerContentProps extends Omit<ComponentPropsWithRef<'dialog'>
 }
 export interface DrawerPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
   /**
-   * `contrast` (default) paints the dark family for the edge surface on any page theme;
-   * `default` returns to the theme's own palette.
+   * `contrast` (default) uses the dark palette on any page theme.
+   * `default` uses the page theme's palette.
    */
   appearance?: AppearanceName;
 }

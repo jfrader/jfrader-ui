@@ -267,10 +267,9 @@ interface Attempt {
   error?: string;
 }
 
-/** The visible surface is the native label of an operable file input; no custom dropzone role.
- * Submit canonical value items, not input.files: drops and accumulated batches are not
- * reflected in native FormData/required. Client validation is a convenience; validate uploads
- * independently on the server. */
+/** Choose or drop files through a labelled native file input; there is no custom dropzone role.
+ * Submit value items, not input.files. Drops and accumulated batches are absent from native
+ * FormData and native required validation. Validate uploads on the server too. */
 export function FileDropzone({
   ref,
   value,

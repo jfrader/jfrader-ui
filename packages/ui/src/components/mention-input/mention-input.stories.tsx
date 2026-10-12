@@ -68,13 +68,31 @@ const meta = {
     docs: {
       source: { code: source },
       description: {
-        component: [
-          'Multiline list autocomplete with virtual focus: the native textbox keeps DOM focus and multiline semantics; a non-focusable combobox wrapper owns expanded state. The textarea owns autocomplete, controls and active descendant. @people and #channels trigger at word boundaries; Enter or unmodified Tab inserts the active result. Space and punctuation edit normally. Shift+Tab leaves backward, Shift+Enter inserts a newline, Escape dismisses, and Home/End keep native caret behavior.',
-          'MentionValue stores plain text plus immutable UTF-16 half-open ranges. The native textarea ref is separate from actionsRef (insert, openSuggestions, clear). Native forms submit visible text; serializeMentions converts validated ranges to storage IDs. Invalid ranges are omitted, never painted or serialized as references.',
-          'Text undo is native when the browser accepts the insertion compatibility path; the direct fallback has no native undo guarantee. Token metadata after any text change, including undo/redo, reconciles by dropping touched or stale tokens. Labels never reconstruct IDs. Cross-browser undo evidence and NVDA/Firefox + VoiceOver/Safari smoke remain manual gates; no metadata-undo guarantee is made.',
-          'Controlled document and open permission requests do not commit without parent acceptance. onMentionAdd reports a request, after onValueChange and before onOpenChange. Field input/mirror typography and padding overrides must be paired. Intended for message-sized documents.',
-        ].join('\n\n'),
+        component: 'Write a message and mention people with @ or channels with #.',
       },
+      usage: `### Keyboard and focus
+- @ and # open suggestions at word boundaries.
+- Up/Down moves through suggestions and wraps.
+- Enter or unmodified Tab inserts the active result. Space and punctuation edit text.
+- Shift+Tab leaves backward; Shift+Enter inserts a newline; Escape dismisses suggestions; Home/End move the caret.
+- Without an active suggestion, \`submitOnEnter\` makes unmodified Enter submit nonblank text. Otherwise Enter inserts a newline.
+- At a mention boundary, unmodified Left/Right jumps across the mention; Backspace/Delete removes it as a unit. Other text editing follows browser behavior.
+- Suggestion and token shortcuts pause during IME composition.
+- Focus stays in the textarea. It exposes a multiline textbox with autocomplete, controls and active descendant. Its combobox wrapper exposes expanded state and cannot receive focus.
+
+### Values and forms
+- \`MentionValue\` holds plain text and mention ranges. Ranges use UTF-16 offsets: \`start\` is included; \`end\` is not. Treat ranges as immutable.
+- Invalid ranges are omitted from highlighting and reference serialization. Plain text is preserved.
+- Forms submit the displayed text. Use \`serializeMentions\` to save IDs from validated ranges; escape its output for your storage format.
+- \`ref\` reaches the textarea. \`actionsRef\` provides \`insert\`, \`openSuggestions\` and \`clear\`.
+- When you pass \`value\` or \`open\`, update it in your callback to accept a change. \`onMentionAdd\` reports a request after \`onValueChange\` and before \`onOpenChange\`.
+
+### Undo and limits
+- Undo depends on the browser accepting the text insertion. If insertion uses the fallback, undo may not work.
+- Edits, undo and redo drop mention ranges that were changed or no longer match. IDs are never inferred from labels; undo may not restore them.
+- If you change text styles or padding, apply the same change to the input and mirror.
+- Use for messages, not long documents.
+- Undo across browsers and screen-reader support with NVDA/Firefox and VoiceOver/Safari still need manual checks.`,
     },
   },
 } satisfies Meta<typeof MentionInput>;
@@ -668,7 +686,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture. Native textarea text replaces the tint mirror under forced colors; environment proof remains a manual browser gate.',
+          'With forced colors, textarea text replaces the tint mirror. Check this in a browser; this test does not emulate forced colors.',
       },
     },
   },
@@ -680,7 +698,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture. The popup transition becomes immediate under prefers-reduced-motion; environment proof remains a manual browser gate.',
+          'With prefers-reduced-motion, the popup changes without a transition. Check this in a browser; this test does not emulate the preference.',
       },
     },
   },

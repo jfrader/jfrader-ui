@@ -21,6 +21,11 @@ const frameStyle = css({
 const meta = {
   title: 'Navigation/Tabs',
   component: Tabs,
+  parameters: {
+    docs: {
+      description: { component: 'Switch between panels by choosing a tab.' },
+    },
+  },
   argTypes: {
     orientation: { control: 'radio', options: ['horizontal', 'vertical'] },
     activation: { control: 'radio', options: ['auto', 'manual'] },

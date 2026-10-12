@@ -18,6 +18,11 @@ const stackStyle = css({
 const meta = {
   title: 'Inputs/TextField',
   component: TextField,
+  parameters: {
+    docs: {
+      description: { component: 'Enter text in a field with a label, description and error message.' },
+    },
+  },
   args: { label: 'Email', placeholder: 'you@example.com', size: 'md' },
   argTypes: {
     size: { control: 'radio', options: SIZES },
@@ -186,4 +191,3 @@ export const Rtl: Story = {
     await expect(input).toHaveAttribute('dir', 'rtl');
   },
 };
-

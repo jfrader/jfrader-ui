@@ -44,8 +44,13 @@ const meta = {
       source: { code: usage },
       description: {
         component:
-          'An immediate, single-choice radio group. Unlike Tabs it owns no panels; unlike ToggleGroup it selects on arrow movement and cannot clear a selected choice. Tab enters the last focused enabled option, then exits. Arrow keys select and wrap, skipping disabled options; horizontal arrows reverse in RTL. Home/End select the first/last enabled option. Space/Enter select once through the native button click. Values must be unique; accessories must be noninteractive. Use RadioGroup for form values.',
+          'Choose one option from a row of buttons.',
       },
+      usage: `- Selection changes on arrow movement and cannot be cleared. The group owns no panels; use Tabs for panels and RadioGroup for form values.
+- Tab enters the last focused enabled option, then exits.
+- Arrows select and wrap, skipping disabled options. Horizontal arrows reverse in RTL. Home/End select the first/last enabled option.
+- Space and Enter select once through a native button click.
+- Values must be unique. Accessories must not be interactive.`,
     },
   },
 } satisfies Meta<typeof SegmentedControl>;
@@ -414,7 +419,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Enable reduced motion in browser rendering settings to inspect instant selection and scrolling.',
+          'Enable reduced motion in the browser to check selection and scrolling without animation.',
       },
     },
   },
@@ -425,7 +430,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Enable forced colors in browser rendering settings to inspect the selected border and focus outline.',
+          'Enable forced colors in the browser to check the selection border and focus outline.',
       },
     },
   },

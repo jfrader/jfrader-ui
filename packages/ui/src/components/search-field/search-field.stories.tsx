@@ -20,7 +20,12 @@ const meta = {
   argTypes: { size: { control: 'radio', options: sizes } },
   decorators: [(Story) => <div css={stackStyle}><Story /></div>],
   parameters: { docs: {
-    description: { component: 'Native searchbox with an accessible clear button. Tab and Shift+Tab move between the input, clear button and page. Enter or Space on clear empties the query and returns focus to the input. Escape clears a nonempty editable query; empty Escape is available to parent dismissals. Enter in the input preserves native form submission. Filtering, fetching and debounce belong to the caller.' },
+    description: { component: 'Enter a search query and clear it with a button or Escape.' },
+    usage: `- The input is a native searchbox. The caller handles filtering, fetching and debounce.
+- Tab and Shift+Tab move between the input, clear button and page.
+- Enter or Space on clear empties the query and returns focus to the input.
+- Escape clears a nonempty editable query. When empty, Escape remains available to parent dismissals.
+- Enter in the input submits the form natively.`,
     source: { code: usage },
   } },
 } satisfies Meta<typeof SearchField>;
@@ -372,8 +377,8 @@ export const RTL: Story = {
   args: { dir: 'rtl', label: 'Buscar miembros', defaultValue: 'Ada' },
   play: async ({ canvas }) => { await expect(getComputedStyle(canvas.getByRole('searchbox')).direction).toBe('rtl'); },
 };
-export const ForcedColors: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Manual check: enable the forced-colors setting in the browser (see docs/qa-gates.md). Not automated here.' } } } };
-export const ReducedMotion: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Manual check: enable prefers-reduced-motion: reduce in the browser (see docs/qa-gates.md). Not automated here.' } } } };
+export const ForcedColors: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Enable forced colors in the browser (see docs/qa-gates.md). This check is manual.' } } } };
+export const ReducedMotion: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Enable prefers-reduced-motion: reduce in the browser (see docs/qa-gates.md). This check is manual.' } } } };
 export const CustomIcons: Story = {
   args: { defaultValue: 'Ada', searchIcon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>, clearIcon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 12h12" /></svg> },
 };

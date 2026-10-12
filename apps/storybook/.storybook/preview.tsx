@@ -5,6 +5,7 @@ import { DecoratorHelpers } from '@storybook/addon-themes';
 import { GLOBALS_UPDATED, SET_GLOBALS } from 'storybook/internal/core-events';
 import '@jfrader/tokens/tokens.css';
 import './preview.css';
+import { ComponentDocs } from './component-docs';
 import { DEFAULT_THEME, THEMES } from './document-theme';
 import { lightTheme, theme } from './theme';
 
@@ -73,6 +74,7 @@ const preview: Preview = {
     },
     docs: {
       container: ThemedDocsContainer,
+      page: ComponentDocs,
       // Snippets use Storybook's default (the story's rendered usage with its arg values).
       // Do not set source.type: 'code' here: the authored story source includes the play
       // tests, which read as examples. See GURI-2129.

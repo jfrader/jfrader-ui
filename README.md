@@ -1,8 +1,8 @@
 # jfrader-ui
 
-A from-scratch React component system styled with Emotion and themed through CSS custom properties, with Storybook 10 as the workbench.
+React components built from scratch, with Emotion styles and CSS custom properties for themes. Browse the components and examples in Storybook 10.
 
-Status: reviewed, tested (Storybook browser tests + axe gate) and story-documented. M1 + M2 complete; see PLAN.md for the inventory.
+Components have been reviewed and documented in stories, with Storybook browser tests and an axe gate. M1 + M2 are complete; see PLAN.md for the inventory.
 
 ## Packages
 
@@ -20,19 +20,18 @@ npm i @jfrader/ui @jfrader/tokens
 
 ### Registry choice
 
-npmjs is the zero-configuration default. GitHub Packages carries the same
-verified tarball, but GitHub requires authentication even for public npm
-packages:
+npmjs is the default and needs no configuration. GitHub Packages hosts the same
+verified tarball and requires authentication even for public npm packages:
 
 ```ini
 @jfrader:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
-Registry selection applies to the whole `@jfrader` scope; npm does not fall
-back from GitHub Packages to npmjs. Projects that map that scope to GitHub must
-authenticate there or use an explicit npmjs tarball URL for a package that is
-not mirrored.
+The registry setting applies to the whole `@jfrader` scope. npm does not fall
+back from GitHub Packages to npmjs. If your project uses GitHub for that scope,
+authenticate there. For a package not mirrored there, use an explicit npmjs
+tarball URL.
 
 To use the library in an app, see [docs/consuming-jfrader-ui.md](docs/consuming-jfrader-ui.md).
 
@@ -66,7 +65,7 @@ Each package's `prepack` builds and validates only its own exports, and its `pos
 pnpm --filter @jfrader/tokens pack --pack-destination /tmp/opencode
 ```
 
-UI keeps tokens as a published dependency, not bundled code. Build tokens before packing UI to prepare that dependency's artifacts; UI's hook does not build or validate tokens:
+UI depends on the published tokens package and does not bundle it. Build tokens before packing UI; UI's hook does not build or validate tokens:
 
 ```sh
 pnpm --filter @jfrader/tokens build
@@ -81,15 +80,15 @@ The default `node scripts/flip-exports.mjs dist` validates both packages and req
 
 1. Set the same `version` in `packages/tokens/package.json` and `packages/ui/package.json` and merge to `master`.
 2. Push an annotated tag on that commit: `git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z`.
-3. The workflow checks that both names and versions match the tag and that the commit is on `master`, runs typecheck, tests and `verify:exports`, builds both packages, and packs each one once with `pnpm pack` (`workspace:*` becomes the released version). It then verifies or publishes those exact tarballs to npmjs and GitHub Packages, tokens before UI.
+3. The workflow checks both package names and versions against the tag and checks that the commit is on `master`. It runs typecheck, tests and `verify:exports`, builds both packages, and packs each one once with `pnpm pack` (`workspace:*` becomes the released version). It verifies or publishes those exact tarballs to npmjs and GitHub Packages, tokens before UI.
 
-Retries are safe: an existing matching artifact is accepted, while a different artifact at the same version fails the release. To re-run a release without re-tagging:
+An existing matching artifact is accepted. A different artifact at the same version fails the release. To re-run a release without re-tagging:
 
 ```sh
 gh workflow run publish.yml --repo jfrader/jfrader-ui --ref v0.1.1
 ```
 
-Each npmjs package uses a trusted publisher for `jfrader/jfrader-ui` → `.github/workflows/publish.yml`; no npm token is stored. A trusted publisher can only be added to a package that exists, so the first version of each package is published by hand, then the trusted publisher is configured in the package's npmjs settings. GitHub Packages uses the workflow's scoped `GITHUB_TOKEN`.
+Each npmjs package uses a trusted publisher for `jfrader/jfrader-ui` → `.github/workflows/publish.yml`; no npm token is stored. Publish the first version of each package by hand, then configure its trusted publisher in npmjs settings. npmjs requires the package to exist before adding a trusted publisher. GitHub Packages uses the workflow's scoped `GITHUB_TOKEN`.
 
 GitHub creates a personal package as private on its first publication. After the first workflow succeeds, make each package public once from its **Package settings → Danger Zone → Change visibility**. Later versions keep that setting.
 

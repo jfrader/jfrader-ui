@@ -122,8 +122,9 @@ const meta = {
     docs: {
       description: {
         component:
-          'Choose an inclusive range of civil dates for reports, bookings and leave. Values are `{ start, end }` with `YYYY-MM-DD` strings: no time or time zone. Selection happens in a draft: the first day anchors it, the hovered or focused day previews the interval, the second day finishes it, and only Apply commits (`onValueChange`, then `onOpenChange(false)`). Cancel, Escape, outside presses and Tab-out discard the draft. Presets are consumer-labelled; `range(today)` returns the preset interval and out-of-bounds presets stay visible but disabled. `months="auto"` shows two months when the boundary leaves 712px. All copy comes from `messages`, including a plural-aware `summary`; dates and numbers go through Intl in `locale`. Supply `today` (and `locale`) for deterministic server rendering. Required is exposed in the trigger name through `messages.required`; the hidden fields do not enforce native validation. Screen-reader, forced-colors and reduced-motion checks remain manual gates.',
+          'Choose a date range or a preset, then apply it.',
       },
+      usage: '- Values are inclusive `{ start, end }` ranges of `YYYY-MM-DD` dates, without time or time zone.\n- The first day starts a draft; hovering or focusing a day previews it; the second day finishes it. Apply calls `onValueChange`, then `onOpenChange(false)`. Cancel, Escape, outside presses and Tab-out discard the draft.\n- Supply preset labels and `range(today)`. Out-of-bounds presets stay visible but disabled.\n- `months="auto"` shows two months when the boundary leaves at least 712px.\n- Supply copy through `messages`, including a plural-aware `summary`. Dates and numbers use Intl with `locale`. Pass `today` and `locale` for repeatable server rendering.\n- `messages.required` adds the required state to the trigger name. Hidden fields do not enforce native validation.\n- Screen-reader, forced-colors and reduced-motion checks require manual testing.',
       source: { code: USAGE },
     },
   },

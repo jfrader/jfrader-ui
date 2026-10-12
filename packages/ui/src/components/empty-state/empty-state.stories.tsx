@@ -49,6 +49,10 @@ CheckIcon.displayName = 'CheckIcon';
 const meta = {
   title: 'Data display/EmptyState',
   component: EmptyState,
+  parameters: { docs: {
+    description: { component: 'Show a message and an action when there is no content to display.' },
+    usage: '- Use Skeleton while content is loading and Alert for an error alongside existing content.\n- Supply copy, translations and result announcements. Keep the icon decorative and put controls in `action`.',
+  } },
   args: {
     title: 'No projects yet',
     description: 'Create a project to start tracking work.',

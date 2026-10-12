@@ -22,6 +22,7 @@ const stackStyle = {
 const meta = {
   title: 'Navigation/Breadcrumbs',
   component: Breadcrumbs,
+  parameters: { docs: { description: { component: 'Show where a page sits and link to the pages above it.' } } },
 } satisfies Meta<typeof Breadcrumbs>;
 
 export default meta;

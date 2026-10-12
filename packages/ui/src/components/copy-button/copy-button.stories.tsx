@@ -168,6 +168,7 @@ CustomIcon.displayName = 'CustomIcon';
 const meta = {
   title: 'Actions/CopyButton',
   component: CopyButton,
+  parameters: { docs: { description: { component: 'Copy text to the clipboard and show whether it succeeded.' } } },
   tags: ['autodocs'],
   args: {
     text: INSTALL_COMMAND,

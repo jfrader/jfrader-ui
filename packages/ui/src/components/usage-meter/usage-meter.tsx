@@ -65,7 +65,7 @@ export interface UsageMeterProps
   locale?: Intl.LocalesArgument;
   numberFormatOptions?: Intl.NumberFormatOptions;
   unitLabel?: ReactNode;
-  /** English defaults; translation callbacks also localize relational value copy. */
+  /** Defaults to English. Use the value-label callbacks to translate comparison text too. */
   labels?: Partial<UsageMeterLabels>;
   getValueLabel?: (summary: UsageMeterSummary) => string;
   getItemLabel?: (item: UsageMeterItem, summary: UsageMeterSummary) => string;
@@ -265,9 +265,9 @@ function geometry(start: number, width: number): CSSProperties {
   } as CSSProperties;
 }
 
-/** Finite allowance, not task progress. The meter is not focusable; legend arrows/Home/End
- * move focus, Enter/Space toggle a pin, and Escape clears it. Numeric ARIA saturates at the
- * allowance while visible text and aria-valuetext retain actual overuse. */
+/** Shows usage against an allowance, not task progress. The meter cannot receive focus.
+ * Legend arrows/Home/End move focus; Enter/Space toggle a pin; Escape clears it.
+ * Numeric ARIA stops at the allowance. Displayed text and aria-valuetext include overuse. */
 export function UsageMeter({
   ref,
   label,

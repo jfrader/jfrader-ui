@@ -21,6 +21,22 @@ const rowStyle = {
 const meta = {
   title: 'Inputs/Select',
   component: Select,
+  parameters: {
+    docs: {
+      description: { component: 'Choose one option from a dropdown list.' },
+      usage: `### Keyboard and focus
+- The trigger is a select-only combobox with a listbox. DOM focus stays on the trigger; aria-activedescendant identifies the highlighted option.
+- Enter/Space/ArrowDown opens on the selected or first enabled option. ArrowUp opens on the selected or last enabled option.
+- Arrows wrap and skip disabled options; Home/End reach the ends. Enter/Space selects and closes; Escape/Tab closes without selecting. Tab lets focus move on.
+- Printable characters match enabled options by case-insensitive prefix. The 500ms buffer continues across opening; closed-state typeahead opens without changing the value.
+- Pointer selection closes the list. Disabled options remain visible and ignore clicks; pressing inside the list never takes focus from the trigger.
+
+### Values and forms
+- value and open support controlled state independently. Option values must be unique.
+- The list stays mounted and hidden when closed so labels remain available; positioning runs only when open.
+- name adds a hidden form input. Native required validation is not supported.`,
+    },
+  },
 } satisfies Meta<typeof Select>;
 
 export default meta;

@@ -19,6 +19,11 @@ const rowStyle = {
 const meta = {
   title: 'Surfaces/Tooltip',
   component: Tooltip,
+  parameters: {
+    docs: {
+      description: { component: 'Show help when someone hovers over or focuses a control.' },
+    },
+  },
 } satisfies Meta<typeof Tooltip>;
 
 export default meta;

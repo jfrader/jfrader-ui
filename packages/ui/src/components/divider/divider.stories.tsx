@@ -27,6 +27,7 @@ const proseStyle = { margin: 0 } satisfies CSSProperties;
 const meta = {
   title: 'Data display/Divider',
   component: Divider,
+  parameters: { docs: { description: { component: 'Separate sections with a line or a label.' } } },
   decorators: [
     (Story) => (
       <div css={stackStyle}>

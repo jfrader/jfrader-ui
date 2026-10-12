@@ -196,15 +196,25 @@ const meta = {
     docs: {
       source: { code: usage },
       description: {
-        component: [
-          'Newest-first activity grouped by calendar day in `timeZone`. Each day is a heading plus an ordered list; events with `detail` get a native disclosure button whose panel stays mounted. Not a feed or accordion widget.',
-          'Keyboard: Tab and Shift+Tab follow DOM order through disclosures and open details. Enter or Space toggles. ArrowDown/ArrowUp move between disclosures across days and stop at the ends; Home/End jump to the first/last. Keys inside detail content are left alone.',
-          'Clock: pass `now` (epoch ms) and update it about once a minute; the component runs no timer. Pass the same `now`, `locale` and `timeZone` on the server and the client so hydration text matches.',
-          'Dates: headings use `Intl.RelativeTimeFormat` for today/yesterday/tomorrow and `Intl.DateTimeFormat` otherwise; rows show signed relative times with the full date as hidden text. Events with unreadable dates stay, in a trailing group. Counts and the region name come from `labels`.',
-          'Updates: new rows never take focus. In a bounded timeline (`maxHeight`) the row being read keeps its position when newer events arrive; `scrollToNew` opts into scrolling to them. New ids are announced in a status region.',
-          'Details: `value`/`defaultValue`/`onValueChange` hold the open ids. Every event is rendered; there is no virtualization or pagination.',
-        ].join('\n\n'),
+        component: 'Read activity by day, newest first, and expand events to see details.',
       },
+      usage: `- Days are headings with ordered lists, grouped in \`timeZone\`. This is not an ARIA feed or accordion.
+- Events with \`detail\` have disclosure buttons. Their panels stay mounted. \`value\` / \`defaultValue\` / \`onValueChange\` hold the open ids.
+- All events render; there is no virtualization or pagination.
+
+### Dates and updates
+- Pass \`now\` in epoch milliseconds and update it about once a minute. Timeline runs no timer.
+- Use the same \`now\`, \`locale\` and \`timeZone\` on server and client so hydration text matches.
+- Headings use \`Intl.RelativeTimeFormat\` for today, yesterday and tomorrow; other dates use \`Intl.DateTimeFormat\`.
+- Rows show signed relative times and include the full date as hidden text. Events with unreadable dates stay in a trailing group.
+- Set counts and the region name through \`labels\`.
+- New rows do not take focus. With \`maxHeight\`, the row being read keeps its position as newer events arrive. Use \`scrollToNew\` to scroll to them instead.
+- A status region announces new ids.
+
+### Keyboard
+- Tab and Shift+Tab follow DOM order through disclosures and open details. Enter or Space toggles a disclosure.
+- Up and Down move between disclosures across days and stop at the ends. Home and End jump to the first and last.
+- Keys inside detail content keep their behavior.`,
     },
   },
 } satisfies Meta<typeof Timeline>;
@@ -908,7 +918,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored reduced-motion rules; it does not emulate the preference. Browser QA verifies the rendered result.',
+          'Enable reduced motion to check rendering in the browser. This story checks CSS rules only.',
       },
     },
   },
@@ -931,7 +941,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored forced-colors rules; it does not emulate forced colors. Browser QA verifies the rendered result.',
+          'Enable forced colors to check rendering in the browser. This story checks CSS rules only.',
       },
     },
   },

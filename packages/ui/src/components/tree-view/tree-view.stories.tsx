@@ -38,8 +38,17 @@ const meta = {
       source: { code: usage },
       description: {
         component:
-          'Single-select APG tree. Each parent owns a sibling child group through aria-owns, keeping its accessible name scoped to its own label. Real roving focus: Up/Down clamp, Home/End jump, Right opens/enters, Left closes/parents (physical keys also in RTL). Enter/Space select without expanding. Locale-aware typeahead uses a 500ms buffer. Selection and expansion are independent controlled axes. Lazy loading starts only after committed expansion, aborts on collapse/unmount and caches successful children per instance. Remount with a new key to replace the cache. Environment stories are structural fixtures; media emulation and screen-reader smoke are separate QA gates.',
+          'Browse a tree, expand branches and select one item.',
       },
+      usage: `- Selection and expansion can be controlled independently.
+- Each parent links to its sibling child group with \`aria-owns\`. Its accessible name contains only its own label.
+- Lazy loading starts after expansion is accepted. Collapse or unmount aborts loading. Successful results are cached per instance; remount with a new key to replace the cache.
+- Environment stories check structure. Check media preferences and screen readers separately.
+
+### Keyboard
+- Up and Down move focus and stop at the ends. Home and End jump to the first and last item.
+- Right expands or enters a branch. Left collapses or moves to its parent. These keys stay the same in RTL.
+- Enter or Space selects without expanding. Typing searches using the locale, with a 500ms buffer.`,
     },
   },
 } satisfies Meta<typeof TreeView>;

@@ -15,13 +15,13 @@ export type { AppearanceName, ThemeName };
 export interface ThemeRootProps extends ComponentPropsWithRef<'div'>, SxProps {
   theme?: ThemeName;
   /**
-   * `contrast` paints the dark family for this subtree on any page theme. Omitted: the enclosing
-   * scope's appearance, else the theme's own. `default` returns to the theme's own palette.
+   * `contrast` uses the dark palette within this root on any page theme.
+   * Omit to inherit the enclosing appearance or theme palette. `default` uses the theme palette.
    */
   appearance?: AppearanceName;
   /**
-   * Where overlays inside this root portal to. Omitted: the enclosing ThemeRoot's container, else
-   * the default (`body`). `null`: overlays wait until the host element is set.
+   * Container for this root's overlays. Omit to inherit the enclosing container or use `body`.
+   * With `null`, overlays wait until the host element is set.
    */
   portalContainer?: HTMLElement | null;
   children?: ReactNode;

@@ -58,17 +58,16 @@ export interface DialogPartRenderProps extends ButtonHTMLAttributes<HTMLButtonEl
 
 export interface DialogTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   /**
-   * Replaces the default button. Spread ALL supplied props onto the operative element and attach
-   * the supplied ref, including when composing through Button. The forwarded and callback refs
-   * refer to the rendered element, which need not be a button; their public types remain
-   * HTMLButtonElement for compatibility.
-   * Overridden handlers, className and style win; compose behavior manually to retain both:
+   * Replace the button. Spread all supplied props onto the element and attach the supplied ref,
+   * including through Button. Refs point to that element, even when it is not a button;
+   * the public ref type remains HTMLButtonElement for compatibility.
+   * Handler, className and style overrides replace the supplied values. Compose handlers to keep both:
    * `onClick={(e) => { p.onClick?.(e); mine(e); }}`.
-   * Only the render path joins data-ui markers into a token list; library selectors should use
-   * `[data-ui~="dialog-trigger"]`. The default button always has data-ui="dialog-trigger".
-   * For disabled anchors, compose through Button's render path: aria-disabled keeps them
-   * focusable and its supplied handler blocks primary click/Enter activation, but does NOT
-   * cover auxiliary/middle-click navigation. This part alone supplies native button semantics.
+   * The render path joins data-ui markers into a token list; use `[data-ui~="dialog-trigger"]`.
+   * The default button has data-ui="dialog-trigger".
+   * For disabled anchors, compose through Button's render path. aria-disabled keeps them focusable;
+   * its handler blocks primary click/Enter, but not auxiliary/middle-click navigation.
+   * This part supplies native button semantics only.
    */
   render?: (props: DialogPartRenderProps) => ReactNode;
 }
@@ -80,17 +79,16 @@ export interface DialogTitleProps extends ComponentPropsWithRef<'h2'>, SxProps {
 export interface DialogDescriptionProps extends ComponentPropsWithRef<'p'>, SxProps {}
 export interface DialogCloseProps extends ComponentPropsWithRef<'button'>, SxProps {
   /**
-   * Replaces the default button. Spread ALL supplied props onto the operative element and attach
-   * the supplied ref, including when composing through Button. The forwarded and callback refs
-   * refer to the rendered element, which need not be a button; their public types remain
-   * HTMLButtonElement for compatibility.
-   * Overridden handlers, className and style win; compose behavior manually to retain both:
+   * Replace the button. Spread all supplied props onto the element and attach the supplied ref,
+   * including through Button. Refs point to that element, even when it is not a button;
+   * the public ref type remains HTMLButtonElement for compatibility.
+   * Handler, className and style overrides replace the supplied values. Compose handlers to keep both:
    * `onClick={(e) => { p.onClick?.(e); mine(e); }}`.
-   * Only the render path joins data-ui markers into a token list; library selectors should use
-   * `[data-ui~="dialog-close"]`. The default button always has data-ui="dialog-close".
-   * For disabled anchors, compose through Button's render path: aria-disabled keeps them
-   * focusable and its supplied handler blocks primary click/Enter activation, but does NOT
-   * cover auxiliary/middle-click navigation. This part alone supplies native button semantics.
+   * The render path joins data-ui markers into a token list; use `[data-ui~="dialog-close"]`.
+   * The default button has data-ui="dialog-close".
+   * For disabled anchors, compose through Button's render path. aria-disabled keeps them focusable;
+   * its handler blocks primary click/Enter, but not auxiliary/middle-click navigation.
+   * This part supplies native button semantics only.
    */
   render?: (props: DialogPartRenderProps) => ReactNode;
 }

@@ -55,10 +55,10 @@ export interface TimelineEvent {
   at: string | number | Date;
   /** Who acted; shown as text next to the title. */
   actor?: string;
-  /** Literal outcome ("Deploy failed"), so tone is never the only cue. */
+  /** Outcome text, such as "Deploy failed", to show state alongside tone. */
   title: ReactNode;
   meta?: ReactNode;
-  /** Content (including 0; not false, null or '') makes the title a disclosure button for this panel. */
+  /** Panel content. Makes the title a disclosure button; 0 counts as content, false/null/'' do not. */
   detail?: ReactNode;
   /** Actor portrait URL; takes precedence over `icon`. */
   avatar?: string;
@@ -102,12 +102,12 @@ export interface TimelineProps
   defaultValue?: readonly string[];
   /** Requested open ids after a disclosure interaction. */
   onValueChange?: (ids: string[]) => void;
-  /** Formatting locale; pass one explicitly for matching server and client output. */
+  /** Formatting locale. Supply one so server and client output match. */
   locale?: Intl.LocalesArgument;
   /** IANA zone used for day grouping and every displayed date. */
   timeZone?: string;
   headingLevel?: TimelineHeadingLevel;
-  /** Bounds the timeline in its own scroller; without it the timeline grows in page flow. */
+  /** Height limit for the timeline's scroller. Without it, the timeline grows with the page. */
   maxHeight?: CSSProperties['maxHeight'];
   /** Scroll to an event newer than any shown before. Never moves focus. */
   scrollToNew?: boolean;

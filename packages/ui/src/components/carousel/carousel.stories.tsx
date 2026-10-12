@@ -86,8 +86,13 @@ const meta = {
       },
       description: {
         component:
-          'A short, mounted set of peer slides with a slide picker, Previous/Next and native scroll-snap (trackpad, touch, mouse drag). Give every slide a stable key and, when slides have names, `getSlideLabel`. Nothing rotates by default: rotation needs `interval` plus Start (or an explicit playing seed), stops for good when focus enters the carousel or the parent declines a rotation step, pauses on hover, drag, offscreen and hidden pages, and is unavailable under reduced motion. A controlled `value` that the parent declines leaves the accepted slide in place and scrolls back to it.',
+          'Browse slides with a picker, Previous/Next buttons, or a swipe. Enable rotation when slides should advance on their own.',
       },
+      usage: `- Use a short set of slides; all stay mounted. Scrolling snaps to a slide with trackpad, touch, or mouse drag.
+- Give every slide a stable key. Use \`getSlideLabel\` when slides have names.
+- Rotation is off by default. It needs \`interval\` and Start, or a playing-state seed.
+- Rotation stops when focus enters or the parent rejects a rotation step. It pauses on hover, drag, when offscreen, and on hidden pages. Reduced motion disables rotation.
+- If the parent rejects a controlled \`value\` change, the accepted slide stays selected and the carousel scrolls back to it.`,
     },
   },
 } satisfies Meta<typeof Carousel>;
@@ -474,7 +479,7 @@ export const PointerSnap: Story = {
     docs: {
       description: {
         story:
-          'Mouse drag on the slide surface, released past the midpoint, requests the next slide once. Touch and trackpad scrolling stay native and settle through scroll-snap.',
+          'Drag past the midpoint and release to request the next slide once. Touch and trackpad scrolling use native scroll-snap.',
       },
     },
   },
@@ -560,7 +565,7 @@ export const ScrollSettle: Story = {
     docs: {
       description: {
         story:
-          'A programmatic `scrollBy` stands in for a trackpad or touch scroll (synthetic wheel events do not scroll). Once the viewport settles, the nearest slide is requested once. Real wheel and touch inertia is browser QA.',
+          'This play uses `scrollBy` because synthetic wheel events do not scroll. Settling requests the nearest slide once. Check wheel and touch inertia in the browser.',
       },
     },
   },
@@ -1142,7 +1147,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Driven by a stubbed `matchMedia` preference, not real media emulation: rotation is unavailable and slide changes scroll instantly. Browser QA covers the real preference.',
+          'This play stubs `matchMedia`: rotation is unavailable and slides scroll without animation. Enable reduced motion in the browser to check the actual preference.',
       },
     },
   },
@@ -1192,7 +1197,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored forced-colors rules; it does not emulate forced colors. Browser QA verifies the rendered picker.',
+          'This play checks CSS rules without enabling forced colors. Enable the preference in the browser to check the picker.',
       },
     },
   },

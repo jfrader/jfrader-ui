@@ -78,7 +78,7 @@ export interface ElasticSliderProps
   max?: number;
   step?: number;
   largeStep?: number;
-  /** Detents. Normalized to the step lattice; invalid or out-of-domain marks are ignored. */
+/** Marks that snap to steps. Invalid marks and marks outside the value range are ignored. */
   marks?: readonly ElasticSliderMark[];
   locale?: Intl.LocalesArgument;
   formatOptions?: Intl.NumberFormatOptions;

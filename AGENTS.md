@@ -20,6 +20,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 | `pnpm og:image` | Regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
 | `pnpm test` | Generate tokens and run Storybook Vitest browser tests |
 | `pnpm typecheck` | Typecheck every package |
+| `pnpm verify:docs` | Check component introductions (also runs before the Storybook build) |
 | `pnpm --filter @jfrader/storybook exec vitest run --project=storybook <file>` | Run one story file (fast loop) |
 
 ## Styling rules
@@ -76,7 +77,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 - [ ] Dark and light stories.
 - [ ] axe clean (a11y gate is `error`, WCAG 2.0–2.2 AA + best-practice ruleset).
 - [ ] Exported from the package index.
-- [ ] Docs via autodocs.
+- [ ] Docs via autodocs; follow the documentation writing spec in `SKILL.md`.
 
 ## Accessibility
 

@@ -134,8 +134,8 @@ function joinIds(...ids: (string | false | undefined)[]) {
 }
 
 /**
- * Empty view with a literal next action. Use Skeleton while content is pending and Alert for an
- * error next to existing content. The caller owns copy, translations and result announcements.
+ * Show a message and action when content is empty. Use Skeleton while loading and Alert for an
+ * error alongside existing content. Supply copy, translations and result announcements.
  */
 export function EmptyState({
   ref,

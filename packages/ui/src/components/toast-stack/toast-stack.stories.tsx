@@ -25,8 +25,13 @@ const meta = {
       source: { code: '<Toast max={12}><PublishButton /><ToastStack maxVisible={3} /></Toast>' },
       description: {
         component:
-          'One renderer per Toast provider. Tab reaches toggle and newest-to-oldest controls; Escape dismisses a focused toast. Alt+T is opt-in. Timed messages require equivalent persistent access. Environment stories are structural fixtures; media emulation and screen-reader smoke are separate QA gates.',
+          'Show toast messages in a stack and dismiss them.',
       },
+      usage: `- Mount one queue renderer per Toast provider.
+- Keep timed messages available elsewhere after they disappear.
+- Tab visits the toggle and controls from newest to oldest. Escape dismisses the focused toast.
+- Enable Alt+T only when you want that shortcut.
+- Environment stories check structure. Check media preferences and screen readers separately.`,
     },
   },
 } satisfies Meta<typeof ToastStack>;
@@ -409,7 +414,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored reduced-motion rules; it does not emulate the media preference. Browser QA verifies instant settling.',
+          'Enable reduced motion to check that toasts settle immediately. This story checks CSS rules only.',
       },
     },
   },
@@ -443,7 +448,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored forced-colors surface; it does not emulate forced colors. Browser QA verifies the rendered outlines.',
+          'Enable forced colors to check outlines in the browser. This story checks CSS rules only.',
       },
     },
   },
@@ -464,7 +469,7 @@ export const NarrowLongCopy: Story = {
         {
           title: 'Your international collaboration workspace is ready',
           description:
-            'A long notification wraps without truncating the important details or hiding its controls.',
+            'Invite teammates from workspace settings, choose their roles and send invitations by email.',
           duration: null,
         },
       ]}

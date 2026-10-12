@@ -41,6 +41,14 @@ const iconStyle = {
 const meta = {
   title: 'Navigation/Navigation',
   component: Navigation,
+  parameters: {
+    docs: {
+      description: { component: 'Group links into navigation sections and mark the current page.' },
+      usage: `- Name the navigation landmark with label. The current link exposes aria-current="page".
+- Collapsible groups use native details/summary. defaultOpen sets the initial open attribute; the browser owns later state.
+- Leading icons are decorative and hidden from assistive technology.`,
+    },
+  },
   decorators: [
     (Story) => (
       <div css={frameStyle}>

@@ -74,8 +74,7 @@ export interface TagInputProps
   extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'value' | 'defaultValue' | 'type' | 'children'>,
     SxProps {
   /**
-   * Committed tokens in order. Entries must be unique, nonempty and already normalized; the
-   * component renders them as given and never rewrites a provided list.
+   * Tokens in order. Entries must be unique, nonempty and normalized. The list renders as supplied.
    */
   value?: readonly string[];
   defaultValue?: readonly string[];
@@ -96,7 +95,7 @@ export interface TagInputProps
   normalize?: (draft: string) => string;
   /** Returns a rejection message, or `null` to accept the token. */
   validateToken?: (token: string) => string | null;
-  /** Additions stop at this count; an initial or controlled list longer than it is kept. */
+  /** Maximum token count for additions. Initial and controlled lists beyond this count are kept. */
   maxTokens?: number;
   /** Locale for duplicate comparison and default number formatting. */
   locale?: Intl.LocalesArgument;

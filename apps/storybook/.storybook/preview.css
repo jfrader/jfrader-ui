@@ -12,3 +12,26 @@ body {
   color: var(--ui-color-text);
   font-family: var(--ui-font-sans);
 }
+
+.component-usage {
+  margin-block: var(--ui-space-6);
+  padding: var(--ui-space-4);
+  border: 1px solid var(--ui-color-border-control);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-color-text);
+}
+
+.component-usage > summary {
+  cursor: pointer;
+}
+
+.component-usage > summary:focus-visible,
+.component-props:focus-visible {
+  outline: 2px solid var(--ui-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.component-props {
+  max-inline-size: 100%;
+  overflow-x: auto;
+}

@@ -43,15 +43,15 @@ export interface ButtonProps extends Omit<ComponentPropsWithRef<'button'>, 'colo
   /** Consumer style overrides, merged after the component's own styles. */
   css?: Interpolation<Theme>;
   /**
-   * Replaces the native button. Spread ALL supplied props onto the operative element and attach
-   * the supplied ref. Both that ref and the forwarded ref refer to the rendered element, which
-   * need not be a button; the public forwarded-ref type remains HTMLButtonElement for compatibility.
-   * Overridden handlers, className and style win; compose behavior manually to retain both:
+   * Replaces the native button. Spread all supplied props onto the element and attach the supplied
+   * ref. Both refs target that element, even when it is not a button. The public ref type remains
+   * HTMLButtonElement for compatibility.
+   * Your handlers, className, and style override the supplied ones. Compose handlers to keep both:
    * `onClick={(e) => { p.onClick?.(e); mine(e); }}`.
-   * Only this render path joins data-ui markers into a token list; library selectors should use
+   * This render path joins data-ui markers into a token list. Library selectors should use
    * `[data-ui~="button"]`. The default button always has data-ui="button".
-   * Disabled anchors receive aria-disabled and remain focusable. Primary click/Enter activation
-   * is blocked by the supplied handler; auxiliary/middle-click navigation is NOT covered.
+   * Disabled anchors receive aria-disabled and stay focusable. The supplied handler blocks primary
+   * click and Enter activation; it does not block auxiliary or middle-click navigation.
    */
   render?: (props: ButtonRenderProps) => ReactNode;
 }

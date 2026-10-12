@@ -8,6 +8,7 @@ Every rule here exists because something went wrong without it.
 
 - Creating a new component or a new part of a compound component.
 - Changing a component's API, behavior, styles, or accessibility wiring.
+- Writing component descriptions, story explanations, prop documentation, or consumer guides.
 - Reviewing a component batch before commit.
 - Fixing an accessibility, performance, or state defect in a component.
 
@@ -363,6 +364,53 @@ Manual gates before calling a component 1.0 (record what was and wasn't tested):
 
 ## 8. Review checklist (use for every batch)
 
+### Documentation writing spec
+
+Write for someone choosing and using a component. Say what it does and what to do next.
+This applies to Storybook, public JSDoc, examples, READMEs, and consumer guides.
+
+**Component introduction**
+
+- Write one or two sentences, at most 40 words. Aim for fewer than 25.
+- Start with the action or result: “Choose a date”, “Show progress toward a goal”.
+- Use everyday words. Leave props, DOM roles, state ownership, and implementation details for
+  usage notes or the prop table.
+- Use nouns and verbs instead of adjectives. Omit praise such as “powerful”, “flexible”,
+  “seamless”, “intuitive”, and “beautiful”. Keep words required to name an API state or type,
+  such as `disabled` or “plain text”.
+- Keep the lead to one paragraph. A heading or bullet list belongs below the example.
+
+MentionInput's introduction: “Write a message and mention people with @ or channels with #.”
+
+**Details and examples**
+
+- Put the introduction in `parameters.docs.description.component` as a single-line string literal.
+  Put any usage notes in `parameters.docs.usage` as Markdown. The shared docs page shows
+  those notes in a “Usage notes” disclosure after the first example.
+- Group notes by the question they answer: Keyboard, Values, Forms, or Limits. Include only
+  sections the component needs. Use short bullets or paragraphs, one point at a time.
+- Preserve requirements, defaults, units, callback order, keyboard behavior, and limits.
+  Shortening prose must not remove a condition or turn an untested behavior into a guarantee.
+  Put a warning that changes how someone uses an example beside that example or prop too.
+- Describe each story's difference or the action to try. Skip “This story demonstrates” and
+  test-result narration. Story JSDoc appears in the docs; keep test rationale in code comments.
+- Prop JSDoc starts with what the prop changes. Add a default, unit, or exception when needed.
+  Keep API names exact and use backticks around them.
+- Prefer “Press Escape to close” to “Escape dismissal is supported”. Address the reader as
+  “you” when needed. Avoid semicolon chains, sales copy, reassurance, and design justification.
+- Keep each fact in one home. Link to setup or QA instructions instead of copying them into
+  every description. Code examples should show usage, not test fixtures.
+
+**Documentation review**
+
+Read every changed introduction, usage note, story description, and public JSDoc comment.
+Remove repetition, adjectives, and filler. Check the rewrite against the previous contracts.
+Run `pnpm verify:docs` for introduction coverage, paragraph/sentence limits, and word count;
+it checks structure, not meaning or writing quality. Open the rendered docs, try the usage
+disclosure with the keyboard, and check the first example and prop table still appear.
+
+### Component review
+
 - [ ] Need + API approved; no duplicate component; contract worksheet filled.
 - [ ] Controlled/uncontrolled matrix incl. falsy values, rejected controlled requests, callback
       count/order, external prop updates, reset behavior.
@@ -373,7 +421,7 @@ Manual gates before calling a component 1.0 (record what was and wasn't tested):
 - [ ] Tokens only; no generated files edited; `pnpm generate` run after token changes.
 - [ ] Stories + play tests per section 7; dimensions/regressions covered.
 - [ ] Performance: module-level styles, stable context values, explicit transition properties.
-- [ ] Docs surfaces updated (props/type exports, `llms.txt`/README status when relevant).
+- [ ] Docs surfaces updated and reviewed against the writing spec above; `pnpm verify:docs` passes.
 - [ ] Every claimed check actually run; unverified items listed honestly.
 
 ## 9. Maintenance

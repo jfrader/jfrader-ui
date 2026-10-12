@@ -12,7 +12,8 @@ const meta = {
   decorators: [(Story) => <div style={{ inlineSize: 420, maxInlineSize: '100%' }}><Story /></div>],
   parameters: { docs: {
     source: { code: '<ExpandingSearch triggerLabel="Search members" value={query} onValueChange={setQuery} />' },
-    description: { component: 'Compact disclosure built on SearchField. Enter or Space opens the field and focuses the native searchbox. Escape collapses without clearing the query; accepted closure returns focus to the button. Tab and Shift+Tab move naturally through the field and clear action; leaving closes without returning focus. Controlled open requests commit only when accepted. Query entry, clear, validation and form reset use SearchField. Reserve a growth lane in the toolbar; the lane keeps neighboring content in place. Filtering and results belong to the caller.' },
+    description: { component: 'Open a search field from a button without moving nearby toolbar items.' },
+    usage: '- Enter or Space opens and focuses the searchbox. Escape collapses without clearing the query; accepted closure returns focus to the button.\n- Tab and Shift+Tab move through the field and clear action. Leaving closes without returning focus. Controlled open requests take effect only when accepted.\n- SearchField handles query entry, clearing, validation and form reset. Supply filtering and results.\n- Reserve space for the field to expand in the toolbar.',
   } },
 } satisfies Meta<typeof ExpandingSearch>;
 export default meta;
@@ -307,7 +308,7 @@ export const RefAndStyles: Story = {
 };
 export const ForcedColors: Story = {
   ...PersistentOpen,
-  parameters: { docs: { description: { story: 'Structural fixture for forced-colors browser QA. The play checks the authored forced-colors rules; the runner does not emulate forced colors.' } } },
+  parameters: { docs: { description: { story: 'Checks CSS rules without emulating forced colors. Enable forced colors in the browser to check rendering.' } } },
   play: async ({ canvas }) => {
     const trigger = canvas.getByRole('button', { name: 'Search members', hidden: true });
     await expect(findConditionalRule(trigger, 'forced-colors: active')?.style.borderColor.toLowerCase()).toBe('buttontext');
@@ -315,7 +316,7 @@ export const ForcedColors: Story = {
   },
 };
 export const ReducedMotion: Story = {
-  parameters: { docs: { description: { story: 'The play stubs `matchMedia` to drive both branches: with reduced motion the search snaps open and closed; otherwise it springs through intermediate widths. Real media emulation is verified in browser QA.' } } },
+  parameters: { docs: { description: { story: 'Mocks `matchMedia` to test instant opening/closing with reduced motion and spring motion without it. Check rendering with browser media emulation.' } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const { shell } = parts(canvasElement);
     const win = shell.ownerDocument.defaultView!;

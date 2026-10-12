@@ -45,8 +45,9 @@ const meta = {
       source: { code: usage },
       description: {
         component:
-          'Single-value horizontal slider with elastic feedback for adjusting a setting by feel. Arrows move one step (horizontal arrows mirror in RTL); Shift+arrows and PageUp/Down move a large step; Home/End move to min/max; Enter and Space on the thumb do nothing. Marks act as magnetic detents while dragging (latch within 7px, release beyond 10px) and, when labelled, as buttons that set their value. Dragging past either end stretches the track up to 26px; the value stays within min/max. Reduced motion removes stretch, swell, tilt, tick pop and vibration; detents still apply. `haptics` opts into a short touch vibration where the platform supports it. Use Slider for ranges. Pass thumb ARIA through slotProps.thumb. Hidden form inputs do not provide native required validation. Touch screen-reader operability needs device testing.',
+          'Adjust a value by dragging a slider that stretches at its ends and snaps to marks.',
       },
+      usage: '- Use Slider for ranges. Pass thumb ARIA through `slotProps.thumb`. Hidden form inputs do not provide native required validation.\n- Arrows move one step; horizontal arrows mirror in RTL. Shift+arrows and PageUp/Down move a large step. Home/End move to min/max. Enter and Space on the thumb do nothing.\n- Marks latch within 7px and release beyond 10px while dragging. Labelled marks are buttons that set their value.\n- Dragging past an end stretches the track up to 26px; the value stays within min/max.\n- `haptics` enables touch vibration where supported. Reduced motion disables stretch, swell, tilt, tick pop and vibration; marks still latch.\n- Test touch screen-reader operation on a device.',
     },
   },
 } satisfies Meta<typeof ElasticSlider>;

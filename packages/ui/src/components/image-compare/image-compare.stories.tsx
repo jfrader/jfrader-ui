@@ -87,14 +87,15 @@ const meta = {
     docs: {
       source: { code: SOURCE },
       description: {
-        component: [
-          'Two aligned, identically cropped images split by a draggable divider. The divider is an APG slider: `value` is the percentage of **Before** visible, measured from inline-start (horizontal) or the top (vertical). 0 shows only After, 100 only Before; the clip, `aria-valuenow` and `aria-valuetext` always read the same accepted value.',
-          'Keyboard: arrows move one `step` (horizontal Left/Right follow the physical direction in RTL; Up always increases), Shift+arrows and PageUp/PageDown move `largeStep`, Home/End go to 0/100. The Center divider button and a double-click on the handle request 50.',
-          'Pointer: tap the frame to jump, or drag anywhere on it. On touch, a drag starts only along the reveal axis, so a vertical swipe over a horizontal comparison keeps scrolling the page.',
-          'Both images stay mounted: give each a meaningful, different `alt`. Captions are decorative and describe the slider. Name the slider with `label` or `slotProps.handle` ARIA; a root `aria-label` names the wrapper, not the slider. Do not put interactive content inside the images. Captions, `label`, `valueText` and `resetLabel` are caller-localized; percentages use `Intl.NumberFormat`.',
-          'Touch screen-reader operation of sliders needs real-device testing.',
-        ].join('\n\n'),
+        component: 'Compare two images by dragging a divider to reveal more of either image.',
       },
+      usage: `- Images are aligned and cropped the same way. The divider follows the APG slider pattern. \`value\` is the percentage of Before visible from inline-start horizontally or the top vertically: 0 shows After; 100 shows Before. The clip, \`aria-valuenow\` and \`aria-valuetext\` use the accepted value.
+- Arrows move one \`step\`; horizontal Left/Right follow physical direction in RTL, and Up always increases. Shift+arrows and PageUp/PageDown move \`largeStep\`; Home/End go to 0/100. Center divider and double-clicking the handle request 50.
+- Tap the frame to jump or drag anywhere on it. Touch dragging starts along the reveal axis, so a vertical swipe over a horizontal comparison scrolls the page.
+- Both images stay mounted. Give each a meaningful, different \`alt\`; do not put interactive content inside them. Captions are decorative and describe the slider.
+- Name the slider with \`label\` or \`slotProps.handle\` ARIA. A root \`aria-label\` names only the wrapper.
+- Localize captions, \`label\`, \`valueText\` and \`resetLabel\`. Percentages use \`Intl.NumberFormat\`.
+- Test touch screen-reader operation on a device.`,
     },
   },
 } satisfies Meta<typeof ImageCompare>;

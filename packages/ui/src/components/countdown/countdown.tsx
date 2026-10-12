@@ -35,7 +35,7 @@ export interface CountdownProps extends Omit<ComponentPropsWithRef<'div'>, 'chil
   pendingLabel?: ReactNode;
   invalidLabel?: ReactNode;
   invalidText?: string;
-  /** Authoritative epoch-ms source. Background callbacks run at the first executable wake-up. */
+/** Clock source in epoch milliseconds. Background callbacks run when execution next becomes possible. */
   clock?: () => number;
   /** Shared server snapshot for identical SSR and hydration output. */
   initialNow?: number;
@@ -267,7 +267,7 @@ function NumericRun({
   );
 }
 
-/** Noninteractive ARIA timer. Tab and every other key pass through; no focus or editable state. */
+/** Show an ARIA timer without controls. Tab and other keys pass through; it cannot be focused or edited. */
 export function Countdown({
   ref,
   target,

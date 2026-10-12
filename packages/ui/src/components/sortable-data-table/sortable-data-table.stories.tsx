@@ -35,8 +35,17 @@ const meta = {
     docs: {
       description: {
         component:
-          'Native sortable table for bounded collections. Tab/Shift+Tab visit the scroller and controls; Enter/Space activate sorting, and Space toggles selection. Sort alternates ascending/descending; a controlled null value resets sorting. Compose Pagination outside the table. No grid navigation, editing or virtualization. Manual mode requires a controlled sort value. Mixed-type accessors require a comparator; non-text sortable headings require sortLabel. Pin locale and timeZone for server rendering.',
+          'Sort rows by column and select rows in a table.',
       },
+      usage: `- Sorting alternates between ascending and descending. Set the controlled sort value to \`null\` to reset it.
+- Manual mode requires a controlled sort value.
+- Accessors that return multiple types need a comparator. Sortable headings without text need \`sortLabel\`.
+- Set \`locale\` and \`timeZone\` for server rendering.
+- Use this table for bounded collections. Add Pagination outside it. Grid navigation, editing and virtualization are not supported.
+
+### Keyboard
+- Tab and Shift+Tab visit the scroller and controls.
+- Enter or Space sorts a column. Space toggles row selection.`,
       source: {
         code: `<SortableDataTable rows={projects} getRowId={row => row.id} caption="Projects" columns={[{ id: 'name', header: 'Name', accessor: row => row.name }, { id: 'budget', header: 'Budget', accessor: row => row.budget, numeric: true }]} />`,
       },
@@ -452,7 +461,7 @@ export const ForcedColors: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Structural high-contrast fixture. Browser media emulation is needed to verify forced-colors rendering.',
+        story: 'Enable forced colors in the browser to check rendering. This story checks structure only.',
       },
     },
   },
@@ -470,7 +479,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural reduced-motion fixture. Browser media emulation is needed to verify the media-query override; reordering is always immediate.',
+          'Enable reduced motion in the browser to check the override. This story checks structure only; rows always reorder immediately.',
       },
     },
   },

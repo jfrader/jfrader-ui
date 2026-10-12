@@ -56,8 +56,20 @@ const meta = {
       source: { code: SOURCE },
       description: {
         component:
-          'Refresh a sized, scrollable feed by pulling downward from its top or activating the persistent native Refresh button. Enter and Space activate once; Tab and Shift+Tab navigate the button, scroll region and item controls. Arrows and Page keys scroll normally; Escape cancels a pull. The button follows the APG button pattern; there is no special pull-to-refresh ARIA pattern. Wheel gestures are not intercepted. Consumers update items before resolving onRefresh and own fetching and cancellation. Controlled refreshing accepts requests in the interaction commit; later external true is display-only. Reduced motion keeps the threshold and status without displacement. aria-labelledby and aria-describedby on slotProps.feed merge with the heading and subtitle; an aria-label alone replaces the heading as the feed name. The progress line springs home with the sheet. Nontext headings require a consumer accessible name. Real touch negotiation and screen-reader announcements require device QA.',
+          'Refresh a feed by pulling down from the top or pressing Refresh.',
       },
+      usage: `- Give the feed a size so it can scroll. Wheel gestures keep their browser behavior.
+- Fetch and cancel requests in your app. Update items before resolving \`onRefresh\`.
+- In controlled mode, accept refreshing requests during the interaction commit. Setting \`refreshing\` to true later only changes the display.
+- The progress line returns with the sheet. Reduced motion keeps the pull threshold and status without moving the sheet.
+- \`slotProps.feed\` merges \`aria-labelledby\` and \`aria-describedby\` with the heading and subtitle. An \`aria-label\` alone replaces the heading as the feed name.
+- Supply an accessible name when the heading has no text.
+- Check touch gestures and screen-reader announcements on a device.
+
+### Keyboard
+- Tab and Shift+Tab visit Refresh, the scroll region and item controls.
+- Enter or Space activates Refresh once. Arrows and Page keys scroll. Escape cancels a pull.
+- Refresh follows the APG button pattern; there is no pull-to-refresh ARIA pattern.`,
     },
   },
 } satisfies Meta<typeof StretchRefresh<Item>>;
@@ -610,7 +622,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Enable reduced motion in the operating system or browser to inspect static pull feedback. This story checks structure; media emulation belongs to browser QA.',
+          'Enable reduced motion to check pull feedback without movement. This story checks structure only.',
       },
     },
   },
@@ -620,7 +632,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Enable forced colors in the operating system or browser to inspect the solid indicator and focus outline. This story does not emulate the environment.',
+          'Enable forced colors to check the indicator and focus outline. This story does not enable forced colors.',
       },
     },
   },

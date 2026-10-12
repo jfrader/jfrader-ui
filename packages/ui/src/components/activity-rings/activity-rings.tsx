@@ -30,10 +30,10 @@ export interface ActivityMetric {
   label: string;
   /** Positive target; nonpositive or nonfinite goals render the metric as unavailable. */
   goal: number;
-  /** Sanctioned `Intl.NumberFormat` unit (`'kilometer'`, `'minute'`, `'hour'`, …); otherwise use `formatValue`. */
+  /** Unit supported by `Intl.NumberFormat` (`'kilometer'`, `'minute'`, `'hour'`, …); otherwise use `formatValue`. */
   unit?: string;
   tone?: ActivityTone;
-  /** Formats amounts for units Intl does not sanction; implement it with Intl. */
+  /** Formats amounts for units Intl does not support. Use Intl in the formatter. */
   formatValue?: (value: number, locale: string | undefined) => string;
 }
 export interface ActivityDay {
@@ -97,9 +97,8 @@ export type ActivityRingsMetricProps = Pick<
   keyof ActivityRingsPartProps<'button'> & keyof ActivityRingsPartProps<'div'>
 >;
 /**
- * The metric slot targets the element each legend row renders: a toggle button when
- * `interactiveLegend` is `true`, a plain row when it is `false` or omitted, and only props shared by
- * both when the flag is a runtime boolean.
+ * The metric slot targets a toggle button when `interactiveLegend` is `true`, or a row when false
+ * or omitted. A runtime boolean accepts only props shared by both elements.
  */
 type LegendMode =
   | {
@@ -453,10 +452,9 @@ function RingStroke({ laps, radius, strokeWidth, className, ...rest }: RingStrok
 }
 
 /**
- * Concentric goal rings over the UsageMeter model: each ring is one metric's value against its
- * goal. The SVG is decoration; the legend carries exact amounts, goals and percentages. Optional
- * native radio day picker (arrows native, Home/End added) and opt-in toggle-button legend
- * (Enter/Space isolate one ring).
+ * Compare each metric with its goal using the UsageMeter value rules. The SVG is decorative;
+ * the legend gives amounts, goals, and percentages. The optional day picker uses native radios
+ * with arrows and Home/End. Enable legend toggle buttons to isolate a ring with Enter/Space.
  */
 export function ActivityRings({
   ref,

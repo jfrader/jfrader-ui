@@ -33,6 +33,11 @@ const frameStyle = css({
 const meta = {
   title: 'Navigation/Stepper',
   component: Stepper,
+  parameters: {
+    docs: {
+      description: { component: 'Show progress through steps or return to a completed step.' },
+    },
+  },
   args: { steps: STEPS },
   argTypes: {
     orientation: { control: 'radio', options: ['horizontal', 'vertical'] },
@@ -592,7 +597,7 @@ export const ReducedMotion: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Spot-check fixture: toggle the OS reduced-motion setting and change steps. Connector and marker transitions drop to 0s.',
+        story: 'Enable reduced motion and change steps. Connector and marker transitions should take 0s.',
       },
     },
   },
@@ -611,7 +616,7 @@ export const ForcedColors: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Spot-check fixture for forced-colors mode: system-color marker boundaries, check and error glyphs.',
+        story: 'Enable forced colors to check marker borders, check glyphs and error glyphs use system colors.',
       },
     },
   },

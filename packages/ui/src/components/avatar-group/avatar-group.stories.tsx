@@ -78,6 +78,7 @@ const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
 const meta = {
   title: 'Data display/AvatarGroup',
   component: AvatarGroup,
+  parameters: { docs: { description: { component: 'Show people together, with a count for those who do not fit.' } } },
   tags: ['autodocs'],
   args: {
     members: SAMPLE_MEMBERS,

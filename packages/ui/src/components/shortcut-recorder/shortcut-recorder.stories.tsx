@@ -59,8 +59,14 @@ const meta = {
     docs: {
       description: {
         component:
-          'Records physical keyboard codes while the button is focused. Tab and Shift+Tab exit recording; Escape cancels; bare Backspace/Delete clear. Modified control keys remain valid chords. Platform detection uses an other-platform server snapshot: provide platform for exact first-paint caps. Key terminology and action messages are caller-localizable. Read-only controls remain focusable. Reserved bindings are caller-supplied advisories; browser and OS shortcuts may never reach the page. Confirming an application conflict reports the replaced binding; the caller owns unbinding it.',
+          'Press a key combination to record a shortcut and check for conflicts with other bindings.',
       },
+      usage: `- Recording uses physical keyboard codes while the button has focus. Read-only controls remain focusable.
+- Tab and Shift+Tab exit recording; Escape cancels; unmodified Backspace/Delete clear. Modified control keys can be recorded as chords.
+- Platform detection uses an other-platform server snapshot. Set platform to show the correct key caps on first paint.
+- The caller can translate key terminology and action messages.
+- Reserved bindings are caller-supplied warnings. Browser and OS shortcuts may never reach the page.
+- Confirming an application conflict reports the replaced binding; the caller must unbind it.`,
       source: {
         code: '<ShortcutRecorder label="Open search" defaultValue="mod+k" resetValue="mod+k" onValueChange={saveShortcut} />',
       },
@@ -636,7 +642,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Persistent recording fixture for external forced-colors browser QA. This play does not emulate the media feature.',
+          'Leaves recording active for a forced-colors browser check. This test does not emulate forced colors.',
       },
     },
   },
@@ -647,7 +653,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Persistent recording fixture for external reduced-motion browser QA. This play does not emulate the media feature.',
+          'Leaves recording active for a reduced-motion browser check. This test does not emulate the preference.',
       },
     },
   },
