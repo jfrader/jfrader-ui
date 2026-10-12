@@ -1,6 +1,5 @@
 import type {
   BoardPlayerCount, BoardSeatGeometryConfig, BoardSurfaceFrameConfig, BoardViewportProfile,
-  HiddenHandRadialRules, MatchSeatPresentationRules, TablePointsPlacementRules,
 } from './types';
 
 export const DEFAULT_SEAT_CONFIG: BoardSeatGeometryConfig = {
@@ -15,6 +14,8 @@ export const MATCH_SEAT_OVERRIDES: Partial<Record<BoardPlayerCount, Partial<Boar
 };
 
 const PHONE_TALL_FRAME: BoardSurfaceFrameConfig = {
+  rootPadding: '0.5rem 0.22rem 0.78rem', shellMaxWidth: '56rem', topStripGap: '0.78rem',
+  topStripMarginBottom: '0.42rem', bottomStripMarginTop: '0.42rem',
   boardWidth: 'min(calc(100% - 0.45rem), 56rem)', boardMaxWidth: 'calc(100% - 0.45rem)',
   boardHeight: 'min(88%, 41rem)', boardMaxHeight: '54vh', boardAspectRatio: 'auto',
   boardBorderRadius: '50% / 48%', boardInnerBorderRadius: '50% / 48%',
@@ -24,30 +25,43 @@ const PHONE_TALL_FRAME: BoardSurfaceFrameConfig = {
 
 export const FRAMES: Record<BoardViewportProfile, BoardSurfaceFrameConfig> = {
   phoneTall: PHONE_TALL_FRAME,
-  phoneCompact: { ...PHONE_TALL_FRAME, boardHeight: 'auto', boardMaxHeight: '62vh', boardAspectRatio: '1 / 1.14' },
+  phoneCompact: { ...PHONE_TALL_FRAME, boardHeight: 'auto', boardMaxHeight: '62vh', boardAspectRatio: '1 / 1.14', topStripGap: '0.66rem', topStripMarginBottom: '0.3rem' },
   phoneWide: {
+    rootPadding: '0.55rem 0.25rem 0.95rem', shellMaxWidth: '56rem', topStripGap: '0.82rem',
+    topStripMarginBottom: '0.52rem', bottomStripMarginTop: '0.5rem',
     boardWidth: 'auto', boardMaxWidth: 'calc(100% - 1.5rem)', boardHeight: 'min(100%, 18rem)',
     boardMaxHeight: '18rem', boardAspectRatio: '2.15 / 1', boardBorderRadius: '50% / 48%',
     boardInnerBorderRadius: '50% / 48%', boardBorderWidth: '0.72rem', boardOutlineWidth: '0.22rem',
     centerSize: '52%', seatWidth: '33%', seatMaxWidth: '11.2rem',
   },
   tablet: {
+    rootPadding: '0.86rem 0.35rem 1.12rem', shellMaxWidth: '56rem', topStripGap: '0.92rem',
+    topStripMarginBottom: '0.7rem', bottomStripMarginTop: '0.82rem',
     boardWidth: '108%', boardMaxWidth: '46rem', boardHeight: 'auto', boardMaxHeight: '34rem',
     boardAspectRatio: '1 / 1', boardBorderRadius: '50%', boardInnerBorderRadius: '50%',
     boardBorderWidth: '0.9rem', boardOutlineWidth: '0.24rem', centerSize: '55%', seatWidth: '35%', seatMaxWidth: '11.8rem',
   },
   tabletWide: {
+    rootPadding: '1rem 0.45rem 1.2rem', shellMaxWidth: '56rem', topStripGap: '0.94rem',
+    topStripMarginBottom: '0.72rem', bottomStripMarginTop: '0.9rem',
     boardWidth: 'min(calc(100% - 2.2rem), 47rem)', boardMaxWidth: 'calc(100% - 2.2rem)',
     boardHeight: 'min(60vh, 39.5rem)', boardMaxHeight: '41rem', boardAspectRatio: '1.2 / 1',
     boardBorderRadius: '50% / 48.6%', boardInnerBorderRadius: '50% / 48.6%',
     boardBorderWidth: '0.86rem', boardOutlineWidth: '0.23rem', centerSize: '53%', seatWidth: '34%', seatMaxWidth: '11.5rem',
   },
   desktop: {
+    rootPadding: '1rem 0.6rem 1.35rem', shellMaxWidth: '56rem', topStripGap: '1rem',
+    topStripMarginBottom: '0.72rem', bottomStripMarginTop: '0.92rem',
     boardWidth: 'min(calc(100% - 1.5rem), 50rem)', boardMaxWidth: 'calc(100% - 1.5rem)',
     boardHeight: 'min(56vh, 38rem)', boardMaxHeight: '56vh', boardAspectRatio: '1.38 / 1',
     boardBorderRadius: '50% / 48.6%', boardInnerBorderRadius: '50% / 48.6%',
     boardBorderWidth: '0.9rem', boardOutlineWidth: '0.24rem', centerSize: '54%', seatWidth: '33%', seatMaxWidth: '11.8rem',
   },
+};
+
+export const BOARD_TRANSLATE_Y: Record<BoardViewportProfile, string> = {
+  phoneCompact: '0rem', phoneTall: '-0.65rem', phoneWide: '-0.45rem',
+  tablet: '0rem', tabletWide: '0rem', desktop: '0rem',
 };
 
 const PHONE_TALL_SEAT: BoardSeatGeometryConfig = {
@@ -108,60 +122,5 @@ export const LOBBY_SEATS: Record<BoardViewportProfile, Partial<Record<BoardPlaye
     2: DESKTOP_SPARSE_LOBBY_SEAT, 4: DESKTOP_SPARSE_LOBBY_SEAT,
     6: { ...DEFAULT_SEAT_CONFIG, radiusYMultiplier: 1.02, sideWeightedYMultiplier: true,
       outwardOffsetY: 44, sideInset: 2.6, sideVerticalOffset: 1.8, topGroupShiftYPx: -22, bottomGroupShiftYPx: -22 },
-  },
-};
-
-export const DEFAULT_HIDDEN_HAND_RADIAL_RULES: HiddenHandRadialRules = {
-  tableInsetPx: 62, axialInsetReductionPx: 22, distanceScale: 0.82, verticalLiftPx: 1.5,
-  fanSpacingPx: 11, fanArcDepthPx: 1.9, fanSpreadDeg: 6.3, minClearancePx: 9, handOrigin: '50% 114%',
-};
-export const DEFAULT_TABLE_POINTS_PLACEMENT_RULES: TablePointsPlacementRules = {
-  sideOffsetDesktopPx: 92, sideOffsetMobilePx: 64, sideOffsetMobileByPlayerCount: { 2: 80, 4: 64, 6: 52 },
-  inwardNudgeByPlayerCount: { 2: -34, 4: -10, 6: -24 },
-  radialInsetDesktopPx: 80, radialInsetMobilePx: 56, tangentialOffsetDesktopPx: 40, tangentialOffsetMobilePx: 28,
-  seatAdjustments: {
-    bottom: { radialDesktopPx: 0, radialMobilePx: 0, tangentialDesktopPx: 16, tangentialMobilePx: 20 },
-    front: { radialDesktopPx: 20, radialMobilePx: 28, tangentialDesktopPx: 20, tangentialMobilePx: -8 },
-    neutral: { radialDesktopPx: 0, radialMobilePx: 0, tangentialDesktopPx: 0, tangentialMobilePx: 0 },
-  },
-  tiltDesktopDeg: 10, tiltMobileDeg: 24, imageHeightDesktop: '1.35rem', imageHeightMobile: '1.1rem', pileGap: '0.24rem',
-};
-
-const PHONE_TALL_PRESENTATION: MatchSeatPresentationRules = {
-  avatarFrameSizePx: 58, meTranslateY: 20, lowerSideTranslateY: 24, topSeatAvatarNudgeY: 0,
-  hideTopSeatAvatarNudgeOnProfiles: ['phoneTall'], hiddenHandCardWidth: 'clamp(1.9rem, 5.35vw, 2.1rem)',
-  hiddenHandScale: 1,
-  hiddenHandRules: { ...DEFAULT_HIDDEN_HAND_RADIAL_RULES, tableInsetPx: 42, distanceScale: 0.7 },
-  tablePoints: { imageHeightMobile: '1.16rem' },
-};
-const BASE_PRESENTATION: MatchSeatPresentationRules = {
-  avatarFrameSizePx: 56, meTranslateY: 22, lowerSideTranslateY: 24, topSeatAvatarNudgeY: 0,
-  hideTopSeatAvatarNudgeOnProfiles: [], hiddenHandCardWidth: 'clamp(1.82rem, 5.1vw, 2.02rem)',
-  hiddenHandScale: 1, hiddenHandRules: DEFAULT_HIDDEN_HAND_RADIAL_RULES,
-};
-export const MATCH_PRESENTATIONS: Record<BoardViewportProfile, MatchSeatPresentationRules> = {
-  phoneTall: PHONE_TALL_PRESENTATION,
-  phoneCompact: { ...PHONE_TALL_PRESENTATION, topSeatAvatarNudgeY: -28 },
-  phoneWide: {
-    ...BASE_PRESENTATION, meTranslateY: 16, lowerSideTranslateY: 18,
-    hiddenHandCardWidth: 'clamp(0.68rem, 2vw, 0.8rem)',
-    hiddenHandRules: { tableInsetPx: 32, axialInsetReductionPx: 20, distanceScale: 0.73, verticalLiftPx: 1.4,
-      fanSpacingPx: 10.3, fanArcDepthPx: 1.8, fanSpreadDeg: 6, minClearancePx: 8.5, handOrigin: '50% 112%' },
-    tablePoints: { imageHeightMobile: '0.64rem', inwardNudgeByPlayerCount: { 2: -34, 4: -10, 6: -10 } },
-  },
-  tablet: {
-    ...BASE_PRESENTATION, meTranslateY: 20,
-    hiddenHandRules: { tableInsetPx: 64, axialInsetReductionPx: 23, distanceScale: 0.93, verticalLiftPx: 1.8,
-      fanSpacingPx: 11.4, fanArcDepthPx: 2, fanSpreadDeg: 6.6, minClearancePx: 9.5, handOrigin: '50% 116%' },
-  },
-  tabletWide: {
-    ...BASE_PRESENTATION,
-    hiddenHandRules: { tableInsetPx: 68, axialInsetReductionPx: 29, distanceScale: 0.96, verticalLiftPx: 0,
-      fanSpacingPx: 12, fanArcDepthPx: 2.2, fanSpreadDeg: 7, minClearancePx: 10, handOrigin: '50% 117%' },
-  },
-  desktop: {
-    ...BASE_PRESENTATION,
-    hiddenHandRules: { tableInsetPx: 72, axialInsetReductionPx: 36, distanceScale: 1, verticalLiftPx: 2.2,
-      fanSpacingPx: 12.6, fanArcDepthPx: 2.3, fanSpreadDeg: 7.4, minClearancePx: 10.5, handOrigin: '50% 118%' },
   },
 };

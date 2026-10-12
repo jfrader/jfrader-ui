@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -6,9 +7,13 @@ import { GameCard } from '../game-card';
 import { ThemeRoot } from '../theme-root';
 import {
   GameTable, buildAlternatingSlots, buildBoardLayoutModel, buildTableOrderSlots,
-  getMatchSeatPresentationForIndex, getTablePointSeatIndexes, resolveTableTurnDirection,
+  getTablePointSeatIndexes, resolveTableTurnDirection,
   type BoardPlayerCount, type BoardViewportProfile, type GameTableProps, type SeatLike,
+  resolveBoardViewportProfile,
 } from './index';
+import { REFERENCE_GEOMETRY, BREAKPOINT_CASES, REFERENCE_SLOT_KEYS } from './reference-fixtures';
+import { ReferenceShell } from './reference-shell.fixture';
+import { validateSlots } from './table-slots';
 
 interface Player extends SeatLike { name: string }
 const SEATS: [Player, Player, Player, Player, Player, Player] = [
@@ -20,6 +25,7 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
   { key: 'frankie', teamIdx: 1, name: 'Frankie' },
 ];
 const COUNTS = [2, 4, 6] as const;
+const measurementFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 function required<T>(value: T | undefined): T {
   if (value === undefined) throw new Error('Missing fixture item');
   return value;
@@ -72,9 +78,22 @@ Pass seat chrome through \`renderSeat(slot, index, geometry)\`. Use \`header\`, 
 ### Geometry
 Give the parent a block size and pass current viewport dimensions in CSS pixels. Update \`viewport\` on resize; the component does not read the browser viewport, so server and client can share the same model.
 \`seats\` fills empty places, alternates teams and puts your seat first. \`slots\` preserves a prebuilt visual order and must contain exactly \`players\` places; order it with the exported builders when needed. Do not pass both.
-The pure model retains the reference's surface frames, seat geometry and match seat presentation. Hand sizing, command bars and played-card piles remain consumer layouts.
-The shell reserves \`--game-table-seat-clearance\` above and below the surface (32px by default); increase it for taller seat chrome.
+GameTable owns surface framing and seat coordinates. Avatars, hands, fans, points and card piles belong to children; their presentation rules are not public table APIs. Geometry coefficients remain profile presets, not theme tokens.
+The default shell padding, strip spacing, maximum width and match translation follow the reference. The lobby landscape auto/auto frame uses a 100% height constraint rather than collapsing to its border; this is an intentional deviation.
+\`seats\` requires compatible alternating teams (at most half the places per team for 2/4/6); incompatible capacities and duplicate player/slot keys throw. Use \`slots\` for arbitrary orders or teams.
+\`clearance\` reserves extra block-axis space around the surface; the default is zero for reference framing. There is no automatic fit or content measurement. Large cards and tall seat chrome can overlap or be clipped in short containers. Increase clearance, reduce chrome/card size, or give the table more height; changing clearance also changes percentage-based surface dimensions. The landscape examples use 32px/64px/96px for sm/md/lg, not universal safe minima.
+Clearance can separate seats from the dock while making the surface smaller; it does not prevent seats from overlapping each other. Six lg cards do not fit in the 840×360 example even with the dock cleared. Use more height or smaller cards for that composition.
 Coordinates are measured from inline-start and mirror with \`dir="rtl"\`. \`data-game-surface="true"\` marks the surface for measuring future card flights.
+
+### Measuring flights
+Query from the root ref, never from the document (multiple tables may exist):
+\`\`\`tsx
+const surface = tableRef.current?.querySelector<HTMLElement>('[data-game-surface="true"]');
+const box = surface?.getBoundingClientRect();
+\`\`\`
+\`box\` is the transformed viewport border box, including borders (not outlines). Absolute-child percentages resolve against the padding box, excluding borders; do not multiply them by \`box.width\`. For an axis-aligned positive scale, use \`scaleX = box.width / surface.offsetWidth\` (and height/offsetHeight for Y); viewport-to-local border-box coordinates are \`(clientX - box.left) / scaleX\`, with the inverse \`box.left + localX * scaleX\`. Subtract the computed physical border widths for padding-box coordinates. RTL inline-start coordinates are \`paddingBoxWidth - physicalX\`; card flight viewport coordinates themselves are not mirrored. Measure both actual endpoints instead of deriving them from seat percentages. Rotation, skew and negative scale require the full transform matrix, not these scale formulas.
+Measure again after viewport updates, resize, scroll, zoom or ancestor transform changes. Measurements are snapshots, not a cache maintained by GameTable.
+\`offsetWidth\` and \`offsetHeight\` are integer-rounded; use a ResizeObserver border-box measurement if subpixel scale precision matters.
 
 ### Keyboard
 The table is a passive layout, not an APG grid or application. It adds no roles, landmarks, focus movement, state or animation; supplied controls keep their own semantics and native tab order. Floating content is table-local, not a dialog or portal.`,
@@ -120,7 +139,7 @@ const matrixStory = (profile: BoardViewportProfile, theme: 'dark' | 'light'): St
     <div style={{ display: 'grid', gap: vars.space[6], inlineSize: 'max-content' }}>
       {COUNTS.map((players) => (
         <ThemeRoot key={players} theme={theme} style={{ inlineSize: args.viewport.width, blockSize: args.viewport.height }}>
-          <GameTable {...args} slots={undefined} players={players} seats={seatsFor(players)} header={`Poker · ${players / 2}v${players / 2}`} />
+          <GameTable {...args} clearance={32} slots={undefined} players={players} seats={seatsFor(players)} header={`Poker · ${players / 2}v${players / 2}`} />
         </ThemeRoot>
       ))}
     </div>
@@ -179,7 +198,6 @@ export const SlotOrderAndGeometry: Story = {
           profiles.push(layout.profile);
           groupShifts.push(required(layout.seatGeometries[0]).groupShiftY);
           await expect(required(layout.seatGeometries[0]).leftPercent).toBeCloseTo(50, 8);
-          await expect(getMatchSeatPresentationForIndex({ layout, seatIndex: 0, isMe: true }).translateY).toBe(profile === 'phoneWide' ? 16 : profile === 'desktop' || profile === 'tabletWide' ? 22 : 20);
         }
       }
     }
@@ -188,7 +206,6 @@ export const SlotOrderAndGeometry: Story = {
     const compact = buildBoardLayoutModel({ surface: 'match', totalSeats: 6, viewport: { ...VIEWPORTS.phoneCompact, aspectRatio: 412 / 816 } });
     const desktop = buildBoardLayoutModel({ surface: 'match', totalSeats: 6, viewport: { ...VIEWPORTS.desktop, aspectRatio: 1440 / 900 } });
     await expect(required(compact.seatGeometries[1]).leftPercent).not.toBeCloseTo(required(desktop.seatGeometries[1]).leftPercent, 4);
-    await expect(getMatchSeatPresentationForIndex({ layout: compact, seatIndex: 3, isMe: false }).avatarNudgeY).toBe(-28);
     const expectedDesktopPositions = {
       2: { inline: 33.966578105553985, block: 6.4102692469195155 },
       4: { inline: 9.019573022886519, block: 79.28531809989322 },
@@ -260,5 +277,180 @@ export const MirroredSeats: Story = {
       await expect((a.x + a.width / 2 - ltrBox.x) + (b.x + b.width / 2 - rtlBox.x)).toBeCloseTo(ltrBox.width, 1);
       await expect(a.y - ltrBox.y).toBeCloseTo(b.y - rtlBox.y, 1);
     }
+  },
+};
+
+export const ReferenceModelFixtures: Story = {
+  play: async () => {
+    await expect(REFERENCE_GEOMETRY).toHaveLength(36);
+    for (const [surface, profile, totalSeats, ...positions] of REFERENCE_GEOMETRY) {
+      const viewport = VIEWPORTS[profile];
+      const layout = buildBoardLayoutModel({ surface, totalSeats, viewport: { ...viewport, aspectRatio: viewport.width / viewport.height } });
+      await expect(layout.seatGeometries).toHaveLength(positions.length);
+      for (const [index, position] of positions.entries()) {
+        const geometry = required(layout.seatGeometries[index]);
+        const actual = [geometry.leftPercent, geometry.topPercent, geometry.seatShiftX, geometry.seatShiftY, geometry.groupShiftY];
+        for (const [axis, value] of position.entries()) await expect(required(actual[axis])).toBeCloseTo(value, 4);
+      }
+    }
+    for (const [width, height, profile] of BREAKPOINT_CASES) {
+      await expect(resolveBoardViewportProfile({ width, height })).toBe(profile);
+    }
+  },
+};
+
+export const InputConservation: Story = {
+  play: async () => {
+    for (const direction of ['clockwise', 'counterclockwise'] as const) {
+      for (const [count, keys] of REFERENCE_SLOT_KEYS[direction].entries()) {
+        await expect(buildAlternatingSlots(SEATS.slice(0, count), 6, direction).map((slot) => slot.key)).toEqual(keys);
+      }
+    }
+    for (const players of COUNTS) {
+      for (const direction of ['clockwise', 'counterclockwise'] as const) {
+        for (const seats of [seatsFor(players), seatsFor(players).map((seat) => ({ ...seat, isMe: false })), seatsFor(players).map((seat) => ({ ...seat, isMe: seat.key === 'blair' }))]) {
+          const slots = buildAlternatingSlots(seats, players, direction);
+          await expect(slots.flatMap((slot) => slot.player ? [slot.player.key] : []).sort()).toEqual(seats.map((seat) => seat.key).sort());
+          await expect(new Set(slots.map((slot) => slot.key)).size).toBe(players);
+          const local = seats.find((seat) => seat.isMe);
+          if (local) await expect(required(slots[0]).player?.key).toBe(local.key);
+        }
+      }
+    }
+    await expect(() => buildAlternatingSlots([SEATS[0], { ...SEATS[2], key: 'other' }], 2, 'clockwise')).toThrow('team 0 capacity is 1');
+    await expect(() => buildAlternatingSlots([SEATS[0], SEATS[0]], 2, 'clockwise')).toThrow('unique');
+    await expect(() => buildTableOrderSlots([SEATS[0], SEATS[0]], 'clockwise')).toThrow('unique');
+    const slot = { key: 'same', teamIdx: 0, player: SEATS[0] } as const;
+    await expect(() => validateSlots([slot, slot])).toThrow('unique');
+    const collision = buildAlternatingSlots([{ ...SEATS[0], key: 'slot-1' }], 2, 'clockwise');
+    await expect(collision.map((slot) => slot.key)).toEqual(['slot-1', 'slot-1-empty']);
+  },
+};
+
+export const ReferenceDomFraming: Story = {
+  render: () => (
+    <div style={{ inlineSize: 'max-content' }}>
+      {REFERENCE_GEOMETRY.map(([surface, profile, players]) => (
+        <div key={`${surface}-${profile}-${players}`} data-parity-case={`${surface}-${profile}-${players}`} style={{ display: 'flex' }}>
+          <div style={{ inlineSize: VIEWPORTS[profile].width, blockSize: VIEWPORTS[profile].height }}>
+            <ReferenceShell profile={profile} surface={surface} players={players} />
+          </div>
+          <div style={{ inlineSize: VIEWPORTS[profile].width, blockSize: VIEWPORTS[profile].height }}>
+            <GameTable players={players} seats={[]} viewport={VIEWPORTS[profile]} surface={surface} header="Poker" dock={<Button>Check</Button>} renderSeat={(_, index) => <>Seat {index}</>} />
+          </div>
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const pair of canvasElement.querySelectorAll<HTMLElement>('[data-parity-case]')) {
+      const reference = required(pair.querySelector<HTMLElement>('[data-reference-root]') ?? undefined).getBoundingClientRect();
+      const table = required(pair.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined).getBoundingClientRect();
+      const a = required(pair.querySelector<HTMLElement>('[data-reference-surface]') ?? undefined).getBoundingClientRect();
+      const b = required(pair.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
+      // The documented auto/auto lobby constraint is intentionally not reference parity.
+      if (pair.dataset.parityCase?.startsWith('lobby-phoneWide')) {
+        await expect(a.width).toBeLessThan(32);
+        await expect(b.width).toBeGreaterThan(100);
+        await expect(b.height).toBeGreaterThan(100);
+        continue;
+      }
+      await expect(b.width).toBeCloseTo(a.width, 1);
+      await expect(b.height).toBeCloseTo(a.height, 1);
+      await expect(b.x - table.x).toBeCloseTo(a.x - reference.x, 1);
+      await expect(b.y - table.y).toBeCloseTo(a.y - reference.y, 1);
+      const expectedSeats = pair.querySelectorAll('[data-reference-seat]');
+      const actualSeats = pair.querySelectorAll('[data-ui="game-table-seat"]');
+      for (const [index, seat] of Array.from(expectedSeats).entries()) {
+        const x = seat.getBoundingClientRect();
+        const y = required(actualSeats[index]).getBoundingClientRect();
+        await expect(y.x - table.x).toBeCloseTo(x.x - reference.x, 1);
+        await expect(y.y - table.y).toBeCloseTo(x.y - reference.y, 1);
+        await expect(y.width).toBeCloseTo(x.width, 1);
+      }
+    }
+  },
+};
+
+const cardComposition = (clearance: boolean): Story => ({
+  args: { viewport: VIEWPORTS.phoneWide },
+  parameters: { docs: { description: { story: clearance ? 'Explicit clearance separates each own seat from the dock. Larger cards can still overlap other seats; use more height or smaller cards.' : 'Compare sm, md and lg cards at 840×360 with reference framing. The larger cards overlap the dock.' } } },
+  render: (args) => (
+    <div style={{ inlineSize: 'max-content' }}>
+      {(['sm', 'md', 'lg'] as const).map((size, index) => (
+        <div key={size} data-card-composition={size} style={{ inlineSize: 840, blockSize: 360 }}>
+          <GameTable {...args} clearance={clearance ? [32,64,96][index] : 0} renderSeat={(slot) => (
+            <GameCard size={size} label={`${slot.player?.name}: hidden card`} />
+          )} />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const wrapper of canvasElement.querySelectorAll('[data-card-composition]')) {
+      const own = required(wrapper.querySelector<HTMLElement>('[data-ui="game-table-seat"]') ?? undefined).getBoundingClientRect();
+      const dock = required(wrapper.querySelector<HTMLElement>('[data-ui="game-table-dock"]') ?? undefined).getBoundingClientRect();
+      if (clearance) await expect(own.bottom).toBeLessThanOrEqual(dock.top);
+      else if (wrapper.getAttribute('data-card-composition') !== 'sm') await expect(own.bottom).toBeGreaterThan(dock.top);
+      await expect(own.height).toBeGreaterThan(0);
+    }
+  },
+});
+export const LandscapeCardSizes = cardComposition(false);
+export const LandscapeCardSizesWithClearance = cardComposition(true);
+
+function ResizingTables() {
+  const [viewport, setViewport] = useState(VIEWPORTS.phoneCompact);
+  const first = useRef<HTMLDivElement>(null);
+  const second = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState('');
+  return (
+    <>
+      <Button onClick={() => setViewport(VIEWPORTS.phoneWide)}>Landscape viewport</Button>
+      <Button onClick={() => {
+        const a = first.current?.querySelector<HTMLElement>('[data-game-surface]');
+        const b = second.current?.querySelector<HTMLElement>('[data-game-surface]');
+        setMeasured(a && b && a !== b ? `${measurementFormat.format(a.getBoundingClientRect().width)} / ${measurementFormat.format(b.getBoundingClientRect().width)}` : 'Missing surface');
+      }}>Measure tables</Button>
+      <output>{measured}</output>
+      {[first, second].map((ref, index) => (
+        <section key={index} style={{ inlineSize: viewport.width, blockSize: viewport.height, transform: index ? 'scale(0.75)' : undefined, transformOrigin: 'top left' }}>
+          <div style={{ blockSize: '100%' }}>
+            <GameTable ref={ref} dir={index ? 'rtl' : 'ltr'} players={2} slots={buildTableOrderSlots([SEATS[0],SEATS[2]], 'clockwise')} viewport={viewport} renderSeat={(slot) => <span>{slot.player?.name}</span>} />
+          </div>
+        </section>
+      ))}
+    </>
+  );
+}
+export const WrappedTablesAndViewportUpdate: Story = {
+  render: () => <ResizingTables />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Measure tables' }));
+    const before = canvas.getByRole('status').textContent;
+    const tables = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]');
+    const a = required(tables[0]).querySelector<HTMLElement>('[data-game-surface]');
+    const b = required(tables[1]).querySelector<HTMLElement>('[data-game-surface]');
+    if (!a || !b) throw new Error('Missing scoped surface');
+    await expect(a).not.toBe(b);
+    await expect(b.getBoundingClientRect().width / b.offsetWidth).toBeCloseTo(0.75, 2);
+    const box = b.getBoundingClientRect();
+    const scaleX = box.width / b.offsetWidth;
+    const scaleY = box.height / b.offsetHeight;
+    const clientX = box.left + 20 * scaleX;
+    const clientY = box.top + 30 * scaleY;
+    await expect((clientX - box.left) / scaleX).toBeCloseTo(20, 5);
+    await expect((clientY - box.top) / scaleY).toBeCloseTo(30, 5);
+    const firstSeat = required(required(tables[0]).querySelector<HTMLElement>('[data-ui="game-table-seat"]') ?? undefined).getBoundingClientRect();
+    const secondSeat = required(required(tables[1]).querySelector<HTMLElement>('[data-ui="game-table-seat"]') ?? undefined).getBoundingClientRect();
+    const firstBox = a.getBoundingClientRect();
+    const ltrFraction = (firstSeat.x + firstSeat.width / 2 - firstBox.left) / firstBox.width;
+    const rtlFraction = (secondSeat.x + secondSeat.width / 2 - box.left) / box.width;
+    await expect(ltrFraction + rtlFraction).toBeCloseTo(1, 4);
+    await userEvent.click(canvas.getByRole('button', { name: 'Landscape viewport' }));
+    await expect(required(tables[0])).toHaveAttribute('data-profile', 'phoneWide');
+    await userEvent.click(canvas.getByRole('button', { name: 'Measure tables' }));
+    await expect(canvas.getByRole('status').textContent).not.toBe(before);
   },
 };
