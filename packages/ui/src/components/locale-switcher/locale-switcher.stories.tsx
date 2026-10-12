@@ -13,9 +13,16 @@ const OPTIONS = [
   { value: 'ar', label: 'العربية', lang: 'ar', href: '/ar/pricing' },
 ] as const satisfies readonly LocaleSwitcherOption[];
 const PAIR = OPTIONS.slice(0, 2);
+// Short visible codes; the native name stays the accessible name.
+const SHORT_PAIR = [
+  { value: 'es', label: 'ES', ariaLabel: 'Español', lang: 'es', href: '/es/precios' },
+  { value: 'en', label: 'EN', ariaLabel: 'English', lang: 'en', href: '/en/pricing' },
+] as const satisfies readonly LocaleSwitcherOption[];
 const TRIGGER_LABEL = 'Change language';
 const TRIGGER_NAME = `${TRIGGER_LABEL} English`;
 const NAV_LABEL = 'Language';
+// Landmark names must differ when a story renders more than one navigation.
+const SECOND_NAV_LABEL = 'Site language';
 // Regional indicator symbols: the code points flag emoji are made of.
 const FLAG_GLYPHS = /[\u{1F1E6}-\u{1F1FF}]/u;
 
@@ -75,6 +82,8 @@ const meta = {
 - \`menu\` is the default. Its trigger shows the current language. Supply a localized \`triggerLabel\` naming the action, such as "Change language". Assistive technology reads it before the current label, and it names the menu.
 - \`swap\` shows one link to the other language on a two-language site. Other option counts warn in development and use the first noncurrent option. With no noncurrent option, it renders no link.
 - \`inline\` lists all options in a navigation landmark. Supply its accessible name with \`label\`. The current language is plain text, not a tab stop.
+- \`segmented\` lists all options like \`inline\`, in a bordered pill group. The current language is filled with the accent.
+- Set an option's \`ariaLabel\` to its native name when \`label\` is a short code, such as \`ES\`. The visible label is then hidden from assistive tech and the native name is what it reads; interactive parts (links, the menu trigger) take it as their accessible name.
 - Use an option's \`render\` callback for router links. Spread every supplied prop, including the ref and event handlers, onto the returned link.
 
 ### Menu state
@@ -84,7 +93,7 @@ const meta = {
 - On the menu trigger, Enter, Space, or ArrowDown opens on the first item. ArrowUp opens on the last.
 - In the menu, arrows move and wrap. Home and End jump to the first and last items. Type a native name to move to its option.
 - Enter follows the focused link. Space clicks it. Escape closes and returns focus to the trigger. Tab closes and lets focus move on.
-- Inline and swap links follow native Tab order.`,
+- Inline, segmented, and swap links follow native Tab order.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive).
@@ -135,7 +144,8 @@ async function expectFocused(canvasElement: HTMLElement, name: string) {
 
 async function expectClosed(canvasElement: HTMLElement) {
   await waitFor(() => expect(bodyOf(canvasElement).queryByRole('menu')).toBeNull());
-  await expect(getTrigger(canvasElement)).toHaveAttribute('aria-expanded', 'false');
+  const trigger = within(canvasElement).getByRole('button', { name: new RegExp(`^${TRIGGER_LABEL}`) });
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 }
 
 async function expectOptionLink(link: HTMLElement, option: LocaleSwitcherOption, current: boolean) {
@@ -332,17 +342,103 @@ export const Inline: Story = {
 
 export const InlineLightTheme: Story = { ...Inline, decorators: [withLightTheme] };
 
+export const Segmented: Story = {
+  args: { variant: 'segmented', options: SHORT_PAIR },
+  play: async ({ canvas }) => {
+    navigate.mockClear();
+    const nav = canvas.getByRole('navigation', { name: NAV_LABEL });
+    await expect(nav).toHaveAttribute('data-variant', 'segmented');
+    // The visible text is the short code; the name keeps it and adds the native name.
+    const options = within(nav)
+      .getAllByRole('listitem')
+      .map((item) => item.querySelector('[data-ui="locale-switcher-option"]') as HTMLElement);
+    await expect(options).toHaveLength(2);
+    await expect(options[0]).toHaveTextContent(/^ES Español$/);
+    await expect(options[1]).toHaveTextContent(/^EN English$/);
+
+    const current = options[1]!;
+    await expect(current.tagName).toBe('SPAN');
+    await expect(current).toHaveAttribute('aria-current', 'true');
+    await expect(current).not.toHaveAttribute('href');
+    await expect(getComputedStyle(current).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+
+    const [link, ...others] = within(nav).getAllByRole('link');
+    await expect(others).toHaveLength(0);
+    await expect(link).toHaveTextContent('ES');
+    await expect(link).toHaveAccessibleName('ES Español');
+    await expectOptionLink(link!, SHORT_PAIR[0], false);
+
+    await userEvent.tab();
+    await expect(link).toHaveFocus();
+    await expect(getComputedStyle(link!).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Enter}');
+    await expect(callValues(navigate)).toEqual(['/es/precios']);
+  },
+};
+
+export const SegmentedLightTheme: Story = { ...Segmented, decorators: [withLightTheme] };
+
+export const SegmentedSizes: Story = {
+  args: { variant: 'segmented', options: SHORT_PAIR },
+  render: (args) => (
+    <div style={stackStyle}>
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <LocaleSwitcher {...args} key={size} size={size} label={`${NAV_LABEL} ${size}`} />
+      ))}
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    // The pill matches the menu trigger heights.
+    const heights = canvas.getAllByRole('list').map((list) => list.getBoundingClientRect().height);
+    await expect(heights[0]).toBeGreaterThanOrEqual(32);
+    await expect(heights[1]).toBeGreaterThanOrEqual(40);
+    await expect(heights[2]).toBeGreaterThanOrEqual(48);
+  },
+};
+
+// `ariaLabel` names the option in every variant, including the menu trigger's current label.
+export const AriaLabels: Story = {
+  args: { options: SHORT_PAIR },
+  render: (args) => (
+    <div style={stackStyle}>
+      <LocaleSwitcher {...args} />
+      <LocaleSwitcher {...args} variant="swap" />
+      <LocaleSwitcher {...args} variant="inline" />
+    </div>
+  ),
+  play: async ({ canvasElement, canvas }) => {
+    const trigger = canvas.getByRole('button', { name: `${TRIGGER_LABEL} EN English` });
+    await expect(trigger).toHaveAccessibleName(`${TRIGGER_LABEL} EN English`);
+    for (const link of canvas.getAllByRole('link')) await expect(link).toHaveAccessibleName('ES Español');
+    const inlineCurrent = canvas
+      .getByRole('navigation')
+      .querySelector('[aria-current="true"]') as HTMLElement;
+    await expect(inlineCurrent).toHaveTextContent('EN');
+    await expect(inlineCurrent).toHaveTextContent('English');
+
+    await userEvent.click(trigger);
+    const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER_LABEL });
+    const items = within(menu).getAllByRole('menuitem');
+    await expect(items).toHaveLength(2);
+    await expect(items[0]).toHaveAccessibleName('ES Español');
+    await expect(items[1]).toHaveAccessibleName('EN English');
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+  },
+};
+
 export const Semantics: Story = {
   render: (args) => (
     <div style={stackStyle}>
       <LocaleSwitcher {...args} />
       <LocaleSwitcher {...args} variant="swap" options={PAIR} />
       <LocaleSwitcher {...args} variant="inline" />
+      <LocaleSwitcher {...args} variant="segmented" label={SECOND_NAV_LABEL} />
     </div>
   ),
   play: async ({ canvasElement, canvas }) => {
     const roots = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="locale-switcher"]'));
-    await expect(roots.map((root) => root.dataset.variant)).toEqual(['menu', 'swap', 'inline']);
+    await expect(roots.map((root) => root.dataset.variant)).toEqual(['menu', 'swap', 'inline', 'segmented']);
     // The menu trigger is the only button; links are never buttons.
     await expect(canvas.getAllByRole('button')).toHaveLength(1);
     await expect(canvasElement.querySelectorAll('select, [role="button"]:not(button)')).toHaveLength(0);
@@ -362,16 +458,19 @@ export const Rtl: Story = {
     <div style={stackStyle}>
       <LocaleSwitcher {...args} />
       <LocaleSwitcher {...args} variant="inline" />
+      <LocaleSwitcher {...args} variant="segmented" label={SECOND_NAV_LABEL} />
     </div>
   ),
   play: async ({ canvasElement, canvas }) => {
-    // Logical properties: the trigger and the list flow from the inline start (the right).
+    // Logical properties: the trigger and the lists flow from the inline start (the right).
     const trigger = getTrigger(canvasElement);
     const label = within(trigger).getByText('English');
     const chevron = trigger.lastElementChild!;
     await expect(chevron.getBoundingClientRect().right).toBeLessThanOrEqual(label.getBoundingClientRect().left);
-    const [first, second] = within(canvas.getByRole('navigation')).getAllByRole('listitem');
-    await expect(second!.getBoundingClientRect().right).toBeLessThanOrEqual(first!.getBoundingClientRect().left);
+    for (const name of [NAV_LABEL, SECOND_NAV_LABEL]) {
+      const [first, second] = within(canvas.getByRole('navigation', { name })).getAllByRole('listitem');
+      await expect(second!.getBoundingClientRect().right).toBeLessThanOrEqual(first!.getBoundingClientRect().left);
+    }
   },
 };
 
