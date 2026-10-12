@@ -10,7 +10,8 @@ const guidePaths: Record<string, string> = {
 
 function GuideLink({ href, ...props }: ComponentPropsWithoutRef<'a'>) {
   const page = href && guidePaths[href];
-  return <a {...props} href={page ? `./?path=/docs/${page}--docs` : href} target={page ? '_top' : undefined} />;
+  const target = href?.startsWith('#') ? '_self' : page ? '_top' : props.target;
+  return <a {...props} href={page ? `./?path=/docs/${page}--docs` : href} target={target} />;
 }
 
 const markdownOptions = { overrides: { a: GuideLink } };

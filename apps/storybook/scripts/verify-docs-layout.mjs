@@ -72,6 +72,7 @@ try {
         anchors.map((anchor) => ({ href: anchor.getAttribute('href'), target: anchor.target })));
       for (const { href, target } of links) {
         if (href?.startsWith('#')) {
+          assert.equal(target, '_self', `${id}: section links stay inside the preview frame`);
           assert.ok(await page.evaluate((hash) => document.getElementById(hash.slice(1)) !== null, href),
             `${id}: missing section ${href}`);
         } else if (href?.startsWith('./?path=/docs/')) {
@@ -84,6 +85,18 @@ try {
       console.log(`verify-docs-layout: ${id} at ${viewport.width}px OK`);
     }
   }
+
+  await page.setViewportSize(viewports[1]);
+  const managerUrl = new URL(`?path=/docs/${guides[0].id}`, baseURL).href;
+  await page.goto(managerUrl);
+  const frame = page.frameLocator('#storybook-preview-iframe');
+  const sectionLink = frame.locator('.foundation-guide a[href^="#"]').first();
+  await sectionLink.waitFor();
+  const hash = await sectionLink.getAttribute('href');
+  await sectionLink.click();
+  assert.equal(page.url(), managerUrl, 'section links preserve the Storybook manager');
+  assert.equal(await frame.locator('html').evaluate(() => location.hash), hash, 'section link scrolls the preview');
+  console.log('verify-docs-layout: section navigation keeps the sidebar OK');
 } finally {
   await browser?.close();
   await new Promise((resolve, reject) => {
