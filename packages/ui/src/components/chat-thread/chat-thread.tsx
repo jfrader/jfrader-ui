@@ -73,6 +73,7 @@ export type ChatThreadEvent =
   | { type: 'react'; id: string; emoji: string; added: boolean };
 export interface ChatThreadLabels extends ThreadReactionLabels {
   conversation: string;
+  transcript: string;
   composer: string;
   placeholder: string;
   send: string;
@@ -165,6 +166,7 @@ function defaultLabels(format: ThreadFormatters): ChatThreadLabels {
   const count = (n: number, one: string, other: string) => formatCount(format, n, one, other);
   return {
     conversation: 'Conversation',
+    transcript: 'Conversation transcript',
     composer: 'Message',
     placeholder: 'Write a message',
     send: 'Send',
@@ -807,7 +809,7 @@ function ChatThreadRoot({
   return <WithSx className={className} styles={[rootStyle, threadSizeStyles[size]]} sx={sx}>
     {(rootClass) => <div {...rest} ref={rootRefs} className={rootClass} data-ui={UI} data-size={size}>
       <div data-ui={`${UI}-viewport`} className={slotProps?.viewport?.className} css={[viewportStyle, slotProps?.viewport?.css]}>
-        <div ref={scrollerRef} tabIndex={0} data-ui={`${UI}-scroller`} className={slotProps?.scroller?.className} css={[scrollerStyle, slotProps?.scroller?.css]} onScroll={(event) => {
+        <div ref={scrollerRef} tabIndex={0} role="group" aria-label={labels.transcript} data-ui={`${UI}-scroller`} className={slotProps?.scroller?.className} css={[scrollerStyle, slotProps?.scroller?.css]} onScroll={(event) => {
           const el = event.currentTarget;
           const nearBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= PIN_THRESHOLD;
           if (nearBottom) jumping.current = false;

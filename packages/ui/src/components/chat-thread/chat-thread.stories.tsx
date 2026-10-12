@@ -83,8 +83,9 @@ export const Default: Story = {
     const own = item(canvasElement, 'own').querySelector('article')!.getBoundingClientRect();
     const other = item(canvasElement, 'first').querySelector('article')!.getBoundingClientRect();
     await expect(own.right).toBeGreaterThan(other.right);
-    await expect(canvas.queryAllByRole('region')).toHaveLength(0);
-    await expect(part(canvasElement, 'scroller')).not.toHaveAttribute('aria-label');
+    await expect(canvas.getByRole('group', { name: 'Conversation transcript' })).toBeInTheDocument();
+    // Landmarks stay unique: the scroller is a named group, not a region (axe landmark-unique across instances).
+    await expect(part(canvasElement, 'scroller')).toHaveAttribute('aria-label', 'Conversation transcript');
     for (const button of canvas.getAllByRole('button')) {
       const { width, height } = button.getBoundingClientRect();
       await expect(height).toBeGreaterThanOrEqual(31.5);
