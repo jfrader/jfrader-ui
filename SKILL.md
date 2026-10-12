@@ -269,6 +269,16 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
   when Shift+Tab leaves from the first item, so focus lands on the trigger and Tab re-enters;
   (2) APG keeps disabled items focusable but non-activatable; ours are skipped by arrows and stay in
   the list, so pointer users still see them.
+- **Overlay motion (house pattern):** entrances are CSS transitions from `@starting-style`; exits
+  return to the same values under `data-state="closing"` and are *retained*: a native dialog
+  (`useNativeDialog(…, { retainExit: true })`: Dialog, CommandPalette, LightboxGallery) stays in
+  the top layer until its exit transitions settle, then closes natively (focus returns then); a
+  floating surface (`useExitPresence`: DateRangePicker) stays mounted, `inert` and `aria-hidden`.
+  Both wait through `afterExitMotion` (`overlay/exit-motion.ts`); fragments live in
+  `styling/overlay-motion.ts` and move only `opacity`/`scale`/`translate`. A closing layer is no
+  longer open, so topmost-layer dismissal already skips it; close requests during a dialog's exit
+  are absorbed. Native closure (`<form method="dialog">`, ref `.close()`) stays immediate. Reduced
+  motion zeroes the transitions, so both directions are instant.
 - **Nesting:** only the topmost layer handles Escape/outside-dismiss; opening a child layer keeps the
   parent intact.
 - **Nested overlays and the top layer:** a body portal does not enter the native top layer; render

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
@@ -162,11 +163,47 @@ export const Open: Story = {
   args: { defaultOpen: true },
   render: (args) => <DialogExample {...args} />,
   play: async ({ canvasElement }) => {
-    // Persistent open state so the axe gate actually sees the modal content.
+    // Persistent open state so the axe gate actually sees the modal content (entrance settled).
     const dialog = within(canvasElement).getByRole('dialog');
+    await settleMotion(dialog);
     await expect(dialog).toHaveAttribute('open');
     await expect(dialog).toHaveAccessibleName(TITLE);
   },
+};
+
+async function playMotion(canvasElement: HTMLElement, onOpenChange: DialogProps['onOpenChange']) {
+  const { canvas, trigger, dialog } = await openDialog(canvasElement);
+  const panel = dialog.firstElementChild!;
+  await expectEntranceMotion(panel);
+  await expect(dialog).toHaveAttribute('data-state', 'open');
+
+  await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+  // Accepted close: still in the top layer while the exit runs; requests during it are absorbed.
+  await expect(onOpenChange).toHaveBeenCalledTimes(2);
+  await expect(dialog).toHaveAttribute('open');
+  await expect(dialog).toHaveAttribute('data-state', 'closing');
+  requestEscape(dialog);
+  await expect(onOpenChange).toHaveBeenCalledTimes(2);
+
+  await expectRetainedExit(panel, () => !dialog.hasAttribute('open'));
+  await expect(dialog).toHaveAttribute('data-state', 'closed');
+  await expectClosed(canvasElement, trigger);
+  await expect(onOpenChange).toHaveBeenCalledTimes(2);
+}
+
+export const Motion: Story = {
+  tags: ['!autodocs'],
+  args: { onOpenChange: fn() },
+  render: (args) => <DialogExample {...args} />,
+  play: async ({ args, canvasElement }) => playMotion(canvasElement, args.onOpenChange),
+};
+
+export const MotionLight: Story = {
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+  args: { onOpenChange: fn() },
+  render: (args) => <DialogExample {...args} />,
+  play: async ({ args, canvasElement }) => playMotion(canvasElement, args.onOpenChange),
 };
 
 export const NarrowContent: Story = {
@@ -183,6 +220,7 @@ export const NarrowContent: Story = {
   ),
   play: async ({ canvasElement }) => {
     const dialog = within(canvasElement).getByRole('dialog');
+    await settleMotion(dialog);
     await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth);
     await expect(dialog.firstElementChild!.getBoundingClientRect().width).toBeLessThanOrEqual(dialog.clientWidth);
     const close = within(dialog).getByRole('button', { name: 'Close' });
@@ -358,6 +396,7 @@ export const TriggerAsButtonOpen: Story = {
   play: async ({ canvasElement }) => {
     // Persistent open state so the axe gate sees the composed Close button.
     const dialog = await within(canvasElement).findByRole('dialog');
+    await settleMotion(dialog);
     await expect(dialog).toHaveAttribute('open');
     await expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveAttribute(
       'data-ui',

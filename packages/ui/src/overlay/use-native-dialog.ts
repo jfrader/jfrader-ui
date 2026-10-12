@@ -14,6 +14,10 @@
 // - Content does not accept a native `open` prop.
 // - If Content unmounts while open (removal is not a close), focus returns to the invoking
 //   element when it is still connected.
+// - With `retainExit`, an accepted close keeps the dialog in the top layer as
+//   `data-state="closing"` until its exit transitions settle, then closes it natively (focus
+//   returns then). Close requests during the exit are absorbed; reopening cancels it. Native
+//   closure (<form method="dialog">, ref .close()) stays immediate.
 import {
   useCallback,
   useEffect,
@@ -27,6 +31,7 @@ import {
   type Ref,
   type SyntheticEvent,
 } from 'react';
+import { afterExitMotion } from './exit-motion';
 import { useScrollLock } from './use-scroll-lock';
 
 /** What Content needs from its Root; both Roots expose it through their context. */
@@ -43,6 +48,13 @@ export interface NativeDialogHandlers {
   onClick?: MouseEventHandler<HTMLDialogElement>;
   onClose?: ReactEventHandler<HTMLDialogElement>;
 }
+
+export interface NativeDialogOptions {
+  /** Keep the dialog open as `data-state="closing"` until its exit transitions finish. */
+  retainExit?: boolean;
+}
+
+export type NativeDialogState = 'open' | 'closing' | 'closed';
 
 export function requestNativeDialogClose(dialog: HTMLDialogElement | null, setOpen: (open: boolean) => void) {
   if (dialog && dialog.open && typeof dialog.requestClose === 'function') {
@@ -101,6 +113,7 @@ export function useNativeDialog(
   { onCancel, onClick, onClose }: NativeDialogHandlers,
   forwardedRef: Ref<HTMLDialogElement> | undefined,
   contentRef?: MutableRefObject<HTMLDialogElement | null>,
+  { retainExit = false }: NativeDialogOptions = {},
 ) {
   const internalDialogRef = useRef<HTMLDialogElement | null>(null);
   const dialogRef = contentRef ?? internalDialogRef;
@@ -133,11 +146,15 @@ export function useNativeDialog(
       }
       setIsNativeOpen(dialog.open);
     } else if (!open && dialog.open) {
-      dialog.close();
-      wasOpenRef.current = false;
-      setIsNativeOpen(false);
+      const close = () => {
+        dialog.close();
+        wasOpenRef.current = false;
+        setIsNativeOpen(false);
+      };
+      if (!retainExit) close();
+      else return afterExitMotion(dialog, close);
     }
-  }, [open, repairToken]);
+  }, [open, repairToken, retainExit]);
 
   // If Content unmounts while open, removal bypasses the native focus return: do it ourselves.
   useEffect(
@@ -151,6 +168,11 @@ export function useNativeDialog(
   );
 
   const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
+    // Already closing: the accepted request is in progress.
+    if (!open) {
+      event.preventDefault();
+      return;
+    }
     onCancel?.(event);
     const vetoed = event.defaultPrevented;
     // We own closure: block the browser's own close and route through the Root, unless the
@@ -162,7 +184,7 @@ export function useNativeDialog(
   // Backdrop clicks target the dialog element itself; clicks inside the panel do not.
   const handleClick = (event: MouseEvent<HTMLDialogElement>) => {
     onClick?.(event);
-    if (event.target === dialogRef.current && !event.defaultPrevented) requestClose();
+    if (open && event.target === dialogRef.current && !event.defaultPrevented) requestClose();
   };
 
   const handleClose = (event: SyntheticEvent<HTMLDialogElement>) => {
@@ -173,5 +195,7 @@ export function useNativeDialog(
     if (open) setOpen(false);
   };
 
-  return { ref, onCancel: handleCancel, onClick: handleClick, onClose: handleClose };
+  const state: NativeDialogState = open ? 'open' : isNativeOpen ? 'closing' : 'closed';
+
+  return { ref, onCancel: handleCancel, onClick: handleClick, onClose: handleClose, 'data-state': state };
 }

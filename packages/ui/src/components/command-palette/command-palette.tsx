@@ -16,6 +16,7 @@
 // `open` and the dismissal path, Content owns native state. Escape on the Input routes through
 // `requestClose()` so a consumer `cancel` veto applies; accepted closes return focus natively.
 // The Trigger is optional: consumers usually drive `open` themselves (e.g. Cmd+K).
+// Motion: same retained exit as Dialog, entering from a slightly smaller scale.
 import {
   createContext,
   useCallback,
@@ -348,7 +349,7 @@ function CommandPaletteContent({ ref, className, sx, ...props }: CommandPaletteC
 
   const context = useCommandPaletteContext('Content');
   const { label, announcement } = context;
-  const dialogProps = useNativeDialog(context, { onCancel, onClick, onClose }, ref);
+  const dialogProps = useNativeDialog(context, { onCancel, onClick, onClose }, ref, undefined, { retainExit: true });
 
   return (
     <WithSx className={className} styles={dialogStyle} sx={sx}>
