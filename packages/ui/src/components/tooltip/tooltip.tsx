@@ -9,6 +9,7 @@ import {
   createContext,
   useContext,
   useMemo,
+  useState,
   type ComponentPropsWithRef,
   type CSSProperties,
   type ReactNode,
@@ -75,7 +76,8 @@ const contentStyle = css({
   borderRadius: vars.radius.sm,
   boxShadow: vars.shadow.raised,
   padding: `${vars.space[1]} ${vars.space[2]}`,
-  maxInlineSize: '260px',
+  maxInlineSize: `min(260px, calc(100vw - 2 * ${vars.space[4]}))`,
+  overflowWrap: 'anywhere',
   color: vars.color.text,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
@@ -148,11 +150,13 @@ function TooltipTrigger({ ref, 'aria-describedby': ariaDescribedByProp, classNam
 
 TooltipTrigger.displayName = 'Tooltip.Trigger';
 
-function TooltipContent({ ref, style, className, sx, ...rest }: TooltipContentProps) {
-  const { open, refs, floatingStyles, getFloatingProps } = useTooltipContext('Content');
+function TooltipSurface({ ref, style, className, sx, dir, ...rest }: TooltipContentProps) {
+  const { refs, floatingStyles, getFloatingProps } = useTooltipContext('Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
-
-  if (!open) return null;
+  const [direction] = useState(() => {
+    const reference = refs.domReference.current;
+    return reference?.ownerDocument.defaultView?.getComputedStyle(reference).direction;
+  });
 
   // getFloatingProps adds tabIndex={-1}; drop it so the tooltip is never focusable. Do NOT
   // set pointer-events: none — hoverability is part of the WCAG 1.4.13 contract.
@@ -160,18 +164,27 @@ function TooltipContent({ ref, style, className, sx, ...rest }: TooltipContentPr
   void ignoredTabIndex;
 
   return (
+    <WithSx className={className} styles={contentStyle} sx={sx}>
+      {(className) => (
+        <div
+          {...floatingProps}
+          ref={mergedRef}
+          dir={dir ?? direction}
+          data-ui="tooltip"
+          style={{ ...style, ...floatingStyles }}
+          className={className}
+        />
+      )}
+    </WithSx>
+  );
+}
+
+function TooltipContent(props: TooltipContentProps) {
+  const { open } = useTooltipContext('Content');
+  if (!open) return null;
+  return (
     <OverlayPortal>
-      <WithSx className={className} styles={contentStyle} sx={sx}>
-        {(className) => (
-          <div
-            {...floatingProps}
-            ref={mergedRef}
-            data-ui="tooltip"
-            style={{ ...style, ...floatingStyles }}
-            className={className}
-          />
-        )}
-      </WithSx>
+      <TooltipSurface {...props} />
     </OverlayPortal>
   );
 }
