@@ -135,12 +135,14 @@ function useDialogContext(part: string): DialogContextValue {
   return context;
 }
 
-const dialogStyle = css(modalShellReset, modalBackdropMotion);
+const dialogStyle = css(modalShellReset, modalBackdropMotion, {
+  minInlineSize: 'min(320px, calc(100vw - 32px))',
+  maxInlineSize: 'min(560px, calc(100vw - 32px))',
+});
 
 const panelStyle = css({
   padding: vars.space[5],
-  minInlineSize: 'min(320px, 100%)',
-  maxInlineSize: 'min(560px, calc(100vw - 32px))',
+  inlineSize: '100%',
   ...modalPanelMotion(MODAL_ENTER_SCALE),
 });
 

@@ -41,7 +41,7 @@ const meta = {
     usage: `### Panel and shell
 Plain Dialog.Content children get one default Dialog.Panel. For contrast or custom material, supply one direct Dialog.Panel child; fragments and whitespace are allowed, other substantive siblings are not. Put providers inside Panel or outside Content. Panel outside Content throws.
 
-Dialog.Content ref, css, sx and native callbacks target the real dialog shell. Dialog.Panel ref targets its div. Panel has inherited appearance by default; appearance="contrast" establishes fixed charcoal. Panel keeps padding, size limits and enter/exit motion.
+Dialog.Content ref, css, sx and native callbacks target the real dialog shell, which owns the size limits. Dialog.Panel ref targets its div. Panel has inherited appearance by default; appearance="contrast" establishes fixed charcoal. Panel fills the shell and keeps padding and enter/exit motion.
 
 ### Root replacement
 On Panel, component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and css (no sx). Declare adapters outside render, render one div, and forward all supplied props and ref. Apply material before the supplied className. A changed component identity remounts children and loses focus and uncontrolled input state.
@@ -59,6 +59,7 @@ type Story = StoryObj<typeof meta>;
 
 const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
 const shellStyleOverride = css({ outlineOffset: vars.space[3] });
+const panelSizeOverride = css({ inlineSize: '240px' });
 function DialogPaper({ className, ...props }: SurfacePartProps) {
   return <WithSx styles={adapterMaterial} className={className}>{(classes) => <div {...props} className={classes} />}</WithSx>;
 }
@@ -293,6 +294,74 @@ export const Open: Story = {
   },
 };
 
+export const ShortContent: Story = {
+  tags: ['!autodocs'],
+  args: { defaultOpen: true },
+  render: (args) => (
+    <Dialog {...args}>
+      <Dialog.Content>
+        <Dialog.Title>Saved</Dialog.Title>
+        <Dialog.Description>Profile updated.</Dialog.Description>
+        <Dialog.Close>Done</Dialog.Close>
+      </Dialog.Content>
+    </Dialog>
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = within(canvasElement).getByRole('dialog');
+    await settleMotion(dialog);
+    const panel = dialog.querySelector('[data-ui~="dialog-panel"]')!;
+    const viewportWidth = canvasElement.ownerDocument.defaultView!.innerWidth;
+    const panelRect = panel.getBoundingClientRect();
+    await expect(panelRect.width).toBeGreaterThanOrEqual(Math.min(320, viewportWidth - 32));
+    await expect(panelRect.width).toBe(dialog.getBoundingClientRect().width);
+    await expect(panelRect.left).toBeGreaterThanOrEqual(16);
+    await expect(panelRect.right).toBeLessThanOrEqual(viewportWidth - 16);
+    await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth);
+  },
+};
+
+export const ShortContentLight: Story = {
+  ...ShortContent,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+};
+
+export const ShortContentRTL: Story = {
+  ...ShortContent,
+  decorators: [(Story) => <div dir="rtl"><Story /></div>],
+};
+
+export const ShortContentNarrow: Story = {
+  ...ShortContent,
+  parameters: {
+    viewport: { options: { narrow: { name: 'Narrow', styles: { width: '320px', height: '700px' } } } },
+  },
+  globals: { viewport: { value: 'narrow' } },
+};
+
+export const SizingOverrides: Story = {
+  tags: ['!autodocs'],
+  args: { defaultOpen: true },
+  render: (args) => (
+    <Dialog {...args}>
+      <Dialog.Content sx={{ inlineSize: '280px', minInlineSize: 0 }}>
+        <Dialog.Panel slotProps={{ root: { css: panelSizeOverride } }} sx={{ inlineSize: '260px' }}>
+          <Dialog.Title>Saved</Dialog.Title>
+          <Dialog.Description>Profile updated.</Dialog.Description>
+          <Dialog.Close>Done</Dialog.Close>
+        </Dialog.Panel>
+      </Dialog.Content>
+    </Dialog>
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = within(canvasElement).getByRole('dialog');
+    await settleMotion(dialog);
+    const panel = dialog.querySelector('[data-ui~="dialog-panel"]')!;
+    await expect(dialog.getBoundingClientRect().width).toBe(280);
+    await expect(panel.getBoundingClientRect().width).toBe(260);
+  },
+};
+
 async function playMotion(canvasElement: HTMLElement, onOpenChange: DialogProps['onOpenChange']) {
   const { canvas, trigger, dialog } = await openDialog(canvasElement);
   const panel = dialog.firstElementChild!;
@@ -333,7 +402,7 @@ export const NarrowContent: Story = {
   render: (args) => (
     <Dialog {...args} defaultOpen>
       <Dialog.Trigger>Open profile</Dialog.Trigger>
-      <Dialog.Content sx={{ inlineSize: '280px' }}>
+      <Dialog.Content sx={{ inlineSize: '280px', minInlineSize: 0 }}>
         <Dialog.Title>{TITLE}</Dialog.Title>
         <Dialog.Description>{DESCRIPTION}</Dialog.Description>
         <Dialog.Close>Close</Dialog.Close>
@@ -343,6 +412,7 @@ export const NarrowContent: Story = {
   play: async ({ canvasElement }) => {
     const dialog = within(canvasElement).getByRole('dialog');
     await settleMotion(dialog);
+    await expect(dialog.getBoundingClientRect().width).toBe(280);
     await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth);
     await expect(dialog.firstElementChild!.getBoundingClientRect().width).toBeLessThanOrEqual(dialog.clientWidth);
     const close = within(dialog).getByRole('button', { name: 'Close' });
