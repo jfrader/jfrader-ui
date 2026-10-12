@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { Profiler, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ImageCompare } from './index';
 
@@ -65,7 +66,7 @@ const SOURCE = `<ImageCompare
 />`;
 
 const meta = {
-  title: 'Data display/ImageCompare',
+  title: 'Media/ImageCompare',
   component: ImageCompare,
   tags: ['autodocs'],
   args: {
@@ -89,7 +90,7 @@ const meta = {
       description: {
         component: 'Compare two images by dragging a divider to reveal more of either image.',
       },
-      usage: `- Images are aligned and cropped the same way. The divider follows the APG slider pattern. \`value\` is the percentage of Before visible from inline-start horizontally or the top vertically: 0 shows After; 100 shows Before. The clip, \`aria-valuenow\` and \`aria-valuetext\` use the accepted value.
+      usage: `- Images are aligned and cropped the same way. The divider follows the APG slider pattern. \`value\` is the percentage of Before visible from inline-start horizontally or the top vertically: 0 shows After; 100 shows Before. The slider reports the accepted value; after a drag, the divider settles back to that value.
 - Arrows move one \`step\`; horizontal Left/Right follow physical direction in RTL, and Up always increases. Shift+arrows and PageUp/PageDown move \`largeStep\`; Home/End go to 0/100. Center divider and double-clicking the handle request 50.
 - Tap the frame to jump or drag anywhere on it. Touch dragging starts along the reveal axis, so a vertical swipe over a horizontal comparison scrolls the page.
 - Both images stay mounted. Give each a meaningful, different \`alt\`; do not put interactive content inside them. Captions are decorative and describe the slider.
@@ -148,7 +149,12 @@ function pointerOn(frame: HTMLElement, pointerType = 'mouse') {
     type: string,
     x: number,
     y = 0.8,
-    options: { pointerId?: number; isPrimary?: boolean; button?: number; target?: Element } = {},
+    options: {
+      pointerId?: number;
+      isPrimary?: boolean;
+      button?: number;
+      target?: Element;
+    } = {},
   ) => {
     const box = frame.getBoundingClientRect();
     return fireEvent(
@@ -196,7 +202,84 @@ export const Default: Story = {
   },
 };
 
-export const Horizontal: Story = { args: { orientation: 'horizontal', defaultValue: 35 } };
+export const Horizontal: Story = {
+  args: { orientation: 'horizontal', defaultValue: 35 },
+};
+
+const dragRender = fn();
+export const MotionValueDrag: Story = {
+  render: (args) => (
+    <Profiler id="image-compare-drag" onRender={dragRender}>
+      <ImageCompare {...args} />
+    </Profiler>
+  ),
+  play: async ({ canvas, canvasElement, args }) => {
+    const slider = canvas.getByRole('slider');
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    pointer.fire('pointerdown', 0.5);
+    pointer.fire('pointermove', 0.6);
+    await expect(slider).toHaveAttribute('data-dragging');
+    const renders = dragRender.mock.calls.length;
+    pointer.fire('pointermove', 0.65);
+    pointer.fire('pointermove', 0.7);
+    await expect(slider).toHaveAttribute('aria-valuenow', '70');
+    await expect(slider).toHaveAttribute('aria-valuetext', '70% Before visible');
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.7)).toBeLessThan(0.01);
+    await expect(dragRender.mock.calls.length).toBe(renders);
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      await expect(getComputedStyle(slider).transform).not.toBe('matrix(1, 0, 0, 1, 0, 0)');
+    }
+    pointer.fire('pointerup', 0.7);
+    await expect(args.onValueCommit).toHaveBeenLastCalledWith(70);
+    await sleep(motionDurationMs.slow * 2);
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.7)).toBeLessThan(0.01);
+    await expect(getComputedStyle(slider).transform).toBe('matrix(1, 0, 0, 1, 0, 0)');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+  },
+};
+
+export const FadingCaptions: Story = {
+  render: (args) => (
+    <>
+      <ImageCompare {...args} label="Horizontal captions" />
+      <ImageCompare {...args} orientation="vertical" label="Vertical captions" />
+      <ImageCompare {...args} dir="rtl" label="RTL captions" />
+    </>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    for (const root of canvasElement.querySelectorAll('[data-ui="image-compare"]')) {
+      const slider = part(root, 'image-compare-handle');
+      const before = part(root, 'image-compare-before-label');
+      const after = part(root, 'image-compare-after-label');
+      await expect(before.parentElement).toBe(part(root, 'image-compare-frame'));
+      await expect(getComputedStyle(before).opacity).toBe('1');
+      await expect(getComputedStyle(after).opacity).toBe('1');
+      slider.focus();
+      await userEvent.keyboard('{Home}');
+      await expect(getComputedStyle(before).opacity).toBe('0');
+      await expect(getComputedStyle(after).opacity).toBe('1');
+      await userEvent.keyboard('{End}');
+      await expect(getComputedStyle(before).opacity).toBe('1');
+      await expect(getComputedStyle(after).opacity).toBe('0');
+      const frame = part(root, 'image-compare-frame').getBoundingClientRect();
+      const caption = before.getBoundingClientRect();
+      const vertical = slider.getAttribute('aria-orientation') === 'vertical';
+      const reversed = root.matches(':dir(rtl)');
+      const farEdge = vertical
+        ? caption.bottom - frame.top
+        : reversed
+          ? frame.right - caption.left
+          : caption.right - frame.left;
+      const size = vertical ? caption.height : caption.width;
+      const axisSize = vertical ? frame.height : frame.width;
+      const partial = Math.round(((farEdge + size / 2) / axisSize) * 100);
+      await userEvent.keyboard(`{Home}${'{ArrowUp}'.repeat(partial)}`);
+      const opacity = Number(getComputedStyle(before).opacity);
+      await expect(opacity).toBeGreaterThan(0);
+      await expect(opacity).toBeLessThan(1);
+    }
+  },
+};
 
 export const Vertical: Story = {
   args: { orientation: 'vertical', defaultValue: 30 },
@@ -321,6 +404,8 @@ export const RejectedControlled: Story = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith(70);
     await expect(args.onValueCommit).toHaveBeenLastCalledWith(70);
     await expect(slider).toHaveAttribute('aria-valuenow', '40');
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.4)).toBeLessThan(0.01);
+    await sleep(motionDurationMs.fast);
     await expect(Math.abs(dividerRatio(canvasElement) - 0.4)).toBeLessThan(0.01);
   },
 };
@@ -605,7 +690,10 @@ export const ReleaseOutsideFrame: Story = {
 
 const preventPointerUp = fn((event: { preventDefault: () => void }) => event.preventDefault());
 export const PreventedPointerUp: Story = {
-  args: { defaultValue: 50, slotProps: { frame: { onPointerUp: preventPointerUp } } },
+  args: {
+    defaultValue: 50,
+    slotProps: { frame: { onPointerUp: preventPointerUp } },
+  },
   play: async ({ canvas, canvasElement, args }) => {
     const slider = canvas.getByRole('slider');
     const handle = part(canvasElement, 'image-compare-handle');
@@ -954,7 +1042,14 @@ export const AriaMerge: Story = {
 };
 
 export const UnresolvedLabelledBy: Story = {
-  args: { slotProps: { handle: { 'aria-labelledby': 'missing-reference', 'aria-label': 'Handle name' } } },
+  args: {
+    slotProps: {
+      handle: {
+        'aria-labelledby': 'missing-reference',
+        'aria-label': 'Handle name',
+      },
+    },
+  },
   play: async ({ canvas }) => {
     const slider = canvas.getByRole('slider');
     await expect(slider).toHaveAttribute('aria-labelledby', 'missing-reference');
