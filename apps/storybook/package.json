@@ -6,7 +6,7 @@
     "dev": "storybook dev -p 6006",
     "build": "pnpm verify:docs && storybook build",
     "og:image": "node og/render.mjs",
-    "test": "vitest run --project=storybook",
+    "test": "node --test scripts/measure-geometry.test.mjs && vitest run --project=storybook",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify:docs": "node --test scripts/verify-docs.test.mjs && node scripts/verify-docs.mjs",
     "verify:docs:layout": "node scripts/verify-docs-layout.mjs"
