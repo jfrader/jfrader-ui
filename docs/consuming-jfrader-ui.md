@@ -299,97 +299,25 @@ Render `data-theme` on `<html>`, the pre-paint script and the font CSS in the in
 
 ## Next.js App Router
 
-Starting with the next release (0.1.2 planned; unreleased), every published `@jfrader/ui` module starts with `'use client'`. Server Components can render top-level component exports with serializable props.
+The package build marks every `@jfrader/ui` module with `'use client'`. Server Components can render top-level component exports with serializable props.
 
 Use compound parts (e.g. `Dialog.Trigger`), render-prop callbacks and event handlers inside a Client Component. React rejects property access on client references from Server Components.
 
 ### Emotion registry
 
-Add an Emotion registry. Without it, the server renders inline `<style data-emotion>` tags next to components, causing hydration mismatches.
+Wrap the App Router layout in `EmotionRegistry` to collect Emotion styles during server rendering and avoid hydration mismatches. Install `@emotion/cache` alongside Next.js:
 
 ```sh
 pnpm add @emotion/cache
 ```
 
 ```tsx
-// app/emotion-registry.tsx
-'use client';
-
-import createCache from '@emotion/cache';
-import { CacheProvider } from '@emotion/react';
-import { useServerInsertedHTML } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
-
-export function EmotionRegistry({ children }: { children: ReactNode }) {
-  const [{ cache, flush }] = useState(() => {
-    const cache = createCache({ key: 'css' });
-    cache.compat = true;
-    const insert = cache.insert;
-    let pending: { name: string; isGlobal: boolean }[] = [];
-    cache.insert = (...args) => {
-      const [selector, serialized] = args;
-      if (cache.inserted[serialized.name] === undefined) {
-        pending.push({ name: serialized.name, isGlobal: !selector });
-      }
-      return insert(...args);
-    };
-    const flush = () => {
-      const names = pending;
-      pending = [];
-      return names;
-    };
-    return { cache, flush };
-  });
-
-  useServerInsertedHTML(() => {
-    const inserted = flush();
-    if (inserted.length === 0) return null;
-    const globals: { name: string; styles: string }[] = [];
-    const names: string[] = [];
-    let styles = '';
-    for (const { name, isGlobal } of inserted) {
-      const style = cache.inserted[name];
-      if (typeof style !== 'string') continue;
-      if (isGlobal) {
-        globals.push({ name, styles: style });
-      } else {
-        names.push(name);
-        styles += style;
-      }
-    }
-    return (
-      <>
-        {globals.map(({ name, styles }) => (
-          <style
-            key={name}
-            data-emotion={`${cache.key}-global ${name}`}
-            dangerouslySetInnerHTML={{ __html: styles }}
-          />
-        ))}
-        {names.length > 0 && (
-          <style
-            key={cache.key}
-            data-emotion={`${cache.key} ${names.join(' ')}`}
-            dangerouslySetInnerHTML={{ __html: styles }}
-          />
-        )}
-      </>
-    );
-  });
-
-  return <CacheProvider value={cache}>{children}</CacheProvider>;
-}
-```
-
-Wrap the body in the root layout:
-
-```tsx
 // app/layout.tsx
-import { EmotionRegistry } from './emotion-registry';
+import { EmotionRegistry } from '@jfrader/ui/next';
 
 <body>
   <EmotionRegistry>{children}</EmotionRegistry>
 </body>
 ```
 
-Reference implementation: [saticket `apps/web/app/emotion-registry.tsx`](https://github.com/jfrader/saticket/blob/master/apps/web/app/emotion-registry.tsx) (available when PR #9 merges).
+The adapter manages the Emotion cache, flushes styles through `useServerInsertedHTML`, and mounts `ThemeProvider`. The optional `next` peer is used only by this subpath. Source: `packages/ui/src/components/next/emotion-registry.tsx`.

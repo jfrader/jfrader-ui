@@ -62,7 +62,24 @@ import { ThemeRoot } from '@jfrader/ui/theme-root';
 
 `react` and `react-dom` (`^19.0.0`) are peer dependencies.
 
-Next.js App Router: see [Next.js App Router](https://github.com/jfrader/jfrader-ui/blob/master/docs/consuming-jfrader-ui.md#nextjs-app-router) for the required Emotion registry.
+## Next.js App Router
+
+`@jfrader/ui/next` exports `EmotionRegistry`, the required Emotion registry. It needs the optional `next` and `@emotion/cache` peers:
+
+```sh
+pnpm add @emotion/cache
+```
+
+```tsx
+// app/layout.tsx
+import { EmotionRegistry } from '@jfrader/ui/next';
+
+<body>
+  <EmotionRegistry>{children}</EmotionRegistry>
+</body>;
+```
+
+See [Next.js App Router](https://github.com/jfrader/jfrader-ui/blob/master/docs/consuming-jfrader-ui.md#nextjs-app-router) for Server Component boundaries.
 
 ## Theming
 

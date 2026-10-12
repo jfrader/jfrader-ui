@@ -8,7 +8,8 @@
     "og:image": "node og/render.mjs",
     "test": "vitest run --project=storybook",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify:docs": "node --test scripts/verify-docs.test.mjs && node scripts/verify-docs.mjs"
+    "verify:docs": "node --test scripts/verify-docs.test.mjs && node scripts/verify-docs.mjs",
+    "verify:docs:layout": "node scripts/verify-docs-layout.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
