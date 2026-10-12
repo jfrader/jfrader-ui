@@ -25,7 +25,12 @@ const DRAG_PX = 240;
 
 // The inset keeps the test runner's parked pointer (page origin) off the carousel, so hover
 // pause only engages when a story hovers on purpose.
-const frameStyle = css({ inlineSize: '32rem', maxInlineSize: 'calc(100vw - 2rem)', padding: vars.space[4] });
+const frameStyle = css({
+  boxSizing: 'border-box',
+  inlineSize: '32rem',
+  maxInlineSize: 'calc(100vw - 2rem)',
+  padding: vars.space[4],
+});
 const narrowFrameStyle = css({ inlineSize: '18rem' });
 const cardStyle = css({
   display: 'grid',
@@ -843,7 +848,7 @@ export const SingleSlide: Story = {
     await expect(slide).not.toHaveAttribute('aria-labelledby');
     await expect(canvas.queryByRole('tablist')).not.toBeInTheDocument();
     await expect(canvas.queryAllByRole('button')).toHaveLength(0);
-    await expect(viewportOf(canvasElement)).not.toHaveAttribute('tabindex');
+    await expect(viewportOf(canvasElement)).toHaveAttribute('tabindex', '-1');
     await expect(canvasElement.querySelector('[data-ui="carousel-status"]')).not.toBeInTheDocument();
     await sleep(ROTATION_MS * 2);
     await expect(args.onValueChange).not.toHaveBeenCalled();
@@ -885,6 +890,17 @@ export const RemovedActiveSlide: Story = {
     await expect(viewportOf(canvasElement)).toHaveFocus();
     await expect(statusOf(canvasElement)).toHaveTextContent('Slide 3 of 3');
     await expectCentred(canvasElement, 2);
+    for (const name of ['Tower suite', 'Garden suite', 'Harbour suite']) {
+      await userEvent.tab();
+      await expect(canvas.getByRole('button', { name: `Remove ${name}` })).toHaveFocus();
+      await userEvent.keyboard('{Enter}');
+      const remaining = slidesOf(canvasElement).length;
+      const focusTarget = remaining ? viewportOf(canvasElement) : canvas.getByRole('region');
+      await expect(focusTarget).toHaveFocus();
+      await expect(getComputedStyle(focusTarget).outlineStyle).not.toBe('none');
+    }
+    await expect(canvas.getByText('No slides')).toBeInTheDocument();
+    await expect(args.onValueChange).not.toHaveBeenCalled();
   },
 };
 
@@ -1007,7 +1023,7 @@ export const Disabled: Story = {
   },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
-    await expect(viewportOf(canvasElement)).not.toHaveAttribute('tabindex');
+    await expect(viewportOf(canvasElement)).toHaveAttribute('tabindex', '-1');
     await expect(canvas.getByRole('button', { name: 'Start slide rotation' })).toHaveAttribute('aria-disabled', 'true');
     for (const tab of canvas.getAllByRole('tab')) await expect(tab).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(canvas.getByRole('button', { name: 'Next slide' }));
