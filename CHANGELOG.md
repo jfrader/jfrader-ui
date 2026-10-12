@@ -11,6 +11,7 @@
 - `ToastStack` keeps a `contained` stack inside its host when consumer styles add padding to it.
 - `ToastStack` casts a single shadow for a collapsed pile, so the cards behind it stay white instead of turning grey on light surfaces.
 - `EditableDetails` uses aligned headings, quieter labels and separators only between rows. Nested sections no longer stack empty divider lines.
+
 ### Changed
 
 - Face-down GameCards use red-and-paper diagonal stripes in both themes.
