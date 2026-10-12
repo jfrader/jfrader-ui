@@ -364,3 +364,20 @@ export const LightTheme: Story = {
     await expect(currentPage(getNav(canvasElement))).toEqual([['5', 'page']]);
   },
 };
+
+export const ExternalAria: Story = {
+  render: (args) => (
+    <div style={stackStyle}>
+      <p id="pagination-heading">Search results</p>
+      <Pagination {...args} aria-label="Results pages" />
+      <Pagination {...args} aria-labelledby="pagination-heading" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const named = getNav(canvasElement, 'Results pages');
+    await expect(named).toHaveAttribute('aria-label', 'Results pages');
+    const labelled = getNav(canvasElement, 'Search results');
+    await expect(labelled).toHaveAttribute('aria-labelledby', 'pagination-heading');
+    await expect(labelled).not.toHaveAttribute('aria-label');
+  },
+};

@@ -134,6 +134,8 @@ export function Pagination({
   locale = typeof navigator === 'undefined' ? undefined : navigator.language,
   className,
   sx,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
   ...rest
 }: PaginationProps) {
   const lastPage = normalizeCount(totalPages);
@@ -165,7 +167,14 @@ export function Pagination({
   return (
     <WithSx className={className} sx={sx}>
       {(className) => (
-        <nav {...rest} ref={navRef} aria-label={label} data-ui="pagination" className={className}>
+        <nav
+          {...rest}
+          ref={navRef}
+          aria-label={ariaLabel ?? (ariaLabelledBy === undefined ? label : undefined)}
+          aria-labelledby={ariaLabelledBy}
+          data-ui="pagination"
+          className={className}
+        >
           <ul css={listStyle}>
             <li>
               <button
