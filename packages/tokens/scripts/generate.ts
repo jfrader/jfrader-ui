@@ -52,6 +52,7 @@ function assertUniqueNames(tree: TokenTree, label: string) {
 }
 
 const baseNames = assertUniqueNames(base, 'base');
+assertUniqueNames(light, 'light');
 for (const [name] of flatten(light)) {
   if (!baseNames.has(name)) throw new Error(`light: token ${name} has no counterpart in base`);
 }

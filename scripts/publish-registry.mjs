@@ -16,6 +16,33 @@ if (!artifact || !registry) {
 const manifest = JSON.parse(
   await readFile(manifestPath ?? new URL("../package.json", import.meta.url), "utf8"),
 );
+const registryUrl = new URL(registry);
+if (!["http:", "https:"].includes(registryUrl.protocol)) {
+  throw new Error("Registry must be an HTTP(S) URL");
+}
+const { stdout: packedJson } = await execFileAsync("tar", [
+  "-xOzf", artifact, "package/package.json",
+]);
+const packedManifest = JSON.parse(packedJson);
+if (!manifest.name || !manifest.version || packedManifest.private === true ||
+    packedManifest.name !== manifest.name || packedManifest.version !== manifest.version) {
+  throw new Error("Artifact name/version must match the expected non-private package");
+}
+const { stdout: packedFiles } = await execFileAsync("tar", ["-tzf", artifact]);
+const files = new Set(packedFiles.trim().split("\n").filter((file) => !file.endsWith("/")));
+const targetsOf = (entry) => {
+  if (typeof entry === "string") return [entry];
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+    throw new Error("Artifact must have valid export targets");
+  }
+  return Object.values(entry).flatMap(targetsOf);
+};
+const targets = targetsOf(packedManifest.exports);
+if (targets.length === 0 || targets.some((target) =>
+  !target.startsWith("./") || target.split("/").includes("..") ||
+  !files.has(`package/${target.slice(2)}`))) {
+  throw new Error("Artifact has missing or invalid export targets");
+}
 const packageSpec = `${manifest.name}@${manifest.version}`;
 const expectedIntegrity = `sha512-${createHash("sha512")
   .update(await readFile(artifact))
