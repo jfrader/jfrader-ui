@@ -252,3 +252,63 @@ export const LightTheme: Story = {
     await expect(within(canvasElement).getByRole('radio', { name: 'Pro' })).toBeChecked();
   },
 };
+
+export const DisabledGroup: Story = {
+  args: { defaultValue: 'free', disabled: true },
+  render: (args) => <RadioExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const group = canvas.getByRole('radiogroup', { name: 'Plan' });
+    await expect(group).toHaveAttribute('aria-disabled', 'true');
+    const radios = within(group).getAllByRole('radio');
+    for (const radio of radios) {
+      await expect(radio).toBeDisabled();
+    }
+    await userEvent.tab();
+    expect(radios).not.toContain(canvasElement.ownerDocument.activeElement);
+  },
+};
+
+export const Rtl: Story = {
+  args: { defaultValue: 'free', dir: 'rtl' },
+  render: (args) => (
+    <div dir="rtl">
+      <RadioExample {...args} />
+      <RadioGroup aria-label="Individual RTL">
+        <RadioGroup.Radio value="custom" label="Custom" description="Custom RTL description" dir="rtl" />
+      </RadioGroup>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const group = within(canvasElement).getByRole('radiogroup', { name: 'Plan' });
+    await expect(group).toHaveAttribute('dir', 'rtl');
+    const [free, pro] = within(group).getAllByRole('radio');
+    const freeLabel = free!.closest('label');
+    await expect(freeLabel).toHaveAttribute('data-ui', 'radio-group-radio');
+
+    // Verify logical property marginInlineStart resolves to physical marginRight under RTL
+    const freeDescId = free!.getAttribute('aria-describedby');
+    const freeDescription = canvasElement.querySelector('#' + CSS.escape(freeDescId!)) as HTMLElement;
+    const computed = getComputedStyle(freeDescription);
+    expect(parseFloat(computed.marginRight)).toBeGreaterThan(0);
+    expect(parseFloat(computed.marginLeft)).toBe(0);
+
+    // Verify individual RadioGroup.Radio dir forwarding to its label root
+    const customRadio = within(canvasElement).getByRole('radio', { name: 'Custom' });
+    const customLabel = customRadio.closest('label');
+    await expect(customLabel).toHaveAttribute('dir', 'rtl');
+    const customDescId = customRadio.getAttribute('aria-describedby');
+    const customDescription = canvasElement.querySelector('#' + CSS.escape(customDescId!)) as HTMLElement;
+    const customComputed = getComputedStyle(customDescription);
+    expect(parseFloat(customComputed.marginRight)).toBeGreaterThan(0);
+    expect(parseFloat(customComputed.marginLeft)).toBe(0);
+
+    // Keyboard navigation in RTL: tab to first, ArrowDown
+    await userEvent.tab();
+    await expect(free).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(pro).toHaveFocus();
+    await expect(pro).toBeChecked();
+  },
+};
+

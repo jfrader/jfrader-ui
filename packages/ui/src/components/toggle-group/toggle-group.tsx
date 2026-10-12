@@ -235,7 +235,7 @@ function ToggleGroupRoot({
             ref={rootRef}
             role="group"
             aria-label={label ?? ariaLabelProp}
-            aria-disabled={disabled || undefined}
+            aria-disabled={disabled ? true : (rest['aria-disabled'] as boolean | 'true' | 'false' | undefined)}
             data-ui="toggle-group-root"
             data-type={type}
             data-orientation={orientation}
