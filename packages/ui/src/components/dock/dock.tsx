@@ -132,11 +132,17 @@ const controlStyle = css({
   },
 });
 const alwaysControlStyle = css({ inlineSize: 'auto', paddingInline: vars.space[3], gap: vars.space[2] });
+/** Join idref lists without duplicates (external ids can legitimately repeat). */
+const uniqueIds = (...ids: Array<string | undefined>) => {
+  const out = new Set<string>();
+  for (const value of ids) for (const id of value?.split(/\s+/).filter(Boolean) ?? []) out.add(id);
+  return out.size ? [...out].join(' ') : undefined;
+};
 const iconStyle = css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: vars.textSize.md });
 const selectionStyle = css({
   position: 'absolute', inset: 0, backgroundColor: vars.color.accentSoft, pointerEvents: 'none',
   '&::after': {
-    content: '""', position: 'absolute', insetBlockEnd: vars.space[1], insetInlineStart: 'calc(50% - 2px)',
+    content: '""', position: 'absolute', insetBlockEnd: vars.space[1], insetInlineStart: `calc(50% - ${vars.space[1]} / 2)`,
     inlineSize: vars.space[1], blockSize: vars.space[1], borderRadius: vars.radius.full,
     backgroundColor: vars.color.accentText,
   },
@@ -403,6 +409,7 @@ function DockWidget({
   });
   useEffect(() => { setLabelReady(labelFloating.isPositioned); }, [labelFloating.isPositioned]);
 
+  // Deliberately dependency-less: re-reads the portaled/tray direction every render until it settles.
   useLayoutEffect(() => {
     const root = rootRef.current;
     const effective = root?.ownerDocument.defaultView?.getComputedStyle(root).direction;
@@ -558,7 +565,7 @@ function DockWidget({
         <div {...toolbarSlot} ref={toolbarRef} css={[toolbarStyle, toolbarSlot?.css]} role="toolbar"
           aria-hidden={undefined}
           aria-label={toolbarSlot?.['aria-label'] ?? native['aria-label'] ?? label}
-          aria-labelledby={joinIds(native['aria-labelledby'], toolbarSlot?.['aria-labelledby'])}>
+          aria-labelledby={uniqueIds(native['aria-labelledby'], toolbarSlot?.['aria-labelledby'])}>
           {ordered.map((item) => {
             const tool = shownTool(item);
             const count = tool ? badgeCount(tool) : null;
@@ -584,7 +591,7 @@ function DockWidget({
           {items.length === 0 && <span>{messages.empty}</span>}
         </div>
         {reorderable && focusItem && <Menu>
-          <Menu.Trigger css={optionsStyle} aria-label={`${messages.moveBefore} / ${messages.moveAfter}: ${focusItem.label}`}>↔</Menu.Trigger>
+          <Menu.Trigger sx={optionsStyle} aria-label={`${messages.moveBefore} / ${messages.moveAfter}: ${focusItem.label}`}>↔</Menu.Trigger>
           <Menu.Content dir={direction}>
             <Menu.Item disabled={orderedIds.indexOf(focusItem.id) === 0}
               onSelect={() => move(focusItem.id, orderedIds.indexOf(focusItem.id) - 1)}>{messages.moveBefore}</Menu.Item>
