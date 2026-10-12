@@ -161,7 +161,7 @@ const meta = {
           'Aborts: the signal aborts when its address is removed or edited, when Retry replaces the request, when a successful send clears the draft, and when the composer unmounts.',
           'Addresses: complete whitespace-delimited absolute `http`/`https` addresses that `URL` accepts. Pasted text and blur scan everything; while typing, an address waits for the following whitespace. Duplicate addresses are separate links; Remove deletes exactly that occurrence. Addresses that arrive with `value`/`defaultValue` wait for Retry.',
           'Expansion: `expanded`/`defaultExpanded`/`onExpandedChange` hold the open link ids. To open a preview as it resolves, commit the ready record and its id in the same update.',
-          'Keyboard: Enter sends, Shift+Enter adds a line, Alt+Enter opens or closes the preview at the caret, Enter on a title link navigates. Sending is pending while `onSend` returns an unsettled promise.',
+          'Keyboard: Enter sends, Shift+Enter adds a line, Alt+Enter opens or closes the preview at the caret, Enter on a title link navigates. Sending is pending while `onSend` returns an unsettled promise; the field turns read-only and Remove and suggestions go inactive without losing focus.',
         ].join('\n\n'),
       },
     },
@@ -386,13 +386,19 @@ export const AbortOnUnmount: Story = {
 };
 
 export const Sending: Story = {
-  args: { onSend: fn(() => new Promise<void>(() => {})) },
+  args: {
+    onSend: fn(() => new Promise<void>(() => {})),
+    suggestions: [{ url: CHANGELOG, label: 'Changelog' }],
+  },
   play: async ({ canvasElement, canvas, args, userEvent }) => {
     const textarea = field(canvasElement);
-    await userEvent.type(textarea, 'Hello');
+    await pasteInto(textarea, `Hello ${GUIDE}`, userEvent);
     await userEvent.keyboard('{Enter}');
     await expect(args.onSend).toHaveBeenCalledTimes(1);
-    await expect(args.onSend).toHaveBeenCalledWith({ text: 'Hello', previews: [] });
+    await expect(args.onSend).toHaveBeenCalledWith({
+      text: `Hello ${GUIDE}`,
+      previews: [expect.objectContaining({ url: GUIDE, status: 'ready' })],
+    });
     const send = canvas.getByRole('button', { name: 'Send' });
     await expect(send).toHaveAttribute('aria-busy', 'true');
     await expect(textarea).toHaveAttribute('readonly');
@@ -400,7 +406,16 @@ export const Sending: Story = {
     await userEvent.keyboard('{Enter}');
     await userEvent.click(send);
     await expect(args.onSend).toHaveBeenCalledTimes(1);
-    await expect(textarea).toHaveValue('Hello');
+    const remove = canvas.getByRole('button', { name: 'Remove' });
+    const suggestion = canvas.getByRole('button', { name: 'Changelog' });
+    await expect(remove).toHaveAttribute('aria-disabled', 'true');
+    await expect(suggestion).toHaveAttribute('aria-disabled', 'true');
+    const edits = (args.onValueChange as ReturnType<typeof fn>).mock.calls.length;
+    await userEvent.click(remove);
+    await userEvent.click(suggestion);
+    await expect(textarea).toHaveValue(`Hello ${GUIDE}`);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(edits);
+    await expect(items(canvasElement)).toHaveLength(1);
   },
 };
 

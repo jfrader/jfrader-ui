@@ -17,11 +17,13 @@
 // blur, suggestions and Retry, each with a new request id and an AbortSignal that aborts when its
 // link disappears, is retried, or the composer unmounts. Records for another request id are ignored.
 // State: `value` and `expanded` are independent controlled axes; a rejected request keeps the
-// committed text and visibility. A send keeps the draft until `onSend` settles; success requests
-// an empty draft and no expanded ids, failure keeps the draft and shows `labels.error`.
+// committed text and visibility. A send locks the draft (read-only field, inactive Remove and
+// suggestions, all still focusable) until `onSend` settles; success requests an empty draft and
+// no expanded ids, failure keeps the draft and shows `labels.error`.
 import {
   useEffect,
   useId,
+  useMemo,
   useLayoutEffect,
   useRef,
   useState,
@@ -174,6 +176,8 @@ const WIDE = '@container (min-width: 35rem)';
 const FOLD_PROGRESS = 0.4;
 
 const LAYOUT_SPRING = { type: 'spring', stiffness: 420, damping: 38 } as const;
+/** One pass of the decorative pending sweep. */
+const PENDING_SWEEP_DURATION = '1.4s';
 
 // ---------------------------------------------------------------------------------------------
 // Detection and reconciliation
@@ -397,7 +401,7 @@ const pendingStyle = css({
   backgroundImage: `linear-gradient(90deg, transparent 30%, ${vars.color.accentSoft} 50%, transparent 70%)`,
   backgroundSize: '300% 100%',
   borderRadius: vars.radius.sm,
-  animation: `${sweep} 1.4s linear infinite`,
+  animation: `${sweep} ${PENDING_SWEEP_DURATION} linear infinite`,
   '[data-offscreen] &, [data-motion="none"] &': { animationPlayState: 'paused', animationName: 'none' },
   [REDUCED_MOTION]: { animation: 'none' },
   [FORCED_COLORS]: { backgroundImage: 'none' },
@@ -468,6 +472,8 @@ interface PreviewItemProps {
   record: LinkUnfurlPreview | undefined;
   open: boolean;
   animate: boolean;
+  /** A pending send locks the draft, so Remove stays focusable but inactive. */
+  locked: boolean;
   labels: LinkUnfurlLabels;
   slotProps: LinkUnfurlSlotProps | undefined;
   onToggle: () => void;
@@ -481,6 +487,7 @@ function PreviewItem({
   record,
   open,
   animate,
+  locked,
   labels,
   slotProps,
   onToggle,
@@ -611,6 +618,7 @@ function PreviewItem({
             variant="ghost"
             tone="danger"
             css={actionStyle}
+            aria-disabled={locked || undefined}
             aria-describedby={titleId}
             data-link-action="remove"
             onClick={onRemove}
@@ -735,7 +743,7 @@ export function LinkUnfurl({
   const controllersRef = useRef(new Map<string, { requestId: string; controller: AbortController }>());
   const focusAfterRemoval = useRef<{ removed: string; candidates: string[] } | null>(null);
 
-  const joiner = new Intl.ListFormat(locale, { type: 'unit', style: 'short' });
+  const joiner = useMemo(() => new Intl.ListFormat(locale, { type: 'unit', style: 'short' }), [locale]);
   const titleOf = (link: Link) => {
     const record = recordFor(link);
     return (statusOf(link, record) === 'ready' && record?.title) || link.url;
@@ -989,6 +997,7 @@ export function LinkUnfurl({
                       record={record}
                       open={status === 'ready' && expandedIds.includes(link.id)}
                       animate={animate}
+                      locked={sending}
                       labels={labels}
                       slotProps={slotProps}
                       onToggle={() => toggle(link)}
@@ -1007,7 +1016,7 @@ export function LinkUnfurl({
                     size="sm"
                     variant="outline"
                     css={suggestionStyle}
-                    disabled={sending}
+                    aria-disabled={sending || undefined}
                     onClick={() => insertSuggestion(suggestion.url)}
                   >
                     {suggestion.label}
