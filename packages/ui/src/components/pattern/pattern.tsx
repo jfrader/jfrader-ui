@@ -22,7 +22,7 @@ export interface PatternProps
   size?: PatternSize;
   /** Positive, finite multiplier of the tile side. Defaults to 1. */
   scale?: number;
-  /** Two token inks: neutral surface/border, accent soft/accent, or card red/paper. */
+  /** Token inks: `neutral`/`accent` for general surfaces; `card` uses red/paper for card backs. */
   tone?: PatternTone;
 }
 
@@ -36,7 +36,7 @@ const rootStyle = css({
   },
   [FORCED_COLORS]: {
     forcedColorAdjust: 'none',
-    '& > rect': { fill: 'Canvas' },
+    '& > rect': { fill: 'transparent' },
   },
 });
 
@@ -54,13 +54,14 @@ const inks: Record<PatternTone, { paper: string; ink: string }> = {
 
 const tiles: Record<PatternVariant, ReactNode> = {
   stripes: <rect width="4" height="16" />,
-  diagonal: <path d="M-4 0H0L16 16H12ZM12 0H16L32 16H28Z" />,
+  diagonal: <path d="M0 0L16 16H12L0 4ZM12 0H16V4Z" />,
   checks: <path d="M0 0H8V8H0ZM8 8H16V16H8Z" />,
   dots: <circle cx="8" cy="8" r="2" />,
-  waves: <path d="M-16 8C-12 0-12 0-8 8S-4 16 0 8S4 0 8 8S12 16 16 8S20 0 24 8" fill="none" stroke="currentColor" strokeWidth="2" />,
-  chevron: <path d="M-8 2L0 10L8 2L16 10L24 2M-8 18L0 26L8 18L16 26L24 18M-8-14L0-6L8-14L16-6L24-14" fill="none" stroke="currentColor" strokeWidth="4" />,
+  waves: <path d="M0 7C4 1 4 1 8 7S12 13 16 7V9C12 15 12 15 8 9S4 3 0 9Z" />,
+  chevron: <path d="M0 10L8 2L16 10V14L8 6L0 14Z" />,
 };
 
+/** Decorative SVG tiles. In forced colors, paints nothing so the enclosing surface and border remain visible. */
 export function Pattern({
   ref,
   variant = 'diagonal',
@@ -79,6 +80,7 @@ export function Pattern({
     <WithSx className={className} styles={rootStyle} sx={sx}>
       {(rootClass) => (
         <svg {...rest} ref={ref} className={rootClass} data-ui="pattern" data-variant={variant}
+          data-size={size} data-scale={scale}
           aria-hidden="true" focusable="false">
           <defs>
             <pattern id={id} patternUnits="userSpaceOnUse" width={tileSide} height={tileSide}
