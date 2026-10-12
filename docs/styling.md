@@ -8,9 +8,9 @@ Use a component's props for built-in variants. Use tokens for changes shared acr
 | --- | --- |
 | Change a Button's supported size, tone or variant | Its `size`, `tone` or `variant` prop. |
 | Change colors, spacing or fonts across a section or app | [Theme tokens](./theming.md). |
-| Change one component instance or public part | `sx`. No special JSX setup. |
-| Reuse a styled component throughout your app | `styled`. No special JSX setup. |
-| Compose Emotion styles, including on native elements | The `css` prop, with Emotion's JSX runtime configured. |
+| Change one component instance or public part | [`sx`](#change-one-instance-with-sx). No special JSX setup. |
+| Reuse a styled component throughout your app | [`styled`](#reuse-styles-with-styled). No special JSX setup. |
+| Compose Emotion styles, including on native elements | The [`css` prop](#the-css-prop), with Emotion's JSX runtime configured. |
 | Use an existing stylesheet | `className`, with normal CSS cascade rules. |
 
 ## Token references

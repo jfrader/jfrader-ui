@@ -9,6 +9,11 @@
   overflow-x: auto;
 }
 
+.foundation-guide td:first-child code {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
 .foundation-guide pre {
   max-inline-size: 100%;
   overflow-x: auto;

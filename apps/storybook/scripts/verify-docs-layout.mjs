@@ -93,7 +93,8 @@ try {
   const sectionLink = frame.locator('.foundation-guide a[href^="#"]').first();
   await sectionLink.waitFor();
   const hash = await sectionLink.getAttribute('href');
-  await sectionLink.click();
+  await sectionLink.focus();
+  await sectionLink.press('Enter');
   assert.equal(page.url(), managerUrl, 'section links preserve the Storybook manager');
   assert.equal(await frame.locator('html').evaluate(() => location.hash), hash, 'section link scrolls the preview');
   console.log('verify-docs-layout: section navigation keeps the sidebar OK');

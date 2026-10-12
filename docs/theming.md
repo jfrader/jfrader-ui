@@ -2,6 +2,11 @@
 
 Choose a light or dark palette, then change the colors, spacing or typography your app needs. Start with the stylesheet setup in [Getting started](./consuming-jfrader-ui.md).
 
+- [Set the document palette](#set-the-document-palette) and remember a user's choice.
+- [Theme part of a page](#theme-part-of-a-page).
+- [Add your brand colors and tokens](#custom-palettes).
+- [Keep themes inside overlays](#overlays-and-portal-containers).
+
 ## What each API changes
 
 A **token** is a named design value, such as a text color or a spacing step. Components read CSS custom properties such as `var(--ui-color-accent)` instead of fixed values.
