@@ -191,10 +191,11 @@ export function HoldToConfirm({
   const [confirmed, requestConfirmation] = useControlledState(value, defaultValue, onValueChange);
   const [holding, setHolding] = useState(false);
   const [announcement, setAnnouncement] = useState('');
+  // Note: the confirmation announcement is consumed on the first render after completion;
+  // a controlled parent that accepts asynchronously (a later render) will not announce. Documented behavior.
   const pendingAnnouncement = useRef(false);
   const attempt = useRef<Attempt | null>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const mergedRef = useMergeRefs([buttonRef, ref]);
+  const mergedRef = useMergeRefs([ref]);
   const notifyHold = useLatestCallback(onHoldChange);
   const notifyConfirm = useLatestCallback(onConfirm);
   const ariaInactive = rest['aria-disabled'] === true || rest['aria-disabled'] === 'true';

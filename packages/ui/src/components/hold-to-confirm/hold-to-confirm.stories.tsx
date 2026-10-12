@@ -48,19 +48,19 @@ export const Neutral: Story = { args: { tone: 'neutral' } };
 export const Small: Story = {
   args: { size: 'sm' },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button').getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
+    await expect(canvas.getByRole('button').getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
   },
 };
 export const Medium: Story = {
   args: { size: 'md' },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button').getBoundingClientRect().height).toBeGreaterThanOrEqual(39);
+    await expect(canvas.getByRole('button').getBoundingClientRect().height).toBeGreaterThanOrEqual(40);
   },
 };
 export const Large: Story = {
   args: { size: 'lg' },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button').getBoundingClientRect().height).toBeGreaterThanOrEqual(47);
+    await expect(canvas.getByRole('button').getBoundingClientRect().height).toBeGreaterThanOrEqual(48);
   },
 };
 export const Disabled: Story = {
