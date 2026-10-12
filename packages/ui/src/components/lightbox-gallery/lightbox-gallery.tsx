@@ -4,6 +4,7 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ComponentPropsWithRef,
@@ -386,6 +387,11 @@ function Viewer({
   reduced,
 }: ViewerProps) {
   const id = useId();
+  const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const percentFormat = useMemo(
+    () => new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }),
+    [locale],
+  );
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stageMerged = useMergeRefs([stageRef, slots?.stage?.ref]);
@@ -450,14 +456,9 @@ function Viewer({
   const captionId = slots?.caption?.id ?? `${id}-caption`;
   const hasCaption = image && isRenderable(image.caption) && image.caption !== '';
   const position = image
-    ? labels.position(
-        new Intl.NumberFormat(locale).format(index + 1),
-        new Intl.NumberFormat(locale).format(images.length),
-      )
+    ? labels.position(format.format(index + 1), format.format(images.length))
     : labels.unavailable;
-  const zoomText = labels.zoomPercent(
-    new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }).format(zoom),
-  );
+  const zoomText = labels.zoomPercent(percentFormat.format(zoom));
   const limits = (value = scale.get()) => ({
     x: Math.max(0, (bounds.width * value - (stageRef.current?.clientWidth ?? 0)) / 2),
     y: Math.max(0, (bounds.height * value - (stageRef.current?.clientHeight ?? 0)) / 2),
@@ -577,7 +578,7 @@ function Viewer({
     };
     stage.addEventListener('wheel', wheel, { passive: false });
     return () => stage.removeEventListener('wheel', wheel);
-  }, [controller.open, image, bounds, maxZoom]);
+  }, [controller.open, image, maxZoom]);
 
   const keyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.defaultPrevented || event.target !== event.currentTarget || !image) return;
@@ -860,7 +861,7 @@ function Viewer({
               key={item.id}
               type="button"
               aria-current={item.id === selected ? 'true' : undefined}
-              aria-label={`${item.title || item.alt}, ${labels.position(new Intl.NumberFormat(locale).format(itemIndex + 1), new Intl.NumberFormat(locale).format(images.length))}`}
+              aria-label={`${item.title || item.alt}, ${labels.position(format.format(itemIndex + 1), format.format(images.length))}`}
               css={thumbStyle}
               onClick={() => select(item.id)}
             >
@@ -925,7 +926,7 @@ export function LightboxGallery({
   const [geometry, setGeometry] = useState({ columns: 1, width: MIN_COLUMN_WIDTH, gap: 0 });
   const width = validPositive(minColumnWidth, MIN_COLUMN_WIDTH);
   const zoomLimit = Math.max(1, validPositive(maxZoom, MAX_ZOOM));
-  const format = new Intl.NumberFormat(locale);
+  const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
 
   useEffect(() => {
     const query = rootRef.current?.ownerDocument.defaultView?.matchMedia(
