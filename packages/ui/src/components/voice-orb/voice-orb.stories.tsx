@@ -496,6 +496,37 @@ export const DisabledActions: Story = {
     await expect(args.onStart).toHaveBeenCalledTimes(0);
   },
 };
+function installMediaSpies() {
+  const unexpected = () => {
+    throw new Error('VoiceOrb must not access media APIs');
+  };
+  return {
+    microphone: navigator.mediaDevices
+      ? spyOn(navigator.mediaDevices, 'getUserMedia').mockImplementation(unexpected)
+      : undefined,
+    audio: spyOn(window, 'AudioContext').mockImplementation(unexpected),
+  };
+}
+let ownershipSpies: ReturnType<typeof installMediaSpies>;
+export const MediaOwnership: Story = {
+  beforeEach: () => {
+    ownershipSpies = installMediaSpies();
+    return () => {
+      ownershipSpies.microphone?.mockRestore();
+      ownershipSpies.audio.mockRestore();
+    };
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    if (ownershipSpies.microphone) await expect(ownershipSpies.microphone).toHaveBeenCalledTimes(0);
+    await expect(ownershipSpies.audio).toHaveBeenCalledTimes(0);
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Start voice session' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Mute microphone' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'End voice session' }));
+    if (ownershipSpies.microphone) await expect(ownershipSpies.microphone).toHaveBeenCalledTimes(0);
+    await expect(ownershipSpies.audio).toHaveBeenCalledTimes(0);
+  },
+};
 export const RefAndStyling: Story = {
   args: { ref: fn() },
   render: (args) => (
