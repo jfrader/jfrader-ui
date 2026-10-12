@@ -4,31 +4,39 @@
 // Home/End. Horizontal arrows mirror in RTL; Up/PageUp always increase.
 // Commit reports the completed request, not controlled-parent acceptance.
 // Hidden inputs support submission, not native required/range validation.
-import {
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type ComponentPropsWithRef,
-  type KeyboardEvent,
-  type PointerEvent,
-  type ReactNode,
-} from 'react';
+import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
-import { isRenderable } from '../../utils/renderable';
-import { useControlledState } from '../../utils/use-controlled-state';
+import {
+  hasContent,
+  indexedPart,
+  joinIds,
+  useSliderFormat,
+  useSliderInteraction,
+  type SliderMark,
+  type SliderPart as Part,
+} from './use-slider-interaction';
+import {
+  sliderControlStyle,
+  sliderDescriptionStyle,
+  sliderErrorStyle,
+  sliderHeaderStyle,
+  sliderLabelStyle,
+  sliderMarkStyle,
+  sliderMarksStyle,
+  sliderReadoutStyle,
+  sliderRootStyle,
+  sliderRowStyle,
+  sliderSizeStyles,
+} from './slider-style';
 
-export type SliderValue = number | readonly [number, number];
-export type SliderMark = number | { value: number; label?: ReactNode };
+export type { SliderMark, SliderValue } from './use-slider-interaction';
 export type SliderSize = 'sm' | 'md';
-type Part<E extends 'div' | 'span' | 'button'> = ComponentPropsWithRef<E> & { css?: Interpolation<Theme> };
 export interface SliderSlotProps {
   label?: Part<'span'>;
   readout?: Part<'span'>;
@@ -88,49 +96,9 @@ export type SliderProps = SliderCommonProps &
       }
   );
 
-const STEP_TOLERANCE = 1e-7;
 const SETTLING_SPRING = { type: 'spring', stiffness: 420, damping: 30 } as const;
 const STRAIN_BOUND = 8;
-const rootStyle = css({
-  label: 'slider',
-  display: 'grid',
-  gap: vars.space[2],
-  minInlineSize: 0,
-  inlineSize: '100%',
-  fontFamily: vars.font.sans,
-  fontSize: vars.textSize.sm,
-  lineHeight: vars.lineHeight.base,
-  color: vars.color.text,
-});
-const headerStyle = css({
-  display: 'flex',
-  flexWrap: 'wrap',
-  justifyContent: 'space-between',
-  gap: vars.space[2],
-  alignItems: 'baseline',
-});
-const labelStyle = css({ fontWeight: vars.fontWeight.medium });
-const readoutStyle = css({ fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' });
-const descriptionStyle = css({ color: vars.color.textMuted });
-const errorStyle = css({ color: vars.color.dangerText });
-const rowStyle = css({
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space[3],
-  minInlineSize: 0,
-  paddingBlockStart: vars.space[8],
-});
-const controlStyle = css({
-  position: 'relative',
-  flex: 1,
-  minInlineSize: vars.space[8],
-  marginInline: vars.space[4],
-  touchAction: 'pan-y',
-  userSelect: 'none',
-  cursor: 'pointer',
-  '&[data-disabled]': { cursor: 'default' },
-});
-const sizeStyles = { sm: css({ minBlockSize: vars.space[8] }), md: css({ minBlockSize: vars.space[10] }) };
+const rootStyle = css(sliderRootStyle, { label: 'slider' });
 const trackStyle = css({
   position: 'absolute',
   insetInline: 0,
@@ -215,50 +183,6 @@ const tickStyle = css({
   pointerEvents: 'none',
   [FORCED_COLORS]: { background: 'Canvas', borderColor: 'CanvasText' },
 });
-const marksStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
-const markStyle = css({
-  minBlockSize: vars.space[8],
-  minInlineSize: vars.space[8],
-  paddingBlock: vars.space[1],
-  paddingInline: vars.space[2],
-  font: 'inherit',
-  overflowWrap: 'anywhere',
-  maxInlineSize: '100%',
-  color: vars.color.text,
-  background: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.md,
-  cursor: 'pointer',
-  '&:focus-visible': focusRingOutset,
-  '&:disabled': { cursor: 'default' },
-  [FORCED_COLORS]: { borderColor: 'ButtonText' },
-});
-
-function sameValue(a: SliderValue, b: SliderValue) {
-  return typeof a === 'number' ? a === b : typeof b !== 'number' && a[0] === b[0] && a[1] === b[1];
-}
-function ids(...values: (string | false | undefined)[]) {
-  return values.filter(Boolean).join(' ') || undefined;
-}
-function hasContent(node: ReactNode) {
-  return isRenderable(node) && node !== '';
-}
-function indexed<E extends 'div' | 'button'>(
-  part: Part<E> | ((index: number) => Part<E>) | undefined,
-  index: number,
-) {
-  return typeof part === 'function' ? part(index) : part;
-}
-interface Gesture {
-  pointerId: number;
-  thumb: number;
-  offset: number;
-  originX: number;
-  coincident: boolean;
-  initial: SliderValue;
-  candidate: SliderValue;
-  control: HTMLDivElement;
-}
 
 export function Slider(props: SliderProps) {
   const {
@@ -299,216 +223,48 @@ export function Slider(props: SliderProps) {
     ...rest
   } = props;
   const range = type === 'range';
-  const steps = (max - min) / step;
-  if (
-    ![min, max, step, steps].every(Number.isFinite) ||
-    max <= min ||
-    step <= 0 ||
-    !Number.isSafeInteger(Math.round(steps)) ||
-    Math.abs(steps - Math.round(steps)) > STEP_TOLERANCE
-  )
-    throw new Error('Slider requires finite min < max, a positive step, and max aligned to min + n * step.');
-  if (
-    !Number.isInteger(minStepsBetweenThumbs) ||
-    minStepsBetweenThumbs < 0 ||
-    minStepsBetweenThumbs > Math.round(steps)
-  )
-    throw new Error('Slider minStepsBetweenThumbs must be a nonnegative integer that fits the domain.');
-  if (largeStep !== undefined && (!Number.isFinite(largeStep) || largeStep <= 0))
-    throw new Error('Slider largeStep must be finite and positive.');
-  const gap = minStepsBetweenThumbs * step;
-  const large = Math.max(1, Math.round((largeStep ?? (max - min) / 10) / step)) * step;
-  const snap = (n: number) => {
-    if (!Number.isFinite(n)) throw new Error('Slider values must be finite.');
-    const index = Math.max(0, Math.min(Math.round(steps), Math.round((n - min) / step)));
-    const latticeValue = min + index * step;
-    const rounded = Number(latticeValue.toPrecision(15));
-    return Math.abs(rounded - latticeValue) <= step * STEP_TOLERANCE ? rounded : latticeValue;
-  };
-  const normalize = (input: SliderValue): SliderValue => {
-    if (!range) {
-      if (typeof input !== 'number') throw new Error('Slider single mode requires a number.');
-      return snap(input);
-    }
-    if (typeof input === 'number' || input.length !== 2 || input[0] > input[1])
-      throw new Error('Slider range requires an ordered [lower, upper] tuple.');
-    const lower = snap(input[0]);
-    const upper = snap(input[1]);
-    if ((upper - lower) / step + STEP_TOLERANCE < minStepsBetweenThumbs)
-      throw new Error('Slider range values must respect minStepsBetweenThumbs.');
-    return [lower, upper];
-  };
-  const [seed] = useState(() => normalize(defaultValue ?? (range ? [min, max] : min)));
-  const notify = (next: SliderValue) => {
+  const reduced = useReducedMotion();
+  const [strain, setStrain] = useState(0);
+  const slider = useSliderInteraction({
+    component: 'Slider',
+    range,
+    value,
+    defaultValue,
+    min,
+    max,
+    step,
+    largeStep,
+    minStepsBetweenThumbs,
+    disabled,
     // `props.type === 'range'` (not the `range` alias) is required for the discriminant narrowing.
-    if (props.type === 'range') props.onValueChange?.(next as readonly [number, number]);
-    else props.onValueChange?.(next as number);
-  };
-  const commit = (next: SliderValue) => {
-    if (props.type === 'range') props.onValueCommit?.(next as readonly [number, number]);
-    else props.onValueCommit?.(next as number);
-  };
-  const [state, requestChange, reset] = useControlledState<SliderValue>(value, seed, notify);
-  const current = normalize(state ?? seed);
-  const values = typeof current === 'number' ? [current] : current;
-  const id = useId();
-  const formatter = useMemo(() => new Intl.NumberFormat(locale, formatOptions), [locale, formatOptions]);
-  const format = (n: number) => (formatValue ? formatValue(n, formatter) : formatter.format(n));
+    onValueChange: (next) => {
+      if (props.type === 'range') props.onValueChange?.(next as readonly [number, number]);
+      else props.onValueChange?.(next as number);
+    },
+    onValueCommit: (next) => {
+      if (props.type === 'range') props.onValueCommit?.(next as readonly [number, number]);
+      else props.onValueCommit?.(next as number);
+    },
+    onPointerSample: ({ raw, low, high, rtl }) =>
+      setStrain(
+        reduced
+          ? 0
+          : Math.max(
+              -STRAIN_BOUND,
+              Math.min(STRAIN_BOUND, (raw - Math.max(low, Math.min(high, raw))) * (rtl ? -1 : 1)),
+            ),
+      ),
+    onGestureEnd: () => setStrain(0),
+  });
+  const { id, current, values, active, bounds, percent } = slider;
+  const { formatter, format } = useSliderFormat(locale, formatOptions, formatValue);
   const readout =
     typeof current === 'number'
       ? format(current)
       : !formatValue && 'formatRange' in formatter
         ? formatter.formatRange(current[0], current[1])
         : `${format(current[0])} – ${format(current[1])}`;
-  const reduced = useReducedMotion();
-  const controlRef = useRef<HTMLDivElement | null>(null);
-  const gesture = useRef<Gesture | null>(null);
-  const lastFocused = useRef(0);
-  const [active, setActive] = useState<number | null>(null);
-  const [strain, setStrain] = useState(0);
-  const bounds = (index: number) =>
-    range ? [index === 0 ? min : values[0]! + gap, index === 0 ? values[1]! - gap : max] : [min, max];
-  const candidate = (index: number, raw: number): SliderValue => {
-    const [low, high] = bounds(index);
-    const next = snap(Math.max(low!, Math.min(high!, raw)));
-    return range ? (index === 0 ? [next, values[1]!] : [values[0]!, next]) : next;
-  };
-  const request = (next: SliderValue) => {
-    if (!sameValue(current, next)) requestChange(next);
-  };
-  const finish = (complete: boolean) => {
-    const drag = gesture.current;
-    if (!drag) return;
-    gesture.current = null;
-    setActive(null);
-    setStrain(0);
-    if (drag.control.hasPointerCapture(drag.pointerId)) drag.control.releasePointerCapture(drag.pointerId);
-    if (complete && !sameValue(drag.initial, drag.candidate)) commit(drag.candidate);
-  };
-  useEffect(() => {
-    if (disabled) finish(false);
-  }, [disabled]);
-  useEffect(
-    () => () => {
-      const drag = gesture.current;
-      gesture.current = null;
-      if (drag?.control.hasPointerCapture(drag.pointerId)) drag.control.releasePointerCapture(drag.pointerId);
-    },
-    [],
-  );
-  useEffect(() => {
-    const form = controlRef.current?.closest('form');
-    if (!form) return;
-    const handleReset = (event: Event) => {
-      queueMicrotask(() => {
-        if (!event.defaultPrevented) {
-          finish(false);
-          reset();
-        }
-      });
-    };
-    form.addEventListener('reset', handleReset);
-    return () => form.removeEventListener('reset', handleReset);
-  }, [reset]);
-  const focusThumb = (index: number) =>
-    controlRef.current?.querySelector<HTMLElement>(`[data-slider-thumb="${index}"]`)?.focus();
-  const rtl = () => controlRef.current?.matches(':dir(rtl)') ?? false;
-  const pointerValue = (x: number) => {
-    const rect = controlRef.current!.getBoundingClientRect();
-    const ratio = rect.width > 0 ? (x - rect.left) / rect.width : 0;
-    return min + (rtl() ? 1 - ratio : ratio) * (max - min);
-  };
-  const nearest = (n: number) =>
-    !range
-      ? 0
-      : Math.abs(n - values[0]!) === Math.abs(n - values[1]!)
-        ? lastFocused.current
-        : Math.abs(n - values[0]!) < Math.abs(n - values[1]!)
-          ? 0
-          : 1;
-  const movePointer = (event: PointerEvent<HTMLDivElement>) => {
-    const drag = gesture.current;
-    if (!drag || event.pointerId !== drag.pointerId || disabled) return;
-    if (drag.coincident && event.clientX !== drag.originX) {
-      drag.thumb = event.clientX > drag.originX !== rtl() ? 1 : 0;
-      drag.coincident = false;
-      setActive(drag.thumb);
-      focusThumb(drag.thumb);
-    }
-    const raw = pointerValue(event.clientX - drag.offset);
-    const next = candidate(drag.thumb, raw);
-    const [low, high] = bounds(drag.thumb);
-    setStrain(
-      reduced
-        ? 0
-        : Math.max(
-            -STRAIN_BOUND,
-            Math.min(STRAIN_BOUND, (raw - Math.max(low!, Math.min(high!, raw))) * (rtl() ? -1 : 1)),
-          ),
-    );
-    if (!sameValue(drag.candidate, next)) {
-      drag.candidate = next;
-      request(next);
-    }
-  };
-  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.defaultPrevented || disabled || gesture.current || !event.isPrimary || event.button !== 0)
-      return;
-    const hit = (event.target as HTMLElement).closest<HTMLElement>('[data-slider-thumb]');
-    const index = hit ? Number(hit.dataset.sliderThumb) : nearest(pointerValue(event.clientX));
-    const rect = hit?.getBoundingClientRect();
-    const offset = rect ? event.clientX - (rect.left + rect.width / 2) : 0;
-    gesture.current = {
-      pointerId: event.pointerId,
-      thumb: index,
-      offset,
-      originX: event.clientX,
-      coincident: range && values[0] === values[1],
-      initial: current,
-      candidate: current,
-      control: event.currentTarget,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.preventDefault();
-    setActive(index);
-    focusThumb(index);
-    if (!hit) movePointer(event);
-  };
-  const handleKey = (event: KeyboardEvent<HTMLDivElement>, index: number) => {
-    if (disabled || event.defaultPrevented) return;
-    const direction = rtl() ? -1 : 1;
-    const amount = event.shiftKey ? large : step;
-    const [low, high] = bounds(index);
-    const targets: Record<string, number> = {
-      ArrowRight: values[index]! + amount * direction,
-      ArrowLeft: values[index]! - amount * direction,
-      ArrowUp: values[index]! + amount,
-      ArrowDown: values[index]! - amount,
-      PageUp: values[index]! + large,
-      PageDown: values[index]! - large,
-      Home: low!,
-      End: high!,
-    };
-    const target = targets[event.key];
-    if (target === undefined) return;
-    event.preventDefault();
-    const next = candidate(index, target);
-    if (!sameValue(current, next)) {
-      request(next);
-      commit(next);
-    }
-  };
-  const normalizedMarks = Array.from(
-    new Map(
-      marks.flatMap((mark) => {
-        const entry = typeof mark === 'number' ? { value: mark } : mark;
-        return Number.isFinite(entry.value) && entry.value >= min && entry.value <= max
-          ? [[snap(entry.value), { ...entry, value: snap(entry.value) }] as const]
-          : [];
-      }),
-    ).values(),
-  );
-  const percent = (n: number) => ((n - min) / (max - min)) * 100;
+  const normalizedMarks = slider.normalizeMarks(marks);
   const startPercent = range ? percent(values[0]!) : 0;
   const endPercent = percent(values[range ? 1 : 0]!);
   const hasLabel = hasContent(label);
@@ -526,16 +282,17 @@ export function Slider(props: SliderProps) {
             data-disabled={disabled || undefined}
             onKeyDown={(event) => {
               onKeyDown?.(event);
-              const thumb = (event.target as HTMLElement).closest<HTMLElement>('[data-slider-thumb]');
-              if (thumb && controlRef.current?.contains(thumb)) {
-                handleKey(event, Number(thumb.dataset.sliderThumb));
-              }
+              slider.handleRootKeyDown(event);
             }}
           >
             {(hasLabel || showValue) && (
-              <div css={headerStyle}>
+              <div css={sliderHeaderStyle}>
                 {hasLabel && (
-                  <span {...slotProps?.label} id={`${id}-label`} css={[labelStyle, slotProps?.label?.css]}>
+                  <span
+                    {...slotProps?.label}
+                    id={`${id}-label`}
+                    css={[sliderLabelStyle, slotProps?.label?.css]}
+                  >
                     {label}
                   </span>
                 )}
@@ -543,7 +300,7 @@ export function Slider(props: SliderProps) {
                   <span
                     {...slotProps?.readout}
                     aria-hidden="true"
-                    css={[readoutStyle, slotProps?.readout?.css]}
+                    css={[sliderReadoutStyle, slotProps?.readout?.css]}
                   >
                     {readout}
                   </span>
@@ -554,7 +311,7 @@ export function Slider(props: SliderProps) {
               <div
                 {...slotProps?.description}
                 id={`${id}-description`}
-                css={[descriptionStyle, slotProps?.description?.css]}
+                css={[sliderDescriptionStyle, slotProps?.description?.css]}
               >
                 {description}
               </div>
@@ -564,44 +321,19 @@ export function Slider(props: SliderProps) {
                 {...slotProps?.error}
                 id={`${id}-error`}
                 role="alert"
-                css={[errorStyle, slotProps?.error?.css]}
+                css={[sliderErrorStyle, slotProps?.error?.css]}
               >
                 {error}
               </div>
             )}
-            <div css={rowStyle}>
+            <div css={sliderRowStyle}>
               {hasContent(start) && <div {...slotProps?.start}>{start}</div>}
               <div
                 {...slotProps?.control}
-                ref={(node) => {
-                  controlRef.current = node;
-                  const external = slotProps?.control?.ref;
-                  if (typeof external === 'function') return external(node);
-                  if (external) external.current = node;
-                }}
-                css={[controlStyle, sizeStyles[size], slotProps?.control?.css]}
+                {...slider.controlHandlers(slotProps?.control)}
+                css={[sliderControlStyle, sliderSizeStyles[size], slotProps?.control?.css]}
                 data-ui="slider-control"
                 data-disabled={disabled || undefined}
-                onPointerDown={(e) => {
-                  slotProps?.control?.onPointerDown?.(e);
-                  handlePointerDown(e);
-                }}
-                onPointerMove={(e) => {
-                  slotProps?.control?.onPointerMove?.(e);
-                  if (!e.defaultPrevented) movePointer(e);
-                }}
-                onPointerUp={(e) => {
-                  slotProps?.control?.onPointerUp?.(e);
-                  if (gesture.current?.pointerId === e.pointerId) finish(true);
-                }}
-                onPointerCancel={(e) => {
-                  slotProps?.control?.onPointerCancel?.(e);
-                  if (gesture.current?.pointerId === e.pointerId) finish(false);
-                }}
-                onLostPointerCapture={(e) => {
-                  slotProps?.control?.onLostPointerCapture?.(e);
-                  if (gesture.current?.pointerId === e.pointerId) finish(false);
-                }}
               >
                 <div
                   {...slotProps?.track}
@@ -629,7 +361,7 @@ export function Slider(props: SliderProps) {
                   />
                 ))}
                 {values.map((n, index) => {
-                  const part = indexed(slotProps?.thumb, index);
+                  const part = indexedPart(slotProps?.thumb, index);
                   const [low, high] = bounds(index);
                   return (
                     <div
@@ -642,20 +374,18 @@ export function Slider(props: SliderProps) {
                       tabIndex={disabled ? -1 : 0}
                       aria-orientation="horizontal"
                       aria-disabled={disabled}
-                      aria-invalid={
-                        hasError || invalid ? true : (part?.['aria-invalid'] ?? ariaInvalidProp)
-                      }
+                      aria-invalid={hasError || invalid ? true : (part?.['aria-invalid'] ?? ariaInvalidProp)}
                       aria-valuemin={low}
                       aria-valuemax={high}
                       aria-valuenow={n}
                       aria-valuetext={format(n)}
                       aria-label={part?.['aria-label'] ?? (range ? thumbLabels?.[index] : ariaLabelProp)}
-                      aria-labelledby={ids(
+                      aria-labelledby={joinIds(
                         ariaLabelledByProp,
                         part?.['aria-labelledby'],
                         range ? `${id}-name-${index}` : hasLabel && `${id}-label`,
                       )}
-                      aria-describedby={ids(
+                      aria-describedby={joinIds(
                         ariaDescribedByProp,
                         part?.['aria-describedby'],
                         hasDescription && `${id}-description`,
@@ -664,7 +394,7 @@ export function Slider(props: SliderProps) {
                       css={[thumbStyle, part?.css]}
                       style={{ ...part?.style, insetInlineStart: `${percent(n)}%` }}
                       onFocus={(e) => {
-                        lastFocused.current = index;
+                        slider.noteFocus(index);
                         part?.onFocus?.(e);
                       }}
                       onKeyDown={(e) => {
@@ -704,25 +434,20 @@ export function Slider(props: SliderProps) {
               {hasContent(end) && <div {...slotProps?.end}>{end}</div>}
             </div>
             {normalizedMarks.some((mark) => hasContent(mark.label)) && (
-              <div css={marksStyle}>
+              <div css={sliderMarksStyle}>
                 {normalizedMarks.map((mark, index) => {
                   if (!hasContent(mark.label)) return null;
-                  const part = indexed(slotProps?.mark, index);
+                  const part = indexedPart(slotProps?.mark, index);
                   return (
                     <button
                       {...part}
                       key={index}
                       type="button"
                       disabled={disabled}
-                      css={[markStyle, part?.css]}
+                      css={[sliderMarkStyle, part?.css]}
                       onClick={(e) => {
                         part?.onClick?.(e);
-                        if (disabled || e.defaultPrevented) return;
-                        const next = candidate(nearest(mark.value), mark.value);
-                        if (!sameValue(current, next)) {
-                          request(next);
-                          commit(next);
-                        }
+                        if (!e.defaultPrevented) slider.selectMark(mark.value);
                       }}
                     >
                       {mark.label}
