@@ -158,6 +158,15 @@ const PRICE_SPRING = {
   visualDuration: 0.24,
 } as const;
 
+function PriceSurface({
+  ref,
+  nativeProps,
+  ...rest
+}: ComponentPropsWithRef<'span'> & { nativeProps: ComponentPropsWithoutRef<'span'> }) {
+  return <span {...nativeProps} {...rest} ref={ref} data-ui="billing-toggle-price" />;
+}
+const MotionPriceSurface = motion.create(PriceSurface);
+
 function BillingToggleRoot({
   ref,
   value: valueProp,
@@ -374,19 +383,21 @@ function BillingTogglePrice({
   return (
     <WithSx className={className} styles={priceStyle} sx={sx}>
       {(className) => (
-        <span {...rest} ref={ref} data-ui="billing-toggle-price" className={className}>
+        <MotionPriceSurface
+          nativeProps={rest}
+          style={rest.style}
+          ref={ref}
+          className={className}
+          layout={!reducedMotion}
+          transition={PRICE_SPRING}
+        >
           <span
             {...slotProps?.amount}
             data-ui="billing-toggle-amount"
             css={[amountStyle, slotProps?.amount?.css]}
           >
             <span css={visuallyHiddenStyle}>{formatted}</span>
-            <motion.span
-              aria-hidden="true"
-              css={visualStyle}
-              layout={!reducedMotion}
-              transition={PRICE_SPRING}
-            >
+            <motion.span aria-hidden="true" css={visualStyle} transition={PRICE_SPRING}>
               <AnimatePresence initial={false}>
                 <motion.span
                   key={formatted}
@@ -425,7 +436,7 @@ function BillingTogglePrice({
               {period}
             </span>
           )}
-        </span>
+        </MotionPriceSurface>
       )}
     </WithSx>
   );
