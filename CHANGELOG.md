@@ -5,6 +5,7 @@
 ### Added
 
 - `CodeBlock`'s optional Shiki adapter highlights JSX and TSX with their own grammars.
+- `Surface`: panel material with flat, raised and floating shadows, inherited or contrast appearance, and div-root replacement through `component` or `slots.root`. Card supports the same root replacement and native root `slotProps`.
 - `Pattern`: decorative SVG tiles (`stripes`, `diagonal`, `checks`, `dots`, `waves`, `chevron`) with continuous tile edges, token inks, tile sizes and scaling, including custom flipped-card artwork. Forced colors hides the pattern and preserves the enclosing surface and border.
 - `GameHand`: card fans with keyboard selection and an explicit play action, plus count-only hidden opponent hands.
 - `CardFlightsProvider` deals and plays cards between measured board slots, with themed overlays, interruptible flights and immediate reduced-motion landing.
@@ -24,4 +25,5 @@
 
 ### Fixed
 
+- Card with `appearance="default"` inside a contrast parent keeps that appearance in descendant portals.
 - Face-down GameCards no longer show a pale strip or pale corners through their ink border.

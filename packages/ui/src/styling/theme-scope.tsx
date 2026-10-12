@@ -47,18 +47,19 @@ export function useSurfaceStyle(theme: ThemeName | null, style: CSSProperties | 
   return scopeStyle(carriedTokenStyle(useContext(ThemeScopeContext), theme), style);
 }
 
-/** The appearance a surface wears: its own value, else the enclosing scope's, else the theme's own. */
+/** `contrast` establishes charcoal; omitted and `default` inherit the enclosing appearance. */
 export function useSurfaceAppearance(appearance?: AppearanceName): AppearanceName {
   const parent = useContext(ThemeScopeContext);
-  return appearance ?? parent?.appearance ?? 'default';
+  return appearance === 'contrast' ? 'contrast' : parent?.appearance ?? 'default';
 }
 
-/** What a `data-theme` scope root sets besides the attribute: inherited text color and color-scheme. */
-export const themeScopeStyle = css({
-  color: vars.color.text,
+export const themeColorSchemeStyle = css({
   colorScheme: 'dark',
   '&[data-theme="light"]': { colorScheme: 'light' },
 });
+
+/** What a `data-theme` scope root sets besides the attribute: inherited text color and color-scheme. */
+export const themeScopeStyle = css([themeColorSchemeStyle, { color: vars.color.text }]);
 
 // Custom properties and color-scheme inherit through `display: contents`, so the wrapper
 // re-scopes the theme without adding a box around positioned or fixed overlay content.
@@ -85,10 +86,10 @@ export function AppearanceScope({
     () => ({ theme: resolvedTheme, appearance, portalContainer: parent?.portalContainer, tokenStyle }),
     [resolvedTheme, appearance, parent?.portalContainer, tokenStyle],
   );
-  if (parent ? parent.theme === resolvedTheme && parent.appearance === appearance : appearance === 'default') {
-    return children;
-  }
-  return <ThemeScopeContext.Provider value={scope}>{children}</ThemeScopeContext.Provider>;
+  const unchanged = parent
+    ? parent.theme === resolvedTheme && parent.appearance === appearance
+    : appearance === 'default';
+  return <ThemeScopeContext.Provider value={unchanged ? parent : scope}>{children}</ThemeScopeContext.Provider>;
 }
 
 /** Re-applies the nearest scope (theme, appearance and tokens) around portaled content. */

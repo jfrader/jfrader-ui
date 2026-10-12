@@ -170,8 +170,10 @@ Fill this in the spec/PR before coding (it prevents 80% of review findings):
    native event callbacks (`onChange`, `onClick`, `onCancel`) keep their native event signature.
 5. **Ref target** — which DOM element the `ref` prop reaches.
 6. **Customization surface** — `className`, `css` and `sx` on every public visual part root,
-   `slotProps` for single widgets with internal parts, `render` for polymorphism (planned; do not
-   add `asChild`).
+   `component` (exactly sugar for `slots.root`) and `slots` for adopted part replacement,
+   `slotProps` for part props. Root extra props merge as `slotProps.root`: slot conflicts win,
+   except combined className and shallow-merged style. Existing leaf-control `render` APIs stay;
+   no new panel render APIs, `asChild`, or element-valued replacements.
 7. **Environments** — RTL, reduced motion, forced colors, SSR/hydration notes.
 8. **Lifecycle status** — new / stable / deprecated (with replacement).
 
@@ -205,6 +207,14 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `loading-ring` — spinning ring and its reduced-motion pulse (Button, Spinner).
 - `surface` — `raisedSurface` panel, the surface appearance helpers and `modalShellReset` for native
   `<dialog>` shells.
+- `components/surface/surface-root` — private root seam shared by Surface and Card: separates
+  default material from retained host structure, resolves inherited appearance once, carries
+  same-theme tokens, merges root props and style lanes, composes refs with cleanup, and diagnoses
+  missing/non-div refs and changed replacement identity. Both adopt only `slots.root`; Card's
+  header/title/description/content/footer remain styling-only `slotProps`. Replacements own
+  material, forward all received props to one div, and apply their styles before the supplied
+  className. Declare component types outside render; first-render inline functions cannot be
+  reliably diagnosed. Scope/style updates must preserve the root and descendant identity.
 - `trigger-style` — overlay trigger button (Dialog, Popover, Menu).
 - `listbox-style` — popup surface, item and option fragments (Menu, Select, Combobox, CommandPalette).
 - `input-control` — text-input control skin (TextField, Textarea).
@@ -234,6 +244,8 @@ Shared story assertions in `src/testing/` (reuse before writing a local copy):
   `ComponentPropsWithRef<'el'>`; never `forwardRef`. Every public component and compound part sets a
   dotted `displayName` (`Dialog.Trigger`) so DevTools and Storybook code panels show the public name.
 - `data-ui="<name>"` on every component root (and `data-ui="<name>-<part>"` on compound parts).
+  Composed roots retain deduplicated identity tokens; use `[data-ui~="<name>"]` selectors.
+  Surface uses `data-surface-variant`, leaving host `data-variant` untouched.
 - One folder per component; a shared hook only when a second consumer exists.
 - The package index re-exports components + types with `export *`, plus the styling API (`styled`,
   `theme`, `ThemeProvider`, `useTheme`, `createTheme`, `themeTokenStyle`, `SxProps`). `theme-provider/` has no `index.ts`, so it gets
