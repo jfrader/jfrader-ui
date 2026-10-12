@@ -193,6 +193,8 @@ A `Badge` count is not part of the wrapped control's accessible name. If the con
 
 ## Workspace apps
 
+The reference app in `apps/pilot` imports both CSS files in `src/main.tsx` and uses the workspace JSX configuration below. It starts with `data-theme="dark"` in `index.html` and switches that attribute without persisting it. It uses app CSS rather than theme callbacks, so it does not need `ThemeProvider`.
+
 This section is only for apps inside the jfrader-ui monorepo. Workspace exports point at `src/`, so these apps compile the library's TSX. Run `pnpm generate`, then configure Emotion's JSX runtime in both Vite and TypeScript, as shown in [Styling](./styling.md).
 
 Published-package consumers do not need that configuration unless they use the `css` prop themselves. TypeScript's `strict` and `noUncheckedIndexedAccess` are repo conventions, not requirements for consumers.
