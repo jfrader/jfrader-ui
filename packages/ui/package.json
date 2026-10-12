@@ -54,6 +54,7 @@
     "./dialog": { "types": "./src/components/dialog/index.ts", "import": "./src/components/dialog/index.ts" },
     "./divider": { "types": "./src/components/divider/index.ts", "import": "./src/components/divider/index.ts" },
     "./drawer": { "types": "./src/components/drawer/index.ts", "import": "./src/components/drawer/index.ts" },
+    "./editable-details": { "types": "./src/components/editable-details/index.ts", "import": "./src/components/editable-details/index.ts" },
     "./emblem": { "types": "./src/components/emblem/index.ts", "import": "./src/components/emblem/index.ts" },
     "./empty-state": { "types": "./src/components/empty-state/index.ts", "import": "./src/components/empty-state/index.ts" },
     "./expandable-card": { "types": "./src/components/expandable-card/index.ts", "import": "./src/components/expandable-card/index.ts" },

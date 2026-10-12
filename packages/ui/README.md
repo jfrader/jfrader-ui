@@ -22,6 +22,7 @@ React components styled with Emotion and themed through the CSS custom propertie
 | `@jfrader/ui/date-picker` | `DatePicker` |
 | `@jfrader/ui/dialog` | `Dialog` |
 | `@jfrader/ui/divider` | `Divider` |
+| `@jfrader/ui/editable-details` | `EditableDetails` |
 | `@jfrader/ui/emblem` | `Emblem` |
 | `@jfrader/ui/flex` | `Flex` |
 | `@jfrader/ui/flip-game-card` | `FlipGameCard` |

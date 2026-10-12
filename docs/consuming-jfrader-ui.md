@@ -271,6 +271,121 @@ import { Inbox } from 'lucide-react';
 
 You can use your own SVG instead. Keep brand artwork in your app.
 
+## Editable details
+
+`EditableDetails` presents labelled values in description lists, optionally grouped in nested
+disclosures. It does not own values, validation, forms or persistence. Use `InlineEdit` for a single
+string with its built-in save lifecycle; use `TreeView` for hierarchical navigation.
+
+```tsx
+import { useState } from 'react';
+import { Button, EditableDetails, TextField, type EditableDetailsEditorProps } from '@jfrader/ui';
+
+function NameEditor({
+  initialFocusRef, complete, cancel, name, onSave,
+}: EditableDetailsEditorProps & { name: string; onSave: (name: string) => Promise<void> }) {
+  const [draft, setDraft] = useState(name);
+  const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
+
+  return (
+    <form onSubmit={async (event) => {
+      event.preventDefault();
+      if (pending) return;
+      setPending(true);
+      setError('');
+      try {
+        await onSave(draft);
+        complete();
+      } catch {
+        setError('Could not save. Try again.');
+      } finally {
+        setPending(false);
+      }
+    }}>
+      <TextField ref={initialFocusRef} label="Name" value={draft}
+        onValueChange={setDraft} required readOnly={pending} error={error} />
+      <Button type="submit" loading={pending}>Save</Button>
+      <Button type="button" onClick={cancel} disabled={pending}>Cancel</Button>
+    </form>
+  );
+}
+
+<EditableDetails messages={{ edit: 'Edit' }}>
+  <EditableDetails.Section title="Project" headingLevel={2} defaultOpen>
+    <EditableDetails.List>
+      <EditableDetails.Item label="Name" renderEditor={(editor) => (
+        <NameEditor {...editor} name={name} onSave={saveName} />
+      )}>
+        {name}
+      </EditableDetails.Item>
+      <EditableDetails.Item label="Members">{memberCount}</EditableDetails.Item>
+    </EditableDetails.List>
+  </EditableDetails.Section>
+</EditableDetails>;
+```
+
+Update the app's saved value inside `saveName`; `complete()` only requests closure. Hooks belong in
+the returned editor component, not in `renderEditor`. Editors can use unrelated scalar or object
+types; the module never parses the summary. Return normal React content for zero, false and empty
+values. Supply readable boolean labels and missing-value placeholders in the application.
+
+- `Section` and `Item` each support `open`, `defaultOpen` (default `false`) and `onOpenChange`.
+  Controlled requests do not commit until their prop changes. Multiple editors may remain open.
+- A closed Section hides its mounted panel. Drafts, nested disclosure state and pending work remain;
+  unopened editors are not mounted. Reopening the Section does not move focus into the editor.
+- `complete` and `cancel` request close, without validation, submission or resetting fields. A
+  rejected controlled close retains the same session. Do not clear drafts on a close request.
+- Accepted close unmounts the editor. Removed capabilities and changed keys end that lifetime;
+  old callbacks cannot close a later editor. Capability removal also clears pending Edit focus
+  intent, even if the open request was not accepted. Apps still own cancellation of network requests.
+- Stable React keys, not labels or list indexes, preserve row identity across reorder/translation.
+  Keep Sections beside Lists; a List contains Items, whose native terms/descriptions name the rows.
+- Section headings use the caller's `headingLevel`. Panels are not region landmarks by default.
+  Refs target the root `div`, Section `section`, List `dl`, and Item row `div` respectively.
+
+### Forms and Actions
+
+The module creates no form. Do not put a supplied native form inside another form. Inside an existing
+form, render a non-form editor or form-associated controls targeting a separate form. Disclosure and
+Edit actions are `type="button"` and do not submit that surrounding form.
+
+React function-valued Actions reset uncontrolled fields after successful resolution, including a
+returned validation-error result or a save whose close request the parent rejects. Use controlled
+fields (or explicitly restore them) in Action editors. Preserving a mounted editor is not an
+independent backup of its values. The `Showcase/EditableDetails` stories exercise native forms,
+grouped values, RHF submission/errors/focus, and controlled Action drafts. RHF is only a workbench
+development dependency, not a library runtime or peer requirement.
+
+### Keyboard and focus
+
+Tab and Shift+Tab follow native order. Enter/Space activate disclosure and Edit buttons. Editors own
+Enter, Escape, arrows and IME behavior; the module does not intercept those keys or save on blur.
+
+An accepted Edit interaction focuses `initialFocusRef`, or the row's named editor group if that
+target cannot take focus. The group has a visible outline and `tabIndex={-1}`, not a normal Tab stop.
+Initial `defaultOpen` and unrelated external opens do not steal focus. Accepted completion/cancellation
+returns focus only while it still belongs to the editor. Collapsing a focused panel or removing a
+focused row falls back to a surviving visible ancestor disclosure; unrelated focus stays untouched.
+
+### Portaled and top-layer editors
+
+`visible` reflects accepted visibility through every enclosing Section. Use it to gate picker or
+dialog visibility without resetting the draft: `<Popover open={visible && pickerOpen}>`.
+DOM hiding does not hide portals or the native top layer.
+
+Control the Section's `open` state and expose its `triggerRef` when coordinating overlays:
+
+1. At the actual collapse, check whether your overlay contains its document's active element.
+2. Dismiss it and suppress restoration to a hidden invoker. For native dialogs, call `close()` before
+   hiding the invoker, releasing the top layer and its inert background first.
+3. Move focus to the nearest still-visible Section trigger only if that overlay owned focus.
+4. Accept the Section close and gate the overlay with `visible` as a final safeguard.
+
+The library handles DOM-descendant focus, not arbitrary external portal ownership. The runnable
+`Showcase/EditableDetails overlays` recipes cover a portaled Popover picker, native modal dialog,
+retained drafts and focus that has already moved elsewhere.
+
 ## Badge counts
 
 A `Badge` count is not part of the wrapped control's accessible name. If the control has an `aria-label`, include the count in it: `aria-label="Inbox, 3 unread"`. If the control is named by its visible text, the count is read after it.
