@@ -41,6 +41,7 @@
     "./code-block/shiki": { "types": "./src/components/code-block/shiki.ts", "import": "./src/components/code-block/shiki.ts" },
     "./combobox": { "types": "./src/components/combobox/index.ts", "import": "./src/components/combobox/index.ts" },
     "./command-palette": { "types": "./src/components/command-palette/index.ts", "import": "./src/components/command-palette/index.ts" },
+    "./comment-thread": { "types": "./src/components/comment-thread/index.ts", "import": "./src/components/comment-thread/index.ts" },
     "./container": { "types": "./src/components/container/index.ts", "import": "./src/components/container/index.ts" },
     "./context-menu": { "types": "./src/components/context-menu/index.ts", "import": "./src/components/context-menu/index.ts" },
     "./copy-button": { "types": "./src/components/copy-button/index.ts", "import": "./src/components/copy-button/index.ts" },
