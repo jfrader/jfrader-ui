@@ -1,44 +1,71 @@
 // Named-theme scope shared by ThemeRoot and portaled content. Token variables are scoped by
-// `[data-theme]` and inherit through DOM parents, so content portaled out of a ThemeRoot (to the
-// body or a `portalContainer`) loses its theme. ThemeRoot publishes the resolved theme through
-// context; ThemeBoundary re-applies it inside the portal exactly like ThemeRoot does. Only the
-// named theme crosses the portal: arbitrary ancestor CSS overrides do not.
-import { createContext, useContext, type ReactNode } from 'react';
+// `[data-theme]` and `[data-appearance]` and inherit through DOM parents, so content portaled out of
+// a scope root (to the body or a `portalContainer`) loses both. Scope roots publish what they set
+// through context; ThemeBoundary re-applies it inside the portal exactly like the root does. Only the
+// named axes cross the portal: arbitrary ancestor CSS overrides do not.
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from './css';
+import { contrastSurfaceStyle } from './surface';
 
 export type ThemeName = 'dark' | 'light';
 
+/** Surface palette in scope: `contrast` paints the dark family on any page theme. */
+export type AppearanceName = 'default' | 'contrast';
+
 export interface ThemeScope {
-  theme: ThemeName;
+  /** Named theme in scope; `undefined` leaves `data-theme` to the page (no ThemeRoot above). */
+  theme?: ThemeName;
+  appearance: AppearanceName;
   /** `undefined` keeps default portal routing; `null` holds portals until the host exists. */
   portalContainer: HTMLElement | null | undefined;
 }
 
 export const ThemeScopeContext = createContext<ThemeScope | null>(null);
 
-/** The nearest ThemeRoot's scope, or `null` outside any ThemeRoot (page theme applies). */
+/** The nearest theme scope (ThemeRoot or contrast surface), or `null` outside any. */
 export function useThemeScope(): ThemeScope | null {
   return useContext(ThemeScopeContext);
 }
 
-/** What a `data-theme` scope root sets besides the attribute: inherited text color and color-scheme. */
+/** What a scope root sets besides the attributes: inherited text color and native `color-scheme`. */
 export const themeScopeStyle = css({
   color: vars.color.text,
   colorScheme: 'dark',
   '&[data-theme="light"]': { colorScheme: 'light' },
+  // A contrast subtree is the dark family whatever the page theme is; keep this last so it wins.
+  '&[data-appearance="contrast"]': { colorScheme: 'dark' },
 });
 
 // Custom properties and color-scheme inherit through `display: contents`, so the wrapper
 // re-scopes the theme without adding a box around positioned or fixed overlay content.
 const boundaryStyle = css({ display: 'contents' });
 
-/** Re-applies the nearest ThemeRoot's theme around portaled content; renders children bare outside one. */
+/**
+ * Publishes an `appearance` to descendants (portaled overlays included) without rendering a box.
+ * Merges over the enclosing scope, so the theme and `portalContainer` keep flowing.
+ */
+export function AppearanceScope({ appearance, children }: { appearance: AppearanceName; children?: ReactNode }) {
+  const parent = useContext(ThemeScopeContext);
+  const scope = useMemo<ThemeScope>(
+    () => ({ theme: parent?.theme, appearance, portalContainer: parent?.portalContainer }),
+    [parent?.theme, parent?.portalContainer, appearance],
+  );
+  if (parent ? parent.appearance === appearance : appearance === 'default') return children;
+  return <ThemeScopeContext.Provider value={scope}>{children}</ThemeScopeContext.Provider>;
+}
+
+/** Re-applies the nearest scope around portaled content; renders children bare outside one. */
 export function ThemeBoundary({ children }: { children?: ReactNode }) {
   const scope = useThemeScope();
   if (!scope) return children;
   return (
-    <div data-ui="theme-boundary" data-theme={scope.theme} css={[themeScopeStyle, boundaryStyle]}>
+    <div
+      data-ui="theme-boundary"
+      data-theme={scope.theme}
+      data-appearance={scope.appearance}
+      css={[scope.theme && themeScopeStyle, scope.appearance === 'contrast' && contrastSurfaceStyle, boundaryStyle]}
+    >
       {children}
     </div>
   );

@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { base, light } from '../src/tokens';
+import { base, contrast, light } from '../src/tokens';
 
 type TokenTree = { readonly [key: string]: string | TokenTree };
 type VarTree = { [key: string]: string | VarTree };
@@ -55,11 +55,17 @@ const baseNames = assertUniqueNames(base, 'base');
 for (const [name] of flatten(light)) {
   if (!baseNames.has(name)) throw new Error(`light: token ${name} has no counterpart in base`);
 }
+for (const [name] of flatten(contrast)) {
+  if (!baseNames.has(name)) throw new Error(`contrast: token ${name} has no counterpart in base`);
+}
 
 const css = [
   HEADER,
   cssBlock(":root, [data-theme='dark']", base),
   cssBlock("[data-theme='light']", light),
+  // Last on purpose: the contrast palette is theme-independent, so it wins over both theme blocks by
+  // source order wherever an element carries `data-appearance="contrast"`.
+  cssBlock("[data-appearance='contrast']", contrast),
 ].join('\n\n');
 
 const vars = `${HEADER}\n\nexport const vars = ${JSON.stringify(toVarTree(base), null, 2)} as const;\n`;

@@ -8,7 +8,8 @@
 import { createContext, useContext, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { raisedSurface } from '../../styling/surface';
+import { contrastSurfaceStyle, raisedSurface } from '../../styling/surface';
+import { AppearanceScope, type AppearanceName } from '../../styling/theme-scope';
 import { WithSx, type SxProps } from '../../styling/sx';
 
 export type CardVariant = 'flat' | 'raised';
@@ -31,6 +32,8 @@ export interface CardSlotProps {
 
 export interface CardProps extends ComponentPropsWithRef<'div'>, SxProps {
   variant?: CardVariant;
+  /** `contrast` paints the dark family for this card on any page theme. */
+  appearance?: AppearanceName;
   slotProps?: CardSlotProps;
 }
 
@@ -104,16 +107,20 @@ const footerStyle = css({
   '& > :only-child': { marginInlineStart: 'auto' },
 });
 
-function CardRoot({ ref, variant = 'raised', slotProps, className, sx, ...rest }: CardProps) {
+function CardRoot({ ref, variant = 'raised', appearance = 'default', slotProps, className, sx, ...rest }: CardProps) {
   return (
     <CardSlotContext.Provider value={slotProps}>
-      <WithSx
-        className={joinClassNames(slotProps?.root?.className, className)}
-        styles={[rootStyle, variantStyles[variant], slotProps?.root?.css]}
-        sx={sx}
-      >
-        {(className) => <div {...rest} ref={ref} data-ui="card" data-variant={variant} className={className} />}
-      </WithSx>
+      <AppearanceScope appearance={appearance}>
+        <WithSx
+          className={joinClassNames(slotProps?.root?.className, className)}
+          styles={[rootStyle, variantStyles[variant], contrastSurfaceStyle, slotProps?.root?.css]}
+          sx={sx}
+        >
+          {(className) => (
+            <div {...rest} ref={ref} data-ui="card" data-variant={variant} data-appearance={appearance} className={className} />
+          )}
+        </WithSx>
+      </AppearanceScope>
     </CardSlotContext.Provider>
   );
 }

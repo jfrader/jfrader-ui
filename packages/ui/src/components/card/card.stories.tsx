@@ -5,6 +5,7 @@ import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectContrastSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { TextField } from '../text-field';
 import { Card, type CardProps, type CardVariant } from './index';
@@ -296,6 +297,31 @@ export const LightTheme: Story = {
   play: async ({ canvasElement }) => {
     await expect(getCards(canvasElement)).toHaveLength(VARIANTS.length + 1);
     await expect(within(canvasElement).getAllByRole('heading', { level: 3 })).toHaveLength(VARIANTS.length + 1);
+  },
+};
+
+export const Contrast: Story = {
+  args: { appearance: 'contrast' },
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  render: (args) => (
+    <>
+      <PlanCard {...args} />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const card = getCards(canvasElement)[0]!;
+    const pageScope = canvasElement.querySelector<HTMLElement>('[data-story-theme-scope]')!;
+
+    // One card asks for the dark family on a light page; everything else keeps the page palette.
+    await expect(canvasElement.querySelectorAll('[data-appearance="contrast"]')).toHaveLength(1);
+    await expect(card).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(card, 'light');
+
+    // Text follows the palette and native widgets follow the surface: near-white text on a light page,
+    // and `color-scheme: dark` for the controls and scrollbars inside it.
+    await expect(getComputedStyle(card).color).not.toBe(getComputedStyle(pageScope).color);
+    await expect(getComputedStyle(card).colorScheme).toBe('dark');
   },
 };
 
