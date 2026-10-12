@@ -173,6 +173,10 @@ export const Default: Story = {
     await expect(canvasElement.contains(region)).toBe(true);
     const cards = region.querySelectorAll('[data-ui="toast"]');
     await expect(cards).toHaveLength(3);
+    // The collapsed pile casts one shadow; the cards inside it stay shadowless, so the cards behind
+    // are not washed grey by the front card's shadow on light surfaces.
+    await expect(getComputedStyle(region.querySelector('[data-ui="toast-stack-list"]')!).boxShadow).not.toBe('none');
+    await expect(getComputedStyle(cards[0]!).boxShadow).toBe('none');
     await expect(cards[0]).toHaveTextContent('Message sent');
     await expect(cards[1]).toHaveAttribute('inert');
     await expect(cards[1]).toHaveAttribute('aria-hidden', 'true');
@@ -307,6 +311,8 @@ export const HoverAndTouchExpansion: Story = {
     const collapsedHeight = list.getBoundingClientRect().height;
     await userEvent.hover(region);
     await expect(region).toHaveAttribute('data-expanded', 'true');
+    // Unfolded, every card casts its own shadow again.
+    await expect(getComputedStyle(region.querySelector('[data-ui="toast"]')!).boxShadow).not.toBe('none');
     // The list's block size animates between collapsed and expanded instead of snapping.
     await waitFor(async () => {
       await expect(list.getAnimations().length).toBeGreaterThan(0);

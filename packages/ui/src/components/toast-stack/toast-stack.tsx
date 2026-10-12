@@ -61,6 +61,13 @@ const listStyle = css({
   transitionProperty: 'block-size',
   transitionDuration: vars.motion.duration.base,
   transitionTimingFunction: vars.motion.easeStandard,
+  // A collapsed pile reads as one object, so it casts one shadow. Per-card shadows would fall from
+  // the front card onto the white cards behind it and read as grey bands on light surfaces.
+  '&[data-expanded="false"]': {
+    borderRadius: vars.radius.lg,
+    boxShadow: vars.shadow.floating,
+    '& [data-ui="toast"]': { boxShadow: 'none' },
+  },
   [REDUCED_MOTION]: { transitionDuration: '0s' },
 });
 const itemStyle = css({
@@ -264,6 +271,7 @@ function ToastStackContent({
             id={listId}
             ref={listRef}
             data-ui="toast-stack-list"
+            data-expanded={expanded}
             className={slotProps?.list?.className}
             css={[listStyle, slotProps?.list?.css]}
             style={{ '--toast-stack-height': height } as CSSProperties}
