@@ -134,12 +134,14 @@ export const VisibilityMatrix: Story = {
       <Badge {...args} badgeContent={undefined} showZero />
       <Badge {...args} badgeContent={null} />
       <Badge {...args} badgeContent={false} />
+      <Badge {...args} badgeContent={true} />
       <Badge {...args} badgeContent={7} />
     </>
   ),
   play: async ({ canvasElement }) => {
-    const [zero, shownZero, absent, absentWithShowZero, nullContent, falseContent, seven] = getRoots(canvasElement);
-    for (const root of [zero, absent, absentWithShowZero, nullContent, falseContent]) {
+    const [zero, shownZero, absent, absentWithShowZero, nullContent, falseContent, trueContent, seven] =
+      getRoots(canvasElement);
+    for (const root of [zero, absent, absentWithShowZero, nullContent, falseContent, trueContent]) {
       await expect(getMarker(root!)).toBeNull();
     }
     await expect(getMarker(shownZero!)).toBeVisible();
