@@ -176,7 +176,7 @@ const imageStyle = css({
   display: 'block',
   inlineSize: '100%',
   blockSize: '100%',
-  objectFit: 'contain',
+  objectFit: 'cover',
   userSelect: 'none',
 });
 // Motion: the viewer's own surface (background, border) and its chrome fade over the fading scrim;
@@ -264,6 +264,7 @@ const actionStyle = css({
   overflowWrap: 'anywhere',
 });
 const desktopActionStyle = css({ [NARROW_VIEWER]: { display: 'none' } });
+const closeActionStyle = css({ flexShrink: 0, whiteSpace: 'nowrap' });
 const actionTextStyle = css({ [NARROW_VIEWER]: { display: 'none' } });
 const actionGlyphStyle = css({ display: 'none', [NARROW_VIEWER]: { display: 'inline' } });
 const captionStyle = css({
@@ -282,6 +283,7 @@ const stripStyle = css({
 const thumbStyle = css({
   position: 'relative',
   flexShrink: 0,
+  overflow: 'hidden',
   ...focusRingOutset,
   outline: 'none',
   inlineSize: vars.space[12],
@@ -879,7 +881,7 @@ function Viewer({
           </h2>
           <Button
             size="sm"
-            css={actionStyle}
+            css={[actionStyle, closeActionStyle]}
             ref={(element) => {
               element?.setAttribute('autofocus', '');
             }}
