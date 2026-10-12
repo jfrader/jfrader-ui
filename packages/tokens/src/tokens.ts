@@ -38,6 +38,12 @@ export const base = {
     signatureInkBlack: '#171717',
     signatureInkBlue: '#1746a2',
     signatureInkViolet: '#6230a3',
+    // Playing-card paper and ink: a card is an object with its own material, so these read the same
+    // in both themes (>= 14:1 between them).
+    cardFace: '#f4f4f5',
+    cardInk: 'rgba(0, 0, 0, 0.87)',
+    // A card's red for the French deck's two-colour suits (5.35:1 on cardFace).
+    cardRed: '#c8102e',
     scrim: 'rgba(1, 2, 3, 0.72)',
     // Syntax highlighting roles (>=4.5:1 against surfaceInset and surfaceRaised).
     syntaxKeyword: '#c4adff',
@@ -111,6 +117,10 @@ export const base = {
     emblemMd: '32px',
     emblemLg: '40px',
     emblemXl: '56px',
+    // Game card width. The frame keeps the 1.48 height ratio and a width/13 corner it came with.
+    gameCardSm: '32px',
+    gameCardMd: '72px',
+    gameCardLg: '112px',
     // Layer inline size at which SheetStack's auto variant switches from sheet to centered dialog.
     sheetStackBreakpoint: '640px',
     // How much of each parent panel shows above the active one.
@@ -175,6 +185,9 @@ export const light = {
     signatureInkBlack: '#171717',
     signatureInkBlue: '#1746a2',
     signatureInkViolet: '#6230a3',
+    cardFace: '#f4f4f5',
+    cardInk: 'rgba(0, 0, 0, 0.87)',
+    cardRed: '#c8102e',
     scrim: 'oklch(20% 0 0 / 0.4)',
     syntaxKeyword: 'oklch(48% 0.2 290)',
     syntaxString: 'oklch(47% 0.12 150)',

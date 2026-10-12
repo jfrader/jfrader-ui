@@ -32,6 +32,7 @@ Requires React 19 and the `@jfrader/tokens/tokens.css` stylesheet. The same guid
 | `@jfrader/ui/divider` | `Divider` |
 | `@jfrader/ui/emblem` | `Emblem` |
 | `@jfrader/ui/flex` | `Flex` |
+| `@jfrader/ui/game-card` | `GameCard` |
 | `@jfrader/ui/kbd` | `Kbd` |
 | `@jfrader/ui/menu` | `Menu` |
 | `@jfrader/ui/pagination` | `Pagination` |

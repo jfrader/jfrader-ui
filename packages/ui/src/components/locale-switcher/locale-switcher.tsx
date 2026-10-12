@@ -15,6 +15,8 @@
 //   warns in development and links to the first option that is not current.
 // - inline: a labelled <nav> listing every option; the current one is plain text
 //   (<span aria-current="true">), the others are links in native Tab order.
+// - segmented: the inline structure drawn as a bordered pill group; the current option is filled
+//   with the accent.
 import {
   useEffect,
   useId,
@@ -30,7 +32,7 @@ import { css, type Interpolation, type SerializedStyles, type Theme } from '../.
 import { focusRingOutset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { listboxOptionCheckStyle, listboxScrollStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
-import { REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -43,7 +45,7 @@ declare const process: { env: { NODE_ENV?: string } };
 const FAMILY = 'LocaleSwitcher';
 const SELECTED_GLYPH = '✓';
 
-export type LocaleSwitcherVariant = 'menu' | 'swap' | 'inline';
+export type LocaleSwitcherVariant = 'menu' | 'swap' | 'inline' | 'segmented';
 export type LocaleSwitcherSize = 'sm' | 'md' | 'lg';
 
 /** Spread these props onto the link returned by an option's `render` callback. */
@@ -57,6 +59,8 @@ export interface LocaleSwitcherOption {
   value: string;
   /** Labels the language with its native name, such as "Español" or "English". */
   label: ReactNode;
+  /** Names the option for assistive technology when `label` is a short code, such as "ES". */
+  ariaLabel?: string;
   /** Sets the label and linked page's BCP 47 language tag through `lang` and `hreflang`. */
   lang?: string;
   href: string;
@@ -85,7 +89,7 @@ export interface LocaleSwitcherProps extends Omit<ComponentPropsWithRef<'nav'>, 
   size?: LocaleSwitcherSize;
   /** Names the menu trigger's action, such as "Change language". Read before the current label. */
   triggerLabel?: string;
-  /** Names the navigation landmark in the inline variant. */
+  /** Names the navigation landmark in the inline and segmented variants. */
   label?: string;
   /** Shows a decorative icon before the menu's current label. Defaults to a globe. `null` removes it. */
   icon?: ReactNode;
@@ -194,6 +198,66 @@ const currentStyle = css({
   fontWeight: vars.fontWeight.medium,
 });
 
+const segmentedListStyle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: `calc(${vars.space[1]} / 2)`,
+  margin: 0,
+  padding: `calc(${vars.space[1]} * 0.75)`,
+  listStyle: 'none',
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.full,
+  backgroundColor: vars.color.surfaceRaised,
+  '& > li': { display: 'flex' },
+  [FORCED_COLORS]: { borderColor: 'CanvasText' },
+});
+
+const segmentStyle = css({
+  justifyContent: 'center',
+  boxSizing: 'border-box',
+  borderRadius: vars.radius.full,
+  whiteSpace: 'nowrap',
+});
+
+// Outer pill heights match the menu trigger: segment + padding + border = 32 / 40 / 48px.
+const segmentSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
+  sm: css({ minBlockSize: vars.space[6], minInlineSize: vars.space[10], paddingInline: vars.space[2] }),
+  md: css({ minBlockSize: vars.space[8], minInlineSize: vars.space[12], paddingInline: vars.space[3] }),
+  lg: css({
+    minBlockSize: vars.space[10],
+    minInlineSize: `calc(${vars.space[12]} + ${vars.space[2]})`,
+    paddingInline: vars.space[3],
+  }),
+};
+
+const segmentLinkStyle = css({
+  color: vars.color.textMuted,
+  textDecoration: 'none',
+  transitionProperty: 'color',
+  transitionDuration: vars.motion.duration.fast,
+  transitionTimingFunction: vars.motion.easeStandard,
+  '&:hover': {
+    color: vars.color.text,
+  },
+  '&:focus-visible': {
+    ...focusRingOutset,
+  },
+  [REDUCED_MOTION]: {
+    transitionDuration: '0s',
+  },
+});
+
+const segmentCurrentStyle = css({
+  backgroundColor: vars.color.accent,
+  color: vars.color.accentContrast,
+  fontWeight: vars.fontWeight.medium,
+  [FORCED_COLORS]: {
+    forcedColorAdjust: 'none',
+    backgroundColor: 'SelectedItem',
+    color: 'SelectedItemText',
+  },
+});
+
 const globe = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" focusable="false">
     <circle cx="12" cy="12" r="9" />
@@ -212,7 +276,7 @@ interface OptionElementProps extends HTMLAttributes<HTMLElement> {
   'data-ui': string;
   option: LocaleSwitcherOption;
   current: boolean;
-  /** A link to the option's page; otherwise plain text (the inline variant's current option). */
+  /** A link to the option's page; otherwise plain text (the current option in a list). */
   link: boolean;
   /** Decoration after the label. */
   adornment?: ReactNode;
@@ -220,17 +284,29 @@ interface OptionElementProps extends HTMLAttributes<HTMLElement> {
 
 /** The single rendering path of an option: lang, hreflang, dir and aria-current live here. */
 function OptionElement({ option, current, link, adornment, ...props }: OptionElementProps) {
+  // A short visible label (`ES`) keeps the full native name in the accessible name: the name is
+  // appended after the code ("ES Español"), because a name that omits the visible text fails
+  // label-in-name and `aria-label` is ignored on a plain span.
+  const label = (
+    <>
+      {option.label}
+      {adornment}
+    </>
+  );
+  const children = option.ariaLabel ? (
+    <>
+      {label}{' '}
+      <span css={visuallyHiddenStyle}>{option.ariaLabel}</span>
+    </>
+  ) : (
+    label
+  );
   const shared = {
     ...props,
     lang: option.lang,
     dir: 'auto',
     'aria-current': current ? ('true' as const) : undefined,
-    children: (
-      <>
-        {option.label}
-        {adornment}
-      </>
-    ),
+    children,
   };
   if (!link) return <span {...shared} />;
   const linkProps: LocaleSwitcherLinkProps = { ...shared, href: option.href, hrefLang: option.lang };
@@ -302,6 +378,12 @@ function MenuVariant({
         {current && (
           <span id={currentId} lang={current.lang} dir="auto">
             {current.label}
+            {current.ariaLabel && (
+              <>
+                {' '}
+                <span css={visuallyHiddenStyle}>{current.ariaLabel}</span>
+              </>
+            )}
           </span>
         )}
         <span aria-hidden="true" css={chevronStyle}>
@@ -354,9 +436,16 @@ function SwapVariant({ options, value, slotProps }: VariantProps) {
   return <StyledOption option={target} current={false} link styles={linkStyle} slot={slotProps?.option} />;
 }
 
-function InlineVariant({ options, value, slotProps }: VariantProps) {
+interface OptionListProps extends Pick<VariantProps, 'options' | 'value' | 'slotProps'> {
+  listStyles: Interpolation<Theme>;
+  linkStyles: Interpolation<Theme>;
+  currentStyles: Interpolation<Theme>;
+}
+
+/** Every option in a list; the current one is plain text, the others are links. */
+function OptionList({ options, value, slotProps, listStyles, linkStyles, currentStyles }: OptionListProps) {
   return (
-    <ul css={listStyle}>
+    <ul css={listStyles}>
       {options.map((option) => {
         const isCurrent = option.value === value;
         return (
@@ -365,7 +454,7 @@ function InlineVariant({ options, value, slotProps }: VariantProps) {
               option={option}
               current={isCurrent}
               link={!isCurrent}
-              styles={isCurrent ? currentStyle : linkStyle}
+              styles={isCurrent ? currentStyles : linkStyles}
               slot={slotProps?.option}
             />
           </li>
@@ -375,13 +464,30 @@ function InlineVariant({ options, value, slotProps }: VariantProps) {
   );
 }
 
+function InlineVariant(props: VariantProps) {
+  return <OptionList {...props} listStyles={listStyle} linkStyles={linkStyle} currentStyles={currentStyle} />;
+}
+
+function SegmentedVariant(props: VariantProps) {
+  const segment = [segmentStyle, segmentSizeStyles[props.size]];
+  return (
+    <OptionList
+      {...props}
+      listStyles={segmentedListStyle}
+      linkStyles={[segment, segmentLinkStyle]}
+      currentStyles={[segment, segmentCurrentStyle]}
+    />
+  );
+}
+
 const VARIANTS: Record<LocaleSwitcherVariant, (props: VariantProps) => ReactNode> = {
   menu: MenuVariant,
   swap: SwapVariant,
   inline: InlineVariant,
+  segmented: SegmentedVariant,
 };
 
-const ROOT_ELEMENT = { menu: 'div', swap: 'div', inline: 'nav' } as const satisfies Record<
+const ROOT_ELEMENT = { menu: 'div', swap: 'div', inline: 'nav', segmented: 'nav' } as const satisfies Record<
   LocaleSwitcherVariant,
   'div' | 'nav'
 >;
@@ -432,7 +538,7 @@ export function LocaleSwitcher({
         <Root
           {...rest}
           ref={rootRef}
-          aria-label={rest['aria-label'] ?? (variant === 'inline' ? label : undefined)}
+          aria-label={rest['aria-label'] ?? (Root === 'nav' ? label : undefined)}
           data-ui="locale-switcher"
           data-variant={variant}
           className={className}

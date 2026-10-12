@@ -10,7 +10,22 @@ import { InViewTitle, type InViewTitleProps } from './index';
 const meta = {
   title: 'Typography/InViewTitle', component: InViewTitle, tags: ['autodocs'],
   args: { text: 'Tools for teams that ship', sx: { fontSize: vars.textSize['3xl'], fontWeight: vars.fontWeight.semibold, lineHeight: vars.lineHeight.tight } },
-  parameters: { docs: { description: { component: 'A native heading with a finite entrance at 45% viewport visibility. SSR, no-JS and idle content are immediately readable. Repeated entries keep text visible between entrances. Choose the level for the page outline. No widget keyboard map or controlled state API: Tab skips the heading and all keys retain native behavior.' }, source: { code: '<InViewTitle level={2} variant="line" text={\'Tools for teams\\nthat ship\'} />' } } },
+  parameters: {
+    docs: {
+      description: {
+        component: 'Reveal a heading as it scrolls into view. Choose the level for the page outline.',
+      },
+      usage: `**Behavior**
+
+- The entrance runs once, at 45% viewport visibility. A heading that leaves and re-enters stays visible.
+- Server-rendered, no-JS and idle content is readable immediately.
+
+**Keyboard**
+
+- No widget keyboard map: Tab skips the heading and every key keeps its native behaviour.`,
+      source: { code: '<InViewTitle level={2} variant="line" text={\'Tools for teams\\nthat ship\'} />' },
+    },
+  },
 } satisfies Meta<typeof InViewTitle>;
 export default meta;
 type Story = StoryObj<typeof meta>;

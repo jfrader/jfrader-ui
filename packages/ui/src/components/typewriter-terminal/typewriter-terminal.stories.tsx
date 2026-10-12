@@ -33,9 +33,23 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component:
-          'Scripted playback. Commands are text and are never executed. Copy writes commands only; clipboard failures appear below the controls. The complete transcript is available throughout playback. Tab reaches Copy, Play/Pause, Replay, seek, then transcript links. On seek, arrows and Page keys jump command boundaries; Home/End jump to start/end; Space/K toggle playback. Cadence: 40ms per grapheme, 160ms per output line, 240ms between commands, 1200ms per task. Reduced motion shows completed output and disables looping.',
+        component: 'Play a scripted terminal session, command by command. Commands are text and are never executed.',
       },
+      usage: `**Keyboard**
+
+- Tab reaches Copy, Play/Pause, Replay, the seek control, then the transcript links.
+- On the seek control, arrows and Page keys jump command boundaries; Home and End jump to the start and the end.
+- Space and K toggle playback.
+
+**Values**
+
+- Cadence: 40ms per grapheme, 160ms per output line, 240ms between commands, 1200ms per task.
+
+**Limits**
+
+- Copy writes the commands only, never the output. A clipboard failure appears below the controls.
+- The complete transcript stays available throughout playback.
+- Reduced motion shows the completed output and disables looping.`,
       source: {
         code: `<TypewriterTerminal steps={[{ command: 'example --help', output: ['Usage: example'] }]} loop={false} />`,
       },
