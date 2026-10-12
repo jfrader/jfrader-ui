@@ -6,7 +6,7 @@ import { useId, type ChangeEvent, type ComponentPropsWithRef, type ReactNode } f
 import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 
@@ -58,6 +58,9 @@ const trackStyle = css({
     transitionDuration: '0s',
     '&::after': { transitionDuration: '0s' },
   },
+  [FORCED_COLORS]: {
+    '&::after': { backgroundColor: 'CanvasText' },
+  },
 });
 
 const trackSizeStyles: Record<SwitchSize, SerializedStyles> = {
@@ -81,6 +84,9 @@ const checkedThumbStyles: Record<SwitchSize, SerializedStyles> = {
       backgroundColor: vars.color.accentContrast,
     },
     '&:dir(rtl) input:checked + span::after': { transform: 'translateX(-16px)' },
+    [FORCED_COLORS]: {
+      'input:checked + span::after': { backgroundColor: 'CanvasText' },
+    },
   }),
   md: css({
     'input:checked + span::after': {
@@ -88,6 +94,9 @@ const checkedThumbStyles: Record<SwitchSize, SerializedStyles> = {
       backgroundColor: vars.color.accentContrast,
     },
     '&:dir(rtl) input:checked + span::after': { transform: 'translateX(-20px)' },
+    [FORCED_COLORS]: {
+      'input:checked + span::after': { backgroundColor: 'CanvasText' },
+    },
   }),
 };
 

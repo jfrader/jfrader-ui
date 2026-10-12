@@ -169,3 +169,16 @@ export const LightTheme: Story = {
     await expect(within(canvasElement).getByRole('checkbox')).toBeChecked();
   },
 };
+
+export const Rtl: Story = {
+  args: { dir: 'rtl', label: 'עדכן אותי באימייל', description: 'אימייל אחד בחודש, לא יותר.' },
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector('[data-ui="checkbox"]') as HTMLElement;
+    await expect(root).toHaveAttribute('dir', 'rtl');
+    const desc = canvasElement.querySelector('[id$="-description"]') as HTMLElement;
+    const computed = getComputedStyle(desc);
+    await expect(computed.direction).toBe('rtl');
+    await expect(computed.marginRight).not.toBe('0px');
+    await expect(computed.marginLeft).toBe('0px');
+  },
+};
