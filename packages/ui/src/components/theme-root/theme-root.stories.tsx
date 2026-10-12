@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
+import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Popover, type PopoverProps } from '../popover';
 import { TextField } from '../text-field';
@@ -50,10 +50,10 @@ function ThemedPopover({ label, ...props }: PopoverProps & { label: string }) {
 ThemedPopover.displayName = 'ThemedPopover';
 
 /** Overlays inside the root portal into a host element it owns (set through a state ref). */
-function PortalContainerExample({ theme, appearance, children }: ThemeRootProps) {
+function PortalContainerExample({ theme, children }: ThemeRootProps) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
-    <ThemeRoot theme={theme} appearance={appearance} portalContainer={host} style={surfaceStyle}>
+    <ThemeRoot theme={theme} portalContainer={host} style={surfaceStyle}>
       {children}
       <div ref={setHost} data-overlay-host="" />
     </ThemeRoot>
@@ -78,6 +78,11 @@ LiveThemeExample.displayName = 'LiveThemeExample';
 const meta = {
   title: 'Foundations/Theme',
   component: ThemeRoot,
+  parameters: {
+    docs: {
+      description: { component: 'Apply a theme to part of a page and its overlays.' },
+    },
+  },
   args: { onClick: fn() },
   argTypes: {
     theme: { control: 'radio', options: THEMES },
@@ -250,48 +255,6 @@ export const NestedThemeRoots: Story = {
   },
 };
 
-export const ContrastScope: Story = {
-  args: { theme: 'light', appearance: 'contrast' },
-  decorators: [withLightTheme],
-  globals: { theme: 'light' },
-  render: (args) => (
-    <PortalContainerExample {...args}>
-      <div style={rowStyle}>
-        <ThemedPopover label="Panel" defaultOpen placement="bottom-start" />
-        <ThemeRoot theme="light" style={surfaceStyle}>
-          <ThemedPopover label="Nested" defaultOpen placement="top-start" />
-        </ThemeRoot>
-        <ThemeRoot theme="light" appearance="default" style={surfaceStyle}>
-          <ThemedPopover label="Page" defaultOpen placement="bottom-start" />
-        </ThemeRoot>
-      </div>
-    </PortalContainerExample>
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const scopeRoot = canvasElement.querySelector<HTMLElement>('[data-ui="theme-root"][data-appearance="contrast"]')!;
-    const panel = await canvas.findByRole('dialog', { name: 'Panel details' });
-    const nested = await canvas.findByRole('dialog', { name: 'Nested details' });
-    const page = await canvas.findByRole('dialog', { name: 'Page details' });
-
-    // The contrast palette crosses the portal on a light page, boundary and surface in agreement.
-    await expect(panel.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
-    await expectContrastSurface(panel, 'light');
-    await expectContrastSurface(scopeRoot, 'light', vars.color.surface);
-
-    // A nested root keeps the enclosing palette; naming `default` returns to the page theme's surface.
-    await expect(nested.closest('[data-ui="theme-root"]')).toHaveAttribute('data-appearance', 'contrast');
-    await expect(nested.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-theme', 'light');
-    await expectContrastSurface(nested, 'light');
-    await expect(page.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'default');
-    await expectThemedSurface(page, 'light');
-
-    // Nothing leaks outward: the surrounding light page keeps its own values.
-    const pageScope = canvasElement.querySelector<HTMLElement>('[data-story-theme-scope]')!;
-    await expectThemedSurface(pageScope, 'light', vars.color.bg);
-  },
-};
-
 export const LiveThemeChange: Story = {
   render: () => <LiveThemeExample />,
   parameters: {
@@ -354,7 +317,6 @@ export const AttributePrecedence: Story = {
       theme="dark"
       data-ui="custom-ui"
       data-theme="light"
-      data-appearance="contrast"
       data-testid="precedence-root"
       style={surfaceStyle}
     >
@@ -366,7 +328,6 @@ export const AttributePrecedence: Story = {
     // Own markers win over consumer rest props
     await expect(root).toHaveAttribute('data-ui', 'theme-root');
     await expect(root).toHaveAttribute('data-theme', 'dark');
-    await expect(root).toHaveAttribute('data-appearance', 'default');
   },
 };
 

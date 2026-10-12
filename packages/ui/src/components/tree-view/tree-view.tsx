@@ -180,9 +180,10 @@ const statusStyle = css({
   '&:empty': { padding: 0 },
 });
 
-/** Single-select APG tree with real roving focus. Right opens/enters and Left closes/parents,
- * including RTL. Up/Down clamp; Home/End jump; Enter/Space select; typeahead resets after 500ms.
- * Lazy results are cached per instance; remount with a new key to replace the dataset cache. */
+/** APG tree with one selection and roving focus.
+ * Right expands or enters; Left collapses or moves to the parent, including in RTL.
+ * Up/Down stop at the ends; Home/End jump; Enter/Space select. Typeahead resets after 500ms.
+ * Loaded children are cached per instance. Remount with a new key to replace the cache. */
 export function TreeView({
   nodes,
   value,

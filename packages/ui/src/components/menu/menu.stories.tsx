@@ -23,6 +23,16 @@ const meta = {
   title: 'Navigation/Menu',
   component: Menu,
   parameters: {
+    docs: {
+      description: { component: 'Open a menu and choose an action.' },
+      usage: `- Uses menu/menuitem semantics, labelled by the trigger. The trigger exposes aria-haspopup, aria-expanded and aria-controls.
+- Enter, Space or ArrowDown opens on the first enabled item; ArrowUp opens on the last. Pointer opening also focuses the first item.
+- Arrows wrap and skip disabled items; Home/End reach the ends. Typeahead resets after 500ms (the upstream default is 750ms).
+- Escape or selection returns focus to the trigger after an accepted close. Outside press and Tab out close without moving focus.
+- Shift+Tab from the first item returns to the trigger and leaves the menu open; Tab re-enters it.
+- Skipping disabled items and leaving the menu open on Shift+Tab differ from APG. Disabled items stay visible. Revisit both behaviors with screen-reader feedback.
+- Focus management is non-modal with automatic returnFocus off. A click handler can preventDefault() to stop an item from closing the menu.`,
+    },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
     // aria-hidden element is still checked.

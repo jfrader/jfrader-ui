@@ -39,13 +39,29 @@ const meta = {
     onReact: fn(),
   },
   decorators: [(Story) => <div css={frameStyle}><Story /></div>],
-  parameters: { docs: { source: { code: usage }, description: { component: [
-    'A flat conversation transcript and attachment composer on the same internal Thread core as CommentThread. A named log contains an ordered list of articles named by author and time; typing and submission errors stay outside the log.',
-    'Keyboard: Enter sends once; Shift+Enter inserts a newline; IME composition does not send. Tab and Shift+Tab follow native order. Reaction picker: Left/Right wrap, mirrored in RTL; Home/End jump; Escape restores the trigger. Outside dismissal never restores focus.',
-    'Messages and Composer drafts support value/defaultValue/onValueChange. A controlled send requests a proposed message before calling onSend; the parent must retain its proposed id until acknowledgement. The draft clears only after transport resolves and the id appears in value. A rejected request keeps the draft; edit it to retry. Rejected transport keeps text and files. Transport, uploads, authentication, pagination and delivery status remain app-owned.',
-    'Root and Composer refs target div elements. composerProps.slotProps.textarea.ref targets the textarea. Attachment object URLs created by the component are released on removal, failure and unmount; caller URLs are never revoked. Image previews and accepted local messages own separate leases.',
-    'Provide a bounded-height layout. Nonvirtualized history keeps caller order. Scrolling stays pinned only within 48px of the bottom or after your send/jump; incoming updates never move focus. Dates, counts, byte sizes and names use Intl; now is an explicit caller-owned epoch clock and timeZone defaults to UTC.',
-  ].join('\n\n') } } },
+  parameters: {
+    docs: {
+      source: { code: usage },
+      description: { component: 'Write messages, attach files, and react to a conversation.' },
+      usage: `### Messages and drafts
+- Messages and Composer drafts support \`value/defaultValue/onValueChange\`.
+- A controlled send proposes a message before calling \`onSend\`. Keep its proposed id until acknowledgement.
+- The draft clears after transport resolves and the id appears in \`value\`. A rejected request keeps the draft; edit it to retry. Transport failures keep text and files.
+- Your app handles transport, uploads, authentication, pagination, and delivery status.
+- The named log contains an ordered list of articles named by author and time. Typing indicators and submission errors stay outside the log.
+
+### Layout and attachments
+- Set a height limit. History is not virtualized and keeps the order you supply.
+- Scrolling stays pinned within 48px of the bottom or after a send/jump. Incoming updates never move focus.
+- Root and Composer refs target divs. \`composerProps.slotProps.textarea.ref\` targets the textarea.
+- Component-created object URLs are released on removal, failure, and unmount. Caller URLs are never revoked. Image previews and accepted local messages each retain their own URL lease.
+- Dates, counts, byte sizes, and names use Intl. Update \`now\` yourself with epoch milliseconds; \`timeZone\` defaults to UTC.
+
+### Keyboard
+- Enter sends once; Shift+Enter adds a newline. IME composition does not send. Tab/Shift+Tab follow native order.
+- In the reaction picker, Left/Right wrap and reverse in RTL; Home/End jump to the ends. Escape returns focus to the trigger; outside dismissal does not.`,
+    },
+  },
 } satisfies Meta<typeof ChatThread>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -453,7 +469,7 @@ export const FailedSendReleasesUrls: Story = {
     await expect(createUrl).toHaveBeenCalledTimes(2);
     await expect(revokeUrl).toHaveBeenCalledTimes(1);
     await expect(revokeUrl).toHaveBeenLastCalledWith((createUrl as Mock).mock.results[1]!.value);
-    await expect(canvas.getByRole('button', { name: 'Remove pending.png' })).toBeVisible();
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Remove pending.png' })).toBeVisible());
     await expect(args.onValueChange).toHaveBeenCalledTimes(0);
     await userEvent.click(canvas.getByRole('button', { name: 'Remove pending.png' }));
     await expect(revokeUrl).toHaveBeenCalledTimes(2);
@@ -547,14 +563,14 @@ export const RTL: Story = {
 };
 export const ReducedMotion: Story = {
   args: { typing: ['grace'] },
-  parameters: { docs: { description: { story: 'Structural check only; this story does not emulate reduced motion. Browser QA verifies effective media styles and instant jump behavior.' } } },
+  parameters: { docs: { description: { story: 'This story does not enable reduced motion. Set it in the browser to check media styles and jumps without animation.' } } },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
     await expect(getComputedStyle(part(canvasElement, 'list')).animationName).toBe('none');
   },
 };
 export const ForcedColors: Story = {
-  parameters: { docs: { description: { story: 'Structural check only; this story does not emulate forced colors. Browser QA verifies system-color borders and focus outlines.' } } },
+  parameters: { docs: { description: { story: 'This story does not enable forced colors. Set it in the browser to check system-color borders and focus outlines.' } } },
   play: async ({ canvasElement }) => {
     const chip = item(canvasElement, 'second').querySelector('[data-part="reaction"]')!;
     await expect(chip).toHaveAttribute('aria-pressed', 'true');

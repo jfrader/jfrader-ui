@@ -104,6 +104,19 @@ export const base = {
     },
     easeStandard: 'cubic-bezier(0.2, 0.6, 0.2, 1)',
   },
+  // Component structural sizes; theme-independent, so light shares them.
+  size: {
+    // Emblem plate: the square side for circle, squircle and hexagon; the shield is 8:7 on top of it.
+    emblemSm: '24px',
+    emblemMd: '32px',
+    emblemLg: '40px',
+    emblemXl: '56px',
+    // Layer inline size at which SheetStack's auto variant switches from sheet to centered dialog.
+    sheetStackBreakpoint: '640px',
+    // How much of each parent panel shows above the active one.
+    sheetStackSheetPeek: '10px',
+    sheetStackDialogPeek: '14px',
+  },
 } as const;
 
 export type Tokens = typeof base;
@@ -111,6 +124,11 @@ export type Tokens = typeof base;
 export type ThemeOverrides = {
   readonly color: Record<keyof Tokens['color'], string>;
   readonly shadow: Record<keyof Tokens['shadow'], string>;
+};
+
+/** Sparse palette overrides: only the roles that differ, no full restatement of a theme. */
+export type AppearanceOverrides = {
+  readonly color: Partial<Record<keyof Tokens['color'], string>>;
 };
 
 /*
@@ -176,18 +194,14 @@ export const light = {
 } as const satisfies ThemeOverrides;
 
 /*
- * Contrast surface: the dark family applied on any page theme, so a drawer, panel or card reads as a
- * separate object (dark panel on a light page, elevated charcoal on a dark page). Only the roles that
- * move relative to the dark base are listed; the rest reuse it.
- * Theme-independent on purpose: the values are identical under `data-theme="dark"` and `data-theme="light"`,
- * so one generated block carries it and no `vars.ts` entry changes.
- * Measured with the sRGB contrast script against the panel #202226: text 14.97, textMuted 4.90,
- * textSubtle 5.93, accentText 5.90, focusRing 5.90, borderControl 4.04 on the panel and 4.37 on a well.
- * The dark base's #757982 (3.65) and #62666d (2.76) fail there, which is why both move.
+ * Contrast surface: the eight roles the elevated charcoal panel changes on top of the dark theme,
+ * which supplies every other value. Sparse by design - no `...base.color`, so nothing is restated and
+ * no per-theme copy is needed. Measured on the #202226 fill (sRGB script): textSubtle #9a9ea7 5.93,
+ * borderControl #7d808a 4.04 on the panel and 4.37 on a well. The dark theme's own #757982 (4.19 on
+ * #141516) and #62666d fail there, which is why both move.
  */
 export const contrast = {
   color: {
-    ...base.color,
     surfaceRaised: '#202226',
     surfaceHover: '#30323b',
     surfaceInset: '#191b20',
@@ -197,5 +211,4 @@ export const contrast = {
     borderControl: '#7d808a',
     textSubtle: '#9a9ea7',
   },
-  shadow: base.shadow,
-} as const satisfies ThemeOverrides;
+} as const satisfies AppearanceOverrides;

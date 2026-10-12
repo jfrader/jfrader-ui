@@ -102,11 +102,11 @@ export interface HoverCardTriggerRenderProps extends HTMLAttributes<HTMLElement>
 
 export interface HoverCardTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   /**
-   * Replaces the default button, e.g. with a profile link. Spread ALL supplied props onto the
-   * operative element and attach the supplied ref. The ref refers to the rendered element, which
-   * need not be a button; its public type remains HTMLButtonElement for compatibility.
-   * Native activation is never prevented: a rendered link still navigates on click, Enter or tap.
-   * Compact inline links rely on the WCAG 2.5.8 inline exception for target size.
+   * Replace the button, e.g. with a profile link. Spread all supplied props onto the element
+   * and attach the supplied ref. The ref points to that element, even when it is not a button;
+   * its public type remains HTMLButtonElement for compatibility.
+   * Links still navigate on click, Enter or tap; native activation is not prevented.
+   * Inline links rely on the WCAG 2.5.8 inline exception for target size.
    */
   render?: (props: HoverCardTriggerRenderProps) => ReactNode;
 }

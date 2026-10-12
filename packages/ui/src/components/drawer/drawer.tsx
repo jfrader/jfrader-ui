@@ -45,9 +45,9 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { contrastSurfaceStyle, modalShellReset, raisedSurface } from '../../styling/surface';
+import { modalShellReset, raisedSurface, surfaceAttributes, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { AppearanceScope, useSurfaceAppearance, type AppearanceName } from '../../styling/theme-scope';
+import { AppearanceScope, themeScopeStyle, useSurfaceAppearance, useSurfaceStyle } from '../../styling/theme-scope';
 import { triggerStyle } from '../../styling/trigger-style';
 import {
   omitNativeOpen,
@@ -84,10 +84,10 @@ export interface DrawerContentProps extends Omit<ComponentPropsWithRef<'dialog'>
 }
 export interface DrawerPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
   /**
-   * `contrast` (default) paints the dark family for the edge surface on any page theme;
-   * `default` returns to the theme's own palette.
+   * `contrast` (default) uses the dark palette with a charcoal surface on any page theme.
+   * `default` keeps the enclosing theme.
    */
-  appearance?: AppearanceName;
+  appearance?: SurfaceAppearance;
 }
 export interface DrawerHeaderProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface DrawerBodyProps extends ComponentPropsWithRef<'div'>, SxProps {}
@@ -148,8 +148,10 @@ const NO_DRAG_SELECTOR = [
   '[data-ui~="drawer-title"]',
   '[data-ui~="drawer-description"]',
 ].join(', ');
-// An open overlay portaled into the drawer (OverlayPortal → FloatingPortal) handles Escape first.
-const NESTED_LAYER_SELECTOR = '[data-floating-ui-portal]:not(:empty)';
+// An open overlay opened from inside the drawer handles Escape first. Its trigger carries the
+// library's own open-state contract, so a Select that keeps its popup mounted while hidden does not
+// count as an open layer (GURI-2293) and the drawer keeps its Escape.
+const NESTED_LAYER_SELECTOR = '[aria-expanded="true"][aria-haspopup]';
 
 // Structural sizes.
 const INLINE_SIZE_CAP: Record<DrawerSize, string> = { sm: '22rem', md: '30rem', lg: '38rem' };
@@ -732,18 +734,20 @@ function DrawerContent({ ref, className, sx, ...props }: DrawerContentProps) {
 
 DrawerContent.displayName = 'Drawer.Content';
 
-function DrawerPanel({ ref, className, appearance = 'contrast', sx, ...props }: DrawerPanelProps) {
+function DrawerPanel({ ref, className, appearance = 'contrast', style, sx, ...props }: DrawerPanelProps) {
   const { side, size } = useDrawerContext('Panel');
   const panelRef = useContext(DrawerSurfaceContext)?.panelRef;
   const mergedRef = useMergeRefs([panelRef, ref]);
   const inline = side === 'inline-start' || side === 'inline-end';
   const surfaceAppearance = useSurfaceAppearance(appearance);
+  const ownTheme = surfaceTheme(appearance);
+  const surfaceStyle = useSurfaceStyle(ownTheme, style);
 
   return (
-    <AppearanceScope appearance={surfaceAppearance}>
+    <AppearanceScope theme={ownTheme} appearance={surfaceAppearance}>
       <WithSx
         className={className}
-        styles={[panelStyle, panelSideStyles[side], inline && panelSizeStyles[size], contrastSurfaceStyle]}
+        styles={[panelStyle, panelSideStyles[side], inline && panelSizeStyles[size], ownTheme && themeScopeStyle]}
         sx={sx}
       >
         {(className) => (
@@ -751,8 +755,9 @@ function DrawerPanel({ ref, className, appearance = 'contrast', sx, ...props }: 
             {...props}
             ref={mergedRef}
             data-ui="drawer-panel"
-            data-appearance={surfaceAppearance}
+            {...surfaceAttributes(appearance)}
             className={className}
+            style={surfaceStyle}
           />
         )}
       </WithSx>

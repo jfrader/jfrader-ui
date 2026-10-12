@@ -21,6 +21,7 @@ const stackStyle = {
 const meta = {
   title: 'Inputs/Combobox',
   component: Combobox,
+  parameters: { docs: { description: { component: 'Type to filter a list and choose an option.' } } },
 } satisfies Meta<typeof Combobox>;
 
 export default meta;

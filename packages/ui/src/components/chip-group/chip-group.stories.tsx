@@ -26,8 +26,14 @@ const meta = {
     docs: {
       description: {
         component:
-          'Clearable filter buttons. Arrows move focus without changing selection; horizontal arrows follow text direction. Home/End jump to the first/last enabled item. Enter/Space toggle. Multiple values are reported in option order. Selected filters stay visible when collapsed.',
+          'Choose filters and clear them when they are no longer needed.',
       },
+      usage: `- Multiple values are reported in option order.
+- Selected filters stay visible when the group is collapsed.
+
+### Keyboard
+- Arrows move focus without changing selection; horizontal arrows follow text direction.
+- Home/End move to the first/last enabled item. Enter/Space toggle selection.`,
       source: {
         code: '<ChipGroup label="Topics" options={[{ value: "design", label: "Design" }, { value: "code", label: "Code" }]} />',
       },
@@ -569,7 +575,7 @@ export const ReducedMotion: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Structural fixture for reduced-motion browser QA. The play runner does not emulate media preferences.',
+        story: 'Enable reduced motion in the browser to check this example. The play does not set media preferences.',
       },
     },
   },
@@ -579,7 +585,7 @@ export const ForcedColors: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Structural fixture for forced-colors browser QA. The play runner does not emulate forced colors.',
+        story: 'Enable forced colors in the browser to check this example. The play does not set the preference.',
       },
     },
   },

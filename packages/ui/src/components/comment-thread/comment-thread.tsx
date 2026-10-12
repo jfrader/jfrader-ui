@@ -84,7 +84,7 @@ export type CommentThreadSize = ThreadSize;
 export type CommentThreadHeadingLevel = 2 | 3 | 4 | 5 | 6;
 export type CommentThreadPartProps = ThreadPartProps;
 
-/** What a proposed tree changes; `parentId` is where a reply actually attached after `maxDepth`. */
+/** Describes a proposed change. `parentId` is the reply's attachment point after applying `maxDepth`. */
 export type CommentThreadEvent =
   | { type: 'reply'; comment: ThreadComment; parentId: string | null }
   | { type: 'edit'; id: string; body: string }
@@ -147,9 +147,9 @@ type CommentThreadPart =
   | 'status';
 
 export type CommentThreadSlotProps = Partial<Record<CommentThreadPart, CommentThreadPartProps>> & {
-  /** Extra Textarea props for every composer and editor; handlers are composed with the thread's. */
+  /** Textarea props for every composer and editor. Handlers are combined with the thread's handlers. */
   textarea?: ThreadTextareaProps;
-  /** Extra Button props for every Send/Save button; `onClick` runs first and may `preventDefault()`. */
+  /** Button props for Send/Save. `onClick` runs first and can call `preventDefault()`. */
   send?: ThreadButtonProps;
 };
 
@@ -161,7 +161,7 @@ export interface CommentThreadProps
   defaultValue?: readonly ThreadComment[];
   /** The full proposed tree plus what changed. */
   onValueChange?: (next: ThreadComment[], event: CommentThreadEvent) => void;
-  /** Whose comments are editable; authorization stays on the server. */
+  /** Determines whose comments can be edited. Enforce authorization on the server. */
   currentUser: CommentAuthor;
   /** Mention candidates; defaults to every author plus `currentUser`. Deduped by id. */
   people?: readonly CommentAuthor[];

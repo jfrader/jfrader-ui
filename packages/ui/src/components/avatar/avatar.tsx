@@ -7,6 +7,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS } from '../../styling/media';
+import { getInitials } from '../../utils/initials';
 
 export type AvatarSize = 'sm' | 'md' | 'lg';
 export type AvatarStatus = 'online' | 'away' | 'busy' | 'offline';
@@ -34,33 +35,6 @@ export interface AvatarProps
 }
 
 const MAX_INITIALS = 2;
-
-// Grapheme-aware so names starting with combining marks or emoji keep a whole character.
-const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
-
-function getWordInitial(word: string): string {
-  const segments = Array.from(graphemes.segment(word), ({ segment }) => segment);
-  const first = segments[0] ?? '';
-  if (!/\p{Extended_Pictographic}/u.test(first)) return first;
-
-  let initial = '';
-  for (const segment of segments) {
-    if (!/\p{Extended_Pictographic}/u.test(segment)) break;
-    initial += segment;
-  }
-  return initial;
-}
-
-function getInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, MAX_INITIALS)
-    .map(getWordInitial)
-    .join('')
-    .toLocaleUpperCase();
-}
 
 // Initials use `text` on `surfaceHover`: ~16:1 dark, ~18:1 light (WCAG AA needs 4.5:1).
 const rootStyle = css({
@@ -177,7 +151,7 @@ export function Avatar({
             />
           ) : (
             <span aria-hidden="true" className={slotProps?.fallback?.className} css={slotProps?.fallback?.css}>
-              {getInitials(name)}
+              {getInitials(name, MAX_INITIALS)}
             </span>
           )}
           {status !== undefined && (

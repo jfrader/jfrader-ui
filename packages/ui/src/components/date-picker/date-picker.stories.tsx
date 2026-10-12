@@ -24,6 +24,7 @@ const meta = {
   component: DatePicker,
   args: { locale: LOCALE },
   parameters: {
+    docs: { description: { component: 'Choose a date from a calendar.' } },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
     // aria-hidden element is still checked.

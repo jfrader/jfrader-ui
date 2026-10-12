@@ -6,6 +6,7 @@ import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
+import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { LightboxGallery, type LightboxGalleryImage } from './index';
@@ -57,14 +58,20 @@ const meta = {
     docs: {
       source: { code: '<LightboxGallery images={photos} label="Trip photos" minColumnWidth={180} />' },
       description: {
-        component: [
-          'A row-major masonry list and full-screen native image dialog. Supply unique image IDs, meaningful alt text and positive intrinsic dimensions. Images support srcSet and sizes; paginate large collections in the consumer. There is no virtualization or image-provider integration.',
-          'Selection (value/defaultValue/onValueChange) and visibility (open/defaultOpen/onOpenChange) are independent. Controlled requests commit only when accepted. null means no selection; an invalid ID exposes an unavailable state and does not open a modal. Navigation stops at each end.',
-          'Tab traverses launch buttons in reading order. In the stage, Left/Right select images in the effective direction, Home/End select the endpoints, plus/minus change zoom, and 0 resets it. Zoomed arrows pan. All gestures have explicit buttons: swipe selects, downward drag closes, pinch and Ctrl+wheel zoom, double-click toggles zoom, and zoomed drag pans. Escape closes even when zoomed, returning focus to the original launcher.',
-          'Native showModal owns focus containment and scroll locking. Close uses requestClose when supported, including cancel veto; older engines use the shared state-close fallback without cancel dispatch. Native close/form closure reconcile visibility. Viewer ARIA relationships merge external IDs and the title/caption; viewer.withDescription=false opts structured captions out. Floating children must remain inside the native dialog subtree.',
-          'Motion follows the user’s reduced-motion setting. Forced-colors and ReducedMotion stories are structural fixtures; effective environment behavior needs browser media emulation. Screen-reader and physical multi-touch device verification remain separate manual gates.',
-        ].join('\n\n'),
+        component: 'Browse an image gallery, open a photo, and zoom or move through the collection.',
       },
+      usage: `- Images appear in a row-major masonry list and open in a full-screen native dialog. Supply unique IDs, meaningful alt text and positive intrinsic dimensions. \`srcSet\` and \`sizes\` are supported. Paginate large collections; there is no virtualization or image-provider integration.
+- Selection (\`value/defaultValue/onValueChange\`) and visibility (\`open/defaultOpen/onOpenChange\`) are independent. Controlled requests take effect only when accepted. \`null\` means no selection; an invalid ID shows an unavailable state without opening a modal. Navigation stops at each end.
+
+### Keyboard and gestures
+- Tab follows launcher reading order. Left/Right select in the effective direction; Home/End select endpoints. Plus/minus zoom; 0 resets. When zoomed, arrows pan.
+- Swipe selects, downward drag closes, pinch and Ctrl+wheel zoom, double-click toggles zoom, and zoomed drag pans. Buttons provide alternatives to every gesture.
+- Escape closes even when zoomed and returns focus to the original launcher.
+
+### Dialog and accessibility
+- Native \`showModal\` contains focus and locks scrolling. Close uses \`requestClose\` with cancel veto where supported. Older engines use a state-close fallback without dispatching cancel. Native close and form closure update visibility.
+- Viewer ARIA merges external IDs with the title/caption. Set \`viewer.withDescription=false\` to exclude structured captions. Keep floating children inside the dialog subtree.
+- Motion respects reduced motion. Forced-colors and ReducedMotion stories require browser media emulation to check rendering. Test screen readers and multi-touch devices manually.`,
     },
   },
 } satisfies Meta<typeof LightboxGallery>;
@@ -90,6 +97,11 @@ async function current(element: HTMLElement, alt: string) {
   });
   await expect(within(dialog).getAllByRole('img')).toHaveLength(1);
 }
+const imageLayer = (element: HTMLElement) => stage(element).firstElementChild as HTMLElement;
+/** Persistent-open fixtures: the axe gate and visibility checks read the settled entrance. */
+const settled: Story['play'] = async ({ canvasElement }) => {
+  await settleMotion(viewer(canvasElement));
+};
 function cancel(dialog: HTMLDialogElement) {
   fireEvent(dialog, new Event('cancel', { cancelable: true }));
 }
@@ -116,10 +128,12 @@ export const DefaultMixedRatios: Story = {
     }
   },
 };
-export const TitlesCaptions: Story = { 
+export const TitlesCaptions: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
-args: { defaultOpen: true } };
+  args: { defaultOpen: true },
+  play: settled,
+};
 export const PersistentViewer: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
@@ -181,6 +195,7 @@ export const PersistentImageError: Story = {
   args: { images: [{ ...images[0]!, src: '' }], defaultOpen: true },
   play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByRole('dialog')).toBeVisible();
+    await settleMotion(viewer(canvasElement));
     await expect(within(stage(canvasElement)).getByText('Image unavailable')).toBeVisible();
   },
 };
@@ -221,6 +236,7 @@ export const Light: Story = {
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   args: { defaultOpen: true },
+  play: settled,
 };
 export const ReducedMotion: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
@@ -234,6 +250,7 @@ export const ReducedMotion: Story = {
       },
     },
   },
+  play: settled,
 };
 export const ForcedColors: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
@@ -246,6 +263,43 @@ export const ForcedColors: Story = {
           'Structural fixture. Enable forced colors in the browser to inspect borders and the current-thumbnail outline.',
       },
     },
+  },
+  play: settled,
+};
+async function playMotionFromTile({ canvas, canvasElement, userEvent }: Parameters<NonNullable<Story['play']>>[0]) {
+  const invoker = tiles(canvasElement)[1]!;
+  await userEvent.click(invoker);
+  const dialog = viewer(canvasElement);
+  const header = (await canvas.findByRole('heading', { name: 'Trip photos — Forest' })).parentElement!;
+  await expectEntranceMotion(header);
+  await current(canvasElement, 'Tall forest trees');
+
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Close viewer' }));
+  await expect(dialog).toHaveAttribute('data-state', 'closing');
+  // The image flies home after the native close, so it stays put while the chrome fades.
+  await expect(imageLayer(canvasElement)).toHaveAttribute('data-exit', 'home');
+  await expectRetainedExit(header, () => !dialog.hasAttribute('open'));
+  await expect(invoker.ownerDocument.activeElement).toBe(invoker);
+}
+export const Motion: Story = { tags: ['!autodocs'], play: playMotionFromTile };
+export const MotionLight: Story = {
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  play: playMotionFromTile,
+};
+export const MotionWithoutLauncher: Story = {
+  tags: ['!autodocs'],
+  args: { defaultOpen: true },
+  play: async ({ canvasElement, args, userEvent }) => {
+    const dialog = viewer(canvasElement);
+    await expectEntranceMotion(imageLayer(canvasElement));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close viewer' }));
+    // No launcher to fly home to: the image fades out with the viewer.
+    const layer = imageLayer(canvasElement);
+    await expect(layer).toHaveAttribute('data-exit', 'fade');
+    await expectRetainedExit(layer, () => !dialog.hasAttribute('open'));
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
   },
 };
 export const RTL: Story = {
@@ -490,7 +544,8 @@ export const FalsyCaptions: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Next image' }));
     await expect(dialog).not.toHaveAttribute('aria-describedby');
     await userEvent.click(canvas.getByRole('button', { name: 'Next image' }));
-    await expect(within(dialog).getByText('0', { selector: 'p' })).toBeVisible();
+    // A caption that appears with a new image fades in with the rest of the chrome.
+    await waitFor(() => expect(within(dialog).getByText('0', { selector: 'p' })).toBeVisible());
     await expect(dialog.getAttribute('aria-describedby')).toBeTruthy();
     await userEvent.click(canvas.getByRole('button', { name: 'Next image' }));
     await expect(dialog).not.toHaveAttribute('aria-describedby');
@@ -870,7 +925,7 @@ export const LiveReducedMotionPreference: Story = {
     docs: {
       description: {
         story:
-          'Regression harness for a live media-preference change. The mocked preference tests behavior, not browser media-query styles.',
+          'Mocks a media-preference change to test behavior. Browser media-query styles need a separate check.',
       },
     },
   },

@@ -117,7 +117,7 @@ function unitsOf(key: KeycapSpec) {
   return key.units !== undefined && Number.isFinite(key.units) && key.units > 0 ? key.units : DEFAULT_UNITS;
 }
 
-/** Decorative physical keyboard; text, focus and shortcut descriptions belong to the consumer. */
+/** Show a keyboard illustration. Supply text input, focus and shortcut descriptions separately. */
 export function KeycapKeyboard({
   ref, layout = 'compact', rows = layouts[layout], value, defaultValue = EMPTY_CODES,
   onValueChange, eventTarget = null, tone = 'accent', paused = false, slotProps, className, sx, style, ...rest

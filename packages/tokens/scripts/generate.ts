@@ -59,41 +59,13 @@ for (const [name] of flatten(contrast)) {
   if (!baseNames.has(name)) throw new Error(`contrast: token ${name} has no counterpart in base`);
 }
 
-/** Roles the contrast palette repaints, purely for documentation of what the direction touches. */
-const contrastRoles = (Object.keys(base.color) as (keyof typeof base.color)[]).filter(
-  (role) => contrast.color[role] !== base.color[role],
-);
-
-/**
- * The theme's own palette under the `theme` namespace: what an explicit `data-appearance="default"`
- * surface points back at. It copies the whole palette, because against the other page theme the
- * contrast block repaints every role, not only the deltas inside the dark family.
- */
-function themeMirror(palette: { readonly color: Record<string, string>; readonly shadow: Record<string, string> }): TokenTree {
-  return { theme: palette };
-}
-
-/** Points every mirrored role at the enclosing theme's own value, whatever the contrast palette repainted. */
-function appearanceReset(tree: TokenTree, path: readonly string[] = []): TokenTree {
-  return Object.fromEntries(
-    Object.entries(tree).map(([key, value]) => [
-      key,
-      typeof value === 'string' ? `var(${varName(['theme', ...path, key])})` : appearanceReset(value, [...path, key]),
-    ]),
-  );
-}
-
 const css = [
   HEADER,
   cssBlock(":root, [data-theme='dark']", base),
-  cssBlock(":root, [data-theme='dark']", themeMirror(base)),
   cssBlock("[data-theme='light']", light),
-  cssBlock("[data-theme='light']", themeMirror(light)),
-  // Last on purpose: the contrast palette is theme-independent, so it wins over both theme blocks by
-  // source order wherever an element carries `data-appearance="contrast"`, and the reset after it
-  // points those roles back at the theme the surface sits in.
+  // Sparse overrides, not a palette: they apply on top of whatever theme the surface wears (always
+  // the dark one), so they are written once instead of once per theme.
   cssBlock("[data-appearance='contrast']", contrast),
-  cssBlock("[data-appearance='default']", appearanceReset({ color: base.color, shadow: base.shadow })),
 ].join('\n\n');
 
 const vars = `${HEADER}\n\nexport const vars = ${JSON.stringify(toVarTree(base), null, 2)} as const;\n`;

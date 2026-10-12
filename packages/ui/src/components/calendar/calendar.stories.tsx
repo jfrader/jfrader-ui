@@ -11,6 +11,7 @@ const REJECTED_DATE = '2026-10-17';
 const meta = {
   title: 'Pickers/Calendar',
   component: Calendar,
+  parameters: { docs: { description: { component: 'Choose a date or show a range of dates. Move between months to find a day.' } } },
   args: { locale: LOCALE },
 } satisfies Meta<typeof Calendar>;
 

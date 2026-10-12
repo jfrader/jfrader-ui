@@ -142,8 +142,12 @@ const meta = {
     docs: {
       description: {
         component:
-          'One default action joined to a menu of close alternatives (export PDF plus other formats, merge plus squash or rebase). The Action and the Trigger are two native buttons in a labelled group; the Trigger is a menu button and never runs the main action, and choosing an alternative never replaces the default. Use Menu when there is no default action, Button when there are no alternatives. The Trigger has no visible text and needs a localized `aria-label` or `aria-labelledby`.',
+          'Run an action or choose another action from the menu beside it.',
       },
+      usage: `- Action and Trigger are buttons in a labelled group. Trigger opens the menu without running Action.
+- Choosing a menu item does not replace the default action.
+- Give Trigger a translated \`aria-label\` or \`aria-labelledby\`; it has no text.
+- Use Menu when there is no default action. Use Button when there are no alternatives.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
@@ -830,7 +834,7 @@ export const ThemeRootPortal: Story = {
   ),
   play: async ({ canvasElement }) => {
     const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
-    // Portaled into the scope's host, keeping the nearest scope's theme and appearance.
+    // Portaled into the scope's host, keeping the nearest ThemeRoot's theme.
     await expect(canvasElement.querySelector('[data-overlay-host]')!.contains(menu)).toBe(true);
     await expectThemedSurface(menu, 'light');
   },
@@ -1151,7 +1155,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored reduced-motion rules; it does not emulate the preference. Browser QA covers the rendered behavior.',
+          'Enable reduced motion to check behavior in the browser. This story checks CSS rules only.',
       },
     },
   },
@@ -1180,7 +1184,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored forced-colors rules; it does not emulate forced colors. Browser QA verifies the rendered pair.',
+          'Enable forced colors to check both buttons in the browser. This story checks CSS rules only.',
       },
     },
   },

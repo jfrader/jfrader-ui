@@ -33,8 +33,9 @@ const meta = {
       source: { code: usage },
       description: {
         component:
-          'Native button with timed activation: hold Space, Enter, or the primary pointer continuously. Release early, Escape, Tab, blur, or pointer cancellation abandons the attempt. A completed button stays focusable with aria-disabled. Provide an ordinary confirmation Button in a Dialog as an untimed alternative. For a failed request, reset controlled value to false; onConfirm reports the interaction, not an async result.',
+          'Hold a button until the timer finishes to confirm an action.',
       },
+      usage: '- Hold Space, Enter or the primary pointer continuously. Releasing early, Escape, Tab, blur or pointer cancellation cancels the attempt.\n- After completion, the button stays focusable with `aria-disabled`.\n- Provide a confirmation Button in a Dialog as an untimed alternative.\n- `onConfirm` reports the interaction, not an async result. Reset controlled `value` to `false` if the request fails.',
     },
   },
 } satisfies Meta<typeof HoldToConfirm>;

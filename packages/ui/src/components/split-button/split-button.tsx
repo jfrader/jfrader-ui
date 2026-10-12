@@ -54,7 +54,7 @@ export interface SplitButtonProps extends Omit<ComponentPropsWithRef<'div'>, 'ro
   variant?: ButtonVariant;
   tone?: ButtonTone;
   size?: ButtonSize;
-  /** Disables Action, Trigger and items, and asks once for an open menu to close. */
+  /** Disables Action, Trigger and items. Requests closure once if the menu is open. */
   disabled?: boolean;
   open?: boolean;
   defaultOpen?: boolean;
@@ -66,8 +66,7 @@ export interface SplitButtonProps extends Omit<ComponentPropsWithRef<'div'>, 'ro
 
 export interface SplitButtonActionProps extends Omit<ButtonProps, 'render'> {
   /**
-   * Labels the Action may show. They share one grid cell so the Action keeps the width of the
-   * longest one while its label changes; a label swap fades in.
+   * Labels Action may show. Reserves the width of the longest label; changed labels fade in.
    */
   reserveLabels?: readonly string[];
 }
@@ -77,7 +76,7 @@ type SplitButtonTriggerBaseProps = Omit<
   'render' | 'variant' | 'tone' | 'size' | 'loading' | 'startIcon' | 'endIcon' | 'aria-haspopup' | 'aria-expanded' | 'aria-controls'
 >;
 
-/** The Trigger has no visible text: it needs a localized `aria-label` or `aria-labelledby`. */
+  /** Trigger has no text. Supply a translated `aria-label` or `aria-labelledby`. */
 export type SplitButtonTriggerProps = SplitButtonTriggerBaseProps &
   ({ 'aria-label': string } | { 'aria-labelledby': string });
 
@@ -97,8 +96,7 @@ interface SplitButtonContextValue {
   size: ButtonSize;
   disabled: boolean;
   direction: Direction | undefined;
-  /** The Trigger's consumer label ids; the menu is named by them (accname does not follow
-   * the Trigger's own aria-labelledby when the menu references the Trigger). */
+  /** Label ids for Trigger and the menu. Referencing Trigger alone does not follow its `aria-labelledby`. */
   triggerLabelledBy: string | undefined;
   setTriggerLabelledBy: (ids: string | undefined) => void;
 }

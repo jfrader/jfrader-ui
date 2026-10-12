@@ -101,9 +101,9 @@ const moon = (
   </svg>
 );
 
-/** Composes Switch: Space toggles dark appearance; the accessible name stays stable.
- * The consumer applies the requested theme. The ref reaches Switch's native input.
- * The decorative icon frame is a hidden label for the input, so clicking the glyph toggles too.
+/** Requests light or dark appearance; the app applies the theme.
+ * Space and clicking the icon toggle Switch. Keep its accessible name the same in both states.
+ * The ref points to Switch's input. The icon frame is a hidden label for that input.
  */
 export function ThemeSwitch({
   value: valueProp,

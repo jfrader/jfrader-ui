@@ -150,7 +150,7 @@ interface Attempt {
   stop: () => void;
 }
 
-/** Native button with timed Space/Enter activation. Provide an untimed Dialog alternative in the application. */
+/** Hold Space or Enter to confirm. Provide an untimed confirmation in a Dialog too. */
 export function HoldToConfirm({
   ref,
   label,

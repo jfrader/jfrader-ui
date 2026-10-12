@@ -238,16 +238,31 @@ const meta = {
     docs: {
       source: { code: usage },
       description: {
-        component: [
-          'Comments attached to a document or record: nested replies, reactions, inline edit and delete, @-mentions and resolve/reopen. A named region around a card; comments are native lists of articles named by author and time. Bodies are plain text.',
-          'Keyboard: Tab follows DOM order. Ctrl/Cmd+Enter submits a composer or editor once (never during IME composition, while disabled or while a submit is pending). Escape closes the innermost layer first: mention suggestions, the reaction picker, the delete confirmation; the next Escape cancels an edit or reply. Suggestions: Up/Down wrap, Home/End jump, Enter/Tab insert `@Name`. Reaction picker: Left/Right wrap (mirrored in RTL), Home/End jump.',
-          'Data: `value`/`defaultValue` hold an immutable tree; `onValueChange(next, event)` receives the full proposed tree and a `reply`/`edit`/`delete`/`react` event. Persistence and authorization stay on the server: `currentUser` only decides which controls are shown. A submitted draft clears once the new comment or edit appears in `value`, so a rejected request keeps the text; editing it or Cancel allows a retry.',
-          'Depth: `maxDepth` (default 2) counts reply edges below a root comment. A reply to a deeper comment attaches to its ancestor at depth `maxDepth - 1`; `maxDepth={0}` adds root comments. Deeper trees passed in are rendered as they are, with indentation capped.',
-          'Deleting a comment with replies keeps a tombstone (id, author, time, replies) without body or reactions; a leaf is removed.',
-          'Timestamps: `createdAt` is epoch ms, a Date or an ISO date-time with an offset. Times are relative to `now` (`Intl.RelativeTimeFormat`) with the full date in `timeZone` as the description; the component runs no clock, so tick `now` yourself. Counts and names use `Intl.NumberFormat`, `PluralRules` and `ListFormat`; every visible word comes from `labels`.',
-          '`resolvedValue` and `expandedValue` are independent controlled axes. Resolving hides the thread (drafts stay mounted) and shows a summary with Reopen.',
-        ].join('\n\n'),
+        component: 'Comment on a document, reply to people, and mention them with @. Edit, delete, react to, or resolve a discussion.',
       },
+      usage: `### Comments and state
+- Bodies are plain text. A named region contains a card and native lists of articles named by author and time.
+- \`value/defaultValue\` holds an immutable tree. \`onValueChange(next, event)\` receives the full proposed tree and a \`reply/edit/delete/react\` event.
+- Keep persistence and authorization on the server. \`currentUser\` only controls which actions are shown.
+- A submitted draft clears when the new comment or edit appears in \`value\`. Rejected requests keep the text; edit it or Cancel to retry.
+- Deleting a comment with replies keeps its id, author, time, and replies as a tombstone, without body or reactions. A comment without replies is removed.
+- \`resolvedValue\` and \`expandedValue\` are independently controlled. Resolving hides the thread, keeps drafts mounted, and shows a summary with Reopen.
+
+### Reply depth
+- \`maxDepth\` defaults to 2 and counts reply edges below a root comment.
+- A deeper reply attaches to its ancestor at depth \`maxDepth - 1\`. \`maxDepth={0}\` adds root comments.
+- Deeper trees you supply keep their structure; indentation is capped.
+
+### Times and labels
+- \`createdAt\` accepts epoch milliseconds, a Date, or an ISO date-time with an offset.
+- Relative times use \`now\` and Intl.RelativeTimeFormat. The full date in \`timeZone\` is the description. Update \`now\` yourself; the component runs no clock.
+- Counts and names use Intl.NumberFormat, PluralRules, and ListFormat. Supply visible words through \`labels\`.
+
+### Keyboard
+- Tab follows DOM order. Ctrl/Cmd+Enter submits once, except during IME composition, while disabled, or while a submit is pending.
+- Escape closes the innermost suggestions, reaction picker, or delete confirmation first. The next Escape cancels an edit or reply.
+- Suggestions: Up/Down wrap, Home/End jump, Enter/Tab insert \`@Name\`.
+- Reaction picker: Left/Right wrap and reverse in RTL; Home/End jump.`,
     },
   },
 } satisfies Meta<typeof CommentThread>;
@@ -1179,7 +1194,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored reduced-motion rules; it does not emulate the preference. Browser QA verifies the rendered result.',
+          'This play checks CSS rules without enabling reduced motion. Enable the preference in the browser to check the result.',
       },
     },
   },
@@ -1201,7 +1216,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural check of the authored forced-colors rules; it does not emulate forced colors. Browser QA verifies the rendered result.',
+          'This play checks CSS rules without enabling forced colors. Enable the preference in the browser to check the result.',
       },
     },
   },

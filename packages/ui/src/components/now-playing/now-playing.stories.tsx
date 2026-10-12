@@ -54,8 +54,18 @@ const meta = {
       },
       description: {
         component:
-          'Inline media transport, not an audio engine. The consumer owns media loading, timeupdate, ended, and play() permission failures. Commit playing=true only after play() succeeds; uncontrolled playing is intent and never advances time. Expand/Collapse are disclosure buttons; Escape closes only the expanded subtree and accepted keyboard disclosure changes repair focus. Seek composes Slider: arrows move seekStep seconds, Shift+arrows and PageUp/Down use seekLargeStep (30 seconds), Home/End reach the bounds. Horizontal seek remains left-to-right in RTL. The default seekStep is a duration-aligned step of at most one second; an explicit seekStep that does not divide the duration is rounded to the nearest step that does. Artwork uses a reserved square, object-fit:cover; explicit artworkAlt makes it informative. Pulling artwork down 70px or a downward flick requests collapse; Collapse and Escape are equivalent alternatives. No volume control or media-key capture is included.',
+          'Play, pause, seek and switch tracks through controls connected to your media player.',
       },
+      usage: `### Playback
+- The caller handles media loading, timeupdate, ended and play() permission failures. Set playing=true only after play() succeeds.
+- Uncontrolled playing records intent; it never advances time. Volume control and media-key capture are not included.
+- Expand/Collapse are disclosure buttons. Escape closes only the expanded subtree; accepted keyboard disclosure changes restore focus as needed.
+
+### Seeking and artwork
+- Slider arrows move seekStep seconds. Shift+arrows and PageUp/Down use seekLargeStep (30 seconds); Home/End reach the bounds. Horizontal seeking stays left-to-right in RTL.
+- The default seekStep is the largest step of at most one second that divides the duration. A supplied step that does not divide it is rounded to the nearest one that does.
+- Artwork fills a reserved square with object-fit:cover. Set artworkAlt when the image conveys information.
+- Pull artwork down 70px or flick downward to request collapse. Collapse and Escape provide the same action.`,
     },
   },
 } satisfies Meta<typeof NowPlaying>;
@@ -297,7 +307,7 @@ export const HiddenPanelBlur: Story = {
     docs: {
       description: {
         story:
-          'Blurs the focused control inside the hidden panel before NowPlaying commits, as a browser focus fixup can. Focus still returns to Expand.',
+          'Blurs the focused control before the panel change commits, matching browser focus fixup. Focus returns to Expand.',
       },
     },
   },
@@ -479,7 +489,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture for reduced-motion browser QA. This story does not emulate the media preference.',
+          'Enable reduced motion in a browser to check this story. The test does not emulate the preference.',
       },
     },
   },
@@ -490,7 +500,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture for forced-colors browser QA. This story does not emulate forced colors.',
+          'Enable forced colors in a browser to check this story. The test does not emulate forced colors.',
       },
     },
   },
@@ -815,7 +825,7 @@ export const RealMediaAdapterExample: Story = {
     docs: {
       description: {
         story:
-          'A one-second local silent WAV fixture. Playback starts only from Play; the media element owns time updates, seek acceptance, ended, pause, and play() rejection.',
+          'Uses a one-second local WAV without sound. Play starts playback; the media element handles time updates, seek acceptance, ended, pause and play() rejection.',
       },
     },
   },

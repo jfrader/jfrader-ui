@@ -58,7 +58,7 @@ export interface PasswordFieldProps
   error?: ReactNode;
   size?: PasswordFieldSize;
   messages?: Partial<PasswordFieldMessages>;
-  /** Replaces the built-in eye; rendered decoratively inside the toggle. */
+  /** Replaces the eye icon inside the toggle; hidden from assistive technology. */
   revealIcon?: (revealed: boolean) => ReactNode;
   slotProps?: PasswordFieldSlotProps;
 }

@@ -88,8 +88,9 @@ const meta = {
     docs: {
       description: {
         component:
-          'Read-only preview of a person, mention or reference (tooltip pattern: `role="tooltip"`, the trigger is described by the card while it is open). Hover opens after `openDelay` (500ms); Tab onto the trigger opens immediately; Enter or Space activate the trigger natively and open the card once. Escape closes and keeps focus where it was; the card does not reopen until the pointer leaves or focus moves. Tab or Shift+Tab away closes without moving focus. Arrows, Home and End are not intercepted. The pointer can rest on the card (WCAG 1.4.13). A touch tap on a button trigger toggles the card; a rendered link (`render`) still navigates on click, Enter or tap. The card holds no links, buttons or fields — use Popover for actions — and repeats information available elsewhere. `HoverCard.Group` owns which member is open (`value` / `defaultValue` / `onValueChange`) and swaps cards after 80ms while warm. Inside a modal dialog, give the enclosing ThemeRoot a `portalContainer` inside the dialog.',
+          'Preview a person or reference by hovering over or focusing its trigger.',
       },
+      usage: '- Uses the tooltip pattern: `role="tooltip"`; the open card describes the trigger. Repeat information available elsewhere. Do not add links, buttons or fields; use Popover for actions.\n- Hover opens after `openDelay` (500ms). Tab onto the trigger opens immediately; Enter or Space activate the trigger and open once. The pointer can rest on the card (WCAG 1.4.13).\n- Escape closes without moving focus and blocks reopening until the pointer leaves or focus moves. Tab/Shift+Tab away closes without moving focus. Arrows, Home and End pass through.\n- A touch tap on a button trigger toggles the card. A link supplied through `render` still navigates on click, Enter or tap.\n- `HoverCard.Group` controls the open member through `value` / `defaultValue` / `onValueChange`. Cards swap after 80ms while the group is warm.\n- Inside a modal, give the enclosing ThemeRoot a `portalContainer` inside the dialog.',
       source: { code: usage },
     },
   },
@@ -1116,7 +1117,7 @@ export const ScopedThemePortal: Story = {
   ),
   play: async ({ canvasElement }) => {
     const card = await findCard(canvasElement);
-    // Portaled into the scope's host, keeping the nearest scope's theme and appearance.
+    // Portaled into the scope's host, keeping the nearest ThemeRoot's theme.
     await expect(canvasElement.querySelector('[data-overlay-host]')!.contains(card)).toBe(true);
     await expectThemedSurface(card, 'light');
   },
@@ -1199,7 +1200,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Enable reduced motion in browser rendering settings to inspect the entry fade and offset being removed. Open, close and focus behave the same.',
+          'Enable reduced motion in the browser to check that entry fade and movement stop. Open, close and focus behavior stay the same.',
       },
     },
   },

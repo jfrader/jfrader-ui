@@ -65,8 +65,9 @@ const meta = {
     docs: {
       description: {
         component:
-          'The visible surface is the native label of an operable file input; no custom dropzone role or second picker button. Clicking anywhere on the surface opens the picker; Tab reaches the input (the surface draws the focus ring) then row actions; Enter/Space open the native picker once. ArrowUp/Down preserve the row action without wrapping; Delete/Backspace remove. Paste accepts files only while focus is inside, excluding editable controls. Escape is not intercepted. Upload intents and image previews start only for committed selections; existing rows never auto-upload. Submit value items, not input.files: dropped and accumulated files are not native FormData, and native required does not validate that list. Sizes use Intl decimal 1000 scaling. Validate uploaded content independently on the server. Real OS picker, screen reader, mobile and actual media-environment checks remain browser/manual QA gates.',
+          'Choose, drop or paste files, then manage the selection and upload progress.',
       },
+      usage: '- The surface labels the native file input; it has no custom dropzone role or second picker button. Clicking the surface opens the picker.\n- Tab reaches the input, with a focus ring on the surface, then row actions. Enter/Space open the picker once. ArrowUp/Down preserve the row action without wrapping; Delete/Backspace remove. Escape passes through.\n- Paste accepts files only while focus is inside, excluding editable controls.\n- Upload requests and image previews start only for committed selections. Existing rows never auto-upload.\n- Submit `value` items, not `input.files`: dropped and accumulated files are absent from native FormData, and native required does not validate the list. Validate uploads on the server.\n- Sizes use Intl with decimal 1000 scaling.\n- Test the OS picker, screen readers, mobile devices and media settings in browser/manual QA.',
       source: {
         code: `<FileDropzone label="Add receipts" accept="image/*,.pdf" maxFiles={3}
   value={items} onValueChange={setItems} messages={fileMessages}
@@ -261,7 +262,7 @@ export const DropAndPaste: Story = {
     docs: {
       description: {
         story:
-          'Dispatched DataTransfer events prove React drag/drop and focused paste handlers. Real OS dragging and picker dialogs are separate browser QA gates.',
+          'Tests drag/drop and focused paste with DataTransfer events. Test OS dragging and picker dialogs separately in the browser.',
       },
     },
   },
@@ -647,7 +648,7 @@ export const SurfaceOpensPicker: Story = {
     docs: {
       description: {
         story:
-          'Clicks anywhere on the dashed surface open the native input once: the label forwards its own clicks, the frame forwards the blank area around an inside list, and file rows with their actions never open it. The real OS picker is a browser QA gate.',
+          'Click the surface or blank area around the list to open the picker once. File rows and their actions do not open it. Test the OS picker separately.',
       },
     },
   },

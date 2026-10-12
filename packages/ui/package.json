@@ -1,6 +1,6 @@
 {
   "name": "@jfrader/ui",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "React components styled with Emotion and themed through CSS custom properties.",
   "keywords": [
     "react",
@@ -56,7 +56,7 @@
     "./divider": { "types": "./src/components/divider/index.ts", "import": "./src/components/divider/index.ts" },
     "./drawer": { "types": "./src/components/drawer/index.ts", "import": "./src/components/drawer/index.ts" },
     "./editable-details": { "types": "./src/components/editable-details/index.ts", "import": "./src/components/editable-details/index.ts" },
-    "./elastic-slider": { "types": "./src/components/elastic-slider/index.ts", "import": "./src/components/elastic-slider/index.ts" },
+    "./emblem": { "types": "./src/components/emblem/index.ts", "import": "./src/components/emblem/index.ts" },
     "./empty-state": { "types": "./src/components/empty-state/index.ts", "import": "./src/components/empty-state/index.ts" },
     "./expandable-card": { "types": "./src/components/expandable-card/index.ts", "import": "./src/components/expandable-card/index.ts" },
     "./expanding-search": { "types": "./src/components/expanding-search/index.ts", "import": "./src/components/expanding-search/index.ts" },
@@ -65,17 +65,21 @@
     "./flex": { "types": "./src/components/flex/index.ts", "import": "./src/components/flex/index.ts" },
     "./hold-to-confirm": { "types": "./src/components/hold-to-confirm/index.ts", "import": "./src/components/hold-to-confirm/index.ts" },
     "./image-compare": { "types": "./src/components/image-compare/index.ts", "import": "./src/components/image-compare/index.ts" },
+    "./in-view-title": { "types": "./src/components/in-view-title/index.ts", "import": "./src/components/in-view-title/index.ts" },
     "./inline-edit": { "types": "./src/components/inline-edit/index.ts", "import": "./src/components/inline-edit/index.ts" },
     "./hover-card": { "types": "./src/components/hover-card/index.ts", "import": "./src/components/hover-card/index.ts" },
     "./json-viewer": { "types": "./src/components/json-viewer/index.ts", "import": "./src/components/json-viewer/index.ts" },
     "./kbd": { "types": "./src/components/kbd/index.ts", "import": "./src/components/kbd/index.ts" },
     "./keycap-keyboard": { "types": "./src/components/keycap-keyboard/index.ts", "import": "./src/components/keycap-keyboard/index.ts" },
     "./lightbox-gallery": { "types": "./src/components/lightbox-gallery/index.ts", "import": "./src/components/lightbox-gallery/index.ts" },
+    "./link-unfurl": { "types": "./src/components/link-unfurl/index.ts", "import": "./src/components/link-unfurl/index.ts" },
+    "./locale-switcher": { "types": "./src/components/locale-switcher/index.ts", "import": "./src/components/locale-switcher/index.ts" },
     "./mention-input": { "types": "./src/components/mention-input/index.ts", "import": "./src/components/mention-input/index.ts" },
     "./menu": { "types": "./src/components/menu/index.ts", "import": "./src/components/menu/index.ts" },
     "./metric-card": { "types": "./src/components/metric-card/index.ts", "import": "./src/components/metric-card/index.ts" },
     "./multi-select": { "types": "./src/components/multi-select/index.ts", "import": "./src/components/multi-select/index.ts" },
     "./navigation": { "types": "./src/components/navigation/index.ts", "import": "./src/components/navigation/index.ts" },
+    "./next": { "types": "./src/components/next/index.ts", "import": "./src/components/next/index.ts" },
     "./now-playing": { "types": "./src/components/now-playing/index.ts", "import": "./src/components/now-playing/index.ts" },
     "./pagination": { "types": "./src/components/pagination/index.ts", "import": "./src/components/pagination/index.ts" },
     "./password-field": { "types": "./src/components/password-field/index.ts", "import": "./src/components/password-field/index.ts" },
@@ -90,7 +94,8 @@
     "./search-field": { "types": "./src/components/search-field/index.ts", "import": "./src/components/search-field/index.ts" },
     "./segmented-control": { "types": "./src/components/segmented-control/index.ts", "import": "./src/components/segmented-control/index.ts" },
     "./select": { "types": "./src/components/select/index.ts", "import": "./src/components/select/index.ts" },
-    "./shortcut-recorder": { "types": "./src/components/shortcut-recorder/index.ts", "import": "./src/components/shortcut-recorder/index.ts" },
+"./sheet-stack": { "types": "./src/components/sheet-stack/index.ts", "import": "./src/components/sheet-stack/index.ts" },
+"./shortcut-recorder": { "types": "./src/components/shortcut-recorder/index.ts", "import": "./src/components/shortcut-recorder/index.ts" },
     "./signature-pad": { "types": "./src/components/signature-pad/index.ts", "import": "./src/components/signature-pad/index.ts" },
     "./skeleton": { "types": "./src/components/skeleton/index.ts", "import": "./src/components/skeleton/index.ts" },
     "./slider": { "types": "./src/components/slider/index.ts", "import": "./src/components/slider/index.ts" },
@@ -115,6 +120,7 @@
     "./toggle-group": { "types": "./src/components/toggle-group/index.ts", "import": "./src/components/toggle-group/index.ts" },
     "./tooltip": { "types": "./src/components/tooltip/index.ts", "import": "./src/components/tooltip/index.ts" },
     "./tree-view": { "types": "./src/components/tree-view/index.ts", "import": "./src/components/tree-view/index.ts" },
+    "./typewriter-terminal": { "types": "./src/components/typewriter-terminal/index.ts", "import": "./src/components/typewriter-terminal/index.ts" },
     "./usage-meter": { "types": "./src/components/usage-meter/index.ts", "import": "./src/components/usage-meter/index.ts" },
     "./user-menu": { "types": "./src/components/user-menu/index.ts", "import": "./src/components/user-menu/index.ts" }
   },
@@ -135,20 +141,30 @@
     "motion": "^14.1.0"
   },
   "peerDependencies": {
+    "@emotion/cache": "^11.14.0",
+    "next": "^15.0.0 || ^16.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "shiki": "^4.4.3"
   },
   "peerDependenciesMeta": {
+    "@emotion/cache": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    },
     "shiki": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@emotion/cache": "^11.14.0",
     "@storybook/react-vite": "^10.6.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "next": "^16.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "shiki": "^4.4.3",

@@ -32,6 +32,11 @@ const stackStyle = {
 const meta = {
   title: 'Inputs/RadioGroup',
   component: RadioGroup,
+  parameters: {
+    docs: {
+      description: { component: 'Choose one option from a group of radio buttons.' },
+    },
+  },
   argTypes: {
     orientation: { control: 'radio', options: ORIENTATIONS },
     disabled: { control: 'boolean' },
@@ -311,4 +316,3 @@ export const Rtl: Story = {
     await expect(pro).toBeChecked();
   },
 };
-

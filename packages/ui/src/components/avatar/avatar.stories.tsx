@@ -28,6 +28,7 @@ const rowStyle = {
 const meta = {
   title: 'Data display/Avatar',
   component: Avatar,
+  parameters: { docs: { description: { component: 'Show a person’s photo or initials, with an optional status.' } } },
   args: { name: NAME, size: 'md' },
   argTypes: {
     size: { control: 'radio', options: SIZES },

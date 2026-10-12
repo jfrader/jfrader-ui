@@ -51,7 +51,7 @@ export interface Mention {
   readonly start: number;
   readonly end: number;
 }
-/** Ranges are immutable UTF-16 half-open offsets, matching native textarea selection. */
+/** Immutable UTF-16 `[start,end)` offsets, matching textarea selection. */
 export interface MentionValue {
   readonly text: string;
   readonly mentions: readonly Mention[];
@@ -162,7 +162,7 @@ function validMentions(value: MentionValue): Mention[] {
   });
 }
 
-/** Invalid metadata is omitted; plain text is always preserved. The caller owns storage escaping. */
+/** Omits invalid metadata and keeps plain text. The caller handles storage escaping. */
 export function serializeMentions(
   value: MentionValue,
   format: (mention: Mention) => string = (mention) => `<${SYMBOL[mention.kind]}${mention.id}>`,
@@ -338,11 +338,11 @@ const metadataStyle = css({ color: vars.color.textMuted, fontSize: vars.textSize
 const suggestionNameStyle = css({ display: 'inline-flex', alignItems: 'center', gap: vars.space[2] });
 const emptyStyle = css({ padding: vars.space[2], color: vars.color.textMuted, fontSize: vars.textSize.sm });
 
-/** Native multiline textbox in a combobox semantic wrapper with virtual focus.
- * Enter/Tab commit; Space edits;
- * Shift+Tab leaves, Home/End edit, Escape dismisses. Pair input/mirror metric overrides.
- * Native text undo is best-effort across engines; stale metadata is deliberately dropped.
- * Intended for message-sized documents, not rich-text editing. */
+/** Write a message and mention people with @ or channels with #.
+ * The textarea keeps multiline semantics and DOM focus inside a combobox wrapper.
+ * Enter/Tab insert a result; Space edits; Shift+Tab leaves; Home/End move the caret; Escape dismisses.
+ * Pair input/mirror metric overrides. Native text undo depends on the browser; stale metadata is dropped.
+ * Use for message-sized documents, not rich-text editing. */
 export function MentionInput({
   ref,
   actionsRef,

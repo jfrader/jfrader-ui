@@ -67,8 +67,9 @@ const meta = {
       source: { code: usage },
       description: {
         component:
-          'Standalone APG disclosure. Enter and Space toggle; Tab and Shift+Tab follow document order; Escape requests collapse. Details remain mounted. Controlled requests do not commit until open changes. Choose headingLevel to match the page hierarchy.',
+          'Show or hide details inside a card.',
       },
+      usage: '- Follows the APG disclosure pattern. Enter and Space toggle; Escape requests collapse. Tab and Shift+Tab follow document order.\n- Details remain mounted. Controlled requests take effect when `open` changes.\n- Choose `headingLevel` to match the page hierarchy.',
     },
   },
 } satisfies Meta<typeof ExpandableCard>;
@@ -209,7 +210,7 @@ export const LongSummary: Story = {
           International creative production, billing, subscriptions and workspace administration
         </ExpandableCard.Title>
         <ExpandableCard.Description>
-          Review the organization’s current plan and all members across several teams and locations.
+          Review the plan and members across teams and locations.
         </ExpandableCard.Description>
       </ExpandableCard.Trigger>
       <ExpandableCard.Content>Workspace details</ExpandableCard.Content>
@@ -328,7 +329,7 @@ function DynamicExample(args: ExpandableCardProps) {
       </button>
       {more && (
         <p>
-          Additional storage, collaboration, support and billing details for every member in the workspace.
+          Storage, collaboration, support and billing details for each member.
           Changes to detail content resize the retained panel.
         </p>
       )}

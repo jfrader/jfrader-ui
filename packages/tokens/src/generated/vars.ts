@@ -103,5 +103,14 @@ export const vars = {
       "slow": "var(--ui-motion-duration-slow)"
     },
     "easeStandard": "var(--ui-motion-ease-standard)"
+  },
+  "size": {
+    "emblemSm": "var(--ui-size-emblem-sm)",
+    "emblemMd": "var(--ui-size-emblem-md)",
+    "emblemLg": "var(--ui-size-emblem-lg)",
+    "emblemXl": "var(--ui-size-emblem-xl)",
+    "sheetStackBreakpoint": "var(--ui-size-sheet-stack-breakpoint)",
+    "sheetStackSheetPeek": "var(--ui-size-sheet-stack-sheet-peek)",
+    "sheetStackDialogPeek": "var(--ui-size-sheet-stack-dialog-peek)"
   }
 } as const;

@@ -35,8 +35,17 @@ const meta = {
     docs: {
       description: {
         component:
-          'A named announcement region, with opt-in APG basic carousel rotation. Tab follows native controls; Enter/Space activate buttons, Enter activates links. Arrow keys and Escape pass through. Focus stops rotation until Resume; hover and document hiding pause temporarily. Reduced motion disables autoplay. Each of open/value/paused can be controlled or seeded with its default prop; do not switch modes during an instance. Rejected controlled requests leave the axis unchanged. Persistence belongs to the app. Supply dismissFocusRef for a deliberate keyboard dismissal destination. Live announcements are off by default; opt-in polite prose excludes the Countdown timer.',
+          'Show an announcement that people can dismiss. Rotate through messages when autoplay is enabled.',
       },
+      usage: `- The announcement is a named region. Rotation follows the APG basic carousel pattern.
+- Control \`open\`, \`value\`, and \`paused\`, or initialize each with its default prop. Do not switch modes while mounted. Rejected requests leave that state unchanged.
+- Your app stores dismissal state. Set \`dismissFocusRef\` to choose where focus goes after keyboard dismissal.
+- Focus stops rotation until Resume. Hover and a hidden document pause it temporarily. Reduced motion disables autoplay.
+- Live announcements are off by default. When enabled, polite announcements exclude the Countdown timer.
+
+### Keyboard
+- Tab visits controls. Enter/Space activate buttons; Enter activates links.
+- Arrow keys and Escape keep their native behavior.`,
     },
   },
 } satisfies Meta<typeof AnnouncementBar>;
@@ -99,7 +108,7 @@ export const AutoPlayWithPause: Story = {
     docs: {
       description: {
         story:
-          'Assumes normal motion: the OS-level reduced-motion preference disables auto-rotation, so this play returns early when prefers-reduced-motion: reduce matches (see Reduced Motion for that branch).',
+          'Reduced motion disables rotation, so this play skips when that preference is set. See Reduced Motion for that case.',
       },
     },
   },
@@ -251,7 +260,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural paused state. Browser media emulation is required to verify reduced-motion autoplay suppression and instant collapse.',
+          'Enable reduced motion in the browser. Autoplay should stop and collapse should happen without animation. This example shows the paused state.',
       },
     },
   },
@@ -261,7 +270,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural controls and borders. Verify system colors with forced-colors media emulation in browser QA.',
+          'Enable forced colors in the browser to check system colors on controls and borders.',
       },
     },
   },
@@ -407,7 +416,7 @@ export const StorageDelegation: Story = {
       },
       description: {
         story:
-          'The app supplies campaign visibility. This example keeps state in memory; an app may persist it according to its own campaign policy.',
+          'Your app decides when to show a campaign and whether to store that choice. This example keeps it in memory.',
       },
     },
   },

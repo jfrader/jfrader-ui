@@ -1,5 +1,5 @@
 // Shared numeric, pointer, keyboard and form engine behind every slider skin (Slider,
-// ElasticSlider). Skins own rendering and visual feedback; this module owns the value lattice,
+// skins). The skin owns rendering and visual feedback; this module owns the value lattice,
 // the controlled/uncontrolled authority, gestures, key handling and commit semantics.
 import {
   useEffect,

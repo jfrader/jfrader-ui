@@ -433,15 +433,13 @@ const pathIcon = icon(
   </>,
 );
 
-/** Read-only JSON tree. Search overlays expansion/pages; clearing restores base state.
- * Each expanded treeitem OWNS its child role=group via aria-owns; the group is a DOM sibling
- * (flattened out of the treeitem) so the author name stays scoped to the label — nesting it in
- * the DOM would fold the whole subtree into the treeitem's visible text and break the
- * label-content-name-mismatch axe gate. Roving DOM focus follows the TreeView
- * navigation contract. Right opens, Left closes/moves to parent even in RTL. Up/Down clamp;
- * Home/End move; Enter/Space activate; 500ms typeahead; / searches; Ctrl/Cmd+C copies JSON
- * (+Shift copies path).
- * Strict JSON only, no getters/cycles/nonfinite numbers. Paged, not virtualized.
+/** Browse JSON without editing it.
+ * Search adds expansion and pages; clearing restores the base state.
+ * Expanded treeitems reference sibling child groups with aria-owns to keep names scoped to labels.
+ * TreeView navigation: Right opens/enters; Left closes/moves to the parent, including in RTL.
+ * Up/Down stop at the ends; Home/End move; Enter/Space activate. Typeahead resets after 500ms.
+ * / searches; Ctrl/Cmd+C copies JSON; add Shift to copy the path.
+ * Accepts strict JSON only, without getters, cycles or nonfinite numbers. Paged, not virtualized.
  */
 export function JsonViewer({
   data,

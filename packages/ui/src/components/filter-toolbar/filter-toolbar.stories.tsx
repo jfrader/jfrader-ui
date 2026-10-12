@@ -41,7 +41,8 @@ const meta = {
   title: 'Data/FilterToolbar', component: FilterToolbar, tags: ['autodocs'],
   args: { defaultValue: FILTERS }, render: (args) => <Example {...args} />,
   parameters: { docs: {
-    description: { component: 'A named group of collection filters. Tab and Shift+Tab follow native control order; Enter and Space remove or clear filters. Editing and Select navigation remain owned by those controls. Filtering and result counts come from the caller. Pin locale during server rendering. Do not switch between controlled and uncontrolled value ownership.' },
+    description: { component: 'Choose filters for a collection, remove them one at a time, or clear them all.' },
+    usage: '- Tab and Shift+Tab follow control order. Enter and Space activate remove and clear buttons. Each control handles its own editing and Select navigation.\n- Supply filtering and result counts. Set `locale` during server rendering.\n- Do not switch between controlled and uncontrolled values.',
     source: { code: SOURCE },
   } },
 } satisfies Meta<typeof FilterToolbar>;

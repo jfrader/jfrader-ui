@@ -98,7 +98,7 @@ export interface ComboboxProps {
   onOpenChange?: (open: boolean) => void;
   /** Renders a hidden input so the value takes part in native form submission. */
   name?: string;
-  /** Decides whether an option label matches the typed query. Defaults to a case-insensitive substring match. */
+  /** Matches an option label to the query. Defaults to a case-insensitive substring match. */
   filter?: (label: string, query: string) => boolean;
   /** Fires with the new input text when the user types and when a selection or Escape writes a label. */
   onInputChange?: (query: string) => void;
@@ -106,7 +106,7 @@ export interface ComboboxProps {
 }
 
 export interface ComboboxInputProps extends Omit<TextFieldProps, 'value' | 'defaultValue' | 'onValueChange'> {
-  /** Root `name` is the canonical form name; an Input `name` submits an extra text entry. */
+  /** Root `name` submits the selected value. Input `name` submits an extra text entry. */
   name?: string;
   /** Controlled input text. */
   inputValue?: string;

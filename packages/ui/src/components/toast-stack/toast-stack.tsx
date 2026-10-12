@@ -75,9 +75,9 @@ const itemStyle = css({
 });
 const toggleStyle = css({ pointerEvents: 'auto', justifySelf: 'end', minBlockSize: vars.space[8] });
 
-/** Replaces Toast.Viewport: mount exactly one queue renderer in each Toast provider.
- * Tab follows newest-to-oldest controls; Escape dismisses only the focused card.
- * Alt+T is opt-in. The region is not live; shared Toast items own announcements.
+/** Replaces Toast.Viewport. Mount one queue renderer per Toast provider.
+ * Tab visits controls from newest to oldest. Escape dismisses the focused card.
+ * Alt+T must be enabled. Toast items announce messages; the stack region is not live.
  */
 function ToastStackContent({
   ref,

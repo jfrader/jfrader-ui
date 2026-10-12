@@ -50,8 +50,16 @@ const meta = {
       source: { code: snippet },
       description: {
         component:
-          'Swipe short lists to reveal shortcuts. The visible actions button provides the same commands through Menu: Enter/Space/Down opens first, Up opens last, arrows wrap and skip disabled commands, Home/End and typeahead navigate, Escape restores focus, and Tab leaves. Parents own removal, confirmation, errors and undo; actions never delete rows internally. Use keyed direct Row children and paginate long lists.',
+          'Swipe a row to reveal actions, or open its actions menu.',
       },
+      usage: `- Use keyed Row children directly inside SwipeActions. Paginate long lists.
+- Handle removal, confirmation, errors and undo in your app. Actions do not delete rows.
+- The actions button offers the same commands as swiping.
+
+### Keyboard
+- Enter, Space or ArrowDown opens the first menu item. ArrowUp opens the last.
+- Arrows wrap and skip disabled commands. Home, End and typing move between commands.
+- Escape closes the menu and restores focus. Tab leaves.`,
     },
     a11y: {
       config: {
@@ -603,7 +611,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture. Use browser media emulation to verify instant released stops and removal with prefers-reduced-motion.',
+          'Enable reduced motion to check that released rows settle and disappear immediately. This story checks structure only.',
       },
     },
   },
@@ -613,7 +621,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture. Use forced-colors browser emulation to inspect real borders, command labels and focus outlines.',
+          'Enable forced colors to check borders, command labels and focus outlines. This story checks structure only.',
       },
     },
   },

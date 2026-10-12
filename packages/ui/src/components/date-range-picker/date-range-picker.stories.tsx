@@ -2,6 +2,7 @@ import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
@@ -122,8 +123,9 @@ const meta = {
     docs: {
       description: {
         component:
-          'Choose an inclusive range of civil dates for reports, bookings and leave. Values are `{ start, end }` with `YYYY-MM-DD` strings: no time or time zone. Selection happens in a draft: the first day anchors it, the hovered or focused day previews the interval, the second day finishes it, and only Apply commits (`onValueChange`, then `onOpenChange(false)`). Cancel, Escape, outside presses and Tab-out discard the draft. Presets are consumer-labelled; `range(today)` returns the preset interval and out-of-bounds presets stay visible but disabled. `months="auto"` shows two months when the boundary leaves 712px. All copy comes from `messages`, including a plural-aware `summary`; dates and numbers go through Intl in `locale`. Supply `today` (and `locale`) for deterministic server rendering. Required is exposed in the trigger name through `messages.required`; the hidden fields do not enforce native validation. Screen-reader, forced-colors and reduced-motion checks remain manual gates.',
+          'Choose a date range or a preset, then apply it.',
       },
+      usage: '- Values are inclusive `{ start, end }` ranges of `YYYY-MM-DD` dates, without time or time zone.\n- The first day starts a draft; hovering or focusing a day previews it; the second day finishes it. Apply calls `onValueChange`, then `onOpenChange(false)`. Cancel, Escape, outside presses and Tab-out discard the draft.\n- Supply preset labels and `range(today)`. Out-of-bounds presets stay visible but disabled.\n- `months="auto"` shows two months when the boundary leaves at least 712px.\n- Supply copy through `messages`, including a plural-aware `summary`. Dates and numbers use Intl with `locale`. Pass `today` and `locale` for repeatable server rendering.\n- `messages.required` adds the required state to the trigger name. Hidden fields do not enforce native validation.\n- Screen-reader, forced-colors and reduced-motion checks require manual testing.',
       source: { code: USAGE },
     },
   },
@@ -168,7 +170,12 @@ const bodyOf = (canvasElement: HTMLElement) => within(canvasElement.ownerDocumen
 const getTrigger = (canvasElement: HTMLElement, name: string | RegExp = new RegExp(`^${LABEL}`)) =>
   within(canvasElement).getByRole('button', { name });
 
-const findDialog = (canvasElement: HTMLElement, name = LABEL) => bodyOf(canvasElement).findByRole('dialog', { name });
+/** Resolves with the open dialog once its entrance settled (visibility checks read opacity). */
+async function findDialog(canvasElement: HTMLElement, name = LABEL) {
+  const dialog = await bodyOf(canvasElement).findByRole('dialog', { name });
+  await settleMotion(dialog);
+  return dialog;
+}
 
 const day = (canvasElement: HTMLElement, iso: string) => bodyOf(canvasElement).getByRole('button', { name: dayName(iso) });
 
@@ -1152,6 +1159,15 @@ export const NestedInPopover: Story = {
     await expect(reopened).toBeVisible();
     await expectFocused(canvasElement, () => within(reopened).getByRole('button', { name: new RegExp(`^${LABEL}`) }));
     await expect(callValues(popoverOpenChange)).toEqual([true, false, true]);
+
+    // An exiting picker is no longer a layer: the next Escape already reaches the popover.
+    await userEvent.click(within(reopened).getByRole('button', { name: new RegExp(`^${LABEL}`) }));
+    const exiting = await findDialog(canvasElement);
+    await userEvent.keyboard('{Escape}');
+    await expect(exiting).toHaveAttribute('data-state', 'closing');
+    await userEvent.keyboard('{Escape}');
+    await expect(callValues(popoverOpenChange)).toEqual([true, false, true, false]);
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'Filters' })).toBeNull());
   },
 };
 
@@ -1398,6 +1414,7 @@ export const PersistentOpen: Story = {
   render: (args) => <RangeExample {...args} />,
   play: async ({ canvasElement }) => {
     const dialog = await findDialog(canvasElement);
+    await settleMotion(dialog);
     await expect(dialog).toBeVisible();
     await expect(dialog).toHaveAttribute('aria-label', LABEL);
     await expect(dialog.getAttribute('aria-describedby')).toBe(summary(canvasElement).id);
@@ -1413,7 +1430,43 @@ export const LightTheme: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await findDialog(canvasElement);
     await expectThemedSurface(dialog, 'light');
+    await settleMotion(dialog);
   },
+};
+
+async function playMotion({ args, canvasElement, userEvent }: Parameters<NonNullable<Story['play']>>[0]) {
+  await userEvent.click(getTrigger(canvasElement));
+  const dialog = await bodyOf(canvasElement).findByRole('dialog', { name: LABEL });
+  // Below the trigger: it slides down from it.
+  await expect(dialog).toHaveAttribute('data-side', 'bottom');
+  await expectEntranceMotion(dialog);
+  await expect(getComputedStyle(dialog).translate).toBe('none');
+  await expectDayFocused(canvasElement, WEEK.start);
+
+  await userEvent.keyboard('{Escape}');
+  // Accepted close: focus is back on the trigger at once while the inert surface fades out.
+  await expectFocused(canvasElement, () => getTrigger(canvasElement));
+  await expect(dialog).toHaveAttribute('data-state', 'closing');
+  await expect(dialog).toHaveAttribute('inert');
+  await expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull();
+  await expectRetainedExit(dialog, () => !dialog.isConnected);
+  await expect(callValues(args.onOpenChange)).toEqual([true, false]);
+}
+
+export const Motion: Story = {
+  tags: ['!autodocs'],
+  args: { defaultValue: WEEK, months: 1, onOpenChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: playMotion,
+};
+
+export const MotionLight: Story = {
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  args: { defaultValue: WEEK, months: 1, onOpenChange: fn() },
+  render: (args) => <RangeExample {...args} />,
+  play: playMotion,
 };
 
 function ScopedHost({ children }: { children: ReactNode }) {
@@ -1436,7 +1489,7 @@ export const ThemeRootPortal: Story = {
   ),
   play: async ({ canvasElement }) => {
     const dialog = await findDialog(canvasElement);
-    // Portaled into the scope's host, keeping the nearest scope's theme and appearance.
+    // Portaled into the scope's host, keeping the nearest ThemeRoot's theme.
     await expect(canvasElement.querySelector('[data-overlay-host]')!.contains(dialog)).toBe(true);
     await expectThemedSurface(dialog, 'light');
   },

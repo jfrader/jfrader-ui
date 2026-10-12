@@ -9,6 +9,9 @@
 // (Safari preview) — keep manual backdrop handling.
 // Synthetic key events in tests do not trigger native cancel; dispatch a cancel event.
 //
+// Motion: the panel scales and fades in; an accepted close fades it out before the native close
+// (`data-state="closing"`), and reduced motion makes both instant.
+//
 // Lifecycle contract (Root owns logical `open`, Content owns native state): see
 // `overlay/use-native-dialog.ts`.
 import {
@@ -31,9 +34,11 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
+import { MODAL_ENTER_SCALE, modalBackdropMotion, modalPanelMotion } from '../../styling/overlay-motion';
 import { modalShellReset, raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { styledDialogTransition } from '../../overlay/exit-motion';
 import {
   omitNativeOpen,
   requestNativeDialogClose,
@@ -58,17 +63,16 @@ export interface DialogPartRenderProps extends ButtonHTMLAttributes<HTMLButtonEl
 
 export interface DialogTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   /**
-   * Replaces the default button. Spread ALL supplied props onto the operative element and attach
-   * the supplied ref, including when composing through Button. The forwarded and callback refs
-   * refer to the rendered element, which need not be a button; their public types remain
-   * HTMLButtonElement for compatibility.
-   * Overridden handlers, className and style win; compose behavior manually to retain both:
+   * Replace the button. Spread all supplied props onto the element and attach the supplied ref,
+   * including through Button. Refs point to that element, even when it is not a button;
+   * the public ref type remains HTMLButtonElement for compatibility.
+   * Handler, className and style overrides replace the supplied values. Compose handlers to keep both:
    * `onClick={(e) => { p.onClick?.(e); mine(e); }}`.
-   * Only the render path joins data-ui markers into a token list; library selectors should use
-   * `[data-ui~="dialog-trigger"]`. The default button always has data-ui="dialog-trigger".
-   * For disabled anchors, compose through Button's render path: aria-disabled keeps them
-   * focusable and its supplied handler blocks primary click/Enter activation, but does NOT
-   * cover auxiliary/middle-click navigation. This part alone supplies native button semantics.
+   * The render path joins data-ui markers into a token list; use `[data-ui~="dialog-trigger"]`.
+   * The default button has data-ui="dialog-trigger".
+   * For disabled anchors, compose through Button's render path. aria-disabled keeps them focusable;
+   * its handler blocks primary click/Enter, but not auxiliary/middle-click navigation.
+   * This part supplies native button semantics only.
    */
   render?: (props: DialogPartRenderProps) => ReactNode;
 }
@@ -80,17 +84,16 @@ export interface DialogTitleProps extends ComponentPropsWithRef<'h2'>, SxProps {
 export interface DialogDescriptionProps extends ComponentPropsWithRef<'p'>, SxProps {}
 export interface DialogCloseProps extends ComponentPropsWithRef<'button'>, SxProps {
   /**
-   * Replaces the default button. Spread ALL supplied props onto the operative element and attach
-   * the supplied ref, including when composing through Button. The forwarded and callback refs
-   * refer to the rendered element, which need not be a button; their public types remain
-   * HTMLButtonElement for compatibility.
-   * Overridden handlers, className and style win; compose behavior manually to retain both:
+   * Replace the button. Spread all supplied props onto the element and attach the supplied ref,
+   * including through Button. Refs point to that element, even when it is not a button;
+   * the public ref type remains HTMLButtonElement for compatibility.
+   * Handler, className and style overrides replace the supplied values. Compose handlers to keep both:
    * `onClick={(e) => { p.onClick?.(e); mine(e); }}`.
-   * Only the render path joins data-ui markers into a token list; library selectors should use
-   * `[data-ui~="dialog-close"]`. The default button always has data-ui="dialog-close".
-   * For disabled anchors, compose through Button's render path: aria-disabled keeps them
-   * focusable and its supplied handler blocks primary click/Enter activation, but does NOT
-   * cover auxiliary/middle-click navigation. This part alone supplies native button semantics.
+   * The render path joins data-ui markers into a token list; use `[data-ui~="dialog-close"]`.
+   * The default button has data-ui="dialog-close".
+   * For disabled anchors, compose through Button's render path. aria-disabled keeps them focusable;
+   * its handler blocks primary click/Enter, but not auxiliary/middle-click navigation.
+   * This part supplies native button semantics only.
    */
   render?: (props: DialogPartRenderProps) => ReactNode;
 }
@@ -114,7 +117,7 @@ function useDialogContext(part: string): DialogContextValue {
   return context;
 }
 
-const dialogStyle = css(modalShellReset);
+const dialogStyle = css(modalShellReset, modalBackdropMotion);
 
 const panelStyle = css({
   ...raisedSurface,
@@ -123,6 +126,7 @@ const panelStyle = css({
   padding: vars.space[5],
   minInlineSize: 'min(320px, 100%)',
   maxInlineSize: 'min(560px, calc(100vw - 32px))',
+  ...modalPanelMotion(MODAL_ENTER_SCALE),
 });
 
 const titleStyle = css({
@@ -253,7 +257,13 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
   const requestClose = useCallback(() => {
     requestNativeDialogClose(dialogRef.current, setOpen);
   }, [setOpen]);
-  const dialogProps = useNativeDialog({ ...context, requestClose }, { onCancel, onClick, onClose }, ref, dialogRef);
+  const dialogProps = useNativeDialog(
+    { ...context, requestClose },
+    { onCancel, onClick, onClose },
+    ref,
+    dialogRef,
+    styledDialogTransition,
+  );
 
   const labelledBy = [ariaLabelledByProp, hasTitle && titleId].filter(Boolean).join(' ') || undefined;
   const describedBy = [ariaDescribedByProp, withDescription && hasDescription && descriptionId]

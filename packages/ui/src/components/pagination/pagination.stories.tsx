@@ -15,6 +15,11 @@ const stackStyle = {
 const meta = {
   title: 'Navigation/Pagination',
   component: Pagination,
+  parameters: {
+    docs: {
+      description: { component: 'Move between pages of results.' },
+    },
+  },
   args: { page: 5, totalPages: 20, locale: 'en-US' },
   argTypes: {
     page: { control: { type: 'number', min: 1 } },

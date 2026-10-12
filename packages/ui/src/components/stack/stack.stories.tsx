@@ -38,6 +38,11 @@ const boxStyle = {
 const meta = {
   title: 'Layout/Stack',
   component: Stack,
+  parameters: {
+    docs: {
+      description: { component: 'Arrange items in a column and set the space between them.' },
+    },
+  },
   argTypes: {
     align: { control: 'select', options: Object.keys(ALIGNS) },
     gap: { control: 'select', options: LAYOUT_SPACES },

@@ -1,0 +1,459 @@
+'use client';
+
+// LocaleSwitcher: links to the current page in other languages. Locale-agnostic: the consumer
+// passes the options (native-name labels, `lang`, `href`) and the current `value`.
+// Every option renders through one path: an <a href> carrying `lang`, `hreflang` and dir="auto",
+// with aria-current="true" on the current option. Never a button or a native <select>.
+// Variants:
+// - menu: APG menu button whose items are the links (navigation menu button), on the shared menu
+//   controller. The trigger shows the current label and is named by `triggerLabel` followed by
+//   that label; the menu is named by `triggerLabel`. Keyboard map (Menu contract): on the trigger,
+//   Enter/Space/ArrowDown open on the first item and ArrowUp on the last; in the menu, arrows move
+//   and wrap, Home/End jump, typing jumps by native name, Enter follows the link and Space clicks
+//   it, Escape closes and returns focus to the trigger, Tab closes and lets focus move on.
+// - swap: a single link to the other option (two-language sites). With any other option count it
+//   warns in development and links to the first option that is not current.
+// - inline: a labelled <nav> listing every option; the current one is plain text
+//   (<span aria-current="true">), the others are links in native Tab order.
+import {
+  useEffect,
+  useId,
+  type ComponentPropsWithoutRef,
+  type ComponentPropsWithRef,
+  type HTMLAttributes,
+  type ReactNode,
+  type RefCallback,
+} from 'react';
+import { useMergeRefs, type Placement } from '@floating-ui/react';
+import { vars } from '@jfrader/tokens/vars';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { focusRingOutset } from '../../styling/focus-ring';
+import { iconWrapperStyle } from '../../styling/icon-wrapper';
+import { listboxOptionCheckStyle, listboxScrollStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
+import { REDUCED_MOTION } from '../../styling/media';
+import { WithSx, type SxProps } from '../../styling/sx';
+import { triggerStyle } from '../../styling/trigger-style';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { isRenderable } from '../../utils/renderable';
+import { MenuContentPart, MenuController, MenuItemPart, MenuTriggerPart, joinIds, menuItemStyles } from '../menu/menu';
+
+// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
+declare const process: { env: { NODE_ENV?: string } };
+
+const FAMILY = 'LocaleSwitcher';
+const SELECTED_GLYPH = '✓';
+
+export type LocaleSwitcherVariant = 'menu' | 'swap' | 'inline';
+export type LocaleSwitcherSize = 'sm' | 'md' | 'lg';
+
+/** Spread these props onto the link returned by an option's `render` callback. */
+export interface LocaleSwitcherLinkProps extends Omit<ComponentPropsWithRef<'a'>, 'href' | 'children'> {
+  href: string;
+  children: ReactNode;
+  'data-ui': string;
+}
+
+export interface LocaleSwitcherOption {
+  value: string;
+  /** Labels the language with its native name, such as "Español" or "English". */
+  label: ReactNode;
+  /** Sets the label and linked page's BCP 47 language tag through `lang` and `hreflang`. */
+  lang?: string;
+  href: string;
+  /** Replaces the native `<a>` with a router link. Spread every supplied prop onto it. */
+  render?: (props: LocaleSwitcherLinkProps) => ReactNode;
+}
+
+type SlotStyle = { className?: string; css?: Interpolation<Theme> };
+
+export interface LocaleSwitcherSlotProps {
+  /** Menu variant's trigger button. */
+  trigger?: Omit<ComponentPropsWithoutRef<'button'>, 'children' | 'className' | 'aria-labelledby'> & SlotStyle;
+  /** Menu variant's popup. */
+  content?: Omit<ComponentPropsWithoutRef<'div'>, 'children' | 'className'> & SlotStyle;
+  /** Styles every option: menu items, the swap link, inline links, and the current label. */
+  option?: SlotStyle;
+}
+
+export interface LocaleSwitcherProps extends Omit<ComponentPropsWithRef<'nav'>, 'children'>, SxProps {
+  options: readonly LocaleSwitcherOption[];
+  /** Identifies the current language option. */
+  value: string;
+  /** Sets the link layout. Defaults to `'menu'`. */
+  variant?: LocaleSwitcherVariant;
+  /** Sets the text and menu trigger size. Defaults to `'md'`. */
+  size?: LocaleSwitcherSize;
+  /** Names the menu trigger's action, such as "Change language". Read before the current label. */
+  triggerLabel?: string;
+  /** Names the navigation landmark in the inline variant. */
+  label?: string;
+  /** Shows a decorative icon before the menu's current label. Defaults to a globe. `null` removes it. */
+  icon?: ReactNode;
+  /** Controls whether the menu is open. */
+  open?: boolean;
+  /** Sets the menu's initial uncontrolled open state. */
+  defaultOpen?: boolean;
+  /** Requests a menu open-state change. */
+  onOpenChange?: (open: boolean) => void;
+  placement?: Placement;
+  slotProps?: LocaleSwitcherSlotProps;
+}
+
+const rootStyle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  fontFamily: vars.font.sans,
+  lineHeight: vars.lineHeight.tight,
+  color: vars.color.text,
+});
+
+const rootSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
+  sm: css({ fontSize: vars.textSize.sm }),
+  md: css({ fontSize: vars.textSize.sm }),
+  lg: css({ fontSize: vars.textSize.md }),
+};
+
+const triggerLayoutStyle = css({
+  gap: vars.space[2],
+  maxInlineSize: '100%',
+  fontSize: 'inherit',
+  whiteSpace: 'nowrap',
+});
+
+const triggerSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
+  sm: css({ minBlockSize: vars.space[8], paddingInline: vars.space[3] }),
+  md: css({ minBlockSize: vars.space[10], paddingInline: vars.space[4] }),
+  lg: css({ minBlockSize: vars.space[12], paddingInline: vars.space[5] }),
+};
+
+const chevronStyle = css({
+  display: 'inline-flex',
+  transitionProperty: 'transform',
+  transitionDuration: vars.motion.duration.fast,
+  transitionTimingFunction: vars.motion.easeStandard,
+  '& svg': { inlineSize: '1em', blockSize: '1em' },
+  '[aria-expanded="true"] > &': {
+    transform: 'rotate(180deg)',
+  },
+  [REDUCED_MOTION]: {
+    transitionDuration: '0s',
+  },
+});
+
+const menuOptionStyle = css({
+  gap: vars.space[2],
+  textDecoration: 'none',
+  '&[aria-current="true"]': {
+    fontWeight: vars.fontWeight.medium,
+  },
+});
+
+const checkStyle = css({
+  marginInlineStart: 'auto',
+});
+
+const listStyle = css({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+  margin: 0,
+  padding: 0,
+  listStyle: 'none',
+});
+
+const optionStyle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  minBlockSize: vars.space[8],
+  borderRadius: vars.radius.sm,
+});
+
+const linkStyle = css({
+  color: vars.color.accentText,
+  textDecoration: 'underline',
+  textUnderlineOffset: '0.2em',
+  transitionProperty: 'color',
+  transitionDuration: vars.motion.duration.fast,
+  transitionTimingFunction: vars.motion.easeStandard,
+  '&:hover': {
+    color: vars.color.text,
+  },
+  '&:focus-visible': {
+    ...focusRingOutset,
+  },
+  [REDUCED_MOTION]: {
+    transitionDuration: '0s',
+  },
+});
+
+const currentStyle = css({
+  color: vars.color.text,
+  fontWeight: vars.fontWeight.medium,
+});
+
+const globe = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" focusable="false">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3c2.5 2.5 3.75 5.5 3.75 9S14.5 18.5 12 21c-2.5-2.5-3.75-5.5-3.75-9S9.5 5.5 12 3Z" />
+  </svg>
+);
+
+const chevron = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 6l4 4 4-4" />
+  </svg>
+);
+
+interface OptionElementProps extends HTMLAttributes<HTMLElement> {
+  ref?: RefCallback<HTMLElement> | null;
+  'data-ui': string;
+  option: LocaleSwitcherOption;
+  current: boolean;
+  /** A link to the option's page; otherwise plain text (the inline variant's current option). */
+  link: boolean;
+  /** Decoration after the label. */
+  adornment?: ReactNode;
+}
+
+/** The single rendering path of an option: lang, hreflang, dir and aria-current live here. */
+function OptionElement({ option, current, link, adornment, ...props }: OptionElementProps) {
+  const shared = {
+    ...props,
+    lang: option.lang,
+    dir: 'auto',
+    'aria-current': current ? ('true' as const) : undefined,
+    children: (
+      <>
+        {option.label}
+        {adornment}
+      </>
+    ),
+  };
+  if (!link) return <span {...shared} />;
+  const linkProps: LocaleSwitcherLinkProps = { ...shared, href: option.href, hrefLang: option.lang };
+  return option.render ? option.render(linkProps) : <a {...linkProps} />;
+}
+
+interface StyledOptionProps extends Omit<OptionElementProps, 'data-ui' | 'className' | 'slot'> {
+  styles: Interpolation<Theme>;
+  slot: SlotStyle | undefined;
+}
+
+function StyledOption({ styles, slot, ...props }: StyledOptionProps) {
+  return (
+    <WithSx className={slot?.className} styles={[optionStyle, styles, slot?.css]}>
+      {(className) => <OptionElement {...props} data-ui="locale-switcher-option" className={className} />}
+    </WithSx>
+  );
+}
+
+interface VariantProps
+  extends Pick<
+    LocaleSwitcherProps,
+    'options' | 'value' | 'triggerLabel' | 'icon' | 'open' | 'defaultOpen' | 'onOpenChange' | 'placement' | 'slotProps'
+  > {
+  size: LocaleSwitcherSize;
+  current: LocaleSwitcherOption | undefined;
+}
+
+function MenuVariant({
+  options,
+  value,
+  current,
+  size,
+  triggerLabel,
+  icon,
+  open,
+  defaultOpen,
+  onOpenChange,
+  placement,
+  slotProps,
+}: VariantProps) {
+  const id = useId();
+  const actionId = `${id}-action`;
+  const currentId = `${id}-current`;
+  const { className: triggerClassName, css: triggerCss, ...triggerAttributes } = slotProps?.trigger ?? {};
+  const { className: contentClassName, css: contentCss, ...contentAttributes } = slotProps?.content ?? {};
+  const optionSlot = slotProps?.option;
+
+  return (
+    <MenuController open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} placement={placement}>
+      <MenuTriggerPart
+        {...triggerAttributes}
+        aria-labelledby={joinIds(triggerLabel ? actionId : undefined, current ? currentId : undefined)}
+        family={FAMILY}
+        marker="locale-switcher-trigger"
+        styles={[triggerStyle, triggerLayoutStyle, triggerSizeStyles[size], triggerCss]}
+        className={triggerClassName}
+      >
+        {triggerLabel && (
+          <span id={actionId} css={visuallyHiddenStyle}>
+            {triggerLabel}
+          </span>
+        )}
+        {isRenderable(icon) && (
+          <span aria-hidden="true" css={iconWrapperStyle}>
+            {icon}
+          </span>
+        )}
+        {current && (
+          <span id={currentId} lang={current.lang} dir="auto">
+            {current.label}
+          </span>
+        )}
+        <span aria-hidden="true" css={chevronStyle}>
+          {chevron}
+        </span>
+      </MenuTriggerPart>
+      <MenuContentPart
+        {...contentAttributes}
+        family={FAMILY}
+        marker="locale-switcher-menu"
+        styles={[listboxSurfaceStyle, listboxScrollStyle, contentCss]}
+        className={contentClassName}
+        defaultLabelledBy={triggerLabel ? actionId : undefined}
+      >
+        {options.map((option) => {
+          const isCurrent = option.value === value;
+          return (
+            <MenuItemPart
+              key={option.value}
+              family={FAMILY}
+              marker="locale-switcher-option"
+              styles={[menuItemStyles, menuOptionStyle, optionSlot?.css]}
+              className={optionSlot?.className}
+              render={(itemProps) => (
+                <OptionElement
+                  {...itemProps}
+                  option={option}
+                  current={isCurrent}
+                  link
+                  adornment={
+                    isCurrent && (
+                      <span aria-hidden="true" css={[listboxOptionCheckStyle, checkStyle]}>
+                        {SELECTED_GLYPH}
+                      </span>
+                    )
+                  }
+                />
+              )}
+            />
+          );
+        })}
+      </MenuContentPart>
+    </MenuController>
+  );
+}
+
+function SwapVariant({ options, value, slotProps }: VariantProps) {
+  const target = options.find((option) => option.value !== value);
+  if (!target) return null;
+  return <StyledOption option={target} current={false} link styles={linkStyle} slot={slotProps?.option} />;
+}
+
+function InlineVariant({ options, value, slotProps }: VariantProps) {
+  return (
+    <ul css={listStyle}>
+      {options.map((option) => {
+        const isCurrent = option.value === value;
+        return (
+          <li key={option.value}>
+            <StyledOption
+              option={option}
+              current={isCurrent}
+              link={!isCurrent}
+              styles={isCurrent ? currentStyle : linkStyle}
+              slot={slotProps?.option}
+            />
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+const VARIANTS: Record<LocaleSwitcherVariant, (props: VariantProps) => ReactNode> = {
+  menu: MenuVariant,
+  swap: SwapVariant,
+  inline: InlineVariant,
+};
+
+const ROOT_ELEMENT = { menu: 'div', swap: 'div', inline: 'nav' } as const satisfies Record<
+  LocaleSwitcherVariant,
+  'div' | 'nav'
+>;
+
+export function LocaleSwitcher({
+  ref,
+  options,
+  value,
+  variant = 'menu',
+  size = 'md',
+  triggerLabel,
+  label,
+  icon = globe,
+  open,
+  defaultOpen,
+  onOpenChange,
+  placement,
+  slotProps,
+  className,
+  sx,
+  ...rest
+}: LocaleSwitcherProps) {
+  const rootRef = useMergeRefs<HTMLElement>([ref]);
+  const current = options.find((option) => option.value === value);
+  const optionCount = options.length;
+  const hasCurrent = current !== undefined;
+  const hasTriggerLabel = Boolean(triggerLabel);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    if (!hasCurrent) console.warn(`LocaleSwitcher: value "${value}" matches no option.`);
+    if (variant === 'swap' && optionCount !== 2) {
+      console.warn(
+        `LocaleSwitcher: the swap variant expects exactly two options and got ${optionCount}; it links to the first option that is not current.`,
+      );
+    }
+    if (variant === 'menu' && !hasTriggerLabel) {
+      console.warn('LocaleSwitcher: the menu variant needs a triggerLabel that names its action.');
+    }
+  }, [variant, value, hasCurrent, optionCount, hasTriggerLabel]);
+
+  const Root = ROOT_ELEMENT[variant];
+  const Variant = VARIANTS[variant];
+
+  return (
+    <WithSx className={className} styles={[rootStyle, rootSizeStyles[size]]} sx={sx}>
+      {(className) => (
+        <Root
+          {...rest}
+          ref={rootRef}
+          aria-label={rest['aria-label'] ?? (variant === 'inline' ? label : undefined)}
+          data-ui="locale-switcher"
+          data-variant={variant}
+          className={className}
+        >
+          <Variant
+            options={options}
+            value={value}
+            current={current}
+            size={size}
+            triggerLabel={triggerLabel}
+            icon={icon}
+            open={open}
+            defaultOpen={defaultOpen}
+            onOpenChange={onOpenChange}
+            placement={placement}
+            slotProps={slotProps}
+          />
+        </Root>
+      )}
+    </WithSx>
+  );
+}
+
+LocaleSwitcher.displayName = 'LocaleSwitcher';

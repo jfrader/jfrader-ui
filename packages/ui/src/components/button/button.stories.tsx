@@ -45,6 +45,7 @@ ArrowIcon.displayName = 'ArrowIcon';
 const meta = {
   title: 'Inputs/Button',
   component: Button,
+  parameters: { docs: { description: { component: 'Run an action with a button. Show when it is loading or unavailable.' } } },
   tags: ['autodocs'],
   args: { children: 'Button', variant: 'solid', tone: 'neutral', size: 'md' },
   argTypes: {

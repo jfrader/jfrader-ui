@@ -17,8 +17,11 @@ const meta = {
     docs: {
       description: {
         component:
-          'A binary appearance preference composed with Switch. Space toggles; Enter does not. The accessible name stays stable. The ref reaches the native input. The application applies the theme; system preference and page transitions are not managed here.',
+          'Switch between light and dark appearance.',
       },
+      usage: `- Apply the requested theme in your app. ThemeSwitch does not manage system preferences or page transitions.
+- Keep the accessible name the same in both states. The ref points to the input.
+- Space toggles the switch; Enter does not.`,
     },
   },
 } satisfies Meta<typeof ThemeSwitch>;
@@ -421,7 +424,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Use an OS or browser reduced-motion preference to inspect the instant icon swap. This story does not emulate media preferences.',
+          'Enable reduced motion to check that the icon changes immediately. This story does not enable media preferences.',
       },
     },
   },
@@ -431,7 +434,7 @@ export const ForcedColors: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Inspect with forced colors enabled. This story does not emulate forced colors.',
+        story: 'Enable forced colors to check rendering. This story does not enable forced colors.',
       },
     },
   },

@@ -28,7 +28,7 @@ export interface AvatarGroupPartProps {
 export interface AvatarGroupProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'role'>,
     SxProps {
-  /** Stable display order of people; immutable input. */
+  /** People in display order. Treat this array as immutable. */
   members: readonly AvatarGroupMember[];
   /** Maximum number of visible people; overflow does not consume a person slot. Defaults to 4. */
   max?: number;
@@ -36,7 +36,7 @@ export interface AvatarGroupProps
   size?: AvatarSize;
   /** Fallback accessible name for the group landmark. Defaults to 'Team members'. */
   label?: string;
-  /** Locale for formatting count numerals; pin for deterministic SSR. Defaults to ambient Intl locale. */
+  /** Locale for counts. Set it for SSR; otherwise uses the environment's Intl locale. */
   locale?: Intl.LocalesArgument;
   /** Formats the accessible name of the overflow image. Defaults to English plural wording. */
   getOverflowLabel?: (hidden: number, formatted: string) => string;
@@ -48,7 +48,7 @@ export interface AvatarGroupProps
     overflow?: AvatarGroupPartProps;
     summary?: AvatarGroupPartProps;
   };
-  /** Shared styling overrides passed down to each child Avatar. Cannot override id/name/status. */
+  /** Style overrides for each Avatar. Cannot override id/name/status. */
   avatarProps?: Pick<AvatarProps, 'slotProps' | 'sx' | 'className'>;
 }
 

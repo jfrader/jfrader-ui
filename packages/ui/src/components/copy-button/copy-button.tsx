@@ -52,17 +52,17 @@ export interface CopyButtonProps
     SxProps {
   /** The string written to the clipboard. An empty string is a valid payload. */
   text: string;
-  /** Accessible name and idle face, e.g. "Copy command". */
+  /** Accessible name and label while idle, e.g. "Copy command". */
   label: string;
-  /** Face and announcement while the write is in flight. */
+  /** Label and announcement while copying. */
   pendingLabel: string;
-  /** Face and announcement after a successful write. */
+  /** Label and announcement after copying succeeds. */
   copiedLabel: string;
-  /** Face and announcement after a failed or unavailable write. */
+  /** Label and announcement when copying fails or is unavailable. */
   errorLabel: string;
   /** Hides the visible label; the accessible name and announcements stay. */
   iconOnly?: boolean;
-  /** Decorative icon per face; a supplied key replaces the default, including `null` for none. */
+  /** Icon for each state. A supplied key replaces the default; `null` removes it. */
   icons?: CopyButtonIcons;
   value?: CopyButtonValue;
   defaultValue?: CopyButtonValue;
@@ -71,7 +71,7 @@ export interface CopyButtonProps
   onCopied?: (text: string) => void;
   /** Called once per failed write, including a missing Clipboard API. */
   onCopyError?: (error: unknown) => void;
-  /** Milliseconds before `copied`/`error` request `idle`; 0 keeps the result face. */
+  /** Milliseconds before `copied`/`error` request `idle`; 0 keeps the result label. */
   resetAfterMs?: number;
   variant?: ButtonVariant;
   tone?: ButtonTone;

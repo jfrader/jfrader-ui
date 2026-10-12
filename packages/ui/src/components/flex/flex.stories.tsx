@@ -57,6 +57,7 @@ const proseStyle = {
 const meta = {
   title: 'Layout/Flex',
   component: Flex,
+  parameters: { docs: { description: { component: 'Arrange items in a row or column and set their spacing and alignment.' } } },
   args: { gap: 'sm' },
   argTypes: {
     direction: { control: 'radio', options: ['row', 'column'] },

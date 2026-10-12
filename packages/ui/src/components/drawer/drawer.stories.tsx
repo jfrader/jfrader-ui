@@ -42,8 +42,9 @@ const meta = {
     docs: {
       description: {
         component:
-          'Modal edge surface for filters, settings, long forms and record details. Built on the native modal dialog: the page behind is inert, Tab/Shift+Tab stay inside, Escape, Close and backdrop clicks request close through one cancelable path, and focus returns to the invoker. `side` attaches the panel to `inline-start`, `inline-end` (default), `top` or `bottom`; inline sides follow text direction. `size` caps inline panels; top/bottom panels span the viewport and cap their height. The Body scrolls while Header and Footer stay visible. Optional `draggable` lets the header pull the panel toward its edge to dismiss; reduced motion turns it off, and Close/Escape always remain. Modal only. The panel slides in from its edge and back out before the dialog closes; reduced motion opens and closes instantly. Floating overlays inside the drawer need a `ThemeRoot portalContainer` host inside it; an open nested overlay takes the Escape first. Close needs visible text or a localized `aria-label`.',
+          'Open a panel from the edge of the page to show settings, filters or details.',
       },
+      usage: '- Modal only: the page behind is inert, Tab/Shift+Tab stay inside, and closing returns focus to the invoker. Escape, Close and backdrop clicks share the cancelable close request.\n- `side` accepts `inline-start`, `inline-end` (default), `top` or `bottom`. Inline sides follow text direction. `size` caps inline panels; top/bottom panels span the viewport and cap their height.\n- Body scrolls while Header and Footer stay visible.\n- `draggable` lets the header pull the panel toward its edge to dismiss. Close and Escape remain available.\n- The panel slides in and finishes sliding out before the dialog closes. Reduced motion disables dragging and opens/closes instantly.\n- Floating overlays need a `ThemeRoot portalContainer` host inside the drawer. A nested overlay handles Escape first.\n- Give Close visible text or a localized `aria-label`.',
       source: {
         code: `<Drawer>
   <Drawer.Trigger>Filters</Drawer.Trigger>
@@ -578,7 +579,8 @@ export const LightTheme: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
     await expect(canvasElement.contains(dialog)).toBe(true);
-    // The panel paints the contrast palette by default: the dark family on a light page.
+    // The panel wears the dark theme plus the elevated-charcoal overrides, on a light page.
+    await expect(panel).toHaveAttribute('data-theme', 'dark');
     await expect(panel).toHaveAttribute('data-appearance', 'contrast');
     await expectContrastSurface(panel, 'light');
     await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
@@ -592,7 +594,7 @@ export const ContrastPanelDark: Story = {
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
-    // On a dark page the panel is elevated charcoal; the palette values are the same as on a light page.
+    // On a dark page the panel keeps its charcoal elevation above the page; same values as on light.
     await expect(panel).toHaveAttribute('data-appearance', 'contrast');
     await expectContrastSurface(panel, 'dark');
     await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
@@ -608,8 +610,9 @@ export const DefaultAppearance: Story = {
   render: (args) => <DrawerExample {...args} panelProps={{ appearance: 'default' }} />,
   play: async ({ canvasElement, userEvent }) => {
     const { panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
-    // Opting out restores the page theme's own surface.
-    await expect(panel).toHaveAttribute('data-appearance', 'default');
+    // Opting out names no appearance, so the panel inherits the page's own surface.
+    await expect(panel).not.toHaveAttribute('data-theme');
+    await expect(panel).not.toHaveAttribute('data-appearance');
     await expectThemedSurface(panel, 'light');
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);
@@ -1159,10 +1162,40 @@ export const ContrastSelectPanel: Story = {
     await expect(dialog).toHaveAttribute('open');
     await expectContrastSurface(panel, 'light');
 
-    // The drawer closes with its own affordance here: with a Select inside, its Escape cancel is dropped
-    // while the Select's portal stays mounted — tracked as GURI-2293, not this surface work.
-    await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+    // The second belongs to the drawer, even though the select keeps its popup mounted (GURI-2293).
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(dialog);
+    await userEvent.keyboard('{/Escape}');
     await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const SelectEscape: Story = {
+  render: (args) => <DrawerExample {...args} body={<NestedSelectBody />} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const { dialog, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
+
+    // With the select closed, Escape is the drawer's: its mounted-but-hidden popup is not a layer.
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(dialog);
+    await userEvent.keyboard('{/Escape}');
+    await expectClosed(canvasElement, trigger);
+
+    // With the select open, that Escape belongs to the select and the drawer stays.
+    const reopened = await openDrawer({ canvasElement, userEvent });
+    await userEvent.click(canvas.getByRole('combobox', { name: 'Status' }));
+    await within(reopened.dialog).findByRole('listbox', { name: 'Status' });
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(reopened.dialog);
+    await userEvent.keyboard('{/Escape}');
+    await waitFor(() => expect(within(reopened.dialog).queryByRole('listbox')).toBeNull());
+    await expect(reopened.dialog).toHaveAttribute('open');
+
+    // The next Escape closes the drawer.
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(reopened.dialog);
+    await userEvent.keyboard('{/Escape}');
+    await expectClosed(canvasElement, reopened.trigger);
   },
 };
 
@@ -1237,7 +1270,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'With the OS setting on, the panel opens and closes without the slide and the header drag is off. The play stubs `matchMedia` to drive the reduced branch; real media emulation is verified in browser QA.',
+          'Reduced motion removes sliding and header dragging. This test mocks `matchMedia`; check rendering with browser media emulation.',
       },
     },
   },
@@ -1305,7 +1338,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture for forced-colors browser QA: the panel trades its shadow for a system-color border. The play runner does not emulate forced colors; it checks the authored rules.',
+          'Forced colors replaces the shadow with a system-color border. The test checks CSS rules without emulating forced colors.',
       },
     },
   },

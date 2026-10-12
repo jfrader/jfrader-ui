@@ -34,6 +34,16 @@ const rowStyle = {
 const meta = {
   title: 'Surfaces/Popover',
   component: Popover,
+  parameters: {
+    docs: {
+      description: { component: 'Open a panel beside a button without blocking the rest of the page.' },
+      usage: `- The panel uses a non-modal dialog role. Give it a name with aria-labelledby (preferred) or aria-label.
+- Enter/Space toggles; Escape and outside press close.
+- Opening does not move focus or trap it. Tab follows page order across the portal and does not close the panel.
+- Escape returns focus to the trigger only after an accepted close. Outside press closes without moving focus.
+- Nested layers handle Escape and outside press before the parent.`,
+    },
+  },
 } satisfies Meta<typeof Popover>;
 
 export default meta;

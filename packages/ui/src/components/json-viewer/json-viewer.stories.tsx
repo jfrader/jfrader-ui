@@ -30,8 +30,9 @@ const meta = {
       source: { code: snippet },
       description: {
         component:
-          'Read-only strict JSON inspector. Cycles, accessors, unsupported values and nonfinite numbers are rejected. Value copy uses pretty JSON, including quoted strings; paths use dot identifiers and JSON-escaped brackets. Expansion, search query and current path each support controlled/default/callback props. Search overlays ancestor expansion and pages; clearing restores base state. Arrays and objects are paged, not virtualized, and are not intended for arbitrary multi-megabyte input. Each expanded treeitem owns its child group via aria-owns (flattened DOM sibling; names stay scoped to labels); roving DOM focus uses the TreeView contract: Up/Down clamp, Right opens/enters, Left closes/parents (also in RTL), Home/End, Enter/Space, 500ms typeahead. / opens search; Ctrl/Cmd+C copies value, +Shift copies path. Environment stories are structural fixtures; actual media emulation and screen-reader checks are separate QA gates.',
+          'Browse JSON, search its contents, and copy values or paths.',
       },
+      usage: '- Accepts strict JSON only. Cycles, accessors, unsupported values and nonfinite numbers are rejected. Editing is not supported.\n- Copies values as pretty JSON, including quoted strings. Paths use dot identifiers and JSON-escaped brackets.\n- Expansion, search query and current path each have controlled/default/callback props. Search adds ancestor expansion and pages; clearing restores the base state.\n- Arrays and objects are paged, not virtualized. Avoid multi-megabyte input.\n- Expanded treeitems reference child groups through `aria-owns`; the groups are DOM siblings so names stay scoped to labels.\n- TreeView keyboard navigation: Up/Down stop at the ends; Right opens/enters; Left closes/moves to the parent, including in RTL. Home/End, Enter/Space and 500ms typeahead are supported. `/` opens search; Ctrl/Cmd+C copies a value; add Shift to copy its path.\n- Environment stories do not emulate media settings. Media emulation and screen-reader checks need separate QA.',
     },
     a11y: { test: 'error' },
   },

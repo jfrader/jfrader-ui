@@ -37,8 +37,18 @@ const meta = {
       source: { code: '<Slider label="Volume" defaultValue={40} locale="en-GB" />' },
       description: {
         component:
-          'Horizontal single or range selection. Arrows move one step (horizontal arrows mirror in RTL); Shift+arrows and PageUp/Down move a large step; Home/End move to permitted bounds. Thumbs never cross and retain their tab order. Max must equal min + n × step. Nonfinite values, unordered tuples and infeasible gaps throw. onValueCommit reports a completed request even when a controlled parent rejects it. Pass thumb ARIA through slotProps.thumb; root descriptions are also routed to thumbs. Hidden form inputs do not provide native required validation. Touch screen-reader operability needs device testing.',
+          'Drag a thumb to choose a number, or use two thumbs to choose a range.',
       },
+      usage: `### Keyboard
+- Arrows move one step; horizontal arrows reverse in RTL. Shift+arrows and PageUp/Down move a large step. Home/End reach the permitted bounds.
+- Thumbs cannot cross and keep their tab order.
+
+### Values and forms
+- max must equal min + n × step. Nonfinite values, unordered tuples and infeasible gaps throw.
+- onValueCommit reports a completed request even when a controlled parent rejects it.
+- Pass thumb ARIA through slotProps.thumb. Root descriptions also reach the thumbs.
+- Hidden form inputs do not provide native required validation.
+- Test touch screen-reader operation on devices.`,
     },
   },
 } satisfies Meta<typeof Slider>;
@@ -427,7 +437,7 @@ export const ReducedMotion: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Structural fixture. Enable reduced motion in browser QA to verify instantaneous settling.',
+        story: 'Enable reduced motion in the browser to check that the thumb settles without animation.',
       },
     },
   },
@@ -437,7 +447,7 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story:
-          'Structural fixture. Enable forced colors in browser QA to verify system-color boundaries and focus.',
+          'Enable forced colors in the browser to check control boundaries and focus with system colors.',
       },
     },
   },

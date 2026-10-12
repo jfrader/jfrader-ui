@@ -40,6 +40,14 @@ function skeletonsIn(canvasElement: HTMLElement) {
 const meta = {
   title: 'Feedback/Skeleton',
   component: Skeleton,
+  parameters: {
+    docs: {
+      description: { component: 'Reserve space for content while it loads.' },
+      usage: `- The placeholder is aria-hidden and has no role. Announce loading elsewhere with a Spinner or aria-busy on the region.
+- Numeric dimensions are pixels; strings are CSS lengths.
+- With circle, height follows width unless height is supplied.`,
+    },
+  },
   tags: ['autodocs'],
 } satisfies Meta<typeof Skeleton>;
 

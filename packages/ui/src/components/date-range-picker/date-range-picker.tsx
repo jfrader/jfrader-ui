@@ -30,6 +30,10 @@
 // Direction: the portaled dialog takes the trigger's effective direction (an explicit `dir`
 // on Content wins), so grid and preset arrows follow an RTL subtree of an LTR document.
 // Disabled hides the dialog and blocks opening without requesting any open change.
+// Motion: the dialog fades in a few pixels from the trigger's side. An accepted close keeps it
+// mounted, inert and hidden from assistive technology while it fades out; it is no longer an
+// open layer then, so Escape and outside presses already reach the layer below. Reduced motion
+// makes both instant.
 // Values are inclusive date-only ranges of 'YYYY-MM-DD' strings, parsed and formatted as UTC
 // Gregorian dates: there is no time or time zone. An invalid or reversed value is shown as
 // empty and invalid, never repaired. `today` makes presets and the today marker deterministic
@@ -65,8 +69,10 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { floatingSurfaceMotion } from '../../styling/overlay-motion';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { useExitPresence } from '../../overlay/exit-motion';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating, type OverlayAvailableSize } from '../../overlay/use-overlay-floating';
@@ -358,6 +364,7 @@ const contentStyle = css({
   boxShadow: vars.shadow.overlay,
   padding: vars.space[4],
   overflow: 'auto',
+  ...floatingSurfaceMotion,
   '&[data-layout="rail"]': {
     gridTemplateColumns: 'auto 1fr',
   },
@@ -797,14 +804,27 @@ DateRangePickerTrigger.displayName = 'DateRangePicker.Trigger';
 
 function DateRangePickerContent(props: DateRangePickerContentProps) {
   const { open } = useDateRangePickerContext('Content');
-  // The panel mounts with every open, so each open starts a fresh draft.
-  return open ? <DateRangePickerPanel {...props} /> : null;
+  const presence = useExitPresence<HTMLDivElement>(open);
+  // The panel mounts with every open, so each open starts a fresh draft, even one that
+  // interrupts the previous panel's exit.
+  const [opening, setOpening] = useState({ open, count: 0 });
+  if (opening.open !== open) setOpening({ open, count: opening.count + (open ? 1 : 0) });
+  return presence.present ? (
+    <DateRangePickerPanel key={opening.count} {...props} presenceRef={presence.ref} closing={presence.closing} />
+  ) : null;
 }
 
 DateRangePickerContent.displayName = 'DateRangePicker.Content';
 
+interface DateRangePickerPanelProps extends DateRangePickerContentProps {
+  presenceRef: RefObject<HTMLDivElement | null>;
+  closing: boolean;
+}
+
 function DateRangePickerPanel({
   ref,
+  presenceRef,
+  closing,
   dir,
   style,
   className,
@@ -814,7 +834,7 @@ function DateRangePickerPanel({
   'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
   ...rest
-}: DateRangePickerContentProps) {
+}: DateRangePickerPanelProps) {
   const {
     readOnly,
     value,
@@ -959,7 +979,7 @@ function DateRangePickerPanel({
     },
     [contentRef],
   );
-  const mergedRef = useMergeRefs([refs.setFloating, ref, setContentNode]);
+  const mergedRef = useMergeRefs([refs.setFloating, ref, setContentNode, presenceRef]);
   // The trigger's effective direction, which the portal would otherwise lose. Read after the
   // trigger attaches: a surface open on mount renders before the trigger's ref is set.
   const triggerNode = floatingContext.elements.domReference;
@@ -994,6 +1014,10 @@ function DateRangePickerPanel({
               dir={dir ?? triggerDirection}
               data-ui="date-range-picker-content"
               data-layout={layout}
+              data-side={floatingContext.placement.split('-')[0]}
+              data-state={closing ? 'closing' : 'open'}
+              inert={closing}
+              aria-hidden={closing || undefined}
               style={{
                 ...style,
                 ...floatingStyles,

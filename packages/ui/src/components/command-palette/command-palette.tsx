@@ -16,6 +16,7 @@
 // `open` and the dismissal path, Content owns native state. Escape on the Input routes through
 // `requestClose()` so a consumer `cancel` veto applies; accepted closes return focus natively.
 // The Trigger is optional: consumers usually drive `open` themselves (e.g. Cmd+K).
+// Motion: same retained exit as Dialog, entering from a slightly smaller scale.
 import {
   createContext,
   useCallback,
@@ -43,6 +44,7 @@ import { listboxItemStateStyle, listboxItemStyle } from '../../styling/listbox-s
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { styledDialogTransition } from '../../overlay/exit-motion';
 import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import {
   omitNativeOpen,
@@ -83,7 +85,7 @@ export interface CommandPaletteProps {
   onOpenChange?: (open: boolean) => void;
   /** Accessible name of the dialog, input and listbox. */
   label?: string;
-  /** Decides whether an item's label (or keywords) matches the query. Case-insensitive substring by default. */
+  /** Matches an item's label or keywords to the query. Defaults to a case-insensitive substring match. */
   filter?: (text: string, query: string) => boolean;
   /** Rendered by CommandPalette.Empty when nothing matches. */
   emptyMessage?: ReactNode;
@@ -348,7 +350,7 @@ function CommandPaletteContent({ ref, className, sx, ...props }: CommandPaletteC
 
   const context = useCommandPaletteContext('Content');
   const { label, announcement } = context;
-  const dialogProps = useNativeDialog(context, { onCancel, onClick, onClose }, ref);
+  const dialogProps = useNativeDialog(context, { onCancel, onClick, onClose }, ref, undefined, styledDialogTransition);
 
   return (
     <WithSx className={className} styles={dialogStyle} sx={sx}>

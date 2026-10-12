@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 import { ClassNames, type ClassNamesContent, type Interpolation, type Theme } from './css';
 
 export interface SxProps {
-  /** Consumer style overrides, identical to `css` and applied after it (`sx` is the MUI-style spelling). */
+  /** Style overrides. Accepts the same values as `css` and applies after it. */
   sx?: Interpolation<Theme>;
 }
 

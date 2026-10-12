@@ -1,6 +1,6 @@
 # Consuming jfrader-ui
 
-Published `@jfrader/ui` and `@jfrader/tokens` packages ship compiled ES modules and TypeScript declarations. The app does not compile the library's TSX or need Emotion's `jsxImportSource` for library internals.
+Add `@jfrader/ui` and `@jfrader/tokens` to your React app. The published packages include compiled ES modules and TypeScript declarations; your app does not compile the library's TSX or need Emotion's `jsxImportSource` for its internals.
 
 ## Dependencies
 
@@ -12,29 +12,30 @@ pnpm add @jfrader/ui @jfrader/tokens @emotion/react react react-dom
 
 ### Registry choice
 
-npmjs is the zero-configuration default. GitHub Packages carries the same
-verified tarball, but GitHub requires authentication even for public npm
-packages:
+npmjs is the default and needs no configuration. GitHub Packages hosts the same
+verified tarball and requires authentication even for public npm packages:
 
 ```ini
 @jfrader:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
-Registry selection applies to the whole `@jfrader` scope; npm does not fall
-back from GitHub Packages to npmjs. Projects that map that scope to GitHub must
-authenticate there or use an explicit npmjs tarball URL for a package that is
-not mirrored.
+The registry setting applies to the whole `@jfrader` scope. npm does not fall
+back from GitHub Packages to npmjs. If your project uses GitHub for that scope,
+authenticate there. For a package not mirrored there, use an explicit npmjs
+tarball URL.
 
 ## Published packages
 
 Use your app's normal React JSX configuration. Configure Emotion's `jsxImportSource` only if the app itself uses Emotion's `css` prop.
 
-## In-repo workspace development
+<a id="in-repo-workspace-development"></a>
 
-Workspace exports point at TypeScript and TSX under `src/`. The app must compile that source with Emotion's JSX runtime. Generate the tokens with `pnpm generate` before starting the app.
+## Workspace apps
 
-The following Vite and TypeScript settings apply to workspace source consumption, or to an app that uses Emotion's `css` prop itself.
+Inside this repo, packages export TypeScript and TSX from `src/`. Your app must compile that source with Emotion's JSX runtime. Run `pnpm generate` before starting the app.
+
+Use these Vite and TypeScript settings for workspace apps or apps that use Emotion's `css` prop.
 
 ### Vite
 
@@ -63,7 +64,7 @@ For the Vite setup above, use:
 }
 ```
 
-This repo also sets `strict` and `noUncheckedIndexedAccess`. Those are repo preferences; consumers do not need them.
+This repo also sets `strict` and `noUncheckedIndexedAccess`. Your app does not need those settings.
 
 ## Styles
 
@@ -117,27 +118,51 @@ html[data-theme='light'] {
 
 To switch at runtime, set `document.documentElement.dataset.theme` and store the value under the same `localStorage` key.
 
-### Contrast surfaces
+### Custom palettes
 
-A surface can paint the dark family whatever the page theme is: dark panel on a light page, elevated charcoal on a dark page. `Drawer.Panel` does it by default; `Card` and `ThemeRoot` opt in with `appearance="contrast"`.
+Use `createTheme` to derive accent colors from one hex color. Pass the result to `ThemeRoot tokens` to override the palette for that subtree.
 
 ```tsx
-<Card appearance="contrast">{/* … */}</Card>
-<Card appearance="default">{/* back to the theme's own palette */}</Card>
+import { createTheme, ThemeRoot } from '@jfrader/ui';
+
+const brand = createTheme({ base: 'dark', accent: '#7c3aed' });
+
+<ThemeRoot theme="dark" tokens={brand}>{/* brand accent in here */}</ThemeRoot>;
 ```
 
-- Text, borders, control boundaries, wells and native `color-scheme` inside the surface come from the palette; nothing to override per component.
-- The palette crosses portals: a Select, Menu or Popover opened inside a contrast surface stays dark, on the page it is opened from.
-- Omitted, `appearance` inherits: a surface nested inside a contrast one stays contrast. `appearance="default"` returns that surface to the theme's own palette.
-- A nested `ThemeRoot` keeps the enclosing palette unless it names one, so an overlay host inside a drawer needs only `portalContainer`.
+- `base` chooses the dark or light derivation. Match it to the root's `theme`.
+- `accent` sets `accentHover`, `accentText`, `accentSoft`, `accentSoftHover`, `accentBorder`, `accentContrast`, and `focusRing`. The focus ring uses the accent color.
+- `tokens` merges your overrides over the derived values. Your value wins for each token path.
+- On light, `accentText` limits lightness for AA contrast on white. On dark, it uses the accent unchanged; a dark accent may be unreadable as text.
+- `accentContrast` picks near-black or white, whichever has higher contrast against the accent. Accents with relative luminance around 0.17–0.22 fall below 4.5:1 against both. Pick a darker or lighter accent, or set `accentContrast` yourself.
+- `accent` accepts `#rgb` or `#rrggbb`. Other formats throw.
+- Overrides are inline custom properties on the scope root. Changing the named palette needs no re-render; portaled overlays carry the scope's tokens.
+- For document-level themes on `<html>`, call `themeTokenStyle(createTheme({ base, accent }))`. Serialize its custom-property map into one CSS block per base under your `data-theme` selectors.
 
-### Scoped theming and overlays
+### Contrast surfaces
 
-Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast portal their content to `body`. Inside a `ThemeRoot`, that content takes the nearest `ThemeRoot`'s `theme` and `appearance`, and follows them when they change while open. Dialog renders in place and inherits them directly.
+A contrast surface uses the dark palette with a charcoal background on either page theme. `Drawer.Panel` uses it by default. Set `appearance="contrast"` on `Card` to use it there.
 
-Only the named theme and appearance carry over. CSS you set on an element around the overlay, such as overriding a `--ui-*` variable on a wrapper, does not reach portaled content.
+```tsx
+<Card appearance="contrast">{/* dark palette, charcoal background */}</Card>
+<Card>{/* enclosing palette */}</Card>
+```
 
-To keep overlays inside a layout boundary (a modal `<dialog>`'s top layer, an embedded widget's own element), give the `ThemeRoot` a `portalContainer`:
+- The palette sets text, borders, control boundaries, wells and native `color-scheme` inside the surface.
+- A Select, Menu or Popover opened inside a contrast surface keeps its palette through portals.
+- Omit `appearance` on a nested Card to inherit the enclosing palette. `appearance="default"` keeps the enclosing theme; it does not restore the outer page theme.
+- To switch a section inside a contrast surface to light, wrap it in `ThemeRoot theme="light"`.
+- For an overlay host, give `ThemeRoot` the enclosing theme and set `portalContainer`. Keeping the same theme preserves the appearance for its overlays.
+
+<a id="scoped-theming-and-overlays"></a>
+
+### Themes in overlays
+
+Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast portal their content to `body`. They keep the nearest scope's theme and appearance, including changes made while open. Dialog renders in place and inherits them directly.
+
+The named theme, appearance, and `ThemeRoot tokens` carry over. Other ancestor CSS, such as a `--ui-*` variable set on a wrapper, does not reach portaled content.
+
+Set `portalContainer` on `ThemeRoot` to keep overlays inside a modal `<dialog>`'s top layer or an embedded widget's element:
 
 ```tsx
 const [overlayHost, setOverlayHost] = useState<HTMLElement | null>(null);
@@ -199,14 +224,14 @@ function Sparkline({ points }: { points: string }) {
 
 ### `sx`
 
-Every public visual part root takes `sx` for one-off overrides. Context/provider components render no DOM and take no `sx`. It accepts the same values as `css`, including theme callbacks, and needs no JSX configuration:
+Use `sx` to override styles on any public component or part that renders an element. Context/provider components render no DOM and take no `sx`. `sx` accepts the same values as `css`, including theme callbacks, and needs no JSX configuration:
 
 ```tsx
 <Button sx={{ inlineSize: '100%' }}>Create project</Button>
 <Card.Title sx={(theme) => ({ color: theme.color.accentText })}>Team plan</Card.Title>
 ```
 
-Precedence, last wins: component styles → `slotProps` → `css` → `sx`.
+Styles apply in this order, with later styles winning: component styles → `slotProps` → `css` → `sx`.
 
 ### `css` prop
 
@@ -224,7 +249,7 @@ const roomy = css({ paddingBlock: theme.space[6] });
 
 ### Tokens
 
-Take every value from `theme` (the same object as `vars` from `@jfrader/tokens/vars`). Each value is a `var(--ui-*)` reference. Never write raw hex or rgb values.
+Use values from `theme` (the same object as `vars` from `@jfrader/tokens/vars`). Each value is a `var(--ui-*)` reference. Do not write raw hex or rgb values.
 
 ### Next.js
 
@@ -232,7 +257,7 @@ Take every value from `theme` (the same object as `vars` from `@jfrader/tokens/v
 
 ## Icons
 
-Use [Lucide](https://lucide.dev) for shared control glyphs, with named imports:
+Use named imports from [Lucide](https://lucide.dev) for control icons:
 
 ```sh
 pnpm add lucide-react
@@ -244,7 +269,7 @@ import { Inbox } from 'lucide-react';
 <Button startIcon={<Inbox />}>Inbox</Button>;
 ```
 
-Replace any glyph with your own SVG where needed. Brand artwork stays app-owned.
+You can use your own SVG instead. Keep brand artwork in your app.
 
 ## Editable details
 
@@ -410,95 +435,25 @@ Render `data-theme` on `<html>`, the pre-paint script and the font CSS in the in
 
 ## Next.js App Router
 
-Starting with the next release (0.1.2 planned; unreleased), every published `@jfrader/ui` module starts with `'use client'`. This makes top-level component exports renderable from Server Components with serializable props. Compose compound parts (e.g. `Dialog.Trigger`), render-prop callbacks and event handlers inside a Client Component; React's client-reference proxy rejects property access from Server Components.
+The package build marks every `@jfrader/ui` module with `'use client'`. Server Components can render top-level component exports with serializable props.
+
+Use compound parts (e.g. `Dialog.Trigger`), render-prop callbacks and event handlers inside a Client Component. React rejects property access on client references from Server Components.
 
 ### Emotion registry
 
-Required. Without it the server renders inline `<style data-emotion>` tags next to components and hydration mismatches.
+Wrap the App Router layout in `EmotionRegistry` to collect Emotion styles during server rendering and avoid hydration mismatches. Install `@emotion/cache` alongside Next.js:
 
 ```sh
 pnpm add @emotion/cache
 ```
 
 ```tsx
-// app/emotion-registry.tsx
-'use client';
-
-import createCache from '@emotion/cache';
-import { CacheProvider } from '@emotion/react';
-import { useServerInsertedHTML } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
-
-export function EmotionRegistry({ children }: { children: ReactNode }) {
-  const [{ cache, flush }] = useState(() => {
-    const cache = createCache({ key: 'css' });
-    cache.compat = true;
-    const insert = cache.insert;
-    let pending: { name: string; isGlobal: boolean }[] = [];
-    cache.insert = (...args) => {
-      const [selector, serialized] = args;
-      if (cache.inserted[serialized.name] === undefined) {
-        pending.push({ name: serialized.name, isGlobal: !selector });
-      }
-      return insert(...args);
-    };
-    const flush = () => {
-      const names = pending;
-      pending = [];
-      return names;
-    };
-    return { cache, flush };
-  });
-
-  useServerInsertedHTML(() => {
-    const inserted = flush();
-    if (inserted.length === 0) return null;
-    const globals: { name: string; styles: string }[] = [];
-    const names: string[] = [];
-    let styles = '';
-    for (const { name, isGlobal } of inserted) {
-      const style = cache.inserted[name];
-      if (typeof style !== 'string') continue;
-      if (isGlobal) {
-        globals.push({ name, styles: style });
-      } else {
-        names.push(name);
-        styles += style;
-      }
-    }
-    return (
-      <>
-        {globals.map(({ name, styles }) => (
-          <style
-            key={name}
-            data-emotion={`${cache.key}-global ${name}`}
-            dangerouslySetInnerHTML={{ __html: styles }}
-          />
-        ))}
-        {names.length > 0 && (
-          <style
-            key={cache.key}
-            data-emotion={`${cache.key} ${names.join(' ')}`}
-            dangerouslySetInnerHTML={{ __html: styles }}
-          />
-        )}
-      </>
-    );
-  });
-
-  return <CacheProvider value={cache}>{children}</CacheProvider>;
-}
-```
-
-Wrap the body in the root layout:
-
-```tsx
 // app/layout.tsx
-import { EmotionRegistry } from './emotion-registry';
+import { EmotionRegistry } from '@jfrader/ui/next';
 
 <body>
   <EmotionRegistry>{children}</EmotionRegistry>
 </body>
 ```
 
-Reference implementation: [saticket `apps/web/app/emotion-registry.tsx`](https://github.com/jfrader/saticket/blob/master/apps/web/app/emotion-registry.tsx) (available when PR #9 merges).
+The adapter manages the Emotion cache, flushes styles through `useServerInsertedHTML`, and mounts `ThemeProvider`. The optional `next` peer is used only by this subpath. Source: `packages/ui/src/components/next/emotion-registry.tsx`.

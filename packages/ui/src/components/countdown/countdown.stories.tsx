@@ -42,8 +42,9 @@ const meta = {
     docs: {
       description: {
         component:
-          'A noninteractive timer for an exact instant. Tab and other keys pass through. The parent owns the target; clock sampling owns time. No editable controlled/uncontrolled axis applies. Updates are not announced; completion announcements are opt-in. Background completion runs at the first executable wake-up, not a guaranteed wall-clock instant. Pass an explicit locale and initialNow for SSR.',
+          'Show the time remaining until a date and time.',
       },
+      usage: '- The timer has no controls or editable state. Tab and other keys pass through. Set the target in the parent; the clock supplies the current time.\n- Updates are not announced. Completion announcements are opt-in.\n- In the background, completion runs when the browser can next execute a callback, which may be after the target time.\n- Pass `locale` and `initialNow` for server rendering.',
     },
   },
   decorators: [

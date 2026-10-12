@@ -136,6 +136,9 @@ export const Default: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Open command palette' }));
     await waitFor(() => expect(canvas.getAllByRole('option').length).toBeGreaterThan(0));
+    // The palette fades in: wait for the settled entrance before visibility and axe read it.
+    const panel = canvas.getByRole('dialog').firstElementChild!;
+    await waitFor(() => expect(getComputedStyle(panel).opacity).toBe('1'));
     await expect(canvas.getByRole('option', { name: 'New project' })).toBeVisible();
   },
 };
