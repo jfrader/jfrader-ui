@@ -854,9 +854,9 @@ export const NativeRejectedRepair: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Complete' }));
     await waitFor(async () => {
       await expect(dialogIn(canvasElement).open).toBe(false);
+      await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+      await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
     });
-    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
-    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
     await userEvent.click(canvas.getByRole('button', { name: TRIGGER }));
     await expect(dialogIn(canvasElement).open).toBe(true);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
