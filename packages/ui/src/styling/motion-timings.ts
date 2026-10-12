@@ -28,4 +28,5 @@ export const motionDurationMs = {
   fast: resolveMotionDurationMs('duration.fast', base.motion.duration.fast),
   base: resolveMotionDurationMs('duration.base', base.motion.duration.base),
   slow: resolveMotionDurationMs('duration.slow', base.motion.duration.slow),
+  cardFlip: resolveMotionDurationMs('duration.cardFlip', base.motion.duration.cardFlip),
 } as const;
