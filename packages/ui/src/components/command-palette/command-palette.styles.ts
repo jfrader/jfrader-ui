@@ -67,9 +67,8 @@ export const groupHeadingStyle = css({
 });
 
 export const itemStyle = css({
-  '&:hover, &[data-active]': {
-    backgroundColor: vars.color.surfaceHover,
-  },
+  minInlineSize: 0,
+  overflowWrap: 'anywhere',
   '&[hidden]': {
     display: 'none',
   },

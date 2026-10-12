@@ -180,6 +180,45 @@ export const KeyboardWrap: Story = {
   },
 };
 
+export const DisabledAndScrollable: Story = {
+  render: (args) => (
+    <CommandPalette {...args}>
+      <CommandPalette.Trigger>{TRIGGER}</CommandPalette.Trigger>
+      <CommandPalette.Content dir="rtl">
+        <CommandPalette.Input />
+        <CommandPalette.List>
+          <CommandPalette.Item value="disabled" aria-disabled="true">
+            Unavailable command
+          </CommandPalette.Item>
+          {Array.from({ length: 24 }, (_, index) => (
+            <CommandPalette.Item key={index} value={`command-${index}`}>
+              {`Command ${index}: ${'LongCommandDescription'.repeat(8)}`}
+            </CommandPalette.Item>
+          ))}
+        </CommandPalette.List>
+      </CommandPalette.Content>
+    </CommandPalette>
+  ),
+  args: { onOpenChange: fn() },
+  play: async ({ args, canvasElement }) => {
+    const { dialog, input } = await openPalette(canvasElement);
+    const disabled = within(dialog).getByRole('option', { name: 'Unavailable command' });
+    await expect(disabled).not.toHaveAttribute('data-active');
+    await userEvent.click(disabled);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(dialog).toHaveAttribute('open');
+    await userEvent.keyboard('{End}');
+    const last = within(dialog).getAllByRole('option').at(-1)!;
+    await waitFor(() => expect(input).toHaveAttribute('aria-activedescendant', last.id));
+    const list = within(dialog).getByRole('listbox');
+    await waitFor(() => expect(list.scrollTop).toBeGreaterThan(0));
+    await expect(list.scrollWidth).toBeLessThanOrEqual(list.clientWidth);
+    input.focus();
+    await userEvent.keyboard('{Home}');
+    await expect(input).toHaveAttribute('aria-activedescendant', within(dialog).getAllByRole('option')[1]!.id);
+  },
+};
+
 function NativeCloseExample(props: CommandPaletteProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   return (
