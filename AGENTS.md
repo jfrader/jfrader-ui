@@ -20,7 +20,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 | `pnpm og:image` | Regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
 | `pnpm test` | Generate tokens and run Storybook Vitest browser tests |
 | `pnpm typecheck` | Typecheck every package |
-| `pnpm verify:docs` | Check component introductions (also runs before the Storybook build) |
+| `pnpm verify:docs` | Check component documentation coverage (also runs before the Storybook build) |
 | `pnpm --filter @jfrader/storybook exec vitest run --project=storybook <file>` | Run one story file (fast loop) |
 
 ## Styling rules
