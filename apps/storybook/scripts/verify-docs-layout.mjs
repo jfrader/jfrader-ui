@@ -7,6 +7,11 @@ const cases = [
   { id: 'inputs-linkunfurl--docs', primary: '[data-ui="link-unfurl"]' },
   { id: 'inputs-mentioninput--docs', primary: '[data-ui="mention-input"]' },
 ];
+const guides = [
+  { id: 'foundations-getting-started--docs', title: 'Getting started' },
+  { id: 'foundations-theming--docs', title: 'Theming' },
+  { id: 'foundations-styling--docs', title: 'Styling' },
+];
 const viewports = [{ width: 390, height: 844 }, { width: 1440, height: 1000 }];
 const server = process.env.STORYBOOK_URL ? null : await preview({
   configFile: false,
@@ -43,6 +48,39 @@ try {
         `${id}: focus stays on the summary`);
       await summary.press('Space');
       assert.equal(await usage.evaluate((element) => element.open), false, `${id}: Space closes usage notes`);
+      console.log(`verify-docs-layout: ${id} at ${viewport.width}px OK`);
+    }
+  }
+
+  const index = await (await fetch(new URL('index.json', baseURL))).json();
+  for (const { id, title } of guides) {
+    assert.ok(index.entries[id], `${id}: guide is indexed`);
+    assert.ok(index.entries[id].tags.includes('dev'), `${id}: guide is visible in the sidebar`);
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport);
+      await page.goto(new URL(`iframe.html?id=${id}&viewMode=docs`, baseURL).href);
+      await page.getByRole('heading', { name: title, exact: true }).waitFor();
+      await page.evaluate(() => document.fonts.ready);
+      assert.ok(await page.locator('.foundation-guide pre').count(), `${id}: examples are rendered`);
+      const dimensions = await page.evaluate(() => ({
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      assert.ok(dimensions.scrollWidth <= dimensions.width,
+        `${id} at ${viewport.width}px: docs overflow (${dimensions.scrollWidth}px)`);
+      const links = await page.locator('.foundation-guide a').evaluateAll((anchors) =>
+        anchors.map((anchor) => ({ href: anchor.getAttribute('href'), target: anchor.target })));
+      for (const { href, target } of links) {
+        if (href?.startsWith('#')) {
+          assert.ok(await page.evaluate((hash) => document.getElementById(hash.slice(1)) !== null, href),
+            `${id}: missing section ${href}`);
+        } else if (href?.startsWith('./?path=/docs/')) {
+          const linkedId = new URL(href, baseURL).searchParams.get('path').replace('/docs/', '');
+          assert.ok(index.entries[linkedId], `${id}: missing guide ${linkedId}`);
+          assert.equal(target, '_top', `${id}: guide links navigate the Storybook manager`);
+        }
+        assert.ok(!href?.includes('.md'), `${id}: Markdown file link was not mapped to Storybook`);
+      }
       console.log(`verify-docs-layout: ${id} at ${viewport.width}px OK`);
     }
   }

@@ -7,9 +7,10 @@
     "build": "pnpm verify:docs && storybook build",
     "og:image": "node og/render.mjs",
     "test": "vitest run --project=storybook",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm verify:docs:examples",
     "verify:docs": "node --test scripts/verify-docs.test.mjs && node scripts/verify-docs.mjs",
-    "verify:docs:layout": "node scripts/verify-docs-layout.mjs"
+    "verify:docs:layout": "node scripts/verify-docs-layout.mjs",
+    "verify:docs:examples": "node scripts/verify-guide-examples.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

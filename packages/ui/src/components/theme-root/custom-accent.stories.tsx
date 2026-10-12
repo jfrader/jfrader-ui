@@ -172,7 +172,7 @@ const meta = {
 
 ### Contrast
 - Check text and focus-ring contrast with your chosen accent. Some colors need explicit overrides.
-- See [Custom palettes](https://github.com/jfrader/jfrader-ui/blob/master/docs/consuming-jfrader-ui.md#custom-palettes) for color formats, contrast limits, and document-level themes.`,
+- See [Custom palettes](https://github.com/jfrader/jfrader-ui/blob/master/docs/theming.md#custom-palettes) for color formats, contrast limits, and document-level themes.`,
     },
   },
   args: { theme: 'dark' },

@@ -1,344 +1,221 @@
-# Consuming jfrader-ui
+# Getting started
 
-Add `@jfrader/ui` and `@jfrader/tokens` to your React app. The published packages include compiled ES modules and TypeScript declarations; your app does not compile the library's TSX or need Emotion's `jsxImportSource` for its internals.
+Add a component to a React app, then choose its theme and customize its styles.
 
-## Dependencies
+## Install
+
+In an existing **React 19** app, install the components and their stylesheet:
 
 ```sh
-pnpm add @jfrader/ui @jfrader/tokens @emotion/react react react-dom
+pnpm add @jfrader/ui @jfrader/tokens
 ```
 
-`@jfrader/ui` requires React 19 (`react` and `react-dom` `^19.0.0`): components take `ref` as a regular prop.
+`react` and `react-dom` must both satisfy `^19.0.0`. The published packages include compiled JavaScript and TypeScript declarations. Keep your app's normal React JSX configuration; you do not need Emotion's JSX runtime just to render the components or use `sx`.
 
-### Registry choice
+Choose the setup for your app:
 
-npmjs is the default and needs no configuration. GitHub Packages hosts the same
-verified tarball and requires authentication even for public npm packages:
+- [React / Vite](#react--vite): add styles and render your first component.
+- [Next.js App Router](#nextjs-app-router): add the server-rendering registry.
+- [Inside this monorepo](#workspace-apps): compile workspace source with Emotion's JSX runtime.
+
+## React / Vite
+
+Import the styles once in your entry file. `tokens.css` supplies the colors, spacing and other values used by every component. The optional `base.css` sets box sizing and the body's margin, background, text color and font.
+
+This is a complete `src/main.tsx` for a Vite app whose `index.html` contains `<div id="root"></div>`:
+
+```tsx
+import { createRoot } from 'react-dom/client';
+import { Button, Card, ThemeProvider } from '@jfrader/ui';
+import '@jfrader/tokens/tokens.css';
+import '@jfrader/tokens/base.css';
+
+function App() {
+  return (
+    <Card>
+      <Card.Header>
+        <Card.Title>Your first project</Card.Title>
+        <Card.Description>Keep your team's work in one place.</Card.Description>
+      </Card.Header>
+      <Card.Footer>
+        <Button tone="accent">Create project</Button>
+      </Card.Footer>
+    </Card>
+  );
+}
+
+const root = document.getElementById('root');
+if (!root) throw new Error('Missing #root element');
+
+createRoot(root).render(
+  <ThemeProvider>
+    <App />
+  </ThemeProvider>,
+);
+```
+
+You should see a card and an accent-colored button. The button has no action yet; add `onClick` when you connect it to your app.
+
+`ThemeProvider` supplies token references to styling callbacks. The components above work without it, but keeping it at the app root lets you use `sx={(theme) => …}`, `styled` and `useTheme` later. It does **not** choose light or dark.
+
+Set the initial palette on the existing `<html>` in `index.html`:
+
+```html
+<html lang="en" data-theme="light">
+```
+
+Use `dark` for the dark palette. Without an attribute, the token stylesheet defaults to dark. [Theming](./theming.md) explains switching at runtime, saved preferences and custom colors.
+
+## Using components
+
+Start with the component's props before adding custom styles. For example, `Button` has `variant`, `tone` and `size`:
+
+```tsx
+import { Button } from '@jfrader/ui';
+
+export function Actions() {
+  return (
+    <>
+      <Button tone="accent" size="lg">Save changes</Button>
+      <Button variant="outline">Cancel</Button>
+      <Button disabled>Unavailable</Button>
+    </>
+  );
+}
+```
+
+The available values vary by component; check its prop table. Names such as `Card.Header` and `Card.Title` are public parts you compose inside the parent. Put content in the part that describes its job.
+
+You can import from the package root or a component subpath, such as `import { Button } from '@jfrader/ui/button'`. Both export the component's prop types. `ThemeProvider`, `styled` and the other shared styling APIs come from the package root. `EmotionRegistry` comes from `@jfrader/ui/next` only.
+
+### Let a component manage its value, or manage it yourself
+
+Use `defaultValue` for an initial value the component can change. Use `value` and `onValueChange` together when the app owns it. For checked/open state, components use `checked` / `defaultChecked` / `onCheckedChange` and `open` / `defaultOpen` / `onOpenChange`.
+
+```tsx
+import { useState } from 'react';
+import { Switch } from '@jfrader/ui';
+
+export function NotificationSettings() {
+  const [enabled, setEnabled] = useState(false);
+  return (
+    <Switch
+      label="Email notifications"
+      checked={enabled}
+      onCheckedChange={setEnabled}
+    />
+  );
+}
+```
+
+State callbacks receive the next value. Native handlers such as `onChange` still receive a React event. Do not switch a mounted instance between controlled and uncontrolled use.
+
+## Next.js App Router
+
+Install the packages above and `@emotion/cache` in your Next.js app. The adapter supports Next.js 15 and 16.
+
+```sh
+pnpm add @jfrader/ui @jfrader/tokens @emotion/cache
+```
+
+Put this in `app/layout.tsx`. `EmotionRegistry` collects styles during server rendering and already includes `ThemeProvider`:
+
+```tsx
+import type { ReactNode } from 'react';
+import { EmotionRegistry } from '@jfrader/ui/next';
+import '@jfrader/tokens/tokens.css';
+import '@jfrader/tokens/base.css';
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en" data-theme="light">
+      <body>
+        <EmotionRegistry>{children}</EmotionRegistry>
+      </body>
+    </html>
+  );
+}
+```
+
+Then a Server Component, such as `app/page.tsx`, can render a top-level component with serializable props:
+
+```tsx
+import { Button } from '@jfrader/ui';
+
+export default function Page() {
+  return <Button tone="accent" sx={{ inlineSize: '100%' }}>Continue</Button>;
+}
+```
+
+Use a Client Component for event handlers, hooks, theme callbacks, `styled`, or compound parts such as `Dialog.Trigger`. The published modules have a `'use client'` boundary; accessing a part on that client reference from a Server Component is not supported.
+
+For example, put this in `app/settings-button.tsx` and render `<SettingsButton />` from your page:
+
+```tsx
+'use client';
+
+import { Dialog } from '@jfrader/ui';
+
+export function SettingsButton() {
+  return (
+    <Dialog>
+      <Dialog.Trigger>Settings</Dialog.Trigger>
+      <Dialog.Content>
+        <Dialog.Title>Settings</Dialog.Title>
+        <Dialog.Description>Manage your account preferences.</Dialog.Description>
+        <Dialog.Close>Close</Dialog.Close>
+      </Dialog.Content>
+    </Dialog>
+  );
+}
+```
+
+Plain-object `sx` props can cross the server boundary. Function-valued `sx` props cannot. Vite apps do not need `EmotionRegistry` or Next.js.
+
+## Fonts and icons
+
+The default font stack starts with Inter, but the library does not download it. Load your chosen font in the app. For Vite, you can install `@fontsource/inter` and import its `400.css`, `500.css` and `600.css` files in `src/main.tsx`.
+
+For Next.js, add `Inter` from `next/font/google` to the layout above, using `variable: '--font-inter'`. Put its `variable` class on `<html>` and set `--ui-font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif` in app CSS. [Theming](./theming.md) explains where CSS token overrides apply.
+
+For icons, install `lucide-react` in your app or pass your own SVG. For example:
+
+```tsx
+import { Button } from '@jfrader/ui';
+import { Inbox } from 'lucide-react';
+
+export function InboxButton() {
+  return <Button startIcon={<Inbox />}>Inbox</Button>;
+}
+```
+
+A `Badge` count is not part of the wrapped control's accessible name. If the control has an `aria-label`, include the count, such as `aria-label="Inbox, 3 unread"`. With a visible text label, the count is read after that text.
+
+## Workspace apps
+
+This section is only for apps inside the jfrader-ui monorepo. Workspace exports point at `src/`, so these apps compile the library's TSX. Run `pnpm generate`, then configure Emotion's JSX runtime in both Vite and TypeScript, as shown in [Styling](./styling.md).
+
+Published-package consumers do not need that configuration unless they use the `css` prop themselves. TypeScript's `strict` and `noUncheckedIndexedAccess` are repo conventions, not requirements for consumers.
+
+## Registry choice
+
+npmjs is the default and needs no configuration. GitHub Packages hosts the same verified tarball and requires authentication even for public packages. If you use it, put this in your app's `.npmrc`:
 
 ```ini
 @jfrader:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
-The registry setting applies to the whole `@jfrader` scope. npm does not fall
-back from GitHub Packages to npmjs. If your project uses GitHub for that scope,
-authenticate there. For a package not mirrored there, use an explicit npmjs
-tarball URL.
-
-## Published packages
-
-Use your app's normal React JSX configuration. Configure Emotion's `jsxImportSource` only if the app itself uses Emotion's `css` prop.
-
-<a id="in-repo-workspace-development"></a>
-
-## Workspace apps
-
-Inside this repo, packages export TypeScript and TSX from `src/`. Your app must compile that source with Emotion's JSX runtime. Run `pnpm generate` before starting the app.
-
-Use these Vite and TypeScript settings for workspace apps or apps that use Emotion's `css` prop.
-
-### Vite
-
-```ts
-// vite.config.ts
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
-
-export default defineConfig({
-  plugins: [react({ jsxImportSource: '@emotion/react' })],
-});
-```
-
-### tsconfig
-
-For the Vite setup above, use:
-
-```json
-{
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "@emotion/react",
-    "module": "ESNext",
-    "moduleResolution": "bundler"
-  }
-}
-```
-
-This repo also sets `strict` and `noUncheckedIndexedAccess`. Your app does not need those settings.
-
-## Styles
-
-Import the tokens once in the app entry, then the optional base styles:
-
-```ts
-import '@jfrader/tokens/tokens.css';
-import '@jfrader/tokens/base.css';
-```
-
-`base.css` sets `box-sizing: border-box` and the `body` margin, background, text color and font. Override any of it in your own CSS imported after it.
-
-Use tokens in app CSS as `var(--ui-*)`:
-
-```css
-.page {
-  gap: var(--ui-space-6);
-  color: var(--ui-color-text-muted);
-}
-```
-
-In TypeScript, import typed references from `@jfrader/tokens/vars`.
-
-## Theming
-
-Set the app theme with `data-theme="dark"` or `data-theme="light"` on `<html>`.
-
-Wrap a subtree in `ThemeRoot theme="light"` (or `"dark"`) to theme only that subtree, such as an embedded widget.
-
-Set the attribute before first paint:
-
-```html
-<script>
-  document.documentElement.dataset.theme =
-    localStorage.getItem('theme') ??
-    (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-</script>
-```
-
-Match native controls and scrollbars to the theme:
-
-```css
-html {
-  color-scheme: dark;
-}
-
-html[data-theme='light'] {
-  color-scheme: light;
-}
-```
-
-To switch at runtime, set `document.documentElement.dataset.theme` and store the value under the same `localStorage` key.
-
-### Custom palettes
-
-Use `createTheme` to derive accent colors from one hex color. Pass the result to `ThemeRoot tokens` to override the palette for that subtree.
-
-```tsx
-import { createTheme, ThemeRoot } from '@jfrader/ui';
-
-const brand = createTheme({ base: 'dark', accent: '#7c3aed' });
-
-<ThemeRoot theme="dark" tokens={brand}>{/* brand accent in here */}</ThemeRoot>;
-```
-
-- `base` chooses the dark or light derivation. Match it to the root's `theme`.
-- `accent` sets `accentHover`, `accentText`, `accentSoft`, `accentSoftHover`, `accentBorder`, `accentContrast`, and `focusRing`. The focus ring uses the accent color.
-- `tokens` merges your overrides over the derived values. Your value wins for each token path.
-- On light, `accentText` limits lightness for AA contrast on white. On dark, it uses the accent unchanged; a dark accent may be unreadable as text.
-- `accentContrast` picks near-black or white, whichever has higher contrast against the accent. Accents with relative luminance around 0.17–0.22 fall below 4.5:1 against both. Pick a darker or lighter accent, or set `accentContrast` yourself.
-- `accent` accepts `#rgb` or `#rrggbb`. Other formats throw.
-- Overrides are inline custom properties on the scope root. Changing the named palette needs no re-render; portaled overlays carry the scope's tokens.
-- For document-level themes on `<html>`, call `themeTokenStyle(createTheme({ base, accent }))`. Serialize its custom-property map into one CSS block per base under your `data-theme` selectors.
-
-### Contrast surfaces
-
-A contrast surface uses the dark palette with a charcoal background on either page theme. `Drawer.Panel` uses it by default. Set `appearance="contrast"` on `Card` to use it there.
-
-```tsx
-<Card appearance="contrast">{/* dark palette, charcoal background */}</Card>
-<Card>{/* enclosing palette */}</Card>
-```
-
-- The palette sets text, borders, control boundaries, wells and native `color-scheme` inside the surface.
-- A Select, Menu or Popover opened inside a contrast surface keeps its palette through portals.
-- Omit `appearance` on a nested Card to inherit the enclosing palette. `appearance="default"` keeps the enclosing theme; it does not restore the outer page theme.
-- To switch a section inside a contrast surface to light, wrap it in `ThemeRoot theme="light"`.
-- For an overlay host, give `ThemeRoot` the enclosing theme and set `portalContainer`. Keeping the same theme preserves the appearance for its overlays.
-
-<a id="scoped-theming-and-overlays"></a>
-
-### Themes in overlays
-
-Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast portal their content to `body`. They keep the nearest scope's theme and appearance, including changes made while open. Dialog renders in place and inherits them directly.
-
-The named theme, appearance, and `ThemeRoot tokens` carry over. Other ancestor CSS, such as a `--ui-*` variable set on a wrapper, does not reach portaled content.
-
-Set `portalContainer` on `ThemeRoot` to keep overlays inside a modal `<dialog>`'s top layer or an embedded widget's element:
-
-```tsx
-const [overlayHost, setOverlayHost] = useState<HTMLElement | null>(null);
-
-<ThemeRoot theme="light" portalContainer={overlayHost}>
-  <Select>{/* … */}</Select>
-  <div ref={setOverlayHost} />
-</ThemeRoot>;
-```
-
-- Omitted: overlays use the enclosing `ThemeRoot`'s container, or `body`.
-- `null`: overlays render once the element is set.
-- An element: overlays render into it. Set it once; switching to a different element later is not supported.
-
-## Styling your app
-
-Style app code with `styled`, `sx` and the `css` prop. Their values come from the token `theme`, so they follow `data-theme` and `ThemeRoot` without re-rendering.
-
-### `styled` and the theme
-
-```tsx
-import { Card, styled } from '@jfrader/ui';
-
-const FeaturedCard = styled(Card)(({ theme }) => ({
-  borderColor: theme.color.accentBorder,
-  boxShadow: theme.shadow.overlay,
-}));
-
-const Toolbar = styled.div(({ theme }) => ({
-  display: 'flex',
-  gap: theme.space[2],
-}));
-```
-
-`({ theme })` needs a `ThemeProvider` above the component. `ThemeRoot` mounts one. Without `ThemeRoot`, wrap the app:
-
-```tsx
-import { ThemeProvider } from '@jfrader/ui';
-
-<ThemeProvider>{children}</ThemeProvider>;
-```
-
-A custom `ThemeProvider` must go inside `ThemeRoot` (or replace it): `ThemeRoot` mounts the default provider, overriding an outer custom one.
-
-`useTheme()` returns the same object inside components:
-
-```tsx
-import { useTheme } from '@jfrader/ui';
-
-function Sparkline({ points }: { points: string }) {
-  const theme = useTheme();
-  return (
-    <svg viewBox="0 0 100 20" aria-hidden="true">
-      <polyline points={points} fill="none" style={{ stroke: theme.color.accent }} />
-    </svg>
-  );
-}
-```
-
-### `sx`
-
-Use `sx` to override styles on any public component or part that renders an element. Context/provider components render no DOM and take no `sx`. `sx` accepts the same values as `css`, including theme callbacks, and needs no JSX configuration:
-
-```tsx
-<Button sx={{ inlineSize: '100%' }}>Create project</Button>
-<Card.Title sx={(theme) => ({ color: theme.color.accentText })}>Team plan</Card.Title>
-```
-
-Styles apply in this order, with later styles winning: component styles → `slotProps` → `css` → `sx`.
-
-### `css` prop
-
-The `css` prop needs Emotion's `jsxImportSource` (see [Vite](#vite) and [tsconfig](#tsconfig)). Compose module-level styles in arrays:
-
-```tsx
-import { css } from '@emotion/react';
-import { Card, theme } from '@jfrader/ui';
-
-const highlight = css({ borderColor: theme.color.accentBorder });
-const roomy = css({ paddingBlock: theme.space[6] });
-
-<Card css={[highlight, roomy]} />;
-```
-
-### Tokens
-
-Use values from `theme` (the same object as `vars` from `@jfrader/tokens/vars`). Each value is a `var(--ui-*)` reference. Do not write raw hex or rgb values.
-
-### Next.js
-
-`styled`, the `css` prop, `useTheme` and `ThemeProvider` run Emotion where they are used, so use them in Client Components (`'use client'`) under the [Emotion registry](#emotion-registry). Server Components can pass a plain-object `sx`; theme callbacks are functions and only work from Client Components.
-
-## Icons
-
-Use named imports from [Lucide](https://lucide.dev) for control icons:
-
-```sh
-pnpm add lucide-react
-```
-
-```tsx
-import { Inbox } from 'lucide-react';
-
-<Button startIcon={<Inbox />}>Inbox</Button>;
-```
-
-You can use your own SVG instead. Keep brand artwork in your app.
-
-## Badge counts
-
-A `Badge` count is not part of the wrapped control's accessible name. If the control has an `aria-label`, include the count in it: `aria-label="Inbox, 3 unread"`. If the control is named by its visible text, the count is read after it.
-
-## Fonts
-
-Load fonts in the app. The token font stack starts with `Inter`.
-
-Vite, with [Fontsource](https://fontsource.org):
-
-```sh
-pnpm add @fontsource/inter
-```
-
-```ts
-import '@fontsource/inter/400.css';
-import '@fontsource/inter/500.css';
-import '@fontsource/inter/600.css';
-```
-
-Next.js, with [`next/font`](https://nextjs.org/docs/app/getting-started/fonts):
-
-```tsx
-// app/layout.tsx
-import { Inter } from 'next/font/google';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" data-theme="dark" className={inter.variable} suppressHydrationWarning>
-      <body>{children}</body>
-    </html>
-  );
-}
-```
-
-```css
-html[data-theme] {
-  --ui-font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-}
-```
-
-## SSR
-
-Render `data-theme` on `<html>`, the pre-paint script and the font CSS in the initial HTML. If the pre-paint script can change the server-rendered `data-theme`, add `suppressHydrationWarning` to `<html>`.
-
-## Next.js App Router
-
-The package build marks every `@jfrader/ui` module with `'use client'`. Server Components can render top-level component exports with serializable props.
-
-Use compound parts (e.g. `Dialog.Trigger`), render-prop callbacks and event handlers inside a Client Component. React rejects property access on client references from Server Components.
-
-### Emotion registry
-
-Wrap the App Router layout in `EmotionRegistry` to collect Emotion styles during server rendering and avoid hydration mismatches. Install `@emotion/cache` alongside Next.js:
-
-```sh
-pnpm add @emotion/cache
-```
-
-```tsx
-// app/layout.tsx
-import { EmotionRegistry } from '@jfrader/ui/next';
-
-<body>
-  <EmotionRegistry>{children}</EmotionRegistry>
-</body>
-```
-
-The adapter manages the Emotion cache, flushes styles through `useServerInsertedHTML`, and mounts `ThemeProvider`. The optional `next` peer is used only by this subpath. Source: `packages/ui/src/components/next/emotion-registry.tsx`.
+The setting applies to the entire `@jfrader` scope. npm does not fall back from GitHub Packages to npmjs. Authenticate there, or use an explicit npmjs tarball URL for a package that is not mirrored there.
+
+## If the first component looks wrong
+
+| Symptom | Check |
+| --- | --- |
+| Missing colors, spacing or borders | Import `@jfrader/tokens/tokens.css` once. |
+| The page background does not match the components | Import the optional `base.css`, or set your app's body styles using the tokens. |
+| `sx` works but `css` does not | Configure Emotion's JSX runtime in your app's compiler and TypeScript. See [Styling](./styling.md). |
+| A theme callback has no token values | Add `ThemeProvider`, or use a `ThemeRoot` that includes it. |
+| Next.js reports a hydration mismatch around style tags | Wrap the layout in `EmotionRegistry`. |
+
+Next: [Theming](./theming.md) for light/dark and brand colors, or [Styling](./styling.md) for component overrides.

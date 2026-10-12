@@ -1,0 +1,15 @@
+.foundation-guide :not(pre) > code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.foundation-guide table {
+  display: block;
+  max-inline-size: 100%;
+  overflow-x: auto;
+}
+
+.foundation-guide pre {
+  max-inline-size: 100%;
+  overflow-x: auto;
+}
