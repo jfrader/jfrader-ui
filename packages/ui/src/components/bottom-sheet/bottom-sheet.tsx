@@ -146,6 +146,7 @@ const headerStyle = css({
   gap: vars.space[2],
   paddingInline: vars.space[6],
   paddingBlock: vars.space[2],
+  '&[data-dragging]': { userSelect: 'none' },
   '& > [data-ui="bottom-sheet-handle"]': {
     gridColumn: '1 / -1',
     justifySelf: 'center',
@@ -441,6 +442,7 @@ function useSheetSurface(context: SheetContext, dialogRef: RefObject<HTMLDialogE
     const session = drag.current;
     if (!session) return false;
     drag.current = null;
+    session.capture?.removeAttribute('data-dragging');
     if (session.capture?.hasPointerCapture(session.id))
       session.capture.releasePointerCapture(session.id);
     suppressClick.current = true;
@@ -490,6 +492,7 @@ function useSheetSurface(context: SheetContext, dialogRef: RefObject<HTMLDialogE
       animation.current?.stop();
       const session = drag.current;
       drag.current = null;
+      session?.capture?.removeAttribute('data-dragging');
       if (session?.capture?.hasPointerCapture(session.id))
         session.capture.releasePointerCapture(session.id);
       win.removeEventListener('pointerdown', anotherPointer, true);
@@ -510,6 +513,7 @@ function useSheetSurface(context: SheetContext, dialogRef: RefObject<HTMLDialogE
   ) => {
     animation.current?.stop();
     suppressClick.current = false;
+    capture?.setAttribute('data-dragging', '');
     drag.current = {
       id,
       start: position,
@@ -542,6 +546,7 @@ function useSheetSurface(context: SheetContext, dialogRef: RefObject<HTMLDialogE
     const session = drag.current;
     if (!session) return;
     drag.current = null;
+    session.capture?.removeAttribute('data-dragging');
     suppressClick.current = session.moved;
     const samples = [...session.samples, { position, time }].filter(
       (sample) => time - sample.time <= SAMPLE_WINDOW_MS,
