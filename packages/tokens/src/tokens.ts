@@ -174,28 +174,3 @@ export const light = {
     floating: '0 20px 48px oklch(0% 0 0 / 0.12), 0 3px 10px oklch(0% 0 0 / 0.05)',
   },
 } as const satisfies ThemeOverrides;
-
-/*
- * Contrast surface: the dark family applied on any page theme, so a drawer, panel or card reads as a
- * separate object (dark panel on a light page, elevated charcoal on a dark page). Only the roles that
- * move relative to the dark base are listed; the rest reuse it.
- * Theme-independent on purpose: the values are identical under `data-theme="dark"` and `data-theme="light"`,
- * so one generated block carries it and no `vars.ts` entry changes.
- * Measured with the sRGB contrast script against the panel #202226: text 14.97, textMuted 4.90,
- * textSubtle 5.93, accentText 5.90, focusRing 5.90, borderControl 4.04 on the panel and 4.37 on a well.
- * The dark base's #757982 (3.65) and #62666d (2.76) fail there, which is why both move.
- */
-export const contrast = {
-  color: {
-    ...base.color,
-    surfaceRaised: '#202226',
-    surfaceHover: '#30323b',
-    surfaceInset: '#191b20',
-    border: '#3b3e47',
-    borderSubtle: '#31333a',
-    borderStrong: '#4c4f59',
-    borderControl: '#7d808a',
-    textSubtle: '#9a9ea7',
-  },
-  shadow: base.shadow,
-} as const satisfies ThemeOverrides;

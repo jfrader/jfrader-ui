@@ -1,6 +1,6 @@
 import { expect, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import type { AppearanceName, ThemeName } from '../styling/theme-scope';
+import type { ThemeName } from '../styling/theme-scope';
 
 const OTHER_THEME: Record<ThemeName, ThemeName> = { dark: 'light', light: 'dark' };
 
@@ -8,17 +8,6 @@ const OTHER_THEME: Record<ThemeName, ThemeName> = { dark: 'light', light: 'dark'
 function probeBackground(document: Document, theme: ThemeName, color: string): string {
   const probe = document.createElement('div');
   probe.dataset.theme = theme;
-  probe.style.backgroundColor = color;
-  document.body.append(probe);
-  const value = getComputedStyle(probe).backgroundColor;
-  probe.remove();
-  return value;
-}
-
-/** Story-only: the computed background under an `appearance` scope, on a throwaway probe. */
-function probeAppearance(document: Document, appearance: AppearanceName, color: string): string {
-  const probe = document.createElement('div');
-  probe.dataset.appearance = appearance;
   probe.style.backgroundColor = color;
   document.body.append(probe);
   const value = getComputedStyle(probe).backgroundColor;
@@ -38,20 +27,5 @@ export async function expectThemedSurface(
   const { ownerDocument } = element;
   const expected = probeBackground(ownerDocument, theme, surface);
   await expect(probeBackground(ownerDocument, OTHER_THEME[theme], surface)).not.toBe(expected);
-  await waitFor(() => expect(getComputedStyle(element).backgroundColor).toBe(expected));
-}
-
-/**
- * Story-only: asserts `element` paints `surface` from the `contrast` appearance whatever the page
- * theme is, and that the page theme's own value differs, so the check can fail.
- */
-export async function expectContrastSurface(
-  element: HTMLElement,
-  theme: ThemeName,
-  surface: string = vars.color.surfaceRaised,
-) {
-  const { ownerDocument } = element;
-  const expected = probeAppearance(ownerDocument, 'contrast', surface);
-  await expect(probeBackground(ownerDocument, theme, surface)).not.toBe(expected);
   await waitFor(() => expect(getComputedStyle(element).backgroundColor).toBe(expected));
 }
