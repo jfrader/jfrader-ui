@@ -8,6 +8,7 @@ import { ThemeRoot } from '../theme-root';
 import { Slider, type SliderProps } from './index';
 
 const frameStyle = css({
+  boxSizing: 'border-box',
   inlineSize: '30rem',
   maxInlineSize: '100%',
   display: 'grid',
@@ -101,6 +102,28 @@ export const FractionalStep: Story = {
 };
 export const NegativeDomain: Story = {
   args: { label: 'Balance', min: -10, max: 10, step: 0.5, defaultValue: -2 },
+};
+export const FractionalRangeGap: Story = {
+  args: {
+    type: 'range',
+    min: 0,
+    max: 1,
+    step: 0.1,
+    defaultValue: [0.2, 0.4],
+    minStepsBetweenThumbs: 1,
+    thumbLabels: ['Start', 'End'],
+  },
+  play: async ({ canvas, userEvent, args }) => {
+    const lower = canvas.getByRole('slider', { name: 'Start' });
+    const upper = canvas.getByRole('slider', { name: 'End' });
+    await expect(lower).toHaveAttribute('aria-valuemax', '0.3');
+    await expect(upper).toHaveAttribute('aria-valuemin', '0.3');
+    await userEvent.tab();
+    await userEvent.keyboard('{End}{End}');
+    await expect(lower).toHaveAttribute('aria-valuenow', '0.3');
+    await expect(upper).toHaveAttribute('aria-valuemin', '0.4');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
 };
 export const ScientificStep: Story = {
   args: {
@@ -383,6 +406,13 @@ export const NarrowMarks: Story = {
       <Slider {...args} />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="slider"]')!;
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+    for (const button of root.querySelectorAll('button')) {
+      await expect(button.scrollHeight).toBeLessThanOrEqual(button.clientHeight);
+    }
+  },
 };
 export const Dark: Story = {};
 export const LightTheme: Story = { decorators: [withLightTheme] };
