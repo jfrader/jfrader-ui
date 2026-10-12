@@ -59,7 +59,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Records physical keyboard codes while the button is focused. Tab and Shift+Tab exit recording; Escape cancels; bare Backspace/Delete clear. Modified control keys remain valid chords. Platform detection uses an other-platform server snapshot: provide platform for exact first-paint caps. Key terminology and action messages are caller-localizable. Read-only controls remain focusable. Reserved bindings are caller-supplied advisories; browser and OS shortcuts may never reach the page. Confirming an application conflict reports the replaced binding; the caller owns unbinding it.',
+          'Records physical keyboard codes while the button is focused. Tab and Shift+Tab exit recording; Escape and element blur cancel without committing; bare Backspace/Delete clear. Other capture keys suppress browser defaults, including rejected chords. Modified control keys remain valid chords. Platform detection uses an other-platform server snapshot: provide platform for exact first-paint caps. Key terminology and action messages are caller-localizable. Read-only controls remain focusable. Reserved bindings are caller-supplied advisories; browser and OS shortcuts may never reach the page. Confirming an application conflict reports the replaced binding; the caller owns unbinding it.',
       },
       source: {
         code: '<ShortcutRecorder label="Open search" defaultValue="mod+k" resetValue="mod+k" onValueChange={saveShortcut} />',
@@ -188,6 +188,44 @@ export const ModifierRequired: Story = {
     });
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenCalledWith('f24', {});
+  },
+};
+export const CaptureIsolation: Story = {
+  play: async ({ canvas, userEvent, args }) => {
+    const recorder = canvas.getByRole('button', { name: /Open search/ });
+    await userEvent.click(recorder);
+    for (const [key, code, repeat] of [
+      ['ArrowDown', 'ArrowDown', false],
+      ['ArrowDown', 'ArrowDown', true],
+      ['a', 'KeyA', false],
+    ] as const) {
+      const event = new KeyboardEvent('keydown', { key, code, repeat, bubbles: true, cancelable: true });
+      fireEvent(recorder, event);
+      await expect(event.defaultPrevented).toBe(true);
+    }
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.click(canvas.getByRole('button', { name: /^Reset to/ }));
+    await expect(canvas.getByRole('status')).toHaveTextContent('Recording canceled');
+  },
+};
+export const AriaDisabled: Story = {
+  args: { 'aria-disabled': true },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: /Open search/ }));
+    await userEvent.keyboard('{Backspace}');
+    await userEvent.click(canvas.getByRole('button', { name: 'Clear shortcut' }));
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onRecordingChange).not.toHaveBeenCalled();
+  },
+};
+export const WindowFocusReturn: Story = {
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const recorder = canvas.getByRole('button', { name: /Open search/ });
+    await userEvent.click(recorder);
+    fireEvent.blur(canvasElement.ownerDocument.defaultView!);
+    fireEvent.focus(canvasElement.ownerDocument.defaultView!);
+    await userEvent.keyboard('{Control>}[KeyP]{/Control}');
+    await expect(args.onValueChange).toHaveBeenCalledWith('mod+p', {});
   },
 };
 export const ModifierFree: Story = {

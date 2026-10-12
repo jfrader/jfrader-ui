@@ -591,7 +591,6 @@ function ShortcutRecorderRoot({
     null,
   );
   const [preview, setPreview] = useState<string[]>([]);
-  const [focused, setFocused] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const mergedRef = useMergeRefs([buttonRef, ref]);
   const latch = useRef(false);
@@ -609,7 +608,8 @@ function ShortcutRecorderRoot({
   const summaryId = `${uid}-summary`,
     labelId = `${uid}-label`,
     conflictId = `${uid}-conflict`;
-  const mutable = !disabled && !readOnly;
+  const mutable =
+    !disabled && !readOnly && rest['aria-disabled'] !== true && rest['aria-disabled'] !== 'true';
   const stop = () => {
     requestRecording(false);
     setPreview([]);
@@ -640,7 +640,6 @@ function ShortcutRecorderRoot({
     const clearHeld = () => {
       setPreview([]);
       latch.current = false;
-      setFocused(false);
     };
     const visibility = () => {
       if (button.ownerDocument.visibilityState !== 'visible') clearHeld();
@@ -720,16 +719,16 @@ function ShortcutRecorderRoot({
           className={slotProps?.recorder?.className}
           css={[recorderStyle, sizeStyles[size], slotProps?.recorder?.css]}
           onFocus={(event) => {
-            setFocused(true);
             tabExit.current = false;
             onFocus?.(event);
           }}
           onBlur={(event) => {
-            setFocused(false);
             latch.current = false;
             suppressClick.current = false;
-            if (!tabExit.current) stop();
-            else setPreview([]);
+            if (!tabExit.current) {
+              stop();
+              if (active) setStatus(messages.canceled);
+            } else setPreview([]);
             tabExit.current = false;
             onBlur?.(event);
           }}
@@ -752,18 +751,23 @@ function ShortcutRecorderRoot({
             if (
               !mutable ||
               event.defaultPrevented ||
-              !focused ||
               event.currentTarget.ownerDocument.activeElement !== event.currentTarget
             )
               return;
             const native = event.nativeEvent;
             if (
               native.isComposing ||
-              native.repeat ||
               ['Dead', 'Process', 'Unidentified', 'AltGraph'].includes(native.key) ||
               native.getModifierState('AltGraph')
             )
               return;
+            if (native.repeat) {
+              if (active && event.key !== 'Tab') {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+              return;
+            }
             const bare = !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
             if (event.key === 'Tab') {
               if (active) {
@@ -792,8 +796,9 @@ function ShortcutRecorderRoot({
               return;
             }
             if (!active) return;
+            event.preventDefault();
+            event.stopPropagation();
             if (bare && ['Enter', ' '].includes(event.key)) {
-              event.preventDefault();
               suppressClick.current = event.key === ' ';
             }
             setPreview(eventModifiers(native, platform));
@@ -809,8 +814,6 @@ function ShortcutRecorderRoot({
               setRecordingHint(messages.requireModifier(platform));
               return;
             }
-            event.preventDefault();
-            event.stopPropagation();
             latch.current = true;
             stop();
             const binding = bindings.find(
@@ -891,7 +894,7 @@ function ShortcutRecorderRoot({
             size="sm"
             variant="outline"
             disabled={disabled}
-            aria-disabled={readOnly}
+            aria-disabled={!mutable}
             css={[actionStyle, slotProps?.reset?.css]}
             className={slotProps?.reset?.className}
             onClick={() => {
@@ -912,7 +915,7 @@ function ShortcutRecorderRoot({
             size="sm"
             variant="outline"
             disabled={disabled}
-            aria-disabled={readOnly}
+            aria-disabled={!mutable}
             css={[actionStyle, slotProps?.clear?.css]}
             className={slotProps?.clear?.className}
             onClick={() => {
@@ -950,7 +953,7 @@ function ShortcutRecorderRoot({
             <Button
               size="sm"
               disabled={disabled}
-              aria-disabled={readOnly}
+              aria-disabled={!mutable}
               css={[actionStyle, slotProps?.confirm?.css]}
               className={slotProps?.confirm?.className}
               onClick={() => {
@@ -970,7 +973,7 @@ function ShortcutRecorderRoot({
             <Button
               size="sm"
               disabled={disabled}
-              aria-disabled={readOnly}
+              aria-disabled={!mutable}
               css={[actionStyle, slotProps?.cancel?.css]}
               className={slotProps?.cancel?.className}
               onClick={cancelConflict}
