@@ -1,8 +1,9 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, SyntheticEvent } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
@@ -163,11 +164,47 @@ export const Open: Story = {
   args: { defaultOpen: true },
   render: (args) => <DialogExample {...args} />,
   play: async ({ canvasElement }) => {
-    // Persistent open state so the axe gate actually sees the modal content.
+    // Persistent open state so the axe gate actually sees the modal content (entrance settled).
     const dialog = within(canvasElement).getByRole('dialog');
+    await settleMotion(dialog);
     await expect(dialog).toHaveAttribute('open');
     await expect(dialog).toHaveAccessibleName(TITLE);
   },
+};
+
+async function playMotion(canvasElement: HTMLElement, onOpenChange: DialogProps['onOpenChange']) {
+  const { canvas, trigger, dialog } = await openDialog(canvasElement);
+  const panel = dialog.firstElementChild!;
+  await expectEntranceMotion(panel);
+  await expect(dialog).toHaveAttribute('data-state', 'open');
+
+  await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+  // Accepted close: still in the top layer while the exit runs; requests during it are absorbed.
+  await expect(onOpenChange).toHaveBeenCalledTimes(2);
+  await expect(dialog).toHaveAttribute('open');
+  await expect(dialog).toHaveAttribute('data-state', 'closing');
+  requestEscape(dialog);
+  await expect(onOpenChange).toHaveBeenCalledTimes(2);
+
+  await expectRetainedExit(panel, () => !dialog.hasAttribute('open'));
+  await expect(dialog).toHaveAttribute('data-state', 'closed');
+  await expectClosed(canvasElement, trigger);
+  await expect(onOpenChange).toHaveBeenCalledTimes(2);
+}
+
+export const Motion: Story = {
+  tags: ['!autodocs'],
+  args: { onOpenChange: fn() },
+  render: (args) => <DialogExample {...args} />,
+  play: async ({ args, canvasElement }) => playMotion(canvasElement, args.onOpenChange),
+};
+
+export const MotionLight: Story = {
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+  args: { onOpenChange: fn() },
+  render: (args) => <DialogExample {...args} />,
+  play: async ({ args, canvasElement }) => playMotion(canvasElement, args.onOpenChange),
 };
 
 export const NarrowContent: Story = {
@@ -184,6 +221,7 @@ export const NarrowContent: Story = {
   ),
   play: async ({ canvasElement }) => {
     const dialog = within(canvasElement).getByRole('dialog');
+    await settleMotion(dialog);
     await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth);
     await expect(dialog.firstElementChild!.getBoundingClientRect().width).toBeLessThanOrEqual(dialog.clientWidth);
     const close = within(dialog).getByRole('button', { name: 'Close' });
@@ -359,6 +397,7 @@ export const TriggerAsButtonOpen: Story = {
   play: async ({ canvasElement }) => {
     // Persistent open state so the axe gate sees the composed Close button.
     const dialog = await within(canvasElement).findByRole('dialog');
+    await settleMotion(dialog);
     await expect(dialog).toHaveAttribute('open');
     await expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveAttribute(
       'data-ui',
@@ -379,5 +418,68 @@ export const LightTheme: Story = {
     await expectThemedSurface(dialog.firstElementChild as HTMLElement, 'light');
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);
+  },
+};
+
+const outerCancel = fn<(event: SyntheticEvent<HTMLDialogElement>) => void>();
+const outerClose = fn<(event: SyntheticEvent<HTMLDialogElement>) => void>();
+
+export const NestedDialog: Story = {
+  args: { onOpenChange: fn() },
+  render: (args) => (
+    <Dialog {...args}>
+      <Dialog.Trigger>Open profile</Dialog.Trigger>
+      <Dialog.Content onCancel={outerCancel} onClose={outerClose}>
+        <Dialog.Title>{TITLE}</Dialog.Title>
+        <Dialog>
+          <Dialog.Trigger>Discard changes</Dialog.Trigger>
+          <Dialog.Content>
+            <Dialog.Title>Discard changes?</Dialog.Title>
+            <form method="dialog">
+              <button type="submit">Keep editing</button>
+            </form>
+          </Dialog.Content>
+        </Dialog>
+      </Dialog.Content>
+    </Dialog>
+  ),
+  play: async ({ args, canvasElement, userEvent }) => {
+    outerCancel.mockClear();
+    outerClose.mockClear();
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Open profile' }));
+    const outer = await canvas.findByRole('dialog', { name: TITLE });
+    const nestedTrigger = within(outer).getByRole('button', { name: 'Discard changes' });
+
+    // React bubbles the nested cancel/close here; the outer dialog forwards them to its consumer
+    // handlers and otherwise ignores them.
+    await userEvent.click(nestedTrigger);
+    const nested = await within(outer).findByRole('dialog', { name: 'Discard changes?' });
+    const cancel = new Event('cancel', { cancelable: true });
+    fireEvent(nested, cancel);
+    await waitFor(() => expect(nested).not.toHaveAttribute('open'));
+    await expect(outerCancel).toHaveBeenCalledTimes(1);
+    await expect(outerCancel.mock.calls[0]![0].target).toBe(nested);
+    await waitFor(() => expect(outerClose).toHaveBeenCalledTimes(1));
+    await expect(outer).toHaveAttribute('open');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(nestedTrigger).toHaveFocus();
+
+    // A native form close inside the nested dialog does not reconcile the outer one either.
+    await userEvent.click(nestedTrigger);
+    await within(outer).findByRole('dialog', { name: 'Discard changes?' });
+    await userEvent.click(within(nested).getByRole('button', { name: 'Keep editing' }));
+    await waitFor(() => expect(nested).not.toHaveAttribute('open'));
+    await waitFor(() => expect(outerClose).toHaveBeenCalledTimes(2));
+    await expect(outer).toHaveAttribute('open');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+    await expect(canvasElement.ownerDocument.documentElement.style.overflow).toBe('hidden');
+
+    // The outer dialog's own Escape still closes it.
+    fireEvent(outer, new Event('cancel', { cancelable: true }));
+    await waitFor(() => expect(outer).not.toHaveAttribute('open'));
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
   },
 };

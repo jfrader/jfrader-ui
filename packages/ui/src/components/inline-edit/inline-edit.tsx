@@ -95,7 +95,7 @@ export interface InlineEditControlProps
 export interface InlineEditProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>,
     SxProps {
-/** Saved value shown by the trigger, not the draft. */
+  /** Saved value shown by the trigger, not the draft. */
   value?: string;
   defaultValue?: string;
   /** Requested once per resolved save, before the close request. */
@@ -104,7 +104,7 @@ export interface InlineEditProps
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
-/** Saves a changed value. Throw or reject to report a failed save. */
+  /** Saves a changed value. Throw or reject to report a failed save. */
   onSave: (next: string) => void | Promise<unknown>;
   /** Accessible name of the editor and part of the trigger's name. */
   label: string;
@@ -120,7 +120,7 @@ export interface InlineEditProps
   readOnly?: boolean;
   /** Saves when focus leaves the whole widget. */
   saveOnBlur?: boolean;
-/** Content shown while the saved value is empty. */
+  /** Content shown while the saved value is empty. */
   placeholder?: ReactNode;
   /** Native placeholder of the editor. */
   inputPlaceholder?: string;
@@ -128,7 +128,7 @@ export interface InlineEditProps
   /** External error; while present it marks the editor invalid and blocks saving. */
   error?: ReactNode;
   controlProps?: InlineEditControlProps;
-/** The editor element, or null when not editing. */
+  /** The editor element, or null when not editing. */
   controlRef?: Ref<ControlElement>;
   messages?: Partial<InlineEditMessages>;
   editIcon?: ReactNode;

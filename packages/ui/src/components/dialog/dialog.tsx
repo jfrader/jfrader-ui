@@ -9,6 +9,9 @@
 // (Safari preview) — keep manual backdrop handling.
 // Synthetic key events in tests do not trigger native cancel; dispatch a cancel event.
 //
+// Motion: the panel scales and fades in; an accepted close fades it out before the native close
+// (`data-state="closing"`), and reduced motion makes both instant.
+//
 // Lifecycle contract (Root owns logical `open`, Content owns native state): see
 // `overlay/use-native-dialog.ts`.
 import {
@@ -31,9 +34,11 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
+import { MODAL_ENTER_SCALE, modalBackdropMotion, modalPanelMotion } from '../../styling/overlay-motion';
 import { modalShellReset, raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { styledDialogTransition } from '../../overlay/exit-motion';
 import {
   omitNativeOpen,
   requestNativeDialogClose,
@@ -112,7 +117,7 @@ function useDialogContext(part: string): DialogContextValue {
   return context;
 }
 
-const dialogStyle = css(modalShellReset);
+const dialogStyle = css(modalShellReset, modalBackdropMotion);
 
 const panelStyle = css({
   ...raisedSurface,
@@ -121,6 +126,7 @@ const panelStyle = css({
   padding: vars.space[5],
   minInlineSize: 'min(320px, 100%)',
   maxInlineSize: 'min(560px, calc(100vw - 32px))',
+  ...modalPanelMotion(MODAL_ENTER_SCALE),
 });
 
 const titleStyle = css({
@@ -251,7 +257,13 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
   const requestClose = useCallback(() => {
     requestNativeDialogClose(dialogRef.current, setOpen);
   }, [setOpen]);
-  const dialogProps = useNativeDialog({ ...context, requestClose }, { onCancel, onClick, onClose }, ref, dialogRef);
+  const dialogProps = useNativeDialog(
+    { ...context, requestClose },
+    { onCancel, onClick, onClose },
+    ref,
+    dialogRef,
+    styledDialogTransition,
+  );
 
   const labelledBy = [ariaLabelledByProp, hasTitle && titleId].filter(Boolean).join(' ') || undefined;
   const describedBy = [ariaDescribedByProp, withDescription && hasDescription && descriptionId]

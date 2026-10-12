@@ -1,4 +1,4 @@
-// Field chrome shared by the slider skins (Slider, ElasticSlider); each skin owns its track and thumb.
+// Field chrome shared by the slider skins; each skin owns its track and thumb.
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';

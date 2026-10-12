@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { CommandPalette, type CommandPaletteProps } from './index';
 
@@ -68,6 +69,8 @@ async function openPalette(canvasElement: HTMLElement) {
   const dialog = await canvas.findByRole('dialog', { name: LABEL });
   const input = getInput(canvasElement);
   await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(input));
+  // Visibility assertions read opacity: let the entrance finish first.
+  await settleMotion(dialog);
   return { canvas, trigger, dialog, input };
 }
 
@@ -305,6 +308,42 @@ export const Escape: Story = {
   },
 };
 
+async function playMotion(canvasElement: HTMLElement, onOpenChange: CommandPaletteProps['onOpenChange']) {
+  const canvas = within(canvasElement);
+  const trigger = canvas.getByRole('button', { name: TRIGGER });
+  await userEvent.click(trigger);
+  const dialog = await canvas.findByRole('dialog', { name: LABEL });
+  const panel = dialog.firstElementChild!;
+  await expectEntranceMotion(panel);
+  await expect(canvasElement.ownerDocument.activeElement).toBe(getInput(canvasElement));
+
+  await userEvent.keyboard('{Escape}');
+  // Accepted close: the palette stays in the top layer while it fades; Escape again is absorbed.
+  await expect(onOpenChange).toHaveBeenCalledTimes(2);
+  await expect(dialog).toHaveAttribute('data-state', 'closing');
+  await expect(dialog).toHaveAttribute('open');
+  await userEvent.keyboard('{Escape}');
+  await expect(onOpenChange).toHaveBeenCalledTimes(2);
+
+  await expectRetainedExit(panel, () => !dialog.hasAttribute('open'));
+  await expectClosed(canvasElement, trigger);
+}
+
+export const Motion: Story = {
+  tags: ['!autodocs'],
+  args: { onOpenChange: fn() },
+  render: (args) => <CommandPaletteExample {...args} />,
+  play: async ({ args, canvasElement }) => playMotion(canvasElement, args.onOpenChange),
+};
+
+export const MotionLight: Story = {
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+  args: { onOpenChange: fn() },
+  render: (args) => <CommandPaletteExample {...args} />,
+  play: async ({ args, canvasElement }) => playMotion(canvasElement, args.onOpenChange),
+};
+
 export const RejectedControlled: Story = {
   // Excluded from the docs page: its open modal would cover (or iframe-fragment) the docs preview.
   tags: ['!autodocs'],
@@ -315,6 +354,7 @@ export const RejectedControlled: Story = {
     const dialog = await canvas.findByRole('dialog', { name: LABEL });
     const input = getInput(canvasElement);
     await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(input));
+    await settleMotion(dialog);
 
     await userEvent.keyboard('{Escape}');
     // The parent never honored the request: exactly one callback, and the palette stays open.
@@ -342,9 +382,10 @@ export const Open: Story = {
   args: { defaultOpen: true },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
-    // Persistent open state so the axe gate sees the palette content.
+    // Persistent open state so the axe gate sees the palette content (entrance settled).
     const canvas = within(canvasElement);
     const dialog = await canvas.findByRole('dialog', { name: LABEL });
+    await settleMotion(dialog);
     await expect(dialog).toHaveAttribute('open');
     const listbox = canvas.getByRole('listbox', { name: LABEL });
     await expect(within(listbox).getAllByRole('option')).toHaveLength(4);

@@ -35,7 +35,7 @@ export interface CountdownProps extends Omit<ComponentPropsWithRef<'div'>, 'chil
   pendingLabel?: ReactNode;
   invalidLabel?: ReactNode;
   invalidText?: string;
-/** Clock source in epoch milliseconds. Background callbacks run when execution next becomes possible. */
+  /** Clock source in epoch milliseconds. Background callbacks run when execution next becomes possible. */
   clock?: () => number;
   /** Shared server snapshot for identical SSR and hydration output. */
   initialNow?: number;

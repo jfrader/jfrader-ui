@@ -16,6 +16,7 @@ import {
 import { useMergeRefs } from '@floating-ui/react';
 import { animate, MotionConfig, motion, useMotionValue, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
+import { styledDialogTransition } from '../../overlay/exit-motion';
 import {
   omitNativeOpen,
   useNativeDialog,
@@ -25,6 +26,12 @@ import {
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import {
+  enterTransition as enter,
+  exitTransition as exit,
+  MODAL_ENTER_SCALE,
+  modalBackdropMotion,
+} from '../../styling/overlay-motion';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -168,27 +175,45 @@ const imageStyle = css({
   objectFit: 'contain',
   userSelect: 'none',
 });
-const viewerStyle = css({
-  boxSizing: 'border-box',
-  inlineSize: '100%',
-  maxInlineSize: '100%',
-  blockSize: '100dvh',
-  maxBlockSize: '100dvh',
-  margin: 0,
-  border: `1px solid ${vars.color.borderControl}`,
-  background: vars.color.bg,
-  color: vars.color.text,
-  padding: `max(${vars.space[4]}, env(safe-area-inset-top)) max(${vars.space[4]}, env(safe-area-inset-right)) max(${vars.space[4]}, env(safe-area-inset-bottom)) max(${vars.space[4]}, env(safe-area-inset-left))`,
-  overflow: 'auto',
-  fontFamily: vars.font.sans,
-  '&::backdrop': { background: vars.color.scrim },
-  [FORCED_COLORS]: { boxShadow: 'none' },
-});
+// Motion: the viewer's own surface (background, border) and its chrome fade over the fading scrim;
+// the image fades and scales in (during its flight from the tile, when it has one). On close an
+// image that flies home stays put for the hand-off to the return flight; otherwise it fades with
+// the chrome.
+const hiddenSurface = { backgroundColor: 'transparent', borderColor: 'transparent' };
+const hiddenImage = { opacity: 0, scale: String(MODAL_ENTER_SCALE) };
+const viewerStyle = css(
+  {
+    boxSizing: 'border-box',
+    inlineSize: '100%',
+    maxInlineSize: '100%',
+    blockSize: '100dvh',
+    maxBlockSize: '100dvh',
+    margin: 0,
+    border: `1px solid ${vars.color.borderControl}`,
+    background: vars.color.bg,
+    color: vars.color.text,
+    padding: `max(${vars.space[4]}, env(safe-area-inset-top)) max(${vars.space[4]}, env(safe-area-inset-right)) max(${vars.space[4]}, env(safe-area-inset-bottom)) max(${vars.space[4]}, env(safe-area-inset-left))`,
+    overflow: 'auto',
+    fontFamily: vars.font.sans,
+    '&::backdrop': { background: vars.color.scrim },
+    transitionProperty: 'background-color, border-color',
+    ...enter,
+    '@starting-style': hiddenSurface,
+    '&[data-state="closing"]': { ...hiddenSurface, ...exit },
+    [REDUCED_MOTION]: { '&, &[data-state="closing"]': { transitionDuration: '0s' } },
+    [FORCED_COLORS]: { boxShadow: 'none' },
+  },
+  modalBackdropMotion,
+);
+const CHROME = ':not([data-ui="lightbox-gallery-stage"])';
 const contentStyle = css({
   display: 'flex',
   flexDirection: 'column',
   gap: vars.space[3],
   minBlockSize: '100%',
+  [`& > ${CHROME}`]: { transitionProperty: 'opacity', ...enter, '@starting-style': { opacity: 0 } },
+  [`&[data-state="closing"] > ${CHROME}`]: { opacity: 0, ...exit },
+  [REDUCED_MOTION]: { [`& > ${CHROME}, &[data-state="closing"] > ${CHROME}`]: { transitionDuration: '0s' } },
 });
 const headerStyle = css({
   display: 'flex',
@@ -209,11 +234,17 @@ const stageStyle = css({
   borderRadius: vars.radius.md,
   '&:focus-visible': focusRingOutset,
 });
+// Motion values own `transform` here (flight); the entrance moves the separate `scale` property.
 const viewerImageStyle = css({
   position: 'absolute',
   pointerEvents: 'none',
   display: 'grid',
   placeItems: 'center',
+  transitionProperty: 'opacity, scale',
+  ...enter,
+  '@starting-style': hiddenImage,
+  '&[data-exit="fade"]': { ...hiddenImage, ...exit },
+  [REDUCED_MOTION]: { '&, &[data-exit="fade"]': { transitionDuration: '0s' } },
 });
 const controlsStyle = css({
   display: 'flex',
@@ -427,7 +458,11 @@ function Viewer({
     },
     viewerSlot.ref,
     dialogRef,
+    styledDialogTransition,
   );
+  const phase = native['data-state'];
+  // Decided when the viewer opens, so the exit styles never flip mid-transition.
+  const [homeward, setHomeward] = useState(false);
   const index = images.findIndex((image) => image.id === selected);
   const image = images[index];
   const [zoom, setZoomState] = useState(1);
@@ -562,6 +597,10 @@ function Viewer({
     ];
     return () => animations.forEach((animation) => animation.stop());
   }, [controller.open, controller.repairToken, reduced, flightX, flightY, flightScale]);
+
+  useEffect(() => {
+    if (controller.open) setHomeward(!reduced && !!launch.current?.isConnected);
+  }, [controller.open, reduced, launch]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -723,7 +762,7 @@ function Viewer({
         if (event.target === event.currentTarget) native.onClose(event);
       }}
     >
-      <div css={contentStyle}>
+      <div css={contentStyle} data-state={phase}>
         <div css={headerStyle}>
           <h2 {...slots?.title} id={titleId} css={[titleStyle, slots?.title?.css]}>
             {label}
@@ -786,9 +825,10 @@ function Viewer({
             if (!event.defaultPrevented && !suppressClick.current) setZoom(zoom > 1 ? 1 : 2);
           }}
         >
-          {controller.open && image && (
+          {phase !== 'closed' && image && (
             <motion.div
               css={viewerImageStyle}
+              data-exit={phase === 'closing' ? (homeward ? 'home' : 'fade') : undefined}
               style={{
                 width: bounds.width,
                 height: bounds.height,
