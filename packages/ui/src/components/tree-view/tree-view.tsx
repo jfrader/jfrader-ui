@@ -153,6 +153,12 @@ const disclosureStyle = css({
   '&[data-open="true"]::after': { transform: 'rotate(90deg)' },
   '&:dir(rtl)[data-open="true"]::after': { transform: 'rotate(-90deg)' },
   [REDUCED_MOTION]: { '&[data-branch="true"]::after': { transitionDuration: '0s' } },
+  [FORCED_COLORS]: {
+    '&[data-branch="true"]::after': {
+      forcedColorAdjust: 'none',
+      color: 'CanvasText',
+    },
+  },
 });
 const groupStyle = css({
   listStyle: 'none',
