@@ -1,11 +1,13 @@
 import type { CSSProperties } from 'react';
 import { useId } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, within } from 'storybook/test';
+import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
+import { Popover } from '../popover';
 import { TextField } from '../text-field';
 import { Card, type CardProps, type CardVariant } from './index';
 
@@ -25,6 +27,13 @@ const listStyle = {
 const formStyle = {
   display: 'grid',
   gap: vars.space[3],
+} satisfies CSSProperties;
+
+const fixtureButtonStyle = {
+  minHeight: '24px',
+  minWidth: '24px',
+  padding: '4px 10px',
+  boxSizing: 'border-box',
 } satisfies CSSProperties;
 
 const meta = {
@@ -296,6 +305,107 @@ export const LightTheme: Story = {
   play: async ({ canvasElement }) => {
     await expect(getCards(canvasElement)).toHaveLength(VARIANTS.length + 1);
     await expect(within(canvasElement).getAllByRole('heading', { level: 3 })).toHaveLength(VARIANTS.length + 1);
+  },
+};
+
+export const Contrast: Story = {
+  args: { appearance: 'contrast' },
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  render: (args) => (
+    <>
+      <PlanCard {...args} />
+      <PlanCard />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const [contrastCard, defaultCard] = getCards(canvasElement);
+    if (!contrastCard || !defaultCard) throw new Error('Expected both cards');
+
+    // The requested card paints the dark family on a light page; the one beside it keeps the page palette.
+    await expect(contrastCard).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(contrastCard, 'light');
+    await expect(getComputedStyle(contrastCard).backgroundColor).toBe('rgb(32, 34, 38)');
+    await expect(getComputedStyle(contrastCard).colorScheme).toBe('dark');
+
+    await expect(defaultCard).toHaveAttribute('data-appearance', 'default');
+    await expectThemedSurface(defaultCard, 'light');
+    await expect(getComputedStyle(defaultCard).colorScheme).toBe('light');
+  },
+};
+
+export const ContrastNestedSurfaces: Story = {
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  render: () => (
+    <Card appearance="contrast">
+      <Card.Header>
+        <Card.Title>Contrast panel</Card.Title>
+      </Card.Header>
+      <Card.Content>
+        <Card>
+          <Card.Header>
+            <Card.Title>Inherited surface</Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <Popover>
+              <Popover.Trigger>Inner options</Popover.Trigger>
+              <Popover.Content aria-label="Inner options">
+                <button type="button" style={fixtureButtonStyle}>
+                  Assign to me
+                </button>
+              </Popover.Content>
+            </Popover>
+          </Card.Content>
+        </Card>
+        <Card appearance="default">
+          <Card.Header>
+            <Card.Title>Theme surface</Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <Popover>
+              <Popover.Trigger>Theme options</Popover.Trigger>
+              <Popover.Content aria-label="Theme options">
+                <button type="button" style={fixtureButtonStyle}>
+                  Assign to me
+                </button>
+              </Popover.Content>
+            </Popover>
+          </Card.Content>
+        </Card>
+      </Card.Content>
+    </Card>
+  ),
+  play: async ({ canvasElement, userEvent: user }) => {
+    const canvas = within(canvasElement);
+    const [outer, inherited, reset] = getCards(canvasElement);
+    if (!outer || !inherited || !reset) throw new Error('Expected the three nested cards');
+
+    // A surface that names no appearance keeps the enclosing palette, in the DOM…
+    await expect(outer).toHaveAttribute('data-appearance', 'contrast');
+    await expect(inherited).toHaveAttribute('data-appearance', 'contrast');
+    await expect(getComputedStyle(inherited).backgroundColor).toBe(getComputedStyle(outer).backgroundColor);
+
+    // …and through the portal: the overlay opened inside the nested surface stays the dark family.
+    await user.click(canvas.getByRole('button', { name: 'Inner options' }));
+    const innerPopover = await within(canvasElement.ownerDocument.body).findByRole('dialog', {
+      name: 'Inner options',
+    });
+    await expect(innerPopover.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(innerPopover, 'light');
+
+    // Naming `default` returns to the theme's own palette: the reset block points the contrast roles
+    // back at the theme mirror instead of relying on inherited values.
+    await expect(reset).toHaveAttribute('data-appearance', 'default');
+    await expectThemedSurface(reset, 'light');
+    await expect(getComputedStyle(reset).backgroundColor).not.toBe(getComputedStyle(outer).backgroundColor);
+
+    await user.click(canvas.getByRole('button', { name: 'Theme options' }));
+    const themePopover = await within(canvasElement.ownerDocument.body).findByRole('dialog', {
+      name: 'Theme options',
+    });
+    await expect(themePopover.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'default');
+    await expectThemedSurface(themePopover, 'light');
   },
 };
 

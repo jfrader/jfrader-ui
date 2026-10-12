@@ -64,6 +64,7 @@ export * from './components/search-field';
 export * from './components/segmented-control';
 export * from './components/select';
 export * from './components/sheet-stack';
+export * from './components/shortcut-recorder';
 export * from './components/signature-pad';
 export * from './components/skeleton';
 export * from './components/slider';

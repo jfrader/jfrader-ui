@@ -390,6 +390,31 @@ export const PointerCancelArmed: Story = {
     }
   },
 };
+export const TouchCaptureTransfer: Story = {
+  play: async ({ canvasElement }) => {
+    const row = rowOf(canvasElement);
+    const body = row.querySelector('[data-ui="swipe-actions-body"]')!;
+    const p = pointer(row);
+    try {
+      // Touch implicitly captures to the pressed child; the horizontal lock moves capture to the
+      // row, and the child's lostpointercapture bubbles up mid-gesture.
+      p.fire('pointerdown', 0, {}, body);
+      p.fire('gotpointercapture', 0, {}, body);
+      p.fire('pointermove', -20, {}, body);
+      await expect(p.captured.has(1)).toBe(true);
+      p.fire('lostpointercapture', -20, {}, body);
+      p.fire('gotpointercapture', -20);
+      p.fire('pointermove', -120);
+      await near(row, -120);
+      p.fire('pointerup', -120);
+    } finally {
+      p.restore();
+    }
+    await near(row, -160);
+    await expect(row).toHaveAttribute('data-state', 'trailing');
+    await expect(select).toHaveBeenCalledTimes(0);
+  },
+};
 export const DisabledAction: Story = {
   render: (args) => (
     <SwipeActions {...args}>
