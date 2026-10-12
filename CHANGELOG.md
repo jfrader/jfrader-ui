@@ -26,6 +26,7 @@
 
 ### Fixed
 
+- Dialogs with short content keep a 320px minimum width, reduced to fit narrow viewports with 16px side gutters. Set size limits on Dialog.Content; set `minInlineSize: 0` to opt out of the default minimum.
 - Card with `appearance="default"` inside a contrast parent keeps that appearance in descendant portals.
 - BottomSheet and Dialog panels can publish contrast appearance to descendant portals. DialogStack panels retain declaration-site themes and scoped tokens through the stage portal.
 - Drawer panels keep square attached corners on replacement material; BottomSheet panels keep square lower corners.
