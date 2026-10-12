@@ -9,6 +9,7 @@
 import { useId, type HTMLAttributes, type ReactNode, type Ref, type RefAttributes } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 
@@ -31,7 +32,6 @@ export interface DividerVerticalProps extends DividerBaseProps {
 
 export type DividerProps = DividerHorizontalProps | DividerVerticalProps;
 
-const FORCED_COLORS = '@media (forced-colors: active)';
 const LINE_THICKNESS = '1px';
 
 // Lines are painted as backgrounds, which forced-colors mode would erase; repaint them in CanvasText.
