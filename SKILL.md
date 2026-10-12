@@ -205,7 +205,7 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `data-ui="<name>"` on every component root (and `data-ui="<name>-<part>"` on compound parts).
 - One folder per component; a shared hook only when a second consumer exists.
 - The package index re-exports components + types with `export *`, plus the styling API (`styled`,
-  `theme`, `ThemeProvider`, `useTheme`, `createTheme`, `SxProps`). `theme-provider/` has no `index.ts`, so it gets
+  `theme`, `ThemeProvider`, `useTheme`, `createTheme`, `themeTokenStyle`, `SxProps`). `theme-provider/` has no `index.ts`, so it gets
   no subpath export.
 
 ## 5. State ownership recipe

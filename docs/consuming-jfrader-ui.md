@@ -134,6 +134,7 @@ const brand = createTheme({ base: 'dark', accent: '#7c3aed' });
 - The overrides are declared as inline custom properties on the scope root: the palette switch still works with no re-render, and overlays portaled inside the scope carry them.
 - Mid-brightness accents (relative luminance around 0.17–0.22) reach under 4.5:1 against both text candidates (near-black and white); pick a darker or lighter accent, or set `accentContrast` yourself.
 - `accent` takes `#rgb` or `#rrggbb` (the contrast pick reads the color in JS). Anything else throws.
+- A document-level theme (the app sets `data-theme` on `<html>` instead of rendering a `ThemeRoot`) can emit the same declarations as CSS: `themeTokenStyle(createTheme({ base, accent }))` returns the custom-property map — serialize one block per base under your `data-theme` selectors.
 
 ### Contrast surfaces
 
