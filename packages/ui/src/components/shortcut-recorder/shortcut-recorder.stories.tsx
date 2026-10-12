@@ -10,6 +10,7 @@ import {
   normalizeShortcut,
   matchesShortcut,
   formatShortcut,
+  defaultShortcutMessages,
   type ShortcutRecorderProps,
   type ShortcutListGroup,
 } from './index';
@@ -411,6 +412,31 @@ export const ListQueryControlled: Story = {
     await expect(args.onValueChange).toHaveBeenCalledWith('', {});
     await expect(canvas.getByRole('textbox')).toHaveValue('Print');
     await expect(canvas.getAllByRole('listitem')).toHaveLength(1);
+  },
+};
+export const ListSearchSlot: Story = {
+  render: () => (
+    <ShortcutRecorder.List
+      groups={groups}
+      slotProps={{ search: { className: 'shortcut-search', css: css({ borderRadius: 0 }) } }}
+    />
+  ),
+  play: async ({ canvas }) => {
+    const search = canvas.getByRole('textbox');
+    await expect(search).toHaveClass('shortcut-search');
+    await expect(getComputedStyle(search).borderStartStartRadius).toBe('0px');
+  },
+};
+export const ListLocaleResults: Story = {
+  render: () => (
+    <ShortcutRecorder.List
+      groups={groups}
+      locale="ar-EG"
+      messages={{ ...defaultShortcutMessages, empty: 'Nothing here' }}
+    />
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('status')).toHaveTextContent('٤ shortcuts');
   },
 };
 export const ListHighlightOff: Story = {

@@ -3,6 +3,7 @@
 import {
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -409,10 +410,13 @@ const listStyle = css({
   gap: vars.space[4],
   color: vars.color.text,
 });
-const CHEATSHEET_COLUMN_MINIMUM = '16rem';
+// Narrowest a cheatsheet group column may get. The auto-fit grid adds a second column once the
+// container fits two of these plus the gap, so the layout responds to its own width instead of a
+// viewport breakpoint token.
+const CHEATSHEET_GROUP_MIN_INLINE_SIZE = '16rem';
 const groupsStyle = css({
   display: 'grid',
-  gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${CHEATSHEET_COLUMN_MINIMUM}), 1fr))`,
+  gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${CHEATSHEET_GROUP_MIN_INLINE_SIZE}), 1fr))`,
   gap: vars.space[6],
 });
 const itemStyle = css({
@@ -838,7 +842,8 @@ function ShortcutRecorderRoot({
             latch.current = false;
             if (suppressClick.current && event.key === ' ') event.preventDefault();
             suppressClick.current = false;
-            setPreview(event.key === 'Meta' ? [] : eventModifiers(event.nativeEvent, platform));
+            if (active)
+              setPreview(event.key === 'Meta' ? [] : eventModifiers(event.nativeEvent, platform));
           }}
         >
           <span id={summaryId} css={visuallyHiddenStyle}>
@@ -1037,33 +1042,35 @@ function ShortcutList({
   const [root, setRoot] = useState<HTMLElement | null>(null);
   const mergedRef = useMergeRefs([ref, setRoot]);
   const held = useHeldKeys(highlightPressed, root?.ownerDocument.defaultView);
-  const collator = new Intl.Collator(locale, {
-    usage: 'search',
-    sensitivity: 'base',
-  });
-  const matches = (text: string) => {
+  const filtered = useMemo(() => {
+    const collator = new Intl.Collator(locale, {
+      usage: 'search',
+      sensitivity: 'base',
+    });
     const search = query ?? '';
-    const chars = Array.from(text),
-      needle = Array.from(search);
-    return (
-      !search ||
-      chars.some(
-        (_, index) =>
-          collator.compare(chars.slice(index, index + needle.length).join(''), search) === 0,
-      )
-    );
-  };
-  const filtered = groups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) =>
-        matches(`${item.label} ${item.keywords ?? ''} ${item.shortcut}`),
-      ),
-    }))
-    .filter((group) => group.items.length);
+    const needle = Array.from(search);
+    const matches = (text: string) => {
+      const chars = Array.from(text);
+      return (
+        !search ||
+        chars.some(
+          (_, index) =>
+            collator.compare(chars.slice(index, index + needle.length).join(''), search) === 0,
+        )
+      );
+    };
+    return groups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          matches(`${item.label} ${item.keywords ?? ''} ${item.shortcut}`),
+        ),
+      }))
+      .filter((group) => group.items.length);
+  }, [locale, query, groups]);
   const count = filtered.reduce((total, group) => total + group.items.length, 0);
   const results =
-    messages === defaultShortcutMessages ? formatResults(count, locale) : messages.results(count);
+    messages.results === formatResults ? formatResults(count, locale) : messages.results(count);
   return (
     <WithSx
       className={[className, slotProps?.root?.className].filter(Boolean).join(' ')}
@@ -1084,8 +1091,7 @@ function ShortcutList({
               placeholder={messages.searchPlaceholder}
               value={query ?? ''}
               onValueChange={requestQuery}
-              className={slotProps?.search?.className}
-              css={slotProps?.search?.css}
+              slotProps={{ control: slotProps?.search }}
               onKeyDown={(event) => {
                 if (event.key === 'Escape') {
                   event.preventDefault();
