@@ -1715,6 +1715,9 @@ export const TinyViewport: Story = {
     await expect(view.innerHeight).toBe(TINY_VIEWPORT.height);
     const rootFontSize = parseFloat(getComputedStyle(canvasElement.ownerDocument.documentElement).fontSize);
     await expect(13 * rootFontSize).toBeGreaterThan(view.innerWidth - 2 * VIEWPORT_PADDING);
+    // The runner resizes the page right before the story, and the window's resize event only fires
+    // on the next frame; an open menu would treat it as a viewport change and close.
+    await new Promise((resolve) => view.requestAnimationFrame(resolve));
 
     const target = getTarget(canvasElement);
     const box = target.getBoundingClientRect();
