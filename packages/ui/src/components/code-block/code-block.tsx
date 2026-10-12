@@ -217,6 +217,7 @@ function warnHighlightFailure(error: unknown) {
 }
 
 interface HighlightState {
+  loader: CodeHighlightLoader;
   code: string;
   language: string | undefined;
   lines: CodeHighlightLines;
@@ -289,6 +290,7 @@ export function CodeBlock({
   });
   useEffect(() => {
     const loader = highlightRef.current;
+    setHighlighted(null);
     if (!loader || code === '') return;
     let active = true;
     let result: ReturnType<CodeHighlightLoader>;
@@ -300,7 +302,7 @@ export function CodeBlock({
     }
     Promise.resolve(result).then(
       (lines) => {
-        if (active) setHighlighted(lines ? { code, language, lines } : null);
+        if (active) setHighlighted(lines ? { loader, code, language, lines } : null);
       },
       (error: unknown) => {
         if (active) warnHighlightFailure(error);
@@ -311,7 +313,9 @@ export function CodeBlock({
     };
   }, [code, language, hasHighlight, highlight]);
   const highlightedLines =
-    hasHighlight && highlighted?.code === code && highlighted.language === language ? highlighted.lines : undefined;
+    hasHighlight && highlighted?.loader === highlight && highlighted.code === code && highlighted.language === language
+      ? highlighted.lines
+      : undefined;
   useLayoutEffect(() => {
     if (focusSource.current) {
       focusSource.current.getElementById(sourceId)?.focus();

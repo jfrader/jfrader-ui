@@ -163,6 +163,29 @@ export const Open: Story = {
   },
 };
 
+export const LongContent: Story = {
+  render: (args) => (
+    <Popover {...args} defaultOpen>
+      <Popover.Trigger>{TRIGGER}</Popover.Trigger>
+      <Popover.Content aria-label={HEADING}>
+        <h2 style={headingStyle}>{HEADING}</h2>
+        {Array.from({ length: 40 }, (_, index) => <p key={index}>Link {index + 1}</p>)}
+        <Button size="sm">Copy link</Button>
+      </Popover.Content>
+    </Popover>
+  ),
+  play: async ({ canvasElement }) => {
+    const popover = await bodyOf(canvasElement).findByRole('dialog', { name: HEADING });
+    await waitFor(() => {
+      const bounds = popover.getBoundingClientRect();
+      expect(bounds.top).toBeGreaterThanOrEqual(0);
+      expect(bounds.bottom).toBeLessThanOrEqual(canvasElement.ownerDocument.defaultView!.innerHeight);
+    });
+    await expect(getComputedStyle(popover).overflowY).toBe('auto');
+    await expect(popover.scrollHeight).toBeGreaterThan(popover.clientHeight);
+  },
+};
+
 export const Controlled: Story = {
   args: { onOpenChange: fn() },
   render: (args) => <ControlledPopover {...args} />,

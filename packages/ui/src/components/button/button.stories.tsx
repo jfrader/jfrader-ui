@@ -93,6 +93,30 @@ export const Sizes: Story = {
   ),
 };
 
+export const ControlBoundaries: Story = {
+  render: (args) => (
+    <div style={rowStyle}>
+      <span aria-hidden="true" data-testid="boundary-color" style={{ color: vars.color.borderControl }} />
+      <Button {...args} tone="neutral" variant="solid">solid neutral</Button>
+      {TONES.map((tone) => (
+        <Button {...args} key={tone} tone={tone} variant="outline">outline {tone}</Button>
+      ))}
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    const expected = getComputedStyle(canvas.getByTestId('boundary-color')).color;
+    for (const button of canvas.getAllByRole('button')) {
+      await expect(getComputedStyle(button).borderColor).toBe(expected);
+    }
+  },
+};
+
+export const ControlBoundariesLight: Story = {
+  ...ControlBoundaries,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+};
+
 export const WithIcons: Story = {
   args: { startIcon: <PlusIcon />, endIcon: <ArrowIcon /> },
 };

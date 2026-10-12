@@ -17,6 +17,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type ComponentPropsWithRef,
   type CSSProperties,
   type ReactNode,
@@ -78,6 +79,7 @@ const contentStyle = css({
   minInlineSize: '200px',
   maxInlineSize: 'min(360px, calc(100vw - 32px))',
   fontSize: vars.textSize.sm,
+  overflowY: 'auto',
 });
 
 function PopoverLayer({
@@ -90,11 +92,13 @@ function PopoverLayer({
 }: PopoverProps & { nodeId: string | undefined }) {
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const pendingFocusRestoreRef = useRef(false);
+  const [availableHeight, setAvailableHeight] = useState<number>();
 
   const { refs, floatingStyles, context } = useOverlayFloating({
     open,
     placement,
     nodeId,
+    onAvailableSize: ({ height }) => setAvailableHeight(Math.max(0, height)),
     onOpenChange: (next, _event, reason) => {
       // Escape requests a close; focus is restored only once the close is actually applied.
       if (!next) pendingFocusRestoreRef.current = reason === 'escape-key';
@@ -116,8 +120,15 @@ function PopoverLayer({
   const { getReferenceProps, getFloatingProps } = useInteractions([click, ...dismiss, role]);
 
   const value = useMemo(
-    () => ({ open, refs, floatingContext: context, floatingStyles, getReferenceProps, getFloatingProps }),
-    [open, refs, context, floatingStyles, getReferenceProps, getFloatingProps],
+    () => ({
+      open,
+      refs,
+      floatingContext: context,
+      floatingStyles: { ...floatingStyles, maxBlockSize: availableHeight },
+      getReferenceProps,
+      getFloatingProps,
+    }),
+    [open, refs, context, floatingStyles, availableHeight, getReferenceProps, getFloatingProps],
   );
 
   return <PopoverContext.Provider value={value}>{children}</PopoverContext.Provider>;

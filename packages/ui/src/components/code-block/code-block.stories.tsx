@@ -671,3 +671,29 @@ export const HighlightTokenMismatch: Story = {
     await expect(spans[0]!.style.fontStyle).toBe('italic');
   },
 };
+
+function ReplacedLoaderExample(args: CodeBlockProps) {
+  const [replacement] = useState(deferredLoader);
+  const [replaced, setReplaced] = useState(false);
+  return (
+    <>
+      <Button onClick={() => setReplaced(true)}>Replace highlighter</Button>
+      <Button onClick={() => replacement.resolve(null)}>Resolve without highlighting</Button>
+      <CodeBlock {...args} highlight={replaced ? replacement.loader : loadShikiHighlight} />
+    </>
+  );
+}
+export const HighlightLoaderReplacement: Story = {
+  args: Highlighted.args,
+  render: (args) => <ReplacedLoaderExample {...args} />,
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    const root = canvasElement.querySelector('section')!;
+    await expectHighlighted(root, args.code);
+    await userEvent.click(canvas.getByRole('button', { name: 'Replace highlighter' }));
+    await expect(root).not.toHaveAttribute('data-highlighted');
+    await expect(root.querySelectorAll('code span')).toHaveLength(0);
+    await expect(source(canvasElement).textContent).toBe(args.code);
+    await userEvent.click(canvas.getByRole('button', { name: 'Resolve without highlighting' }));
+    await expect(root).not.toHaveAttribute('data-highlighted');
+  },
+};

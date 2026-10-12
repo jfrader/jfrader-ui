@@ -73,6 +73,17 @@ export const Default: Story = {
   },
 };
 export const Populated: Story = { args: { defaultValue: 'Ada' } };
+export const EmptyClearMessage: Story = {
+  args: { defaultValue: 'Ada', messages: { clear: '' }, onValueChange: fn() },
+  play: async ({ canvas, userEvent, args }) => {
+    const clear = canvas.getByRole('button', { name: 'Clear search' });
+    await expect(clear).toHaveAccessibleName('Clear search');
+    await userEvent.click(clear);
+    await expect(canvas.getByRole('searchbox')).toHaveValue('');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('');
+  },
+};
 export const Description: Story = { args: { description: 'Search by name or email.' } };
 export const Error: Story = {
   args: { defaultValue: 'Ada', description: 'Search by name or email.', error: 'Enter at least four characters.' },
@@ -112,6 +123,9 @@ export const ReadOnly: Story = {
   args: { readOnly: true, defaultValue: 'Ada', onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    fireEvent(input, escape);
+    await expect(escape.defaultPrevented).toBe(false);
     await userEvent.click(input);
     await userEvent.keyboard('{Escape}x');
     await expect(input).toHaveValue('Ada');
@@ -123,6 +137,9 @@ export const NotClearable: Story = {
   args: { clearable: false, defaultValue: 'Ada', onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    fireEvent(input, escape);
+    await expect(escape.defaultPrevented).toBe(false);
     await userEvent.click(input);
     await userEvent.keyboard('{Escape}');
     await expect(input).toHaveValue('Ada');

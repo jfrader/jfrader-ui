@@ -135,7 +135,11 @@ const itemStyle = css({
   '&:disabled': { opacity: 0.55, cursor: 'not-allowed' },
   [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: {
-    '&[aria-checked="true"]': { borderColor: 'Highlight', color: 'CanvasText' },
+    '&[aria-checked="true"]': {
+      borderColor: 'Highlight',
+      color: 'CanvasText',
+      textDecoration: 'underline',
+    },
   },
 });
 const sizeStyles: Record<SegmentedControlSize, SerializedStyles> = {

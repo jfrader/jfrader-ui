@@ -109,6 +109,7 @@ export function Checkbox({
   slotProps,
   className,
   sx,
+  dir,
   'aria-labelledby': ariaLabelledByProp,
   'aria-describedby': ariaDescribedByProp,
   ...rest
@@ -144,7 +145,7 @@ export function Checkbox({
       sx={sx}
     >
       {(className) => (
-        <label data-ui="checkbox" data-indeterminate={indeterminate || undefined} className={className}>
+        <label data-ui="checkbox" dir={dir} data-indeterminate={indeterminate || undefined} className={className}>
           <span css={choiceRowStyle}>
             <input
               {...rest}

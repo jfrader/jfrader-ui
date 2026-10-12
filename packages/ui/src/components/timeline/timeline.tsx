@@ -492,7 +492,10 @@ const triggerStyle = css({
   '&:hover': { backgroundColor: vars.color.surfaceHover },
   '&:focus-visible': { ...focusRingInset },
   [REDUCED_MOTION]: { transitionDuration: '0s', '&::after': { transitionDuration: '0s' } },
-  [FORCED_COLORS]: { '&:focus-visible': { outlineColor: 'Highlight' } },
+  [FORCED_COLORS]: {
+    '&:focus-visible': { outlineColor: 'Highlight' },
+    '&::after': { forcedColorAdjust: 'none', color: 'ButtonText' },
+  },
 });
 
 const metaStyle = css({

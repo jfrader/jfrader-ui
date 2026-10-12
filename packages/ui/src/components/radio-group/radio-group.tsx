@@ -158,6 +158,7 @@ function RadioGroupRoot({
             ref={ref}
             role="radiogroup"
             aria-orientation={orientation}
+            aria-disabled={disabled ? true : (rest['aria-disabled'] as boolean | 'true' | 'false' | undefined)}
             data-ui="radio-group-root"
             data-orientation={orientation}
             className={className}
@@ -180,6 +181,7 @@ function RadioGroupRadio({
   slotProps,
   className,
   sx,
+  dir,
   'aria-labelledby': ariaLabelledByProp,
   'aria-describedby': ariaDescribedByProp,
   ...rest
@@ -210,7 +212,7 @@ function RadioGroupRadio({
       sx={sx}
     >
       {(className) => (
-        <label data-ui="radio-group-radio" className={className}>
+        <label data-ui="radio-group-radio" dir={dir} className={className}>
           <span css={[choiceRowStyle, rowFloorStyle]}>
             <input
               {...rest}
@@ -218,6 +220,7 @@ function RadioGroupRadio({
               type="radio"
               name={name}
               value={value}
+              dir={dir}
               checked={selectedValue === value}
               disabled={disabled}
               aria-labelledby={ariaLabelledBy}

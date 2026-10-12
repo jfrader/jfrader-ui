@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: button. Enter and Space write `text` to the clipboard once; the button keeps a
 // stable accessible name (`label`) while the visible face and a polite status region report the
 // result. A copy in flight is a lock: further activations are inert until it settles, and the

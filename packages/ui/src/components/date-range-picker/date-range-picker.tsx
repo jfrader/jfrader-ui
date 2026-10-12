@@ -220,6 +220,8 @@ interface DateRangePickerContextValue {
   required: boolean;
   invalid: boolean;
   value: DateRangeValue | null;
+  startName: string | undefined;
+  endName: string | undefined;
   displayValue: string | undefined;
   min: string | undefined;
   max: string | undefined;
@@ -550,6 +552,8 @@ function DateRangePickerLayer({
       required,
       invalid,
       value,
+      startName,
+      endName,
       displayValue,
       min,
       max,
@@ -595,6 +599,8 @@ function DateRangePickerLayer({
     invalid,
     committed,
     value,
+    startName,
+    endName,
     displayValue,
     min,
     max,
@@ -621,10 +627,6 @@ function DateRangePickerLayer({
   return (
     <DateRangePickerContext.Provider value={contextValue}>
       {children}
-      {startName !== undefined && (
-        <input type="hidden" name={startName} value={value?.start ?? ''} disabled={disabled} />
-      )}
-      {endName !== undefined && <input type="hidden" name={endName} value={value?.end ?? ''} disabled={disabled} />}
     </DateRangePickerContext.Provider>
   );
 }
@@ -638,6 +640,7 @@ DateRangePickerRoot.displayName = 'DateRangePicker';
 function DateRangePickerTrigger({
   ref,
   id: idProp,
+  form,
   size = 'md',
   icon,
   placeholder,
@@ -658,6 +661,9 @@ function DateRangePickerTrigger({
     required,
     invalid,
     displayValue,
+    value,
+    startName,
+    endName,
     messages,
     contentRef,
     refs,
@@ -696,7 +702,7 @@ function DateRangePickerTrigger({
     const handleReset = () => resetValueRef.current();
     form.addEventListener('reset', handleReset);
     return () => form.removeEventListener('reset', handleReset);
-  }, []);
+  }, [form]);
 
   // The name is the consumer's label followed by the committed range (or placeholder);
   // a self reference reads this button's own aria-label.
@@ -739,6 +745,7 @@ function DateRangePickerTrigger({
             {...getReferenceProps({ ...rest, onKeyDown: handleKeyDown, onKeyUp: handleKeyUp })}
             ref={mergedRef}
             id={id}
+            form={form}
             disabled={disabled}
             aria-label={ariaLabel}
             aria-labelledby={labelledBy}
@@ -775,6 +782,12 @@ function DateRangePickerTrigger({
         <span id={errorId} role="alert" data-ui="date-range-picker-error" css={errorStyle}>
           {messages.error}
         </span>
+      )}
+      {startName !== undefined && (
+        <input type="hidden" form={form} name={startName} value={value?.start ?? ''} disabled={disabled} />
+      )}
+      {endName !== undefined && (
+        <input type="hidden" form={form} name={endName} value={value?.end ?? ''} disabled={disabled} />
       )}
     </>
   );
@@ -961,7 +974,7 @@ function DateRangePickerPanel({
       : triggerLabelling?.labelledBy !== undefined
         ? { 'aria-labelledby': triggerLabelling.labelledBy }
         : { 'aria-label': triggerLabelling?.label };
-  const layout = monthCount === 2 ? 'rail' : 'row';
+  const layout = monthCount === 2 && presetItems.length > 0 ? 'rail' : 'row';
   const canApply = !readOnly && isAvailableRange(draft, min, max);
 
   return (

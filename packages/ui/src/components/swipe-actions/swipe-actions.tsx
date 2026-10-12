@@ -553,6 +553,7 @@ function SwipeActionsRow({
               return;
             const node = event.currentTarget;
             const doc = node.ownerDocument;
+            if (event.pointerType === 'mouse') event.preventDefault();
             // Capture starts only after the horizontal lock, so a release or cancel outside the row
             // before then never reaches it; abandon the gesture there.
             const endOutside = (outside: globalThis.PointerEvent) => {

@@ -117,6 +117,31 @@ export const Today: Story = {
   },
 };
 
+export const TodayStates: Story = {
+  args: { visibleMonth: '2026-10', today: '2026-10-11' },
+  render: (args) => (
+    <>
+      <div data-testid="selected-today">
+        <CalendarExample {...args} value="2026-10-11" />
+      </div>
+      <div data-testid="disabled-today">
+        <CalendarExample {...args} min="2026-10-12" />
+      </div>
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const selected = day(canvas.getByTestId('selected-today'), 'October 11, 2026');
+    const disabled = day(canvas.getByTestId('disabled-today'), 'October 11, 2026');
+    await expect(selected.closest('td')).toHaveAttribute('aria-selected', 'true');
+    await expect(selected).toHaveAttribute('aria-current', 'date');
+    await expect(getComputedStyle(selected).textDecorationLine).toContain('underline');
+    await expect(disabled).toBeDisabled();
+    await expect(getComputedStyle(disabled).textDecorationLine).toContain('underline');
+    await expect(getComputedStyle(disabled).textDecorationLine).toContain('line-through');
+  },
+};
+
 export const MinMax: Story = {
   args: {
     defaultValue: '2026-10-05',

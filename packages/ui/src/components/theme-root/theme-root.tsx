@@ -28,7 +28,7 @@ export function ThemeRoot({ ref, theme = 'dark', portalContainer, className, sx,
     <ThemeScopeContext.Provider value={scope}>
       <ThemeProvider>
         <WithSx className={className} styles={themeScopeStyle} sx={sx}>
-          {(className) => <div data-ui="theme-root" data-theme={theme} {...rest} ref={ref} className={className} />}
+          {(className) => <div {...rest} ref={ref} data-ui="theme-root" data-theme={theme} className={className} />}
         </WithSx>
       </ThemeProvider>
     </ThemeScopeContext.Provider>

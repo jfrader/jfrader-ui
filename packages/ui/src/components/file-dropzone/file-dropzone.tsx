@@ -831,7 +831,7 @@ export function FileDropzone({
             aria-atomic="true"
             css={[visuallyHiddenStyle, slotProps?.status?.css]}
           >
-            {announcement}
+            {dragging && isRenderable(dropLabel) ? dropLabel : announcement}
           </div>
         </div>
       )}

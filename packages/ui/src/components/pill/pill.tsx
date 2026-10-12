@@ -3,6 +3,7 @@
 import type { ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
+import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 
 export type PillTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
@@ -23,6 +24,9 @@ const rootStyle = css({
   lineHeight: 1,
   whiteSpace: 'nowrap',
   verticalAlign: 'middle',
+  [FORCED_COLORS]: {
+    outline: '1px solid CanvasText',
+  },
 });
 
 /*

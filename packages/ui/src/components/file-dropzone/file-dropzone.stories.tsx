@@ -101,7 +101,7 @@ function ControlledExample(props: FileDropzoneProps) {
 }
 async function dispatchFiles(
   element: HTMLElement,
-  type: 'drop' | 'paste' | 'dragenter' | 'dragover',
+  type: 'drop' | 'paste' | 'dragenter' | 'dragover' | 'dragleave',
   files: File[],
 ) {
   const data = new DataTransfer();
@@ -264,6 +264,24 @@ export const DropAndPaste: Story = {
           'Dispatched DataTransfer events prove React drag/drop and focused paste handlers. Real OS dragging and picker dialogs are separate browser QA gates.',
       },
     },
+  },
+};
+export const DragAnnouncement: Story = {
+  args: { dropLabel: 'Drop receipts here' },
+  play: async ({ canvasElement, args }) => {
+    const root = rootOf(canvasElement);
+    const status = within(canvasElement).getByRole('status');
+    const child = within(canvasElement).getByText('Browse files');
+    await dispatchFiles(root, 'dragenter', [file()]);
+    await expect(status).toHaveTextContent('Drop receipts here');
+    await dispatchFiles(child, 'dragenter', [file()]);
+    await dispatchFiles(child, 'dragleave', [file()]);
+    await expect(root).toHaveAttribute('data-state', 'dragging');
+    await expect(status).toHaveTextContent('Drop receipts here');
+    await dispatchFiles(root, 'dragleave', [file()]);
+    await expect(root).toHaveAttribute('data-state', 'empty');
+    await expect(status).toBeEmptyDOMElement();
+    await expect(args.onValueChange).not.toHaveBeenCalled();
   },
 };
 export const SingleRemoteCapacity: Story = {

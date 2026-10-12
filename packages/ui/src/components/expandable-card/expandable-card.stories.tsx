@@ -7,7 +7,11 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Popover } from '../popover';
 import { ExpandableCard, type ExpandableCardProps } from './index';
 
-const frameStyle = css({ inlineSize: 'min(100%, 640px)', minInlineSize: 0 });
+const frameStyle = css({
+  inlineSize: 'min(100%, 640px)',
+  maxInlineSize: `calc(100vw - ${vars.space[8]})`,
+  minInlineSize: 0,
+});
 // Definite parent widths: the centered story frame is otherwise shrink-to-fit around the card.
 const morphParentStyle = css({ inlineSize: '640px', maxInlineSize: '100%' });
 const narrowParentStyle = css({ inlineSize: '200px' });
@@ -462,6 +466,10 @@ export const ForcedColors: Story = {
     },
   },
   play: async ({ canvas }) => {
+    const caret = getComputedStyle(canvas.getByRole('button'), '::after');
+    await expect(caret.borderBlockStartColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(caret.borderBlockEndColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(parseFloat(caret.borderInlineStartWidth)).toBeGreaterThan(0);
     await expect(
       parseFloat(getComputedStyle(canvas.getByRole('button').closest('article')!).borderTopWidth),
     ).toBeGreaterThan(0);

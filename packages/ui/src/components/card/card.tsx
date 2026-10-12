@@ -8,6 +8,7 @@
 import { createContext, useContext, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 
 export type CardVariant = 'flat' | 'raised';
@@ -53,16 +54,11 @@ function joinClassNames(...names: (string | undefined)[]) {
 
 // Precedence: base → variant → slotProps.root.css → consumer css → consumer sx.
 const rootStyle = css({
-  boxSizing: 'border-box',
+  ...raisedSurface,
   minInlineSize: 0,
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.border}`,
   borderRadius: vars.radius.lg,
   paddingBlock: vars.space[4],
   paddingInline: vars.space[5],
-  fontFamily: vars.font.sans,
-  lineHeight: vars.lineHeight.base,
-  color: vars.color.text,
 });
 
 const variantStyles: Record<CardVariant, SerializedStyles> = {

@@ -114,7 +114,7 @@ const chipStyle = css({
     color: vars.color.accentText,
   },
   '&[aria-pressed="true"]:hover:not(:disabled)': { backgroundColor: vars.color.accentSoftHover },
-  '&:disabled': { opacity: 0.55, cursor: 'not-allowed' },
+  '&:disabled': { opacity: 0.55, cursor: 'not-allowed', borderStyle: 'dashed' },
   '&:focus-visible': focusRingOutset,
   [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: {

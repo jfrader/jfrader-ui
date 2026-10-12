@@ -157,6 +157,7 @@ function useSelectItemContext(): SelectContextValue {
 const selectTriggerStyle = css({
   justifyContent: 'flex-start',
   minInlineSize: '180px',
+  maxInlineSize: '100%',
   '&[aria-expanded="true"]': {
     backgroundColor: vars.color.surfaceHover,
   },

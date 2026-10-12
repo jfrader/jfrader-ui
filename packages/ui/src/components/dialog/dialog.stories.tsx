@@ -169,6 +169,27 @@ export const Open: Story = {
   },
 };
 
+export const NarrowContent: Story = {
+  tags: ['!autodocs'],
+  render: (args) => (
+    <Dialog {...args} defaultOpen>
+      <Dialog.Trigger>Open profile</Dialog.Trigger>
+      <Dialog.Content sx={{ inlineSize: '280px' }}>
+        <Dialog.Title>{TITLE}</Dialog.Title>
+        <Dialog.Description>{DESCRIPTION}</Dialog.Description>
+        <Dialog.Close>Close</Dialog.Close>
+      </Dialog.Content>
+    </Dialog>
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = within(canvasElement).getByRole('dialog');
+    await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth);
+    await expect(dialog.firstElementChild!.getBoundingClientRect().width).toBeLessThanOrEqual(dialog.clientWidth);
+    const close = within(dialog).getByRole('button', { name: 'Close' });
+    await expect(close.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+  },
+};
+
 export const Controlled: Story = {
   args: { onOpenChange: fn() },
   render: (args) => <ControlledDialog {...args} />,

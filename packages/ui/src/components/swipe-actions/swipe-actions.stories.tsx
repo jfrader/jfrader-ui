@@ -295,6 +295,44 @@ export const UncapturedReleaseOutside: Story = {
     await expect(row).toHaveAttribute('data-state', 'leading');
   },
 };
+export const MouseSelectionGuard: Story = {
+  render: (args) => (
+    <SwipeActions {...args}>
+      <SwipeActions.Row id="invoice" label="Invoice" actionsLabel="Actions for Invoice" leading={leading}>
+        Invoice <input aria-label="Note" />
+      </SwipeActions.Row>
+    </SwipeActions>
+  ),
+  play: async ({ canvas, canvasElement }) => {
+    const row = rowOf(canvasElement);
+    const p = pointer(row);
+    try {
+      const press = new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        isPrimary: true,
+        button: 0,
+        pointerType: 'mouse',
+      });
+      fireEvent(row.querySelector('[data-ui="swipe-actions-content"]')!, press);
+      await expect(press.defaultPrevented).toBe(true);
+      p.fire('pointerup', 0);
+      const inputPress = new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 2,
+        isPrimary: true,
+        button: 0,
+        pointerType: 'mouse',
+      });
+      fireEvent(canvas.getByRole('textbox', { name: 'Note' }), inputPress);
+      await expect(inputPress.defaultPrevented).toBe(false);
+    } finally {
+      p.restore();
+    }
+  },
+};
 export const FullSwipe: Story = {
   play: async ({ canvasElement }) => {
     const row = rowOf(canvasElement);

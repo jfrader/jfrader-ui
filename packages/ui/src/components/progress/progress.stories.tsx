@@ -9,7 +9,7 @@ import { Progress } from './index';
 const frameStyle = css({
   display: 'grid',
   gap: vars.space[4],
-  inlineSize: '20rem',
+  inlineSize: `min(20rem, calc(100vw - ${vars.space[8]}))`,
 });
 
 const fieldStyle = {
@@ -66,6 +66,23 @@ export const Indeterminate: Story = {
   },
 };
 
+export const RTL: Story = {
+  render: (args) => (
+    <>
+      <Progress {...args} dir="rtl" label="Empty" value={0} />
+      <Progress {...args} dir="rtl" aria-label="Half complete" value={50} />
+      <Progress {...args} dir="rtl" label="Complete" value={100} sx={{ blockSize: vars.space[2] }} />
+      <Progress {...args} dir="rtl" label="Preparing" sx={{ blockSize: vars.space[2] }} />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const progressbar of within(canvasElement).getAllByRole('progressbar')) {
+      await expect(progressbar).toHaveAttribute('dir', 'rtl');
+      await expect(getComputedStyle(progressbar).direction).toBe('rtl');
+    }
+  },
+};
+
 export const ValueText: Story = {
   args: {
     label: 'Importing files',
@@ -93,6 +110,36 @@ export const VisibleLabel: Story = {
   play: async ({ canvasElement }) => {
     const progressbar = within(canvasElement).getByRole('progressbar', { name: 'Storage used' });
     await expect(progressbar).toHaveAttribute('aria-labelledby', 'storage-label');
+  },
+};
+
+export const AccessibleValueText: Story = {
+  render: (args) => (
+    <>
+      <Progress {...args} aria-label="Download" value={40} aria-valuetext="40 megabytes downloaded" />
+      <Progress {...args} aria-label="Preparing download" aria-valuetext="Connecting" />
+      <Progress
+        {...args}
+        aria-label="Formatted download"
+        value={40}
+        aria-valuetext="Consumer value"
+        getValueLabel={() => 'Generated value'}
+      />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('progressbar', { name: 'Download' })).toHaveAttribute(
+      'aria-valuetext',
+      '40 megabytes downloaded',
+    );
+    const preparing = canvas.getByRole('progressbar', { name: 'Preparing download' });
+    await expect(preparing).not.toHaveAttribute('aria-valuenow');
+    await expect(preparing).toHaveAttribute('aria-valuetext', 'Connecting');
+    await expect(canvas.getByRole('progressbar', { name: 'Formatted download' })).toHaveAttribute(
+      'aria-valuetext',
+      'Consumer value',
+    );
   },
 };
 

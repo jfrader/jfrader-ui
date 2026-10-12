@@ -8,6 +8,7 @@ import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Popover, type PopoverProps } from '../popover';
 import { TextField } from '../text-field';
+import { ThemeProvider, useTheme } from '../theme-provider/theme-provider';
 import { ThemeRoot, type ThemeName, type ThemeRootProps } from './index';
 
 const THEMES = ['dark', 'light'] as const satisfies readonly ThemeName[];
@@ -275,5 +276,72 @@ export const LiveThemeChange: Story = {
     // The open overlay follows the root's new theme in place, without remounting.
     await expectThemedSurface(popover, 'light');
     await expect(popover.isConnected).toBe(true);
+  },
+};
+
+function ThemeProbe() {
+  const currentTheme = useTheme();
+  return (
+    <span data-ui="theme-probe" data-color-text={currentTheme?.color?.text}>
+      Probe
+    </span>
+  );
+}
+ThemeProbe.displayName = 'ThemeProbe';
+
+export const ThemeProviderStandalone: Story = {
+  render: () => (
+    <div data-testid="provider-host">
+      <ThemeProvider>
+        <ThemeProbe />
+      </ThemeProvider>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const host = within(canvasElement).getByTestId('provider-host');
+    const probe = within(canvasElement).getByText('Probe');
+    // ThemeProvider renders no DOM node of its own: child is the direct child of the host element
+    await expect(probe.parentElement).toBe(host);
+    await expect(probe).toHaveAttribute('data-color-text', vars.color.text);
+  },
+};
+
+export const AttributePrecedence: Story = {
+  render: () => (
+    <ThemeRoot
+      theme="dark"
+      data-ui="custom-ui"
+      data-theme="light"
+      data-testid="precedence-root"
+      style={surfaceStyle}
+    >
+      <ThemeProbe />
+    </ThemeRoot>
+  ),
+  play: async ({ canvasElement }) => {
+    const root = within(canvasElement).getByTestId('precedence-root');
+    // Own markers win over consumer rest props
+    await expect(root).toHaveAttribute('data-ui', 'theme-root');
+    await expect(root).toHaveAttribute('data-theme', 'dark');
+  },
+};
+
+export const ThemeIdentity: Story = {
+  render: () => (
+    <div style={rowStyle}>
+      <ThemeRoot theme="dark" data-testid="dark-root" style={surfaceStyle}>
+        <ThemeProbe />
+      </ThemeRoot>
+      <ThemeRoot theme="light" data-testid="light-root" style={surfaceStyle}>
+        <ThemeProbe />
+      </ThemeRoot>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const probes = within(canvasElement).getAllByText('Probe');
+    await expect(probes).toHaveLength(2);
+    // Both dark and light roots supply token var references (values never change between dark and light)
+    await expect(probes[0]).toHaveAttribute('data-color-text', vars.color.text);
+    await expect(probes[1]).toHaveAttribute('data-color-text', vars.color.text);
   },
 };

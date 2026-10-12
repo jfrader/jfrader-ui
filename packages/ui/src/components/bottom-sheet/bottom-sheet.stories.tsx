@@ -410,8 +410,10 @@ export const DragSettleAndDismiss: Story = {
     const header = canvasElement.querySelector('[data-ui="bottom-sheet-header"]')!;
     const h = canvasElement.ownerDocument.defaultView!.innerHeight;
     pointer(header, 'pointerdown', h * 0.7, 0);
+    await expect(getComputedStyle(header).userSelect).toBe('none');
     pointer(header, 'pointermove', h * 0.4, 100);
     pointer(header, 'pointerup', h * 0.4, 300);
+    await expect(getComputedStyle(header).userSelect).not.toBe('none');
     await settled(canvasElement, 0.6);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith(1);
@@ -439,6 +441,7 @@ export const GestureCancel: Story = {
       pointer(header, 'pointerdown', 100, 0);
       pointer(header, 'pointermove', 500, 100);
       pointer(header, type, 500, 110);
+      await expect(getComputedStyle(header).userSelect).not.toBe('none');
       pointer(header, 'pointerup', 500, 120);
       await settled(canvasElement, 0.45);
     }

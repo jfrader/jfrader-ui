@@ -7,6 +7,7 @@ import {
   useFloating,
   type OpenChangeReason,
   type Placement,
+  type Strategy,
   type UseFloatingReturn,
 } from '@floating-ui/react';
 
@@ -25,6 +26,13 @@ export interface OverlayFloatingOptions {
   boundary?: Element | null;
   /** Receives the space left for the surface inside the boundary after each positioning pass. */
   onAvailableSize?: (size: OverlayAvailableSize) => void;
+  /** CSS positioning strategy. Defaults to `absolute`. */
+  strategy?: Strategy;
+  /** Gap between the anchor and the surface, in px. Defaults to `ANCHOR_GAP`. */
+  gap?: number;
+  /** Position with `transform` (default) or with `left`/`top`, which leaves `transform` and
+   * `scale` free for the surface's own animation. */
+  transform?: boolean;
 }
 
 export interface OverlayAvailableSize {
@@ -43,6 +51,9 @@ export function useOverlayFloating({
   nodeId,
   boundary,
   onAvailableSize,
+  strategy,
+  gap = ANCHOR_GAP,
+  transform,
 }: OverlayFloatingOptions): UseFloatingReturn<HTMLButtonElement> {
   const detectOverflow = { padding: VIEWPORT_PADDING, ...(boundary ? { boundary } : {}) };
   return useFloating<HTMLButtonElement>({
@@ -50,8 +61,10 @@ export function useOverlayFloating({
     onOpenChange,
     placement,
     nodeId,
+    strategy,
+    transform,
     middleware: [
-      offset(ANCHOR_GAP),
+      offset(gap),
       flip(detectOverflow),
       shift(detectOverflow),
       onAvailableSize &&

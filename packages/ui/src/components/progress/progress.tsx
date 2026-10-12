@@ -123,7 +123,9 @@ export function Progress({
           aria-valuemin={0}
           aria-valuemax={normalizedMax}
           aria-valuenow={current}
-          aria-valuetext={current === undefined ? undefined : getValueLabel?.(current, normalizedMax)}
+          aria-valuetext={
+            rest['aria-valuetext'] ?? (current === undefined ? undefined : getValueLabel?.(current, normalizedMax))
+          }
           className={className}
         >
           {hasLabel && (

@@ -1,8 +1,8 @@
-// Nesting for floating overlays (Popover, HoverCard, DateRangePicker). Each layer registers a
+// Nesting for floating overlays (Popover, HoverCard, DateRangePicker, Menu). Each layer registers a
 // node in one shared floating tree, so a layer opened inside another one is its child: Escape and outside presses
 // reach only the topmost open layer, and a press inside a child is not outside its parent.
 // The first layer creates the tree; nested layers join it through React context, across portals.
-// Overlays that do not take part (Menu, Select, …) render inside `IsolatedOverlay`, so the
+// Overlays that do not take part (Select, Combobox, …) render inside `IsolatedOverlay`, so the
 // enclosing layer's tree and node never change their roles, list navigation or focus handling.
 import { useMemo, type KeyboardEvent, type ReactNode } from 'react';
 import {
@@ -78,6 +78,25 @@ export function OverlayLayer({ children }: { children: (nodeId: string | undefin
 }
 
 OverlayLayer.displayName = 'OverlayLayer';
+
+/**
+ * A layer for a menu. Its node joins the tree under the enclosing layer like any other, but the
+ * menu's own hooks see no parent node: useRole and useListNavigation read a parent node as a parent
+ * menu (a menuitem trigger, cross-axis open/close keys). The menu's content re-provides the node
+ * through `LayerContent`, so layers opened inside it nest under it.
+ */
+export function MenuLayer({ children }: { children: (nodeId: string | undefined) => ReactNode }) {
+  return <OverlayLayer>{(nodeId) => <FloatingNode id={undefined}>{children(nodeId)}</FloatingNode>}</OverlayLayer>;
+}
+
+MenuLayer.displayName = 'MenuLayer';
+
+/** Makes `nodeId` the parent of layers rendered inside `children`. */
+export function LayerContent({ nodeId, children }: { nodeId: string | undefined; children: ReactNode }) {
+  return <FloatingNode id={nodeId}>{children}</FloatingNode>;
+}
+
+LayerContent.displayName = 'LayerContent';
 
 /**
  * Root boundary for an overlay that does not take part in layer nesting. Inside a layer it gets

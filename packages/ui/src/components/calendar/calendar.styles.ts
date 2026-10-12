@@ -113,6 +113,7 @@ export const dayStyle = css({
   '&[data-today]': {
     borderColor: vars.color.borderControl,
     fontWeight: vars.fontWeight.semibold,
+    textDecoration: 'underline',
   },
   '&[data-selected]': {
     backgroundColor: vars.color.accent,
@@ -146,6 +147,9 @@ export const dayStyle = css({
     opacity: 0.55,
     cursor: 'not-allowed',
     textDecoration: 'line-through',
+  },
+  '&[data-today]:disabled': {
+    textDecoration: 'underline line-through',
   },
   '&:focus-visible': {
     ...focusRingOutset,

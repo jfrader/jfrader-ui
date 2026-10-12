@@ -488,6 +488,20 @@ export const RTL: Story = {
 };
 export const ForcedColors: Story = {
   args: { defaultOpen: ['app'], defaultValue: 'alpha' },
+  play: async ({ canvas, canvasElement }) => {
+    const parent = canvas.getByRole('treeitem', { name: 'Application' });
+    const caret = getComputedStyle(disclosure(parent), '::after');
+    const forced = canvasElement.ownerDocument.defaultView!.matchMedia(
+      '(forced-colors: active)',
+    ).matches;
+    await expect(caret.borderTopColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(caret.borderBottomColor).toBe('rgba(0, 0, 0, 0)');
+    if (forced) await expect(caret.forcedColorAdjust).toBe('none');
+    await expect(canvas.getByRole('treeitem', { name: 'Alpha' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  },
 };
 export const ReducedMotion: Story = { args: { defaultOpen: ['app'] } };
 export const EmptyLoadedChildren: Story = {

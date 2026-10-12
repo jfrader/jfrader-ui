@@ -144,3 +144,43 @@ export const LightTheme: Story = {
     await expect(canvas.getByRole('img', { name: `${NAME}, busy` })).toHaveTextContent('AL');
   },
 };
+
+export const ForcedColorsRule: Story = {
+  ...Status,
+  play: async ({ canvasElement }) => {
+    const avatars = canvasElement.querySelectorAll<HTMLElement>('[data-ui="avatar"]');
+    await expect(avatars).toHaveLength(5);
+    const rules = Array.from(canvasElement.ownerDocument.styleSheets)
+      .flatMap((sheet) => Array.from(sheet.cssRules))
+      .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText.includes('forced-colors: active'))
+      .flatMap((rule) => Array.from(rule.cssRules))
+      .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule);
+    for (const avatar of avatars) {
+      const selectors = Array.from(avatar.classList, (name) => `.${name}`);
+      await expect(rules.some((rule) => selectors.includes(rule.selectorText) && rule.style.outlineColor.toLowerCase() === 'canvastext')).toBe(true);
+      const status = avatar.querySelector<HTMLElement>('[data-status]')!;
+      const statusSelectors = Array.from(status.classList, (name) => `.${name}::before`);
+      const statusRule = rules.find((rule) => statusSelectors.includes(rule.selectorText) && rule.style.forcedColorAdjust === 'none');
+      await expect(statusRule?.style.backgroundColor).toBe('canvastext');
+      await expect(statusRule?.style.outlineColor.toLowerCase()).toBe('canvas');
+      await expect(statusRule?.style.outlineWidth).toBe('2px');
+      if (status.dataset.status === 'away') {
+        const awaySelectors = Array.from(status.classList, (name) => `.${name}[data-status="away"]::before`);
+        const awayRule = rules.find((rule) => awaySelectors.includes(rule.selectorText));
+        await expect(awayRule?.style.backgroundColor).toBe('canvas');
+        await expect(awayRule?.style.borderColor).toBe('canvastext');
+      }
+    }
+  },
+};
+
+export const RTL: Story = {
+  args: { dir: 'rtl', status: 'online' },
+  play: async ({ canvasElement }) => {
+    const avatar = within(canvasElement).getByRole('img', { name: `${NAME}, online` });
+    await expect(avatar).toHaveAttribute('dir', 'rtl');
+    const status = avatar.querySelector<HTMLElement>('[data-status]')!;
+    await expect(getComputedStyle(status).left).toBe('0px');
+    await expect(getComputedStyle(status).right).not.toBe('0px');
+  },
+};

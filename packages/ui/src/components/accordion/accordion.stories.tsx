@@ -18,6 +18,7 @@ const REJECTED_VALUE = 'three';
 
 const frameStyle = css({
   inlineSize: '360px',
+  maxInlineSize: `calc(100vw - ${vars.space[8]})`,
   fontSize: vars.textSize.sm,
 });
 
@@ -335,5 +336,28 @@ export const LightTheme: Story = {
   render: (args) => <AccordionExample {...args} />,
   play: async ({ canvasElement }) => {
     await expectExpanded(canvasElement, ['Security']);
+  },
+};
+
+export const RTL: Story = {
+  args: { dir: 'rtl', defaultValue: 'one' },
+  render: (args) => <AccordionExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector('[data-ui="accordion"]')!;
+    await expect(root).toHaveAttribute('dir', 'rtl');
+    await expectExpanded(canvasElement, ['Account']);
+  },
+};
+
+export const ForcedColors: Story = {
+  args: { defaultValue: 'one' },
+  render: (args) => <AccordionExample {...args} disabledValue="two" />,
+  play: async ({ canvasElement }) => {
+    for (const trigger of within(canvasElement).getAllByRole('button')) {
+      const caret = getComputedStyle(trigger, '::after');
+      await expect(caret.borderBlockStartColor).toBe('rgba(0, 0, 0, 0)');
+      await expect(caret.borderBlockEndColor).toBe('rgba(0, 0, 0, 0)');
+      await expect(parseFloat(caret.borderInlineStartWidth)).toBeGreaterThan(0);
+    }
   },
 };

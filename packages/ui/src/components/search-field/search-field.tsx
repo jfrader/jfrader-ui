@@ -204,10 +204,10 @@ export function SearchField({
                 onKeyDown?.(event);
                 if (
                   event.defaultPrevented || event.key !== 'Escape' || event.nativeEvent.isComposing ||
-                  event.nativeEvent.keyCode === 229 || query === ''
+                  event.nativeEvent.keyCode === 229 || query === '' || !clearable || disabled || readOnly
                 ) return;
                 event.preventDefault();
-                if (clearable && !disabled && !readOnly) clear();
+                clear();
               }}
             />
             <span className={slotProps?.clearSlot?.className} css={[clearSlotStyle, slotProps?.clearSlot?.css]}>
@@ -216,7 +216,7 @@ export function SearchField({
                   type="button"
                   disabled={disabled}
                   data-enter={mounted.current ? '' : undefined}
-                  aria-label={messages?.clear ?? defaultMessages.clear}
+                  aria-label={messages?.clear || defaultMessages.clear}
                   aria-controls={field.id}
                   onClick={clear}
                   className={slotProps?.clear?.className}

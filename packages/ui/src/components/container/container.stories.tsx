@@ -218,7 +218,7 @@ export const CenteredPage: Story = {
 export const RTL: Story = {
   render: (args) => (
     <div dir="rtl">
-      <Container {...args} size="sm" paddingInline="lg">
+      <Container {...args} dir="rtl" size="sm" paddingInline="lg">
         <Flex gap="md">
           <div style={boxStyle} data-box>
             Item 1
@@ -232,6 +232,7 @@ export const RTL: Story = {
   ),
   play: async ({ canvasElement }) => {
     const [container] = getContainers(canvasElement);
+    await expect(container!).toHaveAttribute('dir', 'rtl');
     const style = getComputedStyle(container!);
     await expect(style.direction).toBe('rtl');
     await expect(style.paddingInlineStart).toBe(spacePx('lg'));

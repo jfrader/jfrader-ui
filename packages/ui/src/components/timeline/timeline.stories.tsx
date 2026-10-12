@@ -945,5 +945,8 @@ export const ForcedColors: Story = {
     );
     // The disclosure keeps a real border that forced colors paints as the button boundary.
     await expect(getComputedStyle(part(row, 'trigger')).borderTopStyle).toBe('solid');
+    await expect(mediaDeclarations(part(row, 'trigger'), 'forced-colors', '::after')).toContainEqual(
+      expect.objectContaining({ forcedColorAdjust: 'none', color: 'buttontext' }),
+    );
   },
 };

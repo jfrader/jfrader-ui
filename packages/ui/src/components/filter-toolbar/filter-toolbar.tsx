@@ -132,7 +132,12 @@ const chipStyle = css({
   backgroundColor: vars.color.surfaceHover, color: vars.color.text,
   [FORCED_COLORS]: { borderColor: 'CanvasText', backgroundColor: 'Canvas', color: 'CanvasText' },
 });
-const labelStyle = css({ minInlineSize: 0, overflowWrap: 'anywhere' });
+const labelStyle = css({
+  minInlineSize: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+});
 const fieldStyle = css({ color: vars.color.textMuted });
 const valueStyle = css({ fontWeight: vars.fontWeight.medium });
 const removeStyle = css({

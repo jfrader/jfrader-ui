@@ -570,6 +570,30 @@ export const ControlledReset: Story = {
     await expect(new FormData(trigger.form!).get('time')).toBe('10:00');
   },
 };
+export const ExternalForm: Story = {
+  render: (args) => (
+    <>
+      <form id="time-picker-external-form" />
+      <TimePicker {...args} name="time" form="time-picker-external-form" />
+      <TimePicker
+        {...args}
+        label="End time"
+        name="end-time"
+        slotProps={{ control: { form: 'time-picker-external-form' } }}
+      />
+    </>
+  ),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('combobox', { name: 'Start time' }) as HTMLButtonElement;
+    await expect(new FormData(trigger.form!).get('time')).toBe('09:00');
+    await expect(new FormData(trigger.form!).get('end-time')).toBe('09:00');
+    await userEvent.click(trigger);
+    await userEvent.click(await body(canvasElement).findByRole('option', { name: format('10:00') }));
+    await expect(new FormData(trigger.form!).get('time')).toBe('10:00');
+    trigger.form!.reset();
+    await waitFor(() => expect(new FormData(trigger.form!).get('time')).toBe('09:00'));
+  },
+};
 export const RejectedValueAcceptedClose: Story = {
   args: { value: '09:00' },
   play: async ({ canvas, canvasElement, args, userEvent }) => {

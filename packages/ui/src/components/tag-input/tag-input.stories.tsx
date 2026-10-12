@@ -900,6 +900,26 @@ export const FormSubmission: Story = {
   },
 };
 
+export const ExternalForm: Story = {
+  args: { form: 'external-topics', name: 'topics', defaultValue: ['design'], onValueChange: fn() },
+  render: (args) => (
+    <>
+      <form id="external-topics" aria-label="Topics form" />
+      <TagInput {...args} />
+    </>
+  ),
+  play: async ({ canvas, userEvent, args }) => {
+    const form = canvas.getByRole('form', { name: 'Topics form' }) as HTMLFormElement;
+    const input = inputOf(canvas);
+    await expect(input.form).toBe(form);
+    await userEvent.type(input, 'motion{Enter}');
+    await expect(new FormData(form).getAll('topics')).toEqual(['design', 'motion']);
+    form.reset();
+    await waitFor(() => expect(new FormData(form).getAll('topics')).toEqual(['design']));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
 export const FormReset: Story = {
   args: { name: 'topics', defaultValue: ['design', 'motion'], onValueChange: fn(), onInputChange: fn() },
   render: (args) => (
