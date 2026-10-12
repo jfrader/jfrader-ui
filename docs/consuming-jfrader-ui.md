@@ -305,7 +305,7 @@ function NameEditor({
     }}>
       <TextField ref={initialFocusRef} label="Name" value={draft}
         onValueChange={setDraft} required readOnly={pending} error={error} />
-      <Button type="submit" disabled={pending}>Save</Button>
+      <Button type="submit" loading={pending}>Save</Button>
       <Button type="button" onClick={cancel} disabled={pending}>Cancel</Button>
     </form>
   );
