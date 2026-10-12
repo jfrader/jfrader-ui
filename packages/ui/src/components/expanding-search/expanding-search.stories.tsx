@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fireEvent, fn, waitFor } from 'storybook/test';
+import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ExpandingSearch, type ExpandingSearchProps } from './index';
@@ -8,7 +8,7 @@ import { ExpandingSearch, type ExpandingSearchProps } from './index';
 const fixtureButton = { minWidth: 24, minHeight: 24 } as const;
 const meta = {
   title: 'Inputs/ExpandingSearch', component: ExpandingSearch, tags: ['autodocs'],
-  args: { triggerLabel: 'Search members', placeholder: 'Name or email' },
+  args: { triggerLabel: 'Search members', inputProps: { placeholder: 'Name or email' } },
   decorators: [(Story) => <div style={{ inlineSize: 420, maxInlineSize: '100%' }}><Story /></div>],
   parameters: { docs: {
     source: { code: '<ExpandingSearch triggerLabel="Search members" value={query} onValueChange={setQuery} />' },
@@ -25,6 +25,40 @@ function ControlledSearch(props: ExpandingSearchProps) {
 }
 ControlledSearch.displayName = 'ControlledExpandingSearch';
 
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+const TOLERANCE = 1.1;
+const near = (actual: number, expected: number) => Math.abs(actual - expected) < TOLERANCE;
+const parts = (canvasElement: HTMLElement) => {
+  const root = canvasElement.querySelector<HTMLElement>('[data-ui="expanding-search"]')!;
+  return { root, shell: root.children[1] as HTMLElement };
+};
+/** Waits for the open morph to settle on the lane-capped target before axe reads the geometry. */
+async function settledOpen(canvasElement: HTMLElement) {
+  const { root, shell } = parts(canvasElement);
+  await waitFor(async () => { await expect(near(shell.getBoundingClientRect().width, root.children[0]!.getBoundingClientRect().width)).toBe(true); });
+}
+/** Resolves a token length through a throwaway element, independent of the component's own measurement. */
+function resolvePx(host: HTMLElement, radius: string) {
+  const probe = host.ownerDocument.createElement('span');
+  probe.style.borderStartStartRadius = radius;
+  host.append(probe);
+  const value = parseFloat(getComputedStyle(probe).borderStartStartRadius);
+  probe.remove();
+  return value;
+}
+/** The authored rule inside `condition` that targets one of `element`'s classes. */
+function findConditionalRule(element: Element, condition: string) {
+  for (const sheet of Array.from(element.ownerDocument.styleSheets)) {
+    for (const rule of Array.from(sheet.cssRules)) {
+      if (!(rule instanceof CSSMediaRule) || !rule.conditionText.includes(condition)) continue;
+      for (const inner of Array.from(rule.cssRules)) {
+        if (inner instanceof CSSStyleRule && Array.from(element.classList).some((name) => inner.selectorText.split(',').some((selector) => selector.trim() === `.${name}`))) return inner;
+      }
+    }
+  }
+  return undefined;
+}
+
 async function expectFocus(element: HTMLElement, ring = element) {
   await expect(element.ownerDocument.activeElement).toBe(element);
   await expect(getComputedStyle(ring).outlineStyle).not.toBe('none');
@@ -32,26 +66,32 @@ async function expectFocus(element: HTMLElement, ring = element) {
 }
 
 export const Default: Story = {
-  play: async ({ canvas, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(canvas.queryByRole('searchbox')).toBeNull();
     const trigger = canvas.getByRole('button', { name: 'Search members' });
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(trigger);
     const input = canvas.getByRole('searchbox', { name: 'Search members' });
     await expect(input.ownerDocument.activeElement).toBe(input);
-    await waitFor(async () => { await expect(Math.abs(input.closest('[data-ui="expanding-search"]')!.children[1]!.getBoundingClientRect().width - 384)).toBeLessThan(1.1); });
+    const { shell } = parts(canvasElement);
+    const fieldRadius = resolvePx(canvasElement, vars.radius.sm);
+    await waitFor(async () => {
+      await expect(near(shell.getBoundingClientRect().width, 384)).toBe(true);
+      await expect(near(parseFloat(getComputedStyle(input.parentElement!).borderStartStartRadius), fieldRadius)).toBe(true);
+    });
   },
 };
 export const PersistentOpen: Story = { args: { defaultOpen: true, defaultValue: 'Ada' } };
 export const Description: Story = { args: { defaultOpen: true, label: 'Search members', description: 'Search by name or email.' } };
-export const Error: Story = { args: { defaultOpen: true, error: 'Enter at least four characters.', defaultValue: 'Ada', required: true } };
+export const Error: Story = { args: { defaultOpen: true, error: 'Enter at least four characters.', defaultValue: 'Ada', inputProps: { required: true } } };
 export const Sizes: Story = {
   render: (args) => <div style={{ display: 'grid', gap: vars.space[4] }}>{(['sm', 'md', 'lg'] as const).map((size) => <ExpandingSearch {...args} key={size} size={size} triggerLabel={`Search ${size}`} />)}</div>,
   play: async ({ canvas }) => {
     for (const [index, size] of [32, 40, 48].entries()) {
       const rect = canvas.getAllByRole('button')[index]!.getBoundingClientRect();
-      await expect(Math.abs(rect.width - size)).toBeLessThan(1.1);
-      await expect(Math.abs(rect.height - size)).toBeLessThan(1.1);
+      await expect(near(rect.width, size)).toBe(true);
+      await expect(near(rect.height, size)).toBe(true);
+      await expect(near(parseFloat(getComputedStyle(canvas.getAllByRole('button')[index]!).borderStartStartRadius), size / 2)).toBe(true);
     }
   },
 };
@@ -60,7 +100,7 @@ export const Anchors: Story = {
 };
 export const Uncontrolled: Story = {
   args: { defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn() },
-  play: async ({ canvas, userEvent, args }) => {
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button'));
     const input = canvas.getByRole('searchbox');
     await expect(input).toHaveValue('Ada');
@@ -73,6 +113,7 @@ export const Uncontrolled: Story = {
     await userEvent.keyboard('{Enter}');
     await expect(canvas.getByRole('searchbox')).toHaveValue('Ada');
     await expect(args.onOpenChange).toHaveBeenCalledTimes(3);
+    await settledOpen(canvasElement);
   },
 };
 export const Controlled: Story = { ...Uncontrolled, render: (args) => <ControlledSearch {...args} />, args: { defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn() } };
@@ -151,7 +192,7 @@ export const Keyboard: Story = {
   },
 };
 export const CompositionAndVeto: Story = {
-  args: { defaultOpen: true, defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn(), onKeyDown: (event) => { if (event.shiftKey) event.preventDefault(); } },
+  args: { defaultOpen: true, defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn(), inputProps: { onKeyDown: (event) => { if (event.shiftKey) event.preventDefault(); } } },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
     const event = new KeyboardEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true, cancelable: true });
@@ -165,7 +206,7 @@ export const CompositionAndVeto: Story = {
   },
 };
 export const ExternalAria: Story = {
-  args: { defaultOpen: true, 'aria-label': 'Fallback name', 'aria-labelledby': 'member-name missing-name', 'aria-describedby': 'member-help missing-help', description: 'Name or email.', error: 'No matches.' },
+  args: { defaultOpen: true, inputProps: { 'aria-label': 'Fallback name', 'aria-labelledby': 'member-name missing-name', 'aria-describedby': 'member-help missing-help' }, description: 'Name or email.', error: 'No matches.' },
   render: (args) => <><span id="member-name">Find members</span><span id="member-help">Directory</span><ExpandingSearch {...args} /></>,
   play: async ({ canvas }) => {
     const input = canvas.getByRole('searchbox', { name: 'Find members' });
@@ -176,7 +217,7 @@ export const ExternalAria: Story = {
   },
 };
 export const FalsyNodes: Story = {
-  render: (args) => <div style={{ display: 'grid', gap: vars.space[4] }}>{([false, null, 0, ''] as const).map((node, index) => <ExpandingSearch {...args} key={index} defaultOpen triggerLabel={`Search ${index}`} label={node} description={node} error={node} searchIcon={node} clearIcon={node} messages={{ clear: node === 0 ? 'Clear search 0' : 'Clear search' }} aria-label={`Search ${index}`} defaultValue="x" />)}</div>,
+  render: (args) => <div style={{ display: 'grid', gap: vars.space[4] }}>{([false, null, 0, ''] as const).map((node, index) => <ExpandingSearch {...args} key={index} defaultOpen triggerLabel={`Search ${index}`} label={node} description={node} error={node} searchIcon={node} clearIcon={node} messages={{ clear: node === 0 ? 'Clear search 0' : 'Clear search' }} inputProps={{ 'aria-label': `Search ${index}` }} defaultValue="x" />)}</div>,
   play: async ({ canvas }) => {
     const inputs = canvas.getAllByRole('searchbox');
     await expect(inputs).toHaveLength(4);
@@ -197,7 +238,7 @@ export const Disabled: Story = {
   },
 };
 export const DisabledOpen: Story = { args: { defaultOpen: true, disabled: true, defaultValue: 'Ada' } };
-export const ReadOnly: Story = { args: { defaultOpen: true, readOnly: true, defaultValue: 'Ada' } };
+export const ReadOnly: Story = { args: { defaultOpen: true, inputProps: { readOnly: true }, defaultValue: 'Ada' } };
 export const ClearThenCollapse: Story = {
   args: { defaultOpen: true, defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
@@ -212,9 +253,9 @@ export const ClearThenCollapse: Story = {
   },
 };
 export const FormReset: Story = {
-  args: { defaultValue: 'Ada', name: 'query', onValueChange: fn() },
+  args: { defaultValue: 'Ada', inputProps: { name: 'query' }, onValueChange: fn() },
   render: (args) => <form><ExpandingSearch {...args} /><button style={fixtureButton} type="reset">Reset query</button></form>,
-  play: async ({ canvas, userEvent, args }) => {
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Search members' }));
     await userEvent.keyboard('x{Escape}');
     await userEvent.click(canvas.getByRole('button', { name: 'Reset query' }));
@@ -224,6 +265,7 @@ export const FormReset: Story = {
     await expect(new FormData(input.form!).get('query')).toBe('Ada');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith('Adax');
+    await settledOpen(canvasElement);
   },
 };
 export const LightTheme: Story = { ...PersistentOpen, decorators: [withLightTheme], globals: { theme: 'light' } };
@@ -237,23 +279,84 @@ export const NarrowLane: Story = {
     const neighbor = canvas.getByRole('button', { name: 'Neighbor' });
     const before = neighbor.getBoundingClientRect();
     await userEvent.click(canvas.getByRole('button', { name: 'Search members' }));
-    const root = canvasElement.querySelector('[data-ui="expanding-search"]')!;
-    await waitFor(async () => { await expect(Math.abs(root.children[1]!.getBoundingClientRect().width - root.getBoundingClientRect().width)).toBeLessThan(1.1); });
-    await expect(Math.abs(neighbor.getBoundingClientRect().top - before.top)).toBeLessThan(1.1);
-    await expect(Math.abs(neighbor.getBoundingClientRect().left - before.left)).toBeLessThan(1.1);
+    const { root, shell } = parts(canvasElement);
+    await waitFor(async () => { await expect(near(shell.getBoundingClientRect().width, root.getBoundingClientRect().width)).toBe(true); });
+    await expect(near(neighbor.getBoundingClientRect().top, before.top)).toBe(true);
+    await expect(near(neighbor.getBoundingClientRect().left, before.left)).toBe(true);
   },
 };
 export const RefAndStyles: Story = {
-  args: { defaultOpen: true, ref: fn(), inputRef: fn(), style: { letterSpacing: '0.1em' }, sx: { paddingBlock: vars.space[3] }, slotProps: { control: { css: { fontWeight: vars.fontWeight.medium } } } },
+  args: {
+    defaultOpen: true, ref: fn(), inputRef: fn(), id: 'member-search', title: 'Member search', style: { letterSpacing: '0.1em' },
+    sx: { paddingBlock: vars.space[3] }, inputProps: { style: { wordSpacing: '0.2em' } },
+    slotProps: { control: { css: { fontWeight: vars.fontWeight.medium } }, shell: { css: { borderRadius: 0 } } },
+  },
   play: async ({ canvas, canvasElement, args }) => {
-    const root = canvasElement.querySelector('[data-ui="expanding-search"]')!;
+    const { root } = parts(canvasElement);
     const input = canvas.getByRole('searchbox');
     await expect(args.ref).toHaveBeenLastCalledWith(root);
     await expect(args.inputRef).toHaveBeenLastCalledWith(input);
+    await expect(root).toHaveAttribute('id', 'member-search');
+    await expect(root).toHaveAttribute('title', 'Member search');
+    await expect(root.style.letterSpacing).toBe('0.1em');
+    await expect(input.style.wordSpacing).toBe('0.2em');
     await expect(parseFloat(getComputedStyle(root).paddingBlockStart)).toBeGreaterThan(10);
     await expect(getComputedStyle(input).fontWeight).toBe('500');
-    await expect(input.style.letterSpacing).toBe('0.1em');
+    await expect(getComputedStyle(input.parentElement!).borderStartStartRadius).toBe('0px');
   },
 };
-export const ForcedColors: Story = { ...PersistentOpen, parameters: { docs: { description: { story: 'Structural example. Enable forced colors in the browser to check borders and focus; media emulation is not automated in this story.' } } } };
-export const ReducedMotion: Story = { parameters: { docs: { description: { story: 'Structural example. Enable reduced motion in the browser to check instant expansion; media emulation is not automated in this story.' } } } };
+export const ForcedColors: Story = {
+  ...PersistentOpen,
+  parameters: { docs: { description: { story: 'Structural fixture for forced-colors browser QA. The play checks the authored forced-colors rules; the runner does not emulate forced colors.' } } },
+  play: async ({ canvas }) => {
+    const trigger = canvas.getByRole('button', { name: 'Search members', hidden: true });
+    await expect(findConditionalRule(trigger, 'forced-colors: active')?.style.borderColor.toLowerCase()).toBe('buttontext');
+    await expect(findConditionalRule(canvas.getByRole('searchbox').parentElement!, 'forced-colors: active')?.style.borderColor.toLowerCase()).toBe('canvastext');
+  },
+};
+export const ReducedMotion: Story = {
+  parameters: { docs: { description: { story: 'The play stubs `matchMedia` to drive both branches: with reduced motion the search snaps open and closed; otherwise it springs through intermediate widths. Real media emulation is verified in browser QA.' } } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const { shell } = parts(canvasElement);
+    const win = shell.ownerDocument.defaultView!;
+    const realMatchMedia = win.matchMedia.bind(win);
+    const fieldRadius = resolvePx(canvasElement, vars.radius.sm);
+    const frames: { width: number; radius: number }[] = [];
+    const observer = new MutationObserver(() => frames.push({ width: parseFloat(shell.style.inlineSize), radius: parseFloat(shell.style.getPropertyValue('--expanding-search-radius')) }));
+    const between = (value: number, a: number, b: number) => value > Math.min(a, b) + TOLERANCE / 2 && value < Math.max(a, b) - TOLERANCE / 2;
+    // Collapsed: 40px circle (radius 20px); expanded: 384px field with the radius.sm corner.
+    const morph = async (act: () => Promise<void>, open: boolean, reduce: boolean) => {
+      const [from, to] = open ? [{ width: 40, radius: 20 }, { width: 384, radius: fieldRadius }] : [{ width: 384, radius: fieldRadius }, { width: 40, radius: 20 }];
+      frames.length = 0;
+      await act();
+      if (reduce) await expect(near(shell.getBoundingClientRect().width, to.width)).toBe(true);
+      await waitFor(async () => { await expect(near(shell.getBoundingClientRect().width, to.width)).toBe(true); });
+      await expect(near(parseFloat(shell.style.getPropertyValue('--expanding-search-radius')), to.radius)).toBe(true);
+      const widths = frames.filter((frame) => between(frame.width, from.width, to.width));
+      const radii = frames.filter((frame) => between(frame.radius, from.radius, to.radius));
+      if (reduce) {
+        await expect(widths).toHaveLength(0);
+        await expect(radii).toHaveLength(0);
+      } else {
+        await expect(widths.length).toBeGreaterThan(0);
+        await expect(radii.length).toBeGreaterThan(0);
+      }
+    };
+    observer.observe(shell, { attributeFilter: ['style'] });
+    try {
+      for (const reduce of [true, false]) {
+        const matchMedia = spyOn(win, 'matchMedia').mockImplementation((query) =>
+          query === REDUCED_MOTION_QUERY ? Object.defineProperty(realMatchMedia(query), 'matches', { value: reduce }) : realMatchMedia(query));
+        try {
+          await morph(() => userEvent.click(canvas.getByRole('button', { name: 'Search members' })), true, reduce);
+          await expect(matchMedia).toHaveBeenCalledWith(REDUCED_MOTION_QUERY);
+          await morph(() => userEvent.keyboard('{Escape}'), false, reduce);
+        } finally {
+          matchMedia.mockRestore();
+        }
+      }
+    } finally {
+      observer.disconnect();
+    }
+  },
+};

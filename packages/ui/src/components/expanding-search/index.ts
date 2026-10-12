@@ -1,1 +1,1 @@
-export { ExpandingSearch, type ExpandingSearchProps } from './expanding-search';
+export { ExpandingSearch, type ExpandingSearchInputProps, type ExpandingSearchProps } from './expanding-search';
