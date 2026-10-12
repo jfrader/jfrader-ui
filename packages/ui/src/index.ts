@@ -58,6 +58,7 @@ export * from './components/navigation';
 export * from './components/now-playing';
 export * from './components/pagination';
 export * from './components/password-field';
+export * from './components/pattern';
 export * from './components/photo-grid';
 export * from './components/pill';
 export * from './components/popover';

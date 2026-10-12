@@ -85,6 +85,7 @@
     "./now-playing": { "types": "./src/components/now-playing/index.ts", "import": "./src/components/now-playing/index.ts" },
     "./pagination": { "types": "./src/components/pagination/index.ts", "import": "./src/components/pagination/index.ts" },
     "./password-field": { "types": "./src/components/password-field/index.ts", "import": "./src/components/password-field/index.ts" },
+    "./pattern": { "types": "./src/components/pattern/index.ts", "import": "./src/components/pattern/index.ts" },
     "./photo-grid": { "types": "./src/components/photo-grid/index.ts", "import": "./src/components/photo-grid/index.ts" },
     "./pill": { "types": "./src/components/pill/index.ts", "import": "./src/components/pill/index.ts" },
     "./popover": { "types": "./src/components/popover/index.ts", "import": "./src/components/popover/index.ts" },
