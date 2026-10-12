@@ -43,8 +43,9 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { modalShellReset, raisedSurface } from '../../styling/surface';
+import { contrastSurfaceStyle, modalShellReset, raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { AppearanceScope, useSurfaceAppearance, type AppearanceName } from '../../styling/theme-scope';
 import { triggerStyle } from '../../styling/trigger-style';
 import {
   omitNativeOpen,
@@ -77,7 +78,13 @@ export interface DrawerContentProps extends Omit<ComponentPropsWithRef<'dialog'>
   /** Set false to keep structured content out of the drawer's accessible description. */
   withDescription?: boolean;
 }
-export interface DrawerPanelProps extends ComponentPropsWithRef<'div'>, SxProps {}
+export interface DrawerPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /**
+   * `contrast` (default) paints the dark family for the edge surface on any page theme;
+   * `default` returns to the theme's own palette.
+   */
+  appearance?: AppearanceName;
+}
 export interface DrawerHeaderProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface DrawerBodyProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface DrawerFooterProps extends ComponentPropsWithRef<'div'>, SxProps {}
@@ -665,20 +672,31 @@ function DrawerContent({ ref, className, sx, ...props }: DrawerContentProps) {
 
 DrawerContent.displayName = 'Drawer.Content';
 
-function DrawerPanel({ ref, className, sx, ...props }: DrawerPanelProps) {
+function DrawerPanel({ ref, className, appearance = 'contrast', sx, ...props }: DrawerPanelProps) {
   const { side, size } = useDrawerContext('Panel');
   const panelRef = useContext(DrawerSurfaceContext)?.panelRef;
   const mergedRef = useMergeRefs([panelRef, ref]);
   const inline = side === 'inline-start' || side === 'inline-end';
+  const surfaceAppearance = useSurfaceAppearance(appearance);
 
   return (
-    <WithSx
-      className={className}
-      styles={[panelStyle, panelSideStyles[side], inline && panelSizeStyles[size]]}
-      sx={sx}
-    >
-      {(className) => <div {...props} ref={mergedRef} data-ui="drawer-panel" className={className} />}
-    </WithSx>
+    <AppearanceScope appearance={surfaceAppearance}>
+      <WithSx
+        className={className}
+        styles={[panelStyle, panelSideStyles[side], inline && panelSizeStyles[size], contrastSurfaceStyle]}
+        sx={sx}
+      >
+        {(className) => (
+          <div
+            {...props}
+            ref={mergedRef}
+            data-ui="drawer-panel"
+            data-appearance={surfaceAppearance}
+            className={className}
+          />
+        )}
+      </WithSx>
+    </AppearanceScope>
   );
 }
 
