@@ -60,6 +60,18 @@ try {
       await page.setViewportSize(viewport);
       await page.goto(new URL(`iframe.html?id=${id}&viewMode=docs`, baseURL).href);
       await page.locator('[data-ui="toast"][data-populated="true"]').first().waitFor();
+      await page.evaluate(() => document.fonts.ready);
+      // Inline examples mount over a few passes, so measure only once the populated stacks stop
+      // growing; a partially mounted page would let a later example escape unmeasured.
+      let previousCount = -1;
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        const current = await page.evaluate(
+          () => document.querySelectorAll('[data-ui="toast"][data-populated="true"]').length,
+        );
+        if (current > 0 && current === previousCount) break;
+        previousCount = current;
+        await page.waitForTimeout(750);
+      }
       const escaped = await page.evaluate(() => {
         const stacks = Array.from(document.querySelectorAll('[data-ui="toast-stack"]')).filter(
           (stack) => stack.querySelector('[data-ui="toast"]'),
