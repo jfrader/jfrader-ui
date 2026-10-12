@@ -94,6 +94,16 @@ function RoutingEditor({ initialFocusRef, complete, cancel, value, onSave }: Edi
   const [phase, setPhase] = useState<'editing' | 'confirming' | 'saving'>('editing');
   const [error, setError] = useState<string>();
   const [confirmed, setConfirmed] = useState(false);
+  const input = useRef<HTMLInputElement | null>(null);
+  const inputRef = useCallback((node: HTMLInputElement | null) => {
+    input.current = node;
+    const cleanup = initialFocusRef(node);
+    return () => {
+      input.current = null;
+      if (typeof cleanup === 'function') cleanup();
+      else initialFocusRef(null);
+    };
+  }, [initialFocusRef]);
   const request = useRef<AbortController | null>(null);
   useEffect(() => () => request.current?.abort(), []);
   const persist = async () => {
@@ -121,16 +131,16 @@ function RoutingEditor({ initialFocusRef, complete, cancel, value, onSave }: Edi
     setConfirmed(false);
     setPhase('confirming');
   }}>
-    <TextField ref={initialFocusRef} name="slug" label="Routing slug" value={draft} error={error} readOnly={phase !== 'editing'}
+    <TextField ref={inputRef} name="slug" label="Routing slug" value={draft} error={error} readOnly={phase !== 'editing'}
       onValueChange={(next) => { setDraft(next); setError(undefined); }} />
     {phase === 'editing' && <EditorActions cancel={cancel} submit="Apply slug" />}
     {phase !== 'editing' && <div css={confirmationStyle}>
       <p>Change the routing slug to &quot;{draft}&quot;?</p>
-      <Checkbox label="Update existing links" checked={confirmed} onCheckedChange={setConfirmed} disabled={phase === 'saving'} />
+      <Checkbox autoFocus label="Update existing links" checked={confirmed} onCheckedChange={setConfirmed} disabled={phase === 'saving'} />
       {phase === 'saving' && <span role="status">Saving routing slug…</span>}
       <div css={actionsStyle}>
-        <Button variant="outline" type="button" disabled={phase === 'saving'} onClick={() => { setPhase('editing'); setError(undefined); }}>Back to edit</Button>
-        <Button tone="accent" type="button" disabled={!confirmed || phase === 'saving'} onClick={() => void persist()}>{error ? 'Retry save' : 'Confirm and apply'}</Button>
+        <Button variant="outline" type="button" disabled={phase === 'saving'} onClick={() => { input.current?.focus(); setPhase('editing'); setError(undefined); }}>Back to edit</Button>
+        <Button tone="accent" type="button" disabled={!confirmed} loading={phase === 'saving'} onClick={() => void persist()}>{error ? 'Retry save' : 'Confirm and apply'}</Button>
       </div>
     </div>}
   </form>;
@@ -378,15 +388,32 @@ export const AsyncValidationAndConfirmation: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Apply slug' }));
     await expect(canvas.getByText('Use at least 3 lowercase letters, digits or hyphens.')).toBeVisible();
     await userEvent.clear(input); await userEvent.type(input, 'northwind-v2');
-    await userEvent.click(canvas.getByRole('button', { name: 'Apply slug' }));
+    await userEvent.tab();
+    await userEvent.tab();
+    await expect(canvas.getByRole('button', { name: 'Apply slug' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    let agreement = canvas.getByRole('checkbox', { name: 'Update existing links' });
+    await expect(agreement).toHaveFocus();
+    await userEvent.tab();
+    await expect(canvas.getByRole('button', { name: 'Back to edit' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await expect(input).toHaveFocus();
+    await expect(input).toHaveValue('northwind-v2');
+    await userEvent.keyboard('{Enter}');
+    agreement = canvas.getByRole('checkbox', { name: 'Update existing links' });
+    await expect(agreement).toHaveFocus();
     const confirm = canvas.getByRole('button', { name: 'Confirm and apply' });
     await expect(confirm).toBeDisabled();
     await expect(canvas.getByRole('button', { name: 'Resolve response' })).toBeDisabled();
-    await userEvent.click(canvas.getByRole('checkbox', { name: 'Update existing links' }));
-    await userEvent.click(confirm);
+    await userEvent.keyboard(' ');
+    await userEvent.tab();
+    await userEvent.tab();
+    await expect(confirm).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
     await expect(canvas.getByRole('status')).toHaveTextContent('Saving routing slug…');
     await expect(input).toHaveValue('northwind-v2');
-    await expect(confirm).toBeDisabled();
+    await expect(confirm).toHaveAttribute('aria-disabled', 'true');
+    await expect(confirm).toHaveFocus();
     await expect(canvas.getByRole('button', { name: 'Resolve response' })).toBeEnabled();
     const section = canvas.getByRole('button', { name: 'Routing' });
     await userEvent.click(section);
