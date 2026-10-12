@@ -148,8 +148,10 @@ const NO_DRAG_SELECTOR = [
   '[data-ui~="drawer-title"]',
   '[data-ui~="drawer-description"]',
 ].join(', ');
-// An open overlay portaled into the drawer (OverlayPortal → FloatingPortal) handles Escape first.
-const NESTED_LAYER_SELECTOR = '[data-floating-ui-portal]:not(:empty)';
+// An open overlay opened from inside the drawer handles Escape first. Its trigger carries the
+// library's own open-state contract, so a Select that keeps its popup mounted while hidden does not
+// count as an open layer (GURI-2293) and the drawer keeps its Escape.
+const NESTED_LAYER_SELECTOR = '[aria-expanded="true"][aria-haspopup]';
 
 // Structural sizes.
 const INLINE_SIZE_CAP: Record<DrawerSize, string> = { sm: '22rem', md: '30rem', lg: '38rem' };

@@ -1161,10 +1161,40 @@ export const ContrastSelectPanel: Story = {
     await expect(dialog).toHaveAttribute('open');
     await expectContrastSurface(panel, 'light');
 
-    // The drawer closes with its own affordance here: with a Select inside, its Escape cancel is dropped
-    // while the Select's portal stays mounted — tracked as GURI-2293, not this surface work.
-    await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+    // The second belongs to the drawer, even though the select keeps its popup mounted (GURI-2293).
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(dialog);
+    await userEvent.keyboard('{/Escape}');
     await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const SelectEscape: Story = {
+  render: (args) => <DrawerExample {...args} body={<NestedSelectBody />} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const { dialog, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
+
+    // With the select closed, Escape is the drawer's: its mounted-but-hidden popup is not a layer.
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(dialog);
+    await userEvent.keyboard('{/Escape}');
+    await expectClosed(canvasElement, trigger);
+
+    // With the select open, that Escape belongs to the select and the drawer stays.
+    const reopened = await openDrawer({ canvasElement, userEvent });
+    await userEvent.click(canvas.getByRole('combobox', { name: 'Status' }));
+    await within(reopened.dialog).findByRole('listbox', { name: 'Status' });
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(reopened.dialog);
+    await userEvent.keyboard('{/Escape}');
+    await waitFor(() => expect(within(reopened.dialog).queryByRole('listbox')).toBeNull());
+    await expect(reopened.dialog).toHaveAttribute('open');
+
+    // The next Escape closes the drawer.
+    await userEvent.keyboard('{Escape>}');
+    requestEscape(reopened.dialog);
+    await userEvent.keyboard('{/Escape}');
+    await expectClosed(canvasElement, reopened.trigger);
   },
 };
 
