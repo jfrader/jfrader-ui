@@ -15,8 +15,8 @@ const NarrowFrame = styled.div({ inlineSize: '12rem', maxInlineSize: '100%' });
 
 const Frame = styled.div({
   boxSizing: 'border-box',
-  inlineSize: '30rem',
-  maxInlineSize: '100%',
+  inlineSize: '100%',
+  maxInlineSize: '30rem',
   display: 'grid',
   gap: vars.space[8],
   padding: vars.space[4],
@@ -39,6 +39,7 @@ const meta = {
     ),
   ],
   parameters: {
+    layout: 'padded',
     docs: {
       source: { code: '<Slider label="Volume" defaultValue={40} locale="en-GB" />' },
       description: {
