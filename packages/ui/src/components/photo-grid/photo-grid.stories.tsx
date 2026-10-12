@@ -123,6 +123,49 @@ export const EachDensity: Story = {
     </div>
   ),
 };
+export const ViewerVisibility: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const viewer = canvasElement.querySelector<HTMLDialogElement>('[data-ui="photo-grid-viewer"]')!;
+    const expectClosed = async () => {
+      await expect(viewer).not.toHaveAttribute('open');
+      await expect(getComputedStyle(viewer).display).toBe('none');
+      await expect(viewer.getBoundingClientRect().width).toBe(0);
+      await expect(viewer.getBoundingClientRect().height).toBe(0);
+    };
+    await expectClosed();
+    const album = canvas.getByRole('list', { name: 'September Traverse' });
+    await expect(album).toBeVisible();
+    const tile = tiles(canvasElement)[0]!;
+    await expect(tile).toBeVisible();
+    const tileBox = tile.getBoundingClientRect();
+    await expect(tile.contains(tile.ownerDocument.elementFromPoint(
+      tileBox.x + tileBox.width / 2,
+      tileBox.y + tileBox.height / 2,
+    ))).toBe(true);
+    await userEvent.click(tile);
+    await expect(await canvas.findByRole('dialog', { name: 'Ridge at First Light' })).toBeVisible();
+    await expect(getComputedStyle(viewer).display).toBe('flex');
+    const viewport = viewer.ownerDocument.defaultView!;
+    const viewerBox = viewer.getBoundingClientRect();
+    await expect(viewerBox.x).toBe(0);
+    await expect(viewerBox.y).toBe(0);
+    await expect(viewerBox.width).toBe(viewport.innerWidth);
+    await expect(viewerBox.height).toBe(viewport.innerHeight);
+    const stage = viewer.querySelector<HTMLElement>('[data-ui="photo-grid-stage"]')!;
+    await expect(stage).toBeVisible();
+    await expect(stage.getBoundingClientRect().height).toBeGreaterThan(0);
+    const image = stage.querySelector('img')!;
+    await expect(image).toBeVisible();
+    await expect(image).toHaveAttribute('src', photos[0]!.src);
+    await waitFor(async () => {
+      await expect(image.complete).toBe(true);
+      await expect(image.naturalWidth).toBeGreaterThan(0);
+    });
+    await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
+    await waitFor(expectClosed);
+    await expect(album).toBeVisible();
+  },
+};
 export const CustomSteps: Story = {
   args: { densitySteps: [4, 2, 1] },
   play: async ({ canvas }) => {

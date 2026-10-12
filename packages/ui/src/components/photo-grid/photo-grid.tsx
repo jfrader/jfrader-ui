@@ -262,7 +262,7 @@ const viewerStyle = css({
   fontFamily: vars.font.sans,
   position: 'fixed',
   inset: 0,
-  display: 'flex',
+  '&[open]': { display: 'flex' },
   flexDirection: 'column',
   '&::backdrop': {
     background: vars.color.scrim,
