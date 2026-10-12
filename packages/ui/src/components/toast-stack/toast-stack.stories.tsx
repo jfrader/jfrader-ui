@@ -424,9 +424,17 @@ export const ReducedMotion: Story = {
       expect.objectContaining({ transitionDuration: '0s' }),
     );
     const toast = region.querySelector('[data-ui="toast"]')!;
+    const toastRules = mediaDeclarations(toast, 'prefers-reduced-motion');
+    await expect(toastRules).toContainEqual(expect.objectContaining({ transitionDuration: '0s' }));
+    // The open-state offsets keep their transform (the stack relies on it); only the closing slide is dropped.
+    await expect(toastRules.every((rule) => rule.transform !== 'none')).toBe(true);
+    const previousState = toast.getAttribute('data-state');
+    toast.setAttribute('data-state', 'closing');
     await expect(mediaDeclarations(toast, 'prefers-reduced-motion')).toContainEqual(
-      expect.objectContaining({ transitionDuration: '0s', transform: 'none' }),
+      expect.objectContaining({ transform: 'none' }),
     );
+    if (previousState === null) toast.removeAttribute('data-state');
+    else toast.setAttribute('data-state', previousState);
   },
 };
 export const ForcedColors: Story = {
