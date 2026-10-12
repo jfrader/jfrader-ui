@@ -17,7 +17,7 @@ type StoryArgs = EditableDetailsProps & {
   onHydrationError: (error: unknown) => void;
 };
 
-const frame = css({ maxInlineSize: '36rem', inlineSize: '100%' });
+const frame = css({ maxInlineSize: '36rem', inlineSize: '100%', marginInline: 'auto' });
 const editorStyle = css({ display: 'grid', gap: vars.space[3], minInlineSize: 0 });
 const meta = {
   title: 'Data display/EditableDetails',
@@ -25,7 +25,7 @@ const meta = {
   tags: ['autodocs'],
   args: { onItemOpenChange: fn(), onSectionOpenChange: fn(), onRefCleanup: fn(), onHydrationError: fn() },
   decorators: [(Story) => <div css={frame}><Story /></div>],
-  parameters: { docs: { description: { component: 'Native description lists and disclosures with application-owned editors. Enter and Space toggle disclosure buttons; Tab follows native document order. Section collapse preserves editors. Editors own drafts, validation, persistence and overlays; complete/cancel only request closure. Use InlineEdit for one independently persisted string.' } } },
+  parameters: { layout: 'padded', docs: { description: { component: 'Native description lists and disclosures with application-owned editors. Enter and Space toggle disclosure buttons; Tab follows native document order. Section collapse preserves editors. Editors own drafts, validation, persistence and overlays; complete/cancel only request closure. Use InlineEdit for one independently persisted string.' } } },
 } satisfies Meta<StoryArgs>;
 export default meta;
 type Story = StoryObj<typeof meta>;
