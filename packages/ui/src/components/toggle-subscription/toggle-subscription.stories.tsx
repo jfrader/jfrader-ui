@@ -4,45 +4,45 @@ import { expect, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
-import { BillingToggle, type BillingToggleProps } from './index';
+import { ToggleSubscription, type ToggleSubscriptionProps } from './index';
 
 const saving = `Save ${new Intl.NumberFormat('en', { style: 'percent' }).format(0.2)}`;
-const usage = `<BillingToggle value={period} onValueChange={setPeriod} locale="en-US">
-  <BillingToggle.Label>Billing period</BillingToggle.Label>
-  <BillingToggle.List>
-    <BillingToggle.Item value="monthly">Monthly</BillingToggle.Item>
-    <BillingToggle.Item value="annual" badge={savingText}>Annual</BillingToggle.Item>
-  </BillingToggle.List>
-  <BillingToggle.Price amount={price.amount} currency="USD" period={price.periodText} />
-</BillingToggle>`;
+const usage = `<ToggleSubscription value={period} onValueChange={setPeriod} locale="en-US">
+  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+  <ToggleSubscription.List>
+    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+    <ToggleSubscription.Item value="annual" badge={savingText}>Annual</ToggleSubscription.Item>
+  </ToggleSubscription.List>
+  <ToggleSubscription.Price amount={price.amount} currency="USD" period={price.periodText} />
+</ToggleSubscription>`;
 const fixtureButton = { minHeight: 32, minWidth: 32 };
 function Example({
   third = false,
   badge = saving,
   activeBadge = 'Annual saving applied',
   ...args
-}: BillingToggleProps & {
+}: ToggleSubscriptionProps & {
   third?: boolean;
   badge?: ReactNode;
   activeBadge?: ReactNode;
 }) {
   return (
-    <BillingToggle {...args}>
-      <BillingToggle.Label>Billing period</BillingToggle.Label>
-      <BillingToggle.List>
-        <BillingToggle.Item value="monthly">Monthly</BillingToggle.Item>
-        <BillingToggle.Item value="annual" badge={badge} activeBadge={activeBadge}>
+    <ToggleSubscription {...args}>
+      <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+      <ToggleSubscription.List>
+        <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+        <ToggleSubscription.Item value="annual" badge={badge} activeBadge={activeBadge}>
           Annual
-        </BillingToggle.Item>
-        {third && <BillingToggle.Item value="lifetime">Lifetime</BillingToggle.Item>}
-      </BillingToggle.List>
-      <BillingToggle.Price amount={24} currency="USD" period="/ month" />
-    </BillingToggle>
+        </ToggleSubscription.Item>
+        {third && <ToggleSubscription.Item value="lifetime">Lifetime</ToggleSubscription.Item>}
+      </ToggleSubscription.List>
+      <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
+    </ToggleSubscription>
   );
 }
 const meta = {
-  title: 'Inputs/BillingToggle',
-  component: BillingToggle,
+  title: 'Inputs/ToggleSubscription',
+  component: ToggleSubscription,
   tags: ['autodocs'],
   args: { defaultValue: 'monthly', locale: 'en-US', onValueChange: fn() },
   render: (args) => <Example {...args} />,
@@ -57,7 +57,7 @@ const meta = {
 - Controlled changes take effect when the parent updates \`value\`.
 - Price needs a finite amount and an ISO currency. Supply \`previousLabel\` when showing a previous price. Set \`locale\` for SSR.
 - Badges must not contain controls.
-- The selector keeps SegmentedControl data-ui markers. Each Item has a wrapper with \`data-ui="billing-toggle-item"\`.
+- The selector keeps SegmentedControl data-ui markers. Each Item has a wrapper with \`data-ui="toggle-subscription-item"\`.
 - List ref targets the radiogroup; Item ref targets its button.
 
 ### Keyboard
@@ -66,7 +66,7 @@ const meta = {
 - Tab enters the focused enabled item, then leaves the group.`,
     },
   },
-} satisfies Meta<typeof BillingToggle>;
+} satisfies Meta<typeof ToggleSubscription>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 function contrastRatio(document: Document, foreground: string, ...layers: string[]) {
@@ -104,7 +104,7 @@ export const MonthlyYearly: Story = {
     await expect(canvas.getByRole('radiogroup', { name: 'Billing period' })).toBeInTheDocument();
     for (const item of [monthly, annual]) {
       const wrapper = item.parentElement!;
-      await expect(wrapper).toHaveAttribute('data-ui', 'billing-toggle-item');
+      await expect(wrapper).toHaveAttribute('data-ui', 'toggle-subscription-item');
       await expect(getComputedStyle(wrapper).display).toBe('contents');
       await expect(item).toHaveAttribute('data-ui', 'segmented-control-item');
     }
@@ -160,7 +160,7 @@ export const Tones: Story = {
     for (const group of canvas.getAllByRole('radiogroup')) {
       const selected = group.querySelector<HTMLElement>('[aria-checked="true"]')!;
       const pill = selected.querySelector('[data-ui="segmented-control-selection"]')!;
-      const badge = group.querySelector('[data-ui="billing-toggle-badge"]')!;
+      const badge = group.querySelector('[data-ui="toggle-subscription-badge"]')!;
       const document = group.ownerDocument;
       const track = getComputedStyle(group).backgroundColor;
       await expect(
@@ -200,18 +200,18 @@ export const Keyboard: Story = {
   render: (args) => (
     <>
       <button style={fixtureButton}>Before</button>
-      <BillingToggle {...args}>
-        <BillingToggle.Label>Billing period</BillingToggle.Label>
-        <BillingToggle.List>
-          <BillingToggle.Item value="monthly">Monthly</BillingToggle.Item>
-          <BillingToggle.Item value="paused" disabled>
+      <ToggleSubscription {...args}>
+        <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+        <ToggleSubscription.List>
+          <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+          <ToggleSubscription.Item value="paused" disabled>
             Paused
-          </BillingToggle.Item>
-          <BillingToggle.Item value="annual">Annual</BillingToggle.Item>
-          <BillingToggle.Item value="lifetime">Lifetime</BillingToggle.Item>
-        </BillingToggle.List>
-        <BillingToggle.Price amount={0} currency="USD" />
-      </BillingToggle>
+          </ToggleSubscription.Item>
+          <ToggleSubscription.Item value="annual">Annual</ToggleSubscription.Item>
+          <ToggleSubscription.Item value="lifetime">Lifetime</ToggleSubscription.Item>
+        </ToggleSubscription.List>
+        <ToggleSubscription.Price amount={0} currency="USD" />
+      </ToggleSubscription>
       <button style={fixtureButton}>After</button>
     </>
   ),
@@ -277,12 +277,12 @@ export const NativeActivation: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
   },
 };
-function PricesExample({ reject = false, ...args }: BillingToggleProps & { reject?: boolean }) {
+function PricesExample({ reject = false, ...args }: ToggleSubscriptionProps & { reject?: boolean }) {
   const [period, setPeriod] = useState('monthly');
   const annual = period === 'annual';
   return (
     <>
-      <BillingToggle
+      <ToggleSubscription
         {...args}
         value={period}
         onValueChange={(next) => {
@@ -290,24 +290,24 @@ function PricesExample({ reject = false, ...args }: BillingToggleProps & { rejec
           if (!reject) setPeriod(next);
         }}
       >
-        <BillingToggle.Label>Billing period</BillingToggle.Label>
-        <BillingToggle.List>
-          <BillingToggle.Item value="monthly">Monthly</BillingToggle.Item>
-          <BillingToggle.Item value="annual" badge={saving} activeBadge="Annual saving applied">
+        <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+        <ToggleSubscription.List>
+          <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+          <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">
             Annual
-          </BillingToggle.Item>
-        </BillingToggle.List>
-        <BillingToggle.Price
+          </ToggleSubscription.Item>
+        </ToggleSubscription.List>
+        <ToggleSubscription.Price
           amount={annual ? 240 : 24}
           currency="USD"
           period={annual ? '/ year' : '/ month'}
         />
-        <BillingToggle.Price
+        <ToggleSubscription.Price
           amount={annual ? 480 : 48}
           currency="USD"
           period={annual ? '/ year' : '/ month'}
         />
-      </BillingToggle>
+      </ToggleSubscription>
       <button style={fixtureButton} onClick={() => setPeriod('annual')}>
         Set annual externally
       </button>
@@ -388,29 +388,29 @@ export const UnknownPeriod: Story = {
 };
 export const EmptyList: Story = {
   render: (args) => (
-    <BillingToggle {...args}>
-      <BillingToggle.Label>Billing period</BillingToggle.Label>
-      <BillingToggle.List />
-    </BillingToggle>
+    <ToggleSubscription {...args}>
+      <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+      <ToggleSubscription.List />
+    </ToggleSubscription>
   ),
 };
 export const PreviousPrice: Story = {
   render: (args) => (
-    <BillingToggle {...args}>
-      <BillingToggle.Price
+    <ToggleSubscription {...args}>
+      <ToggleSubscription.Price
         amount={19.5}
         was={24}
         currency="USD"
         previousLabel="Previous price"
         period="/ month"
       />
-      <BillingToggle.Price amount={24} was={24} currency="USD" />
-      <BillingToggle.Price amount={24} was={Number.NaN} currency="USD" />
-    </BillingToggle>
+      <ToggleSubscription.Price amount={24} was={24} currency="USD" />
+      <ToggleSubscription.Price amount={24} was={Number.NaN} currency="USD" />
+    </ToggleSubscription>
   ),
   play: async ({ canvasElement }) => {
     const previous = canvasElement.querySelector('del')!;
-    const price = previous.closest('[data-ui="billing-toggle-price"]')!;
+    const price = previous.closest('[data-ui="toggle-subscription-price"]')!;
     await expect(canvasElement.querySelectorAll('del')).toHaveLength(1);
     await expect(previous).not.toHaveAttribute('aria-describedby');
     await expect(previous.textContent).toBe('Previous price$24.00');
@@ -419,16 +419,16 @@ export const PreviousPrice: Story = {
 };
 export const ZeroAmount: Story = {
   render: (args) => (
-    <BillingToggle {...args}>
-      <BillingToggle.Price amount={0} currency="JPY" period={0} />
-    </BillingToggle>
+    <ToggleSubscription {...args}>
+      <ToggleSubscription.Price amount={0} currency="JPY" period={0} />
+    </ToggleSubscription>
   ),
   play: async ({ canvasElement }) => {
     await expect(
-      canvasElement.querySelector('[data-ui="billing-toggle-amount"]')!.textContent,
+      canvasElement.querySelector('[data-ui="toggle-subscription-amount"]')!.textContent,
     ).toContain('¥0');
     await expect(
-      canvasElement.querySelector('[data-ui="billing-toggle-period"]'),
+      canvasElement.querySelector('[data-ui="toggle-subscription-period"]'),
     ).toHaveTextContent('0');
   },
 };
@@ -441,15 +441,15 @@ const currencies = [
 ];
 export const IntlCurrencies: Story = {
   render: (args) => (
-    <BillingToggle {...args}>
+    <ToggleSubscription {...args}>
       {currencies.map((props) => (
-        <BillingToggle.Price key={String(props.locale)} {...props} />
+        <ToggleSubscription.Price key={String(props.locale)} {...props} />
       ))}
-    </BillingToggle>
+    </ToggleSubscription>
   ),
   play: async ({ canvasElement }) => {
     for (const [index, node] of canvasElement
-      .querySelectorAll('[data-ui="billing-toggle-amount"]')
+      .querySelectorAll('[data-ui="toggle-subscription-amount"]')
       .entries()) {
       const props = currencies[index]!;
       const formatted = new Intl.NumberFormat(props.locale, {
@@ -464,33 +464,33 @@ export const IntlCurrencies: Story = {
 export const NarrowPrices: Story = {
   render: (args) => (
     <div style={{ width: 180 }}>
-      <BillingToggle {...args}>
-        <BillingToggle.Price
+      <ToggleSubscription {...args}>
+        <ToggleSubscription.Price
           amount={123456789.12}
           currency="EUR"
           locale="de-DE"
           period="por cada período de facturación anual"
         />
-      </BillingToggle>
+      </ToggleSubscription>
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const price = canvasElement.querySelector<HTMLElement>('[data-ui="billing-toggle-price"]')!;
+    const price = canvasElement.querySelector<HTMLElement>('[data-ui="toggle-subscription-price"]')!;
     await expect(price.scrollWidth).toBeLessThanOrEqual(price.clientWidth + 1);
     await expect(getComputedStyle(price).overflowWrap).toBe('anywhere');
   },
 };
 export const LongTranslatedLabels: Story = {
   render: (args) => (
-    <BillingToggle {...args} style={{ width: 280 }}>
-      <BillingToggle.Label>Período de facturación</BillingToggle.Label>
-      <BillingToggle.List>
-        <BillingToggle.Item value="monthly">Facturación mensual flexible</BillingToggle.Item>
-        <BillingToggle.Item value="annual" badge="Ahorro durante todo el año">
+    <ToggleSubscription {...args} style={{ width: 280 }}>
+      <ToggleSubscription.Label>Período de facturación</ToggleSubscription.Label>
+      <ToggleSubscription.List>
+        <ToggleSubscription.Item value="monthly">Facturación mensual flexible</ToggleSubscription.Item>
+        <ToggleSubscription.Item value="annual" badge="Ahorro durante todo el año">
           Facturación anual anticipada
-        </BillingToggle.Item>
-      </BillingToggle.List>
-    </BillingToggle>
+        </ToggleSubscription.Item>
+      </ToggleSubscription.List>
+    </ToggleSubscription>
   ),
   play: async ({ canvas, userEvent }) => {
     await userEvent.tab();
@@ -502,21 +502,21 @@ export const LongTranslatedLabels: Story = {
     await expect(annual.getBoundingClientRect().width).toBeGreaterThan(280);
   },
 };
-function AriaExample(args: BillingToggleProps) {
+function AriaExample(args: ToggleSubscriptionProps) {
   const id = useId();
   return (
     <>
       <span id={`${id}-name`}>Plan</span>
       <span id={`${id}-description`}>Prices before tax</span>
-      <BillingToggle {...args}>
-        <BillingToggle.Label>Billing period</BillingToggle.Label>
-        <BillingToggle.List
+      <ToggleSubscription {...args}>
+        <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+        <ToggleSubscription.List
           aria-label="Fallback"
           aria-labelledby={`${id}-name missing-reference`}
           aria-describedby={`${id}-description`}
           aria-invalid="true"
         >
-          <BillingToggle.Item
+          <ToggleSubscription.Item
             value="monthly"
             aria-label="Fallback item"
             aria-labelledby={`${id}-name`}
@@ -524,10 +524,10 @@ function AriaExample(args: BillingToggleProps) {
             badge={0}
           >
             Monthly
-          </BillingToggle.Item>
-          <BillingToggle.Item value="annual">Annual</BillingToggle.Item>
-        </BillingToggle.List>
-      </BillingToggle>
+          </ToggleSubscription.Item>
+          <ToggleSubscription.Item value="annual">Annual</ToggleSubscription.Item>
+        </ToggleSubscription.List>
+      </ToggleSubscription>
     </>
   );
 }
@@ -550,15 +550,15 @@ export const FalsyBadge: Story = {
   render: (args) => (
     <div>
       {[false, null, 0, ''].map((content, index) => (
-        <BillingToggle {...args} key={index} defaultValue="annual">
-          <BillingToggle.Label>{`Period ${index}`}</BillingToggle.Label>
-          <BillingToggle.List>
-            <BillingToggle.Item value="annual" badge={content} activeBadge={content}>
+        <ToggleSubscription {...args} key={index} defaultValue="annual">
+          <ToggleSubscription.Label>{`Period ${index}`}</ToggleSubscription.Label>
+          <ToggleSubscription.List>
+            <ToggleSubscription.Item value="annual" badge={content} activeBadge={content}>
               Annual
-            </BillingToggle.Item>
-          </BillingToggle.List>
-          <BillingToggle.Price amount={0} currency="USD" period={content} />
-        </BillingToggle>
+            </ToggleSubscription.Item>
+          </ToggleSubscription.List>
+          <ToggleSubscription.Price amount={0} currency="USD" period={content} />
+        </ToggleSubscription>
       ))}
     </div>
   ),
@@ -566,11 +566,11 @@ export const FalsyBadge: Story = {
     const items = canvas.getAllByRole('radio');
     for (const [index, item] of items.entries()) {
       await expect(item.hasAttribute('aria-describedby')).toBe(index === 2);
-      await expect(item.querySelectorAll('[data-ui="billing-toggle-badge"]')).toHaveLength(
+      await expect(item.querySelectorAll('[data-ui="toggle-subscription-badge"]')).toHaveLength(
         index === 2 ? 1 : 0,
       );
     }
-    await expect(canvasElement.querySelectorAll('[data-ui="billing-toggle-period"]')).toHaveLength(
+    await expect(canvasElement.querySelectorAll('[data-ui="toggle-subscription-period"]')).toHaveLength(
       1,
     );
     await expect(items[2]).toHaveAccessibleDescription('0');
@@ -618,14 +618,14 @@ export const ConsumerVeto: Story = {
         throw new Error('Unexpected submit');
       }}
     >
-      <BillingToggle {...args}>
-        <BillingToggle.List aria-label="Billing period">
-          <BillingToggle.Item value="monthly">Monthly</BillingToggle.Item>
-          <BillingToggle.Item value="annual" onClick={(event) => event.preventDefault()}>
+      <ToggleSubscription {...args}>
+        <ToggleSubscription.List aria-label="Billing period">
+          <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+          <ToggleSubscription.Item value="annual" onClick={(event) => event.preventDefault()}>
             Annual
-          </BillingToggle.Item>
-        </BillingToggle.List>
-      </BillingToggle>
+          </ToggleSubscription.Item>
+        </ToggleSubscription.List>
+      </ToggleSubscription>
     </form>
   ),
   play: async ({ canvas, userEvent, args }) => {
@@ -637,12 +637,12 @@ export const ConsumerVeto: Story = {
 };
 export const SlotsAndStyling: Story = {
   render: (args) => (
-    <BillingToggle {...args} sx={{ gap: vars.space[4] }}>
-      <BillingToggle.Label sx={{ fontWeight: vars.fontWeight.semibold }}>
+    <ToggleSubscription {...args} sx={{ gap: vars.space[4] }}>
+      <ToggleSubscription.Label sx={{ fontWeight: vars.fontWeight.semibold }}>
         Billing period
-      </BillingToggle.Label>
-      <BillingToggle.List sx={{ padding: vars.space[2] }}>
-        <BillingToggle.Item
+      </ToggleSubscription.Label>
+      <ToggleSubscription.List sx={{ padding: vars.space[2] }}>
+        <ToggleSubscription.Item
           value="monthly"
           sx={{ paddingInline: vars.space[4] }}
           slotProps={{
@@ -657,9 +657,9 @@ export const SlotsAndStyling: Story = {
           badge={0}
         >
           Monthly
-        </BillingToggle.Item>
-      </BillingToggle.List>
-      <BillingToggle.Price
+        </ToggleSubscription.Item>
+      </ToggleSubscription.List>
+      <ToggleSubscription.Price
         amount={24}
         was={30}
         currency="USD"
@@ -672,22 +672,22 @@ export const SlotsAndStyling: Story = {
           period: { css: { fontWeight: vars.fontWeight.semibold } },
         }}
       />
-    </BillingToggle>
+    </ToggleSubscription>
   ),
   play: async ({ canvasElement, canvas }) => {
     const item = canvas.getByRole('radio');
     await expect(
-      getComputedStyle(item.querySelector('[data-ui="billing-toggle-item-label"]')!).fontStyle,
+      getComputedStyle(item.querySelector('[data-ui="toggle-subscription-item-label"]')!).fontStyle,
     ).toBe('italic');
     await expectPx(
-      getComputedStyle(item.querySelector('[data-ui="billing-toggle-badge"]')!).borderRadius,
+      getComputedStyle(item.querySelector('[data-ui="toggle-subscription-badge"]')!).borderRadius,
       8,
     );
     await expect(getComputedStyle(canvasElement.querySelector('del')!).fontStyle).toBe('italic');
     await expect(
       Math.abs(
         parseFloat(
-          getComputedStyle(canvasElement.querySelector('[data-ui="billing-toggle-period"]')!)
+          getComputedStyle(canvasElement.querySelector('[data-ui="toggle-subscription-period"]')!)
             .fontWeight,
         ) - 600,
       ),
@@ -707,18 +707,18 @@ export const RootRef: Story = {
   args: { ref: fn() },
   play: async ({ canvasElement, args }) => {
     await expect(args.ref).toHaveBeenCalledWith(
-      canvasElement.querySelector('[data-ui="billing-toggle"]'),
+      canvasElement.querySelector('[data-ui="toggle-subscription"]'),
     );
   },
 };
 export const ListRef: Story = {
   args: { ref: fn() },
   render: ({ ref, ...args }) => (
-    <BillingToggle {...args}>
-      <BillingToggle.List ref={ref} aria-label="Billing period">
-        <BillingToggle.Item value="monthly">Monthly</BillingToggle.Item>
-      </BillingToggle.List>
-    </BillingToggle>
+    <ToggleSubscription {...args}>
+      <ToggleSubscription.List ref={ref} aria-label="Billing period">
+        <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+      </ToggleSubscription.List>
+    </ToggleSubscription>
   ),
   play: async ({ canvas, args }) => {
     await expect(args.ref).toHaveBeenCalledWith(canvas.getByRole('radiogroup'));
@@ -728,23 +728,23 @@ export const FalsyLabels: Story = {
   render: (args) => (
     <div>
       {[false, null, 0, ''].map((content, index) => (
-        <BillingToggle {...args} key={index}>
-          <BillingToggle.Label>{content}</BillingToggle.Label>
-          <BillingToggle.List aria-label={`Billing period ${index}`}>
-            <BillingToggle.Item value="monthly" aria-label={`Monthly ${index}`}>
+        <ToggleSubscription {...args} key={index}>
+          <ToggleSubscription.Label>{content}</ToggleSubscription.Label>
+          <ToggleSubscription.List aria-label={`Billing period ${index}`}>
+            <ToggleSubscription.Item value="monthly" aria-label={`Monthly ${index}`}>
               {content}
-            </BillingToggle.Item>
-          </BillingToggle.List>
-        </BillingToggle>
+            </ToggleSubscription.Item>
+          </ToggleSubscription.List>
+        </ToggleSubscription>
       ))}
     </div>
   ),
   play: async ({ canvasElement, canvas }) => {
-    await expect(canvasElement.querySelectorAll('[data-ui="billing-toggle-label"]')).toHaveLength(
+    await expect(canvasElement.querySelectorAll('[data-ui="toggle-subscription-label"]')).toHaveLength(
       1,
     );
     await expect(
-      canvasElement.querySelectorAll('[data-ui="billing-toggle-item-label"]'),
+      canvasElement.querySelectorAll('[data-ui="toggle-subscription-item-label"]'),
     ).toHaveLength(1);
     for (const [index, item] of canvas.getAllByRole('radio').entries()) {
       await expect(item.hasAttribute('aria-labelledby')).toBe(index === 2);
