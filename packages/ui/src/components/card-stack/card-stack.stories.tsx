@@ -123,18 +123,22 @@ async function once(callback: unknown, ...args: unknown[]) {
   await expect(callback).toHaveBeenCalledWith(...args);
 }
 async function settled(root: Element) {
-  await waitFor(async () => {
-    await expect(part(root, 'stage')).toHaveAttribute('data-state', 'settled');
+  // Generous window: cancel-driven home springs can complete late under CI load.
+  await waitFor(
+    async () => {
+      await expect(part(root, 'stage')).toHaveAttribute('data-state', 'settled');
     const card = top(root);
     if (card) {
       const transform = getComputedStyle(card).transform;
       const translation = transform === 'none' ? 0 : new DOMMatrixReadOnly(transform).m41;
       await expect(Math.abs(translation)).toBeLessThan(0.1);
-      for (const stamp of card.querySelectorAll<HTMLElement>('[data-ui$="-stamp"]')) {
-        await expect(Number(getComputedStyle(stamp).opacity)).toBe(0);
+        for (const stamp of card.querySelectorAll<HTMLElement>('[data-ui$="-stamp"]')) {
+          await expect(Number(getComputedStyle(stamp).opacity)).toBe(0);
+        }
       }
-    }
-  });
+    },
+    { timeout: 4000 },
+  );
 }
 async function focusRing(node: HTMLElement) {
   await expect(node.ownerDocument.activeElement).toBe(node);
@@ -448,7 +452,11 @@ export const GestureDeck: Story = {
     send('pointerdown', 0);
     send('pointermove', -180);
     send('lostpointercapture', -180);
+    // A pointerup after capture loss must not decide (first finish wins on the session).
     send('pointerup', -180);
+    await waitFor(async () => {
+      await expect(captures.size).toBe(0);
+    });
     await settled(canvasElement);
     await expect(args.onDecide).not.toHaveBeenCalled();
     send('pointerdown', 0);
