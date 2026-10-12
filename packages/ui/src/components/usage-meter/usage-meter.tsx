@@ -37,6 +37,7 @@ export interface UsageMeterSegment {
   id: string;
   label: string;
   value: number;
+  /** Opt into a semantic color. Omitted tones use the neutral category palette. */
   tone?: 'accent' | 'info' | 'success' | 'warning';
 }
 export type UsageMeterItem = UsageMeterSelection & {
@@ -111,7 +112,10 @@ const STATE_GLYPHS: Record<UsageMeterState, string> = {
   'over-limit': '!',
   unavailable: '—',
 };
-const TONES = ['accent', 'info', 'success', 'warning'] as const;
+const CATEGORY_COLORS = [vars.color.text, vars.color.textMuted, vars.color.borderControl];
+function segmentColor(segment: UsageMeterSegment, index: number) {
+  return segment.tone ? vars.color[segment.tone] : CATEGORY_COLORS[index % CATEGORY_COLORS.length]!;
+}
 const rootStyle = css({
   display: 'grid',
   gap: vars.space[3],
@@ -122,12 +126,6 @@ const rootStyle = css({
   color: vars.color.text,
   overflowWrap: 'anywhere',
 });
-const ellipsisStyle = css({
-  minInlineSize: 0,
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-});
 const headerStyle = css({
   display: 'flex',
   alignItems: 'center',
@@ -136,39 +134,40 @@ const headerStyle = css({
   minInlineSize: 0,
   flexWrap: 'wrap',
 });
-const titleStyle = css({ fontWeight: vars.fontWeight.medium, flex: '1 1 0' });
+const titleStyle = css({ minInlineSize: 0, fontWeight: vars.fontWeight.medium, flex: '1 1 auto' });
 const statusStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
   gap: vars.space[1],
-  maxInlineSize: '65%',
+  maxInlineSize: '100%',
   minInlineSize: 0,
-  overflow: 'hidden',
-  paddingBlock: vars.space[1],
-  paddingInline: vars.space[2],
-  borderRadius: vars.radius.full,
   fontSize: vars.textSize.xs,
   color: vars.color.textMuted,
-  backgroundColor: vars.color.surfaceHover,
   '&[data-state="near-limit"]': {
     color: vars.color.warning,
-    backgroundColor: vars.color.warningSoft,
   },
   '&[data-state="over-limit"]': {
     color: vars.color.dangerText,
-    backgroundColor: vars.color.dangerSoft,
   },
 });
 const totalCaptionStyle = css({
-  marginInlineStart: vars.space[1],
+  display: 'block',
+  marginBlockStart: vars.space[1],
   fontSize: vars.textSize.sm,
   fontWeight: vars.fontWeight.regular,
   color: vars.color.textMuted,
 });
+const unitStyle = css({
+  display: 'inline-block',
+  fontSize: vars.textSize.md,
+  fontWeight: vars.fontWeight.regular,
+  color: vars.color.textMuted,
+  lineHeight: vars.lineHeight.base,
+});
+const percentageStyle = css({ whiteSpace: 'nowrap' });
 const rollingStyle = css({
-  display: 'inline-flex',
+  display: 'inline',
   fontVariantNumeric: 'tabular-nums',
-  whiteSpace: 'pre',
 });
 const digitStyle = css({
   display: 'inline-grid',
@@ -178,21 +177,23 @@ const digitStyle = css({
 const totalStyle = css({
   margin: 0,
   fontSize: 'var(--usage-total-size)',
-  fontWeight: vars.fontWeight.medium,
+  fontWeight: vars.fontWeight.semibold,
   fontVariantNumeric: 'tabular-nums',
+  lineHeight: vars.lineHeight.tight,
 });
 const sizeStyles = {
   sm: css({ '--usage-total-size': vars.textSize.md, gap: vars.space[2] }),
-  md: css({ '--usage-total-size': vars.textSize.xl }),
+  md: css({ '--usage-total-size': vars.textSize['2xl'] }),
   lg: css({ '--usage-total-size': vars.textSize['3xl'], gap: vars.space[4] }),
 };
 const trackStyle = css({
   position: 'relative',
-  blockSize: vars.space[4],
+  blockSize: vars.space[2],
   border: `1px solid ${vars.color.borderControl}`,
   backgroundColor: vars.color.surfaceInset,
   borderRadius: vars.radius.full,
   overflow: 'hidden',
+  '&[data-state="unavailable"]': { borderStyle: 'dashed' },
   [FORCED_COLORS]: { backgroundColor: 'Canvas', borderColor: 'CanvasText' },
 });
 const geometryStyle = css({
@@ -249,26 +250,24 @@ const limitStyle = css({
   borderInlineStart: `2px solid ${vars.color.text}`,
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
-/** Minimum legend column width: roughly one short label plus the swatch before wrapping to one column. */
-const LEGEND_COLUMN_MIN = '108px';
 const legendStyle = css({
   display: 'grid',
-  gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${LEGEND_COLUMN_MIN}), 1fr))`,
-  gap: vars.space[2],
+  gap: 0,
   padding: 0,
   margin: 0,
   listStyle: 'none',
+  '& > li + li': { borderBlockStart: `1px solid ${vars.color.border}` },
 });
 const itemStyle = css({
   display: 'grid',
-  gridTemplateColumns: 'auto minmax(0, 1fr)',
+  gridTemplateColumns: 'auto minmax(0, 1fr) minmax(0, 1fr)',
   alignItems: 'center',
   gap: vars.space[2],
   inlineSize: '100%',
   minInlineSize: 0,
   minBlockSize: vars.space[8],
   boxSizing: 'border-box',
-  paddingBlock: vars.space[1],
+  paddingBlock: vars.space[2],
   paddingInline: vars.space[2],
   textAlign: 'start',
   font: 'inherit',
@@ -283,6 +282,7 @@ const itemStyle = css({
     outline: `2px solid ${vars.color.text}`,
     outlineOffset: '-2px',
   },
+  '&[type="button"]': { cursor: 'pointer' },
   '&:focus-visible': focusRingOutset,
   [FORCED_COLORS]: {
     borderColor: 'CanvasText',
@@ -290,43 +290,35 @@ const itemStyle = css({
     '&[aria-pressed="true"]': { outlineColor: 'CanvasText' },
   },
 });
-const indexStyle = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  minInlineSize: vars.space[4],
-  inlineSize: 'fit-content',
-  paddingInline: vars.space[1],
+const swatchStyle = css({
+  display: 'inline-block',
+  inlineSize: vars.space[2],
   boxSizing: 'border-box',
-  blockSize: vars.space[4],
-  borderRadius: vars.radius.full,
+  blockSize: vars.space[2],
   backgroundColor: 'var(--usage-tone)',
-  color: vars.color.surfaceInset,
-  fontSize: vars.textSize.xs,
-  fontWeight: vars.fontWeight.medium,
-});
-const segmentIndexStyle = css({
-  display: 'block',
-  inlineSize: 'fit-content',
-  paddingInline: vars.space[1],
-  fontSize: vars.textSize.xs,
-  lineHeight: 1,
-  color: vars.color.text,
-  backgroundColor: vars.color.surfaceInset,
-  [FORCED_COLORS]: { color: 'CanvasText', backgroundColor: 'Canvas' },
+  border: `1px solid var(--usage-tone)`,
+  '&[data-remainder="true"]': { backgroundColor: vars.color.surfaceInset },
+  [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
 const amountStyle = css({
-  gridColumn: 2,
   fontSize: vars.textSize.xs,
   color: vars.color.textMuted,
+  fontVariantNumeric: 'tabular-nums',
+  textAlign: 'end',
+  minInlineSize: 0,
 });
-const SEGMENT_STAGGER = motionDurationMs.fast / 2000;
+const SEGMENT_STAGGER = motionDurationMs.fast / 4000;
+const MAX_STAGGER_STEPS = 3;
 const ANNOUNCEMENT_DELAY = motionDurationMs.slow * 4;
 const geometrySpring = {
   type: 'spring',
   duration: motionDurationMs.slow / 1000,
   bounce: 0,
 } as const;
+const digitVariants = {
+  enter: (sign: number) => ({ y: `${sign * 35}%`, opacity: 0 }),
+  exit: (sign: number) => ({ y: `${sign * -35}%`, opacity: 0 }),
+};
 
 function MeterSpan({
   nativeProps,
@@ -346,11 +338,13 @@ const AnimatedSpan = motion.create(MeterSpan);
 
 function RollingTotal({
   text,
+  parts,
   total,
   reduced,
   visible,
 }: {
   text: string;
+  parts: Intl.NumberFormatPart[];
   total: number;
   reduced: boolean;
   visible: boolean;
@@ -360,38 +354,46 @@ function RollingTotal({
   useEffect(() => {
     previous.current = total;
   }, [total]);
-  if (reduced) return <span>{text}</span>;
+  const contents = parts.map((part, partIndex) => {
+    if (part.type === 'unit' || part.type === 'currency' || part.type === 'percentSign') {
+      return (
+        <span key={partIndex} css={unitStyle}>
+          {part.value}
+        </span>
+      );
+    }
+    if (reduced || (part.type !== 'integer' && part.type !== 'fraction')) return part.value;
+    return Array.from(part.value).map((character, index, characters) => (
+      <span key={`${partIndex}-${characters.length - index}`} css={digitStyle}>
+        <AnimatePresence initial={false} custom={direction}>
+          <motion.span
+            key={character}
+            custom={direction}
+            variants={digitVariants}
+            initial="enter"
+            animate={{ y: 0, opacity: 1 }}
+            exit="exit"
+            transition={{ duration: motionDurationMs.base / 1000 }}
+          >
+            {character}
+          </motion.span>
+        </AnimatePresence>
+      </span>
+    ));
+  });
+  if (reduced) return <span css={rollingStyle}>{contents}</span>;
   return (
     <>
       <span css={visuallyHiddenStyle}>{text}</span>
-      <span aria-hidden="true" css={rollingStyle}>
-        {Array.from(text).map((character, index) => (
-          <span key={index} css={digitStyle}>
-            <AnimatePresence custom={direction}>
-              <motion.span
-                key={character}
-                custom={direction}
-                variants={{
-                  enter: (sign: number) => ({
-                    y: `${sign * 100}%`,
-                    opacity: 0,
-                  }),
-                  exit: (sign: number) => ({
-                    y: `${sign * -100}%`,
-                    opacity: 0,
-                  }),
-                }}
-                initial="enter"
-                animate={{ y: visible ? 0 : '100%', opacity: visible ? 1 : 0 }}
-                exit="exit"
-                transition={{ duration: motionDurationMs.slow / 1000 }}
-              >
-                {character}
-              </motion.span>
-            </AnimatePresence>
-          </span>
-        ))}
-      </span>
+      <motion.span
+        aria-hidden="true"
+        css={rollingStyle}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: visible ? 1 : 0 }}
+        transition={{ duration: motionDurationMs.base / 1000 }}
+      >
+        {contents}
+      </motion.span>
     </>
   );
 }
@@ -605,7 +607,7 @@ export function UsageMeter({
                   {...slotProps?.title}
                   id={titleId}
                   data-ui="usage-meter-title"
-                  css={[titleStyle, ellipsisStyle, slotProps?.title?.css]}
+                  css={[titleStyle, slotProps?.title?.css]}
                 >
                   {label}
                 </span>
@@ -615,43 +617,46 @@ export function UsageMeter({
                 id={statusId}
                 data-ui="usage-meter-status"
                 data-state={state}
-                layout={reducedMotion ? false : 'size'}
-                transition={reducedMotion ? { duration: 0 } : geometrySpring}
                 css={[statusStyle, slotProps?.status?.css]}
               >
                 <span aria-hidden="true">
                   {isRenderable(icon) && icon !== '' ? icon : STATE_GLYPHS[state]}
                 </span>{' '}
-                <span css={ellipsisStyle}>{statusText}</span>
+                <span>{statusText}</span>
               </AnimatedSpan>
             </div>
             <p {...slotProps?.total} data-ui="usage-meter-total" css={[totalStyle, slotProps?.total?.css]}>
               {valid ? (
-                <>
-                  <RollingTotal
-                    text={summary.formattedTotal}
-                    total={total}
-                    reduced={reducedMotion}
-                    visible={inView}
-                  />
-                  {hasUnit && <span data-ui="usage-meter-unit"> {unitLabel}</span>}
-                  <span css={totalCaptionStyle}>
-                    {' '}
-                    {labels.of} {summary.formattedLimit}
-                    {hasUnit && <> {unitLabel}</>} {labels.used}
-                  </span>
-                </>
+                <RollingTotal
+                  text={summary.formattedTotal}
+                  parts={amount.formatToParts(total)}
+                  total={total}
+                  reduced={reducedMotion}
+                  visible={inView}
+                />
               ) : (
+                summary.formattedTotal
+              )}
+              {hasUnit && (
                 <>
-                  {summary.formattedTotal}
-                  {hasUnit && <span data-ui="usage-meter-unit"> {unitLabel}</span>}
+                  {' '}
+                  <span data-ui="usage-meter-unit" css={unitStyle}>{unitLabel}</span>
                 </>
+              )}
+              {valid && (
+                <span css={totalCaptionStyle}>
+                  {' '}
+                  {labels.of} {summary.formattedLimit}
+                  {hasUnit && <> {unitLabel}</>} {labels.used}
+                  <span css={percentageStyle}> · {summary.formattedPercent}</span>
+                </span>
               )}
             </p>
             <div
               {...track}
               ref={viewRef}
               data-ui="usage-meter-track"
+              data-state={state}
               role={valid ? 'meter' : undefined}
               aria-label={
                 track?.['aria-label'] ?? (!hasLabel ? (ariaLabel ?? root?.['aria-label']) : undefined)
@@ -696,7 +701,9 @@ export function UsageMeter({
                           ? { duration: 0 }
                           : {
                               ...geometrySpring,
-                              delay: entered.current ? 0 : index * SEGMENT_STAGGER,
+                              delay: entered.current
+                                ? 0
+                                : Math.min(index, MAX_STAGGER_STEPS) * SEGMENT_STAGGER,
                             }
                       }
                       onPointerEnter={(event) => {
@@ -728,15 +735,11 @@ export function UsageMeter({
                         {
                           ...slotProps?.segment?.style,
                           ...geometry(offset, segment.value / span),
-                          '--usage-tone': vars.color[segment.tone ?? TONES[index % TONES.length]!],
+                          '--usage-tone': segmentColor(segment, index),
                         } as CSSProperties
                       }
                       css={[geometryStyle, segmentStyle, slotProps?.segment?.css]}
-                    >
-                      {segment.value / span >= 0.08 && (
-                        <span css={segmentIndexStyle}>{indexFormat.format(index + 1)}</span>
-                      )}
-                    </AnimatedSpan>
+                    />
                   );
                 })}
               {valid && summary.free > 0 && (
@@ -826,23 +829,23 @@ export function UsageMeter({
                 const contents = (
                   <>
                     <span
-                      css={indexStyle}
+                      aria-hidden="true"
+                      css={[swatchStyle, item.kind === 'remainder' && summary.over > 0 && overageStyle]}
+                      data-remainder={item.kind === 'remainder'}
                       style={
                         {
                           '--usage-tone':
                             item.kind === 'segment'
-                              ? vars.color[sanitized[index]?.tone ?? TONES[index % TONES.length]!]
+                              ? segmentColor(sanitized[index]!, index)
                               : vars.color.borderControl,
                         } as CSSProperties
                       }
-                    >
+                    />
+                    <span css={visuallyHiddenStyle}>
                       {item.kind === 'segment' ? indexFormat.format(index + 1) : '—'}
-                      {selected && <span aria-hidden="true"> ◆</span>}
                     </span>
-                    <span css={ellipsisStyle} title={item.label}>
-                      {item.label}
-                    </span>
-                    <span css={[amountStyle, ellipsisStyle]}>
+                    <span>{item.label}</span>
+                    <span css={amountStyle}>
                       {amount.format(item.value)}
                       {hasUnit && <> {unitLabel}</>}
                     </span>

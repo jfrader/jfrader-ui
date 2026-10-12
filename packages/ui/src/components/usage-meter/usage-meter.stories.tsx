@@ -13,7 +13,7 @@ const usage = [
   { id: 'backups', label: 'Backups', value: 8 },
 ];
 const frameStyle = css({
-  inlineSize: `min(36rem, calc(100vw - ${vars.space[8]}))`,
+  inlineSize: `min(24rem, calc(100vw - ${vars.space[8]}))`,
   maxInlineSize: '100%',
   display: 'grid',
   gap: vars.space[4],
@@ -47,14 +47,14 @@ const meta = {
     docs: {
       description: {
         component:
-          'See how much of an allowance is used. Hover the bar or legend to highlight a category, and tap or click to pin it. Status changes and growing overage are announced by default.',
+          'See how much of an allowance is used, including its percentage and category amounts. Categories use neutral shades by default; set a segment’s tone for a semantic color. Hover the bar or legend to highlight a category, and tap or click to pin it. Status changes and growing overage are announced by default.',
       },
       usage: `- Supply quota data from your app. Use this meter for an allowance, not task progress.
 - Numeric ARIA values stop at the limit. Value text reports usage, including overage, following the APG meter contract.
 - Translate status and comparison text with \`labels\`, \`getValueLabel\` and \`getItemLabel\`.
 - Supply \`locale\` for server rendering.
 - Status transitions and growing overage are announced by default. Rapid updates are coalesced; set \`announceChanges={false}\` to turn announcements off.
-- Translate “of” and “used” with \`labels.of\` and \`labels.used\`. \`labels.normal\` follows the free amount in the badge.
+- Translate “of” and “used” with \`labels.of\` and \`labels.used\`. \`labels.normal\` follows the free amount in the status.
 
 ### Keyboard
 - The legend has one Tab stop. Arrows follow the text direction; Home and End move to the first and last item.
@@ -91,6 +91,29 @@ export const StorageQuota: Story = {
     ],
     limit: 15,
     numberFormatOptions: { style: 'unit', unit: 'gigabyte', maximumFractionDigits: 1 },
+  },
+  play: async ({ canvasElement }) => {
+    const total = canvasElement.querySelector<HTMLElement>('[data-ui="usage-meter-total"]')!;
+    await expect(within(total).getByText('· 83%')).toBeVisible();
+    const segments = canvasElement.querySelectorAll<HTMLElement>('[data-ui="usage-meter-segment"]');
+    for (const segment of segments) await expect(segment).toBeEmptyDOMElement();
+    const doc = canvasElement.ownerDocument;
+    const root = canvasElement.querySelector('[data-ui="usage-meter"]')!;
+    await expect(doc.defaultView!.getComputedStyle(segments[0]!).backgroundColor).toBe(
+      doc.defaultView!.getComputedStyle(root).color,
+    );
+    const items = within(canvasElement).getAllByRole('button');
+    for (let index = 1; index < items.length; index++) {
+      await expect(items[index]!.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+        items[index - 1]!.getBoundingClientRect().bottom,
+      );
+    }
+  },
+};
+export const SemanticTones: Story = {
+  args: { segments: [{ id: 'requests', label: 'Requests', value: 48, tone: 'accent' }] },
+  parameters: {
+    docs: { description: { story: 'Set a segment’s tone when its color carries meaning in your app.' } },
   },
 };
 export const FourSegments: Story = {
@@ -570,7 +593,7 @@ export const LongLabels: Story = {
   },
   play: async ({ canvasElement }) => {
     for (const element of canvasElement.querySelectorAll<HTMLElement>(
-      '[data-ui="usage-meter-total"], [data-ui="usage-meter-item"]',
+      '[data-ui="usage-meter-title"], [data-ui="usage-meter-status"], [data-ui="usage-meter-total"], [data-ui="usage-meter-item"]',
     )) {
       await expect(element.scrollWidth).toBeLessThanOrEqual(element.clientWidth + 1);
     }
