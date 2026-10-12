@@ -518,6 +518,12 @@ const signOutStyle = css({
   },
 });
 
+const separatorStyle = css({
+  [FORCED_COLORS]: {
+    backgroundColor: 'CanvasText',
+  },
+});
+
 const groupStyle = css({
   display: 'flex',
   flexDirection: 'column',
@@ -1213,7 +1219,7 @@ UserMenuSignOut.displayName = 'UserMenu.SignOut';
 
 function UserMenuSeparator(props: UserMenuSeparatorProps) {
   useUserMenu('Separator');
-  return <MenuSeparatorPart {...props} marker="user-menu-separator" styles={menuSeparatorStyles} />;
+  return <MenuSeparatorPart {...props} marker="user-menu-separator" styles={[menuSeparatorStyles, separatorStyle]} />;
 }
 
 UserMenuSeparator.displayName = 'UserMenu.Separator';

@@ -1582,6 +1582,9 @@ export const ForcedColors: Story = {
     const option = canvasElement.ownerDocument.activeElement!;
     const checked = bodyOf(canvasElement).getByRole('menuitemradio', { name: 'System' });
     await expect(mediaRuleSets(shell, 'forced-colors: active', 'border-color', 'buttontext')).toBe(true);
+    for (const separator of within(shell).getAllByRole('separator')) {
+      await expect(mediaRuleSets(separator, 'forced-colors: active', 'background-color', 'canvastext')).toBe(true);
+    }
     await expect(mediaRuleSets(getTrigger(canvasElement), 'forced-colors: active', 'border-color', 'buttontext')).toBe(true);
     await expect(mediaRuleSets(checked, 'forced-colors: active', 'border-color', 'highlight')).toBe(true);
     await expect(mediaRuleSets(option, 'forced-colors: active', 'outline-color', 'highlight')).toBe(true);
