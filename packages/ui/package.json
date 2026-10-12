@@ -54,6 +54,7 @@
     "./date-range-picker": { "types": "./src/components/date-range-picker/index.ts", "import": "./src/components/date-range-picker/index.ts" },
     "./dialog": { "types": "./src/components/dialog/index.ts", "import": "./src/components/dialog/index.ts" },
     "./divider": { "types": "./src/components/divider/index.ts", "import": "./src/components/divider/index.ts" },
+    "./dot-grid": { "types": "./src/components/dot-grid/index.ts", "import": "./src/components/dot-grid/index.ts" },
     "./drawer": { "types": "./src/components/drawer/index.ts", "import": "./src/components/drawer/index.ts" },
     "./elastic-slider": { "types": "./src/components/elastic-slider/index.ts", "import": "./src/components/elastic-slider/index.ts" },
     "./empty-state": { "types": "./src/components/empty-state/index.ts", "import": "./src/components/empty-state/index.ts" },

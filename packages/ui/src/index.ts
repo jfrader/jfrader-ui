@@ -28,6 +28,7 @@ export * from './components/date-picker';
 export * from './components/date-range-picker';
 export * from './components/dialog';
 export * from './components/divider';
+export * from './components/dot-grid';
 export * from './components/drawer';
 export * from './components/elastic-slider';
 export * from './components/empty-state';
