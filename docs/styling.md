@@ -161,7 +161,7 @@ pnpm add @emotion/react
 
 In a Vite app, configure both the compiler and TypeScript. Merge these settings with your existing files:
 
-```ts
+```ts filename="vite.config.ts"
 // vite.config.ts
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
@@ -171,7 +171,7 @@ export default defineConfig({
 });
 ```
 
-```json
+```json filename="tsconfig.json"
 {
   "compilerOptions": {
     "jsx": "react-jsx",

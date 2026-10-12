@@ -463,6 +463,12 @@ MentionInput's introduction: “Write a message and mention people with @ or cha
   “you” when needed. Avoid semicolon chains, sales copy, reassurance, and design justification.
 - Keep each fact in one home. Link to setup or QA instructions instead of copying them into
   every description. Code examples should show usage, not test fixtures.
+- Keep foundation-guide content in Markdown and render it through `apps/storybook/home/Guide.tsx`.
+  Use the library's `CodeBlock` with syntax highlighting for source examples and
+  `TypewriterTerminal` for shell commands. Commands start fully visible; playback is opt-in.
+  Isolate these components from Storybook's prose styles with `Unstyled`. Add other components
+  only when they help a reader use the API, and keep example text in the Markdown source.
+  For a named file, add `filename="path/to/file.tsx"` after the fence language.
 
 **Documentation review**
 

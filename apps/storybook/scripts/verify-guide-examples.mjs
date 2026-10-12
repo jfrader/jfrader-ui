@@ -13,7 +13,7 @@ try {
   const files = [];
   for (const guide of guides) {
     const content = readFileSync(path.join(root, 'docs', guide), 'utf8');
-    const examples = [...content.matchAll(/^```(tsx|ts)\n([\s\S]*?)^```/gm)];
+    const examples = [...content.matchAll(/^```(tsx|ts)(?:[ \t]+[^\n]*)?\n([\s\S]*?)^```/gm)];
     assert.ok(examples.length > 0, `${guide}: no TypeScript examples found`);
     for (const [index, [, language, source]] of examples.entries()) {
       const file = path.join(directory, `${path.basename(guide, '.md')}-${index + 1}.${language}`);

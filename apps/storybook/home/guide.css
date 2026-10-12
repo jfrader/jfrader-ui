@@ -14,7 +14,12 @@
   overflow-wrap: normal;
 }
 
-.foundation-guide pre {
+.foundation-guide pre:not(.sb-unstyled pre) {
   max-inline-size: 100%;
   overflow-x: auto;
+}
+
+.foundation-guide [data-guide-example] {
+  margin-block: var(--ui-space-6);
+  min-inline-size: 0;
 }
