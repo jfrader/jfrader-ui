@@ -46,6 +46,7 @@ export * from './components/multi-select';
 export * from './components/navigation';
 export * from './components/pagination';
 export * from './components/password-field';
+export * from './components/photo-grid';
 export * from './components/pill';
 export * from './components/popover';
 export * from './components/progress';
