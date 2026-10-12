@@ -38,6 +38,7 @@ export * from './components/inline-edit';
 export * from './components/hover-card';
 export * from './components/json-viewer';
 export * from './components/kbd';
+export * from './components/keycap-keyboard';
 export * from './components/mention-input';
 export * from './components/menu';
 export * from './components/metric-card';
