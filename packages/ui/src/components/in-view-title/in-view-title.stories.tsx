@@ -1,6 +1,6 @@
 import { StrictMode, act, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor } from 'storybook/test';
+import { expect, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
@@ -61,7 +61,14 @@ export const Default: Story = { play: async ({ canvas }) => {
 } };
 export const Word: Story = { args: { variant: 'word' } };
 export const Line: Story = { args: { variant: 'line', text: 'Tools for teams\nthat ship' } };
-export const Blur: Story = { args: { variant: 'blur' } };
+export const Blur: Story = {
+  args: { variant: 'blur' },
+  play: async ({ canvas }) => {
+    const clip = getComputedStyle(canvas.getByRole('heading').querySelector('[data-in-view-segment]')!.parentElement!);
+    await expect(clip.overflowY).toBe('clip');
+    await expect(clip.overflowX).toBe('visible');
+  },
+};
 export const Tracking: Story = { args: { variant: 'tracking' } };
 export const Wipe: Story = { args: { variant: 'wipe' } };
 export const ScrollIntoView: Story = {
@@ -251,7 +258,70 @@ export const NoObserver: Story = {
   render: below,
   play: async ({ canvas }) => { const heading = canvas.getByRole('heading'); await expect(heading).toHaveAttribute('data-state', 'settled'); await expect(getComputedStyle(heading.querySelector('[data-in-view-segment]')!).opacity).toBe('1'); },
 };
-export const ReducedMotion: Story = { parameters: { docs: { description: { story: 'Enable reduced motion in the browser to inspect the plain-text presentation. This story does not emulate the browser media preference.' } } }, ...Default };
+export const ReducedMotion: Story = { parameters: { docs: { description: { story: 'Enable reduced motion in the browser to inspect the plain-text presentation. This story does not emulate the browser media preference; ReducedMotionPreference covers the behavior with a stubbed preference.' } } }, ...Default };
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+const reducedMotionPreference = { set: (_matches: boolean) => {} };
+function stubReducedMotion(initial: boolean) {
+  let matches = initial;
+  const listeners = new Set<() => void>();
+  const realMatchMedia = window.matchMedia.bind(window);
+  const spy = spyOn(window, 'matchMedia').mockImplementation((query: string) => query === REDUCED_MOTION_QUERY
+    ? ({
+        media: query,
+        get matches() { return matches; },
+        addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+        removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+      } as unknown as MediaQueryList)
+    : realMatchMedia(query));
+  reducedMotionPreference.set = (next) => { matches = next; listeners.forEach((listener) => listener()); };
+  return () => spy.mockRestore();
+}
+async function expectStill(heading: HTMLElement) {
+  await expect(heading).toHaveAttribute('data-state', 'settled');
+  for (const segment of heading.querySelectorAll('[data-in-view-segment]')) {
+    const style = getComputedStyle(segment);
+    await expect(style.animationName).toBe('none');
+    await expect(style.opacity).toBe('1');
+    await expect(style.transform).toBe('none');
+    await expect(style.filter).toBe('none');
+    await expect(style.maskImage).toBe('none');
+  }
+}
+function PreferenceFixture(args: InViewTitleProps) {
+  const [later, setLater] = useState(false);
+  return <><InViewTitle {...args} ref={belowRef} /><Button onClick={() => setLater(true)}>Add title</Button>{later && <InViewTitle {...args} ref={belowRef} text="Next chapter" />}</>;
+}
+export const ReducedMotionPreference: Story = {
+  args: { once: false },
+  beforeEach: () => {
+    const restoreObserver = observerSetup();
+    const restoreMedia = stubReducedMotion(true);
+    return () => { restoreMedia(); restoreObserver(); };
+  },
+  render: (args) => <PreferenceFixture {...args} />,
+  parameters: { docs: { description: { story: 'The play stubs `matchMedia`: a reduced-motion preference before mount leaves the heading settled with no observer; switching it on mid-entrance settles the heading and stops replays. Real media emulation is verified in browser QA.' } } },
+  play: async ({ canvas, userEvent }) => {
+    const first = canvas.getByRole('heading', { name: 'Tools for teams that ship' });
+    await expect(window.matchMedia).toHaveBeenCalledWith(REDUCED_MOTION_QUERY);
+    await expect(observers).toHaveLength(0);
+    await expectStill(first);
+    reducedMotionPreference.set(false);
+    await userEvent.click(canvas.getByRole('button', { name: 'Add title' }));
+    const second = canvas.getByRole('heading', { name: 'Next chapter' });
+    const observer = activeObserver();
+    await expect(observers).toHaveLength(1);
+    await expect(second).toHaveAttribute('data-state', 'idle');
+    await observer.enter(1);
+    await expect(second).toHaveAttribute('data-state', 'revealing');
+    await act(async () => reducedMotionPreference.set(true));
+    await expectStill(second);
+    await expect(observer.disconnect).toHaveBeenCalledTimes(1);
+    await observer.enter(0);
+    await observer.enter(1);
+    await expectStill(second);
+    await expectStill(first);
+  },
+};
 export const ForcedColors: Story = { parameters: { docs: { description: { story: 'Enable forced colors in the browser to inspect CanvasText and the plain-text presentation. This story does not emulate forced colors.' } } } };
 export const StrictModeCleanup: Story = {
   beforeEach: observerSetup, args: { ref: belowRef, once: false },

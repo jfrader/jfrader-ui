@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ComponentPropsWithRef, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ComponentPropsWithRef, type CSSProperties } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -68,11 +68,13 @@ const rootStyle = css({
 });
 const visualStyle = css({ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' });
 const lineStyle = css({ display: 'block', minInlineSize: 0, maxInlineSize: '100%' });
+const rising = { word: true, line: true, blur: true, tracking: false, wipe: false } satisfies Record<InViewTitleVariant, boolean>;
 const clipStyle = css({
   display: 'inline-block',
   verticalAlign: 'bottom',
   maxInlineSize: '100%',
-  overflow: 'clip',
+  overflowX: 'visible',
+  overflowY: 'clip',
   paddingBlock: DESCENDER_ALLOWANCE,
   marginBlock: `-${DESCENDER_ALLOWANCE}`,
 });
@@ -197,9 +199,10 @@ export function InViewTitle({
 
   const Heading = headings[level];
   const whole = variant === 'tracking' || variant === 'wipe';
-  const segmenter = typeof Intl.Segmenter === 'function'
-    ? new Intl.Segmenter(locale, { granularity: 'word' })
-    : undefined;
+  const segmenter = useMemo(
+    () => typeof Intl.Segmenter === 'function' ? new Intl.Segmenter(locale, { granularity: 'word' }) : undefined,
+    [locale],
+  );
   const lines = whole ? [text] : text.split('\n');
   const groups = lines.map((line) => variant === 'line' || whole || !segmenter
     ? [line]
@@ -226,7 +229,7 @@ export function InViewTitle({
                       if (!part.trim()) return <span key={partIndex}>{part || '\u200b'}</span>;
                       const index = order++;
                       return (
-                        <span key={partIndex} css={(variant === 'word' || variant === 'line') && clipStyle}>
+                        <span key={partIndex} css={rising[variant] && clipStyle}>
                           <span
                             data-in-view-segment=""
                             data-in-view-last={index === count - 1 ? '' : undefined}
