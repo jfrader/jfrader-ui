@@ -2,6 +2,10 @@
 // and packages/core/src/board/hiddenHand.ts. Object proportions, not theme scales.
 export const HAND_CARD_OVERLAP_SPACING = -1.32;
 export const HAND_FAN_DROP_PX = 2;
+// SKILL.md §7 (Target size): library controls keep a 32px+ main-axis target.
+// Clamp overlap to leave this strip exposed: sm cannot use the reference's
+// 10.56px overlap without reducing its selectable width below that policy.
+export const HAND_SELECTION_TARGET_PX = 32;
 export const OPPONENT_SEAT_METRICS = { avatarSizePx: 56, nameBlockPx: 28 } as const;
 export const getHandFanRotations = (count: number) =>
   count === 3 ? [-10, 0, 10] : count === 2 ? [-7, 7] : [0];

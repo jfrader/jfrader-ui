@@ -11,7 +11,7 @@ import { GameCard, type GameCardPartProps, type GameCardSize, type GameCardValue
 import { CARD_FRAME } from '../game-card/card-frame';
 import {
   buildOpponentHiddenHandLayout, DEFAULT_HIDDEN_HAND_RULES, getHandFanRotations,
-  HAND_CARD_OVERLAP_SPACING, HAND_FAN_DROP_PX, OPPONENT_SEAT_METRICS,
+  HAND_CARD_OVERLAP_SPACING, HAND_FAN_DROP_PX, HAND_SELECTION_TARGET_PX, OPPONENT_SEAT_METRICS,
   type HandPolarVector, type HiddenHandRules,
 } from './hand-layout';
 
@@ -66,7 +66,7 @@ const cardStyle = css({
   borderRadius: `calc(var(--hand-card-width) / ${CARD_FRAME.cornerDivisor})`,
   transform: 'rotate(calc(var(--hand-angle) * var(--hand-direction))) translateY(var(--hand-drop))',
   transformOrigin: 'bottom center',
-  '& + &': { marginInlineStart: `max(calc(${vars.space[2]} * ${HAND_CARD_OVERLAP_SPACING}), calc(${vars.space[8]} - var(--hand-card-width)))` },
+  '& + &': { marginInlineStart: `max(calc(${vars.space[2]} * ${HAND_CARD_OVERLAP_SPACING}), calc(${HAND_SELECTION_TARGET_PX}px - var(--hand-card-width)))` },
   '&[aria-pressed="true"]': {
     translate: `0 calc(-1 * ${vars.space[2]})`,
     outline: `3px double ${vars.color.accent}`,
@@ -181,7 +181,7 @@ function GameHandHidden({
           style={{ transform: anchor ? `translate(${anchor.x}px, ${anchor.y}px) rotate(${anchor.rotateDeg}deg)` : undefined,
             transformOrigin: anchor?.origin, ...style }}>
           {layout.cards.map((card, index) => (
-            <div key={index} data-ui="game-hand-hidden-card" aria-hidden="true" css={hiddenCardStyle}
+            <div key={`hidden-${index}`} data-ui="game-hand-hidden-card" aria-hidden="true" css={hiddenCardStyle}
               style={{ '--hidden-x': `${card.x}px`, '--hidden-y': `${card.y}px`, '--hidden-angle': `${card.rotateDeg}deg`, zIndex: card.zIndex } as CSSProperties}>
               <GameCard label={label} size={size} />
             </div>
