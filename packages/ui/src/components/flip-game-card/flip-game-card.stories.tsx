@@ -69,7 +69,7 @@ const meta = {
 
 ### Motion and layout
 - The outer root (and its React 19 \`ref\`) stays still; only the inner rotator moves. Use root \`sx\` for placement and \`slotProps\` for part styles.
-- Perspective uses \`size.gameCardPerspective\` (600px). The flip uses the slow duration token (240ms), rather than the original 300ms.
+- Perspective uses \`size.gameCardPerspective\` (28rem). The flip uses \`motion.duration.cardFlip\` (300ms) and \`motion.easeCardFlip\` (ease).
 - Reduced motion switches faces immediately without rotation. No render-time measurements are needed.`,
     },
   },
@@ -78,8 +78,21 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+async function expectRealPerspective(root: HTMLElement) {
+  const perspective = getComputedStyle(root).perspective;
+  const rootFontSize = Number.parseFloat(getComputedStyle(root.ownerDocument.documentElement).fontSize);
+  const expectedPixels = Number.parseFloat(base.size.gameCardPerspective) * rootFontSize;
+  await expect(perspective).not.toBe('none');
+  await expect(perspective).toMatch(/^\d+(?:\.\d+)?px$/);
+  await expect(Number.parseFloat(perspective)).toBeGreaterThan(0);
+  await expect(Number.parseFloat(perspective)).toBeCloseTo(expectedPixels, 2);
+}
+
 export const Default: Story = {
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card"]');
+    if (!root) throw new Error('Missing flip root');
+    await expectRealPerspective(root);
     await expect(canvas.getByRole('img', { name: FRONT_LABEL })).toBeVisible();
     await expect(canvas.queryByRole('img', { name: BACK_LABEL })).toBeNull();
   },
@@ -228,10 +241,10 @@ export const StationaryRoot: Story = {
     if (!root || !rotator) throw new Error('Missing flip anatomy');
     const before = root.getBoundingClientRect();
     await userEvent.click(canvas.getByRole('button', { name: 'Flip card' }));
-    await new Promise((resolve) => setTimeout(resolve, motionDurationMs.slow));
+    await new Promise((resolve) => setTimeout(resolve, motionDurationMs.cardFlip));
     await Promise.all(rotator.getAnimations().map((animation) => animation.finished));
     await expect(getComputedStyle(root).transform).toBe('none');
-    await expect(getComputedStyle(root).perspective).toBe(base.size.gameCardPerspective);
+    await expectRealPerspective(root);
     await expect(root.getBoundingClientRect().toJSON()).toEqual(before.toJSON());
     await expect(getComputedStyle(rotator).transform).toBe('matrix3d(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)');
   },
@@ -250,7 +263,8 @@ async function sampleFlip(
   animation.pause();
   await animation.ready;
   const duration = Number(animation.effect.getComputedTiming().duration);
-  await expect(duration).toBe(motionDurationMs.slow);
+  await expect(duration).toBe(motionDurationMs.cardFlip);
+  await expect(getComputedStyle(rotator).transitionTimingFunction).toBe(base.motion.easeCardFlip);
   const degrees = () => {
     const matrix = new DOMMatrixReadOnly(getComputedStyle(rotator).transform);
     return Math.acos(Math.max(-1, Math.min(1, matrix.m11))) * 180 / Math.PI;
@@ -266,7 +280,9 @@ async function sampleFlip(
     }
     animation.currentTime = target === 0 || target === 180 ? duration : (low + high) / 2;
     await expect(degrees()).toBeCloseTo(target, 1);
-    const rotation = new DOMMatrixReadOnly(getComputedStyle(rotator).transform);
+    const transform = getComputedStyle(rotator).transform;
+    if (target > 0 && target < 180) await expect(transform).toMatch(/^matrix3d\(/);
+    const rotation = new DOMMatrixReadOnly(transform);
     for (const [face, facesViewer] of [[frontFace, target < 90], [backFace, target > 90]] as const) {
       const style = getComputedStyle(face);
       await expect(style.visibility).toBe('visible');
@@ -283,10 +299,12 @@ export const FlipFrames: Story = {
   render: (args) => <ControlledFixture {...args} />,
   parameters: { docs: { description: { story: 'Inspect both directions at 45° and 135°. The play test pauses the native transition and seeks bounded samples without changing its easing.' } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card"]');
     const rotator = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card-rotator"]');
     const frontFace = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card-front"]');
     const backFace = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card-back"]');
-    if (!rotator || !frontFace || !backFace) throw new Error('Missing flip anatomy');
+    if (!root || !rotator || !frontFace || !backFace) throw new Error('Missing flip anatomy');
+    await expectRealPerspective(root);
     const trigger = canvas.getByRole('button', { name: 'Flip card' });
     await userEvent.click(trigger);
     await expect(frontFace).toHaveAttribute('inert');

@@ -59,7 +59,7 @@ const rotatorStyle = css({
   blockSize: '100%',
   transformStyle: 'preserve-3d',
   transform: 'rotateY(0deg)',
-  transition: `transform ${vars.motion.duration.slow} ${vars.motion.easeStandard}`,
+  transition: `transform ${vars.motion.duration.cardFlip} ${vars.motion.easeCardFlip}`,
   '&[data-state="back"]': { transform: 'rotateY(180deg)' },
 });
 
