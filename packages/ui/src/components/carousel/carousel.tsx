@@ -187,6 +187,7 @@ const rootStyle = css({
   gap: vars.space[3],
   fontFamily: vars.font.sans,
   color: vars.color.text,
+  '&:focus-visible': focusRingOutset,
 });
 
 const rotationButtonStyle = css({ justifySelf: 'start' });
@@ -504,14 +505,15 @@ export function Carousel({
   useLayoutEffect(() => {
     activeRef.current = active;
     const viewport = viewportRef.current;
-    if (!viewport) return;
-    const { activeElement: focused, body } = viewport.ownerDocument;
+    const focusTarget = viewport ?? rootRef.current;
+    if (!focusTarget) return;
+    const { activeElement: focused, body } = focusTarget.ownerDocument;
     const lastFocus = lastFocusRef.current;
-    const inInertSlide = (element: Element) => viewport.contains(element) && element.closest('[inert]') !== null;
+    const inInertSlide = (element: Element) => viewport?.contains(element) && element.closest('[inert]') !== null;
     const focusInInertSlide = focused !== null && inInertSlide(focused);
     const focusLostWithSlide =
       focused === body && lastFocus !== null && (!lastFocus.isConnected || inInertSlide(lastFocus));
-    if (focusInInertSlide || focusLostWithSlide) viewport.focus({ preventScroll: true });
+    if (focusInInertSlide || focusLostWithSlide) focusTarget.focus({ preventScroll: true });
     if (!tabListRef.current?.contains(focused)) setFocusedIndicator(null);
     if (dragRef.current?.active) return;
     scrollToSlide(active, firstSyncRef.current || reducedMotion ? 'instant' : 'smooth');
@@ -713,6 +715,7 @@ export function Carousel({
         <section
           {...rest}
           ref={rootRefs}
+          tabIndex={rest.tabIndex ?? -1}
           role={role}
           aria-roledescription={roleDescription ?? labels.carouselRole}
           data-ui="carousel"
@@ -754,7 +757,7 @@ export function Carousel({
               ref={viewportRefs}
               role="group"
               aria-label={viewportSlot?.['aria-label'] ?? (viewportSlot?.['aria-labelledby'] ? undefined : labels.slides)}
-              tabIndex={navigable ? 0 : undefined}
+              tabIndex={navigable ? 0 : -1}
               data-ui="carousel-viewport"
               data-disabled={disabled || undefined}
               data-dragging={dragging || undefined}
