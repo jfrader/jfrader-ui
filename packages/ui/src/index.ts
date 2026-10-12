@@ -5,6 +5,7 @@ export * from './components/announcement-bar';
 export * from './components/avatar';
 export * from './components/avatar-group';
 export * from './components/badge';
+export * from './components/billing-toggle';
 export * from './components/bottom-sheet';
 export * from './components/breadcrumbs';
 export * from './components/button';
