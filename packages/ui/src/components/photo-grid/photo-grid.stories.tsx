@@ -5,22 +5,22 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { PhotoGrid, type PhotoGridPhoto } from './index';
+import { sceneSource } from '../scene';
 
-const photoSource = (seed: number) =>
-  `data:image/svg+xml,${encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400">' +
-      `<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.008" numOctaves="3" seed="${seed}"/></filter>` +
-      '<rect width="600" height="400" filter="url(#n)"/></svg>',
-  )}`;
-const photos: PhotoGridPhoto[] = Array.from({ length: 8 }, (_, index) => ({
-  id: `photo-${index}`,
-  src: photoSource(index + 1),
-  alt: `Landscape ${index + 1}`,
-  width: 600,
-  height: 400,
-  title: `Landscape ${index + 1}`,
-  detail: `Field study ${index + 1}`,
-}));
+const photos: PhotoGridPhoto[] = [
+  // landscape (wide)
+  { id: 'p1', src: sceneSource('alps-dawn-01', { variant: 'landscape' }), alt: 'Ridge at First Light', width: 1200, height: 800, title: 'Ridge at First Light', detail: 'Alpine traverse, 2800 m' },
+  { id: 'p2', src: sceneSource('valley-noon-02', { variant: 'landscape' }), alt: 'Valley Floor', width: 1200, height: 800, title: 'Valley Floor', detail: 'Midday light on moraine' },
+  { id: 'p3', src: sceneSource('pass-sunset-03', { variant: 'dusk' }), alt: 'High Pass at Sunset', width: 1200, height: 800, title: 'High Pass at Sunset', detail: 'Col de la Meije' },
+  // dunes
+  { id: 'p4', src: sceneSource('dunes-crest-04', { variant: 'dunes' }), alt: 'Dune Crest', width: 1200, height: 800, title: 'Dune Crest', detail: 'Erg Chebbi, late afternoon' },
+  { id: 'p5', src: sceneSource('dunes-wind-05', { variant: 'dunes' }), alt: 'Wind-Sculpted Dunes', width: 800, height: 1200, title: 'Wind-Sculpted Dunes', detail: 'Portrait orientation study' },
+  // dusk / tide mix
+  { id: 'p6', src: sceneSource('tide-pool-06', { variant: 'tide' }), alt: 'Tidal Pool', width: 1200, height: 800, title: 'Tidal Pool', detail: 'Low tide, Atlantic coast' },
+  { id: 'p7', src: sceneSource('dusk-lagoon-07', { variant: 'dusk' }), alt: 'Lagoon at Dusk', width: 800, height: 1200, title: 'Lagoon at Dusk', detail: 'Portrait: reflections' },
+  { id: 'p8', src: sceneSource('shore-mist-08', { variant: 'tide' }), alt: 'Misty Shore', width: 1200, height: 800, title: 'Misty Shore', detail: 'Morning fog on the flats' },
+  { id: 'p9', src: sceneSource('ridge-storm-09', { variant: 'landscape' }), alt: 'Storm Light on Ridge', width: 1200, height: 800, title: 'Storm Light on Ridge', detail: 'Clearing after rain' },
+];
 const frameStyle = css({
   inlineSize: '48rem',
   maxInlineSize: '100%',
@@ -34,14 +34,14 @@ const fixtureStyle = css({
   padding: vars.space[2],
 });
 const SOURCE =
-  '<PhotoGrid title="September" photos={photos} defaultDensity={3} onFavoriteChange={saveFavorite} />';
+  '<PhotoGrid title="September Traverse" photos={photos} defaultDensity={3} onFavoriteChange={saveFavorite} />';
 
 const meta = {
   title: 'Media/PhotoGrid',
   component: PhotoGrid,
   tags: ['autodocs'],
   args: {
-    title: 'September',
+    title: 'September Traverse',
     photos,
     locale: 'en-GB',
     onDensityChange: fn(),
@@ -98,15 +98,16 @@ async function focused(element: HTMLElement) {
 
 export const Default: Story = {
   play: async ({ canvas, canvasElement }) => {
-    await expect(canvas.getByRole('region', { name: 'September' })).toBeInTheDocument();
-    await expect(canvas.getByRole('list', { name: 'September' })).toBeInTheDocument();
-    await expect(tiles(canvasElement)).toHaveLength(8);
+    await expect(canvas.getByRole('region', { name: 'September Traverse' })).toBeInTheDocument();
+    await expect(canvas.getByRole('list', { name: 'September Traverse' })).toBeInTheDocument();
+    await expect(tiles(canvasElement)).toHaveLength(9);
+    const expectedTitles = ['Ridge at First Light', 'Valley Floor', 'High Pass at Sunset', 'Dune Crest', 'Wind-Sculpted Dunes', 'Tidal Pool', 'Lagoon at Dusk', 'Misty Shore', 'Storm Light on Ridge'];
     for (const [index, tile] of tiles(canvasElement).entries()) {
       const image = tile.querySelector('img')!;
       await expect(image).toHaveAttribute('loading', 'lazy');
       await expect(image).toHaveAttribute('alt', '');
       await expect(image).not.toHaveAttribute('aria-hidden');
-      await expect(tile).toHaveAccessibleName(`Landscape ${index + 1}`);
+      await expect(tile).toHaveAccessibleName(expectedTitles[index]);
       const box = tile.getBoundingClientRect();
       await expect(Math.abs(box.width - box.height)).toBeLessThan(1.1);
       await expect(box.width).toBeGreaterThanOrEqual(32);
@@ -129,24 +130,24 @@ export const CustomSteps: Story = {
   },
 };
 export const Favorites: Story = {
-  args: { defaultFavorites: ['photo-1', 'photo-3', 'unseen'] },
+  args: { defaultFavorites: ['p2', 'p4', 'unseen'] },
   play: async ({ canvasElement, args, userEvent }) => {
     await userEvent.click(favorites(canvasElement)[0]!);
     await expect(args.onFavoritesChange).toHaveBeenCalledTimes(1);
     await expect(args.onFavoritesChange).toHaveBeenLastCalledWith([
-      'photo-1',
-      'photo-3',
+      'p2',
+      'p4',
       'unseen',
-      'photo-0',
+      'p1',
     ]);
     await expect(args.onFavoriteChange).toHaveBeenCalledTimes(1);
-    await expect(args.onFavoriteChange).toHaveBeenLastCalledWith('photo-0', true);
+    await expect(args.onFavoriteChange).toHaveBeenLastCalledWith('p1', true);
     await expect(args.onOpenChange).not.toHaveBeenCalled();
     await expect(favorites(canvasElement)[0]).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(favorites(canvasElement)[0]!);
     await expect(args.onFavoritesChange).toHaveBeenCalledTimes(2);
-    await expect(args.onFavoritesChange).toHaveBeenLastCalledWith(['photo-1', 'photo-3', 'unseen']);
-    await expect(args.onFavoriteChange).toHaveBeenLastCalledWith('photo-0', false);
+    await expect(args.onFavoritesChange).toHaveBeenLastCalledWith(['p2', 'p4', 'unseen']);
+    await expect(args.onFavoriteChange).toHaveBeenLastCalledWith('p1', false);
   },
 };
 export const ControlledFavorites: Story = {
@@ -167,7 +168,7 @@ export const ControlledFavorites: Story = {
     await userEvent.click(favorites(canvasElement)[0]!);
     await expect(favorites(canvasElement)[0]).toHaveAttribute('aria-pressed', 'true');
     await expect(args.onFavoritesChange).toHaveBeenCalledTimes(1);
-    await expect(args.onFavoritesChange).toHaveBeenLastCalledWith(['photo-0']);
+    await expect(args.onFavoritesChange).toHaveBeenLastCalledWith(['p1']);
   },
 };
 export const Empty: Story = {
@@ -186,7 +187,7 @@ export const SinglePhoto: Story = {
   tags: ['!autodocs'],
   args: { photos: photos.slice(0, 1), defaultOpen: true },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('dialog', { name: 'Landscape 1' })).toBeVisible();
+    await expect(await canvas.findByRole('dialog', { name: 'Ridge at First Light' })).toBeVisible();
     await expect(canvas.getByRole('slider')).toBeDisabled();
     await expect(canvas.getByRole('button', { name: 'Previous photo' })).toBeDisabled();
     await expect(canvas.getByRole('button', { name: 'Next photo' })).toBeDisabled();
@@ -211,7 +212,7 @@ export const PaginatedSet: Story = {
         <PhotoGrid
           {...args}
           photos={args.photos.slice(page * 4, page * 4 + 4)}
-          defaultFavorites={['photo-0', 'saved-page']}
+          defaultFavorites={['p1', 'saved-page']}
         />
       </>
     );
@@ -220,7 +221,7 @@ export const PaginatedSet: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Change page' }));
     await userEvent.click(favorites(canvasElement)[0]!);
     await expect(args.onFavoritesChange).toHaveBeenCalledTimes(1);
-    await expect(args.onFavoritesChange).toHaveBeenLastCalledWith(['photo-0', 'saved-page', 'photo-4']);
+    await expect(args.onFavoritesChange).toHaveBeenLastCalledWith(['p1', 'saved-page', 'p5']);
   },
 };
 export const Light: Story = { decorators: [withLightTheme], globals: { theme: 'light' } };
@@ -278,7 +279,7 @@ export const ForcedColors: Story = {
       },
     },
   },
-  args: { defaultFavorites: ['photo-0'] },
+  args: { defaultFavorites: ['p1'] },
 };
 export const ControlledRejected: Story = {
   args: { density: 3, favorites: [], value: null, open: false },
@@ -290,10 +291,10 @@ export const ControlledRejected: Story = {
     await userEvent.click(favorites(canvasElement)[0]!);
     await expect(favorites(canvasElement)[0]).toHaveAttribute('aria-pressed', 'false');
     await expect(args.onFavoritesChange).toHaveBeenCalledTimes(1);
-    await expect(args.onFavoritesChange).toHaveBeenLastCalledWith(['photo-0']);
+    await expect(args.onFavoritesChange).toHaveBeenLastCalledWith(['p1']);
     await userEvent.click(tiles(canvasElement)[1]!);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('photo-1');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('p2');
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
     await waitFor(() => {
@@ -318,9 +319,9 @@ export const LiveStatus: Story = {
       await userEvent.click(canvas.getByRole('button', { name: 'Next photo' }));
       await expect(announced).toEqual([
         '5 columns',
-        'Remove Landscape 1 from favorites',
-        'Landscape 2, 2 / 8',
-        'Landscape 3, 3 / 8',
+        'Remove Ridge at First Light from favorites',
+        'Valley Floor, 2 / 9',
+        'High Pass at Sunset, 3 / 9',
       ]);
     } finally {
       observer.disconnect();
@@ -330,12 +331,12 @@ export const LiveStatus: Story = {
 export const ControlledValueRejected: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
-  args: { open: true, value: 'photo-0' },
+  args: { open: true, value: 'p1' },
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Next photo' }));
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('photo-1');
-    await expect(canvas.getByRole('dialog')).toHaveAccessibleName('Landscape 1');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('p2');
+    await expect(canvas.getByRole('dialog')).toHaveAccessibleName('Ridge at First Light');
     await expect(canvas.getByRole('slider')).toHaveValue('0');
     await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
@@ -358,7 +359,7 @@ export const ExternalAria: Story = {
     </>
   ),
   play: async ({ canvas }) => {
-    const root = canvas.getByRole('region', { name: 'Library September' });
+    const root = canvas.getByRole('region', { name: 'Library September Traverse' });
     await expect(root).toHaveAttribute('aria-label', 'External label');
     await expect(root).toHaveAttribute(
       'aria-labelledby',
@@ -384,17 +385,17 @@ export const MultipleInstances: Story = {
 export const PersistentViewer: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
-  args: { defaultOpen: true, defaultValue: 'photo-2' },
+  args: { defaultOpen: true, defaultValue: 'p3' },
   play: async ({ canvas }) => {
     const dialog = canvas.getByRole('dialog');
-    await expect(dialog).toHaveAccessibleName('Landscape 3');
+    await expect(dialog).toHaveAccessibleName('High Pass at Sunset');
     await expect(dialog.querySelector('[data-ui="photo-grid-stage"] img')).toHaveAttribute('alt', '');
   },
 };
 export const PersistentFavorite: Story = { 
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
-args: { defaultOpen: true, defaultFavorites: ['photo-0'] } };
+args: { defaultOpen: true, defaultFavorites: ['p1'] } };
 export const PersistentImageZoom: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
@@ -402,7 +403,7 @@ export const PersistentImageZoom: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
     await waitFor(() => {
-      expect(canvas.getByRole('group', { name: 'Landscape 1' })).toHaveAttribute('data-zoom', '1.5');
+      expect(canvas.getByRole('group', { name: 'Ridge at First Light' })).toHaveAttribute('data-zoom', '1.5');
     });
     await expect(canvas.getByRole('button', { name: 'Pan left' })).toBeVisible();
   },
@@ -423,10 +424,10 @@ export const KeyboardPlay: Story = {
       ['{ArrowLeft}', 0],
       ['{ArrowDown}', 3],
       ['{ArrowUp}', 0],
-      ['{PageDown}', 7],
+      ['{PageDown}', 8],
       ['{PageUp}', 0],
-      ['{End}', 7],
-      ['{ArrowDown}', 7],
+      ['{End}', 8],
+      ['{ArrowDown}', 8],
       ['{Home}', 0],
     ];
     for (const [key, index] of route) {
@@ -444,7 +445,7 @@ export const KeyboardPlay: Story = {
     await focused(favorites(canvasElement)[0]!);
     await userEvent.keyboard(' ');
     await expect(args.onFavoriteChange).toHaveBeenCalledTimes(1);
-    await expect(args.onFavoriteChange).toHaveBeenLastCalledWith('photo-0', true);
+    await expect(args.onFavoriteChange).toHaveBeenLastCalledWith('p1', true);
     await expect(args.onOpenChange).not.toHaveBeenCalled();
     await userEvent.tab({ shift: true });
     await userEvent.keyboard('{Enter}');
@@ -453,27 +454,27 @@ export const KeyboardPlay: Story = {
     await focused(viewer.getByRole('button', { name: 'Close viewer' }));
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
-    const stage = viewer.getByRole('group', { name: 'Landscape 1' });
+    const stage = viewer.getByRole('group', { name: 'Ridge at First Light' });
     await userEvent.tab();
     await focused(stage);
     await userEvent.keyboard('{ArrowRight}');
-    await expect(dialog).toHaveAccessibleName('Landscape 2');
+    await expect(dialog).toHaveAccessibleName('Valley Floor');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('photo-1');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('p2');
     await userEvent.keyboard('{End}');
-    await expect(dialog).toHaveAccessibleName('Landscape 8');
+    await expect(dialog).toHaveAccessibleName('Storm Light on Ridge');
     await userEvent.keyboard('{Home}');
-    await expect(dialog).toHaveAccessibleName('Landscape 1');
+    await expect(dialog).toHaveAccessibleName('Ridge at First Light');
     const slider = viewer.getByRole('slider');
     await expect(slider).toHaveAttribute('min', '0');
-    await expect(slider).toHaveAttribute('max', '7');
+    await expect(slider).toHaveAttribute('max', '8');
     await expect(slider).toHaveAttribute('step', '1');
     slider.focus();
     await userEvent.keyboard('{ArrowRight}');
     await expect(fireEvent.keyDown(slider, { key: 'ArrowRight' })).toBe(true);
     fireEvent.change(slider, { target: { value: '1' } });
     await expect(slider).toHaveValue('1');
-    await expect(slider).toHaveAttribute('aria-valuetext', 'Landscape 2, 2 / 8');
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Valley Floor, 2 / 9');
     await userEvent.keyboard('{Escape}');
     fireEvent(dialog, new Event('cancel', { cancelable: true }));
     await waitFor(async () => {
@@ -600,9 +601,9 @@ export const ControlledAxes: Story = {
     await userEvent.click(favorites(canvasElement)[1]!);
     await expect(favorites(canvasElement)[1]).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(tiles(canvasElement)[1]!);
-    await expect(canvas.getByRole('dialog')).toHaveAccessibleName('Landscape 2');
+    await expect(canvas.getByRole('dialog')).toHaveAccessibleName('Valley Floor');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('photo-1');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('p2');
     await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
     await waitFor(() => {
       const d = canvas.queryByRole('dialog');
@@ -615,7 +616,7 @@ export const ControlledAxes: Story = {
 export const RejectedNativeCloseRepair: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
-  args: { open: true, value: 'photo-0' },
+  args: { open: true, value: 'p1' },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const dialog = canvas.getByRole('dialog') as HTMLDialogElement;
     dialog.close();
@@ -754,7 +755,7 @@ export const InvokerRemoval: Story = {
     await userEvent.click(tiles(canvasElement)[0]!);
     await expect(canvas.getByRole('dialog')).toHaveAccessibleName('Photo unavailable');
     await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
-    await expect(tiles(canvasElement)[0]).toHaveAccessibleName('Landscape 2');
+    await expect(tiles(canvasElement)[0]).toHaveAccessibleName('Valley Floor');
     await expect(canvasElement.ownerDocument.activeElement).toBe(tiles(canvasElement)[0]);
     await new Promise((resolve) => setTimeout(resolve, 500));
   },
@@ -819,15 +820,15 @@ export const ViewerGestures: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvas, args, userEvent }) => {
-    let stage = canvas.getByRole('group', { name: 'Landscape 1' });
+    let stage = canvas.getByRole('group', { name: 'Ridge at First Light' });
     spyOn(stage, 'setPointerCapture').mockImplementation(() => {});
     const pointer = { pointerId: 1, pointerType: 'touch', button: 0, clientX: 200, clientY: 200 };
     fireEvent.pointerDown(stage, pointer);
     fireEvent.pointerUp(stage, { ...pointer, clientX: 50 });
-    await expect(canvas.getByRole('dialog')).toHaveAccessibleName('Landscape 2');
+    await expect(canvas.getByRole('dialog')).toHaveAccessibleName('Valley Floor');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('photo-1');
-    stage = canvas.getByRole('group', { name: 'Landscape 2' });
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('p2');
+    stage = canvas.getByRole('group', { name: 'Valley Floor' });
     fireEvent.pointerDown(stage, pointer);
     fireEvent.pointerDown(stage, { ...pointer, pointerId: 2, clientX: 300 });
     fireEvent.pointerMove(stage, { ...pointer, pointerId: 2, clientX: 400 });
@@ -872,9 +873,9 @@ export const ViewerExternalAria: Story = {
     </>
   ),
   play: async ({ canvas }) => {
-    const dialog = canvas.getByRole('dialog', { name: 'Field collection Landscape 1' });
+    const dialog = canvas.getByRole('dialog', { name: 'Field collection Ridge at First Light' });
     await expect(dialog).toHaveAttribute('aria-label', 'Viewer label');
     await expect(dialog.getAttribute('aria-labelledby')).toContain('unresolved-viewer');
-    await expect(dialog).toHaveAccessibleDescription('Large view Field study 1');
+    await expect(dialog).toHaveAccessibleDescription('Large view Alpine traverse, 2800 m');
   },
 };
