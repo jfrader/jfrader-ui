@@ -1,5 +1,6 @@
 import { vars } from '@jfrader/tokens/vars';
 import { css } from './css';
+import { REDUCED_MOTION } from './media';
 
 // Shared fragments for listbox-like popups (Menu, Select, Combobox, CommandPalette). Components
 // compose them in the `css` prop and keep their own focus, sizing and visibility rules.
@@ -14,8 +15,8 @@ export const listboxSurfaceStyle = css({
   borderRadius: vars.radius.md,
   boxShadow: vars.shadow.overlay,
   padding: vars.space[1],
-  minInlineSize: '180px',
-  maxInlineSize: 'min(320px, calc(100vw - 32px))',
+  minInlineSize: `min(180px, calc(100vw - ${vars.space[8]}))`,
+  maxInlineSize: `min(320px, calc(100vw - ${vars.space[8]}))`,
   color: vars.color.text,
   fontFamily: vars.font.sans,
   lineHeight: vars.lineHeight.base,
@@ -23,7 +24,7 @@ export const listboxSurfaceStyle = css({
 
 /** A surface that stays mounted while closed and scrolls past its maximum height. */
 export const listboxScrollStyle = css({
-  maxBlockSize: '280px',
+  maxBlockSize: `min(280px, calc(100vh - ${vars.space[8]}))`,
   overflow: 'auto',
   '&[hidden]': {
     display: 'none',
@@ -36,7 +37,7 @@ export const listboxItemStyle = css({
   display: 'flex',
   alignItems: 'center',
   inlineSize: '100%',
-  minBlockSize: '32px',
+  minBlockSize: vars.space[8],
   flexShrink: 0,
   borderRadius: vars.radius.sm,
   paddingBlock: vars.space[1],
@@ -52,7 +53,7 @@ export const listboxItemStyle = css({
     outline: `2px solid ${vars.color.focusRing}`,
     outlineOffset: '-2px',
   },
-  '@media (prefers-reduced-motion: reduce)': {
+  [REDUCED_MOTION]: {
     transitionDuration: '0s',
   },
 });

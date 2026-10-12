@@ -1,5 +1,6 @@
 import { vars } from '@jfrader/tokens/vars';
 import { css } from './css';
+import { REDUCED_MOTION } from './media';
 
 // Shared button style for overlay triggers (Dialog, Popover, Menu).
 export const triggerStyle = css({
@@ -10,7 +11,7 @@ export const triggerStyle = css({
   border: `1px solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.md,
   backgroundColor: vars.color.surfaceRaised,
-  minBlockSize: '40px',
+  minBlockSize: vars.space[10],
   paddingBlock: vars.space[2],
   paddingInline: vars.space[4],
   font: 'inherit',
@@ -32,7 +33,7 @@ export const triggerStyle = css({
     opacity: 0.55,
     cursor: 'not-allowed',
   },
-  '@media (prefers-reduced-motion: reduce)': {
+  [REDUCED_MOTION]: {
     transitionDuration: '0s',
   },
 });
