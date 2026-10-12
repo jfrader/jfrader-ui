@@ -14,6 +14,9 @@ importers:
 
   apps/docs:
     dependencies:
+      '@emotion/cache':
+        specifier: ^11.14.0
+        version: 11.14.0
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.3.0)(react@19.3.0)
@@ -21,11 +24,11 @@ importers:
         specifier: link:../../../../storybook-docs
         version: link:../../../../storybook-docs
       '@jfrader/tokens':
-        specifier: workspace:*
-        version: link:../../packages/tokens
+        specifier: link:../../../../jfrader-ui/packages/tokens
+        version: link:../../../../jfrader-ui/packages/tokens
       '@jfrader/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
+        specifier: link:../../../../jfrader-ui/packages/ui
+        version: link:../../../../jfrader-ui/packages/ui
       react:
         specifier: ^19.3.0
         version: 19.3.0

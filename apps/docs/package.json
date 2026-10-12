@@ -3,15 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "pnpm tokens && vite",
+    "build": "pnpm tokens && vite build",
+    "preview": "vite preview",
+    "tokens": "pnpm --dir ../../../../jfrader-ui/packages/tokens generate"
   },
   "dependencies": {
+    "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@jfrader/storybook-docs": "link:../../../../storybook-docs",
-    "@jfrader/tokens": "workspace:*",
-    "@jfrader/ui": "workspace:*",
+    "@jfrader/tokens": "link:../../../../jfrader-ui/packages/tokens",
+    "@jfrader/ui": "link:../../../../jfrader-ui/packages/ui",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
