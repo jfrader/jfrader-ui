@@ -15,7 +15,7 @@
 //   warns in development and links to the first option that is not current.
 // - inline: a labelled <nav> listing every option; the current one is plain text
 //   (<span aria-current="true">), the others are links in native Tab order.
-// - segmented: the inline structure drawn as a bordered pill group; the current option is filled
+// - pills: the inline structure drawn as a bordered pill group; the current option is filled
 //   with the accent.
 import {
   useEffect,
@@ -45,7 +45,7 @@ declare const process: { env: { NODE_ENV?: string } };
 const FAMILY = 'LocaleSwitcher';
 const SELECTED_GLYPH = '✓';
 
-export type LocaleSwitcherVariant = 'menu' | 'swap' | 'inline' | 'segmented';
+export type LocaleSwitcherVariant = 'menu' | 'swap' | 'inline' | 'pills';
 export type LocaleSwitcherSize = 'sm' | 'md' | 'lg';
 
 /** Spread these props onto the link returned by an option's `render` callback. */
@@ -89,7 +89,7 @@ export interface LocaleSwitcherProps extends Omit<ComponentPropsWithRef<'nav'>, 
   size?: LocaleSwitcherSize;
   /** Names the menu trigger's action, such as "Change language". Read before the current label. */
   triggerLabel?: string;
-  /** Names the navigation landmark in the inline and segmented variants. */
+  /** Names the navigation landmark in the inline and pills variants. */
   label?: string;
   /** Shows a decorative icon before the menu's current label. Defaults to a globe. `null` removes it. */
   icon?: ReactNode;
@@ -198,7 +198,7 @@ const currentStyle = css({
   fontWeight: vars.fontWeight.medium,
 });
 
-const segmentedListStyle = css({
+const pillsListStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
   gap: `calc(${vars.space[1]} / 2)`,
@@ -212,15 +212,15 @@ const segmentedListStyle = css({
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
 
-const segmentStyle = css({
+const pillStyle = css({
   justifyContent: 'center',
   boxSizing: 'border-box',
   borderRadius: vars.radius.full,
   whiteSpace: 'nowrap',
 });
 
-// Outer pill heights match the menu trigger: segment + padding + border = 32 / 40 / 48px.
-const segmentSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
+// Outer pill heights match the menu trigger: pill + padding + border = 32 / 40 / 48px.
+const pillSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
   sm: css({ minBlockSize: vars.space[6], minInlineSize: vars.space[10], paddingInline: vars.space[2] }),
   md: css({ minBlockSize: vars.space[8], minInlineSize: vars.space[12], paddingInline: vars.space[3] }),
   lg: css({
@@ -230,7 +230,7 @@ const segmentSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
   }),
 };
 
-const segmentLinkStyle = css({
+const pillLinkStyle = css({
   color: vars.color.textMuted,
   textDecoration: 'none',
   transitionProperty: 'color',
@@ -247,7 +247,7 @@ const segmentLinkStyle = css({
   },
 });
 
-const segmentCurrentStyle = css({
+const pillCurrentStyle = css({
   backgroundColor: vars.color.accent,
   color: vars.color.accentContrast,
   fontWeight: vars.fontWeight.medium,
@@ -468,14 +468,14 @@ function InlineVariant(props: VariantProps) {
   return <OptionList {...props} listStyles={listStyle} linkStyles={linkStyle} currentStyles={currentStyle} />;
 }
 
-function SegmentedVariant(props: VariantProps) {
-  const segment = [segmentStyle, segmentSizeStyles[props.size]];
+function PillsVariant(props: VariantProps) {
+  const pill = [pillStyle, pillSizeStyles[props.size]];
   return (
     <OptionList
       {...props}
-      listStyles={segmentedListStyle}
-      linkStyles={[segment, segmentLinkStyle]}
-      currentStyles={[segment, segmentCurrentStyle]}
+      listStyles={pillsListStyle}
+      linkStyles={[pill, pillLinkStyle]}
+      currentStyles={[pill, pillCurrentStyle]}
     />
   );
 }
@@ -484,10 +484,10 @@ const VARIANTS: Record<LocaleSwitcherVariant, (props: VariantProps) => ReactNode
   menu: MenuVariant,
   swap: SwapVariant,
   inline: InlineVariant,
-  segmented: SegmentedVariant,
+  pills: PillsVariant,
 };
 
-const ROOT_ELEMENT = { menu: 'div', swap: 'div', inline: 'nav', segmented: 'nav' } as const satisfies Record<
+const ROOT_ELEMENT = { menu: 'div', swap: 'div', inline: 'nav', pills: 'nav' } as const satisfies Record<
   LocaleSwitcherVariant,
   'div' | 'nav'
 >;
