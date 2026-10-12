@@ -126,3 +126,23 @@
   font-size: var(--ui-text-size-sm);
   font-weight: var(--ui-font-weight-medium);
 }
+
+@media (max-width: 48rem) {
+  .showcase-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .showcase-sidebar {
+    border-inline-end: 0;
+    border-block-end: 1px solid var(--ui-color-border);
+  }
+
+  .showcase-topbar {
+    flex-wrap: wrap;
+    padding-inline: var(--ui-space-4);
+  }
+
+  .showcase-main {
+    padding: var(--ui-space-4);
+  }
+}

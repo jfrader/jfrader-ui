@@ -35,7 +35,6 @@
   margin-block-start: var(--ui-space-2);
 }
 
-/* Button renders a <button> only; links styled to match its solid/outline md variants. */
 .home-cta {
   display: inline-flex;
   align-items: center;
