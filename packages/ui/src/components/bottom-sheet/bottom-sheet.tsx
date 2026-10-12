@@ -3,7 +3,10 @@
 // Modal dialog with an expanded-state button: Up/Down select adjacent detents, Home/End
 // select tallest/smallest, and Enter/Space toggle the extremes. Body PageDown/Space expands
 // before reading. Escape cancels a drag first, then dismisses the topmost shared overlay.
-// Native closure is immediate; detents are stable fractions and each state axis has one owner.
+// The panel rises from below the viewport to the selected detent after showModal() and sinks
+// back before the native close (the sheet stays modal until then); reduced motion is instant.
+// The shell clips instead of hiding overflow, so showModal()'s focus scroll cannot pull the
+// offscreen panel into view. Detents are stable fractions and each state axis has one owner.
 import {
   createContext,
   useCallback,
@@ -43,7 +46,9 @@ import {
   useNativeDialog,
   useNativeDialogRoot,
   type NativeDialogController,
+  type NativeDialogTransition,
 } from '../../overlay/use-native-dialog';
+import { PRESENCE_SPRING } from '../../overlay/presence-spring';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -110,7 +115,7 @@ const shellStyle = css({
   blockSize: '100dvh',
   maxInlineSize: 'none',
   maxBlockSize: 'none',
-  overflow: 'hidden',
+  overflow: 'clip',
   '&::backdrop': { backgroundColor: 'transparent' },
 });
 const scrimStyle = css({
@@ -259,6 +264,9 @@ interface SurfaceContext {
   gesture: Gesture;
   cancelDrag: () => boolean;
   suppressClick: RefObject<boolean>;
+  transition: NativeDialogTransition;
+  /** The native dialog closed: park the panel below the viewport for the next entrance. */
+  reset: () => void;
 }
 const Context = createContext<SheetContext | null>(null);
 const Surface = createContext<SurfaceContext | null>(null);
@@ -431,13 +439,21 @@ function useSheetSurface(context: SheetContext, dialogRef: RefObject<HTMLDialogE
   const reduced = useReducedMotion();
   const latest = useRef({ context, reduced });
   latest.current = { context, reduced };
+  // The exit owns `y` until the native close; detent changes and drags wait for the next open.
+  const exiting = useRef(false);
   const acceptedY = () =>
     height.current * (1 - latest.current.context.detents[latest.current.context.value]!);
-  const settle = useCallback(() => {
-    animation.current?.stop();
-    if (latest.current.reduced) y.set(acceptedY());
-    else animation.current = animate(y, acceptedY(), SPRING);
-  }, [y]);
+  // Shown: the accepted detent. Closed: just below the viewport, where the entrance starts.
+  const restingY = () => (dialogRef.current?.open ? acceptedY() : height.current);
+  const settle = useCallback(
+    (spring: typeof SPRING | typeof PRESENCE_SPRING = SPRING) => {
+      if (exiting.current) return;
+      animation.current?.stop();
+      if (latest.current.reduced || !dialogRef.current?.open) y.set(restingY());
+      else animation.current = animate(y, acceptedY(), spring);
+    },
+    [y, dialogRef],
+  );
   const cancelDrag = useCallback(() => {
     const session = drag.current;
     if (!session) return false;
@@ -473,9 +489,11 @@ function useSheetSurface(context: SheetContext, dialogRef: RefObject<HTMLDialogE
       height.current = Math.max(1, viewportHeight - safeInset.current);
       dialog.style.blockSize = `${viewportHeight}px`;
       dialog.style.insetBlockStart = `${viewport?.offsetTop ?? 0}px`;
-      animation.current?.stop();
-      drag.current = null;
-      y.set(acceptedY());
+      if (!exiting.current) {
+        animation.current?.stop();
+        drag.current = null;
+        y.set(restingY());
+      }
       draw(y.get());
     };
     measure();
@@ -504,13 +522,37 @@ function useSheetSurface(context: SheetContext, dialogRef: RefObject<HTMLDialogE
   useEffect(() => {
     cancelDrag();
     settle();
-  }, [context.value, context.open, settle, reduced, cancelDrag]);
+  }, [context.value, settle, reduced, cancelDrag]);
+  const transition = useMemo(
+    (): NativeDialogTransition => ({
+      enter: () => {
+        exiting.current = false;
+        settle(PRESENCE_SPRING);
+      },
+      exit: () => {
+        cancelDrag();
+        if (latest.current.reduced) return undefined;
+        exiting.current = true;
+        animation.current?.stop();
+        animation.current = animate(y, height.current, PRESENCE_SPRING);
+        return animation.current.finished;
+      },
+    }),
+    [settle, cancelDrag, y],
+  );
+  const reset = useCallback(() => {
+    exiting.current = false;
+    animation.current?.stop();
+    animation.current = null;
+    y.set(height.current);
+  }, [y]);
   const begin = (
     id: number,
     position: number,
     time: number,
     capture: HTMLDivElement | null = null,
   ) => {
+    if (exiting.current) return;
     animation.current?.stop();
     suppressClick.current = false;
     capture?.setAttribute('data-dragging', '');
@@ -697,7 +739,7 @@ function useSheetSurface(context: SheetContext, dialogRef: RefObject<HTMLDialogE
       body.removeEventListener('touchcancel', cancel);
     };
   }, [cancelDrag]);
-  return { panelRef, bodyRef, gesture, cancelDrag, suppressClick };
+  return { panelRef, bodyRef, gesture, cancelDrag, suppressClick, transition, reset };
 }
 
 function BottomSheetContent({ ref, sx, className, ...props }: BottomSheetContentProps) {
@@ -729,10 +771,14 @@ function BottomSheetContent({ ref, sx, className, ...props }: BottomSheetContent
           event.preventDefault();
         }
       },
-      onClose,
+      onClose: (event) => {
+        surface.reset();
+        onClose?.(event);
+      },
     },
     ref,
     dialogRef,
+    surface.transition,
   );
   const mergedRef = useMergeRefs([native.ref, context.floating.refs.setFloating]);
   const previousValue = useRef(context.value);

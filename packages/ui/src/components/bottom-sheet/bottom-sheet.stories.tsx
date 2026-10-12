@@ -35,7 +35,7 @@ const meta = {
       source: { code: USAGE },
       description: {
         component:
-          'Modal-only bottom sheet with stable ascending fractional detents and an independent numeric index axis (`value/defaultValue/onValueChange`). Native dialog contains focus and makes the background inert even at peek height; closure is immediate. Up/Down on Handle select adjacent detents, Home/End select tallest/smallest, Enter/Space toggle the extremes. Escape cancels a drag first, otherwise dismisses only the topmost layer. Body PageDown/Space expands before scrolling; reverse reading keys scroll natively. Supply localized Handle/Close names and optional getValueText/locale (Intl percent by default). Detent contents require remount to change. Floating children need a stable ThemeRoot portalContainer host inside Content, not a body portal. Reduced motion jumps to accepted detents without spring travel. Mobile keyboard/touch and screen-reader verification remain manual gates.',
+          'Modal-only bottom sheet with stable ascending fractional detents and an independent numeric index axis (`value/defaultValue/onValueChange`). Native dialog contains focus and makes the background inert even at peek height. The panel rises from below to its detent on open and sinks back before the dialog closes. Up/Down on Handle select adjacent detents, Home/End select tallest/smallest, Enter/Space toggle the extremes. Escape cancels a drag first, otherwise dismisses only the topmost layer. Body PageDown/Space expands before scrolling; reverse reading keys scroll natively. Supply localized Handle/Close names and optional getValueText/locale (Intl percent by default). Detent contents require remount to change. Floating children need a stable ThemeRoot portalContainer host inside Content, not a body portal. Reduced motion opens, closes and jumps to accepted detents without spring travel. Mobile keyboard/touch and screen-reader verification remain manual gates.',
       },
     },
   },
@@ -173,6 +173,104 @@ export const Default: Story = {
     await expect(canvasElement.ownerDocument.activeElement).toBe(
       canvas.getByRole('button', { name: TRIGGER }),
     );
+  },
+};
+interface SheetFrame {
+  open: boolean;
+  top: number;
+  scrim: number;
+  /** The shell's scroll offset; any scroll would cancel the panel's travel on screen. */
+  scroll: number;
+}
+
+/** One reading per animation frame, from `start()` until `done` holds or the time runs out. */
+async function sampleFrames(
+  canvasElement: HTMLElement,
+  start: () => void,
+  done: (frame: SheetFrame) => boolean,
+) {
+  const dialog = dialogIn(canvasElement);
+  const panel = panelIn(canvasElement);
+  const win = dialog.ownerDocument.defaultView!;
+  const frames: SheetFrame[] = [];
+  const startedAt = win.performance.now();
+  start();
+  await new Promise<void>((resolve) => {
+    const tick = () => {
+      const frame = {
+        open: dialog.open,
+        top: panel.getBoundingClientRect().top,
+        scrim: Number.parseFloat(dialog.style.getPropertyValue('--sheet-scrim')),
+        scroll: dialog.scrollTop,
+      };
+      frames.push(frame);
+      if (done(frame) || win.performance.now() - startedAt > 2000) resolve();
+      else win.requestAnimationFrame(tick);
+    };
+    win.requestAnimationFrame(tick);
+  });
+  return frames;
+}
+const isMonotonic = (values: number[], direction: 1 | -1) =>
+  values.every((value, index) => index === 0 || (value - values[index - 1]!) * direction >= -0.01);
+
+export const EntranceAndExit: Story = {
+  render,
+  play: async ({ canvas, canvasElement, args }) => {
+    const trigger = canvas.getByRole('button', { name: TRIGGER });
+    const win = canvasElement.ownerDocument.defaultView!;
+    const viewportBottom = (win.visualViewport?.offsetTop ?? 0) + (win.visualViewport?.height ?? win.innerHeight);
+    const detentTop = viewportBottom - (win.visualViewport?.height ?? win.innerHeight) * 0.45;
+
+    // Entrance: the panel rises from below the viewport to the selected detent; the scrim follows.
+    trigger.focus();
+    const entrance = await sampleFrames(
+      canvasElement,
+      () => trigger.click(),
+      (frame) => Math.abs(frame.top - detentTop) < 1,
+    );
+    await expect(entrance.every((frame) => frame.scroll === 0)).toBe(true);
+    await expect(entrance[0]!.top).toBeGreaterThan(viewportBottom - (viewportBottom - detentTop) / 2);
+    await expect(new Set(entrance.map((frame) => frame.top)).size).toBeGreaterThan(2);
+    await expect(isMonotonic(entrance.map((frame) => frame.top), -1)).toBe(true);
+    await expect(isMonotonic(entrance.map((frame) => frame.scrim), 1)).toBe(true);
+    await settled(canvasElement, 0.45);
+
+    // Exit: the dialog stays open while the panel sinks, then closes and returns focus.
+    const close = canvas.getByRole('button', { name: 'Close' });
+    const exit = await sampleFrames(canvasElement, () => close.click(), (frame) => !frame.open);
+    const retained = exit.filter((frame) => frame.open);
+    await expect(retained.length).toBeGreaterThan(1);
+    await expect(retained.every((frame) => frame.scroll === 0)).toBe(true);
+    await expect(new Set(retained.map((frame) => frame.top)).size).toBeGreaterThan(1);
+    await expect(isMonotonic(retained.map((frame) => frame.top), 1)).toBe(true);
+    await expect(retained.at(-1)!.top).toBeGreaterThan(detentTop);
+    await expect(isMonotonic(retained.map((frame) => frame.scrim), -1)).toBe(true);
+    await expect(exit.at(-1)!.open).toBe(false);
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(trigger));
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+  },
+};
+export const ReopenDuringExit: Story = {
+  render,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: TRIGGER });
+    await userEvent.click(trigger);
+    await settled(canvasElement, 0.45);
+    const panel = panelIn(canvasElement);
+    const rest = panel.getBoundingClientRect().top;
+    fireEvent.click(canvas.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(panel.getBoundingClientRect().top).toBeGreaterThan(rest + 1));
+    await expect(dialogIn(canvasElement).open).toBe(true);
+    // Mid-exit the logical state is already closed; a programmatic reopen turns the panel back.
+    fireEvent.click(trigger);
+    await settled(canvasElement, 0.45);
+    await expect(dialogIn(canvasElement).open).toBe(true);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(3);
+    for (const [index, open] of [true, false, true].entries()) {
+      await expect(args.onOpenChange).toHaveBeenNthCalledWith(index + 1, open);
+    }
   },
 };
 export const SingleDetent: Story = {
