@@ -402,6 +402,24 @@ export const RTL: Story = {
 };
 export const ForcedColors: Story = {
   args: { defaultExpandDepth: 3 },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const root = canvas.getByRole('treeitem', { name: /^root:/ });
+    const caret = root.querySelector('[data-ui="json-viewer-caret"]')!;
+    const view = canvasElement.ownerDocument.defaultView!;
+    const expectTriangle = async () => {
+      const style = view.getComputedStyle(caret, '::after');
+      await expect(style.borderBlockStartColor).toBe('rgba(0, 0, 0, 0)');
+      await expect(style.borderBlockEndColor).toBe('rgba(0, 0, 0, 0)');
+      await expect(style.borderInlineStartColor).not.toBe('rgba(0, 0, 0, 0)');
+    };
+    await expectTriangle();
+    root.focus();
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(root).toHaveAttribute('aria-expanded', 'false');
+    await expectTriangle();
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(root).toHaveAttribute('aria-expanded', 'true');
+  },
   parameters: {
     docs: {
       description: {
