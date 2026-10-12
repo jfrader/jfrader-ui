@@ -276,6 +276,7 @@ export const ControlledTimeline: Story = {
     await userEvent.keyboard('{End}');
     await expect(slider).toHaveValue(slider.getAttribute('max'));
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(canvas.getByRole('status')).toHaveTextContent(/^Seek session: /);
     await userEvent.keyboard('{Home}');
     await expect(slider).toHaveValue('0');
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
@@ -300,7 +301,9 @@ export const ControlledPaused: Story = {
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Play' }));
     await expect(canvas.getByRole('button', { name: 'Pause' })).toBeVisible();
+    await expect(canvas.getByRole('status')).toHaveTextContent('Playing');
     await userEvent.click(canvas.getByRole('button', { name: 'Pause' }));
+    await expect(canvas.getByRole('status')).toHaveTextContent('Paused');
     await expect(args.onPausedChange).toHaveBeenNthCalledWith(1, false);
     await expect(args.onPausedChange).toHaveBeenNthCalledWith(2, true);
     await expect(args.onPausedChange).toHaveBeenCalledTimes(2);
@@ -310,14 +313,18 @@ export const RejectedRequests: Story = {
   args: { value: 40, paused: true, steps: CLOCK_SCRIPT },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const before = screen(canvasElement).textContent;
+    const status = canvas.getByRole('status');
     await userEvent.click(canvas.getByRole('button', { name: 'Play' }));
     await expect(canvas.getByRole('button', { name: 'Play' })).toBeVisible();
+    await expect(status).toBeEmptyDOMElement();
     const slider = canvas.getByRole('slider');
     slider.focus();
     await userEvent.keyboard('{End}');
     await expect(slider).toHaveValue('40');
     await expect(screen(canvasElement).textContent).toBe(before);
+    await expect(status).toBeEmptyDOMElement();
     await userEvent.click(canvas.getByRole('button', { name: 'Replay' }));
+    await expect(status).toBeEmptyDOMElement();
     await expect(args.onValueChange).toHaveBeenNthCalledWith(1, 400);
     await expect(args.onValueChange).toHaveBeenNthCalledWith(2, 0);
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
@@ -628,7 +635,13 @@ export const SlotStyles: Story = {
     await expect(
       parseFloat(getComputedStyle(canvasElement.querySelector('header')!).paddingInlineStart),
     ).toBeCloseTo(24, 0);
-    await expect(getComputedStyle(screen(canvasElement)).fontSize).toBe('16px');
+    const remPx = parseFloat(
+      getComputedStyle(canvasElement.ownerDocument.documentElement).fontSize,
+    );
+    await expect(parseFloat(getComputedStyle(screen(canvasElement)).fontSize)).toBeCloseTo(
+      remPx,
+      0,
+    );
     await expect(getComputedStyle(canvasElement.querySelector('figcaption')!).fontWeight).toBe(
       '500',
     );

@@ -373,6 +373,12 @@ function safeHref(href: string | undefined) {
     return undefined;
   }
 }
+/** A deliberate request's announcement, spoken only once the requested state is accepted. */
+interface Announcement {
+  message: string;
+  position?: number;
+  paused?: boolean;
+}
 function joined(...ids: (string | undefined)[]) {
   return ids.filter(Boolean).join(' ') || undefined;
 }
@@ -427,6 +433,7 @@ export function TypewriterTerminal({
     target: null,
   });
   const [status, setStatus] = useState('');
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [copying, setCopying] = useState(false);
   const screen = useRef<HTMLDivElement>(null);
   const copyGuard = useRef(0);
@@ -541,6 +548,15 @@ export function TypewriterTerminal({
     requestPaused,
   ]);
 
+  useEffect(() => {
+    if (!announcement) return;
+    setAnnouncement(null);
+    const accepted =
+      (announcement.position === undefined || announcement.position === current) &&
+      (announcement.paused === undefined || announcement.paused === isPaused);
+    if (accepted) setStatus(announcement.message);
+  }, [announcement, current, isPaused]);
+
   useLayoutEffect(() => {
     const element = screen.current;
     if (!element || isPaused || !visible || !foreground) return;
@@ -563,13 +579,17 @@ export function TypewriterTerminal({
 
   function seek(next: number) {
     const accepted = clamp(next, session.duration);
-    if (accepted !== current) requestPosition(accepted);
     if (reduced) setSnapshot({ active: snapshotActive, target: accepted });
-    if (accepted !== current) setStatus(`${labels.seek}: ${seconds.format(accepted / 1000)} s`);
+    if (accepted === current) return;
+    requestPosition(accepted);
+    setAnnouncement({
+      message: `${labels.seek}: ${seconds.format(accepted / 1000)} s`,
+      position: accepted,
+    });
   }
   function togglePaused() {
     requestPaused(!isPaused);
-    setStatus(isPaused ? labels.playing : labels.paused);
+    setAnnouncement({ message: isPaused ? labels.playing : labels.paused, paused: !isPaused });
   }
   async function copy() {
     if (pendingCopy.current) return;
@@ -742,7 +762,7 @@ export function TypewriterTerminal({
                   requestPaused(false);
                   completionPending.current = null;
                   setSnapshot({ active: false, target: null });
-                  setStatus(labels.replayed);
+                  setAnnouncement({ message: labels.replayed, position: 0, paused: false });
                 }}
               >
                 {labels.replay}
