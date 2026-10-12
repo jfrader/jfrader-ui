@@ -9,11 +9,13 @@ import {
   GameTable, buildAlternatingSlots, buildBoardLayoutModel, buildTableOrderSlots,
   getTablePointSeatIndexes, resolveTableTurnDirection,
   type BoardPlayerCount, type BoardViewportProfile, type GameTableProps, type SeatLike,
+  type GameTableSlot,
   resolveBoardViewportProfile,
 } from './index';
 import { REFERENCE_GEOMETRY, BREAKPOINT_CASES, REFERENCE_SLOT_KEYS } from './reference-fixtures';
 import { ReferenceShell } from './reference-shell.fixture';
 import { validateSlots } from './table-slots';
+import { expectInside, expectMirrored, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
 
 interface Player extends SeatLike { name: string }
 const SEATS: [Player, Player, Player, Player, Player, Player] = [
@@ -25,10 +27,62 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
   { key: 'frankie', teamIdx: 1, name: 'Frankie' },
 ];
 const COUNTS = [2, 4, 6] as const;
+const GEOMETRY_TOLERANCE_PX = 1;
 const measurementFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 function required<T>(value: T | undefined): T {
   if (value === undefined) throw new Error('Missing fixture item');
   return value;
+}
+
+async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, profile: BoardViewportProfile) {
+  const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined);
+  const frame = surface.getBoundingClientRect();
+  const style = getComputedStyle(surface);
+  const borderX = Number.parseFloat(style.borderLeftWidth);
+  const borderY = Number.parseFloat(style.borderTopWidth);
+  const paddingWidth = frame.width - borderX - Number.parseFloat(style.borderRightWidth);
+  const paddingHeight = frame.height - borderY - Number.parseFloat(style.borderBottomWidth);
+  const fixture = required(REFERENCE_GEOMETRY.find(([kind, name, count]) => kind === 'match' && name === profile && count === players));
+  const [, , , ...positions] = fixture;
+  const seats = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
+  const dock = required(table.querySelector<HTMLElement>('[data-ui="game-table-dock"]') ?? undefined);
+  for (const [index, seat] of seats.entries()) {
+    const [inline, block, shiftX, shiftY, groupY] = required(positions[index]);
+    const box = seat.getBoundingClientRect();
+    const inlinePercent = style.direction === 'rtl' ? 100 - inline : inline;
+    const inlineShift = style.direction === 'rtl' ? -shiftX : shiftX;
+    const x = borderX + inlinePercent / 100 * paddingWidth + inlineShift - box.width / 2;
+    const y = borderY + block / 100 * paddingHeight + shiftY + groupY - box.height / 2;
+    const expected = { left: x, right: frame.width - x - box.width, top: y, bottom: frame.height - y - box.height };
+    const actual = { left: box.left - frame.left, right: frame.right - box.right, top: box.top - frame.top, bottom: frame.bottom - box.bottom };
+    // Overflow is a signed reference target, not a blanket 40px measurement tolerance.
+    const designOverhang = Math.max(0, -Math.min(...Object.values(expected)));
+    await expectInside(seat, surface, { tolerancePx: designOverhang + GEOMETRY_TOLERANCE_PX });
+    for (const edge of ['left', 'right', 'top', 'bottom'] as const) {
+      await expect(Math.abs(actual[edge] - expected[edge]), `${profile}/${players} seat ${index} ${edge}: measured=${actual[edge]}px; reference=${expected[edge]}px; measurement tolerance=${GEOMETRY_TOLERANCE_PX}px`)
+        .toBeLessThanOrEqual(GEOMETRY_TOLERANCE_PX);
+    }
+    await expectNoOverlap(seat, dock, { tolerancePx: GEOMETRY_TOLERANCE_PX });
+    for (const other of seats.slice(index + 1)) await expectNoOverlap(seat, other, { tolerancePx: GEOMETRY_TOLERANCE_PX });
+  }
+  // Two/four-seat presets are antipodal, not axial mirrors. Mobile group shifts move their symmetry center.
+  for (let index = 0; index < players / 2; index++) {
+    const a = required(seats[index]).getBoundingClientRect();
+    const b = required(seats[index + players / 2]).getBoundingClientRect();
+    const groupSum = required(positions[index])[4] + required(positions[index + players / 2])[4];
+    const dx = a.left + a.width / 2 + b.left + b.width / 2 - frame.left - frame.right;
+    const dy = a.top + a.height / 2 + b.top + b.height / 2 - frame.top - frame.bottom - groupSum;
+    await expect(Math.abs(dx), `Antipodal X seats ${index}/${index + players / 2}: delta=${dx}px; tolerance=${GEOMETRY_TOLERANCE_PX}px`).toBeLessThanOrEqual(GEOMETRY_TOLERANCE_PX);
+    await expect(Math.abs(dy), `Antipodal Y seats ${index}/${index + players / 2}: delta=${dy}px after reference group shift ${groupSum}px; tolerance=${GEOMETRY_TOLERANCE_PX}px`).toBeLessThanOrEqual(GEOMETRY_TOLERANCE_PX);
+  }
+  if (players === 6) {
+    await expectMirrored(required(seats[1]), required(seats[5]), surface, 'vertical', { tolerancePx: GEOMETRY_TOLERANCE_PX });
+    await expectMirrored(required(seats[2]), required(seats[4]), surface, 'vertical', { tolerancePx: GEOMETRY_TOLERANCE_PX });
+    if (required(positions[0])[4] + required(positions[3])[4] === 0) {
+      await expectMirrored(required(seats[0]), required(seats[3]), surface, 'horizontal', { tolerancePx: GEOMETRY_TOLERANCE_PX });
+      await expectMirrored(required(seats[1]), required(seats[2]), surface, 'horizontal', { tolerancePx: GEOMETRY_TOLERANCE_PX });
+    }
+  }
 }
 const VIEWPORTS = {
   phoneCompact: { width: 412, height: 816 },
@@ -40,7 +94,7 @@ const VIEWPORTS = {
 } satisfies Record<BoardViewportProfile, { width: number; height: number }>;
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
-const renderSeat = fn<GameTableProps<Player>['renderSeat']>((slot) => (
+const seatChrome = (slot: GameTableSlot<Player>) => (
   <div style={{ display: 'grid', justifyItems: 'center', gap: vars.space[1] }}>
     <span>{slot.player?.name ?? 'Open seat'}</span>
     <div style={{ display: 'flex', gap: vars.space[1] }}>
@@ -48,7 +102,8 @@ const renderSeat = fn<GameTableProps<Player>['renderSeat']>((slot) => (
       <GameCard size="sm" label={`${slot.player?.name ?? 'Open seat'}: second hidden card`} />
     </div>
   </div>
-));
+);
+const renderSeat = fn<GameTableProps<Player>['renderSeat']>((slot) => seatChrome(slot));
 const center = (
   <div style={{ display: 'grid', justifyItems: 'center', gap: vars.space[2] }}>
     <span>Pot: 240</span>
@@ -84,6 +139,11 @@ The default shell padding, strip spacing, maximum width and match translation fo
 \`clearance\` reserves extra block-axis space around the surface; the default is zero for reference framing. There is no automatic fit or content measurement. Large cards and tall seat chrome can overlap or be clipped in short containers. Increase clearance, reduce chrome/card size, or give the table more height; changing clearance also changes percentage-based surface dimensions. The landscape examples use 32px/64px/96px for sm/md/lg, not universal safe minima.
 Clearance can separate seats from the dock while making the surface smaller; it does not prevent seats from overlapping each other. Six lg cards do not fit in the 840×360 example even with the dock cleared. Use more height or smaller cards for that composition.
 Coordinates are measured from inline-start and mirror with \`dir="rtl"\`. \`data-game-surface="true"\` marks the surface for measuring future card flights.
+
+### Seat framing
+The inherited presets do not put every seat border box on the same edge of the table's bounding rectangle. Two/four-seat layouts use antipodal pairs (a 180° rotation), not left/right or top/bottom axial mirrors; six-seat layouts mirror left/right. Mobile group offsets move the antipodal symmetry center: phoneCompact +4px, phoneTall −2px and phoneWide −1px vertically.
+Seat chrome can extend beyond the surface rectangle. With the story's 188.80×73.36px chrome on desktop, two-seat top/bottom overflow is about 1.72px; four-seat side overflow is 13.96px; six-seat side overflow is 39.53px and top/bottom overflow is 7.93px. These are reference placements, not rounding tolerances or an equal-edge-alignment promise. Negative edge distance means overflow; positive means inside the rectangle, not distance to the curved rim.
+The matrix tests bound every signed edge against independent reference coordinates within 1 CSS px (subpixel layout/rounding), separate from the design overhang. Mirrors and seat/dock non-overlap use the same 1px measurement tolerance. They do not allow a blanket 40px error.
 
 ### Measuring flights
 Query from the root ref, never from the document (multiple tables may exist):
@@ -159,6 +219,7 @@ const matrixStory = (profile: BoardViewportProfile, theme: 'dark' | 'light'): St
       const dock = required(table.querySelector<HTMLElement>('[data-ui="game-table-dock"]') ?? undefined).getBoundingClientRect();
       const own = required(table.querySelector<HTMLElement>('[data-ui="game-table-seat"]') ?? undefined).getBoundingClientRect();
       await expect(own.bottom).toBeLessThanOrEqual(dock.top);
+      await expectSeatFraming(table, required(COUNTS[index]), profile);
     }
   },
 });
@@ -175,6 +236,24 @@ export const TabletWideDark = matrixStory('tabletWide', 'dark');
 export const TabletWideLight = matrixStory('tabletWide', 'light');
 export const DesktopDark = matrixStory('desktop', 'dark');
 export const DesktopLight = matrixStory('desktop', 'light');
+
+const referenceChromeStory = (profile: 'desktop' | 'phoneCompact'): Story => ({
+  args: { viewport: VIEWPORTS[profile] },
+  render: (args) => (
+    <div style={{ inlineSize: 'max-content' }}>
+      {COUNTS.map((players) => {
+        const slots = buildAlternatingSlots(seatsFor(players), players, 'counterclockwise');
+        return (
+          <div key={players} data-reference-chrome-count={players} style={{ inlineSize: args.viewport.width, blockSize: args.viewport.height }}>
+            <ReferenceShell profile={profile} surface="match" players={players} renderSeat={(index) => seatChrome(required(slots[index]))} />
+          </div>
+        );
+      })}
+    </div>
+  ),
+});
+export const ReferenceChromeDesktop = referenceChromeStory('desktop');
+export const ReferenceChromePhoneCompact = referenceChromeStory('phoneCompact');
 
 export const SlotOrderAndGeometry: Story = {
   play: async () => {
@@ -277,6 +356,8 @@ export const MirroredSeats: Story = {
       await expect((a.x + a.width / 2 - ltrBox.x) + (b.x + b.width / 2 - rtlBox.x)).toBeCloseTo(ltrBox.width, 1);
       await expect(a.y - ltrBox.y).toBeCloseTo(b.y - rtlBox.y, 1);
     }
+    await expectMirroredDirection(ltr, '[data-ui="game-table-seat"]');
+    await expectMirroredDirection(rtl, '[data-ui="game-table-seat"]');
   },
 };
 
