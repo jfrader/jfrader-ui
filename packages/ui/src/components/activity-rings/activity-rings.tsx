@@ -66,7 +66,7 @@ export interface ActivityRingsLabels {
   amount: (value: string, goal: string) => string;
   summary: (met: string, total: string) => string;
 }
-type PartElement = 'svg' | 'ul' | 'button' | 'fieldset' | 'label' | 'p';
+type PartElement = 'svg' | 'ul' | 'button' | 'div' | 'fieldset' | 'label' | 'p';
 export type ActivityRingsPartProps<T extends PartElement> = Omit<
   ComponentPropsWithoutRef<T>,
   'children'
@@ -84,12 +84,44 @@ type DataSource =
       days: readonly ActivityDay[];
       values?: never;
     };
+interface ActivityRingsSlotProps {
+  rings?: ActivityRingsPartProps<'svg'>;
+  legend?: ActivityRingsPartProps<'ul'>;
+  dayPicker?: ActivityRingsPartProps<'fieldset'>;
+  dayLabel?: ActivityRingsPartProps<'label'>;
+  summary?: ActivityRingsPartProps<'p'>;
+}
+/** Metric slot props shared by the toggle-button and plain-row legend elements. */
+export type ActivityRingsMetricProps = Pick<
+  ActivityRingsPartProps<'button'> & ActivityRingsPartProps<'div'>,
+  keyof ActivityRingsPartProps<'button'> & keyof ActivityRingsPartProps<'div'>
+>;
+/**
+ * The metric slot targets the element each legend row renders: a toggle button when
+ * `interactiveLegend` is `true`, a plain row when it is `false` or omitted, and only props shared by
+ * both when the flag is a runtime boolean.
+ */
+type LegendMode =
+  | {
+      /** Legend rows become toggle buttons that isolate one ring. */
+      interactiveLegend: true;
+      slotProps?: ActivityRingsSlotProps & { metric?: ActivityRingsPartProps<'button'> };
+    }
+  | {
+      interactiveLegend?: false;
+      slotProps?: ActivityRingsSlotProps & { metric?: ActivityRingsPartProps<'div'> };
+    }
+  | {
+      interactiveLegend?: boolean;
+      slotProps?: ActivityRingsSlotProps & { metric?: ActivityRingsMetricProps };
+    };
 export type ActivityRingsProps = Omit<
   ComponentPropsWithRef<'section'>,
   'children' | 'defaultValue' | 'onChange'
 > &
   SxProps &
-  DataSource & {
+  DataSource &
+  LegendMode & {
     /** Rendered outside → inside. */
     metrics: readonly ActivityMetric[];
     /** Selected day id. A missing id renders the no-selection summary. */
@@ -100,8 +132,6 @@ export type ActivityRingsProps = Omit<
     focusedMetric?: string | null;
     defaultFocusedMetric?: string | null;
     onFocusedMetricChange?: (metricId: string | null) => void;
-    /** Legend rows become toggle buttons that isolate one ring. */
-    interactiveLegend?: boolean;
     /** Fires once when a same-day value observed below its goal reaches it. */
     onRingClose?: (metricId: string, dayId: string | null) => void;
     size?: ActivityRingsSize;
@@ -110,14 +140,6 @@ export type ActivityRingsProps = Omit<
     labels?: Partial<ActivityRingsLabels>;
     /** Keeps the legend for assistive tech while removing it visually. */
     hideLegend?: boolean;
-    slotProps?: {
-      rings?: ActivityRingsPartProps<'svg'>;
-      legend?: ActivityRingsPartProps<'ul'>;
-      metric?: ActivityRingsPartProps<'button'>;
-      dayPicker?: ActivityRingsPartProps<'fieldset'>;
-      dayLabel?: ActivityRingsPartProps<'label'>;
-      summary?: ActivityRingsPartProps<'p'>;
-    };
   };
 
 declare const process: { env: { NODE_ENV?: string } };
@@ -356,6 +378,17 @@ function readValue(values: ActivityValues, id: string): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : null;
 }
 
+/** Unit formats for sanctioned units; any other unit falls back to the plain amount format. */
+function ringFormats(locale: string | undefined, unit: string | undefined) {
+  if (!unit) return createUsageFormats(locale);
+  try {
+    return createUsageFormats(locale, { style: 'unit', unit, unitDisplay: 'short' });
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+    return createUsageFormats(locale);
+  }
+}
+
 function summarizeRing(
   metric: ActivityMetric,
   values: ActivityValues | null,
@@ -364,12 +397,8 @@ function summarizeRing(
 ): ActivityRingSummary {
   const value = values ? readValue(values, metric.id) : null;
   if (value === null) return { metric, status: 'unknown', value, usage: null };
-  const formats = createUsageFormats(
-    locale,
-    metric.unit ? { style: 'unit', unit: metric.unit, unitDisplay: 'short' } : undefined,
-  );
   const usage = summarizeUsage(value, metric.goal, {
-    formats,
+    formats: ringFormats(locale, metric.unit),
     unavailable: labels.unavailable,
     formatAmount: metric.formatValue && ((amount) => metric.formatValue!(amount, locale)),
   });
@@ -500,7 +529,9 @@ export function ActivityRings({
       const before = previous.ratios.get(metricId);
       if (before != null && ratio != null && before < 1 && ratio >= 1) onRingClose?.(metricId, dayKey);
     }
-    // Keyed on the observed day and ratios; `rings` is this render's derivation of both.
+    // `ratioSignature` encodes every metric id and ratio the effect reads, so [dayKey,
+    // ratioSignature] covers all its inputs; `rings` is this render's derivation of them, and
+    // `onRingClose` is read from the render that changed them, so it is never stale.
   }, [dayKey, ratioSignature]);
 
   useEffect(() => {
@@ -528,7 +559,10 @@ export function ActivityRings({
   const stroke = Math.min(MAX_STROKE[size], band * STROKE_SHARE);
   const ringsSlot = slotProps?.rings;
   const legendSlot = slotProps?.legend;
-  const metricSlot = slotProps?.metric;
+  // Re-pair the destructured props so the metric slot narrows with the legend mode.
+  const legendMode = { interactiveLegend, slotProps } as LegendMode;
+  const metricButtonSlot = legendMode.interactiveLegend ? (legendMode.slotProps?.metric ?? {}) : null;
+  const metricRowSlot = legendMode.interactiveLegend ? undefined : legendMode.slotProps?.metric;
   const pickerSlot = slotProps?.dayPicker;
   const dayLabelSlot = slotProps?.dayLabel;
   const summarySlot = slotProps?.summary;
@@ -545,9 +579,11 @@ export function ActivityRings({
           aria-label={ariaLabel}
           aria-labelledby={joinIds(labelledBy, ariaLabel === undefined && titleId)}
         >
-          <span id={titleId} hidden>
-            {labels.root}
-          </span>
+          {ariaLabel === undefined && (
+            <span id={titleId} hidden>
+              {labels.root}
+            </span>
+          )}
           <div css={layoutStyle}>
             <MotionConfig reducedMotion="user">
               <svg
@@ -596,13 +632,16 @@ export function ActivityRings({
                             css={lapStyle}
                           />
                         )}
-                        <line
-                          x1={CENTER + radius + stroke / 2 + TICK_OVERHANG}
-                          x2={CENTER + radius - stroke / 2 - TICK_OVERHANG}
-                          y1={CENTER}
-                          y2={CENTER}
-                          css={tickStyle}
-                        />
+                        {(ring.status === 'open' || ring.status === 'closed') && (
+                          <line
+                            data-ui="activity-rings-tick"
+                            x1={CENTER + radius + stroke / 2 + TICK_OVERHANG}
+                            x2={CENTER + radius - stroke / 2 - TICK_OVERHANG}
+                            y1={CENTER}
+                            y2={CENTER}
+                            css={tickStyle}
+                          />
+                        )}
                       </g>
                     );
                   })}
@@ -706,16 +745,16 @@ export function ActivityRings({
                     );
                     return (
                       <li key={metric.id}>
-                        {interactiveLegend ? (
+                        {metricButtonSlot ? (
                           <button
-                            {...metricSlot}
+                            {...metricButtonSlot}
                             type="button"
                             data-ui="activity-rings-metric"
                             data-status={status}
                             aria-pressed={pressed}
-                            css={[metricStyle, metricSlot?.css]}
+                            css={[metricStyle, metricButtonSlot.css]}
                             onClick={(event) => {
-                              metricSlot?.onClick?.(event);
+                              metricButtonSlot.onClick?.(event);
                               if (!event.defaultPrevented) requestFocused(pressed ? null : metric.id);
                             }}
                           >
@@ -723,10 +762,10 @@ export function ActivityRings({
                           </button>
                         ) : (
                           <div
+                            {...metricRowSlot}
                             data-ui="activity-rings-metric"
                             data-status={status}
-                            className={metricSlot?.className}
-                            css={[metricStyle, metricSlot?.css]}
+                            css={[metricStyle, metricRowSlot?.css]}
                           >
                             {contents}
                           </div>

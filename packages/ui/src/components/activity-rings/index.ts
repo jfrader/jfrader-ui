@@ -4,6 +4,7 @@ export type {
   ActivityMetric,
   ActivityRingStatus,
   ActivityRingsLabels,
+  ActivityRingsMetricProps,
   ActivityRingsPartProps,
   ActivityRingsProps,
   ActivityRingsSize,

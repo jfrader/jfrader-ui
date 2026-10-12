@@ -1,4 +1,4 @@
-import { StrictMode, useState, type ComponentType } from 'react';
+import { StrictMode, useState, type ComponentType, type MouseEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -8,14 +8,19 @@ import {
   ActivityRings,
   type ActivityDay,
   type ActivityMetric,
+  type ActivityRingsMetricProps,
   type ActivityRingsProps,
   type ActivityValues,
 } from './index';
 
-/** Story args flatten the props' data-source union, which Storybook's arg types cannot carry. */
-type RingsArgs = Omit<ActivityRingsProps, 'values' | 'days'> & {
+/** Story args flatten the props' data-source and legend-mode unions, which Storybook's arg types cannot carry. */
+type RingsArgs = Omit<ActivityRingsProps, 'values' | 'days' | 'interactiveLegend' | 'slotProps'> & {
   values?: ActivityValues;
   days?: readonly ActivityDay[];
+  interactiveLegend?: boolean;
+  slotProps?: Omit<NonNullable<ActivityRingsProps['slotProps']>, 'metric'> & {
+    metric?: ActivityRingsMetricProps;
+  };
 };
 function Rings({ values, days, ...props }: RingsArgs) {
   return days ? <ActivityRings {...props} days={days} /> : <ActivityRings {...props} values={values} />;
@@ -336,6 +341,9 @@ export const UnknownAndInvalid: Story = {
       'unavailable',
     ]);
     for (const fill of ringParts(canvasElement)) await expectDrawn(fill, 0);
+    await expect(
+      rings.map((ring) => ring.querySelector('[data-ui="activity-rings-tick"]') !== null),
+    ).toEqual([false, false, false, false, true, true, false, false]);
     await expect(canvasElement.querySelector('[data-ui="activity-rings-summary"]')).toHaveTextContent(
       '0 of 8 goals met',
     );
@@ -822,6 +830,26 @@ export const RootRef: Story = {
   },
 };
 
+export const UnsanctionedUnit: Story = {
+  args: {
+    metrics: [
+      { id: 'energy', label: 'Energy', goal: 500, unit: 'kcal' },
+      { id: 'distance', label: 'Distance', goal: 6, unit: 'kilometer' },
+    ],
+    values: { energy: 320.25, distance: 4.5 },
+  },
+  play: async ({ canvasElement }) => {
+    const plain = (value: number) => new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 }).format(value);
+    const items = within(canvasElement).getAllByRole('listitem');
+    await expect(items[0]).toHaveTextContent(`${plain(320.25)} of ${plain(500)}${percent(0.6405)}`);
+    await expect(items[1]).toHaveTextContent(`${amount(4.5, 'kilometer')} of ${amount(6, 'kilometer')}`);
+    await expect(ringParts(canvasElement, 'ring').map((ring) => ring.getAttribute('data-status'))).toEqual([
+      'open',
+      'open',
+    ]);
+  },
+};
+
 export const SlotStyles: Story = {
   args: {
     interactiveLegend: true,
@@ -854,6 +882,44 @@ export const SlotStyles: Story = {
     await expect(dayLabel.getBoundingClientRect().width).toBeGreaterThanOrEqual(47);
   },
 };
+
+export const StaticSlotProps: Story = {
+  args: {
+    slotProps: { metric: { 'aria-describedby': 'rings-static-hint', onMouseEnter: fn() } },
+  },
+  render: (args) => (
+    <>
+      <span id="rings-static-hint">Updated hourly</span>
+      <Rings {...args} />
+    </>
+  ),
+  play: async ({ canvasElement, userEvent, args }) => {
+    const rows = [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="activity-rings-metric"]')];
+    await expect(rows.map((row) => row.tagName)).toEqual(['DIV', 'DIV', 'DIV']);
+    for (const row of rows) await expect(row).toHaveAttribute('aria-describedby', 'rings-static-hint');
+    await userEvent.hover(rows[0]!);
+    await expect(args.slotProps!.metric!.onMouseEnter).toHaveBeenCalledTimes(1);
+  },
+};
+
+function slotTypeRegressions(flag: boolean) {
+  const onButtonClick = (event: MouseEvent<HTMLButtonElement>) => event;
+  const toggle = { metric: { type: 'submit', onClick: onButtonClick } } as const;
+  return [
+    <ActivityRings key="toggle" metrics={goals} interactiveLegend slotProps={toggle} />,
+    // @ts-expect-error A plain legend row rejects button-only attributes.
+    <ActivityRings key="row" metrics={goals} slotProps={{ metric: { type: 'submit' } }} />,
+    // @ts-expect-error A runtime-boolean legend accepts only props shared by both row elements.
+    <ActivityRings key="runtime" metrics={goals} interactiveLegend={flag} slotProps={{ metric: { onClick: onButtonClick } }} />,
+    <ActivityRings
+      key="shared"
+      metrics={goals}
+      interactiveLegend={flag}
+      slotProps={{ metric: { 'aria-describedby': 'hint' } }}
+    />,
+  ];
+}
+export type ActivityRingsTypeRegression = typeof slotTypeRegressions;
 
 export const LightTheme: Story = {
   decorators: [withLightTheme],
