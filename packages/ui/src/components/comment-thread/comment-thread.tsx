@@ -834,6 +834,9 @@ export function CommentThread({
     const open = expandedIds.has(id);
     const lineage = new Set(ancestors).add(comment);
     const promptId = partId(baseId, 'confirm', id);
+    const actionId = (name: string) => partId(baseId, name, id);
+    const actionName = (name: string) =>
+      `${actionId(name)} ${partId(baseId, 'author', id)} ${partId(baseId, 'time', id)}`;
 
     const handleConfirmKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
       if (event.key !== 'Escape') return;
@@ -937,6 +940,8 @@ export function CommentThread({
                 variant="solid"
                 tone="danger"
                 size="sm"
+                id={actionId('confirm-delete')}
+                aria-labelledby={actionName('confirm-delete')}
                 disabled={disabled}
                 onClick={(event) => confirmDelete(id, event.currentTarget.parentElement!)}
               >
@@ -954,6 +959,8 @@ export function CommentThread({
                 variant="ghost"
                 size="sm"
                 data-action="reply"
+                id={actionId('reply')}
+                aria-labelledby={actionName('reply')}
                 aria-expanded={ui.replyTo === id}
                 disabled={disabled}
                 onClick={() => openReply(id)}
@@ -962,7 +969,15 @@ export function CommentThread({
               </Button>
               {own ? (
                 <>
-                  <Button variant="ghost" size="sm" data-action="edit" disabled={disabled} onClick={() => openEdit(comment)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    data-action="edit"
+                    id={actionId('edit')}
+                    aria-labelledby={actionName('edit')}
+                    disabled={disabled}
+                    onClick={() => openEdit(comment)}
+                  >
                     {labels.edit}
                   </Button>
                   <Button
@@ -970,6 +985,8 @@ export function CommentThread({
                     size="sm"
                     tone="danger"
                     data-action="delete"
+                    id={actionId('delete')}
+                    aria-labelledby={actionName('delete')}
                     disabled={disabled}
                     onClick={() => setUi((current) => ({ ...current, confirming: id, picker: null }))}
                   >
@@ -1006,6 +1023,8 @@ export function CommentThread({
               variant="ghost"
               size="sm"
               data-part="toggle"
+              id={actionId('toggle')}
+              aria-labelledby={actionName('toggle')}
               aria-expanded={open}
               aria-controls={repliesId}
               onClick={() => toggleReplies(id)}
