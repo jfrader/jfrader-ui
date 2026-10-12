@@ -461,10 +461,8 @@ disclosure with the keyboard, and check the first example and prop table still a
 - **API changes**: additive = minor, fix = patch, breaking = deprecate first (`@deprecated` JSDoc with
   the replacement, example, and removal plan). Consumers wrap components to customize; we do not add
   style-override registries.
-- **Dependencies**: the allowlist is `@emotion/react`, `@emotion/styled` (the app-facing `styled`),
-  `@floating-ui/react`, `motion` (only when a component needs them), `shiki` as an optional peer
-  imported only by the `./code-block/shiki` subpath, and `next` + `@emotion/cache` as optional peers
-  imported only by the `./next` subpath. Update `AGENTS.md` before adding anything else.
+- **Dependencies**: `AGENTS.md` owns the allowlist, including runtime, optional-peer and
+  development-only import boundaries. Update it before adding any other dependency.
 - **Compound part naming stays consistent** across components: callable roots (`Tabs`, `Dialog`) with
   the same part names — `Trigger`, `Content`, `Title`, `Description`, `Close`, `List`, `Tab`, `Panel`.
 - Keep `SKILL.md`, `AGENTS.md`, `PLAN.md` and `README.md` status in sync in the same change that

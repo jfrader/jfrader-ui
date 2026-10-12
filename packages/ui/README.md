@@ -30,6 +30,7 @@ Requires React 19 and the `@jfrader/tokens/tokens.css` stylesheet. The same guid
 | `@jfrader/ui/date-picker` | `DatePicker` |
 | `@jfrader/ui/dialog` | `Dialog` |
 | `@jfrader/ui/divider` | `Divider` |
+| `@jfrader/ui/editable-details` | `EditableDetails` |
 | `@jfrader/ui/emblem` | `Emblem` |
 | `@jfrader/ui/flex` | `Flex` |
 | `@jfrader/ui/flip-game-card` | `FlipGameCard` |

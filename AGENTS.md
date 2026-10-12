@@ -61,6 +61,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 - `motion` (v14.x, imported as `motion/react`) is installed; components that animate use `MotionConfig reducedMotion="user"` + `useReducedMotion()`, keep an explicit reduced-motion branch, and take durations from `src/styling/motion-timings.ts`.
 - `lucide-react` is approved for consumer apps and examples (e.g. `apps/pilot`); `@jfrader/ui` itself must not depend on it.
 - `shiki` is an optional peer (`peerDependenciesMeta.optional`; devDependency for stories). Only `packages/ui/src/components/code-block/shiki.ts`, published as the `./code-block/shiki` subpath, may import it; nothing in the main graph does.
+- `react-hook-form` is approved only as an `apps/storybook` devDependency for app-owned editor fixtures. No runtime or peer dependency, import, or declaration in `@jfrader/ui` may depend on it.
 - `next` and `@emotion/cache` are optional peers (`peerDependenciesMeta.optional`; devDependencies for build and stories). Only `packages/ui/src/components/next/`, published as the `./next` subpath, may import them; nothing in the main graph does.
 - Any other dependency requires updating this file first.
 
