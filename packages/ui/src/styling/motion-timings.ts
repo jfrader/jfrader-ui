@@ -3,6 +3,9 @@
 // moves both and no component writes its own literal.
 import { base } from '@jfrader/tokens';
 
+// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
+declare const process: { env: { NODE_ENV?: string } };
+
 /**
  * Parses a `120ms` token into a number. A token that is missing or stops being milliseconds resolves
  * to `0` — no animation, and the state still completes — because a design system cannot take the page

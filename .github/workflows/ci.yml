@@ -21,4 +21,6 @@ jobs:
       - run: pnpm test
       - run: pnpm verify:exports
       - run: pnpm build
+      - run: pnpm --filter @jfrader/tokens build
+      - run: pnpm --filter @jfrader/ui build
       - run: pnpm --filter @jfrader/storybook verify:docs:layout
