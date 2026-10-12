@@ -393,6 +393,7 @@ export const KeyboardDeck: Story = {
     await expect(args.onDecide).toHaveBeenCalledTimes(5);
     await expect(keep.ownerDocument.activeElement).toBe(keep);
     await expect(canvas.getByText('All cards reviewed')).toBeInTheDocument();
+    await expect(canvas.getByRole('status')).toHaveTextContent('Porto: Kept. All cards reviewed.');
     await userEvent.keyboard(' ');
     await expect(args.onDecide).toHaveBeenCalledTimes(5);
     await userEvent.tab();
@@ -468,6 +469,24 @@ export const GestureDeck: Story = {
     await settled(canvasElement);
     await once(args.onDecide, cities[0], 'right');
     await expect(top(canvasElement)).toHaveTextContent('Porto');
+  },
+};
+export const ThrowStamp: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Keep' }));
+    const outgoing = () =>
+      canvasElement.querySelector<HTMLElement>('[data-ui="card-stack-card"][data-state="outgoing"]');
+    await waitFor(async () => {
+      const card = outgoing()!;
+      await expect(card).toHaveTextContent('Oslo');
+      await expect(part(card, 'right-stamp')).toHaveTextContent('Keep');
+      await expect(Number(getComputedStyle(part(card, 'right-stamp')).opacity)).toBeGreaterThan(
+        0.5,
+      );
+      await expect(Number(getComputedStyle(part(card, 'left-stamp')).opacity)).toBeLessThan(0.01);
+    });
+    await settled(canvasElement);
+    await expect(outgoing()).toBeNull();
   },
 };
 export const RejectedGesture: Story = {

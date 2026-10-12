@@ -11,7 +11,6 @@ import {
   type ReactNode,
   type KeyboardEvent,
   type PointerEvent,
-  type RefObject,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import {
@@ -281,18 +280,22 @@ function dictionary(locale: Intl.LocalesArgument | undefined): CardStackLabels {
   const plurals = new Intl.PluralRules(locale);
   const count = (n: number) =>
     `${numbers.format(n)} ${plurals.select(n) === 'one' ? 'card' : 'cards'}`;
+  const completed = 'All cards reviewed';
   return {
     left: 'Pass',
     right: 'Keep',
     undo: 'Undo',
     reset: 'Reset',
     empty: 'No cards',
-    completed: 'All cards reviewed',
+    completed,
     cardStackRole: 'card stack',
     hint: (left, right) =>
       `Left arrow: ${left}. Right arrow: ${right}. Backspace, Control+Z or Command+Z: Undo.`,
     position: (index, total) => `Card ${numbers.format(index + 1)} of ${numbers.format(total)}`,
-    decided: (name, outcome, remaining) => `${name}: ${outcome}. ${count(remaining)} remaining.`,
+    decided: (name, outcome, remaining) =>
+      remaining === 0
+        ? `${name}: ${outcome}. ${completed}.`
+        : `${name}: ${outcome}. ${count(remaining)} remaining.`,
     restored: (name) => `${name} restored.`,
     resetComplete: (n) => `${count(n)} reset.`,
   };
@@ -341,7 +344,6 @@ function Layer<T>({
   renderCard,
   slots,
   labels,
-  stage,
   onComplete,
 }: {
   item: T;
@@ -357,10 +359,8 @@ function Layer<T>({
   renderCard: (item: T) => ReactNode;
   slots: CardStackSlotProps;
   labels: CardStackLabels;
-  stage: RefObject<HTMLDivElement | null>;
   onComplete: () => void;
 }) {
-  const element = useRef<HTMLDivElement>(null);
   const ownX = useMotionValue(outgoing?.from ?? returning ?? 0);
   const y = useMotionValue(reduced ? 0 : index * GEOMETRY.peek);
   const scale = useMotionValue(reduced ? 1 : 1 - index * GEOMETRY.scaleStep);
@@ -411,16 +411,8 @@ function Layer<T>({
   }, [outgoing, returning, returnVelocity, reduced]);
   const nameId = useId();
   const slot = slots.card;
-  useLayoutEffect(() => {
-    const node = element.current;
-    return () => {
-      if (active && node?.contains(node.ownerDocument.activeElement) && stage.current?.isConnected)
-        stage.current.focus({ preventScroll: true });
-    };
-  }, [active]);
   return (
     <motion.div
-      ref={element}
       data-ui="card-stack-card"
       data-state={outgoing ? 'outgoing' : active ? 'active' : 'inactive'}
       inert={!active}
@@ -451,7 +443,7 @@ function Layer<T>({
         >
           {renderCard(item)}
         </div>
-        {active &&
+        {(active || outgoing) &&
           (['left', 'right'] as const).map((side) => (
             <MotionDiv
               key={side}
@@ -628,15 +620,7 @@ export function CardStack<T>({
     const accepted = equal(history, pending.history);
     if (accepted) {
       const event = pending.event;
-      const focused = stage.current?.ownerDocument.activeElement;
       if (event.type === 'decide') {
-        if (
-          focused?.closest('[data-ui="card-stack-card"][data-state="inactive"]') ||
-          (focus.current &&
-            !focus.current.isConnected &&
-            focused === stage.current?.ownerDocument.body)
-        )
-          stage.current?.focus({ preventScroll: true });
         if (pending.exit) {
           exits.current.set(pending.exit.key, {
             target: pending.exit.target,
@@ -644,9 +628,7 @@ export function CardStack<T>({
           });
           if (!reduced) setOutgoing(pending.exit);
         }
-        setStatus(
-          `${labels.decided(getLabel(event.item), outcomes[event.decision], remaining.length)}${remaining.length === 0 ? ` ${labels.completed}` : ''}`,
-        );
+        setStatus(labels.decided(getLabel(event.item), outcomes[event.decision], remaining.length));
       }
       if (event.type === 'undo') {
         const item = unique.find((entry) => entry.key === event.key);
@@ -776,6 +758,8 @@ export function CardStack<T>({
     session.distance = dx;
     x.set(reduced ? 0 : dx);
   };
+  // Single focus-restore path: when the active card changes, focus left in a removed or inert
+  // card (or removed empty surface) moves to the stage before inert takes effect.
   useLayoutEffect(() => {
     const focused = stage.current?.ownerDocument.activeElement;
     const last = focus.current;
@@ -955,7 +939,6 @@ export function CardStack<T>({
                   active={index === 0}
                   reduced={reduced}
                   dragX={x}
-                  stage={stage}
                   size={size}
                   label={`${getLabel(entry.item)}, ${labels.position(
                     unique.findIndex((candidate) => candidate.key === entry.key),
@@ -978,7 +961,6 @@ export function CardStack<T>({
                   outgoing={outgoing}
                   reduced={reduced}
                   dragX={x}
-                  stage={stage}
                   size={size}
                   label={getLabel(outgoing.item)}
                   renderCard={renderCard}
