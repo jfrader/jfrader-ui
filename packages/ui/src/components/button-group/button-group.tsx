@@ -11,18 +11,10 @@ import {
   type ComponentPropsWithRef,
   type ReactNode,
 } from 'react';
-import {
-  useDismiss,
-  useFocus,
-  useHover,
-  useInteractions,
-  useMergeRefs,
-  useRole,
-  type Placement,
-} from '@floating-ui/react';
+import { useMergeRefs, type Placement } from '@floating-ui/react';
 import { MotionConfig, animate, motion, useMotionValue, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type SerializedStyles } from '../../styling/css';
+import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { listboxSurfaceStyle, listboxScrollStyle } from '../../styling/listbox-style';
@@ -47,6 +39,7 @@ import {
   type MenuSeparatorProps,
   type MenuItemTone,
 } from '../menu/menu';
+import { tooltipContentStyle, useTooltipInteractions } from '../tooltip/tooltip';
 
 export type ButtonGroupOrientation = 'horizontal' | 'vertical';
 export interface ButtonGroupProps extends Omit<ComponentPropsWithRef<'div'>, 'role'>, SxProps {
@@ -68,6 +61,7 @@ export interface ButtonGroupItemProps extends Omit<ButtonProps, 'render'> {
 }
 export interface ButtonGroupLinkProps extends Omit<ComponentPropsWithRef<'a'>, 'color'>, SxProps {
   href: string;
+  css?: Interpolation<Theme>;
   disabled?: boolean;
   variant?: ButtonVariant;
   tone?: ButtonTone;
@@ -78,14 +72,21 @@ export interface ButtonGroupLinkProps extends Omit<ComponentPropsWithRef<'a'>, '
   reserveLabels?: readonly string[];
 }
 export interface ButtonGroupLabelProps
-  extends Omit<ComponentPropsWithRef<'span'>, 'role' | 'tabIndex'>, SxProps {}
+  extends Omit<ComponentPropsWithRef<'span'>, 'role' | 'tabIndex'>, SxProps {
+  css?: Interpolation<Theme>;
+}
 export type ButtonGroupTriggerProps = Omit<ButtonGroupItemProps, 'loading' | 'reserveLabels' | 'iconOnly'> &
   ({ 'aria-label': string } | { 'aria-labelledby': string });
-export interface ButtonGroupContentProps extends Omit<MenuContentProps, 'role'> {}
+export interface ButtonGroupContentProps extends Omit<MenuContentProps, 'role'> {
+  css?: Interpolation<Theme>;
+}
 export interface ButtonGroupMenuItemProps extends MenuItemProps {
   tone?: MenuItemTone;
+  css?: Interpolation<Theme>;
 }
-export interface ButtonGroupSeparatorProps extends MenuSeparatorProps {}
+export interface ButtonGroupSeparatorProps extends MenuSeparatorProps {
+  css?: Interpolation<Theme>;
+}
 
 interface GroupContext {
   variant: ButtonVariant;
@@ -225,16 +226,6 @@ const highlightStyle = css({
   [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: { display: 'none' },
 });
-const tooltipStyle = css({
-  backgroundColor: vars.color.bgSoft,
-  color: vars.color.text,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.sm,
-  padding: `${vars.space[1]} ${vars.space[2]}`,
-  fontFamily: vars.font.sans,
-  fontSize: vars.textSize.sm,
-  maxInlineSize: '100vw',
-});
 const caretStyle = css({
   display: 'inline-flex',
   '& svg': { inlineSize: '1em', blockSize: '1em' },
@@ -262,13 +253,13 @@ function Labels({
       data-collapsed={collapsed || undefined}
       aria-hidden={collapsed || undefined}
     >
-      {reserveLabels?.map((text) => (
-        <span key={text} data-reservation aria-hidden>
+      {[...new Set(reserveLabels)].map((text) => (
+        <span key={`reserve-${text}`} data-reservation aria-hidden>
           {text}
         </span>
       ))}
       <span
-        key={typeof children === 'string' || typeof children === 'number' ? String(children) : undefined}
+        key={typeof children === 'string' || typeof children === 'number' ? `live-${children}` : undefined}
         data-live
       >
         {children}
@@ -442,7 +433,6 @@ function ButtonGroupRoot({
                 data-ui="button-group"
                 data-orientation={orientation}
                 data-compact={compact || undefined}
-                aria-disabled={disabled || rest['aria-disabled']}
                 className={className}
                 onKeyDown={(event) => {
                   onKeyDown?.(event);
@@ -490,6 +480,8 @@ function ButtonGroupRoot({
 }
 ButtonGroupRoot.displayName = 'ButtonGroup';
 
+// Tooltip.Trigger renders its own button, and segments render through Button's render seam, so
+// the segment element itself is the reference; behavior and surface come from Tooltip's seam.
 function ActionTooltip({
   name,
   labelledBy,
@@ -526,22 +518,14 @@ function ActionTooltip({
   useEffect(() => {
     if (!available) setOpen(false);
   }, [available]);
-  const hover = useHover(context, {
-    enabled: available,
-    delay: { open: 300, close: 100 },
-    move: false,
-  });
-  const focus = useFocus(context, { enabled: available });
-  const dismiss = useDismiss(context);
-  const role = useRole(context, { role: 'tooltip' });
-  const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, dismiss, role]);
+  const { getReferenceProps, getFloatingProps } = useTooltipInteractions(context, { enabled: available });
   const { tabIndex: _tabIndex, ...floatingProps } = getFloatingProps();
   return (
     <>
       {children(getReferenceProps(), refs.setReference)}
       {available && open && (
         <OverlayPortal>
-          <div {...floatingProps} ref={refs.setFloating} css={tooltipStyle} style={floatingStyles}>
+          <div {...floatingProps} ref={refs.setFloating} css={tooltipContentStyle} style={floatingStyles}>
             {resolvedName}
           </div>
         </OverlayPortal>
@@ -678,6 +662,7 @@ function ButtonGroupLink({
   reserveLabels,
   children,
   className,
+  css: cssProp,
   sx,
   onClick,
   onAuxClick,
@@ -704,7 +689,7 @@ function ButtonGroupLink({
             tone={tone ?? group.tone}
             size={resolvedSize}
             startIcon={isRenderable(startIcon) && startIcon !== '' ? startIcon : undefined}
-            css={[segmentStyle, sizeStyles[resolvedSize], iconOnly && iconOnlyStyle]}
+            css={[segmentStyle, sizeStyles[resolvedSize], iconOnly && iconOnlyStyle, cssProp]}
             className={className}
             sx={sx}
             data-ui="button-group-link"

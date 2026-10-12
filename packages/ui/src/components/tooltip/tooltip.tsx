@@ -21,6 +21,7 @@ import {
   useInteractions,
   useMergeRefs,
   useRole,
+  type FloatingRootContext,
   type Placement,
   type UseInteractionsReturn,
 } from '@floating-ui/react';
@@ -69,7 +70,7 @@ function useTooltipContext(part: string): TooltipContextValue {
   return context;
 }
 
-const contentStyle = css({
+export const tooltipContentStyle = css({
   boxSizing: 'border-box',
   backgroundColor: vars.color.bgSoft,
   border: `1px solid ${vars.color.border}`,
@@ -84,6 +85,25 @@ const contentStyle = css({
   lineHeight: vars.lineHeight.base,
 });
 
+/** The tooltip interaction chain, shared with parts whose operative element cannot be a Tooltip.Trigger. */
+export function useTooltipInteractions(
+  context: FloatingRootContext,
+  {
+    enabled = true,
+    openDelay = DEFAULT_OPEN_DELAY_MS,
+    closeDelay = DEFAULT_CLOSE_DELAY_MS,
+  }: { enabled?: boolean; openDelay?: number; closeDelay?: number } = {},
+): UseInteractionsReturn {
+  // `move: false` keeps moving the pointer onto the content from re-triggering hover logic on
+  // the reference; useHover still keeps the tooltip open while the pointer rests on it, and
+  // the close delay covers the offset gap (WCAG 1.4.13 hoverable + persistent).
+  const hover = useHover(context, { enabled, delay: { open: openDelay, close: closeDelay }, move: false });
+  const focus = useFocus(context, { enabled });
+  const dismiss = useDismiss(context, { escapeKey: true });
+  const role = useRole(context, { role: 'tooltip' });
+  return useInteractions([hover, focus, dismiss, role]);
+}
+
 function TooltipOverlay({
   open: openProp,
   defaultOpen = false,
@@ -95,15 +115,7 @@ function TooltipOverlay({
 }: TooltipProps) {
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const { refs, floatingStyles, context } = useOverlayFloating({ open, placement, onOpenChange: requestOpenChange });
-
-  // `move: false` keeps moving the pointer onto the content from re-triggering hover logic on
-  // the reference; useHover still keeps the tooltip open while the pointer rests on it, and
-  // the close delay covers the offset gap (WCAG 1.4.13 hoverable + persistent).
-  const hover = useHover(context, { delay: { open: openDelay, close: closeDelay }, move: false });
-  const focus = useFocus(context);
-  const dismiss = useDismiss(context, { escapeKey: true });
-  const role = useRole(context, { role: 'tooltip' });
-  const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, dismiss, role]);
+  const { getReferenceProps, getFloatingProps } = useTooltipInteractions(context, { openDelay, closeDelay });
 
   const value = useMemo(
     () => ({ open, refs, floatingStyles, getReferenceProps, getFloatingProps }),
@@ -164,7 +176,7 @@ function TooltipSurface({ ref, style, className, sx, dir, ...rest }: TooltipCont
   void ignoredTabIndex;
 
   return (
-    <WithSx className={className} styles={contentStyle} sx={sx}>
+    <WithSx className={className} styles={tooltipContentStyle} sx={sx}>
       {(className) => (
         <div
           {...floatingProps}

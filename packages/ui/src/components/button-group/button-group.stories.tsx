@@ -1,6 +1,6 @@
 import { useState, type MouseEventHandler, type RefCallback } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor, within } from 'storybook/test';
+import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -241,6 +241,7 @@ export const Disabled: Story = {
     </ButtonGroup>
   ),
   play: async ({ args, canvas, userEvent }) => {
+    await expect(canvas.getByRole('group')).not.toHaveAttribute('aria-disabled');
     for (const button of canvas.getAllByRole('button')) {
       await expect(button).toBeDisabled();
       await userEvent.click(button);
@@ -483,15 +484,17 @@ export const FalsyContent: Story = {
     }
   },
 };
-function ReservedExample({ args }: { args: Parameters<NonNullable<Story['render']>>[0] }) {
+function ReservedExample({
+  args,
+  reserveLabels = ['Save', 'Changes saved'],
+}: {
+  args: Parameters<NonNullable<Story['render']>>[0];
+  reserveLabels?: readonly string[];
+}) {
   const [saved, setSaved] = useState(false);
   return (
     <ButtonGroup {...args}>
-      <ButtonGroup.Item
-        onClick={() => setSaved(!saved)}
-        reserveLabels={['Save', 'Changes saved']}
-        data-testid="reserved"
-      >
+      <ButtonGroup.Item onClick={() => setSaved(!saved)} reserveLabels={reserveLabels} data-testid="reserved">
         {saved ? 'Changes saved' : 'Save'}
       </ButtonGroup.Item>
       <ButtonGroup.Item>Duplicate</ButtonGroup.Item>
@@ -500,13 +503,37 @@ function ReservedExample({ args }: { args: Parameters<NonNullable<Story['render'
 }
 export const ReservedLabels: Story = {
   render: (args) => <ReservedExample args={args} />,
+  beforeEach: () => {
+    const errors = spyOn(console, 'error');
+    return () => errors.mockRestore();
+  },
   play: async ({ canvas, userEvent }) => {
     const item = canvas.getByTestId('reserved'),
       before = item.getBoundingClientRect().width;
-    await userEvent.click(item);
-    await expect(item).toHaveAccessibleName('Changes saved');
-    await expect(Math.abs(item.getBoundingClientRect().width - before)).toBeLessThan(1.1);
+    const labelParts = () =>
+      [...item.querySelectorAll('[data-button-group-labels] > span')].map((node) => [
+        node.textContent,
+        node.hasAttribute('data-live') ? 'live' : 'reservation',
+      ]);
+    for (const live of ['Changes saved', 'Save', 'Changes saved']) {
+      await userEvent.click(item);
+      await expect(item).toHaveAccessibleName(live);
+      await expect(labelParts()).toEqual([
+        ['Save', 'reservation'],
+        ['Changes saved', 'reservation'],
+        [live, 'live'],
+      ]);
+      await expect(Math.abs(item.getBoundingClientRect().width - before)).toBeLessThan(1.1);
+    }
+    const keyWarnings = (console.error as Mock).mock.calls.filter(([message]) =>
+      /same key/.test(String(message)),
+    );
+    await expect(keyWarnings).toEqual([]);
   },
+};
+export const RepeatedReservedLabels: Story = {
+  ...ReservedLabels,
+  render: (args) => <ReservedExample args={args} reserveLabels={['Save', 'Changes saved', 'Save']} />,
 };
 function CompactExample({ args }: { args: Parameters<NonNullable<Story['render']>>[0] }) {
   const [wide, setWide] = useState(false);
@@ -620,9 +647,19 @@ export const SxPrecedence: Story = {
       <ButtonGroup.Label css={{ paddingInline: '29px' }} sx={{ paddingInline: '37px' }}>
         100%
       </ButtonGroup.Label>
+      <ButtonGroup.Link href="#docs" css={{ paddingInline: '29px' }}>
+        Docs
+      </ButtonGroup.Link>
     </ButtonGroup>
   ),
   play: async ({ canvas }) => {
+    await expect(parseFloat(getComputedStyle(canvas.getByText('100%')).paddingInlineStart)).toBeCloseTo(
+      37,
+      0,
+    );
+    await expect(
+      parseFloat(getComputedStyle(canvas.getByRole('link', { name: 'Docs' })).paddingInlineStart),
+    ).toBeCloseTo(29, 0);
     await expect(parseFloat(getComputedStyle(canvas.getByRole('group')).columnGap)).toBeCloseTo(7, 0);
     await expect(parseFloat(getComputedStyle(canvas.getByRole('button')).borderTopRightRadius)).toBeCloseTo(
       17,
