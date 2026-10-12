@@ -121,7 +121,7 @@ const panelStyle = css({
   borderRadius: vars.radius.lg,
   boxShadow: vars.shadow.floating,
   padding: vars.space[5],
-  minInlineSize: '320px',
+  minInlineSize: 'min(320px, 100%)',
   maxInlineSize: 'min(560px, calc(100vw - 32px))',
 });
 
@@ -144,6 +144,7 @@ const closeStyle = css({
   appearance: 'none',
   display: 'inline-flex',
   alignItems: 'center',
+  minBlockSize: '32px',
   border: '1px solid transparent',
   borderRadius: vars.radius.md,
   backgroundColor: 'transparent',
