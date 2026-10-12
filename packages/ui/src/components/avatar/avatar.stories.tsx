@@ -28,7 +28,12 @@ const rowStyle = {
 const meta = {
   title: 'Data display/Avatar',
   component: Avatar,
-  parameters: { docs: { description: { component: 'Show a person’s photo or initials, with an optional status.' } } },
+  parameters: {
+    docs: {
+      description: { component: 'Show a person’s photo or initials, with an optional status.' },
+      usage: '### Presence\nSet `pulse` with `status="online"` for an expanding ring. The default is static; reduced motion and forced colors hide the ring.',
+    },
+  },
   args: { name: NAME, size: 'md' },
   argTypes: {
     size: { control: 'radio', options: SIZES },
@@ -126,6 +131,7 @@ export const Status: Story = {
       const dot = avatar.querySelector(`[data-status="${status}"]`) as HTMLElement;
       await expect(dot).toHaveAttribute('aria-hidden', 'true');
       await expect(Math.round(dot.getBoundingClientRect().width)).toBe(SIZE_PX.md / 4);
+      await expect(getComputedStyle(dot, '::after').animationName).toBe('none');
     }
     await expect(canvas.getByRole('img', { name: `${NAME}, en línea` })).toBeInTheDocument();
   },
@@ -176,12 +182,170 @@ export const ForcedColorsRule: Story = {
 };
 
 export const RTL: Story = {
-  args: { dir: 'rtl', status: 'online' },
+  args: { dir: 'rtl', status: 'online', pulse: true },
   play: async ({ canvasElement }) => {
     const avatar = within(canvasElement).getByRole('img', { name: `${NAME}, online` });
     await expect(avatar).toHaveAttribute('dir', 'rtl');
     const status = avatar.querySelector<HTMLElement>('[data-status]')!;
     await expect(getComputedStyle(status).left).toBe('0px');
     await expect(getComputedStyle(status).right).not.toBe('0px');
+  },
+};
+
+type RingFrame = { scale: number; opacity: number };
+const SAMPLE_WINDOW_MS = 2600;
+const SAMPLE_TIMEOUT_MS = 4000;
+
+async function samplePresenceRings(badges: HTMLElement[]): Promise<RingFrame[][]> {
+  const view = badges[0]!.ownerDocument.defaultView!;
+  const frames = badges.map(() => [] as RingFrame[]);
+  await new Promise<void>((resolve, reject) => {
+    const start = view.performance.now();
+    let frameId = 0;
+    const timeout = view.setTimeout(() => {
+      view.cancelAnimationFrame(frameId);
+      reject(new Error('Presence ring frame sampling timed out'));
+    }, SAMPLE_TIMEOUT_MS);
+    const sample = () => {
+      badges.forEach((badge, index) => {
+        const ring = view.getComputedStyle(badge, '::after');
+        frames[index]!.push({ scale: new DOMMatrixReadOnly(ring.transform).a, opacity: Number(ring.opacity) });
+      });
+      if (view.performance.now() - start >= SAMPLE_WINDOW_MS) {
+        view.clearTimeout(timeout);
+        resolve();
+      } else {
+        frameId = view.requestAnimationFrame(sample);
+      }
+    };
+    frameId = view.requestAnimationFrame(sample);
+  });
+  return frames;
+}
+
+export const OnlinePulse: Story = {
+  args: { status: 'online', pulse: true },
+  render: (args) => (
+    <div style={rowStyle}>
+      {SIZES.flatMap((size) => [
+        <Avatar {...args} key={`${size}-photo`} size={size} src={PHOTO_SRC} name={`Photo ${size}`} />,
+        <Avatar {...args} key={`${size}-initials`} size={size} name={`Initials ${size}`} />,
+      ])}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const avatars = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="avatar"]'));
+    const badges = avatars.map((avatar) => avatar.querySelector<HTMLElement>('[data-status]')!);
+    await expect(badges).toHaveLength(SIZES.length * 2);
+    for (const [index, badge] of badges.entries()) {
+      const avatar = avatars[index]!;
+      const ring = getComputedStyle(badge, '::after');
+      await expect(badge).toHaveAttribute('data-status', 'online');
+      await expect(badge).toHaveAttribute('aria-hidden', 'true');
+      await expect(avatar).toHaveAccessibleName(`${index % 2 === 0 ? 'Photo' : 'Initials'} ${SIZES[Math.floor(index / 2)]}, online`);
+      await expect(avatar.tabIndex).toBe(-1);
+      await expect(avatar.querySelector('[aria-live]')).toBeNull();
+      await expect(getComputedStyle(avatar).overflow).not.toBe('hidden');
+      await expect(badge.getBoundingClientRect().width).toBe(avatar.getBoundingClientRect().width / 4);
+      await expect(badge.getBoundingClientRect().height).toBe(avatar.getBoundingClientRect().height / 4);
+      await expect(Number.parseFloat(ring.width)).toBe(badge.getBoundingClientRect().width);
+      await expect(Number.parseFloat(ring.height)).toBe(badge.getBoundingClientRect().height);
+      if (index % 2 === 0) {
+        const photo = avatar.querySelector('img')!;
+        await waitFor(() => expect(photo.naturalWidth).toBeGreaterThan(0));
+      } else {
+        await expect(avatar).toHaveTextContent(`I${SIZES[Math.floor(index / 2)]!.charAt(0).toUpperCase()}`);
+      }
+      await expect(ring.animationDuration).toBe('1.2s');
+      await expect(ring.animationTimingFunction).toBe('ease-in-out');
+      await expect(ring.animationIterationCount).toBe('infinite');
+      await expect(ring.borderTopWidth).toBe('1px');
+      await expect(ring.borderTopColor).toBe(ring.color);
+      await expect(getComputedStyle(badge, '::before').animationName).toBe('none');
+      await expect(getComputedStyle(badge, '::before').transform).toBe('none');
+      await expect(getComputedStyle(badge, '::before').opacity).toBe('1');
+    }
+    const samples = await samplePresenceRings(badges);
+    for (const frames of samples) {
+      await expect(frames.some(({ scale, opacity }) => scale > 1 && scale < 2 && opacity > 0.2 && opacity < 0.8)).toBe(true);
+      await expect(Math.min(...frames.map(({ scale }) => scale))).toBeLessThan(0.9);
+      await expect(Math.max(...frames.map(({ scale }) => scale))).toBeGreaterThan(2.3);
+      const resets = frames.filter((frame, index) => index > 0 && frame.scale < frames[index - 1]!.scale - 1 && frame.opacity > frames[index - 1]!.opacity + 0.5);
+      await expect(resets.length).toBeGreaterThanOrEqual(2);
+    }
+  },
+};
+
+export const OnlinePulseLight: Story = {
+  ...OnlinePulse,
+  decorators: [withLightTheme],
+};
+
+export const StaticPresence: Story = {
+  render: (args) => (
+    <div style={rowStyle}>
+      <Avatar {...args} status="online" />
+      <Avatar {...args} status="online" pulse={false} />
+      {STATUSES.filter((status) => status !== 'online').map((status) => (
+        <Avatar {...args} key={status} status={status} pulse />
+      ))}
+      <Avatar {...args} pulse />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const avatars = canvasElement.querySelectorAll<HTMLElement>('[data-ui="avatar"]');
+    await expect(avatars).toHaveLength(6);
+    await expect(canvasElement.querySelectorAll('[data-status]')).toHaveLength(5);
+    await expect(avatars[5]!.querySelector('[data-status]')).toBeNull();
+    for (const avatar of avatars) {
+      await expect(avatar).not.toHaveAttribute('pulse');
+      const badge = avatar.querySelector<HTMLElement>('[data-status]');
+      if (badge) {
+        await expect(badge).not.toHaveAttribute('data-pulse');
+        await expect(getComputedStyle(badge, '::after').animationName).toBe('none');
+        await expect(getComputedStyle(badge, '::after').content).toBe('none');
+      } else {
+        await expect(avatar).toHaveAccessibleName(NAME);
+      }
+    }
+  },
+};
+
+async function expectHiddenRingForMedia(canvasElement: HTMLElement, condition: string) {
+  const badge = canvasElement.querySelector<HTMLElement>('[data-status]')!;
+  const rules = Array.from(canvasElement.ownerDocument.styleSheets)
+    .flatMap((sheet) => Array.from(sheet.cssRules))
+    .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText.includes(condition));
+  const originalMedia = rules.map((rule) => rule.media.mediaText);
+  await expect(rules.length).toBeGreaterThan(0);
+  try {
+    rules.forEach((rule) => { rule.media.mediaText = 'all'; });
+    const ring = getComputedStyle(badge, '::after');
+    await expect(ring.animationName).toBe('none');
+    await expect(ring.display).toBe('none');
+    await expect(ring.content).toBe('none');
+    const dot = getComputedStyle(badge, '::before');
+    await expect(dot.content).toBe('""');
+    await expect(dot.display).not.toBe('none');
+    await expect(dot.animationName).toBe('none');
+    await expect(dot.opacity).toBe('1');
+    await expect(badge).toHaveAttribute('data-status', 'online');
+    await expect(badge.parentElement).toHaveAccessibleName(`${NAME}, online`);
+  } finally {
+    rules.forEach((rule, index) => { rule.media.mediaText = originalMedia[index]!; });
+  }
+}
+
+export const ReducedMotionRule: Story = {
+  args: { status: 'online', pulse: true },
+  play: async ({ canvasElement }) => {
+    await expectHiddenRingForMedia(canvasElement, 'prefers-reduced-motion: reduce');
+  },
+};
+
+export const PulseForcedColorsRule: Story = {
+  args: { status: 'online', pulse: true },
+  play: async ({ canvasElement }) => {
+    await expectHiddenRingForMedia(canvasElement, 'forced-colors: active');
   },
 };
