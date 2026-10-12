@@ -158,7 +158,7 @@ const toastStyle = css({
   },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',
-    transform: 'none',
+    '&[data-state="closing"]': { transform: 'none' },
   },
   [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText' },
 });
@@ -178,6 +178,7 @@ const bodyStyle = css({
   gap: vars.space[1],
   alignSelf: 'center',
   minInlineSize: 0,
+  overflowWrap: 'anywhere',
 });
 
 const titleStyle = css({
@@ -209,6 +210,16 @@ const actionRowStyle = css({
   gap: vars.space[2],
 });
 
+const actionStyle = css({
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  blockSize: 'auto',
+  minBlockSize: '32px',
+  paddingBlock: vars.space[2],
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
+});
+
 export function useToastQueueContext(part: string): ToastQueueContextValue {
   const context = useContext(ToastQueueContext);
   if (!context) throw new Error(`Toast.${part} must be rendered inside <Toast.Provider>.`);
@@ -231,9 +242,16 @@ function ToastProvider({
   const counterRef = useRef(0);
   const [toasts, setToasts] = useState<ToastRecord[]>([]);
   const queueRef = useRef<ToastRecord[]>([]);
+  const mountedRef = useRef(true);
   const rootsRef = useRef(new Map<string, HTMLDivElement>());
   const pendingFocusRef = useRef<{ container: Element; ids: Set<string> } | null>(null);
   const rendererCount = useRef(0);
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const registerRenderer = useCallback(() => {
     rendererCount.current += 1;
     if (process.env.NODE_ENV !== 'production' && rendererCount.current > 1)
@@ -281,6 +299,7 @@ function ToastProvider({
     (options: ToastOptions) => {
       counterRef.current += 1;
       const id = `${idPrefix}toast-${counterRef.current}`;
+      if (!mountedRef.current) return id;
       // Resolve the provider default once; later provider changes do not retime this toast.
       const record: ToastRecord = {
         id,
@@ -305,6 +324,7 @@ function ToastProvider({
 
   const update = useCallback(
     (id: string, patch: Partial<ToastOptions>) => {
+      if (!mountedRef.current) return;
       const next = queueRef.current.map((record) => {
         if (record.id !== id || record.state !== 'open') return record;
         const options = { ...record.options, ...patch };
@@ -321,6 +341,7 @@ function ToastProvider({
 
   const dismiss = useCallback(
     (id: string) => {
+      if (!mountedRef.current) return;
       const current = queueRef.current;
       continueFocus(
         current.filter((record) => record.id === id),
@@ -337,6 +358,7 @@ function ToastProvider({
 
   const remove = useCallback(
     (id: string) => {
+      if (!mountedRef.current) return;
       const current = queueRef.current;
       const next = current.filter((record) => record.id !== id);
       continueFocus(
@@ -556,7 +578,7 @@ export function ToastItem({
           </Button>
           {action && (
             <div css={actionRowStyle}>
-              <Button variant="outline" size="sm" onClick={handleAction}>
+              <Button variant="outline" size="sm" onClick={handleAction} css={actionStyle}>
                 {action.label}
               </Button>
             </div>

@@ -1,12 +1,13 @@
 import type { CSSProperties } from 'react';
-import { useState } from 'react';
+import { StrictMode, useEffect, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
-import { Toast, useToast, type ToastOptions, type ToastProviderProps } from './index';
+import { ThemeRoot } from '../theme-root';
+import { Toast, useToast, type ToastApi, type ToastOptions, type ToastProviderProps } from './index';
 
 const TITLE = 'Changes saved';
 const DESCRIPTION = 'Your profile is up to date.';
@@ -307,5 +308,162 @@ export const LightTheme: Story = {
     await expectSettled(toast);
     await expect(toast).toBeVisible();
     await expectThemedSurface(toast, 'light');
+  },
+};
+
+export const LongContent: Story = {
+  render: (args) => (
+    <ToastHarness
+      {...args}
+      options={{
+        duration: null,
+        title: 'A notification with a long title that wraps across multiple lines',
+        description: 'https://example.com/'.padEnd(180, 'a'),
+        action: {
+          label: 'Retry uploading the original document from your device',
+          onClick: (event) => event.preventDefault(),
+        },
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const toast = await showToast(
+      canvasElement,
+      'Show toast',
+      'A notification with a long title that wraps across multiple lines',
+    );
+    await expectSettled(toast);
+    for (const element of [toast, ...toast.querySelectorAll<HTMLElement>('[role="status"], button')]) {
+      await expect(element.scrollWidth).toBeLessThanOrEqual(element.clientWidth);
+    }
+  },
+};
+
+export const PauseOnHoverAndFocus: Story = {
+  render: (args) => <ToastHarness {...args} options={{ duration: 400 }} />,
+  play: async ({ canvasElement }) => {
+    const toast = await showToast(canvasElement, 'Show toast', TITLE);
+    const dismiss = within(toast).getByRole('button', { name: 'Dismiss' });
+    await userEvent.hover(toast);
+    dismiss.focus();
+    await userEvent.unhover(toast);
+    await sleep(500);
+    await expect(toast).toHaveAttribute('data-state', 'open');
+    await userEvent.hover(toast);
+    within(canvasElement).getByRole('button', { name: 'Show toast' }).focus();
+    await sleep(500);
+    await expect(toast).toHaveAttribute('data-state', 'open');
+    await userEvent.unhover(toast);
+    await expectRemoved(toast);
+  },
+};
+
+function UpdateTriggers() {
+  const { toast, update } = useToast();
+  const [id, setId] = useState('');
+  return (
+    <div style={rowStyle}>
+      <Button onClick={() => setId(toast({ title: TITLE, duration: 800 }))}>Start countdown</Button>
+      <Button onClick={() => update(id, { duration: null, title: PERSISTENT_TITLE })}>Persist</Button>
+      <Button onClick={() => update(id, { duration: 300 })}>Resume countdown</Button>
+    </div>
+  );
+}
+
+export const UpdateCountdown: Story = {
+  render: (args) => (
+    <StrictMode>
+      <ToastHarness {...args}>
+        <UpdateTriggers />
+      </ToastHarness>
+    </StrictMode>
+  ),
+  play: async ({ canvasElement }) => {
+    const toast = await showToast(canvasElement, 'Start countdown', TITLE);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Persist' }));
+    await sleep(1000);
+    await expect(toast).toHaveAttribute('data-state', 'open');
+    await expect(toast).toHaveTextContent(PERSISTENT_TITLE);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Resume countdown' }));
+    await expectRemoved(toast);
+  },
+};
+
+function ScopedHarness(args: ToastProviderProps) {
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  return (
+    <>
+      <div ref={setContainer} data-testid="toast-host" />
+      <ThemeRoot theme="light" portalContainer={container}>
+        <ToastHarness {...args} options={{ duration: null }} />
+      </ThemeRoot>
+    </>
+  );
+}
+
+export const ScopedPortal: Story = {
+  render: (args) => <ScopedHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const toast = await showToast(canvasElement, 'Show toast', TITLE);
+    await expect(within(canvasElement).getByTestId('toast-host').contains(toast)).toBe(true);
+    await expect(toast.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-theme', 'light');
+    await expectSettled(toast);
+    await expectThemedSurface(toast, 'light');
+  },
+};
+
+function CaptureApi({ capture }: { capture: (api: ToastApi) => void }) {
+  const api = useToast();
+  useEffect(() => capture(api), [api, capture]);
+  return null;
+}
+
+function UnmountHarness(args: ToastProviderProps) {
+  const [mounted, setMounted] = useState(true);
+  const [reads, setReads] = useState<number | null>(null);
+  const apiRef = useRef<ToastApi | null>(null);
+  return (
+    <>
+      <Button onClick={() => setMounted(false)}>Unmount provider</Button>
+      <Button
+        onClick={() => {
+          let optionReads = 0;
+          apiRef.current?.toast({
+            get title() {
+              optionReads += 1;
+              return TITLE;
+            },
+          });
+          apiRef.current?.dismiss('missing');
+          apiRef.current?.update('missing', { duration: 100 });
+          setReads(optionReads);
+        }}
+      >
+        Call retained API
+      </Button>
+      {reads !== null && <p>Options reads: {reads}</p>}
+      {mounted && (
+        <ToastHarness {...args}>
+          <CaptureApi
+            capture={(api) => {
+              apiRef.current = api;
+            }}
+          />
+          <Triggers />
+        </ToastHarness>
+      )}
+    </>
+  );
+}
+
+export const UnmountCleanup: Story = {
+  render: (args) => <UnmountHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const toast = await showToast(canvasElement, 'Show toast', TITLE);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Unmount provider' }));
+    await expect(toast.isConnected).toBe(false);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Call retained API' }));
+    await expect(within(canvasElement).getByText('Options reads: 0')).toBeInTheDocument();
+    await expect(canvasElement.ownerDocument.querySelector('[data-ui="toast"]')).toBeNull();
   },
 };
