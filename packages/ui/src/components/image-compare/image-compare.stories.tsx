@@ -1,26 +1,28 @@
-import { useState, type ReactNode } from 'react';
+import { Profiler, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ImageCompare } from './index';
+import { sceneSource } from '../scene';
 
-// Procedural noise photos: the images draw their own pixels, so the fixtures need no color literals
-// and no network. The two seeds and color matrices give clearly different Before/After pixels.
-const noisePhoto = (seed: number, matrix: string) =>
-  `data:image/svg+xml,${encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">' +
-      `<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" seed="${seed}"/>` +
-      `<feColorMatrix values="${matrix}"/></filter>` +
-      '<rect width="300" height="200" filter="url(#n)"/></svg>',
-  )}`;
-const RAW_SRC = noisePhoto(3, '1.8 0 0 0 -0.3  0 1.4 0 0 -0.2  0 0 0.6 0 0  0 0 0 0 1');
-const EDIT_SRC = noisePhoto(11, '0.4 0.4 0.4 0 0  0.4 0.4 0.4 0 0.05  0.6 0.6 0.6 0 0.1  0 0 0 0 1');
+const SCENE_SRC = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const WARM_GRADE = 'sepia(0.65) saturate(1.6) contrast(1.15) brightness(1.08)';
+const gradedImageStyle = css({ filter: WARM_GRADE });
 const BROKEN_SRC = 'data:image/png;base64,broken';
 
-const beforeImage = <img src={RAW_SRC} alt="Original portrait" width={300} height={200} />;
-const afterImage = <img src={EDIT_SRC} alt="Retouched portrait" width={300} height={200} />;
+const beforeImage = <img src={SCENE_SRC} alt="Mountain landscape before grading" width={1200} height={800} />;
+const afterImage = (
+  <img
+    src={SCENE_SRC}
+    alt="Mountain landscape with a warm grade"
+    width={1200}
+    height={800}
+    css={gradedImageStyle}
+  />
+);
 
 /** Outline and its offset (2px + 2px) drawn outside the handle. */
 const FOCUS_RING_EXTENT = 4;
@@ -58,20 +60,23 @@ const fixtureButtonStyle = css({
   paddingInline: vars.space[3],
 });
 
-const SOURCE = `<ImageCompare
-  before={<img src="/raw.jpg" alt="Original portrait" />}
-  after={<img src="/edit.jpg" alt="Retouched portrait" />}
-  label="Portrait comparison"
+const SOURCE = `const source = sceneSource('image-compare-alpine', { variant: 'landscape' });
+
+<ImageCompare
+  before={<img src={source} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={source} alt="Mountain landscape with a warm grade" width={1200} height={800}
+    style={{ filter: '${WARM_GRADE}' }} />}
+  label="Landscape grading comparison"
 />`;
 
 const meta = {
-  title: 'Data display/ImageCompare',
+  title: 'Media/ImageCompare',
   component: ImageCompare,
   tags: ['autodocs'],
   args: {
     before: beforeImage,
     after: afterImage,
-    label: 'Portrait comparison',
+    label: 'Landscape grading comparison',
     locale: 'en-GB',
     onValueChange: fn(),
     onValueCommit: fn(),
@@ -89,7 +94,7 @@ const meta = {
       description: {
         component: 'Compare two images by dragging a divider to reveal more of either image.',
       },
-      usage: `- Images are aligned and cropped the same way. The divider follows the APG slider pattern. \`value\` is the percentage of Before visible from inline-start horizontally or the top vertically: 0 shows After; 100 shows Before. The clip, \`aria-valuenow\` and \`aria-valuetext\` use the accepted value.
+      usage: `- Images are aligned and cropped the same way. The divider follows the APG slider pattern. \`value\` is the percentage of Before visible from inline-start horizontally or the top vertically: 0 shows After; 100 shows Before. The slider reports the accepted value; after a drag, the divider settles back to that value.
 - Arrows move one \`step\`; horizontal Left/Right follow physical direction in RTL, and Up always increases. Shift+arrows and PageUp/PageDown move \`largeStep\`; Home/End go to 0/100. Center divider and double-clicking the handle request 50.
 - Tap the frame to jump or drag anywhere on it. Touch dragging starts along the reveal axis, so a vertical swipe over a horizontal comparison scrolls the page.
 - Both images stay mounted. Give each a meaningful, different \`alt\`; do not put interactive content inside them. Captions are decorative and describe the slider.
@@ -148,7 +153,12 @@ function pointerOn(frame: HTMLElement, pointerType = 'mouse') {
     type: string,
     x: number,
     y = 0.8,
-    options: { pointerId?: number; isPrimary?: boolean; button?: number; target?: Element } = {},
+    options: {
+      pointerId?: number;
+      isPrimary?: boolean;
+      button?: number;
+      target?: Element;
+    } = {},
   ) => {
     const box = frame.getBoundingClientRect();
     return fireEvent(
@@ -170,15 +180,25 @@ function pointerOn(frame: HTMLElement, pointerType = 'mouse') {
 
 export const Default: Story = {
   play: async ({ canvas, canvasElement }) => {
-    const slider = canvas.getByRole('slider', { name: 'Portrait comparison' });
+    const slider = canvas.getByRole('slider', { name: 'Landscape grading comparison' });
     await expect(slider).toHaveAttribute('aria-valuemin', '0');
     await expect(slider).toHaveAttribute('aria-valuemax', '100');
     await expect(slider).toHaveAttribute('aria-valuenow', '50');
     await expect(slider).toHaveAttribute('aria-valuetext', '50% Before visible');
     await expect(slider).toHaveAttribute('aria-orientation', 'horizontal');
     await expect(slider).toHaveAccessibleDescription('Before After');
-    await expect(canvas.getByRole('img', { name: 'Original portrait' })).toBeInTheDocument();
-    await expect(canvas.getByRole('img', { name: 'Retouched portrait' })).toBeInTheDocument();
+    const before = canvas.getByRole<HTMLImageElement>('img', { name: 'Mountain landscape before grading' });
+    const after = canvas.getByRole<HTMLImageElement>('img', { name: 'Mountain landscape with a warm grade' });
+    await expect(before).toHaveAttribute('src', SCENE_SRC);
+    await expect(after).toHaveAttribute('src', SCENE_SRC);
+    await expect(getComputedStyle(before).filter).toBe('none');
+    await expect(getComputedStyle(after).filter).toBe(WARM_GRADE);
+    await waitFor(() => {
+      expect(before.naturalWidth).toBeGreaterThan(0);
+      expect(after.naturalWidth).toBe(before.naturalWidth);
+      expect(after.naturalHeight).toBe(before.naturalHeight);
+    });
+    await expect(after.getBoundingClientRect().toJSON()).toEqual(before.getBoundingClientRect().toJSON());
     await expect(canvas.queryByText('Before')?.closest('[aria-hidden="true"]')).not.toBeNull();
     await expect(canvas.queryByText('After')?.closest('[aria-hidden="true"]')).not.toBeNull();
     // Captions are chips sized by their text, not stretched like the images.
@@ -196,7 +216,84 @@ export const Default: Story = {
   },
 };
 
-export const Horizontal: Story = { args: { orientation: 'horizontal', defaultValue: 35 } };
+export const Horizontal: Story = {
+  args: { orientation: 'horizontal', defaultValue: 35 },
+};
+
+const dragRender = fn();
+export const MotionValueDrag: Story = {
+  render: (args) => (
+    <Profiler id="image-compare-drag" onRender={dragRender}>
+      <ImageCompare {...args} />
+    </Profiler>
+  ),
+  play: async ({ canvas, canvasElement, args }) => {
+    const slider = canvas.getByRole('slider');
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    pointer.fire('pointerdown', 0.5);
+    pointer.fire('pointermove', 0.6);
+    await expect(slider).toHaveAttribute('data-dragging');
+    const renders = dragRender.mock.calls.length;
+    pointer.fire('pointermove', 0.65);
+    pointer.fire('pointermove', 0.7);
+    await expect(slider).toHaveAttribute('aria-valuenow', '70');
+    await expect(slider).toHaveAttribute('aria-valuetext', '70% Before visible');
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.7)).toBeLessThan(0.01);
+    await expect(dragRender.mock.calls.length).toBe(renders);
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      await expect(getComputedStyle(slider).transform).not.toBe('matrix(1, 0, 0, 1, 0, 0)');
+    }
+    pointer.fire('pointerup', 0.7);
+    await expect(args.onValueCommit).toHaveBeenLastCalledWith(70);
+    await sleep(motionDurationMs.slow * 2);
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.7)).toBeLessThan(0.01);
+    await expect(getComputedStyle(slider).transform).toBe('matrix(1, 0, 0, 1, 0, 0)');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+  },
+};
+
+export const FadingCaptions: Story = {
+  render: (args) => (
+    <>
+      <ImageCompare {...args} label="Horizontal captions" />
+      <ImageCompare {...args} orientation="vertical" label="Vertical captions" />
+      <ImageCompare {...args} dir="rtl" label="RTL captions" />
+    </>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    for (const root of canvasElement.querySelectorAll('[data-ui="image-compare"]')) {
+      const slider = part(root, 'image-compare-handle');
+      const before = part(root, 'image-compare-before-label');
+      const after = part(root, 'image-compare-after-label');
+      await expect(before.parentElement).toBe(part(root, 'image-compare-frame'));
+      await expect(getComputedStyle(before).opacity).toBe('1');
+      await expect(getComputedStyle(after).opacity).toBe('1');
+      slider.focus();
+      await userEvent.keyboard('{Home}');
+      await expect(getComputedStyle(before).opacity).toBe('0');
+      await expect(getComputedStyle(after).opacity).toBe('1');
+      await userEvent.keyboard('{End}');
+      await expect(getComputedStyle(before).opacity).toBe('1');
+      await expect(getComputedStyle(after).opacity).toBe('0');
+      const frame = part(root, 'image-compare-frame').getBoundingClientRect();
+      const caption = before.getBoundingClientRect();
+      const vertical = slider.getAttribute('aria-orientation') === 'vertical';
+      const reversed = root.matches(':dir(rtl)');
+      const farEdge = vertical
+        ? caption.bottom - frame.top
+        : reversed
+          ? frame.right - caption.left
+          : caption.right - frame.left;
+      const size = vertical ? caption.height : caption.width;
+      const axisSize = vertical ? frame.height : frame.width;
+      const partial = Math.round(((farEdge + size / 2) / axisSize) * 100);
+      await userEvent.keyboard(`{Home}${'{ArrowUp}'.repeat(partial)}`);
+      const opacity = Number(getComputedStyle(before).opacity);
+      await expect(opacity).toBeGreaterThan(0);
+      await expect(opacity).toBeLessThan(1);
+    }
+  },
+};
 
 export const Vertical: Story = {
   args: { orientation: 'vertical', defaultValue: 30 },
@@ -228,13 +325,13 @@ export const LabelsHidden: Story = {
 
 export const CustomLabels: Story = {
   args: {
-    labels: ['Original', 'Retouched'],
+    labels: ['Original', 'Graded'],
     valueText: (_value, percent) => `${percent} original visible`,
     defaultValue: 40,
   },
   play: async ({ canvas }) => {
     const slider = canvas.getByRole('slider');
-    await expect(slider).toHaveAccessibleDescription('Original Retouched');
+    await expect(slider).toHaveAccessibleDescription('Original Graded');
     await expect(slider).toHaveAttribute('aria-valuetext', '40% original visible');
   },
 };
@@ -321,6 +418,8 @@ export const RejectedControlled: Story = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith(70);
     await expect(args.onValueCommit).toHaveBeenLastCalledWith(70);
     await expect(slider).toHaveAttribute('aria-valuenow', '40');
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.4)).toBeLessThan(0.01);
+    await sleep(motionDurationMs.fast);
     await expect(Math.abs(dividerRatio(canvasElement) - 0.4)).toBeLessThan(0.01);
   },
 };
@@ -605,7 +704,10 @@ export const ReleaseOutsideFrame: Story = {
 
 const preventPointerUp = fn((event: { preventDefault: () => void }) => event.preventDefault());
 export const PreventedPointerUp: Story = {
-  args: { defaultValue: 50, slotProps: { frame: { onPointerUp: preventPointerUp } } },
+  args: {
+    defaultValue: 50,
+    slotProps: { frame: { onPointerUp: preventPointerUp } },
+  },
   play: async ({ canvas, canvasElement, args }) => {
     const slider = canvas.getByRole('slider');
     const handle = part(canvasElement, 'image-compare-handle');
@@ -779,12 +881,12 @@ export const ImageLoading: Story = {
   args: {
     after: (
       <div role="status" css={statusStyle}>
-        Loading retouched portrait…
+        Loading graded landscape…
       </div>
     ),
   },
   play: async ({ canvas, userEvent }) => {
-    await expect(canvas.getByRole('status')).toHaveTextContent('Loading retouched portrait…');
+    await expect(canvas.getByRole('status')).toHaveTextContent('Loading graded landscape…');
     await userEvent.tab();
     await userEvent.keyboard('{ArrowLeft}');
     await expect(canvas.getByRole('slider')).toHaveAttribute('aria-valuenow', '49');
@@ -795,16 +897,16 @@ function BrokenAfter() {
   const [failed, setFailed] = useState(false);
   return failed ? (
     <div role="alert" css={statusStyle}>
-      Retouched portrait failed to load
+      Graded landscape failed to load
     </div>
   ) : (
-    <img src={BROKEN_SRC} alt="Retouched portrait" onError={() => setFailed(true)} />
+    <img src={BROKEN_SRC} alt="Mountain landscape with a warm grade" onError={() => setFailed(true)} />
   );
 }
 export const ImageError: Story = {
   args: { after: <BrokenAfter /> },
   play: async ({ canvas, userEvent }) => {
-    await expect(await canvas.findByRole('alert')).toHaveTextContent('Retouched portrait failed to load');
+    await expect(await canvas.findByRole('alert')).toHaveTextContent('Graded landscape failed to load');
     await userEvent.tab();
     await userEvent.keyboard('{End}');
     await expect(canvas.getByRole('slider')).toHaveAttribute('aria-valuenow', '100');
@@ -813,7 +915,7 @@ export const ImageError: Story = {
 
 export const Narrow: Story = {
   args: {
-    labels: ['Original exposure before retouching', 'Retouched with lifted shadows'],
+    labels: ['Original landscape before grading', 'Graded with warmer highlights'],
     resetLabel: 'Center the comparison divider between both images',
   },
   render: (args) => (
@@ -938,7 +1040,7 @@ export const AriaMerge: Story = {
   },
   render: (args) => (
     <>
-      <h2 id="compare-heading">Retouch review</h2>
+      <h2 id="compare-heading">Grading review</h2>
       <p id="compare-hint">Drag to compare</p>
       <ImageCompare {...args} role="group" />
     </>
@@ -946,15 +1048,22 @@ export const AriaMerge: Story = {
   play: async ({ canvas, canvasElement }) => {
     const slider = canvas.getByRole('slider');
     await expect(slider).toHaveAttribute('aria-labelledby', 'compare-heading missing-reference');
-    await expect(slider).toHaveAttribute('aria-label', 'Portrait comparison');
-    await expect(slider).toHaveAccessibleName('Retouch review');
+    await expect(slider).toHaveAttribute('aria-label', 'Landscape grading comparison');
+    await expect(slider).toHaveAccessibleName('Grading review');
     await expect(slider).toHaveAccessibleDescription('Drag to compare Before After');
     await expect(part(canvasElement, 'image-compare')).toHaveAttribute('aria-label', 'Wrapper name');
   },
 };
 
 export const UnresolvedLabelledBy: Story = {
-  args: { slotProps: { handle: { 'aria-labelledby': 'missing-reference', 'aria-label': 'Handle name' } } },
+  args: {
+    slotProps: {
+      handle: {
+        'aria-labelledby': 'missing-reference',
+        'aria-label': 'Handle name',
+      },
+    },
+  },
   play: async ({ canvas }) => {
     const slider = canvas.getByRole('slider');
     await expect(slider).toHaveAttribute('aria-labelledby', 'missing-reference');
