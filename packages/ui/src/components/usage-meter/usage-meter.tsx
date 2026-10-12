@@ -19,8 +19,15 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import {
+  createUsageFormats,
+  DEFAULT_WARN_AT,
+  summarizeUsage,
+  type UsageMeterState,
+  type UsageMeterSummary,
+} from './usage-model';
 
-export type UsageMeterState = 'normal' | 'near-limit' | 'over-limit' | 'unavailable';
+export type { UsageMeterState, UsageMeterSummary } from './usage-model';
 export type UsageMeterSize = 'sm' | 'md' | 'lg';
 export type UsageMeterSelection = { kind: 'segment'; id: string } | { kind: 'remainder' };
 export interface UsageMeterSegment {
@@ -34,17 +41,6 @@ export type UsageMeterItem = UsageMeterSelection & {
   label: string;
   value: number;
 };
-export interface UsageMeterSummary {
-  total: number;
-  limit: number;
-  free: number;
-  over: number;
-  ratio: number;
-  state: UsageMeterState;
-  formattedTotal: string;
-  formattedLimit: string;
-  formattedPercent: string;
-}
 export interface UsageMeterLabels {
   free: string;
   near: string;
@@ -93,7 +89,6 @@ export interface UsageMeterProps
   };
 }
 
-const DEFAULT_WARN_AT = 0.9;
 declare const process: { env: { NODE_ENV?: string } };
 const DEFAULT_LABELS: UsageMeterLabels = {
   free: 'Remaining',
@@ -305,43 +300,16 @@ export function UsageMeter({
   const statusId = slotProps?.status?.id ?? `${id}-status`;
   const hasLabel = isRenderable(label) && label !== '';
   const labels = { ...DEFAULT_LABELS, ...labelsProp };
-  const amount = new Intl.NumberFormat(locale, {
-    maximumFractionDigits: 1,
-    ...numberFormatOptions,
-  });
-  const percent = new Intl.NumberFormat(locale, {
-    style: 'percent',
-    maximumFractionDigits: 0,
-  });
-  const indexFormat = new Intl.NumberFormat(locale, {
-    maximumFractionDigits: 0,
-  });
+  const formats = createUsageFormats(locale, numberFormatOptions);
+  const { amount, percent, index: indexFormat } = formats;
   const sanitized = segments.map((segment) => ({
     ...segment,
     value: Number.isFinite(segment.value) && segment.value >= 0 ? segment.value : 0,
   }));
   const total = sanitized.reduce((sum, segment) => sum + segment.value, 0);
-  const valid =
-    Number.isFinite(limit) && limit > 0 && Number.isFinite(total) && Number.isFinite(total / limit);
-  const threshold = Number.isFinite(warnAt) ? Math.min(1, Math.max(0, warnAt)) : DEFAULT_WARN_AT;
-  const state: UsageMeterState = !valid
-    ? 'unavailable'
-    : total > limit
-      ? 'over-limit'
-      : total >= threshold * limit
-        ? 'near-limit'
-        : 'normal';
-  const summary: UsageMeterSummary = {
-    total,
-    limit,
-    free: valid ? Math.max(0, limit - total) : 0,
-    over: valid ? Math.max(0, total - limit) : 0,
-    ratio: valid ? total / limit : 0,
-    state,
-    formattedTotal: Number.isFinite(total) ? amount.format(total) : labels.unavailable,
-    formattedLimit: valid ? amount.format(limit) : labels.unavailable,
-    formattedPercent: valid ? percent.format(total / limit) : labels.unavailable,
-  };
+  const summary = summarizeUsage(total, limit, { warnAt, formats, unavailable: labels.unavailable });
+  const { state } = summary;
+  const valid = state !== 'unavailable';
   const stateText = {
     normal: labels.normal,
     'near-limit': labels.near,

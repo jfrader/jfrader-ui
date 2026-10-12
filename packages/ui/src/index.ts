@@ -1,4 +1,5 @@
 export * from './components/accordion';
+export * from './components/activity-rings';
 export * from './components/alert';
 export * from './components/announcement-bar';
 export * from './components/avatar';
