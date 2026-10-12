@@ -100,15 +100,16 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   through `slotProps` do not get `sx`.
 - **The styling seam**: import `css`/`keyframes`/types only from `src/styling/css.ts`. Never from
   `@emotion/react` directly, never `styled()` inside the library. `styled`, `ThemeProvider`,
-  `useTheme` and `theme` are the app-facing styling API; library internals stay on `css()` constants.
+  `useTheme`, `theme` and `createTheme` are the app-facing styling API; library internals stay on `css()` constants.
 - **State through attributes**: `:hover`, `[aria-disabled="true"]`, `[aria-invalid="true"]`,
   `[data-state]`, `:checked`, `:focus-visible` — not class soup.
 - **Transitions list properties explicitly** (`background-color, border-color`), never `transition: all`.
   Declare `keyframes` at module scope.
 - **Dynamic values** (progress, coordinates) go through inline CSS custom properties or `style`
   attributes, never through generated per-value classes.
-- **Theming has two paths.** Apps set `data-theme` on `<html>`; `ThemeRoot` themes a scoped subtree
-  (embedded widgets). A surface may also wear `appearance="contrast"`: the dark theme with the eight
+- **Theming has three paths.** Apps set `data-theme` on `<html>`; `ThemeRoot` themes a scoped subtree
+  (embedded widgets); `ThemeRoot tokens` (`createTheme`) recolors the accent family of one scope. A
+  surface may also wear `appearance="contrast"`: the dark theme with the eight
   charcoal overrides, on any page (Drawer.Panel by default). Components read tokens only and never pick a theme themselves. The Emotion
   theme (`theme`, mounted by `ThemeProvider` and by `ThemeRoot`) is the token object itself, so it
   never changes between dark and light. Consumer setup lives in `docs/consuming-jfrader-ui.md`.
@@ -180,6 +181,7 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `css` — the styling seam (`css`, `keyframes`, types, Emotion's theme provider/hook).
 - `sx` — `SxProps` and `WithSx`, which merges own styles, consumer `css` and `sx` for a part root.
 - `theme` — the token `theme` and the Emotion `Theme` augmentation (public).
+- `create-theme` — `createTheme`, `ThemeTokens` and `themeTokenStyle`; the custom-palette API (public).
 - `theme-scope` — ThemeRoot's scope context (`useThemeScope`), the `appearance` axis
   (`AppearanceScope`), `themeScopeStyle` and `ThemeBoundary` for portaled content.
 - `styled` — re-export of `@emotion/styled` for apps (public; never used by components).
@@ -204,7 +206,7 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `data-ui="<name>"` on every component root (and `data-ui="<name>-<part>"` on compound parts).
 - One folder per component; a shared hook only when a second consumer exists.
 - The package index re-exports components + types with `export *`, plus the styling API (`styled`,
-  `theme`, `ThemeProvider`, `useTheme`, `SxProps`). `theme-provider/` has no `index.ts`, so it gets
+  `theme`, `ThemeProvider`, `useTheme`, `createTheme`, `themeTokenStyle`, `SxProps`). `theme-provider/` has no `index.ts`, so it gets
   no subpath export.
 
 ## 5. State ownership recipe

@@ -118,6 +118,27 @@ html[data-theme='light'] {
 
 To switch at runtime, set `document.documentElement.dataset.theme` and store the value under the same `localStorage` key.
 
+### Custom palettes
+
+Use `createTheme` to derive accent colors from one hex color. Pass the result to `ThemeRoot tokens` to override the palette for that subtree.
+
+```tsx
+import { createTheme, ThemeRoot } from '@jfrader/ui';
+
+const brand = createTheme({ base: 'dark', accent: '#7c3aed' });
+
+<ThemeRoot theme="dark" tokens={brand}>{/* brand accent in here */}</ThemeRoot>;
+```
+
+- `base` chooses the dark or light derivation. Match it to the root's `theme`.
+- `accent` sets `accentHover`, `accentText`, `accentSoft`, `accentSoftHover`, `accentBorder`, `accentContrast`, and `focusRing`. The focus ring uses the accent color.
+- `tokens` merges your overrides over the derived values. Your value wins for each token path.
+- On light, `accentText` limits lightness for AA contrast on white. On dark, it uses the accent unchanged; a dark accent may be unreadable as text.
+- `accentContrast` picks near-black or white, whichever has higher contrast against the accent. Accents with relative luminance around 0.17–0.22 fall below 4.5:1 against both. Pick a darker or lighter accent, or set `accentContrast` yourself.
+- `accent` accepts `#rgb` or `#rrggbb`. Other formats throw.
+- Overrides are inline custom properties on the scope root. Changing the named palette needs no re-render; portaled overlays carry the scope's tokens.
+- For document-level themes on `<html>`, call `themeTokenStyle(createTheme({ base, accent }))`. Serialize its custom-property map into one CSS block per base under your `data-theme` selectors.
+
 ### Contrast surfaces
 
 A contrast surface uses the dark palette with a charcoal background on either page theme. `Drawer.Panel` uses it by default. Set `appearance="contrast"` on `Card` to use it there.
@@ -139,7 +160,7 @@ A contrast surface uses the dark palette with a charcoal background on either pa
 
 Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast portal their content to `body`. They keep the nearest scope's theme and appearance, including changes made while open. Dialog renders in place and inherits them directly.
 
-Only the named theme and appearance carry over. CSS you set on an element around the overlay, such as overriding a `--ui-*` variable on a wrapper, does not reach portaled content.
+The named theme, appearance, and `ThemeRoot tokens` carry over. Other ancestor CSS, such as a `--ui-*` variable set on a wrapper, does not reach portaled content.
 
 Set `portalContainer` on `ThemeRoot` to keep overlays inside a modal `<dialog>`'s top layer or an embedded widget's element:
 
