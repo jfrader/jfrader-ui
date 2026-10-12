@@ -98,6 +98,13 @@ try {
   assert.equal(page.url(), managerUrl, 'section links preserve the Storybook manager');
   assert.equal(await frame.locator('html').evaluate(() => location.hash), hash, 'section link scrolls the preview');
   console.log('verify-docs-layout: section navigation keeps the sidebar OK');
+
+  await page.goto(new URL('?path=/docs/foundations-theme--docs', baseURL).href);
+  await frame.locator('.component-usage summary').click();
+  await frame.getByRole('link', { name: 'Theming guide', exact: true }).click();
+  await page.waitForURL(new URL('?path=/docs/foundations-theming--docs', baseURL).href);
+  await frame.getByRole('heading', { name: 'Theming', exact: true }).waitFor();
+  console.log('verify-docs-layout: component links reach the guide OK');
 } finally {
   await browser?.close();
   await new Promise((resolve, reject) => {
