@@ -7,7 +7,7 @@ import { css } from '../../styling/css';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
-import { GameCard } from '../game-card';
+import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { FlipGameCard, type FlipGameCardProps } from './index';
 
@@ -99,6 +99,23 @@ export const Default: Story = {
 };
 
 export const LightTheme: Story = { decorators: [withLightTheme] };
+
+const patternFaces: Story['render'] = (args) => (
+  <div style={{ display: 'flex', gap: vars.space[4] }}>
+    {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => (
+      <FlipGameCard {...args} key={deck} data-test-pattern={pattern}
+        front={<GameCard label={`${deck} face`} value={deck === 'spanish' ? { deck: 'spanish', suit: 'oros', rank: 1 } : { deck: 'french', suit: 'spades', rank: 'A' }} />}
+        back={<GameCard label={`${deck} back`} backPattern={pattern} />} />
+    ))}
+  </div>
+);
+
+/** Both card faces with their deck's back kept mounted. */
+export const PatternFronts: Story = { render: patternFaces };
+/** Spanish diagonal backs and poker checks in flip frames. */
+export const PatternBacks: Story = { render: patternFaces, args: { flipped: true } };
+export const PatternFrontsLightTheme: Story = { ...PatternFronts, decorators: [withLightTheme] };
+export const PatternBacksLightTheme: Story = { ...PatternBacks, decorators: [withLightTheme] };
 
 export const Sizes: Story = {
   render: (args) => (
