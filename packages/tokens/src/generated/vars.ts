@@ -103,9 +103,11 @@ export const vars = {
     "duration": {
       "fast": "var(--ui-motion-duration-fast)",
       "base": "var(--ui-motion-duration-base)",
-      "slow": "var(--ui-motion-duration-slow)"
+      "slow": "var(--ui-motion-duration-slow)",
+      "presence": "var(--ui-motion-duration-presence)"
     },
-    "easeStandard": "var(--ui-motion-ease-standard)"
+    "easeStandard": "var(--ui-motion-ease-standard)",
+    "easePresence": "var(--ui-motion-ease-presence)"
   },
   "size": {
     "emblemSm": "var(--ui-size-emblem-sm)",
