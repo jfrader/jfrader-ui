@@ -24,26 +24,26 @@ import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { SegmentedControl, type SegmentedControlItemProps } from '../segmented-control';
 
-export type BillingToggleSize = 'md' | 'lg';
-export type BillingToggleTone = 'neutral' | 'accent' | 'success';
+export type ToggleSubscriptionSize = 'md' | 'lg';
+export type ToggleSubscriptionTone = 'neutral' | 'accent' | 'success';
 type SlotProps<Element extends 'span' | 'del'> = ComponentPropsWithoutRef<Element> & {
   css?: Interpolation<Theme>;
 };
 
-export interface BillingToggleProps
+export interface ToggleSubscriptionProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
   disabled?: boolean;
-  size?: BillingToggleSize;
-  tone?: BillingToggleTone;
+  size?: ToggleSubscriptionSize;
+  tone?: ToggleSubscriptionTone;
   locale?: Intl.LocalesArgument;
 }
-export interface BillingToggleListProps
+export interface ToggleSubscriptionListProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {}
-export interface BillingToggleLabelProps extends ComponentPropsWithRef<'span'>, SxProps {}
-export interface BillingToggleItemProps extends Omit<SegmentedControlItemProps, 'accessory'> {
+export interface ToggleSubscriptionLabelProps extends ComponentPropsWithRef<'span'>, SxProps {}
+export interface ToggleSubscriptionItemProps extends Omit<SegmentedControlItemProps, 'accessory'> {
   badge?: ReactNode;
   activeBadge?: ReactNode;
   slotProps?: {
@@ -52,7 +52,7 @@ export interface BillingToggleItemProps extends Omit<SegmentedControlItemProps, 
     selection?: SlotProps<'span'>;
   };
 }
-export interface BillingTogglePriceProps
+export interface ToggleSubscriptionPriceProps
   extends Omit<ComponentPropsWithRef<'span'>, 'children'>, SxProps {
   amount: number;
   currency: string;
@@ -68,23 +68,23 @@ export interface BillingTogglePriceProps
   };
 }
 
-interface BillingContext {
+interface ToggleSubscriptionContext {
   value: string | undefined;
   emptyValue: string;
   requestChange: (value: string) => void;
   disabled: boolean;
-  size: BillingToggleSize;
-  tone: BillingToggleTone;
+  size: ToggleSubscriptionSize;
+  tone: ToggleSubscriptionTone;
   locale: Intl.LocalesArgument | undefined;
   labels: string[];
   setLabels: Dispatch<SetStateAction<string[]>>;
   selections: ReadonlyMap<string, SlotProps<'span'>>;
   setSelections: Dispatch<SetStateAction<ReadonlyMap<string, SlotProps<'span'>>>>;
 }
-const Context = createContext<BillingContext | null>(null);
-function useBilling() {
+const Context = createContext<ToggleSubscriptionContext | null>(null);
+function useToggleSubscription() {
   const context = useContext(Context);
-  if (!context) throw new Error('BillingToggle parts must be rendered inside <BillingToggle>.');
+  if (!context) throw new Error('ToggleSubscription parts must be rendered inside <ToggleSubscription>.');
   return context;
 }
 const rootStyle = css({
@@ -118,12 +118,12 @@ const badgeStyle = css({
 });
 const badgeCellStyle = css({ gridArea: '1 / 1', whiteSpace: 'nowrap' });
 const sizerStyle = css({ visibility: 'hidden', pointerEvents: 'none' });
-const toneStyles: Record<BillingToggleTone, SerializedStyles> = {
+const toneStyles: Record<ToggleSubscriptionTone, SerializedStyles> = {
   neutral: css({ color: vars.color.textMuted }),
   accent: css({ borderColor: vars.color.accentText }),
   success: css({ borderColor: vars.color.success }),
 };
-const selectionToneStyles: Record<BillingToggleTone, SerializedStyles> = {
+const selectionToneStyles: Record<ToggleSubscriptionTone, SerializedStyles> = {
   neutral: css({ backgroundColor: vars.color.surfaceRaised }),
   accent: css({ backgroundColor: vars.color.accentSoft }),
   success: css({ backgroundColor: vars.color.successSoft }),
@@ -166,11 +166,11 @@ function PriceSurface({
   nativeProps,
   ...rest
 }: ComponentPropsWithRef<'span'> & { nativeProps: ComponentPropsWithoutRef<'span'> }) {
-  return <span {...nativeProps} {...rest} ref={ref} data-ui="billing-toggle-price" />;
+  return <span {...nativeProps} {...rest} ref={ref} data-ui="toggle-subscription-price" />;
 }
 const MotionPriceSurface = motion.create(PriceSurface);
 
-function BillingToggleRoot({
+function ToggleSubscriptionRoot({
   ref,
   value: valueProp,
   defaultValue,
@@ -183,7 +183,7 @@ function BillingToggleRoot({
   sx,
   children,
   ...rest
-}: BillingToggleProps) {
+}: ToggleSubscriptionProps) {
   const [value, requestChange] = useControlledState(valueProp, defaultValue, onValueChange);
   const [labels, setLabels] = useState<string[]>([]);
   const [selections, setSelections] = useState<ReadonlyMap<string, SlotProps<'span'>>>(new Map());
@@ -209,7 +209,7 @@ function BillingToggleRoot({
       <MotionConfig reducedMotion="user">
         <WithSx className={className} styles={rootStyle} sx={sx}>
           {(className) => (
-            <div {...rest} ref={ref} className={className} data-ui="billing-toggle">
+            <div {...rest} ref={ref} className={className} data-ui="toggle-subscription">
               {children}
             </div>
           )}
@@ -218,17 +218,17 @@ function BillingToggleRoot({
     </Context.Provider>
   );
 }
-BillingToggleRoot.displayName = 'BillingToggle';
+ToggleSubscriptionRoot.displayName = 'ToggleSubscription';
 
-function BillingToggleLabel({
+function ToggleSubscriptionLabel({
   ref,
   id: idProp,
   className,
   sx,
   children,
   ...rest
-}: BillingToggleLabelProps) {
-  const { setLabels } = useBilling();
+}: ToggleSubscriptionLabelProps) {
+  const { setLabels } = useToggleSubscription();
   const generatedId = useId();
   const id = idProp ?? generatedId;
   const present = isRenderable(children) && children !== '';
@@ -241,20 +241,20 @@ function BillingToggleLabel({
   return (
     <WithSx className={className} styles={labelStyle} sx={sx}>
       {(className) => (
-        <span {...rest} ref={ref} id={id} data-ui="billing-toggle-label" className={className}>
+        <span {...rest} ref={ref} id={id} data-ui="toggle-subscription-label" className={className}>
           {children}
         </span>
       )}
     </WithSx>
   );
 }
-BillingToggleLabel.displayName = 'BillingToggle.Label';
+ToggleSubscriptionLabel.displayName = 'ToggleSubscription.Label';
 
-function BillingToggleList({ ref, className, sx, children, ...rest }: BillingToggleListProps) {
-  const context = useBilling();
+function ToggleSubscriptionList({ ref, className, sx, children, ...rest }: ToggleSubscriptionListProps) {
+  const context = useToggleSubscription();
   const selection = context.value === undefined ? undefined : context.selections.get(context.value);
   return (
-    <div data-ui="billing-toggle-list" css={listStyle}>
+    <div data-ui="toggle-subscription-list" css={listStyle}>
       <WithSx className={className} styles={listStyle} sx={sx}>
         {(className) => (
           <SegmentedControl
@@ -283,9 +283,9 @@ function BillingToggleList({ ref, className, sx, children, ...rest }: BillingTog
     </div>
   );
 }
-BillingToggleList.displayName = 'BillingToggle.List';
+ToggleSubscriptionList.displayName = 'ToggleSubscription.List';
 
-function BillingToggleItem({
+function ToggleSubscriptionItem({
   badge,
   activeBadge,
   slotProps,
@@ -293,8 +293,8 @@ function BillingToggleItem({
   className,
   sx,
   ...rest
-}: BillingToggleItemProps) {
-  const context = useBilling();
+}: ToggleSubscriptionItemProps) {
+  const context = useToggleSubscription();
   const { setSelections } = context;
   const selection = slotProps?.selection;
   const value = rest.value;
@@ -312,7 +312,7 @@ function BillingToggleItem({
     context.value === rest.value && activeBadge !== undefined ? activeBadge : badge;
   const hasBadge = isRenderable(currentBadge) && currentBadge !== '';
   return (
-    <span data-ui="billing-toggle-item" css={itemStyle}>
+    <span data-ui="toggle-subscription-item" css={itemStyle}>
       <WithSx className={className} sx={sx}>
         {(className) => (
           <SegmentedControl.Item
@@ -322,7 +322,7 @@ function BillingToggleItem({
               hasBadge ? (
                 <span
                   {...slotProps?.badge}
-                  data-ui="billing-toggle-badge"
+                  data-ui="toggle-subscription-badge"
                   css={[badgeStyle, toneStyles[context.tone], slotProps?.badge?.css]}
                 >
                   {isRenderable(badge) && badge !== '' && (
@@ -343,7 +343,7 @@ function BillingToggleItem({
             {isRenderable(children) && children !== '' && (
               <span
                 {...slotProps?.label}
-                data-ui="billing-toggle-item-label"
+                data-ui="toggle-subscription-item-label"
                 css={slotProps?.label?.css}
               >
                 {children}
@@ -355,9 +355,9 @@ function BillingToggleItem({
     </span>
   );
 }
-BillingToggleItem.displayName = 'BillingToggle.Item';
+ToggleSubscriptionItem.displayName = 'ToggleSubscription.Item';
 
-function BillingTogglePrice({
+function ToggleSubscriptionPrice({
   ref,
   amount,
   currency,
@@ -370,10 +370,10 @@ function BillingTogglePrice({
   className,
   sx,
   ...rest
-}: BillingTogglePriceProps) {
+}: ToggleSubscriptionPriceProps) {
   // Validate before any hooks: keeps hook order stable even if the guard ever changes.
-  if (!Number.isFinite(amount)) throw new RangeError('BillingToggle.Price amount must be finite.');
-  const { locale } = useBilling();
+  if (!Number.isFinite(amount)) throw new RangeError('ToggleSubscription.Price amount must be finite.');
+  const { locale } = useToggleSubscription();
   const reducedMotion = useReducedMotion();
   const locales = localeProp ?? locale;
   const formatKey = JSON.stringify([
@@ -385,14 +385,14 @@ function BillingTogglePrice({
     const [tags, currency, options] = JSON.parse(formatKey) as [
       string[],
       string,
-      BillingTogglePriceProps['formatOptions'],
+      ToggleSubscriptionPriceProps['formatOptions'],
     ];
     return new Intl.NumberFormat(tags, { ...options, style: 'currency', currency });
   }, [formatKey]);
   const formatted = formatter.format(amount);
   const hasPrevious = was !== undefined && Number.isFinite(was) && was > amount;
   if (hasPrevious && !previousLabel)
-    throw new Error('BillingToggle.Price requires previousLabel when was exceeds amount.');
+    throw new Error('ToggleSubscription.Price requires previousLabel when was exceeds amount.');
   return (
     <WithSx className={className} styles={priceStyle} sx={sx}>
       {(className) => (
@@ -406,7 +406,7 @@ function BillingTogglePrice({
         >
           <span
             {...slotProps?.amount}
-            data-ui="billing-toggle-amount"
+            data-ui="toggle-subscription-amount"
             css={[amountStyle, slotProps?.amount?.css]}
           >
             <span css={visuallyHiddenStyle}>{formatted}</span>
@@ -428,7 +428,7 @@ function BillingTogglePrice({
           {hasPrevious && (
             <del
               {...slotProps?.previous}
-              data-ui="billing-toggle-previous"
+              data-ui="toggle-subscription-previous"
               css={[previousStyle, slotProps?.previous?.css]}
             >
               <span css={visuallyHiddenStyle}>{previousLabel}</span>
@@ -438,7 +438,7 @@ function BillingTogglePrice({
           {isRenderable(period) && period !== '' && (
             <span
               {...slotProps?.period}
-              data-ui="billing-toggle-period"
+              data-ui="toggle-subscription-period"
               css={[periodStyle, slotProps?.period?.css]}
             >
               {period}
@@ -449,11 +449,11 @@ function BillingTogglePrice({
     </WithSx>
   );
 }
-BillingTogglePrice.displayName = 'BillingToggle.Price';
+ToggleSubscriptionPrice.displayName = 'ToggleSubscription.Price';
 
-export const BillingToggle = Object.assign(BillingToggleRoot, {
-  List: BillingToggleList,
-  Item: BillingToggleItem,
-  Label: BillingToggleLabel,
-  Price: BillingTogglePrice,
+export const ToggleSubscription = Object.assign(ToggleSubscriptionRoot, {
+  List: ToggleSubscriptionList,
+  Item: ToggleSubscriptionItem,
+  Label: ToggleSubscriptionLabel,
+  Price: ToggleSubscriptionPrice,
 });
