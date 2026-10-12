@@ -108,9 +108,10 @@ export const base = {
       base: '160ms',
       slow: '240ms',
       presence: '1200ms',
+      cardFlip: '300ms',
+    },
     easeStandard: 'cubic-bezier(0.2, 0.6, 0.2, 1)',
     easePresence: 'ease-in-out',
-      cardFlip: '300ms',
     easeCardFlip: 'ease',
   },
   // Component structural sizes; theme-independent, so light shares them.

@@ -104,9 +104,11 @@ export const vars = {
       "fast": "var(--ui-motion-duration-fast)",
       "base": "var(--ui-motion-duration-base)",
       "slow": "var(--ui-motion-duration-slow)",
+      "presence": "var(--ui-motion-duration-presence)",
       "cardFlip": "var(--ui-motion-duration-card-flip)"
     },
     "easeStandard": "var(--ui-motion-ease-standard)",
+    "easePresence": "var(--ui-motion-ease-presence)",
     "easeCardFlip": "var(--ui-motion-ease-card-flip)"
   },
   "size": {
