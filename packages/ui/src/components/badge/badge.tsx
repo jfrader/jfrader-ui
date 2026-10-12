@@ -5,7 +5,9 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { isRenderable } from '../../utils/renderable';
 
 export type BadgeVariant = 'standard' | 'dot';
 export type BadgeTone = 'accent' | 'danger' | 'neutral';
@@ -60,6 +62,10 @@ const markerStyle = css({
   lineHeight: 1,
   whiteSpace: 'nowrap',
   pointerEvents: 'none',
+  [FORCED_COLORS]: {
+    outline: '1px solid CanvasText',
+    backgroundColor: 'Canvas',
+  },
 });
 
 const variantStyles: Record<BadgeVariant, SerializedStyles> = {
@@ -73,6 +79,11 @@ const variantStyles: Record<BadgeVariant, SerializedStyles> = {
     blockSize: vars.space[2],
     inlineSize: vars.space[2],
     borderRadius: vars.radius.full,
+    [FORCED_COLORS]: {
+      backgroundColor: 'CanvasText',
+      forcedColorAdjust: 'none',
+      outline: 'none',
+    },
   }),
 };
 
@@ -152,12 +163,11 @@ export function Badge({
   ...rest
 }: BadgeProps) {
   const isDot = variant === 'dot';
-  // MUI-faithful: null/undefined/false never render a marker, even with showZero; numeric zero
-  // hides unless showZero; dot never hides on content. The one deliberate extension over MUI
-  // treats false as absent so `count > 0 && count` idioms hide cleanly.
+  // Null, undefined, booleans and non-renderables never render a marker, even with showZero;
+  // numeric zero hides unless showZero; dot never hides on content.
   const hidden =
     invisible ||
-    (variant !== 'dot' && (badgeContent == null || badgeContent === false || (badgeContent === 0 && !showZero)));
+    (variant !== 'dot' && (!isRenderable(badgeContent) || (badgeContent === 0 && !showZero)));
   const content = typeof badgeContent === 'number' && badgeContent > max ? `${max}+` : badgeContent;
   const anchorKey: AnchorKey = `${anchor?.vertical ?? 'top'}-${anchor?.horizontal ?? 'end'}`;
   const rootClassName = [className, slotProps?.root?.className].filter(Boolean).join(' ') || undefined;
