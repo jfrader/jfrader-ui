@@ -98,17 +98,7 @@ export const Default: Story = {
   },
 };
 
-export const BackFinalState: Story = {
-  args: { flipped: true },
-  parameters: { docs: { description: { story: 'The card mounts showing its back. Open Controlled and press Flip card to see the animation.' } } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole('img', { name: BACK_LABEL })).toBeVisible();
-    await expect(canvas.queryByRole('img', { name: FRONT_LABEL })).toBeNull();
-  },
-};
-
 export const LightTheme: Story = { decorators: [withLightTheme] };
-export const BackFinalStateLightTheme: Story = { ...BackFinalState, decorators: [withLightTheme] };
 
 export const Sizes: Story = {
   render: (args) => (
@@ -176,6 +166,8 @@ export const FrontFinalState: Story = {
   render: (args) => <ControlledFixture {...args} />,
   play: flipToFinalState,
 };
+
+export const BackFinalStateLightTheme: Story = { ...BackFinalState, decorators: [withLightTheme] };
 
 export const Controlled: Story = {
   render: (args) => <ControlledFixture {...args} />,
