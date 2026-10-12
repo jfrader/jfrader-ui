@@ -8,6 +8,7 @@ import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { isRenderable } from '../../utils/renderable';
 import { CARD_FACE, CARD_FRAME } from './card-frame';
 import { RANK_MARKS, SUIT_GLYPHS, SUIT_INK, type GameCardValue } from './decks';
 
@@ -49,6 +50,7 @@ const rootStyle = css({
   '--game-card-width': vars.size.gameCardMd,
   position: 'relative',
   display: 'block',
+  flexShrink: 0,
   boxSizing: 'border-box',
   inlineSize: 'var(--game-card-width)',
   blockSize: `calc(var(--game-card-width) * ${CARD_FRAME.ratio})`,
@@ -178,7 +180,7 @@ export function GameCard({
               className={slotProps?.back?.className}
               css={[layerStyle, backStyle, slotProps?.back?.css]}
             />
-          ) : children !== undefined ? (
+          ) : isRenderable(children) ? (
             <span
               data-ui="game-card-art"
               aria-hidden="true"
