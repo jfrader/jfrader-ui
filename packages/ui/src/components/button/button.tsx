@@ -87,9 +87,9 @@ const baseStyle = css({
 });
 
 const sizeStyles: Record<ButtonSize, SerializedStyles> = {
-  sm: css({ blockSize: '32px', paddingInline: vars.space[3], fontSize: vars.textSize.sm }),
-  md: css({ blockSize: '40px', paddingInline: vars.space[4], fontSize: vars.textSize.sm }),
-  lg: css({ blockSize: '48px', paddingInline: vars.space[5], fontSize: vars.textSize.md }),
+  sm: css({ blockSize: vars.space[8], paddingInline: vars.space[3], fontSize: vars.textSize.sm }),
+  md: css({ blockSize: vars.space[10], paddingInline: vars.space[4], fontSize: vars.textSize.sm }),
+  lg: css({ blockSize: vars.space[12], paddingInline: vars.space[5], fontSize: vars.textSize.md }),
 };
 
 const variantStyles: Record<ButtonVariant, Record<ButtonTone, SerializedStyles>> = {
@@ -107,7 +107,7 @@ const variantStyles: Record<ButtonVariant, Record<ButtonTone, SerializedStyles>>
     neutral: css({
       backgroundColor: vars.color.surfaceRaised,
       color: vars.color.text,
-      borderColor: vars.color.border,
+      borderColor: vars.color.borderControl,
       [HOVER]: { backgroundColor: vars.color.surfaceHover },
     }),
   },
@@ -131,19 +131,19 @@ const variantStyles: Record<ButtonVariant, Record<ButtonTone, SerializedStyles>>
   outline: {
     accent: css({
       backgroundColor: 'transparent',
-      borderColor: vars.color.accentBorder,
+      borderColor: vars.color.borderControl,
       color: vars.color.accentText,
       [HOVER]: { backgroundColor: vars.color.accentSoft },
     }),
     danger: css({
       backgroundColor: 'transparent',
-      borderColor: vars.color.dangerBorder,
+      borderColor: vars.color.borderControl,
       color: vars.color.dangerText,
       [HOVER]: { backgroundColor: vars.color.dangerSoft },
     }),
     neutral: css({
       backgroundColor: 'transparent',
-      borderColor: vars.color.borderStrong,
+      borderColor: vars.color.borderControl,
       color: vars.color.text,
       [HOVER]: { backgroundColor: vars.color.surfaceHover },
     }),
