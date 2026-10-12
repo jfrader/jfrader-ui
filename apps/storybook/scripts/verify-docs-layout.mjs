@@ -56,7 +56,7 @@ try {
   const index = await (await fetch(new URL('index.json', baseURL))).json();
   for (const { id, title, source } of guides) {
     const markdown = readFileSync(new URL(`../../../docs/${source}`, import.meta.url), 'utf8');
-    const examples = [...markdown.matchAll(/^```(\w*)\n([\s\S]*?)^```/gm)];
+    const examples = [...markdown.matchAll(/^```(\w*)[^\n]*\n([\s\S]*?)^```/gm)];
     assert.ok(index.entries[id], `${id}: guide is indexed`);
     assert.ok(index.entries[id].tags.includes('dev'), `${id}: guide is visible in the sidebar`);
     for (const { viewport, theme } of viewports.flatMap((viewport) =>
@@ -65,7 +65,7 @@ try {
       await page.goto(new URL(`iframe.html?id=${id}&viewMode=docs&globals=theme:${theme}`, baseURL).href);
       await page.getByRole('heading', { name: title, exact: true }).waitFor();
       await page.evaluate(() => document.fonts.ready);
-      const rendered = page.locator('.foundation-guide .guide-example');
+      const rendered = page.locator('.foundation-guide [data-guide-example]');
       assert.equal(await rendered.count(), examples.length, `${id}: every Markdown fence uses a component`);
       for (const [index, [, language, code]] of examples.entries()) {
         const example = rendered.nth(index);

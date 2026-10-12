@@ -13,7 +13,7 @@ const config = '@jfrader:registry=https://npm.pkg.github.com\n';
 const document = [
   '# Guide examples',
   'Use `sx` for a one-off change. Keep `<Button>` inline.',
-  `\`\`\`tsx\n${source}\`\`\``,
+  `\`\`\`tsx filename="save.tsx"\n${source}\`\`\``,
   `\`\`\`bash\n${command}\`\`\``,
   `\`\`\`ini\n${config}\`\`\``,
   '```\nplain <code> & text\n```',
@@ -34,6 +34,8 @@ export const Examples: Story = {
     const blocks = canvasElement.querySelectorAll<HTMLElement>('[data-ui="code-block"]');
     await expect(blocks).toHaveLength(3);
     const highlighted = blocks[0]!;
+    await expect(canvasElement.querySelectorAll('[data-guide-example]')).toHaveLength(4);
+    await expect(within(highlighted).getByText('save.tsx')).toBeVisible();
     await waitFor(() => expect(highlighted).toHaveAttribute('data-highlighted'), { timeout: 5000 });
     await expect(highlighted.querySelector('code')?.textContent).toBe(source);
     await expect(blocks[1]?.querySelector('code')?.textContent).toBe(config);
@@ -46,6 +48,11 @@ export const Examples: Story = {
     const terminal = canvas.getByRole('figure', { name: 'Setup commands' });
     const screen = terminal.querySelector('[data-ui="typewriter-terminal-screen"]')!;
     await expect(screen.textContent).toContain(command);
+    const screenStyle = canvasElement.ownerDocument.defaultView!.getComputedStyle(screen);
+    const contentHeight = screen.firstElementChild!.getBoundingClientRect().height;
+    await expect(screen.getBoundingClientRect().height).toBeCloseTo(
+      contentHeight + parseFloat(screenStyle.paddingTop) + parseFloat(screenStyle.paddingBottom),
+    );
     await expect(terminal.querySelectorAll('[data-ui="typewriter-terminal-transcript"] > li')).toHaveLength(1);
     const seek = within(terminal).getByRole('slider');
     await expect(seek).toHaveValue(seek.getAttribute('max'));

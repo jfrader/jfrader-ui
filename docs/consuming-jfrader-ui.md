@@ -24,7 +24,7 @@ Import the styles once in your entry file. `tokens.css` supplies the colors, spa
 
 This is a complete `src/main.tsx` for a Vite app whose `index.html` contains `<div id="root"></div>`:
 
-```tsx
+```tsx filename="src/main.tsx"
 import { createRoot } from 'react-dom/client';
 import { Button, Card, ThemeProvider } from '@jfrader/ui';
 import '@jfrader/tokens/tokens.css';
@@ -60,7 +60,7 @@ You should see a card and an accent-colored button. The button has no action yet
 
 Set the initial palette on the existing `<html>` in `index.html`:
 
-```html
+```html filename="index.html"
 <html lang="en" data-theme="light">
 ```
 
@@ -120,7 +120,7 @@ pnpm add @jfrader/ui @jfrader/tokens @emotion/cache
 
 Put this in `app/layout.tsx`. `EmotionRegistry` collects styles during server rendering and already includes `ThemeProvider`:
 
-```tsx
+```tsx filename="app/layout.tsx"
 import type { ReactNode } from 'react';
 import { EmotionRegistry } from '@jfrader/ui/next';
 import '@jfrader/tokens/tokens.css';
@@ -139,7 +139,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
 Then a Server Component, such as `app/page.tsx`, can render a top-level component with serializable props:
 
-```tsx
+```tsx filename="app/page.tsx"
 import { Button } from '@jfrader/ui';
 
 export default function Page() {
@@ -151,7 +151,7 @@ Use a Client Component for event handlers, hooks, theme callbacks, `styled`, or 
 
 For example, put this in `app/settings-button.tsx` and render `<SettingsButton />` from your page:
 
-```tsx
+```tsx filename="app/settings-button.tsx"
 'use client';
 
 import { Dialog } from '@jfrader/ui';
@@ -201,7 +201,7 @@ Published-package consumers do not need that configuration unless they use the `
 
 npmjs is the default and needs no configuration. GitHub Packages hosts the same verified tarball and requires authentication even for public packages. If you use it, put this in your app's `.npmrc`:
 
-```ini
+```ini filename=".npmrc"
 @jfrader:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
@@ -228,7 +228,7 @@ Put this in `ProjectDetails.tsx`. Pass the project's initial name, member count 
 `persistName` function from your app. That function must reject when saving fails. The example
 updates the displayed name only after saving succeeds. In Next.js, add `'use client'` at the top.
 
-```tsx
+```tsx filename="ProjectDetails.tsx"
 import { useState } from 'react';
 import { Button, EditableDetails, TextField, type EditableDetailsEditorProps } from '@jfrader/ui';
 

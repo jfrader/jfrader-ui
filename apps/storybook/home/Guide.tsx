@@ -2,6 +2,7 @@ import { isValidElement, useMemo, type ComponentPropsWithoutRef } from 'react';
 import { Markdown, Unstyled } from '@storybook/addon-docs/blocks';
 import { CodeBlock, TypewriterTerminal } from '@jfrader/ui';
 import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
+import { css } from '../../../packages/ui/src/styling/css';
 import './guide.css';
 
 const guidePaths: Record<string, string> = {
@@ -17,7 +18,8 @@ function GuideLink({ href, ...props }: ComponentPropsWithoutRef<'a'>) {
 }
 
 const shellLanguages = new Set(['sh', 'shell', 'bash', 'shellscript']);
-const terminalSlots = { screen: { className: 'guide-terminal-screen' } };
+const terminalScreenStyle = css({ blockSize: 'auto' });
+const terminalSlots = { screen: { css: terminalScreenStyle } };
 const completedPosition = Number.MAX_SAFE_INTEGER;
 
 function GuideTerminal({ code }: { code: string }) {
@@ -36,17 +38,17 @@ function GuideTerminal({ code }: { code: string }) {
 }
 
 function GuideCode({ children, ...props }: ComponentPropsWithoutRef<'pre'>) {
-  if (!isValidElement<ComponentPropsWithoutRef<'code'>>(children) || typeof children.props.children !== 'string') {
+  if (!isValidElement<ComponentPropsWithoutRef<'code'> & { filename?: string }>(children) || typeof children.props.children !== 'string') {
     return <pre {...props}>{children}</pre>;
   }
   const code = children.props.children;
   const language = children.props.className?.match(/\blang(?:uage)?-(\S+)/)?.[1];
   return (
-    <Unstyled className="guide-example">
+    <Unstyled data-guide-example="">
       {language && shellLanguages.has(language.toLowerCase()) ? (
         <GuideTerminal code={code} />
       ) : (
-        <CodeBlock role="group" code={code} language={language} highlight={loadShikiHighlight} />
+        <CodeBlock role="group" code={code} filename={children.props.filename} language={language} highlight={loadShikiHighlight} />
       )}
     </Unstyled>
   );

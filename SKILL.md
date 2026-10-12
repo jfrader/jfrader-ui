@@ -433,6 +433,7 @@ MentionInput's introduction: “Write a message and mention people with @ or cha
   `TypewriterTerminal` for shell commands. Commands start fully visible; playback is opt-in.
   Isolate these components from Storybook's prose styles with `Unstyled`. Add other components
   only when they help a reader use the API, and keep example text in the Markdown source.
+  For a named file, add `filename="path/to/file.tsx"` after the fence language.
 
 **Documentation review**
 
