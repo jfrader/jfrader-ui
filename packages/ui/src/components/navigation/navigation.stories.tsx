@@ -343,3 +343,30 @@ export const LightTheme: Story = {
     await expect(within(nav).getByRole('link', { name: ACTIVE_LABEL })).toHaveAttribute('aria-current', 'page');
   },
 };
+
+export const NarrowLabels: Story = {
+  args: { dir: 'rtl', 'aria-label': 'Sections' },
+  render: (args) => (
+    <Navigation {...args}>
+      <Navigation.Group label="AnUnbrokenGroupLabelThatMustFitTheAvailableWidth" collapsible defaultOpen>
+        <Navigation.Item href="/projects" aria-current="page">
+          AnUnbrokenProjectLabelThatMustFitTheAvailableWidth
+        </Navigation.Item>
+        <Navigation.Item href="/settings" aria-disabled="true" onClick={disabledActivation}>Settings</Navigation.Item>
+      </Navigation.Group>
+    </Navigation>
+  ),
+  play: async ({ canvasElement }) => {
+    const nav = within(canvasElement).getByRole('navigation', { name: 'Sections' });
+    await expect(nav).toHaveAttribute('dir', 'rtl');
+    await expect(nav.scrollWidth).toBeLessThanOrEqual(nav.clientWidth);
+    await expect(within(nav).getAllByRole('link')[0]).toHaveAttribute('aria-current', 'page');
+    disabledActivation.mockClear();
+    const disabled = within(nav).getByRole('link', { name: 'Settings' });
+    await expect(disabled).toHaveAttribute('aria-disabled', 'true');
+    await expect(disabled).toHaveAttribute('tabindex', '-1');
+    await expect(disabled).not.toHaveAttribute('href');
+    await expect(fireEvent.click(disabled)).toBe(false);
+    await expect(disabledActivation).not.toHaveBeenCalled();
+  },
+};

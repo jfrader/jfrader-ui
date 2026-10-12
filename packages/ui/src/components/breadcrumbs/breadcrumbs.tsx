@@ -79,6 +79,8 @@ const listStyle = css({
 
 const itemStyle = css({
   display: 'inline-flex',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
   alignItems: 'center',
   gap: vars.space[2],
   color: vars.color.textMuted,
@@ -89,13 +91,16 @@ const itemStyle = css({
 
 const separatorStyle = css({
   display: 'inline-flex',
+  flexShrink: 0,
 });
 
 const contentStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
   gap: vars.space[1],
-  minBlockSize: '24px',
+  minBlockSize: vars.space[8],
+  minInlineSize: 0,
+  overflowWrap: 'anywhere',
   borderRadius: vars.radius.sm,
   color: 'inherit',
   '& svg': { inlineSize: '1em', blockSize: '1em', flexShrink: 0 },
@@ -171,7 +176,7 @@ function BreadcrumbsRoot({
     <BreadcrumbsContext.Provider value={context}>
       <WithSx className={className} sx={sx}>
         {(className) => (
-          <nav {...rest} ref={ref} aria-label={label} data-ui="breadcrumbs" className={className}>
+          <nav {...rest} ref={ref} aria-label={rest['aria-label'] ?? label} data-ui="breadcrumbs" className={className}>
             <ol css={listStyle}>{children}</ol>
           </nav>
         )}
