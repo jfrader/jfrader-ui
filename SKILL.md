@@ -248,6 +248,11 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
   returns on close. Native `<dialog>` lifecycle: every native close (`<form method="dialog">`,
   `.close()` through the `ref`) is reconciled into `onOpenChange`; only lock scroll after `showModal()`
   succeeds.
+- **Native dialog motion:** a full-viewport shell that slides a child panel uses `overflow: clip`,
+  never `hidden` — a hidden-overflow dialog is still a scroll container, so focus landing on the
+  offscreen panel scrolls the shell and cancels the travel on screen. Enter/exit go through
+  `useNativeDialog`'s transition: a logical close keeps the dialog open (modal, scroll-locked)
+  until the exit settles; reduced motion returns no exit and closes at once.
 - **Dialog cancel semantics:** `onCancel` is the *close request* (cancelable) and `onClose` the
   *completed closure*. React bubbles both, unlike native DOM — nested handlers must check the
   originating dialog (`event.target === dialogElement`). A consumer `preventDefault()` on `cancel`
