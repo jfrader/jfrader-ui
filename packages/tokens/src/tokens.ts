@@ -104,6 +104,14 @@ export const base = {
     },
     easeStandard: 'cubic-bezier(0.2, 0.6, 0.2, 1)',
   },
+  // Component structural sizes; theme-independent, so light shares them.
+  size: {
+    // Layer inline size at which SheetStack's auto variant switches from sheet to centered dialog.
+    sheetStackBreakpoint: '640px',
+    // How much of each parent panel shows above the active one.
+    sheetStackSheetPeek: '10px',
+    sheetStackDialogPeek: '14px',
+  },
 } as const;
 
 export type Tokens = typeof base;

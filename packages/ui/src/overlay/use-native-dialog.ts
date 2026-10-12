@@ -14,6 +14,11 @@
 // - Content does not accept a native `open` prop.
 // - If Content unmounts while open (removal is not a close), focus returns to the invoking
 //   element when it is still connected.
+// - Own events only: React bubbles `cancel` and `close` through the component tree, unlike the
+//   DOM, so a dialog nested inside this one (in the React tree, portaled or not) delivers its
+//   events here with `event.target` set to the nested <dialog>. Those reach the consumer's
+//   handler untouched and never drive this dialog's lifecycle: no preventDefault on the nested
+//   request, no close request and no native-state reconciliation here.
 import {
   useCallback,
   useEffect,
@@ -150,8 +155,12 @@ export function useNativeDialog(
     [],
   );
 
+  // `target` is the dialog the event was fired on; anything else bubbled up from a nested dialog.
+  const isOwnEvent = (event: SyntheticEvent<HTMLDialogElement>) => event.target === dialogRef.current;
+
   const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
     onCancel?.(event);
+    if (!isOwnEvent(event)) return;
     const vetoed = event.defaultPrevented;
     // We own closure: block the browser's own close and route through the Root, unless the
     // consumer vetoed the cancellation. Noncancelable platform requests reconcile on `close`.
@@ -166,6 +175,10 @@ export function useNativeDialog(
   };
 
   const handleClose = (event: SyntheticEvent<HTMLDialogElement>) => {
+    if (!isOwnEvent(event)) {
+      onClose?.(event);
+      return;
+    }
     wasOpenRef.current = false;
     onClose?.(event);
     setIsNativeOpen(false);

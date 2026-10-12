@@ -89,6 +89,7 @@
     "./search-field": { "types": "./src/components/search-field/index.ts", "import": "./src/components/search-field/index.ts" },
     "./segmented-control": { "types": "./src/components/segmented-control/index.ts", "import": "./src/components/segmented-control/index.ts" },
     "./select": { "types": "./src/components/select/index.ts", "import": "./src/components/select/index.ts" },
+    "./sheet-stack": { "types": "./src/components/sheet-stack/index.ts", "import": "./src/components/sheet-stack/index.ts" },
     "./signature-pad": { "types": "./src/components/signature-pad/index.ts", "import": "./src/components/signature-pad/index.ts" },
     "./skeleton": { "types": "./src/components/skeleton/index.ts", "import": "./src/components/skeleton/index.ts" },
     "./slider": { "types": "./src/components/slider/index.ts", "import": "./src/components/slider/index.ts" },
