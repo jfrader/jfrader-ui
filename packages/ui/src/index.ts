@@ -71,6 +71,7 @@ export * from './components/scroll-area';
 export * from './components/search-field';
 export * from './components/segmented-control';
 export * from './components/select';
+export * from './components/share-sheet';
 export * from './components/signature-pad';
 export * from './components/skeleton';
 export * from './components/slider';
