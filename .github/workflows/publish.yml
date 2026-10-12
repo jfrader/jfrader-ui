@@ -12,7 +12,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: publish-${{ github.ref }}
+  group: publish-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
@@ -51,6 +51,9 @@ jobs:
           for (const [dir, name] of Object.entries(expected)) {
             const manifest = JSON.parse(readFileSync(`packages/${dir}/package.json`, 'utf8'));
             if (manifest.name !== name) throw new Error(`Unexpected package name in packages/${dir}`);
+            if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(manifest.version)) {
+              throw new Error(`Only stable versions may be published to latest: ${name}`);
+            }
             if (process.env.GITHUB_REF_NAME !== `v${manifest.version}`) throw new Error(`Tag/version mismatch for ${name}`);
           }
           NODE
@@ -80,6 +83,7 @@ jobs:
         env:
           npm_config_ignore_scripts: "true"
         run: |
+          trap 'node scripts/flip-exports.mjs src' EXIT
           node scripts/flip-exports.mjs dist
           mkdir -p "$RUNNER_TEMP/release"
           for package in tokens ui; do
@@ -97,7 +101,6 @@ jobs:
             appendFileSync(process.env.GITHUB_OUTPUT, `${dir}=${path.resolve(process.env.RUNNER_TEMP, 'release', packed.filename)}\n`);
           }
           NODE
-          node scripts/flip-exports.mjs src
 
       # Tokens first: the UI package depends on @jfrader/tokens@<version>.
       # npmjs authenticates through each package's trusted publisher (OIDC) for this workflow; no token.
