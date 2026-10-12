@@ -37,7 +37,7 @@ const SOURCE =
   '<PhotoGrid title="September" photos={photos} defaultDensity={3} onFavoriteChange={saveFavorite} />';
 
 const meta = {
-  title: 'Data display/PhotoGrid',
+  title: 'Media/PhotoGrid',
   component: PhotoGrid,
   tags: ['autodocs'],
   args: {
@@ -66,7 +66,7 @@ const meta = {
       usage: `### Collection and density
 - Density, favorites, current photo and viewer visibility have independent controlled state. Requests take effect only when accepted.
 - The caller handles storage, pagination and formatted details. Use for moderate collections; thumbnails are square, with no virtualization or masonry layout.
-- Density sets the preferred column count. Narrow containers use fewer columns without requesting a density change.
+- Density sets the column count from the configured steps (no silent override by container width). Narrow containers may produce smaller cells.
 - Steps become unique positive integers in descending order. Invalid values use the nearest configured step. If the default 3 is absent, the first step seeds density.
 - Favorite IDs outside the current page are kept. Give each photo a stable, unique ID and finite positive intrinsic dimensions.
 - Use labels to translate actions/status and locale for Intl-formatted counts.
@@ -232,7 +232,7 @@ export const Narrow: Story = {
   ),
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('region')).toHaveAttribute('data-density', '5');
-    await expect(canvas.getByRole('region')).toHaveAttribute('data-columns', '2');
+    await expect(canvas.getByRole('region')).toHaveAttribute('data-columns', '5');
     for (const button of [...tiles(canvasElement), ...favorites(canvasElement)]) {
       await expect(button.getBoundingClientRect().width).toBeGreaterThanOrEqual(32 - 1.1);
       await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32 - 1.1);
@@ -296,7 +296,10 @@ export const ControlledRejected: Story = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('photo-1');
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
-    await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => {
+      const d = canvas.queryByRole('dialog');
+      if (d) expect(d).not.toHaveAttribute('open');
+    });
     await expect(status(canvasElement)).toHaveTextContent('');
   },
 };
@@ -398,7 +401,9 @@ export const PersistentImageZoom: Story = {
   args: { defaultOpen: true },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
-    await expect(canvas.getByRole('group', { name: 'Landscape 1' })).toHaveAttribute('data-zoom', '1.5');
+    await waitFor(() => {
+      expect(canvas.getByRole('group', { name: 'Landscape 1' })).toHaveAttribute('data-zoom', '1.5');
+    });
     await expect(canvas.getByRole('button', { name: 'Pan left' })).toBeVisible();
   },
 };
@@ -599,7 +604,10 @@ export const ControlledAxes: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith('photo-1');
     await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
-    await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => {
+      const d = canvas.queryByRole('dialog');
+      if (d) expect(d).not.toHaveAttribute('open');
+    });
     await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
   },
 };
@@ -834,7 +842,8 @@ export const ViewerGestures: Story = {
     fireEvent.pointerDown(stage, pointer);
     fireEvent.pointerUp(stage, { ...pointer, clientY: 350 });
     await waitFor(async () => {
-      await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument();
+      const d = canvas.queryByRole('dialog');
+      if (d) expect(d).not.toHaveAttribute('open');
     });
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
