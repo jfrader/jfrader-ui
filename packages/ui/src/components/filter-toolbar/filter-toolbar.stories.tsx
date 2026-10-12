@@ -391,6 +391,15 @@ export const LongChips: Story = {
   play: async ({ canvas }) => {
     const root = canvas.getByRole('group');
     await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    const chip = canvas.getAllByRole('listitem')[0]!;
+    const label = chip.querySelector('span')!;
+    await expect(getComputedStyle(label).textOverflow).toBe('ellipsis');
+    await expect(getComputedStyle(label).whiteSpace).toBe('nowrap');
+    await expect(label.scrollWidth).toBeGreaterThan(label.clientWidth);
+    await expect(chip.getBoundingClientRect().height).toBeLessThanOrEqual(34);
+    await expect(canvas.getAllByRole('button')[0]).toHaveAccessibleName(
+      `Remove Delivery responsibility: ${'International collection review and publication'.repeat(3)}`,
+    );
     for (const button of canvas.getAllByRole('button')) {
       await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
       await expect(button.getBoundingClientRect().width).toBeGreaterThanOrEqual(31);
