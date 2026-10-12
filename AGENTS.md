@@ -20,7 +20,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 | `pnpm og:image` | Regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
 | `pnpm test` | Generate tokens and run Storybook Vitest browser tests |
 | `pnpm typecheck` | Typecheck every package |
-| `pnpm verify:docs` | Check component introductions (also runs before the Storybook build) |
+| `pnpm verify:docs` | Check component documentation coverage (also runs before the Storybook build) |
 | `pnpm --filter @jfrader/storybook exec vitest run --project=storybook <file>` | Run one story file (fast loop) |
 
 ## Styling rules
@@ -58,7 +58,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 ## Dependency allowlist
 
 - `@emotion/react`, `@emotion/styled` (re-exported as the app-facing `styled`; components never use it) and `@floating-ui/react` (Popover, Tooltip, Menu) are installed now.
-- `motion` (v14.x, imported as `motion/react`) is approved but only installed when a component actually needs animation; use `MotionConfig reducedMotion="user"` + `useReducedMotion()` and keep an explicit reduced-motion branch.
+- `motion` (v14.x, imported as `motion/react`) is installed; components that animate use `MotionConfig reducedMotion="user"` + `useReducedMotion()`, keep an explicit reduced-motion branch, and take durations from `src/styling/motion-timings.ts`.
 - `lucide-react` is approved for consumer apps and examples (e.g. `apps/pilot`); `@jfrader/ui` itself must not depend on it.
 - `shiki` is an optional peer (`peerDependenciesMeta.optional`; devDependency for stories). Only `packages/ui/src/components/code-block/shiki.ts`, published as the `./code-block/shiki` subpath, may import it; nothing in the main graph does.
 - `react-hook-form` is approved only as an `apps/storybook` devDependency for app-owned editor fixtures. No runtime or peer dependency, import, or declaration in `@jfrader/ui` may depend on it.

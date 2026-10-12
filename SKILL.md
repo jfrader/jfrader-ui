@@ -136,6 +136,17 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - Prefer `layout` for measured layout animation and `layoutId` for shared elements; springs via
   `transition={{ type: 'spring', … }}` or `useSpring()`. Change layout through styles/classes; never let
   CSS transitions and motion own the same property.
+- **Timings come from `src/styling/motion-timings.ts`** (`motionDurationMs`), which reads the token
+  object: Motion wants a number, the stylesheet wants `vars.motion.duration.*`, and both must move
+  together. Never write a duration literal next to a token.
+- **Long moves between regions use the imperative track.** When a thing travels from one measured box
+  to another (a card dealt to a hand, a tile landing in a slot), drive it with `animate()` from
+  `motion/mini` rather than a CSS transition: the geometry is only known at launch, the flight must be
+  interruptible, and the destination stays hidden until it lands. Keep CSS transitions for state
+  changes that live in one place.
+- **A reduced-motion branch completes the state.** Skipping the move is not enough: the consumer's
+  bookkeeping (landing, focus, "this card is now in the hand") has to finish anyway, and nothing in the
+  component's contract may wait for `transitionend`, `animationend` or a finished Motion promise.
 
 ### Performance (author-level)
 
@@ -198,8 +209,12 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `input-control` — text-input control skin (TextField, Textarea).
 - `choice-control` — root, row and hidden-input fragments (Checkbox, Switch, RadioGroup.Radio).
 - `layout-style` — `flexLayoutStyles` (Flex, Stack) and the layout space scale (Container).
+- `motion-timings` — `motionDurationMs`, the numeric side of the duration tokens for Motion and timers.
 
 - PascalCase components, `<Name>Props` types, explicit public exports; helpers stay private.
+- Storybook groups components by the `storySort` order in `apps/storybook/.storybook/preview.tsx` (`Home`,
+  `Foundations`, `Inputs`, `Pickers`, `Data display`, `Feedback`, `Navigation`, `Surfaces`, `Layout`,
+  `Games`, `Showcase`). A new section is added there and to this list in the same change.
 - React 19 ref-as-prop: components are plain functions reading `ref` from props typed with
   `ComponentPropsWithRef<'el'>`; never `forwardRef`. Every public component and compound part sets a
   dotted `displayName` (`Dialog.Trigger`) so DevTools and Storybook code panels show the public name.
@@ -384,20 +399,20 @@ This applies to Storybook, public JSDoc, examples, READMEs, and consumer guides.
 
 **Component introduction**
 
-- Write one or two sentences, at most 40 words. Aim for fewer than 25.
+- Explain enough for the reader to choose and use the component. Keep the purpose easy to find.
 - Start with the action or result: “Choose a date”, “Show progress toward a goal”.
 - Use everyday words. Leave props, DOM roles, state ownership, and implementation details for
   usage notes or the prop table.
 - Use nouns and verbs instead of adjectives. Omit praise such as “powerful”, “flexible”,
   “seamless”, “intuitive”, and “beautiful”. Keep words required to name an API state or type,
   such as `disabled` or “plain text”.
-- Keep the lead to one paragraph. A heading or bullet list belongs below the example.
+- Use paragraphs, headings, or lists when they make the explanation easier to follow.
 
 MentionInput's introduction: “Write a message and mention people with @ or channels with #.”
 
 **Details and examples**
 
-- Put the introduction in `parameters.docs.description.component` as a single-line string literal.
+- Put the introduction in `parameters.docs.description.component` as a string or template literal.
   Put any usage notes in `parameters.docs.usage` as Markdown. The shared docs page shows
   those notes in a “Usage notes” disclosure after the first example.
 - Group notes by the question they answer: Keyboard, Values, Forms, or Limits. Include only
@@ -418,8 +433,9 @@ MentionInput's introduction: “Write a message and mention people with @ or cha
 
 Read every changed introduction, usage note, story description, and public JSDoc comment.
 Remove repetition, adjectives, and filler. Check the rewrite against the previous contracts.
-Run `pnpm verify:docs` for introduction coverage, paragraph/sentence limits, and word count;
-it checks structure, not meaning or writing quality. Open the rendered docs, try the usage
+Run `pnpm verify:docs` to check that component stories declare nonempty documentation.
+Length, sentence count, and prose formatting are editorial choices, not build gates.
+Review clarity and completeness in context. Open the rendered docs, try the usage
 disclosure with the keyboard, and check the first example and prop table still appear.
 
 ### Component review
