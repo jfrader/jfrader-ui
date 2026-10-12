@@ -49,6 +49,28 @@ function cap(container: HTMLElement, code: string) {
   return key;
 }
 
+const REDUCED_MOTION_QUERY = 'prefers-reduced-motion: reduce';
+const FORCED_COLORS_QUERY = 'forced-colors: active';
+/** True when a stylesheet rule under `query` matching `element` sets `property` to `expected`. */
+function mediaRuleSets(element: Element, query: string, property: string, expected: string) {
+  return Array.from(element.ownerDocument.styleSheets).some((sheet) =>
+    Array.from(sheet.cssRules).some((rule) => rule instanceof CSSMediaRule && rule.conditionText.includes(query) &&
+      Array.from(rule.cssRules).some((inner) => inner instanceof CSSStyleRule && element.matches(inner.selectorText) &&
+        inner.style.getPropertyValue(property).toLowerCase() === expected)));
+}
+function mediaActive(element: Element, query: string) {
+  return element.ownerDocument.defaultView!.matchMedia(`(${query})`).matches;
+}
+/** The computed value of a system color, measured on a throwaway probe. */
+function systemColor(container: HTMLElement, color: string) {
+  const probe = container.ownerDocument.createElement('span');
+  probe.style.color = color;
+  container.append(probe);
+  const value = getComputedStyle(probe).color;
+  probe.remove();
+  return value;
+}
+
 export const Default: Story = {
   play: async ({ canvasElement, canvas }) => {
     await expect(board(canvasElement)).toHaveAttribute('aria-hidden', 'true');
@@ -65,7 +87,7 @@ export const KeyboardNoTrap: Story = {
     await userEvent.tab();
     await expect(input.ownerDocument.activeElement).toBe(input);
     await expect(getComputedStyle(input).outlineStyle).not.toBe('none');
-    await expect(input.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
+    await expect(input.getBoundingClientRect().height).toBeGreaterThanOrEqual(31.5);
     await userEvent.keyboard('[KeyA>]');
     await expect(input).toHaveValue('a');
     await expect(cap(canvasElement, 'KeyA')).toHaveAttribute('data-state', 'pressed');
@@ -117,9 +139,9 @@ export const CustomMacro: Story = {
   parameters: { docs: { source: { code: '<KeycapKeyboard rows={macroRows} value={["ControlLeft", "ShiftLeft", "KeyK"]} />' } } },
 };
 export const MacShortcut: Story = {
-  ...CustomMacro,
   args: { rows: [[{ code: 'MetaLeft', legend: '⌘', units: 1.5 }, { code: 'KeyK', legend: 'K' }]], value: ['MetaLeft', 'KeyK'] },
   render: (args) => <div style={stackStyle}><p>Search: <Kbd.Group><Kbd>Command</Kbd><Kbd>K</Kbd></Kbd.Group></p><KeycapKeyboard {...args} /></div>,
+  parameters: { docs: { source: { code: '<KeycapKeyboard rows={[[{ code: "MetaLeft", legend: "⌘", units: 1.5 }, { code: "KeyK", legend: "K" }]]} value={["MetaLeft", "KeyK"]} />' } } },
 };
 
 export const NoTarget: Story = {
@@ -297,13 +319,51 @@ export const RTL: Story = {
 };
 export const ReducedMotion: Story = {
   args: { value: ['KeyA'] },
-  parameters: { docs: { description: { story: 'Structural fixture. Enable reduced motion in the browser to check that pressed caps retain their color and border without travel.' } } },
-  play: async ({ canvasElement }) => { await expect(cap(canvasElement, 'KeyA')).toHaveAttribute('data-state', 'pressed'); },
+  parameters: { docs: { description: { story: 'Checks the authored reduced-motion rules. Computed transform and transition values are asserted only when the browser reports reduced motion.' } } },
+  play: async ({ canvasElement }) => {
+    const pressed = cap(canvasElement, 'KeyA');
+    const idle = cap(canvasElement, 'KeyB');
+    await expect(pressed).toHaveAttribute('data-state', 'pressed');
+    await expect(mediaRuleSets(pressed, REDUCED_MOTION_QUERY, 'transform', 'none')).toBe(true);
+    for (const key of [pressed, idle]) {
+      await expect(mediaRuleSets(key, REDUCED_MOTION_QUERY, 'transition-duration', '0s')).toBe(true);
+      await expect(getComputedStyle(key).animationName).toBe('none');
+    }
+    if (!mediaActive(canvasElement, REDUCED_MOTION_QUERY)) {
+      await expect(getComputedStyle(pressed).transform).not.toBe('none');
+      return;
+    }
+    for (const key of [pressed, idle]) {
+      await expect(getComputedStyle(key).transform).toBe('none');
+      await expect(getComputedStyle(key).transitionDuration).toBe('0s');
+      await expect(getComputedStyle(key).animationDuration).toBe('0s');
+    }
+  },
 };
 export const ForcedColors: Story = {
   args: { value: ['KeyA'] },
-  parameters: { docs: { description: { story: 'Structural fixture. Enable forced colors in the browser to check system-colored cap edges and legends.' } } },
-  play: async ({ canvasElement }) => { await expect(getComputedStyle(cap(canvasElement, 'KeyA')).borderStyle).toBe('solid'); },
+  parameters: { docs: { description: { story: 'Checks the authored forced-colors rules. Computed system colors are asserted only when the browser reports forced colors.' } } },
+  play: async ({ canvasElement }) => {
+    const root = board(canvasElement);
+    const pressed = cap(canvasElement, 'KeyA');
+    const idle = cap(canvasElement, 'KeyB');
+    await expect(mediaRuleSets(root, FORCED_COLORS_QUERY, 'background-color', 'canvas')).toBe(true);
+    await expect(mediaRuleSets(root, FORCED_COLORS_QUERY, 'border-color', 'canvastext')).toBe(true);
+    await expect(mediaRuleSets(idle, FORCED_COLORS_QUERY, 'background-color', 'buttonface')).toBe(true);
+    await expect(mediaRuleSets(idle, FORCED_COLORS_QUERY, 'border-color', 'canvastext')).toBe(true);
+    await expect(mediaRuleSets(pressed, FORCED_COLORS_QUERY, 'background-color', 'highlight')).toBe(true);
+    await expect(mediaRuleSets(pressed, FORCED_COLORS_QUERY, 'color', 'highlighttext')).toBe(true);
+    for (const key of [pressed, idle]) {
+      await expect(getComputedStyle(key).borderBottomStyle).toBe('solid');
+      // Fractional devicePixelRatios compute authored px borders as e.g. 2.23256px; assert a drawn edge.
+      await expect(parseFloat(getComputedStyle(key).borderBottomWidth)).toBeGreaterThan(0);
+    }
+    if (!mediaActive(canvasElement, FORCED_COLORS_QUERY)) return;
+    await expect(getComputedStyle(idle).backgroundColor).toBe(systemColor(canvasElement, 'ButtonFace'));
+    await expect(getComputedStyle(idle).borderBottomColor).toBe(systemColor(canvasElement, 'CanvasText'));
+    await expect(getComputedStyle(pressed).backgroundColor).toBe(systemColor(canvasElement, 'Highlight'));
+    await expect(getComputedStyle(pressed).color).toBe(systemColor(canvasElement, 'HighlightText'));
+  },
 };
 export const StylingAndRef: Story = {
   args: {

@@ -39,6 +39,7 @@ export interface KeycapKeyboardProps extends Omit<ComponentPropsWithRef<'div'>,
 
 const EMPTY_CODES: readonly string[] = [];
 const DEFAULT_UNITS = 1;
+// The spacing scale has no 2px/3px steps; cap travel and edge depth sit below any spacing token.
 const CAP_TRAVEL = '2px';
 const CAP_DEPTH = '3px';
 
