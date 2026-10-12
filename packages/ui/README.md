@@ -35,6 +35,7 @@ Requires React 19 and the `@jfrader/tokens/tokens.css` stylesheet. The same guid
 | `@jfrader/ui/flex` | `Flex` |
 | `@jfrader/ui/flip-game-card` | `FlipGameCard` |
 | `@jfrader/ui/game-card` | `GameCard` |
+| `@jfrader/ui/game-table` | `GameTable`, viewport layout and seat-order helpers |
 | `@jfrader/ui/kbd` | `Kbd` |
 | `@jfrader/ui/menu` | `Menu` |
 | `@jfrader/ui/pagination` | `Pagination` |
