@@ -6,6 +6,7 @@ import { useState, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { FORCED_COLORS } from '../../styling/media';
 
 export type AvatarSize = 'sm' | 'md' | 'lg';
 export type AvatarStatus = 'online' | 'away' | 'busy' | 'offline';
@@ -76,6 +77,9 @@ const rootStyle = css({
   lineHeight: 1,
   userSelect: 'none',
   verticalAlign: 'middle',
+  [FORCED_COLORS]: {
+    outline: '1px solid CanvasText',
+  },
 });
 
 const sizeStyles: Record<AvatarSize, SerializedStyles> = {
@@ -127,6 +131,20 @@ const statusToneStyles: Record<AvatarStatus, SerializedStyles> = {
   }),
 };
 
+const statusForcedColorsStyle = css({
+  [FORCED_COLORS]: {
+    '&::before': {
+      forcedColorAdjust: 'none',
+      backgroundColor: 'CanvasText',
+      outline: '2px solid Canvas',
+    },
+    '&[data-status="away"]::before': {
+      borderColor: 'CanvasText',
+      backgroundColor: 'Canvas',
+    },
+  },
+});
+
 export function Avatar({
   ref,
   name,
@@ -167,7 +185,7 @@ export function Avatar({
               aria-hidden="true"
               data-status={status}
               className={slotProps?.status?.className}
-              css={[statusStyle, statusToneStyles[status], slotProps?.status?.css]}
+              css={[statusStyle, statusToneStyles[status], statusForcedColorsStyle, slotProps?.status?.css]}
             />
           )}
         </span>
