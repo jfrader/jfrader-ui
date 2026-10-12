@@ -153,6 +153,30 @@ function ControlledFixture(args: FlipGameCardProps) {
   );
 }
 
+const flipToFinalState: NonNullable<Story['play']> = async ({ args, canvas, canvasElement, userEvent }) => {
+  const root = canvasElement.querySelector('[data-ui="flip-game-card"]');
+  const rotator = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card-rotator"]');
+  if (!root || !rotator) throw new Error('Missing flip anatomy');
+  await userEvent.click(canvas.getByRole('button', { name: 'Flip card' }));
+  await new Promise((resolve) => setTimeout(resolve, motionDurationMs.slow));
+  await Promise.all(rotator.getAnimations().map((animation) => animation.finished));
+  await expect(root).toHaveAttribute('data-state', args.flipped ? 'front' : 'back');
+  await expect(canvas.getByRole('img', { name: args.flipped ? FRONT_LABEL : BACK_LABEL })).toBeVisible();
+};
+
+/** Flip from the front and leave the controlled card face down. */
+export const BackFinalState: Story = {
+  render: (args) => <ControlledFixture {...args} />,
+  play: flipToFinalState,
+};
+
+/** Flip from the back and leave the controlled card face up. */
+export const FrontFinalState: Story = {
+  args: { flipped: true },
+  render: (args) => <ControlledFixture {...args} />,
+  play: flipToFinalState,
+};
+
 export const Controlled: Story = {
   render: (args) => <ControlledFixture {...args} />,
   parameters: { docs: { source: { code: `<Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
