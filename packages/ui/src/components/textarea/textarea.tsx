@@ -68,6 +68,7 @@ export function Textarea({
   slotProps,
   className,
   sx,
+  dir,
   required,
   id: idProp,
   'aria-describedby': ariaDescribedByProp,
@@ -88,7 +89,7 @@ export function Textarea({
   };
 
   return (
-    <FieldRoot data-ui="textarea" className={className} sx={sx} part={slotProps?.root}>
+    <FieldRoot data-ui="textarea" dir={dir} className={className} sx={sx} part={slotProps?.root}>
       <FieldLabel htmlFor={field.id} required={required} part={slotProps?.label}>
         {label}
       </FieldLabel>
@@ -97,6 +98,7 @@ export function Textarea({
         ref={ref}
         id={field.id}
         rows={rows}
+        dir={dir}
         required={required}
         aria-describedby={field.describedBy}
         aria-invalid={field.ariaInvalid}
