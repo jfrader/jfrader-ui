@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { hydrateRoot } from 'react-dom/client';
+import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn } from 'storybook/test';
+import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
@@ -24,6 +26,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 const settle = () => new Promise((resolve) => setTimeout(resolve, 300));
 const stack = { display: 'grid', gap: vars.space[4] };
+const iconFrameOf = (input: HTMLElement) =>
+  input.closest('[data-ui="theme-switch"]')!.querySelector<HTMLElement>('[data-ui="theme-switch-icon-frame"]')!;
 
 function ControlledExample(args: ThemeSwitchProps) {
   const [value, setValue] = useState<ThemeSwitchValue>('light');
@@ -48,6 +52,12 @@ function ExternalExample(args: ThemeSwitchProps) {
       <ThemeSwitch {...args} value={value} />
     </div>
   );
+}
+/** Server and first client render agree on light; a stored dark preference is applied after mount. */
+function HydrationExample(args: ThemeSwitchProps) {
+  const [value, setValue] = useState<ThemeSwitchValue>('light');
+  useEffect(() => setValue('dark'), []);
+  return <ThemeSwitch {...args} value={value} />;
 }
 function ScopedExample(args: ThemeSwitchProps) {
   const [value, setValue] = useState<ThemeSwitchValue>('light');
@@ -90,6 +100,25 @@ export const TransitionCues: Story = {
       await expect(getComputedStyle(root.querySelector('[data-ui="theme-switch-dark-icon"]')!).opacity).toBe('1');
       await expect(getComputedStyle(root.querySelector('[data-ui="theme-switch-light-icon"]')!).opacity).toBe('0');
     }
+  },
+};
+export const IconClick: Story = {
+  args: { onValueChange: fn() },
+  play: async ({ canvas, args, userEvent }) => {
+    const input = canvas.getByRole('switch');
+    const frame = iconFrameOf(input);
+    await expect(frame.tagName).toBe('LABEL');
+    await expect(frame).toHaveAttribute('aria-hidden', 'true');
+    await expect(frame).toHaveAttribute('for', input.id);
+    await expect(frame.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await userEvent.click(frame.querySelector('[data-ui="theme-switch-light-icon"]')!);
+    await expect(input).toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith('dark', expect.objectContaining({ trigger: input }));
+    await userEvent.click(frame);
+    await expect(input).not.toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(input).toHaveAccessibleName('Dark appearance');
   },
 };
 export const LightValue: Story = { args: { value: 'light' } };
@@ -218,7 +247,9 @@ export const Disabled: Story = {
   play: async ({ canvas, args, userEvent }) => {
     const input = canvas.getByRole('switch');
     await userEvent.click(input);
+    await userEvent.click(iconFrameOf(input));
     await expect(input).toBeDisabled();
+    await expect(input).not.toBeChecked();
     await expect(args.onValueChange).not.toHaveBeenCalled();
   },
 };
@@ -230,6 +261,7 @@ export const Loading: Story = {
     await expect(input.ownerDocument.activeElement).toBe(input);
     await userEvent.keyboard('[Space]');
     await userEvent.click(input);
+    await userEvent.click(iconFrameOf(input));
     await expect(input).toBeChecked();
     await expect(input).toHaveAttribute('aria-busy', 'true');
     await expect(args.onValueChange).not.toHaveBeenCalled();
@@ -252,6 +284,46 @@ export const PreventedClick: Story = {
     await userEvent.click(input);
     await expect(input).not.toBeChecked();
     await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+export const HydrationCorrection: Story = {
+  args: { onValueChange: fn() },
+  render: (args) => <HydrationExample {...args} />,
+  parameters: {
+    docs: {
+      source: {
+        code: '<ThemeSwitch label="Dark appearance" value={appearance} onValueChange={setAppearance} />',
+      },
+    },
+  },
+  play: async ({ canvas, canvasElement, args }) => {
+    const input = canvas.getByRole('switch');
+    await expect(input).toBeChecked();
+    await expect(input).toHaveAccessibleName('Dark appearance');
+    await expect(iconFrameOf(input)).toHaveAttribute('data-animated', 'false');
+    await expect(getComputedStyle(iconFrameOf(input)).transitionDuration).toBe('0s');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+
+    const markup = renderToString(<HydrationExample {...args} />);
+    await expect(markup).toContain('data-value="light"');
+    await expect(markup).not.toContain('checked=""');
+    const host = canvasElement.ownerDocument.createElement('div');
+    host.innerHTML = markup;
+    canvasElement.append(host);
+    const onRecoverableError = fn();
+    const root = hydrateRoot(host, <HydrationExample {...args} />, { onRecoverableError });
+    try {
+      const hydrated = host.querySelector<HTMLInputElement>('[role="switch"]')!;
+      await waitFor(() => expect(hydrated).toBeChecked());
+      await expect(host.querySelector('[role="switch"]')).toBe(hydrated);
+      await expect(hydrated).toHaveAccessibleName('Dark appearance');
+      await expect(iconFrameOf(hydrated)).toHaveAttribute('data-animated', 'false');
+      await expect(onRecoverableError).not.toHaveBeenCalled();
+      await expect(args.onValueChange).not.toHaveBeenCalled();
+    } finally {
+      root.unmount();
+      host.remove();
+    }
   },
 };
 export const ExternalAria: Story = {

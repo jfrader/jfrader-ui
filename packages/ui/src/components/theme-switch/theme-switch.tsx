@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -43,6 +43,7 @@ const rootStyle = css({
   gap: vars.space[2],
   maxInlineSize: '100%',
   minInlineSize: 0,
+  '&:has(input:disabled) [data-ui="theme-switch-icon-frame"]': { cursor: 'not-allowed' },
 });
 const switchRootStyle = css({ minBlockSize: vars.space[8], justifyContent: 'center' });
 const frameStyle = css({
@@ -52,6 +53,7 @@ const frameStyle = css({
   blockSize: vars.space[5],
   alignItems: 'center',
   justifyItems: 'center',
+  cursor: 'pointer',
   '&[data-animated="true"]': {
     transitionProperty: 'transform',
     transitionDuration: vars.motion.duration.slow,
@@ -101,6 +103,7 @@ const moon = (
 
 /** Composes Switch: Space toggles dark appearance; the accessible name stays stable.
  * The consumer applies the requested theme. The ref reaches Switch's native input.
+ * The decorative icon frame is a hidden label for the input, so clicking the glyph toggles too.
  */
 export function ThemeSwitch({
   value: valueProp,
@@ -118,8 +121,13 @@ export function ThemeSwitch({
   onChange,
   onClick,
   dir,
+  id: idProp,
   ...rest
 }: ThemeSwitchProps) {
+  const generatedId = useId();
+  const inputId = idProp ?? generatedId;
+  const { iconFrame: iconFrameSlot, lightIcon: lightIconSlot, darkIcon: darkIconSlot, ...switchSlotProps } =
+    slotProps ?? {};
   const [value, requestChange] = useControlledState(valueProp, defaultValue);
   const [animated, setAnimated] = useState(false);
   const hasLabel = isRenderable(label) && label !== '';
@@ -137,21 +145,22 @@ export function ThemeSwitch({
           className={className}
         >
           {(hasLight || hasDark) && (
-            <span
+            <label
+              htmlFor={inputId}
               aria-hidden="true"
               data-ui="theme-switch-icon-frame"
               data-value={value}
               data-animated={animated}
-              className={slotProps?.iconFrame?.className}
-              css={[frameStyle, cueStyles[transition], slotProps?.iconFrame?.css]}
+              className={iconFrameSlot?.className}
+              css={[frameStyle, cueStyles[transition], iconFrameSlot?.css]}
             >
               {hasLight && (
                 <span
                   data-ui="theme-switch-light-icon"
                   data-active={value === 'light'}
                   data-animated={animated}
-                  className={slotProps?.lightIcon?.className}
-                  css={[iconStyle, slotProps?.lightIcon?.css]}
+                  className={lightIconSlot?.className}
+                  css={[iconStyle, lightIconSlot?.css]}
                 >
                   {lightIcon}
                 </span>
@@ -161,24 +170,25 @@ export function ThemeSwitch({
                   data-ui="theme-switch-dark-icon"
                   data-active={value === 'dark'}
                   data-animated={animated}
-                  className={slotProps?.darkIcon?.className}
-                  css={[iconStyle, slotProps?.darkIcon?.css]}
+                  className={darkIconSlot?.className}
+                  css={[iconStyle, darkIconSlot?.css]}
                 >
                   {darkIcon}
                 </span>
               )}
-            </span>
+            </label>
           )}
           <Switch
             {...rest}
+            id={inputId}
             dir={dir}
             checked={value === 'dark'}
             aria-busy={loading || rest['aria-busy']}
             aria-disabled={inactive || rest['aria-disabled']}
             description={rest.description === '' ? undefined : rest.description}
             slotProps={{
-              ...slotProps,
-              root: { ...slotProps?.root, css: [switchRootStyle, slotProps?.root?.css] },
+              ...switchSlotProps,
+              root: { ...switchSlotProps.root, css: [switchRootStyle, switchSlotProps.root?.css] },
             }}
             onClick={(event) => {
               onClick?.(event);
