@@ -1,4 +1,4 @@
-import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Component, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -28,6 +28,7 @@ const meta = {
           'Show toast messages in a stack and dismiss them.',
       },
       usage: `- Mount one queue renderer per Toast provider.
+- Toasts land in the corner of the page. Set \`contained\` with a positioned host to keep the stack inside a panel.
 - Keep timed messages available elsewhere after they disappear.
 - Tab visits the toggle and controls from newest to oldest. Escape dismisses the focused toast.
 - Enable Alt+T only when you want that shortcut.
@@ -97,16 +98,45 @@ function Controls({ initial, mode }: { initial: ToastOptions[]; mode?: 'update' 
     </div>
   );
 }
+// Every example renders the stack inside its own surface, so a stack lands in that surface's
+// corner. Without one, each example pins its toasts to the corner of the page and the whole docs
+// page piles them on top of each other. `ViewportAnchored` keeps the page-level behavior.
+const surfaceStyle = {
+  boxSizing: 'border-box',
+  position: 'relative',
+  inlineSize: '100%',
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.md,
+} satisfies CSSProperties;
+
+function Surface({ blockSize = '20rem', children }: { blockSize?: string; children: ReactNode }) {
+  return <div style={{ ...surfaceStyle, blockSize }}>{children}</div>;
+}
+
 function Harness({
   initial = messages.slice(0, 3),
   max = 12,
   mode,
+  surface = true,
+  blockSize = '20rem',
   ...args
-}: ToastStackProps & { initial?: ToastOptions[]; max?: number; mode?: 'update' | 'evict' }) {
+}: ToastStackProps & {
+  initial?: ToastOptions[];
+  max?: number;
+  mode?: 'update' | 'evict';
+  surface?: boolean;
+  blockSize?: string;
+}) {
   return (
     <Toast max={max}>
       <Controls initial={initial} mode={mode} />
-      <ToastStack {...args} />
+      {surface ? (
+        <Surface blockSize={blockSize}>
+          <ToastStack contained {...args} />
+        </Surface>
+      ) : (
+        <ToastStack {...args} />
+      )}
     </Toast>
   );
 }
@@ -139,14 +169,57 @@ export const Default: Story = {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
     await expect(region).not.toHaveAttribute('aria-live');
+    // The example renders its stack in place, inside its own surface.
+    await expect(canvasElement.contains(region)).toBe(true);
     const cards = region.querySelectorAll('[data-ui="toast"]');
     await expect(cards).toHaveLength(3);
+    // The collapsed pile casts one shadow; the cards inside it stay shadowless, so the cards behind
+    // are not washed grey by the front card's shadow on light surfaces.
+    await expect(getComputedStyle(region.querySelector('[data-ui="toast-stack-list"]')!).boxShadow).not.toBe('none');
+    await expect(getComputedStyle(cards[0]!).boxShadow).toBe('none');
     await expect(cards[0]).toHaveTextContent('Message sent');
     await expect(cards[1]).toHaveAttribute('inert');
     await expect(cards[1]).toHaveAttribute('aria-hidden', 'true');
     await expect(cards[1]?.querySelector('[role="status"]')).toBeEmptyDOMElement();
     await expect(within(region).getAllByRole('status')).toHaveLength(1);
     await expect(within(region).getByRole('status').querySelector('button')).toBeNull();
+  },
+};
+const viewportTriggers: { label: string; options: ToastOptions }[] = [
+  { label: 'Save profile', options: { title: 'Profile saved', description: 'Your changes are published.' } },
+  {
+    label: 'Upload a large file',
+    options: { title: 'Upload failed', description: 'The file is larger than 10 MB.', tone: 'danger', duration: null },
+  },
+  { label: 'Pause sync', options: { title: 'Sync paused', duration: null } },
+];
+function ViewportTriggers() {
+  const api = useToast();
+  return (
+    <div style={{ display: 'flex', gap: vars.space[2], flexWrap: 'wrap' }}>
+      {viewportTriggers.map(({ label, options }) => (
+        <Button key={label} onClick={() => api.toast(options)}>
+          {label}
+        </Button>
+      ))}
+    </div>
+  );
+}
+/** Click a button: the stack pins to the corner of the page, over the documentation. */
+export const ViewportAnchored: Story = {
+  render: (args) => (
+    <Toast>
+      <ViewportTriggers />
+      <ToastStack {...args} />
+    </Toast>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await expect(getComputedStyle(region).position).toBe('fixed');
+    await expect(canvasElement.contains(region)).toBe(false);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Save profile' }));
+    await settled(region);
+    await expect(await bodyOf(canvasElement).findByText('Profile saved')).toBeVisible();
   },
 };
 export const List: Story = {
@@ -238,6 +311,8 @@ export const HoverAndTouchExpansion: Story = {
     const collapsedHeight = list.getBoundingClientRect().height;
     await userEvent.hover(region);
     await expect(region).toHaveAttribute('data-expanded', 'true');
+    // Unfolded, every card casts its own shadow again.
+    await expect(getComputedStyle(region.querySelector('[data-ui="toast"]')!).boxShadow).not.toBe('none');
     // The list's block size animates between collapsed and expanded instead of snapping.
     await waitFor(async () => {
       await expect(list.getAnimations().length).toBeGreaterThan(0);
@@ -396,13 +471,10 @@ export const Positions: Story = {
   args: { position: 'bottom-start' },
   render: (args) => <Harness {...args} />,
 };
+/** The stack fills your own container; give it a positioned host and set `contained`. */
 export const Contained: Story = {
   args: { contained: true },
-  render: (args) => (
-    <div style={{ position: 'relative', blockSize: '30rem' }}>
-      <Harness {...args} />
-    </div>
-  ),
+  render: (args) => <Harness {...args} blockSize="30rem" />,
 };
 export const RTL: Story = {
   args: { dir: 'rtl', position: 'bottom-start', variant: 'list' },
@@ -478,11 +550,7 @@ export const NarrowLongCopy: Story = {
 };
 export const ScrollableQueue: Story = {
   args: { variant: 'list', contained: true },
-  render: (args) => (
-    <div style={{ position: 'relative', blockSize: '12rem' }}>
-      <Harness {...args} initial={messages} />
-    </div>
-  ),
+  render: (args) => <Harness {...args} blockSize="12rem" initial={messages} />,
   play: async ({ canvasElement }) => {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
@@ -508,10 +576,11 @@ function Scoped({ args }: { args: ToastStackProps }) {
   return (
     <ThemeRoot theme="light" portalContainer={container}>
       <div ref={setContainer} />
-      <Harness {...args} />
+      <Harness {...args} surface={false} initial={[]} />
     </ThemeRoot>
   );
 }
+/** Click Notify: the stack portals into the theme scope's container and keeps the light palette. */
 export const ScopedPortal: Story = { args: { variant: 'list' }, render: (args) => <Scoped args={args} /> };
 
 export const ConsumerEscapeVeto: Story = {
@@ -639,7 +708,9 @@ export const UpdateLifetime: Story = {
   render: (args) => (
     <Toast>
       <LifetimeControls />
-      <ToastStack {...args} />
+      <Surface>
+        <ToastStack contained {...args} />
+      </Surface>
     </Toast>
   ),
   play: async ({ canvasElement, userEvent }) => {

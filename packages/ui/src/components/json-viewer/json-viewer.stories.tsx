@@ -20,7 +20,7 @@ const object = Object.fromEntries(array.map((value, index) => [`key${index}`, va
 const snippet =
   '<JsonViewer data={{ active: false, count: 0 }} defaultExpandDepth={2} aria-label="Webhook payload" />';
 const meta = {
-  title: 'Components/JsonViewer',
+  title: 'Data display/JsonViewer',
   component: JsonViewer,
   tags: ['autodocs'],
   args: { data: payload, 'aria-label': 'Webhook payload' },
