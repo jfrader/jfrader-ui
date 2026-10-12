@@ -81,6 +81,7 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Apply a theme to part of a page and its overlays.' },
+      usage: 'For setup, light/dark switching, custom palettes and portal behavior, start with the [Theming guide](./?path=/docs/foundations-theming--docs). The examples below cover ThemeRoot itself.',
     },
   },
   args: { onClick: fn() },

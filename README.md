@@ -2,7 +2,13 @@
 
 React components built from scratch, with Emotion styles and CSS custom properties for themes. Browse the components and examples in Storybook 10.
 
-Components have been reviewed and documented in stories, with Storybook browser tests and an axe gate. M1 + M2 are complete; see PLAN.md for the inventory.
+## Guides
+
+- [Getting started](docs/consuming-jfrader-ui.md): install, render your first component, and set up React / Vite or Next.js.
+- [Theming](docs/theming.md): light/dark, saved preferences, brand colors and scoped themes.
+- [Styling](docs/styling.md): props, `sx`, `styled`, `css` and component parts.
+
+The same guides are available under **Foundations** in Storybook. Component pages contain examples, props, keyboard behavior and usage notes.
 
 ## Packages
 
@@ -18,6 +24,8 @@ Components have been reviewed and documented in stories, with Storybook browser 
 npm i @jfrader/ui @jfrader/tokens
 ```
 
+Requires React 19. Import `@jfrader/tokens/tokens.css` once in your app entry. See [Getting started](docs/consuming-jfrader-ui.md) for a complete working file; installing the package alone does not load its token stylesheet.
+
 ### Registry choice
 
 npmjs is the default and needs no configuration. GitHub Packages hosts the same
@@ -32,8 +40,6 @@ The registry setting applies to the whole `@jfrader` scope. npm does not fall
 back from GitHub Packages to npmjs. If your project uses GitHub for that scope,
 authenticate there. For a package not mirrored there, use an explicit npmjs
 tarball URL.
-
-To use the library in an app, see [docs/consuming-jfrader-ui.md](docs/consuming-jfrader-ui.md).
 
 ## Commands
 

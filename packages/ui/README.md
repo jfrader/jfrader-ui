@@ -2,7 +2,15 @@
 
 React components styled with Emotion and themed through the CSS custom properties from `@jfrader/tokens`.
 
-## Components
+## Start here
+
+- [Getting started](https://github.com/jfrader/jfrader-ui/blob/master/docs/consuming-jfrader-ui.md): installation and complete React / Vite and Next.js examples.
+- [Theming](https://github.com/jfrader/jfrader-ui/blob/master/docs/theming.md): light/dark palettes, brand accents and token overrides.
+- [Styling](https://github.com/jfrader/jfrader-ui/blob/master/docs/styling.md): customize instances, public parts and reusable wrappers.
+
+Requires React 19 and the `@jfrader/tokens/tokens.css` stylesheet. The same guides appear under **Foundations** in Storybook.
+
+## Component subpath examples
 
 | Subpath | Exports |
 | --- | --- |
@@ -48,7 +56,7 @@ React components styled with Emotion and themed through the CSS custom propertie
 | `@jfrader/ui/toggle-group` | `ToggleGroup` |
 | `@jfrader/ui/tooltip` | `Tooltip` |
 
-Each subpath also exports its prop types. The package root re-exports everything.
+Each component subpath also exports its prop types. The package root re-exports component APIs; optional integrations such as `@jfrader/ui/next` and `@jfrader/ui/code-block/shiki` remain separate imports.
 
 ## Usage
 
@@ -68,35 +76,11 @@ import { ThemeRoot } from '@jfrader/ui/theme-root';
 
 ## Next.js App Router
 
-`@jfrader/ui/next` exports `EmotionRegistry`, the required Emotion registry. It needs the optional `next` and `@emotion/cache` peers:
-
-```sh
-pnpm add @emotion/cache
-```
-
-```tsx
-// app/layout.tsx
-import { EmotionRegistry } from '@jfrader/ui/next';
-
-<body>
-  <EmotionRegistry>{children}</EmotionRegistry>
-</body>;
-```
-
-See [Next.js App Router](https://github.com/jfrader/jfrader-ui/blob/master/docs/consuming-jfrader-ui.md#nextjs-app-router) for Server Component boundaries.
+Use the `EmotionRegistry` adapter from `@jfrader/ui/next`. See the complete [App Router layout](https://github.com/jfrader/jfrader-ui/blob/master/docs/consuming-jfrader-ui.md#nextjs-app-router), including dependencies and Server Component boundaries.
 
 ## Theming
 
-Components read CSS custom properties defined by `@jfrader/tokens`. Load the stylesheet once and wrap the app in `ThemeRoot`:
-
-```tsx
-import '@jfrader/tokens/tokens.css';
-import { ThemeRoot } from '@jfrader/ui/theme-root';
-
-<ThemeRoot theme="light">{app}</ThemeRoot>;
-```
-
-Token names and values live in `packages/tokens/src/tokens.ts`.
+Set `data-theme` on `<html>` for the page, or use `ThemeRoot` for a subtree. `ThemeProvider` supplies styling callbacks with token references; it does not choose light or dark. See [Theming](https://github.com/jfrader/jfrader-ui/blob/master/docs/theming.md) for complete recipes and portal behavior.
 
 ## Build
 
