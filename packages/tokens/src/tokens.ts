@@ -62,6 +62,9 @@ export const base = {
     floating: '0 16px 48px rgba(0, 0, 0, 0.55)',
     cardFlight: '0 10px 14px rgba(0, 0, 0, 0.3)',
   },
+  zIndex: {
+    cardFlight: '1000',
+  },
   radius: {
     sm: '8px',
     md: '12px',

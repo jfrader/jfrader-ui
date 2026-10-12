@@ -59,6 +59,9 @@ export const vars = {
     "floating": "var(--ui-shadow-floating)",
     "cardFlight": "var(--ui-shadow-card-flight)"
   },
+  "zIndex": {
+    "cardFlight": "var(--ui-z-index-card-flight)"
+  },
   "radius": {
     "sm": "var(--ui-radius-sm)",
     "md": "var(--ui-radius-md)",

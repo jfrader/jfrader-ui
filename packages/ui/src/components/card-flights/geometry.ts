@@ -46,7 +46,7 @@ export function findMarker(root: HTMLElement, attribute: string, value: string) 
 
 export const FLIGHT_GEOMETRY = {
   maxLiftPx: 120, liftRatio: 0.32, peakScale: 1.14, perspectivePx: 600,
-  spinDeg: -20, zIndex: 1000,
+  spinDeg: -20,
   flipDurationRatio: 0.7, flipDelayRatio: 0.15, deckWidthRatio: 0.085,
   maxCards: 3, originTtlMs: 4000,
   easing: [0.22, 1, 0.36, 1] as const,

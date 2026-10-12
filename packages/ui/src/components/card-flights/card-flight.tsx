@@ -9,7 +9,7 @@ import { FLIGHT_GEOMETRY as config } from './geometry';
 import type { CardFlightSpec } from './card-flights';
 
 const bodyStyle = css({
-  position: 'fixed', left: 0, top: 0, pointerEvents: 'none', zIndex: config.zIndex,
+  position: 'fixed', left: 0, top: 0, pointerEvents: 'none', zIndex: vars.zIndex.cardFlight,
   perspective: `${config.perspectivePx}px`,
 });
 const shadowStyle = css({ position: 'absolute', inset: 0, boxShadow: vars.shadow.cardFlight, opacity: 0 });
@@ -22,12 +22,13 @@ const backStyle = css({ transform: 'rotateY(180deg)' });
 const pose = (x: number, y: number, rotate: number, scale: number) =>
   `translate(${x}px, ${y}px) rotate(${rotate}deg) scale(${scale})`;
 
-export function CardFlight({ spec, onFinish }: { spec: CardFlightSpec; onFinish: () => void }) {
+export function CardFlight({ flightId, spec, onFinish }: { flightId: number; spec: CardFlightSpec; onFinish: () => void }) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const shadowRef = useRef<HTMLDivElement>(null);
   const turnRef = useRef<HTMLDivElement>(null);
   const { from, to, face, durationMs, delayMs = 0, front, back } = spec;
   const start = pose(from.cx - to.width / 2, from.cy - to.height / 2, from.rotate, from.width / to.width);
+  // Only a new launch identity restarts tracks; equivalent spec objects do not.
   useLayoutEffect(() => {
     const body = bodyRef.current;
     const shadow = shadowRef.current;
@@ -54,7 +55,7 @@ export function CardFlight({ spec, onFinish }: { spec: CardFlightSpec; onFinish:
       delay: options.delay + options.duration * config.flipDelayRatio, ease: 'easeInOut',
     }) : null;
     return () => { travel.stop(); lifted.stop(); flip?.stop(); };
-  }, [spec, onFinish, start, durationMs, delayMs, face, from, to]);
+  }, [flightId]);
   return <div ref={bodyRef} css={bodyStyle} aria-hidden="true" data-ui="card-flight"
     data-flight-target={spec.target} style={{ width: to.width, height: to.height, transform: start }}>
     <div ref={shadowRef} css={shadowStyle} data-ui="card-flight-shadow" style={{ borderRadius: to.width / CARD_FRAME.cornerDivisor }} />

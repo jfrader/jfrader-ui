@@ -5,6 +5,8 @@ import { motionDurationMs } from '../../../packages/ui/src/styling/motion-timing
 import { Button, CardFlightsProvider, GameCard, GameTable, ThemeRoot, flightTarget, measureCardBox,
   useCardFlights, useDealFlights, usePlayedCardFlights, type DealFlightPlayer, type FlightCard, type PlayedFlightCard,
 } from '@jfrader/ui';
+import { CardFlight } from '../../../packages/ui/src/components/card-flights/card-flight';
+import type { CardFlightSpec } from '../../../packages/ui/src/components/card-flights/card-flights';
 
 const controlsStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: vars.space[3] });
 const boardStyle = css({ blockSize: '600px', maxInlineSize: '850px' });
@@ -27,6 +29,27 @@ export interface CardFlightsFixtureProps {
   initialDealt?: boolean;
   initialPlayed?: boolean;
   portalReady?: boolean;
+}
+
+export function FlightIdentityProbe() {
+  const destinationRef = useRef<HTMLDivElement>(null);
+  const [spec, setSpec] = useState<CardFlightSpec | null>(null);
+  return <div data-identity-probe>
+    <div ref={destinationRef}><GameCard label="Probe card" /></div>
+    <div css={controlsStyle}>
+      <Button onClick={() => {
+        const destination = destinationRef.current;
+        if (!destination) return;
+        const to = measureCardBox(destination);
+        setSpec({ target: 'identity-probe', destination, to, from: { ...to, cx: to.cx - to.width },
+          face: 'reveal', front: <GameCard label="Probe front" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />,
+          back: <GameCard label="Probe back" />, durationMs: motionDurationMs.cardPlay });
+      }}>Start identity probe</Button>
+      <Button onClick={() => setSpec((current) => current && ({ ...current, from: { ...current.from }, to: { ...current.to } }))}>Rerender identity probe</Button>
+      <Button onClick={() => setSpec(null)}>Stop identity probe</Button>
+    </div>
+    {spec && <CardFlight flightId={1} spec={spec} onFinish={() => undefined} />}
+  </div>;
 }
 
 export function CardFlightsFixture({ theme = 'dark', initialDealt = false, initialPlayed = false, portalReady = true }: CardFlightsFixtureProps) {

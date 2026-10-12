@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { StrictMode } from 'react';
 import { expect, spyOn, waitFor } from 'storybook/test';
-import { CardFlightsFixture } from '../../../../../apps/storybook/stories/card-flights-fixture';
+import { CardFlightsFixture, FlightIdentityProbe } from '../../../../../apps/storybook/stories/card-flights-fixture';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { CardFlightsProvider } from './index';
 import { FLIGHT_GEOMETRY, dealSequence, measureCardBox } from './geometry';
@@ -172,7 +173,7 @@ export const ReducedMotion: Story = {
   },
 };
 export const Interruption: Story = {
-  render: () => <CardFlightsFixture initialPlayed />,
+  render: () => <><CardFlightsFixture initialPlayed /><StrictMode><FlightIdentityProbe /></StrictMode></>,
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Replace flight' }));
     const first = required(flights(canvasElement)[0]);
@@ -198,6 +199,19 @@ export const Interruption: Story = {
     await expect(unmountTracks.every((track) => track.playState !== 'running')).toBe(true);
     await userEvent.click(canvas.getByRole('button', { name: 'Mount board' }));
     await expect(canvas.getByRole('img', { name: 'A of spades' })).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: 'Start identity probe' }));
+    const probe = required(canvasElement.querySelector<HTMLElement>('[data-identity-probe] [data-ui="card-flight"]'));
+    const probeTracks = probe.getAnimations({ subtree: true });
+    try {
+      await expect(probeTracks).toHaveLength(3);
+      await userEvent.click(canvas.getByRole('button', { name: 'Rerender identity probe' }));
+      const afterRender = probe.getAnimations({ subtree: true });
+      await expect(afterRender).toHaveLength(3);
+      for (const [index, track] of probeTracks.entries()) await expect(afterRender[index]).toBe(track);
+    } finally {
+      await userEvent.click(canvas.getByRole('button', { name: 'Stop identity probe' }));
+    }
+    await expect(probeTracks.every((track) => track.playState !== 'running')).toBe(true);
   },
 };
 export const ReduceInFlight: Story = {

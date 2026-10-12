@@ -78,6 +78,7 @@ export function usePlayedCardFlights({ plays, playerCount, resyncKey }: PlayedCa
   const { scopeRef, reducedMotion, resetEpoch, launch, takePlayOrigin } = useCardFlights();
   const previous = useRef<{ keys: Set<string>; resyncKey: typeof resyncKey; resetEpoch: number } | null>(null);
   const sources = useRef(new Map<string, CardBox>());
+  // Capture hand/seat positions after every render for the next accepted play's origin.
   useLayoutEffect(() => {
     const root = scopeRef.current;
     const baseline = previous.current;

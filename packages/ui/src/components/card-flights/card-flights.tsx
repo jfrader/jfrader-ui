@@ -150,7 +150,7 @@ export function CardFlightsProvider({ children, scopeRef }: CardFlightsProviderP
   return <MotionConfig reducedMotion="user"><Context.Provider value={value}>
     {children}
     {flights.length > 0 && <OverlayPortal>{flights.map((flight) =>
-      <CardFlight key={flight.id} spec={flight.spec} onFinish={flight.finish} />)}</OverlayPortal>}
+      <CardFlight key={flight.id} flightId={flight.id} spec={flight.spec} onFinish={flight.finish} />)}</OverlayPortal>}
   </Context.Provider></MotionConfig>;
 }
 CardFlightsProvider.displayName = 'CardFlightsProvider';
