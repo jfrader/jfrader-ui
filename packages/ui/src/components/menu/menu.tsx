@@ -10,10 +10,14 @@
 // useListNavigation with focusItemOnOpen; FloatingFocusManager's own initial focus is off).
 // Focus return is explicit: only an ACCEPTED Escape or item selection restores focus to the
 // trigger (a rejected controlled dismissal keeps focus inside); Tab-out and outside presses
-// never move focus (returnFocus is off, so no transient trigger focus either). Restoration is
-// skipped when the trigger left the document or became inert (its owner is being removed) or
-// when the command already moved focus elsewhere, so a neighbor or opened surface keeps it.
+// never move focus (returnFocus is off, so no transient trigger focus either). Every open or
+// close request decides restoration afresh, so a rejected Escape never leaks into a later close.
+// Restoration is skipped when the trigger left the document or became inert (its owner is being
+// removed) or when the command already moved focus elsewhere, so a neighbor or opened surface
+// keeps it.
 // Disabled items stay in the list with aria-disabled="true"; arrows and typeahead skip them.
+// The menu is an overlay layer: opened inside another layer (Popover, …) it is that layer's child,
+// so Escape and outside presses dismiss the menu alone.
 // Consumer trigger handlers run before the menu's own; preventDefault() vetoes the open request.
 // The menu is labelled by the trigger; consumer aria-labelledby ids join it and a consumer
 // aria-label replaces it.
@@ -35,7 +39,6 @@ import {
   FloatingFocusManager,
   FloatingList,
   useClick,
-  useDismiss,
   useInteractions,
   useListNavigation,
   useMergeRefs,
@@ -45,15 +48,15 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
-import { IsolatedOverlay } from '../../overlay/overlay-layer';
+import { LayerContent, MenuLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
-import { useOverlayFloating } from '../../overlay/use-overlay-floating';
+import { useOverlayFloating, type OverlayFloatingOptions } from '../../overlay/use-overlay-floating';
 import { useCollectionIndexRegistration, useCollectionListItem } from '../../utils/collection-registry';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -77,10 +80,21 @@ export interface MenuItemProps extends Omit<ComponentPropsWithRef<'button'>, 'on
 }
 export interface MenuSeparatorProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
+export type MenuItemTone = 'neutral' | 'danger';
+
+/** Positioning options a family may set on the shared controller; Menu keeps the defaults. */
+export type MenuPositioning = Pick<OverlayFloatingOptions, 'strategy' | 'gap' | 'transform' | 'onAvailableSize'>;
+
+export interface MenuControllerProps extends MenuProps {
+  positioning?: MenuPositioning;
+}
+
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
 interface MenuContextValue {
   open: boolean;
+  nodeId: string | undefined;
+  requestOpen: () => void;
   requestClose: (restoreFocus?: boolean) => void;
   activeIndex: number | null;
   refs: OverlayFloating['refs'];
@@ -104,19 +118,27 @@ export interface MenuPartIdentity {
   styles?: Interpolation<Theme>;
 }
 
+/** Item behavior a family may change: the part name in usage errors, the item role and whether
+ * selection closes the menu. */
+export interface MenuItemPartBehavior {
+  part?: string;
+  itemRole?: 'menuitem' | 'menuitemcheckbox';
+  closeOnSelect?: boolean;
+}
+
 const MenuContext = createContext<MenuContextValue | null>(null);
 // Set by the content part: items may only render inside it (they register with its FloatingList).
 const MenuContentContext = createContext(false);
 
-function useMenuContext(family: string, part: string): MenuContextValue {
+export function useMenuContext(family: string, part: string): MenuContextValue {
   const context = useContext(MenuContext);
   if (!context) throw new Error(`${family}.${part} must be rendered inside <${family}>.`);
   return context;
 }
 
-function useMenuItemContext(family: string): MenuContextValue {
-  const context = useMenuContext(family, 'Item');
-  if (!useContext(MenuContentContext)) throw new Error(`${family}.Item must be rendered inside <${family}.Content>.`);
+function useMenuItemContext(family: string, part: string): MenuContextValue {
+  const context = useMenuContext(family, part);
+  if (!useContext(MenuContentContext)) throw new Error(`${family}.${part} must be rendered inside <${family}.Content>.`);
   return context;
 }
 
@@ -128,7 +150,7 @@ const isHandlerKey = (key: string) => /^on[A-Z]/.test(key);
  * Runs each consumer handler before the matching interaction handler; a consumer
  * `preventDefault()` vetoes the internal request (open, toggle, navigation).
  */
-function consumerHandlersFirst(
+export function consumerHandlersFirst(
   props: HTMLProps<Element>,
   getProps: (userProps: HTMLProps<Element>) => Record<string, unknown>,
 ) {
@@ -189,14 +211,26 @@ const separatorStyle = css({
 export const menuItemStyles = [itemStyle, listboxItemStateStyle];
 /** Own styles of a menu separator. */
 export const menuSeparatorStyles = separatorStyle;
+/** Command tones for families whose items carry one (SplitButton, ContextMenu). */
+export const menuItemToneStyles: Record<MenuItemTone, SerializedStyles> = {
+  neutral: css({}),
+  danger: css({
+    color: vars.color.dangerText,
+    '&:hover:not([aria-disabled="true"]), &[data-active]:not([aria-disabled="true"])': {
+      backgroundColor: vars.color.dangerSoft,
+    },
+  }),
+};
 
 function MenuOverlay({
   open: openProp,
   defaultOpen = false,
   onOpenChange,
   placement = 'bottom-start',
+  positioning,
+  nodeId,
   children,
-}: MenuProps) {
+}: MenuControllerProps & { nodeId: string | undefined }) {
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const elementsRef = useRef<Array<HTMLElement | null>>([]);
@@ -206,11 +240,13 @@ function MenuOverlay({
   const pendingFocusRestoreRef = useRef(false);
 
   const { refs, floatingStyles, context } = useOverlayFloating({
+    ...positioning,
     open,
     placement,
+    nodeId,
     onOpenChange: (next, _event, reason) => {
       // Escape requests a close; focus is restored only once the close is actually applied.
-      if (!next) pendingFocusRestoreRef.current = reason === 'escape-key';
+      pendingFocusRestoreRef.current = !next && reason === 'escape-key';
       requestOpenChange(next);
     },
   });
@@ -228,7 +264,7 @@ function MenuOverlay({
 
   const click = useClick(context);
   const role = useRole(context, { role: 'menu' });
-  const dismiss = useDismiss(context, { escapeKey: true, outsidePress: true });
+  const dismiss = useLayerDismiss(context, 'container');
   const listNavigation = useListNavigation(context, {
     listRef: elementsRef,
     activeIndex,
@@ -247,7 +283,7 @@ function MenuOverlay({
   const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
     click,
     role,
-    dismiss,
+    ...dismiss,
     listNavigation,
     typeahead,
   ]);
@@ -255,8 +291,13 @@ function MenuOverlay({
   const value = useMemo(
     () => ({
       open,
+      nodeId,
+      requestOpen: () => {
+        pendingFocusRestoreRef.current = false;
+        requestOpenChange(true);
+      },
       requestClose: (restoreFocus = false) => {
-        if (restoreFocus) pendingFocusRestoreRef.current = true;
+        pendingFocusRestoreRef.current = restoreFocus;
         requestOpenChange(false);
       },
       activeIndex,
@@ -272,6 +313,7 @@ function MenuOverlay({
     }),
     [
       open,
+      nodeId,
       requestOpenChange,
       activeIndex,
       refs,
@@ -286,12 +328,13 @@ function MenuOverlay({
   return <MenuContext.Provider value={value}>{children}</MenuContext.Provider>;
 }
 
+/** The shared menu controller (state, positioning, navigation, dismissal, focus return). */
+export function MenuController(props: MenuControllerProps) {
+  return <MenuLayer>{(nodeId) => <MenuOverlay {...props} nodeId={nodeId} />}</MenuLayer>;
+}
+
 function MenuRoot(props: MenuProps) {
-  return (
-    <IsolatedOverlay>
-      <MenuOverlay {...props} />
-    </IsolatedOverlay>
-  );
+  return <MenuController {...props} />;
 }
 
 MenuRoot.displayName = 'Menu';
@@ -340,17 +383,19 @@ export function MenuContentPart({
   sx,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
+  defaultLabelledBy,
   ...rest
-}: MenuContentProps & MenuPartIdentity) {
-  const { open, refs, floatingContext, floatingStyles, elementsRef, labelsRef, getFloatingProps } =
+}: MenuContentProps & MenuPartIdentity & { defaultLabelledBy?: string }) {
+  const { open, nodeId, refs, floatingContext, floatingStyles, elementsRef, labelsRef, getFloatingProps } =
     useMenuContext(family, 'Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
 
   if (!open) return null;
 
   const floatingProps = getFloatingProps(rest);
-  // The trigger names the menu; consumer ids join it, and a consumer aria-label replaces it.
-  const triggerLabel = floatingProps['aria-labelledby'] as string | undefined;
+  // The trigger (or the family's own default) names the menu; consumer ids join it, and a
+  // consumer aria-label replaces it.
+  const triggerLabel = defaultLabelledBy ?? (floatingProps['aria-labelledby'] as string | undefined);
   const labelledBy =
     ariaLabelledBy !== undefined ? joinIds(ariaLabelledBy, triggerLabel) : ariaLabel !== undefined ? undefined : triggerLabel;
 
@@ -378,7 +423,9 @@ export function MenuContentPart({
               className={className}
             >
               <FloatingList elementsRef={elementsRef} labelsRef={labelsRef}>
-                <MenuContentContext.Provider value>{children}</MenuContentContext.Provider>
+                <MenuContentContext.Provider value>
+                  <LayerContent nodeId={nodeId}>{children}</LayerContent>
+                </MenuContentContext.Provider>
               </FloatingList>
             </div>
           )}
@@ -401,12 +448,15 @@ export function MenuItemPart({
   ref,
   onSelect,
   disabled = false,
+  part = 'Item',
+  itemRole = 'menuitem',
+  closeOnSelect = true,
   onClick,
   className,
   sx,
   ...rest
-}: MenuItemProps & MenuPartIdentity) {
-  const { activeIndex, requestClose, disabledIndices, getItemProps } = useMenuItemContext(family);
+}: MenuItemProps & MenuPartIdentity & MenuItemPartBehavior) {
+  const { activeIndex, requestClose, disabledIndices, getItemProps } = useMenuItemContext(family, part);
   // A null label removes disabled items from typeahead; undefined falls back to textContent.
   const { ref: listItemRef, index } = useCollectionListItem({ label: disabled ? null : undefined });
   const mergedRef = useMergeRefs([listItemRef, ref]);
@@ -419,7 +469,7 @@ export function MenuItemPart({
     if (disabled) return;
     onClick?.(event);
     onSelect?.();
-    if (!event.defaultPrevented) requestClose(true);
+    if (closeOnSelect && !event.defaultPrevented) requestClose(true);
   };
 
   return (
@@ -429,7 +479,7 @@ export function MenuItemPart({
           type="button"
           {...getItemProps({ ...rest, onClick: handleClick })}
           ref={mergedRef}
-          role="menuitem"
+          role={itemRole}
           tabIndex={isActive ? 0 : -1}
           aria-disabled={disabled || undefined}
           data-active={isActive || undefined}

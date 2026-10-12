@@ -37,7 +37,9 @@ import {
   MenuSeparatorPart,
   MenuTriggerPart,
   menuItemStyles,
+  menuItemToneStyles,
   menuSeparatorStyles,
+  type MenuItemTone,
   type MenuContentProps,
   type MenuItemProps,
   type MenuSeparatorProps,
@@ -45,7 +47,7 @@ import {
 
 const FAMILY = 'SplitButton';
 
-export type SplitButtonItemTone = 'neutral' | 'danger';
+export type SplitButtonItemTone = MenuItemTone;
 
 export interface SplitButtonProps extends Omit<ComponentPropsWithRef<'div'>, 'role'>, SxProps {
   /** Appearance of the Action; the Trigger uses the matching subdued fill. */
@@ -213,16 +215,6 @@ const liveLabelStyle = css({
     '&[data-swapped]': { animation: 'none' },
   },
 });
-
-const itemToneStyles: Record<SplitButtonItemTone, SerializedStyles> = {
-  neutral: css({}),
-  danger: css({
-    color: vars.color.dangerText,
-    '&:hover:not([aria-disabled="true"]), &[data-active]:not([aria-disabled="true"])': {
-      backgroundColor: vars.color.dangerSoft,
-    },
-  }),
-};
 
 const chevron = (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -439,7 +431,7 @@ function SplitButtonItem({ tone = 'neutral', disabled = false, ...props }: Split
       disabled={context.disabled || disabled}
       family={FAMILY}
       marker="split-button-item"
-      styles={[menuItemStyles, itemToneStyles[tone]]}
+      styles={[menuItemStyles, menuItemToneStyles[tone]]}
     />
   );
 }
