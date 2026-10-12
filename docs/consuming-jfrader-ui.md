@@ -119,17 +119,17 @@ To switch at runtime, set `document.documentElement.dataset.theme` and store the
 
 ### Contrast surfaces
 
-A surface can wear the dark theme's own palette whatever the page theme is: dark panel on a light page, charcoal elevation on a dark page. `Drawer.Panel` does it by default; `Card` opts in with `appearance="contrast"`.
+A surface can wear the dark theme — plus the handful of roles the elevated charcoal panel changes — whatever the page theme is: dark panel on a light page, charcoal elevation on a dark page. `Drawer.Panel` does it by default; `Card` opts in with `appearance="contrast"`.
 
 ```tsx
-<Card appearance="contrast">{/* the dark theme's tokens, on any page */}</Card>
+<Card appearance="contrast">{/* dark theme + charcoal overrides, on any page */}</Card>
 <Card>{/* names no appearance: whatever theme is in scope */}</Card>
 ```
 
-- No new tokens: the surface carries `data-theme="dark"`, so every role — text, borders, wells, control boundaries, native `color-scheme` — comes from the dark theme's own block.
-- The palette crosses portals: a Select, Menu or Popover opened inside a contrast surface stays dark, on the page it is opened from.
+- Reused, not recreated: the surface carries `data-theme="dark"` and the library's dark block supplies every role; `data-appearance="contrast"` adds only the eight roles the charcoal panel changes (its elevated surface, hover, wells, three borders, the control boundary and subtle text), each measured for AA on the new fill.
+- The palette crosses portals: a Select, Menu or Popover opened inside a contrast surface keeps it, on the page it is opened from.
 - A surface that names no appearance keeps the enclosing theme, so nesting inherits instead of fighting it.
-- To return to the page palette inside a contrast surface, wrap that subtree in `ThemeRoot theme="light"`: a theme root names the theme, so the surface never has to guess it.
+- To return to the page palette inside a contrast surface, wrap that subtree in `ThemeRoot theme="light"`: naming a different theme redeclares the whole palette, so the surface treatment does not carry over.
 
 ### Scoped theming and overlays
 

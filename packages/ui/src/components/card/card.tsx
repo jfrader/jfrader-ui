@@ -8,8 +8,8 @@
 import { createContext, useContext, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { raisedSurface, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
-import { SurfaceScope, themeScopeStyle } from '../../styling/theme-scope';
+import { raisedSurface, surfaceAttributes, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
+import { AppearanceScope, themeScopeStyle, useSurfaceAppearance } from '../../styling/theme-scope';
 import { WithSx, type SxProps } from '../../styling/sx';
 
 export type CardVariant = 'flat' | 'raised';
@@ -107,31 +107,30 @@ const footerStyle = css({
   '& > :only-child': { marginInlineStart: 'auto' },
 });
 
-function CardRoot({ ref, variant = 'raised', appearance = 'default', slotProps, className, sx, ...rest }: CardProps) {
-  const contrastTheme = surfaceTheme(appearance);
-
-  const card = (
-    <WithSx
-      className={joinClassNames(slotProps?.root?.className, className)}
-      styles={[rootStyle, variantStyles[variant], contrastTheme && themeScopeStyle, slotProps?.root?.css]}
-      sx={sx}
-    >
-      {(className) => (
-        <div
-          {...rest}
-          ref={ref}
-          data-ui="card"
-          data-variant={variant}
-          {...(contrastTheme ? { 'data-theme': contrastTheme } : null)}
-          className={className}
-        />
-      )}
-    </WithSx>
-  );
+function CardRoot({ ref, variant = 'raised', appearance, slotProps, className, sx, ...rest }: CardProps) {
+  const surfaceAppearance = useSurfaceAppearance(appearance);
+  const ownTheme = surfaceTheme(appearance ?? 'default');
 
   return (
     <CardSlotContext.Provider value={slotProps}>
-      {contrastTheme ? <SurfaceScope theme={contrastTheme}>{card}</SurfaceScope> : card}
+      <AppearanceScope theme={ownTheme} appearance={surfaceAppearance}>
+        <WithSx
+          className={joinClassNames(slotProps?.root?.className, className)}
+          styles={[rootStyle, variantStyles[variant], ownTheme && themeScopeStyle, slotProps?.root?.css]}
+          sx={sx}
+        >
+          {(className) => (
+            <div
+              {...rest}
+              ref={ref}
+              data-ui="card"
+              data-variant={variant}
+              {...surfaceAttributes(appearance ?? 'default')}
+              className={className}
+            />
+          )}
+        </WithSx>
+      </AppearanceScope>
     </CardSlotContext.Provider>
   );
 }

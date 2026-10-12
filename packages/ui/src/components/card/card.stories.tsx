@@ -5,7 +5,7 @@ import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
-import { expectThemedSurface } from '../../testing/theme-assertions';
+import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
 import { TextField } from '../text-field';
@@ -323,14 +323,16 @@ export const Contrast: Story = {
     const [contrastCard, defaultCard] = getCards(canvasElement);
     if (!contrastCard || !defaultCard) throw new Error('Expected both cards');
 
-    // The requested card paints the dark theme's own palette on a light page; the one beside it keeps
-    // the page palette by naming no theme at all.
+    // The requested card wears the dark theme plus the charcoal overrides on a light page; the one
+    // beside it keeps the page palette by naming no appearance.
     await expect(contrastCard).toHaveAttribute('data-theme', 'dark');
-    await expectThemedSurface(contrastCard, 'dark');
-    await expect(getComputedStyle(contrastCard).backgroundColor).toBe('rgb(20, 21, 22)');
+    await expect(contrastCard).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(contrastCard, 'light');
+    await expect(getComputedStyle(contrastCard).backgroundColor).toBe('rgb(32, 34, 38)');
     await expect(getComputedStyle(contrastCard).colorScheme).toBe('dark');
 
     await expect(defaultCard).not.toHaveAttribute('data-theme');
+    await expect(defaultCard).not.toHaveAttribute('data-appearance');
     await expectThemedSurface(defaultCard, 'light');
     await expect(getComputedStyle(defaultCard).colorScheme).toBe('light');
   },
@@ -386,7 +388,7 @@ export const ContrastNestedSurfaces: Story = {
     if (!outer || !inherited || !themed) throw new Error('Expected the three nested cards');
 
     // A surface that names no appearance keeps the enclosing palette, in the DOM…
-    await expect(outer).toHaveAttribute('data-theme', 'dark');
+    await expect(outer).toHaveAttribute('data-appearance', 'contrast');
     await expect(inherited).not.toHaveAttribute('data-theme');
     await expect(getComputedStyle(inherited).backgroundColor).toBe(getComputedStyle(outer).backgroundColor);
 
@@ -395,8 +397,8 @@ export const ContrastNestedSurfaces: Story = {
     const innerPopover = await within(canvasElement.ownerDocument.body).findByRole('dialog', {
       name: 'Inner options',
     });
-    await expect(innerPopover.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-theme', 'dark');
-    await expectThemedSurface(innerPopover, 'dark');
+    await expect(innerPopover.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(innerPopover, 'light');
 
     // Returning to the page palette inside a contrast surface is a theme root's job: it names the
     // theme it wants, so neither the surface nor the portal has to guess.

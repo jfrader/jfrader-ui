@@ -4,7 +4,7 @@ import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { expectThemedSurface } from '../../testing/theme-assertions';
+import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
 import { Checkbox } from '../checkbox';
 import { Dialog } from '../dialog';
 import { Popover } from '../popover';
@@ -462,10 +462,11 @@ export const LightTheme: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
     await expect(canvasElement.contains(dialog)).toBe(true);
-    // The panel paints the dark theme's own palette by default, on a light page.
+    // The panel wears the dark theme plus the elevated-charcoal overrides, on a light page.
     await expect(panel).toHaveAttribute('data-theme', 'dark');
-    await expectThemedSurface(panel, 'dark');
-    await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(20, 21, 22)');
+    await expect(panel).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(panel, 'light');
+    await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
     await expect(getComputedStyle(panel).colorScheme).toBe('dark');
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);
@@ -476,10 +477,10 @@ export const ContrastPanelDark: Story = {
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
-    // On a dark page the panel keeps dark-charcoal elevation; the values are the same as on a light page.
-    await expect(panel).toHaveAttribute('data-theme', 'dark');
-    await expectThemedSurface(panel, 'dark');
-    await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(20, 21, 22)');
+    // On a dark page the panel keeps its charcoal elevation above the page; same values as on light.
+    await expect(panel).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(panel, 'dark');
+    await expect(getComputedStyle(panel).backgroundColor).toBe('rgb(32, 34, 38)');
     await expect(getComputedStyle(panel).colorScheme).toBe('dark');
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);
@@ -492,8 +493,9 @@ export const DefaultAppearance: Story = {
   render: (args) => <DrawerExample {...args} panelProps={{ appearance: 'default' }} />,
   play: async ({ canvasElement, userEvent }) => {
     const { panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
-    // Opting out names no theme, so the panel inherits the page's own surface.
+    // Opting out names no appearance, so the panel inherits the page's own surface.
     await expect(panel).not.toHaveAttribute('data-theme');
+    await expect(panel).not.toHaveAttribute('data-appearance');
     await expectThemedSurface(panel, 'light');
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
     await expectClosed(canvasElement, trigger);
@@ -529,7 +531,7 @@ export const PersistentOpenLight: Story = {
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement }) => {
     const dialog = await expectPersistentOpen(canvasElement);
-    await expectThemedSurface(parts(canvasElement).panel, 'dark');
+    await expectContrastSurface(parts(canvasElement).panel, 'light');
     await expect(canvasElement.contains(dialog)).toBe(true);
   },
 };
@@ -970,12 +972,12 @@ export const ContrastScopedPopover: Story = {
     const popover = await within(dialog).findByRole('dialog', { name: 'Owner options' });
 
     // The panel's palette crosses the portal: the overlay stays the dark family on a light page.
-    await expect(popover.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-theme', 'dark');
-    await expectThemedSurface(popover, 'dark');
+    await expect(popover.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(popover, 'light');
 
     // Controls inside the panel read the same palette, so their own surface comes from the panel.
-    await expect(panel).toHaveAttribute('data-theme', 'dark');
-    await expectThemedSurface(canvas.getByRole('textbox', { name: 'Owner' }), 'dark');
+    await expect(panel).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(canvas.getByRole('textbox', { name: 'Owner' }), 'light');
 
     // The first Escape belongs to the open overlay; the panel keeps its palette while the drawer stays.
     await userEvent.keyboard('{Escape>}');
@@ -983,7 +985,7 @@ export const ContrastScopedPopover: Story = {
     requestEscape(dialog);
     await userEvent.keyboard('{/Escape}');
     await expect(dialog).toHaveAttribute('open');
-    await expectThemedSurface(panel, 'dark');
+    await expectContrastSurface(panel, 'light');
 
     // The next Escape belongs to the drawer.
     await userEvent.keyboard('{Escape>}');
@@ -1032,16 +1034,16 @@ export const ContrastSelectPanel: Story = {
     const listbox = await within(dialog).findByRole('listbox', { name: 'Status' });
 
     // The open select keeps the panel palette: boundary, popup and panel agree on a light page.
-    await expect(listbox.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-theme', 'dark');
-    await expectThemedSurface(listbox, 'dark');
-    await expectThemedSurface(panel, 'dark');
-    await expectThemedSurface(canvas.getByRole('textbox', { name: 'Owner' }), 'dark');
+    await expect(listbox.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
+    await expectContrastSurface(listbox, 'light');
+    await expectContrastSurface(panel, 'light');
+    await expectContrastSurface(canvas.getByRole('textbox', { name: 'Owner' }), 'light');
 
     // The first Escape belongs to the open select; the drawer stays open on the same palette.
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(within(dialog).queryByRole('listbox')).toBeNull());
     await expect(dialog).toHaveAttribute('open');
-    await expectThemedSurface(panel, 'dark');
+    await expectContrastSurface(panel, 'light');
 
     // The drawer closes with its own affordance here: with a Select inside, its Escape cancel is dropped
     // while the Select's portal stays mounted — tracked as GURI-2293, not this surface work.

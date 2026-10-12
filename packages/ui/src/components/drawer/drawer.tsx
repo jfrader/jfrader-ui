@@ -43,9 +43,9 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { modalShellReset, raisedSurface, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
+import { modalShellReset, raisedSurface, surfaceAttributes, surfaceTheme, type SurfaceAppearance } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { SurfaceScope, themeScopeStyle } from '../../styling/theme-scope';
+import { AppearanceScope, themeScopeStyle, useSurfaceAppearance } from '../../styling/theme-scope';
 import { triggerStyle } from '../../styling/trigger-style';
 import {
   omitNativeOpen,
@@ -80,8 +80,8 @@ export interface DrawerContentProps extends Omit<ComponentPropsWithRef<'dialog'>
 }
 export interface DrawerPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
   /**
-   * `contrast` (default) paints the dark theme's own palette for the edge surface on any page theme;
-   * `default` keeps the theme in scope.
+   * `contrast` (default) wears the dark theme plus the elevated-charcoal overrides on any page theme;
+   * `default` keeps whatever theme is in scope.
    */
   appearance?: SurfaceAppearance;
 }
@@ -677,27 +677,28 @@ function DrawerPanel({ ref, className, appearance = 'contrast', sx, ...props }: 
   const panelRef = useContext(DrawerSurfaceContext)?.panelRef;
   const mergedRef = useMergeRefs([panelRef, ref]);
   const inline = side === 'inline-start' || side === 'inline-end';
-  const contrastTheme = surfaceTheme(appearance);
+  const surfaceAppearance = useSurfaceAppearance(appearance);
+  const ownTheme = surfaceTheme(appearance);
 
-  const panel = (
-    <WithSx
-      className={className}
-      styles={[panelStyle, panelSideStyles[side], inline && panelSizeStyles[size], contrastTheme && themeScopeStyle]}
-      sx={sx}
-    >
-      {(className) => (
-        <div
-          {...props}
-          ref={mergedRef}
-          data-ui="drawer-panel"
-          {...(contrastTheme ? { 'data-theme': contrastTheme } : null)}
-          className={className}
-        />
-      )}
-    </WithSx>
+  return (
+    <AppearanceScope theme={ownTheme} appearance={surfaceAppearance}>
+      <WithSx
+        className={className}
+        styles={[panelStyle, panelSideStyles[side], inline && panelSizeStyles[size], ownTheme && themeScopeStyle]}
+        sx={sx}
+      >
+        {(className) => (
+          <div
+            {...props}
+            ref={mergedRef}
+            data-ui="drawer-panel"
+            {...surfaceAttributes(appearance)}
+            className={className}
+          />
+        )}
+      </WithSx>
+    </AppearanceScope>
   );
-
-  return contrastTheme ? <SurfaceScope theme={contrastTheme}>{panel}</SurfaceScope> : panel;
 }
 
 DrawerPanel.displayName = 'Drawer.Panel';

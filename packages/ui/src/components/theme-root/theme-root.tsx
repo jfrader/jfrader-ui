@@ -16,13 +16,20 @@ export interface ThemeRootProps extends ComponentPropsWithRef<'div'>, SxProps {
 }
 
 // Mounts the token theme too, so `styled` callbacks and `useTheme()` work anywhere below.
-// Overlays read the scope from context to carry this theme through their portals.
+// Overlays read the scope from context to carry this theme through their portals. Naming a theme
+// also clears any contrast appearance: the root redeclares the whole palette locally.
 export function ThemeRoot({ ref, theme = 'dark', portalContainer, className, sx, ...rest }: ThemeRootProps) {
   const parent = useContext(ThemeScopeContext);
   // A nested root without its own container keeps the outer one: the outer container is
   // usually a layout boundary (a modal dialog's top layer, an embed's own element) that still applies.
   const resolvedContainer = portalContainer === undefined ? parent?.portalContainer : portalContainer;
-  const scope = useMemo(() => ({ theme, portalContainer: resolvedContainer }), [theme, resolvedContainer]);
+  // Naming a different theme redeclares the whole palette, so the surface appearance does not carry
+  // over; naming the same theme keeps it, which is what an overlay host inside a panel wants.
+  const appearance = parent && parent.theme === theme ? parent.appearance : ('default' as const);
+  const scope = useMemo(
+    () => ({ theme, appearance, portalContainer: resolvedContainer }),
+    [theme, appearance, resolvedContainer],
+  );
 
   return (
     <ThemeScopeContext.Provider value={scope}>

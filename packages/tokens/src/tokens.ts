@@ -113,6 +113,11 @@ export type ThemeOverrides = {
   readonly shadow: Record<keyof Tokens['shadow'], string>;
 };
 
+/** Sparse palette overrides: only the roles that differ, no full restatement of a theme. */
+export type AppearanceOverrides = {
+  readonly color: Partial<Record<keyof Tokens['color'], string>>;
+};
+
 /*
  * Light theme pairs with the dark default: white/gray structure with the
  * same violet accent family (fill #7747ff with white text; violet-as-text #5f2ee0).
@@ -174,3 +179,23 @@ export const light = {
     floating: '0 20px 48px oklch(0% 0 0 / 0.12), 0 3px 10px oklch(0% 0 0 / 0.05)',
   },
 } as const satisfies ThemeOverrides;
+
+/*
+ * Contrast surface: the eight roles the elevated charcoal panel changes on top of the dark theme,
+ * which supplies every other value. Sparse by design - no `...base.color`, so nothing is restated and
+ * no per-theme copy is needed. Measured on the #202226 fill (sRGB script): textSubtle #9a9ea7 5.93,
+ * borderControl #7d808a 4.04 on the panel and 4.37 on a well. The dark theme's own #757982 (4.19 on
+ * #141516) and #62666d fail there, which is why both move.
+ */
+export const contrast = {
+  color: {
+    surfaceRaised: '#202226',
+    surfaceHover: '#30323b',
+    surfaceInset: '#191b20',
+    border: '#3b3e47',
+    borderSubtle: '#31333a',
+    borderStrong: '#4c4f59',
+    borderControl: '#7d808a',
+    textSubtle: '#9a9ea7',
+  },
+} as const satisfies AppearanceOverrides;
