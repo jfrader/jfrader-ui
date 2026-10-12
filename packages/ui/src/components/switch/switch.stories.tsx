@@ -158,3 +158,20 @@ export const LightTheme: Story = {
     await expect(within(canvasElement).getByRole('switch')).toBeChecked();
   },
 };
+
+export const Rtl: Story = {
+  args: { dir: 'rtl', defaultChecked: true, label: 'מצב טיסה', description: 'מכבה Wi-Fi ו-Bluetooth.' },
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector('[data-ui="switch"]') as HTMLElement;
+    await expect(root).toHaveAttribute('dir', 'rtl');
+    const desc = canvasElement.querySelector('[id$="-description"]') as HTMLElement;
+    const computed = getComputedStyle(desc);
+    await expect(computed.direction).toBe('rtl');
+    await expect(computed.marginRight).not.toBe('0px');
+    await expect(computed.marginLeft).toBe('0px');
+    const control = within(canvasElement).getByRole('switch');
+    await expect(control).toBeChecked();
+    const track = control.nextElementSibling as HTMLElement;
+    await expect(getComputedStyle(track, '::after').transform).toContain('-20');
+  },
+};
