@@ -100,6 +100,7 @@ export * from './components/toggle-group';
 export * from './components/toggle-subscription';
 export * from './components/tooltip';
 export * from './components/tree-view';
+export * from './components/trick-stacks';
 export * from './components/typewriter-terminal';
 export * from './components/usage-meter';
 export * from './components/user-menu';

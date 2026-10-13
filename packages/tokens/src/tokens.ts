@@ -117,10 +117,13 @@ export const base = {
       cardDealStagger: '70ms',
       cardPlayOwn: '400ms',
       cardPlay: '520ms',
+      trickStack: '190ms',
     },
     easeStandard: 'cubic-bezier(0.2, 0.6, 0.2, 1)',
     easePresence: 'ease-in-out',
     easeCardFlip: 'ease',
+    easeTrickStack: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+    easeTrickStackShadow: 'ease',
   },
   // Component structural sizes; theme-independent, so light shares them.
   size: {
