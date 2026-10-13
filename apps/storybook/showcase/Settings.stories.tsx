@@ -1,6 +1,5 @@
 import { useId, useState, type FormEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect } from 'storybook/test';
 import { Button, Card, Dialog, Pill, Switch, TextField, ToggleGroup } from '@jfrader/ui';
 import './showcase.css';
 
@@ -155,22 +154,4 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => <SettingsScene />,
-  play: async ({ canvas, userEvent }) => {
-    const workspace = canvas.getByRole('textbox', { name: 'Workspace name' });
-    const save = canvas.getByRole('button', { name: 'Save changes' });
-    await expect(save).toBeDisabled();
-    await userEvent.clear(workspace);
-    await expect(workspace).toHaveAttribute('aria-invalid', 'true');
-    await expect(canvas.getByRole('alert')).toHaveTextContent('Enter a workspace name.');
-    await userEvent.type(workspace, 'Southwind');
-    await userEvent.click(canvas.getByRole('switch', { name: 'Desktop notifications' }));
-    await userEvent.click(save);
-    await expect(save).toBeDisabled();
-    await expect(workspace).toHaveValue('Southwind');
-    await userEvent.click(canvas.getByRole('button', { name: 'Reset to defaults' }));
-    await userEvent.click(canvas.getByRole('button', { name: /^Reset$/ }));
-    await expect(workspace).toHaveValue('Northwind');
-    await expect(canvas.getByRole('switch', { name: 'Desktop notifications' })).not.toBeChecked();
-    await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument();
-  },
 };

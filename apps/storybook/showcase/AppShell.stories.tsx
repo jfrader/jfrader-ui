@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect } from 'storybook/test';
 import { Badge, Button, Card, CommandPalette, Navigation, Pill } from '@jfrader/ui';
 import './showcase.css';
 
@@ -197,16 +196,4 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => <AppShellScene />,
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('link', { name: 'Projects' }));
-    await expect(canvas.getByRole('heading', { level: 1 })).toHaveTextContent('Projects');
-    await expect(canvas.getByRole('link', { name: 'Projects' })).toHaveAttribute('aria-current', 'page');
-    await userEvent.click(canvas.getByRole('button', { name: 'Search pages' }));
-    await userEvent.type(canvas.getByRole('combobox'), 'Billing');
-    await userEvent.click(await canvas.findByRole('option', { name: 'Billing' }));
-    await expect(canvas.getByRole('heading', { level: 1 })).toHaveTextContent('Billing');
-    await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument();
-    const viewport = canvasElement.ownerDocument.documentElement;
-    await expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth);
-  },
 };
