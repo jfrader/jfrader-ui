@@ -24,11 +24,11 @@ importers:
         specifier: https://github.com/jfrader/storybook-docs/releases/download/docs-v0.1.0/jfrader-storybook-docs-0.1.0.tgz
         version: https://github.com/jfrader/storybook-docs/releases/download/docs-v0.1.0/jfrader-storybook-docs-0.1.0.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
       '@jfrader/tokens':
-        specifier: link:../../../../jfrader-ui/packages/tokens
-        version: link:../../../../jfrader-ui/packages/tokens
+        specifier: workspace:*
+        version: link:../../packages/tokens
       '@jfrader/ui':
-        specifier: link:../../../../jfrader-ui/packages/ui
-        version: link:../../../../jfrader-ui/packages/ui
+        specifier: workspace:*
+        version: link:../../packages/ui
       react:
         specifier: ^19.3.0
         version: 19.3.0
