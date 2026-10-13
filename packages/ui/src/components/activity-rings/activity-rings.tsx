@@ -66,6 +66,8 @@ export interface ActivityRingsLabels {
   empty: string;
   /** Caption under the mean completion percentage. */
   completion?: string;
+  /** Formats the amount above a valid goal, including the surplus sign and caption. */
+  overGoal?: (amount: string) => string;
   amount: (value: string, goal: string) => string;
   summary: (met: string, total: string) => string;
 }
@@ -142,7 +144,7 @@ export type ActivityRingsProps = Omit<
   };
 
 declare const process: { env: { NODE_ENV?: string } };
-const DEFAULT_LABELS: ActivityRingsLabels = {
+const DEFAULT_LABELS = {
   root: 'Activity',
   days: 'Day',
   legend: 'Goals',
@@ -152,9 +154,10 @@ const DEFAULT_LABELS: ActivityRingsLabels = {
   noSelection: 'No day selected',
   empty: 'No goals',
   completion: 'of goals',
+  overGoal: (amount: string) => `+${amount} over goal`,
   amount: (value, goal) => `${value} of ${goal}`,
   summary: (met, total) => `${met} of ${total} goals met`,
-};
+} satisfies ActivityRingsLabels;
 const CATEGORY_COLORS = [vars.color.text, vars.color.textMuted, vars.color.borderControl];
 const NO_VALUES: ActivityValues = {};
 const NO_DAYS: readonly ActivityDay[] = [];
@@ -167,15 +170,13 @@ const OUTER_RADIUS = 58;
 const CORE_RADIUS = 27;
 /** Share of each ring's band drawn as stroke; the rest is the gap to the next ring. */
 const STROKE_SHARE = 0.55;
-const LAP_SHARE = 0.15;
+const LAP_SHARE = 0.22;
+const LAP_GAP_SHARE = 0.04;
 /** A second lap is the visual cap: 200% and beyond draws two full laps, the text stays exact. */
 const MAX_LAPS = 2;
-/** Goal tick length past the ring stroke on both sides, in viewBox units. */
-const TICK_OVERHANG = 1;
 const TICK_SPACING = 6;
 const MIN_TICKS = 24;
 const TICK_FILL_SHARE = 0.35;
-const ENDPOINT_RADIUS = 2;
 const MAX_STROKE: Record<ActivityRingsSize, number> = { sm: 16, md: 14, lg: 12 };
 const RING_SIZE: Record<ActivityRingsSize, string> = { sm: '10rem', md: '13.5rem', lg: '16rem' };
 /** Root width from which the legend sits beside the rings instead of below them. */
@@ -298,17 +299,6 @@ const lapStyle = css({
   stroke: 'var(--ring-tone)',
   [FORCED_COLORS]: { stroke: 'CanvasText' },
 });
-const endpointStyle = css({
-  fill: 'var(--ring-tone)',
-  stroke: vars.color.bg,
-  strokeWidth: 0.75,
-  [FORCED_COLORS]: { fill: 'CanvasText', stroke: 'Canvas' },
-});
-const tickStyle = css({
-  stroke: vars.color.text,
-  strokeWidth: 1,
-  [FORCED_COLORS]: { stroke: 'CanvasText' },
-});
 const summaryStyle = css({ margin: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs });
 const legendStyle = css({
   display: 'grid',
@@ -384,6 +374,12 @@ const metricPercentStyle = css({
   whiteSpace: 'nowrap',
 });
 const statusStyle = css({ color: vars.color.text });
+const metricStatusStyle = css({
+  gridColumn: '2 / -1',
+  fontSize: vars.textSize.xs,
+  color: vars.color.textMuted,
+  fontVariantNumeric: 'tabular-nums',
+});
 const dayPickerStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
@@ -538,9 +534,8 @@ function RingPlot({
   const displayed = useDisplayedNumber(ratio);
   const first = useTransform(displayed, clampLap);
   const second = useTransform(displayed, (value) => clampLap(Math.min(value, MAX_LAPS) - 1));
-  const endpointX = useTransform(first, (value) => CENTER + radius * Math.cos(value * Math.PI * 2));
-  const endpointY = useTransform(first, (value) => CENTER + radius * Math.sin(value * Math.PI * 2));
-  const endpointOpacity = useTransform(first, (value) => (value > 0 ? 1 : 0));
+  const lapOpacity = useTransform(second, (value) => (value > 0 ? 1 : 0));
+  const lapRadius = radius - stroke / 2 - band * (LAP_GAP_SHARE + LAP_SHARE / 2);
   const tickCount = Math.max(MIN_TICKS, Math.round((2 * Math.PI * radius) / TICK_SPACING));
   const tickStep = (2 * Math.PI * radius) / tickCount;
   const ticks = `${tickStep * TICK_FILL_SHARE} ${tickStep * (1 - TICK_FILL_SHARE)}`;
@@ -590,32 +585,13 @@ function RingPlot({
         data-ui="activity-rings-lap"
         cx={CENTER}
         cy={CENTER}
-        r={radius - stroke / 2 - band * LAP_SHARE}
+        r={lapRadius}
         strokeWidth={band * LAP_SHARE}
+        strokeLinecap="round"
         data-laps={clampLap(ratio - 1)}
-        style={{ pathLength: second }}
+        style={{ pathLength: second, opacity: lapOpacity }}
         css={lapStyle}
       />
-      {valid && (
-        <>
-          <line
-            data-ui="activity-rings-tick"
-            x1={CENTER + radius + stroke / 2 + TICK_OVERHANG}
-            x2={CENTER + radius - stroke / 2 - TICK_OVERHANG}
-            y1={CENTER}
-            y2={CENTER}
-            css={tickStyle}
-          />
-          <motion.circle
-            data-ui="activity-rings-endpoint"
-            cx={endpointX}
-            cy={endpointY}
-            r={Math.min(ENDPOINT_RADIUS, stroke / 2)}
-            style={{ opacity: endpointOpacity }}
-            css={endpointStyle}
-          />
-        </>
-      )}
     </g>
   );
 }
@@ -712,6 +688,7 @@ export function ActivityRings({
   const id = useId();
   const titleId = `${id}-title`;
   const labels = { ...DEFAULT_LABELS, ...labelsProp };
+  const overGoal = labels.overGoal ?? DEFAULT_LABELS.overGoal;
   const days = daysProp ?? NO_DAYS;
   const hasDays = daysProp !== undefined && days.length > 0;
   const [selectedDay, requestDay] = useControlledState<string | null>(
@@ -923,6 +900,17 @@ export function ActivityRings({
                       const formats = ringFormats(locale, metric.unit);
                       const formatAmount = (next: number) =>
                         metric.formatValue?.(next, locale) ?? formats.amount.format(next);
+                      const metLabel =
+                        usage && usage.over > 0 ? overGoal(formatAmount(usage.over)) : labels.goalMet;
+                      const committedDetail = !usage
+                        ? labels.unknown
+                        : status === 'unavailable'
+                          ? `${usage.formattedTotal} · ${labels.unavailable}`
+                          : [
+                              labels.amount(usage.formattedTotal, usage.formattedLimit),
+                              usage.formattedPercent,
+                              ...(status === 'closed' ? [metLabel] : []),
+                            ].join(' · ');
                       const contents = (
                         <>
                           <span aria-hidden="true">
@@ -931,27 +919,7 @@ export function ActivityRings({
                           </span>
                           <span css={metricLabelStyle}>{metric.label}</span>
                           <span css={metricDetailStyle} data-ui="activity-rings-detail">
-                            <span css={visuallyHiddenStyle}>
-                              {status === 'unknown' || !usage ? (
-                                <span>{labels.unknown}</span>
-                              ) : status === 'unavailable' ? (
-                                <>
-                                  <span>{usage.formattedTotal}</span>
-                                  <span css={statusStyle}>{labels.unavailable}</span>
-                                </>
-                              ) : (
-                                <>
-                                  <span>{labels.amount(usage.formattedTotal, usage.formattedLimit)}</span>
-                                  <span>{usage.formattedPercent}</span>
-                                  {status === 'closed' && (
-                                    <span css={statusStyle}>
-                                      <span aria-hidden="true">✓ </span>
-                                      {labels.goalMet}
-                                    </span>
-                                  )}
-                                </>
-                              )}
-                            </span>
+                            <span css={visuallyHiddenStyle}>{committedDetail}</span>
                             <span aria-hidden="true">
                               {status === 'unknown' || !usage ? (
                                 labels.unknown
@@ -977,6 +945,15 @@ export function ActivityRings({
                               '—'
                             )}
                           </span>
+                          {status === 'closed' && usage && (
+                            <span aria-hidden="true" css={metricStatusStyle} data-ui="activity-rings-status">
+                              {usage.over > 0 ? (
+                                <Count value={usage.over} format={(next) => overGoal(formatAmount(next))} />
+                              ) : (
+                                labels.goalMet
+                              )}
+                            </span>
+                          )}
                         </>
                       );
                       return (
