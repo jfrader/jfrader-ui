@@ -150,6 +150,7 @@ const feedStyle = css({
   minInlineSize: 0,
   padding: vars.space[2],
   overscrollBehaviorY: 'contain',
+  '&[data-pulling="true"]': { userSelect: 'none' },
   '&:focus-visible': focusRingInset,
 });
 const indicatorStyle = css({
@@ -227,6 +228,7 @@ export function StretchRefresh<T>({
   );
   const [result, setResult] = useState<Result | null>(null);
   const [distance, setDistance] = useState(0);
+  const [pulling, setPulling] = useState(false);
   const feed = useRef<HTMLDivElement>(null);
   const mergedFeedRef = useMergeRefs([feed, slotProps?.feed?.ref]);
   const gesture = useRef<Gesture | null>(null);
@@ -289,6 +291,7 @@ export function StretchRefresh<T>({
     drag.cleanup();
     if (drag.node.hasPointerCapture(drag.pointer)) drag.node.releasePointerCapture(drag.pointer);
     setDistance(0);
+    setPulling(false);
     for (const value of [y, progress]) {
       if (reduced || drag.node.ownerDocument.hidden) value.jump(0);
       else animate(value, 0, SPRING);
@@ -360,6 +363,10 @@ export function StretchRefresh<T>({
         return;
       }
       drag.locked = true;
+      setPulling(true);
+      const selection = drag.node.ownerDocument.getSelection();
+      if (selection?.anchorNode && drag.node.contains(selection.anchorNode))
+        selection.removeAllRanges();
       if (!drag.touch) drag.node.setPointerCapture(drag.pointer);
     }
     prevent();
@@ -514,6 +521,7 @@ export function StretchRefresh<T>({
               role="region"
               tabIndex={feedSlot?.tabIndex ?? 0}
               data-ui="stretch-refresh-feed"
+              data-pulling={pulling || undefined}
               aria-labelledby={ids(feedSlot?.['aria-labelledby'], feedLabelledBy)}
               aria-describedby={ids(
                 feedSlot?.['aria-describedby'],

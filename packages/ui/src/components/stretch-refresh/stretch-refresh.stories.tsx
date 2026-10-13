@@ -462,6 +462,28 @@ export const PointerCancel: Story = {
     await expect(args.onRefresh).not.toHaveBeenCalled();
   },
 };
+export const PullSelection: Story = {
+  play: async ({ canvas, args }) => {
+    const feed = canvas.getByRole('region');
+    const fire = pointer(feed);
+    fire('pointerdown', 0);
+    const selection = feed.ownerDocument.getSelection()!;
+    const range = feed.ownerDocument.createRange();
+    range.selectNodeContents(canvas.getAllByRole('listitem')[0]!);
+    selection.addRange(range);
+    fire('pointermove', 30);
+    await nextFrame();
+    await expect(selection.toString()).toBe('');
+    await expect(getComputedStyle(feed).userSelect).toBe('none');
+    fire('pointermove', 0);
+    await nextFrame();
+    await expect(getComputedStyle(feed).userSelect).toBe('none');
+    fire('pointercancel', 30);
+    await nextFrame();
+    await expect(getComputedStyle(feed).userSelect).not.toBe('none');
+    await expect(args.onRefresh).not.toHaveBeenCalled();
+  },
+};
 export const ScrollAndInteractive: Story = {
   args: {
     items: Array.from({ length: 15 }, (_, index) => ({
