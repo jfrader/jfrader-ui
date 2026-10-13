@@ -60,14 +60,13 @@ const meta = {
     usage: `### Cards and placement
 - Pass \`stacks\` in GameTable's visual seat order. The first three cards per player stay mounted. Include empty stacks to reserve each player's position while cards arrive.
 - Supply translated \`labels.stacks\` by player key and \`labels.cards\` by \`getTrickCardKey\`. Poker faces are the default examples; GameCard also accepts Spanish values.
-- \`getPlayerTableCards\` groups round data and appends explicit revealed cards without duplicates. It reads no session or game state.
 - \`revealedKeys\` keeps those players' cards spread at normal width. Inspection enlarges width by 1.45 and spreads by 0.52 card widths.
 - The default \`placement="reference"\` preserves the original board's fixed seat positions, center presets and played-card widths. Pass the same \`viewport\` as GameTable; it selects the original device profile without measuring or rearranging the table.
 - The root fills its parent. Give the parent a definite width and height. Reference card widths use CSS viewport units, so \`viewport\` should describe that same browser viewport.
 - Opt into \`placement="auto-fit"\` to measure the table, choose rows and columns, and shrink cards when necessary. Every cell reserves space for a three-card inspected fan, including rotation and jitter; opening a stack does not move its neighbours. This changes the original arrangement.
 - \`cardWidth\` overrides the original width; in \`auto-fit\` mode it is a preferred width, not a minimum. Buttons have a minimum 32px hit area; extremely small fitted tables can overlap those targets, so give the table more space.
 - \`geometry\` and \`layout\` explicitly override reference placement. A supplied geometry opts that stack out of automatic fitting. Mixing fixed and fitted stacks can overlap; the caller owns those positions.
-- \`data-ui="trick-stack"\` and \`data-trick-key\` mark stack and card destinations for caller-owned flights. Pass \`playOrder\` from \`buildTrickPlayOrder\` for global closed-card layering.
+- \`data-ui="trick-stack"\` and \`data-trick-key\` mark stack and card destinations for caller-owned flights. Pass \`playOrder\` keyed by \`getTrickCardKey\` for global closed-card layering.
 
 ### Inspection and keyboard
 - [APG disclosure](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/) trigger with \`aria-expanded\` and \`aria-controls\`; no grid or application role. Tab reaches each stack. Enter or Space opens or closes inspection; Escape closes and returns focus to the stack button after acceptance.
@@ -84,6 +83,19 @@ async function noOverlap(root: HTMLElement) {
   const table = root.matches('[data-ui="trick-stacks"]') ? root : root.querySelector('[data-ui="trick-stacks"]')!;
   await expect(table.getBoundingClientRect().width).toBeGreaterThan(0);
   const stacks = [...root.querySelectorAll('[data-ui="trick-stack"]')];
+  for (const stack of stacks) {
+    const stackStyle = getComputedStyle(stack);
+    const width = Number.parseFloat(stackStyle.width) * Number.parseFloat(stackStyle.getPropertyValue('--trick-card-scale'));
+    for (const card of stack.querySelectorAll('[data-ui="trick-stack-card"]')) {
+      const style = getComputedStyle(card);
+      const faceStyle = getComputedStyle(card.querySelector('[data-ui="game-card"]')!);
+      await expect(Number.parseFloat(style.width)).toBeCloseTo(width, 1);
+      await expect(faceStyle.width).toBe(style.width);
+      await expect(faceStyle.height).toBe(style.height);
+      await expect(faceStyle.borderRadius).toBe(style.borderRadius);
+      await expect(Number.parseFloat(faceStyle.borderRadius)).toBeCloseTo(width / CARD_FRAME.cornerDivisor, 1);
+    }
+  }
   for (let first = 0; first < stacks.length; first++) {
     for (let second = first + 1; second < stacks.length; second++) {
       await expectNoOverlap(stacks[first]!, stacks[second]!);

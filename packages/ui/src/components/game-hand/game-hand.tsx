@@ -2,12 +2,13 @@
 
 import type { ComponentPropsWithRef, CSSProperties } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type SerializedStyles } from '../../styling/css';
+import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
 import { GameCard, type GameCardPartProps, type GameCardSize, type GameCardValue } from '../game-card';
+import { gameCardSizeStyles } from '../game-card/game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
 import {
   buildOpponentHiddenHandLayout, DEFAULT_HIDDEN_HAND_RULES, getHandFanRotations,
@@ -51,7 +52,7 @@ const fanStyle = css({
   inlineSize: 'max-content',
   isolation: 'isolate',
   paddingBlock: vars.space[4],
-  paddingInline: `calc(var(--hand-card-width) * ${fanInlineReserveRatio} + ${vars.space[2]})`,
+  paddingInline: `calc(var(--game-card-width) * ${fanInlineReserveRatio} + ${vars.space[2]})`,
   '--hand-direction': 1,
   '&:dir(rtl)': { '--hand-direction': -1 },
 });
@@ -63,10 +64,10 @@ const cardStyle = css({
   cursor: 'pointer',
   position: 'relative',
   flexShrink: 0,
-  borderRadius: `calc(var(--hand-card-width) / ${CARD_FRAME.cornerDivisor})`,
+  borderRadius: `calc(var(--game-card-width) / ${CARD_FRAME.cornerDivisor})`,
   transform: 'rotate(calc(var(--hand-angle) * var(--hand-direction))) translateY(var(--hand-drop))',
   transformOrigin: 'bottom center',
-  '& + &': { marginInlineStart: `max(calc(${vars.space[2]} * ${HAND_CARD_OVERLAP_SPACING}), calc(${HAND_SELECTION_TARGET_PX}px - var(--hand-card-width)))` },
+  '& + &': { marginInlineStart: `max(calc(${vars.space[2]} * ${HAND_CARD_OVERLAP_SPACING}), calc(${HAND_SELECTION_TARGET_PX}px - var(--game-card-width)))` },
   '&[aria-pressed="true"]': {
     translate: `0 calc(-1 * ${vars.space[2]})`,
     outline: `3px double ${vars.color.accent}`,
@@ -75,11 +76,6 @@ const cardStyle = css({
   '&:focus-visible': { ...focusRingOutset, zIndex: 1000 },
   '&:disabled': { cursor: 'default' },
 });
-const sizeStyles: Record<GameCardSize, SerializedStyles> = {
-  sm: css({ '--hand-card-width': vars.size.gameCardSm }),
-  md: css({ '--hand-card-width': vars.size.gameCardMd }),
-  lg: css({ '--hand-card-width': vars.size.gameCardLg }),
-};
 
 export function GameHand({
   ref,
@@ -104,7 +100,7 @@ export function GameHand({
   const cardIdx = cards.findIndex((card) => card.id === selectedId);
   const rotations = getHandFanRotations(cards.length);
   return (
-    <WithSx className={className} styles={[rootStyle, sizeStyles[size]]} sx={sx}>
+    <WithSx className={className} styles={[rootStyle, gameCardSizeStyles[size]]} sx={sx}>
       {(rootClass) => (
         <div {...rest} ref={ref} data-ui="game-hand" className={rootClass}>
           <div data-ui="game-hand-fan" className={slotProps?.fan?.className} css={[fanStyle, slotProps?.fan?.css]}>
@@ -151,8 +147,8 @@ export interface GameHandHiddenProps extends Omit<ComponentPropsWithRef<'div'>, 
 const hiddenStyle = css({
   label: 'game-hand-hidden',
   position: 'relative',
-  inlineSize: 'var(--hand-card-width)',
-  blockSize: `calc(var(--hand-card-width) * ${CARD_FRAME.ratio})`,
+  inlineSize: 'var(--game-card-width)',
+  blockSize: `calc(var(--game-card-width) * ${CARD_FRAME.ratio})`,
   isolation: 'isolate',
   '--hand-direction': 1,
   '&:dir(rtl)': { '--hand-direction': -1 },
@@ -178,7 +174,7 @@ function GameHandHidden({
   });
   const anchor = polar ? layout.anchor : null;
   return (
-    <WithSx className={className} styles={[hiddenStyle, sizeStyles[size]]} sx={sx}>
+    <WithSx className={className} styles={[hiddenStyle, gameCardSizeStyles[size]]} sx={sx}>
       {(rootClass) => (
         <div {...rest} ref={ref} data-ui="game-hand-hidden" role="img" aria-label={label} className={rootClass}
           style={{ transform: anchor ? `translate(${anchor.x}px, ${anchor.y}px) rotate(${anchor.rotateDeg}deg)` : undefined,

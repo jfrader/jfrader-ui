@@ -73,7 +73,7 @@ const probeStyle = css({
 });
 const stackStyle = css({
   position: 'relative',
-  inlineSize: 'var(--trick-card-width)', blockSize: `calc(var(--trick-card-width) * ${CARD_FRAME.ratio})`,
+  inlineSize: 'var(--game-card-width)', blockSize: `calc(var(--game-card-width) * ${CARD_FRAME.ratio})`,
   zIndex: TRICK_STACK.zIndex.closed,
   '&[data-placement="manual"]': {
     position: 'absolute', insetInlineStart: 'var(--stack-x)', insetBlockStart: 'var(--stack-y)',
@@ -92,11 +92,13 @@ const triggerStyle = css({
   '&:focus-visible': focusRingOutset,
 });
 const cardsStyle = css({ position: 'absolute', inset: 0, pointerEvents: 'none' });
-const faceStyle = css({ '--game-card-width': 'var(--visible-card-width)' });
+const visibleCardWidth = 'calc(var(--game-card-width) * var(--trick-card-scale))';
+const visibleCardRadius = `calc(${visibleCardWidth} / ${CARD_FRAME.cornerDivisor})`;
+const faceStyle = css({ '--game-card-width': 'inherit', borderRadius: visibleCardRadius });
 const cardStyle = css({
   position: 'absolute', insetInlineStart: '50%', insetBlockStart: '50%',
-  width: 'var(--visible-card-width)', height: `calc(var(--visible-card-width) * ${CARD_FRAME.ratio})`,
-  borderRadius: `calc(var(--visible-card-width) / ${CARD_FRAME.cornerDivisor})`,
+  width: visibleCardWidth, height: `calc(${visibleCardWidth} * ${CARD_FRAME.ratio})`,
+  borderRadius: visibleCardRadius,
   boxShadow: 'var(--card-shadow)',
   transform: 'translate(calc(-50% + var(--card-x)), calc(-50% + var(--card-y))) rotate(var(--card-rotation))',
   '&:dir(rtl)': {
@@ -208,7 +210,7 @@ export function TrickStacks({
               style={{
                 '--trick-columns': fitted?.columns ?? Math.ceil(Math.sqrt(Math.max(1, automaticCount))),
                 '--trick-rows': fitted?.rows ?? Math.ceil(Math.sqrt(Math.max(1, automaticCount))),
-                '--trick-card-width': automaticCount && fitted ? `${fitted.cardWidth}px` : 'var(--trick-preferred-width)',
+                '--game-card-width': automaticCount && fitted ? `${fitted.cardWidth}px` : 'var(--trick-preferred-width)',
               } as CSSProperties}
             >
               <div ref={probeRef} aria-hidden="true" css={probeStyle} />
@@ -267,7 +269,6 @@ function PlayerStack({
   const position = stack.geometry ? getPlayerStackPosition({ geometry: stack.geometry, ...config }) : undefined;
   const spread = inspecting || revealed;
   const cards = stack.cards.slice(0, TRICK_STACK.maxCards);
-  const visibleWidth = inspecting ? `calc(var(--trick-card-width) * ${TRICK_STACK.openScale})` : 'var(--trick-card-width)';
   return (
     <div
       data-ui="trick-stack"
@@ -281,8 +282,8 @@ function PlayerStack({
       style={{
         '--stack-x': position ? `${position.x}%` : undefined,
         '--stack-y': position ? `${position.y}%` : undefined,
-        '--trick-card-width': position ? 'var(--trick-preferred-width)' : undefined,
-        '--visible-card-width': visibleWidth,
+        '--game-card-width': position ? 'var(--trick-preferred-width)' : undefined,
+        '--trick-card-scale': inspecting ? TRICK_STACK.openScale : 1,
       } as CSSProperties}
     >
       <button
@@ -311,7 +312,7 @@ function PlayerStack({
               className={slotProps?.card?.className}
               css={[cardStyle, slotProps?.card?.css]}
               style={{
-                '--card-x': `calc(${jitter.x}px + ${spread ? `var(--visible-card-width) * ${offset.xCardWidths}` : `${offset.xPx}px`})`,
+                '--card-x': `calc(${jitter.x}px + ${spread ? `${visibleCardWidth} * ${offset.xCardWidths}` : `${offset.xPx}px`})`,
                 '--card-y': `${jitter.y + offset.y}px`, '--card-rotation': `${rotation}deg`,
                 '--card-shadow': spread ? vars.shadow.floating : index === cards.length - 1 ? vars.shadow.raised : 'none',
                 zIndex: spread ? TRICK_STACK.zIndex.openCard + index : TRICK_STACK.zIndex.card + (playOrder[key] ?? 0),
