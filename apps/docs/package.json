@@ -1,0 +1,27 @@
+{
+  "name": "@jfrader/docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm tokens && vite",
+    "build": "pnpm tokens && vite build",
+    "preview": "vite preview",
+    "tokens": "pnpm --filter @jfrader/tokens generate"
+  },
+  "dependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@jfrader/storybook-docs": "link:../../../../storybook-docs",
+    "@jfrader/tokens": "link:../../../../jfrader-ui/packages/tokens",
+    "@jfrader/ui": "link:../../../../jfrader-ui/packages/ui",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  }
+}

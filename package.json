@@ -4,18 +4,29 @@
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.12.1",
-  "engines": { "node": ">=22.12" },
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "postinstall": "pnpm generate",
     "generate": "pnpm --filter @jfrader/tokens generate",
     "dev": "pnpm generate && pnpm --filter @jfrader/storybook dev",
-    "build": "pnpm generate && pnpm --filter @jfrader/storybook build",
+    "build": "pnpm generate && pnpm --filter @jfrader/storybook build && pnpm docs:build",
     "og:image": "pnpm generate && pnpm --filter @jfrader/storybook og:image",
     "test": "pnpm generate && pnpm --filter @jfrader/storybook test",
     "typecheck": "pnpm generate && pnpm -r typecheck",
     "verify:exports": "node scripts/verify-exports.mjs",
-    "verify:docs": "pnpm --filter @jfrader/storybook verify:docs"
+    "verify:docs": "pnpm --filter @jfrader/storybook verify:docs",
+    "preinstall": "node scripts/fetch-docs-engine.mjs",
+    "docs:build": "node scripts/build-docs.mjs"
   },
-  "pnpm": { "onlyBuiltDependencies": ["esbuild", "playwright"] },
-  "devDependencies": { "typescript": "^7.0.2" }
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "playwright"
+    ]
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
 }
