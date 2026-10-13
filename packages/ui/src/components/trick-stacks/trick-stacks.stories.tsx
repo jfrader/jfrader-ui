@@ -7,6 +7,7 @@ import { motionDurationMs } from '../../styling/motion-timings';
 import { settleMotion } from '../../testing/motion-assertions';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { Button } from '../button';
+import { buildBoardLayoutModel } from '../game-table';
 import { TrickStacks, getTrickCardKey, type TrickPlayerStack, type TrickStacksProps } from './index';
 import { getStackOffset, getStableRotation, getStableJitter, getPlayerStackPosition,
   buildTrickPlayOrder, getPlayerTableCards, TRICK_STACK } from './trick-layout';
@@ -62,7 +63,7 @@ const meta = {
 - Supply translated \`labels.stacks\` by player key and \`labels.cards\` by \`getTrickCardKey\`. Poker faces are the default examples; GameCard also accepts Spanish values.
 - \`getPlayerTableCards\` groups round data and appends explicit revealed cards without duplicates. It reads no session or game state.
 - \`revealedKeys\` keeps those players' cards spread at normal width. Inspection enlarges width by 1.45 and spreads by 0.52 card widths.
-- The default \`placement="reference"\` preserves the original board's fixed seat positions, center presets and played-card widths. Pass the same \`viewport\` as GameTable; it selects the original device profile without measuring or rearranging the table.
+- The default \`placement="reference"\` preserves the reference's card mathematics, center spread and played-card widths, but anchors stacks using our GameTable geometry. Its circular seat directions deliberately replace the original profile-specific seat presets. Pass the same \`viewport\` as GameTable.
 - The root fills its parent. Give the parent a definite width and height. Reference card widths use CSS viewport units, so \`viewport\` should describe that same browser viewport.
 - Opt into \`placement="auto-fit"\` to measure the table, choose rows and columns, and shrink cards when necessary. Every cell reserves space for a three-card inspected fan, including rotation and jitter; opening a stack does not move its neighbours. This changes the original arrangement.
 - \`cardWidth\` overrides the original width; in \`auto-fit\` mode it is a preferred width, not a minimum. Buttons have a minimum 32px hit area; extremely small fitted tables can overlap those targets, so give the table more space.
@@ -269,6 +270,7 @@ export const ReferenceParity: Story = {
       await expect(getStableRotation({ seed, maxRotationOffsetDeg: 6 })).toBe(rotation);
       await expect(getStableJitter({ seed, spread: 4 })).toEqual(jitter);
     }
+    // Synthetic direction inputs verify the reference projection formula, not legacy board seat placement.
     for (const { input, expected } of parity.positions) await expect(getPlayerStackPosition(input)).toEqual(expected);
     const rounds = parity.order.rounds;
     await expect(buildTrickPlayOrder(rounds)).toEqual(parity.order.expected);
@@ -300,6 +302,7 @@ function ReferenceBoardCases(args: TrickStacksProps) {
   </>;
 }
 
+/** Reference parity covers card geometry relative to each anchor; absolute anchors follow our circular GameTable, not legacy seat fixtures. */
 export const DefaultReferenceParity: Story = {
   render: (args) => <ReferenceBoardCases {...args} />,
   parameters: { docs: { source: { code: '<TrickStacks viewport={viewport} stacks={stacks} labels={labels} />' } } },
@@ -317,18 +320,16 @@ export const DefaultReferenceParity: Story = {
           y: (box.top + box.height / 2 - frame.top) / frame.height * 100, width: box.width, height: box.height };
       }) };
     });
-    console.info('DEFAULT_RENDERED_VS_REFERENCE', JSON.stringify({ browserViewport: { width: window.innerWidth, height: window.innerHeight },
-      cases: measurements.filter(({ reference }) => reference.profile === 'desktop').map(({ reference, expectedSize, measured }) => ({
-        players: reference.players, reference: reference.positions.map(({ playerKey, x, y }) => ({ playerKey, x, y })),
-        referenceSize: { width: expectedSize.width, height: expectedSize.height }, measured,
-      })) }));
     for (const { reference, root, frame, expectedSize, measured } of measurements) {
+      const board = buildBoardLayoutModel({ surface: 'match', totalSeats: reference.players,
+        viewport: { ...reference.viewport, aspectRatio: reference.viewport.width / reference.viewport.height } });
       await expect(root.getBoundingClientRect().width).toBe(frame.width);
       await expect(root.getBoundingClientRect().height).toBe(frame.height);
       for (const [index, expected] of reference.positions.entries()) {
         const actual = measured[index]!;
-        await expect(Math.abs(actual.x - expected.x) * frame.width / 100, `${reference.profile}/${reference.players}/${expected.playerKey}: x`).toBeLessThanOrEqual(1);
-        await expect(Math.abs(actual.y - expected.y) * frame.height / 100, `${reference.profile}/${reference.players}/${expected.playerKey}: y`).toBeLessThanOrEqual(1);
+        const anchor = getPlayerStackPosition({ geometry: board.seatGeometries[index]!, ...reference.centerStack });
+        await expect(Math.abs(actual.x - anchor.x) * frame.width / 100, `${reference.profile}/${reference.players}/${expected.playerKey}: table anchor x`).toBeLessThanOrEqual(1);
+        await expect(Math.abs(actual.y - anchor.y) * frame.height / 100, `${reference.profile}/${reference.players}/${expected.playerKey}: table anchor y`).toBeLessThanOrEqual(1);
         await expect(actual.width).toBeCloseTo(expectedSize.width, 1);
         await expect(actual.height).toBeCloseTo(expectedSize.height, 1);
         const trigger = root.querySelector<HTMLButtonElement>(`[data-player-key="${expected.playerKey}"] button`)!;
@@ -347,8 +348,8 @@ export const DefaultReferenceParity: Story = {
           await expect(Math.atan2(matrix.m12, matrix.m11) * 180 / Math.PI).toBeCloseTo(card.rotation, 2);
           const box = element.getBoundingClientRect();
           const radians = card.rotation * Math.PI / 180;
-          await expect(box.left + box.width / 2).toBeCloseTo(frame.left + frame.width * expected.x / 100 + card.xOffset, 1);
-          await expect(box.top + box.height / 2).toBeCloseTo(frame.top + frame.height * expected.y / 100 + card.yOffset, 1);
+          await expect(box.left + box.width / 2 - (frame.left + frame.width * actual.x / 100)).toBeCloseTo(card.xOffset, 1);
+          await expect(box.top + box.height / 2 - (frame.top + frame.height * actual.y / 100)).toBeCloseTo(card.yOffset, 1);
           await expect(box.width).toBeCloseTo(expectedSize.width * Math.abs(Math.cos(radians)) + expectedSize.height * Math.abs(Math.sin(radians)), 1);
           await expect(box.height).toBeCloseTo(expectedSize.height * Math.abs(Math.cos(radians)) + expectedSize.width * Math.abs(Math.sin(radians)), 1);
         }

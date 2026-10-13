@@ -9,7 +9,8 @@ type CenterProfile = {
 };
 
 // Literal match.center + match.playedCards fields from the reference's
-// packages/core/src/board/config/breakpoints/*.ts. Seat geometry is already ported by GameTable.
+// packages/core/src/board/config/breakpoints/*.ts. Seat directions deliberately come from our
+// circular GameTable instead of reference presets; only card/spread mathematics retain reference parity.
 const profiles: Record<BoardViewportProfile, CenterProfile> = {
   phoneCompact: {
     overrides: { centerShiftXPercent: 0, centerShiftYPercent: 0, playerSpreadXPercent: 31, playerSpreadYPercent: 25, maxJitterPx: 2 },
