@@ -1,12 +1,14 @@
 import type { BoardLayoutModel, BoardSurface, BoardViewport } from './types';
-import { buildSeatGeometries, mergeSeatConfig } from './geometry';
+import { buildSeatGeometries } from './geometry';
+import type { BoardMeasurements } from './fit-layout';
 import { normalizeBoardPlayerCount, resolveBoardViewportProfile } from './viewport';
-import { DEFAULT_SEAT_CONFIG, FRAMES, LOBBY_SEATS, MATCH_SEATS, MATCH_SEAT_OVERRIDES, BOARD_TRANSLATE_Y } from './layout-config';
+import { FRAMES } from './layout-config';
 
-export const buildBoardLayoutModel = ({ surface, totalSeats, viewport }: {
+export const buildBoardLayoutModel = ({ surface, totalSeats, viewport, measurement }: {
   surface: BoardSurface;
   totalSeats: number;
   viewport: BoardViewport;
+  measurement?: BoardMeasurements;
 }): BoardLayoutModel => {
   const profile = resolveBoardViewportProfile(viewport);
   const playerCount = normalizeBoardPlayerCount(totalSeats);
@@ -15,12 +17,13 @@ export const buildBoardLayoutModel = ({ surface, totalSeats, viewport }: {
     ? { ...baseFrame, boardAspectRatio: '1 / 1', boardBorderRadius: '50%', boardInnerBorderRadius: '50%',
       boardHeight: 'auto', seatWidth: '35%', seatMaxWidth: '11.7rem' }
     : baseFrame;
-  const seatConfig = surface === 'match'
-    ? mergeSeatConfig(MATCH_SEATS[profile], MATCH_SEAT_OVERRIDES[playerCount])
-    : LOBBY_SEATS[profile][playerCount] || mergeSeatConfig(DEFAULT_SEAT_CONFIG);
+  const { fitted, seatGeometries } = buildSeatGeometries(Math.max(totalSeats, 2), measurement);
+  const seatConfig = { radiusX: fitted?.radiusX ?? 0, radiusY: fitted?.radiusY ?? 0,
+    scale: fitted?.scale ?? 1, centerScale: fitted?.centerScale ?? 1, gap: fitted?.gap ?? 0 };
+  let fit: BoardLayoutModel['fit'] = 'measuring';
+  if (fitted) fit = fitted.fits ? 'fitted' : 'insufficient-space';
   return {
-    surface, profile, playerCount, viewport, frame, seatConfig,
-    boardTranslateY: surface === 'match' ? BOARD_TRANSLATE_Y[profile] : '0rem',
-    seatGeometries: buildSeatGeometries({ totalSeats: Math.max(totalSeats, 2), config: seatConfig }),
+    surface, profile, playerCount, viewport, frame, seatConfig, fit,
+    boardTranslateY: '0rem', seatGeometries,
   };
 };

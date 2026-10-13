@@ -6,6 +6,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { buildBoardLayoutModel } from './layout-model';
+import { useBoardMeasurements } from './use-board-measurements';
 import {
   buildAlternatingSlots, resolveTableTurnDirection, validateSlots,
   type GameTableSlot, type SeatLike, type TableTurnDirection,
@@ -38,11 +39,15 @@ export type GameTableProps<T extends SeatLike = SeatLike> =
     viewport: { width: number; height: number };
     /** Match geometry or waiting-room geometry. Defaults to `match`. */
     surface?: BoardSurface;
-    /** Extra block-axis space around the surface. Defaults to zero (reference framing); does not measure seat content. */
+    /** Preferred block-axis space. Yields to zero before cards cross GAME_TABLE_LIMITS.minimumCardWidthPx.
+     * data-clearance="reduced" declares this concession. If floors still cannot fit,
+     * data-layout-fit="insufficient-space" declares possible overflow/collisions; floors are preserved.
+     * The floor covers normal-flow GameCard content in local CSS pixels, before external ancestor transforms.
+     */
     clearance?: CSSProperties['paddingBlock'];
     /** Order for `seats`. Prebuilt `slots` already carry their visual order. */
     turnDirection?: TableTurnDirection;
-    /** Seat chrome and controls. Geometry uses inline-start coordinates, mirrored in RTL. */
+    /** Intrinsic seat content. The table measures, scales and rotates it; do not apply geometry.scale again. GameCard backs in occupied rival seats receive hidden-card flight markers in DOM order. */
     renderSeat: (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
     header?: ReactNode;
     center?: ReactNode;
@@ -81,7 +86,6 @@ const shellStyle = css({
   paddingBlock: 'var(--game-table-seat-clearance)',
   maxInlineSize: 'var(--game-table-shell-max-width)',
   marginInline: 'auto',
-  transform: 'translateY(var(--game-table-board-translate-y))',
   alignItems: 'center',
   justifyContent: 'center',
 });
@@ -91,37 +95,40 @@ const surfaceStyle = css({
   inlineSize: 'var(--game-table-width)',
   maxInlineSize: 'var(--game-table-max-width)',
   blockSize: 'var(--game-table-height)',
-  maxBlockSize: 'var(--game-table-max-height)',
+  maxBlockSize: 'min(var(--game-table-max-height), 100%)',
   aspectRatio: 'var(--game-table-ratio)',
   borderRadius: 'var(--game-table-radius)',
   border: `var(--game-table-border) solid ${vars.color.border}`,
   outline: `var(--game-table-outline) solid ${vars.color.surfaceRaised}`,
   backgroundColor: vars.color.surfaceInset,
+  columnGap: vars.space[2],
+  '&[data-layout-fit="measuring"] > [data-ui="game-table-seat"], &[data-layout-fit="measuring"] > [data-ui="game-table-center"]': {
+    visibility: 'hidden',
+  },
 });
 const seatStyle = css({
   position: 'absolute',
   zIndex: 2,
-  inlineSize: 'var(--game-table-seat-width)',
-  maxInlineSize: 'var(--game-table-seat-max-width)',
+  inlineSize: 'max-content',
   insetInlineStart: 'var(--game-table-seat-inline)',
   insetBlockStart: 'var(--game-table-seat-block)',
-  transform: 'translate(calc(-50% + var(--game-table-seat-shift-x)), calc(-50% + var(--game-table-seat-shift-y) + var(--game-table-seat-group-shift-y)))',
+  transform: 'translate(-50%, -50%) rotate(var(--game-table-seat-rotation)) scale(var(--game-table-content-scale))',
   '&:dir(rtl)': {
-    transform: 'translate(calc(50% - var(--game-table-seat-shift-x)), calc(-50% + var(--game-table-seat-shift-y) + var(--game-table-seat-group-shift-y)))',
+    transform: 'translate(50%, -50%) rotate(calc(-1 * var(--game-table-seat-rotation))) scale(var(--game-table-content-scale))',
   },
 });
 const centerStyle = css({
   position: 'absolute',
   zIndex: 1,
-  insetInlineStart: '50%',
-  insetBlockStart: '50%',
-  inlineSize: 'var(--game-table-center-size)',
-  blockSize: 'var(--game-table-center-size)',
+  insetInlineStart: 'var(--game-table-center-inline)',
+  insetBlockStart: 'var(--game-table-center-block)',
+  inlineSize: 'max-content',
+  blockSize: 'max-content',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  transform: 'translate(-50%, -50%)',
-  '&:dir(rtl)': { transform: 'translate(50%, -50%)' },
+  transform: 'translate(-50%, -50%) scale(var(--game-table-center-scale))',
+  '&:dir(rtl)': { transform: 'translate(50%, -50%) scale(var(--game-table-center-scale))' },
 });
 const stripStyle = css({ position: 'relative', flexShrink: 0, zIndex: 3, textAlign: 'center' });
 const headerStyle = css({
@@ -142,13 +149,14 @@ export function GameTable<T extends SeatLike>({
   ref, seats, slots: suppliedSlots, players, viewport, surface = 'match', turnDirection, clearance = 0,
   renderSeat, header, center, dock, footer, floating, slotProps, className, sx, style, ...rest
 }: GameTableProps<T>) {
+  const { surfaceRef, measurement } = useBoardMeasurements();
   const slots = suppliedSlots ?? buildAlternatingSlots(seats ?? [], players, resolveTableTurnDirection(turnDirection));
   if (slots.length !== players) {
     throw new Error('GameTable requires one slot per place. Pass fewer seats to fill empty places, or exactly players slots.');
   }
   validateSlots(slots);
   const layout = buildBoardLayoutModel({
-    surface, totalSeats: players,
+    surface, totalSeats: players, measurement,
     viewport: { ...viewport, aspectRatio: viewport.width / Math.max(viewport.height, 1) },
   });
   const { frame } = layout;
@@ -162,7 +170,6 @@ export function GameTable<T extends SeatLike>({
     '--game-table-top-gap': frame.topStripGap,
     '--game-table-top-margin': frame.topStripMarginBottom,
     '--game-table-bottom-margin': frame.bottomStripMarginTop,
-    '--game-table-board-translate-y': layout.boardTranslateY,
     '--game-table-top-translate-y': surface === 'lobby' ? `calc(0px - ${paddingTop})` : '0px',
     '--game-table-width': frame.boardWidth,
     '--game-table-max-width': frame.boardMaxWidth,
@@ -175,6 +182,13 @@ export function GameTable<T extends SeatLike>({
     '--game-table-seat-width': frame.seatWidth,
     '--game-table-seat-max-width': frame.seatMaxWidth,
     '--game-table-center-size': frame.centerSize,
+    '--game-table-content-scale': String(layout.seatConfig.scale),
+    '--game-table-center-scale': String(layout.seatConfig.centerScale),
+    '--game-table-radius-x': `${layout.seatConfig.radiusX}px`,
+    '--game-table-radius-y': `${layout.seatConfig.radiusY}px`,
+    '--game-table-content-gap': `${layout.seatConfig.gap}px`,
+    '--game-table-center-inline': `${measurement?.width ? measurement.centerX / measurement.width * 100 : 50}%`,
+    '--game-table-center-block': `${measurement?.height ? measurement.centerY / measurement.height * 100 : 50}%`,
     ...style,
   };
   return (
@@ -182,7 +196,9 @@ export function GameTable<T extends SeatLike>({
       {(rootClass) => (
         <div
           {...rest} ref={ref} className={rootClass} style={variables}
-          data-ui="game-table" data-profile={layout.profile} data-surface={surface}
+          data-ui="game-table" data-profile={layout.profile} data-surface={surface} data-layout-fit={layout.fit}
+          data-clearance={measurement?.clearance && (measurement.clearance.start < measurement.clearance.requestedStart || measurement.clearance.end < measurement.clearance.requestedEnd) ? 'reduced' : 'requested'}
+          data-clearance-start={measurement?.clearance?.start} data-clearance-end={measurement?.clearance?.end}
         >
           {isRenderable(header) && (
             <div data-ui="game-table-header" className={slotProps?.header?.className} css={[stripStyle, headerStyle, slotProps?.header?.css]}>
@@ -192,7 +208,7 @@ export function GameTable<T extends SeatLike>({
           <div data-ui="game-table-shell" css={shellStyle}>
             {/* Stable measurement target for future card flights; owned by this library. */}
             <div
-              data-ui="game-table-surface" data-game-surface="true"
+              ref={surfaceRef} data-ui="game-table-surface" data-game-surface="true" data-layout-fit={layout.fit}
               className={slotProps?.surface?.className} css={[surfaceStyle, slotProps?.surface?.css]}
             >
               {slots.map((slot, index) => {
@@ -201,13 +217,13 @@ export function GameTable<T extends SeatLike>({
                 const seatVariables: TableVariables = {
                   '--game-table-seat-inline': `${geometry.leftPercent}%`,
                   '--game-table-seat-block': `${geometry.topPercent}%`,
-                  '--game-table-seat-shift-x': `${geometry.seatShiftX}px`,
-                  '--game-table-seat-shift-y': `${geometry.seatShiftY}px`,
-                  '--game-table-seat-group-shift-y': `${geometry.groupShiftY}px`,
+                  '--game-table-seat-rotation': `${geometry.rotationDeg}deg`,
+                  '--game-table-content-scale': String(geometry.scale),
                 };
                 return (
                   <div
                     key={slot.key} data-ui="game-table-seat" data-slot-key={slot.key} data-slot-team={slot.teamIdx}
+                    data-slot-player={slot.player?.key} data-slot-own={slot.player?.isMe ? 'true' : undefined}
                     className={slotProps?.seat?.className} css={[seatStyle, slotProps?.seat?.css]} style={seatVariables}
                   >
                     {renderSeat(slot, index, geometry)}

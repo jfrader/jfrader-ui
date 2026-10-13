@@ -10,7 +10,7 @@
 - `Pattern`: decorative SVG tiles (`stripes`, `diagonal`, `checks`, `dots`, `waves`, `chevron`) with continuous tile edges, token inks, tile sizes and scaling, including custom flipped-card artwork. Forced colors hides the pattern and preserves the enclosing surface and border.
 - `GameHand`: card fans with keyboard selection and an explicit play action, plus count-only hidden opponent hands.
 - `CardFlightsProvider` deals and plays cards between measured board slots, with themed overlays, interruptible flights and immediate reduced-motion landing.
-- `TrickStacks`: keep up to three played cards per player at the table center, inspect stacks with the keyboard, and spread revealed hands. Preserves the original board placement by default; measured grid fitting is an explicit option. Includes RTL and reduced motion.
+- `TrickStacks`: keep up to three played cards per player at the table center, inspect stacks with the keyboard, and spread revealed hands. Preserves the original card geometry around anchors derived from the circular GameTable, deliberately replacing the original seat presets; measured grid fitting is an explicit option. Includes RTL and reduced motion.
 - `EditableDetails`: nested labelled details with independent app-owned editors, controlled disclosure, draft preservation on collapse, and keyboard focus recovery. Includes native form, React Action, React Hook Form, and overlay examples.
 
 ### Improved
@@ -26,6 +26,8 @@
 ### Changed
 
 - GameCard no longer exports the internal rendering maps `RANK_MARKS`, `SUIT_GLYPHS` and `SUIT_INK`; card data types and `CARD_BACK_PATTERNS` remain public.
+- GameTable intentionally replaces the reference's per-profile seat presets with a measured, centered curve: circular in near-square space and capped at a 1.5 axis ratio otherwise. Seats face the center; intrinsic seat/center content scales to fit without covering community cards. Rival GameCard backs now emit the player/index markers consumed by card flights. Component props and the surface measurement target are unchanged; exported seat configuration now describes derived radii, scale and gap instead of positional corrections.
+- GameTable intentionally replaces the reference's per-profile seat presets with a measured, centered curve: circular in near-square space and capped at a 1.5 axis ratio otherwise. Seats face the center. Separate seat/center scales preserve a 32px GameCard width floor; requested clearance yields to zero before that floor can be crossed. `data-clearance` reports the concession and `data-layout-fit="insufficient-space"` declares compositions that still cannot fit without collisions or clipping. Rival GameCard backs now emit the player/index markers consumed by card flights. Component props and the surface measurement target are unchanged; exported seat configuration now describes derived radii, scales and gap instead of positional corrections.
 - GameCard backs use red-and-paper `Pattern` tiles: poker checks by default, or Spanish diagonals via `backPattern={CARD_BACK_PATTERNS.spanish}`. Custom artwork replaces either face.
 
 ### Fixed
