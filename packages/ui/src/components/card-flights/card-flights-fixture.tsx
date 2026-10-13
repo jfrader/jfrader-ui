@@ -1,12 +1,17 @@
 import { useRef, useState, type RefObject } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../../packages/ui/src/styling/css';
-import { motionDurationMs } from '../../../packages/ui/src/styling/motion-timings';
-import { Button, CardFlightsProvider, GameCard, GameTable, ThemeRoot, flightTarget, measureCardBox,
-  GameHand, TrickStacks, useCardFlights, useDealFlights, usePlayedCardFlights, type DealFlightPlayer, type FlightCard, type PlayedFlightCard,
-} from '@jfrader/ui';
-import { CardFlight } from '../../../packages/ui/src/components/card-flights/card-flight';
-import type { CardFlightSpec } from '../../../packages/ui/src/components/card-flights/card-flights';
+import { css } from '../../styling/css';
+import { motionDurationMs } from '../../styling/motion-timings';
+import { Button } from '../button';
+import { GameCard } from '../game-card';
+import { GameHand } from '../game-hand';
+import { GameTable } from '../game-table';
+import { ThemeRoot } from '../theme-root';
+import { TrickStacks } from '../trick-stacks';
+import { CardFlight } from './card-flight';
+import { CardFlightsProvider, flightTarget, measureCardBox, useCardFlights, useDealFlights, usePlayedCardFlights,
+  type CardFlightSpec, type DealFlightPlayer, type FlightCard, type PlayedFlightCard,
+} from './index';
 
 const controlsStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: vars.space[3] });
 const boardStyle = css({ blockSize: '600px', maxInlineSize: '850px' });
