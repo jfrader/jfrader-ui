@@ -45,11 +45,48 @@ const images: LightboxGalleryImage[] = [
     src: sceneSource('trip-tidal-bay', { variant: 'tide' }),
     width: 900,
     height: 400,
-    alt: 'Sun over blue tidal water',
+    alt: 'Sun over tidal water',
     title: 'Tidal bay',
     caption: 'One final stop along the shore.',
   },
+  {
+    id: 'ridge',
+    src: sceneSource('trip-ridge-walk', { variant: 'landscape' }),
+    width: 600,
+    height: 900,
+    alt: 'Mountain ridges under a cloudy sky',
+    title: 'Ridge walk',
+    caption: 'The trail followed the ridge all morning.',
+  },
+  {
+    id: 'shore',
+    src: sceneSource('trip-north-shore', { variant: 'tide' }),
+    width: 800,
+    height: 800,
+    alt: 'Foam along a sandy shoreline',
+    title: 'North shore',
+    caption: 'Low tide on the walk back.',
+  },
+  {
+    id: 'erg',
+    src: sceneSource('trip-erg-crossing', { variant: 'dunes' }),
+    width: 1000,
+    height: 500,
+    alt: 'Long dunes under a low sun',
+    title: 'Erg crossing',
+    caption: 'Wind had smoothed every crest.',
+  },
+  {
+    id: 'night',
+    src: sceneSource('trip-night-hills', { variant: 'dusk' }),
+    width: 500,
+    height: 700,
+    alt: 'Stars over dark rolling hills',
+    title: 'Night hills',
+    caption: 'The stars came out over camp.',
+  },
 ];
+const lastImage = images[images.length - 1]!;
 const frameStyle = css({
   inlineSize: '48rem',
   maxInlineSize: '100%',
@@ -126,7 +163,7 @@ export const DefaultMixedRatios: Story = {
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('region', { name: 'Trip photos' })).toBeInTheDocument();
     await expect(canvas.getByRole('list')).toBeInTheDocument();
-    await expect(tiles(canvasElement)).toHaveLength(4);
+    await expect(tiles(canvasElement)).toHaveLength(images.length);
     await waitFor(async () => {
       await expect(canvasElement.querySelector('[data-ui="lightbox-gallery"]')).toHaveAttribute(
         'data-columns',
@@ -135,7 +172,7 @@ export const DefaultMixedRatios: Story = {
     });
     for (const [index, tile] of tiles(canvasElement).entries()) {
       await expect(getComputedStyle(tile.querySelector('img')!).objectFit).toBe('cover');
-      await expect(tile).toHaveAccessibleName(`${images[index]!.title}, ${index + 1} / 4, Open image`);
+      await expect(tile).toHaveAccessibleName(`${images[index]!.title}, ${index + 1} / ${images.length}, Open image`);
       const box = tile.getBoundingClientRect();
       await expect(box.width).toBeGreaterThanOrEqual(32 - 1.1);
       await expect(box.height).toBeGreaterThanOrEqual(32 - 1.1);
@@ -158,12 +195,13 @@ export const PersistentViewer: Story = {
   play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByRole('dialog', { name: 'Trip photos — Dune walk' })).toBeVisible();
     await current(canvasElement, 'Sun above warm sand dunes');
-    await expect(within(viewer(canvasElement)).getByRole('status')).toHaveTextContent('2 / 4');
+    await expect(within(viewer(canvasElement)).getByRole('status')).toHaveTextContent(`2 / ${images.length}`);
     await expect(
-      within(viewer(canvasElement)).getByRole('button', { name: 'Dune walk, 2 / 4' }),
+      within(viewer(canvasElement)).getByRole('button', { name: `Dune walk, 2 / ${images.length}` }),
     ).toHaveAttribute('aria-current', 'true');
     await expect(
-      getComputedStyle(within(viewer(canvasElement)).getByRole('button', { name: 'Dune walk, 2 / 4' })).overflow,
+      getComputedStyle(within(viewer(canvasElement)).getByRole('button', { name: `Dune walk, 2 / ${images.length}` }))
+        .overflow,
     ).toBe('hidden');
   },
 };
@@ -360,7 +398,7 @@ export const KeyboardPlay: Story = {
     await userEvent.keyboard('{ArrowLeft}');
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
     await userEvent.keyboard('{End}');
-    await current(canvasElement, 'Sun over blue tidal water');
+    await current(canvasElement, lastImage.alt);
     await expect(canvas.getByRole('button', { name: 'Next image' })).toBeDisabled();
     await userEvent.keyboard('{ArrowRight}');
     await expect(args.onValueChange).toHaveBeenCalledTimes(3);
@@ -381,7 +419,7 @@ export const KeyboardPlay: Story = {
     await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
     await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
     await userEvent.keyboard('0');
-    await userEvent.click(canvas.getByRole('button', { name: 'Dune walk, 2 / 4' }));
+    await userEvent.click(canvas.getByRole('button', { name: `Dune walk, 2 / ${images.length}` }));
     await userEvent.keyboard('{ArrowRight}');
     await current(canvasElement, 'Moon above violet hills at dusk');
     await userEvent.keyboard('{Escape}');
@@ -717,7 +755,10 @@ export const LocalizedContent: Story = {
       name: 'Go to the next photograph in this collection',
     });
     await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth + 1.1);
-    await expect(canvas.getByRole('status')).toHaveTextContent('Photograph ١ from a collection of ٤');
+    const digits = new Intl.NumberFormat('ar-EG');
+    await expect(canvas.getByRole('status')).toHaveTextContent(
+      `Photograph ${digits.format(1)} from a collection of ${digits.format(images.length)}`,
+    );
   },
 };
 export const GestureAlternatives: Story = {

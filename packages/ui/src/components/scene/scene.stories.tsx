@@ -5,9 +5,13 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Avatar } from '../avatar';
 import { Scene, sceneSource, type SceneSize, type SceneVariant } from './index';
+import { generateSceneSvg, SCENE_PARAMETERS } from './scene-generator';
 
 const VARIANTS = ['landscape', 'dunes', 'dusk', 'tide'] as const satisfies readonly SceneVariant[];
 const SIZES = ['sm', 'md', 'lg', 'full'] as const satisfies readonly SceneSize[];
+const FRAME_PARTS = ['sky', 'light', 'ground', 'haze', 'wash', 'vignette', 'grain'] as const;
+
+const idsOf = (markup: string) => new Set(Array.from(markup.matchAll(/ id="([^"]+)"/g), ([, id]) => id));
 
 const railStyle: CSSProperties = {
   display: 'grid',
@@ -190,6 +194,68 @@ export const Determinism: Story = {
     const srcDiff = sceneSource('different-seed-sample', { variant: 'landscape' });
     await expect(srcA).toBe(srcB);
     await expect(srcA).not.toBe(srcDiff);
+
+    // Every variant is byte-identical for one seed and differs across seeds.
+    for (const variant of VARIANTS) {
+      await expect(generateSceneSvg('same-seed-target', variant)).toBe(generateSceneSvg('same-seed-target', variant));
+      await expect(generateSceneSvg('same-seed-target', variant)).not.toBe(
+        generateSceneSvg('different-seed-sample', variant),
+      );
+    }
+    // One seed in two variants shares no ids, so inline scenes never resolve each other's defs.
+    const variantIds = VARIANTS.map((variant) => idsOf(generateSceneSvg('same-seed-target', variant)));
+    for (const [index, ids] of variantIds.entries()) {
+      for (const other of variantIds.slice(index + 1)) {
+        await expect([...ids].filter((id) => other.has(id))).toEqual([]);
+      }
+    }
+  },
+};
+
+/** One seed in every variant: clouds over landscape, dunes and tide, stars over dusk, water and shore on tide. */
+export const ArtworkLayers: Story = {
+  render: () => (
+    <div style={railStyle}>
+      {VARIANTS.map((variant) => (
+        <div key={variant} style={cardStyle}>
+          <span style={{ fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.medium }}>{variant}</span>
+          <div style={{ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+            <Scene seed="layer-check" variant={variant} alt={`${variant} layers`} />
+          </div>
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const variant of VARIANTS) {
+      const scene = canvas.getByRole('img', { name: `${variant} layers` });
+      const params = SCENE_PARAMETERS[variant];
+      const coast = params.ground.kind === 'coast';
+      const count = (selector: string) => scene.querySelectorAll(selector).length;
+      for (const name of FRAME_PARTS) await expect(count(`[data-part="${name}"]`)).toBe(1);
+      await expect(count('[data-part="clouds"]')).toBe(params.clouds ? 1 : 0);
+      await expect(count('[data-part="stars"]')).toBe(params.stars ? 1 : 0);
+      await expect(count('[data-part="reflection"]')).toBe(coast ? 1 : 0);
+      await expect(count('[data-part="shore"]')).toBe(coast ? 1 : 0);
+      if (params.stars) {
+        await expect(count('[data-part="stars"] circle')).toBeGreaterThanOrEqual(params.stars.count.min);
+      }
+      if (params.ground.kind === 'layers') {
+        await expect(count('[data-part="ground"] > [data-layer]')).toBeGreaterThanOrEqual(params.ground.layerCount.min);
+      }
+      // Grain and vignette keep their table strength after rounding.
+      const grain = scene.querySelector('[data-part="grain"] rect')!;
+      await expect(Number(grain.getAttribute('opacity'))).toBeGreaterThanOrEqual(params.grainOpacity.min);
+      const vignette = scene.querySelector('[id$="-vignette"] stop:last-child')!;
+      await expect(Number(vignette.getAttribute('stop-opacity'))).toBeGreaterThanOrEqual(params.vignetteOpacity.min);
+      // Every reference resolves inside the same scene.
+      for (const [, id] of scene.innerHTML.matchAll(/url\(#([^)]+)\)/g)) {
+        await expect(scene.querySelector(`[id="${id}"]`)).not.toBeNull();
+      }
+      // Procedural colours only, and every number formatted.
+      await expect(scene.innerHTML).not.toMatch(/var\(|NaN|undefined|Infinity/);
+    }
   },
 };
 
