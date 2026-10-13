@@ -117,7 +117,8 @@ const meta = {
 
 ### Keyboard and gestures
 - Tab follows launcher reading order. Left/Right select in the effective direction; Home/End select endpoints. Plus/minus zoom; 0 resets. When zoomed, arrows pan.
-- Momentum swipes select, resistant downward drag closes, pinch and Ctrl+wheel zoom, double-click and touch double-tap zoom around the pointer, and zoomed drag pans. On narrow screens, use the thumbnail strip to select images and arrows to pan.
+- Momentum swipes select, resistant downward drag closes, pinch and Ctrl+wheel zoom, double-click and touch double-tap zoom around the pointer, and zoomed drag pans.
+- The viewer's controls show icons. Hover or focus one to see its name.
 - Commands work throughout the viewer, except in editable fields. Escape closes even when zoomed and returns focus to the current image's tile.
 
 ### Dialog and accessibility
@@ -210,11 +211,16 @@ export const PersistentZoomed: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Toggle zoom' }));
+    await current(canvasElement, 'Layered hills beneath a low sun');
+    stage(canvasElement).focus();
+    await userEvent.keyboard('++');
     await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '2');
-    await expect(canvas.getByRole('button', { name: 'Toggle zoom' })).toHaveAttribute('aria-pressed', 'true');
-    for (const name of ['Pan left', 'Pan right', 'Pan up', 'Pan down'])
+    await expect(within(viewer(canvasElement)).getByText('200%')).toBeVisible();
+    for (const name of ['Zoom out', 'Zoom in', 'Reset zoom'])
       await expect(canvas.getByRole('button', { name })).toBeEnabled();
+    for (const name of ['Toggle zoom', 'Pan left', 'Pan right', 'Pan up', 'Pan down'])
+      await expect(canvas.queryByRole('button', { name })).not.toBeInTheDocument();
+    await settleMotion(viewer(canvasElement));
   },
 };
 export const SingleImage: Story = {
@@ -414,11 +420,11 @@ export const KeyboardPlay: Story = {
     await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
     await userEvent.keyboard('+0');
     await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
-    await userEvent.click(canvas.getByRole('button', { name: 'Toggle zoom' }));
-    await userEvent.keyboard(' ');
-    await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
     await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
+    await userEvent.keyboard(' ');
+    await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '2');
     await userEvent.keyboard('0');
+    await expect(stage(canvasElement)).toHaveAttribute('data-zoom', '1');
     await userEvent.click(canvas.getByRole('button', { name: `Dune walk, 2 / ${images.length}` }));
     await userEvent.keyboard('{ArrowRight}');
     await current(canvasElement, 'Moon above violet hills at dusk');
@@ -777,10 +783,12 @@ export const GestureAlternatives: Story = {
     await expect(args.slotProps!.stage!.onClick).not.toHaveBeenCalled();
     await current(canvasElement, 'Sun above warm sand dunes');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await userEvent.click(canvas.getByRole('button', { name: 'Toggle zoom' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
     await expect(surface).toHaveAttribute('data-zoom', '2');
     await expect(canvas.getByRole('button', { name: 'Zoom in' })).toBeDisabled();
-    await userEvent.click(canvas.getByRole('button', { name: 'Pan right' }));
+    surface.focus();
+    await userEvent.keyboard('{ArrowLeft}');
     fireEvent.pointerDown(surface, { pointerId: 2, button: 0, clientX: 100, clientY: 100 });
     fireEvent.pointerMove(surface, { pointerId: 2, clientX: 2000, clientY: 2000 });
     fireEvent.pointerCancel(surface, { pointerId: 2 });
@@ -915,7 +923,8 @@ export const PointerAnchoredZoom: Story = {
     await expect(surface).toHaveAttribute('data-zoom', '2');
     await waitFor(async () => {
       const transform = new DOMMatrixReadOnly(getComputedStyle(imageLayer(canvasElement).firstElementChild!).transform);
-      await expect(transform.m42).toBeCloseTo(-40, 0);
+      // The anchor holds within a pixel: the viewer chrome's layout rounds the offset by sub-pixels.
+      await expect(Math.abs(transform.m42 + 40)).toBeLessThanOrEqual(1);
     });
     await userEvent.click(canvas.getByRole('button', { name: 'Reset zoom' }));
     const capture = spyOn(surface, 'setPointerCapture').mockImplementation(() => {});
@@ -926,7 +935,8 @@ export const PointerAnchoredZoom: Story = {
     await expect(surface).toHaveAttribute('data-zoom', '2');
     await waitFor(async () => {
       const transform = new DOMMatrixReadOnly(getComputedStyle(imageLayer(canvasElement).firstElementChild!).transform);
-      await expect(transform.m42).toBeCloseTo(-40, 0);
+      // The anchor holds within a pixel: the viewer chrome's layout rounds the offset by sub-pixels.
+      await expect(Math.abs(transform.m42 + 40)).toBeLessThanOrEqual(1);
     });
     capture.mockRestore();
   },

@@ -36,7 +36,7 @@ import {
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { Button } from '../button';
+import { Filmstrip, ViewerHeader, ViewerToolbar } from './lightbox-gallery-chrome';
 
 export interface LightboxGalleryImage {
   id: string;
@@ -72,13 +72,18 @@ export interface LightboxGalleryLabels {
   close: string;
   previous: string;
   next: string;
+  /** @deprecated No longer rendered: double-click the image, or use `zoomIn` and `reset`. Removed in the next major. */
   zoom: string;
   zoomIn: string;
   zoomOut: string;
   reset: string;
+  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
   panLeft: string;
+  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
   panRight: string;
+  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
   panUp: string;
+  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
   panDown: string;
   empty: string;
   unavailable: string;
@@ -117,7 +122,6 @@ const SWIPE_PROGRESS = 0.2;
 const DISMISS_VELOCITY = 800;
 const DOUBLE_TAP_DISTANCE = 24;
 const DOUBLE_TAP_MS = motionDurationMs.slow * 1.5;
-const NARROW_VIEWER = '@media (width < 640px)';
 const DRAG_SLOP = 8;
 const WHEEL_ZOOM_RATE = 0.002;
 const FLIGHT_SPRING = { type: 'spring', stiffness: 360, damping: 36 } as const;
@@ -219,13 +223,6 @@ const contentStyle = css({
   [`&[data-state="closing"] > ${CHROME}`]: { opacity: 0, ...exit },
   [REDUCED_MOTION]: { [`& > ${CHROME}, &[data-state="closing"] > ${CHROME}`]: { transitionDuration: '0s' } },
 });
-const headerStyle = css({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: vars.space[3],
-});
-const titleStyle = css({ margin: 0, fontSize: vars.textSize.lg, overflowWrap: 'anywhere' });
 const stageStyle = css({
   position: 'relative',
   display: 'grid',
@@ -250,51 +247,11 @@ const viewerImageStyle = css({
   '&[data-exit="fade"]': { ...hiddenImage, ...exit },
   [REDUCED_MOTION]: { '&, &[data-exit="fade"]': { transitionDuration: '0s' } },
 });
-const controlsStyle = css({
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: vars.space[2],
-  alignItems: 'center',
-  background: vars.color.bg,
-});
-const actionStyle = css({
-  whiteSpace: 'normal',
-  blockSize: 'auto',
-  minBlockSize: vars.space[8],
-  overflowWrap: 'anywhere',
-});
-const desktopActionStyle = css({ [NARROW_VIEWER]: { display: 'none' } });
-const closeActionStyle = css({ flexShrink: 0, whiteSpace: 'nowrap' });
-const actionTextStyle = css({ [NARROW_VIEWER]: { display: 'none' } });
-const actionGlyphStyle = css({ display: 'none', [NARROW_VIEWER]: { display: 'inline' } });
 const captionStyle = css({
   margin: 0,
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
   overflowWrap: 'anywhere',
-});
-const stripStyle = css({
-  display: 'flex',
-  gap: vars.space[2],
-  overflowX: 'auto',
-  padding: vars.space[1],
-  minInlineSize: 0,
-});
-const thumbStyle = css({
-  position: 'relative',
-  flexShrink: 0,
-  overflow: 'hidden',
-  ...focusRingOutset,
-  outline: 'none',
-  inlineSize: vars.space[12],
-  blockSize: vars.space[12],
-  padding: 0,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.md,
-  background: 'transparent',
-  '&:focus-visible': focusRingOutset,
-  '&[aria-current="true"]': { outline: `2px solid ${vars.color.accentText}`, outlineOffset: '2px' },
-  [FORCED_COLORS]: { '&[aria-current="true"]': { outlineColor: 'Highlight' } },
 });
 const fallbackStyle = css({
   position: 'absolute',
@@ -834,24 +791,6 @@ function Viewer({
     }
     settlePan(drag.zoom > 1 ? velocityX : 0, drag.zoom > 1 ? velocityY : 0);
   };
-  const action = (
-    name: string,
-    handler: () => void,
-    disabled = false,
-    responsiveStyle?: Interpolation<Theme>,
-    glyph?: string,
-  ) => (
-    <Button size="sm" css={[actionStyle, responsiveStyle]} aria-label={name} disabled={disabled} onClick={handler}>
-      {glyph ? (
-        <>
-          <span css={actionTextStyle}>{name}</span>
-          <span aria-hidden="true" css={actionGlyphStyle}>{glyph}</span>
-        </>
-      ) : (
-        name
-      )}
-    </Button>
-  );
   return (
     <dialog
       {...viewerSlot}
@@ -874,22 +813,13 @@ function Viewer({
       }}
     >
       <div css={contentStyle} data-state={phase}>
-        <div css={headerStyle}>
-          <h2 {...slots?.title} id={titleId} css={[titleStyle, slots?.title?.css]}>
-            {label}
-            {image?.title ? ` — ${image.title}` : ''}
-          </h2>
-          <Button
-            size="sm"
-            css={[actionStyle, closeActionStyle]}
-            ref={(element) => {
-              element?.setAttribute('autofocus', '');
-            }}
-            onClick={controller.requestClose}
-          >
-            {labels.close}
-          </Button>
-        </div>
+        <ViewerHeader
+          title={image?.title ? `${label} — ${image.title}` : label}
+          titleId={titleId}
+          labels={labels}
+          slot={slots?.title}
+          onClose={controller.requestClose}
+        />
         <div
           {...slots?.stage}
           ref={stageMerged}
@@ -963,84 +893,37 @@ function Viewer({
             </motion.div>
           )}
         </div>
-        <div {...slots?.controls} css={[controlsStyle, slots?.controls?.css]}>
-          {action(labels.previous, () => navigate(index - 1), index <= 0, desktopActionStyle)}
-          {action(labels.next, () => navigate(index + 1), index >= images.length - 1, desktopActionStyle)}
-          <Button
-            size="sm"
-            css={actionStyle}
-            aria-pressed={zoom > 1}
-            aria-label={labels.zoom}
-            disabled={maxZoom === 1}
-            onClick={() => setZoom(zoom > 1 ? 1 : 2)}
-          >
-            <span css={actionTextStyle}>{labels.zoom}</span>
-            <span aria-hidden="true" css={actionGlyphStyle}>
-              ⌕
-            </span>
-          </Button>
-          {action(labels.zoomIn, () => setZoom(zoom + ZOOM_STEP), zoom >= maxZoom, undefined, '+')}
-          {action(labels.zoomOut, () => setZoom(zoom - ZOOM_STEP), zoom <= 1, undefined, '−')}
-          {action(labels.reset, () => setZoom(1), zoom === 1, undefined, '↺')}
-          {action(
-            labels.panLeft,
-            () => pan(x.get() + (stageRef.current?.clientWidth ?? 0) * PAN_PROGRESS, y.get()),
-            zoom === 1,
-            desktopActionStyle,
-          )}
-          {action(
-            labels.panRight,
-            () => pan(x.get() - (stageRef.current?.clientWidth ?? 0) * PAN_PROGRESS, y.get()),
-            zoom === 1,
-            desktopActionStyle,
-          )}
-          {action(
-            labels.panUp,
-            () => pan(x.get(), y.get() + (stageRef.current?.clientHeight ?? 0) * PAN_PROGRESS),
-            zoom === 1,
-            desktopActionStyle,
-          )}
-          {action(
-            labels.panDown,
-            () => pan(x.get(), y.get() - (stageRef.current?.clientHeight ?? 0) * PAN_PROGRESS),
-            zoom === 1,
-            desktopActionStyle,
-          )}
-          <span css={statusStyle}>{zoomText}</span>
-        </div>
         {hasCaption && (
           <p {...slots?.caption} id={captionId} css={[captionStyle, slots?.caption?.css]}>
             {image.caption}
           </p>
         )}
-        <div
-          {...slots?.thumbnails}
-          role="group"
-          aria-label={slots?.thumbnails?.['aria-label'] ?? labels.thumbnails}
-          css={[stripStyle, slots?.thumbnails?.css]}
-        >
-          {images.map((item, itemIndex) => (
-            <button
-              key={item.id}
-              type="button"
-              aria-current={item.id === selected ? 'true' : undefined}
-              aria-label={`${item.title || item.alt}, ${labels.position(format.format(itemIndex + 1), format.format(images.length))}`}
-              css={thumbStyle}
-              onClick={() => select(item.id)}
-            >
-              <GalleryImage key={`${item.id}\u0000${item.src}`} image={item} decorative labels={labels} />
-            </button>
-          ))}
-        </div>
-        <div
-          {...slots?.status}
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          css={[statusStyle, slots?.status?.css]}
-        >
-          {position}
-        </div>
+        <ViewerToolbar
+          position={position}
+          zoomText={zoomText}
+          labels={labels}
+          slots={slots}
+          canPrevious={index > 0}
+          canNext={index < images.length - 1}
+          canZoomIn={zoom < maxZoom}
+          zoomed={zoom > 1}
+          onPrevious={() => navigate(index - 1)}
+          onNext={() => navigate(index + 1)}
+          onZoomIn={() => setZoom(zoom + ZOOM_STEP)}
+          onZoomOut={() => setZoom(zoom - ZOOM_STEP)}
+          onReset={() => setZoom(1)}
+        />
+        <Filmstrip
+          images={images}
+          selected={selected}
+          labels={labels}
+          format={format}
+          slot={slots?.thumbnails}
+          onSelect={select}
+          thumbnail={(item) => (
+            <GalleryImage key={`${item.id}\u0000${item.src}`} image={item} decorative labels={labels} />
+          )}
+        />
       </div>
     </dialog>
   );
