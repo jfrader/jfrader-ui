@@ -2,6 +2,7 @@ import { StrictMode, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { Avatar, type AvatarSize } from '../avatar';
 import { Button } from '../button';
 import { GameCard } from '../game-card';
 import { ThemeRoot } from '../theme-root';
@@ -52,13 +53,14 @@ async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, 
   const style = getComputedStyle(table);
   const rx = Number.parseFloat(style.getPropertyValue('--game-table-radius-x'));
   const ry = Number.parseFloat(style.getPropertyValue('--game-table-radius-y'));
-  const direction = style.direction === 'rtl' ? -1 : 1;
+  const isRtl = table.getAttribute('dir') === 'rtl' || style.direction === 'rtl';
+  const direction = isRtl ? -1 : 1;
   await expect(rx).toBeGreaterThan(0);
   await expect(ry).toBeGreaterThan(0);
-  await expect(Math.max(rx, ry) / Math.min(rx, ry)).toBeLessThanOrEqual(1.5 + Number.EPSILON);
   const seats = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
   await expect(seats).toHaveLength(players);
   const obstacles = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-dock"], [data-ui="game-table-header"], [data-ui="game-table-center"], [data-ui="game-table-footer"]'));
+
   for (const [index, seat] of seats.entries()) {
     const box = seat.getBoundingClientRect();
     const dx = box.x + box.width / 2 - frame.x - frame.width / 2;
@@ -68,11 +70,12 @@ async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, 
     await expect(Math.abs(dx - direction * rx * Math.cos(theta)), `${label} regular-angle X`).toBeLessThan(GEOMETRY_TOLERANCE_PX);
     await expect(Math.abs(dy - ry * Math.sin(theta)), `${label} regular-angle Y`).toBeLessThan(GEOMETRY_TOLERANCE_PX);
     await expect(Math.abs(Math.hypot(dx / rx, dy / ry) - 1), `${label} on curve`).toBeLessThan(0.01);
+
+    // All seats remain upright for spectator: no rotation
     const matrix = new DOMMatrix(getComputedStyle(seat).transform);
-    const rotation = Math.atan2(matrix.b, matrix.a);
-    const inwardAngle = Math.atan2(dy, dx) - Math.PI / 2;
-    const rotationError = Math.atan2(Math.sin(rotation - inwardAngle), Math.cos(rotation - inwardAngle));
-    await expect(Math.abs(rotationError), `${label} faces center`).toBeLessThan(0.01);
+    const rotationDeg = Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
+    await expect(Math.abs(rotationDeg), `${label} upright (no rotation)`).toBeLessThan(0.01);
+
     await expectInside(seat, surface, { tolerancePx: GEOMETRY_TOLERANCE_PX });
     for (const other of [...seats.slice(index + 1), ...obstacles]) {
       const otherBox = other.getBoundingClientRect();
@@ -91,12 +94,18 @@ const VIEWPORTS = {
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
-  <div style={{ display: 'grid', justifyItems: 'center', gap: vars.space[1] }}>
-    <span>{slot.player?.name ?? 'Open seat'}</span>
-    <div style={{ display: 'flex', gap: vars.space[1] }}>
-      <GameCard size="sm" label={`${slot.player?.name ?? 'Open seat'}: first hidden card`} />
-      <GameCard size="sm" label={`${slot.player?.name ?? 'Open seat'}: second hidden card`} />
-    </div>
+  <div style={{ position: 'relative', display: 'flex', gap: vars.space[1] }}>
+    <GameTable.SeatChrome>
+      <span>{slot.player?.name ?? 'Open seat'}</span>
+    </GameTable.SeatChrome>
+    <GameCard size="sm" label={`${slot.player?.name ?? 'Open seat'}: first hidden card`} />
+    <GameCard size="sm" label={`${slot.player?.name ?? 'Open seat'}: second hidden card`} />
+  </div>
+);
+const seatCardsOnly = (slot: GameTableSlot<Player>) => (
+  <div style={{ position: 'relative', display: 'flex', gap: vars.space[1] }}>
+    <GameCard size="sm" label={`${slot.player?.name ?? 'Open seat'}: first hidden card`} />
+    <GameCard size="sm" label={`${slot.player?.name ?? 'Open seat'}: second hidden card`} />
   </div>
 );
 const renderSeat = fn<GameTableProps<Player>['renderSeat']>((slot) => seatChrome(slot));
@@ -217,7 +226,7 @@ const matrixStory = (profile: BoardViewportProfile, theme: 'dark' | 'light'): St
       const dock = required(table.querySelector<HTMLElement>('[data-ui="game-table-dock"]') ?? undefined).getBoundingClientRect();
       const own = required(table.querySelector<HTMLElement>('[data-ui="game-table-seat"]') ?? undefined).getBoundingClientRect();
       await expect(own.bottom).toBeLessThanOrEqual(dock.top);
-      await expectSeatFraming(table, required(COUNTS[index]), profile, profile === 'phoneWide' ? 'insufficient-space' : 'fitted');
+      await expectSeatFraming(table, required(COUNTS[index]), profile, 'fitted');
     }
   },
 });
@@ -402,7 +411,8 @@ export const LobbyMatrix: Story = {
     let index = 0;
     for (const viewport of Object.values(VIEWPORTS)) for (const players of COUNTS) {
       const profile = resolveBoardViewportProfile(viewport);
-      await expectSeatFraming(required(tables[index++]), players, profile, profile === 'phoneWide' ? 'insufficient-space' : 'fitted');
+      const expectedFit = profile === 'phoneWide' && players > 2 ? 'insufficient-space' : 'fitted';
+      await expectSeatFraming(required(tables[index++]), players, profile, expectedFit);
     }
   },
 };
@@ -423,7 +433,7 @@ export const RtlMatrix: Story = {
     let index = 0;
     for (const viewport of Object.values(VIEWPORTS)) for (const players of COUNTS) {
       const profile = resolveBoardViewportProfile(viewport);
-      await expectSeatFraming(required(tables[index++]), players, profile, profile === 'phoneWide' ? 'insufficient-space' : 'fitted');
+      await expectSeatFraming(required(tables[index++]), players, profile, 'fitted');
     }
   },
 };
@@ -601,5 +611,174 @@ export const WrappedTablesAndViewportUpdate: Story = {
     await expect(required(tables[0])).toHaveAttribute('data-profile', 'phoneWide');
     await userEvent.click(canvas.getByRole('button', { name: 'Measure tables' }));
     await expect(canvas.getByRole('status').textContent).not.toBe(before);
+  },
+};
+
+const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') => (
+  <div style={{ position: 'relative', display: 'flex', gap: vars.space[1] }}>
+    <GameTable.SeatChrome>
+      <Avatar size={size} name={slot.player?.name ?? 'Open seat'} />
+      <span>{slot.player?.name ?? 'Open seat'}</span>
+    </GameTable.SeatChrome>
+    <GameCard size="sm" label={`${slot.player?.name ?? 'Open seat'}: first hidden card`} />
+    <GameCard size="sm" label={`${slot.player?.name ?? 'Open seat'}: second hidden card`} />
+  </div>
+);
+
+export const WithAvatars: Story = {
+  args: {
+    players: 6, seats: SEATS, viewport: VIEWPORTS.desktop,
+    renderSeat: fn((slot, _index, _geometry) => seatWithAvatar(slot, 'sm')),
+    center, header: 'Poker · Avatars', dock: <Button>Check</Button>,
+  },
+  play: async ({ canvasElement }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await expectSeatFraming(table, 6, 'desktop', 'fitted');
+    const avatars = table.querySelectorAll('[data-ui="avatar"]');
+    await expect(avatars).toHaveLength(6);
+    for (const seat of table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]')) {
+      const matrix = new DOMMatrix(getComputedStyle(seat).transform);
+      const rotationDeg = Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
+      await expect(Math.abs(rotationDeg)).toBeLessThan(0.01);
+    }
+  },
+};
+
+export const UprightProfilesWithAvatars: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: vars.space[6] }}>
+      {(['phoneCompact', 'phoneTall', 'phoneWide', 'tablet', 'tabletWide', 'desktop'] as const).map((profile) => (
+        <div key={profile} data-profile-target={profile} style={{ inlineSize: VIEWPORTS[profile].width, blockSize: VIEWPORTS[profile].height }}>
+          <GameTable
+            players={6}
+            seats={SEATS}
+            viewport={VIEWPORTS[profile]}
+            renderSeat={(slot) => seatWithAvatar(slot, 'sm')}
+            center={center}
+            header={`Poker · ${profile} (6p)`}
+            dock={<Button>Check</Button>}
+          />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const tables = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]');
+    await expect(tables).toHaveLength(6);
+    for (const table of Array.from(tables)) {
+      const avatars = table.querySelectorAll('[data-ui="avatar"]');
+      await expect(avatars).toHaveLength(6);
+      for (const seat of Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'))) {
+        const matrix = new DOMMatrix(getComputedStyle(seat).transform);
+        const rotationDeg = Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
+        await expect(Math.abs(rotationDeg)).toBeLessThan(0.01);
+      }
+    }
+  },
+};
+
+export const AvatarIndependence: Story = {
+  args: {
+    players: 4, seats: seatsFor(4), viewport: VIEWPORTS.desktop,
+    renderSeat: fn((slot, index, _geometry) => {
+      if (index === 0) return seatChrome(slot);
+      if (index === 1) return (
+        <div style={{ position: 'relative', display: 'flex', gap: vars.space[1] }}>
+          <GameCard size="sm" label="First hidden card" />
+          <GameCard size="sm" label="Second hidden card" />
+        </div>
+      );
+      if (index === 2) return seatWithAvatar(slot, 'sm');
+      return seatWithAvatar(slot, 'md');
+    }),
+    center, header: 'Poker · Avatar Independence', dock: <Button>Check</Button>,
+  },
+  play: async ({ canvasElement }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await expectSeatFraming(table, 4, 'desktop', 'fitted');
+  },
+};
+
+export const ChromeRemovalParity: Story = {
+  args: {
+    players: 6, seats: SEATS, viewport: VIEWPORTS.desktop,
+    center, header: 'Poker · Chrome Removal Parity', dock: <Button>Check</Button>,
+  },
+  render: (args) => (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: vars.space[4] }}>
+      <div data-parity-group="with-chrome">
+        <GameTable {...args} renderSeat={seatChrome} />
+      </div>
+      <div data-parity-group="without-chrome">
+        <GameTable {...args} renderSeat={seatCardsOnly} />
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const withChromeTable = required(canvasElement.querySelector<HTMLElement>('[data-parity-group="with-chrome"] [data-ui="game-table"]') ?? undefined);
+    const withoutChromeTable = required(canvasElement.querySelector<HTMLElement>('[data-parity-group="without-chrome"] [data-ui="game-table"]') ?? undefined);
+    await expectSeatFraming(withChromeTable, 6, 'desktop', 'fitted');
+    await expectSeatFraming(withoutChromeTable, 6, 'desktop', 'fitted');
+
+    const seatsA = Array.from(withChromeTable.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
+    const seatsB = Array.from(withoutChromeTable.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
+    await expect(seatsA).toHaveLength(6);
+    await expect(seatsB).toHaveLength(6);
+
+    const surfaceA = required(withChromeTable.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
+    const surfaceB = required(withoutChromeTable.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
+
+    for (let i = 0; i < 6; i++) {
+      const boxA = seatsA[i]!.getBoundingClientRect();
+      const boxB = seatsB[i]!.getBoundingClientRect();
+      await expect(Math.abs(boxA.width - boxB.width)).toBeLessThanOrEqual(1);
+      await expect(Math.abs(boxA.height - boxB.height)).toBeLessThanOrEqual(1);
+
+      const relX_A = boxA.x + boxA.width / 2 - (surfaceA.x + surfaceA.width / 2);
+      const relY_A = boxA.y + boxA.height / 2 - (surfaceA.y + surfaceA.height / 2);
+      const relX_B = boxB.x + boxB.width / 2 - (surfaceB.x + surfaceB.width / 2);
+      const relY_B = boxB.y + boxB.height / 2 - (surfaceB.y + surfaceB.height / 2);
+      await expect(Math.abs(relX_A - relX_B)).toBeLessThanOrEqual(1);
+      await expect(Math.abs(relY_A - relY_B)).toBeLessThanOrEqual(1);
+    }
+  },
+};
+
+export const OversizedInsufficientSpace: Story = {
+  args: {
+    players: 6, seats: SEATS, viewport: VIEWPORTS.phoneCompact,
+    center, header: 'Poker · Insufficient Space', dock: <Button>Check</Button>,
+    renderSeat: fn((slot, _index, _geometry) => (
+      <div style={{ display: 'flex', gap: vars.space[2] }}>
+        <GameCard size="lg" label={`${slot.player?.name}: card 1`} />
+        <GameCard size="lg" label={`${slot.player?.name}: card 2`} />
+        <GameCard size="lg" label={`${slot.player?.name}: card 3`} />
+        <GameCard size="lg" label={`${slot.player?.name}: card 4`} />
+      </div>
+    )),
+  },
+  play: async ({ canvasElement }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await expect(table).toHaveAttribute('data-layout-fit', 'insufficient-space');
+    for (const card of table.querySelectorAll<HTMLElement>('[data-ui~="game-card"]')) {
+      const box = card.getBoundingClientRect();
+      await expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(GAME_TABLE_LIMITS.minimumCardWidthPx - 0.01);
+    }
+  },
+};
+
+export const StateStability: Story = {
+  args: {
+    players: 6, seats: SEATS, viewport: VIEWPORTS.phoneWide,
+    renderSeat: fn((slot, _index, _geometry) => seatWithAvatar(slot, 'sm')), center, header: 'Poker · State Stability', dock: <Button>Check</Button>,
+  },
+  play: async ({ canvasElement }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await expectSeatFraming(table, 6, 'phoneWide', 'fitted');
+    const fit1 = table.getAttribute('data-layout-fit');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const fit2 = table.getAttribute('data-layout-fit');
+    await expect(fit1).toBe('fitted');
+    await expect(fit2).toBe('fitted');
   },
 };

@@ -24,10 +24,12 @@ function naturalSize(element: HTMLElement): BoardContentSize {
 function regionSize(region: HTMLElement): BoardContentSize {
   let minimumScale = 0;
   for (const card of region.querySelectorAll<HTMLElement>('[data-ui~="game-card"]')) {
+    if (card.closest('[data-ui~="game-table-seat-chrome"]')) continue;
     const { width } = naturalSize(card);
     if (width > 0) minimumScale = Math.max(minimumScale, GAME_TABLE_LIMITS.minimumCardWidthPx / width);
   }
   for (const control of region.querySelectorAll<HTMLElement>(CONTROL_SELECTOR)) {
+    if (control.closest('[data-ui~="game-table-seat-chrome"]')) continue;
     const { width, height } = naturalSize(control);
     if (width > 0 && height > 0) minimumScale = Math.max(minimumScale, Math.min(1,
       Math.max(MIN_CONTROL_SIDE / Math.min(width, height), MIN_CONTROL_MAIN_AXIS / Math.max(width, height))));

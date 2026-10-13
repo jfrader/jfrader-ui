@@ -37,12 +37,11 @@ export function fitBoardContent(measurement: BoardMeasurements) {
     const theta = Math.PI / 2 + 2 * Math.PI * index / seats.length;
     const x = axisX * Math.cos(theta);
     const y = axisY * Math.sin(theta);
-    const rotation = Math.atan2(y, x) - Math.PI / 2;
     return {
-      x, y, theta, rotation,
+      x, y, theta, rotation: 0,
       minimumScale: Math.max(measurement.minimumScale, size.minimumScale ?? 0),
-      width: Math.abs(Math.cos(rotation)) * size.width + Math.abs(Math.sin(rotation)) * size.height,
-      height: Math.abs(Math.sin(rotation)) * size.width + Math.abs(Math.cos(rotation)) * size.height,
+      width: size.width,
+      height: size.height,
     };
   });
 
@@ -97,7 +96,7 @@ export function fitBoardContent(measurement: BoardMeasurements) {
     positions: scaled.map((seat) => ({
       scale: seat.scale,
       x: radius * seat.x, y: radius * seat.y,
-      angleRad: seat.theta, rotationDeg: seat.rotation * 180 / Math.PI,
+      angleRad: seat.theta, rotationDeg: 0,
     })),
   };
 }
