@@ -11,7 +11,6 @@ import { useControlledState } from '../../utils/use-controlled-state';
 import { GameCard, type GameCardPartProps } from '../game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
 import {
-  DEFAULT_TRICK_LAYOUT,
   TRICK_STACK,
   getPlayerStackPosition,
   getStackOffset,
@@ -23,17 +22,22 @@ import {
   type TrickSeatGeometry,
 } from './trick-layout';
 import { getAutoLayout } from './auto-layout';
+import { getReferenceLayout } from './reference-layout';
 
 export interface TrickPlayerStack {
   playerKey: string;
-  /** Omit for automatic fitting. Explicit seat geometry opts out of automatic placement. */
+  /** Overrides the reference seat geometry. In `auto-fit` mode, opts this stack out of fitting. */
   geometry?: TrickSeatGeometry;
   cards: readonly TrickCard[];
 }
 
 export interface TrickStacksProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
-  /** Cards for the current hand, grouped by player. At most three per stack are rendered. */
+  /** Current hand in GameTable's visual seat order. Include empty stacks; at most three cards per stack render. */
   stacks: readonly TrickPlayerStack[];
+  /** Viewport in CSS pixels, shared with GameTable. Selects the original board profile. */
+  viewport: { width: number; height: number };
+  /** Defaults to `reference`. `auto-fit` opts into measured grid placement and shrinking. */
+  placement?: 'reference' | 'auto-fit';
   /** Player keys whose cards stay spread, without inspection enlargement. */
   revealedKeys?: readonly string[];
   /** Names in your language, keyed by player and by `getTrickCardKey`. */
@@ -43,9 +47,9 @@ export interface TrickStacksProps extends Omit<ComponentPropsWithRef<'div'>, 'ch
   defaultValue?: string | null;
   /** Requests inspection open/close. Controlled state waits for the caller to accept. */
   onInspect?: (playerKey: string | null) => void;
-  /** Jitter and rotation; placement fields apply only to stacks with explicit geometry. */
+  /** Overrides the reference's center placement, jitter and rotation. Placement fields do not affect fitted stacks. */
   layout?: Partial<TrickLayout>;
-  /** Preferred closed card width. Automatic layout shrinks it to fit; defaults to the medium GameCard token. */
+  /** Overrides the reference profile's played-card width. `auto-fit` treats it as a preferred width. */
   cardWidth?: string;
   /** Global play-order layers, keyed by `getTrickCardKey`. */
   playOrder?: Readonly<Record<string, number>>;
@@ -54,13 +58,14 @@ export interface TrickStacksProps extends Omit<ComponentPropsWithRef<'div'>, 'ch
 
 const rootStyle = css({
   label: 'trick-stacks', position: 'relative', inlineSize: '100%',
-  blockSize: `calc(var(--trick-preferred-width) * 6)`,
+  blockSize: '100%',
 });
 const stageStyle = css({
   position: 'absolute', inset: 0, display: 'grid',
   gridTemplateColumns: 'repeat(var(--trick-columns), minmax(0, 1fr))',
   gridTemplateRows: 'repeat(var(--trick-rows), minmax(0, 1fr))',
-  gap: vars.space[4], padding: vars.space[2], boxSizing: 'border-box', placeItems: 'center',
+  gap: vars.space[4], boxSizing: 'border-box', placeItems: 'center',
+  '&[data-placement="auto-fit"]': { padding: vars.space[2] },
 });
 const probeStyle = css({
   position: 'absolute', inlineSize: 'var(--trick-preferred-width)', blockSize: 0,
@@ -78,7 +83,10 @@ const stackStyle = css({
   '&[data-spread="true"]': { zIndex: TRICK_STACK.zIndex.open },
 });
 const triggerStyle = css({
-  position: 'absolute', inset: 0, inlineSize: '100%', blockSize: '100%',
+  position: 'absolute', insetInlineStart: '50%', insetBlockStart: '50%',
+  inlineSize: `max(100%, ${vars.size.gameCardSm})`, blockSize: `max(100%, ${vars.size.gameCardSm})`,
+  transform: 'translate(-50%, -50%)',
+  '&:dir(rtl)': { transform: 'translate(50%, -50%)' },
   border: 0, padding: 0, background: 'transparent', cursor: 'pointer',
   borderRadius: vars.radius.md, zIndex: TRICK_STACK.zIndex.openCard + TRICK_STACK.maxCards,
   '&:focus-visible': focusRingOutset,
@@ -103,13 +111,15 @@ const cardStyle = css({
 export function TrickStacks({
   ref,
   stacks,
+  viewport,
+  placement = 'reference',
   labels,
   revealedKeys = [],
   value,
   defaultValue = null,
   onInspect,
   layout,
-  cardWidth = vars.size.gameCardMd,
+  cardWidth,
   playOrder = {},
   className,
   sx,
@@ -124,10 +134,15 @@ export function TrickStacks({
   const reducedMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const config = { ...DEFAULT_TRICK_LAYOUT, ...layout };
+  const reference = getReferenceLayout(stacks.length, viewport);
+  const config = { ...reference.centerStack, ...layout };
+  const resolvedCardWidth = cardWidth ?? reference.cardWidth;
+  const resolvedStacks = placement === 'reference'
+    ? stacks.map((stack, index) => ({ ...stack, geometry: stack.geometry ?? reference.geometry[index] }))
+    : stacks;
   const stageRef = useRef<HTMLDivElement>(null);
   const probeRef = useRef<HTMLDivElement>(null);
-  const automaticCount = stacks.filter((stack) => !stack.geometry).length;
+  const automaticCount = placement === 'auto-fit' ? stacks.filter((stack) => !stack.geometry).length : 0;
   const [fitted, setFitted] = useState<{ columns: number; rows: number; cardWidth: number } | null>(null);
   useEffect(() => {
     const stage = stageRef.current;
@@ -173,7 +188,9 @@ export function TrickStacks({
             ref={ref}
             className={rootClass}
             data-ui="trick-stacks"
-            style={{ '--trick-preferred-width': cardWidth, ...style } as CSSProperties}
+            data-placement={placement}
+            data-profile={reference.profile}
+            style={{ '--trick-preferred-width': resolvedCardWidth, ...style } as CSSProperties}
             onKeyDown={(event) => {
               onKeyDown?.(event);
               if (event.defaultPrevented || event.key !== 'Escape' || inspected == null) return;
@@ -185,6 +202,8 @@ export function TrickStacks({
             <div
               ref={stageRef}
               data-ui="trick-stacks-stage"
+              data-placement={placement}
+              data-measured={automaticCount > 0 && fitted !== null || undefined}
               css={stageStyle}
               style={{
                 '--trick-columns': fitted?.columns ?? Math.ceil(Math.sqrt(Math.max(1, automaticCount))),
@@ -193,7 +212,7 @@ export function TrickStacks({
               } as CSSProperties}
             >
               <div ref={probeRef} aria-hidden="true" css={probeStyle} />
-              {stacks.map((stack) => {
+              {resolvedStacks.map((stack) => {
                 if (stack.cards.length === 0) {
                   return stack.geometry ? null : (
                     <div key={stack.playerKey} aria-hidden="true" data-ui="trick-stack-slot"

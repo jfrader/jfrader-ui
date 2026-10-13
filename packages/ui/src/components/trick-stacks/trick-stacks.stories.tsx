@@ -2,7 +2,6 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor } from 'storybook/test';
 import { base } from '@jfrader/tokens';
-import { withLightTheme } from '../../testing/story-decorators';
 import { expectInside, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { settleMotion } from '../../testing/motion-assertions';
@@ -12,6 +11,7 @@ import { TrickStacks, getTrickCardKey, type TrickPlayerStack, type TrickStacksPr
 import { getStackOffset, getStableRotation, getStableJitter, getPlayerStackPosition,
   buildTrickPlayOrder, getPlayerTableCards, TRICK_STACK } from './trick-layout';
 import parity from './trick-layout.parity.json';
+import referenceBoard from './reference-board.parity.json';
 
 const names = ['North', 'East', 'South', 'West', 'Avery', 'Robin'];
 const suits = ['spades', 'hearts', 'clubs'] as const;
@@ -52,19 +52,21 @@ function mockPreference(reduced?: boolean) {
 
 const meta = {
   title: 'Games/TrickStacks', component: TrickStacks, tags: ['autodocs'],
-  args: { stacks: defaultStacks, labels: labels(defaultStacks), onInspect: fn() },
-  decorators: [(Story) => <div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', paddingBlock: 24 }}><Story /></div>],
+  args: { stacks: defaultStacks, labels: labels(defaultStacks), viewport: { width: 1440, height: 900 }, onInspect: fn() },
+  decorators: [(Story) => <div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}><Story /></div>],
   beforeEach: () => mockPreference(),
   parameters: { layout: 'fullscreen', docs: {
     description: { component: 'Keep played cards on the table, grouped by player. Open a stack to read its cards.' },
     usage: `### Cards and placement
-- Pass the current hand's cards in \`stacks\`. The first three cards per player stay mounted. Include empty stacks to reserve each player's position while cards arrive.
+- Pass \`stacks\` in GameTable's visual seat order. The first three cards per player stay mounted. Include empty stacks to reserve each player's position while cards arrive.
 - Supply translated \`labels.stacks\` by player key and \`labels.cards\` by \`getTrickCardKey\`. Poker faces are the default examples; GameCard also accepts Spanish values.
 - \`getPlayerTableCards\` groups round data and appends explicit revealed cards without duplicates. It reads no session or game state.
 - \`revealedKeys\` keeps those players' cards spread at normal width. Inspection enlarges width by 1.45 and spreads by 0.52 card widths.
-- Automatic layout measures the table, chooses rows and columns, and shrinks cards only when necessary. Every cell reserves space for a three-card inspected fan, including rotation and jitter; opening a stack does not move its neighbours.
-- \`cardWidth\` is a preferred width, not a minimum. The root defaults to six preferred card widths in height; set a different height with \`sx\`. Extremely small tables can produce targets below 24px: give the table more space.
-- Explicit \`geometry\` opts a stack out of fitting. For manual placement, pass the board's \`centerStack\` as \`layout\`; the compatibility defaults are a neutral base, not a full device profile. Mixing manual and automatic placement can overlap; the caller owns manual positions.
+- The default \`placement="reference"\` preserves the original board's fixed seat positions, center presets and played-card widths. Pass the same \`viewport\` as GameTable; it selects the original device profile without measuring or rearranging the table.
+- The root fills its parent. Give the parent a definite width and height. Reference card widths use CSS viewport units, so \`viewport\` should describe that same browser viewport.
+- Opt into \`placement="auto-fit"\` to measure the table, choose rows and columns, and shrink cards when necessary. Every cell reserves space for a three-card inspected fan, including rotation and jitter; opening a stack does not move its neighbours. This changes the original arrangement.
+- \`cardWidth\` overrides the original width; in \`auto-fit\` mode it is a preferred width, not a minimum. Buttons have a minimum 32px hit area; extremely small fitted tables can overlap those targets, so give the table more space.
+- \`geometry\` and \`layout\` explicitly override reference placement. A supplied geometry opts that stack out of automatic fitting. Mixing fixed and fitted stacks can overlap; the caller owns those positions.
 - \`data-ui="trick-stack"\` and \`data-trick-key\` mark stack and card destinations for caller-owned flights. Pass \`playOrder\` from \`buildTrickPlayOrder\` for global closed-card layering.
 
 ### Inspection and keyboard
@@ -85,6 +87,7 @@ async function noOverlap(root: HTMLElement) {
   for (let first = 0; first < stacks.length; first++) {
     for (let second = first + 1; second < stacks.length; second++) {
       await expectNoOverlap(stacks[first]!, stacks[second]!);
+      await expectNoOverlap(stacks[first]!.querySelector('button')!, stacks[second]!.querySelector('button')!);
     for (const a of stacks[first]!.querySelectorAll('[data-trick-key]')) {
         for (const b of stacks[second]!.querySelectorAll('[data-trick-key]')) await expectNoOverlap(a, b);
       }
@@ -95,19 +98,26 @@ async function noOverlap(root: HTMLElement) {
 async function fittedViewports(root: HTMLElement, inspect: (button: HTMLElement) => Promise<void>) {
   const table = root.querySelector<HTMLElement>('[data-ui="trick-stacks"]')!;
   const original = table.getAttribute('style');
+  const stackBoxes = () => {
+    const frame = table.getBoundingClientRect();
+    return [...table.querySelectorAll('[data-ui="trick-stack"]')].map((stack) => {
+      const box = stack.getBoundingClientRect();
+      return { x: box.left - frame.left, y: box.top - frame.top, width: box.width, height: box.height };
+    });
+  };
   try {
     for (const [width, height] of [[320, 280], [640, 360], [900, 432]]) {
       table.style.inlineSize = `${width}px`;
       table.style.blockSize = `${height}px`;
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       for (const button of table.querySelectorAll<HTMLButtonElement>('button')) {
-        const stackBoxes = [...table.querySelectorAll('[data-ui="trick-stack"]')].map((stack) => stack.getBoundingClientRect().toJSON());
+        const before = stackBoxes();
         await inspect(button);
         await settleMotion(table);
         await waitFor(async () => {
           for (const card of table.querySelectorAll('[data-trick-key]')) await expectInside(card, table);
         });
-        await expect([...table.querySelectorAll('[data-ui="trick-stack"]')].map((stack) => stack.getBoundingClientRect().toJSON())).toEqual(stackBoxes);
+        await expect(stackBoxes()).toEqual(before);
         await noOverlap(table);
       }
     }
@@ -142,7 +152,6 @@ export const Default: Story = {
     await expect(args.onInspect).toHaveBeenCalledTimes(4);
     await expect(canvas.getAllByRole('img')).toHaveLength(6);
     await noOverlap(canvasElement);
-    await fittedViewports(canvasElement, (button) => userEvent.click(button));
   },
 };
 
@@ -154,7 +163,7 @@ export const OneCard: Story = { args: counts(2, 1), play: async ({ canvasElement
 export const TwoCards: Story = { args: counts(2, 2), play: async ({ canvasElement }) => noOverlap(canvasElement) };
 export const TwoVersusTwo: Story = {
   args: counts(4, 3),
-  play: async ({ canvasElement, userEvent }) => fittedViewports(canvasElement, (button) => userEvent.click(button)),
+  play: async ({ canvasElement }) => noOverlap(canvasElement),
 };
 export const ThreeVersusThree: Story = {
   args: counts(6, 3),
@@ -162,7 +171,6 @@ export const ThreeVersusThree: Story = {
     await noOverlap(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: "North's played cards" }));
     await noOverlap(canvasElement);
-    await fittedViewports(canvasElement, (button) => userEvent.click(button));
   },
 };
 export const Open: Story = { args: { defaultValue: 'North' }, play: async ({ canvasElement }) => noOverlap(canvasElement) };
@@ -179,8 +187,8 @@ export const RevealedHands: Story = {
     await noOverlap(canvasElement);
   },
 };
-export const LightTheme: Story = { decorators: [withLightTheme] };
-export const OpenLightTheme: Story = { args: { defaultValue: 'North' }, decorators: [withLightTheme] };
+export const LightTheme: Story = { globals: { theme: 'light' } };
+export const OpenLightTheme: Story = { args: { defaultValue: 'North' }, globals: { theme: 'light' } };
 export const RTL: Story = {
   args: { ...counts(6, 3), dir: 'rtl', defaultValue: 'East' },
   play: async ({ canvasElement }) => {
@@ -196,7 +204,7 @@ function ControlledFixture(args: TrickStacksProps) {
 }
 export const Controlled: Story = {
   render: (args) => <ControlledFixture {...args} />,
-  parameters: { docs: { source: { code: `<TrickStacks stacks={stacks} labels={labels}
+  parameters: { docs: { source: { code: `<TrickStacks viewport={viewport} stacks={stacks} labels={labels}
   value={inspectedPlayer} onInspect={setInspectedPlayer}
   revealedKeys={revealedPlayerKeys} />` } } },
   play: async ({ canvas, userEvent, args }) => {
@@ -276,12 +284,94 @@ export const ReferenceParity: Story = {
   },
 };
 
+function ReferenceBoardCases(args: TrickStacksProps) {
+  return <>
+    {referenceBoard.cases.map((reference) => {
+      const stacks = players(reference.players, 3);
+      return (
+        <div key={`${reference.profile}-${reference.players}`} data-reference-profile={reference.profile}
+          data-reference-players={reference.players}
+          style={{ position: 'relative', inlineSize: 900, maxInlineSize: '100%', blockSize: 432 }}>
+          <TrickStacks {...args} viewport={reference.viewport} stacks={stacks} labels={labels(stacks)} />
+          <div aria-hidden="true" data-reference-size="" style={{ position: 'absolute', visibility: 'hidden',
+            inlineSize: reference.cardWidth, blockSize: `calc(${reference.cardWidth} * ${CARD_FRAME.ratio})` }} />
+        </div>
+      );
+    })}
+  </>;
+}
+
+export const DefaultReferenceParity: Story = {
+  render: (args) => <ReferenceBoardCases {...args} />,
+  parameters: { docs: { source: { code: '<TrickStacks viewport={viewport} stacks={stacks} labels={labels} />' } } },
+  play: async ({ canvasElement }) => {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    const measurements = referenceBoard.cases.map((reference) => {
+      const container = canvasElement.querySelector<HTMLElement>(`[data-reference-profile="${reference.profile}"][data-reference-players="${reference.players}"]`)!;
+      const root = container.querySelector<HTMLElement>('[data-ui="trick-stacks"]')!;
+      const frame = container.getBoundingClientRect();
+      const expectedSize = container.querySelector('[data-reference-size]')!.getBoundingClientRect();
+      return { reference, root, frame, expectedSize, measured: reference.positions.map((expected) => {
+        const stack = root.querySelector<HTMLElement>(`[data-ui="trick-stack"][data-player-key="${expected.playerKey}"]`)!;
+        const box = stack.getBoundingClientRect();
+        return { playerKey: expected.playerKey, x: (box.left + box.width / 2 - frame.left) / frame.width * 100,
+          y: (box.top + box.height / 2 - frame.top) / frame.height * 100, width: box.width, height: box.height };
+      }) };
+    });
+    console.info('DEFAULT_RENDERED_VS_REFERENCE', JSON.stringify({ browserViewport: { width: window.innerWidth, height: window.innerHeight },
+      cases: measurements.filter(({ reference }) => reference.profile === 'desktop').map(({ reference, expectedSize, measured }) => ({
+        players: reference.players, reference: reference.positions.map(({ playerKey, x, y }) => ({ playerKey, x, y })),
+        referenceSize: { width: expectedSize.width, height: expectedSize.height }, measured,
+      })) }));
+    for (const { reference, root, frame, expectedSize, measured } of measurements) {
+      await expect(root.getBoundingClientRect().width).toBe(frame.width);
+      await expect(root.getBoundingClientRect().height).toBe(frame.height);
+      for (const [index, expected] of reference.positions.entries()) {
+        const actual = measured[index]!;
+        await expect(Math.abs(actual.x - expected.x) * frame.width / 100, `${reference.profile}/${reference.players}/${expected.playerKey}: x`).toBeLessThanOrEqual(1);
+        await expect(Math.abs(actual.y - expected.y) * frame.height / 100, `${reference.profile}/${reference.players}/${expected.playerKey}: y`).toBeLessThanOrEqual(1);
+        await expect(actual.width).toBeCloseTo(expectedSize.width, 1);
+        await expect(actual.height).toBeCloseTo(expectedSize.height, 1);
+        const trigger = root.querySelector<HTMLButtonElement>(`[data-player-key="${expected.playerKey}"] button`)!;
+        await expect(trigger.getBoundingClientRect().width).toBeGreaterThanOrEqual(Number.parseFloat(base.size.gameCardSm));
+        await expect(trigger.getBoundingClientRect().height).toBeGreaterThanOrEqual(Number.parseFloat(base.size.gameCardSm));
+        for (const card of expected.cards) {
+          const element = root.querySelector<HTMLElement>(`[data-trick-key="${card.key}"]`)!;
+          const style = getComputedStyle(element);
+          const width = Number.parseFloat(style.width);
+          const height = Number.parseFloat(style.height);
+          const matrix = new DOMMatrixReadOnly(style.transform);
+          await expect(width).toBeCloseTo(expectedSize.width, 1);
+          await expect(height).toBeCloseTo(expectedSize.height, 1);
+          await expect(matrix.m41).toBeCloseTo(-width / 2 + card.xOffset, 1);
+          await expect(matrix.m42).toBeCloseTo(-height / 2 + card.yOffset, 1);
+          await expect(Math.atan2(matrix.m12, matrix.m11) * 180 / Math.PI).toBeCloseTo(card.rotation, 2);
+          const box = element.getBoundingClientRect();
+          const radians = card.rotation * Math.PI / 180;
+          await expect(box.left + box.width / 2).toBeCloseTo(frame.left + frame.width * expected.x / 100 + card.xOffset, 1);
+          await expect(box.top + box.height / 2).toBeCloseTo(frame.top + frame.height * expected.y / 100 + card.yOffset, 1);
+          await expect(box.width).toBeCloseTo(expectedSize.width * Math.abs(Math.cos(radians)) + expectedSize.height * Math.abs(Math.sin(radians)), 1);
+          await expect(box.height).toBeCloseTo(expectedSize.height * Math.abs(Math.cos(radians)) + expectedSize.width * Math.abs(Math.sin(radians)), 1);
+        }
+      }
+    }
+  },
+};
+
 export const RenderedGeometry: Story = {
   beforeEach: () => mockPreference(false),
   play: async ({ canvas, canvasElement, userEvent }) => {
     const trigger = canvas.getByRole('button', { name: "North's played cards" });
     const stack = trigger.parentElement!;
     const cards = [...stack.querySelectorAll<HTMLElement>('[data-trick-key]')];
+    const reference = referenceBoard.cases.find((entry) => entry.profile === 'desktop' && entry.players === 2)!;
+    const probe = canvasElement.ownerDocument.createElement('div');
+    probe.style.position = 'absolute';
+    probe.style.visibility = 'hidden';
+    probe.style.inlineSize = reference.cardWidth;
+    canvasElement.append(probe);
+    const referenceWidth = probe.getBoundingClientRect().width;
+    probe.remove();
     for (const open of [false, true]) {
       if (open) await userEvent.click(trigger);
       await settleMotion(stack);
@@ -293,7 +383,7 @@ export const RenderedGeometry: Story = {
         if (!rotation || !jitter) throw new Error(`Missing parity fixture for ${key}`);
         const style = getComputedStyle(card);
         const width = Number.parseFloat(style.width);
-        await expect(width).toBeCloseTo(Number.parseFloat(base.size.gameCardMd) * (open ? parity.constants.openScale : 1), 1);
+        await expect(width).toBeCloseTo(referenceWidth * (open ? parity.constants.openScale : 1), 1);
         await expect(Number.parseFloat(style.height)).toBeCloseTo(width * CARD_FRAME.ratio, 1);
         await expect(style.transitionProperty).toBe('transform, width, height, box-shadow');
         await expect(style.transitionDuration).toBe(Array(4).fill(`${motionDurationMs.trickStack / 1000}s`).join(', '));
@@ -320,7 +410,10 @@ function GrowingHandFixture(args: TrickStacksProps) {
 export const MaximumThree: Story = {
   args: counts(2, 4),
   render: (args) => <GrowingHandFixture {...args} />,
-  play: async ({ canvas, canvasElement, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    if (args.placement === 'auto-fit') {
+      await waitFor(() => expect(canvasElement.querySelector('[data-ui="trick-stacks-stage"]')).toHaveAttribute('data-measured', 'true'));
+    }
     for (const stack of canvasElement.querySelectorAll('[data-ui="trick-stack"]')) {
       await expect(stack.querySelectorAll('[data-trick-key]')).toHaveLength(3);
     }
@@ -334,3 +427,30 @@ export const MaximumThree: Story = {
     await expect(east.getBoundingClientRect().toJSON()).toEqual(original);
   },
 };
+
+function AutoFitCases(args: TrickStacksProps) {
+  return <>
+    {[2, 4, 6].map((count) => {
+      const stacks = players(count, 3);
+      return <div key={count} data-auto-players={count} style={{ blockSize: 432 }}>
+        <TrickStacks {...args} placement="auto-fit" stacks={stacks} labels={labels(stacks)} />
+      </div>;
+    })}
+  </>;
+}
+
+export const AutoFit: Story = {
+  render: (args) => <AutoFitCases {...args} />,
+  parameters: { docs: {
+    description: { story: 'Opt into measured grid placement. Cards shrink to leave room for inspected fans; this is not the reference arrangement.' },
+    source: { code: '<TrickStacks viewport={viewport} placement="auto-fit" stacks={stacks} labels={labels} />' },
+  } },
+  play: async ({ canvasElement, userEvent }) => {
+    for (const container of canvasElement.querySelectorAll<HTMLElement>('[data-auto-players]')) {
+      await fittedViewports(container, (button) => userEvent.click(button));
+    }
+  },
+};
+
+export const AutoFitEmptySlots: Story = { ...MaximumThree, args: { ...counts(2, 4), placement: 'auto-fit' } };
+export const AutoFitReducedMotion: Story = { ...ReducedMotion, args: { ...counts(6, 3), placement: 'auto-fit' } };

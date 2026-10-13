@@ -26,14 +26,14 @@ export const TRICK_STACK = {
   zIndex: { closed: 40, open: 240, card: 20, openCard: 280 },
 } as const;
 
-// Manual-placement compatibility only. Automatic placement does not consume board presets.
+// Shared base only; reference-layout.ts applies the reference's viewport/count overrides and spreadBoost.
 // Base fields: trucoshi-client-private/packages/core/src/board/config/defaults.ts/DEFAULT_MATCH_CENTER_BASE.
 export const DEFAULT_TRICK_LAYOUT = {
   centerShiftXPercent: -1.2,
   centerShiftYPercent: 1.8,
   playerSpreadXPercent: 42,
   playerSpreadYPercent: 39,
-  // Neutral adapter value, not a complete match profile: layoutModel.ts supplies this from each profile.
+  // Neutral base placeholder; reference-layout.ts supplies match.center.spreadBoost from the chosen profile.
   spreadBoost: 0,
   // Base is zero; MATCH_CENTER_OVERRIDES_BY_PLAYER_COUNT[6] is 7, desktop overrides it to 20.
   sideVerticalSpreadBoost: 0,
