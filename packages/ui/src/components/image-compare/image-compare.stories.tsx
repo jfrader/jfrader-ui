@@ -8,21 +8,12 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { ImageCompare } from './index';
 import { sceneSource } from '../scene';
 
-const SCENE_SRC = sceneSource('image-compare-alpine', { variant: 'landscape' });
-const WARM_GRADE = 'sepia(0.65) saturate(1.6) contrast(1.15) brightness(1.08)';
-const gradedImageStyle = css({ filter: WARM_GRADE });
+const RAW_SRC = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const GRADED_SRC = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
 const BROKEN_SRC = 'data:image/png;base64,broken';
 
-const beforeImage = <img src={SCENE_SRC} alt="Mountain landscape before grading" width={1200} height={800} />;
-const afterImage = (
-  <img
-    src={SCENE_SRC}
-    alt="Mountain landscape with a warm grade"
-    width={1200}
-    height={800}
-    css={gradedImageStyle}
-  />
-);
+const beforeImage = <img src={RAW_SRC} alt="Mountain landscape before grading" width={1200} height={800} />;
+const afterImage = <img src={GRADED_SRC} alt="Mountain landscape with a warm grade" width={1200} height={800} />;
 
 /** Outline and its offset (2px + 2px) drawn outside the handle. */
 const FOCUS_RING_EXTENT = 4;
@@ -60,12 +51,12 @@ const fixtureButtonStyle = css({
   paddingInline: vars.space[3],
 });
 
-const SOURCE = `const source = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const SOURCE = `const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
 
 <ImageCompare
-  before={<img src={source} alt="Mountain landscape before grading" width={1200} height={800} />}
-  after={<img src={source} alt="Mountain landscape with a warm grade" width={1200} height={800}
-    style={{ filter: '${WARM_GRADE}' }} />}
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
   label="Landscape grading comparison"
 />`;
 
@@ -189,10 +180,12 @@ export const Default: Story = {
     await expect(slider).toHaveAccessibleDescription('Before After');
     const before = canvas.getByRole<HTMLImageElement>('img', { name: 'Mountain landscape before grading' });
     const after = canvas.getByRole<HTMLImageElement>('img', { name: 'Mountain landscape with a warm grade' });
-    await expect(before).toHaveAttribute('src', SCENE_SRC);
-    await expect(after).toHaveAttribute('src', SCENE_SRC);
+    // One photograph in two grades: the generator recolours the same scene, no CSS filter.
+    await expect(before).toHaveAttribute('src', RAW_SRC);
+    await expect(after).toHaveAttribute('src', GRADED_SRC);
+    await expect(GRADED_SRC).not.toBe(RAW_SRC);
     await expect(getComputedStyle(before).filter).toBe('none');
-    await expect(getComputedStyle(after).filter).toBe(WARM_GRADE);
+    await expect(getComputedStyle(after).filter).toBe('none');
     await waitFor(() => {
       expect(before.naturalWidth).toBeGreaterThan(0);
       expect(after.naturalWidth).toBe(before.naturalWidth);

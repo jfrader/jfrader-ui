@@ -7,7 +7,8 @@
  * 3. `SCENE_FRAME` (shared geometry and finish) and `SCENE_PARAMETERS` (per variant palettes,
  *    light, sky, ground, grain and vignette) hold every tunable number.
  * 4. Colours are mixed in OKLCH and gamut-mapped to sRGB hex by reducing chroma, without
- *    dependencies or theme tokens.
+ *    dependencies or theme tokens. An optional grade (`SCENE_GRADES`) recolours every generated
+ *    colour on the way out; it draws no random numbers, so a graded scene keeps the raw geometry.
  * 5. Artwork is authored on a 1200x800 viewBox. The light source stays inside the central
  *    square, so circular avatar crops, portrait tiles and wide tiles keep the focal point.
  *
@@ -16,6 +17,9 @@
  */
 
 export type SceneVariant = 'landscape' | 'dunes' | 'dusk' | 'tide';
+
+/** Colour treatment of one scene: `raw` as generated, `warm` a warmer final grade of the same picture. */
+export type SceneGrade = 'raw' | 'warm';
 
 export interface Range {
   readonly min: number;
@@ -221,6 +225,23 @@ export interface VariantParameters {
   readonly grainOpacity: Range;
   readonly vignetteOpacity: Range;
 }
+
+/** A colour grade applied to every generated colour, like a colourist's pass over one photograph. */
+export interface GradeParameters {
+  /** Chroma multiplier, applied before the tint. */
+  readonly saturation: number;
+  /** Lightness contrast around `pivot`; 1 keeps the generated lightness. */
+  readonly contrast: number;
+  readonly pivot: number;
+  /** OKLab a/b offset scaled by each colour's lightness, so highlights take the most tint. */
+  readonly tint: { readonly a: number; readonly b: number };
+}
+
+/** Grades by name. `raw` keeps the generated colours untouched. */
+export const SCENE_GRADES: Record<SceneGrade, GradeParameters | null> = {
+  raw: null,
+  warm: { saturation: 1.12, contrast: 1.08, pivot: 0.5, tint: { a: 0.014, b: 0.045 } },
+};
 
 /** Shared frame geometry and finishing values for every variant. */
 export const SCENE_FRAME = {
@@ -679,6 +700,16 @@ function mix(from: Oklch, to: Oklch, t: number): Oklch {
 
 const hex = (color: Oklch): string => oklchToHex(color.l, color.c, color.h);
 
+const DEGREES = 180 / Math.PI;
+
+/** Grades one colour in OKLab: contrast on lightness, then saturation and tint on a/b. */
+function gradeColor(color: Oklch, grade: GradeParameters): Oklch {
+  const hue = color.h / DEGREES;
+  const a = color.c * grade.saturation * Math.cos(hue) + grade.tint.a * color.l;
+  const b = color.c * grade.saturation * Math.sin(hue) + grade.tint.b * color.l;
+  return oklch(grade.pivot + (color.l - grade.pivot) * grade.contrast, Math.hypot(a, b), Math.atan2(b, a) * DEGREES);
+}
+
 interface Random {
   readonly next: () => number;
   readonly between: (min: number, max: number) => number;
@@ -751,14 +782,14 @@ interface Stop {
   readonly opacity?: number;
 }
 
-function gradientStops(stops: readonly Stop[]): string {
+function gradientStops(ctx: SceneContext, stops: readonly Stop[]): string {
   return stops
     .map(({ offset, color, opacity }) =>
       tag(
         'stop',
         opacity === undefined
-          ? { offset: unit(offset), 'stop-color': hex(color) }
-          : { offset: unit(offset), 'stop-color': hex(color), 'stop-opacity': unit(opacity) },
+          ? { offset: unit(offset), 'stop-color': ctx.paint(color) }
+          : { offset: unit(offset), 'stop-color': ctx.paint(color), 'stop-opacity': unit(opacity) },
       ),
     )
     .join('');
@@ -769,8 +800,8 @@ interface Falloff {
   readonly strength: number;
 }
 
-const falloffStops = (color: Oklch, opacity: number, falloff: readonly Falloff[]): string =>
-  gradientStops(falloff.map(({ offset, strength }) => ({ offset, color, opacity: opacity * strength })));
+const falloffStops = (ctx: SceneContext, color: Oklch, opacity: number, falloff: readonly Falloff[]): string =>
+  gradientStops(ctx, falloff.map(({ offset, strength }) => ({ offset, color, opacity: opacity * strength })));
 
 function sample(from: number, to: number, y: (x: number) => number): Point[] {
   const steps = Math.max(1, Math.round(Math.abs(to - from) / SCENE_FRAME.sampleStep));
@@ -810,6 +841,8 @@ interface SceneContext {
   readonly haze: Oklch;
   readonly terrainHue: number;
   readonly light: Light;
+  /** Hex for a generated colour after the scene's grade. */
+  readonly paint: (color: Oklch) => string;
   readonly defs: string[];
   readonly content: string[];
 }
@@ -830,12 +863,12 @@ function paintSky(ctx: SceneContext): void {
     tag(
       'linearGradient',
       { id: sky, gradientUnits: 'userSpaceOnUse', x1: 0, y1: 0, x2: 0, y2: coord(ctx.horizonY) },
-      gradientStops(SCENE_FRAME.sky.stops.map((offset) => ({ offset, color: skyColor(ctx, offset) }))),
+      gradientStops(ctx, SCENE_FRAME.sky.stops.map((offset) => ({ offset, color: skyColor(ctx, offset) }))),
     ),
     tag(
       'radialGradient',
       { id: bloom },
-      falloffStops(light.bloom, random.range(ctx.params.light.bloomOpacity), SCENE_FRAME.bloom.falloff),
+      falloffStops(ctx, light.bloom, random.range(ctx.params.light.bloomOpacity), SCENE_FRAME.bloom.falloff),
     ),
   );
   ctx.content.push(
@@ -855,7 +888,7 @@ function paintSky(ctx: SceneContext): void {
 function paintStars(ctx: SceneContext, stars: StarParameters): void {
   const { random } = ctx;
   const ceiling = ctx.horizonY - stars.horizonGap;
-  const fill = hex(ctx.light.color);
+  const fill = ctx.paint(ctx.light.color);
   const place = () => {
     const y = random.between(0, ceiling);
     return { x: coord(random.between(0, WIDTH)), y: coord(y), fade: (1 - y / ceiling) ** stars.fade };
@@ -889,7 +922,7 @@ function paintClouds(ctx: SceneContext, clouds: CloudParameters): void {
     const height = random.range(clouds.height);
     const sky = skyColor(ctx, y / ctx.horizonY);
     const nearLight = clamp(1 - Math.hypot(x - light.x, y - light.y) / clouds.lightReach, 0, 1);
-    const fill = hex(mix(oklch(sky.l + clouds.lift, sky.c * clouds.chroma, sky.h), light.bloom, clouds.lightTint * nearLight));
+    const fill = ctx.paint(mix(oklch(sky.l + clouds.lift, sky.c * clouds.chroma, sky.h), light.bloom, clouds.lightTint * nearLight));
     const opacity = unit(random.range(clouds.opacity));
     return Array.from({ length: random.int(clouds.puffs) }, () =>
       tag('ellipse', {
@@ -908,9 +941,9 @@ function paintClouds(ctx: SceneContext, clouds: CloudParameters): void {
 function paintLight(ctx: SceneContext): void {
   const { light, params } = ctx;
   const halo = ctx.id('halo');
-  ctx.defs.push(tag('radialGradient', { id: halo }, falloffStops(light.color, 1, SCENE_FRAME.halo)));
+  ctx.defs.push(tag('radialGradient', { id: halo }, falloffStops(ctx, light.color, 1, SCENE_FRAME.halo)));
   const disc = { cx: coord(light.x), cy: coord(light.y), r: coord(light.radius) };
-  const fill = hex(light.color);
+  const fill = ctx.paint(light.color);
   const layers = [tag('circle', { ...disc, r: coord(light.radius * params.light.haloScale), fill: url(halo) })];
   const { crescent } = params.light;
   if (crescent) {
@@ -946,7 +979,7 @@ function hazeBand(ctx: SceneContext): string {
     tag(
       'linearGradient',
       { id: gradient, x1: 0, y1: 0, x2: 0, y2: 1 },
-      gradientStops([
+      gradientStops(ctx, [
         { offset: 0, color: ctx.haze, opacity: 0 },
         { offset: haze.above / (haze.above + haze.below), color: ctx.haze, opacity },
         { offset: 1, color: ctx.haze, opacity: 0 },
@@ -1027,7 +1060,7 @@ function leeShadows(
   bottom: number,
 ): string[] {
   const tint = mix(color, ctx.zenith, dunes.shadowSkyMix);
-  const fill = hex(oklch(color.l * dunes.shadowLight, tint.c, tint.h));
+  const fill = ctx.paint(oklch(color.l * dunes.shadowLight, tint.c, tint.h));
   const opacity = unit(dunes.leeShadow * lerp(dunes.farShadow, 1, depth));
   return profile.crests.map((crest) => {
     const end = crest.x + leeSide * crest.lee;
@@ -1063,7 +1096,7 @@ function paintLayers(ctx: SceneContext, ground: LayeredGround): void {
       tag(
         'linearGradient',
         { id: gradient, gradientUnits: 'userSpaceOnUse', x1: 0, y1: coord(top), x2: 0, y2: coord(bottom) },
-        gradientStops([
+        gradientStops(ctx, [
           { offset: 0, color },
           { offset: 1, color: mix(color, ctx.haze, ground.baseHaze * (1 - depth)) },
         ]),
@@ -1075,7 +1108,7 @@ function paintLayers(ctx: SceneContext, ground: LayeredGround): void {
         tag('path', {
           d: linePath(points),
           fill: 'none',
-          stroke: hex(mix(color, ctx.light.color, SCENE_FRAME.rim.lightMix)),
+          stroke: ctx.paint(mix(color, ctx.light.color, SCENE_FRAME.rim.lightMix)),
           'stroke-width': SCENE_FRAME.rim.width,
           'stroke-linejoin': 'round',
           opacity: unit(ground.rimOpacity * (1 - depth)),
@@ -1116,7 +1149,7 @@ function paintHeadlands(ctx: SceneContext, coast: CoastGround): { land: string; 
       return horizonY - relief * lerp(coast.headlandFloor, 1, ridges(u)) * (1 - u) ** coast.headlandTaper;
     });
     const d = silhouettePath(points, horizonY);
-    const fill = hex(mix(ctx.haze, near, lerp(coast.farMix, 1, depth)));
+    const fill = ctx.paint(mix(ctx.haze, near, lerp(coast.farMix, 1, depth)));
     reflections.push(tag('path', { d, fill, opacity: coast.reflectionOpacity, transform: mirror }));
     land.push(tag('path', { d, fill, 'data-layer': index }));
   }
@@ -1128,8 +1161,8 @@ function paintGlint(ctx: SceneContext, coast: CoastGround, shoreTop: number): st
   const { random, light, horizonY } = ctx;
   const depth = shoreTop - horizonY;
   const glow = ctx.id('glint-glow');
-  ctx.defs.push(tag('radialGradient', { id: glow }, falloffStops(light.color, coast.glowOpacity, SCENE_FRAME.fade)));
-  const fill = hex(light.color);
+  ctx.defs.push(tag('radialGradient', { id: glow }, falloffStops(ctx, light.color, coast.glowOpacity, SCENE_FRAME.fade)));
+  const fill = ctx.paint(light.color);
   const bands = [
     tag('ellipse', {
       cx: coord(light.x),
@@ -1182,7 +1215,7 @@ function paintCoast(ctx: SceneContext, coast: CoastGround): void {
       y: coord(horizonY + (shoreTop - horizonY) * u ** coast.glintSpacing),
       width: coord(length),
       height: coord(lerp(coast.swellThickness.min, coast.swellThickness.max, u)),
-      fill: hex(random.next() < 0.5 ? surface : deep),
+      fill: ctx.paint(random.next() < 0.5 ? surface : deep),
       opacity: unit(random.range(coast.swellOpacity)),
     });
   });
@@ -1197,7 +1230,7 @@ function paintCoast(ctx: SceneContext, coast: CoastGround): void {
     tag(
       'linearGradient',
       { id: sea, gradientUnits: 'userSpaceOnUse', x1: 0, y1: coord(horizonY), x2: 0, y2: coord(shoreTop) },
-      gradientStops([
+      gradientStops(ctx, [
         { offset: 0, color: surface },
         { offset: 1, color: deep },
       ]),
@@ -1205,7 +1238,7 @@ function paintCoast(ctx: SceneContext, coast: CoastGround): void {
     tag(
       'linearGradient',
       { id: sandId, gradientUnits: 'userSpaceOnUse', x1: 0, y1: coord(shoreTop), x2: 0, y2: HEIGHT },
-      gradientStops([
+      gradientStops(ctx, [
         { offset: 0, color: mix(sand, ctx.horizon, coast.wetMix) },
         { offset: coast.wetBand, color: sand },
         { offset: 1, color: oklch(sand.l * coast.foregroundShade, sand.c, sand.h) },
@@ -1214,13 +1247,13 @@ function paintCoast(ctx: SceneContext, coast: CoastGround): void {
   );
 
   const edge = linePath(shore);
-  const foam = hex(light.color);
+  const foam = ctx.paint(light.color);
   const beach = [
     tag('path', { d: silhouettePath(shore, HEIGHT), fill: url(sandId) }),
     tag('path', {
       d: edge,
       fill: 'none',
-      stroke: hex(ctx.horizon),
+      stroke: ctx.paint(ctx.horizon),
       'stroke-width': coast.sheenWidth,
       opacity: coast.sheenOpacity,
       transform: `translate(0 ${coord(coast.sheenWidth / 2)})`,
@@ -1260,11 +1293,11 @@ function paintFinish(ctx: SceneContext, hash: number): void {
   const channel = (name: string) =>
     tag(name, { type: 'linear', slope: grain.contrast, intercept: unit((1 - grain.contrast) / 2) });
   ctx.defs.push(
-    tag('radialGradient', { id: wash }, falloffStops(light.bloom, random.range(params.light.washOpacity), SCENE_FRAME.fade)),
+    tag('radialGradient', { id: wash }, falloffStops(ctx, light.bloom, random.range(params.light.washOpacity), SCENE_FRAME.fade)),
     tag(
       'radialGradient',
       { id: vignetteId, r: vignette.radius },
-      gradientStops([
+      gradientStops(ctx, [
         { offset: vignette.inner, color: vignetteColor, opacity: 0 },
         { offset: 1, color: vignetteColor, opacity: random.range(params.vignetteOpacity) },
       ]),
@@ -1318,15 +1351,21 @@ export interface GeneratedSceneParts {
 }
 
 /**
- * Generates the SVG defs and content elements for a given seed and variant.
- * Guaranteed to return identical output for identical inputs. Ids carry the variant and the
- * seed hash, so scenes inlined in one document never resolve each other's gradients.
+ * Generates the SVG defs and content elements for a given seed, variant and grade.
+ * Guaranteed to return identical output for identical inputs. Ids carry the variant, any grade
+ * other than `raw` and the seed hash, so scenes inlined in one document never resolve each
+ * other's gradients. Grades share the geometry of the raw scene.
  */
-export function generateSceneParts(seed: string, variant: SceneVariant = 'landscape'): GeneratedSceneParts {
+export function generateSceneParts(
+  seed: string,
+  variant: SceneVariant = 'landscape',
+  grade: SceneGrade = 'raw',
+): GeneratedSceneParts {
   const hash = hashSeed(seed);
   const random = createRandom(hash);
   const params = SCENE_PARAMETERS[variant] ?? SCENE_PARAMETERS.landscape;
-  const prefix = `sc-${variant}-${hash.toString(36)}`;
+  const grading = SCENE_GRADES[grade] ?? null;
+  const prefix = `sc-${variant}${grading ? `-${grade}` : ''}-${hash.toString(36)}`;
 
   const palette = random.pick(params.palettes);
   const zenith = oklch(random.range(params.zenith.light), random.range(params.zenith.chroma), random.range(palette.zenithHue));
@@ -1350,6 +1389,7 @@ export function generateSceneParts(seed: string, variant: SceneVariant = 'landsc
       color: oklch(SCENE_FRAME.light.lightness, params.light.chroma, lightHue),
       bloom: oklch(SCENE_FRAME.bloom.lightness, params.light.bloomChroma, lightHue),
     },
+    paint: grading ? (color) => hex(gradeColor(color, grading)) : hex,
     defs: [],
     content: [],
   };
@@ -1368,7 +1408,7 @@ export function generateSceneParts(seed: string, variant: SceneVariant = 'landsc
 /**
  * Returns complete SVG markup string for a seeded procedural scene.
  */
-export function generateSceneSvg(seed: string, variant: SceneVariant = 'landscape'): string {
-  const { defs, content } = generateSceneParts(seed, variant);
+export function generateSceneSvg(seed: string, variant: SceneVariant = 'landscape', grade: SceneGrade = 'raw'): string {
+  const { defs, content } = generateSceneParts(seed, variant, grade);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${SCENE_VIEW_BOX}" preserveAspectRatio="xMidYMid slice" width="100%" height="100%"><defs>${defs}</defs>${content}</svg>`;
 }
