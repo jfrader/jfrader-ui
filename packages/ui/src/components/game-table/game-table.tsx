@@ -91,7 +91,7 @@ const surfaceStyle = css({
   inlineSize: 'var(--game-table-width)',
   maxInlineSize: 'var(--game-table-max-width)',
   blockSize: 'var(--game-table-height)',
-  maxBlockSize: 'var(--game-table-max-height)',
+  maxBlockSize: 'min(var(--game-table-max-height), 100%)',
   aspectRatio: 'var(--game-table-ratio)',
   borderRadius: 'var(--game-table-radius)',
   border: `var(--game-table-border) solid ${vars.color.border}`,
@@ -116,8 +116,8 @@ const seatStyle = css({
 const centerStyle = css({
   position: 'absolute',
   zIndex: 1,
-  insetInlineStart: '50%',
-  insetBlockStart: '50%',
+  insetInlineStart: 'var(--game-table-center-inline)',
+  insetBlockStart: 'var(--game-table-center-block)',
   inlineSize: 'max-content',
   blockSize: 'max-content',
   display: 'flex',
@@ -182,6 +182,8 @@ export function GameTable<T extends SeatLike>({
     '--game-table-radius-x': `${layout.seatConfig.radiusX}px`,
     '--game-table-radius-y': `${layout.seatConfig.radiusY}px`,
     '--game-table-content-gap': `${layout.seatConfig.gap}px`,
+    '--game-table-center-inline': `${measurement?.width ? measurement.centerX / measurement.width * 100 : 50}%`,
+    '--game-table-center-block': `${measurement?.height ? measurement.centerY / measurement.height * 100 : 50}%`,
     ...style,
   };
   return (

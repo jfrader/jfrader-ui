@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { BoardContentSize, BoardMeasurements } from './fit-layout';
 
 const SEAT_SELECTOR = '[data-ui="game-table-seat"]';
@@ -23,8 +23,9 @@ function naturalSize(element: HTMLElement): BoardContentSize {
 
 export function useBoardMeasurements() {
   const surfaceRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<(() => void) | null>(null);
   const [measurement, setMeasurement] = useState<BoardMeasurements>();
-  useEffect(() => {
+  useLayoutEffect(() => {
     const surface = surfaceRef.current;
     if (!surface) return;
     const view = surface.ownerDocument.defaultView!;
@@ -53,7 +54,8 @@ export function useBoardMeasurements() {
 
       // GameTable owns the rival-card markers on actual rendered GameCard backs.
       // Index = current DOM order within that occupied seat, not the seat index.
-      // Flights consume these after commit; no card identity or hidden value is inferred.
+      // Publish in the layout phase: parent flight effects must see them on the same
+      // commit as newly dealt cards, not a later MutationObserver microtask.
       const activeMarkers = new Set<HTMLElement>();
       for (const seat of seats) {
         const playerKey = seat.dataset.slotPlayer;
@@ -83,7 +85,8 @@ export function useBoardMeasurements() {
       const next: BoardMeasurements = {
         width: box.width - left - Number.parseFloat(style.borderRightWidth),
         height: box.height - top - Number.parseFloat(style.borderBottomWidth),
-        centerX: box.width / 2 - left, centerY: box.height / 2 - top,
+        centerX: box.width / 2 - (style.direction === 'rtl' ? Number.parseFloat(style.borderRightWidth) : left),
+        centerY: box.height / 2 - top,
         seats: seats.map(naturalSize), center: naturalSize(center),
         gap: Number.parseFloat(style.columnGap), minimumScale,
       };
@@ -94,12 +97,15 @@ export function useBoardMeasurements() {
     const mutation = new view.MutationObserver(measure);
     mutation.observe(surface, { childList: true, subtree: true, characterData: true, attributes: true,
       attributeFilter: ['data-face', 'data-slot-player', 'data-slot-own', 'style', 'class', 'tabindex', 'href'] });
+    measureRef.current = measure;
     measure();
     return () => {
+      measureRef.current = null;
       resize.disconnect();
       mutation.disconnect();
       for (const [card, previous] of markers) restoreMarker(card, previous);
     };
   }, []);
+  useLayoutEffect(() => { measureRef.current?.(); });
   return { surfaceRef, measurement };
 }
