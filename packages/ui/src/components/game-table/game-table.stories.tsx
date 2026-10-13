@@ -57,6 +57,7 @@ async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, 
   const direction = isRtl ? -1 : 1;
   await expect(rx).toBeGreaterThan(0);
   await expect(ry).toBeGreaterThan(0);
+  await expect(Math.max(rx, ry) / Math.min(rx, ry)).toBeLessThanOrEqual(1.5 + Number.EPSILON);
   const seats = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
   await expect(seats).toHaveLength(players);
   const obstacles = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-dock"], [data-ui="game-table-header"], [data-ui="game-table-center"], [data-ui="game-table-footer"]'));
@@ -138,15 +139,19 @@ Pass intrinsic seat content through \`renderSeat(slot, index, geometry)\`. Use \
 ### Geometry
 Give the parent a block size and pass current viewport dimensions in CSS pixels. Update \`viewport\` on resize; it selects the surface frame. ResizeObserver measures the actual local surface and intrinsic content, including when the parent is smaller than the viewport. Seats and center remain hidden until the first measurement; the server does not guess their dimensions.
 \`seats\` fills empty places, alternates teams and puts your seat first. \`slots\` preserves a prebuilt visual order and must contain exactly \`players\` places; order it with the exported builders when needed. Do not pass both.
-The curve uses θᵢ = π/2 + 2πi/N and Pᵢ = C + (Rx cosθᵢ, Ry sinθᵢ). C is the surface border-box center. A near-square available area (axis ratio ≤1.15) gives a circle; beyond that the axis ratio grows continuously up to 1.5. Every seat faces the physical center, not the ellipse's parametric angle. RTL mirrors both placement and rotation. The old reference's per-profile position corrections and group translations are deliberately removed.
+The curve uses θᵢ = π/2 + 2πi/N and Pᵢ = C + (Rx cosθᵢ, Ry sinθᵢ). C is the surface border-box center. A near-square available area (axis ratio ≤1.15) gives a circle; beyond that the shared axis ratio grows continuously up to 1.5. On an ellipse the physical polar-angle gaps differ from the equal parametric gaps; no per-seat angular correction is applied. Content stays upright, with zero seat rotation; RTL mirrors placement only. No table-owned decoration requires rotation. The old reference's per-profile position corrections and group translations are deliberately removed.
 \`seats\` requires compatible alternating teams (at most half the places per team for 2/4/6); incompatible capacities and duplicate player/slot keys throw. Use \`slots\` for arbitrary orders or teams.
 \`clearance\` requests additional block-axis space. Header, dock and footer remain unscaled, outside the surface. The request is a preference: if the content floors cannot fit, both clearance edges yield to \`GAME_TABLE_LIMITS.minimumClearancePx\` (0). The table retries the requested CSS padding on content/size changes, so the request is restored when space returns. This is a two-step policy (requested, then minimum), not a search for the largest feasible clearance.
 Coordinates are measured from inline-start and mirror with \`dir="rtl"\`. \`data-game-surface="true"\` marks the surface for measuring future card flights.
 
 ### Content size
 \`GAME_TABLE_LIMITS.minimumCardWidthPx\` is 32px, matching the existing GameCard sm width. It is a product size floor, not a universal legibility guarantee for arbitrary artwork. Each seat and the center have their own minimum scale: max(32 / intrinsic card width) over that region's GameCards, combined with its control-size floor. Thus lg seat cards can shrink without shrinking sm community cards below their floor. Custom artwork without GameCard markers is not covered by the card floor.
-For a preferred scale t in [0,1], each region uses max(t, its minimum scale). A bounded monotone search finds the largest feasible t under rotated border-box containment and seat/seat/center separation. Internal chrome and spacing scale with their region; the outer space-2 gap remains unscaled. An intrinsically undersized card is enlarged to the floor rather than silently exempted. Content is never substituted or truncated to obtain a fit.
-Precedence: preserve card/control floors → try requested clearance → retry at clearance zero → declare insufficient space if the floors still do not fit. \`data-clearance="requested" | "reduced"\` and numeric \`data-clearance-start/end\` report the effective local CSS pixels. \`data-layout-fit="measuring" | "fitted" | "insufficient-space"\` reports geometry independently. Insufficient space keeps the floors; collisions or clipping are possible and the consumer must provide more room. For example, the original 840×360 match matrix with names, two sm cards per seat and the pot zone reaches this state for 2/4/6 seats even at zero clearance. The lg card-size story with clearance96 instead fits after clearance yields.
+For a preferred scale t in [0,1], each region uses max(t, its minimum scale). A bounded monotone search finds the largest feasible t under upright border-box containment and seat/seat/center separation. The outer space-2 gap remains unscaled. An intrinsically undersized card is enlarged to the floor rather than silently exempted. Content is never substituted or truncated to obtain a fit.
+Precedence: preserve card/control floors → try requested clearance → retry at clearance zero → declare insufficient space if the floors still do not fit. \`data-clearance="requested" | "reduced"\` and numeric \`data-clearance-start/end\` report effective local CSS pixels. \`data-layout-fit="measuring" | "fitted" | "insufficient-space"\` reports card geometry independently. The 840×360 match matrix now fits with upright cards and out-of-flow chrome. The square lobby frame at that viewport remains insufficient for 4/6 seats; insufficient space also has an oversized-content regression. Floors remain intact rather than hiding overflow or collisions.
+
+### Seat chrome
+Put names, avatars and non-layout adornments inside \`<GameTable.SeatChrome>…</GameTable.SeatChrome>\` within renderSeat. The part is absolutely positioned: it reserves no space and its descendants do not constrain card scale. It floats on the outward side; when a side label does not fit horizontally inside the root, only the chrome moves above/below the cards. No card-anchor compensation is applied. Removing the part from the DOM does not move the card block. Unmarked in-flow content still counts as content; the table does not guess which arbitrary text is a player name. Avoid wrappers that reserve padding/gaps for the chrome.
+Chrome is independent of card fit: \`fitted\` does not guarantee arbitrary oversized labels or controls fit. Keep chrome concise and respect control/card minimum sizes within your custom content. The table does not rotate names, avatars, or faces; user-supplied transforms are the consumer's responsibility.
 \`--game-table-content-scale\` on each seat and \`--game-table-center-scale\` on the root expose actual region scales; the root content-scale value is only the preferred t. \`--game-table-radius-x/y\` and \`--game-table-content-gap\` expose local geometry. \`geometry.scale\` is informational: never multiply child sizes by it again. Floors are local CSS-pixel sizes before external ancestor transforms; a consumer scaling the entire table must account for its own scale.
 Native seat/center controls preserve at least 24px on both axes and 32px on their main axis, unless already smaller intrinsically. Regions without GameCards or controls retain their intrinsic size rather than disappearing at a zero floor. \`fitted\` covers normal-flow border boxes, not overflowing artwork, shadows or floating overlays. Keep absolute artwork's full footprint reserved in normal flow.
 
@@ -666,6 +671,10 @@ export const UprightProfilesWithAvatars: Story = {
     const tables = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]');
     await expect(tables).toHaveLength(6);
     for (const table of Array.from(tables)) {
+      await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', 'fitted'));
+      for (const chrome of table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat-chrome"]')) {
+        await waitFor(async () => { await expectInside(chrome, table, { tolerancePx: 0.5 }); });
+      }
       const avatars = table.querySelectorAll('[data-ui="avatar"]');
       await expect(avatars).toHaveLength(6);
       for (const seat of Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'))) {
@@ -741,6 +750,17 @@ export const ChromeRemovalParity: Story = {
       await expect(Math.abs(relX_A - relX_B)).toBeLessThanOrEqual(1);
       await expect(Math.abs(relY_A - relY_B)).toBeLessThanOrEqual(1);
     }
+    const cards = Array.from(withChromeTable.querySelectorAll<HTMLElement>('[data-ui~="game-card"]'));
+    const before = cards.map((card) => card.getBoundingClientRect());
+    withChromeTable.querySelectorAll('[data-ui="game-table-seat-chrome"]').forEach((chrome) => chrome.remove());
+    for (let frame = 0; frame < 12; frame++) await new Promise(requestAnimationFrame);
+    for (const [index, card] of cards.entries()) {
+      const after = card.getBoundingClientRect();
+      const previous = required(before[index]);
+      for (const coordinate of ['x', 'y', 'width', 'height'] as const) {
+        await expect(Math.abs(after[coordinate] - previous[coordinate])).toBeLessThan(0.01);
+      }
+    }
   },
 };
 
@@ -775,10 +795,11 @@ export const StateStability: Story = {
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
     await expectSeatFraming(table, 6, 'phoneWide', 'fitted');
-    const fit1 = table.getAttribute('data-layout-fit');
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    const fit2 = table.getAttribute('data-layout-fit');
-    await expect(fit1).toBe('fitted');
-    await expect(fit2).toBe('fitted');
+    const states = new Set<string | null>();
+    for (let frame = 0; frame < 12; frame++) {
+      await new Promise(requestAnimationFrame);
+      states.add(table.getAttribute('data-layout-fit'));
+    }
+    await expect([...states]).toEqual(['fitted']);
   },
 };

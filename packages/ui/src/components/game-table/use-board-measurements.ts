@@ -3,6 +3,7 @@ import { fitBoardContent, GAME_TABLE_LIMITS, type BoardContentSize, type BoardMe
 
 const SEAT_SELECTOR = '[data-ui="game-table-seat"]';
 const CENTER_SELECTOR = '[data-ui="game-table-center"]';
+const CHROME_SELECTOR = '[data-ui~="game-table-seat-chrome"]';
 const HIDDEN_CARD_SELECTOR = '[data-ui~="game-card"][data-face="back"]';
 const CONTROL_SELECTOR = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
 const MIN_CONTROL_SIDE = 24;
@@ -37,6 +38,34 @@ function regionSize(region: HTMLElement): BoardContentSize {
   return { ...naturalSize(region), minimumScale: minimumScale || 1 };
 }
 
+// Chrome can change sides without feeding its dimensions back into card fitting.
+function placeChrome(surface: HTMLElement, seats: HTMLElement[]) {
+  const view = surface.ownerDocument.defaultView!;
+  const root = surface.closest<HTMLElement>('[data-ui="game-table"]')!;
+  const bounds = root.getBoundingClientRect();
+  for (const seat of seats) for (const chrome of seat.querySelectorAll<HTMLElement>(CHROME_SELECTOR)) {
+    const style = view.getComputedStyle(seat);
+    const scale = Math.hypot(new view.DOMMatrixReadOnly(style.transform).a, new view.DOMMatrixReadOnly(style.transform).b);
+    const box = seat.getBoundingClientRect();
+    const endSide = seat.style.getPropertyValue('--game-table-chrome-x') === '0%';
+    const physicalRight = style.direction === 'rtl' ? !endSide : endSide;
+    const available = physicalRight ? bounds.right - box.right : box.left - bounds.left;
+    const gap = Number.parseFloat(view.getComputedStyle(chrome).columnGap);
+    const fallback = seat.style.getPropertyValue('--game-table-chrome-y') === '-50%' &&
+      available < (naturalSize(chrome).width + gap) * scale;
+    const overrides = {
+      '--game-table-chrome-inline': '50%',
+      '--game-table-chrome-x': '-50%',
+      '--game-table-chrome-block': 'var(--game-table-chrome-fallback-block)',
+      '--game-table-chrome-y': 'var(--game-table-chrome-fallback-y)',
+    };
+    for (const [key, value] of Object.entries(overrides)) {
+      if (fallback && chrome.style.getPropertyValue(key) !== value) chrome.style.setProperty(key, value);
+      else if (!fallback && chrome.style.getPropertyValue(key)) chrome.style.removeProperty(key);
+    }
+  }
+}
+
 export function useBoardMeasurements() {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<(() => void) | null>(null);
@@ -59,7 +88,7 @@ export function useBoardMeasurements() {
       const center = surface.querySelector<HTMLElement>(CENTER_SELECTOR);
       if (!center) return;
       const shell = surface.parentElement!;
-      const elements = new Set([shell, surface, center, ...seats]);
+      const elements = new Set([shell, surface, center, ...seats, ...surface.querySelectorAll<HTMLElement>(CHROME_SELECTOR)]);
       for (const element of observed) if (!elements.has(element)) {
         resize.unobserve(element);
         observed.delete(element);
@@ -120,6 +149,7 @@ export function useBoardMeasurements() {
       next.clearance = { requestedStart, requestedEnd, start, end };
       if (![next.width, next.height, ...next.seats.flatMap((seat) => [seat.width, seat.height]), next.center.width, next.center.height].every(Number.isFinite)) return;
       setMeasurement((current) => JSON.stringify(current) === JSON.stringify(next) ? current : next);
+      placeChrome(surface, seats);
     };
     const resize = new view.ResizeObserver(measure);
     const mutation = new view.MutationObserver(measure);
