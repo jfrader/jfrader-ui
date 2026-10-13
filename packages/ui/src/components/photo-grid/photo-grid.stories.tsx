@@ -69,18 +69,19 @@ const meta = {
       usage: `### Collection and density
 - Density, favorites, current photo and viewer visibility have independent controlled state. Requests take effect only when accepted.
 - The caller handles storage, pagination and formatted details. Use for moderate collections; thumbnails are square, with no virtualization or masonry layout.
-- Density sets the column count from the configured steps (no silent override by container width). Narrow containers may produce smaller cells.
-- Steps become unique positive integers in descending order. Invalid values use the nearest configured step. If the default 3 is absent, the first step seeds density.
+- Density sets the column count from the configured steps; the container width never overrides it. Narrow containers produce smaller cells, and cells narrower than 7rem show the favorite below the photo.
+- Steps become unique positive integers in descending order, one toggle each. Invalid values use the nearest configured step. If the default 3 is absent, the first step seeds density.
 - Favorite IDs outside the current page are kept. Give each photo a stable, unique ID and finite positive intrinsic dimensions.
 - Use labels to translate actions/status and locale for Intl-formatted counts.
 
 ### Keyboard and gestures
 - The grid uses native lists and buttons. Tab reaches every open/favorite action.
 - Arrows move one cell or row; Left/Right follow RTL. PageUp/PageDown move three rows; Home/End reach the ends.
-- Plus/minus change thumbnail size around the focused photo. A two-finger pinch requests one density step on release.
-- The viewer uses a native modal dialog. Unzoomed stage arrows and Home/End select slides without wrapping; the filmstrip is a native range.
+- Plus/minus change thumbnail size around the focused photo. Ctrl+scroll and a two-finger pinch change it around the photo under the pointer; a pinch requests one step on release.
+- The viewer fills the screen in a native modal dialog. Unzoomed stage arrows and Home/End select slides without wrapping; the thumbnail strip selects any photo.
 - Zoomed stage arrows pan; plus/minus magnify the image instead of resizing the grid.
-- Zoom/pan, previous/next, favorite and Close buttons provide alternatives to gestures. Escape returns focus to the launch tile or nearest remaining tile.`,
+- Zoom/pan, previous/next, favorite and Close buttons provide alternatives to gestures. Drag down to close; Escape returns focus to the launch tile or nearest remaining tile.
+- On narrow or touch screens the viewer hides previous/next; swipe or use the thumbnail strip.`,
     },
   },
 } satisfies Meta<typeof PhotoGrid>;
@@ -93,6 +94,13 @@ const favorites = (root: HTMLElement) =>
   Array.from(root.querySelectorAll<HTMLButtonElement>('[data-ui="photo-grid-favorite"]'));
 const status = (root: HTMLElement) =>
   root.querySelector<HTMLElement>('[data-ui="photo-grid"] > [role="status"]')!;
+const densityToggles = (canvas: ReturnType<typeof within>) =>
+  within(canvas.getByRole('group', { name: 'Thumbnail size' })).getAllByRole('button');
+/** Tabs past the density toggles onto the first tile. */
+async function tabToFirstTile(canvas: ReturnType<typeof within>, userEvent: { tab: () => Promise<void> }) {
+  for (const _toggle of densityToggles(canvas)) await userEvent.tab();
+  await userEvent.tab();
+}
 async function focused(element: HTMLElement) {
   await expect(element.ownerDocument.activeElement).toBe(element);
   await expect(getComputedStyle(element).outlineStyle).not.toBe('none');
@@ -221,8 +229,7 @@ export const Empty: Story = {
   args: { photos: [], defaultOpen: true },
   play: async ({ canvas, canvasElement, args }) => {
     await expect(canvas.getByText('No photos')).toBeInTheDocument();
-    await expect(canvas.getByRole('button', { name: 'Larger thumbnails' })).toBeDisabled();
-    await expect(canvas.getByRole('button', { name: 'Smaller thumbnails' })).toBeDisabled();
+    for (const toggle of densityToggles(canvas)) await expect(toggle).toBeDisabled();
     await expect(canvasElement.querySelector('dialog')).not.toHaveAttribute('open');
     await expect(args.onValueChange).not.toHaveBeenCalled();
     await expect(args.onOpenChange).not.toHaveBeenCalled();
@@ -234,7 +241,7 @@ export const SinglePhoto: Story = {
   args: { photos: photos.slice(0, 1), defaultOpen: true },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('dialog', { name: 'Ridge at First Light' })).toBeVisible();
-    await expect(canvas.getByRole('slider')).toBeDisabled();
+    await expect(canvas.queryByRole('group', { name: 'Choose photo' })).not.toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'Previous photo' })).toBeDisabled();
     await expect(canvas.getByRole('button', { name: 'Next photo' })).toBeDisabled();
   },
@@ -288,11 +295,9 @@ export const Narrow: Story = {
 };
 export const RTL: Story = {
   args: { dir: 'rtl' },
-  play: async ({ canvasElement, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     const buttons = tiles(canvasElement);
-    await userEvent.tab();
-    await userEvent.tab();
-    await userEvent.tab();
+    await tabToFirstTile(canvas, userEvent);
     await focused(buttons[0]!);
     await userEvent.keyboard('{ArrowLeft}');
     await focused(buttons[1]!);
@@ -310,7 +315,7 @@ export const ReducedMotion: Story = {
     },
   },
   play: async ({ canvas, args, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Larger thumbnails' }));
+    await userEvent.click(canvas.getByRole('button', { name: '2 columns' }));
     await expect(args.onDensityChange).toHaveBeenCalledTimes(1);
     await expect(args.onDensityChange).toHaveBeenLastCalledWith(2);
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -330,8 +335,10 @@ export const ForcedColors: Story = {
 export const ControlledRejected: Story = {
   args: { density: 3, favorites: [], value: null, open: false },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Larger thumbnails' }));
+    await userEvent.click(canvas.getByRole('button', { name: '2 columns' }));
     await expect(canvas.getByRole('region')).toHaveAttribute('data-density', '3');
+    await expect(canvas.getByRole('button', { name: '3 columns' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(canvas.getByRole('button', { name: '2 columns' })).toHaveAttribute('aria-pressed', 'false');
     await expect(args.onDensityChange).toHaveBeenCalledTimes(1);
     await expect(args.onDensityChange).toHaveBeenLastCalledWith(2);
     await userEvent.click(favorites(canvasElement)[0]!);
@@ -357,7 +364,7 @@ export const LiveStatus: Story = {
     const observer = new MutationObserver(() => announced.push(region.textContent ?? ''));
     observer.observe(region, { childList: true, characterData: true, subtree: true });
     try {
-      await userEvent.click(canvas.getByRole('button', { name: 'Smaller thumbnails' }));
+      await userEvent.click(canvas.getByRole('button', { name: '5 columns' }));
       await userEvent.click(favorites(canvasElement)[0]!);
       await userEvent.click(tiles(canvasElement)[1]!);
       await userEvent.click(canvas.getByRole('button', { name: 'Zoom in' }));
@@ -383,7 +390,10 @@ export const ControlledValueRejected: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith('p2');
     await expect(canvas.getByRole('dialog')).toHaveAccessibleName('Ridge at First Light');
-    await expect(canvas.getByRole('slider')).toHaveValue('0');
+    await expect(canvas.getByRole('button', { name: 'Ridge at First Light, 1 / 12' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
     await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
@@ -461,9 +471,7 @@ args: { defaultOpen: true, value: 'missing' } };
 export const KeyboardPlay: Story = {
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const buttons = tiles(canvasElement);
-    await userEvent.tab();
-    await userEvent.tab();
-    await userEvent.tab();
+    await tabToFirstTile(canvas, userEvent);
     await focused(buttons[0]!);
     const route: [string, number][] = [
       ['{ArrowRight}', 1],
@@ -511,16 +519,17 @@ export const KeyboardPlay: Story = {
     await expect(dialog).toHaveAccessibleName('Night over the Hills');
     await userEvent.keyboard('{Home}');
     await expect(dialog).toHaveAccessibleName('Ridge at First Light');
-    const slider = viewer.getByRole('slider');
-    await expect(slider).toHaveAttribute('min', '0');
-    await expect(slider).toHaveAttribute('max', '11');
-    await expect(slider).toHaveAttribute('step', '1');
-    slider.focus();
-    await userEvent.keyboard('{ArrowRight}');
-    await expect(fireEvent.keyDown(slider, { key: 'ArrowRight' })).toBe(true);
-    fireEvent.change(slider, { target: { value: '1' } });
-    await expect(slider).toHaveValue('1');
-    await expect(slider).toHaveAttribute('aria-valuetext', 'Valley Floor, 2 / 12');
+    const thumbnails = within(viewer.getByRole('group', { name: 'Choose photo' })).getAllByRole('button');
+    await expect(thumbnails).toHaveLength(12);
+    await expect(thumbnails[0]).toHaveAttribute('aria-current', 'true');
+    thumbnails[1]!.focus();
+    await expect(fireEvent.keyDown(thumbnails[1]!, { key: 'ArrowRight' })).toBe(true);
+    await expect(dialog).toHaveAccessibleName('Ridge at First Light');
+    await userEvent.keyboard('{Enter}');
+    await expect(dialog).toHaveAccessibleName('Valley Floor');
+    await expect(thumbnails[1]).toHaveAccessibleName('Valley Floor, 2 / 12');
+    await expect(thumbnails[1]).toHaveAttribute('aria-current', 'true');
+    await expect(thumbnails[0]).not.toHaveAttribute('aria-current');
     await userEvent.keyboard('{Escape}');
     fireEvent(dialog, new Event('cancel', { cancelable: true }));
     await waitFor(async () => {
@@ -608,6 +617,51 @@ export const DensityAnchor: Story = {
   },
 };
 
+export const DensityControls: Story = {
+  play: async ({ canvas, args, userEvent }) => {
+    await expect(canvas.getByText('12 photos')).toBeVisible();
+    await expect(canvas.getByText('3 columns')).toBeVisible();
+    const toggles = densityToggles(canvas);
+    await expect(toggles.map((toggle) => toggle.getAttribute('aria-label'))).toEqual([
+      '5 columns',
+      '3 columns',
+      '2 columns',
+    ]);
+    await expect(toggles.map((toggle) => toggle.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false']);
+    await userEvent.tab();
+    await focused(toggles[0]!);
+    await userEvent.tab();
+    await userEvent.tab();
+    await userEvent.keyboard(' ');
+    await expect(args.onDensityChange).toHaveBeenCalledTimes(1);
+    await expect(args.onDensityChange).toHaveBeenLastCalledWith(2);
+    await expect(canvas.getByRole('region')).toHaveAttribute('data-density', '2');
+    await expect(toggles.map((toggle) => toggle.getAttribute('aria-pressed'))).toEqual(['false', 'false', 'true']);
+    await focused(toggles[2]!);
+    await userEvent.keyboard(' ');
+    await expect(args.onDensityChange).toHaveBeenCalledTimes(1);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  },
+};
+
+export const CtrlScrollDensity: Story = {
+  args: { sx: { maxBlockSize: '22rem', overflowY: 'auto' } },
+  play: async ({ canvasElement, args }) => {
+    const target = tiles(canvasElement)[4]!;
+    const before = target.getBoundingClientRect();
+    const pointer = { clientX: before.left + before.width / 2, clientY: before.top + before.height / 2 };
+    await expect(fireEvent.wheel(target, { ...pointer, deltaY: -20 })).toBe(true);
+    await expect(fireEvent.wheel(target, { ...pointer, deltaY: -20, ctrlKey: true })).toBe(false);
+    await expect(args.onDensityChange).not.toHaveBeenCalled();
+    fireEvent.wheel(target, { ...pointer, deltaY: -40, ctrlKey: true });
+    await expect(args.onDensityChange).toHaveBeenCalledTimes(1);
+    await expect(args.onDensityChange).toHaveBeenLastCalledWith(2);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const after = target.getBoundingClientRect();
+    await expect(Math.abs(after.top + after.height / 2 - pointer.clientY)).toBeLessThan(1.1);
+  },
+};
+
 export const ControlledAxes: Story = {
   render: (args) => {
     const [density, setDensity] = useState(3);
@@ -641,7 +695,7 @@ export const ControlledAxes: Story = {
     );
   },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Smaller thumbnails' }));
+    await userEvent.click(canvas.getByRole('button', { name: '5 columns' }));
     await new Promise((resolve) => setTimeout(resolve, 500));
     await expect(canvas.getByRole('region')).toHaveAttribute('data-density', '5');
     await userEvent.click(favorites(canvasElement)[1]!);
@@ -825,7 +879,7 @@ export const FailedImageRetry: Story = {
     await waitFor(async () => {
       await expect(tiles(canvasElement)[0]!.querySelector('[data-image-state="error"]')).toBeInTheDocument();
     });
-    await userEvent.click(canvas.getByRole('button', { name: 'Larger thumbnails' }));
+    await userEvent.click(canvas.getByRole('button', { name: '2 columns' }));
     await waitFor(async () => {
       await expect(tiles(canvasElement)[0]!.querySelector('img')?.naturalWidth).toBeGreaterThan(0);
     });
@@ -886,6 +940,11 @@ export const ViewerGestures: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await userEvent.click(canvas.getByRole('button', { name: 'Reset zoom' }));
     await expect(stage).toHaveAttribute('data-zoom', '1');
+    fireEvent.pointerDown(stage, pointer);
+    fireEvent.pointerMove(stage, { ...pointer, clientY: 20 });
+    fireEvent.pointerUp(stage, { ...pointer, clientY: 20 });
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await expect(canvas.getByRole('dialog')).toHaveAttribute('open');
     fireEvent.pointerDown(stage, pointer);
     fireEvent.pointerUp(stage, { ...pointer, clientY: 350 });
     await waitFor(async () => {

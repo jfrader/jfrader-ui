@@ -21,11 +21,19 @@ import {
   type NativeDialogController,
 } from '../../overlay/use-native-dialog';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
-import { focusRingOutset } from '../../styling/focus-ring';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
+import { FORCED_COLORS, REDUCED_MOTION, REDUCED_TRANSPARENCY } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import {
+  ChromeAction,
+  chromeIcons,
+  filmstripStyle,
+  Glyph,
+  StarGlyph,
+  thumbStyle,
+} from '../viewer-chrome/viewer-chrome';
 
 export interface PhotoGridPhoto {
   id: string;
@@ -54,13 +62,16 @@ export interface PhotoGridSlotProps {
   favorite?: ActionSlot;
   viewer?: Omit<Slot<'dialog'>, 'open'>;
   stage?: Slot<'div'>;
-  filmstrip?: Omit<Slot<'input'>, 'type' | 'value' | 'defaultValue' | 'min' | 'max' | 'step' | 'disabled'>;
+  /** The viewer's thumbnail strip. */
+  filmstrip?: Slot<'div'>;
   controls?: Slot<'div'>;
   status?: Slot<'div'>;
 }
 
 export interface PhotoGridLabels {
+  /** @deprecated No longer rendered: each density step is a toggle named by `columns`. Removed in the next major. */
   larger: string;
+  /** @deprecated No longer rendered: each density step is a toggle named by `columns`. Removed in the next major. */
   smaller: string;
   density: string;
   empty: string;
@@ -80,14 +91,17 @@ export interface PhotoGridLabels {
   favorite: (title: string, favorite: boolean) => string;
   openPhoto: (title: string, alt: string, favorite: boolean) => string;
   position: (position: string, total: string, title: string) => string;
-  columns: (columns: string) => string;
+  /** Names a density step and the current density. `columns` is formatted; `count` selects the plural. */
+  columns: (columns: string, count: number) => string;
+  /** The album size under the title. `count` is formatted; `total` selects the plural. */
+  photoCount: (count: string, total: number) => string;
 }
 
 export interface PhotoGridProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
   photos: readonly PhotoGridPhoto[];
   title: string;
-  /** Preferred columns. Narrow containers reduce effective columns without changing this axis. */
+  /** Column counts offered as density steps. The container width never overrides them. */
   densitySteps?: readonly number[];
   density?: number;
   defaultDensity?: number;
@@ -114,17 +128,24 @@ const DEFAULT_DENSITY = 3;
 const EMPTY_IDS: readonly string[] = [];
 const PAGE_ROWS = 3;
 const PINCH_THRESHOLD = 0.15;
+/** Accumulated Ctrl-wheel distance, in px, that requests one density step. */
+const WHEEL_STEP_PX = 50;
+/** Pixels per wheel line, for wheels that report `DOM_DELTA_LINE`. */
+const WHEEL_LINE_PX = 16;
 const ZOOM_STEP = 0.5;
 const MAX_ZOOM = 3;
 const PAN_STEP = 40;
 const DISMISS_DISTANCE = 100;
-/**
- * Narrowest tile, in `space[12]` units, before narrow containers drop effective columns. The unit is
- * read back as px: space tokens are authored in px, and a custom property resolves var() but not calc().
- */
-const MIN_CELL_VAR = '--photo-grid-min-cell-unit';
-const MIN_CELL_UNITS = 2;
+/** Density glyphs draw at most this many columns; denser steps share the densest glyph. */
+const GLYPH_MAX_COLUMNS = 6;
+/** Opacity of the chrome bars and tile favorites over the photo, before the blur. */
+const CHROME_MIX = '85%';
+/** Narrow or hoverless viewports: the viewer drops previous/next (swipe and the filmstrip remain) and shrinks. */
+const COMPACT_CHROME = '@media (max-width: 40rem), (hover: none)';
+/** Cells narrower than this show the favorite below the photo instead of over it. */
+const COMPACT_CELL = '@container (max-width: 7rem)';
 const SPRING = { type: 'spring', stiffness: 360, damping: 36 } as const;
+const englishPlural = new Intl.PluralRules('en');
 const favoritePop = keyframes({ from: { transform: 'scale(0.85)' }, to: { transform: 'scale(1)' } });
 const captionFade = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
 const defaultLabels: PhotoGridLabels = {
@@ -150,7 +171,14 @@ const defaultLabels: PhotoGridLabels = {
   openPhoto: (title, alt, favorite) =>
     `${title}${alt && alt !== title ? `, ${alt}` : ''}${favorite ? ', favorite' : ''}`,
   position: (position, total, title) => `${title}, ${position} / ${total}`,
-  columns: (columns) => `${columns} columns`,
+  columns: (columns, count) => `${columns} ${englishPlural.select(count) === 'one' ? 'column' : 'columns'}`,
+  photoCount: (count, total) => `${count} ${englishPlural.select(total) === 'one' ? 'photo' : 'photos'}`,
+};
+
+const translucentChrome = {
+  background: `color-mix(in oklab, ${vars.color.bg} ${CHROME_MIX}, transparent)`,
+  backdropFilter: `blur(${vars.space[3]})`,
+  [REDUCED_TRANSPARENCY]: { background: vars.color.bg, backdropFilter: 'none' },
 };
 
 const rootStyle = css({
@@ -170,59 +198,61 @@ const headerStyle = css({
   justifyContent: 'space-between',
   gap: vars.space[3],
 });
-const titleStyle = css({ margin: 0, fontSize: vars.textSize.lg, overflowWrap: 'anywhere' });
-const controlsStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[2] });
-const actionStyle = css({
-  appearance: 'none',
-  boxSizing: 'border-box',
-  minBlockSize: vars.space[8],
-  minInlineSize: vars.space[8],
-  paddingBlock: vars.space[1],
-  paddingInline: vars.space[3],
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.sm,
-  background: vars.color.surfaceRaised,
-  color: vars.color.text,
-  font: 'inherit',
-  fontSize: vars.textSize.sm,
-  cursor: 'pointer',
+const headingStyle = css({ display: 'grid', gap: vars.space[1], minInlineSize: 0 });
+const titleStyle = css({
+  margin: 0,
+  fontSize: vars.textSize.lg,
+  fontWeight: vars.fontWeight.semibold,
   overflowWrap: 'anywhere',
-  '&:disabled': { cursor: 'default', color: vars.color.textMuted },
-  '&:focus-visible': focusRingOutset,
-  '&[aria-pressed="true"]': { color: vars.color.accentText, borderColor: vars.color.accentText },
-  transitionProperty: 'background-color, border-color',
-  transitionDuration: vars.motion.duration.fast,
-  [REDUCED_MOTION]: { transitionDuration: '0s' },
-  [FORCED_COLORS]: {
-    borderColor: 'ButtonText',
-    '&[aria-pressed="true"]': { borderColor: 'Highlight', outline: '1px solid Highlight' },
-  },
 });
-const responsiveNavStyle = css({
-  [ '@media (max-width: 640px), (hover: none)' ]: {
-    display: 'none',
-  },
+const summaryStyle = css({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: vars.space[3],
+  margin: 0,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+  fontVariantNumeric: 'tabular-nums',
 });
+const densityStyle = css({
+  display: 'flex',
+  gap: vars.space[1],
+  padding: vars.space[1],
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.full,
+  background: vars.color.surfaceInset,
+});
+const segmentStyle = css({ borderRadius: vars.radius.full });
 const listStyle = css({
   display: 'grid',
   gridTemplateColumns: 'repeat(var(--photo-grid-columns), minmax(0, 1fr))',
-  gap: vars.space[3],
+  gap: vars.space[1],
   padding: 0,
   margin: 0,
   listStyle: 'none',
-  [MIN_CELL_VAR]: vars.space[12],
   touchAction: 'pan-y',
 });
-const itemStyle = css({ display: 'grid', gap: vars.space[2], minInlineSize: 0 });
+const cellStyle = css({ containerType: 'inline-size' });
+const itemStyle = css({ position: 'relative', display: 'grid', gap: vars.space[1], minInlineSize: 0 });
 const photoStyle = css({
+  appearance: 'none',
+  boxSizing: 'border-box',
   position: 'relative',
   display: 'grid',
   placeItems: 'center',
   inlineSize: '100%',
   aspectRatio: '1',
   padding: 0,
-  borderRadius: vars.radius.md,
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.sm,
   background: vars.color.surfaceInset,
+  color: vars.color.text,
+  font: 'inherit',
+  fontSize: vars.textSize.sm,
+  cursor: 'pointer',
+  overflow: 'hidden',
+  '&:focus-visible': focusRingOutset,
+  [FORCED_COLORS]: { borderColor: 'ButtonText' },
 });
 const imageStyle = css({
   display: 'block',
@@ -236,14 +266,39 @@ const fallbackStyle = css({
   boxSizing: 'border-box',
   textAlign: 'center',
   color: vars.color.textMuted,
+  overflowWrap: 'anywhere',
 });
-const favoriteStyle = css({
-  justifySelf: 'start',
-  maxInlineSize: '100%',
+// Over the photo, the favorite shows while pressed, focused or hovered, and always without hover.
+const tileFavoriteStyle = css({
+  appearance: 'none',
+  boxSizing: 'border-box',
+  position: 'absolute',
+  insetBlockEnd: vars.space[2],
+  insetInlineStart: vars.space[2],
+  display: 'grid',
+  placeItems: 'center',
+  inlineSize: vars.space[8],
+  blockSize: vars.space[8],
+  padding: 0,
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.full,
+  color: vars.color.text,
+  cursor: 'pointer',
+  ...translucentChrome,
+  opacity: 0,
+  transitionProperty: 'opacity',
+  transitionDuration: vars.motion.duration.fast,
+  transitionTimingFunction: vars.motion.easeStandard,
+  '*:hover > &, &:focus-visible, &[aria-pressed="true"]': { opacity: 1 },
+  '&:focus-visible': focusRingOutset,
   '&[aria-pressed="true"]': {
+    color: vars.color.accentText,
     animation: `${favoritePop} ${vars.motion.duration.base} ${vars.motion.easeStandard}`,
   },
-  [REDUCED_MOTION]: { '&[aria-pressed="true"]': { animation: 'none' } },
+  '@media (hover: none)': { opacity: 1 },
+  [COMPACT_CELL]: { position: 'static', justifySelf: 'start', opacity: 1, background: vars.color.surfaceRaised },
+  [REDUCED_MOTION]: { transitionDuration: '0s', '&[aria-pressed="true"]': { animation: 'none' } },
+  [FORCED_COLORS]: { borderColor: 'ButtonText', '&[aria-pressed="true"]': { borderColor: 'Highlight' } },
 });
 const imageBoxStyle = css({ inlineSize: '100%', blockSize: '100%', borderRadius: 'inherit' });
 const viewerStyle = css({
@@ -257,40 +312,74 @@ const viewerStyle = css({
   borderRadius: 0,
   padding: 0,
   margin: 0,
-  background: vars.color.surfaceRaised,
+  background: vars.color.bg,
   color: vars.color.text,
   fontFamily: vars.font.sans,
   position: 'fixed',
   inset: 0,
   '&[open]': { display: 'flex' },
   flexDirection: 'column',
-  '&::backdrop': {
-    background: vars.color.scrim,
-    backdropFilter: 'blur(12px)',
-    [ '@media (prefers-reduced-transparency: reduce)' ]: {
-      backdropFilter: 'none',
-    },
-  },
+  '&::backdrop': { background: vars.color.scrim },
 });
+// The stage spans every row; the chrome bars sit over its top and bottom edges.
 const viewerContentStyle = css({
-  display: 'flex',
-  flexDirection: 'column',
+  display: 'grid',
+  gridTemplateRows: 'auto minmax(0, 1fr) auto',
+  gridTemplateColumns: 'minmax(0, 1fr)',
   flex: '1 1 0',
   minBlockSize: 0,
-  gap: vars.space[3],
-  padding: vars.space[4],
-  overflow: 'hidden',
+});
+const barStyle = css({
+  zIndex: 1,
+  gridColumn: '1',
+  display: 'grid',
+  gap: vars.space[2],
+  minInlineSize: 0,
+  ...translucentChrome,
+  [FORCED_COLORS]: { border: '1px solid CanvasText' },
+});
+const topBarStyle = css({
+  gridRow: '1',
+  gridTemplateColumns: 'minmax(0, 1fr) auto',
+  alignItems: 'center',
+  padding: `max(${vars.space[2]}, env(safe-area-inset-top)) max(${vars.space[4]}, env(safe-area-inset-right)) ${vars.space[2]} max(${vars.space[4]}, env(safe-area-inset-left))`,
+});
+const bottomBarStyle = css({
+  gridRow: '3',
+  padding: `${vars.space[2]} max(${vars.space[4]}, env(safe-area-inset-right)) max(${vars.space[2]}, env(safe-area-inset-bottom)) max(${vars.space[4]}, env(safe-area-inset-left))`,
+});
+const viewerTitleStyle = css({
+  margin: 0,
+  fontSize: vars.textSize.md,
+  fontWeight: vars.fontWeight.semibold,
+  overflowWrap: 'anywhere',
+});
+const toolbarStyle = css({
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+  alignItems: 'center',
+  gap: vars.space[2],
+  [COMPACT_CHROME]: { gridTemplateColumns: 'minmax(0, 1fr) auto' },
+});
+const controlsStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[1] });
+const favoriteSlotStyle = css({ justifySelf: 'end' });
+const compactHiddenStyle = css({ [COMPACT_CHROME]: { display: 'none' } });
+const dividerStyle = css({
+  alignSelf: 'stretch',
+  marginBlock: vars.space[2],
+  marginInline: vars.space[1],
+  borderInlineStart: `1px solid ${vars.color.border}`,
 });
 const stageStyle = css({
   position: 'relative',
+  gridRow: '1 / -1',
+  gridColumn: '1',
   display: 'grid',
   placeItems: 'center',
-  flex: '1 1 0',
   minBlockSize: 0,
   overflow: 'hidden',
-  background: vars.color.surfaceInset,
   touchAction: 'none',
-  '&:focus-visible': focusRingOutset,
+  '&:focus-visible': focusRingInset,
 });
 const fullImageStyle = css({
   display: 'block',
@@ -300,43 +389,17 @@ const fullImageStyle = css({
   userSelect: 'none',
   pointerEvents: 'none',
 });
-const filmstripStyle = css({
-  inlineSize: '100%',
-  minBlockSize: vars.space[8],
-  accentColor: vars.color.accent,
-  '&:focus-visible': focusRingOutset,
-  [ '@media (max-width: 640px), (hover: none)' ]: {
-    minBlockSize: vars.space[4],
-  },
-});
+const viewerThumbStyle = css({ [COMPACT_CHROME]: { inlineSize: vars.space[8], blockSize: vars.space[8] } });
 const statusStyle = css({
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
   overflowWrap: 'anywhere',
 });
-const countStyle = css({
+const counterStyle = css({
   fontSize: vars.textSize.sm,
-  color: vars.color.textMuted,
-  whiteSpace: 'nowrap',
-});
-const densityReadoutStyle = css({
-  fontSize: vars.textSize.sm,
-  color: vars.color.textMuted,
-  paddingInline: vars.space[2],
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.sm,
-  [FORCED_COLORS]: {
-    borderColor: 'ButtonText',
-  },
-});
-const filmstripWrapperStyle = css({
-  display: 'grid',
-  gap: vars.space[1],
-});
-const headerLeftStyle = css({
-  display: 'flex',
-  alignItems: 'baseline',
-  gap: vars.space[2],
+  fontVariantNumeric: 'tabular-nums',
+  overflowWrap: 'anywhere',
+  [COMPACT_CHROME]: { gridColumn: '1 / -1' },
 });
 const detailStyle = css({
   margin: 0,
@@ -346,6 +409,7 @@ const detailStyle = css({
   animation: `${captionFade} ${vars.motion.duration.slow} ${vars.motion.easeStandard}`,
   [REDUCED_MOTION]: { animation: 'none' },
 });
+const viewerDetailStyle = css({ color: vars.color.text });
 
 function ids(...parts: (string | undefined | false)[]) {
   return parts.filter(Boolean).join(' ') || undefined;
@@ -375,6 +439,23 @@ function scrollBy(element: HTMLElement, delta: number) {
     parent = parent.parentElement;
   }
   element.ownerDocument.defaultView?.scrollBy(0, delta);
+}
+
+/** An n×n grid of cells, one glyph per density step. */
+function DensityGlyph({ columns }: { columns: number }) {
+  const count = Math.min(columns, GLYPH_MAX_COLUMNS);
+  const gap = 1;
+  const cell = (14 - gap * (count - 1)) / count;
+  const offsets = Array.from({ length: count }, (_, index) => 1 + index * (cell + gap));
+  return (
+    <Glyph>
+      {offsets.flatMap((y) =>
+        offsets.map((x) => (
+          <rect key={`${x} ${y}`} x={x} y={y} width={cell} height={cell} rx={cell / 4} fill="currentColor" stroke="none" />
+        )),
+      )}
+    </Glyph>
+  );
 }
 
 function PhotoImage({
@@ -453,6 +534,7 @@ function PhotoViewer({
   const mergedStageRef = useMergeRefs([stageRef, slots?.stage?.ref]);
   const lifecycle = controller;
   const viewerSlot = omitNativeOpen(slots?.viewer ?? {});
+  const { 'aria-label': favoriteLabel, css: favoriteCss, ...favoriteSlot } = slots?.favorite ?? {};
   const native = useNativeDialog(
     { ...lifecycle, open: open && photos.length > 0 },
     {
@@ -482,6 +564,7 @@ function PhotoViewer({
     ? labels.position(format.format(index + 1), format.format(photos.length), photo.title)
     : labels.unavailable;
   const hasDetail = photo && isRenderable(photo.detail) && photo.detail !== '';
+  const favorite = !!photo && favorites.has(photo.id);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef<{
     originX: number;
@@ -579,11 +662,6 @@ function PhotoViewer({
       setZoom(zoom - ZOOM_STEP);
     }
   };
-  const renderAction = (label: string, action: () => void, disabled = false, pressed = false, extraCss?: Interpolation<Theme>) => (
-    <button type="button" css={[actionStyle, extraCss]} disabled={disabled} aria-pressed={pressed || undefined} onClick={action}>
-      {label}
-    </button>
-  );
 
   return (
     <dialog
@@ -607,13 +685,17 @@ function PhotoViewer({
       }}
     >
       <div css={viewerContentStyle}>
-        <header role="presentation" css={headerStyle}>
-          <h2 id={`${id}-title`} css={titleStyle}>
+        <header role="presentation" css={[barStyle, topBarStyle]}>
+          <h2 id={`${id}-title`} css={viewerTitleStyle}>
             {photo?.title ?? labels.unavailable}
           </h2>
-          <button ref={closeRef} type="button" css={actionStyle} onClick={lifecycle.requestClose}>
-            {labels.close}
-          </button>
+          <ChromeAction
+            ref={closeRef}
+            label={labels.close}
+            icon={chromeIcons.close}
+            placement="bottom"
+            onClick={lifecycle.requestClose}
+          />
         </header>
         <div
           {...slots?.stage}
@@ -658,8 +740,9 @@ function PhotoViewer({
                 drag.y + event.clientY - drag.originY - y.get(),
               );
             } else if (!reduced) {
+              // Only a downward drag dismisses, so the photo never follows an upward one.
               x.set(event.clientX - drag.originX);
-              y.set(event.clientY - drag.originY);
+              y.set(Math.max(0, event.clientY - drag.originY));
             }
           }}
           onPointerUp={(event) => {
@@ -727,61 +810,104 @@ function PhotoViewer({
             <span css={fallbackStyle}>{labels.unavailable}</span>
           )}
         </div>
-        <div {...slots?.controls} css={[controlsStyle, slots?.controls?.css]}>
-          {renderAction(labels.previous, () => navigate(index - 1), index <= 0, false, responsiveNavStyle)}
-          {renderAction(labels.next, () => navigate(index + 1), index < 0 || index >= photos.length - 1, false, responsiveNavStyle)}
-          {renderAction(labels.zoomIn, () => setZoom(zoom + ZOOM_STEP), !photo || zoom >= MAX_ZOOM, zoom >= MAX_ZOOM)}
-          {renderAction(labels.zoomOut, () => setZoom(zoom - ZOOM_STEP), !photo || zoom <= 1, zoom <= 1)}
-          {renderAction(labels.resetZoom, () => setZoom(1), !photo || zoom === 1, zoom === 1)}
-          {zoom > 1 && (
-            <>
-              {renderAction(labels.panLeft, () => pan(PAN_STEP, 0))}
-              {renderAction(labels.panRight, () => pan(-PAN_STEP, 0))}
-              {renderAction(labels.panUp, () => pan(0, PAN_STEP))}
-              {renderAction(labels.panDown, () => pan(0, -PAN_STEP))}
-            </>
+        <div css={[barStyle, bottomBarStyle]}>
+          {hasDetail && (
+            <p key={photo.id} id={`${id}-detail`} css={[detailStyle, viewerDetailStyle]}>
+              {photo.detail}
+            </p>
           )}
-        </div>
-        <div css={filmstripWrapperStyle}>
-          <input
-            {...slots?.filmstrip}
-            type="range"
-            data-ui="photo-grid-filmstrip"
-            min={0}
-            max={Math.max(0, photos.length - 1)}
-            step={1}
-            value={Math.max(0, index)}
-            disabled={photos.length < 2 || !photo}
-            aria-label={slots?.filmstrip?.['aria-label'] ?? labels.filmstrip}
-            aria-valuetext={position}
-            css={[filmstripStyle, slots?.filmstrip?.css]}
-            onChange={(event) => {
-              slots?.filmstrip?.onChange?.(event);
-              if (!event.defaultPrevented) navigate(event.currentTarget.valueAsNumber);
-            }}
-          />
-        </div>
-        {photo && (
-          <button
-            {...slots?.favorite}
-            type="button"
-            aria-pressed={favorites.has(photo.id)}
-            css={[actionStyle, favoriteStyle, slots?.favorite?.css]}
-            onClick={(event) => {
-              slots?.favorite?.onClick?.(event);
-              if (!event.defaultPrevented) toggleFavorite(photo.id);
-            }}
-          >
-            {favorites.has(photo.id) ? '★' : '☆'} {labels.favorite(photo.title, favorites.has(photo.id))}
-          </button>
-        )}
-        {hasDetail && (
-          <p key={photo.id} id={`${id}-detail`} css={detailStyle}>
-            {photo.detail}
-          </p>
-        )}
-        <div role="status" aria-live="polite" aria-atomic="true" css={statusStyle}>
-          {position}
+          <div css={toolbarStyle}>
+            <div role="status" aria-live="polite" aria-atomic="true" css={counterStyle}>
+              {position}
+            </div>
+            <div {...slots?.controls} css={[controlsStyle, slots?.controls?.css]}>
+              <ChromeAction
+                label={labels.previous}
+                icon={chromeIcons.previous}
+                disabled={index <= 0}
+                styles={compactHiddenStyle}
+                onClick={() => navigate(index - 1)}
+              />
+              <ChromeAction
+                label={labels.next}
+                icon={chromeIcons.next}
+                disabled={index < 0 || index >= photos.length - 1}
+                styles={compactHiddenStyle}
+                onClick={() => navigate(index + 1)}
+              />
+              <span aria-hidden="true" css={[dividerStyle, compactHiddenStyle]} />
+              <ChromeAction
+                label={labels.zoomOut}
+                icon={chromeIcons.zoomOut}
+                disabled={!photo || zoom <= 1}
+                onClick={() => setZoom(zoom - ZOOM_STEP)}
+              />
+              <ChromeAction
+                label={labels.zoomIn}
+                icon={chromeIcons.zoomIn}
+                disabled={!photo || zoom >= MAX_ZOOM}
+                onClick={() => setZoom(zoom + ZOOM_STEP)}
+              />
+              <ChromeAction
+                label={labels.resetZoom}
+                icon={chromeIcons.reset}
+                disabled={!photo || zoom === 1}
+                onClick={() => setZoom(1)}
+              />
+              {zoom > 1 && (
+                <>
+                  <span aria-hidden="true" css={dividerStyle} />
+                  <ChromeAction label={labels.panLeft} icon={chromeIcons.panLeft} onClick={() => pan(PAN_STEP, 0)} />
+                  <ChromeAction label={labels.panRight} icon={chromeIcons.panRight} onClick={() => pan(-PAN_STEP, 0)} />
+                  <ChromeAction label={labels.panUp} icon={chromeIcons.panUp} onClick={() => pan(0, PAN_STEP)} />
+                  <ChromeAction label={labels.panDown} icon={chromeIcons.panDown} onClick={() => pan(0, -PAN_STEP)} />
+                </>
+              )}
+            </div>
+            {photo && (
+              <ChromeAction
+                {...favoriteSlot}
+                label={favoriteLabel ?? labels.favorite(photo.title, favorite)}
+                icon={<StarGlyph filled={favorite} />}
+                pressed={favorite}
+                styles={[favoriteSlotStyle, favoriteCss]}
+                onClick={(event) => {
+                  favoriteSlot.onClick?.(event);
+                  if (!event.defaultPrevented) toggleFavorite(photo.id);
+                }}
+              />
+            )}
+          </div>
+          {photos.length > 1 && (
+            <div
+              {...slots?.filmstrip}
+              data-ui="photo-grid-filmstrip"
+              role="group"
+              aria-label={slots?.filmstrip?.['aria-label'] ?? labels.filmstrip}
+              css={[filmstripStyle, slots?.filmstrip?.css]}
+            >
+              {photos.map((item, itemIndex) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-current={item.id === selected ? 'true' : undefined}
+                  aria-label={labels.position(
+                    format.format(itemIndex + 1),
+                    format.format(photos.length),
+                    item.title,
+                  )}
+                  css={[thumbStyle, viewerThumbStyle]}
+                  onClick={() => select(item.id)}
+                >
+                  <PhotoImage
+                    key={`${item.src}\u0000${item.srcSet ?? ''}`}
+                    photo={item}
+                    unavailable={labels.imageUnavailable}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </dialog>
@@ -841,12 +967,25 @@ export function PhotoGrid({
   const buttons = useRef(new Map<string, HTMLButtonElement>());
   const focused = useRef<{ id: string; index: number; kind: 'photo' | 'favorite' } | null>(null);
   const invoker = useRef<string | null>(null);
-  const anchor = useRef<{ id: string; top: number; density: number } | null>(null);
+  // The focal photo's point at `clientY` (`fraction` of its height) stays put across the reflow.
+  const anchor = useRef<{
+    id: string;
+    density: number;
+    clientY: number;
+    fraction: number;
+    focus: boolean;
+  } | null>(null);
   const columns = density;
   const reduced = useReducedMotion();
   const [visible, setVisible] = useState(true);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const pinch = useRef<{ distance: number; ratio: number; focalId: string | null } | null>(null);
+  const pinch = useRef<{
+    distance: number;
+    ratio: number;
+    focalId: string | null;
+    clientY?: number;
+  } | null>(null);
+  const wheelDelta = useRef(0);
   const preview = useMotionValue(1);
   const previewOriginX = useMotionValue('50%');
   const previewOriginY = useMotionValue('50%');
@@ -888,6 +1027,12 @@ export function PhotoGrid({
     };
   }, []);
 
+  const resetPreview = () => {
+    preview.set(1);
+    previewOriginX.set('50%');
+    previewOriginY.set('50%');
+  };
+
   useEffect(() => {
     const doc = rootRef.current?.ownerDocument;
     if (!doc) return;
@@ -895,9 +1040,7 @@ export function PhotoGrid({
       if (listRef.current?.contains(event.target as Node)) return;
       pointers.current.delete(event.pointerId);
       pinch.current = null;
-      preview.set(1);
-      previewOriginX.set('50%');
-      previewOriginY.set('50%');
+      resetPreview();
     };
     doc.addEventListener('pointerup', abortOutside, true);
     doc.addEventListener('pointercancel', abortOutside, true);
@@ -913,8 +1056,9 @@ export function PhotoGrid({
     anchor.current = null;
     const button = buttons.current.get(pending.id);
     if (button && rootRef.current) {
-      button.focus({ preventScroll: true });
-      scrollBy(rootRef.current, button.getBoundingClientRect().top - pending.top);
+      if (pending.focus) button.focus({ preventScroll: true });
+      const box = button.getBoundingClientRect();
+      scrollBy(rootRef.current, box.top + pending.fraction * box.height - pending.clientY);
     }
   }, [density]);
 
@@ -930,7 +1074,7 @@ export function PhotoGrid({
 
   useEffect(() => {
     const previous = lastAccepted.current;
-    if (previous.density !== density) setStatus(labels.columns(format.format(density)));
+    if (previous.density !== density) setStatus(labels.columns(format.format(density), density));
     else if (previous.selected !== selected && open) {
       const index = photos.findIndex((photo) => photo.id === selected);
       setStatus(
@@ -956,14 +1100,34 @@ export function PhotoGrid({
     requestFavorites([...next]);
     onFavoriteChange?.(photoId, favorite);
   };
-  const changeDensity = (direction: number, focalId = focused.current?.id ?? photos[0]?.id) => {
-    const next = steps[Math.min(steps.length - 1, Math.max(0, densityIndex + direction))]!;
+  /**
+   * Requests `next` columns around a focal photo. With `clientY`, the point under it stays put;
+   * otherwise the photo's top edge does. `focus` moves focus to the focal photo (grid gestures and keys).
+   */
+  const setDensity = (
+    next: number,
+    { focalId = focused.current?.id ?? photos[0]?.id, clientY, focus = true }: {
+      focalId?: string;
+      clientY?: number;
+      focus?: boolean;
+    } = {},
+  ) => {
     if (next === density) return;
-    const button = focalId ? buttons.current.get(focalId) : undefined;
+    const box = focalId ? buttons.current.get(focalId)?.getBoundingClientRect() : undefined;
     anchor.current =
-      button && focalId ? { id: focalId, top: button.getBoundingClientRect().top, density: next } : null;
+      box && focalId
+        ? {
+            id: focalId,
+            density: next,
+            clientY: clientY ?? box.top,
+            fraction: clientY === undefined || !box.height ? 0 : (clientY - box.top) / box.height,
+            focus,
+          }
+        : null;
     requestDensity(next);
   };
+  const stepDensity = (direction: number, focal?: { focalId?: string; clientY?: number }) =>
+    setDensity(steps[Math.min(steps.length - 1, Math.max(0, densityIndex + direction))]!, focal);
   const focusIndex = (index: number) => {
     const photo = photos[Math.min(photos.length - 1, Math.max(0, index))];
     if (photo) buttons.current.get(photo.id)?.focus();
@@ -987,11 +1151,11 @@ export function PhotoGrid({
     }
     if (event.key === '+' || event.key === '=') {
       event.preventDefault();
-      changeDensity(1, photos[index]!.id);
+      stepDensity(1, { focalId: photos[index]!.id });
     }
     if (event.key === '-') {
       event.preventDefault();
-      changeDensity(-1, photos[index]!.id);
+      stepDensity(-1, { focalId: photos[index]!.id });
     }
   };
   const restore = () => {
@@ -1007,14 +1171,21 @@ export function PhotoGrid({
     const root = rootRef.current;
     if (!root) return;
     const onWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey) return;
+      const target = event.target;
+      if (!event.ctrlKey || event.defaultPrevented || !(target instanceof Element) || target.closest('dialog'))
+        return;
       event.preventDefault();
-      const dir = event.deltaY < 0 ? 1 : -1; // wheel up -> larger thumbnails (lower column count, matching pinch)
-      changeDensity(dir);
+      wheelDelta.current += event.deltaY * (event.deltaMode === WheelEvent.DOM_DELTA_LINE ? WHEEL_LINE_PX : 1);
+      if (Math.abs(wheelDelta.current) < WHEEL_STEP_PX) return;
+      // Wheel up (or a trackpad spread) enlarges thumbnails, like a pinch.
+      const direction = wheelDelta.current < 0 ? 1 : -1;
+      wheelDelta.current = 0;
+      const item = target.closest<HTMLElement>('[data-photo-id]');
+      stepDensity(direction, item ? { focalId: item.dataset.photoId, clientY: event.clientY } : undefined);
     };
     root.addEventListener('wheel', onWheel, { passive: false });
     return () => root.removeEventListener('wheel', onWheel);
-  }, [changeDensity]);
+  }, [stepDensity]);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -1038,7 +1209,7 @@ export function PhotoGrid({
                 role={slotProps?.header?.role ?? 'presentation'}
                 css={[headerStyle, slotProps?.header?.css]}
               >
-                <div css={headerLeftStyle}>
+                <div css={headingStyle}>
                   <h2
                     {...slotProps?.title}
                     id={slotProps?.title?.id ?? `${id}-title`}
@@ -1046,35 +1217,30 @@ export function PhotoGrid({
                   >
                     {title}
                   </h2>
-                  <span css={countStyle} aria-label={`${photos.length} photos`}>
-                    {format.format(photos.length)} photos
-                  </span>
+                  <p css={summaryStyle}>
+                    <span>{labels.photoCount(format.format(photos.length), photos.length)}</span>
+                    <span>{labels.columns(format.format(density), density)}</span>
+                  </p>
                 </div>
                 <div
                   {...slotProps?.density}
                   role="group"
                   aria-label={slotProps?.density?.['aria-label'] ?? labels.density}
-                  css={[controlsStyle, slotProps?.density?.css]}
+                  css={[densityStyle, slotProps?.density?.css]}
                 >
-                  <button
-                    type="button"
-                    css={actionStyle}
-                    disabled={!photos.length || densityIndex === steps.length - 1}
-                    onClick={() => changeDensity(1)}
-                  >
-                    {labels.larger}
-                  </button>
-                  <button
-                    type="button"
-                    css={actionStyle}
-                    disabled={!photos.length || densityIndex === 0}
-                    onClick={() => changeDensity(-1)}
-                  >
-                    {labels.smaller}
-                  </button>
-                  <span css={densityReadoutStyle} aria-label={labels.columns(format.format(density))}>
-                    {density}
-                  </span>
+                  {steps.map((step) => (
+                    <ChromeAction
+                      key={step}
+                      label={labels.columns(format.format(step), step)}
+                      icon={<DensityGlyph columns={step} />}
+                      pressed={step === density}
+                      disabled={!photos.length}
+                      placement="bottom"
+                      portaled
+                      styles={segmentStyle}
+                      onClick={() => setDensity(step, { focus: false })}
+                    />
+                  ))}
                 </div>
               </header>
               {photos.length ? (
@@ -1096,14 +1262,15 @@ export function PhotoGrid({
                       if (pointers.current.size === 2) {
                         const points = [...pointers.current.values()];
                         const item = (event.target as HTMLElement).closest<HTMLLIElement>('[data-photo-id]');
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        const cx = (points[0]!.x + points[1]!.x) / 2;
+                        const cy = (points[0]!.y + points[1]!.y) / 2;
                         pinch.current = {
                           distance: Math.hypot(points[1]!.x - points[0]!.x, points[1]!.y - points[0]!.y),
                           ratio: 1,
                           focalId: item?.dataset.photoId ?? focused.current?.id ?? null,
+                          clientY: item ? cy : undefined,
                         };
-                        const rect = event.currentTarget.getBoundingClientRect();
-                        const cx = (points[0]!.x + points[1]!.x) / 2;
-                        const cy = (points[0]!.y + points[1]!.y) / 2;
                         previewOriginX.set(((cx - rect.left) / rect.width * 100).toFixed(1) + '%');
                         previewOriginY.set(((cy - rect.top) / rect.height * 100).toFixed(1) + '%');
                         event.currentTarget.setPointerCapture(event.pointerId);
@@ -1126,27 +1293,24 @@ export function PhotoGrid({
                       const drag = pinch.current;
                       pointers.current.delete(event.pointerId);
                       pinch.current = null;
-                      preview.set(1);
-                      previewOriginX.set('50%');
-                      previewOriginY.set('50%');
+                      resetPreview();
                       if (!event.defaultPrevented && drag && Math.abs(drag.ratio - 1) >= PINCH_THRESHOLD)
-                        changeDensity(drag.ratio > 1 ? 1 : -1, drag.focalId ?? undefined);
+                        stepDensity(drag.ratio > 1 ? 1 : -1, {
+                          focalId: drag.focalId ?? undefined,
+                          clientY: drag.clientY,
+                        });
                     }}
                     onPointerCancel={(event) => {
                       slotProps?.list?.onPointerCancel?.(event);
                       pointers.current.clear();
                       pinch.current = null;
-                      preview.set(1);
-                      previewOriginX.set('50%');
-                      previewOriginY.set('50%');
+                      resetPreview();
                     }}
                     onLostPointerCapture={(event) => {
                       slotProps?.list?.onLostPointerCapture?.(event);
                       pointers.current.clear();
                       pinch.current = null;
-                      preview.set(1);
-                      previewOriginX.set('50%');
-                      previewOriginY.set('50%');
+                      resetPreview();
                     }}
                   >
                     {photos.map((photo, index) => (
@@ -1154,7 +1318,7 @@ export function PhotoGrid({
                         {...slotProps?.item}
                         key={photo.id}
                         data-photo-id={photo.id}
-                        css={slotProps?.item?.css}
+                        css={[cellStyle, slotProps?.item?.css]}
                       >
                         <motion.div
                           layout={
@@ -1183,7 +1347,7 @@ export function PhotoGrid({
                               slotProps?.photo?.['aria-label'] ??
                               labels.openPhoto(photo.title, photo.alt, favorites.has(photo.id))
                             }
-                            css={[actionStyle, photoStyle, slotProps?.photo?.css]}
+                            css={[photoStyle, slotProps?.photo?.css]}
                             onFocus={(event) => {
                               slotProps?.photo?.onFocus?.(event);
                               buttons.current.set(photo.id, event.currentTarget);
@@ -1222,7 +1386,7 @@ export function PhotoGrid({
                               slotProps?.favorite?.['aria-label'] ??
                               labels.favorite(photo.title, favorites.has(photo.id))
                             }
-                            css={[actionStyle, favoriteStyle, slotProps?.favorite?.css]}
+                            css={[tileFavoriteStyle, slotProps?.favorite?.css]}
                             onFocus={(event) => {
                               slotProps?.favorite?.onFocus?.(event);
                               focused.current = { id: photo.id, index, kind: 'favorite' };
@@ -1232,7 +1396,7 @@ export function PhotoGrid({
                               if (!event.defaultPrevented) toggleFavorite(photo.id);
                             }}
                           >
-                            {favorites.has(photo.id) ? '★' : '☆'}
+                            <StarGlyph filled={favorites.has(photo.id)} />
                           </button>
                         </motion.div>
                       </li>
