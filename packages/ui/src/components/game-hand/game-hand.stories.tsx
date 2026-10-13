@@ -46,6 +46,9 @@ async function checkFan(element: HTMLElement, count: number) {
   await expect(buttons).toHaveLength(count);
   for (const [index, button] of buttons.entries()) {
     const style = getComputedStyle(button);
+    const faceStyle = getComputedStyle(button.querySelector('[data-ui="game-card"]')!);
+    await expect(faceStyle.width).toBe(style.getPropertyValue('--game-card-width').trim());
+    await expect(faceStyle.borderRadius).toBe(style.borderRadius);
     const matrix = new DOMMatrixReadOnly(style.transform);
     const angle = fixture.rotations[index] ?? 0;
     const radians = angle * Math.PI / 180;
