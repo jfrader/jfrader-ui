@@ -291,7 +291,14 @@ const fillStyle = css({
   [FORCED_COLORS]: { stroke: 'CanvasText' },
   '[data-dimmed="true"] > &': { [FORCED_COLORS]: { stroke: 'GrayText' } },
 });
-const summaryStyle = css({ margin: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs });
+const LEGEND_INSET = vars.space[2];
+const LEGEND_BORDER_WIDTH = '1px';
+const summaryStyle = css({
+  marginBlock: 0,
+  marginInline: `calc(${LEGEND_INSET} + ${LEGEND_BORDER_WIDTH})`,
+  color: vars.color.textMuted,
+  fontSize: vars.textSize.xs,
+});
 const legendStyle = css({
   display: 'grid',
   gap: 0,
@@ -310,12 +317,12 @@ const metricStyle = css({
   minBlockSize: vars.space[8],
   boxSizing: 'border-box',
   paddingBlock: vars.space[2],
-  paddingInline: vars.space[2],
+  paddingInline: LEGEND_INSET,
   textAlign: 'start',
   font: 'inherit',
   color: 'inherit',
   backgroundColor: 'transparent',
-  border: '1px solid transparent',
+  border: `${LEGEND_BORDER_WIDTH} solid transparent`,
   borderRadius: vars.radius.sm,
   'button&': {
     cursor: 'pointer',

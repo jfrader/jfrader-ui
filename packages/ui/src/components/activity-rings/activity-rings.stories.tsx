@@ -97,6 +97,18 @@ async function expectTicksOnly(root: Element) {
   }
 }
 
+async function expectLegendAlignment(root: Element) {
+  const summary = root.querySelector('[data-ui="activity-rings-summary"]')!.getBoundingClientRect();
+  const row = root.querySelector('[data-ui="activity-rings-metric"]')!;
+  const bounds = row.getBoundingClientRect();
+  const style = getComputedStyle(row);
+  const left = bounds.left + Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.borderLeftWidth);
+  const right =
+    bounds.right - Number.parseFloat(style.paddingRight) - Number.parseFloat(style.borderRightWidth);
+  await expect(Math.abs(summary.left - left)).toBeLessThanOrEqual(0.5);
+  await expect(Math.abs(summary.right - right)).toBeLessThanOrEqual(0.5);
+}
+
 async function expectTickContrast(root: Element) {
   const context = root.ownerDocument.createElement('canvas').getContext('2d')!;
   const luminance = (color: string) => {
@@ -172,6 +184,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   play: async ({ canvasElement, args }) => {
+    await expectLegendAlignment(canvasElement);
     await expectTickContrast(canvasElement);
     const canvas = within(canvasElement);
     const region = canvas.getByRole('region', { name: 'Activity' });
@@ -1124,6 +1137,7 @@ export const Narrow: Story = {
   ],
   play: async ({ canvasElement }) => {
     const days = [...canvasElement.querySelectorAll('[data-ui="activity-rings-day"]')];
+    await expectLegendAlignment(canvasElement);
     await expect(new Set(days.map((day) => Math.round(day.getBoundingClientRect().top))).size).toBe(1);
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="activity-rings"]')!;
     await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
@@ -1344,6 +1358,7 @@ export const LightTheme: Story = {
 export const RTL: Story = {
   args: { dir: 'rtl', locale: 'ar-EG', days: week, values: undefined },
   play: async ({ canvasElement, userEvent, args }) => {
+    await expectLegendAlignment(canvasElement);
     const radios = within(canvasElement).getAllByRole('radio');
     await expect(radios[0]!.getBoundingClientRect().left).toBeGreaterThan(
       radios[6]!.getBoundingClientRect().left,
@@ -1389,6 +1404,7 @@ const centered = (Story: ComponentType) => (
 export const CenteredFlexParent: Story = {
   decorators: [centered],
   play: async ({ canvasElement }) => {
+    await expectLegendAlignment(canvasElement);
     const region = within(canvasElement).getByRole('region');
     await expect(region.getBoundingClientRect().width).toBeGreaterThanOrEqual(199);
     await expect(region.querySelector('svg')!.getBoundingClientRect().width).toBeGreaterThanOrEqual(159);
