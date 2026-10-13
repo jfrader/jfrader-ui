@@ -1,15 +1,9 @@
 'use client';
 
-import { useEffect, useState, type ReactNode, type Ref } from 'react';
-import { useMergeRefs, type Placement } from '@floating-ui/react';
+import type { ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { IsolatedOverlay } from '../../overlay/overlay-layer';
-import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { css } from '../../styling/css';
-import { focusRingOutset } from '../../styling/focus-ring';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { Button } from '../button';
-import { tooltipContentStyle, useTooltipInteractions } from '../tooltip/tooltip';
+import { ChromeAction, chromeIcons as icons, filmstripStyle, thumbStyle } from '../viewer-chrome/viewer-chrome';
 import type { LightboxGalleryImage, LightboxGalleryLabels, LightboxGallerySlotProps } from './lightbox-gallery';
 
 const headerStyle = css({
@@ -54,161 +48,6 @@ const readoutStyle = css({
   fontVariantNumeric: 'tabular-nums',
   textAlign: 'center',
 });
-const actionStyle = css({ flexShrink: 0, inlineSize: vars.space[8], paddingInline: 0 });
-// Rendered inside the modal dialog, not portaled: a body portal sits behind the top layer.
-const tooltipStyle = css({ zIndex: 1 });
-const glyphStyle = css({ inlineSize: vars.space[4], blockSize: vars.space[4] });
-const directionalGlyphStyle = css({ '&:dir(rtl)': { transform: 'scaleX(-1)' } });
-const stripStyle = css({
-  display: 'flex',
-  justifyContent: 'safe center',
-  gap: vars.space[2],
-  overflowX: 'auto',
-  padding: vars.space[1],
-  minInlineSize: 0,
-  scrollbarWidth: 'thin',
-});
-const thumbStyle = css({
-  position: 'relative',
-  flexShrink: 0,
-  overflow: 'hidden',
-  ...focusRingOutset,
-  outline: 'none',
-  inlineSize: vars.space[10],
-  blockSize: vars.space[10],
-  padding: 0,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.sm,
-  background: 'transparent',
-  cursor: 'pointer',
-  '&::after': {
-    content: '""',
-    position: 'absolute',
-    inset: 0,
-    background: vars.color.scrim,
-    pointerEvents: 'none',
-    transitionProperty: 'opacity',
-    transitionDuration: vars.motion.duration.fast,
-    transitionTimingFunction: vars.motion.easeStandard,
-  },
-  '&[aria-current="true"]::after, &:hover::after, &:focus-visible::after': { opacity: 0 },
-  '&:focus-visible': focusRingOutset,
-  '&[aria-current="true"]': { outline: `2px solid ${vars.color.accentText}`, outlineOffset: '2px' },
-  [REDUCED_MOTION]: { '&::after': { transitionDuration: '0s' } },
-  [FORCED_COLORS]: { '&::after': { display: 'none' }, '&[aria-current="true"]': { outlineColor: 'Highlight' } },
-});
-
-const strokeProps = {
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.5,
-  strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-} as const;
-
-function Glyph({ children, directional = false }: { children: ReactNode; directional?: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      aria-hidden="true"
-      focusable="false"
-      css={[glyphStyle, directional && directionalGlyphStyle]}
-      {...strokeProps}
-    >
-      {children}
-    </svg>
-  );
-}
-
-const icons = {
-  previous: (
-    <Glyph directional>
-      <path d="M10 3 5 8l5 5" />
-    </Glyph>
-  ),
-  next: (
-    <Glyph directional>
-      <path d="m6 3 5 5-5 5" />
-    </Glyph>
-  ),
-  zoomIn: (
-    <Glyph>
-      <circle cx="7" cy="7" r="4.5" />
-      <path d="m10.5 10.5 3 3M5 7h4M7 5v4" />
-    </Glyph>
-  ),
-  zoomOut: (
-    <Glyph>
-      <circle cx="7" cy="7" r="4.5" />
-      <path d="m10.5 10.5 3 3M5 7h4" />
-    </Glyph>
-  ),
-  reset: (
-    <Glyph>
-      <path d="M3 8a5 5 0 1 0 1.5-3.5L3 6M3 3v3h3" />
-    </Glyph>
-  ),
-  close: (
-    <Glyph>
-      <path d="m4 4 8 8M12 4l-8 8" />
-    </Glyph>
-  ),
-};
-
-interface ChromeActionProps {
-  ref?: Ref<HTMLButtonElement>;
-  label: string;
-  icon: ReactNode;
-  disabled?: boolean;
-  placement?: Placement;
-  onClick: () => void;
-}
-
-// An icon-only Button named by `label`, which its tooltip repeats on hover and keyboard focus.
-// The tooltip comes from Tooltip's interaction seam because the operative element is a Button.
-function ChromeAction(props: ChromeActionProps) {
-  return (
-    <IsolatedOverlay>
-      <ChromeActionButton {...props} />
-    </IsolatedOverlay>
-  );
-}
-
-function ChromeActionButton({ ref, label, icon, disabled = false, placement = 'top', onClick }: ChromeActionProps) {
-  const [open, setOpen] = useState(false);
-  const available = !disabled;
-  const { refs, floatingStyles, context } = useOverlayFloating({
-    open: available && open,
-    placement,
-    onOpenChange: setOpen,
-  });
-  useEffect(() => {
-    if (!available) setOpen(false);
-  }, [available]);
-  const { getReferenceProps, getFloatingProps } = useTooltipInteractions(context, { enabled: available, focusVisibleOnly: true });
-  const { tabIndex: _tabIndex, ...floatingProps } = getFloatingProps();
-  const merged = useMergeRefs([ref, refs.setReference]);
-  return (
-    <>
-      <Button
-        {...getReferenceProps({ onClick })}
-        ref={merged}
-        variant="ghost"
-        size="sm"
-        css={actionStyle}
-        aria-label={label}
-        disabled={disabled}
-      >
-        {icon}
-      </Button>
-      {available && open && (
-        <div {...floatingProps} ref={refs.setFloating} css={[tooltipContentStyle, tooltipStyle]} style={floatingStyles}>
-          {label}
-        </div>
-      )}
-    </>
-  );
-}
 
 // React renders `autoFocus` as a focus() call on mount; the closed native dialog needs the attribute.
 const autofocus = (element: HTMLButtonElement | null) => {
@@ -305,7 +144,7 @@ export function Filmstrip({
   thumbnail: (image: LightboxGalleryImage) => ReactNode;
 }) {
   return (
-    <div {...slot} role="group" aria-label={slot?.['aria-label'] ?? labels.thumbnails} css={[stripStyle, slot?.css]}>
+    <div {...slot} role="group" aria-label={slot?.['aria-label'] ?? labels.thumbnails} css={[filmstripStyle, slot?.css]}>
       {images.map((item, index) => (
         <button
           key={item.id}

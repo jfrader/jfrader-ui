@@ -21,6 +21,7 @@
 - `ToastStack` casts a single shadow for a collapsed pile, so the cards behind it stay white instead of turning grey on light surfaces.
 - `EditableDetails` uses aligned headings, quieter labels and separators only between rows. Nested sections no longer stack empty divider lines.
 - Storybook groups `EditableDetails` form and picker examples under one Showcase entry.
+- `PhotoGrid` opens photos in a full-screen viewer with icon controls, tooltips and a thumbnail strip. The header shows the photo count and current density, with one pressed toggle per density step. Ctrl+scroll and pinch resize thumbnails around the photo under the pointer. Upward drags no longer move the photo, and the chrome becomes opaque when reduced transparency is on.
 
 ### Changed
 
@@ -31,6 +32,7 @@
 - GameCard no longer exports the internal rendering maps `RANK_MARKS`, `SUIT_GLYPHS` and `SUIT_INK`; card data types and `CARD_BACK_PATTERNS` remain public.
 - GameTable intentionally replaces the reference's per-profile seat presets with a measured, centered curve: circular in near-square space and capped at a 1.5 axis ratio otherwise. Seats face the center; intrinsic seat/center content scales to fit without covering community cards. Rival GameCard backs now emit the player/index markers consumed by card flights. Component props and the surface measurement target are unchanged; exported seat configuration now describes derived radii, scale and gap instead of positional corrections.
 - GameTable intentionally replaces the reference's per-profile seat presets with a measured, centered curve: circular in near-square space and capped at a 1.5 axis ratio otherwise. Seats face the center. Separate seat/center scales preserve a 32px GameCard width floor; requested clearance yields to zero before that floor can be crossed. `data-clearance` reports the concession and `data-layout-fit="insufficient-space"` declares compositions that still cannot fit without collisions or clipping. Rival GameCard backs now emit the player/index markers consumed by card flights. Component props and the surface measurement target are unchanged; exported seat configuration now describes derived radii, scales and gap instead of positional corrections.
+- `PhotoGrid` `slotProps.filmstrip` now targets the viewer's thumbnail strip (a `div`) instead of a range input. `labels.larger` and `labels.smaller` are deprecated and no longer rendered; `labels.columns` names each density toggle, and the new `labels.photoCount` formats the album size.
 - GameCard backs use red-and-paper `Pattern` tiles: poker checks by default, or Spanish diagonals via `backPattern={CARD_BACK_PATTERNS.spanish}`. Custom artwork replaces either face.
 
 ### Fixed

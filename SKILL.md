@@ -199,7 +199,8 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `theme-scope` — ThemeRoot's scope context (`useThemeScope`), the `appearance` axis
   (`AppearanceScope`), `themeScopeStyle` and `ThemeBoundary` for portaled content.
 - `styled` — re-export of `@emotion/styled` for apps (public; never used by components).
-- `media` — `REDUCED_MOTION` and `FORCED_COLORS` query keys; payloads stay component-local.
+- `media` — `REDUCED_MOTION`, `FORCED_COLORS` and `REDUCED_TRANSPARENCY` query keys; payloads stay
+  component-local.
 - `focus-ring` — `focusRingOutset` / `focusRingInset` declarations; the selector stays local.
 - `visually-hidden` — screen-reader-only text.
 - `disclosure-caret` — inline-end caret for an `&::after`; rotation and reduced motion stay local.
@@ -221,6 +222,10 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
   get one default Dialog.Panel; explicit composition accepts one direct Panel through fragments,
   without substantive siblings. DialogStack keeps its stage-directed portal inside a declaration-site
   ThemeBoundary. Host motion/measurement inline styles are reserved from ordinary root props.
+- `components/viewer-chrome/viewer-chrome` — private media-viewer chrome shared by LightboxGallery and
+  PhotoGrid: `ChromeAction` (ghost icon Button with a `focusVisibleOnly` tooltip, optional
+  `aria-pressed`; unportaled inside a modal dialog, `portaled` elsewhere), the stroke glyphs and the
+  thumbnail-strip styles.
 - `trigger-style` — overlay trigger button (Dialog, Popover, Menu).
 - `listbox-style` — popup surface, item and option fragments (Menu, Select, Combobox, CommandPalette).
 - `input-control` — text-input control skin (TextField, Textarea).
