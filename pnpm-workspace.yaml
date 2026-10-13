@@ -1,3 +1,6 @@
 packages:
   - packages/*
   - apps/*
+# The docs engine builds its dist through prepack when installed from GitHub.
+onlyBuiltDependencies:
+  - '@jfrader/storybook-docs'

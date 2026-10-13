@@ -11,7 +11,7 @@
   "dependencies": {
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
-    "@jfrader/storybook-docs": "link:../../../../storybook-docs",
+    "@jfrader/storybook-docs": "github:jfrader/storybook-docs#203b77e",
     "@jfrader/tokens": "link:../../../../jfrader-ui/packages/tokens",
     "@jfrader/ui": "link:../../../../jfrader-ui/packages/ui",
     "react": "^19.3.0",

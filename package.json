@@ -17,7 +17,6 @@
     "typecheck": "pnpm generate && pnpm -r typecheck",
     "verify:exports": "node scripts/verify-exports.mjs",
     "verify:docs": "pnpm --filter @jfrader/storybook verify:docs",
-    "preinstall": "node scripts/fetch-docs-engine.mjs",
     "docs:build": "node scripts/build-docs.mjs"
   },
   "pnpm": {
