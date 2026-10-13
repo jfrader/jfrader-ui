@@ -88,14 +88,14 @@ async function noOverlap(root: HTMLElement) {
     for (let second = first + 1; second < stacks.length; second++) {
       await expectNoOverlap(stacks[first]!, stacks[second]!);
       await expectNoOverlap(stacks[first]!.querySelector('button')!, stacks[second]!.querySelector('button')!);
-    for (const a of stacks[first]!.querySelectorAll('[data-trick-key]')) {
+      for (const a of stacks[first]!.querySelectorAll('[data-trick-key]')) {
         for (const b of stacks[second]!.querySelectorAll('[data-trick-key]')) await expectNoOverlap(a, b);
       }
     }
   }
 }
 
-async function fittedViewports(root: HTMLElement, inspect: (button: HTMLElement) => Promise<void>) {
+async function fittedViewport(root: HTMLElement, size: readonly [number, number], inspect: (button: HTMLElement) => Promise<void>) {
   const table = root.querySelector<HTMLElement>('[data-ui="trick-stacks"]')!;
   const original = table.getAttribute('style');
   const stackBoxes = () => {
@@ -106,20 +106,19 @@ async function fittedViewports(root: HTMLElement, inspect: (button: HTMLElement)
     });
   };
   try {
-    for (const [width, height] of [[320, 280], [640, 360], [900, 432]]) {
-      table.style.inlineSize = `${width}px`;
-      table.style.blockSize = `${height}px`;
-      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-      for (const button of table.querySelectorAll<HTMLButtonElement>('button')) {
-        const before = stackBoxes();
-        await inspect(button);
-        await settleMotion(table);
-        await waitFor(async () => {
-          for (const card of table.querySelectorAll('[data-trick-key]')) await expectInside(card, table);
-        });
-        await expect(stackBoxes()).toEqual(before);
-        await noOverlap(table);
-      }
+    const [width, height] = size;
+    table.style.inlineSize = `${width}px`;
+    table.style.blockSize = `${height}px`;
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    for (const button of table.querySelectorAll<HTMLButtonElement>('button')) {
+      const before = stackBoxes();
+      await inspect(button);
+      await settleMotion(table);
+      await waitFor(async () => {
+        for (const card of table.querySelectorAll('[data-trick-key]')) await expectInside(card, table);
+      });
+      await expect(stackBoxes()).toEqual(before);
+      await noOverlap(table);
     }
   } finally {
     if (original === null) table.removeAttribute('style');
@@ -428,29 +427,29 @@ export const MaximumThree: Story = {
   },
 };
 
-function AutoFitCases(args: TrickStacksProps) {
-  return <>
-    {[2, 4, 6].map((count) => {
-      const stacks = players(count, 3);
-      return <div key={count} data-auto-players={count} style={{ blockSize: 432 }}>
-        <TrickStacks {...args} placement="auto-fit" stacks={stacks} labels={labels(stacks)} />
-      </div>;
-    })}
-  </>;
+function autoFitStory(count: number, size: readonly [number, number]): Story {
+  return {
+    args: { ...counts(count, 3), placement: 'auto-fit' },
+    parameters: { docs: {
+      description: { story: 'Opt into measured grid placement. Cards shrink to leave room for inspected fans; this is not the reference arrangement.' },
+      source: { code: '<TrickStacks viewport={viewport} placement="auto-fit" stacks={stacks} labels={labels} />' },
+    } },
+    play: async ({ canvasElement, userEvent }) => {
+      await fittedViewport(canvasElement, size, (button) => userEvent.click(button));
+    },
+  };
 }
 
-export const AutoFit: Story = {
-  render: (args) => <AutoFitCases {...args} />,
-  parameters: { docs: {
-    description: { story: 'Opt into measured grid placement. Cards shrink to leave room for inspected fans; this is not the reference arrangement.' },
-    source: { code: '<TrickStacks viewport={viewport} placement="auto-fit" stacks={stacks} labels={labels} />' },
-  } },
-  play: async ({ canvasElement, userEvent }) => {
-    for (const container of canvasElement.querySelectorAll<HTMLElement>('[data-auto-players]')) {
-      await fittedViewports(container, (button) => userEvent.click(button));
-    }
-  },
-};
+const fitSizes = { compact: [320, 280], medium: [640, 360], large: [900, 432] } as const;
+export const AutoFit: Story = autoFitStory(6, fitSizes.compact);
+export const AutoFitSixMedium: Story = autoFitStory(6, fitSizes.medium);
+export const AutoFitSixLarge: Story = autoFitStory(6, fitSizes.large);
+export const AutoFitFourCompact: Story = autoFitStory(4, fitSizes.compact);
+export const AutoFitFourMedium: Story = autoFitStory(4, fitSizes.medium);
+export const AutoFitFourLarge: Story = autoFitStory(4, fitSizes.large);
+export const AutoFitTwoCompact: Story = autoFitStory(2, fitSizes.compact);
+export const AutoFitTwoMedium: Story = autoFitStory(2, fitSizes.medium);
+export const AutoFitTwoLarge: Story = autoFitStory(2, fitSizes.large);
 
 export const AutoFitEmptySlots: Story = { ...MaximumThree, args: { ...counts(2, 4), placement: 'auto-fit' } };
 export const AutoFitReducedMotion: Story = { ...ReducedMotion, args: { ...counts(6, 3), placement: 'auto-fit' } };
