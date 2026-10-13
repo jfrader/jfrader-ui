@@ -11,16 +11,19 @@ import {
   generateSceneParts,
   generateSceneSvg,
   SCENE_VIEW_BOX,
+  type SceneGrade,
   type SceneVariant,
 } from './scene-generator';
 
-export type { SceneVariant } from './scene-generator';
+export type { SceneGrade, SceneVariant } from './scene-generator';
 
 export type SceneSize = 'sm' | 'md' | 'lg' | 'full';
 
 export interface SceneOptions {
   /** Visual variant of the scene. Defaults to 'landscape'. */
   variant?: SceneVariant;
+  /** Colour grade of the same scene: `warm` recolours it without moving anything. Defaults to 'raw'. */
+  grade?: SceneGrade;
 }
 
 export interface SceneSourceOptions extends SceneOptions {}
@@ -32,6 +35,8 @@ export interface SceneProps
   seed: string;
   /** Visual variant of the scene. Defaults to 'landscape'. */
   variant?: SceneVariant;
+  /** Colour grade of the same scene: `warm` recolours it without moving anything. Defaults to 'raw'. */
+  grade?: SceneGrade;
   /**
    * Accessible description of the scene.
    * If omitted, falls back to `aria-label` or the seed string.
@@ -65,13 +70,14 @@ const sizeStyles: Record<SceneSize, SerializedStyles> = {
  * without requiring React runtime components.
  */
 export function sceneSource(seed: string, options?: SceneSourceOptions): string {
-  return `data:image/svg+xml,${encodeURIComponent(generateSceneSvg(seed, options?.variant))}`;
+  return `data:image/svg+xml,${encodeURIComponent(generateSceneSvg(seed, options?.variant, options?.grade))}`;
 }
 
 export function Scene({
   ref,
   seed,
   variant = 'landscape',
+  grade = 'raw',
   alt,
   size = 'full',
   className,
@@ -85,7 +91,7 @@ export function Scene({
     ? undefined
     : (alt ?? rest['aria-label'] ?? seed);
 
-  const { defs, content } = generateSceneParts(seed, variant);
+  const { defs, content } = generateSceneParts(seed, variant, grade);
 
   return (
     <WithSx className={className} styles={[rootStyle, sizeStyles[size]]} sx={sx}>
@@ -101,6 +107,7 @@ export function Scene({
           aria-hidden={isDecorative ? true : undefined}
           data-ui="scene"
           data-variant={variant}
+          data-grade={grade}
           data-seed={seed}
           className={rootClass}
           dangerouslySetInnerHTML={{ __html: `<defs>${defs}</defs>${content}` }}

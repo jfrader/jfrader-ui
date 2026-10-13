@@ -4,14 +4,17 @@ import { expect, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Avatar } from '../avatar';
-import { Scene, sceneSource, type SceneSize, type SceneVariant } from './index';
+import { Scene, sceneSource, type SceneGrade, type SceneSize, type SceneVariant } from './index';
 import { generateSceneSvg, SCENE_PARAMETERS } from './scene-generator';
 
 const VARIANTS = ['landscape', 'dunes', 'dusk', 'tide'] as const satisfies readonly SceneVariant[];
+const GRADES = ['raw', 'warm'] as const satisfies readonly SceneGrade[];
 const SIZES = ['sm', 'md', 'lg', 'full'] as const satisfies readonly SceneSize[];
 const FRAME_PARTS = ['sky', 'light', 'ground', 'haze', 'wash', 'vignette', 'grain'] as const;
 
 const idsOf = (markup: string) => new Set(Array.from(markup.matchAll(/ id="([^"]+)"/g), ([, id]) => id));
+/** Markup with its generated colours removed; mask colours (`#fff`, `#000`) stay. */
+const geometryOf = (markup: string) => markup.replace(/#[0-9a-f]{6}/g, '');
 
 const railStyle: CSSProperties = {
   display: 'grid',
@@ -74,6 +77,9 @@ Pass any string to \`seed\`. The same seed produces identical artwork across rel
 
 ### Variants
 Choose \`landscape\`, \`dunes\`, \`dusk\`, or \`tide\` to change the terrain style and lighting.
+
+### Grades
+Set \`grade="warm"\` for a warmer final grade of the same scene. Only colours change, so a raw and a warm scene from one seed line up as a before/after pair.
 
 ### Image slots
 Use \`sceneSource(seed, options)\` to generate a \`data:image/svg+xml\` URL for image-slot components such as \`Avatar\`.
@@ -208,6 +214,47 @@ export const Determinism: Story = {
       for (const other of variantIds.slice(index + 1)) {
         await expect([...ids].filter((id) => other.has(id))).toEqual([]);
       }
+    }
+  },
+};
+
+/** One seed in its raw colours and with the warm grade. */
+export const Grades: Story = {
+  render: () => (
+    <div style={railStyle}>
+      {GRADES.map((grade) => (
+        <div key={grade} style={cardStyle}>
+          <span style={{ fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.medium }}>{grade}</span>
+          <div style={{ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+            <Scene seed="grade-check" grade={grade} alt={`${grade} grade`} />
+          </div>
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const raw = canvas.getByRole('img', { name: 'raw grade' });
+    const warm = canvas.getByRole('img', { name: 'warm grade' });
+    await expect(warm).toHaveAttribute('data-grade', 'warm');
+    // The raw grade is the ungraded scene.
+    await expect(generateSceneSvg('grade-check', 'landscape', 'raw')).toBe(generateSceneSvg('grade-check'));
+    for (const variant of VARIANTS) {
+      const rawSvg = generateSceneSvg('grade-check', variant, 'raw');
+      const warmSvg = generateSceneSvg('grade-check', variant, 'warm');
+      await expect(generateSceneSvg('grade-check', variant, 'warm')).toBe(warmSvg);
+      await expect(warmSvg).not.toBe(rawSvg);
+      // Same geometry and structure: only colours and id prefixes differ.
+      await expect(geometryOf(warmSvg).replaceAll('-warm-', '-')).toBe(geometryOf(rawSvg));
+      const rawIds = idsOf(rawSvg);
+      await expect([...idsOf(warmSvg)].filter((id) => rawIds.has(id))).toEqual([]);
+    }
+    // Both grades render inline in one document; every reference resolves inside its own scene.
+    for (const scene of [raw, warm]) {
+      for (const [, id] of scene.innerHTML.matchAll(/url\(#([^)]+)\)/g)) {
+        await expect(scene.querySelector(`[id="${id}"]`)).not.toBeNull();
+      }
+      await expect(scene.innerHTML).not.toMatch(/NaN|undefined|Infinity/);
     }
   },
 };

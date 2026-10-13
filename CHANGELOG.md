@@ -12,6 +12,7 @@
 - `CardFlightsProvider` deals and plays cards between measured board slots, with themed overlays, interruptible flights and immediate reduced-motion landing.
 - `TrickStacks`: keep up to three played cards per player at the table center, inspect stacks with the keyboard, and spread revealed hands. Preserves the original card geometry around anchors derived from the circular GameTable, deliberately replacing the original seat presets; measured grid fitting is an explicit option. Includes RTL and reduced motion.
 - `EditableDetails`: nested labelled details with independent app-owned editors, controlled disclosure, draft preservation on collapse, and keyboard focus recovery. Includes native form, React Action, React Hook Form, and overlay examples.
+- `Scene` and `sceneSource` take `grade: 'warm'` for a warmer final grade of the same scene. Geometry is unchanged, and the default `raw` grade renders the same markup as before. ImageCompare examples now compare one scene in raw and warm grades.
 
 ### Improved
 
