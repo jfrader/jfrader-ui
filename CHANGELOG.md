@@ -15,6 +15,7 @@
 
 ### Improved
 
+- ActivityRings removes endpoint dots and the separate goal line. Surplus follows the tick band's inner edge with a round-capped arc, and the legend states the amount over goal with localizable wording.
 - ActivityRings uses neutral tick rings, a central completion figure, flat legend rows and daily previews. Interactive legends preview metrics on hover or focus; amounts, percentages and inner surplus arcs animate together.
 - Foundation guides use highlighted, copyable code examples and terminal commands with optional replay.
 - `ToastStack` keeps a `contained` stack inside its host when consumer styles add padding to it.

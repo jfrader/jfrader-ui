@@ -115,7 +115,7 @@ const meta = {
       },
       usage: `- Each ring compares a metric with its goal using the UsageMeter value rules and Intl percentage formatting.
 - The SVG is decorative. The legend gives the amount, goal, and percentage; unknown values show "No data", not zero.
-- Above 100%, a second lap appears inside the ring. At 200% and above, both laps stay full; the text shows the exact total.
+- Ticks stop at 100%. Above the goal, a round-capped arc follows the inner edge. At 200% and above, the arc stays full; the legend keeps the uncapped amount, percentage and surplus. Translate surplus text with \`labels.overGoal\`.
 - The centre averages completion across goals, capping each at 100%. It shows a dash if any goal is unknown or unavailable. Mixed units are never added together. Translate the caption with \`labels.completion\`.
 - Legend rows are static by default. With \`interactiveLegend\`, hover or focus previews a metric; activation toggles a pin. Preview does not call \`onFocusedMetricChange\`.
 - Counts and sweeps retarget from their displayed values. Assistive technology receives committed values, not intermediate counts. Reduced motion shows the result immediately.
@@ -152,7 +152,9 @@ export const Default: Story = {
     await expect(items).toHaveLength(3);
     await expect(items[0]).toHaveTextContent(`${amount(4.5, 'kilometer')} of ${amount(6, 'kilometer')}`);
     await expect(items[0]).toHaveTextContent(percent(0.75));
-    await expect(items[1]).toHaveTextContent('Goal met');
+    await expect(items[1]).toHaveTextContent('+4 mins over goal');
+    await expect(items[1]).not.toHaveTextContent('Goal met');
+    await expect(svg.querySelector('line, [data-ui="activity-rings-endpoint"]')).toBeNull();
     await expect(canvasElement.querySelector('[data-ui="activity-rings-summary"]')).toHaveTextContent(
       '1 of 3 goals met',
     );
@@ -352,13 +354,122 @@ export const LapBoundaries: Story = {
     await expect(items[0]).toHaveTextContent(percent(0));
     await expect(items[0]).not.toHaveTextContent('Goal met');
     await expect(items[1]).toHaveTextContent('Goal met');
-    await expect(items[4]).toHaveTextContent(`320 of 100${percent(3.2)}`);
+    await expect(items[4]).toHaveTextContent(`320 of 100 · ${percent(3.2)} · +220 over goal`);
     await expect(items[4]).toHaveTextContent(percent(3.2));
     await expect(rings[4]).toHaveAttribute('data-status', 'closed');
   },
 };
 
 export const Laps: Story = { args: { values: { distance: 9, exercise: 52, stand: 13 } } };
+export const BelowGoals: Story = { args: { values: { ...today, exercise: 24 } } };
+export const BeyondTwoLaps: Story = {
+  args: { values: { ...today, exercise: 67.5 }, interactiveLegend: true },
+  play: async ({ canvasElement }) => {
+    const exercise = within(canvasElement).getByRole('button', { name: /^Exercise/ });
+    await expect(exercise).toHaveAccessibleName(
+      /Exercise 67\.5\smins of 30\smins · 225% · \+37\.5\smins over goal/,
+    );
+    await expectDrawn(ringParts(canvasElement)[1]!, 1);
+    await expectDrawn(ringParts(canvasElement, 'lap')[1]!, 1);
+    await waitFor(() =>
+      expect(canvasElement.querySelector('[data-ui="activity-rings-center"]')).toHaveTextContent('83%'),
+    );
+  },
+};
+export const SurplusWithMissingMetric: Story = {
+  args: { values: { distance: null, exercise: 67.5, stand: 9 } },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-ui="activity-rings-center"]')).toHaveTextContent('—');
+    await expect(within(canvasElement).getAllByRole('listitem')[1]).toHaveTextContent(
+      '225% · +37.5 mins over goal',
+    );
+  },
+};
+
+const surplusRatios = [0, 0.999, 1, 1.001, 1.13, 1.99, 2, 3.5];
+const preciseMinutes = (value: number, locale: string | undefined) =>
+  new Intl.NumberFormat(locale, {
+    style: 'unit',
+    unit: 'minute',
+    unitDisplay: 'short',
+    maximumFractionDigits: 2,
+  }).format(value);
+function SurplusStatesFixture(args: RingsArgs) {
+  const [ratio, setRatio] = useState(0);
+  return (
+    <>
+      <div css={fixtureRowStyle}>
+        {surplusRatios.map((next) => (
+          <button key={next} css={fixtureStyle} onClick={() => setRatio(next)}>
+            {new Intl.NumberFormat(args.locale, { style: 'percent', maximumFractionDigits: 1 }).format(next)}
+          </button>
+        ))}
+      </div>
+      <Rings
+        {...args}
+        metrics={[{ ...goals[1]!, formatValue: preciseMinutes }]}
+        values={{ exercise: ratio * 30 }}
+        interactiveLegend
+      />
+    </>
+  );
+}
+/** Rounded percentages do not decide completion; surplus remains exact past two laps. */
+export const SurplusStates: Story = {
+  render: (args) => <SurplusStatesFixture {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const fill = ringParts(canvasElement)[0]!;
+    const lap = ringParts(canvasElement, 'lap')[0]!;
+    const row = canvas.getByRole('button', { name: /^Exercise/ });
+    for (const ratio of surplusRatios) {
+      const label = new Intl.NumberFormat('en-GB', { style: 'percent', maximumFractionDigits: 1 }).format(
+        ratio,
+      );
+      await userEvent.click(canvas.getByRole('button', { name: label }));
+      await expectDrawn(fill, Math.min(1, ratio));
+      await expectDrawn(lap, Math.min(1, Math.max(0, ratio - 1)));
+      if (ratio > 1) {
+        await expect(row).toHaveAccessibleName(
+          new RegExp(
+            `\\+${collapse(preciseMinutes(ratio * 30 - 30, 'en-GB')).replace('.', '\\.')} over goal`,
+          ),
+        );
+        await expect(row).not.toHaveAccessibleName(/Goal met/);
+      } else if (ratio === 1) {
+        await expect(row).toHaveAccessibleName(/100% · Goal met/);
+        await expect(row).not.toHaveAccessibleName(/over goal/);
+      } else {
+        await expect(row).not.toHaveAccessibleName(/Goal met|over goal/);
+      }
+    }
+    await expect(row).toHaveAccessibleName(/105\smins of 30\smins · 350% · \+75\smins over goal/);
+    await expect(lap).toHaveAttribute('stroke-linecap', 'round');
+    await expect(canvasElement.querySelector('line, [data-ui="activity-rings-endpoint"]')).toBeNull();
+    const track = ringParts(canvasElement, 'track')[0]!;
+    const gap =
+      Number(track.getAttribute('r')) -
+      Number(track.getAttribute('stroke-width')) / 2 -
+      Number(lap.getAttribute('r')) -
+      Number(lap.getAttribute('stroke-width')) / 2;
+    await expect(gap).toBeGreaterThan(0);
+    await expect(gap).toBeLessThan(Number(lap.getAttribute('stroke-width')) / 4);
+  },
+};
+
+export const SurplusLabel: Story = {
+  args: { interactiveLegend: true, labels: { overGoal: (amount) => `${amount} above target` } },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('button', { name: /^Exercise/ })).toHaveAccessibleName(
+      /113% · 4\smins above target/,
+    );
+    await waitFor(() =>
+      expect(canvasElement.querySelector('[data-ui="activity-rings-status"]')).toHaveTextContent(
+        '4 mins above target',
+      ),
+    );
+  },
+};
 export const ZeroDay: Story = {
   args: { days: week, values: undefined, defaultValue: week[4]!.id },
   play: async ({ canvasElement }) => {
@@ -412,10 +523,10 @@ export const ValueBoundaries: Story = {
       await expect(items[index]).toHaveTextContent('No data');
       await expect(items[index]).not.toHaveTextContent(percent(0));
     }
-    await expect(items[4]).toHaveTextContent(`0 of 10${percent(0)}`);
-    await expect(items[5]).toHaveTextContent(`0 of 10${percent(0)}`);
+    await expect(items[4]).toHaveTextContent(`0 of 10 · ${percent(0)}`);
+    await expect(items[5]).toHaveTextContent(`0 of 10 · ${percent(0)}`);
     for (const index of [6, 7]) {
-      await expect(items[index]).toHaveTextContent('5Goal unavailable');
+      await expect(items[index]).toHaveTextContent('5 · Goal unavailable');
       await expect(items[index]).not.toHaveTextContent('Goal met');
     }
     const rings = ringParts(canvasElement, 'ring');
@@ -430,9 +541,7 @@ export const ValueBoundaries: Story = {
       'unavailable',
     ]);
     for (const fill of ringParts(canvasElement)) await expectDrawn(fill, 0);
-    await expect(rings.map((ring) => ring.querySelector('[data-ui="activity-rings-tick"]') !== null)).toEqual(
-      [false, false, false, false, true, true, false, false],
-    );
+    await expect(canvasElement.querySelector('line, [data-ui="activity-rings-endpoint"]')).toBeNull();
     await expect(canvasElement.querySelector('[data-ui="activity-rings-summary"]')).toHaveTextContent(
       '0 of 8 goals met',
     );
@@ -1090,7 +1199,7 @@ export const UnsanctionedUnit: Story = {
     const plain = (value: number) =>
       new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 }).format(value);
     const items = within(canvasElement).getAllByRole('listitem');
-    await expect(items[0]).toHaveTextContent(`${plain(320.25)} of ${plain(500)}${percent(0.6405)}`);
+    await expect(items[0]).toHaveTextContent(`${plain(320.25)} of ${plain(500)} · ${percent(0.6405)}`);
     await expect(items[1]).toHaveTextContent(`${amount(4.5, 'kilometer')} of ${amount(6, 'kilometer')}`);
     await expect(ringParts(canvasElement, 'ring').map((ring) => ring.getAttribute('data-status'))).toEqual([
       'open',
