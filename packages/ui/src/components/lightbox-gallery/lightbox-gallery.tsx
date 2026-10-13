@@ -36,6 +36,7 @@ import {
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useImageStatus } from '../../utils/use-image-status';
 import { Filmstrip, ViewerHeader, ViewerToolbar } from './lightbox-gallery-chrome';
 
 export interface LightboxGalleryImage {
@@ -268,11 +269,12 @@ const statusStyle = css({
   color: vars.color.textMuted,
   overflowWrap: 'anywhere',
 });
+// Hidden only while the client knows the image is loading (server markup never carries the
+// state); only the reveal fades.
 const loadingStyle = css({
-  opacity: 0,
   transitionProperty: 'opacity',
   transitionDuration: vars.motion.duration.base,
-  '&[data-image-state="loaded"]': { opacity: 1 },
+  '&[data-image-state="loading"]': { opacity: 0, transitionDuration: '0s' },
   [REDUCED_MOTION]: { transitionDuration: '0s' },
 });
 const returnFlightStyle = css({
@@ -311,11 +313,13 @@ function GalleryImage({
   labels: LightboxGalleryLabels;
   slot?: LightboxGallerySlotProps['image'];
 }) {
-  const [state, setState] = useState<'loading' | 'loaded' | 'error'>(image.src ? 'loading' : 'error');
-  const { onLoad, onError, ...rest } = slot ?? {};
+  const status = useImageStatus(image.src);
+  const { ref, onLoad, onError, ...rest } = slot ?? {};
+  const mergedRef = useMergeRefs([status.ref, ref]);
+  const state = image.src ? status.status : 'error';
   return (
     <>
-      {state !== 'loaded' && (
+      {(state === 'loading' || state === 'error') && (
         <span css={fallbackStyle} aria-hidden={decorative || undefined} data-image-state={state}>
           {decorative ? '▧' : state === 'error' ? labels.imageUnavailable : labels.loading}
         </span>
@@ -323,6 +327,7 @@ function GalleryImage({
       {state !== 'error' && (
         <img
           {...rest}
+          ref={mergedRef}
           css={[imageStyle, loadingStyle, slot?.css]}
           src={image.src}
           srcSet={image.srcSet}
@@ -337,11 +342,11 @@ function GalleryImage({
           data-image-state={state}
           onLoad={(event) => {
             onLoad?.(event);
-            setState('loaded');
+            status.onLoad();
           }}
           onError={(event) => {
             onError?.(event);
-            setState('error');
+            status.onError();
           }}
         />
       )}

@@ -46,6 +46,7 @@ import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useImageStatus } from '../../utils/use-image-status';
 import { Button } from '../button';
 
 export type LinkUnfurlPreviewStatus = 'pending' | 'ready' | 'none' | 'error';
@@ -447,16 +448,17 @@ const imageFrameStyle = css({
 });
 
 // The image settles in once loaded; the frame already holds its geometry, so nothing shifts.
+// Hidden only while the client knows it is loading (server markup never carries the state); only
+// the reveal fades.
 const imageStyle = css({
   display: 'block',
   inlineSize: '100%',
   blockSize: '100%',
   objectFit: 'cover',
-  opacity: 0,
   transitionProperty: 'opacity',
   transitionDuration: vars.motion.duration.slow,
   transitionTimingFunction: vars.motion.easeStandard,
-  '&[data-loaded]': { opacity: 1 },
+  '&[data-image-state="loading"]': { opacity: 0, transitionDuration: '0s' },
   '[data-motion="none"] &': { opacity: 1, transitionDuration: '0s' },
   [REDUCED_MOTION]: { transitionDuration: '0s' },
 });
@@ -509,14 +511,12 @@ function PreviewItem({
   const bodyId = `${id}-body`;
   const bodyRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ pointerId: number; startY: number; height: number; progress: number } | null>(null);
-  // Keyed by URL so a new image gets a fresh attempt without an effect.
-  const [failedSrc, setFailedSrc] = useState<string>();
-  const [loadedSrc, setLoadedSrc] = useState<string>();
   const ready = status === 'ready' && record !== undefined;
   const title = (ready && record.title) || link.url;
   const site = (ready && record.site) || hostOf(link.href);
   const image = ready ? record.image : undefined;
-  const showImage = image !== undefined && image.src !== '' && image.src !== failedSrc;
+  const imageStatus = useImageStatus(image?.src);
+  const showImage = image !== undefined && image.src !== '' && imageStatus.status !== 'error';
   const chip = splitPart(slotProps?.chip);
   const card = splitPart(slotProps?.card);
   const titlePart = splitPart(slotProps?.title);
@@ -655,14 +655,15 @@ function PreviewItem({
                   {...imagePart.attributes}
                   src={image.src}
                   alt={image.alt}
-                  data-loaded={loadedSrc === image.src || undefined}
+                  ref={imageStatus.ref}
+                  data-image-state={imageStatus.status}
                   onLoad={(event) => {
                     imagePart.attributes.onLoad?.(event);
-                    setLoadedSrc(image.src);
+                    imageStatus.onLoad();
                   }}
                   onError={(event) => {
                     imagePart.attributes.onError?.(event);
-                    setFailedSrc(image.src);
+                    imageStatus.onError();
                   }}
                   className={imagePart.className}
                   css={[imageStyle, imagePart.partCss]}

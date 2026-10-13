@@ -170,9 +170,9 @@ export const KeyboardFlow: Story = {
 };
 export const ReactionsOpen: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
-    const add = within(item(canvasElement, 'first')).getByRole('button', { name: 'Add reaction' });
+     const add = within(item(canvasElement, 'first')).getByRole('button', { name: /^Add reaction/ });
     await userEvent.click(add);
-    const picker = await page(canvasElement).findByRole('group', { name: 'Reactions' });
+     const picker = await page(canvasElement).findByRole('group', { name: /^Reactions/ });
     await expect(add).toHaveAttribute('aria-controls', picker.id);
     const emoji = within(picker).getAllByRole('button').slice(0, -1);
     await expect(canvasElement.ownerDocument.activeElement).toBe(emoji[0]);
@@ -192,10 +192,10 @@ export const ReactionsOpen: Story = {
     await userEvent.click(add);
     const field = canvas.getByRole('textbox');
     await userEvent.click(field);
-    await expect(page(canvasElement).queryByRole('group', { name: 'Reactions' })).toBeNull();
+     await expect(page(canvasElement).queryByRole('group', { name: /^Reactions/ })).toBeNull();
     await expect(canvasElement.ownerDocument.activeElement).toBe(field);
     await userEvent.click(add);
-    await expect(await page(canvasElement).findByRole('group', { name: 'Reactions' })).toBeVisible();
+     await expect(await page(canvasElement).findByRole('group', { name: /^Reactions/ })).toBeVisible();
   },
 };
 export const ReadReceipts: Story = {
@@ -222,7 +222,7 @@ export const AllDeliveryStates: Story = {
 export const Retry: Story = {
   args: { defaultValue: [{ ...MESSAGES[2]!, status: 'failed' }], onRetry: fn() },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+     await userEvent.click(canvas.getByRole('button', { name: /^Retry/ }));
     await expect(args.onRetry).toHaveBeenCalledTimes(1);
     await expect(args.onRetry).toHaveBeenLastCalledWith('own');
     await expect(canvas.getByText('Failed')).toBeVisible();
@@ -230,11 +230,35 @@ export const Retry: Story = {
     await expect(part(canvasElement, 'retry-error')).toBeNull();
   },
 };
+export const ContextualActions: Story = {
+  args: {
+    defaultValue: [
+      { id: 'failed-one', authorId: 'grace', text: 'First draft', createdAt: NOW, status: 'failed', reactions: [{ emoji: '👍', count: 1 }] },
+      { id: 'failed-two', authorId: 'grace', text: 'Second draft', createdAt: NOW, status: 'failed', reactions: [{ emoji: '👍', count: 1 }] },
+    ],
+    onRetry: fn(),
+    labels: { addReaction: 'Añadir reacción', retry: 'Reintentar' },
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    for (const text of ['First draft', 'Second draft']) {
+      for (const action of ['Añadir reacción', 'Reintentar', '👍 1 reaction']) {
+        const button = canvas.getByRole('button', { name: (name) => name.startsWith(action) && name.includes(text) });
+        await expect(button).toHaveAccessibleName(expect.stringContaining('Grace Hopper'));
+        await expect(button).toHaveAccessibleName(expect.stringContaining(new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', dateStyle: 'full', timeStyle: 'short' }).format(NOW)));
+      }
+    }
+    await userEvent.click(canvas.getByRole('button', { name: (name) => name.startsWith('Añadir reacción') && name.includes('First draft') }));
+    const picker = await page(canvasElement).findByRole('group', { name: /^Reactions.*First draft/ });
+    await expect(within(picker).getByRole('button', { name: /^React with 👍.*First draft/ })).toBeVisible();
+    await expect(within(picker).getByRole('button', { name: /^Close reactions.*First draft/ })).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+  },
+};
 export const RetryFailure: Story = {
   args: { defaultValue: [{ ...MESSAGES[2]!, status: 'failed' }], onRetry: fn(() => Promise.reject(new Error('offline'))) },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await expect(part(canvasElement, 'retry-error')).toBeNull();
-    await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+     await userEvent.click(canvas.getByRole('button', { name: /^Retry/ }));
     await expect(args.onRetry).toHaveBeenCalledTimes(1);
     await expect(args.onRetry).toHaveBeenLastCalledWith('own');
     await waitFor(() => expect(part(canvasElement, 'retry-error')).toHaveTextContent('Message could not be sent'));
@@ -347,13 +371,13 @@ export const RejectedDraft: Story = {
 export const RejectedReaction: Story = {
   args: { value: MESSAGES },
   play: async ({ canvas, args, userEvent }) => {
-    const reaction = canvas.getByRole('button', { name: '👍 2 reactions, including you' });
+     const reaction = canvas.getByRole('button', { name: /^👍 2 reactions, including you/ });
     await userEvent.click(reaction);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(lastEvent(args.onValueChange)).toEqual({ type: 'react', id: 'second', emoji: '👍', added: false });
     await expect(lastMessages(args.onValueChange)[1]!.reactions).toEqual([{ emoji: '👍', count: 1, mine: false }]);
     await expect(reaction).toHaveAttribute('aria-pressed', 'true');
-    await expect(reaction).toHaveAccessibleName('👍 2 reactions, including you');
+     await expect(reaction).toHaveAccessibleName(expect.stringContaining('👍 2 reactions, including you'));
     await expect(MESSAGES[1]!.reactions).toEqual([{ emoji: '👍', count: 2, mine: true }]);
   },
 };
@@ -391,7 +415,7 @@ export const LongContent: Story = {
   play: async ({ canvasElement, canvas }) => {
     const scroller = part(canvasElement, 'scroller');
     await expect(scroller.scrollWidth).toBeLessThanOrEqual(scroller.clientWidth + 2);
-    const reaction = canvas.getByRole('button', { name: '👀 12,345 reactions' });
+     const reaction = canvas.getByRole('button', { name: /^👀 12,345 reactions/ });
     await expect(reaction.scrollWidth).toBeLessThanOrEqual(reaction.clientWidth + 2);
   },
 };
@@ -552,8 +576,8 @@ export const RTL: Story = {
     const own = item(canvasElement, 'own').querySelector('article')!.getBoundingClientRect();
     const other = item(canvasElement, 'first').querySelector('article')!.getBoundingClientRect();
     await expect(own.left).toBeLessThan(other.left);
-    await userEvent.click(within(item(canvasElement, 'first')).getByRole('button', { name: 'Add reaction' }));
-    const picker = await page(canvasElement).findByRole('group', { name: 'Reactions' });
+     await userEvent.click(within(item(canvasElement, 'first')).getByRole('button', { name: /^Add reaction/ }));
+     const picker = await page(canvasElement).findByRole('group', { name: /^Reactions/ });
     const emoji = within(picker).getAllByRole('button').slice(0, -1);
     await userEvent.keyboard('{ArrowLeft}');
     await expect(canvasElement.ownerDocument.activeElement).toBe(emoji[1]);
