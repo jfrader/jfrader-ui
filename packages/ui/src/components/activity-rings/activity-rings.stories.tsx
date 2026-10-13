@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import {
   ActivityRings,
@@ -33,18 +34,14 @@ const goals: ActivityMetric[] = [
 ];
 const today = { distance: 4.5, exercise: 34, stand: 9 };
 const week: ActivityDay[] = [
-  ['2026-10-05', 6.1, 41, 12],
-  ['2026-10-06', 3.2, 12, 8],
-  ['2026-10-07', 5.4, 30, 11],
-  ['2026-10-08', 7, 52, 13],
-  ['2026-10-09', 1.5, 0, 5],
-  ['2026-10-10', 5.9, 28, 12],
-  ['2026-10-11', 4.5, 34, 9],
-].map(([date, distance, exercise, stand]) => ({
-  id: `day-${date}`,
-  date: date as string,
-  values: { distance: distance as number, exercise: exercise as number, stand: stand as number },
-}));
+  { id: 'day-2026-10-05', date: '2026-10-05', values: { distance: 6.1, exercise: 41, stand: 12 } },
+  { id: 'day-2026-10-06', date: '2026-10-06', values: { distance: 3.2, exercise: 12, stand: 8 } },
+  { id: 'day-2026-10-07', date: '2026-10-07', values: { distance: 5.4, exercise: 30, stand: 11 } },
+  { id: 'day-2026-10-08', date: '2026-10-08', values: { distance: 7, exercise: 52, stand: 13 } },
+  { id: 'day-2026-10-09', date: '2026-10-09', values: { distance: 0, exercise: 0, stand: 0 } },
+  { id: 'day-2026-10-10', date: '2026-10-10', values: { distance: null, exercise: null, stand: null } },
+  { id: 'day-2026-10-11', date: '2026-10-11', values: today },
+];
 const lastDay = week.at(-1)!.id;
 /** Text matchers collapse whitespace on the received side only; Intl output uses no-break spaces. */
 const collapse = (text: string) => text.replace(/\s+/g, ' ');
@@ -56,13 +53,17 @@ const percent = (ratio: number, locale = 'en-GB') =>
   collapse(new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }).format(ratio));
 const amount = (value: number, unit: string, locale = 'en-GB') =>
   collapse(
-    new Intl.NumberFormat(locale, { style: 'unit', unit, unitDisplay: 'short', maximumFractionDigits: 1 }).format(
-      value,
-    ),
+    new Intl.NumberFormat(locale, {
+      style: 'unit',
+      unit,
+      unitDisplay: 'short',
+      maximumFractionDigits: 1,
+    }).format(value),
   );
 
 const frameStyle = css({
-  inlineSize: 'min(100%, 40rem)',
+  inlineSize: `min(24rem, calc(100vw - ${vars.space[8]}))`,
+  maxInlineSize: '100%',
   display: 'grid',
   gap: vars.space[4],
 });
@@ -76,7 +77,9 @@ const fixtureStyle = css({
 });
 const fixtureRowStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
 
-const ringParts = (root: Element, part = 'fill') => [...root.querySelectorAll(`[data-ui="activity-rings-${part}"]`)];
+const ringParts = (root: Element, part = 'fill') => [
+  ...root.querySelectorAll(`[data-ui="activity-rings-${part}"]`),
+];
 const drawnLaps = (stroke: Element) => Number.parseFloat(stroke.getAttribute('stroke-dasharray') ?? 'NaN');
 /** Waits for the sweep to settle on its target; tolerant of easing and sub-pixel rounding. */
 async function expectDrawn(stroke: Element, laps: number) {
@@ -108,11 +111,14 @@ const meta = {
     docs: {
       description: {
         component:
-          'Track progress toward goals with rings. Choose a day or select a ring to view one metric.',
+          'Track daily activity against independent goals. Compare days with the week picker. Enable the interactive legend to preview or pin a metric.',
       },
       usage: `- Each ring compares a metric with its goal using the UsageMeter value rules and Intl percentage formatting.
 - The SVG is decorative. The legend gives the amount, goal, and percentage; unknown values show "No data", not zero.
 - Above 100%, a second lap appears inside the ring. At 200% and above, both laps stay full; the text shows the exact total.
+- The centre averages completion across goals, capping each at 100%. It shows a dash if any goal is unknown or unavailable. Mixed units are never added together. Translate the caption with \`labels.completion\`.
+- Legend rows are static by default. With \`interactiveLegend\`, hover or focus previews a metric; activation toggles a pin. Preview does not call \`onFocusedMetricChange\`.
+- Counts and sweeps retarget from their displayed values. Assistive technology receives committed values, not intermediate counts. Reduced motion shows the result immediately.
 - \`days\` takes precedence over \`values\`.
 - \`onRingClose\` fires when a value rises to its goal on the same day. Mounting, remounting, and changing days do not fire it.
 
@@ -151,6 +157,12 @@ export const Default: Story = {
       '1 of 3 goals met',
     );
     await expect(args.onRingClose).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(canvasElement.querySelector('[data-ui="activity-rings-center"]')).toHaveTextContent('83%'),
+    );
+    await expect(canvasElement.querySelector('[data-ui="activity-rings-summary"]')).toHaveTextContent(
+      '83% of goals',
+    );
   },
 };
 
@@ -209,6 +221,48 @@ export const Isolated: Story = {
       'aria-pressed',
       'true',
     );
+  },
+};
+
+/** Hover previews another metric without replacing a controlled pin. */
+export const MetricPreview: Story = {
+  args: { interactiveLegend: true, focusedMetric: 'stand' },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const canvas = within(canvasElement);
+    const center = canvasElement.querySelector('[data-ui="activity-rings-center"]')!;
+    const distance = canvas.getByRole('button', { name: /Distance/ });
+    await userEvent.hover(distance);
+    await expect(center).toHaveAttribute('data-metric', 'distance');
+    await expect(ringParts(canvasElement, 'ring')[2]).toHaveAttribute('data-dimmed', 'true');
+    await expect(canvas.getByRole('button', { name: /Stand/ })).toHaveAttribute('aria-pressed', 'true');
+    await expect(args.onFocusedMetricChange).not.toHaveBeenCalled();
+    await userEvent.unhover(distance);
+    await expect(center).toHaveAttribute('data-metric', 'stand');
+    await userEvent.click(distance);
+    await expect(args.onFocusedMetricChange).toHaveBeenCalledTimes(1);
+    await expect(center).toHaveAttribute('data-metric', 'stand');
+  },
+};
+
+export const CancelledPreview: Story = {
+  args: {
+    interactiveLegend: true,
+    slotProps: {
+      metric: {
+        onMouseEnter: (event) => event.preventDefault(),
+        onFocus: (event) => event.preventDefault(),
+        onClick: (event) => event.preventDefault(),
+      },
+    },
+  },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const button = within(canvasElement).getByRole('button', { name: /Distance/ });
+    await userEvent.hover(button);
+    await userEvent.click(button);
+    await expect(canvasElement.querySelector('[data-ui="activity-rings-center"]')).not.toHaveAttribute(
+      'data-metric',
+    );
+    await expect(args.onFocusedMetricChange).not.toHaveBeenCalled();
   },
 };
 
@@ -273,7 +327,7 @@ const lapMetrics: ActivityMetric[] = [0, 1, 1.5, 2, 3.2].map((ratio) => ({
   label: `Ratio ${ratio}`,
   goal: 100,
 }));
-export const Laps: Story = {
+export const LapBoundaries: Story = {
   args: {
     metrics: lapMetrics,
     values: Object.fromEntries([0, 1, 1.5, 2, 3.2].map((ratio) => [`ratio-${ratio}`, ratio * 100])),
@@ -281,8 +335,8 @@ export const Laps: Story = {
   play: async ({ canvasElement }) => {
     const rings = ringParts(canvasElement, 'ring');
     const expected = [
-      [0, null],
-      [1, null],
+      [0, 0],
+      [1, 0],
       [1, 0.5],
       [1, 1],
       [1, 1],
@@ -291,8 +345,8 @@ export const Laps: Story = {
       const fill = rings[index]!.querySelector('[data-ui="activity-rings-fill"]')!;
       await expectDrawn(fill, first);
       const lap = rings[index]!.querySelector('[data-ui="activity-rings-lap"]');
-      if (second === null) await expect(lap).toBeNull();
-      else await expectDrawn(lap!, second);
+      await expectDrawn(lap!, second);
+      await expect(Number(lap!.getAttribute('r'))).toBeLessThan(Number(fill.getAttribute('r')));
     }
     const items = within(canvasElement).getAllByRole('listitem');
     await expect(items[0]).toHaveTextContent(percent(0));
@@ -304,7 +358,33 @@ export const Laps: Story = {
   },
 };
 
+export const Laps: Story = { args: { values: { distance: 9, exercise: 52, stand: 13 } } };
+export const ZeroDay: Story = {
+  args: { days: week, values: undefined, defaultValue: week[4]!.id },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-ui="activity-rings-center"]')).toHaveTextContent('0%');
+    const days = [...canvasElement.querySelectorAll('[data-ui="activity-rings-day"]')];
+    await expect(days[4]!.querySelector('text')).toBeNull();
+    await expect(days[5]!.querySelector('text')).toHaveTextContent('—');
+  },
+};
 export const UnknownAndInvalid: Story = {
+  args: {
+    metrics: [goals[0]!, goals[1]!, { ...goals[2]!, goal: 0 }],
+    values: { distance: null, exercise: null, stand: 9 },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-ui="activity-rings-center"]')).toHaveTextContent('—');
+    await expect(canvasElement.querySelector('[data-ui="activity-rings-summary"]')).toHaveTextContent(
+      'No data',
+    );
+    await expect(canvasElement.querySelector('[data-ui="activity-rings-summary"]')).not.toHaveTextContent(
+      '0 of',
+    );
+  },
+};
+
+export const ValueBoundaries: Story = {
   args: {
     metrics: [
       { id: 'missing', label: 'Missing', goal: 10 },
@@ -350,9 +430,9 @@ export const UnknownAndInvalid: Story = {
       'unavailable',
     ]);
     for (const fill of ringParts(canvasElement)) await expectDrawn(fill, 0);
-    await expect(
-      rings.map((ring) => ring.querySelector('[data-ui="activity-rings-tick"]') !== null),
-    ).toEqual([false, false, false, false, true, true, false, false]);
+    await expect(rings.map((ring) => ring.querySelector('[data-ui="activity-rings-tick"]') !== null)).toEqual(
+      [false, false, false, false, true, true, false, false],
+    );
     await expect(canvasElement.querySelector('[data-ui="activity-rings-summary"]')).toHaveTextContent(
       '0 of 8 goals met',
     );
@@ -363,7 +443,10 @@ export const EmptyMetrics: Story = {
   args: { metrics: [] },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole('list')).toBeNull();
-    await expect(canvasElement.querySelector('[data-ui="activity-rings-summary"]')).toHaveTextContent('No goals');
+    await expect(canvasElement.querySelector('svg')).toBeNull();
+    await expect(canvasElement.querySelector('[data-ui="activity-rings-summary"]')).toHaveTextContent(
+      'No goals',
+    );
   },
 };
 export const EmptyDays: Story = {
@@ -419,6 +502,26 @@ export const KeyboardWeek: Story = {
     const toggles = canvas.getAllByRole('button').slice(1, -1);
     await userEvent.click(canvas.getByRole('button', { name: 'Before' }));
     await userEvent.tab();
+    await expect(doc.activeElement).toBe(toggles[0]);
+    await expect(doc.defaultView!.getComputedStyle(toggles[0]!).outlineStyle).not.toBe('none');
+    await expect(toggles[0]!.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
+    await expect(canvasElement.querySelector('[data-ui="activity-rings-center"]')).toHaveAttribute(
+      'data-metric',
+      'distance',
+    );
+    await expect(args.onFocusedMetricChange).not.toHaveBeenCalled();
+    await userEvent.keyboard('{Enter}');
+    await expect(toggles[0]).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.keyboard(' ');
+    await expect(toggles[0]).toHaveAttribute('aria-pressed', 'false');
+    await expect(args.onFocusedMetricChange).toHaveBeenCalledTimes(2);
+    await expect(args.onFocusedMetricChange).toHaveBeenNthCalledWith(1, 'distance');
+    await expect(args.onFocusedMetricChange).toHaveBeenNthCalledWith(2, null);
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onFocusedMetricChange).toHaveBeenCalledTimes(2);
+    await userEvent.tab();
+    await userEvent.tab();
+    await userEvent.tab();
     await expect(doc.activeElement).toBe(radios[6]);
     const label = radios[6]!.closest('label')!;
     await expect(doc.defaultView!.getComputedStyle(label).outlineStyle).not.toBe('none');
@@ -438,27 +541,13 @@ export const KeyboardWeek: Story = {
     await expect(args.onValueChange).toHaveBeenNthCalledWith(3, week[6]!.id);
     await expect(args.onValueChange).toHaveBeenCalledTimes(3);
     await userEvent.tab();
-    await expect(doc.activeElement).toBe(toggles[0]);
-    await expect(doc.defaultView!.getComputedStyle(toggles[0]!).outlineStyle).not.toBe('none');
-    await expect(toggles[0]!.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
-    await userEvent.keyboard('{Enter}');
-    await expect(toggles[0]).toHaveAttribute('aria-pressed', 'true');
-    await userEvent.keyboard(' ');
-    await expect(toggles[0]).toHaveAttribute('aria-pressed', 'false');
-    await expect(args.onFocusedMetricChange).toHaveBeenCalledTimes(2);
-    await expect(args.onFocusedMetricChange).toHaveBeenNthCalledWith(1, 'distance');
-    await expect(args.onFocusedMetricChange).toHaveBeenNthCalledWith(2, null);
-    await userEvent.keyboard('{Escape}');
-    await expect(args.onFocusedMetricChange).toHaveBeenCalledTimes(2);
-    await userEvent.tab();
-    await userEvent.tab();
-    await userEvent.tab();
     await expect(doc.activeElement).toBe(canvas.getByRole('button', { name: 'After' }));
     await userEvent.tab({ shift: true });
-    await userEvent.tab({ shift: true });
-    await userEvent.tab({ shift: true });
-    await userEvent.tab({ shift: true });
     await expect(doc.activeElement).toBe(radios[6]);
+    await userEvent.tab({ shift: true });
+    await userEvent.tab({ shift: true });
+    await userEvent.tab({ shift: true });
+    await expect(doc.activeElement).toBe(toggles[0]);
     await expect(args.onRingClose).not.toHaveBeenCalled();
   },
 };
@@ -536,7 +625,8 @@ export const Controlled: Story = {
     await expect(args.onValueChange).not.toHaveBeenCalled();
     await expect(args.onFocusedMetricChange).not.toHaveBeenCalled();
     await userEvent.click(canvas.getByRole('button', { name: 'Isolate empty id' }));
-    for (const toggle of canvas.getAllByRole('button', { pressed: false })) await expect(toggle).toBeVisible();
+    for (const toggle of canvas.getAllByRole('button', { pressed: false }))
+      await expect(toggle).toBeVisible();
     await expect(canvas.queryAllByRole('button', { pressed: true })).toHaveLength(0);
     await userEvent.click(canvas.getByRole('button', { name: /Stand/ }));
     await expect(args.onFocusedMetricChange).toHaveBeenCalledTimes(1);
@@ -612,6 +702,42 @@ export const GoalCrossing: Story = {
   },
 };
 
+function GoalValidityFixture(args: RingsArgs) {
+  const [state, setState] = useState({ goal: 6, distance: 0 });
+  return (
+    <>
+      <div css={fixtureRowStyle}>
+        <button css={fixtureStyle} onClick={() => setState({ goal: 0, distance: 0 })}>
+          Remove goal
+        </button>
+        <button css={fixtureStyle} onClick={() => setState({ goal: 6, distance: 6 })}>
+          Restore completed goal
+        </button>
+        <button css={fixtureStyle} onClick={() => setState({ goal: 6, distance: 3 })}>
+          Walk 3 km
+        </button>
+      </div>
+      <Rings {...args} metrics={[{ ...goals[0]!, goal: state.goal }]} values={{ distance: state.distance }} />
+    </>
+  );
+}
+
+/** Restoring a goal starts a new baseline, even when its previous ratio was zero. */
+export const GoalValidityBaseline: Story = {
+  render: (args) => <GoalValidityFixture {...args} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove goal' }));
+    await expect(canvas.getByRole('listitem')).toHaveTextContent('Goal unavailable');
+    await userEvent.click(canvas.getByRole('button', { name: 'Restore completed goal' }));
+    await expect(canvas.getByRole('listitem')).toHaveTextContent('Goal met');
+    await expect(args.onRingClose).not.toHaveBeenCalled();
+    await userEvent.click(canvas.getByRole('button', { name: 'Walk 3 km' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Restore completed goal' }));
+    await expect(args.onRingClose).toHaveBeenCalledTimes(1);
+  },
+};
+
 function DayCrossingFixture(args: RingsArgs) {
   const [mounted, setMounted] = useState(true);
   return (
@@ -637,7 +763,7 @@ export const DaySwitchNoCelebration: Story = {
 };
 
 /** Inside the 240ms sweep, so the second update retargets a moving fill. */
-const MID_SWEEP_MS = 60;
+const MID_SWEEP_MS = motionDurationMs.slow / 4;
 function QuickUpdatesFixture(args: RingsArgs) {
   const [distance, setDistance] = useState(0);
   return (
@@ -659,11 +785,94 @@ export const QuickInterruptedUpdates: Story = {
   render: (args) => <QuickUpdatesFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
+    const fill = ringParts(canvasElement)[0]!;
+    const counter = canvas.getByRole('listitem').querySelector('[data-ui="activity-rings-count"]')!;
+    const samples: { amount: number; sweep: number; target: number }[] = [];
+    const view = canvasElement.ownerDocument.defaultView!;
+    const sampling = new Promise<void>((resolve) => {
+      const start = view.performance.now();
+      const sample = () => {
+        samples.push({
+          amount: parseFloat(counter.textContent!),
+          sweep: drawnLaps(fill),
+          target: Number(fill.getAttribute('data-laps')),
+        });
+        if (view.performance.now() - start > motionDurationMs.slow * 3) resolve();
+        else view.requestAnimationFrame(sample);
+      };
+      view.requestAnimationFrame(sample);
+    });
     await userEvent.click(canvas.getByRole('button', { name: 'Interrupt' }));
+    await sampling;
+    await expect(
+      samples.some((sample) => sample.target > 0.8 && sample.amount > 0 && sample.amount < 5),
+    ).toBe(true);
+    await expect(
+      samples.some(
+        (sample) => sample.target === 0.5 && sample.amount > 0 && Math.abs(sample.amount - 3) > 0.1,
+      ),
+    ).toBe(true);
+    for (const sample of samples) {
+      await expect(Math.abs(sample.sweep - sample.amount / 6)).toBeLessThan(0.04);
+    }
     await waitFor(() => expect(canvas.getByRole('listitem')).toHaveTextContent(percent(0.5)));
     await expectDrawn(ringParts(canvasElement)[0]!, 0.5);
-    await expect(ringParts(canvasElement, 'lap')).toHaveLength(0);
+    await expectDrawn(ringParts(canvasElement, 'lap')[0]!, 0);
     await expect(args.onRingClose).toHaveBeenCalledTimes(0);
+  },
+};
+
+function LapReturnFixture(args: RingsArgs) {
+  const [distance, setDistance] = useState(9);
+  return (
+    <>
+      <button css={fixtureStyle} onClick={() => setDistance(3)}>
+        Walk 3 km
+      </button>
+      <button css={fixtureStyle} onClick={() => setDistance(9)}>
+        Walk 9 km
+      </button>
+      <Rings {...args} metrics={goals.slice(0, 1)} values={{ distance }} />
+    </>
+  );
+}
+
+/** The surplus trace retracts before the first lap, with counts following the same sweep. */
+export const ReturningSecondLap: Story = {
+  render: (args) => <LapReturnFixture {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const lap = ringParts(canvasElement, 'lap')[0]!;
+    const fill = ringParts(canvasElement)[0]!;
+    const counter = canvas.getByRole('listitem').querySelector('[data-ui="activity-rings-count"]')!;
+    await expectDrawn(lap, 0.5);
+    await userEvent.click(canvas.getByRole('button', { name: 'Walk 3 km' }));
+    await expect(ringParts(canvasElement, 'lap')[0]).toBe(lap);
+    const samples: { amount: number; lap: number; fill: number }[] = [];
+    const view = canvasElement.ownerDocument.defaultView!;
+    await new Promise<void>((resolve) => {
+      const start = view.performance.now();
+      const sample = () => {
+        samples.push({
+          amount: parseFloat(counter.textContent!),
+          lap: drawnLaps(lap),
+          fill: drawnLaps(fill),
+        });
+        if (view.performance.now() - start > motionDurationMs.slow * 2) resolve();
+        else view.requestAnimationFrame(sample);
+      };
+      view.requestAnimationFrame(sample);
+    });
+    await expect(samples.some((sample) => sample.lap > 0 && sample.lap < 0.5)).toBe(true);
+    await expect(samples.some((sample) => sample.amount > 3 && sample.amount < 9)).toBe(true);
+    for (const sample of samples) {
+      await expect(Math.abs(sample.fill - Math.min(sample.amount / 6, 1))).toBeLessThan(0.04);
+      await expect(Math.abs(sample.lap - Math.max(sample.amount / 6 - 1, 0))).toBeLessThan(0.04);
+    }
+    await expectDrawn(lap, 0);
+    await expectDrawn(fill, 0.5);
+    await expect(counter).toHaveTextContent('3 km of 6 km');
+    await expect(canvas.getByRole('listitem')).toHaveTextContent('50%');
   },
 };
 
@@ -681,7 +890,9 @@ export const IntlFormatting: Story = {
       const first = within(region).getAllByRole('listitem')[0]!;
       await expect(first).toHaveTextContent(amount(4.5, 'kilometer', locale));
       await expect(first).toHaveTextContent(percent(0.75, locale));
-      await expect(within(region).getAllByRole('radio')[0]).toHaveAccessibleName(fullDate('2026-10-05', locale));
+      await expect(within(region).getAllByRole('radio')[0]).toHaveAccessibleName(
+        fullDate('2026-10-05', locale),
+      );
     }
   },
 };
@@ -704,7 +915,12 @@ export const LongIntlUnits: Story = {
   args: {
     locale: 'de',
     metrics: [
-      { id: 'distance', label: 'Zurückgelegte Strecke im Wochenvergleich', goal: 123456.7, unit: 'kilometer' },
+      {
+        id: 'distance',
+        label: 'Zurückgelegte Strecke im Wochenvergleich',
+        goal: 123456.7,
+        unit: 'kilometer',
+      },
       { id: 'speed', label: 'Durchschnittsgeschwindigkeit', goal: 98765.4, unit: 'kilometer-per-hour' },
       { id: 'volume', label: 'Wasseraufnahme', goal: 3, unit: 'liter' },
     ],
@@ -717,9 +933,9 @@ export const LongIntlUnits: Story = {
   },
 };
 
-export const Narrow: Story = {
+export const NarrowLongUnits: Story = {
   ...LongIntlUnits,
-  args: { ...LongIntlUnits.args, days: week, values: undefined, interactiveLegend: true },
+  args: { ...LongIntlUnits.args, interactiveLegend: true },
   decorators: [
     (Story) => (
       <div style={{ inlineSize: 320, maxInlineSize: '100%' }}>
@@ -737,10 +953,26 @@ export const Narrow: Story = {
     await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth + 1);
   },
 };
+export const Narrow: Story = {
+  args: { days: week, values: undefined, interactiveLegend: true },
+  decorators: [
+    (Story) => (
+      <div style={{ inlineSize: 320, maxInlineSize: '100%' }}>
+        <Story />
+      </div>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    const days = [...canvasElement.querySelectorAll('[data-ui="activity-rings-day"]')];
+    await expect(new Set(days.map((day) => Math.round(day.getBoundingClientRect().top))).size).toBe(1);
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="activity-rings"]')!;
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+  },
+};
 export const Wide: Story = {
   decorators: [
     (Story) => (
-      <div style={{ inlineSize: '40rem', maxInlineSize: '100%' }}>
+      <div style={{ inlineSize: '40rem', maxInlineSize: 'calc(100vw - 2rem)' }}>
         <Story />
       </div>
     ),
@@ -855,7 +1087,8 @@ export const UnsanctionedUnit: Story = {
     values: { energy: 320.25, distance: 4.5 },
   },
   play: async ({ canvasElement }) => {
-    const plain = (value: number) => new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 }).format(value);
+    const plain = (value: number) =>
+      new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 }).format(value);
     const items = within(canvasElement).getAllByRole('listitem');
     await expect(items[0]).toHaveTextContent(`${plain(320.25)} of ${plain(500)}${percent(0.6405)}`);
     await expect(items[1]).toHaveTextContent(`${amount(4.5, 'kilometer')} of ${amount(6, 'kilometer')}`);
@@ -926,7 +1159,12 @@ function slotTypeRegressions(flag: boolean) {
     // @ts-expect-error A plain legend row rejects button-only attributes.
     <ActivityRings key="row" metrics={goals} slotProps={{ metric: { type: 'submit' } }} />,
     // @ts-expect-error A runtime-boolean legend accepts only props shared by both row elements.
-    <ActivityRings key="runtime" metrics={goals} interactiveLegend={flag} slotProps={{ metric: { onClick: onButtonClick } }} />,
+    <ActivityRings
+      key="runtime"
+      metrics={goals}
+      interactiveLegend={flag}
+      slotProps={{ metric: { onClick: onButtonClick } }}
+    />,
     <ActivityRings
       key="shared"
       metrics={goals}
@@ -947,7 +1185,9 @@ export const RTL: Story = {
   args: { dir: 'rtl', locale: 'ar-EG', days: week, values: undefined },
   play: async ({ canvasElement, userEvent, args }) => {
     const radios = within(canvasElement).getAllByRole('radio');
-    await expect(radios[0]!.getBoundingClientRect().left).toBeGreaterThan(radios[6]!.getBoundingClientRect().left);
+    await expect(radios[0]!.getBoundingClientRect().left).toBeGreaterThan(
+      radios[6]!.getBoundingClientRect().left,
+    );
     await userEvent.click(radios[3]!);
     await userEvent.keyboard('{Home}');
     await expect(canvasElement.ownerDocument.activeElement).toBe(radios[0]);

@@ -15,6 +15,7 @@
 
 ### Improved
 
+- ActivityRings uses neutral tick rings, a central completion figure, flat legend rows and daily previews. Interactive legends preview metrics on hover or focus; amounts, percentages and inner surplus arcs animate together.
 - Foundation guides use highlighted, copyable code examples and terminal commands with optional replay.
 - `ToastStack` keeps a `contained` stack inside its host when consumer styles add padding to it.
 - `ToastStack` casts a single shadow for a collapsed pile, so the cards behind it stay white instead of turning grey on light surfaces.
@@ -27,6 +28,7 @@
 
 ### Fixed
 
+- ActivityRings no longer reports a goal crossing when a completed goal is restored after being unavailable.
 - Dialogs with short content keep a 320px minimum width, reduced to fit narrow viewports with 16px side gutters. Set size limits on Dialog.Content; set `minInlineSize: 0` to opt out of the default minimum.
 - Card with `appearance="default"` inside a contrast parent keeps that appearance in descendant portals.
 - BottomSheet and Dialog panels can publish contrast appearance to descendant portals. DialogStack panels retain declaration-site themes and scoped tokens through the stage portal.

@@ -4,17 +4,18 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   type ComponentPropsWithoutRef,
   type ComponentPropsWithRef,
   type CSSProperties,
   type KeyboardEvent,
 } from 'react';
-import { MotionConfig, animate, motion, useMotionValue, useReducedMotion } from 'motion/react';
-import { base } from '@jfrader/tokens';
+import { MotionConfig, animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -63,14 +64,13 @@ export interface ActivityRingsLabels {
   goalMet: string;
   noSelection: string;
   empty: string;
+  /** Caption under the mean completion percentage. */
+  completion?: string;
   amount: (value: string, goal: string) => string;
   summary: (met: string, total: string) => string;
 }
 type PartElement = 'svg' | 'ul' | 'button' | 'div' | 'fieldset' | 'label' | 'p';
-export type ActivityRingsPartProps<T extends PartElement> = Omit<
-  ComponentPropsWithoutRef<T>,
-  'children'
-> & {
+export type ActivityRingsPartProps<T extends PartElement> = Omit<ComponentPropsWithoutRef<T>, 'children'> & {
   css?: Interpolation<Theme>;
 };
 type DataSource =
@@ -151,10 +151,11 @@ const DEFAULT_LABELS: ActivityRingsLabels = {
   goalMet: 'Goal met',
   noSelection: 'No day selected',
   empty: 'No goals',
+  completion: 'of goals',
   amount: (value, goal) => `${value} of ${goal}`,
   summary: (met, total) => `${met} of ${total} goals met`,
 };
-const TONES: readonly ActivityTone[] = ['accent', 'success', 'info', 'warning'];
+const CATEGORY_COLORS = [vars.color.text, vars.color.textMuted, vars.color.borderControl];
 const NO_VALUES: ActivityValues = {};
 const NO_DAYS: readonly ActivityDay[] = [];
 
@@ -163,23 +164,26 @@ const NO_DAYS: readonly ActivityDay[] = [];
 const VIEWBOX = 120;
 const CENTER = VIEWBOX / 2;
 const OUTER_RADIUS = 58;
-const CORE_RADIUS = 14;
+const CORE_RADIUS = 27;
 /** Share of each ring's band drawn as stroke; the rest is the gap to the next ring. */
-const STROKE_SHARE = 0.8;
-/** Second-lap stroke as a share of the ring stroke, drawn inset over the first lap. */
-const LAP_SHARE = 0.4;
+const STROKE_SHARE = 0.55;
+const LAP_SHARE = 0.15;
 /** A second lap is the visual cap: 200% and beyond draws two full laps, the text stays exact. */
 const MAX_LAPS = 2;
 /** Goal tick length past the ring stroke on both sides, in viewBox units. */
 const TICK_OVERHANG = 1;
+const TICK_SPACING = 6;
+const MIN_TICKS = 24;
+const TICK_FILL_SHARE = 0.35;
+const ENDPOINT_RADIUS = 2;
 const MAX_STROKE: Record<ActivityRingsSize, number> = { sm: 16, md: 14, lg: 12 };
-const RING_SIZE: Record<ActivityRingsSize, string> = { sm: '7rem', md: '10rem', lg: '14rem' };
+const RING_SIZE: Record<ActivityRingsSize, string> = { sm: '10rem', md: '13.5rem', lg: '16rem' };
 /** Root width from which the legend sits beside the rings instead of below them. */
-const WIDE_MIN = '32rem';
+const WIDE_MIN = '30rem';
 /** `motion.easeStandard` (tokens.ts) as cubic-bezier numbers; `motion` cannot consume the CSS string. */
 const EASE_STANDARD = [0.2, 0.6, 0.2, 1] as const;
 const SWEEP = {
-  duration: Number.parseFloat(base.motion.duration.slow) / 1000, // e.g. '240ms' -> 0.24s
+  duration: motionDurationMs.slow / 1000,
   ease: EASE_STANDARD,
 } as const;
 
@@ -205,6 +209,44 @@ const layoutStyle = css({
   alignItems: 'center',
   justifyContent: 'center',
 });
+const dialStyle = css({
+  display: 'grid',
+  flex: 'none',
+  inlineSize: 'var(--rings-size)',
+  maxInlineSize: '100%',
+  '& > *': { gridArea: '1 / 1' },
+});
+const centerStyle = css({
+  alignSelf: 'center',
+  justifySelf: 'center',
+  inlineSize: '44%',
+  textAlign: 'center',
+  minInlineSize: 0,
+  lineHeight: vars.lineHeight.tight,
+  fontVariantNumeric: 'tabular-nums',
+  pointerEvents: 'none',
+});
+const centerNumberStyle = css({
+  display: 'block',
+  fontSize: 'var(--rings-figure-size)',
+  fontWeight: vars.fontWeight.semibold,
+  '&[data-focused="true"]': {
+    fontSize: vars.textSize.xl,
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical',
+    WebkitLineClamp: 2,
+    overflow: 'hidden',
+  },
+});
+const centerCaptionStyle = css({
+  display: '-webkit-box',
+  WebkitBoxOrient: 'vertical',
+  WebkitLineClamp: 2,
+  overflow: 'hidden',
+  marginBlockStart: vars.space[1],
+  fontSize: vars.textSize.xs,
+  color: vars.color.textMuted,
+});
 const bodyStyle = css({
   display: 'grid',
   gap: vars.space[3],
@@ -212,9 +254,13 @@ const bodyStyle = css({
   minInlineSize: 0,
 });
 const sizeStyles = {
-  sm: css({ '--rings-size': RING_SIZE.sm }),
-  md: css({ '--rings-size': RING_SIZE.md }),
-  lg: css({ '--rings-size': RING_SIZE.lg, fontSize: vars.textSize.md }),
+  sm: css({ '--rings-size': RING_SIZE.sm, '--rings-figure-size': vars.textSize.xl }),
+  md: css({ '--rings-size': RING_SIZE.md, '--rings-figure-size': vars.textSize['3xl'] }),
+  lg: css({
+    '--rings-size': RING_SIZE.lg,
+    '--rings-figure-size': vars.textSize['3xl'],
+    fontSize: vars.textSize.md,
+  }),
 };
 const svgStyle = css({
   display: 'block',
@@ -235,7 +281,7 @@ const ringStyle = css({
 });
 const trackStyle = css({
   fill: 'none',
-  stroke: vars.color.surfaceHover,
+  stroke: vars.color.border,
   [FORCED_COLORS]: {
     stroke: 'GrayText',
     '&[data-pattern="dashed"]': { strokeDasharray: '2 2' },
@@ -249,44 +295,49 @@ const fillStyle = css({
 });
 const lapStyle = css({
   fill: 'none',
+  stroke: 'var(--ring-tone)',
+  [FORCED_COLORS]: { stroke: 'CanvasText' },
+});
+const endpointStyle = css({
+  fill: 'var(--ring-tone)',
   stroke: vars.color.bg,
-  [FORCED_COLORS]: { stroke: 'Canvas' },
+  strokeWidth: 0.75,
+  [FORCED_COLORS]: { fill: 'CanvasText', stroke: 'Canvas' },
 });
 const tickStyle = css({
   stroke: vars.color.text,
   strokeWidth: 1,
   [FORCED_COLORS]: { stroke: 'CanvasText' },
 });
-const summaryStyle = css({ margin: 0, fontWeight: vars.fontWeight.medium });
+const summaryStyle = css({ margin: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs });
 const legendStyle = css({
   display: 'grid',
-  gap: vars.space[2],
+  gap: 0,
   padding: 0,
   margin: 0,
   listStyle: 'none',
+  '& > li + li': { borderBlockStart: `1px solid ${vars.color.border}` },
 });
 const metricStyle = css({
   display: 'grid',
-  gridTemplateColumns: 'auto auto minmax(0, 1fr)',
+  gridTemplateColumns: 'auto minmax(0, 1fr) auto',
   columnGap: vars.space[2],
   alignItems: 'baseline',
   inlineSize: '100%',
   minInlineSize: 0,
   minBlockSize: vars.space[8],
   boxSizing: 'border-box',
-  paddingBlock: vars.space[1],
+  paddingBlock: vars.space[2],
   paddingInline: vars.space[2],
   textAlign: 'start',
   font: 'inherit',
   color: 'inherit',
   backgroundColor: 'transparent',
   border: '1px solid transparent',
-  borderRadius: vars.radius.md,
+  borderRadius: vars.radius.sm,
   'button&': {
     cursor: 'pointer',
-    backgroundColor: vars.color.surfaceRaised,
-    borderColor: vars.color.borderControl,
-    boxShadow: vars.shadow.raised,
+    '&:hover, &[data-preview="true"]': { backgroundColor: vars.color.surfaceHover },
   },
   '&[aria-pressed="true"]': {
     outline: `2px solid ${vars.color.text}`,
@@ -301,26 +352,36 @@ const metricStyle = css({
   },
 });
 const indexStyle = css({
+  display: 'none',
   fontSize: vars.textSize.xs,
   fontWeight: vars.fontWeight.medium,
   color: vars.color.textMuted,
+  [FORCED_COLORS]: { display: 'inline' },
 });
 const swatchStyle = css({
   display: 'inline-block',
-  inlineSize: '0.75em',
-  blockSize: '0.75em',
-  borderRadius: vars.radius.full,
+  inlineSize: vars.space[2],
+  blockSize: vars.space[2],
   backgroundColor: 'var(--ring-tone)',
   border: `1px solid ${vars.color.borderControl}`,
   [FORCED_COLORS]: { backgroundColor: 'CanvasText', borderColor: 'CanvasText' },
 });
 const metricLabelStyle = css({ fontWeight: vars.fontWeight.medium });
 const metricDetailStyle = css({
-  gridColumn: '3',
+  gridColumn: '2',
   display: 'flex',
   flexWrap: 'wrap',
   columnGap: vars.space[2],
   color: vars.color.textMuted,
+  fontSize: vars.textSize.xs,
+  fontVariantNumeric: 'tabular-nums',
+});
+const metricPercentStyle = css({
+  gridColumn: '3',
+  gridRow: '1 / span 2',
+  alignSelf: 'center',
+  fontVariantNumeric: 'tabular-nums',
+  whiteSpace: 'nowrap',
 });
 const statusStyle = css({ color: vars.color.text });
 const dayPickerStyle = css({
@@ -331,6 +392,8 @@ const dayPickerStyle = css({
   margin: 0,
   padding: 0,
   border: 0,
+  marginBlockStart: vars.space[4],
+  justifyContent: 'center',
 });
 const dayLabelStyle = css({
   position: 'relative',
@@ -339,11 +402,11 @@ const dayLabelStyle = css({
   minInlineSize: vars.space[10],
   minBlockSize: vars.space[10],
   boxSizing: 'border-box',
-  paddingInline: vars.space[2],
+  paddingInline: vars.space[1],
   paddingBlock: vars.space[1],
   borderRadius: vars.radius.md,
-  border: `1px solid ${vars.color.borderControl}`,
-  backgroundColor: vars.color.surfaceRaised,
+  border: '1px solid transparent',
+  backgroundColor: 'transparent',
   fontSize: vars.textSize.xs,
   lineHeight: vars.lineHeight.tight,
   textAlign: 'center',
@@ -352,6 +415,7 @@ const dayLabelStyle = css({
   transitionDuration: vars.motion.duration.base,
   transitionTimingFunction: vars.motion.easeStandard,
   '&:has(input:checked)': {
+    backgroundColor: vars.color.surfaceHover,
     borderColor: vars.color.text,
     outline: `1px solid ${vars.color.text}`,
     outlineOffset: '-2px',
@@ -373,13 +437,25 @@ const radioStyle = css({
   cursor: 'pointer',
 });
 const dayNumberStyle = css({ fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.medium });
+const miniatureStyle = css({
+  inlineSize: vars.space[8],
+  blockSize: vars.space[8],
+  marginBlockEnd: vars.space[1],
+});
+const miniatureMissingStyle = css({
+  fill: vars.color.textMuted,
+  fontSize: vars.textSize['3xl'],
+  [FORCED_COLORS]: { fill: 'CanvasText' },
+});
 
 function joinIds(...ids: (string | undefined | false)[]) {
   return ids.filter(Boolean).join(' ') || undefined;
 }
 const clampLap = (ratio: number) => Math.min(1, Math.max(0, ratio));
 const toneStyle = (metric: ActivityMetric, index: number) =>
-  ({ '--ring-tone': vars.color[metric.tone ?? TONES[index % TONES.length]!] }) as CSSProperties;
+  ({
+    '--ring-tone': metric.tone ? vars.color[metric.tone] : CATEGORY_COLORS[index % CATEGORY_COLORS.length]!,
+  }) as CSSProperties;
 
 function readValue(values: ActivityValues, id: string): number | null {
   const value = Object.hasOwn(values, id) ? values[id] : null;
@@ -415,39 +491,192 @@ function summarizeRing(
   return { metric, status, value, usage };
 }
 
-interface RingStrokeProps {
-  radius: number;
-  strokeWidth: number;
-  /** Target sweep in laps (0–1). */
-  laps: number;
-  className?: string;
-  'data-ui': string;
-}
-
-/** Sweeps from the displayed length to `laps` through a motion value: no React render per frame. */
-function RingStroke({ laps, radius, strokeWidth, className, ...rest }: RingStrokeProps) {
+function useDisplayedNumber(target: number) {
   const reduced = useReducedMotion();
-  const length = useMotionValue(reduced ? laps : 0);
+  const displayed = useMotionValue(reduced ? target : 0);
   useEffect(() => {
     if (reduced) {
-      length.set(laps);
+      displayed.set(target);
       return;
     }
-    const controls = animate(length, laps, SWEEP);
+    const controls = animate(displayed, target, SWEEP);
     return () => controls.stop();
-  }, [laps, reduced, length]);
+  }, [target, reduced, displayed]);
+  return displayed;
+}
+
+function Count({ value, format }: { value: number; format: (value: number) => string }) {
+  const node = useRef<HTMLSpanElement>(null);
+  const displayed = useDisplayedNumber(value);
+  useEffect(() => {
+    const write = (next: number) => {
+      if (node.current) node.current.textContent = format(next);
+    };
+    write(displayed.get());
+    return displayed.on('change', write);
+  }, [displayed, format]);
+  return <span ref={node} data-ui="activity-rings-count" />;
+}
+
+function RingPlot({
+  ring,
+  index,
+  band,
+  stroke,
+  dimmed,
+}: {
+  ring: ActivityRingSummary;
+  index: number;
+  band: number;
+  stroke: number;
+  dimmed: boolean;
+}) {
+  const maskId = useId();
+  const radius = OUTER_RADIUS - stroke / 2 - index * band;
+  const valid = ring.status === 'open' || ring.status === 'closed';
+  const ratio = valid ? ring.usage!.ratio : 0;
+  const displayed = useDisplayedNumber(ratio);
+  const first = useTransform(displayed, clampLap);
+  const second = useTransform(displayed, (value) => clampLap(Math.min(value, MAX_LAPS) - 1));
+  const endpointX = useTransform(first, (value) => CENTER + radius * Math.cos(value * Math.PI * 2));
+  const endpointY = useTransform(first, (value) => CENTER + radius * Math.sin(value * Math.PI * 2));
+  const endpointOpacity = useTransform(first, (value) => (value > 0 ? 1 : 0));
+  const tickCount = Math.max(MIN_TICKS, Math.round((2 * Math.PI * radius) / TICK_SPACING));
+  const tickStep = (2 * Math.PI * radius) / tickCount;
+  const ticks = `${tickStep * TICK_FILL_SHARE} ${tickStep * (1 - TICK_FILL_SHARE)}`;
   return (
-    <motion.circle
-      {...rest}
-      cx={CENTER}
-      cy={CENTER}
-      r={radius}
-      strokeWidth={strokeWidth}
-      strokeLinecap="butt"
-      data-laps={laps}
-      className={className}
-      style={{ pathLength: length }}
-    />
+    <g
+      data-ui="activity-rings-ring"
+      data-status={ring.status}
+      data-dimmed={dimmed}
+      style={toneStyle(ring.metric, index)}
+      css={ringStyle}
+    >
+      <defs>
+        <mask id={maskId} style={{ maskType: 'alpha' }}>
+          <motion.circle
+            data-ui="activity-rings-fill"
+            cx={CENTER}
+            cy={CENTER}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={stroke + 1}
+            data-laps={clampLap(ratio)}
+            style={{ pathLength: first }}
+          />
+        </mask>
+      </defs>
+      <circle
+        data-ui="activity-rings-track"
+        data-pattern={index % 2 ? 'dashed' : 'solid'}
+        cx={CENTER}
+        cy={CENTER}
+        r={radius}
+        strokeWidth={stroke}
+        strokeDasharray={ticks}
+        css={trackStyle}
+      />
+      <circle
+        cx={CENTER}
+        cy={CENTER}
+        r={radius}
+        strokeWidth={stroke}
+        strokeDasharray={ticks}
+        mask={`url(#${maskId})`}
+        css={fillStyle}
+      />
+      <motion.circle
+        data-ui="activity-rings-lap"
+        cx={CENTER}
+        cy={CENTER}
+        r={radius - stroke / 2 - band * LAP_SHARE}
+        strokeWidth={band * LAP_SHARE}
+        data-laps={clampLap(ratio - 1)}
+        style={{ pathLength: second }}
+        css={lapStyle}
+      />
+      {valid && (
+        <>
+          <line
+            data-ui="activity-rings-tick"
+            x1={CENTER + radius + stroke / 2 + TICK_OVERHANG}
+            x2={CENTER + radius - stroke / 2 - TICK_OVERHANG}
+            y1={CENTER}
+            y2={CENTER}
+            css={tickStyle}
+          />
+          <motion.circle
+            data-ui="activity-rings-endpoint"
+            cx={endpointX}
+            cy={endpointY}
+            r={Math.min(ENDPOINT_RADIUS, stroke / 2)}
+            style={{ opacity: endpointOpacity }}
+            css={endpointStyle}
+          />
+        </>
+      )}
+    </g>
+  );
+}
+
+function DayPreview({
+  metrics,
+  values,
+  locale,
+  labels,
+}: {
+  metrics: readonly ActivityMetric[];
+  values: ActivityValues;
+  locale: string | undefined;
+  labels: ActivityRingsLabels;
+}) {
+  const band = (OUTER_RADIUS - CORE_RADIUS) / Math.max(1, metrics.length);
+  const rings = metrics.map((metric) => summarizeRing(metric, values, locale, labels));
+  return (
+    <svg viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`} aria-hidden="true" focusable="false" css={miniatureStyle}>
+      <g transform={`rotate(-90 ${CENTER} ${CENTER})`}>
+        {rings.map((ring, index) => {
+          const { metric } = ring;
+          const valid = ring.status === 'open' || ring.status === 'closed';
+          const radius = OUTER_RADIUS - band / 2 - index * band;
+          return (
+            <g key={metric.id} style={toneStyle(metric, index)} data-status={ring.status}>
+              <circle
+                cx={CENTER}
+                cy={CENTER}
+                r={radius}
+                strokeWidth={band * STROKE_SHARE}
+                strokeDasharray={valid ? undefined : '3 5'}
+                css={trackStyle}
+              />
+              {valid && (
+                <circle
+                  cx={CENTER}
+                  cy={CENTER}
+                  r={radius}
+                  strokeWidth={band * STROKE_SHARE}
+                  pathLength={1}
+                  strokeDasharray={`${clampLap(ring.usage!.ratio)} 1`}
+                  css={fillStyle}
+                />
+              )}
+            </g>
+          );
+        })}
+      </g>
+      {rings.some((ring) => ring.status === 'unknown' || ring.status === 'unavailable') && (
+        <text
+          x={CENTER}
+          y={CENTER}
+          textAnchor="middle"
+          dominantBaseline="central"
+          css={miniatureMissingStyle}
+        >
+          —
+        </text>
+      )}
+    </svg>
   );
 }
 
@@ -497,11 +726,22 @@ export function ActivityRings({
     defaultFocusedMetric,
     onFocusedMetricChange,
   );
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [keyboardPreview, setKeyboardPreview] = useState<string | null>(null);
   const day = hasDays ? days.find((item) => item.id === selectedDay) : undefined;
   const values = hasDays ? (day?.values ?? null) : (valuesProp ?? NO_VALUES);
   const dayKey = hasDays ? (day?.id ?? null) : null;
   const rings = metrics.map((metric) => summarizeRing(metric, values, locale, labels));
   const isolated = rings.some((ring) => ring.metric.id === focused) ? focused : null;
+  const preview = interactiveLegend ? (hovered ?? keyboardPreview) : null;
+  const active = rings.some((ring) => ring.metric.id === preview) ? preview : isolated;
+  const activeRing = rings.find((ring) => ring.metric.id === active);
+  const activeFormats = ringFormats(locale, activeRing?.metric.unit);
+  const allKnown =
+    rings.length > 0 && rings.every((ring) => ring.status === 'open' || ring.status === 'closed');
+  const completion = allKnown
+    ? rings.reduce((total, ring) => total + clampLap(ring.usage!.ratio), 0) / rings.length
+    : null;
   const count = createUsageFormats(locale).index;
   const met = rings.filter((ring) => ring.status === 'closed').length;
   const dateFormats = {
@@ -516,12 +756,18 @@ export function ActivityRings({
       ? labels.empty
       : hasDays && !day
         ? labels.noSelection
-        : labels.summary(count.format(met), count.format(metrics.length));
+        : rings.every((ring) => ring.status === 'unavailable')
+          ? labels.unavailable
+          : rings.every((ring) => ring.status === 'unknown' || ring.status === 'unavailable')
+            ? labels.unknown
+            : labels.summary(count.format(met), count.format(metrics.length));
 
   // External-data notification only: a same-day value observed below its goal that reaches it.
   // Mount, remount and day switches set the baseline silently; unknown → known never counts.
   const baseline = useRef<{ dayKey: string | null; ratios: Map<string, number | null> } | null>(null);
-  const ratioSignature = rings.map((ring) => `${ring.metric.id}:${ring.usage?.ratio ?? ''}`).join('|');
+  const ratioSignature = JSON.stringify(
+    rings.map((ring) => [ring.metric.id, ring.status, ring.usage?.ratio]),
+  );
   useEffect(() => {
     const ratios = new Map(
       rings.map((ring) => [
@@ -536,7 +782,7 @@ export function ActivityRings({
       const before = previous.ratios.get(metricId);
       if (before != null && ratio != null && before < 1 && ratio >= 1) onRingClose?.(metricId, dayKey);
     }
-    // `ratioSignature` encodes every metric id and ratio the effect reads, so [dayKey,
+    // `ratioSignature` encodes every metric id, validity and ratio the effect reads, so [dayKey,
     // ratioSignature] covers all its inputs; `rings` is this render's derivation of them, and
     // `onRingClose` is read from the render that changed them, so it is never stale.
   }, [dayKey, ratioSignature]);
@@ -591,199 +837,249 @@ export function ActivityRings({
               {labels.root}
             </span>
           )}
-          <div css={layoutStyle}>
-            <MotionConfig reducedMotion="user">
-              <svg
-                {...ringsSlot}
-                data-ui="activity-rings-rings"
-                viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
-                aria-hidden="true"
-                focusable="false"
-                css={[svgStyle, ringsSlot?.css]}
-              >
-                <g transform={`rotate(-90 ${CENTER} ${CENTER})`}>
-                  {rings.map((ring, index) => {
-                    const radius = OUTER_RADIUS - stroke / 2 - index * band;
-                    const ratio = ring.usage && ring.status !== 'unavailable' ? ring.usage.ratio : 0;
-                    return (
-                      <g
-                        key={ring.metric.id}
-                        data-ui="activity-rings-ring"
-                        data-status={ring.status}
-                        data-dimmed={isolated !== null && isolated !== ring.metric.id}
-                        style={toneStyle(ring.metric, index)}
-                        css={ringStyle}
-                      >
-                        <circle
-                          data-ui="activity-rings-track"
-                          data-pattern={index % 2 ? 'dashed' : 'solid'}
-                          cx={CENTER}
-                          cy={CENTER}
-                          r={radius}
-                          strokeWidth={stroke}
-                          css={trackStyle}
-                        />
-                        <RingStroke
-                          data-ui="activity-rings-fill"
-                          radius={radius}
-                          strokeWidth={stroke}
-                          laps={clampLap(ratio)}
-                          css={fillStyle}
-                        />
-                        {ratio > 1 && (
-                          <RingStroke
-                            data-ui="activity-rings-lap"
-                            radius={radius}
-                            strokeWidth={stroke * LAP_SHARE}
-                            laps={clampLap(Math.min(ratio, MAX_LAPS) - 1)}
-                            css={lapStyle}
-                          />
-                        )}
-                        {(ring.status === 'open' || ring.status === 'closed') && (
-                          <line
-                            data-ui="activity-rings-tick"
-                            x1={CENTER + radius + stroke / 2 + TICK_OVERHANG}
-                            x2={CENTER + radius - stroke / 2 - TICK_OVERHANG}
-                            y1={CENTER}
-                            y2={CENTER}
-                            css={tickStyle}
-                          />
-                        )}
-                      </g>
-                    );
-                  })}
-                </g>
-              </svg>
-            </MotionConfig>
-            <div css={bodyStyle}>
-              <p
-                {...summarySlot}
-                data-ui="activity-rings-summary"
-                css={[summaryStyle, summarySlot?.css]}
-              >
-                {day && <>{dayName(day)} · </>}
-                {summaryText}
-              </p>
-              {hasDays && (
-                <fieldset
-                  {...pickerSlot}
-                  data-ui="activity-rings-days"
-                  css={[dayPickerStyle, pickerSlot?.css]}
-                  onKeyDown={onDayKeyDown}
-                >
-                  <legend css={visuallyHiddenStyle}>{labels.days}</legend>
-                  {days.map((item) => {
-                    const civil = isIsoDate(item.date) ? dateFromIso(item.date) : null;
-                    return (
-                      <label
-                        {...dayLabelSlot}
-                        key={item.id}
-                        data-ui="activity-rings-day"
-                        css={[dayLabelStyle, dayLabelSlot?.css]}
-                      >
-                        <input
-                          ref={(node) => {
-                            if (!node) return;
-                            radios.current.set(item.id, node);
-                            return () => {
-                              radios.current.delete(item.id);
-                            };
-                          }}
-                          type="radio"
-                          name={`${id}-day`}
-                          value={item.id}
-                          checked={item.id === selectedDay}
-                          onChange={() => requestDay(item.id)}
-                          css={radioStyle}
-                        />
-                        <span css={visuallyHiddenStyle}>{dayName(item)}</span>
-                        <span aria-hidden="true">
-                          {civil ? dateFormats.weekday.format(civil) : item.id}
-                        </span>
-                        {civil && (
-                          <span aria-hidden="true" css={dayNumberStyle}>
-                            {dateFormats.day.format(civil)}
-                          </span>
-                        )}
-                      </label>
-                    );
-                  })}
-                </fieldset>
-              )}
+          <MotionConfig reducedMotion="user">
+            <div css={layoutStyle}>
               {rings.length > 0 && (
-                <ul
-                  {...legendSlot}
-                  data-ui="activity-rings-legend"
-                  aria-label={legendSlot?.['aria-label'] ?? labels.legend}
-                  css={[legendStyle, hideLegend && visuallyHiddenStyle, legendSlot?.css]}
-                >
-                  {rings.map((ring, index) => {
-                    const { metric, usage, status } = ring;
-                    const pressed = isolated === metric.id;
-                    const contents = (
-                      <>
-                        <span aria-hidden="true" css={indexStyle}>
-                          {count.format(index + 1)}
-                        </span>
-                        <span aria-hidden="true" css={swatchStyle} style={toneStyle(metric, index)} />
-                        <span css={metricLabelStyle}>{metric.label}</span>
-                        <span css={metricDetailStyle} data-ui="activity-rings-detail">
-                          {status === 'unknown' || !usage ? (
-                            <span>{labels.unknown}</span>
-                          ) : status === 'unavailable' ? (
-                            <>
-                              <span>{usage.formattedTotal}</span>
-                              <span css={statusStyle}>{labels.unavailable}</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>{labels.amount(usage.formattedTotal, usage.formattedLimit)}</span>
-                              <span>{usage.formattedPercent}</span>
-                              {status === 'closed' && (
-                                <span css={statusStyle}>
-                                  <span aria-hidden="true">✓ </span>
-                                  {labels.goalMet}
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </span>
-                      </>
-                    );
-                    return (
-                      <li key={metric.id}>
-                        {metricButtonSlot ? (
-                          <button
-                            {...metricButtonSlot}
-                            type="button"
-                            data-ui="activity-rings-metric"
-                            data-status={status}
-                            aria-pressed={pressed}
-                            css={[metricStyle, metricButtonSlot.css]}
-                            onClick={(event) => {
-                              metricButtonSlot.onClick?.(event);
-                              if (!event.defaultPrevented) requestFocused(pressed ? null : metric.id);
-                            }}
-                          >
-                            {contents}
-                          </button>
+                <div css={dialStyle}>
+                  <svg
+                    {...ringsSlot}
+                    data-ui="activity-rings-rings"
+                    viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
+                    aria-hidden="true"
+                    focusable="false"
+                    css={[svgStyle, ringsSlot?.css]}
+                  >
+                    <g transform={`rotate(-90 ${CENTER} ${CENTER})`}>
+                      {rings.map((ring, index) => (
+                        <RingPlot
+                          key={ring.metric.id}
+                          ring={ring}
+                          index={index}
+                          band={band}
+                          stroke={stroke}
+                          dimmed={active !== null && active !== ring.metric.id}
+                        />
+                      ))}
+                    </g>
+                  </svg>
+                  <div
+                    aria-hidden="true"
+                    css={centerStyle}
+                    data-ui="activity-rings-center"
+                    data-metric={active ?? undefined}
+                  >
+                    <span css={centerNumberStyle} data-focused={!!activeRing}>
+                      {activeRing ? (
+                        activeRing.value === null ? (
+                          '—'
                         ) : (
-                          <div
-                            {...metricRowSlot}
-                            data-ui="activity-rings-metric"
-                            data-status={status}
-                            css={[metricStyle, metricRowSlot?.css]}
-                          >
-                            {contents}
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+                          <Count
+                            key={activeRing.metric.id}
+                            value={activeRing.value}
+                            format={(next) =>
+                              activeRing.metric.formatValue?.(next, locale) ??
+                              activeFormats.amount.format(next)
+                            }
+                          />
+                        )
+                      ) : completion === null ? (
+                        '—'
+                      ) : (
+                        <Count
+                          key="completion"
+                          value={completion}
+                          format={createUsageFormats(locale).percent.format}
+                        />
+                      )}
+                    </span>
+                    <span css={centerCaptionStyle}>
+                      {activeRing?.metric.label ?? (completion === null ? labels.unknown : labels.completion)}
+                    </span>
+                  </div>
+                </div>
               )}
+              <div css={bodyStyle}>
+                <p {...summarySlot} data-ui="activity-rings-summary" css={[summaryStyle, summarySlot?.css]}>
+                  {day && <>{dayName(day)} · </>}
+                  {summaryText}
+                  {completion !== null && (
+                    <span css={visuallyHiddenStyle}>
+                      {' · '}
+                      {createUsageFormats(locale).percent.format(completion)} {labels.completion}
+                    </span>
+                  )}
+                </p>
+                {rings.length > 0 && (
+                  <ul
+                    {...legendSlot}
+                    data-ui="activity-rings-legend"
+                    aria-label={legendSlot?.['aria-label'] ?? labels.legend}
+                    css={[legendStyle, hideLegend && visuallyHiddenStyle, legendSlot?.css]}
+                  >
+                    {rings.map((ring, index) => {
+                      const { metric, usage, status } = ring;
+                      const pressed = isolated === metric.id;
+                      const valid = status === 'open' || status === 'closed';
+                      const formats = ringFormats(locale, metric.unit);
+                      const formatAmount = (next: number) =>
+                        metric.formatValue?.(next, locale) ?? formats.amount.format(next);
+                      const contents = (
+                        <>
+                          <span aria-hidden="true">
+                            <span css={indexStyle}>{count.format(index + 1)} </span>
+                            <span css={swatchStyle} style={toneStyle(metric, index)} />
+                          </span>
+                          <span css={metricLabelStyle}>{metric.label}</span>
+                          <span css={metricDetailStyle} data-ui="activity-rings-detail">
+                            <span css={visuallyHiddenStyle}>
+                              {status === 'unknown' || !usage ? (
+                                <span>{labels.unknown}</span>
+                              ) : status === 'unavailable' ? (
+                                <>
+                                  <span>{usage.formattedTotal}</span>
+                                  <span css={statusStyle}>{labels.unavailable}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>{labels.amount(usage.formattedTotal, usage.formattedLimit)}</span>
+                                  <span>{usage.formattedPercent}</span>
+                                  {status === 'closed' && (
+                                    <span css={statusStyle}>
+                                      <span aria-hidden="true">✓ </span>
+                                      {labels.goalMet}
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </span>
+                            <span aria-hidden="true">
+                              {status === 'unknown' || !usage ? (
+                                labels.unknown
+                              ) : (
+                                <Count
+                                  value={usage.total}
+                                  format={(next) =>
+                                    valid
+                                      ? labels.amount(formatAmount(next), usage.formattedLimit)
+                                      : `${formatAmount(next)} · ${labels.unavailable}`
+                                  }
+                                />
+                              )}
+                            </span>
+                          </span>
+                          <span aria-hidden="true" css={metricPercentStyle}>
+                            {valid && usage ? (
+                              <>
+                                {status === 'closed' && <span css={statusStyle}>✓ </span>}
+                                <Count value={usage.ratio} format={formats.percent.format} />
+                              </>
+                            ) : (
+                              '—'
+                            )}
+                          </span>
+                        </>
+                      );
+                      return (
+                        <li key={metric.id}>
+                          {metricButtonSlot ? (
+                            <button
+                              {...metricButtonSlot}
+                              type="button"
+                              data-ui="activity-rings-metric"
+                              data-status={status}
+                              aria-pressed={pressed}
+                              data-preview={active === metric.id}
+                              css={[metricStyle, metricButtonSlot.css]}
+                              onMouseEnter={(event) => {
+                                metricButtonSlot.onMouseEnter?.(event);
+                                if (!event.defaultPrevented) setHovered(metric.id);
+                              }}
+                              onMouseLeave={(event) => {
+                                metricButtonSlot.onMouseLeave?.(event);
+                                if (!event.defaultPrevented) setHovered(null);
+                              }}
+                              onFocus={(event) => {
+                                metricButtonSlot.onFocus?.(event);
+                                if (!event.defaultPrevented) setKeyboardPreview(metric.id);
+                              }}
+                              onBlur={(event) => {
+                                metricButtonSlot.onBlur?.(event);
+                                if (!event.defaultPrevented) setKeyboardPreview(null);
+                              }}
+                              onClick={(event) => {
+                                metricButtonSlot.onClick?.(event);
+                                if (!event.defaultPrevented) {
+                                  setHovered(null);
+                                  setKeyboardPreview(null);
+                                  requestFocused(pressed ? null : metric.id);
+                                }
+                              }}
+                            >
+                              {contents}
+                            </button>
+                          ) : (
+                            <div
+                              {...metricRowSlot}
+                              data-ui="activity-rings-metric"
+                              data-status={status}
+                              css={[metricStyle, metricRowSlot?.css]}
+                            >
+                              {contents}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
-          </div>
+            {hasDays && (
+              <fieldset
+                {...pickerSlot}
+                data-ui="activity-rings-days"
+                css={[dayPickerStyle, pickerSlot?.css]}
+                onKeyDown={onDayKeyDown}
+              >
+                <legend css={visuallyHiddenStyle}>{labels.days}</legend>
+                {days.map((item) => {
+                  const civil = isIsoDate(item.date) ? dateFromIso(item.date) : null;
+                  return (
+                    <label
+                      {...dayLabelSlot}
+                      key={item.id}
+                      data-ui="activity-rings-day"
+                      css={[dayLabelStyle, dayLabelSlot?.css]}
+                    >
+                      <input
+                        ref={(node) => {
+                          if (!node) return;
+                          radios.current.set(item.id, node);
+                          return () => {
+                            radios.current.delete(item.id);
+                          };
+                        }}
+                        type="radio"
+                        name={`${id}-day`}
+                        value={item.id}
+                        checked={item.id === selectedDay}
+                        onChange={() => requestDay(item.id)}
+                        css={radioStyle}
+                      />
+                      <span css={visuallyHiddenStyle}>{dayName(item)}</span>
+                      <DayPreview metrics={metrics} values={item.values} locale={locale} labels={labels} />
+                      <span aria-hidden="true">{civil ? dateFormats.weekday.format(civil) : item.id}</span>
+                      {civil && (
+                        <span aria-hidden="true" css={dayNumberStyle}>
+                          {dateFormats.day.format(civil)}
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
+              </fieldset>
+            )}
+          </MotionConfig>
         </section>
       )}
     </WithSx>
