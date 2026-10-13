@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { css } from '../../../packages/ui/src/styling/css';
+import { css } from '@emotion/react';
 import { expect, userEvent, within } from 'storybook/test';
 import { Button, Card, Dialog, ThemeProvider, styled, theme } from '@jfrader/ui';
 import { WithSx } from '../../../packages/ui/src/styling/sx';
