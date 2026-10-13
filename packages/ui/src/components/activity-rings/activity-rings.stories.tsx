@@ -80,10 +80,21 @@ const fixtureRowStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space
 const ringParts = (root: Element, part = 'fill') => [
   ...root.querySelectorAll(`[data-ui="activity-rings-${part}"]`),
 ];
-const drawnLaps = (stroke: Element) => Number.parseFloat(stroke.getAttribute('stroke-dasharray') ?? 'NaN');
+const drawnProgress = (stroke: Element) =>
+  Number.parseFloat(stroke.getAttribute('stroke-dasharray') ?? 'NaN');
 /** Waits for the sweep to settle on its target; tolerant of easing and sub-pixel rounding. */
-async function expectDrawn(stroke: Element, laps: number) {
-  await waitFor(() => expect(Math.abs(drawnLaps(stroke) - laps)).toBeLessThan(0.005));
+async function expectDrawn(stroke: Element, progress: number) {
+  await waitFor(() => expect(Math.abs(drawnProgress(stroke) - progress)).toBeLessThan(0.005));
+}
+async function expectTicksOnly(root: Element) {
+  for (const ring of ringParts(root, 'ring')) {
+    await expect(Array.from(ring.children, (child) => child.tagName)).toEqual(['defs', 'circle', 'circle']);
+    const circles = ring.querySelectorAll(':scope > circle');
+    await expect(circles).toHaveLength(2);
+    for (const circle of circles) await expect(circle).toHaveAttribute('stroke-dasharray');
+    await expect(ring.querySelectorAll('circle')).toHaveLength(3);
+    await expect(ring.querySelector('line, path')).toBeNull();
+  }
 }
 
 const meta = {
@@ -115,7 +126,7 @@ const meta = {
       },
       usage: `- Each ring compares a metric with its goal using the UsageMeter value rules and Intl percentage formatting.
 - The SVG is decorative. The legend gives the amount, goal, and percentage; unknown values show "No data", not zero.
-- Ticks stop at 100%. Above the goal, a round-capped arc follows the inner edge. At 200% and above, the arc stays full; the legend keeps the uncapped amount, percentage and surplus. Translate surplus text with \`labels.overGoal\`.
+- All ticks at full tone mean the goal is complete. The dial stops at 100%; surplus appears only in the legend as the uncapped amount, percentage and amount over goal. Translate surplus text with \`labels.overGoal\`.
 - The centre averages completion across goals, capping each at 100%. It shows a dash if any goal is unknown or unavailable. Mixed units are never added together. Translate the caption with \`labels.completion\`.
 - Legend rows are static by default. With \`interactiveLegend\`, hover or focus previews a metric; activation toggles a pin. Preview does not call \`onFocusedMetricChange\`.
 - Counts and sweeps retarget from their displayed values. Assistive technology receives committed values, not intermediate counts. Reduced motion shows the result immediately.
@@ -145,6 +156,7 @@ export const Default: Story = {
     await expect(svg).toHaveAttribute('aria-hidden', 'true');
     await expect(svg).toHaveAttribute('focusable', 'false');
     await expect(svg.querySelector('[tabindex]')).toBeNull();
+    await expectTicksOnly(canvasElement);
     await expect(canvas.queryAllByRole('button')).toHaveLength(0);
     await expect(canvas.queryAllByRole('radio')).toHaveLength(0);
     await expect(canvasElement.querySelector('[aria-live]')).toBeNull();
@@ -324,32 +336,24 @@ export const ManyMetrics: Story = {
   },
 };
 
-const lapMetrics: ActivityMetric[] = [0, 1, 1.5, 2, 3.2].map((ratio) => ({
+const boundaryMetrics: ActivityMetric[] = [0, 1, 1.5, 2, 3.2].map((ratio) => ({
   id: `ratio-${ratio}`,
   label: `Ratio ${ratio}`,
   goal: 100,
 }));
-export const LapBoundaries: Story = {
+export const CompletionBoundaries: Story = {
   args: {
-    metrics: lapMetrics,
+    metrics: boundaryMetrics,
     values: Object.fromEntries([0, 1, 1.5, 2, 3.2].map((ratio) => [`ratio-${ratio}`, ratio * 100])),
   },
   play: async ({ canvasElement }) => {
     const rings = ringParts(canvasElement, 'ring');
-    const expected = [
-      [0, 0],
-      [1, 0],
-      [1, 0.5],
-      [1, 1],
-      [1, 1],
-    ] as const;
-    for (const [index, [first, second]] of expected.entries()) {
+    const expected = [0, 1, 1, 1, 1];
+    for (const [index, progress] of expected.entries()) {
       const fill = rings[index]!.querySelector('[data-ui="activity-rings-fill"]')!;
-      await expectDrawn(fill, first);
-      const lap = rings[index]!.querySelector('[data-ui="activity-rings-lap"]');
-      await expectDrawn(lap!, second);
-      await expect(Number(lap!.getAttribute('r'))).toBeLessThan(Number(fill.getAttribute('r')));
+      await expectDrawn(fill, progress);
     }
+    await expectTicksOnly(canvasElement);
     const items = within(canvasElement).getAllByRole('listitem');
     await expect(items[0]).toHaveTextContent(percent(0));
     await expect(items[0]).not.toHaveTextContent('Goal met');
@@ -360,9 +364,9 @@ export const LapBoundaries: Story = {
   },
 };
 
-export const Laps: Story = { args: { values: { distance: 9, exercise: 52, stand: 13 } } };
+export const OverGoal: Story = { args: { values: { distance: 9, exercise: 52, stand: 13 } } };
 export const BelowGoals: Story = { args: { values: { ...today, exercise: 24 } } };
-export const BeyondTwoLaps: Story = {
+export const BeyondDoubleGoal: Story = {
   args: { values: { ...today, exercise: 67.5 }, interactiveLegend: true },
   play: async ({ canvasElement }) => {
     const exercise = within(canvasElement).getByRole('button', { name: /^Exercise/ });
@@ -370,7 +374,7 @@ export const BeyondTwoLaps: Story = {
       /Exercise 67\.5\smins of 30\smins · 225% · \+37\.5\smins over goal/,
     );
     await expectDrawn(ringParts(canvasElement)[1]!, 1);
-    await expectDrawn(ringParts(canvasElement, 'lap')[1]!, 1);
+    await expectTicksOnly(canvasElement);
     await waitFor(() =>
       expect(canvasElement.querySelector('[data-ui="activity-rings-center"]')).toHaveTextContent('83%'),
     );
@@ -414,13 +418,12 @@ function SurplusStatesFixture(args: RingsArgs) {
     </>
   );
 }
-/** Rounded percentages do not decide completion; surplus remains exact past two laps. */
+/** Rounded percentages do not decide completion; surplus text remains uncapped. */
 export const SurplusStates: Story = {
   render: (args) => <SurplusStatesFixture {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const fill = ringParts(canvasElement)[0]!;
-    const lap = ringParts(canvasElement, 'lap')[0]!;
     const row = canvas.getByRole('button', { name: /^Exercise/ });
     for (const ratio of surplusRatios) {
       const label = new Intl.NumberFormat('en-GB', { style: 'percent', maximumFractionDigits: 1 }).format(
@@ -428,7 +431,7 @@ export const SurplusStates: Story = {
       );
       await userEvent.click(canvas.getByRole('button', { name: label }));
       await expectDrawn(fill, Math.min(1, ratio));
-      await expectDrawn(lap, Math.min(1, Math.max(0, ratio - 1)));
+      await expectTicksOnly(canvasElement);
       if (ratio > 1) {
         await expect(row).toHaveAccessibleName(
           new RegExp(
@@ -444,16 +447,7 @@ export const SurplusStates: Story = {
       }
     }
     await expect(row).toHaveAccessibleName(/105\smins of 30\smins · 350% · \+75\smins over goal/);
-    await expect(lap).toHaveAttribute('stroke-linecap', 'round');
     await expect(canvasElement.querySelector('line, [data-ui="activity-rings-endpoint"]')).toBeNull();
-    const track = ringParts(canvasElement, 'track')[0]!;
-    const gap =
-      Number(track.getAttribute('r')) -
-      Number(track.getAttribute('stroke-width')) / 2 -
-      Number(lap.getAttribute('r')) -
-      Number(lap.getAttribute('stroke-width')) / 2;
-    await expect(gap).toBeGreaterThan(0);
-    await expect(gap).toBeLessThan(Number(lap.getAttribute('stroke-width')) / 4);
   },
 };
 
@@ -800,9 +794,15 @@ export const GoalCrossing: Story = {
     await expect(canvas.getAllByRole('listitem')[0]).toHaveTextContent('Goal met');
     await set('6.12');
     await expect(args.onRingClose).toHaveBeenCalledTimes(1);
+    await expect(canvas.getAllByRole('listitem')[0]).toHaveTextContent('102% · +0.1 km over goal');
+    await expect(
+      canvas.getAllByRole('listitem')[0]!.querySelector('[data-ui="activity-rings-status"]'),
+    ).toBeVisible();
     await set('5.94');
     await set('6.12');
     await expect(args.onRingClose).toHaveBeenCalledTimes(2);
+    await expect(canvas.getAllByRole('listitem')[0]).toHaveTextContent('102% · +0.1 km over goal');
+    await expectTicksOnly(canvasElement);
     await set('unknown');
     await set('6.12');
     await expect(args.onRingClose).toHaveBeenCalledTimes(2);
@@ -903,8 +903,8 @@ export const QuickInterruptedUpdates: Story = {
       const sample = () => {
         samples.push({
           amount: parseFloat(counter.textContent!),
-          sweep: drawnLaps(fill),
-          target: Number(fill.getAttribute('data-laps')),
+          sweep: drawnProgress(fill),
+          target: Number(fill.getAttribute('data-progress')),
         });
         if (view.performance.now() - start > motionDurationMs.slow * 3) resolve();
         else view.requestAnimationFrame(sample);
@@ -926,12 +926,12 @@ export const QuickInterruptedUpdates: Story = {
     }
     await waitFor(() => expect(canvas.getByRole('listitem')).toHaveTextContent(percent(0.5)));
     await expectDrawn(ringParts(canvasElement)[0]!, 0.5);
-    await expectDrawn(ringParts(canvasElement, 'lap')[0]!, 0);
+    await expectTicksOnly(canvasElement);
     await expect(args.onRingClose).toHaveBeenCalledTimes(0);
   },
 };
 
-function LapReturnFixture(args: RingsArgs) {
+function ReturnBelowGoalFixture(args: RingsArgs) {
   const [distance, setDistance] = useState(9);
   return (
     <>
@@ -946,39 +946,34 @@ function LapReturnFixture(args: RingsArgs) {
   );
 }
 
-/** The surplus trace retracts before the first lap, with counts following the same sweep. */
-export const ReturningSecondLap: Story = {
-  render: (args) => <LapReturnFixture {...args} />,
+/** The ticks stay full while the displayed amount exceeds the goal, then retract with the count. */
+export const ReturningBelowGoal: Story = {
+  render: (args) => <ReturnBelowGoalFixture {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
-    const lap = ringParts(canvasElement, 'lap')[0]!;
     const fill = ringParts(canvasElement)[0]!;
     const counter = canvas.getByRole('listitem').querySelector('[data-ui="activity-rings-count"]')!;
-    await expectDrawn(lap, 0.5);
+    await waitFor(() => expect(counter).toHaveTextContent('9 km of 6 km'));
     await userEvent.click(canvas.getByRole('button', { name: 'Walk 3 km' }));
-    await expect(ringParts(canvasElement, 'lap')[0]).toBe(lap);
-    const samples: { amount: number; lap: number; fill: number }[] = [];
+    const samples: { amount: number; fill: number }[] = [];
     const view = canvasElement.ownerDocument.defaultView!;
     await new Promise<void>((resolve) => {
       const start = view.performance.now();
       const sample = () => {
         samples.push({
           amount: parseFloat(counter.textContent!),
-          lap: drawnLaps(lap),
-          fill: drawnLaps(fill),
+          fill: drawnProgress(fill),
         });
         if (view.performance.now() - start > motionDurationMs.slow * 2) resolve();
         else view.requestAnimationFrame(sample);
       };
       view.requestAnimationFrame(sample);
     });
-    await expect(samples.some((sample) => sample.lap > 0 && sample.lap < 0.5)).toBe(true);
     await expect(samples.some((sample) => sample.amount > 3 && sample.amount < 9)).toBe(true);
     for (const sample of samples) {
       await expect(Math.abs(sample.fill - Math.min(sample.amount / 6, 1))).toBeLessThan(0.04);
-      await expect(Math.abs(sample.lap - Math.max(sample.amount / 6 - 1, 0))).toBeLessThan(0.04);
     }
-    await expectDrawn(lap, 0);
+    await expectTicksOnly(canvasElement);
     await expectDrawn(fill, 0.5);
     await expect(counter).toHaveTextContent('3 km of 6 km');
     await expect(canvas.getByRole('listitem')).toHaveTextContent('50%');
@@ -1312,7 +1307,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Enable reduced motion in the browser. Rings should show their final fill without a sweep, and isolation dimming should have no transition. This example includes a second lap.',
+          'Enable reduced motion in the browser. Ticks should show their final fill without a sweep, and isolation dimming should have no transition. Surplus remains in the legend.',
       },
     },
   },

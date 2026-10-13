@@ -170,10 +170,6 @@ const OUTER_RADIUS = 58;
 const CORE_RADIUS = 27;
 /** Share of each ring's band drawn as stroke; the rest is the gap to the next ring. */
 const STROKE_SHARE = 0.55;
-const LAP_SHARE = 0.22;
-const LAP_GAP_SHARE = 0.04;
-/** A second lap is the visual cap: 200% and beyond draws two full laps, the text stays exact. */
-const MAX_LAPS = 2;
 const TICK_SPACING = 6;
 const MIN_TICKS = 24;
 const TICK_FILL_SHARE = 0.35;
@@ -293,11 +289,6 @@ const fillStyle = css({
   stroke: 'var(--ring-tone)',
   [FORCED_COLORS]: { stroke: 'CanvasText' },
   '[data-dimmed="true"] > &': { [FORCED_COLORS]: { stroke: 'GrayText' } },
-});
-const lapStyle = css({
-  fill: 'none',
-  stroke: 'var(--ring-tone)',
-  [FORCED_COLORS]: { stroke: 'CanvasText' },
 });
 const summaryStyle = css({ margin: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs });
 const legendStyle = css({
@@ -447,7 +438,7 @@ const miniatureMissingStyle = css({
 function joinIds(...ids: (string | undefined | false)[]) {
   return ids.filter(Boolean).join(' ') || undefined;
 }
-const clampLap = (ratio: number) => Math.min(1, Math.max(0, ratio));
+const clampCompletion = (ratio: number) => Math.min(1, Math.max(0, ratio));
 const toneStyle = (metric: ActivityMetric, index: number) =>
   ({
     '--ring-tone': metric.tone ? vars.color[metric.tone] : CATEGORY_COLORS[index % CATEGORY_COLORS.length]!,
@@ -532,10 +523,7 @@ function RingPlot({
   const valid = ring.status === 'open' || ring.status === 'closed';
   const ratio = valid ? ring.usage!.ratio : 0;
   const displayed = useDisplayedNumber(ratio);
-  const first = useTransform(displayed, clampLap);
-  const second = useTransform(displayed, (value) => clampLap(Math.min(value, MAX_LAPS) - 1));
-  const lapOpacity = useTransform(second, (value) => (value > 0 ? 1 : 0));
-  const lapRadius = radius - stroke / 2 - band * (LAP_GAP_SHARE + LAP_SHARE / 2);
+  const completion = useTransform(displayed, clampCompletion);
   const tickCount = Math.max(MIN_TICKS, Math.round((2 * Math.PI * radius) / TICK_SPACING));
   const tickStep = (2 * Math.PI * radius) / tickCount;
   const ticks = `${tickStep * TICK_FILL_SHARE} ${tickStep * (1 - TICK_FILL_SHARE)}`;
@@ -557,8 +545,8 @@ function RingPlot({
             fill="none"
             stroke="currentColor"
             strokeWidth={stroke + 1}
-            data-laps={clampLap(ratio)}
-            style={{ pathLength: first }}
+            data-progress={clampCompletion(ratio)}
+            style={{ pathLength: completion }}
           />
         </mask>
       </defs>
@@ -580,17 +568,6 @@ function RingPlot({
         strokeDasharray={ticks}
         mask={`url(#${maskId})`}
         css={fillStyle}
-      />
-      <motion.circle
-        data-ui="activity-rings-lap"
-        cx={CENTER}
-        cy={CENTER}
-        r={lapRadius}
-        strokeWidth={band * LAP_SHARE}
-        strokeLinecap="round"
-        data-laps={clampLap(ratio - 1)}
-        style={{ pathLength: second, opacity: lapOpacity }}
-        css={lapStyle}
       />
     </g>
   );
@@ -633,7 +610,7 @@ function DayPreview({
                   r={radius}
                   strokeWidth={band * STROKE_SHARE}
                   pathLength={1}
-                  strokeDasharray={`${clampLap(ring.usage!.ratio)} 1`}
+                  strokeDasharray={`${clampCompletion(ring.usage!.ratio)} 1`}
                   css={fillStyle}
                 />
               )}
@@ -717,7 +694,7 @@ export function ActivityRings({
   const allKnown =
     rings.length > 0 && rings.every((ring) => ring.status === 'open' || ring.status === 'closed');
   const completion = allKnown
-    ? rings.reduce((total, ring) => total + clampLap(ring.usage!.ratio), 0) / rings.length
+    ? rings.reduce((total, ring) => total + clampCompletion(ring.usage!.ratio), 0) / rings.length
     : null;
   const count = createUsageFormats(locale).index;
   const met = rings.filter((ring) => ring.status === 'closed').length;
