@@ -16,7 +16,7 @@ import {
 } from './hand-layout';
 
 export interface GameHandCard {
-  /** Unique, stable identity within the hand; keep it when the card moves. */
+  /** Unique, stable identity; match FlightCard.key when using CardFlights. */
   id: string;
   value: GameCardValue;
   label: string;
@@ -111,7 +111,8 @@ export function GameHand({
             {cards.map((card, index) => {
               const angle = rotations[index] ?? 0;
               return (
-                <button key={card.id} type="button" data-ui="game-hand-card"
+                // CardFlights measures this wrapper; card.id must match FlightCard.key.
+                <button key={card.id} type="button" data-ui="game-hand-card" data-hand-card={card.id}
                   aria-pressed={cardIdx === index} disabled={disabled}
                   onClick={() => select(cardIdx === index ? null : card.id)}
                   className={slotProps?.card?.className} css={[cardStyle, slotProps?.card?.css]}
@@ -138,6 +139,8 @@ export interface GameHandHiddenProps extends Omit<ComponentPropsWithRef<'div'>, 
   /** Number of backs, clamped to 0–3 and rounded down. */
   count: number;
   label: string;
+  /** Stable player key for CardFlights' hidden-hand origins and deal destinations. */
+  playerKey?: string;
   size?: GameCardSize;
   /** Seat vector for radial placement. Omit for a standalone fan. */
   polar?: HandPolarVector;
@@ -163,7 +166,7 @@ const hiddenCardStyle = css({
 const STANDALONE_POLAR: HandPolarVector = { cos: 0, sin: -1, sideStrength: 0 };
 
 function GameHandHidden({
-  ref, count, label, size = 'md', polar, scale = 1, rules = DEFAULT_HIDDEN_HAND_RULES,
+  ref, count, label, playerKey, size = 'md', polar, scale = 1, rules = DEFAULT_HIDDEN_HAND_RULES,
   className, sx, style, ...rest
 }: GameHandHiddenProps) {
   const layout = buildOpponentHiddenHandLayout({
@@ -181,7 +184,9 @@ function GameHandHidden({
           style={{ transform: anchor ? `translate(${anchor.x}px, ${anchor.y}px) rotate(${anchor.rotateDeg}deg)` : undefined,
             transformOrigin: anchor?.origin, ...style }}>
           {layout.cards.map((card, index) => (
-            <div key={`hidden-${index}`} data-ui="game-hand-hidden-card" aria-hidden="true" css={hiddenCardStyle}
+            // CardFlights pairs the player key and zero-based index on the measured wrapper.
+            <div key={`hidden-${index}`} data-ui="game-hand-hidden-card" data-seat-hidden-card={playerKey}
+              data-seat-hidden-card-index={playerKey === undefined ? undefined : index} aria-hidden="true" css={hiddenCardStyle}
               style={{ '--hidden-x': `${card.x}px`, '--hidden-y': `${card.y}px`, '--hidden-angle': `${card.rotateDeg}deg`, zIndex: card.zIndex } as CSSProperties}>
               <GameCard label={label} size={size} />
             </div>

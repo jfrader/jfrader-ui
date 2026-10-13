@@ -30,6 +30,7 @@
 ### Fixed
 
 - GameCard's French and Spanish deck galleries wrap into multiple columns instead of a 32px strip. FlipGameCard faces inherit the frame width, keeping corner radii consistent across sizes.
+- Card flights wait for their animations before revealing landed cards, hide staggered cards until departure, and cancel replaced flights without a residual frame. GameHand supplies flight markers for visible cards and hidden hands with a player key.
 - ActivityRings no longer reports a goal crossing when a completed goal is restored after being unavailable.
 - Dialogs with short content keep a 320px minimum width, reduced to fit narrow viewports with 16px side gutters. Set size limits on Dialog.Content; set `minInlineSize: 0` to opt out of the default minimum.
 - Card with `appearance="default"` inside a contrast parent keeps that appearance in descendant portals.

@@ -51,6 +51,7 @@ export function useDealFlights({ handIndex, dealt, forehandIdx, players, resyncK
       const player = players.find((candidate) => candidate.key === playerKey)!;
       const card = player.cards[cardIdx];
       if (!card) return [];
+      // GameHand emits card.id = card.key; Hidden emits playerKey + zero-based card index.
       const destination = player.isOwn ? findMarker(root, attributes.handCard, card.key)
         : [...root.querySelectorAll<HTMLElement>(`[${attributes.hiddenCard}]`)].find((node) =>
           node.getAttribute(attributes.hiddenCard) === playerKey && node.getAttribute(attributes.hiddenCardIndex) === String(cardIdx));
