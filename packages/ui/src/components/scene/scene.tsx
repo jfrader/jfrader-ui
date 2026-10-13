@@ -9,6 +9,8 @@ import { css, type SerializedStyles } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import {
   generateSceneParts,
+  generateSceneSvg,
+  SCENE_VIEW_BOX,
   type SceneVariant,
 } from './scene-generator';
 
@@ -63,10 +65,7 @@ const sizeStyles: Record<SceneSize, SerializedStyles> = {
  * without requiring React runtime components.
  */
 export function sceneSource(seed: string, options?: SceneSourceOptions): string {
-  const variant = options?.variant ?? 'landscape';
-  const { defs, content } = generateSceneParts(seed, variant);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" width="100%" height="100%"><defs>${defs}</defs>${content}</svg>`;
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  return `data:image/svg+xml,${encodeURIComponent(generateSceneSvg(seed, options?.variant))}`;
 }
 
 export function Scene({
@@ -95,7 +94,7 @@ export function Scene({
           {...rest}
           ref={ref}
           xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 1200 800"
+          viewBox={SCENE_VIEW_BOX}
           preserveAspectRatio={preserveAspectRatio}
           role={isDecorative ? undefined : 'img'}
           aria-label={accessibleName}

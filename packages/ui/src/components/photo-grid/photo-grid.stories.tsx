@@ -20,6 +20,9 @@ const photos: PhotoGridPhoto[] = [
   { id: 'p7', src: sceneSource('dusk-lagoon-07', { variant: 'dusk' }), alt: 'Lagoon at Dusk', width: 800, height: 1200, title: 'Lagoon at Dusk', detail: 'Portrait: reflections' },
   { id: 'p8', src: sceneSource('shore-mist-08', { variant: 'tide' }), alt: 'Misty Shore', width: 1200, height: 800, title: 'Misty Shore', detail: 'Morning fog on the flats' },
   { id: 'p9', src: sceneSource('ridge-storm-09', { variant: 'landscape' }), alt: 'Storm Light on Ridge', width: 1200, height: 800, title: 'Storm Light on Ridge', detail: 'Clearing after rain' },
+  { id: 'p10', src: sceneSource('erg-shadow-10', { variant: 'dunes' }), alt: 'Erg in Shadow', width: 1200, height: 800, title: 'Erg in Shadow', detail: 'Lee faces at sundown' },
+  { id: 'p11', src: sceneSource('cove-swell-11', { variant: 'tide' }), alt: 'Cove Swell', width: 1000, height: 1000, title: 'Cove Swell', detail: 'Square crop, incoming tide' },
+  { id: 'p12', src: sceneSource('hills-night-12', { variant: 'dusk' }), alt: 'Night over the Hills', width: 800, height: 1200, title: 'Night over the Hills', detail: 'Portrait: first stars' },
 ];
 const frameStyle = css({
   inlineSize: '48rem',
@@ -100,8 +103,8 @@ export const Default: Story = {
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('region', { name: 'September Traverse' })).toBeInTheDocument();
     await expect(canvas.getByRole('list', { name: 'September Traverse' })).toBeInTheDocument();
-    await expect(tiles(canvasElement)).toHaveLength(9);
-    const expectedTitles = ['Ridge at First Light', 'Valley Floor', 'High Pass at Sunset', 'Dune Crest', 'Wind-Sculpted Dunes', 'Tidal Pool', 'Lagoon at Dusk', 'Misty Shore', 'Storm Light on Ridge'];
+    await expect(tiles(canvasElement)).toHaveLength(12);
+    const expectedTitles = ['Ridge at First Light', 'Valley Floor', 'High Pass at Sunset', 'Dune Crest', 'Wind-Sculpted Dunes', 'Tidal Pool', 'Lagoon at Dusk', 'Misty Shore', 'Storm Light on Ridge', 'Erg in Shadow', 'Cove Swell', 'Night over the Hills'];
     for (const [index, tile] of tiles(canvasElement).entries()) {
       const image = tile.querySelector('img')!;
       await expect(image).toHaveAttribute('loading', 'lazy');
@@ -363,8 +366,8 @@ export const LiveStatus: Story = {
       await expect(announced).toEqual([
         '5 columns',
         'Remove Ridge at First Light from favorites',
-        'Valley Floor, 2 / 9',
-        'High Pass at Sunset, 3 / 9',
+        'Valley Floor, 2 / 12',
+        'High Pass at Sunset, 3 / 12',
       ]);
     } finally {
       observer.disconnect();
@@ -467,10 +470,10 @@ export const KeyboardPlay: Story = {
       ['{ArrowLeft}', 0],
       ['{ArrowDown}', 3],
       ['{ArrowUp}', 0],
-      ['{PageDown}', 8],
+      ['{PageDown}', 9],
       ['{PageUp}', 0],
-      ['{End}', 8],
-      ['{ArrowDown}', 8],
+      ['{End}', 11],
+      ['{ArrowDown}', 11],
       ['{Home}', 0],
     ];
     for (const [key, index] of route) {
@@ -505,19 +508,19 @@ export const KeyboardPlay: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith('p2');
     await userEvent.keyboard('{End}');
-    await expect(dialog).toHaveAccessibleName('Storm Light on Ridge');
+    await expect(dialog).toHaveAccessibleName('Night over the Hills');
     await userEvent.keyboard('{Home}');
     await expect(dialog).toHaveAccessibleName('Ridge at First Light');
     const slider = viewer.getByRole('slider');
     await expect(slider).toHaveAttribute('min', '0');
-    await expect(slider).toHaveAttribute('max', '8');
+    await expect(slider).toHaveAttribute('max', '11');
     await expect(slider).toHaveAttribute('step', '1');
     slider.focus();
     await userEvent.keyboard('{ArrowRight}');
     await expect(fireEvent.keyDown(slider, { key: 'ArrowRight' })).toBe(true);
     fireEvent.change(slider, { target: { value: '1' } });
     await expect(slider).toHaveValue('1');
-    await expect(slider).toHaveAttribute('aria-valuetext', 'Valley Floor, 2 / 9');
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Valley Floor, 2 / 12');
     await userEvent.keyboard('{Escape}');
     fireEvent(dialog, new Event('cancel', { cancelable: true }));
     await waitFor(async () => {
