@@ -24,7 +24,7 @@ const rowStyle = css({ display: 'flex', alignItems: 'center', gap: vars.space[3]
 const labelStyle = css({ marginBlock: vars.space[2], color: vars.color.text, fontSize: vars.textSize.sm });
 
 const meta = {
-  title: 'Foundations/Pattern',
+  title: 'Media/Pattern',
   component: Pattern,
   tags: ['autodocs'],
   args: { variant: 'diagonal', size: 'md', scale: 1, tone: 'accent' },
