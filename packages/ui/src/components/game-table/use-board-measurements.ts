@@ -32,7 +32,7 @@ function regionSize(region: HTMLElement): BoardContentSize {
     if (width > 0 && height > 0) minimumScale = Math.max(minimumScale, Math.min(1,
       Math.max(MIN_CONTROL_SIDE / Math.min(width, height), MIN_CONTROL_MAIN_AXIS / Math.max(width, height))));
   }
-  return { ...naturalSize(region), minimumScale };
+  return { ...naturalSize(region), minimumScale: minimumScale || 1 };
 }
 
 export function useBoardMeasurements() {
@@ -88,18 +88,18 @@ export function useBoardMeasurements() {
       }
 
       const read = (): BoardMeasurements => {
-      const style = view.getComputedStyle(surface);
-      const box = naturalSize(surface);
-      const left = Number.parseFloat(style.borderLeftWidth);
-      const top = Number.parseFloat(style.borderTopWidth);
-      return {
-        width: box.width - left - Number.parseFloat(style.borderRightWidth),
-        height: box.height - top - Number.parseFloat(style.borderBottomWidth),
-        centerX: box.width / 2 - (style.direction === 'rtl' ? Number.parseFloat(style.borderRightWidth) : left),
-        centerY: box.height / 2 - top,
-        seats: seats.map(regionSize), center: regionSize(center),
-        gap: Number.parseFloat(style.columnGap), minimumScale: 0,
-      };
+        const style = view.getComputedStyle(surface);
+        const box = naturalSize(surface);
+        const left = Number.parseFloat(style.borderLeftWidth);
+        const top = Number.parseFloat(style.borderTopWidth);
+        return {
+          width: box.width - left - Number.parseFloat(style.borderRightWidth),
+          height: box.height - top - Number.parseFloat(style.borderBottomWidth),
+          centerX: box.width / 2 - (style.direction === 'rtl' ? Number.parseFloat(style.borderRightWidth) : left),
+          centerY: box.height / 2 - top,
+          seats: seats.map(regionSize), center: regionSize(center),
+          gap: Number.parseFloat(style.columnGap), minimumScale: 0,
+        };
       };
       // Try the requested CSS padding in the browser, not a profile-based estimate.
       // If floors do not fit, surrender optional clearance to its documented minimum.
