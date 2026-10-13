@@ -24,6 +24,8 @@
 
 ### Changed
 
+- ActivityRings examples use accent, success and info tones, with a Neutral example alongside them. Completed goals retain their metric colour; unknown and unavailable values use neutral swatches. The neutral palette's third tone now meets 3:1 contrast against the tick track in both themes.
+
 - GameCard no longer exports the internal rendering maps `RANK_MARKS`, `SUIT_GLYPHS` and `SUIT_INK`; card data types and `CARD_BACK_PATTERNS` remain public.
 - GameCard backs use red-and-paper `Pattern` tiles: poker checks by default, or Spanish diagonals via `backPattern={CARD_BACK_PATTERNS.spanish}`. Custom artwork replaces either face.
 

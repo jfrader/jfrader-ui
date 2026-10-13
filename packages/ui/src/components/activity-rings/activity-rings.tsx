@@ -33,6 +33,7 @@ export interface ActivityMetric {
   goal: number;
   /** Unit supported by `Intl.NumberFormat` (`'kilometer'`, `'minute'`, `'hour'`, …); otherwise use `formatValue`. */
   unit?: string;
+  /** Ring colour for known values, including met goals. Omit for the neutral positional palette. */
   tone?: ActivityTone;
   /** Formats amounts for units Intl does not support. Use Intl in the formatter. */
   formatValue?: (value: number, locale: string | undefined) => string;
@@ -158,7 +159,7 @@ const DEFAULT_LABELS = {
   amount: (value, goal) => `${value} of ${goal}`,
   summary: (met, total) => `${met} of ${total} goals met`,
 } satisfies ActivityRingsLabels;
-const CATEGORY_COLORS = [vars.color.text, vars.color.textMuted, vars.color.borderControl];
+const CATEGORY_COLORS = [vars.color.text, vars.color.textMuted, vars.color.textSubtle];
 const NO_VALUES: ActivityValues = {};
 const NO_DAYS: readonly ActivityDay[] = [];
 
@@ -439,9 +440,13 @@ function joinIds(...ids: (string | undefined | false)[]) {
   return ids.filter(Boolean).join(' ') || undefined;
 }
 const clampCompletion = (ratio: number) => Math.min(1, Math.max(0, ratio));
-const toneStyle = (metric: ActivityMetric, index: number) =>
+const toneStyle = (metric: ActivityMetric, index: number, valid: boolean) =>
   ({
-    '--ring-tone': metric.tone ? vars.color[metric.tone] : CATEGORY_COLORS[index % CATEGORY_COLORS.length]!,
+    '--ring-tone': !valid
+      ? vars.color.textMuted
+      : metric.tone
+        ? vars.color[metric.tone]
+        : CATEGORY_COLORS[index % CATEGORY_COLORS.length]!,
   }) as CSSProperties;
 
 function readValue(values: ActivityValues, id: string): number | null {
@@ -532,7 +537,7 @@ function RingPlot({
       data-ui="activity-rings-ring"
       data-status={ring.status}
       data-dimmed={dimmed}
-      style={toneStyle(ring.metric, index)}
+      style={toneStyle(ring.metric, index, valid)}
       css={ringStyle}
     >
       <defs>
@@ -594,7 +599,7 @@ function DayPreview({
           const valid = ring.status === 'open' || ring.status === 'closed';
           const radius = OUTER_RADIUS - band / 2 - index * band;
           return (
-            <g key={metric.id} style={toneStyle(metric, index)} data-status={ring.status}>
+            <g key={metric.id} style={toneStyle(metric, index, valid)} data-status={ring.status}>
               <circle
                 cx={CENTER}
                 cy={CENTER}
@@ -892,7 +897,7 @@ export function ActivityRings({
                         <>
                           <span aria-hidden="true">
                             <span css={indexStyle}>{count.format(index + 1)} </span>
-                            <span css={swatchStyle} style={toneStyle(metric, index)} />
+                            <span css={swatchStyle} style={toneStyle(metric, index, valid)} />
                           </span>
                           <span css={metricLabelStyle}>{metric.label}</span>
                           <span css={metricDetailStyle} data-ui="activity-rings-detail">

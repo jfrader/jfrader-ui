@@ -28,9 +28,9 @@ function Rings({ values, days, ...props }: RingsArgs) {
 }
 
 const goals: ActivityMetric[] = [
-  { id: 'distance', label: 'Distance', goal: 6, unit: 'kilometer' },
-  { id: 'exercise', label: 'Exercise', goal: 30, unit: 'minute' },
-  { id: 'stand', label: 'Stand', goal: 12, unit: 'hour' },
+  { id: 'distance', label: 'Distance', goal: 6, unit: 'kilometer', tone: 'accent' },
+  { id: 'exercise', label: 'Exercise', goal: 30, unit: 'minute', tone: 'success' },
+  { id: 'stand', label: 'Stand', goal: 12, unit: 'hour', tone: 'info' },
 ];
 const today = { distance: 4.5, exercise: 34, stand: 9 };
 const week: ActivityDay[] = [
@@ -97,6 +97,27 @@ async function expectTicksOnly(root: Element) {
   }
 }
 
+async function expectTickContrast(root: Element) {
+  const context = root.ownerDocument.createElement('canvas').getContext('2d')!;
+  const luminance = (color: string) => {
+    context.fillStyle = color;
+    context.fillRect(0, 0, 1, 1);
+    return Array.from(context.getImageData(0, 0, 1, 1).data)
+      .slice(0, 3)
+      .map((channel) => {
+        const value = channel / 255;
+        return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+      })
+      .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index]!, 0);
+  };
+  for (const ring of ringParts(root, 'ring')) {
+    const circles = ring.querySelectorAll(':scope > circle');
+    const track = luminance(getComputedStyle(circles[0]!).stroke);
+    const fill = luminance(getComputedStyle(circles[1]!).stroke);
+    await expect((Math.max(track, fill) + 0.05) / (Math.min(track, fill) + 0.05)).toBeGreaterThanOrEqual(3);
+  }
+}
+
 const meta = {
   title: 'Data display/ActivityRings',
   // The real component documents the props; stories render through the flattened adapter.
@@ -126,6 +147,7 @@ const meta = {
       },
       usage: `- Each ring compares a metric with its goal using the UsageMeter value rules and Intl percentage formatting.
 - The SVG is decorative. The legend gives the amount, goal, and percentage; unknown values show "No data", not zero.
+- Set each metric's \`tone\` to \`accent\`, \`success\`, \`info\` or \`warning\`. Known values keep that colour at and above the goal; unknown and unavailable metrics stay neutral. Omit tones for the neutral positional palette.
 - All ticks at full tone mean the goal is complete. The dial stops at 100%; surplus appears only in the legend as the uncapped amount, percentage and amount over goal. Translate surplus text with \`labels.overGoal\`.
 - The centre averages completion across goals, capping each at 100%. It shows a dash if any goal is unknown or unavailable. Mixed units are never added together. Translate the caption with \`labels.completion\`.
 - Legend rows are static by default. With \`interactiveLegend\`, hover or focus previews a metric; activation toggles a pin. Preview does not call \`onFocusedMetricChange\`.
@@ -150,6 +172,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   play: async ({ canvasElement, args }) => {
+    await expectTickContrast(canvasElement);
     const canvas = within(canvasElement);
     const region = canvas.getByRole('region', { name: 'Activity' });
     const svg = region.querySelector('svg')!;
@@ -178,6 +201,39 @@ export const Default: Story = {
       '83% of goals',
     );
   },
+};
+
+export const Neutral: Story = {
+  args: { metrics: goals.map(({ tone, ...metric }) => metric) },
+  play: async ({ canvasElement }) => expectTickContrast(canvasElement),
+};
+
+export const NeutralLight: Story = { ...Neutral, decorators: [withLightTheme] };
+
+export const ColourLight: Story = {
+  decorators: [withLightTheme],
+  play: async ({ canvasElement }) => expectTickContrast(canvasElement),
+};
+
+export const ColouredStates: Story = {
+  args: { values: { distance: 6, exercise: 67.5, stand: null } },
+  play: async ({ canvasElement }) => {
+    await expectTickContrast(canvasElement);
+    const rings = ringParts(canvasElement, 'ring');
+    for (const [index, tone] of (['accent', 'success', 'textMuted'] as const).entries()) {
+      await expect(rings[index]!.getAttribute('style')).toContain(`--ring-tone: ${vars.color[tone]}`);
+    }
+    await expect(rings[0]).toHaveAttribute('data-status', 'closed');
+    await expect(rings[1]).toHaveAttribute('data-status', 'closed');
+    await expect(rings[2]).toHaveAttribute('data-status', 'unknown');
+    await expectTicksOnly(canvasElement);
+    await expect(within(canvasElement).getAllByRole('listitem')[1]).toHaveTextContent('+37.5 mins over goal');
+  },
+};
+
+export const ColouredStatesLight: Story = {
+  ...ColouredStates,
+  decorators: [withLightTheme],
 };
 
 export const WeekSelector: Story = {
