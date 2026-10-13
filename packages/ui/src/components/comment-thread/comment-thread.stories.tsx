@@ -292,7 +292,10 @@ export const Default: Story = {
     // Replies start expanded and are wired as disclosures.
     const toggle = toggleOf(canvasElement, 'c1')!;
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(toggle).toHaveAccessibleName('Hide replies');
+    await expect(toggle).toHaveAccessibleName(`Hide replies Grace Hopper ${relative.format(-3, 'hour')}`);
+    await expect(action(canvasElement, 'c1', 'reply')).toHaveAccessibleName(`Reply Grace Hopper ${relative.format(-3, 'hour')}`);
+    await expect(action(canvasElement, 'c2', 'edit')).toHaveAccessibleName(`Edit Ada Lovelace ${relative.format(-5, 'minute')}`);
+    await expect(action(canvasElement, 'c2', 'delete')).toHaveAccessibleName(`Delete Ada Lovelace ${relative.format(-5, 'minute')}`);
     await expect(canvasElement.ownerDocument.getElementById(toggle.getAttribute('aria-controls')!)).toBeVisible();
     await expect(canvas.getByRole('textbox', { name: 'Add a comment' })).toHaveAttribute('placeholder', 'Write a comment');
     await expect(canvas.getByRole('button', { name: 'Resolve' })).toBeEnabled();
@@ -412,7 +415,7 @@ export const CollapsedReplies: Story = {
     const toggle = toggleOf(canvasElement, 'c1')!;
     const list = canvasElement.ownerDocument.getElementById(toggle.getAttribute('aria-controls')!)!;
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(toggle).toHaveAccessibleName('Show 1 reply');
+    await expect(toggle).toHaveAccessibleName(`Show 1 reply Grace Hopper ${relative.format(-3, 'hour')}`);
     await expect(list).not.toBeVisible();
     // Collapsed replies stay in the DOM as a structural list.
     await expect(list).toHaveAttribute('role', 'list');
@@ -434,8 +437,9 @@ export const CollapsedReplies: Story = {
 export const OwnAndOther: Story = {
   play: async ({ canvasElement }) => {
     for (const id of ['c1r1', 'c2']) {
-      await expect(action(canvasElement, id, 'edit')).toHaveAccessibleName('Edit');
-      await expect(action(canvasElement, id, 'delete')).toHaveAccessibleName('Delete');
+      const time = id === 'c1r1' ? relative.format(-2, 'hour') : relative.format(-5, 'minute');
+      await expect(action(canvasElement, id, 'edit')).toHaveAccessibleName(`Edit Ada Lovelace ${time}`);
+      await expect(action(canvasElement, id, 'delete')).toHaveAccessibleName(`Delete Ada Lovelace ${time}`);
     }
     for (const id of ['c1', 'c1r1r1']) {
       await expect(action(canvasElement, id, 'edit')).toBeNull();
@@ -504,7 +508,7 @@ export const DeleteConfirmation: Story = {
 export const DeleteLeaf: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(action(canvasElement, 'c2', 'delete')!);
-    await userEvent.click(within(canvas.getByRole('group')).getByRole('button', { name: 'Delete' }));
+    await userEvent.click(within(canvas.getByRole('group')).getByRole('button', { name: /^Delete Ada Lovelace/ }));
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(lastEvent(args.onValueChange)).toEqual({ type: 'delete', id: 'c2' });
     await expect(itemIds(canvasElement)).toEqual(['c1', 'c1r1', 'c1r1r1']);
@@ -516,7 +520,7 @@ export const DeleteLeaf: Story = {
 export const DeletedParent: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(action(canvasElement, 'c1r1', 'delete')!);
-    await userEvent.click(within(canvas.getByRole('group')).getByRole('button', { name: 'Delete' }));
+    await userEvent.click(within(canvas.getByRole('group')).getByRole('button', { name: /^Delete Ada Lovelace/ }));
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     const tombstone = lastTree(args.onValueChange)[0]!.replies![0]!;
     await expect(tombstone).toMatchObject({ id: 'c1r1', author: ADA, deleted: true, body: '', reactions: [] });
@@ -1093,7 +1097,7 @@ export const Localized: Story = {
     await expect(part(canvasElement, 'count')).toHaveTextContent(
       new Intl.ListFormat('es', { type: 'unit', style: 'short' }).format(['4 comentarios', '3 people']),
     );
-    await expect(canvas.getAllByRole('button', { name: 'Responder' })).toHaveLength(4);
+    await expect(canvas.getAllByRole('button', { name: /^Responder / })).toHaveLength(4);
     await expect(canvas.getByRole('textbox', { name: 'Añadir un comentario' })).toBeVisible();
     // Undefined keys keep their defaults.
     await expect(canvas.getByRole('button', { name: 'Resolve' })).toBeVisible();
