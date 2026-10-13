@@ -138,6 +138,8 @@ export const Sizes: Story = {
       for (const card of root.querySelectorAll('[data-ui="game-card"]')) {
         await expect(card.getBoundingClientRect().width).toBe(widths[size]);
         await expect(card.getBoundingClientRect().height).toBeCloseTo(widths[size] * CARD_FRAME.ratio, 1);
+        await expect(Number.parseFloat(getComputedStyle(card).borderRadius)).toBeCloseTo(widths[size] / CARD_FRAME.cornerDivisor, 2);
+        await expect(getComputedStyle(card).getPropertyValue('--game-card-width')).toBe(getComputedStyle(root).getPropertyValue('--game-card-width'));
       }
     }
   },

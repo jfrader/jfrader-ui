@@ -1,3 +1,5 @@
+import { CARD_PERSPECTIVE } from '../game-card/card-frame';
+
 export interface CardBox {
   cx: number;
   cy: number;
@@ -45,7 +47,7 @@ export function findMarker(root: HTMLElement, attribute: string, value: string) 
 }
 
 export const FLIGHT_GEOMETRY = {
-  maxLiftPx: 120, liftRatio: 0.32, peakScale: 1.14, perspectivePx: 600,
+  maxLiftPx: 120, liftRatio: 0.32, peakScale: 1.14, perspectivePx: CARD_PERSPECTIVE.flightPx,
   spinDeg: -20,
   flipDurationRatio: 0.7, flipDelayRatio: 0.15, deckWidthRatio: 0.085,
   maxCards: 3, originTtlMs: 4000,

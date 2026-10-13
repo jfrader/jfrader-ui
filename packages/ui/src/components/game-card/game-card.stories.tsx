@@ -55,7 +55,10 @@ const BACK_LABEL = 'Carta boca abajo';
 
 const gridStyle = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(32px, max-content))',
+  inlineSize: `calc(${vars.size.gameCardSm} * ${FRENCH_RANKS.length} + ${vars.space[2]} * ${FRENCH_RANKS.length - 1})`,
+  maxInlineSize: '100%',
+  marginInline: 'auto',
+  gridTemplateColumns: `repeat(auto-fit, minmax(${vars.size.gameCardSm}, max-content))`,
   gap: vars.space[2],
   alignItems: 'center',
 } satisfies CSSProperties;
@@ -89,6 +92,25 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+async function expectDeckGrid(cards: NodeListOf<Element>) {
+  const firstCard = cards[0];
+  const grid = firstCard?.parentElement;
+  if (!firstCard || !grid) throw new Error('Missing deck grid');
+  const bounds = grid.getBoundingClientRect();
+  const cardWidth = firstCard.getBoundingClientRect().width;
+  const gap = Number.parseFloat(getComputedStyle(grid).columnGap);
+  const columns = Math.floor((bounds.width + gap) / (cardWidth + gap));
+  const actualColumns = new Set(Array.from(cards, (card) => card.getBoundingClientRect().x)).size;
+  await expect(actualColumns).toBe(columns);
+  await expect(actualColumns).toBeGreaterThan(1);
+  await expect(actualColumns).toBeLessThanOrEqual(FRENCH_RANKS.length);
+  for (const card of cards) {
+    const rect = card.getBoundingClientRect();
+    await expect(rect.left).toBeGreaterThanOrEqual(bounds.left);
+    await expect(rect.right).toBeLessThanOrEqual(bounds.right + 1);
+  }
+}
 
 /** Spanish diagonal backs and poker checks beside their faces. */
 export const BackPatterns: Story = {
@@ -126,6 +148,7 @@ export const Default: Story = {
 };
 
 export const FrenchDeck: Story = {
+  parameters: { layout: 'padded' },
   render: () => (
     <div style={gridStyle}>
       {FRENCH_SUITS.flatMap((suit) =>
@@ -139,6 +162,7 @@ export const FrenchDeck: Story = {
   play: async ({ canvasElement }) => {
     const cards = canvasElement.querySelectorAll('[data-ui="game-card"]');
     await expect(cards).toHaveLength(52);
+    await expectDeckGrid(cards);
     for (const suit of FRENCH_SUITS) {
       for (const rank of FRENCH_RANKS) {
         const card = within(canvasElement).getByRole('img', { name: `${rank} of ${suit}` });
@@ -154,6 +178,7 @@ export const FrenchDeck: Story = {
 };
 
 export const SpanishDeck: Story = {
+  parameters: { layout: 'padded' },
   render: () => (
     <div style={gridStyle}>
       {SPANISH_SUITS.flatMap((suit) =>
@@ -167,6 +192,7 @@ export const SpanishDeck: Story = {
   play: async ({ canvasElement }) => {
     const cards = canvasElement.querySelectorAll('[data-ui="game-card"]');
     await expect(cards).toHaveLength(40);
+    await expectDeckGrid(cards);
     for (const suit of SPANISH_SUITS) {
       for (const rank of SPANISH_RANKS) {
         const card = within(canvasElement).getByRole('img', { name: cardLabel({ deck: 'spanish', suit, rank }) });
