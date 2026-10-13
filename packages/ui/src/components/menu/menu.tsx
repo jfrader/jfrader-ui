@@ -58,7 +58,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { listboxItemStateStyle, listboxScrollStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
-import { REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { LayerContent, MenuLayer, useLayerDismiss } from '../../overlay/overlay-layer';
@@ -223,6 +223,10 @@ const separatorStyle = css({
   blockSize: '1px',
   marginBlock: vars.space[1],
   backgroundColor: vars.color.border,
+  [FORCED_COLORS]: {
+    forcedColorAdjust: 'none',
+    backgroundColor: 'CanvasText',
+  },
 });
 
 /** Own styles of a menu item, for families that layer their own item styles on top. */

@@ -86,6 +86,22 @@ function bodyOf(canvasElement: HTMLElement) {
   return within(canvasElement.ownerDocument.body);
 }
 
+function mediaRuleSets(element: Element, query: string, property: string, expected: string) {
+  return Array.from(element.ownerDocument.styleSheets).some((sheet) =>
+    Array.from(sheet.cssRules).some(
+      (rule) =>
+        rule instanceof CSSMediaRule &&
+        rule.conditionText.includes(query) &&
+        Array.from(rule.cssRules).some(
+          (inner) =>
+            inner instanceof CSSStyleRule &&
+            element.matches(inner.selectorText) &&
+            inner.style.getPropertyValue(property).toLowerCase() === expected,
+        ),
+    ),
+  );
+}
+
 const callValues = (spy: unknown) => (spy as Mock).mock.calls.map(([value]) => value);
 
 function getTrigger(canvasElement: HTMLElement) {
@@ -143,6 +159,27 @@ export const Open: Story = {
     // Persistent open state so the axe gate sees the portaled menu.
     const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
     await expect(within(menu).getByRole('menuitem', { name: 'Duplicate' })).toHaveAttribute('aria-disabled', 'true');
+  },
+};
+
+export const ForcedColors: Story = {
+  args: { defaultOpen: true },
+  render: (args) => <MenuExample {...args} />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Structural check of the authored separator rules; it does not emulate forced colors. Browser QA verifies the rendered line.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
+    const separator = within(menu).getByRole('separator');
+    await expect(separator).toBeVisible();
+    await expect(getComputedStyle(separator).blockSize).toBe('1px');
+    await expect(mediaRuleSets(separator, 'forced-colors: active', 'background-color', 'canvastext')).toBe(true);
+    await expect(mediaRuleSets(separator, 'forced-colors: active', 'forced-color-adjust', 'none')).toBe(true);
   },
 };
 
