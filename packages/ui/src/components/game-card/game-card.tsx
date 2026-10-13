@@ -135,7 +135,7 @@ const suitInkStyles: Record<'red' | 'ink', SerializedStyles> = {
   ink: css({ color: vars.color.cardInk }),
 };
 
-const sizeStyles: Record<GameCardSize, SerializedStyles> = {
+export const gameCardSizeStyles: Record<GameCardSize, SerializedStyles> = {
   sm: css({ '--game-card-width': vars.size.gameCardSm }),
   md: css({ '--game-card-width': vars.size.gameCardMd }),
   lg: css({ '--game-card-width': vars.size.gameCardLg }),
@@ -163,7 +163,7 @@ export function GameCard({
   return (
     <WithSx
       className={className}
-      styles={[rootStyle, paperStyle, hidden && backMaterialStyle, sizeStyles[size], dimmed && dimmedStyle]}
+      styles={[rootStyle, paperStyle, hidden && backMaterialStyle, gameCardSizeStyles[size], dimmed && dimmedStyle]}
       sx={sx}
     >
       {(rootClass) => (

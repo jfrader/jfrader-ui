@@ -1,11 +1,18 @@
 // The card frame and the face's paint, taken from the reference implementation (Trucoshi's
 // cardFlipPaint and emojiCardPaint). Constants, not tokens: they describe one object's proportions
 // rather than a scale the whole system shares.
+import { vars } from '@jfrader/tokens/vars';
+
 export const CARD_FRAME = {
   /** height = width × ratio */
   ratio: 1.48,
   /** border-radius = width / cornerDivisor */
   cornerDivisor: 13,
+} as const;
+
+export const CARD_PERSPECTIVE = {
+  flip: vars.size.gameCardPerspective,
+  flightPx: 600,
 } as const;
 
 export const CARD_FACE = {

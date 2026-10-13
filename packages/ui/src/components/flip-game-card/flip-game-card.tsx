@@ -3,11 +3,12 @@
 import { useEffect, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { MotionConfig, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type SerializedStyles } from '../../styling/css';
+import { css } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import type { GameCardPartProps, GameCardSize } from '../game-card';
-import { CARD_FRAME } from '../game-card/card-frame';
+import { CARD_FRAME, CARD_PERSPECTIVE } from '../game-card/card-frame';
+import { gameCardSizeStyles } from '../game-card/game-card';
 
 export interface FlipGameCardProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   /** Shows `back` when true and `front` when false. No interaction changes this prop. */
@@ -29,16 +30,11 @@ const rootStyle = css({
   label: 'flip-game-card',
   position: 'relative',
   flexShrink: 0,
-  inlineSize: 'var(--flip-game-card-width)',
-  blockSize: `calc(var(--flip-game-card-width) * ${CARD_FRAME.ratio})`,
-  perspective: vars.size.gameCardPerspective,
+  inlineSize: 'var(--game-card-width)',
+  blockSize: `calc(var(--game-card-width) * ${CARD_FRAME.ratio})`,
+  borderRadius: `calc(var(--game-card-width) / ${CARD_FRAME.cornerDivisor})`,
+  perspective: CARD_PERSPECTIVE.flip,
 });
-
-const sizeStyles: Record<GameCardSize, SerializedStyles> = {
-  sm: css({ '--flip-game-card-width': vars.size.gameCardSm }),
-  md: css({ '--flip-game-card-width': vars.size.gameCardMd }),
-  lg: css({ '--flip-game-card-width': vars.size.gameCardLg }),
-};
 
 const stillStyle = css({
   '& > [data-ui="flip-game-card-rotator"]': {
@@ -67,7 +63,7 @@ const faceStyle = css({
   position: 'absolute',
   inset: 0,
   backfaceVisibility: 'hidden',
-  '& > [data-ui="game-card"]': { inlineSize: '100%', blockSize: '100%' },
+  '& > [data-ui~="game-card"]': { '--game-card-width': 'inherit', inlineSize: '100%', blockSize: '100%' },
 });
 
 const backStyle = css({
@@ -94,7 +90,7 @@ export function FlipGameCard({
 
   return (
     <MotionConfig reducedMotion="user">
-      <WithSx className={className} styles={[rootStyle, sizeStyles[size], reducedStyle]} sx={sx}>
+      <WithSx className={className} styles={[rootStyle, gameCardSizeStyles[size], reducedStyle]} sx={sx}>
         {(rootClass) => (
           <div
             {...rest}
