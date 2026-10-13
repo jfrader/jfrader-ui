@@ -4,17 +4,11 @@ export type BoardPlayerCount = 2 | 4 | 6;
 export type BoardViewport = { width: number; height: number; aspectRatio: number };
 
 export interface BoardSeatGeometryConfig {
-  radiusXMultiplier: number;
-  radiusYMultiplier: number;
-  sideWeightedYMultiplier: boolean;
-  outwardOffsetX: number;
-  outwardOffsetY: number;
-  sideInset: number;
-  sideVerticalOffset: number;
-  angleOffsetDeg: number;
-  sideAngleOffsetDeg: number;
-  topGroupShiftYPx: number;
-  bottomGroupShiftYPx: number;
+  /** Derived from measured content and space; no per-profile position overrides. */
+  radiusX: number;
+  radiusY: number;
+  scale: number;
+  gap: number;
 }
 export interface BoardSeatGeometry {
   index: number;
@@ -26,8 +20,14 @@ export interface BoardSeatGeometry {
   sideStrength: number;
   leftPercent: number;
   topPercent: number;
+  rotationDeg: number;
+  /** Already applied by the table. Do not apply again in renderSeat. */
+  scale: number;
+  /** @deprecated Preset translations were removed. Always zero. */
   groupShiftY: number;
+  /** @deprecated Preset translations were removed. Always zero. */
   seatShiftX: number;
+  /** @deprecated Preset translations were removed. Always zero. */
   seatShiftY: number;
 }
 export interface BoardSurfaceFrameConfig {
@@ -58,5 +58,6 @@ export interface BoardLayoutModel {
   frame: BoardSurfaceFrameConfig;
   boardTranslateY: string;
   seatConfig: BoardSeatGeometryConfig;
+  fit: 'measuring' | 'fitted' | 'insufficient-space';
   seatGeometries: BoardSeatGeometry[];
 }

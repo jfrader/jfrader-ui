@@ -1,48 +1,22 @@
-import type { BoardSeatGeometry, BoardSeatGeometryConfig } from './types';
+import type { BoardSeatGeometry } from './types';
+import { fitBoardContent, type BoardMeasurements } from './fit-layout';
 
-export const mergeSeatConfig = (base: BoardSeatGeometryConfig, overrides?: Partial<BoardSeatGeometryConfig>) => ({
-  ...base,
-  ...(overrides || {}),
-});
-
-export const buildSeatGeometry = ({ index, totalSeats, config }: {
-  index: number;
-  totalSeats: number;
-  config: BoardSeatGeometryConfig;
-}): BoardSeatGeometry => {
-  const safeSeatCount = Math.max(totalSeats, 2);
-  const baseAngleDeg = 90 + config.angleOffsetDeg + (index * 360) / safeSeatCount;
-  const baseAngle = (baseAngleDeg * Math.PI) / 180;
-  const sideOffsetDeg = config.sideAngleOffsetDeg * Math.abs(Math.cos(baseAngle));
-  const angleDeg = baseAngleDeg + sideOffsetDeg;
-  const angleRad = (angleDeg * Math.PI) / 180;
-  const cos = Math.cos(angleRad);
-  const sin = Math.sin(angleRad);
-  const sideStrength = Math.abs(cos);
-  const effectiveYMultiplier = config.sideWeightedYMultiplier
-    ? 1 + (config.radiusYMultiplier - 1) * sideStrength
-    : config.radiusYMultiplier;
-  const radiusX = 50 * config.radiusXMultiplier;
-  const radiusY = 40 * effectiveYMultiplier;
-  const leftBase = 50 + cos * radiusX;
-  const topBase = 50 + sin * radiusY;
-  return {
-    index,
-    totalSeats: safeSeatCount,
-    angleDeg,
-    angleRad,
-    cos,
-    sin,
-    sideStrength,
-    leftPercent: leftBase - cos * sideStrength * config.sideInset,
-    topPercent: topBase + Math.sign(sin || 1) * sideStrength * config.sideVerticalOffset,
-    groupShiftY: sin < 0 ? -config.topGroupShiftYPx : sin > 0 ? config.bottomGroupShiftYPx : 0,
-    seatShiftX: cos * config.outwardOffsetX,
-    seatShiftY: sin * config.outwardOffsetY,
-  };
-};
-
-export const buildSeatGeometries = ({ totalSeats, config }: { totalSeats: number; config: BoardSeatGeometryConfig }) => {
-  const safeSeatCount = Math.max(totalSeats, 2);
-  return Array.from({ length: safeSeatCount }, (_, index) => buildSeatGeometry({ index, totalSeats: safeSeatCount, config }));
-};
+/** Deliberately replaces Trucoshi's deformed profile presets with a measured curve. */
+export function buildSeatGeometries(totalSeats: number, measurement?: BoardMeasurements) {
+  const fitted = measurement && measurement.seats.length === totalSeats ? fitBoardContent(measurement) : undefined;
+  const seatGeometries: BoardSeatGeometry[] = Array.from({ length: totalSeats }, (_, index) => {
+    const theta = Math.PI / 2 + index * 2 * Math.PI / totalSeats;
+    const point = fitted?.positions[index];
+    const physicalAngle = point ? point.rotationDeg * Math.PI / 180 + Math.PI / 2 : theta;
+    return {
+      index, totalSeats, angleRad: theta, angleDeg: theta * 180 / Math.PI,
+      cos: Math.cos(physicalAngle), sin: Math.sin(physicalAngle), sideStrength: Math.abs(Math.cos(physicalAngle)),
+      leftPercent: point && measurement?.width ? (measurement.centerX + point.x) / measurement.width * 100 : 50,
+      topPercent: point && measurement?.height ? (measurement.centerY + point.y) / measurement.height * 100 : 50,
+      rotationDeg: point?.rotationDeg ?? index * 360 / totalSeats,
+      scale: fitted?.scale ?? 1,
+      groupShiftY: 0, seatShiftX: 0, seatShiftY: 0,
+    };
+  });
+  return { fitted, seatGeometries };
+}
