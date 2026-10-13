@@ -92,13 +92,20 @@ export function useTooltipInteractions(
     enabled = true,
     openDelay = DEFAULT_OPEN_DELAY_MS,
     closeDelay = DEFAULT_CLOSE_DELAY_MS,
-  }: { enabled?: boolean; openDelay?: number; closeDelay?: number } = {},
+    focusVisibleOnly = false,
+  }: {
+    enabled?: boolean;
+    openDelay?: number;
+    closeDelay?: number;
+    /** Only keyboard focus (:focus-visible) opens the tooltip, so a programmatic focus cannot flash it. */
+    focusVisibleOnly?: boolean;
+  } = {},
 ): UseInteractionsReturn {
   // `move: false` keeps moving the pointer onto the content from re-triggering hover logic on
   // the reference; useHover still keeps the tooltip open while the pointer rests on it, and
   // the close delay covers the offset gap (WCAG 1.4.13 hoverable + persistent).
   const hover = useHover(context, { enabled, delay: { open: openDelay, close: closeDelay }, move: false });
-  const focus = useFocus(context, { enabled });
+  const focus = useFocus(context, { enabled, visibleOnly: focusVisibleOnly });
   const dismiss = useDismiss(context, { escapeKey: true });
   const role = useRole(context, { role: 'tooltip' });
   return useInteractions([hover, focus, dismiss, role]);

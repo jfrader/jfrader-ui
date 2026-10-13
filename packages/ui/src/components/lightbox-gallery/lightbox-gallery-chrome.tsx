@@ -185,7 +185,7 @@ function ChromeActionButton({ ref, label, icon, disabled = false, placement = 't
   useEffect(() => {
     if (!available) setOpen(false);
   }, [available]);
-  const { getReferenceProps, getFloatingProps } = useTooltipInteractions(context, { enabled: available });
+  const { getReferenceProps, getFloatingProps } = useTooltipInteractions(context, { enabled: available, focusVisibleOnly: true });
   const { tabIndex: _tabIndex, ...floatingProps } = getFloatingProps();
   const merged = useMergeRefs([ref, refs.setReference]);
   return (
