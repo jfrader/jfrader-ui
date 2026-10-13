@@ -58,4 +58,8 @@ export default {
     varsExport: 'vars',
     css: ['@jfrader/tokens/tokens.css', '@jfrader/tokens/base.css'],
   },
+  // The library's own code block, with its shiki highlighter, for every code sample the docs show.
+  code: {
+    module: './src/code.tsx',
+  },
 };
