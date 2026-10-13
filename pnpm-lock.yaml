@@ -21,8 +21,8 @@ importers:
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.3.0)(react@19.3.0)
       '@jfrader/storybook-docs':
-        specifier: https://github.com/jfrader/storybook-docs/releases/download/docs-v0.4.0/jfrader-storybook-docs-0.4.0.tgz
-        version: https://github.com/jfrader/storybook-docs/releases/download/docs-v0.4.0/jfrader-storybook-docs-0.4.0.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+        specifier: https://github.com/jfrader/storybook-docs/releases/download/docs-v0.4.1/jfrader-storybook-docs-0.4.1.tgz
+        version: https://github.com/jfrader/storybook-docs/releases/download/docs-v0.4.1/jfrader-storybook-docs-0.4.1.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
       '@jfrader/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -713,9 +713,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@jfrader/storybook-docs@https://github.com/jfrader/storybook-docs/releases/download/docs-v0.4.0/jfrader-storybook-docs-0.4.0.tgz':
-    resolution: {tarball: https://github.com/jfrader/storybook-docs/releases/download/docs-v0.4.0/jfrader-storybook-docs-0.4.0.tgz}
-    version: 0.4.0
+  '@jfrader/storybook-docs@https://github.com/jfrader/storybook-docs/releases/download/docs-v0.4.1/jfrader-storybook-docs-0.4.1.tgz':
+    resolution: {tarball: https://github.com/jfrader/storybook-docs/releases/download/docs-v0.4.1/jfrader-storybook-docs-0.4.1.tgz}
+    version: 0.4.1
     engines: {node: '>=22.12.0'}
     peerDependencies:
       react: ^19.0.0
@@ -2965,7 +2965,7 @@ snapshots:
   '@img/sharp-win32-x64@0.35.5':
     optional: true
 
-  '@jfrader/storybook-docs@https://github.com/jfrader/storybook-docs/releases/download/docs-v0.4.0/jfrader-storybook-docs-0.4.0.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))':
+  '@jfrader/storybook-docs@https://github.com/jfrader/storybook-docs/releases/download/docs-v0.4.1/jfrader-storybook-docs-0.4.1.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))':
     dependencies:
       marked: 18.1.1
       react: 19.3.0
