@@ -42,14 +42,14 @@ usePlayedCardFlights({ plays, playerCount, resyncKey });` },
     usage: `### Setup
 - Wrap one board in \`CardFlightsProvider\` with its wrapper \`scopeRef\`. Portals inherit ThemeRoot tokens, appearance and portalContainer.
 - Call \`useDealFlights\` and \`usePlayedCardFlights\` below the provider with your snapshots and front/back content. Keep game rules and snapshot parsing in your app.
-- GameTable supplies \`data-game-surface="true"\`. Mark own hand slots with \`data-hand-card={cardKey}\`, rival slots with \`data-seat-hidden-card={playerKey}\` and \`data-seat-hidden-card-index={index}\`. Played destinations use TrickStacks' existing \`data-trick-key\` value.
+- GameTable supplies \`data-game-surface="true"\`. GameHand supplies \`data-hand-card={card.id}\`; match its IDs to FlightCard keys. Pass \`playerKey\` to GameHand.Hidden for \`data-seat-hidden-card\` and zero-based \`data-seat-hidden-card-index\`. Played destinations use TrickStacks' \`data-trick-key\` value.
 - Destinations must be mounted and measurable in the same commit as the snapshot. Missing origins or destinations appear in place. A down flight never mounts its front content.
 
 ### Snapshots and landing
 - Initial snapshots do not fly. Change \`resyncKey\` when applying a reconnect/resync snapshot. Played bursts larger than one round also appear in place.
 - Deal order starts at forehandIdx, sorts player idx and deals at most three cards, one per player per round. Timings are 380ms with 70ms stagger. Own plays take 400ms; rivals take 520ms and reveal in flight.
 - Capture an own card with \`useCardFlights().rememberPlayOrigin(key, elementOrBox)\` before accepting a click or drag. Origins expire after 4000ms and are consumed once; otherwise the preceding render supplies the origin.
-- The provider hides each destination until its deadline, without transitionend/animationend or a Motion promise. Read \`landingTargets\` for app bookkeeping; do not write the destination's visibility while it is in flight.
+- Mounted flights hide each destination until their animation tracks finish, then remove the painted flight before showing the destination. An unavailable portal completes at the duration deadline. Read \`landingTargets\` for app bookkeeping; do not write the destination's visibility while it is in flight.
 - Replacing the same target stops all old tracks and starts a new flight. Old completions cannot land its replacement. Call \`reset()\` or remount the provider for a new match: pending destinations become visible and origins/baselines are cleared.
 - Reduced motion skips flights and still advances both snapshot baselines. Enabling it in flight lands all pending cards immediately.
 
@@ -75,6 +75,7 @@ function sampleFrames(root: HTMLElement, windowMs: number) {
   return new Promise<typeof samples>((resolve) => {
     const frame = () => {
       for (const node of flights(root)) {
+        if (getComputedStyle(node).display === 'none') continue;
         const sample = samples.get(node) ?? { transforms: new Set<string>(), opacities: new Set<string>() };
         sample.transforms.add(getComputedStyle(node).transform);
         sample.opacities.add(getComputedStyle(required(node.querySelector('[data-ui="card-flight-shadow"]'))).opacity);
@@ -116,6 +117,12 @@ export const DealAndPlay: Story = {
         ? canvasElement.querySelector(`[data-hand-card="${target.slice(5)}"]`)
         : canvasElement.querySelector(`[data-seat-hidden-card="rival"][data-seat-hidden-card-index="${target.slice(-1)}"]`);
       await expect(getComputedStyle(required(destination)).visibility).toBe('hidden');
+      const shadowTracks = required(node.querySelector('[data-ui="card-flight-shadow"]')).getAnimations();
+      const shadowFrames = shadowTracks.flatMap((track) => track.effect instanceof KeyframeEffect ? track.effect.getKeyframes() : []);
+      const peakOpacity = Number(required(shadowFrames.find((frame) => frame.offset === FLIGHT_GEOMETRY.offsets[1] && frame.opacity !== undefined)).opacity);
+      await expect(peakOpacity).toBeGreaterThan(0);
+      await expect(peakOpacity).toBeLessThan(1);
+      await expect(shadowFrames.some((frame) => frame.offset === FLIGHT_GEOMETRY.offsets[1] && frame.transform === `scale(${FLIGHT_GEOMETRY.peakScale})`)).toBe(true);
     }
     await expectFlightSamples(await sampledDeal, 6);
     await landed(canvasElement);
@@ -178,7 +185,7 @@ export const Interruption: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Replace flight' }));
     const first = required(flights(canvasElement)[0]);
     const oldTracks = first.getAnimations({ subtree: true });
-    await expect(oldTracks).toHaveLength(3);
+    await expect(oldTracks).toHaveLength(5);
     await userEvent.click(canvas.getByRole('button', { name: 'Replace flight' }));
     await expect(flights(canvasElement)[0]).not.toBe(first);
     await expect(first.isConnected).toBe(false);
@@ -203,10 +210,10 @@ export const Interruption: Story = {
     const probe = required(canvasElement.querySelector<HTMLElement>('[data-identity-probe] [data-ui="card-flight"]'));
     const probeTracks = probe.getAnimations({ subtree: true });
     try {
-      await expect(probeTracks).toHaveLength(3);
+      await expect(probeTracks).toHaveLength(5);
       await userEvent.click(canvas.getByRole('button', { name: 'Rerender identity probe' }));
       const afterRender = probe.getAnimations({ subtree: true });
-      await expect(afterRender).toHaveLength(3);
+      await expect(afterRender).toHaveLength(5);
       for (const [index, track] of probeTracks.entries()) await expect(afterRender[index]).toBe(track);
     } finally {
       await userEvent.click(canvas.getByRole('button', { name: 'Stop identity probe' }));
@@ -289,16 +296,93 @@ export const ExpiredOrigin: Story = {
     await expect(destination).toBeVisible();
   },
 };
-export const LandingWithoutAnimationCompletion: Story = {
+export const LandingWaitsForAnimationCompletion: Story = {
   render: () => <CardFlightsFixture initialPlayed />,
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Replace flight' }));
     const tracks = required(flights(canvasElement)[0]).getAnimations({ subtree: true });
-    await expect(tracks).toHaveLength(3);
+    await expect(tracks.length).toBeGreaterThan(0);
     tracks.forEach((track) => track.pause());
+    await new Promise((resolve) => setTimeout(resolve, motionDurationMs.cardPlay + 80));
+    await expect(flights(canvasElement)).toHaveLength(1);
+    await expect(getComputedStyle(required(canvasElement.querySelector('[data-trick-key="0-own-own:0"]'))).visibility).toBe('hidden');
+    tracks.forEach((track) => track.play());
     await landed(canvasElement);
     await expect(canvas.getByRole('img', { name: 'A of spades' })).toBeVisible();
     await expect(tracks.every((track) => track.playState !== 'running')).toBe(true);
+  },
+};
+
+export const RealComponentsAndStagger: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const departures = new Map<string, number>();
+    const pendingPaints: string[] = [];
+    const started = performance.now();
+    const sampling = new Promise<void>((resolve) => {
+      const frame = () => {
+        for (const node of flights(canvasElement)) {
+          const track = node.getAnimations()[0];
+          const visible = getComputedStyle(node).visibility === 'visible';
+          const progress = track?.effect?.getComputedTiming().progress;
+          if (visible && Number(track?.currentTime) < Number(track?.effect?.getTiming().delay)) pendingPaints.push(node.dataset.flightTarget!);
+          if (visible && progress !== null && progress !== undefined && progress > 0 && !departures.has(node.dataset.flightTarget!)) departures.set(node.dataset.flightTarget!, performance.now());
+        }
+        if (performance.now() - started < 1000) requestAnimationFrame(frame);
+        else resolve();
+      };
+      requestAnimationFrame(frame);
+    });
+    await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
+    await expect(canvasElement.querySelector('[data-ui="game-table"]')).not.toBeNull();
+    await expect(canvasElement.querySelector('[data-ui="game-hand-card"][data-hand-card="own:0"]')).not.toBeNull();
+    await expect(canvasElement.querySelector('[data-ui="game-hand-hidden-card"][data-seat-hidden-card="rival"][data-seat-hidden-card-index="0"]')).not.toBeNull();
+    await sampling;
+    await expect(pendingPaints).toEqual([]);
+    await expect(departures.size).toBe(6);
+    await expect(required(departures.get('hand:own:0')) - required(departures.get('seat:rival:0'))).toBeGreaterThan(motionDurationMs.cardDealStagger / 2);
+    const origin = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-hand-card="own:0"]')));
+    await userEvent.click(canvas.getByRole('button', { name: 'Play without capture' }));
+    const destination = required(canvasElement.querySelector<HTMLElement>('[data-trick-key="0-own-own:0"]'));
+    await expectOrigin(required(flights(canvasElement)[0]), origin, destination);
+    await landed(canvasElement);
+    const hiddenOrigin = measureCardBox(required([...canvasElement.querySelectorAll<HTMLElement>('[data-seat-hidden-card="rival"]')].at(-1)));
+    await userEvent.click(canvas.getByRole('button', { name: 'Play rival' }));
+    await expectOrigin(required(flights(canvasElement)[0]), hiddenOrigin,
+      required(canvasElement.querySelector<HTMLElement>('[data-trick-key="0-rival-rival:0"]')));
+    await landed(canvasElement);
+  },
+};
+
+export const LandingFrameContinuity: Story = {
+  render: () => <CardFlightsFixture initialPlayed />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const destination = required(canvasElement.querySelector<HTMLElement>('[data-trick-key="0-own-own:0"]'));
+    const counts: number[] = [];
+    const premature: number[] = [];
+    let launched = false;
+    let completed = false;
+    const started = performance.now();
+    const sampling = new Promise<void>((resolve) => {
+      const frame = () => {
+        const painted = flights(canvasElement).filter((node) => getComputedStyle(node).display !== 'none' && getComputedStyle(node).visibility === 'visible').length;
+        counts.push(painted + (getComputedStyle(destination).visibility === 'visible' ? 1 : 0));
+        if (launched && !completed && getComputedStyle(destination).visibility === 'visible') premature.push(performance.now() - started);
+        if (performance.now() - started < 1450) requestAnimationFrame(frame);
+        else resolve();
+      };
+      requestAnimationFrame(frame);
+    });
+    await userEvent.click(canvas.getByRole('button', { name: 'Replace flight' }));
+    const tracks = required(flights(canvasElement)[0]).getAnimations({ subtree: true });
+    tracks.forEach((track) => track.updatePlaybackRate(0.5));
+    void required(tracks[0]).finished.then(() => { completed = true; }).catch(() => undefined);
+    launched = true;
+    await sampling;
+    await expect(counts.length).toBeGreaterThan(10);
+    await expect(counts.every((count) => count === 1)).toBe(true);
+    await expect(premature).toEqual([]);
+    await expect(completed).toBe(true);
+    await landed(canvasElement);
   },
 };
 

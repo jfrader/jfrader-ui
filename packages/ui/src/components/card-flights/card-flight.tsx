@@ -22,7 +22,9 @@ const backStyle = css({ transform: 'rotateY(180deg)' });
 const pose = (x: number, y: number, rotate: number, scale: number) =>
   `translate(${x}px, ${y}px) rotate(${rotate}deg) scale(${scale})`;
 
-export function CardFlight({ flightId, spec, onFinish }: { flightId: number; spec: CardFlightSpec; onFinish: () => void }) {
+export function CardFlight({ flightId, spec, onStart, onFinish }: {
+  flightId: number; spec: CardFlightSpec; onStart?: (cancel: () => void) => void; onFinish: () => void;
+}) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const shadowRef = useRef<HTMLDivElement>(null);
   const turnRef = useRef<HTMLDivElement>(null);
@@ -34,6 +36,7 @@ export function CardFlight({ flightId, spec, onFinish }: { flightId: number; spe
     const shadow = shadowRef.current;
     const turn = turnRef.current;
     if (!body || !shadow || !turn) return;
+    body.style.display = '';
     if (typeof body.animate !== 'function' || durationMs <= 0) {
       onFinish();
       return;
@@ -49,15 +52,32 @@ export function CardFlight({ flightId, spec, onFinish }: { flightId: number; spe
       pose((x + endX) / 2, Math.min(y, endY) - lift, (from.rotate + to.rotate) / 2 + (face === 'reveal' ? config.spinDeg : 0), config.peakScale),
       pose(endX, endY, to.rotate, 1),
     ] }, options);
-    const lifted = animate(shadow, { opacity: [0, 1, 0] }, options);
+    const lifted = animate(shadow, {
+      opacity: [0, 1 - lift / (config.maxLiftPx * config.shadowFadeRatio), 0],
+      transform: ['scale(1)', `scale(${config.peakScale})`, 'scale(1)'],
+    }, options);
+    const departure = body.animate({ visibility: ['visible', 'visible'] }, {
+      duration: durationMs, delay: delayMs, fill: 'forwards',
+    });
     const flip = face === 'reveal' ? animate(turn, { transform: ['rotateY(180deg)', 'rotateY(0deg)'] }, {
       duration: options.duration * config.flipDurationRatio,
       delay: options.delay + options.duration * config.flipDelayRatio, ease: 'easeInOut',
     }) : null;
-    return () => { travel.stop(); lifted.stop(); flip?.stop(); };
+    let active = true;
+    const cancel = () => {
+      active = false;
+      // Remove the painted flight before restoring its destination or starting a replacement.
+      body.style.display = 'none';
+      travel.cancel(); lifted.cancel(); flip?.cancel(); departure.cancel();
+    };
+    onStart?.(cancel);
+    void Promise.all([travel, lifted, flip, departure.finished]).then(() => {
+      if (active) { body.style.display = 'none'; onFinish(); }
+    }).catch(() => { if (active) { cancel(); onFinish(); } });
+    return cancel;
   }, [flightId]);
   return <div ref={bodyRef} css={bodyStyle} aria-hidden="true" data-ui="card-flight"
-    data-flight-target={spec.target} style={{ width: to.width, height: to.height, transform: start }}>
+    data-flight-target={spec.target} style={{ width: to.width, height: to.height, transform: start, visibility: 'hidden' }}>
     <div ref={shadowRef} css={shadowStyle} data-ui="card-flight-shadow" style={{ borderRadius: to.width / CARD_FRAME.cornerDivisor }} />
     <div ref={turnRef} css={rotatorStyle} data-ui="card-flight-turn" style={{ transform: face === 'up' ? 'none' : 'rotateY(180deg)' }}>
       <div css={faceStyle}>{face !== 'down' && front}</div>

@@ -3,22 +3,26 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../../packages/ui/src/styling/css';
 import { motionDurationMs } from '../../../packages/ui/src/styling/motion-timings';
 import { Button, CardFlightsProvider, GameCard, GameTable, ThemeRoot, flightTarget, measureCardBox,
-  useCardFlights, useDealFlights, usePlayedCardFlights, type DealFlightPlayer, type FlightCard, type PlayedFlightCard,
+  GameHand, TrickStacks, useCardFlights, useDealFlights, usePlayedCardFlights, type DealFlightPlayer, type FlightCard, type PlayedFlightCard,
 } from '@jfrader/ui';
 import { CardFlight } from '../../../packages/ui/src/components/card-flights/card-flight';
 import type { CardFlightSpec } from '../../../packages/ui/src/components/card-flights/card-flights';
 
 const controlsStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: vars.space[3] });
 const boardStyle = css({ blockSize: '600px', maxInlineSize: '850px' });
-const handStyle = css({ display: 'flex', gap: vars.space[2], justifyContent: 'center' });
-const centerStyle = css({ display: 'flex', gap: vars.space[2], justifyContent: 'center', alignItems: 'center' });
-const cards: FlightCard[] = (['A', 2, 3] as const).map((rank, index) => ({
-  key: `own:${index}`,
-  front: <GameCard label={`${rank} of spades`} value={{ deck: 'french', rank, suit: 'spades' }} />,
+const ownHand = (['A', 2, 3] as const).map((rank, index) => ({
+  id: `own:${index}`, label: `${rank} of spades`, value: { deck: 'french' as const, rank, suit: 'spades' as const },
+}));
+const rivalHand = ([4, 5, 6] as const).map((rank, index) => ({
+  id: `rival:${index}`, label: `${rank} of hearts`, value: { deck: 'french' as const, rank, suit: 'hearts' as const },
+}));
+const cards: FlightCard[] = ownHand.map((card) => ({
+  key: card.id,
+  front: <GameCard label={card.label} value={card.value} />,
   back: <GameCard label="Card back" />,
 }));
-const opponentCards: FlightCard[] = ([4, 5, 6] as const).map((rank, index) => ({
-  key: `rival:${index}`, front: <GameCard label={`${rank} of hearts`} value={{ deck: 'french', rank, suit: 'hearts' }} />,
+const opponentCards: FlightCard[] = rivalHand.map((card) => ({
+  key: card.id, front: <GameCard label={card.label} value={card.value} />,
   back: <GameCard label="Card back" />,
 }));
 const OWN_PLAY: PlayedFlightCard = { ...cards[0]!, playerKey: 'own', isOwn: true, playedKey: '0-own-own:0' };
@@ -116,11 +120,14 @@ function FakeMatch({ scopeRef, initialDealt, initialPlayed }: {
         seats={[{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }]}
         renderSeat={(slot) => {
           const player = players.find((candidate) => candidate.key === slot.player?.key);
-          return <div css={handStyle}>{player?.cards.map((card, index) => player.isOwn
-            ? <div key={card.key} data-hand-card={card.key}>{card.front}</div>
-            : <div key={card.key} data-seat-hidden-card={player.key} data-seat-hidden-card-index={index}>{card.back}</div>)}</div>;
+          return player?.isOwn ? <GameHand playLabel="Play selected" cards={ownHand.filter((card) => player.cards.some((entry) => entry.key === card.id))} />
+            : <GameHand.Hidden playerKey={player?.key} count={player?.cards.length ?? 0} label="Rival hand" />;
         }}
-        center={<div css={centerStyle}>{plays.map((entry) => <div key={entry.playedKey} data-trick-key={entry.playedKey}>{entry.front}</div>)}</div>}
+        center={<TrickStacks viewport={{ width: 1000, height: 800 }}
+          stacks={players.map((player) => ({ playerKey: player.key, cards: plays.filter((entry) => entry.playerKey === player.key).map((entry) => ({
+            card: entry.key, roundIdx: 0, value: (player.isOwn ? ownHand : rivalHand).find((card) => card.id === entry.key)?.value,
+          })) }))}
+          labels={{ stacks: { own: 'Own stack', rival: 'Rival stack' }, cards: { [OWN_PLAY.playedKey]: 'A of spades', [RIVAL_PLAY.playedKey]: '4 of hearts' } }} />}
       />
     </div>
   </div>;

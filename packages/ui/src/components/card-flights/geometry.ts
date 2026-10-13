@@ -29,7 +29,7 @@ export function measureCardBox(element: HTMLElement): CardBox {
   };
 }
 
-// GameTable supplies the surface; hands expose the reference markers; TrickStacks owns data-trick-key.
+// GameTable supplies the surface; GameHand emits card IDs, Hidden emits playerKey + index; TrickStacks owns data-trick-key.
 export const CARD_FLIGHT_ATTRIBUTES = {
   surface: 'data-game-surface', handCard: 'data-hand-card', hiddenCard: 'data-seat-hidden-card',
   hiddenCardIndex: 'data-seat-hidden-card-index', trickCard: 'data-trick-key',
@@ -48,6 +48,7 @@ export function findMarker(root: HTMLElement, attribute: string, value: string) 
 
 export const FLIGHT_GEOMETRY = {
   maxLiftPx: 120, liftRatio: 0.32, peakScale: 1.14, perspectivePx: CARD_PERSPECTIVE.flightPx,
+  shadowFadeRatio: 1.5,
   spinDeg: -20,
   flipDurationRatio: 0.7, flipDelayRatio: 0.15, deckWidthRatio: 0.085,
   maxCards: 3, originTtlMs: 4000,

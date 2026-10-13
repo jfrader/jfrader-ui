@@ -26,6 +26,8 @@ interface FlightRecord {
   visibility: string;
   priority: string;
   timer: ReturnType<typeof setTimeout> | null;
+  cancel?: () => void;
+  start: (cancel: () => void) => void;
   finish: () => void;
 }
 
@@ -87,6 +89,7 @@ export function CardFlightsProvider({ children, scopeRef }: CardFlightsProviderP
   const actions = useMemo(() => {
     const restore = (record: FlightRecord) => {
       if (record.timer !== null) clearTimeout(record.timer);
+      record.cancel?.();
       record.spec.destination.style.setProperty('visibility', record.visibility, record.priority);
     };
     const clear = () => {
@@ -108,6 +111,11 @@ export function CardFlightsProvider({ children, scopeRef }: CardFlightsProviderP
             visibility: spec.destination.style.getPropertyValue('visibility'),
             priority: spec.destination.style.getPropertyPriority('visibility'),
             timer: null,
+            start: (cancel) => {
+              if (record.timer !== null) clearTimeout(record.timer);
+              record.timer = null;
+              record.cancel = cancel;
+            },
             finish: () => {
               if (records.current.get(spec.target) !== record) return;
               restore(record);
@@ -117,7 +125,7 @@ export function CardFlightsProvider({ children, scopeRef }: CardFlightsProviderP
           };
           spec.destination.style.setProperty('visibility', 'hidden');
           records.current.set(spec.target, record);
-          // The provider owns landing even if the portal is waiting for its container.
+          // Only an unmounted portal has a deadline; mounted flights own their actual landing.
           record.timer = setTimeout(record.finish, spec.durationMs + (spec.delayMs ?? 0));
         }
         setFlights([...records.current.values()]);
@@ -150,7 +158,7 @@ export function CardFlightsProvider({ children, scopeRef }: CardFlightsProviderP
   return <MotionConfig reducedMotion="user"><Context.Provider value={value}>
     {children}
     {flights.length > 0 && <OverlayPortal>{flights.map((flight) =>
-      <CardFlight key={flight.id} flightId={flight.id} spec={flight.spec} onFinish={flight.finish} />)}</OverlayPortal>}
+      <CardFlight key={flight.id} flightId={flight.id} spec={flight.spec} onStart={flight.start} onFinish={flight.finish} />)}</OverlayPortal>}
   </Context.Provider></MotionConfig>;
 }
 CardFlightsProvider.displayName = 'CardFlightsProvider';
