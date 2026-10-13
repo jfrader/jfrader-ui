@@ -47,7 +47,11 @@ export type GameTableProps<T extends SeatLike = SeatLike> =
     clearance?: CSSProperties['paddingBlock'];
     /** Order for `seats`. Prebuilt `slots` already carry their visual order. */
     turnDirection?: TableTurnDirection;
-    /** Intrinsic seat content. The table measures, scales and rotates it; do not apply geometry.scale again. GameCard backs in occupied rival seats receive hidden-card flight markers in DOM order. */
+    /** Intrinsic card content, upright for the spectator. Put names/avatars in GameTable.SeatChrome:
+     * it floats out of flow on the outward side without affecting card placement or sizing.
+     * Arbitrary unmarked in-flow content still participates in layout.
+     * GameCard backs in occupied rival seats receive hidden-card flight markers in DOM order.
+     */
     renderSeat: (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
     header?: ReactNode;
     center?: ReactNode;
@@ -106,15 +110,52 @@ const surfaceStyle = css({
     visibility: 'hidden',
   },
 });
+const seatChromeStyle = css({
+  position: 'absolute',
+  insetBlockStart: 'var(--game-table-chrome-block)',
+  insetInlineStart: 'var(--game-table-chrome-inline)',
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  inlineSize: 'max-content',
+  gap: vars.space[1],
+  transform: 'translate(var(--game-table-chrome-x), var(--game-table-chrome-y))',
+  '&:dir(rtl)': { transform: 'translate(calc(-1 * var(--game-table-chrome-x)), var(--game-table-chrome-y))' },
+  whiteSpace: 'nowrap',
+  pointerEvents: 'none',
+  '& > *': { pointerEvents: 'auto' },
+});
+
+export type GameTableSeatChromeProps = ComponentPropsWithRef<'div'> & SxProps;
+
+export function GameTableSeatChrome({
+  ref,
+  className,
+  sx,
+  children,
+  ...rest
+}: GameTableSeatChromeProps) {
+  return (
+    <WithSx className={className} styles={seatChromeStyle} sx={sx}>
+      {(rootClass) => (
+        <div {...rest} ref={ref} data-ui="game-table-seat-chrome" className={rootClass}>
+          {children}
+        </div>
+      )}
+    </WithSx>
+  );
+}
+GameTableSeatChrome.displayName = 'GameTable.SeatChrome';
+
 const seatStyle = css({
   position: 'absolute',
   zIndex: 2,
   inlineSize: 'max-content',
   insetInlineStart: 'var(--game-table-seat-inline)',
   insetBlockStart: 'var(--game-table-seat-block)',
-  transform: 'translate(-50%, -50%) rotate(var(--game-table-seat-rotation)) scale(var(--game-table-content-scale))',
+  transform: 'translate(-50%, -50%) scale(var(--game-table-content-scale))',
   '&:dir(rtl)': {
-    transform: 'translate(50%, -50%) rotate(calc(-1 * var(--game-table-seat-rotation))) scale(var(--game-table-content-scale))',
+    transform: 'translate(50%, -50%) scale(var(--game-table-content-scale))',
   },
 });
 const centerStyle = css({
@@ -214,7 +255,16 @@ export function GameTable<T extends SeatLike>({
               {slots.map((slot, index) => {
                 const geometry = layout.seatGeometries[index];
                 if (!geometry) throw new Error('GameTable is missing seat geometry.');
+                const chromeOnSide = Math.abs(geometry.cos) > Math.abs(geometry.sin);
+                const chromeInline = geometry.cos > 0 ? `calc(100% + ${vars.space[1]})` : `calc(0px - ${vars.space[1]})`;
+                const chromeBlock = geometry.sin > 0 ? `calc(100% + ${vars.space[1]})` : `calc(0px - ${vars.space[1]})`;
                 const seatVariables: TableVariables = {
+                  '--game-table-chrome-inline': chromeOnSide ? chromeInline : '50%',
+                  '--game-table-chrome-block': chromeOnSide ? '50%' : chromeBlock,
+                  '--game-table-chrome-x': chromeOnSide ? (geometry.cos > 0 ? '0%' : '-100%') : '-50%',
+                  '--game-table-chrome-y': chromeOnSide ? '-50%' : (geometry.sin > 0 ? '0%' : '-100%'),
+                  '--game-table-chrome-fallback-block': chromeBlock,
+                  '--game-table-chrome-fallback-y': geometry.sin > 0 ? '0%' : '-100%',
                   '--game-table-seat-inline': `${geometry.leftPercent}%`,
                   '--game-table-seat-block': `${geometry.topPercent}%`,
                   '--game-table-seat-rotation': `${geometry.rotationDeg}deg`,
@@ -256,3 +306,4 @@ export function GameTable<T extends SeatLike>({
   );
 }
 GameTable.displayName = 'GameTable';
+GameTable.SeatChrome = GameTableSeatChrome;

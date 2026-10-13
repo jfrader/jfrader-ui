@@ -13,6 +13,7 @@
 - `TrickStacks`: keep up to three played cards per player at the table center, inspect stacks with the keyboard, and spread revealed hands. Preserves the original card geometry around anchors derived from the circular GameTable, deliberately replacing the original seat presets; measured grid fitting is an explicit option. Includes RTL and reduced motion.
 - `EditableDetails`: nested labelled details with independent app-owned editors, controlled disclosure, draft preservation on collapse, and keyboard focus recovery. Includes native form, React Action, React Hook Form, and overlay examples.
 - `Scene` and `sceneSource` take `grade: 'warm'` for a warmer final grade of the same scene. Geometry is unchanged, and the default `raw` grade renders the same markup as before. ImageCompare examples now compare one scene in raw and warm grades.
+- `GameTable.SeatChrome`: opt-in seat chrome subpart (`data-ui="game-table-seat-chrome"`) that positions names, avatars and badges out of flow above the seat cards, ensuring card block placement and curve geometry are measured independent of chrome.
 
 ### Improved
 
@@ -31,10 +32,14 @@
 - ActivityRings examples use accent, success and info tones, with a Neutral example alongside them. Completed goals retain their metric colour; unknown and unavailable values use neutral swatches. The neutral palette's third tone now meets 3:1 contrast against the tick track in both themes.
 
 - GameCard no longer exports the internal rendering maps `RANK_MARKS`, `SUIT_GLYPHS` and `SUIT_INK`; card data types and `CARD_BACK_PATTERNS` remain public.
+<<<<<<< HEAD
 - GameTable intentionally replaces the reference's per-profile seat presets with a measured, centered curve: circular in near-square space and capped at a 1.5 axis ratio otherwise. Seats face the center; intrinsic seat/center content scales to fit without covering community cards. Rival GameCard backs now emit the player/index markers consumed by card flights. Component props and the surface measurement target are unchanged; exported seat configuration now describes derived radii, scale and gap instead of positional corrections.
 - GameTable intentionally replaces the reference's per-profile seat presets with a measured, centered curve: circular in near-square space and capped at a 1.5 axis ratio otherwise. Seats face the center. Separate seat/center scales preserve a 32px GameCard width floor; requested clearance yields to zero before that floor can be crossed. `data-clearance` reports the concession and `data-layout-fit="insufficient-space"` declares compositions that still cannot fit without collisions or clipping. Rival GameCard backs now emit the player/index markers consumed by card flights. Component props and the surface measurement target are unchanged; exported seat configuration now describes derived radii, scales and gap instead of positional corrections.
 - `PhotoGrid` `slotProps.filmstrip` now targets the viewer's thumbnail strip (a `div`) instead of a range input. `labels.larger` and `labels.smaller` are deprecated and no longer rendered; `labels.columns` names each density toggle, and the new `labels.photoCount` formats the album size.
+=======
+>>>>>>> d28b632 (fix(game-table): keep floating chrome readable within narrow roots)
 - GameCard backs use red-and-paper `Pattern` tiles: poker checks by default, or Spanish diagonals via `backPattern={CARD_BACK_PATTERNS.spanish}`. Custom artwork replaces either face.
+- GameTable places seats on a measured bounded curve (circular in near-square space and bounded ellipse with axis ratio up to 1.5). All seat content remains upright for the spectator without rotation. `GameTable.SeatChrome` places names and avatars out of flow, without affecting card positions or scales; side chrome moves above/below cards when horizontal room runs out. Separate seat/center scales preserve a 32px GameCard width floor; requested clearance yields to zero before that floor can be crossed. `data-clearance` reports the concession and `data-layout-fit="insufficient-space"` declares card compositions that still cannot fit without collisions or clipping. Rival GameCard backs emit the player/index markers consumed by card flights. Component props and the surface measurement target are unchanged; exported seat configuration describes derived radii, scales and gap.
 
 ### Fixed
 
