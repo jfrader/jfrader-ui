@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: jfrader/storybook-docs
-          ref: ab1787eaba55ef7fea08c0aeffcad85fe8aad6ec
+          ref: ad19ce5459f1cdbca49e78b4b31553db36e11ca5
           path: storybook-docs
           persist-credentials: false
 
