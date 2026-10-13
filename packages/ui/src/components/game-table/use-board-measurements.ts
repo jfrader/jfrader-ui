@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import type { BoardContentSize, BoardMeasurements } from './fit-layout';
+import { fitBoardContent, GAME_TABLE_LIMITS, type BoardContentSize, type BoardMeasurements } from './fit-layout';
 
 const SEAT_SELECTOR = '[data-ui="game-table-seat"]';
 const CENTER_SELECTOR = '[data-ui="game-table-center"]';
@@ -19,6 +19,20 @@ function naturalSize(element: HTMLElement): BoardContentSize {
       Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom) +
       Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth)),
   };
+}
+
+function regionSize(region: HTMLElement): BoardContentSize {
+  let minimumScale = 0;
+  for (const card of region.querySelectorAll<HTMLElement>('[data-ui~="game-card"]')) {
+    const { width } = naturalSize(card);
+    if (width > 0) minimumScale = Math.max(minimumScale, GAME_TABLE_LIMITS.minimumCardWidthPx / width);
+  }
+  for (const control of region.querySelectorAll<HTMLElement>(CONTROL_SELECTOR)) {
+    const { width, height } = naturalSize(control);
+    if (width > 0 && height > 0) minimumScale = Math.max(minimumScale, Math.min(1,
+      Math.max(MIN_CONTROL_SIDE / Math.min(width, height), MIN_CONTROL_MAIN_AXIS / Math.max(width, height))));
+  }
+  return { ...naturalSize(region), minimumScale };
 }
 
 export function useBoardMeasurements() {
@@ -42,7 +56,8 @@ export function useBoardMeasurements() {
       const seats = Array.from(surface.querySelectorAll<HTMLElement>(SEAT_SELECTOR));
       const center = surface.querySelector<HTMLElement>(CENTER_SELECTOR);
       if (!center) return;
-      const elements = new Set([surface, center, ...seats]);
+      const shell = surface.parentElement!;
+      const elements = new Set([shell, surface, center, ...seats]);
       for (const element of observed) if (!elements.has(element)) {
         resize.unobserve(element);
         observed.delete(element);
@@ -72,24 +87,35 @@ export function useBoardMeasurements() {
         markers.delete(card);
       }
 
-      let minimumScale = 0;
-      for (const region of [...seats, center]) for (const control of region.querySelectorAll<HTMLElement>(CONTROL_SELECTOR)) {
-        const { width, height } = naturalSize(control);
-        if (width > 0 && height > 0) minimumScale = Math.max(minimumScale, Math.min(1,
-          Math.max(MIN_CONTROL_SIDE / Math.min(width, height), MIN_CONTROL_MAIN_AXIS / Math.max(width, height))));
-      }
+      const read = (): BoardMeasurements => {
       const style = view.getComputedStyle(surface);
       const box = naturalSize(surface);
       const left = Number.parseFloat(style.borderLeftWidth);
       const top = Number.parseFloat(style.borderTopWidth);
-      const next: BoardMeasurements = {
+      return {
         width: box.width - left - Number.parseFloat(style.borderRightWidth),
         height: box.height - top - Number.parseFloat(style.borderBottomWidth),
         centerX: box.width / 2 - (style.direction === 'rtl' ? Number.parseFloat(style.borderRightWidth) : left),
         centerY: box.height / 2 - top,
-        seats: seats.map(naturalSize), center: naturalSize(center),
-        gap: Number.parseFloat(style.columnGap), minimumScale,
+        seats: seats.map(regionSize), center: regionSize(center),
+        gap: Number.parseFloat(style.columnGap), minimumScale: 0,
       };
+      };
+      // Try the requested CSS padding in the browser, not a profile-based estimate.
+      // If floors do not fit, surrender optional clearance to its documented minimum.
+      shell.style.removeProperty('padding-block');
+      const requested = view.getComputedStyle(shell);
+      const requestedStart = Number.parseFloat(requested.paddingBlockStart);
+      const requestedEnd = Number.parseFloat(requested.paddingBlockEnd);
+      let next = read();
+      let start = requestedStart;
+      let end = requestedEnd;
+      if (!fitBoardContent(next).fits) {
+        start = end = GAME_TABLE_LIMITS.minimumClearancePx;
+        shell.style.paddingBlock = `${start}px`;
+        next = read();
+      }
+      next.clearance = { requestedStart, requestedEnd, start, end };
       if (![next.width, next.height, ...next.seats.flatMap((seat) => [seat.width, seat.height]), next.center.width, next.center.height].every(Number.isFinite)) return;
       setMeasurement((current) => JSON.stringify(current) === JSON.stringify(next) ? current : next);
     };

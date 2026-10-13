@@ -13,7 +13,7 @@ import {
   resolveBoardViewportProfile,
 } from './index';
 import { BREAKPOINT_CASES, REFERENCE_SLOT_KEYS } from './reference-fixtures';
-import { fitBoardContent } from './fit-layout';
+import { fitBoardContent, GAME_TABLE_LIMITS } from './fit-layout';
 import { validateSlots } from './table-slots';
 import { expectInside, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
 
@@ -36,7 +36,17 @@ function required<T>(value: T | undefined): T {
 
 async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, profile: BoardViewportProfile) {
   await table.ownerDocument.fonts.ready;
-  await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', 'fitted'));
+  await waitFor(() => expect(table.getAttribute('data-layout-fit')).toMatch(/^(fitted|insufficient-space)$/));
+  for (const card of table.querySelectorAll<HTMLElement>('[data-ui~="game-card"]')) {
+    const box = card.getBoundingClientRect();
+    await expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(GAME_TABLE_LIMITS.minimumCardWidthPx - 0.01);
+  }
+  if (table.dataset.layoutFit === 'insufficient-space') {
+    await expect(table).toHaveAttribute('data-clearance-start', String(GAME_TABLE_LIMITS.minimumClearancePx));
+    await expect(table).toHaveAttribute('data-clearance-end', String(GAME_TABLE_LIMITS.minimumClearancePx));
+    // The floor remains visible in geometry even when containment cannot be promised.
+    return;
+  }
   const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined);
   const frame = surface.getBoundingClientRect();
   const style = getComputedStyle(table);
@@ -330,7 +340,8 @@ export const MeasuredModel: Story = {
     await expect(small.fits).toBe(true);
     const blocked = fitBoardContent({ ...measured, width: 160, height: 100, centerX: 80, centerY: 50, minimumScale: 1 });
     await expect(blocked.fits).toBe(false);
-    await expect(blocked.scale).toBe(1);
+    await expect(blocked.positions.every((seat) => seat.scale === 1)).toBe(true);
+    await expect(blocked.centerScale).toBe(1);
     const grownContent = fitBoardContent({ ...measured, seats: measured.seats.map((seat) => ({ width: seat.width * 5, height: seat.height * 5 })) });
     await expect(grownContent.scale).toBeLessThan(circle.scale);
     const wide = fitBoardContent({ ...measured, width: 2000, centerX: 1000 });
@@ -424,6 +435,11 @@ const cardComposition = (clearance: boolean): Story => ({
     for (const wrapper of canvasElement.querySelectorAll('[data-card-composition]')) {
       const table = required(wrapper.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
       await expectSeatFraming(table, 6, 'phoneWide');
+      await expect(table).toHaveAttribute('data-layout-fit', 'fitted');
+      if (clearance && wrapper.getAttribute('data-card-composition') === 'lg') {
+        await expect(table).toHaveAttribute('data-clearance', 'reduced');
+        await expect(table).toHaveAttribute('data-clearance-start', '0');
+      }
       const ownCard = required(table.querySelector<HTMLElement>('[data-ui="game-table-seat"] [data-ui="game-card"]') ?? undefined);
       const intrinsicWidths = { sm: 32, md: 72, lg: 112 };
       const size = wrapper.getAttribute('data-card-composition');

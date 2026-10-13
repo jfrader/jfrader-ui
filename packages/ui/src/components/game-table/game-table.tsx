@@ -39,7 +39,11 @@ export type GameTableProps<T extends SeatLike = SeatLike> =
     viewport: { width: number; height: number };
     /** Match geometry or waiting-room geometry. Defaults to `match`. */
     surface?: BoardSurface;
-    /** Extra block-axis space around the surface. Defaults to zero; content fits the remaining measured space. */
+    /** Preferred block-axis space. Yields to zero before cards cross GAME_TABLE_LIMITS.minimumCardWidthPx.
+     * data-clearance="reduced" declares this concession. If floors still cannot fit,
+     * data-layout-fit="insufficient-space" declares possible overflow/collisions; floors are preserved.
+     * The floor covers normal-flow GameCard content in local CSS pixels, before external ancestor transforms.
+     */
     clearance?: CSSProperties['paddingBlock'];
     /** Order for `seats`. Prebuilt `slots` already carry their visual order. */
     turnDirection?: TableTurnDirection;
@@ -123,8 +127,8 @@ const centerStyle = css({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  transform: 'translate(-50%, -50%) scale(var(--game-table-content-scale))',
-  '&:dir(rtl)': { transform: 'translate(50%, -50%) scale(var(--game-table-content-scale))' },
+  transform: 'translate(-50%, -50%) scale(var(--game-table-center-scale))',
+  '&:dir(rtl)': { transform: 'translate(50%, -50%) scale(var(--game-table-center-scale))' },
 });
 const stripStyle = css({ position: 'relative', flexShrink: 0, zIndex: 3, textAlign: 'center' });
 const headerStyle = css({
@@ -179,6 +183,7 @@ export function GameTable<T extends SeatLike>({
     '--game-table-seat-max-width': frame.seatMaxWidth,
     '--game-table-center-size': frame.centerSize,
     '--game-table-content-scale': String(layout.seatConfig.scale),
+    '--game-table-center-scale': String(layout.seatConfig.centerScale),
     '--game-table-radius-x': `${layout.seatConfig.radiusX}px`,
     '--game-table-radius-y': `${layout.seatConfig.radiusY}px`,
     '--game-table-content-gap': `${layout.seatConfig.gap}px`,
@@ -192,6 +197,8 @@ export function GameTable<T extends SeatLike>({
         <div
           {...rest} ref={ref} className={rootClass} style={variables}
           data-ui="game-table" data-profile={layout.profile} data-surface={surface} data-layout-fit={layout.fit}
+          data-clearance={measurement?.clearance && (measurement.clearance.start < measurement.clearance.requestedStart || measurement.clearance.end < measurement.clearance.requestedEnd) ? 'reduced' : 'requested'}
+          data-clearance-start={measurement?.clearance?.start} data-clearance-end={measurement?.clearance?.end}
         >
           {isRenderable(header) && (
             <div data-ui="game-table-header" className={slotProps?.header?.className} css={[stripStyle, headerStyle, slotProps?.header?.css]}>
@@ -211,6 +218,7 @@ export function GameTable<T extends SeatLike>({
                   '--game-table-seat-inline': `${geometry.leftPercent}%`,
                   '--game-table-seat-block': `${geometry.topPercent}%`,
                   '--game-table-seat-rotation': `${geometry.rotationDeg}deg`,
+                  '--game-table-content-scale': String(geometry.scale),
                 };
                 return (
                   <div

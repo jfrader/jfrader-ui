@@ -14,7 +14,7 @@ export function buildSeatGeometries(totalSeats: number, measurement?: BoardMeasu
       leftPercent: point && measurement?.width ? (measurement.centerX + point.x) / measurement.width * 100 : 50,
       topPercent: point && measurement?.height ? (measurement.centerY + point.y) / measurement.height * 100 : 50,
       rotationDeg: point?.rotationDeg ?? index * 360 / totalSeats,
-      scale: fitted?.scale ?? 1,
+      scale: point?.scale ?? 1,
       groupShiftY: 0, seatShiftX: 0, seatShiftY: 0,
     };
   });

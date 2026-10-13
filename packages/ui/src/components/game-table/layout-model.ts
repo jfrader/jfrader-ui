@@ -19,7 +19,7 @@ export const buildBoardLayoutModel = ({ surface, totalSeats, viewport, measureme
     : baseFrame;
   const { fitted, seatGeometries } = buildSeatGeometries(Math.max(totalSeats, 2), measurement);
   const seatConfig = { radiusX: fitted?.radiusX ?? 0, radiusY: fitted?.radiusY ?? 0,
-    scale: fitted?.scale ?? 1, gap: fitted?.gap ?? 0 };
+    scale: fitted?.scale ?? 1, centerScale: fitted?.centerScale ?? 1, gap: fitted?.gap ?? 0 };
   let fit: BoardLayoutModel['fit'] = 'measuring';
   if (fitted) fit = fitted.fits ? 'fitted' : 'insufficient-space';
   return {

@@ -8,6 +8,7 @@ export interface BoardSeatGeometryConfig {
   radiusX: number;
   radiusY: number;
   scale: number;
+  centerScale: number;
   gap: number;
 }
 export interface BoardSeatGeometry {
