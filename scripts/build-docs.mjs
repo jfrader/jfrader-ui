@@ -1,26 +1,46 @@
 /**
- * Builds the docs front and drops it into the Storybook static site, so one Render service serves
- * both: the workbench at the site root and the docs at /docs/.
+ * Builds the published static site: the docs front at the root of ui.jfrader.com and the Storybook
+ * workbench under /storybook/.
  *
- * Skipped unless DOCS_BUILD=1, which is set on the Render service: ordinary CI keeps its speed.
+ * The Render service publishes one directory (apps/storybook/storybook-static) with one command
+ * (`pnpm build`), so both apps land inside it. Skipped unless DOCS_BUILD=1, which the service sets:
+ * ordinary CI builds the workbench alone and keeps its speed.
  */
 import { execFileSync } from 'node:child_process';
-import { cpSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 if (process.env.DOCS_BUILD !== '1') process.exit(0);
 
+const run = (command, args, cwd, env = {}) =>
+  execFileSync(command, args, { cwd, stdio: 'inherit', env: { ...process.env, ...env } });
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const storybookApp = path.join(repoRoot, 'apps', 'storybook');
 const docsApp = path.join(repoRoot, 'apps', 'docs');
+const published = path.join(storybookApp, 'storybook-static');
+const workbench = path.join(published, 'storybook');
+
+// 1. The workbench, based under /storybook/ so its own asset URLs resolve there.
+// The base comes from .storybook/main.ts, which reads STORYBOOK_BASE: the CLI has no --base option.
+run('pnpm', ['exec', 'storybook', 'build', '--output-dir', 'storybook-static/storybook'], storybookApp, {
+  STORYBOOK_BASE: '/storybook/',
+});
+
+// 3. Copy the docs front to the root. The publish directory must not keep the workbench's top-level
+//    build output, or its index.html and iframe would sit beside the docs.
+for (const entry of readdirSync(published)) {
+  if (entry !== 'storybook') rmSync(path.join(published, entry), { recursive: true, force: true });
+}
+// 2. The docs front, based at the root of the domain.
+run('pnpm', ['build'], docsApp, { DOCS_BASE: '/' });
 const dist = path.join(docsApp, 'dist');
-const target = path.join(repoRoot, 'apps', 'storybook', 'storybook-static', 'docs');
+if (!existsSync(dist)) {
+  console.error('docs: apps/docs/dist is missing; build the docs app first.');
+  process.exit(1);
+}
+mkdirSync(published, { recursive: true });
+cpSync(dist, published, { recursive: true });
 
-const run = (command, args, cwd) =>
-  execFileSync(command, args, { cwd, stdio: 'inherit', env: { ...process.env, DOCS_BASE: '/docs/' } });
-
-run('pnpm', ['build'], docsApp);
-
-rmSync(target, { recursive: true, force: true });
-cpSync(dist, target, { recursive: true });
-console.log(`docs: published to apps/storybook/storybook-static/docs (${target})`);
+console.log(`site: docs at the root, workbench at /storybook (${published})`);

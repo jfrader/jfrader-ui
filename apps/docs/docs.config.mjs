@@ -9,7 +9,10 @@ export default {
     mark: 'j',
     tagline:
       'The component system behind our products — documented straight from the library’s own Storybook stories.',
-    links: [{ label: 'GitHub', href: 'https://github.com/jfrader/jfrader-ui' }],
+    links: [
+      { label: 'Storybook', href: '/storybook/' },
+      { label: 'GitHub', href: 'https://github.com/jfrader/jfrader-ui' },
+    ],
   },
   stories: {
     from: '@jfrader/ui',

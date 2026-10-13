@@ -14,6 +14,9 @@ const config = {
   framework: '@storybook/react-vite',
   staticDirs: ['../public'],
   previewHead: (head) => `${head}${documentThemeScript}`,
+  // The workbench is served under /storybook/ when it shares a domain with the docs front; its
+  // asset URLs have to carry that prefix. Defaults to the root, which is how it deploys alone.
+  viteFinal: async (vite) => ({ ...vite, base: process.env.STORYBOOK_BASE ?? '/' }),
 } satisfies StorybookConfig & { title: string };
 
 export default config;
