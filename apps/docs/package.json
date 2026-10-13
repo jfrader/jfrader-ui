@@ -6,7 +6,7 @@
     "dev": "pnpm tokens && vite",
     "build": "pnpm tokens && vite build",
     "preview": "vite preview",
-    "tokens": "pnpm --dir ../../../../jfrader-ui/packages/tokens generate"
+    "tokens": "pnpm --filter @jfrader/tokens generate"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
