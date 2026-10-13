@@ -1,5 +1,6 @@
 import { vars } from '@jfrader/tokens/vars';
 import { keyframes } from './css';
+import { FORCED_COLORS } from './media';
 
 // Spinning ring shared by Button's loading decoration and Spinner. Components own sizing and
 // their reduced-motion pulse.
@@ -21,4 +22,8 @@ export const loadingRing = {
   borderInlineEndColor: 'transparent',
   borderRadius: vars.radius.full,
   animation: `${spin} 0.7s linear infinite`,
+  [FORCED_COLORS]: {
+    forcedColorAdjust: 'none' as const,
+    color: 'CanvasText',
+  },
 };
