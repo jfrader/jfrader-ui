@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { StrictMode } from 'react';
 import { expect, spyOn, waitFor } from 'storybook/test';
-import { CardFlightsFixture, FlightIdentityProbe } from '../../../../../apps/storybook/stories/card-flights-fixture';
+import { CardFlightsFixture, FlightIdentityProbe } from './card-flights-fixture';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { CardFlightsProvider } from './index';
 import { FLIGHT_GEOMETRY, dealSequence, measureCardBox } from './geometry';
