@@ -1,5 +1,5 @@
-import { StrictMode, useEffect, useRef, useState } from 'react';
-import { hydrateRoot } from 'react-dom/client';
+import { StrictMode, useEffect, useRef, useState, type ReactNode } from 'react';
+import { hydrateRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
@@ -10,6 +10,7 @@ import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../te
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { sceneSource } from '../scene';
+import { generateSceneSvg } from '../scene/scene-generator';
 import { LightboxGallery, type LightboxGalleryImage } from './index';
 
 const images: LightboxGalleryImage[] = [
@@ -261,6 +262,55 @@ export const PersistentImageError: Story = {
     await expect(await canvas.findByRole('dialog')).toBeVisible();
     await settleMotion(viewer(canvasElement));
     await expect(within(stage(canvasElement)).getByText('Image unavailable')).toBeVisible();
+  },
+};
+/** Keeps native image loads from reaching React, like a stalled network; synthetic `load` events pass. */
+function HeldImageLoads({ children }: { children: ReactNode }) {
+  return (
+    <div
+      ref={(node) => {
+        if (!node) return;
+        const hold = (event: Event) => {
+          if (event.isTrusted && event.target instanceof HTMLImageElement) event.stopPropagation();
+        };
+        node.addEventListener('load', hold, true);
+        return () => node.removeEventListener('load', hold, true);
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+export const SlowImage: Story = {
+  // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
+  tags: ['!autodocs'],
+  args: { defaultOpen: true },
+  render: (args) => {
+    // A fresh blob URL: never cached, and fetched asynchronously, unlike a `data:` URL.
+    const [items] = useState(() => [
+      {
+        ...images[0]!,
+        src: URL.createObjectURL(new Blob([generateSceneSvg('trip-slow-image')], { type: 'image/svg+xml' })),
+      },
+    ]);
+    useEffect(() => () => URL.revokeObjectURL(items[0]!.src), [items]);
+    return (
+      <HeldImageLoads>
+        <LightboxGallery {...args} images={items} />
+      </HeldImageLoads>
+    );
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const dialog = await canvas.findByRole('dialog');
+    await settleMotion(dialog);
+    const image = within(dialog).getByRole<HTMLImageElement>('img', { name: images[0]!.alt });
+    await expect(image).toHaveAttribute('data-image-state', 'loading');
+    await expect(getComputedStyle(image).opacity).toBe('0');
+    await expect(within(stage(canvasElement)).getByText('Loading image')).toBeVisible();
+    fireEvent.load(image);
+    await expect(image).toHaveAttribute('data-image-state', 'loaded');
+    await expect(within(stage(canvasElement)).queryByText('Loading image')).not.toBeInTheDocument();
+    await waitFor(() => expect(getComputedStyle(image).opacity).toBe('1'));
   },
 };
 export const NarrowTwoColumns: Story = {
@@ -1019,37 +1069,79 @@ export const ReplacedImageSource: Story = {
   },
 };
 
+/**
+ * Server-renders the gallery, then hydrates it. With `afterImagesLoad`, hydration waits until the
+ * tile images finish, so their `load` events fire before React listens.
+ */
 function HydrationFixture({
   images: items,
   label,
+  identifierPrefix,
+  afterImagesLoad = false,
 }: {
   images: readonly LightboxGalleryImage[];
   label: string;
+  identifierPrefix: string;
+  afterImagesLoad?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [markup] = useState(() =>
-    renderToString(<LightboxGallery images={items} label={label} />, { identifierPrefix: 'gallery-ssr-' }),
+    renderToString(<LightboxGallery images={items} label={label} />, { identifierPrefix }),
   );
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
-    const before = node.querySelector('h2')?.id;
-    const root = hydrateRoot(node, <LightboxGallery images={items} label={label} />, {
-      identifierPrefix: 'gallery-ssr-',
-    });
-    node.dataset.serverTitle = before;
-    return () => root.unmount();
-  }, [items, label]);
+    let active = true;
+    let root: Root | undefined;
+    const tileImages = [...node.querySelectorAll<HTMLImageElement>('[data-ui="lightbox-gallery-tile"] img')];
+    const hydrate = () => {
+      if (!active) return;
+      node.dataset.serverTitle = node.querySelector('h2')?.id;
+      // Emotion may not have inserted the server markup's styles yet; count the attribute that hides an image.
+      node.dataset.serverImageStates = String(tileImages.filter((image) => image.dataset.imageState).length);
+      root = hydrateRoot(node, <LightboxGallery images={items} label={label} />, { identifierPrefix });
+      node.dataset.hydrated = '';
+    };
+    if (afterImagesLoad)
+      void Promise.all(tileImages.map((image) => image.decode().catch(() => undefined))).then(hydrate);
+    else hydrate();
+    return () => {
+      active = false;
+      root?.unmount();
+    };
+  }, [items, label, identifierPrefix, afterImagesLoad]);
   return <div ref={ref} data-hydration-fixture dangerouslySetInnerHTML={{ __html: markup }} />;
 }
 
 export const SSRHydration: Story = {
-  render: (args) => <HydrationFixture images={args.images} label={args.label} />,
+  render: (args) => <HydrationFixture images={args.images} label={args.label} identifierPrefix="gallery-ssr-" />,
   play: async ({ canvas, canvasElement, userEvent }) => {
     const fixture = canvasElement.querySelector<HTMLElement>('[data-hydration-fixture]')!;
     await expect(fixture.querySelector('h2')!.id).toBe(fixture.dataset.serverTitle);
     await userEvent.click(tiles(canvasElement)[0]!);
     await expect(await canvas.findByRole('dialog')).toBeVisible();
+  },
+};
+
+/** Server-rendered images show before hydration, and stay shown when they finished loading first. */
+export const SSRImagesLoadedBeforeHydration: Story = {
+  render: (args) => (
+    <HydrationFixture
+      images={args.images}
+      label={args.label}
+      identifierPrefix="gallery-ssr-preloaded-"
+      afterImagesLoad
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const fixture = canvasElement.querySelector<HTMLElement>('[data-hydration-fixture]')!;
+    await waitFor(() => expect(fixture).toHaveAttribute('data-hydrated'));
+    await expect(fixture.dataset.serverImageStates).toBe('0');
+    for (const tile of tiles(canvasElement)) {
+      const image = tile.querySelector('img')!;
+      await expect(image).toHaveAttribute('data-image-state', 'loaded');
+      await expect(getComputedStyle(image).opacity).toBe('1');
+    }
   },
 };
 
