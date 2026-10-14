@@ -50,19 +50,19 @@ export function PatternExamples() {
     </>
   );
 }` },
-      usage: `### Tiles and inks
+      usage: `## Tiles and inks
 - Give the SVG a width and height through its parent or \`sx\`. It fills its parent by default.
 - \`size\` sets the tile side to 8, 16 or 24 CSS pixels. \`scale\` multiplies that side; nonpositive or nonfinite values fall back to 1.
 - For general surfaces, use \`neutral\` (surfaceRaised/borderStrong), \`accent\` (accentSoft/accent), or style the root with \`sx\`. Reserve \`card\` (cardRed/cardFace) for card backs.
 - Use \`@jfrader/ui/pattern\` or the main package export. The React 19 \`ref\` reaches the SVG; \`sx\` styles that root.
 
-### Accessibility and environments
+## Accessibility and environments
 - Patterns are always decorative (\`aria-hidden="true"\`, not focusable). Give the enclosing card or surface its own name when needed. There is no APG widget, state or keyboard command.
 - Inherited direction and a root \`dir\` prop mirror diagonal and chevron patterns in RTL; other variants keep their orientation.
 - Forced colors suppresses the pattern with a transparent fill; the enclosing surface and its border remain visible. Do not use patterns to convey information.
 - Patterns have no motion. IDs come from React \`useId\`; give separate SSR roots distinct \`identifierPrefix\` values and reuse them during hydration.
 
-### Card artwork
+## Card artwork
 - Pass a Pattern as \`GameCard children\`, then pass that named card as \`FlipGameCard back\`. Artwork replaces either face without requiring a \`value\`. Never put secret card data in a flipped wrapper, whose two faces stay mounted.`,
     },
   },
@@ -73,6 +73,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Diagonal: Story = {
   name: 'Diagonal',
+  parameters: { docs: { source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
+import { vars } from '@jfrader/tokens/vars';
+
+<Pattern variant="diagonal" size="md" tone="accent"
+  sx={{ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg }} />` } } },
   render: (args) => <Pattern {...args} css={sampleStyle} />,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui="pattern"]');
@@ -84,9 +89,27 @@ export const Diagonal: Story = {
 
 export const Default: Story = {
   name: 'Default',
+  parameters: { docs: { source: { language: 'tsx', code: `import { Pattern, type PatternVariant } from '@jfrader/ui/pattern';
+import { vars } from '@jfrader/tokens/vars';
+
+const variants: PatternVariant[] = ['stripes', 'diagonal', 'checks', 'dots', 'waves', 'chevron'];
+const sample = { inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg };
+
+export function PatternGallery() {
+  return <div style={{ display: 'grid', gap: vars.space[6], gridTemplateColumns: 'repeat(2, max-content)' }}>
+    {variants.map((variant) => <section key={variant}>
+      <h2 style={{ marginBlock: vars.space[2], color: vars.color.text, fontSize: vars.textSize.sm }}>{variant}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
+        <Pattern variant={variant} size="sm" tone="accent" sx={{ inlineSize: vars.size.gameCardSm, blockSize: vars.size.gameCardSm }} />
+        <Pattern variant={variant} size="sm" tone="accent" sx={sample} />
+        <Pattern variant={variant} size="lg" tone="accent" sx={sample} />
+      </div>
+    </section>)}
+  </div>;
+}` } } },
   render: (args) => <div css={galleryStyle}>
     {variants.map((variant) => <section key={variant}>
-      <h3 css={labelStyle}>{variant}</h3>
+      <h2 css={labelStyle}>{variant}</h2>
       <div css={rowStyle}>
         <Pattern {...args} variant={variant} size="sm" css={smallSampleStyle} />
         <Pattern {...args} variant={variant} size="sm" css={sampleStyle} />
@@ -113,12 +136,28 @@ export const Default: Story = {
 export const GalleryLight: Story = { ...Default, name: 'Gallery light theme', decorators: [withLightTheme] };
 
 export const Tones: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
+import { vars } from '@jfrader/tokens/vars';
+
+<div style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
+  {(['neutral', 'accent', 'card'] as const).map((tone) =>
+    <Pattern key={tone} variant="diagonal" size="md" tone={tone}
+      sx={{ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg }} />)}
+</div>` } } },
   render: (args) => <div css={rowStyle}>{(['neutral', 'accent', 'card'] as const).map((tone) =>
     <Pattern {...args} key={tone} tone={tone} css={sampleStyle} />)}</div>,
 };
 export const TonesLight: Story = { ...Tones, decorators: [withLightTheme] };
 
 export const TileScale: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
+import { vars } from '@jfrader/tokens/vars';
+
+<div style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
+  {[0.5, 1, 2, 0, -1, Infinity].map((scale) =>
+    <Pattern key={scale} variant="diagonal" size="md" tone="accent" scale={scale}
+      sx={{ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg }} />)}
+</div>` } } },
   render: (args) => <div css={rowStyle}>{[0.5, 1, 2, 0, -1, Infinity].map((scale) =>
     <Pattern {...args} key={scale} scale={scale} css={sampleStyle} />)}</div>,
   play: async ({ canvasElement }) => {
@@ -134,6 +173,19 @@ export const TileScale: Story = {
 };
 
 export const Direction: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Pattern, type PatternVariant } from '@jfrader/ui/pattern';
+import { vars } from '@jfrader/tokens/vars';
+
+const variants: PatternVariant[] = ['stripes', 'diagonal', 'checks', 'dots', 'waves', 'chevron'];
+const sample = { inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg };
+
+<div style={{ display: 'grid', gap: vars.space[6], gridTemplateColumns: 'repeat(2, max-content)' }}>
+  {variants.map((variant) => <div key={variant} style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
+    <div dir="rtl"><Pattern variant={variant} tone="accent" dir="ltr" sx={sample} /></div>
+    <div dir="rtl"><Pattern variant={variant} tone="accent" sx={sample} /></div>
+    <Pattern variant={variant} tone="accent" dir="rtl" sx={sample} />
+  </div>)}
+</div>` } } },
   render: (args) => <div css={galleryStyle}>{variants.map((variant) => <div css={rowStyle} key={variant}>
     <div dir="rtl"><Pattern {...args} variant={variant} dir="ltr" css={sampleStyle} /></div>
     <div dir="rtl"><Pattern {...args} variant={variant} css={sampleStyle} /></div>
@@ -149,6 +201,17 @@ export const Direction: Story = {
 };
 
 export const FlippedCard: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
+import { GameCard } from '@jfrader/ui/game-card';
+import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+import { vars } from '@jfrader/tokens/vars';
+
+<div style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
+  {(['sm', 'md', 'lg'] as const).map((size) =>
+    <FlipGameCard key={size} size={size} flipped
+      front={<GameCard label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />}
+      back={<GameCard label="Patterned card back"><Pattern variant="diagonal" tone="card" size="sm" /></GameCard>} />)}
+</div>` } } },
   render: (args) => <div css={rowStyle}>{(['sm', 'md', 'lg'] as const).map((size) =>
     <FlipGameCard key={size} size={size} flipped
       front={<GameCard label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />}
@@ -241,7 +304,7 @@ export const SeamContinuity: Story = {
   tags: ['!autodocs'],
   render: (args) => <div style={{ display: 'grid', gap: vars.space[6] }}>
     {seamVariants.map((variant) => <section key={variant}>
-      <h3 css={labelStyle}>{variant} — 8 / 16 / 24 px</h3>
+      <h2 css={labelStyle}>{variant} — 8 / 16 / 24 px</h2>
       <div css={rowStyle}>{sizes.map((size) =>
         <Pattern {...args} key={size} variant={variant} size={size}
           scale={1} tone="card" css={repeatedStyle} />)}</div>

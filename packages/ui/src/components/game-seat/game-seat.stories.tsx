@@ -22,20 +22,20 @@ const meta = {
   },
   parameters: { docs: {
     description: { component: 'Show a player, their hand and the current turn. Supply avatars, badges, points and chat in your game’s language.' },
-    usage: `### Placement
+    usage: `## Placement
 GameTable.Seat is the region that places a player around the table. GameSeat is the player’s appearance inside that region; it also works on its own.
 
-### Content
+## Content
 Pass name and any avatar, badges, points, chat or hand nodes. The shell does not choose avatar sizes, badge meanings or chat behavior. handCount renders a decorative GameHand.Hidden when hand is absent. Supply a labeled GameHand.Hidden through hand if the count needs an accessible description. null explicitly suppresses the hand shorthand.
 
-### Turn
+## Turn
 deadline and now are epoch milliseconds; durationMs is the full positive turn length. Inject now for server rendering and deterministic synchronization. Without now, the clock is sampled when deadline or durationMs changes. CSS drains the ring with no React ticks. Reduced motion keeps the sampled geometry without movement. A changed now resynchronizes it.
 onTurnMilestone schedules at most three one-shot deadlines, never an interval: half (50% remaining), quarter (25%) and ending (zero). Past thresholds are skipped. Increasing a still-live deadline emits extended and starts a new threshold schedule. Removing the turn or callback cancels pending notifications. Callbacks may run late in background tabs.
 
-### Accessibility
+## Accessibility
 The seat is a named group, not an APG widget. It adds no keyboard bindings or focus target. The ring is decorative. Supply localized remaining-time text in chat or your own content; announce only turn changes or milestones, not ticks. Mark decorative avatars aria-hidden to avoid repeating the player name. turned, offline and dimmed are exposed as data attributes; supply visible state labels in your slots.
 
-### Customization
+## Customization
 slotProps accepts native props and css for root, avatar, name, badges, points, hand, timer and chat. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div and are declared outside render. Root slot props win conflicts; className and style merge. Consumer css and sx apply after slot styles.`,
     source: { language: 'tsx', code: `<GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
   handCount={3} badges={<Badge>Host</Badge>}
@@ -63,8 +63,12 @@ export const InjectedClock: Story = {
     <GameSeat {...args} name="Earlier" turn={turn} />
     <GameSeat {...args} name="Later" turn={{ ...turn, now: NOW + DURATION * 3 / 4 }} />
   </div>,
-  parameters: { docs: { source: { language: 'tsx', code: `<GameSeat name="Earlier" avatar={avatar} turn={{ deadline, durationMs, now: earlier }} />
-<GameSeat name="Later" avatar={avatar} turn={{ deadline, durationMs, now: later }} />` } } },
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameSeat } from '@jfrader/ui/game-seat';
+
+<>
+  <GameSeat name="Earlier" avatar={avatar} turn={{ deadline, durationMs, now: earlier }} />
+  <GameSeat name="Later" avatar={avatar} turn={{ deadline, durationMs, now: later }} />
+</>` } } },
   play: async ({ canvasElement }) => {
     const circles = canvasElement.querySelectorAll('circle');
     await expect(circles[0]).toHaveAttribute('stroke-dashoffset', '25');
