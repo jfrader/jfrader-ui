@@ -28,6 +28,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
@@ -46,7 +47,7 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import {
   listboxItemStateStyle,
   listboxItemStyle,
@@ -67,6 +68,7 @@ import {
   useCollectionRegistry,
   type CollectionRegistration,
 } from '../../utils/collection-registry';
+import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useFormReset } from '../../utils/use-form-reset';
 
@@ -74,7 +76,65 @@ const TYPEAHEAD_RESET_MS = 500;
 const TYPEAHEAD_COLLATOR = new Intl.Collator(undefined, { usage: 'search', sensitivity: 'base' });
 const SELECTED_GLYPH = '✓';
 
-export interface SelectProps {
+export interface SelectOption {
+  value: string;
+  label: ReactNode;
+  disabled?: boolean;
+  textValue?: string;
+  id?: string;
+}
+
+export type SelectSize = 'sm' | 'md' | 'lg';
+
+export interface SelectTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
+  id?: string;
+  size?: SelectSize;
+}
+export interface SelectValueProps extends ComponentPropsWithRef<'span'>, SxProps {
+  /** Shown when no option matches the selected value. */
+  placeholder?: ReactNode;
+}
+export interface SelectContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
+export interface SelectItemProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Unique within the select. */
+  value: string;
+  disabled?: boolean;
+  textValue?: string;
+}
+export interface SelectLabelProps extends ComponentPropsWithRef<'label'>, SxProps {}
+export interface SelectDescriptionProps extends ComponentPropsWithRef<'span'>, SxProps {}
+export interface SelectErrorProps extends ComponentPropsWithRef<'span'>, SxProps {}
+export interface SelectEmptyProps extends ComponentPropsWithRef<'div'>, SxProps {}
+
+export interface SelectSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  label?: ComponentType<SelectLabelProps>;
+  description?: ComponentType<SelectDescriptionProps>;
+  error?: ComponentType<SelectErrorProps>;
+  trigger?: ComponentType<SelectTriggerProps>;
+  value?: ComponentType<SelectValueProps>;
+  content?: ComponentType<SelectContentProps>;
+  item?: ComponentType<SelectItemProps>;
+  empty?: ComponentType<SelectEmptyProps>;
+}
+
+export interface SelectSlotProps {
+  root?: ComponentPropsWithRef<'div'> &
+    SxProps & {
+      css?: Interpolation<Theme>;
+      [attribute: `data-${string}`]: unknown;
+    };
+  label?: Partial<SelectLabelProps>;
+  description?: Partial<SelectDescriptionProps>;
+  error?: Partial<SelectErrorProps>;
+  trigger?: Partial<SelectTriggerProps>;
+  value?: Partial<SelectValueProps>;
+  content?: Partial<SelectContentProps>;
+  item?: Partial<Omit<SelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>>;
+  empty?: Partial<SelectEmptyProps>;
+}
+
+export interface SelectBaseProps {
   value?: string;
   defaultValue?: string;
   /** Fires once per accepted selection with the option's `value`. */
@@ -86,22 +146,35 @@ export interface SelectProps {
   disabled?: boolean;
   /** Adds a hidden input to submit the value with a native form. */
   name?: string;
-  children?: ReactNode;
 }
 
-export interface SelectTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
-  id?: string;
+export interface SelectCompoundProps extends SelectBaseProps {
+  options?: never;
+  children?: ReactNode;
+  label?: never;
+  description?: never;
+  error?: never;
+  placeholder?: never;
+  size?: never;
+  empty?: never;
+  slots?: never;
+  slotProps?: never;
 }
-export interface SelectValueProps extends ComponentPropsWithRef<'span'>, SxProps {
-  /** Shown when no option matches the selected value. */
+
+export interface SelectEasyProps extends SelectBaseProps {
+  options: readonly SelectOption[];
+  children?: never;
+  label?: ReactNode;
+  description?: ReactNode;
+  error?: ReactNode;
   placeholder?: ReactNode;
+  size?: SelectSize;
+  empty?: ReactNode;
+  slots?: SelectSlots;
+  slotProps?: SelectSlotProps;
 }
-export interface SelectContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
-export interface SelectItemProps extends ComponentPropsWithRef<'div'>, SxProps {
-  /** Unique within the select. */
-  value: string;
-  disabled?: boolean;
-}
+
+export type SelectProps = SelectCompoundProps | SelectEasyProps;
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -109,6 +182,7 @@ interface OptionRecord {
   index: number;
   label: string;
   disabled: boolean;
+  textValue?: string;
 }
 
 interface TriggerLabelling {
@@ -119,6 +193,12 @@ interface TriggerLabelling {
 
 interface SelectContextValue {
   baseId: string;
+  labelId: string | undefined;
+  setLabelId: (id: string | undefined) => void;
+  descriptionId: string | undefined;
+  setDescriptionId: (id: string | undefined) => void;
+  errorId: string | undefined;
+  setErrorId: (id: string | undefined) => void;
   open: boolean;
   disabled: boolean;
   selectedValue: string | undefined;
@@ -166,6 +246,12 @@ const selectTriggerStyle = css({
   },
 });
 
+const triggerSizes = {
+  sm: css({ minBlockSize: vars.space[8] }),
+  md: css({ minBlockSize: vars.space[10] }),
+  lg: css({ minBlockSize: vars.space[12] }),
+};
+
 const valueStyle = css({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
@@ -175,19 +261,65 @@ const valueStyle = css({
   },
 });
 
-function SelectOverlay({
-  value: valueProp,
-  defaultValue,
-  onValueChange,
-  open: openProp,
-  defaultOpen = false,
-  onOpenChange,
-  placement = 'bottom-start',
-  disabled = false,
-  name,
-  children,
-}: SelectProps) {
+const selectLabelStyle = css({
+  display: 'inline-flex',
+  gap: vars.space[1],
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  fontWeight: vars.fontWeight.medium,
+  color: vars.color.text,
+  cursor: 'pointer',
+});
+
+const selectDescriptionStyle = css({
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+});
+
+const selectErrorStyle = css({
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.dangerText,
+});
+
+const selectEmptyStyle = css({
+  paddingBlock: vars.space[1],
+  paddingInline: vars.space[2],
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+});
+
+const selectFieldStyle = css({
+  display: 'inline-flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[1],
+  maxInlineSize: '100%',
+});
+
+const mergeIds = (...ids: Array<string | undefined>) => ids.filter(Boolean).join(' ') || undefined;
+const tokens = (...values: Array<unknown>): string | undefined => {
+  const list = [...new Set(values.flatMap((v) => (typeof v === 'string' ? v.split(/\s+/) : [])))].filter(Boolean);
+  return list.join(' ') || undefined;
+};
+
+function SelectOverlay(props: SelectProps) {
+  const {
+    value: valueProp,
+    defaultValue,
+    onValueChange,
+    open: openProp,
+    defaultOpen = false,
+    onOpenChange,
+    placement = 'bottom-start',
+    disabled = false,
+    name,
+  } = props;
   const baseId = useId();
+  const [labelId, setLabelId] = useState<string>();
+  const [descriptionId, setDescriptionId] = useState<string>();
+  const [errorId, setErrorId] = useState<string>();
   const [selectedValue, requestValueChange, resetValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
   const [openState = false, requestOpen] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const open = openState && !disabled;
@@ -263,6 +395,12 @@ function SelectOverlay({
     };
     return {
       baseId,
+      labelId,
+      setLabelId,
+      descriptionId,
+      setDescriptionId,
+      errorId,
+      setErrorId,
       open,
       disabled,
       selectedValue,
@@ -284,9 +422,11 @@ function SelectOverlay({
         const start = activeIndex ?? -1;
         for (let offset = 1; offset <= labels.length; offset += 1) {
           const index = (start + offset) % labels.length;
-          const label = labels[index];
-          if (label === null || label === undefined || disabledIndices.has(index)) continue;
-          if (TYPEAHEAD_COLLATOR.compare(label.slice(0, search.length), search) !== 0) continue;
+          const val = valuesByIndex[index];
+          const record = val === undefined ? undefined : options.get(val);
+          const candidate = record?.textValue ?? record?.label ?? labels[index];
+          if (candidate === null || candidate === undefined || disabledIndices.has(index)) continue;
+          if (TYPEAHEAD_COLLATOR.compare(candidate.slice(0, search.length), search) !== 0) continue;
           setActiveIndex(index);
           if (!open) {
             setOpenedByTypeahead(true);
@@ -306,6 +446,9 @@ function SelectOverlay({
     };
   }, [
     baseId,
+    labelId,
+    descriptionId,
+    errorId,
     open,
     disabled,
     selectedValue,
@@ -325,9 +468,97 @@ function SelectOverlay({
     registration,
   ]);
 
+  let renderedContent: ReactNode;
+  if ('options' in props && props.options !== undefined) {
+    const {
+      options: optionsList,
+      label,
+      description,
+      error,
+      placeholder,
+      size = 'md',
+      empty,
+      slots,
+      slotProps,
+    } = props;
+    const LabelPart = slots?.label ?? SelectLabel;
+    const TriggerPart = slots?.trigger ?? SelectTrigger;
+    const ValuePart = slots?.value ?? SelectValue;
+    const ContentPart = slots?.content ?? SelectContent;
+    const ItemPart = slots?.item ?? SelectItem;
+    const DescriptionPart = slots?.description ?? SelectDescription;
+    const ErrorPart = slots?.error ?? SelectError;
+    const EmptyPart = slots?.empty ?? SelectEmpty;
+    const RootPart = slots?.root ?? 'div';
+    const {
+      className: rootClassName,
+      css: rootCss,
+      sx: rootSx,
+      'data-ui': rootDataUi,
+      ...rootRest
+    } = slotProps?.root ?? {};
+
+    const hasFieldAnatomy =
+      isRenderable(label) ||
+      isRenderable(description) ||
+      isRenderable(error) ||
+      slots?.root !== undefined ||
+      slotProps?.root !== undefined;
+
+    const controlParts = (
+      <>
+        {isRenderable(label) && <LabelPart {...slotProps?.label}>{label}</LabelPart>}
+        <TriggerPart size={size} {...slotProps?.trigger}>
+          <ValuePart placeholder={placeholder} {...slotProps?.value} />
+        </TriggerPart>
+        {isRenderable(description) && (
+          <DescriptionPart {...slotProps?.description}>{description}</DescriptionPart>
+        )}
+        {isRenderable(error) && <ErrorPart {...slotProps?.error}>{error}</ErrorPart>}
+      </>
+    );
+
+    renderedContent = (
+      <>
+        {hasFieldAnatomy ? (
+          <WithSx className={rootClassName} styles={[selectFieldStyle, rootCss]} sx={rootSx}>
+            {(className) => (
+              <RootPart
+                {...rootRest}
+                className={className}
+                data-ui={tokens('select', rootDataUi)}
+              >
+                {controlParts}
+              </RootPart>
+            )}
+          </WithSx>
+        ) : (
+          controlParts
+        )}
+        <ContentPart {...slotProps?.content}>
+          {optionsList.map((option) => (
+            <ItemPart
+              key={option.value}
+              {...slotProps?.item}
+              id={option.id}
+              value={option.value}
+              disabled={option.disabled}
+              textValue={option.textValue}
+            >
+              {option.label}
+            </ItemPart>
+          ))}
+          <EmptyPart {...slotProps?.empty}>{empty}</EmptyPart>
+        </ContentPart>
+      </>
+    );
+  } else {
+    renderedContent = props.children;
+  }
+
   return (
     <SelectContext.Provider value={value}>
-      {children}
+      {renderedContent}
       {name !== undefined && <input type="hidden" name={name} value={selectedValue ?? ''} disabled={disabled} />}
     </SelectContext.Provider>
   );
@@ -346,6 +577,7 @@ SelectRoot.displayName = 'Select';
 function SelectTrigger({
   ref,
   id: idProp,
+  size = 'md',
   disabled: disabledProp,
   onKeyDown,
   className,
@@ -354,6 +586,9 @@ function SelectTrigger({
 }: SelectTriggerProps) {
   const {
     baseId,
+    labelId,
+    descriptionId,
+    errorId,
     open,
     disabled,
     activeIndex,
@@ -370,7 +605,8 @@ function SelectTrigger({
   useFormReset(triggerRef, resetValue, rest.form);
   const typeaheadRef = useRef({ search: '', lastKeyAt: 0 });
   const id = idProp ?? `${baseId}-trigger`;
-  const labelledBy = rest['aria-labelledby'];
+  const labelledBy = mergeIds(rest['aria-labelledby'], labelId);
+  const describedBy = mergeIds(rest['aria-describedby'], descriptionId, errorId);
   const label = rest['aria-label'];
 
   // The listbox reuses the trigger's label so both share one accessible name.
@@ -403,12 +639,15 @@ function SelectTrigger({
   };
 
   return (
-    <WithSx className={className} styles={[triggerStyle, selectTriggerStyle]} sx={sx}>
+    <WithSx className={className} styles={[triggerStyle, selectTriggerStyle, triggerSizes[size]]} sx={sx}>
       {(className) => (
         <button
           type="button"
           {...getReferenceProps({ ...rest, id, disabled: disabled || disabledProp, onKeyDown: handleKeyDown })}
           ref={mergedRef}
+          aria-labelledby={labelledBy}
+          aria-describedby={describedBy}
+          aria-invalid={errorId ? true : rest['aria-invalid']}
           data-state={open ? 'open' : 'closed'}
           data-ui="select-trigger"
           className={className}
@@ -489,16 +728,33 @@ function SelectContent({ ref, style, onMouseDown, children, className, sx, ...re
 
 SelectContent.displayName = 'Select.Content';
 
-function SelectItem({ ref, value, disabled = false, onClick, children, className, sx, ...rest }: SelectItemProps) {
+function SelectItem({
+  ref,
+  value,
+  id: idProp,
+  disabled = false,
+  textValue,
+  onClick,
+  children,
+  className,
+  sx,
+  ...rest
+}: SelectItemProps) {
   const { baseId, selectedValue, activeIndex, labelsRef, getItemProps, selectValue, registration } =
     useSelectItemContext();
   const textRef = useRef<HTMLSpanElement>(null);
+  const id = idProp ?? collectionItemId(baseId, value);
   // Disabled options stay out of typeahead.
   const { ref: listItemRef, index } = useCollectionItem(
     value,
     registration,
     textRef,
-    (itemIndex, label) => ({ index: itemIndex, label, disabled }),
+    (itemIndex, label) => ({
+      index: itemIndex,
+      label,
+      disabled,
+      textValue,
+    }),
     { labelsRef, include: !disabled },
   );
   const mergedRef = useMergeRefs([listItemRef, ref]);
@@ -515,7 +771,7 @@ function SelectItem({ ref, value, disabled = false, onClick, children, className
     <WithSx className={className} styles={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle]} sx={sx}>
       {(className) => (
         <div
-          {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
+          {...getItemProps({ ...rest, id, onClick: handleClick })}
           ref={mergedRef}
           role="option"
           aria-selected={isSelected}
@@ -540,9 +796,107 @@ function SelectItem({ ref, value, disabled = false, onClick, children, className
 
 SelectItem.displayName = 'Select.Item';
 
+function SelectLabel({ ref, id: idProp, children, className, sx, ...rest }: SelectLabelProps) {
+  const { baseId, triggerLabelling, setLabelId } = useSelectContext('Label');
+  const id = idProp ?? `${baseId}-label`;
+  const present = isRenderable(children);
+  useLayoutEffect(() => {
+    if (!present) return;
+    setLabelId(id);
+    return () => setLabelId(undefined);
+  }, [id, present, setLabelId]);
+  if (!present) return null;
+  return (
+    <WithSx className={className} styles={selectLabelStyle} sx={sx}>
+      {(className) => (
+        <label
+          htmlFor={triggerLabelling?.id ?? `${baseId}-trigger`}
+          {...rest}
+          id={id}
+          ref={ref}
+          data-ui="select-label"
+          className={className}
+        >
+          {children}
+        </label>
+      )}
+    </WithSx>
+  );
+}
+
+SelectLabel.displayName = 'Select.Label';
+
+function SelectDescription({ ref, id: idProp, children, className, sx, ...rest }: SelectDescriptionProps) {
+  const { baseId, setDescriptionId } = useSelectContext('Description');
+  const id = idProp ?? `${baseId}-description`;
+  const present = isRenderable(children);
+  useLayoutEffect(() => {
+    if (!present) return;
+    setDescriptionId(id);
+    return () => setDescriptionId(undefined);
+  }, [id, present, setDescriptionId]);
+  if (!present) return null;
+  return (
+    <WithSx className={className} styles={selectDescriptionStyle} sx={sx}>
+      {(className) => (
+        <span {...rest} id={id} ref={ref} data-ui="select-description" className={className}>
+          {children}
+        </span>
+      )}
+    </WithSx>
+  );
+}
+
+SelectDescription.displayName = 'Select.Description';
+
+function SelectError({ ref, id: idProp, children, className, sx, ...rest }: SelectErrorProps) {
+  const { baseId, setErrorId } = useSelectContext('Error');
+  const id = idProp ?? `${baseId}-error`;
+  const present = isRenderable(children);
+  useLayoutEffect(() => {
+    if (!present) return;
+    setErrorId(id);
+    return () => setErrorId(undefined);
+  }, [id, present, setErrorId]);
+  if (!present) return null;
+  return (
+    <WithSx className={className} styles={selectErrorStyle} sx={sx}>
+      {(className) => (
+        <span {...rest} id={id} ref={ref} role="alert" data-ui="select-error" className={className}>
+          {children}
+        </span>
+      )}
+    </WithSx>
+  );
+}
+
+SelectError.displayName = 'Select.Error';
+
+function SelectEmpty({ ref, children, className, sx, ...rest }: SelectEmptyProps) {
+  const { options } = useSelectContext('Empty');
+  if (options.size > 0) return null;
+  const content = children === undefined ? 'No options' : children;
+  if (!isRenderable(content)) return null;
+  return (
+    <WithSx className={className} styles={selectEmptyStyle} sx={sx}>
+      {(className) => (
+        <div {...rest} ref={ref} data-ui="select-empty" className={className}>
+          {content}
+        </div>
+      )}
+    </WithSx>
+  );
+}
+
+SelectEmpty.displayName = 'Select.Empty';
+
 export const Select = Object.assign(SelectRoot, {
   Trigger: SelectTrigger,
   Value: SelectValue,
   Content: SelectContent,
   Item: SelectItem,
+  Label: SelectLabel,
+  Description: SelectDescription,
+  Error: SelectError,
+  Empty: SelectEmpty,
 });

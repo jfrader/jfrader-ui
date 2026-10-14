@@ -4,6 +4,7 @@
 
 ### Added
 
+- `MultiSelect`, `Select` and `Combobox` accept `options` and field presentation props for a single-element field, with typed `slots`/`slotProps` customization. Compound children and dotted parts remain available; types reject mixing modes. `MultiSelect` also supports `clearable`.
 - `ChatMessage`: show a single message with author, avatar, body, timestamp, delivery status, attachments and reactions without adopting a conversation layout. `ChatThread` keeps its existing API.
 - `CodeBlock`'s optional Shiki adapter highlights JSX and TSX with their own grammars.
 - `Surface`: panel material with flat, raised and floating shadows, inherited or contrast appearance, and div-root replacement through `component` or `slots.root`. Card supports the same root replacement and native root `slotProps`.

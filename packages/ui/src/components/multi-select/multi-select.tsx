@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type HTMLProps,
   type KeyboardEvent,
   type KeyboardEventHandler,
@@ -24,7 +25,7 @@ import {
   type Placement,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes } from '../../styling/css';
+import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -54,7 +55,42 @@ export interface MultiSelectMessages {
   toggled: (label: string, selected: boolean) => string;
   required: string;
 }
-export interface MultiSelectProps {
+export interface MultiSelectOption {
+  value: string;
+  label: ReactNode;
+  disabled?: boolean;
+  textValue?: string;
+  id?: string;
+}
+export interface MultiSelectSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  label?: ComponentType<MultiSelectLabelProps>;
+  description?: ComponentType<MultiSelectDescriptionProps>;
+  error?: ComponentType<MultiSelectErrorProps>;
+  trigger?: ComponentType<MultiSelectTriggerProps>;
+  value?: ComponentType<MultiSelectValueProps>;
+  clear?: ComponentType<MultiSelectClearProps>;
+  content?: ComponentType<MultiSelectContentProps>;
+  item?: ComponentType<MultiSelectItemProps>;
+  empty?: ComponentType<MultiSelectEmptyProps>;
+}
+export interface MultiSelectSlotProps {
+  root?: ComponentPropsWithRef<'div'> &
+    SxProps & {
+      css?: Interpolation<Theme>;
+      [attribute: `data-${string}`]: unknown;
+    };
+  label?: Partial<MultiSelectLabelProps>;
+  description?: Partial<MultiSelectDescriptionProps>;
+  error?: Partial<MultiSelectErrorProps>;
+  trigger?: Partial<MultiSelectTriggerProps>;
+  value?: Partial<MultiSelectValueProps>;
+  clear?: Partial<MultiSelectClearProps>;
+  content?: Partial<MultiSelectContentProps>;
+  item?: Partial<Omit<MultiSelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>>;
+  empty?: Partial<MultiSelectEmptyProps>;
+}
+export interface MultiSelectBaseProps {
   value?: readonly string[];
   defaultValue?: readonly string[];
   onValueChange?: (value: string[]) => void;
@@ -67,8 +103,36 @@ export interface MultiSelectProps {
   locale?: Intl.LocalesArgument;
   messages?: Partial<MultiSelectMessages>;
   placement?: Placement;
-  children?: ReactNode;
 }
+export interface MultiSelectCompoundProps extends MultiSelectBaseProps {
+  options?: never;
+  children?: ReactNode;
+  label?: never;
+  description?: never;
+  error?: never;
+  placeholder?: never;
+  maxVisible?: never;
+  size?: never;
+  clearable?: never;
+  empty?: never;
+  slots?: never;
+  slotProps?: never;
+}
+export interface MultiSelectEasyProps extends MultiSelectBaseProps {
+  options: readonly MultiSelectOption[];
+  children?: never;
+  label?: ReactNode;
+  description?: ReactNode;
+  error?: ReactNode;
+  placeholder?: ReactNode;
+  maxVisible?: number;
+  size?: 'sm' | 'md' | 'lg';
+  clearable?: boolean;
+  empty?: ReactNode;
+  slots?: MultiSelectSlots;
+  slotProps?: MultiSelectSlotProps;
+}
+export type MultiSelectProps = MultiSelectCompoundProps | MultiSelectEasyProps;
 export interface MultiSelectTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   size?: 'sm' | 'md' | 'lg';
 }
@@ -92,6 +156,7 @@ interface OptionRecord {
   label: string;
   disabled: boolean;
   id: string;
+  textValue?: string;
 }
 interface TriggerName {
   id: string;
@@ -99,6 +164,21 @@ interface TriggerName {
   labelledBy?: string;
   label?: string;
 }
+
+const multiSelectFieldStyle = css({
+  display: 'inline-flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[1],
+  maxInlineSize: '100%',
+});
+
+const triggerRowStyle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: vars.space[2],
+  maxInlineSize: '100%',
+});
 
 const triggerSkin = css({
   minInlineSize: 0,
@@ -357,6 +437,10 @@ function useModel(part: string) {
   return model;
 }
 const mergeIds = (...ids: Array<string | undefined>) => ids.filter(Boolean).join(' ') || undefined;
+const tokens = (...values: Array<unknown>): string | undefined => {
+  const list = [...new Set(values.flatMap((v) => (typeof v === 'string' ? v.split(/\s+/) : [])))].filter(Boolean);
+  return list.join(' ') || undefined;
+};
 
 function MultiSelectOverlay(props: MultiSelectProps) {
   const model = useMultiSelectModel(props);
@@ -385,9 +469,112 @@ function MultiSelectOverlay(props: MultiSelectProps) {
     );
     previousSelection.current = model.selected;
   }, [model.selected, model.messages, model.options, labels]);
+  let renderedContent: ReactNode;
+  if ('options' in props && props.options !== undefined) {
+    const {
+      options: optionsList,
+      label,
+      description,
+      error,
+      placeholder,
+      maxVisible,
+      size,
+      clearable,
+      empty,
+      slots,
+      slotProps,
+    } = props;
+    const LabelPart = slots?.label ?? MultiSelectLabel;
+    const TriggerPart = slots?.trigger ?? MultiSelectTrigger;
+    const ValuePart = slots?.value ?? MultiSelectValue;
+    const ClearPart = slots?.clear ?? MultiSelectClear;
+    const ContentPart = slots?.content ?? MultiSelectContent;
+    const ItemPart = slots?.item ?? MultiSelectItem;
+    const EmptyPart = slots?.empty ?? MultiSelectEmpty;
+    const DescriptionPart = slots?.description ?? MultiSelectDescription;
+    const ErrorPart = slots?.error ?? MultiSelectError;
+    const RootPart = slots?.root ?? 'div';
+    const {
+      className: rootClassName,
+      css: rootCss,
+      sx: rootSx,
+      'data-ui': rootDataUi,
+      ...rootRest
+    } = slotProps?.root ?? {};
+
+    const hasFieldAnatomy =
+      isRenderable(label) ||
+      isRenderable(description) ||
+      isRenderable(error) ||
+      clearable ||
+      slots?.root !== undefined ||
+      slotProps?.root !== undefined;
+
+    const controlRow = clearable ? (
+      <div css={triggerRowStyle}>
+        <TriggerPart size={size} {...slotProps?.trigger}>
+          <ValuePart placeholder={placeholder} maxVisible={maxVisible} {...slotProps?.value} />
+        </TriggerPart>
+        <ClearPart {...slotProps?.clear} />
+      </div>
+    ) : (
+      <TriggerPart size={size} {...slotProps?.trigger}>
+        <ValuePart placeholder={placeholder} maxVisible={maxVisible} {...slotProps?.value} />
+      </TriggerPart>
+    );
+
+    const controlParts = (
+      <>
+        {isRenderable(label) && <LabelPart {...slotProps?.label}>{label}</LabelPart>}
+        {controlRow}
+        {isRenderable(description) && (
+          <DescriptionPart {...slotProps?.description}>{description}</DescriptionPart>
+        )}
+        {isRenderable(error) && <ErrorPart {...slotProps?.error}>{error}</ErrorPart>}
+      </>
+    );
+
+    renderedContent = (
+      <>
+        {hasFieldAnatomy ? (
+          <WithSx className={rootClassName} styles={[multiSelectFieldStyle, rootCss]} sx={rootSx}>
+            {(className) => (
+              <RootPart
+                {...rootRest}
+                className={className}
+                data-ui={tokens('multi-select', rootDataUi)}
+              >
+                {controlParts}
+              </RootPart>
+            )}
+          </WithSx>
+        ) : (
+          controlParts
+        )}
+        <ContentPart {...slotProps?.content}>
+          {optionsList.map((option) => (
+            <ItemPart
+              key={option.value}
+              {...slotProps?.item}
+              id={option.id}
+              value={option.value}
+              disabled={option.disabled}
+              textValue={option.textValue}
+            >
+              {option.label}
+            </ItemPart>
+          ))}
+          <EmptyPart {...slotProps?.empty}>{empty}</EmptyPart>
+        </ContentPart>
+      </>
+    );
+  } else {
+    renderedContent = props.children;
+  }
+
   return (
     <Context.Provider value={model}>
-      {props.children}
+      {renderedContent}
       <span id={`${model.baseId}-summary`} css={visuallyHiddenStyle}>
         {model.messages.selected(labels)}
       </span>
@@ -488,10 +675,12 @@ function MultiSelectTrigger({
         const index = ((m.activeIndex ?? -1) + offset) % m.byIndex.length;
         const value = m.byIndex[index];
         const record = value === undefined ? undefined : m.options.get(value);
+        const searchCandidate = record?.textValue ?? record?.label;
         if (
           record &&
           !record.disabled &&
-          m.formatters.collator.compare(record.label.slice(0, text.length), text) === 0
+          searchCandidate &&
+          m.formatters.collator.compare(searchCandidate.slice(0, text.length), text) === 0
         ) {
           m.requestOpen(true);
           m.setActiveIndex(index);
@@ -677,6 +866,7 @@ function MultiSelectItem({
   const item = useCollectionItem(value, m.registration, textRef, (index, label) => ({
     index,
     label: textValue ?? label,
+    textValue,
     disabled,
     id,
   }));

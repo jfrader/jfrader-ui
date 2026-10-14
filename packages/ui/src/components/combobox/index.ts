@@ -1,8 +1,14 @@
 export { Combobox } from './combobox';
 export type {
+  ComboboxProps,
+  ComboboxBaseProps,
+  ComboboxCompoundProps,
+  ComboboxEasyProps,
+  ComboboxOption,
   ComboboxEmptyProps,
   ComboboxInputProps,
   ComboboxItemProps,
   ComboboxListProps,
-  ComboboxProps,
+  ComboboxSlots,
+  ComboboxSlotProps,
 } from './combobox';

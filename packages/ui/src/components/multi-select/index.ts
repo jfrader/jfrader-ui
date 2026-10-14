@@ -1,6 +1,10 @@
 export { MultiSelect } from './multi-select';
 export type {
   MultiSelectProps,
+  MultiSelectBaseProps,
+  MultiSelectCompoundProps,
+  MultiSelectEasyProps,
+  MultiSelectOption,
   MultiSelectMessages,
   MultiSelectTriggerProps,
   MultiSelectValueProps,
@@ -11,4 +15,6 @@ export type {
   MultiSelectDescriptionProps,
   MultiSelectErrorProps,
   MultiSelectEmptyProps,
+  MultiSelectSlots,
+  MultiSelectSlotProps,
 } from './multi-select';

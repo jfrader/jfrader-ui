@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties, ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useId, useState } from 'react';
 import { expect, fireEvent, fn, mocked, userEvent, waitFor, within } from 'storybook/test';
@@ -6,11 +6,38 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
-import { Combobox, type ComboboxInputProps, type ComboboxProps } from './index';
+import {
+  Combobox,
+  type ComboboxCompoundProps,
+  type ComboboxEasyProps,
+  type ComboboxInputProps,
+  type ComboboxListProps,
+  type ComboboxOption,
+  type ComboboxProps,
+} from './index';
 
 const LABEL = 'Fruit';
 const DESCRIPTION = 'Type to search';
 const EMPTY_LABEL = 'No results';
+
+const FRUITS: readonly ComboboxOption[] = [
+  { value: 'apple', label: 'Apple' },
+  { value: 'apricot', label: 'Apricot' },
+  { value: 'banana', label: 'Banana', disabled: true },
+  { value: 'cherry', label: 'Cherry' },
+];
+
+const snippet = `<Combobox
+  label="Fruit"
+  description="Type to search"
+  options={[
+    { value: 'apple', label: 'Apple' },
+    { value: 'apricot', label: 'Apricot' },
+    { value: 'banana', label: 'Banana', disabled: true },
+    { value: 'cherry', label: 'Cherry' },
+  ]}
+  defaultValue="apple"
+/>`;
 
 const stackStyle = {
   display: 'grid',
@@ -18,17 +45,37 @@ const stackStyle = {
   inlineSize: '320px',
 } satisfies CSSProperties;
 
-const meta = {
+const meta: Meta<ComboboxCompoundProps> = {
   title: 'Inputs/Combobox',
   component: Combobox,
-  parameters: { docs: { description: { component: 'Type to filter a list and choose an option.' } } },
-} satisfies Meta<typeof Combobox>;
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Type to filter a list and choose an option using either a single element with options or compound parts for custom anatomy.',
+      },
+    },
+  },
+};
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+type EasyStory = StoryObj<ComboboxEasyProps>;
 
-interface ComboboxExampleProps extends ComboboxProps {
+type CheckedCombobox<Props extends ComboboxProps> = Props;
+export type ComboboxTypeRegression = {
+  // @ts-expect-error Options and children are mutually exclusive.
+  optionsWithChildren: CheckedCombobox<{ options: typeof FRUITS; children: ReactNode }>;
+  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  childrenWithLabel: CheckedCombobox<{ label: string; children: ReactNode }>;
+  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  childrenWithPlaceholder: CheckedCombobox<{ placeholder: string; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects slots and slotProps.
+  childrenWithSlots: CheckedCombobox<{ slots: { root?: () => null }; children: ReactNode }>;
+};
+
+interface ComboboxExampleProps extends ComboboxCompoundProps {
   inputProps?: ComboboxInputProps;
   listId?: string;
 }
@@ -54,50 +101,6 @@ function ComboboxExample({ inputProps, listId, ...props }: ComboboxExampleProps)
 }
 ComboboxExample.displayName = 'ComboboxExample';
 
-function DisabledWhileOpenCombobox(props: ComboboxProps) {
-  const [disabled, setDisabled] = useState(false);
-  return (
-    <>
-      <ComboboxExample {...props} open inputProps={{ disabled }} />
-      <Button onClick={() => setDisabled(true)}>Disable</Button>
-    </>
-  );
-}
-
-export const DisabledWhileOpen: Story = {
-  tags: ['!autodocs'],
-  args: { onValueChange: fn(), onInputChange: fn(), onOpenChange: fn() },
-  render: (args) => <DisabledWhileOpenCombobox {...args} />,
-  play: async ({ args, canvasElement }) => {
-    const option = await bodyOf(canvasElement).findByRole('option', { name: 'Cherry' });
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Disable' }));
-    mocked(args.onOpenChange!).mockClear();
-    await fireEvent.click(option);
-    await fireEvent.keyDown(getInput(canvasElement), { key: 'ArrowDown' });
-    await fireEvent.keyDown(getInput(canvasElement), { key: 'Enter' });
-    await expect(args.onValueChange).not.toHaveBeenCalled();
-    await expect(args.onInputChange).not.toHaveBeenCalled();
-    await expect(args.onOpenChange).not.toHaveBeenCalled();
-    await expectClosed(canvasElement);
-  },
-};
-
-export const ReadOnlySelection: Story = {
-  tags: ['!autodocs'],
-  args: { onValueChange: fn(), onInputChange: fn(), onOpenChange: fn() },
-  render: (args) => <ComboboxExample {...args} open defaultValue="apple" inputProps={{ readOnly: true }} />,
-  play: async ({ args, canvasElement }) => {
-    const input = getInput(canvasElement);
-    const option = bodyOf(canvasElement).getByRole('option', { name: 'Cherry', hidden: true });
-    await fireEvent.click(option);
-    await userEvent.click(input);
-    await userEvent.keyboard('{ArrowDown}{Enter}');
-    await expect(input).toHaveValue('Apple');
-    await expect(args.onValueChange).not.toHaveBeenCalled();
-    await expect(args.onInputChange).not.toHaveBeenCalled();
-    await expect(args.onOpenChange).not.toHaveBeenCalled();
-  },
-};
 
 /** Portaled content lives in the story document's body, outside the canvas. */
 function bodyOf(canvasElement: HTMLElement) {
@@ -134,9 +137,25 @@ async function focusInput(canvasElement: HTMLElement) {
   return input;
 }
 
-export const Default: Story = {
-  args: { onValueChange: fn(), onInputChange: fn() },
-  render: (args) => <ComboboxExample {...args} inputProps={{ description: DESCRIPTION }} />,
+export const Default: EasyStory = {
+  args: {
+    label: LABEL,
+    description: DESCRIPTION,
+    options: FRUITS,
+    onValueChange: fn(),
+    onInputChange: fn(),
+  },
+  render: (args) => (
+    <div style={stackStyle}>
+      <Combobox {...args} />
+      <Button>After</Button>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      source: { code: snippet },
+    },
+  },
   play: async ({ args, canvasElement }) => {
     const input = getInput(canvasElement);
     await expect(input.tagName).toBe('INPUT');
@@ -197,6 +216,266 @@ export const Default: Story = {
   },
 };
 
+export const Compound: Story = {
+  render: (args) => <ComboboxExample {...args} inputProps={{ description: DESCRIPTION }} />,
+  parameters: {
+    docs: {
+      source: {
+        code: `function FruitPicker() {
+  return (
+    <Combobox defaultValue="apple">
+      <Combobox.Input label="Fruit" description="Type to search" />
+      <Combobox.List>
+        <Combobox.Item value="apple">Apple</Combobox.Item>
+        <Combobox.Item value="apricot">Apricot</Combobox.Item>
+        <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+        <Combobox.Item value="cherry">Cherry</Combobox.Item>
+        <Combobox.Empty />
+      </Combobox.List>
+    </Combobox>
+  );
+}`,
+      },
+    },
+  },
+};
+
+function CustomComboboxInput(props: ComboboxInputProps) {
+  return <Combobox.Input {...props} data-testid="custom-input" />;
+}
+
+function CustomComboboxList(props: ComboboxListProps) {
+  return <Combobox.List {...props} data-testid="custom-list" />;
+}
+
+function CustomComboboxRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="custom-root" />;
+}
+
+export const CustomSlots: EasyStory = {
+  render: () => (
+    <Combobox
+      label="Fruit"
+      options={FRUITS}
+      defaultValue="apple"
+      slots={{
+        root: CustomComboboxRoot,
+        input: CustomComboboxInput,
+        list: CustomComboboxList,
+      }}
+      slotProps={{
+        root: { 'data-testid': 'custom-root' },
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const root = canvas.getByTestId('custom-root');
+    await expect(root).toBeInTheDocument();
+    await expect(root).toHaveAttribute('data-ui', 'combobox');
+    await expect(canvas.getByTestId('custom-input')).toBeInTheDocument();
+  },
+};
+
+function EasyControlledCombobox(props: ComboboxEasyProps) {
+  const [value, setValue] = useState<string | null>('apple');
+  return (
+    <div style={stackStyle}>
+      <Combobox
+        {...props}
+        value={value}
+        onValueChange={(next) => {
+          setValue(next);
+          props.onValueChange?.(next);
+        }}
+      />
+    </div>
+  );
+}
+
+export const EasyControlled: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: LABEL, options: FRUITS, onValueChange: fn() },
+  render: (args) => <EasyControlledCombobox {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const input = getInput(canvasElement);
+    await waitFor(() => expect(input).toHaveValue('Apple'));
+    await userEvent.click(input);
+    await userEvent.clear(input);
+    await userEvent.type(input, 'ch');
+    await userEvent.click(getOption(canvasElement, 'Cherry'));
+    await expect(args.onValueChange).toHaveBeenCalledWith('cherry');
+    await expect(input).toHaveValue('Cherry');
+    await expectClosed(canvasElement);
+  },
+};
+
+export const EasyRejectedControlled: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: LABEL, options: FRUITS, value: 'apple', onValueChange: fn() },
+  render: (args) => (
+    <div style={stackStyle}>
+      <Combobox {...args} />
+    </div>
+  ),
+  play: async ({ args, canvasElement }) => {
+    const input = getInput(canvasElement);
+    await waitFor(() => expect(input).toHaveValue('Apple'));
+    await userEvent.type(input, 'ch', { initialSelectionStart: 0, initialSelectionEnd: input.value.length });
+    await expectActive(canvasElement, 'Cherry');
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('cherry');
+    await expectClosed(canvasElement);
+    await expect(input).toHaveValue('Apple');
+  },
+};
+
+export const EasyDisabledOption: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn() },
+  render: (args) => (
+    <div style={stackStyle}>
+      <Combobox {...args} />
+    </div>
+  ),
+  play: async ({ args, canvasElement }) => {
+    await focusInput(canvasElement);
+    await userEvent.keyboard('{ArrowDown}');
+    await bodyOf(canvasElement).findByRole('listbox');
+    const banana = getOption(canvasElement, 'Banana');
+    await expect(banana).toHaveAttribute('aria-disabled', 'true');
+    await fireEvent.click(banana);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(getInput(canvasElement)).toHaveValue('Apple');
+  },
+};
+
+export const EasyKeyboard: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn() },
+  render: (args) => (
+    <div style={stackStyle}>
+      <Combobox {...args} />
+    </div>
+  ),
+  play: async ({ args, canvasElement }) => {
+    const input = await focusInput(canvasElement);
+    await userEvent.keyboard('{ArrowDown}');
+    await expectActive(canvasElement, 'Apple');
+    // Arrow down navigates to Apricot, then skips disabled Banana to Cherry
+    await userEvent.keyboard('{ArrowDown}');
+    await expectActive(canvasElement, 'Apricot');
+    await userEvent.keyboard('{ArrowDown}');
+    await expectActive(canvasElement, 'Cherry');
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onValueChange).toHaveBeenCalledWith('cherry');
+    await expect(input).toHaveValue('Cherry');
+    await expectClosed(canvasElement);
+  },
+};
+
+const CUSTOM_COMBOBOX_OPTIONS: readonly ComboboxOption[] = [
+  { value: 'apple', label: 'Apple', id: 'custom-apple-cb-opt' },
+  { value: 'cherry', label: 'Cherry', id: 'custom-cherry-cb-opt', textValue: 'Zucchini' },
+];
+
+export const EasyOptionIdsAndTextValue: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: LABEL, options: CUSTOM_COMBOBOX_OPTIONS, defaultValue: 'apple' },
+  render: (args) => (
+    <div style={stackStyle}>
+      <Combobox {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const input = await focusInput(canvasElement);
+    await userEvent.keyboard('{ArrowDown}');
+    await bodyOf(canvasElement).findByRole('listbox');
+    const apple = getOption(canvasElement, 'Apple');
+    const cherry = getOption(canvasElement, 'Cherry');
+    await expect(apple).toHaveAttribute('id', 'custom-apple-cb-opt');
+    await expect(cherry).toHaveAttribute('id', 'custom-cherry-cb-opt');
+    await userEvent.clear(input);
+    await userEvent.type(input, 'zu');
+    const listbox = await bodyOf(canvasElement).findByRole('listbox');
+    await expect(within(listbox).getAllByRole('option')).toHaveLength(1);
+    await expect(getOption(canvasElement, 'Cherry')).toBeVisible();
+  },
+};
+
+function DisabledWhileOpenCombobox(props: ComboboxCompoundProps) {
+  const [disabled, setDisabled] = useState(false);
+  return (
+    <>
+      <ComboboxExample {...props} open inputProps={{ disabled }} />
+      <Button onClick={() => setDisabled(true)}>Disable</Button>
+    </>
+  );
+}
+
+export const DisabledWhileOpen: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn(), onInputChange: fn(), onOpenChange: fn() },
+  render: (args) => <DisabledWhileOpenCombobox {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const option = await bodyOf(canvasElement).findByRole('option', { name: 'Cherry' });
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Disable' }));
+    mocked(args.onOpenChange!).mockClear();
+    await fireEvent.click(option);
+    await fireEvent.keyDown(getInput(canvasElement), { key: 'ArrowDown' });
+    await fireEvent.keyDown(getInput(canvasElement), { key: 'Enter' });
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onInputChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await expectClosed(canvasElement);
+  },
+};
+
+export const ReadOnlySelection: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn(), onInputChange: fn(), onOpenChange: fn() },
+  render: (args) => <ComboboxExample {...args} open defaultValue="apple" inputProps={{ readOnly: true }} />,
+  play: async ({ args, canvasElement }) => {
+    const input = getInput(canvasElement);
+    const option = bodyOf(canvasElement).getByRole('option', { name: 'Cherry', hidden: true });
+    await fireEvent.click(option);
+    await userEvent.click(input);
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await expect(input).toHaveValue('Apple');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onInputChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+
+export const EasyFormReset: EasyStory = {
+  render: () => (
+    <form aria-label="Fruit form">
+      <Combobox
+        label={LABEL}
+        name="fruit"
+        options={FRUITS}
+        defaultValue="apple"
+      />
+      <Button type="reset">Reset</Button>
+    </form>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const form = canvas.getByRole('form', { name: 'Fruit form' }) as HTMLFormElement;
+    const input = getInput(canvasElement);
+    await userEvent.click(input);
+    await userEvent.clear(input);
+    await userEvent.type(input, 'ch');
+    await userEvent.click(getOption(canvasElement, 'Cherry'));
+    await expect(new FormData(form).get('fruit')).toBe('cherry');
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await waitFor(() => expect(new FormData(form).get('fruit')).toBe('apple'));
+    await expect(input).toHaveValue('Apple');
+  },
+};
+
 export const NativeFormReset: Story = {
   tags: ['!autodocs'],
   args: { onValueChange: fn(), onInputChange: fn() },
@@ -229,7 +508,7 @@ export const NativeFormReset: Story = {
   },
 };
 
-function AssociatedFormResetCombobox(props: ComboboxProps) {
+function AssociatedFormResetCombobox(props: ComboboxCompoundProps) {
   const formId = useId();
   const [cancelReset, setCancelReset] = useState(true);
   return (
@@ -485,7 +764,7 @@ export const SameOptionReselection: Story = {
   },
 };
 
-function RejectFirstSelectionExample({ onValueChange, ...props }: ComboboxProps) {
+function RejectFirstSelectionExample({ onValueChange, ...props }: ComboboxCompoundProps) {
   const [value, setValue] = useState<string | null>('apple');
   const [reject, setReject] = useState(true);
   return (

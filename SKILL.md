@@ -157,6 +157,16 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   optimize measured boundaries, not guessed ones.
 - `will-change` only for a demonstrated rendering problem, removed afterwards.
 
+### Easy mode
+
+- Dual-mode components (MultiSelect, Select, Combobox) support both compound anatomy and a single-element easy mode via a mutually exclusive `options` XOR `children` type union.
+- `options` is a readonly array of `{ value, label, disabled?, textValue?, id? }`.
+- Presentation props (`label`, `description`, `error`, `placeholder`, `size`, plus `clearable` on MultiSelect only) configure the generated field anatomy.
+- Easy mode composes the existing compound parts internally (no parallel implementations) and preserves existing state, controlled/uncontrolled axes, and native form reset semantics.
+- Generated parts support typed replacement and customization via `slots` and `slotProps`.
+- Component documentation and the primary story snippet show the easy path first as the default usage, followed by compound examples for custom anatomy.
+- Incompatible modes (passing both `options` and `children`) are rejected at compile time with TypeScript type errors.
+
 ## 3. Component contract worksheet
 
 Fill this in the spec/PR before coding (it prevents 80% of review findings):

@@ -1,14 +1,43 @@
 import { useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor, within } from 'storybook/test';
+import { expect, fn, mocked, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
 import { Button } from '../button';
-import { MultiSelect, type MultiSelectProps } from './index';
+import {
+  MultiSelect,
+  type MultiSelectCompoundProps,
+  type MultiSelectEasyProps,
+  type MultiSelectOption,
+  type MultiSelectProps,
+  type MultiSelectLabelProps,
+  type MultiSelectTriggerProps,
+} from './index';
 
 const LABEL = 'Labels';
-const snippet = `<MultiSelect defaultValue={['bug']} name="labels">
+const OPTIONS: readonly MultiSelectOption[] = [
+  { value: 'bug', label: 'Bug' },
+  { value: 'locked', label: 'Locked', disabled: true },
+  { value: 'feature', label: 'Feature' },
+  { value: 'docs', label: 'Documentation' },
+];
+
+const snippet = `<MultiSelect
+  label="Labels"
+  placeholder="Select labels"
+  options={[
+    { value: 'bug', label: 'Bug' },
+    { value: 'feature', label: 'Feature' },
+    { value: 'docs', label: 'Documentation' },
+  ]}
+  defaultValue={['bug']}
+  clearable
+  name="labels"
+/>`;
+
+type CheckedMultiSelect<Props extends MultiSelectProps> = Props;
+const compoundSnippet = `<MultiSelect defaultValue={['bug']} name="labels">
   <MultiSelect.Label>Labels</MultiSelect.Label>
   <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
   <MultiSelect.Clear />
@@ -17,7 +46,21 @@ const snippet = `<MultiSelect defaultValue={['bug']} name="labels">
     <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
   </MultiSelect.Content>
 </MultiSelect>`;
-type ExampleProps = MultiSelectProps & {
+export type MultiSelectTypeRegression = {
+  // @ts-expect-error Options and children are mutually exclusive.
+  optionsWithChildren: CheckedMultiSelect<{ options: typeof OPTIONS; children: ReactNode }>;
+  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  childrenWithLabel: CheckedMultiSelect<{ label: string; children: ReactNode }>;
+  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  childrenWithClearable: CheckedMultiSelect<{ clearable: true; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects slots and slotProps.
+  childrenWithSlots: CheckedMultiSelect<{ slots: { root?: () => null }; children: ReactNode }>;
+};
+
+type ExampleProps = Omit<
+  MultiSelectCompoundProps,
+  'size' | 'empty' | 'maxVisible' | 'error' | 'description'
+> & {
   empty?: boolean;
   maxVisible?: number;
   size?: 'sm' | 'md' | 'lg';
@@ -67,7 +110,7 @@ function Example({ empty, maxVisible, size, error, description, forced, children
     </div>
   );
 }
-const meta = {
+const meta: Meta<MultiSelectCompoundProps> = {
   title: 'Inputs/MultiSelect',
   component: MultiSelect,
   tags: ['autodocs'],
@@ -75,7 +118,6 @@ const meta = {
   render: (args) => <Example {...args} />,
   parameters: {
     docs: {
-      source: { code: snippet },
       description: {
         component:
           'Choose more than one option from a list without closing it after each choice.',
@@ -87,9 +129,10 @@ const meta = {
 - Named fields submit repeated form entries. A separate native input validates required selection.`,
     },
   },
-} satisfies Meta<typeof MultiSelect>;
+};
 export default meta;
 type Story = StoryObj<typeof meta>;
+type EasyStory = StoryObj<MultiSelectEasyProps>;
 const body = (canvasElement: HTMLElement) => within(canvasElement.ownerDocument.body);
 const triggerOf = (canvasElement: HTMLElement) =>
   within(canvasElement).getByRole('combobox', { name: LABEL });
@@ -100,7 +143,33 @@ async function active(canvasElement: HTMLElement, name: string) {
   });
   await expect(canvasElement.ownerDocument.activeElement).toBe(triggerOf(canvasElement));
 }
-export const Default: Story = {
+export const Default: EasyStory = {
+  args: {
+    label: LABEL,
+    placeholder: 'Select labels',
+    options: OPTIONS,
+    clearable: true,
+    defaultValue: ['bug'],
+  },
+  render: (args) => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        gap: vars.space[2],
+        maxInlineSize: '100%',
+      }}
+    >
+      <MultiSelect {...args} />
+      <Button>After</Button>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      source: { code: snippet },
+    },
+  },
   play: async ({ canvasElement, userEvent, args }) => {
     const trigger = triggerOf(canvasElement);
     await userEvent.click(trigger);
@@ -108,18 +177,171 @@ export const Default: Story = {
       'aria-multiselectable',
       'true',
     );
-    await userEvent.click(body(canvasElement).getByRole('option', { name: 'Bug' }));
+    await userEvent.click(body(canvasElement).getByRole('option', { name: 'Feature' }));
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith(['bug']);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['bug', 'feature']);
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    await expect(body(canvasElement).getByRole('option', { name: 'Bug' })).toHaveAttribute(
+    await expect(body(canvasElement).getByRole('option', { name: 'Feature' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
     await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
   },
 };
-function ControlledExample(props: MultiSelectProps) {
+
+export const Compound: Story = {
+  render: (args) => <Example {...args} defaultValue={['bug']} />,
+  parameters: {
+    docs: {
+      source: {
+        code: compoundSnippet,
+      },
+    },
+  },
+};
+
+function CustomLabel(props: MultiSelectLabelProps) {
+  return <MultiSelect.Label {...props} data-testid="custom-label" />;
+}
+function CustomTrigger(props: MultiSelectTriggerProps) {
+  return <MultiSelect.Trigger {...props} data-testid="custom-trigger" />;
+}
+
+export const CustomSlots: EasyStory = {
+  render: () => (
+    <MultiSelect
+      label="Labels"
+      options={OPTIONS}
+      defaultValue={['bug']}
+      clearable
+      slots={{
+        label: CustomLabel,
+        trigger: CustomTrigger,
+      }}
+      slotProps={{
+        root: { 'data-testid': 'custom-root' },
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId('custom-root')).toBeInTheDocument();
+    await expect(canvas.getByTestId('custom-label')).toBeInTheDocument();
+    await expect(canvas.getByTestId('custom-trigger')).toBeInTheDocument();
+  },
+};
+
+export const EasyClearable: EasyStory = {
+  render: () => (
+    <MultiSelect
+      label="Labels"
+      options={OPTIONS}
+      defaultValue={['bug']}
+      clearable
+    />
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const clearBtn = canvas.getByRole('button', { name: 'Clear selection' });
+    await expect(clearBtn).toBeEnabled();
+    await userEvent.click(clearBtn);
+    await expect(clearBtn).toBeDisabled();
+  },
+};
+
+export const EasyFormReset: EasyStory = {
+  render: () => (
+    <form aria-label="Easy multi-select form">
+      <MultiSelect
+        label={LABEL}
+        name="labels"
+        options={OPTIONS}
+        defaultValue={['bug']}
+      />
+      <Button type="reset">Reset</Button>
+    </form>
+  ),
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    const form = canvasElement.querySelector('form')!;
+    const trigger = triggerOf(canvasElement);
+    await userEvent.click(trigger);
+    await userEvent.click(body(canvasElement).getByRole('option', { name: 'Feature' }));
+    await expect(new FormData(form).getAll('labels')).toEqual(['bug', 'feature']);
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await waitFor(async () => {
+      await expect(new FormData(form).getAll('labels')).toEqual(['bug']);
+    });
+  },
+};
+
+function EasyControlledExample(props: MultiSelectEasyProps) {
+  const [value, setValue] = useState<readonly string[]>(['bug']);
+  const [open, setOpen] = useState(false);
+  return <MultiSelect {...props} value={value} open={open}
+    onValueChange={(next) => { setValue(next); props.onValueChange?.(next); }}
+    onOpenChange={(next) => { setOpen(next); props.onOpenChange?.(next); }} />;
+}
+
+export const EasyControlled: EasyStory = {
+  args: { label: LABEL, options: OPTIONS, onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <EasyControlledExample {...args} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    await userEvent.click(triggerOf(canvasElement));
+    await userEvent.click(body(canvasElement).getByRole('option', { name: 'Feature' }));
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['bug', 'feature']);
+    await expect(triggerOf(canvasElement)).toHaveTextContent('Feature');
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await expect(triggerOf(canvasElement)).toHaveAttribute('aria-expanded', 'false');
+  },
+};
+
+export const EasyRejectedControlled: EasyStory = {
+  args: { label: LABEL, options: OPTIONS, value: ['bug'], onValueChange: fn() },
+  render: (args) => <MultiSelect {...args} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    await userEvent.click(triggerOf(canvasElement));
+    await userEvent.click(body(canvasElement).getByRole('option', { name: 'Feature' }));
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['bug', 'feature']);
+    await expect(body(canvasElement).getByRole('option', { name: 'Feature' })).toHaveAttribute('aria-selected', 'false');
+    await expect(triggerOf(canvasElement)).not.toHaveTextContent('Feature');
+  },
+};
+
+export const EasyKeyboard: EasyStory = {
+  args: { label: LABEL, options: OPTIONS, onValueChange: fn() },
+  render: (args) => <MultiSelect {...args} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    await userEvent.tab();
+    await expect(canvasElement.ownerDocument.activeElement).toBe(triggerOf(canvasElement));
+    await userEvent.keyboard('{ArrowDown}');
+    await active(canvasElement, 'Bug');
+    await expect(body(canvasElement).getByRole('option', { name: 'Locked' })).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(body(canvasElement).getByRole('option', { name: 'Locked' }));
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['feature']);
+    await userEvent.keyboard('{End}');
+    await active(canvasElement, 'Documentation');
+    await userEvent.keyboard('{Home}');
+    await active(canvasElement, 'Bug');
+    await userEvent.keyboard('{Escape}');
+    await expect(triggerOf(canvasElement)).toHaveAttribute('aria-expanded', 'false');
+  },
+};
+
+export const EasyOptionMetadata: EasyStory = {
+  args: { label: LABEL, options: [{ value: 'bug', label: 'Bug', textValue: 'Issue', id: 'easy-multi-issue' }], onValueChange: fn() },
+  render: (args) => <MultiSelect {...args} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    await userEvent.click(triggerOf(canvasElement));
+    await expect(body(canvasElement).getByRole('option', { name: 'Bug' })).toHaveAttribute('id', 'easy-multi-issue');
+    await userEvent.keyboard('i{Enter}');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['bug']);
+  },
+};
+
+function ControlledExample(props: MultiSelectCompoundProps) {
   const [value, setValue] = useState<readonly string[]>(['bug']);
   const [open, setOpen] = useState(false);
   return (
@@ -417,7 +639,7 @@ export const ControlledOpenUncontrolledValue: Story = {
     );
   },
 };
-function ExternalUpdatesExample(props: MultiSelectProps) {
+function ExternalUpdatesExample(props: MultiSelectCompoundProps) {
   const [value, setValue] = useState<readonly string[]>(['bug']);
   const [open, setOpen] = useState(false);
   return (
@@ -453,7 +675,7 @@ export const DuplicateValues: Story = {
     await userEvent.click(body(canvasElement).getByRole('option', { name: 'Documentation' }));
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith(['bug', 'feature', 'docs']);
-    await expect(args.onValueChange!.mock.calls[0]![0]).not.toBe(duplicatedValue);
+    await expect(mocked(args.onValueChange!).mock.calls[0]![0]).not.toBe(duplicatedValue);
     await expect(duplicatedValue).toEqual(['bug', 'feature', 'bug']);
     await userEvent.keyboard('{Escape}');
   },
@@ -660,7 +882,7 @@ export const ItemUpdates: Story = {
     await expect(args.onValueChange).not.toHaveBeenCalled();
   },
 };
-function DynamicItems(props: MultiSelectProps) {
+function DynamicItems(props: MultiSelectCompoundProps) {
   const [updated, setUpdated] = useState(false);
   return (
     <>
@@ -758,8 +980,8 @@ export const ClearPointerOrder: Story = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith([]);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
-    await expect(args.onValueChange!.mock.invocationCallOrder[0]).toBeLessThan(
-      args.onOpenChange!.mock.invocationCallOrder[0]!,
+    await expect(mocked(args.onValueChange!).mock.invocationCallOrder[0]).toBeLessThan(
+      mocked(args.onOpenChange!).mock.invocationCallOrder[0]!,
     );
     await expect(canvasElement.ownerDocument.activeElement).toBe(triggerOf(canvasElement));
   },
