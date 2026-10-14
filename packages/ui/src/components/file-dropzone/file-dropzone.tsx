@@ -10,17 +10,19 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme, type SerializedStyles } from '../../styling/css';
+import { css, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { focusRingOutset } from '../../styling/focus-ring';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
-import { Button } from '../button';
-import { Progress } from '../progress';
+import { Button, type ButtonProps } from '../button';
+import { Progress, type ProgressProps } from '../progress';
+import type { ComponentType } from 'react';
+import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
 
 export type FileDropzoneSize = 'sm' | 'md' | 'lg';
 export type FileDropzoneUploadStatus = 'idle' | 'uploading' | 'uploaded' | 'failed';
@@ -53,27 +55,31 @@ export interface FileDropzoneMessages {
   count: (count: number) => string;
   uploadError: string;
 }
-type Slot<E extends keyof React.JSX.IntrinsicElements> = Omit<
-  ComponentPropsWithRef<E>,
-  'ref' | 'children'
-> & { css?: Interpolation<Theme> };
-export interface FileDropzoneSlotProps {
-  root?: Slot<'div'>;
-  input?: Slot<'input'>;
-  target?: Slot<'div'>;
-  /** The native label: the clickable drop surface that names and opens the input. */
-  label?: Slot<'label'>;
-  browse?: Slot<'span'>;
-  description?: Slot<'div'>;
-  note?: Slot<'div'>;
-  list?: Slot<'ul'>;
-  item?: Slot<'li'>;
-  preview?: Slot<'img'>;
-  progress?: Slot<'div'>;
-  action?: Slot<'button'>;
-  error?: Slot<'div'>;
-  status?: Slot<'div'>;
-}
+export type FileDropzoneSlotProps = FieldParts<FileDropzoneAnatomy> & {
+  action?: ButtonProps;
+  progress?: Omit<ProgressProps, 'value' | 'max'>;
+};
+type FileDropzoneAnatomy = {
+  root: 'div';
+  input: 'input';
+  target: 'div';
+  label: 'label';
+  browse: 'span';
+  description: 'div';
+  note: 'div';
+  list: 'ul';
+  item: 'li';
+  preview: 'img';
+  progress: 'div';
+  action: 'button';
+  error: 'div';
+  status: 'div';
+};
+export type FileDropzoneSlots = Omit<FieldSlots<FileDropzoneAnatomy>, 'action' | 'progress'> & {
+  action?: ComponentType<ButtonProps>;
+  progress?: ComponentType<ProgressProps>;
+};
+
 export interface FileDropzoneProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   value?: FileDropzoneItem[];
@@ -103,6 +109,10 @@ export interface FileDropzoneProps
   renderFileIcon?: (item: FileDropzoneItem) => ReactNode;
   name?: string;
   inputRef?: Ref<HTMLInputElement>;
+  /** Replace the wrapper div; `slots.root` takes precedence. */
+  component?: FileDropzoneSlots['root'];
+  /** Replace generated parts with components that forward props and ref. */
+  slots?: FileDropzoneSlots;
   slotProps?: FileDropzoneSlotProps;
 }
 
@@ -230,17 +240,16 @@ const byteUnits = ['byte', 'kilobyte', 'megabyte', 'gigabyte'] as const;
 const sameItems = (a: FileDropzoneItem[], b: FileDropzoneItem[]) =>
   a.length === b.length && a.every((item, index) => item.id === b[index]?.id && item.file === b[index]?.file);
 const carriesFiles = (data: DataTransfer) => Array.from(data.types).includes('Files');
-const duplicate = (a: File, b: File) =>
-  a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
+const duplicate = (a: File, b: File) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
 function matchesAccept(file: File, accept?: string) {
   const tokens =
     accept
       ?.split(',')
-      .map(token => token.trim().toLowerCase())
+      .map((token) => token.trim().toLowerCase())
       .filter(Boolean) ?? [];
   return (
     !tokens.length ||
-    tokens.some(token =>
+    tokens.some((token) =>
       token.startsWith('.')
         ? file.name.toLowerCase().endsWith(token)
         : Boolean(file.type) &&
@@ -251,8 +260,7 @@ function matchesAccept(file: File, accept?: string) {
   );
 }
 function formatSize(bytes: number, locale?: string) {
-  const exponent =
-    bytes > 0 ? Math.min(Math.floor(Math.log(bytes) / Math.log(DECIMAL_UNIT)), byteUnits.length - 1) : 0;
+  const exponent = bytes > 0 ? Math.min(Math.floor(Math.log(bytes) / Math.log(DECIMAL_UNIT)), byteUnits.length - 1) : 0;
   return numberFormatter(locale, {
     style: 'unit',
     unit: byteUnits[Math.max(0, exponent)],
@@ -300,6 +308,8 @@ export function FileDropzone({
   renderFileIcon,
   name,
   inputRef,
+  component,
+  slots,
   slotProps,
   className,
   sx,
@@ -310,13 +320,11 @@ export function FileDropzone({
   onPaste,
   ...rest
 }: FileDropzoneProps) {
+  const Action = slots?.action ?? Button;
+  const UploadProgress = slots?.progress ?? Progress;
   const id = useId();
   const seed = useRef(defaultValue);
-  const [items = EMPTY, requestChange, resetToDefault] = useControlledState(
-    value,
-    seed.current,
-    onValueChange,
-  );
+  const [items = EMPTY, requestChange, resetToDefault] = useControlledState(value, seed.current, onValueChange);
   const input = useRef<HTMLInputElement>(null);
   const root = useRef<HTMLDivElement>(null);
   const mergedRoot = useMergeRefs([root, ref]);
@@ -330,7 +338,7 @@ export function FileDropzone({
     active: Element | null;
   } | null>(null);
   const [, refresh] = useState(0);
-  const update = () => refresh(n => n + 1);
+  const update = () => refresh((n) => n + 1);
   const [dragging, setDragging] = useState(false);
   const dragDepth = useRef(0);
   const [rejections, setRejections] = useState<FileRejection[]>([]);
@@ -399,8 +407,7 @@ export function FileDropzone({
             return;
           }
           attempt.status = 'failed';
-          attempt.error =
-            reason instanceof Error && reason.message.trim() ? reason.message : messages.uploadError;
+          attempt.error = reason instanceof Error && reason.message.trim() ? reason.message : messages.uploadError;
           setAnnouncement(messages.status('failed', item.name));
           update();
         },
@@ -411,14 +418,14 @@ export function FileDropzone({
     let changed = false;
     let added = 0;
     for (const [key, attempt] of attempts.current) {
-      if (!items.some(item => item.id === key && item.file === attempt.file)) {
+      if (!items.some((item) => item.id === key && item.file === attempt.file)) {
         attempt.controller.abort();
         attempts.current.delete(key);
         changed = true;
       }
     }
     for (const [key, preview] of previews.current) {
-      if (!items.some(item => item.id === key && item.file === preview.file && item.preview === undefined)) {
+      if (!items.some((item) => item.id === key && item.file === preview.file && item.preview === undefined)) {
         URL.revokeObjectURL(preview.url);
         previews.current.delete(key);
         changed = true;
@@ -428,11 +435,7 @@ export function FileDropzone({
       const intent = intents.current.get(item.id);
       if (!intent || intent.file !== item.file) continue;
       intents.current.delete(item.id);
-      if (
-        item.file?.type.startsWith('image/') &&
-        item.preview === undefined &&
-        !previews.current.has(item.id)
-      ) {
+      if (item.file?.type.startsWith('image/') && item.preview === undefined && !previews.current.has(item.id)) {
         previews.current.set(item.id, {
           file: item.file,
           url: URL.createObjectURL(item.file),
@@ -444,7 +447,7 @@ export function FileDropzone({
     }
     if (added) setAnnouncement(messages.added(added));
     const pending = focusRequest.current;
-    if (pending && !items.some(item => item.id === pending.item.id && item.file === pending.item.file)) {
+    if (pending && !items.some((item) => item.id === pending.item.id && item.file === pending.item.file)) {
       focusRequest.current = null;
       setAnnouncement(messages.removed(pending.item.name));
       if (
@@ -491,21 +494,20 @@ export function FileDropzone({
     if (inactive) return;
     const rejected: FileRejection[] = [];
     const accepted: File[] = [];
-    const retained = multiple ? items : items.filter(item => !item.file);
+    const retained = multiple ? items : items.filter((item) => !item.file);
     for (const file of files) {
       let code: FileRejection['code'] | undefined;
       let custom: string | null = null;
       if (!matchesAccept(file, accept)) code = 'type';
-      else if (maxSize !== undefined && Number.isFinite(maxSize) && maxSize >= 0 && file.size > maxSize)
-        code = 'size';
+      else if (maxSize !== undefined && Number.isFinite(maxSize) && maxSize >= 0 && file.size > maxSize) code = 'size';
       else {
         custom = validate?.(file) ?? null;
         if (custom !== null) code = 'custom';
       }
       if (
         !code &&
-        (items.some(item => item.file && duplicate(item.file, file)) ||
-          accepted.some(previous => duplicate(previous, file)))
+        (items.some((item) => item.file && duplicate(item.file, file)) ||
+          accepted.some((previous) => duplicate(previous, file)))
       )
         continue;
       if (!code && (retained.length + accepted.length >= capacity || (!multiple && accepted.length >= 1)))
@@ -521,7 +523,7 @@ export function FileDropzone({
     setRejections(rejected);
     if (rejected.length) onReject?.(rejected);
     if (!accepted.length) return;
-    const additions = accepted.map(file => ({
+    const additions = accepted.map((file) => ({
       id: crypto.randomUUID(),
       file,
       name: file.name,
@@ -540,7 +542,7 @@ export function FileDropzone({
       index,
       active: row?.contains(active) ? active : null,
     };
-    request(items.filter(candidate => candidate.id !== item.id));
+    request(items.filter((candidate) => candidate.id !== item.id));
   }
   function rowKeyboard(event: KeyboardEvent<HTMLLIElement>, item: FileDropzoneItem, index: number) {
     if (inactive || !(event.target instanceof HTMLButtonElement)) return;
@@ -560,10 +562,12 @@ export function FileDropzone({
     }
   }
   const fileList = items.length > 0 && (
-    <ul
-      {...slotProps?.list}
+    <FieldSlot
+      element="ul"
+      component={slots?.list}
+      slotProps={slotProps?.list}
       aria-label={slotProps?.list?.['aria-label'] ?? messages.files}
-      css={[listStyle, listPlacement === 'inside' && insideListDensity[size], slotProps?.list?.css]}
+      styles={[listStyle, listPlacement === 'inside' && insideListDensity[size]]}
     >
       {items.map((item, index) => {
         const attempt = attempts.current.get(item.id);
@@ -571,26 +575,28 @@ export function FileDropzone({
         const preview = item.preview ?? previews.current.get(item.id)?.url;
         const icon = renderFileIcon?.(item);
         return (
-          <li
-            {...slotProps?.item}
+          <FieldSlot
+            element="li"
+            component={slots?.item}
+            slotProps={slotProps?.item}
             key={item.id}
             data-file-row
             data-state={status}
-            onKeyDown={event => {
-              slotProps?.item?.onKeyDown?.(event);
+            onKeyDown={(event) => {
               if (!event.defaultPrevented) rowKeyboard(event, item, index);
             }}
-            css={[itemStyle, slotProps?.item?.css]}
+            styles={[itemStyle]}
           >
             {preview && !brokenPreviews.has(preview) ? (
-              <img
-                {...slotProps?.preview}
+              <FieldSlot
+                element="img"
+                component={slots?.preview}
+                slotProps={slotProps?.preview}
                 src={preview}
                 alt=""
-                css={[previewStyle, slotProps?.preview?.css]}
-                onError={event => {
-                  slotProps?.preview?.onError?.(event);
-                  setBrokenPreviews(previous => new Set([...previous, preview]));
+                styles={[previewStyle]}
+                onError={(event) => {
+                  setBrokenPreviews((previous) => new Set([...previous, preview]));
                 }}
               />
             ) : (
@@ -601,12 +607,14 @@ export function FileDropzone({
               <span css={mutedStyle}>{formatSize(item.size, locale)}</span>
               <span>{messages.status(status, item.name)}</span>
               {status === 'uploading' && (
-                <Progress
+                <UploadProgress
                   {...slotProps?.progress}
                   value={attempt?.progress}
+                  max={MAX_PERCENT}
                   aria-label={slotProps?.progress?.['aria-label'] ?? item.name}
-                  getValueLabel={percent =>
-                    numberFormatter(locale, { style: 'percent' }).format(percent / MAX_PERCENT)
+                  getValueLabel={
+                    slotProps?.progress?.getValueLabel ??
+                    ((percent) => numberFormatter(locale, { style: 'percent' }).format(percent / MAX_PERCENT))
                   }
                   css={[instantProgressStyle, slotProps?.progress?.css]}
                 />
@@ -615,16 +623,16 @@ export function FileDropzone({
             </div>
             <div css={actionsStyle}>
               {status === 'failed' && item.file && onUpload && (
-                <Button
-                  {...slotProps?.action}
-                  css={[actionStyle, slotProps?.action?.css]}
+                <Action
                   variant="outline"
                   size="sm"
+                  {...slotProps?.action}
+                  css={[actionStyle, slotProps?.action?.css]}
                   disabled={disabled}
                   aria-disabled={readOnly || slotProps?.action?.['aria-disabled']}
                   data-action="retry"
                   aria-label={slotProps?.action?.['aria-label'] ?? messages.retry(item.name)}
-                  onClick={event => {
+                  onClick={(event) => {
                     slotProps?.action?.onClick?.(event);
                     if (!event.defaultPrevented && !inactive) {
                       startUpload(item);
@@ -635,230 +643,236 @@ export function FileDropzone({
                   }}
                 >
                   {messages.retry(item.name)}
-                </Button>
+                </Action>
               )}
-              <Button
-                {...slotProps?.action}
-                css={[actionStyle, slotProps?.action?.css]}
+              <Action
                 variant="outline"
                 size="sm"
+                {...slotProps?.action}
+                css={[actionStyle, slotProps?.action?.css]}
                 disabled={disabled}
                 aria-disabled={readOnly || slotProps?.action?.['aria-disabled']}
                 data-action="remove"
                 aria-label={slotProps?.action?.['aria-label'] ?? messages.remove(item.name)}
-                onClick={event => {
+                onClick={(event) => {
                   slotProps?.action?.onClick?.(event);
                   if (!event.defaultPrevented) remove(item, index);
                 }}
               >
                 {messages.remove(item.name)}
-              </Button>
+              </Action>
             </div>
-          </li>
+          </FieldSlot>
         );
       })}
-    </ul>
+    </FieldSlot>
   );
   const folded = compactAt !== undefined && compactAt > 0 && items.length >= compactAt && !dragging;
   return (
-    <WithSx
-      className={[slotProps?.root?.className, className].filter(Boolean).join(' ')}
-      styles={[rootStyle, slotProps?.root?.css]}
+    <FieldSlot
+      behavior={{
+        onDragEnter: (event) => {
+          if (!event.defaultPrevented && !inactive && carriesFiles(event.dataTransfer)) {
+            event.preventDefault();
+            dragDepth.current++;
+            setDragging(true);
+          }
+        },
+        onDragOver: (event) => {
+          if (!event.defaultPrevented && !inactive && carriesFiles(event.dataTransfer)) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+          }
+        },
+        onDragLeave: (event) => {
+          if (!event.defaultPrevented && carriesFiles(event.dataTransfer)) {
+            dragDepth.current = Math.max(0, dragDepth.current - 1);
+            if (!dragDepth.current) setDragging(false);
+          }
+        },
+        onDrop: (event) => {
+          dragDepth.current = 0;
+          setDragging(false);
+          if (!event.defaultPrevented && carriesFiles(event.dataTransfer)) {
+            event.preventDefault();
+            intake(Array.from(event.dataTransfer.files));
+          }
+        },
+        onPaste: (event) => {
+          const target = event.target as HTMLElement;
+          if (
+            !event.defaultPrevented &&
+            paste &&
+            !inactive &&
+            root.current?.contains(root.current.ownerDocument.activeElement) &&
+            !target.closest('input, textarea, [contenteditable]:not([contenteditable="false"])') &&
+            event.clipboardData.files.length
+          ) {
+            event.preventDefault();
+            intake(Array.from(event.clipboardData.files));
+          }
+        },
+      }}
+      element="div"
+      component={slots?.root ?? component}
+      slotProps={slotProps?.root}
+      root
+      styles={rootStyle}
       sx={sx}
+      {...rest}
+      ref={mergedRoot}
+      className={className}
+      data-ui="file-dropzone"
+      data-state={dragging ? 'dragging' : items.length ? 'selected' : 'empty'}
+      stateProps={{ 'aria-disabled': inactive || (slotProps?.root?.['aria-disabled'] ?? rest['aria-disabled']) }}
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      onPaste={onPaste}
     >
-      {className => (
-        <div
-          {...slotProps?.root}
-          {...rest}
-          ref={mergedRoot}
-          className={className}
-          data-ui="file-dropzone"
-          data-state={dragging ? 'dragging' : items.length ? 'selected' : 'empty'}
-          aria-disabled={inactive || rest['aria-disabled'] || slotProps?.root?.['aria-disabled']}
-          onDragEnter={event => {
-            slotProps?.root?.onDragEnter?.(event);
-            onDragEnter?.(event);
-            if (
-              !event.defaultPrevented &&
-              !inactive &&
-              carriesFiles(event.dataTransfer)
-            ) {
-              event.preventDefault();
-              dragDepth.current++;
-              setDragging(true);
-            }
+      {required && (
+        <input
+          type="text"
+          form={inputProps?.form}
+          required={required}
+          disabled={disabled}
+          value={items.length ? 'selected' : ''}
+          tabIndex={-1}
+          aria-label={inputProps?.['aria-label'] ?? messages.browse}
+          aria-labelledby={labelledBy}
+          aria-describedby={describedBy}
+          css={visuallyHiddenStyle}
+          onChange={(event) => {
+            event.currentTarget.value = items.length ? 'selected' : '';
           }}
-          onDragOver={event => {
-            slotProps?.root?.onDragOver?.(event);
-            onDragOver?.(event);
-            if (
-              !event.defaultPrevented &&
-              !inactive &&
-              carriesFiles(event.dataTransfer)
-            ) {
-              event.preventDefault();
-              event.dataTransfer.dropEffect = 'copy';
-            }
+          onInvalid={(event) => {
+            inputProps?.onInvalid?.(event);
+            event.preventDefault();
+            input.current?.focus();
           }}
-          onDragLeave={event => {
-            slotProps?.root?.onDragLeave?.(event);
-            onDragLeave?.(event);
-            if (!event.defaultPrevented && carriesFiles(event.dataTransfer)) {
-              dragDepth.current = Math.max(0, dragDepth.current - 1);
-              if (!dragDepth.current) setDragging(false);
-            }
-          }}
-          onDrop={event => {
-            slotProps?.root?.onDrop?.(event);
-            onDrop?.(event);
-            dragDepth.current = 0;
-            setDragging(false);
-            if (!event.defaultPrevented && carriesFiles(event.dataTransfer)) {
-              event.preventDefault();
-              intake(Array.from(event.dataTransfer.files));
-            }
-          }}
-          onPaste={event => {
-            slotProps?.root?.onPaste?.(event);
-            onPaste?.(event);
-            const target = event.target as HTMLElement;
-            if (
-              !event.defaultPrevented &&
-              paste &&
-              !inactive &&
-              root.current?.contains(root.current.ownerDocument.activeElement) &&
-              !target.closest('input, textarea, [contenteditable]:not([contenteditable="false"])') &&
-              event.clipboardData.files.length
-            ) {
-              event.preventDefault();
-              intake(Array.from(event.clipboardData.files));
-            }
-          }}
-        >
-          {required && (
-            <input
-              type="text"
-              form={inputProps?.form}
-              required={required}
-              disabled={disabled}
-              value={items.length ? 'selected' : ''}
-              tabIndex={-1}
-              aria-label={inputProps?.['aria-label'] ?? messages.browse}
-              aria-labelledby={labelledBy}
-              aria-describedby={describedBy}
-              css={visuallyHiddenStyle}
-              onChange={event => {
-                event.currentTarget.value = items.length ? 'selected' : '';
-              }}
-              onInvalid={event => {
-                inputProps?.onInvalid?.(event);
-                event.preventDefault();
-                input.current?.focus();
-              }}
-            />
-          )}
-          <div
-            {...slotProps?.target}
-            data-dragging={dragging}
-            data-compact={folded}
-            css={[targetStyle, inactive && inactiveSurfaceStyle, slotProps?.target?.css]}
-            onClick={event => {
-              slotProps?.target?.onClick?.(event);
-              const excluded = (event.target as Element).closest(SURFACE_EXCLUDED);
-              if (!event.defaultPrevented && !inactive && !event.currentTarget.contains(excluded))
-                input.current?.click();
-            }}
-          >
-            <label
-              {...slotProps?.label}
-              htmlFor={inputId}
-              css={[surfaceStyle, surfaceDensity[size], slotProps?.label?.css]}
-            >
-              <input
-                {...inputProps}
-                ref={mergedInput}
-                id={inputId}
-                type="file"
-                name={name}
-                accept={accept}
-                multiple={multiple}
-                aria-required={required || inputProps?.['aria-required']}
-                required={false}
-                disabled={disabled}
-                aria-disabled={readOnly || inputProps?.['aria-disabled']}
-                aria-labelledby={labelledBy}
-                aria-label={
-                  inputProps?.['aria-label'] ??
-                  (!hasLabel && !inputProps?.['aria-labelledby'] ? messages.browse : undefined)
-                }
-                aria-describedby={describedBy}
-                aria-invalid={invalid}
-                css={[inputStyle, inputProps?.css]}
-                onClick={event => {
-                  inputProps?.onClick?.(event);
-                  if (inactive) event.preventDefault();
-                }}
-                onChange={event => {
-                  inputProps?.onChange?.(event);
-                  if (!event.defaultPrevented) intake(Array.from(event.currentTarget.files ?? []));
-                  event.currentTarget.value = '';
-                }}
-              />
-              {hasLabel && <span id={`${id}-label`}>{label}</span>}
-              {hasDescription && (
-                <div
-                  {...slotProps?.description}
-                  id={`${id}-description`}
-                  css={[folded ? visuallyHiddenStyle : mutedStyle, slotProps?.description?.css]}
-                >
-                  {description}
-                </div>
-              )}
-              {dragging && isRenderable(dropLabel) && <div>{dropLabel}</div>}
-              {folded && <span>{messages.count(items.length)}</span>}
-              <span {...slotProps?.browse} aria-hidden css={[browseStyle, slotProps?.browse?.css]}>
-                {messages.browse}
-              </span>
-              {hasNote && (
-                <div {...slotProps?.note} id={`${id}-note`} css={[mutedStyle, slotProps?.note?.css]}>
-                  {note}
-                </div>
-              )}
-            </label>
-            {listPlacement === 'inside' && fileList}
-          </div>
-          {hasError && (
-            <div
-              {...slotProps?.error}
-              id={`${id}-error`}
-              role="alert"
-              css={[errorStyle, slotProps?.error?.css]}
-            >
-              {isRenderable(error) && error}
-              {rejections.length > 0 && (
-                <ul>
-                  {rejections.map((rejection, index) => (
-                    <li key={index}>
-                      <bdi>{rejection.file.name}</bdi>: {rejection.message}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-          {listPlacement === 'below' && fileList}
-          <div
-            {...slotProps?.status}
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            css={[visuallyHiddenStyle, slotProps?.status?.css]}
-          >
-            {dragging && isRenderable(dropLabel) ? dropLabel : announcement}
-          </div>
-        </div>
+        />
       )}
-    </WithSx>
+      <FieldSlot
+        element="div"
+        component={slots?.target}
+        slotProps={slotProps?.target}
+        data-dragging={dragging}
+        data-compact={folded}
+        styles={[targetStyle, inactive && inactiveSurfaceStyle]}
+        onClick={(event) => {
+          const excluded = (event.target as Element).closest(SURFACE_EXCLUDED);
+          if (!event.defaultPrevented && !inactive && !event.currentTarget.contains(excluded)) input.current?.click();
+        }}
+      >
+        <FieldSlot
+          element="label"
+          component={slots?.label}
+          slotProps={slotProps?.label}
+          htmlFor={inputId}
+          styles={[surfaceStyle, surfaceDensity[size]]}
+        >
+          <FieldSlot
+            element="input"
+            component={slots?.input}
+            slotProps={inputProps}
+            ref={mergedInput}
+            id={inputId}
+            type="file"
+            name={name}
+            accept={accept}
+            multiple={multiple}
+            aria-required={required || inputProps?.['aria-required']}
+            required={false}
+            disabled={disabled}
+            aria-disabled={readOnly || inputProps?.['aria-disabled']}
+            aria-labelledby={labelledBy}
+            aria-label={
+              inputProps?.['aria-label'] ??
+              (!hasLabel && !inputProps?.['aria-labelledby'] ? messages.browse : undefined)
+            }
+            aria-describedby={describedBy}
+            aria-invalid={invalid}
+            styles={inputStyle}
+            onClick={(event) => {
+              if (inactive) event.preventDefault();
+            }}
+            onChange={(event) => {
+              if (!event.defaultPrevented) intake(Array.from(event.currentTarget.files ?? []));
+              event.currentTarget.value = '';
+            }}
+          />
+          {hasLabel && <span id={`${id}-label`}>{label}</span>}
+          {hasDescription && (
+            <FieldSlot
+              element="div"
+              component={slots?.description}
+              slotProps={slotProps?.description}
+              id={`${id}-description`}
+              styles={[folded ? visuallyHiddenStyle : mutedStyle]}
+            >
+              {description}
+            </FieldSlot>
+          )}
+          {dragging && isRenderable(dropLabel) && <div>{dropLabel}</div>}
+          {folded && <span>{messages.count(items.length)}</span>}
+          <FieldSlot
+            element="span"
+            component={slots?.browse}
+            slotProps={slotProps?.browse}
+            aria-hidden
+            styles={[browseStyle]}
+          >
+            {messages.browse}
+          </FieldSlot>
+          {hasNote && (
+            <FieldSlot
+              element="div"
+              component={slots?.note}
+              slotProps={slotProps?.note}
+              id={`${id}-note`}
+              styles={[mutedStyle]}
+            >
+              {note}
+            </FieldSlot>
+          )}
+        </FieldSlot>
+        {listPlacement === 'inside' && fileList}
+      </FieldSlot>
+      {hasError && (
+        <FieldSlot
+          element="div"
+          component={slots?.error}
+          slotProps={slotProps?.error}
+          id={`${id}-error`}
+          role="alert"
+          styles={[errorStyle]}
+        >
+          {isRenderable(error) && error}
+          {rejections.length > 0 && (
+            <ul>
+              {rejections.map((rejection, index) => (
+                <li key={index}>
+                  <bdi>{rejection.file.name}</bdi>: {rejection.message}
+                </li>
+              ))}
+            </ul>
+          )}
+        </FieldSlot>
+      )}
+      {listPlacement === 'below' && fileList}
+      <FieldSlot
+        element="div"
+        component={slots?.status}
+        slotProps={slotProps?.status}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        styles={[visuallyHiddenStyle]}
+      >
+        {dragging && isRenderable(dropLabel) ? dropLabel : announcement}
+      </FieldSlot>
+    </FieldSlot>
   );
 }
 FileDropzone.displayName = 'FileDropzone';

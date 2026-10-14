@@ -1,10 +1,18 @@
+import {
+  FieldReplacementRoot,
+  FieldSugarRoot,
+  FieldReplacementLabel,
+  fieldRootStyles,
+  expectFieldSlotCustomization,
+} from '../../testing/field-slot-fixtures';
 import { act, useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
-import { Button } from '../button';
+import { Button, type ButtonProps } from '../button';
+import { Progress, type ProgressProps } from '../progress';
 import {
   FileDropzone,
   type FileDropzoneItem,
@@ -1255,5 +1263,119 @@ export const ActionAriaPreserved: Story = {
     await expect(browse).not.toHaveAttribute('aria-label');
     await expect(browse).not.toHaveAttribute('aria-labelledby');
     await expect(inputOf(canvasElement)).not.toHaveAttribute('aria-label');
+  },
+};
+
+/** Replace the wrapper and generated label; pass native props through slotProps. */
+export const SlotCustomization: Story = {
+  args: {
+    ref: fn(),
+    onClick: fn(),
+    className: 'consumer-root',
+    title: 'consumer title',
+    style: fieldRootStyles.consumer,
+    sx: { borderRadius: '11px' },
+    component: FieldSugarRoot,
+    slots: { root: FieldReplacementRoot, label: FieldReplacementLabel },
+    slotProps: {
+      root: {
+        onClick: fn(),
+        ref: fn(),
+        className: 'slot-root',
+        title: 'slot title',
+        style: fieldRootStyles.slot,
+        css: { borderRadius: '8px' },
+      },
+      label: { ref: fn(), title: 'generated part' },
+    },
+  },
+  render: (args) => <FileDropzone {...args} css={{ borderRadius: '9px' }} />,
+  parameters: {
+    docs: {
+      source: {
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<FileDropzone label=\"Name\" messages={messages}\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { className: 'custom-field' }, label: { title: 'Name' } }}\n/>",
+      },
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    await expectFieldSlotCustomization(
+      canvasElement,
+      {
+        rootEvent: args.slotProps?.root?.onClick,
+        consumerEvent: args.onClick,
+        root: args.slotProps?.root?.ref,
+        part: args.slotProps?.label?.ref,
+        consumer: args.ref,
+      },
+      'root',
+    );
+  },
+};
+
+/** Use component as shorthand for the wrapper's root slot. */
+export const ComponentRoot: Story = {
+  args: { component: FieldSugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();
+  },
+};
+
+export type FileDropzoneSlotTypeRegression = {
+  // @ts-expect-error Unknown structural keys are rejected.
+  unknownSlot: NonNullable<import('./index').FileDropzoneProps['slots']>['notASlot'];
+  // @ts-expect-error Unknown prop keys are rejected.
+  unknownSlotProps: NonNullable<import('./index').FileDropzoneProps['slotProps']>['notASlot'];
+};
+
+function UploadAction(props: ButtonProps) {
+  return <Button {...props} data-slot-action data-slot-variant={props.variant} />;
+}
+
+function UploadMeter(props: ProgressProps) {
+  return <Progress {...props} data-slot-progress />;
+}
+
+/** Disabled upload controls keep their state when root props conflict. */
+export const SlotDisabledState: Story = {
+  args: { disabled: true, slots: { root: FieldReplacementRoot }, slotProps: { root: { 'aria-disabled': false } } },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-slot-root]')).toHaveAttribute('aria-disabled', 'true');
+    await expect(canvasElement.querySelector('input[type="file"]')).toBeDisabled();
+  },
+};
+
+/** Replace the upload meter and file actions with adapters for Progress and Button. */
+export const UploadPartSlots: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: '<FileDropzone label="Add receipts" messages={messages} onUpload={uploadReceipt} slots={{ action: UploadAction, progress: UploadMeter }} slotProps={{ action: { variant: "ghost" } }} />',
+      },
+    },
+  },
+  args: {
+    slots: { action: UploadAction, progress: UploadMeter },
+    slotProps: { action: { variant: 'ghost', ref: fn() }, progress: { ref: fn() } },
+    onUpload: async (_item, { onProgress, signal }) => {
+      onProgress(40);
+      await new Promise<void>((resolve) => signal.addEventListener('abort', () => resolve(), { once: true }));
+    },
+  },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await userEvent.upload(
+      canvasElement.querySelector<HTMLInputElement>('input[type="file"]')!,
+      new File(['receipt'], 'receipt.txt', { type: 'text/plain' }),
+    );
+    const progress = await canvas.findByRole('progressbar', { name: 'receipt.txt' });
+    const action = canvas.getByRole('button', { name: 'Remove receipt.txt' });
+    await expect(progress).toHaveAttribute('data-slot-progress');
+    await expect(progress).toHaveAttribute('aria-valuenow', '40');
+    await expect(progress).toHaveAttribute('aria-valuemax', '100');
+    await expect(action).toHaveAttribute('data-slot-action');
+    await expect(action).toHaveAttribute('data-slot-variant', 'ghost');
+    await expect(args.slotProps?.progress?.ref).toHaveBeenCalledWith(progress);
+    await expect(args.slotProps?.action?.ref).toHaveBeenCalledWith(action);
+    await userEvent.click(action);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith([]);
   },
 };
