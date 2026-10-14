@@ -1,8 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { fitBoardContent, GAME_TABLE_LIMITS, type BoardContentSize, type BoardMeasurements } from './fit-layout';
 
-const SEAT_SELECTOR = '[data-ui="game-table-seat"]';
-const CENTER_SELECTOR = '[data-ui="game-table-center"]';
+const SEAT_SELECTOR = '[data-ui~="game-table-seat"]';
+const CENTER_SELECTOR = '[data-ui~="game-table-center"]';
 const CHROME_SELECTOR = '[data-ui~="game-table-seat-chrome"]';
 const HIDDEN_CARD_SELECTOR = '[data-ui~="game-card"][data-face="back"]';
 const CONTROL_SELECTOR = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
@@ -41,7 +41,7 @@ function regionSize(region: HTMLElement): BoardContentSize {
 // Chrome can change sides without feeding its dimensions back into card fitting.
 function placeChrome(surface: HTMLElement, seats: HTMLElement[]) {
   const view = surface.ownerDocument.defaultView!;
-  const root = surface.closest<HTMLElement>('[data-ui="game-table"]')!;
+  const root = surface.closest<HTMLElement>('[data-ui~="game-table"]')!;
   const bounds = root.getBoundingClientRect();
   for (const seat of seats) for (const chrome of seat.querySelectorAll<HTMLElement>(CHROME_SELECTOR)) {
     const style = view.getComputedStyle(seat);
@@ -66,7 +66,7 @@ function placeChrome(surface: HTMLElement, seats: HTMLElement[]) {
   }
 }
 
-export function useBoardMeasurements() {
+export function useBoardMeasurements(rootIdentity?: unknown) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<(() => void) | null>(null);
   const [measurement, setMeasurement] = useState<BoardMeasurements>();
@@ -89,7 +89,7 @@ export function useBoardMeasurements() {
       if (!center) return;
       const shell = surface.parentElement!;
       const root = shell.parentElement!;
-      const plays = Array.from(surface.querySelectorAll<HTMLElement>('[data-ui="game-table-play"]'));
+      const plays = Array.from(surface.querySelectorAll<HTMLElement>('[data-ui~="game-table-play"]'));
       const seatPlacement = root.dataset.seatPlacement as NonNullable<BoardMeasurements['seatPlacement']>;
       const reserve = { inside: 0, edge: 0.5, outside: 1 }[seatPlacement];
       const seatSizes = seats.map(regionSize);
@@ -181,7 +181,7 @@ export function useBoardMeasurements() {
       mutation.disconnect();
       for (const [card, previous] of markers) restoreMarker(card, previous);
     };
-  }, []);
+  }, [rootIdentity]);
   useLayoutEffect(() => { measureRef.current?.(); });
   return { surfaceRef, measurement };
 }

@@ -114,21 +114,16 @@ function FlightRegressionBoard({ scopeRef, initialDealt, initialPlayed }: {
     <div css={boardStyle}>
       <GameTable players={2} viewport={{ width: 1000, height: 800 }}
         seats={[{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }]}
-        renderSeat={(slot) => {
-          const player = players.find((candidate) => candidate.key === slot.player?.key);
-          return player?.isOwn ? null
-            : <GameHand.Hidden playerKey={player?.key} count={player?.cards.length ?? 0} label="Rival hand" />;
-        }}
-        dock={<GameHand playLabel="Play selected" disabled={landingTargets.size > 0}
+      >
+        <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={players[1]!.cards.length} label="Rival hand" /></GameTable.Seat>
+        <GameTable.Dock><GameHand playLabel="Play selected" disabled={landingTargets.size > 0}
           onPlayIntent={(card) => play({ ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true })}
-          cards={ownHand.filter((card) => players[0]!.cards.some((entry) => entry.id === card.id))} />}
-        renderPlay={(slot) => {
-          const player = players.find((candidate) => candidate.key === slot.player?.key);
-          if (!player) return null;
-          return <GameCardStack.Pile playerKey={player.key} label={player.isOwn ? 'Own pile' : 'Rival pile'}
-            cards={plays.filter((entry) => entry.playerKey === player.key)} />;
-        }}
-      />
+          cards={ownHand.filter((card) => players[0]!.cards.some((entry) => entry.id === card.id))} /></GameTable.Dock>
+        {players.map((player) => <GameTable.Play key={player.key} slotKey={player.key}>
+          <GameCardStack.Pile playerKey={player.key} label={player.isOwn ? 'Own pile' : 'Rival pile'}
+            cards={plays.filter((entry) => entry.playerKey === player.key)} />
+        </GameTable.Play>)}
+      </GameTable>
     </div>
   </div>;
 }

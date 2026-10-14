@@ -28,7 +28,7 @@ export interface BoardSeatGeometry {
   playTopPercent: number;
   playScale: number;
   rotationDeg: number;
-  /** Already applied by the table. Do not apply again in renderSeat. */
+  /** Already applied by the table. Do not apply again inside Seat. */
   scale: number;
   /** @deprecated Preset translations were removed. Always zero. */
   groupShiftY: number;

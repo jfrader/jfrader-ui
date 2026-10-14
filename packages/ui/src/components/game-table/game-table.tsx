@@ -1,9 +1,9 @@
 'use client';
 
-import type { ComponentPropsWithRef, CSSProperties, ReactNode } from 'react';
+import { Children, Fragment, createContext, isValidElement, useContext, useMemo, type CSSProperties, type ReactNode, type ReactElement } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { css } from '../../styling/css';
+import type { SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { buildBoardLayoutModel } from './layout-model';
 import { useBoardMeasurements } from './use-board-measurements';
@@ -13,30 +13,27 @@ import {
 } from './table-slots';
 import type { BoardSeatGeometry, BoardSurface } from './types';
 import { resolveSeatCount } from './viewport';
+import { TableRoot, type GameTableRootProps, type GameTableRootCustomization } from './table-root';
 
-type Part = 'surface' | 'seat' | 'play' | 'center' | 'header' | 'dock' | 'footer' | 'floating';
-export interface GameTablePartProps {
-  className?: string;
-  css?: Interpolation<Theme>;
-}
+export type GameTablePartProps = GameTableRootProps & GameTableRootCustomization & SxProps;
 
 type SeatInput<T extends SeatLike> =
   | {
     /** Round-robin teams: team j has the places whose index modulo teamCount is j. Player keys must be unique. */
     seats: readonly T[];
-    slots?: never;
+    seatSlots?: never;
   }
   | {
     /** Prebuilt visual order for arbitrary teams; slot and occupied-player keys must each be unique. */
-    slots: readonly GameTableSlot<T>[];
+    seatSlots: readonly GameTableSlot<T>[];
     seats?: never;
   };
 
 export type GameTableProps<T extends SeatLike = SeatLike> =
-  Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps & SeatInput<T> & {
+  GameTablePartProps & SeatInput<T> & {
     /** Integer number of places >= 2, including empty seats. */
     players: number;
-    /** Number of round-robin teams for `seats`. Defaults to 2; use 1 for free-for-all. Prebuilt `slots` keep their teams. */
+    /** Number of round-robin teams for `seats`. Defaults to 2; use 1 for free-for-all. Prebuilt `seatSlots` keep their teams. */
     teamCount?: number;
     /** Viewport dimensions in CSS pixels; supplied by the consumer for SSR and resize updates. */
     viewport: { width: number; height: number };
@@ -50,24 +47,10 @@ export type GameTableProps<T extends SeatLike = SeatLike> =
      * The floor covers normal-flow GameCard content in local CSS pixels, before external ancestor transforms.
      */
     clearance?: CSSProperties['paddingBlock'];
-    /** Order for `seats`. Prebuilt `slots` already carry their visual order. */
+    /** Order for `seats`. Prebuilt `seatSlots` already carry their visual order. */
     turnDirection?: TableTurnDirection;
-    /** Intrinsic card content, upright for the spectator. Put names/avatars in GameTable.SeatChrome:
-     * it floats out of flow on the outward side without affecting card placement or sizing.
-     * Arbitrary unmarked in-flow content still participates in layout.
-     * GameCard backs in occupied rival seats receive hidden-card flight markers in DOM order.
-     */
-    renderSeat: (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
-    /** Played content on the inward ring, measured and scaled independently per place. */
-    renderPlay?: (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
-    header?: ReactNode;
-    /** Shared community board (for example Hold'em cards), pot or deck. Measured with its own card/control size floor. */
-    center?: ReactNode;
-    dock?: ReactNode;
-    footer?: ReactNode;
-    /** Table-local floating content, above seats and center; not a portal or modal. */
-    floating?: ReactNode;
-    slotProps?: Partial<Record<Part, GameTablePartProps>>;
+    /** Direct region parts, in any order; fragments are accepted. */
+    children?: ReactNode;
   };
 
 const rootStyle = css({
@@ -115,7 +98,7 @@ const surfaceStyle = css({
   outline: `var(--game-table-outline) solid ${vars.color.surfaceRaised}`,
   backgroundColor: vars.color.surfaceInset,
   columnGap: vars.space[2],
-  '&[data-layout-fit="measuring"] > [data-ui="game-table-seat"], &[data-layout-fit="measuring"] > [data-ui="game-table-center"], &[data-layout-fit="measuring"] > [data-ui="game-table-play"]': {
+  '&[data-layout-fit="measuring"] > [data-ui~="game-table-seat"], &[data-layout-fit="measuring"] > [data-ui~="game-table-center"], &[data-layout-fit="measuring"] > [data-ui~="game-table-play"]': {
     visibility: 'hidden',
   },
 });
@@ -135,24 +118,10 @@ const seatChromeStyle = css({
   '& > *': { pointerEvents: 'auto' },
 });
 
-export type GameTableSeatChromeProps = ComponentPropsWithRef<'div'> & SxProps;
+export type GameTableSeatChromeProps = GameTablePartProps;
 
-export function GameTableSeatChrome({
-  ref,
-  className,
-  sx,
-  children,
-  ...rest
-}: GameTableSeatChromeProps) {
-  return (
-    <WithSx className={className} styles={seatChromeStyle} sx={sx}>
-      {(rootClass) => (
-        <div {...rest} ref={ref} data-ui="game-table-seat-chrome" className={rootClass}>
-          {children}
-        </div>
-      )}
-    </WithSx>
-  );
+export function GameTableSeatChrome(props: GameTableSeatChromeProps) {
+  return <TableRoot {...props} marker="game-table-seat-chrome" structure={seatChromeStyle} />;
 }
 GameTableSeatChrome.displayName = 'GameTable.SeatChrome';
 
@@ -201,17 +170,102 @@ const floatingStyle = css({
 
 type TableVariables = CSSProperties & { [key: `--game-table-${string}`]: string };
 
+export interface GameTableSeatContext<T extends SeatLike = SeatLike> {
+  slot: GameTableSlot<T>;
+  player: T | null;
+  index: number;
+  geometry: BoardSeatGeometry;
+}
+const SeatContext = createContext<GameTableSeatContext | null>(null);
+const RegionContext = createContext<GameTableRootProps | undefined>(undefined);
+
+/** Read the current place from children of Seat or Play. */
+export function useGameTableSeat<T extends SeatLike = SeatLike>(): GameTableSeatContext<T> {
+  const context = useContext(SeatContext);
+  if (!context) throw new Error('useGameTableSeat requires GameTable.Seat or GameTable.Play.');
+  return context as GameTableSeatContext<T>;
+}
+export type GameTableSeatProps = GameTablePartProps & {
+  /** Omit to repeat this part at every place, or select one place by its slot key. */
+  slotKey?: string;
+};
+export type GameTablePlayProps = GameTableSeatProps;
+
+function SeatProvider({ slot, geometry, children }: { slot: GameTableSlot; geometry: BoardSeatGeometry; children: ReactNode }) {
+  const value = useMemo(() => ({ slot, player: slot.player, index: geometry.index, geometry }), [slot, geometry]);
+  return <SeatContext value={value}>{children}</SeatContext>;
+}
+export function GameTableSeat({ slotKey: _slotKey, ...props }: GameTableSeatProps) {
+  useGameTableSeat();
+  const attributes = useContext(RegionContext);
+  return <TableRoot {...props} attributes={attributes} marker="game-table-seat" structure={seatStyle} />;
+}
+export function GameTablePlay({ slotKey: _slotKey, ...props }: GameTablePlayProps) {
+  useGameTableSeat();
+  const attributes = useContext(RegionContext);
+  return <TableRoot {...props} attributes={attributes} marker="game-table-play" structure={playStyle} />;
+}
+export function GameTableCenter(props: GameTablePartProps) {
+  return <TableRoot {...props} marker="game-table-center" structure={centerStyle} />;
+}
+export function GameTableHeader(props: GameTablePartProps) {
+  return <TableRoot {...props} marker="game-table-header" structure={[stripStyle, headerStyle]} />;
+}
+export function GameTableDock(props: GameTablePartProps) {
+  return <TableRoot {...props} marker="game-table-dock" structure={[stripStyle, dockStyle]} />;
+}
+export function GameTableFooter(props: GameTablePartProps) {
+  return <TableRoot {...props} marker="game-table-footer" structure={[stripStyle, footerStyle]} />;
+}
+export function GameTableFloating(props: GameTablePartProps) {
+  return <TableRoot {...props} marker="game-table-floating" structure={floatingStyle} />;
+}
+GameTableSeat.displayName = 'GameTable.Seat';
+GameTablePlay.displayName = 'GameTable.Play';
+GameTableCenter.displayName = 'GameTable.Center';
+GameTableHeader.displayName = 'GameTable.Header';
+GameTableDock.displayName = 'GameTable.Dock';
+GameTableFooter.displayName = 'GameTable.Footer';
+GameTableFloating.displayName = 'GameTable.Floating';
+
+const REGION_PARTS: ReadonlySet<unknown> = new Set([
+  GameTableSeat, GameTablePlay, GameTableCenter, GameTableHeader, GameTableDock, GameTableFooter, GameTableFloating,
+]);
+
+function collectRegions(children: ReactNode): ReactElement<GameTableSeatProps>[] {
+  const regions: ReactElement<GameTableSeatProps>[] = [];
+  Children.forEach(children, (child) => {
+    if (!isRenderable(child)) return;
+    if (!isValidElement<GameTableSeatProps>(child)) throw new Error('GameTable children must be region parts.');
+    if (child.type === Fragment) regions.push(...collectRegions(child.props.children));
+    else if (REGION_PARTS.has(child.type)) regions.push(child);
+    else throw new Error('GameTable children must be direct region parts (fragments are accepted).');
+  });
+  return regions;
+}
+
 export function GameTable<T extends SeatLike>({
-  ref, seats, slots: suppliedSlots, players, teamCount = 2, viewport, surface = 'match', turnDirection, clearance = 0,
-  renderSeat, renderPlay, seatPlacement = 'edge', header, center, dock, footer, floating, slotProps, className, sx, style, ...rest
+  seats, seatSlots: suppliedSlots, players, teamCount = 2, viewport, surface = 'match', turnDirection, clearance = 0,
+  children, seatPlacement = 'edge', style, ...rest
 }: GameTableProps<T>) {
-  const { surfaceRef, measurement } = useBoardMeasurements();
+  const { surfaceRef, measurement } = useBoardMeasurements(rest.slots?.root ?? rest.component);
   const seatCount = resolveSeatCount(players);
-  const slots = suppliedSlots ?? buildAlternatingSlots(seats ?? [], seatCount, resolveTableTurnDirection(turnDirection), teamCount);
+  const slots = useMemo(() => suppliedSlots ?? buildAlternatingSlots(seats ?? [], seatCount, resolveTableTurnDirection(turnDirection), teamCount),
+    [suppliedSlots, seats, seatCount, turnDirection, teamCount]);
   if (slots.length !== seatCount) {
-    throw new Error('GameTable requires one slot per place. Pass fewer seats to fill empty places, or exactly players slots.');
+    throw new Error('GameTable requires one slot per place. Pass fewer seats to fill empty places, or exactly players seatSlots.');
   }
   validateSlots(slots);
+  const regions = collectRegions(children);
+  const one = (type: typeof GameTableSeat, slotKey?: string) => {
+    const matches = regions.filter((region) => region.type === type &&
+      (slotKey === undefined || region.props.slotKey === undefined || region.props.slotKey === slotKey));
+    if (matches.length > 1) throw new Error(`GameTable requires at most one ${type.displayName} per region.`);
+    return matches[0];
+  };
+  for (const region of regions) if (region.props.slotKey !== undefined && !slots.some((slot) => slot.key === region.props.slotKey)) {
+    throw new Error(`GameTable has no slot named "${region.props.slotKey}".`);
+  }
   const layout = buildBoardLayoutModel({
     surface, totalSeats: players, measurement,
     viewport: { ...viewport, aspectRatio: viewport.width / Math.max(viewport.height, 1) },
@@ -245,95 +299,75 @@ export function GameTable<T extends SeatLike>({
     '--game-table-content-gap': `${layout.seatConfig.gap}px`,
     '--game-table-center-inline': `${measurement?.width ? measurement.centerX / measurement.width * 100 : 50}%`,
     '--game-table-center-block': `${measurement?.height ? measurement.centerY / measurement.height * 100 : 50}%`,
-    ...style,
   };
   return (
-    <WithSx className={className} styles={rootStyle} sx={sx}>
-      {(rootClass) => (
-        <div
-          {...rest} ref={ref} className={rootClass} style={variables}
-          data-ui="game-table" data-profile={layout.profile} data-surface={surface} data-seat-placement={seatPlacement} data-layout-fit={layout.fit}
-          data-clearance={measurement?.clearance && (measurement.clearance.start < measurement.clearance.requestedStart || measurement.clearance.end < measurement.clearance.requestedEnd) ? 'reduced' : 'requested'}
-          data-clearance-start={measurement?.clearance?.start} data-clearance-end={measurement?.clearance?.end}
-        >
-          {isRenderable(header) && (
-            <div data-ui="game-table-header" className={slotProps?.header?.className} css={[stripStyle, headerStyle, slotProps?.header?.css]}>
-              {header}
-            </div>
-          )}
-          <div data-ui="game-table-shell" css={shellStyle}>
-            {/* Stable measurement target for future card flights; owned by this library. */}
-            <div
-              ref={surfaceRef} data-ui="game-table-surface" data-game-surface="true" data-layout-fit={layout.fit}
-              className={slotProps?.surface?.className} css={[surfaceStyle, slotProps?.surface?.css]}
-            >
-              {slots.map((slot, index) => {
-                const geometry = layout.seatGeometries[index];
-                if (!geometry) throw new Error('GameTable is missing seat geometry.');
-                const chromeOnSide = Math.abs(geometry.cos) > Math.abs(geometry.sin);
-                const chromeInline = geometry.cos > 0 ? `calc(100% + ${vars.space[1]})` : `calc(0px - ${vars.space[1]})`;
-                const chromeBlock = geometry.sin > 0 ? `calc(100% + ${vars.space[1]})` : `calc(0px - ${vars.space[1]})`;
-                const seatVariables: TableVariables = {
-                  '--game-table-chrome-inline': chromeOnSide ? chromeInline : '50%',
-                  '--game-table-chrome-block': chromeOnSide ? '50%' : chromeBlock,
-                  '--game-table-chrome-x': chromeOnSide ? (geometry.cos > 0 ? '0%' : '-100%') : '-50%',
-                  '--game-table-chrome-y': chromeOnSide ? '-50%' : (geometry.sin > 0 ? '0%' : '-100%'),
-                  '--game-table-chrome-fallback-block': chromeBlock,
-                  '--game-table-chrome-fallback-y': geometry.sin > 0 ? '0%' : '-100%',
-                  '--game-table-seat-inline': `${geometry.leftPercent}%`,
-                  '--game-table-seat-block': `${geometry.topPercent}%`,
-                  '--game-table-seat-rotation': `${geometry.rotationDeg}deg`,
-                  '--game-table-content-scale': String(geometry.scale),
-                };
-                return (
-                  <div
-                    key={slot.key} data-ui="game-table-seat" data-slot-key={slot.key} data-slot-team={slot.teamIdx}
-                    data-slot-player={slot.player?.key} data-slot-own={slot.player?.isMe ? 'true' : undefined}
-                    className={slotProps?.seat?.className} css={[seatStyle, slotProps?.seat?.css]} style={seatVariables}
-                  >
-                    {renderSeat(slot, index, geometry)}
-                  </div>
-                );
-              })}
-              {slots.map((slot, index) => {
-                const geometry = layout.seatGeometries[index]!;
-                const playCos = measurement?.direction === 'rtl' ? -geometry.cos : geometry.cos;
-                const playVariables: TableVariables = {
-                  '--game-table-play-inline': `${geometry.playLeftPercent}%`,
-                  '--game-table-play-block': `${geometry.playTopPercent}%`,
-                  '--game-table-play-scale': String(geometry.playScale),
-                  '--game-table-play-angle': `${Math.atan2(geometry.sin, playCos) * 180 / Math.PI}deg`,
-                  '--game-table-play-cos': String(playCos), '--game-table-play-sin': String(geometry.sin),
-                };
-                return <div key={slot.key} data-ui="game-table-play" data-play-slot-key={slot.key}
-                  style={playVariables} className={slotProps?.play?.className} css={[playStyle, slotProps?.play?.css]}>
-                  {renderPlay?.(slot, index, geometry)}
-                </div>;
-              })}
-              <div data-ui="game-table-center" className={slotProps?.center?.className} css={[centerStyle, slotProps?.center?.css]}>
-                {center}
-              </div>
-            </div>
-          </div>
-          {isRenderable(footer) && (
-            <div data-ui="game-table-footer" className={slotProps?.footer?.className} css={[stripStyle, footerStyle, slotProps?.footer?.css]}>
-              {footer}
-            </div>
-          )}
-          {isRenderable(dock) && (
-            <div data-ui="game-table-dock" className={slotProps?.dock?.className} css={[stripStyle, dockStyle, slotProps?.dock?.css]}>
-              {dock}
-            </div>
-          )}
-          {isRenderable(floating) && (
-            <div data-ui="game-table-floating" className={slotProps?.floating?.className} css={[floatingStyle, slotProps?.floating?.css]}>
-              {floating}
-            </div>
-          )}
+    <TableRoot {...rest} marker="game-table" structure={rootStyle} style={style} attributes={{ style: variables,
+      'data-profile': layout.profile, 'data-surface': surface, 'data-seat-placement': seatPlacement, 'data-layout-fit': layout.fit,
+      'data-clearance': measurement?.clearance && (measurement.clearance.start < measurement.clearance.requestedStart || measurement.clearance.end < measurement.clearance.requestedEnd) ? 'reduced' : 'requested',
+      'data-clearance-start': measurement?.clearance?.start, 'data-clearance-end': measurement?.clearance?.end,
+    }}>
+      {one(GameTableHeader)}
+      <div data-ui="game-table-shell" css={shellStyle}>
+        {/* Stable measurement target for future card flights; owned by this library. */}
+        <div ref={surfaceRef} data-ui="game-table-surface" data-game-surface="true" data-layout-fit={layout.fit} css={surfaceStyle}>
+          {slots.map((slot, index) => {
+            const geometry = layout.seatGeometries[index];
+            if (!geometry) throw new Error('GameTable is missing seat geometry.');
+            const chromeOnSide = Math.abs(geometry.cos) > Math.abs(geometry.sin);
+            const chromeInline = geometry.cos > 0 ? `calc(100% + ${vars.space[1]})` : `calc(0px - ${vars.space[1]})`;
+            const chromeBlock = geometry.sin > 0 ? `calc(100% + ${vars.space[1]})` : `calc(0px - ${vars.space[1]})`;
+            const seatVariables: TableVariables = {
+              '--game-table-chrome-inline': chromeOnSide ? chromeInline : '50%',
+              '--game-table-chrome-block': chromeOnSide ? '50%' : chromeBlock,
+              '--game-table-chrome-x': chromeOnSide ? (geometry.cos > 0 ? '0%' : '-100%') : '-50%',
+              '--game-table-chrome-y': chromeOnSide ? '-50%' : (geometry.sin > 0 ? '0%' : '-100%'),
+              '--game-table-chrome-fallback-block': chromeBlock,
+              '--game-table-chrome-fallback-y': geometry.sin > 0 ? '0%' : '-100%',
+              '--game-table-seat-inline': `${geometry.leftPercent}%`,
+              '--game-table-seat-block': `${geometry.topPercent}%`,
+              '--game-table-seat-rotation': `${geometry.rotationDeg}deg`,
+              '--game-table-content-scale': String(geometry.scale),
+            };
+            return (
+              <SeatProvider key={slot.key} slot={slot} geometry={geometry}>
+                <RegionContext value={{ style: seatVariables, 'data-slot-key': slot.key, 'data-slot-team': slot.teamIdx,
+                  'data-slot-player': slot.player?.key, 'data-slot-own': slot.player?.isMe ? 'true' : undefined }}>
+                  {one(GameTableSeat, slot.key) ?? <GameTableSeat />}
+                </RegionContext>
+              </SeatProvider>
+            );
+          })}
+          {slots.map((slot, index) => {
+            const geometry = layout.seatGeometries[index]!;
+            const playCos = measurement?.direction === 'rtl' ? -geometry.cos : geometry.cos;
+            const playVariables: TableVariables = {
+              '--game-table-play-inline': `${geometry.playLeftPercent}%`,
+              '--game-table-play-block': `${geometry.playTopPercent}%`,
+              '--game-table-play-scale': String(geometry.playScale),
+              '--game-table-play-angle': `${Math.atan2(geometry.sin, playCos) * 180 / Math.PI}deg`,
+              '--game-table-play-cos': String(playCos), '--game-table-play-sin': String(geometry.sin),
+            };
+            return <SeatProvider key={slot.key} slot={slot} geometry={geometry}>
+              <RegionContext value={{ style: playVariables, 'data-play-slot-key': slot.key }}>
+                {one(GameTablePlay, slot.key) ?? <GameTablePlay />}
+              </RegionContext>
+            </SeatProvider>;
+          })}
+          {one(GameTableCenter) ?? <GameTableCenter />}
         </div>
-      )}
-    </WithSx>
+      </div>
+      {one(GameTableFooter)}
+      {one(GameTableDock)}
+      {one(GameTableFloating)}
+    </TableRoot>
   );
 }
 GameTable.displayName = 'GameTable';
 GameTable.SeatChrome = GameTableSeatChrome;
+GameTable.Seat = GameTableSeat;
+GameTable.Play = GameTablePlay;
+GameTable.Center = GameTableCenter;
+GameTable.Header = GameTableHeader;
+GameTable.Dock = GameTableDock;
+GameTable.Footer = GameTableFooter;
+GameTable.Floating = GameTableFloating;
