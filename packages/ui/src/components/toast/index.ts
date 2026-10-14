@@ -4,6 +4,9 @@ export type {
   ToastApi,
   ToastOptions,
   ToastProviderProps,
+  ToastProviderBaseProps,
+  ToastMessages,
+  ToastPartProps,
   ToastTone,
   ToastViewportProps,
 } from './toast';

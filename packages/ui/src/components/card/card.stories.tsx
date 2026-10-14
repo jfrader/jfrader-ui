@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useId } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
@@ -14,9 +14,10 @@ import { Popover } from '../popover';
 import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
 import { Surface, type SurfacePartProps } from '../surface';
-import { Card, type CardProps, type CardVariant } from './index';
+import { Card, type CardCompoundProps, type CardEasyProps, type CardVariant } from './index';
 
 const VARIANTS = ['flat', 'raised'] as const satisfies readonly CardVariant[];
+const easyTitleStyle = css({ fontSize: vars.textSize.lg });
 
 const frameStyle = css({
   display: 'grid',
@@ -46,7 +47,10 @@ const meta = {
   component: Card,
   parameters: { docs: {
     description: { component: 'Group content with a heading, description, and actions.' },
-    usage: `### Root replacement
+    source: { code: '<Card title="Project" description="Quarterly roadmap" content="Three milestones remaining." footer={<Button>Open project</Button>} />' },
+    usage: `Pass content with optional title, description, and footer for the generated anatomy. Use children and compound parts for custom layouts. Existing slotProps style the generated parts too.
+
+### Root replacement
 Use component or slots.root to replace the panel material while keeping Card spacing and anatomy. They are equivalent; slots.root wins when both are supplied. Declare a div-rendering adapter outside render and forward its ref and all received props. Apply adapter styles before the supplied className. A changed component identity remounts the panel and resets focus and uncontrolled inputs.
 
 | Part | Replacement | Props |
@@ -70,11 +74,37 @@ Omitted appearance and default inherit the enclosing appearance, including contr
       </div>
     ),
   ],
-} satisfies Meta<typeof Card>;
+} satisfies Meta<CardCompoundProps>;
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<(props: CardCompoundProps) => ReactNode>;
+
+export const EasyMode: StoryObj<(props: CardEasyProps) => ReactNode> = {
+  args: {
+    title: 'Project',
+    description: 'Quarterly roadmap',
+    content: 'Three milestones remaining.',
+    footer: <Button>Open project</Button>,
+  },
+  render: (args) => <Card {...args} />,
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('heading', { name: 'Project' })).toBeVisible();
+    await expect(canvas.getByText('Quarterly roadmap')).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Open project' })).toBeVisible();
+  },
+};
+
+export const EasyCustomization: Story = {
+  render: () => <Card title="Project" content={0} footer={0} slotProps={{ title: { css: easyTitleStyle }, content: { className: 'project-body' } }} />,
+  parameters: { docs: { source: { code: '<Card title="Project" content={0} footer={0} slotProps={{ title: { css: css({ fontSize: vars.textSize.lg }) }, content: { className: "project-body" } }} />' } } },
+  play: async ({ canvasElement }) => {
+    const content = canvasElement.querySelector('[data-ui="card-content"]');
+    await expect(content).toHaveClass('project-body');
+    await expect(content).toHaveTextContent('0');
+    await expect(canvasElement.querySelector('[data-ui="card-footer"]')).toHaveTextContent('0');
+  },
+};
 
 function AppearanceProbe() {
   const scope = useThemeScope();
@@ -96,7 +126,7 @@ export const CardDefaultUnderContrast: Story = {
   },
 };
 
-function PlanCard(props: CardProps) {
+function PlanCard(props: CardCompoundProps) {
   return (
     <Card {...props}>
       <Card.Header>
@@ -128,6 +158,15 @@ function getCards(canvasElement: HTMLElement) {
 }
 
 export const Basic: Story = {
+  name: 'Compound anatomy',
+  parameters: { docs: { source: { code: `<Card>
+  <Card.Header>
+    <Card.Title>Pro plan</Card.Title>
+    <Card.Description>Billed monthly.</Card.Description>
+  </Card.Header>
+  <Card.Content>Unlimited projects</Card.Content>
+  <Card.Footer><Button>Upgrade</Button></Card.Footer>
+</Card>` } } },
   render: (args) => <PlanCard {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -223,7 +262,7 @@ export const Variants: Story = {
   },
 };
 
-function InviteCard(props: CardProps) {
+function InviteCard(props: CardCompoundProps) {
   const titleId = useId();
   const formId = useId();
   return (

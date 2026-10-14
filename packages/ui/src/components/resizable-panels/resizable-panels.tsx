@@ -32,7 +32,9 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
@@ -51,15 +53,50 @@ import { numberFormatter } from '../../utils/intl';
 import { partId } from '../../utils/part-id';
 import { useControlledState } from '../../utils/use-controlled-state';
 
-export type ResizablePanelsSeparatorProps = ComponentPropsWithRef<'div'> & { css?: Interpolation<Theme> };
+export type ResizablePanelsSeparatorProps = ComponentPropsWithRef<'div'> &
+  SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
+
+export interface ResizablePanelsPanelItem {
+  /** Stable identifier, unique within the group. */
+  value: string;
+  /** Accessible name for the panel (maps to aria-label on the panel). */
+  label: string;
+  /** Pane content. */
+  content: ReactNode;
+  /** Smallest open width in px. */
+  minSize?: number;
+  /** Largest width in px. */
+  maxSize?: number;
+  /** Allows the panel to collapse to zero width. */
+  collapsible?: boolean;
+}
+
+export interface ResizablePanelsSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  panel?: ComponentType<ComponentPropsWithRef<'div'>>;
+  separator?: ComponentType<ResizablePanelsSeparatorProps>;
+}
 
 export interface ResizablePanelsSlotProps {
-  /** Applied to every generated separator. */
+  root?: ComponentPropsWithRef<'div'> &
+    SxProps & {
+      css?: Interpolation<Theme>;
+      [attribute: `data-${string}`]: unknown;
+    };
+  panel?: Partial<Omit<ResizablePanelsPanelProps, 'value' | 'id' | 'children' | 'minSize' | 'maxSize' | 'collapsible'>> & {
+    [attribute: `data-${string}`]: unknown;
+  };
   separator?: ResizablePanelsSeparatorProps;
 }
 
-export interface ResizablePanelsProps
-  extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
+export interface ResizablePanelsBaseProps
+  extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>,
+    SxProps {
+  css?: Interpolation<Theme>;
+  [attribute: `data-${string}`]: unknown;
   /** Controlled weights, one per panel in order. A zero collapses a collapsible panel. */
   value?: readonly number[];
   /** Initial weights; equal weights when omitted. */
@@ -73,8 +110,30 @@ export interface ResizablePanelsProps
   locale?: Intl.LocalesArgument;
   /** Separator value text for the primary panel's share (percent of the usable extent). */
   getValueText?: (share: number, panelValue: string, collapsed: boolean) => string;
+}
+
+export interface ResizablePanelsCompoundProps extends ResizablePanelsBaseProps {
+  children?: ReactNode;
+  panels?: never;
+  label?: never;
+  slots?: never;
+  slotProps?: ResizablePanelsSlotProps;
+  component?: never;
+}
+
+export interface ResizablePanelsEasyProps extends ResizablePanelsBaseProps {
+  /** Name the resizable panels group. */
+  label?: string;
+  /** Ordered panel specifications. */
+  panels: readonly ResizablePanelsPanelItem[];
+  children?: never;
+  /** Replace the root container. Exactly sugar for `slots.root`. */
+  component?: ComponentType<ComponentPropsWithRef<'div'>>;
+  slots?: ResizablePanelsSlots;
   slotProps?: ResizablePanelsSlotProps;
 }
+
+export type ResizablePanelsProps = ResizablePanelsCompoundProps | ResizablePanelsEasyProps;
 
 export interface ResizablePanelsPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
   /** Stable identifier, unique within the group. */
@@ -87,6 +146,7 @@ export interface ResizablePanelsPanelProps extends ComponentPropsWithRef<'div'>,
   collapsible?: boolean;
 }
 
+declare const process: { env: { NODE_ENV?: string } };
 const DEFAULT_MIN_SIZE = 80;
 const KEY_STEP = 16;
 const LARGE_KEY_STEP = 64;
@@ -223,6 +283,7 @@ interface PanelConfig {
 }
 
 interface PanelState {
+  component?: ComponentType<ComponentPropsWithRef<'div'>>;
   id: string;
   /** Fraction of the usable extent, the pane's flex factor. */
   size: number;
@@ -449,23 +510,48 @@ interface Gesture {
   usable: number;
 }
 
-function ResizablePanelsRoot({
-  ref,
-  children,
-  value,
-  defaultValue,
-  onValueChange,
-  onValueCommit,
-  disabled = false,
-  locale,
-  getValueText,
-  slotProps,
-  className,
-  sx,
-  ...rest
-}: ResizablePanelsProps) {
+const tokens = (...values: Array<unknown>): string | undefined => {
+  const list = [...new Set(values.flatMap((v) => (typeof v === 'string' ? v.split(/\s+/) : [])))].filter(Boolean);
+  return list.join(' ') || undefined;
+};
+
+function ResizablePanelsRoot(props: ResizablePanelsProps) {
+  const {
+    ref,
+    value,
+    defaultValue,
+    onValueChange,
+    onValueCommit,
+    disabled = false,
+    locale,
+    getValueText,
+    slotProps,
+    className,
+    sx,
+    component,
+    css: consumerCss,
+    'data-ui': consumerDataUi,
+    panels,
+    label,
+    slots,
+    children,
+    ...rest
+  } = props;
+
+  if (process.env.NODE_ENV !== 'production') {
+    if (component && slots?.root && component !== slots.root) {
+      console.warn('ResizablePanels: component is redundant when slots.root is supplied; slots.root wins.');
+    }
+  }
+
   const baseId = useId();
-  const { elements, configs } = readPanels(children, baseId);
+  const anatomy = panels === undefined ? children : panels.map((panel) => (
+    <ResizablePanelsPanel key={panel.value} {...slotProps?.panel} value={panel.value}
+      aria-label={panel.label} minSize={panel.minSize} maxSize={panel.maxSize} collapsible={panel.collapsible}>
+      {panel.content}
+    </ResizablePanelsPanel>
+  ));
+  const { elements, configs } = readPanels(anatomy, baseId);
   const count = configs.length;
   const [initial] = useState(() => normalizeShares(defaultValue ?? value ?? configs.map(() => 1), count));
   const [state, requestChange] = useControlledState<readonly number[]>(value, initial, (next) =>
@@ -491,16 +577,17 @@ function ResizablePanelsRoot({
   const fractionsKey = fractions.map((fraction) => fraction.toFixed(5)).join(' ');
   const separatorId = (index: number) => partId(baseId, 'separator', configs[index]!.value);
 
+  const effectiveRef = slotProps?.root?.ref ?? ref;
   const attachRoot = useCallback(
     (node: HTMLDivElement | null) => {
       rootRef.current = node;
-      const cleanup = attachRef(ref, node);
+      const cleanup = attachRef(effectiveRef, node);
       return () => {
         rootRef.current = null;
         cleanup();
       };
     },
-    [ref],
+    [effectiveRef],
   );
 
   const paint = (next: readonly number[]) => {
@@ -801,7 +888,16 @@ function ResizablePanelsRoot({
     getValueText ? getValueText(share, configs[index]!.value, collapsed) : formatter.format(share / 100);
 
   const renderSeparator = (index: number) => {
+    const SeparatorPart = slots?.separator ?? 'div';
     const slot = slotProps?.separator;
+    const {
+      className: slotClassName,
+      css: slotCss,
+      sx: slotSx,
+      style: slotStyle,
+      'data-ui': slotDataUi,
+      ...slotRest
+    } = slot ?? {};
     const primary = configs[index]!;
     const pair = sizes ? pairOf(sizes, index, configs, usable) : null;
     const percent = (size: number) => roundPercent((size / usable) * 100);
@@ -816,97 +912,128 @@ function ResizablePanelsRoot({
       ? pair.secondaryCollapsed
       : configs[index + 1]!.collapsible && layout[index + 1] === 0;
     const collapsedSide = primaryCollapsed ? 'start' : secondaryCollapsed ? 'end' : undefined;
-    const labelledBy = [slot?.['aria-labelledby'], primary.labelledBy].filter(Boolean).join(' ') || undefined;
+    const labelledBy = [slotRest['aria-labelledby'], primary.labelledBy].filter(Boolean).join(' ') || undefined;
     return (
-      <div
-        {...slot}
-        id={separatorId(index)}
-        role="separator"
-        tabIndex={disabled ? -1 : 0}
-        aria-orientation="vertical"
-        aria-controls={[slot?.['aria-controls'], primary.id].filter(Boolean).join(' ')}
-        aria-valuenow={now}
-        aria-valuemin={min}
-        aria-valuemax={max}
-        aria-valuetext={formatShare(now, index, primaryCollapsed)}
-        aria-label={slot?.['aria-label'] ?? (labelledBy ? undefined : primary.label)}
-        aria-labelledby={labelledBy}
-        aria-disabled={disabled || undefined}
-        data-ui="resizable-panels-separator"
-        data-state={dragging === index ? 'dragging' : 'idle'}
-        data-collapsed={collapsedSide}
-        css={[separatorStyle, slot?.css]}
-        onPointerDown={(event) => {
-          slot?.onPointerDown?.(event);
-          handlePointerDown(event, index);
-        }}
-        onPointerMove={(event) => {
-          slot?.onPointerMove?.(event);
-          handlePointerMove(event);
-        }}
-        onPointerUp={(event) => {
-          slot?.onPointerUp?.(event);
-          handlePointerUp(event);
-        }}
-        onPointerCancel={(event) => {
-          slot?.onPointerCancel?.(event);
-          if (gesture.current?.pointerId === event.pointerId) cancelDrag();
-        }}
-        onLostPointerCapture={(event) => {
-          slot?.onLostPointerCapture?.(event);
-          handleLostCapture(event);
-        }}
-        onKeyDown={(event) => {
-          slot?.onKeyDown?.(event);
-          handleKeyDown(event, index);
-        }}
-        onDoubleClick={(event) => {
-          slot?.onDoubleClick?.(event);
-          handleDoubleClick(event);
-        }}
-      >
-        {collapsedSide ? (
-          <span
-            aria-hidden="true"
-            data-ui="resizable-panels-restore"
-            data-side={collapsedSide}
-            css={restoreStyle}
-          />
-        ) : (
-          <span aria-hidden="true" data-ui="resizable-panels-grip" />
+      <WithSx styles={[separatorStyle, slotCss]} className={slotClassName} sx={slotSx}>
+        {(separatorClass) => (
+          <SeparatorPart
+            {...slotRest}
+            id={separatorId(index)}
+            role="separator"
+            tabIndex={disabled ? -1 : 0}
+            aria-orientation="vertical"
+            aria-controls={[slotRest['aria-controls'], primary.id].filter(Boolean).join(' ')}
+            aria-valuenow={now}
+            aria-valuemin={min}
+            aria-valuemax={max}
+            aria-valuetext={formatShare(now, index, primaryCollapsed)}
+            aria-label={slotRest['aria-label'] ?? (labelledBy ? undefined : primary.label)}
+            aria-labelledby={labelledBy}
+            aria-disabled={disabled || undefined}
+            data-ui={tokens('resizable-panels-separator', slotDataUi)}
+            data-state={dragging === index ? 'dragging' : 'idle'}
+            data-collapsed={collapsedSide}
+            className={separatorClass}
+            style={slotStyle}
+            onPointerDown={(event) => {
+              slotRest.onPointerDown?.(event);
+              handlePointerDown(event, index);
+            }}
+            onPointerMove={(event) => {
+              slotRest.onPointerMove?.(event);
+              handlePointerMove(event);
+            }}
+            onPointerUp={(event) => {
+              slotRest.onPointerUp?.(event);
+              handlePointerUp(event);
+            }}
+            onPointerCancel={(event) => {
+              slotRest.onPointerCancel?.(event);
+              if (gesture.current?.pointerId === event.pointerId) cancelDrag();
+            }}
+            onLostPointerCapture={(event) => {
+              slotRest.onLostPointerCapture?.(event);
+              handleLostCapture(event);
+            }}
+            onKeyDown={(event) => {
+              slotRest.onKeyDown?.(event);
+              handleKeyDown(event, index);
+            }}
+            onDoubleClick={(event) => {
+              slotRest.onDoubleClick?.(event);
+              handleDoubleClick(event);
+            }}
+          >
+            {collapsedSide ? (
+              <span
+                aria-hidden="true"
+                data-ui="resizable-panels-restore"
+                data-side={collapsedSide}
+                css={restoreStyle}
+              />
+            ) : (
+              <span aria-hidden="true" data-ui="resizable-panels-grip" />
+            )}
+          </SeparatorPart>
         )}
-      </div>
+      </WithSx>
     );
   };
 
+  const RootPart = slots?.root ?? component ?? 'div';
+  const rootSlot = slotProps?.root;
+  const {
+    className: rootSlotClassName,
+    css: rootSlotCss,
+    sx: rootSlotSx,
+    style: rootSlotStyle,
+    'data-ui': rootSlotDataUi,
+    'aria-label': rootSlotAriaLabel,
+    ...rootSlotRest
+  } = rootSlot ?? {};
+
+  const effectiveLabel = rootSlotAriaLabel ?? rest['aria-label'] ?? label;
+
   return (
-    <WithSx className={className} styles={rootStyle} sx={sx}>
-      {(rootClass) => (
-        <div
-          role="group"
-          {...rest}
-          ref={attachRoot}
-          className={rootClass}
-          data-ui="resizable-panels"
-          data-disabled={disabled || undefined}
-          data-dragging={dragging !== null || undefined}
-        >
-          {configs.map((config, index) => (
-            <Fragment key={config.value}>
-              <PanelContext.Provider
-                value={{
-                  id: config.id,
-                  size: fractions[index]!,
-                  collapsed: config.collapsible && (sizes ? sizes[index]! <= EPSILON : layout[index] === 0),
-                  repairId: count > 1 ? separatorId(index < count - 1 ? index : index - 1) : undefined,
-                }}
-              >
-                {elements[index]}
-              </PanelContext.Provider>
-              {index < count - 1 && renderSeparator(index)}
-            </Fragment>
-          ))}
-        </div>
+    <WithSx styles={[rootStyle, rootSlotCss, rootSlotSx]} className={rootSlotClassName}>
+      {(slotClasses) => (
+        <WithSx styles={consumerCss} className={className} sx={sx}>
+          {(consumerClasses) => (
+            <WithSx styles={[]} className={[slotClasses, consumerClasses].filter(Boolean).join(' ')}>
+              {(rootClass) => (
+                <RootPart
+                  role="group"
+                  {...rest}
+                  {...rootSlotRest}
+                  ref={attachRoot}
+                  aria-label={effectiveLabel}
+                  className={rootClass}
+                  style={{ ...rest.style, ...rootSlotStyle }}
+                  data-ui={tokens('resizable-panels', consumerDataUi, rootSlotDataUi)}
+                  data-disabled={disabled || undefined}
+                  data-dragging={dragging !== null || undefined}
+                >
+                  {configs.map((config, index) => (
+                    <Fragment key={config.value}>
+                      <PanelContext.Provider
+                        value={{
+                          component: slots?.panel,
+                          id: config.id,
+                          size: fractions[index]!,
+                          collapsed: config.collapsible && (sizes ? sizes[index]! <= EPSILON : layout[index] === 0),
+                          repairId: count > 1 ? separatorId(index < count - 1 ? index : index - 1) : undefined,
+                        }}
+                      >
+                        {elements[index]}
+                      </PanelContext.Provider>
+                      {index < count - 1 && renderSeparator(index)}
+                    </Fragment>
+                  ))}
+                </RootPart>
+              )}
+            </WithSx>
+          )}
+        </WithSx>
       )}
     </WithSx>
   );
@@ -930,6 +1057,7 @@ function ResizablePanelsPanel({
   if (!state) throw new Error('ResizablePanels.Panel must be rendered inside ResizablePanels.');
   const contentRef = useRef<HTMLDivElement>(null);
   const { collapsed, repairId } = state;
+  const Root = state.component ?? 'div';
 
   // Runs after React marks the content inert but before the browser moves focus out of it.
   useLayoutEffect(() => {
@@ -942,7 +1070,7 @@ function ResizablePanelsPanel({
   return (
     <WithSx className={className} styles={panelStyle} sx={sx}>
       {(panelClass) => (
-        <div
+        <Root
           role="group"
           {...rest}
           ref={ref}
@@ -961,7 +1089,7 @@ function ResizablePanelsPanel({
           >
             {children}
           </div>
-        </div>
+        </Root>
       )}
     </WithSx>
   );

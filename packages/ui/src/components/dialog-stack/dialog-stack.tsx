@@ -43,6 +43,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
@@ -76,7 +77,54 @@ export type DialogStackVariant = 'auto' | 'sheet' | 'dialog';
 type ResolvedVariant = Exclude<DialogStackVariant, 'auto'>;
 export type DialogStackHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
-export interface DialogStackProps {
+export interface DialogStackPageRecord {
+  /** Identifies this panel. Keep the key stable and unique within the stack. */
+  value: string;
+  /** Heading for this panel. */
+  title: ReactNode;
+  /** Main content of this panel. */
+  content: ReactNode;
+  /** Description below the title. */
+  description?: ReactNode;
+  /** Footer content placed at the bottom of the panel. */
+  footer?: ReactNode;
+  /** Back button label or content. */
+  back?: string;
+  /** Close button label or content. */
+  close?: string;
+  /** Allows Escape, backdrop, and drag dismissal. Defaults to `true`. When `false`, Back and Close still work. */
+  dismissible?: boolean;
+  /** Receives Escape, backdrop, or drag dismissal requests while this panel is on top. Call `preventDefault()` to keep it open. */
+  onCancel?: (event: Event) => void;
+  /** Inherit appearance by default; `contrast` establishes fixed charcoal. */
+  appearance?: DrawerPanelProps['appearance'];
+  /** Includes `Description` in the accessible description. Defaults to `true`. Use `false` for structured content. */
+  withDescription?: boolean;
+  /** Optional page-specific slotProps overrides. */
+  slotProps?: DialogStackSlotProps;
+}
+
+export interface DialogStackSlots {
+  trigger?: ComponentType<DialogStackTriggerProps>;
+  content?: ComponentType<DialogStackContentProps>;
+  title?: ComponentType<DialogStackTitleProps>;
+  description?: ComponentType<DialogStackDescriptionProps>;
+  footer?: ComponentType<DialogStackFooterProps>;
+  back?: ComponentType<DialogStackBackProps>;
+  close?: ComponentType<DialogStackCloseProps>;
+}
+
+export interface DialogStackSlotProps {
+  trigger?: Partial<Omit<DialogStackTriggerProps, 'value' | 'children'>>;
+  content?: Partial<Omit<DialogStackContentProps, 'value' | 'children'>>;
+  title?: Partial<DialogStackTitleProps>;
+  description?: Partial<DialogStackDescriptionProps>;
+  footer?: Partial<DialogStackFooterProps>;
+  back?: Partial<DialogStackBackProps>;
+  close?: Partial<DialogStackCloseProps>;
+}
+
+export interface DialogStackBaseProps {
   /** Controls the open panel keys, bottom first. */
   value?: readonly string[];
   /** Sets the initial uncontrolled stack, bottom first. Defaults to `[]`. */
@@ -89,8 +137,30 @@ export interface DialogStackProps {
   breakpoint?: number;
   /** Draws inside the nearest positioned ancestor. Modality stays document-wide, without a page scroll lock. Defaults to `false`. */
   contained?: boolean;
-  children: ReactNode;
 }
+
+export interface DialogStackCompoundProps extends DialogStackBaseProps {
+  children?: ReactNode;
+  pages?: never;
+  triggerLabel?: never;
+  initialPage?: never;
+  slots?: never;
+  slotProps?: never;
+}
+
+export interface DialogStackEasyProps extends DialogStackBaseProps {
+  /** Name the button that opens the stack. */
+  triggerLabel?: ReactNode;
+  /** The panel key opened by the trigger button. Defaults to the first page's value. */
+  initialPage?: string;
+  /** Page specifications for the stack. */
+  pages: readonly DialogStackPageRecord[];
+  children?: never;
+  slots?: DialogStackSlots;
+  slotProps?: DialogStackSlotProps;
+}
+
+export type DialogStackProps = DialogStackCompoundProps | DialogStackEasyProps;
 
 export interface DialogStackTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   /** Opens this panel key. An open key removes the panels above it. */
@@ -503,15 +573,15 @@ function useResolvedVariant(
   return variant === 'auto' ? (wide ? 'dialog' : 'sheet') : variant;
 }
 
-function DialogStackRoot({
-  value: valueProp,
-  defaultValue,
-  onValueChange,
-  variant = 'auto',
-  breakpoint = DEFAULT_BREAKPOINT,
-  contained = false,
-  children,
-}: DialogStackProps) {
+function DialogStackRoot(props: DialogStackProps) {
+  const {
+    value: valueProp,
+    defaultValue,
+    onValueChange,
+    variant = 'auto',
+    breakpoint = DEFAULT_BREAKPOINT,
+    contained = false,
+  } = props;
   const [raw = EMPTY_STACK, requestValue] = useControlledState<readonly string[]>(
     valueProp,
     defaultValue ?? EMPTY_STACK,
@@ -657,9 +727,95 @@ function DialogStackRoot({
     [stack, push, pop, popTo, close, contained, resolvedVariant, stage, register, unregister, setNaming, dismissTop],
   );
 
+  let renderedContent: ReactNode;
+  if ('pages' in props && props.pages !== undefined) {
+    const {
+      pages,
+      triggerLabel,
+      initialPage,
+      slots,
+      slotProps,
+    } = props;
+
+    const TriggerPart = slots?.trigger ?? DialogStackTrigger;
+    const ContentPart = slots?.content ?? DialogStackContent;
+    const TitlePart = slots?.title ?? DialogStackTitle;
+    const DescriptionPart = slots?.description ?? DialogStackDescription;
+    const FooterPart = slots?.footer ?? DialogStackFooter;
+    const BackPart = slots?.back ?? DialogStackBack;
+    const ClosePart = slots?.close ?? DialogStackClose;
+
+    const initialKey = initialPage ?? pages[0]?.value;
+    const pageValues = new Set(pages.map((page) => page.value));
+    if (pages.some((page) => !page.value) || pageValues.size !== pages.length)
+      throw new Error('DialogStack page values must be nonempty and unique.');
+    if (initialKey !== undefined && !pageValues.has(initialKey))
+      throw new Error('DialogStack initialPage must reference a page value.');
+
+    renderedContent = (
+      <>
+        {isRenderable(triggerLabel) && initialKey !== undefined && (
+          <TriggerPart {...slotProps?.trigger} value={initialKey}>
+            {triggerLabel}
+          </TriggerPart>
+        )}
+        {pages.map((page) => {
+          const {
+            value: pageValue,
+            title: pageTitle,
+            content: pageContent,
+            description: pageDescription,
+            footer: pageFooter,
+            back: pageBack,
+            close: pageClose,
+            dismissible: pageDismissible,
+            onCancel: pageOnCancel,
+            appearance: pageAppearance,
+            withDescription: pageWithDescription,
+            slotProps: pageSlotProps,
+          } = page;
+
+          const mergedSlotProps: DialogStackSlotProps = {
+            ...slotProps,
+            ...pageSlotProps,
+          };
+
+          return (
+            <ContentPart
+              key={pageValue}
+              value={pageValue}
+              dismissible={pageDismissible}
+              onCancel={pageOnCancel}
+              appearance={pageAppearance}
+              withDescription={pageWithDescription}
+              {...mergedSlotProps.content}
+            >
+              {pageBack !== undefined && (
+                <BackPart label={pageBack} {...mergedSlotProps.back} />
+              )}
+              {pageClose !== undefined && (
+                <ClosePart label={pageClose} {...mergedSlotProps.close} />
+              )}
+              <TitlePart {...mergedSlotProps.title}>{pageTitle}</TitlePart>
+              {isRenderable(pageDescription) && (
+                <DescriptionPart {...mergedSlotProps.description}>{pageDescription}</DescriptionPart>
+              )}
+              {pageContent}
+              {isRenderable(pageFooter) && (
+                <FooterPart {...mergedSlotProps.footer}>{pageFooter}</FooterPart>
+              )}
+            </ContentPart>
+          );
+        })}
+      </>
+    );
+  } else {
+    renderedContent = props.children;
+  }
+
   return (
     <DialogStackContext.Provider value={context}>
-      {children}
+      {renderedContent}
       {contained ? (
         <ContainedLayer open={open} variant={resolvedVariant} />
       ) : (
