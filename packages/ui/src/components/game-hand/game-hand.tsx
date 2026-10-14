@@ -23,15 +23,16 @@ export interface GameHandCard {
   label: string;
 }
 
-export interface GameHandProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'onSelect'>, SxProps {
+export interface GameHandProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
   cards: readonly GameHandCard[];
   size?: GameCardSize;
-  /** Controlled selection. `null` clears it. */
-  selectedIndex?: number | null;
-  defaultSelectedIndex?: number | null;
-  onSelect?: (cardIdx: number | null) => void;
+  /** Selected card id. `null` clears selection. */
+  value?: string | null;
+  /** Initial selected card id for uncontrolled selection. */
+  defaultValue?: string | null;
+  onValueChange?: (cardId: string | null) => void;
   /** Runs only when the confirmation button is activated, never on selection. */
-  onPlayIntent?: (card: GameHandCard, cardIdx: number) => void;
+  onPlayIntent?: (card: GameHandCard) => void;
   /** Text for the explicit confirmation action, in your page's language. */
   playLabel: string;
   disabled?: boolean;
@@ -81,9 +82,9 @@ export function GameHand({
   ref,
   cards,
   size = 'md',
-  selectedIndex,
-  defaultSelectedIndex = null,
-  onSelect,
+  value,
+  defaultValue = null,
+  onValueChange,
   onPlayIntent,
   playLabel,
   disabled = false,
@@ -92,12 +93,8 @@ export function GameHand({
   sx,
   ...rest
 }: GameHandProps) {
-  const [selectedId, select] = useControlledState<string | null>(
-    selectedIndex === undefined ? undefined : cards[selectedIndex ?? -1]?.id ?? null,
-    cards[defaultSelectedIndex ?? -1]?.id ?? null,
-    (id) => onSelect?.(id === null ? null : cards.findIndex((card) => card.id === id)),
-  );
-  const cardIdx = cards.findIndex((card) => card.id === selectedId);
+  const [selectedId, select] = useControlledState<string | null>(value, defaultValue, onValueChange);
+  const selectedCard = cards.find((card) => card.id === selectedId);
   const rotations = getHandFanRotations(cards.length);
   return (
     <WithSx className={className} styles={[rootStyle, gameCardSizeStyles[size]]} sx={sx}>
@@ -109,8 +106,8 @@ export function GameHand({
               return (
                 // CardFlights measures this wrapper; card.id must match FlightCard.key.
                 <button key={card.id} type="button" data-ui="game-hand-card" data-hand-card={card.id}
-                  aria-pressed={cardIdx === index} disabled={disabled}
-                  onClick={() => select(cardIdx === index ? null : card.id)}
+                  aria-pressed={selectedId === card.id} disabled={disabled}
+                  onClick={() => select(selectedId === card.id ? null : card.id)}
                   className={slotProps?.card?.className} css={[cardStyle, slotProps?.card?.css]}
                   style={{ '--hand-angle': `${angle}deg`, '--hand-drop': `${angle ? HAND_FAN_DROP_PX : 0}px` } as CSSProperties}>
                   <GameCard value={card.value} label={card.label} size={size} dimmed={disabled} />
@@ -118,10 +115,10 @@ export function GameHand({
               );
             })}
           </div>
-          <Button type="button" data-ui="game-hand-confirm" disabled={disabled || cardIdx < 0 || !onPlayIntent}
-            render={(props) => <button {...props} data-ui="game-hand-confirm" disabled={disabled || cardIdx < 0 || !onPlayIntent} />}
+          <Button type="button" data-ui="game-hand-confirm" disabled={disabled || !selectedCard || !onPlayIntent}
+            render={(props) => <button {...props} data-ui="game-hand-confirm" disabled={disabled || !selectedCard || !onPlayIntent} />}
             className={slotProps?.confirm?.className} css={slotProps?.confirm?.css}
-            onClick={() => { if (!disabled && cardIdx >= 0) onPlayIntent?.(cards[cardIdx]!, cardIdx); }}>
+            onClick={() => { if (!disabled && selectedCard) onPlayIntent?.(selectedCard); }}>
             {playLabel}
           </Button>
         </div>
@@ -142,6 +139,8 @@ export interface GameHandHiddenProps extends Omit<ComponentPropsWithRef<'div'>, 
   polar?: HandPolarVector;
   scale?: number;
   rules?: HiddenHandRules;
+  /** Styles each hidden-card wrapper. */
+  slotProps?: { card?: GameCardPartProps };
 }
 
 const hiddenStyle = css({
@@ -163,7 +162,7 @@ const STANDALONE_POLAR: HandPolarVector = { cos: 0, sin: -1, sideStrength: 0 };
 
 function GameHandHidden({
   ref, count, label, playerKey, size = 'md', polar, scale = 1, rules = DEFAULT_HIDDEN_HAND_RULES,
-  className, sx, style, ...rest
+  className, sx, style, slotProps, ...rest
 }: GameHandHiddenProps) {
   const layout = buildOpponentHiddenHandLayout({
     geometry: polar ?? STANDALONE_POLAR,
@@ -182,7 +181,8 @@ function GameHandHidden({
           {layout.cards.map((card, index) => (
             // CardFlights pairs the player key and zero-based index on the measured wrapper.
             <div key={`hidden-${index}`} data-ui="game-hand-hidden-card" data-seat-hidden-card={playerKey}
-              data-seat-hidden-card-index={playerKey === undefined ? undefined : index} aria-hidden="true" css={hiddenCardStyle}
+              data-seat-hidden-card-index={playerKey === undefined ? undefined : index} aria-hidden="true"
+              className={slotProps?.card?.className} css={[hiddenCardStyle, slotProps?.card?.css]}
               style={{ '--hidden-x': `${card.x}px`, '--hidden-y': `${card.y}px`, '--hidden-angle': `${card.rotateDeg}deg`, zIndex: card.zIndex } as CSSProperties}>
               <GameCard label={label} size={size} />
             </div>
