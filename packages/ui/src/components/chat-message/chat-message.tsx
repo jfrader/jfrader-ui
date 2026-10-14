@@ -3,20 +3,22 @@
 import {
   useId,
   useMemo,
-  useState,
   type ComponentPropsWithRef,
   type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes } from '../../styling/css';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { REDUCED_MOTION } from '../../styling/media';
 import { type SxProps } from '../../styling/sx';
-import { focusRingOutset } from '../../styling/focus-ring';
 import { partId } from '../../utils/part-id';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
 import { Card } from '../card';
+import {
+  AttachmentListView,
+  type Attachment,
+} from '../attachment-list/attachment-list';
 import {
   DEFAULT_TIME_ZONE,
   formatCount,
@@ -43,16 +45,7 @@ import {
 export type ChatParticipant = ThreadAuthor;
 export type ChatMessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
 
-export interface ChatAttachment {
-  id: string;
-  name: string;
-  kind: 'image' | 'file';
-  url?: string;
-  size?: number;
-  width?: number;
-  height?: number;
-  alt?: string;
-}
+export interface ChatAttachment extends Attachment {}
 
 export interface ChatReaction {
   emoji: string;
@@ -162,7 +155,7 @@ interface ChatMessageViewProps extends ChatMessageProps {
 }
 
 export const DEFAULT_CHAT_EMOJI: readonly string[] = ['👍', '❤️', '🎉', '👀', '🚀', '✅'];
-export const PREVIEW_ATTACHMENTS_COUNT = 4;
+export { DEFAULT_PREVIEW_COUNT as PREVIEW_ATTACHMENTS_COUNT, fileStyle, imageStyle, previewStyle } from '../attachment-list/attachment-list';
 
 export const arrival = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
 
@@ -223,68 +216,7 @@ export const errorStyle = css({
   overflowWrap: 'anywhere',
 });
 
-export const fileStyle = css({
-  display: 'flex',
-  alignItems: 'center',
-  flexWrap: 'wrap',
-  gap: vars.space[2],
-  padding: vars.space[2],
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.sm,
-  minInlineSize: 0,
-  overflowWrap: 'anywhere',
-  [FORCED_COLORS]: { borderColor: 'CanvasText' },
-});
-
-export const imageStyle = css({
-  display: 'block',
-  maxInlineSize: '100%',
-  blockSize: 'auto',
-  aspectRatio: '4 / 3',
-  objectFit: 'contain',
-  borderRadius: vars.radius.sm,
-});
-
-export const previewStyle = css({
-  inlineSize: vars.space[12],
-  blockSize: vars.space[12],
-  objectFit: 'cover',
-});
-
-export const attachmentsStyle = css({
-  display: 'grid',
-  gap: vars.space[2],
-  listStyle: 'none',
-  padding: 0,
-  margin: 0,
-});
-
-export const linkStyle = css({
-  color: vars.color.accentText,
-  overflowWrap: 'anywhere',
-  '&:focus-visible': focusRingOutset,
-});
-
-export function safeUrl(url: string | undefined): string | undefined {
-  if (!url || /[\u0000-\u0020\u007f\\]/u.test(url)) return undefined;
-  try {
-    return ['http:', 'https:', 'blob:'].includes(new URL(url, 'https://attachments.invalid/').protocol) ? url : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-export function fileSize(size: number, locale: Intl.LocalesArgument): string {
-  const units =
-    size >= 1_000_000
-      ? { size: 1_000_000, unit: 'megabyte' }
-      : size >= 1_000
-      ? { size: 1_000, unit: 'kilobyte' }
-      : { size: 1, unit: 'byte' };
-  return new Intl.NumberFormat(locale, { style: 'unit', unit: units.unit, maximumFractionDigits: 1 }).format(
-    size / units.size,
-  );
-}
+export { fileSize, safeUrl } from '../../utils/attachment';
 
 export function chatReactions(reactions: readonly ChatReaction[], currentUserId: string): ThreadReaction[] {
   return uniqueBy(reactions, (reaction) => reaction.emoji).map(({ emoji, mine }) => ({
@@ -328,71 +260,6 @@ export function defaultChatMessageLabels(format: ThreadFormatters): ChatMessageL
   };
 }
 
-export function AttachmentList({
-  attachments,
-  labels,
-  locale,
-  owner = 'chat-message',
-  part,
-}: {
-  attachments: readonly ChatAttachment[];
-  labels: Pick<ChatMessageLabels, 'attachments' | 'showAttachments'>;
-  locale: Intl.LocalesArgument;
-  owner?: string;
-  part?: ThreadPartProps;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const shown = expanded ? attachments : attachments.slice(0, PREVIEW_ATTACHMENTS_COUNT);
-  return (
-    <>
-      <ul
-        role="list"
-        aria-label={labels.attachments}
-        data-ui={`${owner}-attachments`}
-        className={part?.className}
-        css={[attachmentsStyle, part?.css]}
-      >
-        {shown.map((attachment) => {
-          const url = safeUrl(attachment.url);
-          const content = (
-            <>
-              {attachment.kind === 'image' && url ? (
-                <img
-                  src={url}
-                  alt={attachment.alt ?? attachment.name}
-                  width={attachment.width}
-                  height={attachment.height}
-                  style={attachment.width && attachment.height ? { aspectRatio: `${attachment.width} / ${attachment.height}` } : undefined}
-                  css={imageStyle}
-                />
-              ) : null}
-              <span>
-                {attachment.name}
-                {attachment.size !== undefined ? ` · ${fileSize(attachment.size, locale)}` : ''}
-              </span>
-            </>
-          );
-          return (
-            <li key={attachment.id} css={fileStyle}>
-              {url ? (
-                <a href={url} download={attachment.name} css={linkStyle}>
-                  {content}
-                </a>
-              ) : (
-                content
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      {!expanded && attachments.length > PREVIEW_ATTACHMENTS_COUNT ? (
-        <Button size="sm" variant="outline" onClick={() => setExpanded(true)}>
-          {labels.showAttachments(attachments.length - PREVIEW_ATTACHMENTS_COUNT)}
-        </Button>
-      ) : null}
-    </>
-  );
-}
 
 export function ChatMessageView({
   ref,
@@ -559,7 +426,7 @@ export function ChatMessageView({
       >
         {bodyContent}
         {effectiveAttachments?.length ? (
-          <AttachmentList attachments={effectiveAttachments} labels={labels} locale={locale} owner={owner} part={slotProps?.attachments} />
+          <AttachmentListView attachments={effectiveAttachments} labels={labels} locale={locale} owner={owner} partProps={slotProps?.attachments} />
         ) : null}
       </Card>
       <ThreadReactions
