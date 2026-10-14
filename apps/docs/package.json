@@ -3,9 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm tokens && vite",
-    "build": "pnpm tokens && vite build",
+    "dev": "pnpm tokens && node scripts/sync-readme.mjs && vite",
+    "build": "pnpm tokens && node scripts/sync-readme.mjs && vite build",
     "preview": "vite preview",
+    "sync:readme": "node scripts/sync-readme.mjs",
     "tokens": "pnpm --filter @jfrader/tokens generate"
   },
   "dependencies": {
