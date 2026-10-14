@@ -28,7 +28,24 @@ const meta: Meta<DatePickerProps> = {
   parameters: {
     docs: {
       description: { component: 'Choose a date from a calendar.' },
-      usage: '- Pass label to generate the input and calendar popup. Customize them through slots or slotProps.\n- Use DatePicker.Input and DatePicker.Popup as children for a custom field layout.',
+      usage: `### Values
+- Use date-only \`YYYY-MM-DD\` strings for \`value\`, \`defaultValue\`, \`min\` and \`max\`. The input formats the Gregorian date for \`locale\`, which defaults to \`navigator.language\`; the stored value has no time or time zone.
+- If you control \`value\`, update it from \`onValueChange\`. If you control \`open\`, update it from \`onOpenChange\`. Selecting a day requests a value and a close separately, so rejecting one does not reject the other.
+
+### Keyboard
+- Click the input or press Enter, Down or Space to open and focus a day. Use the Calendar arrow, Home, End and Page Up/Page Down keys to navigate, then Enter or Space to select.
+- Selection or Escape returns focus to the input once the popup closes. Tabbing out or pressing outside closes without returning focus. Reopening discards month navigation and starts on the selected month, or the current month, within the bounds.
+
+### Forms
+- Set \`name\` on \`DatePicker\` to submit the ISO value through a hidden input, or \`''\` when empty. Set \`disabled\` to exclude it from form data and prevent opening even when \`open\` is true.
+- The input is read-only: choose a date from the calendar rather than typing. Native \`required\` on a read-only input does not validate selection; check the selected value in your form.
+
+### Limits
+- \`min\` and \`max\` prevent selecting dates outside their inclusive interval. They do not rewrite a supplied value outside that interval; validate your initial or controlled value too.
+
+### Customization
+- Pass a string \`label\` to generate the input and popup, then use \`slots\` or \`slotProps\` for those parts. For custom layout, use \`DatePicker.Input\` and \`DatePicker.Popup\` as children instead.
+- In compound mode, if your input label is not a string, supply \`aria-label\` on \`DatePicker.Input\` so the popup keeps its name while open.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
@@ -141,7 +158,7 @@ async function focusInput(canvasElement: HTMLElement) {
 export const Default: StoryObj<DatePickerEasyProps> = {
   args: { label: LABEL, locale: LOCALE, defaultValue: '2026-10-12', onValueChange: fn() },
   render: (args) => <DatePicker {...args} />,
-  parameters: { docs: { source: { code: '<DatePicker label="Departure" locale="en-US" defaultValue="2026-10-12" />' } } },
+  parameters: { docs: { source: { language: 'tsx', code: '<DatePicker label="Departure" locale="en-US" defaultValue="2026-10-12" />' } } },
   play: async ({ args, canvasElement, userEvent }) => {
     const input = getInput(canvasElement);
     await expect(input).toHaveValue(formatted('2026-10-12'));
@@ -165,6 +182,7 @@ export const Compound: Story = {
   parameters: {
     docs: {
       source: {
+        language: 'tsx',
         code: `<DatePicker locale="en-US" defaultValue="2026-10-12">
   <DatePicker.Input label="Departure" />
   <DatePicker.Popup />
