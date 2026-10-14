@@ -21,6 +21,7 @@ import {
   type FocusEvent,
   type KeyboardEvent,
   type MouseEvent,
+  type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
@@ -34,13 +35,42 @@ import { useControlledState } from '../../utils/use-controlled-state';
 export type TabsOrientation = 'horizontal' | 'vertical';
 export type TabsActivation = 'auto' | 'manual';
 
-export interface TabsProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
+interface TabsStateProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue' | 'children'>, SxProps {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
   orientation?: TabsOrientation;
   activation?: TabsActivation;
 }
+
+export interface TabsSection {
+  value: string;
+  label: ReactNode;
+  panel: ReactNode;
+  disabled?: boolean;
+}
+
+export interface TabsCompoundProps extends TabsStateProps {
+  children?: ReactNode;
+  items?: never;
+  label?: never;
+  slotProps?: never;
+}
+
+export interface TabsEasyProps extends TabsStateProps {
+  /** Name the tab list. */
+  label: string;
+  /** Pair each tab with its panel by value. */
+  items: readonly TabsSection[];
+  children?: never;
+  slotProps?: {
+    list?: Omit<TabsListProps, 'children' | 'aria-label'>;
+    tab?: Omit<TabsTabProps, 'children' | 'value' | 'disabled'>;
+    panel?: Omit<TabsPanelProps, 'children' | 'value'>;
+  };
+}
+
+export type TabsProps = TabsCompoundProps | TabsEasyProps;
 
 export type TabsListProps = ComponentPropsWithRef<'div'> & SxProps;
 
@@ -168,6 +198,10 @@ function TabsRoot({
   activation = 'auto',
   className,
   sx,
+  items,
+  label,
+  slotProps,
+  children,
   ...rest
 }: TabsProps) {
   const baseId = useId();
@@ -183,7 +217,24 @@ function TabsRoot({
     <TabsContext.Provider value={context}>
       <WithSx className={className} styles={rootStyle} sx={sx}>
         {(className) => (
-          <div {...rest} ref={ref} data-ui="tabs-root" data-orientation={orientation} className={className} />
+          <div {...rest} ref={ref} data-ui="tabs-root" data-orientation={orientation} className={className}>
+            {items !== undefined ? (
+              <>
+                <TabsList {...slotProps?.list} aria-label={label}>
+                  {items.map((item) => (
+                    <TabsTab {...slotProps?.tab} key={item.value} value={item.value} disabled={item.disabled}>
+                      {item.label}
+                    </TabsTab>
+                  ))}
+                </TabsList>
+                {items.map((item) => (
+                  <TabsPanel {...slotProps?.panel} key={item.value} value={item.value}>
+                    {item.panel}
+                  </TabsPanel>
+                ))}
+              </>
+            ) : children}
+          </div>
         )}
       </WithSx>
     </TabsContext.Provider>

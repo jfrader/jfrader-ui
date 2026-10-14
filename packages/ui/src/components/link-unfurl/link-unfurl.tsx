@@ -33,40 +33,33 @@ import {
   type FocusEvent,
   type KeyboardEvent,
   type PointerEvent,
-  type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
-import { focusRingOutset } from '../../styling/focus-ring';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { useImageStatus } from '../../utils/use-image-status';
 import { Button } from '../button';
+import {
+  PreviewHeading,
+  PreviewBody,
+  previewSurfaceStyle,
+  previewHeaderStyle,
+  type LinkPreviewData,
+  type LinkPreviewStatus,
+} from '../link-preview/link-preview';
 
-export type LinkUnfurlPreviewStatus = 'pending' | 'ready' | 'none' | 'error';
+export type LinkUnfurlPreviewStatus = LinkPreviewStatus;
 
-export interface LinkUnfurlPreview {
+export interface LinkUnfurlPreview extends LinkPreviewData {
   /** Identifies the link from the `onPreviewRequest` context. */
   linkId: string;
   /** Identifies the request being answered. Other request ids are ignored. */
   requestId: string;
-  url: string;
   status: LinkUnfurlPreviewStatus;
-  site?: string;
-  title?: string;
-  description?: ReactNode;
-  /** Shows a preview image. Describe it with `alt`, or use `''` if it adds no information. */
-  image?: { src: string; alt: string };
-  /** Decorative site icon URL. */
-  favicon?: string;
-  /** Shown instead of `labels.noPreview` when the status is `error`. */
-  error?: string;
 }
 
 export interface LinkUnfurlPreviewRequestContext {
@@ -176,10 +169,6 @@ const DEFAULT_LABELS: LinkUnfurlLabels = {
 
 const EMPTY: never[] = [];
 
-/** Cards never grow past this inline size, whatever the composer width. */
-const CARD_MAX_INLINE_SIZE = '27.5rem';
-/** Open Graph preview images are 1.91:1. */
-const IMAGE_ASPECT_RATIO = '1.91';
 /** Container widths that change spacing and wrapping. */
 const NARROW = '@container (max-width: 22.5rem)';
 const WIDE = '@container (min-width: 35rem)';
@@ -187,8 +176,6 @@ const WIDE = '@container (min-width: 35rem)';
 const FOLD_PROGRESS = 0.4;
 
 const LAYOUT_SPRING = { type: 'spring', stiffness: 420, damping: 38 } as const;
-/** One pass of the decorative pending sweep. */
-const PENDING_SWEEP_DURATION = '1.4s';
 
 // ---------------------------------------------------------------------------------------------
 // Detection and reconciliation
@@ -340,83 +327,10 @@ const laneStyle = css({
   [WIDE]: { gap: vars.space[3] },
 });
 
-const itemStyle = css({
-  boxSizing: 'border-box',
-  inlineSize: '100%',
-  maxInlineSize: CARD_MAX_INLINE_SIZE,
-  minInlineSize: 0,
-  overflow: 'clip',
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.lg,
-  boxShadow: vars.shadow.raised,
-  [FORCED_COLORS]: { border: '1px solid CanvasText' },
-});
-
-const headerStyle = css({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  gap: vars.space[2],
-  paddingBlock: vars.space[2],
-  paddingInline: vars.space[3],
+const headerStyle = css([previewHeaderStyle, {
   touchAction: 'pan-x',
   '[data-state="open"] > &': { cursor: 'grab' },
-  [NARROW]: { paddingInline: vars.space[2] },
-});
-
-const faviconStyle = css({
-  flex: 'none',
-  inlineSize: vars.space[4],
-  blockSize: vars.space[4],
-  borderRadius: vars.radius.sm,
-  objectFit: 'cover',
-});
-
-const headingStyle = css({
-  display: 'grid',
-  flex: '1 1 12rem',
-  minInlineSize: 0,
-});
-
-const titleFade = keyframes({ from: { opacity: 0 } });
-
-// Remounted when the preview resolves, so the resolved title fades in.
-const titleStyle = css({
-  justifySelf: 'start',
-  '&[data-resolved]': { animation: `${titleFade} ${vars.motion.duration.base} ${vars.motion.easeStandard}` },
-  '[data-motion="none"] &': { animation: 'none' },
-  [REDUCED_MOTION]: { animation: 'none' },
-  color: vars.color.accentText,
-  fontWeight: vars.fontWeight.medium,
-  overflowWrap: 'anywhere',
-  textDecoration: 'none',
-  borderRadius: vars.radius.sm,
-  '&:hover': { textDecoration: 'underline' },
-  '&:focus-visible': focusRingOutset,
-  [FORCED_COLORS]: { textDecoration: 'underline' },
-});
-
-const metaStyle = css({ color: vars.color.textMuted, overflowWrap: 'anywhere' });
-
-const errorTextStyle = css({ color: vars.color.dangerText });
-
-const sweep = keyframes({
-  from: { backgroundPosition: '100% 0' },
-  to: { backgroundPosition: '0 0' },
-});
-
-// Decorative only: the pending word carries the state. Paused offscreen and under reduced motion.
-const pendingStyle = css({
-  color: vars.color.textMuted,
-  backgroundImage: `linear-gradient(90deg, transparent 30%, ${vars.color.accentSoft} 50%, transparent 70%)`,
-  backgroundSize: '300% 100%',
-  borderRadius: vars.radius.sm,
-  animation: `${sweep} ${PENDING_SWEEP_DURATION} linear infinite`,
-  '[data-offscreen] &, [data-motion="none"] &': { animationPlayState: 'paused', animationName: 'none' },
-  [REDUCED_MOTION]: { animation: 'none' },
-  [FORCED_COLORS]: { backgroundImage: 'none' },
-});
+}]);
 
 const controlsStyle = css({
   display: 'flex',
@@ -429,41 +343,8 @@ const controlsStyle = css({
 const actionStyle = css({ paddingInline: vars.space[2] });
 
 const bodyStyle = css({
-  display: 'grid',
-  gap: vars.space[2],
-  padding: vars.space[3],
-  borderBlockStart: `1px solid ${vars.color.border}`,
   opacity: 'calc(1 - var(--link-unfurl-fold, 0))',
-  '&[hidden]': { display: 'none' },
-  [NARROW]: { padding: vars.space[2] },
-  [FORCED_COLORS]: { borderBlockStartColor: 'CanvasText' },
 });
-
-const imageFrameStyle = css({
-  aspectRatio: IMAGE_ASPECT_RATIO,
-  inlineSize: '100%',
-  overflow: 'hidden',
-  borderRadius: vars.radius.md,
-  backgroundColor: vars.color.surfaceHover,
-});
-
-// The image settles in once loaded; the frame already holds its geometry, so nothing shifts.
-// Hidden only while the client knows it is loading (server markup never carries the state); only
-// the reveal fades.
-const imageStyle = css({
-  display: 'block',
-  inlineSize: '100%',
-  blockSize: '100%',
-  objectFit: 'cover',
-  transitionProperty: 'opacity',
-  transitionDuration: vars.motion.duration.slow,
-  transitionTimingFunction: vars.motion.easeStandard,
-  '&[data-image-state="loading"]': { opacity: 0, transitionDuration: '0s' },
-  '[data-motion="none"] &': { opacity: 1, transitionDuration: '0s' },
-  [REDUCED_MOTION]: { transitionDuration: '0s' },
-});
-
-const descriptionStyle = css({ margin: 0, color: vars.color.textMuted, overflowWrap: 'anywhere' });
 
 const suggestionsStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
 
@@ -512,15 +393,9 @@ function PreviewItem({
   const bodyRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ pointerId: number; startY: number; height: number; progress: number } | null>(null);
   const ready = status === 'ready' && record !== undefined;
-  const title = (ready && record.title) || link.url;
-  const site = (ready && record.site) || hostOf(link.href);
-  const image = ready ? record.image : undefined;
-  const imageStatus = useImageStatus(image?.src);
-  const showImage = image !== undefined && image.src !== '' && imageStatus.status !== 'error';
+  const data = { ...record, url: link.href };
+  const previewSlots = { title: slotProps?.title, image: slotProps?.image, body: slotProps?.card };
   const chip = splitPart(slotProps?.chip);
-  const card = splitPart(slotProps?.card);
-  const titlePart = splitPart(slotProps?.title);
-  const imagePart = splitPart(slotProps?.image);
   const controls = splitPart(slotProps?.controls);
 
   const setFold = (progress: number) => bodyRef.current?.style.setProperty('--link-unfurl-fold', String(progress));
@@ -551,16 +426,6 @@ function PreviewItem({
     setFold(current.progress);
   };
 
-  const statusText: Partial<Record<LinkStatus, ReactNode>> = {
-    pending: (
-      <span data-ui="link-unfurl-pending" css={pendingStyle}>
-        {labels.pending}
-      </span>
-    ),
-    none: <span css={metaStyle}>{labels.noPreview}</span>,
-    error: <span css={errorTextStyle}>{record?.error || labels.noPreview}</span>,
-  };
-
   return (
     <motion.div
       {...chip.attributes}
@@ -571,7 +436,7 @@ function PreviewItem({
       data-state={open ? 'open' : 'closed'}
       data-link-id={link.id}
       className={chip.className}
-      css={[itemStyle, chip.partCss]}
+      css={[previewSurfaceStyle, chip.partCss]}
     >
       <motion.div
         layout={animate ? 'position' : false}
@@ -582,23 +447,15 @@ function PreviewItem({
         onPointerUp={() => endDrag(true)}
         onPointerCancel={() => endDrag(false)}
       >
-        {ready && record.favicon ? <img src={record.favicon} alt="" css={faviconStyle} /> : null}
-        <span css={headingStyle}>
-          <a
-            {...titlePart.attributes}
-            key={ready ? 'ready' : 'detected'}
-            id={titleId}
-            href={link.href}
-            data-ui="link-unfurl-title"
-            data-resolved={ready || undefined}
-            className={titlePart.className}
-            css={[titleStyle, titlePart.partCss]}
-          >
-            {title}
-          </a>
-          <span css={metaStyle}>{site}</span>
-          {statusText[status]}
-        </span>
+        <PreviewHeading
+          data={data}
+          status={status}
+          labels={{ pending: labels.pending, unavailable: labels.noPreview }}
+          titleId={titleId}
+          titleText={link.url}
+          ui="link-unfurl"
+          slotProps={previewSlots}
+        />
         <div
           {...controls.attributes}
           data-ui="link-unfurl-controls"
@@ -638,43 +495,16 @@ function PreviewItem({
         </div>
       </motion.div>
       {ready ? (
-        <div
-          {...card.attributes}
+        <PreviewBody
+          data={data}
           ref={bodyRef}
           id={bodyId}
-          data-ui="link-unfurl-card"
+          ui="link-unfurl"
           hidden={!open}
           inert={!open}
-          className={card.className}
-          css={[bodyStyle, card.partCss]}
-        >
-          {image !== undefined ? (
-            <div data-ui="link-unfurl-image-frame" css={imageFrameStyle}>
-              {showImage ? (
-                <img
-                  {...imagePart.attributes}
-                  src={image.src}
-                  alt={image.alt}
-                  ref={imageStatus.ref}
-                  data-image-state={imageStatus.status}
-                  onLoad={(event) => {
-                    imagePart.attributes.onLoad?.(event);
-                    imageStatus.onLoad();
-                  }}
-                  onError={(event) => {
-                    imagePart.attributes.onError?.(event);
-                    imageStatus.onError();
-                  }}
-                  className={imagePart.className}
-                  css={[imageStyle, imagePart.partCss]}
-                />
-              ) : null}
-            </div>
-          ) : null}
-          {isRenderable(record.description) && record.description !== '' ? (
-            <p css={descriptionStyle}>{record.description}</p>
-          ) : null}
-        </div>
+          slotProps={previewSlots}
+          baseStyle={bodyStyle}
+        />
       ) : null}
     </motion.div>
   );

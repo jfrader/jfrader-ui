@@ -4,7 +4,7 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
-import { Tabs, type TabsProps } from './index';
+import { Tabs, type TabsCompoundProps, type TabsEasyProps } from './index';
 
 const ITEMS = [
   { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
@@ -24,6 +24,9 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Switch between panels by choosing a tab.' },
+      usage: `Pass label and items to pair each tab with its panel. Each item has value, label, panel and optional disabled. Do not combine items with children. Use slotProps.list/tab/panel for part props, or the compound parts for custom structure.
+
+Arrow keys skip disabled tabs; Home and End reach the ends. With activation="manual", press Enter or Space to select. Panels stay mounted while hidden.`,
     },
   },
   argTypes: {
@@ -41,7 +44,81 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<TabsCompoundProps>;
+
+export const Default: StoryObj<TabsEasyProps> = {
+  name: 'Easy mode',
+  args: {
+    label: 'Settings',
+    items: ITEMS.map((item) => ({ ...item, disabled: item.value === 'two' })),
+    defaultValue: 'one',
+    onValueChange: fn(),
+    slotProps: { list: { className: 'easy-tabs-list' } },
+  },
+  parameters: { docs: { source: { language: 'tsx', code: `const sections = [
+  { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
+  { value: 'two', label: 'Security', panel: 'Password and two-factor sign-in.', disabled: true },
+  { value: 'three', label: 'Billing', panel: 'Plan, invoices and payment method.' },
+];
+
+<Tabs label="Settings" items={sections} defaultValue="one" />` } } },
+  render: (args) => <Tabs {...args} />,
+  play: async ({ canvasElement, canvas, args, userEvent }) => {
+    await expect(canvas.getByRole('tablist', { name: 'Settings' })).toHaveClass('easy-tabs-list');
+    await expectSelected(canvasElement, 0);
+    await expect(canvas.getByRole('tab', { name: 'Security' })).toBeDisabled();
+    await userEvent.tab();
+    await expect(canvas.getByRole('tab', { name: 'Account' })).toHaveFocus();
+    await expect(getComputedStyle(canvasElement.ownerDocument.activeElement!).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(canvas.getByRole('tab', { name: 'Billing' })).toHaveFocus();
+    await expectSelected(canvasElement, 2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('three');
+    await userEvent.keyboard('{Home}{End}{ArrowRight}');
+    await expectSelected(canvasElement, 0);
+    await userEvent.tab();
+    await expect(canvas.getByRole('tabpanel')).toHaveFocus();
+  },
+};
+
+export const EasyModeManual: StoryObj<TabsEasyProps> = {
+  ...Default,
+  name: 'Easy mode manual',
+  args: { ...Default.args, activation: 'manual' },
+  play: async ({ canvasElement, canvas, args, userEvent }) => {
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(canvas.getByRole('tab', { name: 'Billing' })).toHaveFocus();
+    await expectSelected(canvasElement, 0);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.keyboard(' ');
+    await expectSelected(canvasElement, 2);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+export const EasyModeLight: StoryObj<TabsEasyProps> = { ...Default, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
+
+export const EasyModeRejectedSelection: StoryObj<TabsEasyProps> = {
+  ...Default,
+  name: 'Easy mode rejected selection',
+  args: { ...Default.args, value: 'one' },
+  play: async ({ canvasElement, canvas, args, userEvent }) => {
+    await userEvent.click(canvas.getByRole('tab', { name: 'Billing' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith('three');
+    await expectSelected(canvasElement, 0);
+  },
+};
+
+function easyModeTypeContracts() {
+  // @ts-expect-error Collection mode rejects compound children.
+  <Tabs label="Settings" items={ITEMS}>Compound</Tabs>;
+  // @ts-expect-error Collection mode requires a tablist label.
+  <Tabs items={ITEMS} />;
+  // @ts-expect-error Every section pairs a tab with its panel.
+  <Tabs label="Settings" items={[{ value: 'one', label: 'Account' }]} />;
+}
+void easyModeTypeContracts;
 
 const suspendedTabRender = fn();
 const pendingTab = new Promise<never>(() => {});
@@ -54,7 +131,7 @@ function PendingTab({ value }: { value: string }) {
   return null;
 }
 
-function SuspendedControlledTabs(props: TabsProps) {
+function SuspendedControlledTabs(props: TabsCompoundProps) {
   const [value, setValue] = useState('one');
   return <>
     <button onClick={() => startTransition(() => setValue('two'))}>Load security</button>
@@ -89,7 +166,7 @@ export const SuspendedControlledRequest: Story = {
   },
 };
 
-function TabsExample({ disabledValue, ...props }: TabsProps & { disabledValue?: string }) {
+function TabsExample({ disabledValue, ...props }: TabsCompoundProps & { disabledValue?: string }) {
   return (
     <Tabs {...props}>
       <Tabs.List aria-label="Settings">
@@ -109,7 +186,7 @@ function TabsExample({ disabledValue, ...props }: TabsProps & { disabledValue?: 
 }
 TabsExample.displayName = 'TabsExample';
 
-function ControlledTabs(props: TabsProps) {
+function ControlledTabs(props: TabsCompoundProps) {
   const [value, setValue] = useState('one');
   return (
     <TabsExample
@@ -163,7 +240,8 @@ async function expectSelected(canvasElement: HTMLElement, selectedIndex: number)
   await expect(panel).toHaveTextContent(ITEMS[selectedIndex]!.panel);
 }
 
-export const Default: Story = {
+export const Compound: Story = {
+  name: 'Compound',
   parameters: { docs: { source: { language: 'tsx', code: `import { Tabs } from '@jfrader/ui';
 
 <Tabs defaultValue="one">
