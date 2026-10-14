@@ -17,6 +17,8 @@ The same guides are available under **Foundations** in [Storybook](https://ui.jf
 
 ## Packages
 
+The public component inventory is in [`packages/ui/src/index.ts`](packages/ui/src/index.ts); colocated stories provide documentation and browser tests with an axe gate. Planning and review status live in Linear; see [PLAN.md](PLAN.md).
+
 | Path | Package | Contents |
 | --- | --- | --- |
 | `packages/tokens` | `@jfrader/tokens` | Typed token source, generated `tokens.css` and typed `var()` references |
@@ -59,7 +61,7 @@ Run from the repo root.
 | `pnpm dev` | Generate tokens and start Storybook on port 6006 |
 | `pnpm build` | Generate tokens, build static Storybook and static docs front (when `DOCS_BUILD=1`) |
 | `pnpm test` | Generate tokens and run Storybook tests in the browser |
-| `pnpm typecheck` | Typecheck every package |
+| `pnpm typecheck` | Generate tokens and typecheck every package |
 | `pnpm verify:docs` | Check component documentation coverage |
 | `pnpm --filter @jfrader/docs dev` | Start docs front dev server on port 5173 |
 | `pnpm --filter @jfrader/docs build` | Sync README to guidance and build docs front |

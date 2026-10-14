@@ -61,6 +61,7 @@ const meta = {
     ),
   ],
   parameters: {
+    layout: 'fullscreen',
     docs: {
       source: { code: SOURCE },
       description: {
@@ -441,11 +442,18 @@ export const MultipleInstances: Story = {
 export const PersistentViewer: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
-  args: { defaultOpen: true, defaultValue: 'p3' },
+  args: {
+    defaultOpen: true,
+    defaultValue: 'p3',
+    photos: photos.map((photo) => ({ ...photo, alt: `Mountain view: ${photo.title}` })),
+  },
   play: async ({ canvas }) => {
     const dialog = canvas.getByRole('dialog');
     await expect(dialog).toHaveAccessibleName('High Pass at Sunset');
-    await expect(dialog.querySelector('[data-ui="photo-grid-stage"] img')).toHaveAttribute('alt', '');
+    await expect(dialog.querySelector('[data-ui="photo-grid-stage"] img')).toHaveAttribute(
+      'alt',
+      'Mountain view: High Pass at Sunset',
+    );
   },
 };
 export const PersistentFavorite: Story = { 
@@ -953,6 +961,22 @@ export const ViewerGestures: Story = {
     });
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  },
+};
+
+export const RTLViewerGesture: Story = {
+  tags: ['!autodocs'],
+  args: { dir: 'rtl', defaultOpen: true, defaultValue: 'p2' },
+  play: async ({ canvas, args }) => {
+    const stage = canvas.getByRole('group', { name: 'Valley Floor' });
+    spyOn(stage, 'setPointerCapture').mockImplementation(() => {});
+    const pointer = { pointerId: 1, pointerType: 'touch', button: 0, clientX: 200, clientY: 200 };
+    fireEvent.pointerDown(stage, pointer);
+    fireEvent.pointerUp(stage, { ...pointer, clientX: 350 });
+    await expect(canvas.getByRole('dialog')).toHaveAccessibleName('High Pass at Sunset');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('p3');
     await new Promise((resolve) => setTimeout(resolve, 500));
   },
 };

@@ -19,9 +19,9 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 | `pnpm build` | Generate tokens and build static Storybook |
 | `pnpm og:image` | Regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
 | `pnpm test` | Generate tokens and run Storybook Vitest browser tests |
-| `pnpm typecheck` | Typecheck every package |
+| `pnpm typecheck` | Generate tokens and typecheck every package |
 | `pnpm verify:docs` | Check component documentation coverage (also runs before the Storybook build) |
-| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook <file>` | Run one story file (fast loop) |
+| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --maxWorkers=2 packages/ui/src/components/<name>/<name>.stories.tsx` | Run one story file from the repo root (fast loop; tokens must already be generated) |
 
 ## Styling rules
 

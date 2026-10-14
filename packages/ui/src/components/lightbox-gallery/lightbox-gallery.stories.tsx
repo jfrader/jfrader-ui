@@ -270,6 +270,24 @@ export const PersistentImageError: Story = {
     await expect(await canvas.findByRole('dialog')).toBeVisible();
     await settleMotion(viewer(canvasElement));
     await expect(within(stage(canvasElement)).getByText('Image unavailable')).toBeVisible();
+    const thumbnail = within(viewer(canvasElement)).getByRole('button', { name: 'Highland pass, 1 / 1' });
+    const fallback = thumbnail.querySelector('[data-image-state="error"]')!;
+    const thumbnailBox = thumbnail.getBoundingClientRect();
+    const fallbackBox = fallback.getBoundingClientRect();
+    await expect(fallbackBox.left).toBeGreaterThanOrEqual(thumbnailBox.left);
+    await expect(fallbackBox.right).toBeLessThanOrEqual(thumbnailBox.right);
+    await expect(fallbackBox.top).toBeGreaterThanOrEqual(thumbnailBox.top);
+    await expect(fallbackBox.bottom).toBeLessThanOrEqual(thumbnailBox.bottom);
+    const close = canvas.getByRole('button', { name: 'Close viewer' });
+    const closeBox = close.getBoundingClientRect();
+    await expect(
+      close.contains(
+        close.ownerDocument.elementFromPoint(
+          closeBox.left + closeBox.width / 2,
+          closeBox.top + closeBox.height / 2,
+        ),
+      ),
+    ).toBe(true);
   },
 };
 /** Keeps native image loads from reaching React, like a stalled network; synthetic `load` events pass. */

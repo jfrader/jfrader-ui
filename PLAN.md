@@ -8,7 +8,7 @@ This file intentionally stays small. Where things live:
 - **Headline decisions** (one-liners; details in git history and Engram memory):
   - Palette: pastel violet (`#a78bff` / dark text) on Linear's near-black stack; matched white/violet light theme; all pairs AA-checked.
   - Stack: from-scratch components, Emotion styling, tokens as typed TS → generated CSS custom properties, Storybook 10 + Vitest browser tests + axe gate, `@floating-ui/react` for overlays.
-  - Distribution: D1 — versioned npm monorepo (`@jfrader/tokens`, `@jfrader/ui`); repo is `jfrader/jfrader-ui` (private) until publish prep (GURI-1969).
+  - Distribution: versioned npm monorepo (`@jfrader/tokens`, `@jfrader/ui`); private repo `jfrader/jfrader-ui`, published packages on npmjs and GitHub Packages (see `README.md`).
 - **Work log** → Linear; **session memory** → Engram.
 
 History of the original plan (research, reviews, reconciliations, wave logs) is in git history of this file.

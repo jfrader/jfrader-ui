@@ -393,7 +393,13 @@ function PreviewItem({
   const bodyRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ pointerId: number; startY: number; height: number; progress: number } | null>(null);
   const ready = status === 'ready' && record !== undefined;
-  const data = { ...record, url: link.href };
+  const imageHref = record?.image === undefined ? undefined : toHttpHref(record.image.src);
+  const data = {
+    ...record,
+    url: link.href,
+    image: imageHref && record?.image ? { ...record.image, src: imageHref } : undefined,
+    favicon: record?.favicon === undefined ? undefined : toHttpHref(record.favicon),
+  };
   const previewSlots = { title: slotProps?.title, image: slotProps?.image, body: slotProps?.card };
   const chip = splitPart(slotProps?.chip);
   const controls = splitPart(slotProps?.controls);
@@ -571,7 +577,7 @@ export function LinkUnfurl({
   const recordFor = (link: Link) =>
     link.requestId === null
       ? undefined
-      : previews.find((record) => record.linkId === link.id && record.requestId === link.requestId);
+      : previews.findLast((record) => record.linkId === link.id && record.requestId === link.requestId);
   const statusOf = (link: Link, record = recordFor(link)): LinkStatus =>
     link.requestId === null ? 'idle' : (record?.status ?? 'pending');
 

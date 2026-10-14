@@ -28,7 +28,7 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - pnpm dev: generate tokens and start Storybook on port 6006
 - pnpm build: generate tokens and build static Storybook
 - pnpm test: generate tokens and run Storybook browser tests
-- pnpm typecheck: typecheck every package
+- pnpm typecheck: generate tokens and typecheck every package
 
 ## The rule that matters most
 

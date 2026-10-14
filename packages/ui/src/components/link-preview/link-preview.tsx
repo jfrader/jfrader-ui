@@ -113,9 +113,11 @@ const headingStyle = css({ display: 'grid', flex: '1 1 12rem', minInlineSize: 0 
 const titleFade = keyframes({ from: { opacity: 0 } });
 const titleStyle = css({
   justifySelf: 'start',
+  minBlockSize: vars.space[6],
+  minInlineSize: vars.space[6],
   '&[data-resolved]': { animation: `${titleFade} ${vars.motion.duration.base} ${vars.motion.easeStandard}` },
   '[data-motion="none"] &': { animation: 'none' },
-  [REDUCED_MOTION]: { animation: 'none' },
+  [REDUCED_MOTION]: { '&[data-resolved]': { animation: 'none' } },
   color: vars.color.accentText,
   fontWeight: vars.fontWeight.medium,
   overflowWrap: 'anywhere',
@@ -227,17 +229,19 @@ export function PreviewHeading({
       <span css={headingStyle}>
         <a
           {...titlePart.attributes}
-          key={ready ? 'ready' : 'detected'}
           id={titleId}
           href={data.url}
+          rel={titlePart.attributes.target?.toLowerCase() === '_blank'
+            ? [titlePart.attributes.rel, 'noopener noreferrer'].filter(Boolean).join(' ')
+            : titlePart.attributes.rel}
           data-ui={`${ui}-title`}
           data-resolved={ready || undefined}
           className={titlePart.className}
           css={[titleStyle, truncate && titleClampStyle, titlePart.partCss]}
         >
-          {title}
+          <bdi>{title}</bdi>
         </a>
-        <span css={metaStyle}>{site}</span>
+        <span css={metaStyle}><bdi dir="ltr">{site}</bdi></span>
         {statusText[status]}
       </span>
     </>

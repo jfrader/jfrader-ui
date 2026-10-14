@@ -18,7 +18,7 @@ Not for: application composition (consumers), token-only work, repo tooling. Tho
 ## 1. Read before writing
 
 1. `AGENTS.md` — commands, repo conventions, dependency allowlist.
-2. `PLAN.md` — architecture decisions and their reasons (append reconciliations, don't rewrite history).
+2. `PLAN.md` — pointer to Linear planning and headline decisions; detailed history is in git. Keep it a pointer; record progress in Linear.
 3. The nearest sibling component — `button/`, `text-field/`, `checkbox/`, `switch/` are the reference
    implementations for patterns in this file.
 4. `packages/tokens/src/tokens.ts` — the token source. If a needed color/size role is missing, add a
@@ -197,9 +197,9 @@ src/components/<kebab-case>/
   <kebab-case>.tsx          # implementation, module-level styles
   <kebab-case>.stories.tsx  # CSF3 + play tests
   index.ts                  # re-exports component + types
-src/utils/                  # shared non-styling helpers (renderable, use-controlled-state)
-src/overlay/                # internal modules (overlay portal, scroll lock, future focus/top-layer helpers) — not exported
-src/styling/                # styling modules (see list below); only styled, theme and SxProps are exported
+src/utils/                  # shared helpers: renderable, use-controlled-state, use-latest-callback, collection-registry, part-id, roving-focus
+src/overlay/                # internal: overlay-portal, overlay-layer, use-scroll-lock, use-native-dialog, use-overlay-floating — not exported
+src/styling/                # styling modules (see list below); public API: styled, theme, JfraderTheme, SxProps; ThemeProvider/useTheme via theme-provider/
 src/testing/                # story-only assertions (see list below)
 ```
 
@@ -270,7 +270,7 @@ Shared story assertions in `src/testing/` (reuse before writing a local copy):
 - `data-ui="<name>"` on every component root (and `data-ui="<name>-<part>"` on compound parts).
   Composed roots retain deduplicated identity tokens; use `[data-ui~="<name>"]` selectors.
   Surface uses `data-surface-variant`, leaving host `data-variant` untouched.
-- One folder per component; a shared hook only when a second consumer exists.
+- One folder per component; `field/` and `thread/` hold shared internal anatomy rather than public components. A shared hook only when a second consumer exists.
 - The package index re-exports components + types with `export *`, plus the styling API (`styled`,
   `theme`, `ThemeProvider`, `useTheme`, `createTheme`, `themeTokenStyle`, `SxProps`). `theme-provider/` has no `index.ts`, so it gets
   no subpath export.
@@ -438,7 +438,7 @@ Per component (all in the colocated stories file):
    px); our 32px+ main-axis policy is stricter library policy, not the normative requirement.
 10. **Retries stay 0**: keep Vitest's default whole-test retries at zero for regression gates;
     `findBy*` retries are query-level retries and do not prove a failure was fixed.
-11. **Scoped runs**: `pnpm --filter @jfrader/storybook exec vitest run --project=storybook <file>`
+11. **Scoped runs** from the repo root (tokens already generated): `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --maxWorkers=2 packages/ui/src/components/<name>/<name>.stories.tsx`
     (append `-t '<regex>'` to narrow). Full `pnpm test` before finishing.
 12. **Snippets**: default `source.type: 'auto'` produces dynamic snippets when the story renders with
     args; prefer args-based render functions, and use story-level `parameters.docs.source.code` for

@@ -15,6 +15,8 @@ function runFixture(mutate = () => {}) {
       './button': sourceEntry('./src/components/button/index.ts'),
       './code-block': sourceEntry('./src/components/code-block/index.ts'),
       './code-block/shiki': sourceEntry('./src/components/code-block/shiki.ts'),
+      // Subpath-only by design (GURI-2359): must NOT be required in the barrel.
+      './game-card': sourceEntry('./src/components/game-card/index.ts'),
     },
     sideEffects: false,
     peerDependencies: { react: '^19.0.0', 'react-dom': '^19.0.0', shiki: '^4.4.3' },
@@ -25,7 +27,7 @@ function runFixture(mutate = () => {}) {
   try {
     mkdirSync(path.join(dir, 'scripts'), { recursive: true });
     writeFileSync(path.join(dir, 'scripts/verify-exports.mjs'), gate);
-    for (const file of ['src/components/button/index.ts', 'src/components/code-block/index.ts', 'src/components/code-block/shiki.ts']) {
+    for (const file of ['src/components/button/index.ts', 'src/components/code-block/index.ts', 'src/components/code-block/shiki.ts', 'src/components/game-card/index.ts']) {
       const target = path.join(dir, 'packages/ui', file);
       mkdirSync(path.dirname(target), { recursive: true });
       writeFileSync(target, 'export {};\n');
