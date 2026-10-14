@@ -58,10 +58,13 @@ function Match() {
       setPlays([]); setHandIndex((index) => index + 1);
     }}>Deal hand</Button></div>
     <div css={boardStyle}><GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}
-      renderSeat={(slot) => slot.player?.isMe ? null : <GameHand.Hidden playerKey={slot.player?.key} count={rivalCards.length} label="Rival hand" />}
-      dock={<GameHand cards={ownCards} playLabel="Play selected" onPlayIntent={acceptPlay} disabled={landingTargets.size > 0} />}
-      renderPlay={(slot) => slot.player && <GameCardStack.Pile playerKey={slot.player.key}
-        label={slot.player.isMe ? 'Own pile' : 'Rival pile'} cards={plays.filter((play) => play.playerKey === slot.player?.key)} />}
-    /></div>
+    >
+      <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rivalCards.length} label="Rival hand" /></GameTable.Seat>
+      <GameTable.Dock><GameHand cards={ownCards} playLabel="Play selected" onPlayIntent={acceptPlay} disabled={landingTargets.size > 0} /></GameTable.Dock>
+      {seats.map((player) => <GameTable.Play key={player.key} slotKey={player.key}>
+        <GameCardStack.Pile playerKey={player.key} label={player.isMe ? 'Own pile' : 'Rival pile'}
+          cards={plays.filter((play) => play.playerKey === player.key)} />
+      </GameTable.Play>)}
+    </GameTable></div>
   </>;
 }

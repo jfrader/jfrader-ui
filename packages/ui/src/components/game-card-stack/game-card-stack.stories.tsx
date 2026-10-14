@@ -47,7 +47,7 @@ const meta = {
   parameters: { layout: 'fullscreen', a11y: { test: 'error' }, docs: {
     description: { component: 'Keep played cards grouped by player. Open a pile to read its cards.' },
     usage: `### Placement and cards
-- Render \`GameCardStack.Pile\` in GameTable's \`renderPlay\` to put each player's cards in front of their seat. The part fills its host in normal flow; it owns no table placement.
+- Render \`GameCardStack.Pile\` inside \`GameTable.Play\` to put each player's cards in front of their seat. The part fills its host in normal flow; it owns no table placement.
 - This deliberately replaces the reference's per-profile preset placement, following GameTable's circular-layout deviation policy. Card mathematics stay unchanged: closed offsets are delta × 4px and |delta| × 1.5px; open offsets are delta × 0.52 card widths and −|delta| × 4px; inspection scale is 1.45, deterministic jitter is at most 4px and rotation offset at most 6 degrees.
 - The root defaults to \`placement="grid"\`: give it a definite width and height. Measurement chooses rows and columns and shrinks cards to reserve inspected fans. Include empty piles to reserve positions.
 - \`placement="free"\` and a pile's \`geometry\` use caller-owned normalized vectors. A supplied geometry always opts a pile out of fitting. The caller owns collisions in mixed or free placement.
@@ -289,14 +289,24 @@ const spanishPiles: readonly GameCardStackPile[] = [
 export const Truco: Story = {
   render: () => <GameTable players={2} viewport={{ width: 1000, height: 800 }}
     seats={[{ key: 'Ana', teamIdx: 0, isMe: true }, { key: 'Luis', teamIdx: 1 }]}
-    renderSeat={(slot) => <><GameTable.SeatChrome>{slot.player?.key}</GameTable.SeatChrome>
-      {!slot.player?.isMe && <GameCard label="Carta oculta de Luis" backPattern={CARD_BACK_PATTERNS.spanish} />}</>}
-    renderPlay={(slot) => {
-      const pile = spanishPiles.find((entry) => entry.playerKey === slot.player?.key);
-      return pile && <GameCardStack.Pile {...pile}
-        backPattern={CARD_BACK_PATTERNS.spanish} />;
-    }} />,
-  parameters: { docs: { description: { story: 'Two-player truco with Spanish-deck cards and a pile in front of each seat.' } } },
+  >
+    {spanishPiles.map((pile) => <GameTable.Seat key={pile.playerKey} slotKey={pile.playerKey}>
+      <GameTable.SeatChrome>{pile.playerKey}</GameTable.SeatChrome>
+      {pile.playerKey === 'Luis' && <GameCard label="Carta oculta de Luis" backPattern={CARD_BACK_PATTERNS.spanish} />}
+    </GameTable.Seat>)}
+    {spanishPiles.map((pile) => <GameTable.Play key={pile.playerKey} slotKey={pile.playerKey}>
+      <GameCardStack.Pile {...pile} backPattern={CARD_BACK_PATTERNS.spanish} />
+    </GameTable.Play>)}
+  </GameTable>,
+  parameters: { docs: { description: { story: 'Two-player truco with Spanish-deck cards and a pile in front of each seat.' }, source: { language: 'tsx', code: `<GameTable players={2} seats={players} viewport={viewport}>
+  <GameTable.Seat slotKey="Luis">
+    <GameTable.SeatChrome>Luis</GameTable.SeatChrome>
+    <GameCard label="Carta oculta de Luis" backPattern={CARD_BACK_PATTERNS.spanish} />
+  </GameTable.Seat>
+  {piles.map((pile) => <GameTable.Play key={pile.playerKey} slotKey={pile.playerKey}>
+    <GameCardStack.Pile {...pile} backPattern={CARD_BACK_PATTERNS.spanish} />
+  </GameTable.Play>)}
+</GameTable>` } } },
   play: async ({ canvasElement, canvas, userEvent }) => {
     await waitFor(() => expect(canvasElement.querySelector('[data-game-surface]')).not.toHaveAttribute('data-layout-fit', 'measuring'));
     await expect(canvasElement.querySelectorAll('[data-ui="game-table-play"] [data-ui="game-card-stack-pile"]')).toHaveLength(2);

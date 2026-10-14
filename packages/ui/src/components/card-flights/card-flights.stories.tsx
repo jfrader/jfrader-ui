@@ -17,51 +17,60 @@ import {
   type GameHandCard, type PlayedFlightCard,
 } from '@jfrader/ui';
 
+import { useRef, useState } from 'react';
+import {
+  Button, CardFlightsProvider, GameCardStack, GameHand, GameTable,
+  useCardFlights, useDealFlights, usePlayedCardFlights,
+  type GameHandCard, type PlayedFlightCard,
+} from '@jfrader/ui';
+
+const seats = [{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }];
 const cards: GameHandCard[] = [
   { id: 'ace', label: 'Ace of spades', value: { suit: 'spades', rank: 'A' } },
   { id: 'queen', label: 'Queen of hearts', value: { suit: 'hearts', rank: 'Q' } },
 ];
 
-function Hand() {
+function Match() {
+  const scopeRef = useRef<HTMLDivElement>(null);
   const [hand, setHand] = useState(cards);
   const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
-  const [handIndex, setHandIndex] = useState(0);
-  const { scopeRef, rememberPlayOrigin, landingTargets } = useCardFlights();
+  const [handIndex, setHandIndex] = useState(1);
+  const { rememberPlayOrigin, landingTargets } = useCardFlights();
   useDealFlights({
     handIndex, dealt: plays.length === 0, forehandIdx: 0,
     players: [{ key: 'own', idx: 0, isOwn: true, cards: hand }],
   });
-  usePlayedCardFlights({ plays, playerCount: 1 });
+  usePlayedCardFlights({ plays, playerCount: seats.length });
 
-  return (
-    <Stack gap="lg" data-game-surface="true">
-      <GameCardStack.Pile playerKey="own" label="Your plays" cards={plays} />
-      <GameHand cards={hand} playLabel="Play selected" disabled={landingTargets.size > 0}
-        onPlayIntent={(card) => {
-          const source = scopeRef.current?.querySelector<HTMLElement>(
-            '[data-hand-card="' + CSS.escape(card.id) + '"]',
-          );
-          if (source) rememberPlayOrigin(card.id, source);
-          setPlays((current) => [...current, {
-            ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true,
-          }]);
-          setHand((current) => current.filter((entry) => entry.id !== card.id));
-        }} />
-      <Button disabled={landingTargets.size > 0} onClick={() => {
-        setHand(cards);
-        setPlays([]);
-        setHandIndex((current) => current + 1);
-      }}>Deal again</Button>
-    </Stack>
-  );
-}
+  const play = (card: GameHandCard) => {
+    const source = scopeRef.current?.querySelector<HTMLElement>(
+      '[data-hand-card="' + CSS.escape(card.id) + '"]',
+    );
+    if (source) rememberPlayOrigin(card.id, source);
+    setPlays((current) => [...current, {
+      ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true,
+    }]);
+    setHand((current) => current.filter((entry) => entry.id !== card.id));
+  };
 
-export function Match() {
-  const scopeRef = useRef<HTMLDivElement>(null);
   return (
     <div ref={scopeRef}>
       <CardFlightsProvider scopeRef={scopeRef}>
-        <Hand />
+        <GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}>
+          <GameTable.Seat slotKey="rival">
+            <GameHand.Hidden playerKey="rival" count={2} label="Rival hand" />
+          </GameTable.Seat>
+          <GameTable.Dock>
+            <GameHand cards={hand} playLabel="Play selected" disabled={landingTargets.size > 0}
+              onPlayIntent={play} />
+          </GameTable.Dock>
+          {seats.map((seat) => (
+            <GameTable.Play key={seat.key} slotKey={seat.key}>
+              <GameCardStack.Pile playerKey={seat.key} label={seat.key + ' pile'}
+                cards={plays.filter((entry) => entry.playerKey === seat.key)} />
+            </GameTable.Play>
+          ))}
+        </GameTable>
       </CardFlightsProvider>
     </div>
   );
