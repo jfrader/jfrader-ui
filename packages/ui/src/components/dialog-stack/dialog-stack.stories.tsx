@@ -83,7 +83,10 @@ component is sugar for slots.root; only root is adopted, and slots.root wins. sl
 
 Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry/motion → slot css/classes → consumer css/classes → sx. Generated handle/body, IDs, active/parent state, inertness, native dismissal and depth variables stay authoritative. Select composed panels with [data-ui~="dialog-stack"].`,
       source: {
-        code: `<DialogStack>
+        language: 'tsx',
+        code: `import { DialogStack, TextField } from '@jfrader/ui';
+
+<DialogStack>
   <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
   <DialogStack.Content value="settings">
     <DialogStack.Close label="Close settings" />
@@ -93,7 +96,7 @@ Root slot props win ordinary conflicts; className combines and style shallow-mer
   <DialogStack.Content value="account">
     <DialogStack.Back label="Back to Settings" />
     <DialogStack.Title>Account</DialogStack.Title>
-    <AccountForm />
+    <TextField label="Display name" defaultValue="Alex" />
     <DialogStack.Footer>
       <DialogStack.Close label="Done">Done</DialogStack.Close>
     </DialogStack.Footer>

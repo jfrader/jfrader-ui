@@ -8,7 +8,7 @@
     "og:image": "node og/render.mjs",
     "test": "node --test scripts/measure-geometry.test.mjs && vitest run --project=storybook",
     "typecheck": "tsc -p tsconfig.json --noEmit && pnpm verify:docs:examples",
-    "verify:docs": "node --test scripts/verify-docs.test.mjs && node scripts/verify-docs.mjs",
+    "verify:docs": "node --test scripts/verify-docs.test.mjs scripts/verify-docs-usage.test.mjs && node scripts/verify-docs.mjs && node scripts/verify-docs-usage.mjs",
     "verify:docs:layout": "node scripts/verify-docs-layout.mjs",
     "verify:docs:examples": "node scripts/verify-guide-examples.mjs",
     "verify:game-card": "node scripts/verify-game-card-edge.mjs"

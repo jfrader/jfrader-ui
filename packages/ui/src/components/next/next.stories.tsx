@@ -42,10 +42,12 @@ const meta = {
 - The adapter is for the App Router. Apps that do not import \`@jfrader/ui/next\` do not load or need to install Next.js.
 - These examples use the underlying cache. \`EmotionRegistry\` itself requires Next's server renderer.`,
       source: {
+        language: 'tsx',
         code: `// app/layout.tsx
+import type { ReactNode } from 'react';
 import { EmotionRegistry } from '@jfrader/ui/next';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" data-theme="dark">
       <body>

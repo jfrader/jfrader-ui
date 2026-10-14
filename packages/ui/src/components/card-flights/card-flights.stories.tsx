@@ -10,24 +10,62 @@ const meta = {
   render: () => <CardFlightsFixture />,
   parameters: { a11y: { test: 'error' }, docs: {
     description: { component: 'Deal cards to a hand and move played cards to their table piles.' },
-    source: { language: 'tsx', code: `// Full match: card-flights-fixture.tsx
-const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
-const { rememberPlayOrigin } = useCardFlights();
-usePlayedCardFlights({ plays, playerCount: 2 });
+    source: { language: 'tsx', code: `import { useRef, useState } from 'react';
+import {
+  Button, CardFlightsProvider, GameCardStack, GameHand, Stack,
+  useCardFlights, useDealFlights, usePlayedCardFlights,
+  type GameHandCard, type PlayedFlightCard,
+} from '@jfrader/ui';
 
-<GameTable players={2} seats={seats} viewport={viewport}
-  dock={<GameHand cards={hand} playLabel="Play selected" onPlayIntent={(card) => {
-    const source = boardRef.current?.querySelector<HTMLElement>('[data-hand-card="' + CSS.escape(card.id) + '"]');
-    if (source) rememberPlayOrigin(card.id, source);
-    setPlays((current) => [...current, {
-      ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true,
-    }]);
-    setHand((current) => current.filter((entry) => entry.id !== card.id));
-  }} />}
-  renderPlay={(slot) => slot.player && <GameCardStack.Pile
-    playerKey={slot.player.key} label={slot.player.name}
-    cards={plays.filter((play) => play.playerKey === slot.player.key)} />}
-/>` },
+const cards: GameHandCard[] = [
+  { id: 'ace', label: 'Ace of spades', value: { suit: 'spades', rank: 'A' } },
+  { id: 'queen', label: 'Queen of hearts', value: { suit: 'hearts', rank: 'Q' } },
+];
+
+function Hand() {
+  const [hand, setHand] = useState(cards);
+  const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
+  const [handIndex, setHandIndex] = useState(0);
+  const { scopeRef, rememberPlayOrigin, landingTargets } = useCardFlights();
+  useDealFlights({
+    handIndex, dealt: plays.length === 0, forehandIdx: 0,
+    players: [{ key: 'own', idx: 0, isOwn: true, cards: hand }],
+  });
+  usePlayedCardFlights({ plays, playerCount: 1 });
+
+  return (
+    <Stack gap="lg" data-game-surface="true">
+      <GameCardStack.Pile playerKey="own" label="Your plays" cards={plays} />
+      <GameHand cards={hand} playLabel="Play selected" disabled={landingTargets.size > 0}
+        onPlayIntent={(card) => {
+          const source = scopeRef.current?.querySelector<HTMLElement>(
+            '[data-hand-card="' + CSS.escape(card.id) + '"]',
+          );
+          if (source) rememberPlayOrigin(card.id, source);
+          setPlays((current) => [...current, {
+            ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true,
+          }]);
+          setHand((current) => current.filter((entry) => entry.id !== card.id));
+        }} />
+      <Button disabled={landingTargets.size > 0} onClick={() => {
+        setHand(cards);
+        setPlays([]);
+        setHandIndex((current) => current + 1);
+      }}>Deal again</Button>
+    </Stack>
+  );
+}
+
+export function Match() {
+  const scopeRef = useRef<HTMLDivElement>(null);
+  return (
+    <div ref={scopeRef}>
+      <CardFlightsProvider scopeRef={scopeRef}>
+        <Hand />
+      </CardFlightsProvider>
+    </div>
+  );
+}` },
     usage: `### Card records
 - Pass the same labeled records to GameHand and useDealFlights: each has an id, label and value. No face nodes are needed. Optional front, back and backPattern customize flight artwork.
 - Give each accepted play a unique id. Pass that record to both GameCardStack.Pile and usePlayedCardFlights. Set cardId to its source hand id when the play id differs. Labels come from your app, never from a suit or rank formatter in the library.
