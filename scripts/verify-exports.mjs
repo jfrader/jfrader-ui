@@ -32,13 +32,29 @@ if (!manifest.peerDependencies?.shiki || manifest.peerDependenciesMeta?.shiki?.o
   errors.push('shiki must be an optional peer dependency');
 }
 
+// Components published as opt-in subpaths only, deliberately absent from the root barrel:
+// game/app pieces (GURI-2359) and the next adapter, whose optional peers must stay out of the
+// main graph. Every other public component must be re-exported from src/index.ts.
+const subpathOnlyComponents = new Set([
+  'card-flights',
+  'deck',
+  'flip-game-card',
+  'game-card',
+  'game-card-stack',
+  'game-hand',
+  'game-seat',
+  'game-table',
+  'next',
+  'scene',
+]);
+
 for (const dirent of readdirSync(componentsDir, { withFileTypes: true })) {
   // Internal implementation folders (e.g. field/) have no index.ts and are not public.
   const isComponent =
     dirent.isDirectory() && existsSync(path.join(componentsDir, dirent.name, 'index.ts'));
   if (isComponent) {
     expectedExports.set(`./${dirent.name}`, `./src/components/${dirent.name}/index.ts`);
-    if (!reexports.has(`./components/${dirent.name}`)) {
+    if (!subpathOnlyComponents.has(dirent.name) && !reexports.has(`./components/${dirent.name}`)) {
       errors.push(`src/index.ts must re-export all values and types from ./components/${dirent.name}`);
     }
   }
