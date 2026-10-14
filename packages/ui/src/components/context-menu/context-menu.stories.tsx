@@ -5,6 +5,7 @@ import { expect, fireEvent, fn, waitFor, within, type Mock } from 'storybook/tes
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
 import { ThemeRoot } from '../theme-root';
@@ -344,6 +345,7 @@ export const EasyKeyboard: StoryObj<ContextMenuEasyProps> = {
     await expectActive(canvasElement, target);
     await userEvent.keyboard('{Shift>}{F10}{/Shift}');
     const menu = await findMenu(canvasElement);
+    await settleMotion(menu);
     await expect(menu).toBeVisible();
     await expectItemFocused(canvasElement, 'Copy link');
 
