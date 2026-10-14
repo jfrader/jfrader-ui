@@ -82,6 +82,23 @@ export const DisabledWhileOpen: Story = {
   },
 };
 
+export const ReadOnlySelection: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn(), onInputChange: fn(), onOpenChange: fn() },
+  render: (args) => <ComboboxExample {...args} open defaultValue="apple" inputProps={{ readOnly: true }} />,
+  play: async ({ args, canvasElement }) => {
+    const input = getInput(canvasElement);
+    const option = bodyOf(canvasElement).getByRole('option', { name: 'Cherry', hidden: true });
+    await fireEvent.click(option);
+    await userEvent.click(input);
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await expect(input).toHaveValue('Apple');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onInputChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+
 /** Portaled content lives in the story document's body, outside the canvas. */
 function bodyOf(canvasElement: HTMLElement) {
   return within(canvasElement.ownerDocument.body);
