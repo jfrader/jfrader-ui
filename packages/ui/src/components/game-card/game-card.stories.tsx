@@ -237,7 +237,17 @@ export function CardPatterns() {
 export const BackPatternsLightTheme: Story = {
   ...Default,
   name: 'Deck backs light theme',
-  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { vars } from '@jfrader/tokens/vars';
+
+const row = { display: 'flex', alignItems: 'center', gap: vars.space[4] };
+<ThemeRoot theme="light"><div style={row}>
+  {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => <div key={deck} style={row}>
+    <GameCard value={deck === 'spanish' ? { deck, suit: 'oros', rank: 1 } : { deck, suit: 'hearts', rank: 'Q' }} label={deck + ' face'} backPattern={pattern} />
+    <GameCard label={deck + ' back'} backPattern={pattern} />
+  </div>)}
+</div></ThemeRoot>` } } },
   decorators: [withLightTheme],
 };
 
@@ -640,7 +650,16 @@ import { vars } from '@jfrader/tokens/vars';
 
 export const CustomBackArtLightTheme: Story = {
   ...CustomBackArt,
-  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { vars } from '@jfrader/tokens/vars';
+
+<ThemeRoot theme="light"><GameCard label="Carta boca abajo" face="back" backPattern={CARD_BACK_PATTERNS.spanish}>
+  <svg viewBox="0 0 40 60" aria-hidden="true">
+    <rect width="40" height="60" fill={vars.color.cardRed} />
+    <circle cx="20" cy="30" r="12" fill={vars.color.cardFace} />
+  </svg>
+</GameCard></ThemeRoot>` } } },
   decorators: [withLightTheme],
 };
 
@@ -684,7 +703,15 @@ export function RankLabelAndDimmedExample() {
 };
 
 export const LightTheme: Story = {
-  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCard } from '@jfrader/ui/game-card';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { vars } from '@jfrader/tokens/vars';
+
+<ThemeRoot theme="light"><div style={{ display: 'flex', alignItems: 'center', gap: vars.space[4] }}>
+  <GameCard size="lg" label="Q of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
+  <GameCard size="lg" label="as de oros" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} />
+  <GameCard size="lg" label="Carta boca abajo" />
+</div></ThemeRoot>` } } },
   decorators: [withLightTheme],
   render: () => (
     <div style={rowStyle}>

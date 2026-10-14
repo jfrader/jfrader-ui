@@ -4,6 +4,7 @@ import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { expectInside, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
 import { settleMotion } from '../../testing/motion-assertions';
+import { ThemeRoot } from '../theme-root';
 import { GameCard, CARD_BACK_PATTERNS } from '../game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { GameTable } from '../game-table';
@@ -130,13 +131,84 @@ export function PlayedPilesExample() {
 };
 export const OneCard: Story = { tags: ['!autodocs'], args: counts(2, 1) };
 export const TwoCards: Story = { tags: ['!autodocs'], args: counts(2, 2) };
-export const TwoVersusTwo: Story = { tags: ['!autodocs'], args: counts(4, 3), play: async ({ canvasElement }) => noOverlap(canvasElement) };
-export const ThreeVersusThree: Story = { tags: ['!autodocs'], args: counts(6, 3), play: async ({ canvasElement }) => noOverlap(canvasElement) };
+export const TwoVersusTwo: Story = {
+  args: counts(4, 3), play: async ({ canvasElement }) => noOverlap(canvasElement),
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East', 'South', 'West'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}>
+  <GameCardStack piles={piles} />
+</div>` } } },
+};
+export const ThreeVersusThree: Story = {
+  args: counts(6, 3), play: async ({ canvasElement }) => noOverlap(canvasElement),
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East', 'South', 'West', 'Avery', 'Robin'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}>
+  <GameCardStack piles={piles} />
+</div>` } } },
+};
 export const Open: Story = { tags: ['!autodocs'], args: { defaultValue: 'North' }, play: async ({ canvasElement }) => noOverlap(canvasElement) };
-export const LightTheme: Story = { tags: ['!autodocs'], globals: { theme: 'light' } };
-export const OpenLightTheme: Story = { ...Open, tags: ['!autodocs'], globals: { theme: 'light' } };
+export const LightTheme: Story = {
+  globals: { theme: 'light' },
+  decorators: [(Story) => <ThemeRoot theme="light" sx={{ blockSize: '100%', backgroundColor: vars.color.bg }}><Story /></ThemeRoot>],
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<ThemeRoot theme="light"><div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}>
+  <GameCardStack piles={piles} />
+</div></ThemeRoot>` } } },
+};
+export const OpenLightTheme: Story = {
+  ...Open, tags: ['autodocs'], globals: { theme: 'light' },
+  decorators: [(Story) => <ThemeRoot theme="light" sx={{ blockSize: '100%', backgroundColor: vars.color.bg }}><Story /></ThemeRoot>],
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<ThemeRoot theme="light"><div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}>
+  <GameCardStack piles={piles} defaultValue="North" />
+</div></ThemeRoot>` } } },
+};
 export const RTL: Story = {
-  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East', 'South', 'West', 'Avery', 'Robin'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}>
+  <GameCardStack dir="rtl" piles={piles} defaultValue="East" />
+</div>` } } },
   args: { ...counts(6, 3), dir: 'rtl', defaultValue: 'East' },
   play: async ({ canvasElement }) => {
     await noOverlap(canvasElement);
@@ -302,7 +374,6 @@ export const MaximumOne: Story = {
 };
 function grid(count: number, width: number, height: number): Story {
   return {
-    tags: ['!autodocs'],
     args: { ...counts(count, 3), style: { inlineSize: width, blockSize: height } },
     play: async ({ canvasElement, canvas, userEvent }) => {
       await noOverlap(canvasElement);
@@ -316,15 +387,123 @@ function grid(count: number, width: number, height: number): Story {
     },
   };
 }
-export const Grid: Story = grid(6, 320, 280);
-export const GridSixMedium: Story = grid(6, 640, 360);
-export const GridSixLarge: Story = grid(6, 900, 432);
-export const GridFourCompact: Story = grid(4, 320, 280);
-export const GridFourMedium: Story = grid(4, 640, 360);
-export const GridFourLarge: Story = grid(4, 900, 432);
-export const GridTwoCompact: Story = grid(2, 320, 280);
-export const GridTwoMedium: Story = grid(2, 640, 360);
-export const GridTwoLarge: Story = grid(2, 900, 432);
+export const Grid: Story = {
+  ...grid(6, 320, 280),
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East', 'South', 'West', 'Avery', 'Robin'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<GameCardStack piles={piles} style={{ inlineSize: 320, blockSize: 280 }} />` } } },
+};
+export const GridSixMedium: Story = {
+  ...grid(6, 640, 360),
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East', 'South', 'West', 'Avery', 'Robin'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<GameCardStack piles={piles} style={{ inlineSize: 640, blockSize: 360 }} />` } } },
+};
+export const GridSixLarge: Story = {
+  ...grid(6, 900, 432),
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East', 'South', 'West', 'Avery', 'Robin'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<GameCardStack piles={piles} style={{ inlineSize: 900, blockSize: 432 }} />` } } },
+};
+export const GridFourCompact: Story = {
+  ...grid(4, 320, 280),
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East', 'South', 'West'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<GameCardStack piles={piles} style={{ inlineSize: 320, blockSize: 280 }} />` } } },
+};
+export const GridFourMedium: Story = {
+  ...grid(4, 640, 360),
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East', 'South', 'West'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<GameCardStack piles={piles} style={{ inlineSize: 640, blockSize: 360 }} />` } } },
+};
+export const GridFourLarge: Story = {
+  ...grid(4, 900, 432),
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East', 'South', 'West'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<GameCardStack piles={piles} style={{ inlineSize: 900, blockSize: 432 }} />` } } },
+};
+export const GridTwoCompact: Story = {
+  ...grid(2, 320, 280),
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<GameCardStack piles={piles} style={{ inlineSize: 320, blockSize: 280 }} />` } } },
+};
+export const GridTwoMedium: Story = {
+  ...grid(2, 640, 360),
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<GameCardStack piles={piles} style={{ inlineSize: 640, blockSize: 360 }} />` } } },
+};
+export const GridTwoLarge: Story = {
+  ...grid(2, 900, 432),
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
+const piles = ['North', 'East'].map((playerKey, index) => ({
+  playerKey, label: playerKey + "'s played cards",
+  cards: faces.map((face, round) => ({ id: 'play-' + index + '-' + round,
+    label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
+}));
+
+<GameCardStack piles={piles} style={{ inlineSize: 900, blockSize: 432 }} />` } } },
+};
 export const FreePlacement: Story = {
   args: {
     placement: 'free',

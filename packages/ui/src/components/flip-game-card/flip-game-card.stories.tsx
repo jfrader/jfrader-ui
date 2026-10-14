@@ -158,7 +158,12 @@ export const FaceDown: Story = {
 };
 
 export const LightTheme: Story = {
-  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+
+<ThemeRoot theme="light">
+  <FlipGameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }} label="Ace of spades" backLabel="Card back" />
+</ThemeRoot>` } } },
   decorators: [withLightTheme],
 };
 
@@ -239,13 +244,27 @@ export function PatternBacks() {
 };
 export const PatternFrontsLightTheme: Story = {
   ...PatternFronts,
-  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { vars } from '@jfrader/tokens/vars';
+
+<ThemeRoot theme="light"><div style={{ display: 'flex', gap: vars.space[4] }}>
+  <FlipGameCard value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="spanish face" backLabel="spanish back" />
+  <FlipGameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }} label="french face" backLabel="french back" />
+</div></ThemeRoot>` } } },
   decorators: [withLightTheme],
 };
 export const PatternBacksLightTheme: Story = {
   ...PatternBacks,
   name: 'Deck backs light theme',
-  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { vars } from '@jfrader/tokens/vars';
+
+<ThemeRoot theme="light"><div style={{ display: 'flex', gap: vars.space[4] }}>
+  <FlipGameCard flipped value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="spanish face" backLabel="spanish back" />
+  <FlipGameCard flipped value={{ deck: 'french', suit: 'spades', rank: 'A' }} label="french face" backLabel="french back" />
+</div></ThemeRoot>` } } },
   decorators: [withLightTheme],
 };
 

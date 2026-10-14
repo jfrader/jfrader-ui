@@ -622,7 +622,34 @@ export const DegradationToRawText: Story = {
 
 export const CustomDeckLightTheme: Story = {
   ...CustomDeck,
-  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { vars } from '@jfrader/tokens/vars';
+
+function FaceArt({ text }: { text: string }) {
+  return <svg viewBox="0 0 72 106" width="100%" height="100%" aria-hidden="true">
+    <rect width="100%" height="100%" fill={vars.color.surfaceInset} />
+    <circle cx="36" cy="53" r="22" fill={vars.color.cardRed} />
+    <text x="36" y="58" textAnchor="middle" fill={vars.color.cardFace} fontSize="11" fontWeight="bold">{text}</text>
+  </svg>;
+}
+const celestialDeck = defineDeck({
+  id: 'celestial',
+  suits: { stars: { label: 'stars', glyph: '⭐', ink: 'red' }, moons: { label: 'moons', glyph: '🌙', ink: 'ink' } },
+  ranks: { I: { label: 'I', mark: 'I' }, II: { label: 'II', mark: 'II' }, III: { label: 'III', mark: 'III' } },
+  faces: { stars: { I: <FaceArt text="STAR I" />, II: <FaceArt text="STAR II" /> } },
+  back: { pattern: 'dots', tone: 'accent' },
+});
+
+<ThemeRoot theme="light"><DeckProvider decks={[celestialDeck]} default="celestial">
+  <div style={{ display: 'flex', alignItems: 'center', gap: vars.space[4] }}>
+    <GameCard label="One of stars" value={{ suit: 'stars', rank: 'I' }} />
+    <GameCard label="Two of stars" value={{ suit: 'stars', rank: 'II' }} />
+    <GameCard label="Three of stars" value={{ suit: 'stars', rank: 'III' }} />
+    <GameCard label="Face down celestial" />
+  </div>
+</DeckProvider></ThemeRoot>` } } },
   decorators: [withLightTheme],
 };
 

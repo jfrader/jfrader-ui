@@ -110,10 +110,40 @@ export const Default: Story = { play: async ({ canvasElement }) => checkFan(canv
 export const OneCard: Story = { tags: ['!autodocs'], args: { cards: CARDS.slice(0, 1) }, play: async ({ canvasElement }) => checkFan(canvasElement, 1) };
 export const TwoCards: Story = { tags: ['!autodocs'], args: { cards: CARDS.slice(0, 2) }, play: async ({ canvasElement }) => checkFan(canvasElement, 2) };
 export const FiveCards: Story = { tags: ['!autodocs'], args: { cards: CARDS }, play: async ({ canvasElement }) => checkFan(canvasElement, 5) };
-export const Selected: Story = { tags: ['!autodocs'], args: { defaultValue: CARDS[1]!.id } };
+export const Selected: Story = {
+  args: { defaultValue: CARDS[1]!.id },
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+
+const cards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
+<GameHand cards={cards} defaultValue="king-hearts" playLabel="Play card" onPlayIntent={console.log} />` } } },
+};
 export const LightTheme: Story = { decorators: [(Story) => <ThemeRoot theme="light"><Story /></ThemeRoot>] };
-export const SelectedLightTheme: Story = { ...Selected, decorators: LightTheme.decorators };
-export const RTL: Story = { tags: ['!autodocs'], args: { dir: 'rtl' }, play: async ({ canvasElement }) => {
+export const SelectedLightTheme: Story = {
+  ...Selected, decorators: LightTheme.decorators,
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+
+const cards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
+<ThemeRoot theme="light"><GameHand cards={cards} defaultValue="king-hearts" playLabel="Play card" onPlayIntent={console.log} /></ThemeRoot>` } } },
+};
+export const RTL: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+
+const cards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
+<GameHand dir="rtl" cards={cards} playLabel="Play card" onPlayIntent={console.log} />` } } },
+  args: { dir: 'rtl' }, play: async ({ canvasElement }) => {
   const fan = canvasElement.querySelector<HTMLElement>('[data-ui="game-hand-fan"]')!;
   const cards = fan.querySelectorAll('[data-ui="game-hand-card"]');
   await expectMirrored(cards[0]!, cards[2]!, fan, 'vertical');
@@ -121,7 +151,15 @@ export const RTL: Story = { tags: ['!autodocs'], args: { dir: 'rtl' }, play: asy
 } };
 
 export const KeyboardSelection: Story = {
-  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+import { Button } from '@jfrader/ui/button';
+
+const cards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
+<><GameHand cards={cards} playLabel="Play card" onPlayIntent={console.log} /><Button>Continue</Button></>` } } },
   render: (args) => <><GameHand {...args} /><Button>Continue</Button></>,
   play: async ({ canvas, userEvent, args }) => {
     const cards = CARDS.slice(0, 3).map((card) => canvas.getByRole('button', { name: card.label }));
@@ -302,7 +340,24 @@ function MutableHand(args: GameHandProps) {
   </div>;
 }
 export const StableIdentity: Story = {
-  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { GameHand } from '@jfrader/ui/game-hand';
+import { Button } from '@jfrader/ui/button';
+import { vars } from '@jfrader/tokens/vars';
+
+const initialCards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
+export function MutableHand() {
+  const [cards, setCards] = useState(initialCards);
+  return <div style={{ display: 'grid', justifyItems: 'start', gap: vars.space[4] }}>
+    <Button onClick={() => setCards(cards.slice(1))}>Remove first card</Button>
+    <Button onClick={() => setCards([...cards].reverse())}>Reverse cards</Button>
+    <GameHand cards={cards} playLabel="Play card" onPlayIntent={console.log} />
+  </div>;
+}` } } },
   name: 'Remove and reorder cards',
   render: (args) => <MutableHand {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -340,7 +395,22 @@ function ReorderedControlledHand(args: GameHandProps) {
   </>;
 }
 export const ControlledReorder: Story = {
-  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { GameHand } from '@jfrader/ui/game-hand';
+import { Button } from '@jfrader/ui/button';
+
+const initialCards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
+export function ReorderedControlledHand() {
+  const [cards, setCards] = useState(initialCards);
+  return <>
+    <Button onClick={() => setCards([...cards].reverse())}>Reverse controlled cards</Button>
+    <GameHand cards={cards} value="ace-spades" playLabel="Play card" onPlayIntent={console.log} />
+  </>;
+}` } } },
   name: 'Reorder a selected hand',
   render: (args) => <ReorderedControlledHand {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -445,7 +515,15 @@ import { vars } from '@jfrader/tokens/vars';
     }
   },
 };
-export const HiddenHandsRTL: Story = { ...HiddenHands, tags: ['!autodocs'], decorators: [(Story) => <div dir="rtl"><Story /></div>] };
+export const HiddenHandsRTL: Story = {
+  ...HiddenHands, decorators: [(Story) => <div dir="rtl"><Story /></div>],
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+import { vars } from '@jfrader/tokens/vars';
+
+<div dir="rtl"><div style={{ display: 'flex', gap: vars.space[12], padding: vars.space[8] }}>
+  {[1, 2, 3].map((count) => <GameHand.Hidden key={count} count={count} label="Opponent hand" />)}
+</div></div>` } } },
+};
 export const RadialHiddenHands: Story = {
   tags: ['!autodocs'],
   render: () => <div style={{ display: 'flex', gap: vars.space[12], padding: vars.space[12] }}>

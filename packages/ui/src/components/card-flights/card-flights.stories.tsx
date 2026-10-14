@@ -170,7 +170,61 @@ export const DealAndPlay: Story = {
     await expect(canvas.getByRole('button', { name: 'Ace of spades' })).toBeEnabled();
   },
 };
-export const Light: Story = { tags: ['!autodocs'], render: () => <CardFlightsFixture theme="light" /> };
+export const Light: Story = {
+  render: () => <CardFlightsFixture theme="light" />,
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { CardFlightsProvider, useBoardFlights, type PlayedFlightCard } from '@jfrader/ui/card-flights';
+import { GameHand, type GameHandCard } from '@jfrader/ui/game-hand';
+import { GameCardStack } from '@jfrader/ui/game-card-stack';
+import { GameTable } from '@jfrader/ui/game-table';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { Button } from '@jfrader/ui/button';
+import { vars } from '@jfrader/tokens/vars';
+
+const hands = {
+  own: [
+    { id: 'own-ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+    { id: 'own-two', label: 'Two of spades', value: { deck: 'french', suit: 'spades', rank: 2 } },
+    { id: 'own-three', label: 'Three of spades', value: { deck: 'french', suit: 'spades', rank: 3 } },
+  ],
+  rival: [
+    { id: 'rival-four', label: 'Four of hearts', value: { deck: 'french', suit: 'hearts', rank: 4 } },
+    { id: 'rival-five', label: 'Five of hearts', value: { deck: 'french', suit: 'hearts', rank: 5 } },
+    { id: 'rival-six', label: 'Six of hearts', value: { deck: 'french', suit: 'hearts', rank: 6 } },
+  ],
+} satisfies Record<string, GameHandCard[]>;
+const seats = [{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }];
+
+export function LightMatch() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return <div ref={setHost}><ThemeRoot theme="light" portalContainer={host}><CardFlightsProvider><Match /></CardFlightsProvider></ThemeRoot></div>;
+}
+function Match() {
+  const [handKey, setHandKey] = useState(1);
+  const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
+  const remaining = (player: keyof typeof hands) => hands[player].filter((card) => !plays.some((play) => play.cardId === card.id));
+  const hand = remaining('own');
+  const rivalCards = remaining('rival');
+  const { landing } = useBoardFlights({ hand, handKey, plays });
+  const play = (card: GameHandCard) => {
+    const own: PlayedFlightCard = { ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true };
+    const rival = rivalCards[0];
+    setPlays((current) => [...current, own, ...(rival ? [{ ...rival, cardId: rival.id, id: crypto.randomUUID(), playerKey: 'rival', isOwn: false }] : [])]);
+  };
+  return <>
+    <div style={{ display: 'flex', gap: vars.space[2], padding: vars.space[3] }}>
+      <Button disabled={landing.size > 0} onClick={() => { setPlays([]); setHandKey((key) => key + 1); }}>Deal hand</Button>
+    </div>
+    <div style={{ blockSize: '600px', maxInlineSize: '850px' }}><GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}>
+      <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rivalCards.length} label="Rival hand" /></GameTable.Seat>
+      <GameTable.Dock><GameHand cards={hand} playLabel="Play selected" onPlayIntent={play} disabled={landing.size > 0} /></GameTable.Dock>
+      {seats.map((seat) => <GameTable.Play key={seat.key} slotKey={seat.key}>
+        <GameCardStack.Pile playerKey={seat.key} label={seat.isMe ? 'Own pile' : 'Rival pile'} cards={plays.filter((entry) => entry.playerKey === seat.key)} />
+      </GameTable.Play>)}
+    </GameTable></div>
+  </>;
+}` } } },
+};
 
 export const StrictRegistryCleanup: Story = {
   ...DealAndPlay,
