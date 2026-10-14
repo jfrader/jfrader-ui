@@ -7,6 +7,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { fileSize, safeUrl } from '../../utils/attachment';
+import { numberFormatter } from '../../utils/intl';
 import { Button, type ButtonProps } from '../button';
 
 export interface Attachment {
@@ -91,7 +92,7 @@ export function AttachmentListView({
   const limit = previewCount === Infinity ? Infinity : Number.isFinite(previewCount) ? Math.max(0, Math.floor(previewCount)) : DEFAULT_PREVIEW_COUNT;
   const shown = expanded ? attachments : attachments.slice(0, limit);
   const labels = useMemo(() => {
-    const number = new Intl.NumberFormat(locale);
+    const number = numberFormatter(locale);
     const plural = new Intl.PluralRules(locale);
     return {
       attachments: 'Attachments',

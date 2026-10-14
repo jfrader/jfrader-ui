@@ -10,6 +10,7 @@ import { css, type Interpolation, type SerializedStyles, type Theme } from '../.
 import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { numberFormatter } from '../../utils/intl';
 import { Avatar, type AvatarProps, type AvatarSize, type AvatarStatus } from '../avatar';
 
 export interface AvatarGroupMember {
@@ -174,9 +175,9 @@ export function AvatarGroup({
   const hiddenCount = totalCount - visibleMembers.length;
   const hasOverflow = hiddenCount > 0;
 
-  const numberFormatter = new Intl.NumberFormat(locale);
-  const formattedHidden = numberFormatter.format(hiddenCount);
-  const formattedTotal = numberFormatter.format(totalCount);
+  const numberFormat = numberFormatter(locale);
+  const formattedHidden = numberFormat.format(hiddenCount);
+  const formattedTotal = numberFormat.format(totalCount);
 
   const overflowLabel = getOverflowLabel(hiddenCount, formattedHidden);
   const summaryLabel = getSummaryLabel(totalCount, formattedTotal);

@@ -54,6 +54,7 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
+import { dateTimeFormatter, defaultLocale } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Calendar, type CalendarWeekday } from '../calendar';
@@ -178,8 +179,6 @@ function localToday(): string {
   return isoFromParts(now.getFullYear(), now.getMonth() + 1, now.getDate());
 }
 
-const defaultLocale = () => (typeof navigator === 'undefined' ? undefined : navigator.language);
-
 /** The date format's fields in the locale's order, e.g. "month day, year". */
 function fieldPlaceholder(formatter: Intl.DateTimeFormat, locale: string): string {
   const fieldNames = new Intl.DisplayNames(locale, { type: 'dateTimeField' });
@@ -239,10 +238,10 @@ function DatePickerOverlay({
   const pendingFocusRestoreRef = useRef(false);
 
   const locale = useMemo(
-    () => new Intl.DateTimeFormat(localeProp ?? defaultLocale()).resolvedOptions().locale,
+    () => dateTimeFormatter(localeProp ?? defaultLocale()).resolvedOptions().locale,
     [localeProp],
   );
-  const formatter = useMemo(() => new Intl.DateTimeFormat(locale, CIVIL_DATE_FORMAT_OPTIONS), [locale]);
+  const formatter = useMemo(() => dateTimeFormatter(locale, CIVIL_DATE_FORMAT_OPTIONS), [locale]);
   const defaultPlaceholder = useMemo(() => fieldPlaceholder(formatter, locale), [formatter, locale]);
   const selectedDate = civilDate(value);
   const displayValue = selectedDate ? formatter.format(selectedDate) : '';

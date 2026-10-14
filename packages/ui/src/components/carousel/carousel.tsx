@@ -42,6 +42,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
@@ -355,7 +356,7 @@ export function Carousel({
   ...rest
 }: CarouselProps) {
   const baseId = useId();
-  const numberFormat = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const numberFormat = useMemo(() => numberFormatter(locale), [locale]);
   const labels: CarouselLabels = {
     slides: 'Slides',
     chooseSlide: 'Choose slide',

@@ -1,4 +1,5 @@
 'use client';
+import { numberFormatter } from '../../utils/intl';
 
 import {
   createContext,
@@ -387,7 +388,7 @@ function ToggleSubscriptionPrice({
       string,
       ToggleSubscriptionPriceProps['formatOptions'],
     ];
-    return new Intl.NumberFormat(tags, { ...options, style: 'currency', currency });
+    return numberFormatter(tags, { ...options, style: 'currency', currency });
   }, [formatKey]);
   const formatted = formatter.format(amount);
   const hasPrevious = was !== undefined && Number.isFinite(was) && was > amount;

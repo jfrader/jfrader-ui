@@ -16,6 +16,7 @@
 // means every step is complete. Values are floored and clamped; normalization never notifies.
 // Step ids are React keys, so duplicates trigger React's development key warning; ids reach the
 // DOM only percent-encoded.
+import { numberFormatter } from '../../utils/intl';
 import {
   useId,
   useLayoutEffect,
@@ -472,7 +473,7 @@ export function Stepper(props: StepperProps) {
   const currentStep = steps[current] ?? null;
   const allComplete = count > 0 && currentStep === null;
 
-  const numberFormat = new Intl.NumberFormat(locale);
+  const numberFormat = numberFormatter(locale);
   const stepLabel = getStepLabel ?? defaultStepLabel(numberFormat);
   const changeLabel = getChangeLabel ?? defaultChangeLabel(numberFormat);
 

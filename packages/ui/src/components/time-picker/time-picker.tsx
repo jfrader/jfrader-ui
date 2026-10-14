@@ -1,4 +1,5 @@
 'use client';
+import { dateTimeFormatter } from '../../utils/intl';
 
 // Select-only combobox: Select owns virtual focus, wrapping arrows, Home/End, typeahead,
 // Enter/Space selection, Escape and Tab dismissal. Values are civil HH:mm, not timestamps.
@@ -210,7 +211,7 @@ export function TimePicker({
   const labelId = `${useId()}-label`;
   const formatter = useMemo(
     () =>
-      new Intl.DateTimeFormat(locale, {
+      dateTimeFormatter(locale, {
         hour: 'numeric',
         minute: '2-digit',
         timeZone: 'UTC',

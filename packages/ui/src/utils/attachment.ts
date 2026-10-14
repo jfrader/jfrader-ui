@@ -1,3 +1,5 @@
+import { numberFormatter } from './intl';
+
 /**
  * Sanitizes and validates a URL for use in attachment links and images.
  * Only http:, https:, and blob: protocols are permitted. Unsafe characters,
@@ -25,7 +27,7 @@ export function fileSize(size: number, locale?: Intl.LocalesArgument): string {
       : safeSize >= 1_000
       ? { size: 1_000, unit: 'kilobyte' }
       : { size: 1, unit: 'byte' };
-  return new Intl.NumberFormat(locale, {
+  return numberFormatter(locale, {
     style: 'unit',
     unit: units.unit,
     maximumFractionDigits: 1,

@@ -15,6 +15,7 @@ import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
@@ -252,7 +253,7 @@ function matchesAccept(file: File, accept?: string) {
 function formatSize(bytes: number, locale?: string) {
   const exponent =
     bytes > 0 ? Math.min(Math.floor(Math.log(bytes) / Math.log(DECIMAL_UNIT)), byteUnits.length - 1) : 0;
-  return new Intl.NumberFormat(locale, {
+  return numberFormatter(locale, {
     style: 'unit',
     unit: byteUnits[Math.max(0, exponent)],
     unitDisplay: 'short',
@@ -605,7 +606,7 @@ export function FileDropzone({
                   value={attempt?.progress}
                   aria-label={slotProps?.progress?.['aria-label'] ?? item.name}
                   getValueLabel={percent =>
-                    new Intl.NumberFormat(locale, { style: 'percent' }).format(percent / MAX_PERCENT)
+                    numberFormatter(locale, { style: 'percent' }).format(percent / MAX_PERCENT)
                   }
                   css={[instantProgressStyle, slotProps?.progress?.css]}
                 />

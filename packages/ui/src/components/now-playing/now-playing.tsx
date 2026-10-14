@@ -18,6 +18,7 @@ import { css, keyframes, type Interpolation, type Theme } from '../../styling/cs
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
@@ -249,7 +250,7 @@ function formatDuration(value: number, locale?: Intl.LocalesArgument) {
     Object.entries(duration)
       .filter(([unit, n]) => n > 0 || unit === 'seconds')
       .map(([unit, n]) =>
-        new Intl.NumberFormat(locale, {
+        numberFormatter(locale, {
           style: 'unit',
           unit: unit.slice(0, -1),
           unitDisplay: 'short',

@@ -1,4 +1,5 @@
 'use client';
+import { numberFormatter } from '../../utils/intl';
 
 import {
   useEffect,
@@ -448,12 +449,12 @@ export function TypewriterTerminal({
   const rate = Number.isFinite(speed) && speed > 0 ? speed : 1;
   const normalizedRows = Number.isInteger(rows) && rows > 0 ? rows : DEFAULT_ROWS;
   const seconds = useMemo(
-    () => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }),
+    () => numberFormatter(locale, { maximumFractionDigits: 1 }),
     [locale],
   );
   const percentage = useMemo(
     () =>
-      new Intl.NumberFormat(locale, {
+      numberFormatter(locale, {
         style: 'percent',
         maximumFractionDigits: 0,
       }),

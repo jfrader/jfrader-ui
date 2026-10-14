@@ -51,6 +51,7 @@ import {
   type NativeDialogTransition,
 } from '../../overlay/use-native-dialog';
 import { PRESENCE_SPRING } from '../../overlay/presence-spring';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -357,7 +358,7 @@ function SheetRoot({
     const fraction = originalDetents.current[value]!;
     return (
       getValueText?.(fraction, value) ??
-      new Intl.NumberFormat(locale, { style: 'percent' }).format(fraction)
+      numberFormatter(locale, { style: 'percent' }).format(fraction)
     );
   }, [getValueText, locale, value]);
   const context = useMemo(

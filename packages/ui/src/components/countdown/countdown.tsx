@@ -13,6 +13,7 @@ import { css, keyframes, type Interpolation, type Theme } from '../../styling/cs
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { numberFormatter, validEpoch } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useLatestCallback } from '../../utils/use-latest-callback';
 
@@ -52,7 +53,6 @@ export interface CountdownProps extends Omit<ComponentPropsWithRef<'div'>, 'chil
 }
 
 const MAX_TIMEOUT = 2147483647;
-const MAX_DATE = 8640000000000000;
 const SECOND_MS = 1000;
 const DEFAULT_UNITS: readonly CountdownUnit[] = ['days', 'hours', 'minutes', 'seconds'];
 const UNIT_SECONDS: Record<CountdownUnit, number> = {
@@ -68,7 +68,6 @@ const UNIT_NAMES: Record<CountdownUnit, string> = {
   seconds: 'second',
 };
 const systemClock = () => Date.now();
-const validEpoch = (value: number) => Number.isFinite(value) && Math.abs(value) <= MAX_DATE;
 const hasContent = (value: ReactNode) => isRenderable(value) && value !== '';
 
 function resolveTarget(target: CountdownProps['target']): number | null {
@@ -127,7 +126,7 @@ function spokenDuration(
     seconds >= 60 && units.length > 1 ? units.filter((unit) => unit !== 'seconds') : units;
   const parts = partsFor(seconds, spokenUnits);
   if (spokenUnits.length === 1 && spokenUnits[0] === 'seconds') {
-    return new Intl.NumberFormat(locale, {
+    return numberFormatter(locale, {
       style: 'unit',
       unit: 'second',
       unitDisplay: 'long',
@@ -147,7 +146,7 @@ function spokenDuration(
     type: 'conjunction',
   }).format(
     selected.map(({ unit, value }) =>
-      new Intl.NumberFormat(locale, {
+      numberFormatter(locale, {
         style: 'unit',
         unit: UNIT_NAMES[unit],
         unitDisplay: 'long',
@@ -440,7 +439,7 @@ export function Countdown({
                 css={[contentStyle, slotProps?.content?.css]}
               >
                 {partsFor(seconds, normalizedUnits).map(({ unit, value }) => {
-                  const formatter = new Intl.NumberFormat(locale, {
+                  const formatter = numberFormatter(locale, {
                     style: 'unit',
                     unit: UNIT_NAMES[unit],
                     unitDisplay,

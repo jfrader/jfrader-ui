@@ -18,6 +18,7 @@ import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { dateTimeFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { CIVIL_DATE_FORMAT_OPTIONS, dateFromIso, isIsoDate } from '../calendar/calendar.utils';
 import { createUsageFormats, summarizeUsage, type UsageMeterSummary } from '../usage-meter/usage-model';
@@ -711,9 +712,9 @@ export function ActivityRings({
   const count = createUsageFormats(locale).index;
   const met = rings.filter((ring) => ring.status === 'closed').length;
   const dateFormats = {
-    full: new Intl.DateTimeFormat(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, dateStyle: 'full' }),
-    weekday: new Intl.DateTimeFormat(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, weekday: 'short' }),
-    day: new Intl.DateTimeFormat(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, day: 'numeric' }),
+    full: dateTimeFormatter(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, dateStyle: 'full' }),
+    weekday: dateTimeFormatter(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, weekday: 'short' }),
+    day: dateTimeFormatter(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, day: 'numeric' }),
   };
   const dayName = (item: ActivityDay) =>
     isIsoDate(item.date) ? dateFormats.full.format(dateFromIso(item.date)) : item.id;

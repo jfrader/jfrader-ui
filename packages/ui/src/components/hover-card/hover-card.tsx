@@ -54,6 +54,7 @@ import { triggerStyle } from '../../styling/trigger-style';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Avatar } from '../avatar';
@@ -580,7 +581,7 @@ function HoverCardProfile({
   ...rest
 }: HoverCardProfileProps) {
   const numberFormat = stats.some((stat) => typeof stat.value === 'number')
-    ? new Intl.NumberFormat(locale)
+    ? numberFormatter(locale)
     : undefined;
 
   return (

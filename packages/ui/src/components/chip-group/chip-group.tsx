@@ -16,6 +16,7 @@ import { css, keyframes, type Interpolation, type Theme } from '../../styling/cs
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -355,7 +356,7 @@ export function ChipGroup({
                     >
                       {expanded
                         ? lessLabel
-                        : moreLabel!(new Intl.NumberFormat(locale).format(hiddenCount), hiddenCount)}
+                        : moreLabel!(numberFormatter(locale).format(hiddenCount), hiddenCount)}
                     </button>
                   </motion.div>
                 )}

@@ -1,4 +1,5 @@
 'use client';
+import { numberFormatter } from '../../utils/intl';
 
 import {
   useEffect,
@@ -264,7 +265,7 @@ function ToastStackContent({
               onClick={() => setLatched((value) => !value)}
             >
               {expanded ? collapseLabel : expandLabel}
-              {overflow > 0 && ` (+${new Intl.NumberFormat().format(overflow)})`}
+              {overflow > 0 && ` (+${numberFormatter().format(overflow)})`}
             </Button>
           )}
           <div

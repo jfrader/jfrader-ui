@@ -77,6 +77,7 @@ import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating, type OverlayAvailableSize } from '../../overlay/use-overlay-floating';
 import { isRenderable } from '../../utils/renderable';
+import { dateTimeFormatter, numberFormatter } from '../../utils/intl';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
@@ -500,10 +501,10 @@ function DateRangePickerLayer({
   const outsidePressTargetRef = useRef<Element | null>(null);
 
   const locale = useMemo(
-    () => new Intl.DateTimeFormat(localeProp ?? defaultLocale(), CIVIL_DATE_FORMAT_OPTIONS).resolvedOptions().locale,
+    () => dateTimeFormatter(localeProp ?? defaultLocale(), CIVIL_DATE_FORMAT_OPTIONS).resolvedOptions().locale,
     [localeProp],
   );
-  const formatter = useMemo(() => new Intl.DateTimeFormat(locale, RANGE_FORMAT_OPTIONS), [locale]);
+  const formatter = useMemo(() => dateTimeFormatter(locale, RANGE_FORMAT_OPTIONS), [locale]);
   const value = isValidRange(committed) ? committed : null;
   const min = isIsoDate(minProp) ? minProp : undefined;
   const max = isIsoDate(maxProp) ? maxProp : undefined;
@@ -857,8 +858,8 @@ function DateRangePickerPanel({
     cancel,
   } = useDateRangePickerContext('Content');
   const summaryId = useId();
-  const formatter = useMemo(() => new Intl.DateTimeFormat(locale, RANGE_FORMAT_OPTIONS), [locale]);
-  const numberFormat = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const formatter = useMemo(() => dateTimeFormatter(locale, RANGE_FORMAT_OPTIONS), [locale]);
+  const numberFormat = useMemo(() => numberFormatter(locale), [locale]);
 
   const isEnabled = (date: string | null | undefined): date is string => date != null && isWithin(date, min, max);
   const hasEnabledDays = min === undefined || max === undefined || min <= max;

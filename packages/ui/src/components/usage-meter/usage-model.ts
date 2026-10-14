@@ -1,6 +1,8 @@
 // Amount-against-allowance model shared by UsageMeter and ActivityRings: one place decides
 // validity, state thresholds and Intl formatting for "value of max".
 
+import { numberFormatter } from '../../utils/intl';
+
 export type UsageMeterState = 'normal' | 'near-limit' | 'over-limit' | 'unavailable';
 export interface UsageMeterSummary {
   total: number;
@@ -27,9 +29,9 @@ export function createUsageFormats(
   numberFormatOptions?: Intl.NumberFormatOptions,
 ): UsageFormats {
   return {
-    amount: new Intl.NumberFormat(locale, { maximumFractionDigits: 1, ...numberFormatOptions }),
-    percent: new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }),
-    index: new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }),
+    amount: numberFormatter(locale, { maximumFractionDigits: 1, ...numberFormatOptions }),
+    percent: numberFormatter(locale, { style: 'percent', maximumFractionDigits: 0 }),
+    index: numberFormatter(locale, { maximumFractionDigits: 0 }),
   };
 }
 

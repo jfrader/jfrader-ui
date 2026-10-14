@@ -18,6 +18,7 @@ import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
 import { TextField } from '../text-field';
@@ -486,7 +487,7 @@ export function JsonViewer({
   const typeahead = useRef({ text: '', time: 0 });
   const labelIdBase = useId();
   const nodes = useMemo(() => inspect(data, rootName), [data, rootName]);
-  const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const format = useMemo(() => numberFormatter(locale), [locale]);
   const plural = useMemo(() => new Intl.PluralRules(locale), [locale]);
   const labels: JsonViewerLabels = {
     tree: 'JSON',

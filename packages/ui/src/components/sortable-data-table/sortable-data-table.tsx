@@ -1,4 +1,5 @@
 'use client';
+import { dateTimeFormatter, numberFormatter } from '../../utils/intl';
 
 import {
   useEffect,
@@ -239,9 +240,9 @@ export function SortableDataTable<T>({
   const keySet = new Set(keys);
   const activeColumn = columns.find((column) => column.id === rawSort?.columnId && sortable(column));
   const sort = activeColumn && rawSort ? rawSort : null;
-  const numberFormat = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const numberFormat = useMemo(() => numberFormatter(locale), [locale]);
   const dateFormat = useMemo(
-    () => new Intl.DateTimeFormat(locale, { ...dateFormatOptions, ...(timeZone ? { timeZone } : {}) }),
+    () => dateTimeFormatter(locale, { ...dateFormatOptions, ...(timeZone ? { timeZone } : {}) }),
     [locale, dateFormatOptions, timeZone],
   );
   const collator = useMemo(() => new Intl.Collator(locale, { numeric: true, sensitivity: 'base' }), [locale]);
