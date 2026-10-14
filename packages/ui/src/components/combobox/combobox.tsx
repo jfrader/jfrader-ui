@@ -45,7 +45,6 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react';
-import { useFormReset } from '../../utils/use-form-reset';
 import {
   FloatingList,
   useDismiss,
@@ -77,6 +76,7 @@ import {
 } from '../../utils/collection-registry';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useFormReset } from '../../utils/use-form-reset';
 import { useLatestCallback } from '../../utils/use-latest-callback';
 import { TextField, type TextFieldProps } from '../text-field';
 
