@@ -26,7 +26,7 @@ interface InspectionProps {
   value?: string | null;
   defaultValue?: string | null;
   /** Controlled inspection waits for the caller to accept the request. */
-  onInspect?: (playerKey: string | null) => void;
+  onValueChange?: (playerKey: string | null) => void;
   /** Jitter and rotation only; GameTable owns placement of composed piles. */
   layout?: Partial<PileLayout>;
   /** First cards to render, rounded down and clamped to zero; defaults to three. */
@@ -108,11 +108,11 @@ function cardLimit(maxCards: number) {
 }
 
 export function GameCardStack({
-  ref, piles, placement = 'grid', labels, revealedKeys = [], value, defaultValue = null, onInspect,
+  ref, piles, placement = 'grid', labels, revealedKeys = [], value, defaultValue = null, onValueChange,
   layout, cardWidth = `var(--game-card-width, ${vars.size.gameCardMd})`, maxCards = PLAYED_PILE.maxCards,
   playOrder, backPattern, className, sx, style, onKeyDown, slotProps, ...rest
 }: GameCardStackProps) {
-  const [inspected, inspect] = useControlledState(value, defaultValue, onInspect);
+  const [inspected, inspect] = useControlledState(value, defaultValue, onValueChange);
   const returnFocus = useRef<HTMLButtonElement | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const probeRef = useRef<HTMLDivElement>(null);
@@ -174,7 +174,7 @@ export function GameCardStack({
             style={{ '--pile-x': position ? `${position.x}%` : undefined, '--pile-y': position ? `${position.y}%` : undefined,
               '--game-card-width': position ? cardWidth : undefined } as CSSProperties}>
             <GameCardStack.Pile playerKey={pile.playerKey} cards={pile.cards} label={labels.piles[pile.playerKey]!}
-              labels={labels.cards} value={inspected} onInspect={inspect} revealed={revealedKeys.includes(pile.playerKey)}
+              labels={labels.cards} value={inspected} onValueChange={inspect} revealed={revealedKeys.includes(pile.playerKey)}
               layout={layout} maxCards={limit} playOrder={playOrder} backPattern={backPattern} slotProps={slotProps}
               style={{ '--pile-base-rotation': config.facePlayerRotation && pile.geometry ? `${(pile.geometry.angleDeg ?? 90) - 90}deg` : undefined } as CSSProperties} />
           </div>;
@@ -186,9 +186,9 @@ export function GameCardStack({
 GameCardStack.displayName = 'GameCardStack';
 
 function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, labels, value, defaultValue = null,
-  onInspect, revealed = false, maxCards = PLAYED_PILE.maxCards, cardWidth, layout, playOrder = {}, backPattern,
+  onValueChange, revealed = false, maxCards = PLAYED_PILE.maxCards, cardWidth, layout, playOrder = {}, backPattern,
   className, sx, style, onKeyDown, slotProps, ...rest }: GameCardStackPileProps) {
-  const [inspected, inspect] = useControlledState(value, defaultValue, onInspect);
+  const [inspected, inspect] = useControlledState(value, defaultValue, onValueChange);
   const inspecting = inspected === playerKey;
   const triggerRef = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef(false);

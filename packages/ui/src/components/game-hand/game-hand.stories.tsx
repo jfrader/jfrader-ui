@@ -19,20 +19,20 @@ const CARDS: GameHandCard[] = [
 
 const meta = {
   title: 'Games/GameHand', component: GameHand, tags: ['autodocs'],
-  args: { cards: CARDS.slice(0, 3), playLabel: 'Play card', onSelect: fn(), onPlayIntent: fn() },
+  args: { cards: CARDS.slice(0, 3), playLabel: 'Play card', onValueChange: fn(), onPlayIntent: fn() },
   parameters: { docs: {
     description: { component: 'Choose a card from your hand and confirm to play it. Show opponents’ hands as card backs with GameHand.Hidden.' },
     usage: `### Selection and keyboard
 Each card is a native toggle button (APG Button pattern, aria-pressed). Tab and Shift+Tab follow card order, then the enabled confirmation action; Enter or Space selects or clears a card. Only confirmation calls onPlayIntent; there is no drag gesture.
 
 ### Values
-Pass plain cards with unique stable id, value and a label in your page’s language. Keep id when reordering or removing cards; uncontrolled selection follows the card, not its old index. selectedIndex/onSelect control selection; defaultSelectedIndex seeds uncontrolled selection. null clears selection. Removing the selected card disables confirmation.
+Pass plain cards with unique stable id, value and a label in your page’s language. Keep id when reordering or removing cards; selection follows the card id in both controlled and uncontrolled hands. value/onValueChange control selection; defaultValue seeds uncontrolled selection. null clears selection. Removing the selected card disables confirmation. onPlayIntent receives the selected card, without an index.
 
 ### Geometry
 size uses the GameCard scale. The reference fan turns 3 cards by −10/0/10° and 2 by −7/7°; other counts stay straight, including the five-card example. Cards overlap by 1.32 spacing steps (10.56px) at md and lg. At sm, cards do not overlap, leaving a 32px strip for pointer selection. No opening animation runs, including with reduced motion. Roots accept ref, css and sx; slotProps styles the fan, card buttons and confirmation.
 
 ### Hidden hands
-GameHand.Hidden takes count, never card values; it renders 0–3 backs and needs a label naming the hand. Omit polar for a standalone fan. With polar, the root moves inward from a caller-positioned seat using the reference’s 56px avatar and 28px name block. rules and scale configure radial geometry; size controls the card width. Seat positioning belongs to the caller.`,
+GameHand.Hidden takes count, never card values; it renders 0–3 backs and needs a label naming the hand. Omit polar for a standalone fan. With polar, the root moves inward from a caller-positioned seat using the reference’s 56px avatar and 28px name block. rules and scale configure radial geometry; size controls the card width. Seat positioning belongs to the caller. slotProps.card styles each hidden-card wrapper; root styles use css and sx.`,
   } },
 } satisfies Meta<typeof GameHand>;
 export default meta;
@@ -76,7 +76,7 @@ export const Default: Story = { play: async ({ canvasElement }) => checkFan(canv
 export const OneCard: Story = { args: { cards: CARDS.slice(0, 1) }, play: async ({ canvasElement }) => checkFan(canvasElement, 1) };
 export const TwoCards: Story = { args: { cards: CARDS.slice(0, 2) }, play: async ({ canvasElement }) => checkFan(canvasElement, 2) };
 export const FiveCards: Story = { args: { cards: CARDS }, play: async ({ canvasElement }) => checkFan(canvasElement, 5) };
-export const Selected: Story = { args: { defaultSelectedIndex: 1 } };
+export const Selected: Story = { args: { defaultValue: CARDS[1]!.id } };
 export const LightTheme: Story = { decorators: [(Story) => <ThemeRoot theme="light"><Story /></ThemeRoot>] };
 export const SelectedLightTheme: Story = { ...Selected, decorators: LightTheme.decorators };
 export const RTL: Story = { args: { dir: 'rtl' }, play: async ({ canvasElement }) => {
@@ -97,13 +97,13 @@ export const KeyboardSelection: Story = {
     await expect(getComputedStyle(cards[0]!).outlineStyle).not.toBe('none');
     await expect(getComputedStyle(cards[0]!).zIndex).toBe('1000');
     await userEvent.keyboard('{Enter}');
-    await expect(args.onSelect).toHaveBeenNthCalledWith(1, 0);
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(1, CARDS[0]!.id);
     await expect(cards[0]).toHaveAttribute('aria-pressed', 'true');
     await expect(args.onPlayIntent).not.toHaveBeenCalled();
     await userEvent.tab();
     await expect(cards[1]).toHaveFocus();
     await userEvent.keyboard(' ');
-    await expect(args.onSelect).toHaveBeenNthCalledWith(2, 1);
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, CARDS[1]!.id);
     await expect(cards[1]).toHaveAttribute('aria-pressed', 'true');
     await expect(cards[0]).toHaveAttribute('aria-pressed', 'false');
     await userEvent.tab();
@@ -113,7 +113,7 @@ export const KeyboardSelection: Story = {
     await expect(getComputedStyle(confirm).outlineStyle).not.toBe('none');
     await userEvent.keyboard('{Enter}');
     await expect(args.onPlayIntent).toHaveBeenCalledTimes(1);
-    await expect(args.onPlayIntent).toHaveBeenCalledWith(CARDS[1], 1);
+    await expect(args.onPlayIntent).toHaveBeenCalledWith(CARDS[1]);
     await userEvent.tab();
     await expect(canvas.getByRole('button', { name: 'Continue' })).toHaveFocus();
     await userEvent.tab({ shift: true });
@@ -123,46 +123,46 @@ export const KeyboardSelection: Story = {
     await userEvent.tab({ shift: true });
     await expect(cards[1]).toHaveFocus();
     await userEvent.keyboard(' ');
-    await expect(args.onSelect).toHaveBeenNthCalledWith(3, null);
-    await expect(args.onSelect).toHaveBeenCalledTimes(3);
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(3, null);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
     await expect(confirm).toBeDisabled();
   },
 };
 
 export const Disabled: Story = {
-  args: { disabled: true, defaultSelectedIndex: 1 },
+  args: { disabled: true, defaultValue: CARDS[1]!.id },
   render: KeyboardSelection.render,
   play: async ({ canvas, userEvent, args }) => {
     for (const card of CARDS.slice(0, 3)) await expect(canvas.getByRole('button', { name: card.label })).toBeDisabled();
     await expect(canvas.getByRole('button', { name: 'Play card' })).toBeDisabled();
     await userEvent.tab();
     await expect(canvas.getByRole('button', { name: 'Continue' })).toHaveFocus();
-    await expect(args.onSelect).not.toHaveBeenCalled();
+    await expect(args.onValueChange).not.toHaveBeenCalled();
     await expect(args.onPlayIntent).not.toHaveBeenCalled();
   },
 };
 
 function ControlledHand(args: GameHandProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  return <GameHand {...args} selectedIndex={selectedIndex} onSelect={(index) => { setSelectedIndex(index); args.onSelect?.(index); }} />;
+  const [value, setValue] = useState<string | null>(null);
+  return <GameHand {...args} value={value} onValueChange={(id) => { setValue(id); args.onValueChange?.(id); }} />;
 }
 export const Controlled: Story = {
   render: (args) => <ControlledHand {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: CARDS[2]!.label }));
-    await expect(args.onSelect).toHaveBeenCalledTimes(1);
-    await expect(args.onSelect).toHaveBeenCalledWith(2);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(CARDS[2]!.id);
     await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));
     await expect(args.onPlayIntent).toHaveBeenCalledTimes(1);
-    await expect(args.onPlayIntent).toHaveBeenCalledWith(CARDS[2], 2);
+    await expect(args.onPlayIntent).toHaveBeenCalledWith(CARDS[2]);
   },
 };
 export const RejectedSelection: Story = {
-  args: { selectedIndex: null },
+  args: { value: null },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: CARDS[0]!.label }));
-    await expect(args.onSelect).toHaveBeenCalledTimes(1);
-    await expect(args.onSelect).toHaveBeenCalledWith(0);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(CARDS[0]!.id);
     await expect(canvas.getByRole('button', { name: CARDS[0]!.label })).toHaveAttribute('aria-pressed', 'false');
     await expect(canvas.getByRole('button', { name: 'Play card' })).toBeDisabled();
     await expect(args.onPlayIntent).not.toHaveBeenCalled();
@@ -188,19 +188,40 @@ export const StableIdentity: Story = {
     await expect(card.querySelector('[data-ui="game-card"]')).toBe(paper);
     await expect(card).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));
-    await expect(args.onPlayIntent).toHaveBeenNthCalledWith(1, CARDS[1], 0);
+    await expect(args.onPlayIntent).toHaveBeenNthCalledWith(1, CARDS[1]);
     await userEvent.click(canvas.getByRole('button', { name: 'Reverse cards' }));
     await expect(canvas.getByRole('button', { name: CARDS[1]!.label })).toBe(card);
     await expect(card).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));
-    await expect(args.onPlayIntent).toHaveBeenNthCalledWith(2, CARDS[1], 1);
+    await expect(args.onPlayIntent).toHaveBeenNthCalledWith(2, CARDS[1]);
     await userEvent.click(canvas.getByRole('button', { name: 'Remove first card' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Remove first card' }));
     await expect(canvas.getByRole('button', { name: 'Play card' })).toBeDisabled();
-    await expect(args.onSelect).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
 export const Empty: Story = { args: { cards: [] } };
+function ReorderedControlledHand(args: GameHandProps) {
+  const [cards, setCards] = useState(args.cards);
+  return <>
+    <Button onClick={() => setCards([...cards].reverse())}>Reverse controlled cards</Button>
+    <GameHand {...args} cards={cards} value={args.cards[0]!.id} />
+  </>;
+}
+export const ControlledReorder: Story = {
+  render: (args) => <ReorderedControlledHand {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const selected = canvas.getByRole('button', { name: CARDS[0]!.label });
+    await expect(selected).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(canvas.getByRole('button', { name: 'Reverse controlled cards' }));
+    await expect(selected).toHaveAttribute('aria-pressed', 'true');
+    await expect(canvas.getByRole('button', { name: CARDS[2]!.label })).toHaveAttribute('aria-pressed', 'false');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));
+    await expect(args.onPlayIntent).toHaveBeenCalledTimes(1);
+    await expect(args.onPlayIntent).toHaveBeenCalledWith(CARDS[0]);
+  },
+};
 export const Sizes: Story = { render: (args) => <div style={{ display: 'flex', gap: vars.space[8] }}>
   {(['sm', 'md', 'lg'] as const).map((size) => <GameHand {...args} key={size} size={size} />)}
 </div>, play: async ({ canvasElement }) => {
@@ -255,6 +276,19 @@ export const HiddenHands: Story = {
   },
 };
 export const HiddenHandsLightTheme: Story = { ...HiddenHands, decorators: LightTheme.decorators };
+export const HiddenCardSlots: Story = {
+  render: () => <GameHand.Hidden count={3} label="Opponent hand"
+    slotProps={{ card: { className: 'custom-hidden-card', css: { borderRadius: vars.radius.lg } } }} />,
+  parameters: { docs: { source: { code: '<GameHand.Hidden count={3} label="Opponent hand" slotProps={{ card: { css: { borderRadius: vars.radius.lg } } }} />' } } },
+  play: async ({ canvasElement }) => {
+    const cards = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand-hidden-card"]');
+    await expect(cards).toHaveLength(3);
+    for (const card of cards) {
+      await expect(card).toHaveClass('custom-hidden-card');
+      await expect(getComputedStyle(card).borderRadius).toBe(getComputedStyle(card).getPropertyValue('--ui-radius-lg').trim());
+    }
+  },
+};
 export const HiddenHandsRTL: Story = { ...HiddenHands, decorators: [(Story) => <div dir="rtl"><Story /></div>] };
 export const RadialHiddenHands: Story = {
   render: () => <div style={{ display: 'flex', gap: vars.space[12], padding: vars.space[12] }}>

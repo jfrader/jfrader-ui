@@ -45,7 +45,7 @@ function mockPreference(reduced = false) {
 }
 const meta = {
   title: 'Games/GameCardStack', component: GameCardStack, tags: ['autodocs'],
-  args: { ...counts(2, 3), onInspect: fn() },
+  args: { ...counts(2, 3), onValueChange: fn() },
   beforeEach: () => mockPreference(),
   decorators: [(Story) => <div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}><Story /></div>],
   parameters: { layout: 'fullscreen', a11y: { test: 'error' }, docs: {
@@ -61,7 +61,7 @@ const meta = {
 
 ### Inspection and keyboard
 - Native disclosure button with \`aria-expanded\` and \`aria-controls\`. Tab reaches each pile; Enter or Space toggles it. Escape closes and returns focus after acceptance. A root \`onKeyDown\` can prevent dismissal.
-- \`defaultValue\` seeds uncontrolled inspection; \`value\` and \`onInspect\` control it. A player key opens that pile; \`null\` closes it. The root shares one inspected key. Standalone parts can share the same controlled state.
+- \`defaultValue\` seeds uncontrolled inspection; \`value\` and \`onValueChange\` control it. A player key opens that pile; \`null\` closes it. The root shares one inspected key. Standalone parts can share the same controlled state.
 - Automatically revealed cards stay spread after inspection closes. Closed cards remain visible to assistive technology. Reduced motion completes size changes and focus without waiting for animation.`,
   } },
 } satisfies Meta<typeof GameCardStack>;
@@ -97,9 +97,9 @@ export const Default: Story = {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await userEvent.keyboard(' ');
     await userEvent.keyboard(' ');
-    await expect(args.onInspect).toHaveBeenCalledTimes(4);
-    await expect(args.onInspect).toHaveBeenNthCalledWith(1, 'North');
-    await expect(args.onInspect).toHaveBeenNthCalledWith(2, null);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(4);
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(1, 'North');
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, null);
     await noOverlap(canvasElement);
   },
 };
@@ -126,7 +126,7 @@ export const RevealedHands: Story = { args: { ...counts(6, 3), revealedKeys: nam
   } };
 function ControlledFixture(args: GameCardStackProps) {
   const [value, setValue] = useState<string | null>(null);
-  return <GameCardStack {...args} value={value} onInspect={(next) => { args.onInspect?.(next); setValue(next); }} />;
+  return <GameCardStack {...args} value={value} onValueChange={(next) => { args.onValueChange?.(next); setValue(next); }} />;
 }
 export const Controlled: Story = { render: (args) => <ControlledFixture {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -136,7 +136,7 @@ export const Controlled: Story = { render: (args) => <ControlledFixture {...args
     await userEvent.keyboard('{Escape}');
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await expect(trigger).toHaveFocus();
-    await expect(args.onInspect).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
   } };
 export const RejectedControlledClose: Story = { args: { value: 'North' },
   play: async ({ canvas, userEvent, args }) => {
@@ -145,16 +145,16 @@ export const RejectedControlledClose: Story = { args: { value: 'North' },
     await userEvent.keyboard('{Escape}');
     await expect(other).toHaveFocus();
     await expect(canvas.getByRole('button', { name: "North's played cards" })).toHaveAttribute('aria-expanded', 'true');
-    await expect(args.onInspect).toHaveBeenCalledTimes(1);
-    await expect(args.onInspect).toHaveBeenCalledWith(null);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(null);
   } };
 export const RejectedControlledOpen: Story = { args: { value: null },
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: "North's played cards" });
     await userEvent.click(trigger);
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    await expect(args.onInspect).toHaveBeenCalledTimes(1);
-    await expect(args.onInspect).toHaveBeenCalledWith('North');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith('North');
   } };
 export const PreventEscape: Story = { args: { defaultValue: 'North', onKeyDown: (event) => event.preventDefault() },
   play: async ({ canvas, userEvent, args }) => {
@@ -162,7 +162,7 @@ export const PreventEscape: Story = { args: { defaultValue: 'North', onKeyDown: 
     trigger.focus();
     await userEvent.keyboard('{Escape}');
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    await expect(args.onInspect).not.toHaveBeenCalled();
+    await expect(args.onValueChange).not.toHaveBeenCalled();
   } };
 export const ReducedMotion: Story = {
   beforeEach: () => mockPreference(true),
@@ -254,7 +254,7 @@ export const FreePlacement: Story = { args: { placement: 'free', piles: players(
   } };
 export const StandalonePile: Story = {
   render: (args) => <div style={{ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` }}>
-    <GameCardStack.Pile {...args.piles[0]!} label={args.labels.piles.North!} labels={args.labels.cards} onInspect={args.onInspect} />
+    <GameCardStack.Pile {...args.piles[0]!} label={args.labels.piles.North!} labels={args.labels.cards} onValueChange={args.onValueChange} />
   </div>,
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: "North's played cards" });
@@ -266,13 +266,13 @@ export const StandalonePile: Story = {
     cards.focus();
     await userEvent.keyboard('{Escape}');
     await expect(trigger).toHaveFocus();
-    await expect(args.onInspect).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
   },
 };
 export const StandaloneControlled: Story = {
   render: (args) => <div style={{ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` }}>
     <GameCardStack.Pile {...args.piles[0]!} label={args.labels.piles.North!} labels={args.labels.cards}
-      value="North" onInspect={args.onInspect} />
+      value="North" onValueChange={args.onValueChange} />
   </div>,
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: "North's played cards" });
@@ -282,8 +282,8 @@ export const StandaloneControlled: Story = {
     await userEvent.keyboard('{Escape}');
     await expect(cards).toHaveFocus();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    await expect(args.onInspect).toHaveBeenCalledTimes(1);
-    await expect(args.onInspect).toHaveBeenCalledWith(null);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(null);
   },
 };
 const spanishPiles: readonly GameCardStackPile[] = [
