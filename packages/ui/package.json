@@ -80,6 +80,7 @@
     "./keycap-keyboard": { "types": "./src/components/keycap-keyboard/index.ts", "import": "./src/components/keycap-keyboard/index.ts" },
     "./lightbox-gallery": { "types": "./src/components/lightbox-gallery/index.ts", "import": "./src/components/lightbox-gallery/index.ts" },
     "./link-unfurl": { "types": "./src/components/link-unfurl/index.ts", "import": "./src/components/link-unfurl/index.ts" },
+    "./link-preview": { "types": "./src/components/link-preview/index.ts", "import": "./src/components/link-preview/index.ts" },
     "./locale-switcher": { "types": "./src/components/locale-switcher/index.ts", "import": "./src/components/locale-switcher/index.ts" },
     "./mention-input": { "types": "./src/components/mention-input/index.ts", "import": "./src/components/mention-input/index.ts" },
     "./menu": { "types": "./src/components/menu/index.ts", "import": "./src/components/menu/index.ts" },
