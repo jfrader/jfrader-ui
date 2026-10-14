@@ -13,6 +13,7 @@ import { CARD_FRAME } from '../game-card/card-frame';
 import { DEFAULT_PILE_LAYOUT, PLAYED_PILE, getPilePosition, getPileOffset, getStableJitter,
   getStableRotation, type PlayedCard, type PileLayout, type SeatVector } from './pile-layout';
 import { getAutoLayout } from './auto-layout';
+import { registerFlightNode, useFlightRegistry } from '../card-flights/flight-registry';
 
 export interface GameCardStackPile {
   playerKey: string;
@@ -24,6 +25,7 @@ export interface GameCardStackPile {
 }
 
 interface InspectionProps {
+  'data-ui'?: string;
   /** Inspected player key; `null` closes inspection. */
   value?: string | null;
   defaultValue?: string | null;
@@ -97,7 +99,7 @@ const cardStyle = css({
   '&:dir(rtl)': { transform: 'translate(calc(50% - var(--card-x)), calc(-50% + var(--card-y))) rotate(calc(-1 * var(--card-rotation)))' },
   transition: `transform ${vars.motion.duration.playedPile} ${vars.motion.easePlayedPile}, inline-size ${vars.motion.duration.playedPile} ${vars.motion.easePlayedPile}, block-size ${vars.motion.duration.playedPile} ${vars.motion.easePlayedPile}, box-shadow ${vars.motion.duration.playedPile} ${vars.motion.easePlayedPileShadow}`,
   '&[data-reduced-motion="true"]': { transition: 'none' }, [REDUCED_MOTION]: { transition: 'none' },
-  '& > [data-ui="game-card"]': { inlineSize: '100%', blockSize: '100%' },
+  '& > [data-ui~="game-card"]': { inlineSize: '100%', blockSize: '100%' },
 });
 
 function cardLimit(maxCards: number) {
@@ -147,13 +149,13 @@ export function GameCardStack({
   }, [inspected]);
 
   return <WithSx className={className} styles={rootStyle} sx={sx}>{(rootClass) => (
-    <div {...rest} ref={ref} className={rootClass} data-ui="game-card-stack" data-placement={placement}
+    <div {...rest} ref={ref} className={rootClass} data-ui={[...new Set(`game-card-stack ${rest['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ')} data-placement={placement}
       style={{ '--pile-preferred-width': cardWidth, ...style } as CSSProperties}
       onKeyDown={(event) => {
         onKeyDown?.(event);
         if (event.defaultPrevented || event.key !== 'Escape' || inspected === null) return;
         event.preventDefault();
-        returnFocus.current = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[data-ui="game-card-stack-pile"] > button')]
+        returnFocus.current = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[data-ui~="game-card-stack-pile"] > button')]
           .find((button) => button.parentElement?.dataset.playerKey === inspected) ?? null;
         inspect(null);
       }}>
@@ -185,6 +187,7 @@ GameCardStack.displayName = 'GameCardStack';
 function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, defaultValue = null,
   onValueChange, revealed = false, maxCards = PLAYED_PILE.maxCards, cardWidth, layout, backPattern,
   className, sx, style, onKeyDown, slotProps, ...rest }: GameCardStackPileProps) {
+  const registry = useFlightRegistry();
   const [inspected, inspect] = useControlledState(value, defaultValue, onValueChange);
   const inspecting = inspected === playerKey;
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -202,7 +205,7 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
   const spread = inspecting || revealed;
   return <MotionConfig reducedMotion="user"><WithSx className={[slotProps?.pile?.className, className].filter(Boolean).join(' ')}
     styles={[pileStyle, slotProps?.pile?.css]} sx={sx}>{(rootClass) => (
-    <div {...rest} ref={ref} data-ui="game-card-stack-pile" data-player-key={playerKey}
+    <div {...rest} ref={ref} data-ui={[...new Set(`game-card-stack-pile ${rest['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ')} data-player-key={playerKey}
       data-spread={spread} data-state={inspecting ? 'open' : 'closed'} data-revealed={revealed || undefined}
       className={rootClass}
       style={{ '--pile-width': cardWidth ?? `var(--game-card-width, ${vars.size.gameCardMd})`, '--pile-card-scale': inspecting ? PLAYED_PILE.openScale : 1, ...style } as CSSProperties}
@@ -210,7 +213,7 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
         onKeyDown?.(event);
         if (event.defaultPrevented || event.key !== 'Escape' || !inspecting) return;
         // Root composition lets its own Escape handler retain native cancellation and focus ownership.
-        if (event.currentTarget.closest('[data-ui="game-card-stack"]')) return;
+        if (event.currentTarget.closest('[data-ui~="game-card-stack"]')) return;
         event.preventDefault();
         returnFocus.current = true;
         inspect(null);
@@ -226,6 +229,7 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
             const offset = getPileOffset({ index, total: cards.length, open: spread, openSpreadRatio: PLAYED_PILE.openSpreadRatio });
             const rotation = getStableRotation({ seed: inspecting ? `${key}:inspected` : key, maxRotationOffsetDeg: config.maxRotationOffsetDeg });
             return <div key={key} data-ui="game-card-stack-card" data-played-key={key}
+              ref={(node) => registerFlightNode(registry?.played, key, node)}
               data-reduced-motion={mounted && !!reducedMotion || undefined} className={slotProps?.card?.className}
               css={[cardStyle, slotProps?.card?.css]} style={{
                 '--card-x': `calc(${jitter.x}px + ${spread ? `${visibleCardWidth} * ${offset.xCardWidths}` : `${offset.xPx}px`})`,

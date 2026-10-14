@@ -25,8 +25,8 @@ import {
   FieldRoot,
   useFieldAnatomy,
   type FieldPartProps,
-  type FieldSlotProps,
 } from '../field/field-anatomy';
+import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
 
 export type PasswordFieldSize = 'sm' | 'md' | 'lg';
 
@@ -39,14 +39,21 @@ const DEFAULT_MESSAGES: PasswordFieldMessages = { reveal: 'Show password' };
 
 export interface PasswordFieldPartProps extends FieldPartProps {}
 
-export interface PasswordFieldSlotProps extends FieldSlotProps<PasswordFieldPartProps> {
-  shell?: PasswordFieldPartProps;
-  reveal?: PasswordFieldPartProps;
-}
+export type PasswordFieldSlotProps = FieldParts<PasswordFieldAnatomy>;
+
+type PasswordFieldAnatomy = {
+  root: 'div';
+  label: 'label';
+  control: 'input';
+  description: 'span';
+  error: 'span';
+  shell: 'div';
+  reveal: 'button';
+};
+export type PasswordFieldSlots = FieldSlots<PasswordFieldAnatomy>;
 
 export interface PasswordFieldProps
-  extends Omit<ComponentPropsWithRef<'input'>, 'type' | 'size' | 'value' | 'defaultValue' | 'children'>,
-    SxProps {
+  extends Omit<ComponentPropsWithRef<'input'>, 'type' | 'size' | 'value' | 'defaultValue' | 'children'>, SxProps {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
@@ -60,6 +67,10 @@ export interface PasswordFieldProps
   messages?: Partial<PasswordFieldMessages>;
   /** Replaces the eye icon inside the toggle; hidden from assistive technology. */
   revealIcon?: (revealed: boolean) => ReactNode;
+  /** Replace the wrapper div; `slots.root` takes precedence. */
+  component?: PasswordFieldSlots['root'];
+  /** Replace generated parts with components that forward props and ref. */
+  slots?: PasswordFieldSlots;
   slotProps?: PasswordFieldSlotProps;
 }
 
@@ -198,6 +209,8 @@ export function PasswordField({
   size = 'md',
   messages: messagesProp,
   revealIcon,
+  component,
+  slots,
   slotProps,
   className,
   sx,
@@ -253,12 +266,24 @@ export function PasswordField({
   };
 
   return (
-    <FieldRoot data-ui="password-field" dir={dir} className={className} sx={sx} part={slotProps?.root}>
-      <FieldLabel id={labelId} htmlFor={field.id} required={required} part={slotProps?.label}>
+    <FieldRoot
+      style={rest.style}
+      title={rest.title}
+      component={slots?.root ?? component}
+      data-ui="password-field"
+      dir={dir}
+      className={className}
+      sx={sx}
+      part={slotProps?.root}
+    >
+      <FieldLabel component={slots?.label} id={labelId} htmlFor={field.id} required={required} part={slotProps?.label}>
         {label}
       </FieldLabel>
-      <div className={slotProps?.shell?.className} css={[shellStyle, slotProps?.shell?.css]}>
-        <input
+      <FieldSlot element="div" component={slots?.shell} slotProps={slotProps?.shell} styles={[shellStyle]}>
+        <FieldSlot
+          element="input"
+          component={slots?.control}
+          slotProps={slotProps?.control}
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
@@ -276,28 +301,29 @@ export function PasswordField({
           aria-describedby={field.describedBy}
           aria-invalid={field.ariaInvalid}
           onChange={handleChange}
-          className={slotProps?.control?.className}
-          css={[inputControlStyle, controlStyle, controlSizeStyles[size], slotProps?.control?.css]}
+          styles={[inputControlStyle, controlStyle, controlSizeStyles[size]]}
         />
-        <button
+        <FieldSlot
+          element="button"
+          component={slots?.reveal}
+          slotProps={slotProps?.reveal}
           type="button"
           disabled={disabled}
           aria-label={messages.reveal}
           aria-pressed={revealed}
           aria-controls={field.id}
           onClick={() => requestRevealed(!revealed)}
-          className={slotProps?.reveal?.className}
-          css={[revealStyle, revealSizeStyles[size], slotProps?.reveal?.css]}
+          styles={[revealStyle, revealSizeStyles[size]]}
         >
           <span aria-hidden css={iconWrapperStyle}>
             {revealIcon ? revealIcon(revealed) : <EyeIcon revealed={revealed} />}
           </span>
-        </button>
-      </div>
-      <FieldDescription id={field.descriptionId} part={slotProps?.description}>
+        </FieldSlot>
+      </FieldSlot>
+      <FieldDescription component={slots?.description} id={field.descriptionId} part={slotProps?.description}>
         {description}
       </FieldDescription>
-      <FieldError id={field.errorId} part={slotProps?.error}>
+      <FieldError component={slots?.error} id={field.errorId} part={slotProps?.error}>
         {error}
       </FieldError>
     </FieldRoot>

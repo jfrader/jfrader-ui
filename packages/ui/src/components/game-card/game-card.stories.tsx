@@ -1,4 +1,7 @@
 import type { CSSProperties } from 'react';
+import { flushSync } from 'react-dom';
+import { createRoot } from 'react-dom/client';
+import { DeckProvider, UnknownDeckError, defineDeck, frenchDeck, useDeck } from '../deck';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -54,6 +57,48 @@ const cardLabel = (value: GameCardValue) => `${SPANISH_RANK_NAMES[String(value.r
 const ACE_OF_OROS: GameCardValue = { deck: 'spanish', suit: 'oros', rank: 1 };
 const QUEEN_OF_HEARTS: GameCardValue = { deck: 'french', suit: 'hearts', rank: 'Q' };
 const BACK_LABEL = 'Carta boca abajo';
+
+export const DeckIdResolution: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvasElement }) => {
+    const host = canvasElement.ownerDocument.createElement('div');
+    canvasElement.append(host);
+    const errors: unknown[] = [];
+    const resolved: ReturnType<typeof useDeck>[] = [];
+    const root = createRoot(host, { onUncaughtError: (error) => { errors.push(error); } });
+    const ids = ['constructor', 'toString', '__proto__', 'missing-deck'];
+    const registered = defineDeck({ ...frenchDeck, id: '__proto__' });
+    let printed = '';
+    try {
+      for (const id of ids) {
+        flushSync(() => root.render(<DeckProbe id={id} onResolved={(deck) => resolved.push(deck)} />));
+        flushSync(() => root.render(<DeckProvider><DeckProbe id={id} onResolved={(deck) => resolved.push(deck)} /></DeckProvider>));
+        flushSync(() => root.render(<GameCard value={{ deck: id, suit: 'hearts', rank: 'Q' }} label="Queen of hearts" />));
+      }
+      flushSync(() => root.render(<DeckProvider decks={[registered]}>
+        <DeckProvider>
+          <DeckProbe id="__proto__" onResolved={(deck) => resolved.push(deck)} />
+          <GameCard value={{ deck: '__proto__', suit: 'hearts', rank: 'Q' }} label="Queen of hearts" />
+        </DeckProvider>
+      </DeckProvider>));
+      printed = host.textContent ?? '';
+    } finally {
+      flushSync(() => root.unmount()); host.remove();
+    }
+    await expect(errors).toHaveLength(ids.length * 3);
+    for (const [index, error] of errors.entries()) {
+      await expect(error).toBeInstanceOf(UnknownDeckError);
+      await expect((error as Error).message).toContain(`"${ids[Math.floor(index / 3)]}"`);
+    }
+    await expect(resolved).toEqual([registered]);
+    await expect(printed).toContain('Q');
+  },
+};
+
+function DeckProbe({ id, onResolved }: { id: string; onResolved: (deck: ReturnType<typeof useDeck>) => void }) {
+  onResolved(useDeck(id));
+  return null;
+}
 
 const gridStyle = {
   display: 'grid',

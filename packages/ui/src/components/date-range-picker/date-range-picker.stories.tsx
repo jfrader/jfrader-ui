@@ -1,4 +1,4 @@
-import { useId, useState, type CSSProperties, type ReactNode } from 'react';
+import { useId, useState, type ComponentPropsWithRef, type CSSProperties, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -13,7 +13,8 @@ import {
   DateRangePicker,
   type DateRangePickerContentProps,
   type DateRangePickerMessages,
-  type DateRangePickerProps,
+  type DateRangePickerCompoundProps as DateRangePickerProps,
+  type DateRangePickerEasyProps,
   type DateRangePickerTriggerProps,
   type DateRangePreset,
   type DateRangeValue,
@@ -101,12 +102,9 @@ const USAGE = `const rangeMessages = {
     \`\${range} · \${formattedDays} \${new Intl.PluralRules('en-GB').select(days) === 'one' ? 'day' : 'days'}\`,
 };
 
-<DateRangePicker locale="en-GB" messages={rangeMessages}>
-  <DateRangePicker.Trigger aria-label="Report period" placeholder="Choose dates" />
-  <DateRangePicker.Content />
-</DateRangePicker>`;
+<DateRangePicker label="Report period" placeholder="Choose dates" locale="en-GB" messages={rangeMessages} />`;
 
-const meta = {
+const meta: Meta<DateRangePickerProps> = {
   title: 'Pickers/DateRangePicker',
   component: DateRangePicker,
   tags: ['autodocs'],
@@ -129,11 +127,46 @@ const meta = {
       source: { code: USAGE },
     },
   },
-} satisfies Meta<typeof DateRangePicker>;
+};
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+type CheckedDateRangePicker<Props extends import('./index').DateRangePickerProps> = Props;
+export type DateRangePickerTypeRegression = {
+  // @ts-expect-error The non-DOM provider root has no component sugar.
+  providerComponent: DateRangePickerEasyProps['component'];
+  // @ts-expect-error The semantic button and portaled panel have separate replacement seams.
+  providerRootSlot: NonNullable<DateRangePickerEasyProps['slots']>['root'];
+  // @ts-expect-error The provider has no root element to receive native props.
+  providerRootProps: NonNullable<DateRangePickerEasyProps['slotProps']>['root'];
+  // @ts-expect-error Easy label and compound children are mutually exclusive.
+  mixed: CheckedDateRangePicker<{ label: string; messages: DateRangePickerMessages; children: string }>;
+  // @ts-expect-error Easy placeholder requires a label.
+  incomplete: CheckedDateRangePicker<{ placeholder: string; messages: DateRangePickerMessages }>;
+  // @ts-expect-error Compound mode rejects generated-part props.
+  compoundSlots: CheckedDateRangePicker<{ children: string; messages: DateRangePickerMessages; slotProps: { trigger: { className: string } } }>;
+};
+
+function EasyControlledRange(props: DateRangePickerEasyProps) {
+  const [value, setValue] = useState<DateRangeValue | null>(WEEK);
+  const [open, setOpen] = useState(false);
+  return <DateRangePicker {...props} value={value} open={open}
+    onValueChange={(next) => { setValue(next); props.onValueChange?.(next); }}
+    onOpenChange={(next) => { setOpen(next); props.onOpenChange?.(next); }} />;
+}
+EasyControlledRange.displayName = 'EasyControlledRange';
+
+function RangeButtonRoot(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-generated-trigger="" />;
+}
+RangeButtonRoot.displayName = 'RangeButtonRoot';
+
+function RangePanelRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-generated-panel="" />;
+}
+RangePanelRoot.displayName = 'RangePanelRoot';
 
 type ExampleProps = DateRangePickerProps & {
   trigger?: Partial<DateRangePickerTriggerProps>;
@@ -234,10 +267,43 @@ const summaryText = ({ start, end }: DateRangeValue, days: number) =>
 
 // ---- Stories.
 
-export const Default: Story = {
+export const Default: StoryObj<DateRangePickerEasyProps> = {
+  args: { label: LABEL, placeholder: PLACEHOLDER, locale: LOCALE, today: TODAY, messages: rangeMessages, defaultValue: WEEK, months: 1, onValueChange: fn() },
+  render: (args) => <DateRangePicker {...args} />,
+  parameters: { docs: { source: { code: USAGE } } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveAccessibleName(`${LABEL} ${formattedRange(WEEK)}`);
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowDown}');
+    await findDialog(canvasElement);
+    await expectDayFocused(canvasElement, WEEK.start);
+    await userEvent.keyboard('{ArrowRight}{Enter}{ArrowDown}{Enter}');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expectClosed(canvasElement);
+    const draft = { start: '2026-10-06', end: '2026-10-13' };
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(draft);
+    await expect(getTrigger(canvasElement)).toHaveAccessibleName(`${LABEL} ${formattedRange(draft)}`);
+    await expectFocused(canvasElement, () => getTrigger(canvasElement));
+    await userEvent.keyboard('{Enter}');
+    await findDialog(canvasElement);
+    await userEvent.click(day(canvasElement, '2026-10-20'));
+    await userEvent.click(dialogButton(canvasElement, 'Cancel'));
+    await expectClosed(canvasElement);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+/** Assemble the range trigger and dialog for a custom layout. */
+export const Compound: Story = {
   args: { defaultValue: WEEK, onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <RangeExample {...args} />,
-  parameters: { docs: { source: { code: USAGE } } },
+  parameters: { docs: { source: { code: `<DateRangePicker locale="en-GB" messages={rangeMessages}>
+  <DateRangePicker.Trigger aria-label="Report period" placeholder="Choose dates" />
+  <DateRangePicker.Content />
+</DateRangePicker>` } } },
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await expect(trigger.tagName).toBe('BUTTON');
@@ -301,6 +367,78 @@ export const Default: Story = {
     await expectClosed(canvasElement);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(4);
+  },
+};
+
+/** Set props on the generated trigger and dialog, including its interior slots. */
+export const CustomParts: StoryObj<DateRangePickerEasyProps> = {
+  args: {
+    label: LABEL, placeholder: PLACEHOLDER, locale: LOCALE, today: TODAY, messages: rangeMessages, defaultValue: WEEK, months: 1,
+    slots: { trigger: RangeButtonRoot, content: RangePanelRoot },
+    slotProps: { trigger: { className: 'report-trigger', ref: fn() }, content: { className: 'report-dialog', ref: fn(), slotProps: { summary: { className: 'report-summary' } } } },
+  },
+  render: (args) => <DateRangePicker {...args} />,
+  parameters: { docs: { source: { code: `<DateRangePicker label="Report period" placeholder="Choose dates" messages={rangeMessages}
+  slotProps={{ content: { slotProps: { summary: { className: 'report-summary' } } } }} />` } } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveClass('report-trigger');
+    await expect(trigger).toHaveAttribute('data-generated-trigger');
+    await expect(args.slotProps?.trigger?.ref).toHaveBeenLastCalledWith(trigger);
+    await userEvent.click(trigger);
+    const dialog = await findDialog(canvasElement);
+    await expect(dialog).toHaveClass('report-dialog');
+    await expect(dialog).toHaveAttribute('data-generated-panel');
+    await expect(args.slotProps?.content?.ref).toHaveBeenLastCalledWith(dialog);
+    await expect(summary(canvasElement)).toHaveClass('report-summary');
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+  },
+};
+
+export const EasyDisabled: StoryObj<DateRangePickerEasyProps> = {
+  args: { label: LABEL, placeholder: PLACEHOLDER, messages: rangeMessages, disabled: true, open: true },
+  render: (args) => <DateRangePicker {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await expect(getTrigger(canvasElement)).toBeDisabled();
+    await userEvent.click(getTrigger(canvasElement));
+    await expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull();
+  },
+};
+
+export const EasyControlled: StoryObj<DateRangePickerEasyProps> = {
+  args: { label: LABEL, placeholder: PLACEHOLDER, locale: LOCALE, today: TODAY, messages: rangeMessages, months: 1, onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <EasyControlledRange {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    await findDialog(canvasElement);
+    await userEvent.click(day(canvasElement, '2026-10-20'));
+    await userEvent.click(day(canvasElement, '2026-10-22'));
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expectClosed(canvasElement);
+    const selected = { start: '2026-10-20', end: '2026-10-22' };
+    await expect(getTrigger(canvasElement)).toHaveAccessibleName(`${LABEL} ${formattedRange(selected)}`);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(selected);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+  },
+};
+
+/** Date text follows the selected locale; action copy comes from messages. */
+export const EasyLocale: StoryObj<DateRangePickerEasyProps> = {
+  args: {
+    label: LABEL, locale: 'es-ES', today: TODAY, defaultValue: WEEK, months: 1,
+    messages: { ...rangeMessages, apply: 'Aplicar', cancel: 'Cancelar', empty: 'Sin fechas', start: 'Fecha inicial', end: 'Fecha final', summary: ({ range }) => range },
+  },
+  render: (args) => <DateRangePicker {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const expected = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', calendar: 'gregory', timeZone: 'UTC' }).formatRange(civil(WEEK.start), civil(WEEK.end));
+    await expect(getTrigger(canvasElement)).toHaveAccessibleName(`${LABEL} ${expected}`);
+    await userEvent.click(getTrigger(canvasElement));
+    const dialog = await findDialog(canvasElement);
+    await expect(within(dialog).getByRole('button', { name: 'Aplicar' })).toBeVisible();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    await expectClosed(canvasElement);
   },
 };
 

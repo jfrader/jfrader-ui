@@ -10,6 +10,7 @@ import { Button } from '../button';
 import { GameCard, type GameCardPartProps, type GameCardSize, type GameCardValue } from '../game-card';
 import { gameCardSizeStyles } from '../game-card/game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
+import { registerFlightNode, registerHiddenFlightNode, useFlightRegistry } from '../card-flights/flight-registry';
 import {
   buildOpponentHiddenHandLayout, DEFAULT_HIDDEN_HAND_RULES, getHandFanRotations,
   HAND_CARD_OVERLAP_SPACING, HAND_FAN_DROP_PX, HAND_SELECTION_TARGET_PX, OPPONENT_SEAT_METRICS,
@@ -24,6 +25,7 @@ export interface GameHandCard {
 }
 
 export interface GameHandProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
+  'data-ui'?: string;
   cards: readonly GameHandCard[];
   size?: GameCardSize;
   /** Selected card id. `null` clears selection. */
@@ -93,19 +95,21 @@ export function GameHand({
   sx,
   ...rest
 }: GameHandProps) {
+  const registry = useFlightRegistry();
   const [selectedId, select] = useControlledState<string | null>(value, defaultValue, onValueChange);
   const selectedCard = cards.find((card) => card.id === selectedId);
   const rotations = getHandFanRotations(cards.length);
   return (
     <WithSx className={className} styles={[rootStyle, gameCardSizeStyles[size]]} sx={sx}>
       {(rootClass) => (
-        <div {...rest} ref={ref} data-ui="game-hand" className={rootClass}>
+        <div {...rest} ref={ref} data-ui={[...new Set(`game-hand ${rest['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ')} className={rootClass}>
           <div data-ui="game-hand-fan" className={slotProps?.fan?.className} css={[fanStyle, slotProps?.fan?.css]}>
             {cards.map((card, index) => {
               const angle = rotations[index] ?? 0;
               return (
                 // CardFlights measures this wrapper using the shared card id.
                 <button key={card.id} type="button" data-ui="game-hand-card" data-hand-card={card.id}
+                  ref={(node) => registerFlightNode(registry?.hand, card.id, node)}
                   aria-pressed={selectedId === card.id} disabled={disabled}
                   onClick={() => select(selectedId === card.id ? null : card.id)}
                   className={slotProps?.card?.className} css={[cardStyle, slotProps?.card?.css]}
@@ -129,6 +133,7 @@ export function GameHand({
 GameHand.displayName = 'GameHand';
 
 export interface GameHandHiddenProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  'data-ui'?: string;
   /** Number of backs, clamped to 0–3 and rounded down. */
   count: number;
   label: string;
@@ -164,6 +169,7 @@ function GameHandHidden({
   ref, count, label, playerKey, size = 'md', polar, scale = 1, rules = DEFAULT_HIDDEN_HAND_RULES,
   className, sx, style, slotProps, ...rest
 }: GameHandHiddenProps) {
+  const registry = useFlightRegistry();
   const layout = buildOpponentHiddenHandLayout({
     geometry: polar ?? STANDALONE_POLAR,
     profileRules: rules,
@@ -175,12 +181,13 @@ function GameHandHidden({
   return (
     <WithSx className={className} styles={[hiddenStyle, gameCardSizeStyles[size]]} sx={sx}>
       {(rootClass) => (
-        <div {...rest} ref={ref} data-ui="game-hand-hidden" role="img" aria-label={label} className={rootClass}
+        <div {...rest} ref={ref} data-ui={[...new Set(`game-hand-hidden ${rest['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ')} role="img" aria-label={label} className={rootClass}
           style={{ transform: anchor ? `translate(${anchor.x}px, ${anchor.y}px) rotate(${anchor.rotateDeg}deg)` : undefined,
             transformOrigin: anchor?.origin, ...style }}>
           {layout.cards.map((card, index) => (
             // CardFlights pairs the player key and zero-based index on the measured wrapper.
             <div key={`hidden-${index}`} data-ui="game-hand-hidden-card" data-seat-hidden-card={playerKey}
+              ref={(node) => registerHiddenFlightNode(registry, playerKey, index, node)}
               data-seat-hidden-card-index={playerKey === undefined ? undefined : index} aria-hidden="true"
               className={slotProps?.card?.className} css={[hiddenCardStyle, slotProps?.card?.css]}
               style={{ '--hidden-x': `${card.x}px`, '--hidden-y': `${card.y}px`, '--hidden-angle': `${card.rotateDeg}deg`, zIndex: card.zIndex } as CSSProperties}>

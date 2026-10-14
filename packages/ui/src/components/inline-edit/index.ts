@@ -8,4 +8,5 @@ export type {
   InlineEditSize,
   InlineEditSlotProps,
   InlineEditVariant,
+  InlineEditSlots,
 } from './inline-edit';
