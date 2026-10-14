@@ -1,11 +1,11 @@
-import { useState, type MouseEventHandler, type RefCallback } from 'react';
+import { useState, type ComponentPropsWithRef, type MouseEventHandler, type RefCallback } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
-import { ButtonGroup, type ButtonGroupProps } from './index';
+import { ButtonGroup, type ButtonGroupCompoundProps, type ButtonGroupEasyProps, type ButtonGroupItemProps, type ButtonGroupItemRecord, type ButtonGroupCompoundProps as ButtonGroupProps } from './index';
 
 const fixtureStyle = { minWidth: 24, minHeight: 24 };
 const stackStyle = {
@@ -50,7 +50,9 @@ const meta = {
         component:
           'Place related actions together, with an optional menu for more commands.',
       },
-      usage: `- This is a named native group, not a toolbar or selection widget. Use ToggleGroup for persistent selection.
+      usage: `- Pass readonly items with label and native button props, or href for a link. Use the dotted parts for custom anatomy and overflow menus.
+- Use slotProps for generated root, item and link props. component replaces the root, as does slots.root. Item and link replacements compose the corresponding dotted part and forward received props/ref. Declare replacements outside render.
+- This is a named native group, not a toolbar or selection widget. Use ToggleGroup for persistent selection.
 - Give at most one Item solid accent emphasis.
 - Icon-only actions need a translated label or ARIA name. Format numbers in Label with Intl.
 - The menu uses Menu keyboard controls. Accepted Escape or selection returns focus to the trigger; outside press and Tab-out do not.
@@ -64,6 +66,87 @@ const meta = {
       },
     },
   },
+  render: (args: ButtonGroupCompoundProps) => (
+    <ButtonGroup {...args}>
+      <ButtonGroup.Item>Share</ButtonGroup.Item>
+      <ButtonGroup.Item>Duplicate</ButtonGroup.Item>
+      <ButtonGroup.Item>Archive</ButtonGroup.Item>
+    </ButtonGroup>
+  ),
+} satisfies Meta<ButtonGroupCompoundProps>;
+export default meta;
+
+function ButtonGroupHost(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="button-group-host" />;
+}
+function CustomItem(props: ButtonGroupItemProps) {
+  return <ButtonGroup.Item {...props} data-testid="custom-button-group-item" />;
+}
+
+type Story = StoryObj<
+  Omit<ButtonGroupCompoundProps, 'onClick' | 'component'> & {
+    onClick?: MouseEventHandler<HTMLElement>;
+    onMenuSelect?: () => void;
+    onPartRef?: RefCallback<HTMLElement>;
+  }
+>;
+
+export const Default: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = {
+  name: 'Easy mode',
+  args: {
+    label: 'Document actions',
+    items: [
+      { label: 'Share', onClick: fn() },
+      { label: 'Duplicate', disabled: true },
+      { label: 'Archive', onClick: fn() },
+    ],
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `const actions = [
+  { label: 'Share', onClick: share },
+  { label: 'Duplicate', disabled: true },
+  { label: 'Archive', onClick: archive },
+] satisfies readonly ButtonGroupItemRecord[];
+
+<ButtonGroup label="Document actions" items={actions} />`,
+      },
+    },
+  },
+  render: (args) => <ButtonGroup {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const group = canvas.getByRole('group', { name: 'Document actions' });
+    await expect(group).toHaveAttribute('data-ui', 'button-group');
+    const buttons = within(group).getAllByRole('button');
+    await expect(buttons).toHaveLength(3);
+    await expect(buttons[0]).toHaveTextContent('Share');
+    await expect(buttons[1]).toHaveTextContent('Duplicate');
+    await expect(buttons[1]).toBeDisabled();
+    await expect(buttons[2]).toHaveTextContent('Archive');
+
+    await userEvent.tab();
+    await expect(buttons[0]).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    const firstItem = args.items[0];
+    if (!firstItem) throw new Error('Expected the Share action.');
+    await expect(firstItem.onClick).toHaveBeenCalledTimes(1);
+
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(buttons[2]).toHaveFocus();
+    await userEvent.keyboard(' ');
+    const thirdItem = args.items[2];
+    if (!thirdItem) throw new Error('Expected the Archive action.');
+    await expect(thirdItem.onClick).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const Compound: Story = {
+  name: 'Compound',
+  args: {
+    'aria-label': 'Document actions',
+  },
   render: (args) => (
     <ButtonGroup {...args}>
       <ButtonGroup.Item>Share</ButtonGroup.Item>
@@ -71,17 +154,6 @@ const meta = {
       <ButtonGroup.Item>Archive</ButtonGroup.Item>
     </ButtonGroup>
   ),
-} satisfies Meta<typeof ButtonGroup>;
-export default meta;
-type Story = StoryObj<
-  Omit<ButtonGroupProps, 'onClick'> & {
-    onClick?: MouseEventHandler<HTMLElement>;
-    onMenuSelect?: () => void;
-    onPartRef?: RefCallback<HTMLElement>;
-  }
->;
-
-export const Default: Story = {
   play: async ({ canvas }) => {
     const group = canvas.getByRole('group', { name: 'Document actions' });
     await expect(group).not.toHaveAttribute('aria-orientation');
@@ -104,6 +176,123 @@ export const Default: Story = {
     ).toBeLessThan(1.1);
   },
 };
+
+export const NativeFormActions: StoryObj<Omit<ButtonGroupEasyProps, 'component'> & { onSave: () => void }> = {
+  args: {
+    label: 'Document actions',
+    items: [
+      { label: 'Save', type: 'submit', name: 'action', value: 'save' },
+      { label: 'Cancel', type: 'button' },
+    ],
+    onSave: fn(),
+  },
+  render: ({ onSave, ...args }) => (
+    <form onSubmit={(event) => { event.preventDefault(); onSave(); }}>
+      <ButtonGroup {...args} />
+    </form>
+  ),
+  parameters: { docs: { source: { code: `<form onSubmit={saveDocument}>
+  <ButtonGroup label="Document actions" items={[
+    { label: 'Save', type: 'submit', name: 'action', value: 'save' },
+    { label: 'Cancel', type: 'button' },
+  ]} />
+</form>` } } },
+  play: async ({ canvas, userEvent, args }) => {
+    const save = canvas.getByRole('button', { name: 'Save' });
+    await expect(save).toHaveAttribute('type', 'submit');
+    await expect(save).toHaveAttribute('name', 'action');
+    await expect(save).toHaveAttribute('value', 'save');
+    await userEvent.click(save);
+    await expect(args.onSave).toHaveBeenCalledTimes(1);
+    await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));
+    await expect(args.onSave).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const GeneratedPartProps: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = {
+  name: 'Generated part props',
+  args: {
+    label: 'Document actions',
+    items: [
+      { label: 'Share', onClick: fn(), css: { fontStyle: 'normal' }, sx: { fontWeight: vars.fontWeight.semibold } },
+      { label: 'Guide', href: '/guide', sx: { fontWeight: vars.fontWeight.semibold } },
+    ],
+    slotProps: {
+      root: { 'data-testid': 'custom-root', className: 'custom-root-class' },
+      item: { className: 'custom-item-class', sx: { fontStyle: 'italic' } },
+      link: { className: 'custom-link-class', sx: { fontStyle: 'italic' } },
+    },
+  },
+  render: (args) => <ButtonGroup {...args} />,
+  parameters: { docs: { source: { code: `<ButtonGroup label="Document actions" items={actions}
+  slotProps={{ item: { sx: { fontStyle: 'italic' } }, link: { sx: { fontStyle: 'italic' } } }} />` } } },
+  play: async ({ canvas }) => {
+    const root = canvas.getByTestId('custom-root');
+    await expect(root).toHaveClass('custom-root-class');
+    await expect(root).toHaveAttribute('data-ui', 'button-group');
+
+    const button = within(root).getByRole('button', { name: 'Share' });
+    await expect(button).toHaveClass('custom-item-class');
+    await expect(getComputedStyle(button).fontStyle).toBe('normal');
+    await expect(getComputedStyle(button).fontWeight).toBe('600');
+
+    const link = within(root).getByRole('link', { name: 'Guide' });
+    await expect(link).toHaveClass('custom-link-class');
+    await expect(getComputedStyle(link).fontStyle).toBe('italic');
+    await expect(getComputedStyle(link).fontWeight).toBe('600');
+    await expect(link).toHaveAttribute('href', '/guide');
+  },
+};
+
+export const ReplacedParts: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = {
+  name: 'Replaced parts',
+  args: {
+    items: [
+      { label: 'Share', onClick: fn() },
+      { label: 'Duplicate', onClick: fn() },
+    ],
+    slots: { root: ButtonGroupHost, item: CustomItem },
+    className: 'consumer-root',
+    style: { fontStyle: 'normal' },
+    sx: { fontStyle: 'normal' },
+    slotProps: {
+      root: { className: 'slot-root', style: { fontStyle: 'italic' }, sx: { fontStyle: 'italic' }, 'aria-label': 'Project actions', 'data-ui': 'custom-group' },
+    },
+  },
+  render: (args) => <ButtonGroup {...args} component={ButtonGroupHost} />,
+  parameters: {
+    docs: {
+      source: {
+        code: `<ButtonGroup items={actions} component={ButtonGroupHost} slots={{ item: CustomItem }} slotProps={{ root: { 'aria-label': 'Project actions' } }} />`,
+      },
+    },
+  },
+  play: async ({ canvas, userEvent }) => {
+    const host = canvas.getByTestId('button-group-host');
+    await expect(host).toHaveClass('consumer-root', 'slot-root');
+    await expect(host).toHaveStyle({ fontStyle: 'italic' });
+    await expect(host).toHaveAttribute('aria-label', 'Project actions');
+    await expect(host).toHaveAttribute('data-ui', 'button-group custom-group');
+    const items = canvas.getAllByTestId('custom-button-group-item');
+    await expect(items).toHaveLength(2);
+    await userEvent.tab();
+    await expect(items[0]).toHaveFocus();
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(items[1]).toHaveFocus();
+  },
+};
+
+function easyModeTypeContracts() {
+  const items: readonly ButtonGroupItemRecord[] = [{ label: 'Action' }];
+  // @ts-expect-error Easy mode rejects compound children.
+  <ButtonGroup items={items}>Child</ButtonGroup>;
+  // @ts-expect-error Compound mode rejects items.
+  <ButtonGroup items={items} label="Group">Child</ButtonGroup>;
+  // @ts-expect-error Compound mode rejects slotProps.
+  <ButtonGroup slotProps={{ root: {} }}>Child</ButtonGroup>;
+}
+void easyModeTypeContracts;
+
 export const Variants: Story = {
   render: (args) => (
     <div style={stackStyle}>

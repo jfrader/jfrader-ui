@@ -57,7 +57,7 @@ Requires React 19 and the `@jfrader/tokens/tokens.css` stylesheet. The same guid
 | `@jfrader/ui/toggle-group` | `ToggleGroup` |
 | `@jfrader/ui/tooltip` | `Tooltip` |
 
-Each component subpath also exports its prop types. The package root re-exports component APIs; optional integrations such as `@jfrader/ui/next` and `@jfrader/ui/code-block/shiki` remain separate imports.
+Each component subpath also exports its prop types. The package root re-exports general component APIs; game components (`@jfrader/ui/game-table`, `@jfrader/ui/game-card`, …), procedural scene (`@jfrader/ui/scene`), and optional integrations such as `@jfrader/ui/next` and `@jfrader/ui/code-block/shiki` remain separate subpath imports.
 
 ## Usage
 

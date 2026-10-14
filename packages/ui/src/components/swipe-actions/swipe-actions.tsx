@@ -47,12 +47,36 @@ export interface SwipeAction {
   keepRow?: boolean;
 }
 type Slot = { className?: string; css?: Interpolation<Theme> };
-export interface SwipeActionsProps
-  extends Omit<ComponentPropsWithRef<'ul'>, 'value' | 'defaultValue'>, SxProps {
+interface SwipeActionsBaseProps
+  extends Omit<ComponentPropsWithRef<'ul'>, 'value' | 'defaultValue' | 'children'>, SxProps {
   value?: SwipeActionsValue;
   defaultValue?: SwipeActionsValue;
   onValueChange?: (value: SwipeActionsValue) => void;
 }
+export interface SwipeActionsRecord extends Omit<SwipeActionsRowProps, 'children' | 'content'> {
+  /** Render the row's body. */
+  content: ReactNode;
+}
+export interface SwipeActionsCompoundProps extends SwipeActionsBaseProps {
+  children?: ReactNode;
+  rows?: never;
+  slotProps?: never;
+}
+export interface SwipeActionsEasyProps extends SwipeActionsBaseProps {
+  /** Render rows in order using their stable ids. */
+  rows: readonly SwipeActionsRecord[];
+  children?: never;
+  slotProps?: SwipeActionsSlotProps;
+}
+export interface SwipeActionsSlotProps {
+  root?: Omit<ComponentPropsWithRef<'ul'>, 'children' | 'value' | 'defaultValue'> &
+    SxProps & {
+      css?: Interpolation<Theme>;
+      [attribute: `data-${string}`]: unknown;
+    };
+  row?: Omit<SwipeActionsRowProps, 'id' | 'label' | 'actionsLabel' | 'leading' | 'trailing' | 'children' | 'content'>;
+}
+export type SwipeActionsProps = SwipeActionsCompoundProps | SwipeActionsEasyProps;
 export interface SwipeActionsRowProps extends ComponentPropsWithRef<'li'>, SxProps {
   id: string;
   label: string;
@@ -202,7 +226,27 @@ type Context = {
 };
 const SwipeContext = createContext<Context | null>(null);
 
-function SwipeActionsRoot({
+function SwipeActionsRoot({ rows: records, slotProps, children, ...props }: SwipeActionsProps) {
+  const { css: slotCss, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
+  return (
+    <SwipeActionsList
+      {...props}
+      {...rootProps}
+      slotCss={[slotCss, slotSx]}
+      sx={props.sx}
+      className={[props.className, rootProps.className].filter(Boolean).join(' ') || undefined}
+      style={{ ...props.style, ...rootProps.style }}
+    >
+      {records !== undefined
+        ? records.map(({ content, ...row }) => (
+          <SwipeActionsRow {...slotProps?.row} {...row} key={row.id}>{content}</SwipeActionsRow>
+        ))
+        : children}
+    </SwipeActionsList>
+  );
+}
+
+function SwipeActionsList({
   ref,
   className,
   sx,
@@ -211,8 +255,9 @@ function SwipeActionsRoot({
   onValueChange,
   children,
   onKeyDown,
+  slotCss,
   ...props
-}: SwipeActionsProps) {
+}: SwipeActionsBaseProps & { children?: ReactNode; slotCss?: Interpolation<Theme> }) {
   const [value = null, change] = useControlledState(valueProp, defaultValue, onValueChange);
   const list = useRef<HTMLUListElement>(null);
   const rows = useRef(new Map<string, RegisteredRow>()).current;
@@ -269,7 +314,7 @@ function SwipeActionsRoot({
   return (
     <MotionConfig reducedMotion="user">
       <SwipeContext.Provider value={context}>
-        <WithSx className={className} styles={listStyle} sx={sx}>
+        <WithSx className={className} styles={[listStyle, slotCss]} sx={sx}>
           {(className) => (
             <ul
               {...props}

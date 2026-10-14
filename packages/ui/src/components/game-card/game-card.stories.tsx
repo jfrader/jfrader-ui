@@ -86,7 +86,20 @@ const meta = {
       description: {
         component: 'Show a French or Spanish playing card with a red-and-paper back or your own artwork.',
       },
-      usage: `Omit \`value\` or set \`face="back"\` to hide built-in rank and suit data. Back patterns come from the deck (e.g. Spanish diagonal, poker checks) or explicit \`backPattern\`, and \`children\` replaces either face’s artwork.
+      source: {
+        language: 'tsx',
+        code: `import { GameCard } from '@jfrader/ui/game-card';
+
+<GameCard
+  label="Queen of hearts"
+  value={{ deck: 'french', suit: 'hearts', rank: 'Q' }}
+/>`,
+      },
+      usage: `### Setup
+- Import from \`@jfrader/ui/game-card\`. GameCard is an opt-in subpath and is not re-exported by the package root.
+
+### Faces and artwork
+- Omit \`value\` or set \`face="back"\` to hide built-in rank and suit data. Back patterns come from the deck (e.g. Spanish diagonal, poker checks) or explicit \`backPattern\`, and \`children\` replaces either face’s artwork.
 
 ### Root customization
 Use \`component\` or \`slots.root\` to replace the root. Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`. \`slots.root\` wins when both are supplied. \`slotProps.root\` overrides root props; className and style merge. Style order is material → slot → consumer css → consumer sx.`,

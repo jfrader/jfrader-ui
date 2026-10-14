@@ -71,7 +71,16 @@ const meta = {
       description: {
         component: 'Render procedural landscape artwork and avatars from deterministic seeds.',
       },
+      source: {
+        language: 'tsx',
+        code: `import { Scene } from '@jfrader/ui/scene';
+
+<Scene seed="north-dunes" variant="landscape" />`,
+      },
       usage: `
+### Setup
+- Import from \`@jfrader/ui/scene\`. Scene is an opt-in subpath and is not re-exported by the package root.
+
 ### Seeds
 Pass any string to \`seed\`. The same seed produces identical artwork across reloads and platforms.
 

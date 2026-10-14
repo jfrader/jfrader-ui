@@ -1,10 +1,17 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
-import { Navigation, type NavigationProps } from './index';
+import {
+  Navigation,
+  type NavigationCompoundProps,
+  type NavigationEasyProps,
+  type NavigationGroupProps,
+  type NavigationGroupRecord,
+  type NavigationCompoundProps as NavigationProps,
+} from './index';
 
 const WORKSPACE = [
   { label: 'Inbox', href: '/inbox' },
@@ -44,7 +51,9 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Group links into navigation sections and mark the current page.' },
-      usage: `- Name the navigation landmark with label. The current link exposes aria-current="page".
+      usage: `- Pass groups with readonly items, or compose the dotted parts with children. activeHref matches each item's href exactly; an explicit item.active takes precedence.
+- Use slotProps for generated root, group and item props. component replaces the root, as does slots.root. Group and item replacements compose the corresponding dotted part and forward received props/ref. Declare replacements outside render.
+- Name the navigation landmark with label. The current link exposes aria-current="page".
 - Collapsible groups use native details/summary. defaultOpen sets the initial open attribute; the browser owns later state.
 - Leading icons are decorative and hidden from assistive technology.`,
     },
@@ -56,11 +65,18 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta<typeof Navigation>;
+} satisfies Meta<NavigationCompoundProps>;
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+function NavigationHost(props: ComponentPropsWithRef<'nav'>) {
+  return <nav {...props} data-testid="navigation-host" />;
+}
+function CustomGroup(props: NavigationGroupProps) {
+  return <Navigation.Group {...props} data-testid="custom-navigation-group" />;
+}
+
+type Story = StoryObj<Omit<NavigationCompoundProps, 'component'>>;
 
 function SidebarExample(props: NavigationProps) {
   return (
@@ -102,7 +118,84 @@ async function expectFocusRing(element: HTMLElement) {
   await expect(getComputedStyle(element).outlineWidth).not.toBe('0px');
 }
 
-export const Default: Story = {
+export const Default: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
+  name: 'Easy mode',
+  args: {
+    label: 'Main',
+    activeHref: '/projects',
+    groups: [
+      {
+        label: 'Workspace',
+        items: [
+          { label: 'Inbox', href: '/inbox' },
+          { label: 'Projects', href: '/projects' },
+          { label: 'Teams', href: '/teams', disabled: true },
+        ],
+      },
+      {
+        label: 'Settings',
+        items: [
+          { label: 'Account', href: '/settings/account' },
+          { label: 'Billing', href: '/settings/billing' },
+        ],
+      },
+    ],
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `const groups = [
+  {
+    label: 'Workspace',
+    items: [
+      { label: 'Inbox', href: '/inbox' },
+      { label: 'Projects', href: '/projects' },
+      { label: 'Teams', href: '/teams', disabled: true },
+    ],
+  },
+  {
+    label: 'Settings',
+    items: [
+      { label: 'Account', href: '/settings/account' },
+      { label: 'Billing', href: '/settings/billing' },
+    ],
+  },
+] satisfies readonly NavigationGroupRecord[];
+
+<Navigation label="Main" groups={groups} activeHref="/projects" />`,
+      },
+    },
+  },
+  render: (args) => <Navigation {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const nav = within(canvasElement).getByRole('navigation', { name: 'Main' });
+    const groups = within(nav);
+    await expect(groups.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      'Workspace',
+      'Settings',
+    ]);
+    await expect(within(groups.getByRole('list', { name: 'Workspace' })).getAllByRole('listitem')).toHaveLength(3);
+    await expect(within(groups.getByRole('list', { name: 'Settings' })).getAllByRole('listitem')).toHaveLength(2);
+
+    const activeLink = groups.getByRole('link', { name: 'Projects' });
+    const inactiveLink = groups.getByRole('link', { name: 'Inbox' });
+    const disabledLink = groups.getByRole('link', { name: 'Teams' });
+
+    await expect(activeLink).toHaveAttribute('aria-current', 'page');
+    await expect(inactiveLink).not.toHaveAttribute('aria-current');
+    await expect(disabledLink).toHaveAttribute('aria-disabled', 'true');
+    await expect(disabledLink).toHaveAttribute('tabindex', '-1');
+
+    await userEvent.tab();
+    await expect(inactiveLink).toHaveFocus();
+    await userEvent.tab();
+    await expect(activeLink).toHaveFocus();
+  },
+};
+
+export const Compound: Story = {
+  name: 'Compound',
   render: (args) => <SidebarExample {...args} />,
   play: async ({ canvasElement }) => {
     const nav = within(canvasElement).getByRole('navigation', { name: 'Main' });
@@ -138,6 +231,95 @@ export const Default: Story = {
     }
   },
 };
+
+export const GeneratedPartProps: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
+  name: 'Generated part props',
+  args: {
+    label: 'Main',
+    groups: [
+      {
+        label: 'Navigation links',
+        items: [
+          { label: 'Home', href: '/' },
+        ],
+      },
+    ],
+    slotProps: {
+      root: { 'data-testid': 'custom-nav-root', className: 'custom-nav-class' },
+      group: { className: 'custom-group-class' },
+      item: { className: 'custom-item-class' },
+    },
+  },
+  render: (args) => <Navigation {...args} />,
+  parameters: { docs: { source: { code: `<Navigation label="Main" groups={groups}
+  slotProps={{ group: { className: 'custom-group-class' }, item: { className: 'custom-item-class' } }} />` } } },
+  play: async ({ canvasElement }) => {
+    const root = within(canvasElement).getByTestId('custom-nav-root');
+    await expect(root).toHaveClass('custom-nav-class');
+    await expect(root).toHaveAttribute('data-ui', 'navigation');
+
+    const group = root.querySelector('[data-ui="navigation-group"]');
+    await expect(group).toHaveClass('custom-group-class');
+
+    const item = within(root).getByRole('link', { name: 'Home' });
+    await expect(item).toHaveClass('custom-item-class');
+  },
+};
+
+export const ReplacedParts: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
+  name: 'Replaced parts',
+  args: {
+    groups: [
+      {
+        label: 'Workspace',
+        items: [
+          { label: 'Inbox', href: '/inbox' },
+          { label: 'Projects', href: '/projects' },
+        ],
+      },
+    ],
+    slots: { root: NavigationHost, group: CustomGroup },
+    className: 'consumer-root',
+    style: { fontStyle: 'normal' },
+    sx: { fontStyle: 'normal' },
+    slotProps: {
+      root: { className: 'slot-root', style: { fontStyle: 'italic' }, sx: { fontStyle: 'italic' }, 'aria-label': 'App navigation' },
+    },
+  },
+  render: (args) => <Navigation {...args} component={NavigationHost} />,
+  parameters: {
+    docs: {
+      source: {
+        code: `<Navigation groups={groups} component={NavigationHost} slots={{ group: CustomGroup }} slotProps={{ root: { 'aria-label': 'App navigation' } }} />`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const host = canvas.getByTestId('navigation-host');
+    await expect(host).toHaveClass('consumer-root', 'slot-root');
+    await expect(host).toHaveStyle({ fontStyle: 'italic' });
+    await expect(host).toHaveAttribute('aria-label', 'App navigation');
+    await expect(host).toHaveAttribute('data-ui', 'navigation');
+    const group = canvas.getByTestId('custom-navigation-group');
+    await expect(group).toBeVisible();
+    await expect(within(host).getAllByRole('link')).toHaveLength(2);
+  },
+};
+
+function easyModeTypeContracts() {
+  const groups: readonly NavigationGroupRecord[] = [{ items: [{ label: 'Home', href: '/' }] }];
+  // @ts-expect-error Easy mode rejects compound children.
+  <Navigation groups={groups}>Child</Navigation>;
+  // @ts-expect-error Compound mode rejects groups.
+  <Navigation groups={groups}>Child</Navigation>;
+  // @ts-expect-error Compound mode rejects activeHref.
+  <Navigation activeHref="/">Child</Navigation>;
+  // @ts-expect-error Compound mode rejects slotProps.
+  <Navigation slotProps={{ root: {} }}>Child</Navigation>;
+}
+void easyModeTypeContracts;
+
 
 export const Links: Story = {
   args: { label: 'Sidebar' },

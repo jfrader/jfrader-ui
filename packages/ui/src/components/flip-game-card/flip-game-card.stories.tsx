@@ -60,7 +60,20 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Turn a playing card over to show its other face.' },
-      usage: `### Faces and state
+      source: {
+        language: 'tsx',
+        code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+
+<FlipGameCard
+  value={{ deck: 'french', suit: 'spades', rank: 'A' }}
+  label="Ace of spades"
+  backLabel="Card back"
+/>`,
+      },
+      usage: `### Setup
+- Import from \`@jfrader/ui/flip-game-card\`. FlipGameCard is an opt-in subpath and is not re-exported by the package root.
+
+### Faces and state
 - Pass \`value\`, \`label\` and \`backLabel\` to render both faces from one deck. Set \`DeckProvider backLabel\` to name backs once in your language.
 - For custom content, pass two named faces with \`front\` and \`back\` instead of the shorthand; there is no \`children\` alias.
 - Set \`flipped\` to show the back (default \`false\`). Clicking the card does not change it. Shorthand without a nonempty back name throws \`MissingBackLabelError\`, even when initially face up.

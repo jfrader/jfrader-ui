@@ -10,9 +10,10 @@ import { Popover } from '../popover';
 import { ThemeRoot } from '../theme-root';
 import {
   HoverCard,
+  type HoverCardEasyProps,
   type HoverCardGroupProps,
   type HoverCardProfileProps,
-  type HoverCardProps,
+  type HoverCardCompoundProps,
   type HoverCardStat,
 } from './index';
 
@@ -94,15 +95,15 @@ const meta = {
       source: { code: usage },
     },
   },
-} satisfies Meta<typeof HoverCard>;
+} satisfies Meta<HoverCardCompoundProps>;
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<HoverCardCompoundProps>;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function ProfileExample({ before = true, ...props }: HoverCardProps & { before?: boolean }) {
+function ProfileExample({ before = true, ...props }: HoverCardCompoundProps & { before?: boolean }) {
   return (
     <div style={rowStyle}>
       {before && <Button>Before</Button>}
@@ -179,7 +180,144 @@ function recordClicks(document: Document) {
   return { seen, stop: () => document.removeEventListener('click', listener) };
 }
 
-export const Default: Story = {
+function easyModeTypeContracts() {
+  // @ts-expect-error Easy mode rejects compound children.
+  <HoverCard triggerLabel="@ada" profile={{ name: 'Ada' }}>Children</HoverCard>;
+  // @ts-expect-error Easy mode requires triggerLabel.
+  <HoverCard profile={{ name: 'Ada' }} />;
+  // @ts-expect-error Easy mode requires profile.
+  <HoverCard triggerLabel="@ada" />;
+}
+void easyModeTypeContracts;
+
+export const Default: StoryObj<HoverCardEasyProps> = {
+  name: 'Easy mode',
+  args: {
+    triggerLabel: TRIGGER,
+    profile: PROFILE,
+    onOpenChange: fn(),
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `<HoverCard
+  triggerLabel="@maya"
+  profile={{
+    name: 'Maya Chen',
+    subtitle: 'Product designer · Platform',
+    bio: 'Designs the review and release flows.',
+    stats: [
+      { id: 'projects', label: 'Projects', value: 12 },
+      { id: 'reviews', label: 'Reviews', value: 1280 },
+    ],
+    meta: 'Joined March 2024',
+  }}
+/>`,
+      },
+    },
+  },
+  render: (args) => (
+    <div style={rowStyle}>
+      <Button>Before</Button>
+      <HoverCard {...args} />
+      <Button>Next</Button>
+    </div>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await userEvent.hover(trigger);
+    const card = await expectOpenWithin(canvasElement, OPEN_DELAY + TIMER_MARGIN);
+    await expect(canvasElement.contains(card)).toBe(false);
+    await expect(card).toHaveAttribute('data-ui', 'hover-card');
+    await expect(trigger).toHaveAttribute('aria-describedby', card.id);
+    await expect(trigger).toHaveAccessibleName(TRIGGER);
+    await expectReadOnly(card);
+    await expect(within(card).getByText('Maya Chen')).toBeInTheDocument();
+  },
+};
+
+export const EasyKeyboard: StoryObj<HoverCardEasyProps> = {
+  ...Default,
+  name: 'Easy mode keyboard',
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await userEvent.tab();
+    await userEvent.tab();
+    await expectFocus(trigger);
+    const card = await expectOpenWithin(canvasElement, IMMEDIATE + TIMER_MARGIN);
+    await expect(card).toHaveAttribute('data-ui', 'hover-card');
+
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expectFocus(trigger);
+
+    await userEvent.tab();
+    await expectClosed(canvasElement);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(within(canvasElement).getByRole('button', { name: 'Next' }));
+  },
+};
+
+export const EasyDismissal: StoryObj<HoverCardEasyProps> = {
+  ...Default,
+  name: 'Easy mode dismissal',
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await userEvent.hover(trigger);
+    const card = await expectOpenWithin(canvasElement, OPEN_DELAY + TIMER_MARGIN);
+    await expect(card).toHaveAttribute('data-ui', 'hover-card');
+
+    await userEvent.unhover(trigger);
+    await sleep(CLOSE_DELAY + TIMER_MARGIN);
+    await expectClosed(canvasElement);
+  },
+};
+
+export const EasyControlled: StoryObj<HoverCardEasyProps> = {
+  ...Default,
+  name: 'Easy mode controlled',
+  args: {
+    ...Default.args,
+    open: true,
+  },
+  play: async ({ canvasElement, args, userEvent }) => {
+    const card = await findCard(canvasElement);
+    await expect(card).toHaveAttribute('data-ui', 'hover-card');
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false);
+    await expect(bodyOf(canvasElement).getByRole('tooltip')).toBe(card);
+  },
+};
+
+export const CustomSlots: StoryObj<HoverCardEasyProps> = {
+  ...Default,
+  name: 'Easy mode custom slotProps',
+  args: {
+    ...Default.args,
+    slotProps: {
+      trigger: { className: 'custom-trigger' },
+      content: { className: 'custom-content' },
+      profile: { className: 'custom-profile' },
+    },
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveClass('custom-trigger');
+
+    await userEvent.hover(trigger);
+    const card = await expectOpenWithin(canvasElement, OPEN_DELAY + TIMER_MARGIN);
+    await expect(card).toHaveClass('custom-content');
+
+    const profile = card.querySelector('[data-ui="hover-card-profile"]');
+    await expect(profile).toHaveClass('custom-profile');
+
+    await userEvent.unhover(trigger);
+    await sleep(CLOSE_DELAY + TIMER_MARGIN);
+    await expectClosed(canvasElement);
+  },
+};
+
+export const Compound: Story = {
   render: (args) => <ProfileExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
@@ -543,7 +681,7 @@ export const GroupMemberUnmount: GroupStory = {
   },
 };
 
-function UnmountExample(props: HoverCardProps) {
+function UnmountExample(props: HoverCardCompoundProps) {
   const [mounted, setMounted] = useState(true);
   return (
     <div style={rowStyle}>
@@ -755,7 +893,7 @@ export const OutsidePress: Story = {
 
 const popoverOpenChange = fn<(open: boolean) => void>();
 
-function PopoverHost(props: HoverCardProps) {
+function PopoverHost(props: HoverCardCompoundProps) {
   return (
     <div style={rowStyle}>
       <Popover defaultOpen onOpenChange={popoverOpenChange}>
@@ -841,7 +979,7 @@ export const InsidePopoverOutsidePress: Story = {
   },
 };
 
-function ControlledRejectExample(props: HoverCardProps) {
+function ControlledRejectExample(props: HoverCardCompoundProps) {
   const [open, setOpen] = useState(true);
   return (
     <div style={rowStyle}>
@@ -1123,7 +1261,7 @@ export const ScopedThemePortal: Story = {
   },
 };
 
-function DialogHost(props: HoverCardProps) {
+function DialogHost(props: HoverCardCompoundProps) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
     <Dialog defaultOpen>

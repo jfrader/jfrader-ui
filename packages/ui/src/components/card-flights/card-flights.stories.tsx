@@ -25,10 +25,15 @@ const meta = {
     description: { component: 'Deal cards to a hand and move played cards to their table piles.' },
     source: { language: 'tsx', code: `import { useState } from 'react';
 import {
-  CardFlightsProvider, GameCardStack, GameHand, GameTable,
-  useCardFlights, useDealFlights, usePlayedCardFlights,
-  type GameHandCard, type PlayedFlightCard,
-} from '@jfrader/ui';
+  CardFlightsProvider,
+  useCardFlights,
+  useDealFlights,
+  usePlayedCardFlights,
+  type PlayedFlightCard,
+} from '@jfrader/ui/card-flights';
+import { GameCardStack } from '@jfrader/ui/game-card-stack';
+import { GameHand, type GameHandCard } from '@jfrader/ui/game-hand';
+import { GameTable } from '@jfrader/ui/game-table';
 
 function App() {
   return <CardFlightsProvider><Match /></CardFlightsProvider>;
@@ -80,7 +85,10 @@ function Match() {
     </GameTable>
   );
 }` },
-    usage: `### Card records
+    usage: `### Setup
+- Import from \`@jfrader/ui/card-flights\`. Card flights are an opt-in subpath and are not re-exported by the package root.
+
+### Card records
 - Pass the same labeled records to GameHand and useDealFlights: each has an id, label and value. No face nodes are needed. Optional front, back and backPattern customize flight artwork.
 - Give each accepted play a unique id. Pass that record to both GameCardStack.Pile and usePlayedCardFlights. Set cardId to its source hand id when the play id differs. Labels come from your app, never from a suit or rank formatter in the library.
 - The pile's data-played-key is the play id. GameHand's data-hand-card is the hand id. Hidden hands keep playerKey and zero-based card-index markers; no opponent value is exposed.

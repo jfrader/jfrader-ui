@@ -55,7 +55,7 @@ import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
-export interface BottomSheetProps {
+export interface BottomSheetBaseProps {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -66,11 +66,11 @@ export interface BottomSheetProps {
   onValueChange?: (index: number) => void;
   locale?: Intl.LocalesArgument;
   getValueText?: (fraction: number, index: number) => string;
-  children?: ReactNode;
 }
 export interface BottomSheetTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface BottomSheetContentProps
   extends Omit<ComponentPropsWithRef<'dialog'>, 'open'>, SxProps {
+  /** Set false to keep structured content out of the bottom sheet's accessible description. */
   withDescription?: boolean;
 }
 export interface BottomSheetPanelProps extends DrawerPanelProps {
@@ -84,6 +84,47 @@ export interface BottomSheetTitleProps extends ComponentPropsWithRef<'h2'>, SxPr
 export interface BottomSheetDescriptionProps extends ComponentPropsWithRef<'p'>, SxProps {}
 export interface BottomSheetHandleProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface BottomSheetCloseProps extends ComponentPropsWithRef<'button'>, SxProps {}
+
+type GeneratedPartProps<Props> = Omit<Props, 'children'> & Pick<DrawerPanelProps, `data-${string}`>;
+
+export interface BottomSheetSlotProps {
+  trigger?: GeneratedPartProps<BottomSheetTriggerProps>;
+  content?: GeneratedPartProps<BottomSheetContentProps>;
+  panel?: GeneratedPartProps<BottomSheetPanelProps>;
+  header?: GeneratedPartProps<BottomSheetHeaderProps>;
+  handle?: GeneratedPartProps<BottomSheetHandleProps>;
+  title?: GeneratedPartProps<BottomSheetTitleProps>;
+  description?: GeneratedPartProps<BottomSheetDescriptionProps>;
+  close?: GeneratedPartProps<BottomSheetCloseProps>;
+  body?: GeneratedPartProps<BottomSheetBodyProps>;
+}
+
+export interface BottomSheetCompoundProps extends BottomSheetBaseProps {
+  children?: ReactNode;
+  triggerLabel?: never;
+  title?: never;
+  description?: never;
+  content?: never;
+  closeLabel?: never;
+  slotProps?: never;
+}
+
+export interface BottomSheetEasyProps extends BottomSheetBaseProps {
+  /** Name the button that opens the bottom sheet. */
+  triggerLabel: ReactNode;
+  /** Name the bottom sheet with a visible heading. */
+  title: ReactNode;
+  /** Describe the bottom sheet below its heading. */
+  description?: ReactNode;
+  /** Place content inside the bottom sheet body. */
+  content: ReactNode;
+  /** Name the close button. */
+  closeLabel: ReactNode;
+  children?: never;
+  slotProps?: BottomSheetSlotProps;
+}
+
+export type BottomSheetProps = BottomSheetCompoundProps | BottomSheetEasyProps;
 
 const DEFAULT_DETENTS = [0.45, 0.92] as const;
 const INLINE_CAP = '36rem';
@@ -293,19 +334,19 @@ function validateDetents(detents: readonly number[]) {
     );
   }
 }
-function SheetRoot({
-  nodeId,
-  open: openProp,
-  defaultOpen = false,
-  onOpenChange,
-  detents = DEFAULT_DETENTS,
-  value: valueProp,
-  defaultValue = 0,
-  onValueChange,
-  locale,
-  getValueText,
-  children,
-}: BottomSheetProps & { nodeId?: string }) {
+function SheetRoot(props: BottomSheetProps & { nodeId?: string }) {
+  const {
+    nodeId,
+    open: openProp,
+    defaultOpen = false,
+    onOpenChange,
+    detents = DEFAULT_DETENTS,
+    value: valueProp,
+    defaultValue = 0,
+    onValueChange,
+    locale,
+    getValueText,
+  } = props;
   validateDetents(detents);
   const originalDetents = useRef([...detents]);
   if (
@@ -397,7 +438,35 @@ function SheetRoot({
       interactions,
     ],
   );
-  return <Context.Provider value={context}>{children}</Context.Provider>;
+  return (
+    <Context.Provider value={context}>
+      {'content' in props ? (
+        <>
+          <BottomSheetTrigger {...props.slotProps?.trigger}>{props.triggerLabel}</BottomSheetTrigger>
+          <BottomSheetContent {...props.slotProps?.content}>
+            <BottomSheetPanel {...props.slotProps?.panel}>
+              <BottomSheetHeader {...props.slotProps?.header}>
+                <BottomSheetHandle
+                  aria-labelledby={props.slotProps?.handle?.['aria-label'] === undefined ? context.titleId : undefined}
+                  {...props.slotProps?.handle}
+                />
+                <BottomSheetTitle {...props.slotProps?.title}>{props.title}</BottomSheetTitle>
+                {isRenderable(props.description) && (
+                  <BottomSheetDescription {...props.slotProps?.description}>
+                    {props.description}
+                  </BottomSheetDescription>
+                )}
+                <BottomSheetClose {...props.slotProps?.close}>{props.closeLabel}</BottomSheetClose>
+              </BottomSheetHeader>
+              <BottomSheetBody {...props.slotProps?.body}>{props.content}</BottomSheetBody>
+            </BottomSheetPanel>
+          </BottomSheetContent>
+        </>
+      ) : (
+        props.children
+      )}
+    </Context.Provider>
+  );
 }
 function BottomSheetRoot(props: BottomSheetProps) {
   return (
