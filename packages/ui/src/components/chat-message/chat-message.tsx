@@ -173,11 +173,14 @@ export const fadeStyle = css({
   [REDUCED_MOTION]: { animation: 'none' },
 });
 
-export const messageShellStyle = css({
+const typographyStyle = css({
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   lineHeight: vars.lineHeight.base,
   color: vars.color.text,
+});
+
+const messageShellStyle = css({
   inlineSize: 'min(78%, 34rem)',
   minInlineSize: 0,
   '@container (max-width: 28rem)': { inlineSize: '84%' },
@@ -544,7 +547,7 @@ export function ChatMessageView({
         'data-size': size,
         style: { ...restProps.style, ...slotProps?.article?.style },
         className: [className, slotProps?.article?.className].filter(Boolean).join(' ') || undefined,
-        css: [messageShellStyle, isOwn && ownShellStyle, threadSizeStyles[size], slotProps?.article?.css],
+        css: [messageShellStyle, owner === 'chat-message' && typographyStyle, isOwn && ownShellStyle, threadSizeStyles[size], slotProps?.article?.css],
         sx,
       }}
       slots={{ time: slotProps?.time, avatar: slotProps?.avatar }}

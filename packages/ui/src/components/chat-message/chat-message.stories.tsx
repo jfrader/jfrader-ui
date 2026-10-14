@@ -5,6 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ChatMessage, type ChatMessageProps } from './index';
+import { ChatThread } from '../chat-thread';
 
 const NOW = Date.parse('2026-10-12T12:00:00Z');
 const MINUTE = 60_000;
@@ -424,5 +425,17 @@ export const RepeatedMessage: Story = {
         await expect(article.contains(article.ownerDocument.getElementById(id))).toBe(true);
       }
     }
+  },
+};
+
+/** Set conversation typography once for all its messages. */
+export const ThreadTypography: Story = {
+  render: () => <ChatThread participants={[{ id: 'ada', name: 'Ada Lovelace' }]} currentUserId="ada" defaultValue={[{ id: 'type', authorId: 'ada', text: 'The build is ready.', createdAt: NOW }]} now={NOW} composer={false} reactions={[]} sx={{ fontFamily: 'serif', fontSize: vars.textSize.lg }} />,
+  parameters: { docs: { source: { code: '<ChatThread participants={people} currentUserId="ada" defaultValue={messages} now={now} composer={false} sx={{ fontFamily: "serif" }} />' } } },
+  play: async ({ canvas, canvasElement }) => {
+    const author = canvas.getByText('Ada Lovelace');
+    const thread = canvasElement.querySelector('[data-ui="chat-thread"]')!;
+    await expect(getComputedStyle(author).fontFamily).toBe(getComputedStyle(thread).fontFamily);
+    await expect(getComputedStyle(author).fontSize).toBe(getComputedStyle(thread).fontSize);
   },
 };
