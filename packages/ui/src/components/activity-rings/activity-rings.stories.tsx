@@ -940,6 +940,32 @@ export const DaySwitchNoCelebration: Story = {
   },
 };
 
+function UnavailableBaselineFixture(args: RingsArgs) {
+  const [state, setState] = useState({ goal: 10, distance: 0 });
+  return (
+    <>
+      <button css={fixtureStyle} onClick={() => setState({ goal: 0, distance: 0 })}>
+        Unavailable goal
+      </button>
+      <button css={fixtureStyle} onClick={() => setState({ goal: 10, distance: 10 })}>
+        Restore completed goal
+      </button>
+      <Rings {...args} metrics={[{ ...goals[0]!, goal: state.goal }]} values={{ distance: state.distance }} />
+    </>
+  );
+}
+export const UnavailableResetsBaseline: Story = {
+  render: (args) => <UnavailableBaselineFixture {...args} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Unavailable goal' }));
+    await expect(canvas.getByRole('listitem')).toHaveTextContent('Goal unavailable');
+    await userEvent.click(canvas.getByRole('button', { name: 'Restore completed goal' }));
+    await expect(canvas.getByRole('listitem')).toHaveTextContent('Goal met');
+    await expect(args.onRingClose).not.toHaveBeenCalled();
+  },
+};
+
 /** Inside the 240ms sweep, so the second update retargets a moving fill. */
 const MID_SWEEP_MS = motionDurationMs.slow / 4;
 function QuickUpdatesFixture(args: RingsArgs) {
