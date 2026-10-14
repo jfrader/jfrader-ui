@@ -24,14 +24,12 @@ import {
   type FocusEvent,
   type KeyboardEvent,
   type ReactNode,
-  type ReactElement,
   type SyntheticEvent,
 } from 'react';
-import { autoUpdate, flip, offset, shift, useDismiss, useFloating, useInteractions, useMergeRefs } from '@floating-ui/react';
+import { autoUpdate, flip, offset, shift, useFloating, useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { FORCED_COLORS } from '../../styling/media';
 import {
   listboxItemStateStyle,
   listboxItemStyle,
@@ -41,9 +39,9 @@ import {
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { partId } from '../../utils/part-id';
-import { moveRovingFocus } from '../../utils/roving-focus';
 import { Avatar } from '../avatar';
 import { Button, type ButtonProps } from '../button';
+import { ReactionGroupView } from '../reaction-group/reaction-group-view';
 import { Textarea, type TextareaProps } from '../textarea';
 import { relativeTime, type ThreadAuthor, type ThreadFormatters, type ThreadReaction } from './thread-core';
 
@@ -303,74 +301,6 @@ export interface ThreadReactionsProps {
   counts?: ReadonlyMap<string, number>;
 }
 
-const reactionsStyle = css({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  gap: vars.space[1],
-});
-
-// Pressed chips change shape (thicker border) and weight, not only color.
-const chipStyle = css({
-  gap: vars.space[1],
-  paddingInline: vars.space[2],
-  fontVariantNumeric: 'tabular-nums',
-  '&[aria-pressed="true"]': {
-    borderWidth: '2px',
-    borderColor: vars.color.accentBorder,
-    backgroundColor: vars.color.accentSoft,
-    color: vars.color.accentText,
-    fontWeight: vars.fontWeight.semibold,
-  },
-  [FORCED_COLORS]: { '&[aria-pressed="true"]': { borderColor: 'Highlight' } },
-});
-
-const staticChipStyle = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: vars.space[1],
-  minBlockSize: vars.space[6],
-  paddingInline: vars.space[2],
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.full,
-  fontSize: vars.textSize.sm,
-  fontVariantNumeric: 'tabular-nums',
-});
-
-// Spec: controls maintain >=32px on the main axis; the icon-only buttons only carried padding.
-const iconButtonStyle = css({ minInlineSize: vars.space[8], paddingInline: vars.space[2] });
-
-const pickerStyle = css({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  gap: vars.space[1],
-  padding: vars.space[1],
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
-  backgroundColor: vars.color.surface,
-  [FORCED_COLORS]: { borderColor: 'CanvasText' },
-});
-
-const glyphStyle = css({ display: 'block', inlineSize: '1em', blockSize: '1em' });
-
-const smileGlyph = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" css={glyphStyle} aria-hidden="true">
-    <circle cx="8" cy="8" r="6.25" />
-    <path d="M5.5 9.5c.6.9 1.4 1.3 2.5 1.3s1.9-.4 2.5-1.3M6 6.25h.01M10 6.25h.01" strokeLinecap="round" />
-  </svg>
-);
-
-const closeGlyph = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" css={glyphStyle} aria-hidden="true">
-    <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
-  </svg>
-);
-
-/**
- * Picker keyboard: Left/Right (mirrored in RTL) wrap across the emoji, Home/End jump; Escape and
- * a chosen emoji close it and return focus to the add button. Pressing outside leaves it open.
- */
 export function ThreadReactions({
   ui: owner,
   reactions,
@@ -388,150 +318,31 @@ export function ThreadReactions({
   overlay = false,
   counts,
 }: ThreadReactionsProps) {
-  const addRef = useRef<HTMLButtonElement>(null);
-  const restoreFocus = useRef(false);
-  const [rovingIndex, setRovingIndex] = useState(0);
-  const emojiQuery = { itemSelector: '[data-part="emoji"]', ownerSelector: `[data-ui="${ui(owner, 'picker')}"]` };
-  const canPick = !readOnly && offered.length > 0;
-  const showPicker = canPick && pickerOpen;
-  const { refs, context, floatingStyles } = useFloating({
-    open: overlay && showPicker,
-    onOpenChange: onPickerOpenChange,
-    placement: 'bottom-start',
-    middleware: [offset(SUGGESTION_GAP), flip(), shift({ padding: VIEWPORT_PADDING })],
-    whileElementsMounted: autoUpdate,
-  });
-  const dismiss = useDismiss(context, { enabled: overlay, escapeKey: false });
-  const { getFloatingProps } = useInteractions([dismiss]);
-  const addRefs = useMergeRefs([addRef, refs.setReference]);
-
-  useLayoutEffect(() => {
-    if (pickerOpen || !restoreFocus.current) return;
-    restoreFocus.current = false;
-    addRef.current?.focus();
-  }, [pickerOpen]);
-
-  const close = () => {
-    restoreFocus.current = true;
-    onPickerOpenChange(false);
-  };
-
-  if (reactions.length === 0 && !canPick) return null;
-
-  const handlePickerKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      close();
-      return;
-    }
-    moveRovingFocus(event, event.currentTarget, 'horizontal', emojiQuery);
-  };
+  const mappedCounts = reactions.map(({ emoji, users }) => ({
+    emoji,
+    count: counts?.get(emoji) ?? users.length,
+    mine: users.includes(currentUserId),
+  }));
 
   return (
-    <div data-ui={ui(owner, 'reactions')} className={part?.className} css={[reactionsStyle, part?.css]}>
-      {reactions.map(({ emoji, users }) => {
-        const mine = users.includes(currentUserId);
-        const count = counts?.get(emoji) ?? users.length;
-        const name = labels.reactionCount(emoji, count, mine);
-        const content = (
-          <>
-            <span aria-hidden="true">{emoji}</span>
-            <span aria-hidden="true">{formatters.number.format(count)}</span>
-          </>
-        );
-        return readOnly ? (
-          <span key={emoji} data-part="reaction" css={staticChipStyle}>
-            {content}
-            <span css={visuallyHiddenStyle}>{name}</span>
-          </span>
-        ) : (
-          <Button
-            key={emoji}
-            variant="outline"
-            size="sm"
-            data-part="reaction"
-            aria-label={name}
-            aria-pressed={mine}
-            disabled={disabled}
-            onClick={() => onToggle(emoji)}
-            css={chipStyle}
-          >
-            {content}
-          </Button>
-        );
-      })}
-      {canPick ? (
-        <Button
-            ref={addRefs}
-          variant="ghost"
-          size="sm"
-          aria-label={labels.addReaction}
-          aria-expanded={showPicker}
-          aria-controls={showPicker ? pickerId : undefined}
-          disabled={disabled}
-          data-action="react"
-          onClick={() => onPickerOpenChange(!pickerOpen)}
-          css={iconButtonStyle}
-        >
-          {smileGlyph}
-        </Button>
-      ) : null}
-      {showPicker ? (
-        <ThreadPickerOverlay overlay={overlay}>
-        <div
-          {...(overlay ? getFloatingProps() : {})}
-          ref={overlay ? refs.setFloating : undefined}
-          style={overlay ? floatingStyles : undefined}
-          dir={overlay && addRef.current ? addRef.current.ownerDocument.defaultView?.getComputedStyle(addRef.current).direction : undefined}
-          id={pickerId}
-          role="group"
-          aria-label={labels.reactions}
-          data-ui={ui(owner, 'picker')}
-          onKeyDown={handlePickerKeyDown}
-          onBlur={(event) => {
-            if (overlay && !event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== addRef.current) {
-              onPickerOpenChange(false);
-            }
-          }}
-          css={pickerStyle}
-        >
-          {offered.map((emoji, index) => (
-            <Button
-              key={emoji}
-              variant="ghost"
-              size="sm"
-              data-part="emoji"
-              aria-label={labels.reactWith(emoji)}
-              tabIndex={index === Math.min(rovingIndex, offered.length - 1) ? 0 : -1}
-              autoFocus={index === 0}
-              disabled={disabled}
-              onFocus={() => setRovingIndex(index)}
-              onClick={() => {
-                onToggle(emoji);
-                close();
-              }}
-              css={iconButtonStyle}
-            >
-              <span aria-hidden="true">{emoji}</span>
-            </Button>
-          ))}
-          <Button variant="ghost" size="sm" aria-label={labels.closeReactions} onClick={close} css={iconButtonStyle}>
-            {closeGlyph}
-          </Button>
-        </div>
-        </ThreadPickerOverlay>
-      ) : null}
-    </div>
+    <ReactionGroupView
+      counts={mappedCounts}
+      offered={offered}
+      onToggle={onToggle}
+      labels={labels}
+      readOnly={readOnly}
+      disabled={disabled}
+      pickerOpen={pickerOpen}
+      onPickerOpenChange={onPickerOpenChange}
+      ui={owner}
+      pickerId={pickerId}
+      overlay={overlay}
+      partProps={part}
+      number={formatters.number}
+    />
   );
 }
 
-function ThreadPickerOverlay({ overlay, children }: {
-  overlay: boolean;
-  children: ReactElement;
-}) {
-  return overlay ? <OverlayPortal>{children}</OverlayPortal> : children;
-}
 
 // ---------------------------------------------------------------------------------------------
 // Composer
