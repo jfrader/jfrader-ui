@@ -13,12 +13,22 @@ import {
   FieldRoot,
   useFieldAnatomy,
   type FieldPartProps,
-  type FieldSlotProps,
 } from '../field/field-anatomy';
+import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
 
 export type TextFieldSize = 'sm' | 'md' | 'lg';
 
 export interface TextFieldPartProps extends FieldPartProps {}
+
+type TextFieldAnatomy = {
+  root: 'div';
+  label: 'label';
+  control: 'input';
+  description: 'span';
+  error: 'span';
+};
+export type TextFieldSlots = FieldSlots<TextFieldAnatomy>;
+export type TextFieldSlotProps = FieldParts<TextFieldAnatomy>;
 
 export interface TextFieldProps extends Omit<ComponentPropsWithRef<'input'>, 'size'>, SxProps {
   label?: ReactNode;
@@ -26,7 +36,11 @@ export interface TextFieldProps extends Omit<ComponentPropsWithRef<'input'>, 'si
   error?: ReactNode;
   size?: TextFieldSize;
   onValueChange?: (value: string) => void;
-  slotProps?: FieldSlotProps<TextFieldPartProps>;
+  /** Replace the wrapper div; `slots.root` takes precedence. */
+  component?: TextFieldSlots['root'];
+  /** Replace generated parts with components that forward props and ref. */
+  slots?: TextFieldSlots;
+  slotProps?: TextFieldSlotProps;
 }
 
 const sizeStyles: Record<TextFieldSize, SerializedStyles> = {
@@ -43,6 +57,8 @@ export function TextField({
   size = 'md',
   onChange,
   onValueChange,
+  component,
+  slots,
   slotProps,
   className,
   sx,
@@ -67,11 +83,23 @@ export function TextField({
   };
 
   return (
-    <FieldRoot data-ui="text-field" dir={dir} className={className} sx={sx} part={slotProps?.root}>
-      <FieldLabel htmlFor={field.id} required={required} part={slotProps?.label}>
+    <FieldRoot
+      style={rest.style}
+      title={rest.title}
+      component={slots?.root ?? component}
+      data-ui="text-field"
+      dir={dir}
+      className={className}
+      sx={sx}
+      part={slotProps?.root}
+    >
+      <FieldLabel component={slots?.label} htmlFor={field.id} required={required} part={slotProps?.label}>
         {label}
       </FieldLabel>
-      <input
+      <FieldSlot
+        element="input"
+        component={slots?.control}
+        slotProps={slotProps?.control}
         {...rest}
         ref={ref}
         id={field.id}
@@ -80,13 +108,12 @@ export function TextField({
         aria-describedby={field.describedBy}
         aria-invalid={field.ariaInvalid}
         onChange={handleChange}
-        className={slotProps?.control?.className}
-        css={[inputControlStyle, sizeStyles[size], slotProps?.control?.css]}
+        styles={[inputControlStyle, sizeStyles[size]]}
       />
-      <FieldDescription id={field.descriptionId} part={slotProps?.description}>
+      <FieldDescription component={slots?.description} id={field.descriptionId} part={slotProps?.description}>
         {description}
       </FieldDescription>
-      <FieldError id={field.errorId} part={slotProps?.error}>
+      <FieldError component={slots?.error} id={field.errorId} part={slotProps?.error}>
         {error}
       </FieldError>
     </FieldRoot>

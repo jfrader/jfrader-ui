@@ -8,6 +8,7 @@ import type { SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { CardRoot, type GameCardRootProps, type GameCardRootCustomization, type GameCardRootSlotProps } from '../game-card/game-card-root';
 import { GameHand } from '../game-hand';
+import { useOptionalGameTableSeat } from '../game-table/game-table';
 
 export type GameSeatTurnMilestone = 'half' | 'quarter' | 'extended' | 'ending';
 export interface GameSeatTurn {
@@ -15,7 +16,7 @@ export interface GameSeatTurn {
   deadline: number;
   /** Full turn length in milliseconds; must be positive. */
   durationMs: number;
-  /** Current epoch milliseconds. Omit to sample the clock once per deadline. */
+  /** Current epoch milliseconds. Omit to sample the clock when deadline or duration changes. */
   now?: number;
 }
 export type GameSeatPartProps = ComponentPropsWithRef<'div'> & { css?: Interpolation<Theme> };
@@ -77,11 +78,11 @@ function SeatPart({ marker, styles = emptyStyle, children, css: slotCss, ...prop
 
 function TurnRing({ turn, onMilestone, ...props }: { turn: GameSeatTurn; onMilestone?: GameSeatProps['onTurnMilestone'] } & NonNullable<GameSeatSlotProps['timer']>) {
   const circle = useRef<SVGCircleElement>(null);
-  const [sample, setSample] = useState<{ deadline: number; now: number }>();
+  const [sample, setSample] = useState<{ deadline: number; durationMs: number; now: number }>();
   useLayoutEffect(() => {
-    if (turn.now === undefined) setSample({ deadline: turn.deadline, now: Date.now() });
-  }, [turn.deadline, turn.now]);
-  const synchronized = turn.now !== undefined || sample?.deadline === turn.deadline;
+    if (turn.now === undefined) setSample({ deadline: turn.deadline, durationMs: turn.durationMs, now: Date.now() });
+  }, [turn.deadline, turn.durationMs, turn.now]);
+  const synchronized = turn.now !== undefined || (sample?.deadline === turn.deadline && sample?.durationMs === turn.durationMs);
   const now = turn.now ?? sample?.now ?? turn.deadline;
   const remaining = Math.max(0, turn.deadline - now);
   const fraction = turn.durationMs > 0 ? Math.min(1, remaining / turn.durationMs) : 0;
@@ -103,15 +104,16 @@ function TurnRing({ turn, onMilestone, ...props }: { turn: GameSeatTurn; onMiles
   }, [turn.deadline, turn.durationMs, now, offset, remaining, synchronized]);
   useEffect(() => {
     if (!synchronized) return;
+    const currentNow = turn.now ?? (onMilestone ? Date.now() : now);
     if (previousDeadline.current !== turn.deadline) {
-      if (turn.deadline > previousDeadline.current && previousDeadline.current > now) callback.current?.('extended');
+      if (turn.deadline > previousDeadline.current && previousDeadline.current > currentNow) callback.current?.('extended');
       previousDeadline.current = turn.deadline;
       emitted.current.clear();
     }
     if (!onMilestone || turn.durationMs <= 0) return;
     const thresholds = [{ milestone: 'half', fraction: 0.5 }, { milestone: 'quarter', fraction: 0.25 }, { milestone: 'ending', fraction: 0 }] as const;
     const timers = thresholds.flatMap(({ milestone, fraction: threshold }) => {
-      const delay = turn.deadline - turn.durationMs * threshold - now;
+      const delay = turn.deadline - turn.durationMs * threshold - currentNow;
       if (delay < 0 || emitted.current.has(milestone)) return [];
       return [setTimeout(() => {
         emitted.current.add(milestone);
@@ -130,10 +132,11 @@ function TurnRing({ turn, onMilestone, ...props }: { turn: GameSeatTurn; onMiles
 export function GameSeat({ name, avatar, badges, points, hand, handCount, chat, turn, onTurnMilestone,
   turned = turn !== undefined, offline = false, dimmed = false, slotProps, ...props }: GameSeatProps) {
   const nameId = useId();
+  const seat = useOptionalGameTableSeat();
   const labelId = slotProps?.name?.id ?? nameId;
   const externalLabel = slotProps?.root?.['aria-labelledby'] ?? props['aria-labelledby'];
   const handContent = hand !== undefined ? hand : handCount !== undefined
-    ? <GameHand.Hidden count={handCount} label="" aria-hidden="true" /> : undefined;
+    ? <GameHand.Hidden playerKey={seat?.player?.key} count={handCount} label="" aria-hidden="true" /> : undefined;
   return <CardRoot {...props} marker="game-seat" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' '),
       'data-turned': String(turned), 'data-offline': String(offline), 'data-dimmed': String(dimmed) }}>

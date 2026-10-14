@@ -17,7 +17,7 @@ const shadowStyle = css({ position: 'absolute', inset: 0, boxShadow: vars.shadow
 const rotatorStyle = css({ position: 'relative', inlineSize: '100%', blockSize: '100%', transformStyle: 'preserve-3d' });
 const faceStyle = css({
   position: 'absolute', inset: 0, backfaceVisibility: 'hidden',
-  '& > [data-ui="game-card"]': { inlineSize: '100%', blockSize: '100%' },
+  '& > [data-ui~="game-card"]': { inlineSize: '100%', blockSize: '100%' },
 });
 const backStyle = css({ transform: 'rotateY(180deg)' });
 const pose = (x: number, y: number, rotate: number, scale: number) =>
@@ -31,7 +31,7 @@ export function CardFlight({ flightId, spec, onStart, onFinish }: {
   const turnRef = useRef<HTMLDivElement>(null);
   const { from, to, face, durationMs, delayMs = 0, card } = spec;
   const front = spec.front ?? card?.front ?? (card && <GameCard label={card.label} value={card.value} />);
-  const back = spec.back ?? card?.back ?? (card && <GameCard label={card.label} backPattern={card.backPattern} />);
+  const back = spec.back ?? card?.back ?? (card && <GameCard label={card.label} value={card.value} face="back" backPattern={card.backPattern} />);
   const start = pose(from.cx - to.width / 2, from.cy - to.height / 2, from.rotate, from.width / to.width);
   // Only a new launch identity restarts tracks; equivalent spec objects do not.
   useLayoutEffect(() => {

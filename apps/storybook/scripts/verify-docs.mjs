@@ -4,6 +4,43 @@ import { fileURLToPath } from 'node:url';
 import { loadCsf, metaObjectPath } from 'storybook/internal/csf-tools';
 
 const DESCRIPTION_PATH = ['parameters', 'docs', 'description', 'component'];
+const SNIPPET_COMPONENTS = new Set(['game-card', 'flip-game-card', 'game-hand', 'game-card-stack', 'deck', 'pattern']);
+
+export function checkSnippets(source, fileName = 'component.stories.tsx') {
+  const csf = loadCsf(source, { fileName, makeTitle: () => fileName });
+  const errors = [];
+  const visited = new WeakSet();
+  const property = (node, name) => node?.properties?.find((entry) =>
+    entry.type === 'ObjectProperty' && !entry.computed &&
+    (entry.key?.name ?? entry.key?.value) === name)?.value;
+  function visit(node) {
+    if (!node || typeof node !== 'object') return;
+    if (visited.has(node)) return;
+    visited.add(node);
+    if (node.type === 'ObjectExpression') {
+      const code = property(property(node, 'source'), 'code');
+      if (code) {
+        const text = code.type === 'StringLiteral' ? code.value :
+          code.type === 'TemplateLiteral' && code.expressions.length === 0 ? code.quasis[0].value.cooked : null;
+        if (text === null || !text.trim()) {
+          errors.push(`source.code at line ${code.loc.start.line}: expected a nonempty literal TSX snippet.`);
+        } else {
+          try {
+            loadCsf(text, { fileName: 'snippet.tsx', makeTitle: () => 'Snippet' });
+          } catch (error) {
+            errors.push(`source.code at line ${code.loc.start.line}: ${error.message}`);
+          }
+        }
+      }
+    }
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) value.forEach(visit);
+      else if (value && typeof value === 'object') visit(value);
+    }
+  }
+  visit(csf._ast);
+  return errors;
+}
 
 export function checkIntroduction(source, fileName) {
   const csf = loadCsf(source, { fileName, makeTitle: (title) => title ?? fileName ?? 'Component' }).parse();
@@ -45,6 +82,10 @@ export function checkComponentDocs(componentsDir) {
       try {
         errors.push(...checkIntroduction(readFileSync(fileName, 'utf8'), fileName)
           .map((error) => `${dir.name}/${story}: ${error}`));
+        if (SNIPPET_COMPONENTS.has(dir.name)) {
+          errors.push(...checkSnippets(readFileSync(fileName, 'utf8'), fileName)
+            .map((error) => `${dir.name}/${story}: ${error}`));
+        }
       } catch (error) {
         errors.push(`${dir.name}/${story}: ${error.message}`);
       }

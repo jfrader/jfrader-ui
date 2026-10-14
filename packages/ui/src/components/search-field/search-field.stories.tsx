@@ -1,3 +1,10 @@
+import {
+  FieldReplacementRoot,
+  FieldSugarRoot,
+  FieldReplacementLabel,
+  fieldRootStyles,
+  expectFieldSlotCustomization,
+} from '../../testing/field-slot-fixtures';
 import { useRef, useState, type FormEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn } from 'storybook/test';
@@ -30,7 +37,7 @@ const meta = {
   } },
 } satisfies Meta<typeof SearchField>;
 export default meta;
-type Story = StoryObj<SearchFieldProps & { onFormSubmit?: (event: FormEvent<HTMLFormElement>) => void }>;
+type Story = StoryObj<Meta<SearchFieldProps & { onFormSubmit?: (event: FormEvent<HTMLFormElement>) => void }>>;
 
 function ControlledField(props: SearchFieldProps) {
   const [value, setValue] = useState(props.defaultValue ?? '');
@@ -381,4 +388,65 @@ export const ForcedColors: Story = { args: { defaultValue: 'Ada' }, parameters: 
 export const ReducedMotion: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Enable prefers-reduced-motion: reduce in the browser (see docs/qa-gates.md). This check is manual.' } } } };
 export const CustomIcons: Story = {
   args: { defaultValue: 'Ada', searchIcon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>, clearIcon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 12h12" /></svg> },
+};
+
+/** Replace the wrapper and generated label; pass native props through slotProps. */
+export const SlotCustomization: Story = {
+  args: {
+    ref: fn(),
+    onClick: fn(),
+    className: 'consumer-root',
+    title: 'consumer title',
+    style: fieldRootStyles.consumer,
+    sx: { borderRadius: '11px' },
+    component: FieldSugarRoot,
+    slots: { root: FieldReplacementRoot, label: FieldReplacementLabel },
+    slotProps: {
+      root: {
+        onClick: fn(),
+        ref: fn(),
+        className: 'slot-root',
+        title: 'slot title',
+        style: fieldRootStyles.slot,
+        css: { borderRadius: '8px' },
+      },
+      label: { ref: fn(), title: 'generated part' },
+    },
+  },
+  render: (args) => <SearchField {...args} css={{ borderRadius: '9px' }} />,
+  parameters: {
+    docs: {
+      source: {
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<SearchField label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { className: 'custom-field' }, label: { title: 'Name' } }}\n/>",
+      },
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    await expectFieldSlotCustomization(
+      canvasElement,
+      {
+        rootEvent: args.slotProps?.root?.onClick,
+        consumerEvent: args.onClick,
+        root: args.slotProps?.root?.ref,
+        part: args.slotProps?.label?.ref,
+        consumer: args.ref,
+      },
+      'input',
+    );
+  },
+};
+
+/** Use component as shorthand for the wrapper's root slot. */
+export const ComponentRoot: Story = {
+  args: { component: FieldSugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();
+  },
+};
+
+export type SearchFieldSlotTypeRegression = {
+  // @ts-expect-error Unknown structural keys are rejected.
+  unknownSlot: NonNullable<import('./index').SearchFieldProps['slots']>['notASlot'];
+  // @ts-expect-error Unknown prop keys are rejected.
+  unknownSlotProps: NonNullable<import('./index').SearchFieldProps['slotProps']>['notASlot'];
 };

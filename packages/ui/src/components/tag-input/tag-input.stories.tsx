@@ -1,3 +1,10 @@
+import {
+  FieldReplacementRoot,
+  FieldSugarRoot,
+  FieldReplacementLabel,
+  fieldRootStyles,
+  expectFieldSlotCustomization,
+} from '../../testing/field-slot-fixtures';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
@@ -1135,4 +1142,65 @@ export const ForcedColors: Story = {
 export const ReducedMotion: Story = {
   args: { defaultValue: ['design', 'motion'] },
   parameters: { docs: { description: { story: 'Enable prefers-reduced-motion: reduce in the browser (see docs/qa-gates.md). This check is manual.' } } },
+};
+
+/** Replace the wrapper and generated label; pass native props through slotProps. */
+export const SlotCustomization: Story = {
+  args: {
+    ref: fn(),
+    onClick: fn(),
+    className: 'consumer-root',
+    title: 'consumer title',
+    style: fieldRootStyles.consumer,
+    sx: { borderRadius: '11px' },
+    component: FieldSugarRoot,
+    slots: { root: FieldReplacementRoot, label: FieldReplacementLabel },
+    slotProps: {
+      root: {
+        onClick: fn(),
+        ref: fn(),
+        className: 'slot-root',
+        title: 'slot title',
+        style: fieldRootStyles.slot,
+        css: { borderRadius: '8px' },
+      },
+      label: { ref: fn(), title: 'generated part' },
+    },
+  },
+  render: (args) => <TagInput {...args} css={{ borderRadius: '9px' }} />,
+  parameters: {
+    docs: {
+      source: {
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<TagInput label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { className: 'custom-field' }, label: { title: 'Name' } }}\n/>",
+      },
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    await expectFieldSlotCustomization(
+      canvasElement,
+      {
+        rootEvent: args.slotProps?.root?.onClick,
+        consumerEvent: args.onClick,
+        root: args.slotProps?.root?.ref,
+        part: args.slotProps?.label?.ref,
+        consumer: args.ref,
+      },
+      'input',
+    );
+  },
+};
+
+/** Use component as shorthand for the wrapper's root slot. */
+export const ComponentRoot: Story = {
+  args: { component: FieldSugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();
+  },
+};
+
+export type TagInputSlotTypeRegression = {
+  // @ts-expect-error Unknown structural keys are rejected.
+  unknownSlot: NonNullable<import('./index').TagInputProps['slots']>['notASlot'];
+  // @ts-expect-error Unknown prop keys are rejected.
+  unknownSlotProps: NonNullable<import('./index').TagInputProps['slotProps']>['notASlot'];
 };

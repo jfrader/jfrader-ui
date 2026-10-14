@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import {
+  FieldReplacementRoot,
+  FieldSugarRoot,
+  FieldReplacementLabel,
+  fieldRootStyles,
+  expectFieldSlotCustomization,
+} from '../../testing/field-slot-fixtures';
+import { StrictMode, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { TextField, type TextFieldProps, type TextFieldSize } from './index';
+import { Button } from '../button';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly TextFieldSize[];
 const HEIGHTS = { sm: 32, md: 40, lg: 48 } as const;
@@ -204,5 +212,147 @@ export const Rtl: Story = {
     const input = within(canvasElement).getByLabelText('Email');
     await expect(root).toHaveAttribute('dir', 'rtl');
     await expect(input).toHaveAttribute('dir', 'rtl');
+  },
+};
+
+/** Replace the wrapper and generated label; pass native props through slotProps. */
+export const SlotCustomization: Story = {
+  args: {
+    ref: fn(),
+    onClick: fn(),
+    className: 'consumer-root',
+    title: 'consumer title',
+    style: fieldRootStyles.consumer,
+    sx: { borderRadius: '11px' },
+    component: FieldSugarRoot,
+    slots: { root: FieldReplacementRoot, label: FieldReplacementLabel },
+    slotProps: {
+      root: {
+        onClick: fn(),
+        ref: fn(),
+        className: 'slot-root',
+        title: 'slot title',
+        style: fieldRootStyles.slot,
+        css: { borderRadius: '8px' },
+      },
+      label: { ref: fn(), title: 'generated part' },
+    },
+  },
+  render: (args) => <TextField {...args} css={{ borderRadius: '9px' }} />,
+  parameters: {
+    docs: {
+      source: {
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<TextField label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { className: 'custom-field' }, label: { title: 'Name' } }}\n/>",
+      },
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    await expectFieldSlotCustomization(
+      canvasElement,
+      {
+        rootEvent: args.slotProps?.root?.onClick,
+        consumerEvent: args.onClick,
+        root: args.slotProps?.root?.ref,
+        part: args.slotProps?.label?.ref,
+        consumer: args.ref,
+      },
+      'input',
+    );
+  },
+};
+
+/** Use component as shorthand for the wrapper's root slot. */
+export const ComponentRoot: Story = {
+  args: { component: FieldSugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();
+  },
+};
+
+export type TextFieldSlotTypeRegression = {
+  // @ts-expect-error Unknown structural keys are rejected.
+  unknownSlot: NonNullable<import('./index').TextFieldProps['slots']>['notASlot'];
+  // @ts-expect-error Unknown prop keys are rejected.
+  unknownSlotProps: NonNullable<import('./index').TextFieldProps['slotProps']>['notASlot'];
+};
+
+const rootCleanup = fn();
+const controlCleanup = fn();
+const consumerCleanup = fn();
+const rootAttach = fn((node: HTMLDivElement | null) => (node ? rootCleanup : undefined));
+const controlAttach = fn((node: HTMLInputElement | null) => (node ? controlCleanup : undefined));
+const consumerAttach = fn((node: HTMLInputElement | null) => (node ? consumerCleanup : undefined));
+
+function RefLifecycleField(args: TextFieldProps) {
+  const [mounted, setMounted] = useState(true);
+  return (
+    <>
+      <StrictMode>{mounted && <TextField {...args} />}</StrictMode>
+      <Button onClick={() => setMounted(false)}>Unmount field</Button>
+    </>
+  );
+}
+
+/** Unmount the field to run each ref cleanup. */
+export const SlotRefCleanup: Story = {
+  tags: ['!autodocs'],
+  args: {
+    ref: consumerAttach,
+    slots: { root: FieldReplacementRoot },
+    slotProps: { root: { ref: rootAttach }, control: { ref: controlAttach } },
+  },
+  beforeEach: () => {
+    for (const spy of [rootAttach, controlAttach, consumerAttach, rootCleanup, controlCleanup, consumerCleanup])
+      spy.mockClear();
+  },
+  render: (args) => <RefLifecycleField {...args} />,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Unmount field' }));
+    await expect(rootAttach.mock.calls.length).toBeGreaterThan(0);
+    await expect(rootCleanup).toHaveBeenCalledTimes(rootAttach.mock.calls.length);
+    await expect(controlCleanup).toHaveBeenCalledTimes(controlAttach.mock.calls.length);
+    await expect(consumerCleanup).toHaveBeenCalledTimes(consumerAttach.mock.calls.length);
+  },
+};
+
+const stableRootRef = fn();
+const stableLabelRef = fn();
+
+function StableSlotField(args: TextFieldProps) {
+  const [customized, setCustomized] = useState(false);
+  return (
+    <>
+      <TextField {...args} sx={customized ? { borderRadius: '0px' } : undefined} />
+      <Button onClick={() => setCustomized(true)}>Change skin</Button>
+    </>
+  );
+}
+
+/** Change the wrapper styling without replacing the field or its contents. */
+export const StableSlotIdentity: Story = {
+  tags: ['!autodocs'],
+  args: {
+    slots: { root: FieldReplacementRoot, label: FieldReplacementLabel },
+    slotProps: { root: { ref: stableRootRef }, label: { ref: stableLabelRef } },
+  },
+  beforeEach: () => {
+    stableRootRef.mockClear();
+    stableLabelRef.mockClear();
+  },
+  render: (args) => <StableSlotField {...args} />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const input = canvas.getByRole('textbox');
+    const root = canvasElement.querySelector('[data-slot-root]');
+    const label = canvasElement.querySelector('[data-slot-part]');
+    await userEvent.type(input, 'draft@example.com');
+    const rootCalls = stableRootRef.mock.calls.length;
+    const labelCalls = stableLabelRef.mock.calls.length;
+    await userEvent.click(canvas.getByRole('button', { name: 'Change skin' }));
+    await expect(canvasElement.querySelector('[data-slot-root]')).toBe(root);
+    await expect(canvasElement.querySelector('[data-slot-part]')).toBe(label);
+    await expect(canvas.getByRole('textbox')).toBe(input);
+    await expect(input).toHaveValue('draft@example.com');
+    await expect(stableRootRef).toHaveBeenCalledTimes(rootCalls);
+    await expect(stableLabelRef).toHaveBeenCalledTimes(labelCalls);
   },
 };

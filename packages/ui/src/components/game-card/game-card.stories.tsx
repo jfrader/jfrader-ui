@@ -1,4 +1,7 @@
 import type { CSSProperties } from 'react';
+import { flushSync } from 'react-dom';
+import { createRoot } from 'react-dom/client';
+import { DeckProvider, UnknownDeckError, defineDeck, frenchDeck, useDeck } from '../deck';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -55,6 +58,48 @@ const ACE_OF_OROS: GameCardValue = { deck: 'spanish', suit: 'oros', rank: 1 };
 const QUEEN_OF_HEARTS: GameCardValue = { deck: 'french', suit: 'hearts', rank: 'Q' };
 const BACK_LABEL = 'Carta boca abajo';
 
+export const DeckIdResolution: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvasElement }) => {
+    const host = canvasElement.ownerDocument.createElement('div');
+    canvasElement.append(host);
+    const errors: unknown[] = [];
+    const resolved: ReturnType<typeof useDeck>[] = [];
+    const root = createRoot(host, { onUncaughtError: (error) => { errors.push(error); } });
+    const ids = ['constructor', 'toString', '__proto__', 'missing-deck'];
+    const registered = defineDeck({ ...frenchDeck, id: '__proto__' });
+    let printed = '';
+    try {
+      for (const id of ids) {
+        flushSync(() => root.render(<DeckProbe id={id} onResolved={(deck) => resolved.push(deck)} />));
+        flushSync(() => root.render(<DeckProvider><DeckProbe id={id} onResolved={(deck) => resolved.push(deck)} /></DeckProvider>));
+        flushSync(() => root.render(<GameCard value={{ deck: id, suit: 'hearts', rank: 'Q' }} label="Queen of hearts" />));
+      }
+      flushSync(() => root.render(<DeckProvider decks={[registered]}>
+        <DeckProvider>
+          <DeckProbe id="__proto__" onResolved={(deck) => resolved.push(deck)} />
+          <GameCard value={{ deck: '__proto__', suit: 'hearts', rank: 'Q' }} label="Queen of hearts" />
+        </DeckProvider>
+      </DeckProvider>));
+      printed = host.textContent ?? '';
+    } finally {
+      flushSync(() => root.unmount()); host.remove();
+    }
+    await expect(errors).toHaveLength(ids.length * 3);
+    for (const [index, error] of errors.entries()) {
+      await expect(error).toBeInstanceOf(UnknownDeckError);
+      await expect((error as Error).message).toContain(`"${ids[Math.floor(index / 3)]}"`);
+    }
+    await expect(resolved).toEqual([registered]);
+    await expect(printed).toContain('Q');
+  },
+};
+
+function DeckProbe({ id, onResolved }: { id: string; onResolved: (deck: ReturnType<typeof useDeck>) => void }) {
+  onResolved(useDeck(id));
+  return null;
+}
+
 const gridStyle = {
   display: 'grid',
   inlineSize: `calc(${vars.size.gameCardSm} * ${FRENCH_RANKS.length} + ${vars.space[2]} * ${FRENCH_RANKS.length - 1})`,
@@ -102,7 +147,10 @@ const meta = {
 - Omit \`value\` or set \`face="back"\` to hide built-in rank and suit data. Back patterns come from the deck (e.g. Spanish diagonal, poker checks) or explicit \`backPattern\`, and \`children\` replaces either face’s artwork.
 
 ### Root customization
-Use \`component\` or \`slots.root\` to replace the root. Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`. \`slots.root\` wins when both are supplied. \`slotProps.root\` overrides root props; className and style merge. Style order is material → slot → consumer css → consumer sx.`,
+- Use \`component\` or \`slots.root\` to replace the root. \`slots.root\` wins when both are supplied.
+- Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`.
+- \`slotProps.root\` overrides root props. ClassName and style merge.
+- Style order is material → slot → consumer css → consumer sx.`,
     },
   },
 } satisfies Meta<typeof GameCard>;
@@ -131,8 +179,8 @@ async function expectDeckGrid(cards: NodeListOf<Element>) {
 }
 
 /** Spanish diagonal backs and poker checks beside their faces. */
-export const BackPatterns: Story = {
-  name: 'Deck backs',
+export const Default: Story = {
+  name: 'Default',
   render: () => (
     <div style={rowStyle}>
       {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => (
@@ -153,9 +201,10 @@ export const BackPatterns: Story = {
   },
 };
 
-export const BackPatternsLightTheme: Story = { ...BackPatterns, name: 'Deck backs light theme', decorators: [withLightTheme] };
+export const BackPatternsLightTheme: Story = { ...Default, name: 'Deck backs light theme', decorators: [withLightTheme] };
 
-export const Default: Story = {
+export const QueenOfHearts: Story = {
+  name: 'Queen of hearts',
   play: async ({ canvasElement }) => {
     const card = within(canvasElement).getByRole('img', { name: 'Q of hearts' });
     await expect(card).toHaveAttribute('data-deck', 'french');
@@ -174,6 +223,7 @@ function CardMaterial({ className, ...props }: GameCardRootProps) {
 }
 
 export const RootCustomization: Story = {
+  tags: ['!autodocs'],
   args: { ref: fn(), component: CardMaterial, slots: { root: CardMaterial }, 'data-ui': 'consumer game-card consumer',
     title: 'Host title', className: 'host-class', style: { marginInlineStart: 1, marginBlockStart: 2 },
     slotProps: { root: { 'data-ui': 'slot consumer', title: 'Slot title', className: 'slot-class',

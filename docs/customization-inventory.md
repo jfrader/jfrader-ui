@@ -9,9 +9,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 ## Counts
 
 - Public callable families: **122**; public callable parts: **156**.
-- Families exposing `slots.root`: **44**; remaining without a family-level root slot: **78** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **32**; remaining without family-level interior slots: **90** (includes components without generated anatomy).
-- Rows with styling-only `slotProps` keys: **84**.
+- Families exposing `slots.root`: **53**; remaining without a family-level root slot: **69** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **41**; remaining without family-level interior slots: **81** (includes components without generated anatomy).
+- Rows with styling-only `slotProps` keys: **73**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
 behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, TrickStacks and CardFlights are owner-held;
@@ -77,7 +77,7 @@ may exist and is listed on the corresponding public part).
 | [CodeBlock](../packages/ui/src/components/code-block/code-block.tsx) | — | — | `code`, `gutter`, `header`, `label`, `language`, `pre`, `sourceFrame`, `toggle` | `code`, `gutter`, `header`, `label`, `language`, `pre`, `sourceFrame`, `toggle` | `copyButtonProps` | — |
 | [Combobox](../packages/ui/src/components/combobox/combobox.tsx) | yes | `empty`, `input`, `item`, `list`, `root` | `description`, `empty`, `error`, `input`, `item`, `label`, `list`, `root` | `description`, `error`, `label` | — | `Empty`, `Input`, `Item`, `List` |
 | [Combobox.Empty](../packages/ui/src/components/combobox/combobox.tsx) | — | — | — | — | — | — |
-| [Combobox.Input](../packages/ui/src/components/combobox/combobox.tsx) | — | — | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — |
+| [Combobox.Input](../packages/ui/src/components/combobox/combobox.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |
 | [Combobox.Item](../packages/ui/src/components/combobox/combobox.tsx) | — | — | — | — | — | — |
 | [Combobox.List](../packages/ui/src/components/combobox/combobox.tsx) | — | — | — | — | — | — |
 | [CommandPalette](../packages/ui/src/components/command-palette/command-palette.tsx) | yes | `content`, `empty`, `group`, `input`, `item`, `list`, `root`, `trigger` | `content`, `empty`, `group`, `input`, `item`, `list`, `root`, `trigger` | — | — | `Content`, `Empty`, `Group`, `Input`, `Item`, `List`, `Trigger` |
@@ -100,7 +100,7 @@ may exist and is listed on the corresponding public part).
 | [CopyButton](../packages/ui/src/components/copy-button/copy-button.tsx) | — | — | `icon`, `label`, `status` | `icon`, `label`, `status` | — | — |
 | [Countdown](../packages/ui/src/components/countdown/countdown.tsx) | — | — | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | — | — |
 | [DatePicker](../packages/ui/src/components/date-picker/date-picker.tsx) | — | `input`, `popup` | `input`, `popup` | — | — | `Input`, `Popup` |
-| [DatePicker.Input](../packages/ui/src/components/date-picker/date-picker.tsx) | — | — | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — |
+| [DatePicker.Input](../packages/ui/src/components/date-picker/date-picker.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |
 | [DatePicker.Popup](../packages/ui/src/components/date-picker/date-picker.tsx) | — | — | — | — | — | — |
 | [DateRangePicker](../packages/ui/src/components/date-range-picker/date-range-picker.tsx) | — | `content`, `trigger` | `content`, `trigger` | — | — | `Content`, `Trigger` |
 | [DateRangePicker.Content](../packages/ui/src/components/date-range-picker/date-range-picker.tsx) | — | — | `actions`, `calendars`, `presets`, `summary` | `actions`, `calendars`, `presets`, `summary` | — | — |
@@ -144,8 +144,8 @@ may exist and is listed on the corresponding public part).
 | [ExpandableCard.Description](../packages/ui/src/components/expandable-card/expandable-card.tsx) | — | — | — | — | — | — |
 | [ExpandableCard.Title](../packages/ui/src/components/expandable-card/expandable-card.tsx) | — | — | — | — | — | — |
 | [ExpandableCard.Trigger](../packages/ui/src/components/expandable-card/expandable-card.tsx) | — | — | — | — | — | — |
-| [ExpandingSearch](../packages/ui/src/components/expanding-search/expanding-search.tsx) | — | — | `clear`, `clearSlot`, `control`, `description`, `error`, `icon`, `label`, `root`, `shell` | `clear`, `clearSlot`, `control`, `description`, `error`, `icon`, `label`, `root`, `shell` | `inputProps` | — |
-| [FileDropzone](../packages/ui/src/components/file-dropzone/file-dropzone.tsx) | — | — | `action`, `browse`, `description`, `error`, `input`, `item`, `label`, `list`, `note`, `preview`, `progress`, `root`, `status`, `target` | `action`, `browse`, `description`, `error`, `input`, `item`, `label`, `list`, `note`, `preview`, `progress`, `root`, `status`, `target` | — | — |
+| [ExpandingSearch](../packages/ui/src/components/expanding-search/expanding-search.tsx) | yes | `clear`, `clearSlot`, `container`, `control`, `description`, `error`, `field`, `fieldRoot`, `icon`, `label`, `measure`, `region`, `root`, `shell`, `trigger`, `triggerIcon`, `triggerWrapper` | `clear`, `clearSlot`, `container`, `control`, `description`, `error`, `field`, `icon`, `label`, `measure`, `region`, `root`, `shell`, `trigger`, `triggerIcon`, `triggerWrapper` | — | `inputProps` | — |
+| [FileDropzone](../packages/ui/src/components/file-dropzone/file-dropzone.tsx) | yes | `action`, `browse`, `description`, `error`, `input`, `item`, `label`, `list`, `note`, `preview`, `progress`, `root`, `status`, `target` | `action`, `browse`, `description`, `error`, `input`, `item`, `label`, `list`, `note`, `preview`, `progress`, `root`, `status`, `target` | — | — | — |
 | [FilterToolbar](../packages/ui/src/components/filter-toolbar/filter-toolbar.tsx) | yes | `activeFilters`, `clear`, `controls`, `multiSelect`, `resultCount`, `root`, `select` | `activeFilters`, `clear`, `controls`, `multiSelect`, `resultCount`, `root`, `select` | — | — | `ActiveFilters`, `Clear`, `Controls`, `ResultCount` |
 | [FilterToolbar.ActiveFilters](../packages/ui/src/components/filter-toolbar/filter-toolbar.tsx) | — | — | `chip`, `label`, `list`, `remove` | `chip`, `label`, `list`, `remove` | — | — |
 | [FilterToolbar.Clear](../packages/ui/src/components/filter-toolbar/filter-toolbar.tsx) | — | — | — | — | — | — |
@@ -183,7 +183,7 @@ may exist and is listed on the corresponding public part).
 | [HoverCard.Profile](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | `avatar`, `bio`, `identity`, `meta`, `stats` | `avatar`, `bio`, `identity`, `meta`, `stats` | — | — |
 | [HoverCard.Trigger](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |
 | [ImageCompare](../packages/ui/src/components/image-compare/image-compare.tsx) | — | — | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | — | — |
-| [InlineEdit](../packages/ui/src/components/inline-edit/inline-edit.tsx) | — | — | `actions`, `cancel`, `control`, `description`, `error`, `retry`, `root`, `save`, `status`, `trigger` | `actions`, `cancel`, `control`, `description`, `error`, `retry`, `root`, `save`, `status`, `trigger` | `controlProps` | — |
+| [InlineEdit](../packages/ui/src/components/inline-edit/inline-edit.tsx) | yes | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | — | `controlProps` | — |
 | [JsonViewer](../packages/ui/src/components/json-viewer/json-viewer.tsx) | — | — | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | — | — |
 | [Kbd](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | `Group` |
 | [Kbd.Group](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | — |
@@ -192,7 +192,7 @@ may exist and is listed on the corresponding public part).
 | [LinkPreview](../packages/ui/src/components/link-preview/link-preview.tsx) | — | — | `body`, `image`, `title` | `body`, `image`, `title` | — | — |
 | [LinkUnfurl](../packages/ui/src/components/link-unfurl/link-unfurl.tsx) | — | — | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | — | — |
 | [LocaleSwitcher](../packages/ui/src/components/locale-switcher/locale-switcher.tsx) | — | — | `content`, `option`, `trigger` | `content`, `option`, `trigger` | — | — |
-| [MentionInput](../packages/ui/src/components/mention-input/mention-input.tsx) | — | — | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | — | — |
+| [MentionInput](../packages/ui/src/components/mention-input/mention-input.tsx) | yes | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | — | — | — |
 | [Menu](../packages/ui/src/components/menu/menu.tsx) | yes | `content`, `item`, `root`, `separator`, `trigger` | `content`, `item`, `root`, `separator`, `trigger` | — | — | `Content`, `Item`, `Separator`, `Trigger` |
 | [Menu.Content](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
 | [Menu.Item](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
@@ -216,7 +216,7 @@ may exist and is listed on the corresponding public part).
 | [NowPlaying.Levels](../packages/ui/src/components/now-playing/now-playing.tsx) | — | — | — | — | — | — |
 | [NowPlayingLevels](../packages/ui/src/components/now-playing/now-playing.tsx) | — | — | — | — | — | — |
 | [Pagination](../packages/ui/src/components/pagination/pagination.tsx) | — | — | — | — | — | — |
-| [PasswordField](../packages/ui/src/components/password-field/password-field.tsx) | — | — | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | — | — |
+| [PasswordField](../packages/ui/src/components/password-field/password-field.tsx) | yes | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | — | — | — |
 | [Pattern](../packages/ui/src/components/pattern/pattern.tsx) | — | — | — | — | — | — |
 | [PhotoGrid](../packages/ui/src/components/photo-grid/photo-grid.tsx) | — | — | `controls`, `density`, `favorite`, `filmstrip`, `header`, `item`, `list`, `photo`, `stage`, `status`, `title`, `viewer` | `controls`, `density`, `favorite`, `filmstrip`, `header`, `item`, `list`, `photo`, `stage`, `status`, `title`, `viewer` | — | — |
 | [Pill](../packages/ui/src/components/pill/pill.tsx) | — | — | — | — | — | — |
@@ -235,7 +235,7 @@ may exist and is listed on the corresponding public part).
 | [ResizablePanels.Panel](../packages/ui/src/components/resizable-panels/resizable-panels.tsx) | — | — | — | — | — | — |
 | [Scene](../packages/ui/src/components/scene/scene.tsx) | — | — | — | — | — | — |
 | [ScrollArea](../packages/ui/src/components/scroll-area/scroll-area.tsx) | — | — | `thumb`, `track`, `viewport` | `thumb`, `track`, `viewport` | — | — |
-| [SearchField](../packages/ui/src/components/search-field/search-field.tsx) | — | — | `clear`, `clearSlot`, `control`, `description`, `error`, `icon`, `label`, `root`, `shell` | `clear`, `clearSlot`, `control`, `description`, `error`, `icon`, `label`, `root`, `shell` | — | — |
+| [SearchField](../packages/ui/src/components/search-field/search-field.tsx) | yes | `clear`, `clearSlot`, `control`, `description`, `error`, `icon`, `label`, `root`, `shell` | `clear`, `clearSlot`, `control`, `description`, `error`, `icon`, `label`, `root`, `shell` | — | — | — |
 | [SegmentedControl](../packages/ui/src/components/segmented-control/segmented-control.tsx) | yes | `item`, `root` | `item`, `root`, `selection`, `track` | `selection`, `track` | — | `Item` |
 | [SegmentedControl.Item](../packages/ui/src/components/segmented-control/segmented-control.tsx) | — | — | — | — | — | — |
 | [Select](../packages/ui/src/components/select/select.tsx) | yes | `content`, `description`, `empty`, `error`, `item`, `label`, `root`, `trigger`, `value` | `content`, `description`, `empty`, `error`, `item`, `label`, `root`, `trigger`, `value` | — | — | `Content`, `Description`, `Empty`, `Error`, `Item`, `Label`, `Trigger`, `Value` |
@@ -269,9 +269,9 @@ may exist and is listed on the corresponding public part).
 | [Tabs.List](../packages/ui/src/components/tabs/tabs.tsx) | — | — | — | — | — | — |
 | [Tabs.Panel](../packages/ui/src/components/tabs/tabs.tsx) | — | — | — | — | — | — |
 | [Tabs.Tab](../packages/ui/src/components/tabs/tabs.tsx) | — | — | — | — | — | — |
-| [TagInput](../packages/ui/src/components/tag-input/tag-input.tsx) | — | — | `control`, `description`, `error`, `input`, `label`, `list`, `remove`, `root`, `status`, `token` | `control`, `description`, `error`, `input`, `label`, `list`, `remove`, `root`, `status`, `token` | — | — |
-| [Textarea](../packages/ui/src/components/textarea/textarea.tsx) | — | — | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — |
-| [TextField](../packages/ui/src/components/text-field/text-field.tsx) | — | — | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — |
+| [TagInput](../packages/ui/src/components/tag-input/tag-input.tsx) | yes | `control`, `description`, `error`, `input`, `label`, `list`, `remove`, `root`, `status`, `token` | `control`, `description`, `error`, `input`, `label`, `list`, `remove`, `root`, `status`, `token` | — | — | — |
+| [Textarea](../packages/ui/src/components/textarea/textarea.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |
+| [TextField](../packages/ui/src/components/text-field/text-field.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |
 | [ThemeProvider](../packages/ui/src/components/theme-provider/theme-provider.tsx) | — | — | — | — | — | — |
 | [ThemeRoot](../packages/ui/src/components/theme-root/theme-root.tsx) | — | — | — | — | — | — |
 | [ThemeSwitch](../packages/ui/src/components/theme-switch/theme-switch.tsx) | — | — | `control`, `darkIcon`, `description`, `iconFrame`, `label`, `lightIcon`, `root` | `control`, `darkIcon`, `description`, `iconFrame`, `label`, `lightIcon`, `root` | — | — |

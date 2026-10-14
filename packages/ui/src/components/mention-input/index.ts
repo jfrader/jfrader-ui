@@ -9,4 +9,6 @@ export type {
   MentionInputProps,
   MentionInputActions,
   MentionInputMessages,
+  MentionInputSlots,
+  MentionInputSlotProps,
 } from './mention-input';

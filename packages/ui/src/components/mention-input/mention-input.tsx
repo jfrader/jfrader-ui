@@ -35,14 +35,8 @@ import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
-import {
-  FieldRoot,
-  FieldLabel,
-  FieldDescription,
-  FieldError,
-  useFieldAnatomy,
-  type FieldPartProps,
-} from '../field/field-anatomy';
+import { FieldRoot, FieldLabel, FieldDescription, FieldError, useFieldAnatomy } from '../field/field-anatomy';
+import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
 
 export type MentionKind = 'person' | 'channel';
 export interface Mention {
@@ -84,20 +78,24 @@ export interface MentionInputMessages {
   removed(mention: Mention): string;
   invalidValue: string;
 }
-type Part =
-  | 'root'
-  | 'label'
-  | 'control'
-  | 'input'
-  | 'mirror'
-  | 'token'
-  | 'panel'
-  | 'list'
-  | 'option'
-  | 'empty'
-  | 'description'
-  | 'error'
-  | 'status';
+type MentionInputAnatomy = {
+  root: 'div';
+  label: 'label';
+  control: 'div';
+  input: 'textarea';
+  mirror: 'div';
+  token: 'span';
+  panel: 'div';
+  list: 'div';
+  option: 'div';
+  empty: 'div';
+  description: 'span';
+  error: 'span';
+  status: 'span';
+};
+export type MentionInputSlots = FieldSlots<MentionInputAnatomy>;
+export type MentionInputSlotProps = FieldParts<MentionInputAnatomy>;
+
 export interface MentionInputProps
   extends Omit<ComponentPropsWithRef<'textarea'>, 'value' | 'defaultValue' | 'onSubmit'>, SxProps {
   value?: MentionValue;
@@ -123,7 +121,11 @@ export interface MentionInputProps
   messages?: Partial<MentionInputMessages>;
   renderSuggestion?: (item: MentionSuggestion, query: string) => ReactNode;
   actionsRef?: Ref<MentionInputActions>;
-  slotProps?: Partial<Record<Part, FieldPartProps>>;
+  /** Replace the wrapper div; `slots.root` takes precedence. */
+  component?: MentionInputSlots['root'];
+  /** Replace generated parts with components that forward props and ref. */
+  slots?: MentionInputSlots;
+  slotProps?: MentionInputSlotProps;
 }
 
 const EMPTY_VALUE: MentionValue = { text: '', mentions: [] };
@@ -201,8 +203,7 @@ function replace(value: MentionValue, start: number, end: number, text: string):
     text: value.text.slice(0, start) + text + value.text.slice(end),
     mentions: validMentions(value).flatMap((mention) => {
       if (mention.end <= start) return [mention];
-      if (mention.start >= end)
-        return [{ ...mention, start: mention.start + delta, end: mention.end + delta }];
+      if (mention.start >= end) return [{ ...mention, start: mention.start + delta, end: mention.end + delta }];
       return [];
     }),
   };
@@ -225,11 +226,7 @@ function reconcile(value: MentionValue, text: string, edit: NativeEdit | null): 
       if (edit.inputType.endsWith('Forward')) end = Math.min(value.text.length, end + deletedLength);
     }
     const insertedLength = text.length - value.text.length + end - start;
-    if (
-      insertedLength >= 0 &&
-      text.startsWith(value.text.slice(0, start)) &&
-      text.endsWith(value.text.slice(end))
-    ) {
+    if (insertedLength >= 0 && text.startsWith(value.text.slice(0, start)) && text.endsWith(value.text.slice(end))) {
       return replace(value, start, end, text.slice(start, start + insertedLength));
     }
   }
@@ -369,6 +366,8 @@ export function MentionInput({
   locale,
   messages,
   renderSuggestion,
+  component,
+  slots,
   slotProps,
   className,
   sx,
@@ -402,11 +401,7 @@ export function MentionInput({
   const textRef = useRef<HTMLTextAreaElement | null>(null);
   const mirrorRef = useRef<HTMLDivElement | null>(null);
   const caretRef = useRef<HTMLSpanElement | null>(null);
-  const [accepted = EMPTY_VALUE, requestValue, resetValue] = useControlledState(
-    valueProp,
-    defaultValue,
-    onValueChange,
-  );
+  const [accepted = EMPTY_VALUE, requestValue, resetValue] = useControlledState(valueProp, defaultValue, onValueChange);
   const acceptedRef = useRef(accepted);
   const initialText = useRef(accepted.text);
   acceptedRef.current = accepted;
@@ -441,8 +436,7 @@ export function MentionInput({
       (item) =>
         !trigger?.query ||
         Array.from(segmenter.segment(item.name)).some(
-          ({ index }) =>
-            collator.compare(item.name.slice(index, index + trigger.query.length), trigger.query) === 0,
+          ({ index }) => collator.compare(item.name.slice(index, index + trigger.query.length), trigger.query) === 0,
         ),
     )
     .sort((a, b) => collator.compare(a.name, b.name))
@@ -486,8 +480,7 @@ export function MentionInput({
   const dismiss = useDismiss(floating.context, { enabled: effectiveOpen, escapeKey: false });
   const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([navigation, dismiss]);
   const referenceProps = getReferenceProps();
-  const ariaLabelledBy =
-    [labelledBy, isRenderable(label) && `${baseId}-label`].filter(Boolean).join(' ') || undefined;
+  const ariaLabelledBy = [labelledBy, isRenderable(label) && `${baseId}-label`].filter(Boolean).join(' ') || undefined;
   const mergedRef = useMergeRefs([ref, textRef, floating.refs.setReference]);
   const rowsMin = positiveInteger(minRows, 1);
   const rowsMax = Math.max(rowsMin, positiveInteger(maxRows, 8));
@@ -543,9 +536,7 @@ export function MentionInput({
     }
     transactionRef.current = false;
     if (input.value !== acceptedRef.current.text) input.value = acceptedRef.current.text;
-    const position = acceptedNext
-      ? start + text.length
-      : Math.min(previousCaret, acceptedRef.current.text.length);
+    const position = acceptedNext ? start + text.length : Math.min(previousCaret, acceptedRef.current.text.length);
     input.setSelectionRange(position, position);
     syncCaret();
   };
@@ -626,8 +617,7 @@ export function MentionInput({
       mirror.scrollLeft = input.scrollLeft;
       floating.refs.setPositionReference({
         contextElement: input,
-        getBoundingClientRect: () =>
-          caretRef.current?.getBoundingClientRect() ?? input.getBoundingClientRect(),
+        getBoundingClientRect: () => caretRef.current?.getBoundingClientRect() ?? input.getBoundingClientRect(),
       });
     };
     measure();
@@ -708,18 +698,18 @@ export function MentionInput({
     return text;
   };
   for (const mention of mentions) {
+    painted.push(<span key={`text-${cursor}`}>{paintText(accepted.text.slice(cursor, mention.start), cursor)}</span>);
     painted.push(
-      <span key={`text-${cursor}`}>{paintText(accepted.text.slice(cursor, mention.start), cursor)}</span>,
-    );
-    painted.push(
-      <span
+      <FieldSlot
+        element="span"
+        component={slots?.token}
+        slotProps={slotProps?.token}
         data-ui="mention-input-token"
         key={`${mention.start}-${mention.end}`}
-        className={slotProps?.token?.className}
-        css={[tokenStyle, slotProps?.token?.css]}
+        styles={[tokenStyle]}
       >
         {mentionText(mention.kind, mention.label)}
-      </span>,
+      </FieldSlot>,
     );
     cursor = mention.end;
   }
@@ -731,35 +721,51 @@ export function MentionInput({
   );
   return (
     <FieldRoot
+      style={rest.style}
+      title={rest.title}
+      component={slots?.root ?? component}
       data-ui="mention-input"
       dir={dir}
       className={className}
       sx={sx}
       part={{ ...slotProps?.root, css: [rootLayoutStyle, slotProps?.root?.css] }}
     >
-      <FieldLabel id={`${baseId}-label`} htmlFor={field.id} required={required} part={slotProps?.label}>
+      <FieldLabel
+        component={slots?.label}
+        id={`${baseId}-label`}
+        htmlFor={field.id}
+        required={required}
+        part={slotProps?.label}
+      >
         {label}
       </FieldLabel>
-      <div
+      <FieldSlot
+        element="div"
+        component={slots?.control}
+        slotProps={slotProps?.control}
         role="combobox"
         aria-label={rest['aria-label']}
         aria-labelledby={ariaLabelledBy}
         aria-haspopup="listbox"
         aria-expanded={effectiveOpen}
         aria-controls={effectiveOpen ? `${baseId}-list` : undefined}
-        className={slotProps?.control?.className}
-        css={[shellStyle, slotProps?.control?.css]}
+        styles={[shellStyle]}
       >
-        <div
+        <FieldSlot
+          element="div"
+          component={slots?.mirror}
+          slotProps={slotProps?.mirror}
           ref={mirrorRef}
           aria-hidden="true"
           dir={dir}
-          className={slotProps?.mirror?.className}
-          css={[metricsStyle, sizeStyles[size], mirrorStyle, slotProps?.mirror?.css]}
+          styles={[metricsStyle, sizeStyles[size], mirrorStyle]}
         >
           {painted}
-        </div>
-        <textarea
+        </FieldSlot>
+        <FieldSlot
+          element="textarea"
+          component={slots?.input}
+          slotProps={slotProps?.input}
           {...referenceProps}
           {...rest}
           onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -811,12 +817,7 @@ export function MentionInput({
                     : undefined;
               if (deleting) {
                 event.preventDefault();
-                write(
-                  deleting.start,
-                  deleting.end,
-                  '',
-                  replace(documentValue, deleting.start, deleting.end, ''),
-                );
+                write(deleting.start, deleting.end, '', replace(documentValue, deleting.start, deleting.end, ''));
                 setAnnouncement(copy.removed(deleting));
               }
               const jumping =
@@ -849,8 +850,7 @@ export function MentionInput({
           aria-labelledby={ariaLabelledBy}
           aria-describedby={field.describedBy}
           aria-invalid={field.ariaInvalid}
-          className={slotProps?.input?.className}
-          css={[inputControlStyle, metricsStyle, sizeStyles[size], inputStyle, slotProps?.input?.css]}
+          styles={[inputControlStyle, metricsStyle, sizeStyles[size], inputStyle]}
           onChange={onChange}
           onInput={(event) => {
             onInput?.(event);
@@ -862,8 +862,7 @@ export function MentionInput({
             requestDocument(next, position);
             if (!compositionRef.current) {
               setActiveIndex(0);
-              if (findTrigger(next, position, people !== undefined, channels !== undefined))
-                requestOpen(true);
+              if (findTrigger(next, position, people !== undefined, channels !== undefined)) requestOpen(true);
             }
           }}
           onSelect={(event) => {
@@ -914,45 +913,54 @@ export function MentionInput({
               requestOpen(true);
           }}
         />
-      </div>
-      <FieldDescription id={field.descriptionId} part={slotProps?.description}>
+      </FieldSlot>
+      <FieldDescription component={slots?.description} id={field.descriptionId} part={slotProps?.description}>
         {description}
       </FieldDescription>
-      <FieldError id={field.errorId} part={slotProps?.error}>
+      <FieldError component={slots?.error} id={field.errorId} part={slotProps?.error}>
         {error}
       </FieldError>
-      <span
+      <FieldSlot
+        element="span"
+        component={slots?.status}
+        slotProps={slotProps?.status}
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        className={slotProps?.status?.className}
-        css={[visuallyHiddenStyle, slotProps?.status?.css]}
+        styles={[visuallyHiddenStyle]}
       >
         {effectiveOpen && trigger
           ? matches.length
             ? copy.results(matches.length, trigger.kind)
             : copy.empty(trigger.kind, trigger.query)
           : announcement}
-      </span>
+      </FieldSlot>
       {effectiveOpen && trigger && (
         <OverlayPortal>
-          <div
+          <FieldSlot
+            element="div"
+            component={slots?.panel}
+            slotProps={slotProps?.panel}
             ref={floating.refs.setFloating}
             style={floating.floatingStyles}
             dir={dir}
-            className={slotProps?.panel?.className}
-            css={[listboxSurfaceStyle, panelStyle, slotProps?.panel?.css]}
+            styles={[listboxSurfaceStyle, panelStyle]}
           >
-            <div
+            <FieldSlot
+              element="div"
+              component={slots?.list}
+              slotProps={slotProps?.list}
               {...getFloatingProps()}
               role="listbox"
               id={`${baseId}-list`}
               aria-label={trigger.kind === 'person' ? copy.peopleLabel : copy.channelsLabel}
-              className={slotProps?.list?.className}
-              css={[listStyle, slotProps?.list?.css]}
+              styles={[listStyle]}
             >
               {matches.map((item, index) => (
-                <div
+                <FieldSlot
+                  element="div"
+                  component={slots?.option}
+                  slotProps={slotProps?.option}
                   {...getItemProps({
                     onClick: () => selectSuggestion(item),
                     onMouseDown: (event) => event.preventDefault(),
@@ -966,8 +974,7 @@ export function MentionInput({
                   role="option"
                   aria-selected={active === index}
                   data-active={active === index ? '' : undefined}
-                  className={slotProps?.option?.className}
-                  css={[listboxItemStyle, listboxItemStateStyle, optionStyle, slotProps?.option?.css]}
+                  styles={[listboxItemStyle, listboxItemStateStyle, optionStyle]}
                 >
                   {renderSuggestion ? (
                     renderSuggestion(item, trigger.query)
@@ -982,20 +989,19 @@ export function MentionInput({
                       <span css={metadataStyle}>
                         {item.kind === 'person'
                           ? item.role
-                          : (item.description ??
-                            (item.members === undefined ? null : formatter.format(item.members)))}
+                          : (item.description ?? (item.members === undefined ? null : formatter.format(item.members)))}
                       </span>
                     </>
                   )}
-                </div>
+                </FieldSlot>
               ))}
-            </div>
+            </FieldSlot>
             {!matches.length && (
-              <div className={slotProps?.empty?.className} css={[emptyStyle, slotProps?.empty?.css]}>
+              <FieldSlot element="div" component={slots?.empty} slotProps={slotProps?.empty} styles={[emptyStyle]}>
                 {copy.empty(trigger.kind, trigger.query)}
-              </div>
+              </FieldSlot>
             )}
-          </div>
+          </FieldSlot>
         </OverlayPortal>
       )}
     </FieldRoot>

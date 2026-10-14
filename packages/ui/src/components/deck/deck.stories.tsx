@@ -69,6 +69,17 @@ const meta = {
       source: { language: 'tsx', code: `import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
 
+export function BuiltInCards() {
+  return (
+    <>
+      <GameCard label="Queen of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
+      <DeckProvider default="spanish">
+        <GameCard label="As de oros" value={{ suit: 'oros', rank: 1 }} />
+      </DeckProvider>
+    </>
+  );
+}
+
 const stars = defineDeck({
   id: 'stars',
   suits: { stars: { label: 'stars', glyph: '★', ink: 'red' } },
@@ -86,8 +97,8 @@ export function StarCard() {
       description: {
         component: 'Declare card decks with suits, ranks, custom artwork, and backs.',
       },
-      usage: `### Defining decks with defineDeck
-Use \`defineDeck\` to declare suits, ranks, per-card face art, and back configuration with full type safety:
+      usage: `### Defining decks
+Use \`defineDeck\` to declare suits, ranks, per-card face art, and backs:
 - \`id\`: Unique string identifier referenced by serializable card props (\`value.deck\`).
 - \`suits\`: Suit definitions with a visual fallback \`label\`, optional \`glyph\` (\`ReactNode\`), and optional \`ink\` (\`'red' | 'ink'\`).
 - \`ranks\`: Rank definitions with a visual fallback \`label\` and optional \`mark\` (\`ReactNode\`). \`GameCard label\` names the whole card for assistive technology.
@@ -108,7 +119,7 @@ The definitions are supplied via \`<DeckProvider decks={[myDeck]}>\`. Set \`back
 - Import from \`@jfrader/ui/deck\`. Decks are an opt-in subpath and are not re-exported by the package root.
 
 ### Resolution order
-1. **Deck identity**: Explicit \`value.deck\` → provider's \`default\` → built-in French deck. Unknown ids throw a clear error naming the missing deck.
+1. **Deck identity**: Explicit \`value.deck\` → provider's \`default\` → built-in French deck. Unknown ids throw \`UnknownDeckError\` naming the missing deck.
 2. **Card face**: Consumer \`children\` → per-card \`faces[\`\${suit}-\${rank}\`]\` art → printed face (suit glyph + rank mark) → raw rank/suit ids as text. It never produces an empty card.
 3. **Card back**: Explicit \`backPattern\` prop → deck \`back\` (pattern or artwork) → checks pattern.`,
     },
@@ -120,8 +131,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Built-in Spanish and French decks resolve without any explicit provider configuration.
- * Setting `default="spanish"` makes cards without an explicit `deck` use the Spanish deck and its diagonal back.
+ * Show Spanish and French cards beside a French card back. Built-in decks need no provider.
  */
 export const Default: Story = {
   render: () => (
@@ -150,8 +160,8 @@ export const Default: Story = {
 };
 
 /**
- * A custom deck with invented suits, ranks, inks, and a custom back pattern.
- * The card with missing face art degrades honestly to the printed face (mark + glyph + ink) rather than a blank card.
+ * Show custom face artwork beside a printed card and a dots back.
+ * Cards without face artwork use the deck's rank mark, suit glyph and ink.
  */
 export const CustomDeck: Story = {
   render: () => (
@@ -208,6 +218,7 @@ export const CustomDeck: Story = {
  * beside a face-up Spanish card.
  */
 export const SpanishBackInheritance: Story = {
+  name: 'Spanish faces and backs',
   render: () => (
     <DeckProvider default="spanish">
       <div style={rowStyle}>
@@ -234,7 +245,7 @@ export const SpanishBackInheritance: Story = {
 };
 
 /**
- * A custom deck whose back is arbitrary consumer artwork rather than an SVG pattern.
+ * Use your own artwork for a deck's card backs.
  */
 export const CustomBackArtwork: Story = {
   render: () => (
@@ -258,10 +269,10 @@ export const CustomBackArtwork: Story = {
 };
 
 /**
- * When suit and rank marks are entirely absent from the deck, rendering degrades honestly
- * to raw text ids instead of rendering a blank card.
+ * Show rank and suit ids as text when the deck has no matching marks.
  */
 export const DegradationToRawText: Story = {
+  name: 'Unlisted rank and suit',
   render: () => (
     <div style={rowStyle}>
       <GameCard label="unknown card" value={{ suit: 'comets', rank: '99' }} />
@@ -280,7 +291,7 @@ export const CustomDeckLightTheme: Story = {
 };
 
 /**
- * Resolving an unregistered deck id throws a clear UnknownDeckError naming the missing deck.
+ * An unregistered deck id throws `UnknownDeckError` naming the missing deck.
  */
 export const UnknownDeckThrows: Story = {
   tags: ['!autodocs'],
