@@ -5,4 +5,5 @@ export type {
   PasswordFieldProps,
   PasswordFieldSize,
   PasswordFieldSlotProps,
+  PasswordFieldSlots,
 } from './password-field';

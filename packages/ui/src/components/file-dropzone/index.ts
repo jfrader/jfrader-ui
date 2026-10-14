@@ -8,4 +8,5 @@ export type {
   FileDropzoneMessages,
   FileDropzoneSize,
   FileDropzoneSlotProps,
+  FileDropzoneSlots,
 } from './file-dropzone';

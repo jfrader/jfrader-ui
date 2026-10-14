@@ -1,25 +1,72 @@
-import { act, useState } from 'react';
+import { act, useState, type ComponentPropsWithRef } from 'react';
 import { renderToString } from 'react-dom/server';
 import { hydrateRoot } from 'react-dom/client';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, userEvent, within } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { Calendar, type CalendarProps } from './index';
+import { Calendar, type CalendarCompoundProps as CalendarProps, type CalendarEasyProps } from './index';
 
 const LOCALE = 'en-US';
 // Rejected by the controlled parent in the Controlled story.
 const REJECTED_DATE = '2026-10-17';
 
-const meta = {
+const meta: Meta<CalendarProps> = {
   title: 'Pickers/Calendar',
   component: Calendar,
-  parameters: { docs: { description: { component: 'Choose a date or show a range of dates. Move between months to find a day.' } } },
+  parameters: { docs: {
+    description: { component: 'Choose a date or show a range of dates. Move between months to find a day.' },
+    usage: '- Omit children for the default header and grid. Customize them through slots or slotProps.\n- Supply Calendar.Header and Calendar.Grid as children for a custom layout. Explicit null children render no calendar parts.',
+  } },
   args: { locale: LOCALE },
-} satisfies Meta<typeof Calendar>;
+};
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+type CheckedCalendar<Props extends import('./index').CalendarProps> = Props;
+export type CalendarTypeRegression = {
+  rootSugar: CheckedCalendar<{
+    component: (props: ComponentPropsWithRef<'div'>) => null;
+    slots: { root: (props: ComponentPropsWithRef<'div'>) => null };
+    slotProps: { root: { title: string; className: string } };
+    title: string;
+    className: string;
+  }>;
+  // @ts-expect-error Root replacements use component types, not intrinsic tag strings.
+  intrinsicRoot: CheckedCalendar<{ component: 'div' }>;
+  // @ts-expect-error Compound children cannot accompany generated-part props.
+  compoundSlots: CheckedCalendar<{ children: string; slotProps: { header: { className: string } } }>;
+  // @ts-expect-error Compound children cannot accompany root replacement sugar.
+  compoundComponent: CheckedCalendar<{ children: string; component: (props: ComponentPropsWithRef<'div'>) => null }>;
+};
+
+function CalendarRootReplacement(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-custom-calendar-root="" />;
+}
+CalendarRootReplacement.displayName = 'CalendarRootReplacement';
+
+function CalendarFallbackRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-fallback-calendar-root="" />;
+}
+CalendarFallbackRoot.displayName = 'CalendarFallbackRoot';
+
+function CalendarHeaderRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-generated-header="" />;
+}
+CalendarHeaderRoot.displayName = 'CalendarHeaderRoot';
+
+function CalendarGridRoot(props: ComponentPropsWithRef<'table'>) {
+  return <table {...props} data-generated-grid="" />;
+}
+CalendarGridRoot.displayName = 'CalendarGridRoot';
+
+function EasyControlledCalendar(props: CalendarEasyProps) {
+  const [value, setValue] = useState('2026-10-14');
+  return <Calendar {...props} value={value} onValueChange={(next) => { setValue(next); props.onValueChange?.(next); }} />;
+}
+EasyControlledCalendar.displayName = 'EasyControlledCalendar';
 
 function CalendarExample(props: CalendarProps) {
   return (
@@ -101,7 +148,25 @@ async function expectSelected(canvasElement: HTMLElement, name: string) {
   await expect(selected[0]).toContainElement(day(canvasElement, name));
 }
 
-export const Default: Story = {
+export const Default: StoryObj<Meta<CalendarEasyProps>> = {
+  args: { locale: LOCALE, defaultValue: '2026-10-14', today: '2026-10-14', onValueChange: fn() },
+  render: (args) => <Calendar {...args} />,
+  parameters: { docs: { source: { code: '<Calendar locale="en-US" defaultValue="2026-10-14" />' } } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    await expectMonth(canvasElement, 'October 2026');
+    await expectSelected(canvasElement, 'October 14, 2026');
+    const selected = day(canvasElement, 'October 14, 2026');
+    selected.focus();
+    await userEvent.keyboard('{ArrowRight}{Enter}');
+    await expectSelected(canvasElement, 'October 15, 2026');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('2026-10-15');
+    await expect(canvasElement.ownerDocument.activeElement).toBe(day(canvasElement, 'October 15, 2026'));
+  },
+};
+
+/** Assemble the month header and grid for a custom layout. */
+export const Compound: Story = {
   args: { defaultValue: '2026-10-12' },
   render: (args) => <CalendarExample {...args} />,
   parameters: {
@@ -139,6 +204,123 @@ export const Default: Story = {
     await expect(day(canvasElement, 'October 30, 2026')).toHaveFocus();
     await userEvent.keyboard('[Space]');
     await expectSelected(canvasElement, 'October 30, 2026');
+  },
+};
+
+/** Set props on the generated root, header and grid. */
+export const CustomParts: StoryObj<Meta<CalendarEasyProps>> = {
+  args: {
+    locale: LOCALE, defaultValue: '2026-10-14', today: '2026-10-14', className: 'calendar-consumer', ref: fn(), title: 'Consumer title', style: { marginBlock: 0, marginInline: vars.space[3] },
+    slots: { header: CalendarHeaderRoot, grid: CalendarGridRoot },
+    slotProps: { root: { className: 'calendar-slot', ref: fn(), title: 'Slot title', style: { marginBlock: vars.space[2] } }, header: { className: 'month-header' }, grid: { className: 'month-grid' } },
+  },
+  render: (args) => <Calendar {...args} />,
+  parameters: { docs: { source: { code: `<Calendar locale="en-US" defaultValue="2026-10-14"
+  slotProps={{ header: { className: 'month-header' }, grid: { className: 'month-grid' } }} />` } } },
+  play: async ({ args, canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="calendar"]')!;
+    await expect(root).toHaveClass('calendar-consumer', 'calendar-slot');
+    await expect(root).toHaveAttribute('title', 'Slot title');
+    await expect(root.style.marginBlock).toBe(vars.space[2]);
+    await expect(root.style.marginInline).toBe(vars.space[3]);
+    await expect(args.ref).not.toHaveBeenCalled();
+    await expect(args.slotProps?.root?.ref).toHaveBeenLastCalledWith(root);
+    await expect(canvasElement.querySelector('[data-ui="calendar-header"]')).toHaveClass('month-header');
+    await expect(canvasElement.querySelector('[data-ui="calendar-header"]')).toHaveAttribute('data-generated-header');
+    await expect(within(canvasElement).getByRole('grid')).toHaveClass('month-grid');
+    await expect(within(canvasElement).getByRole('grid')).toHaveAttribute('data-generated-grid');
+    await expectSelected(canvasElement, 'October 14, 2026');
+  },
+};
+
+/** Replace the root div without changing the header or grid. */
+export const RootReplacement: StoryObj<Meta<CalendarEasyProps>> = {
+  args: {
+    locale: LOCALE,
+    defaultValue: '2026-10-14',
+    component: CalendarRootReplacement,
+    ref: fn(),
+    title: 'Consumer title',
+    className: 'calendar-consumer',
+    style: { marginBlock: 0, marginInline: vars.space[3] },
+    slotProps: {
+      root: {
+        title: 'October calendar',
+        className: 'calendar-slot',
+        style: { marginBlock: vars.space[2] },
+      },
+    },
+  },
+  render: (args) => <Calendar {...args} />,
+  parameters: { docs: { source: { code: `function CalendarRoot(props) {
+  return <div {...props} data-custom-calendar-root="" />;
+}
+
+<Calendar locale="en-US" defaultValue="2026-10-14" component={CalendarRoot}
+  slotProps={{ root: { title: 'October calendar' } }} />` } } },
+  play: async ({ args, canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-custom-calendar-root]')!;
+    await expect(root).toHaveAttribute('data-ui', 'calendar');
+    await expect(root).toHaveAttribute('title', 'October calendar');
+    await expect(root).toHaveClass('calendar-consumer', 'calendar-slot');
+    await expect(root.style.marginBlock).toBe(vars.space[2]);
+    await expect(root.style.marginInline).toBe(vars.space[3]);
+    await expect(args.ref).toHaveBeenLastCalledWith(root);
+    await expectMonth(canvasElement, 'October 2026');
+  },
+};
+
+/** slots.root takes precedence over the component shorthand. */
+export const RootSlotPrecedence: StoryObj<Meta<CalendarEasyProps>> = {
+  args: { locale: LOCALE, defaultValue: '2026-10-14', component: CalendarFallbackRoot, slots: { root: CalendarRootReplacement } },
+  render: (args) => <Calendar {...args} />,
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-custom-calendar-root]')).toHaveAttribute('data-ui', 'calendar');
+    await expect(canvasElement.querySelector('[data-fallback-calendar-root]')).toBeNull();
+    await expectMonth(canvasElement, 'October 2026');
+  },
+};
+
+export const EasyControlled: StoryObj<Meta<CalendarEasyProps>> = {
+  args: { locale: LOCALE, today: '2026-10-14', onValueChange: fn() },
+  render: (args) => <EasyControlledCalendar {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await userEvent.click(day(canvasElement, 'October 15, 2026'));
+    await expectSelected(canvasElement, 'October 15, 2026');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('2026-10-15');
+  },
+};
+
+/** Days outside the bounds cannot be selected. */
+export const EasyMinMax: StoryObj<Meta<CalendarEasyProps>> = {
+  args: { locale: LOCALE, defaultValue: '2026-10-14', min: '2026-10-14', max: '2026-10-15', onValueChange: fn() },
+  render: (args) => <Calendar {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const disabledDay = day(canvasElement, 'October 13, 2026');
+    await expect(disabledDay).toBeDisabled();
+    await userEvent.click(disabledDay);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expectSelected(canvasElement, 'October 14, 2026');
+  },
+};
+
+/** The header, weekdays and day names follow the locale. */
+export const EasyLocale: StoryObj<Meta<CalendarEasyProps>> = {
+  args: { locale: 'es-ES', defaultValue: '2026-10-14' },
+  render: (args) => <Calendar {...args} />,
+  play: async ({ canvasElement }) => {
+    const expected = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', calendar: 'gregory', timeZone: 'UTC' }).format(new Date('2026-10-14T00:00:00Z'));
+    await expect(within(canvasElement).getByRole('grid', { name: expected })).toBeVisible();
+  },
+};
+
+/** Explicit null children keep the compound root empty. */
+export const EmptyCompound: Story = {
+  render: (args) => <Calendar {...args}>{null}</Calendar>,
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).queryByRole('grid')).toBeNull();
+    await expect(canvasElement.querySelector('[data-ui="calendar-header"]')).toBeNull();
   },
 };
 

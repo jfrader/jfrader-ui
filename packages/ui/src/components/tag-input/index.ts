@@ -6,4 +6,5 @@ export type {
   TagInputSeparator,
   TagInputSize,
   TagInputSlotProps,
+  TagInputSlots,
 } from './tag-input';

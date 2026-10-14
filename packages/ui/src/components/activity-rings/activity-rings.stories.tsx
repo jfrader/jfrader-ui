@@ -1,6 +1,6 @@
 import { StrictMode, useState, type ComponentType, type MouseEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor, within } from 'storybook/test';
+import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { motionDurationMs } from '../../styling/motion-timings';
@@ -1030,26 +1030,33 @@ export const ReturningBelowGoal: Story = {
     const counter = canvas.getByRole('listitem').querySelector('[data-ui="activity-rings-count"]')!;
     await waitFor(() => expect(counter).toHaveTextContent('9 km of 6 km'));
     const view = canvasElement.ownerDocument.defaultView!;
-    // `userEvent.click` is not instant, so the sweep can already be under way before the frame sampling
-    // below starts. Watching the counter's writes catches every value the sweep painted, whenever it ran.
+    const nextPaint = () => new Promise<void>((resolve) => {
+      view.requestAnimationFrame(() => view.requestAnimationFrame(() => resolve()));
+    });
+    let timestamp = view.performance.now();
+    const clock = spyOn(view.performance, 'now').mockImplementation(() => timestamp);
     const written: number[] = [];
     const observer = new view.MutationObserver(() => written.push(parseFloat(counter.textContent!)));
-    observer.observe(counter, { childList: true, characterData: true, subtree: true });
-    await userEvent.click(canvas.getByRole('button', { name: 'Walk 3 km' }));
     const samples: { amount: number; fill: number }[] = [];
-    await new Promise<void>((resolve) => {
-      const start = view.performance.now();
-      const sample = () => {
+    const sweepSteps = 15;
+    try {
+      timestamp += motionDurationMs.slow;
+      await nextPaint();
+      observer.observe(counter, { childList: true, characterData: true, subtree: true });
+      await userEvent.click(canvas.getByRole('button', { name: 'Walk 3 km' }));
+      await nextPaint();
+      for (let step = 0; step < sweepSteps * 2; step += 1) {
+        timestamp += motionDurationMs.slow / sweepSteps;
+        await nextPaint();
         samples.push({
           amount: parseFloat(counter.textContent!),
           fill: drawnProgress(fill),
         });
-        if (view.performance.now() - start > motionDurationMs.slow * 2) resolve();
-        else view.requestAnimationFrame(sample);
-      };
-      view.requestAnimationFrame(sample);
-    });
-    observer.disconnect();
+      }
+    } finally {
+      observer.disconnect();
+      clock.mockRestore();
+    }
     await expect(samples.some((sample) => sample.amount > 3 && sample.amount < 9)
       || written.some((amount) => amount > 3 && amount < 9)).toBe(true);
     for (const sample of samples) {

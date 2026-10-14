@@ -4,12 +4,13 @@ import { createContext, useContext, useMemo, type ReactElement, type ReactNode }
 import { BUILTIN_DECKS, type Deck } from './deck';
 
 interface DeckContextValue {
-  decks: Record<string, Deck>;
+  decks: ReadonlyMap<string, Deck>;
   defaultDeckId?: string;
   backLabel?: string;
 }
 
 const DeckContext = createContext<DeckContextValue | null>(null);
+const builtinDecks = new Map(Object.entries(BUILTIN_DECKS));
 
 export interface DeckProviderProps {
   /**
@@ -45,13 +46,10 @@ export function DeckProvider({
   const parent = useContext(DeckContext);
 
   const value = useMemo<DeckContextValue>(() => {
-    const merged: Record<string, Deck> = {
-      ...BUILTIN_DECKS,
-      ...(parent?.decks),
-    };
+    const merged = new Map(parent?.decks ?? builtinDecks);
     if (decks) {
       for (const deck of decks) {
-        merged[deck.id] = deck;
+        merged.set(deck.id, deck);
       }
     }
     return {
@@ -92,7 +90,7 @@ export class UnknownDeckError extends Error {
 export function useDeck(id?: string): Deck {
   const context = useContext(DeckContext);
   const targetId = id ?? context?.defaultDeckId ?? 'french';
-  const resolved = context?.decks[targetId] ?? BUILTIN_DECKS[targetId];
+  const resolved = context?.decks.get(targetId) ?? builtinDecks.get(targetId);
 
   if (!resolved) {
     throw new UnknownDeckError(targetId);

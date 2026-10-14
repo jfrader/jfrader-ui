@@ -232,6 +232,7 @@ const groupPartStyle = css({ gridColumn: '1 / -1', minInlineSize: 0, overflowWra
 const errorStyle = css({ gridColumn: '1 / -1', color: vars.color.dangerText, fontSize: vars.textSize.sm });
 const ringStyle = css({
   position: 'absolute',
+  // Motion x/y use physical DOMRect deltas from the group's top-left, including in RTL.
   top: 0,
   left: 0,
   boxSizing: 'border-box',

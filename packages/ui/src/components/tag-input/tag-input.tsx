@@ -39,8 +39,8 @@ import {
   FieldRoot,
   useFieldAnatomy,
   type FieldPartProps,
-  type FieldSlotProps,
 } from '../field/field-anatomy';
+import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
 
 export type TagInputSize = 'sm' | 'md' | 'lg';
 export type TagInputSeparator = 'Enter' | ',';
@@ -63,17 +63,24 @@ export interface TagInputMessages {
 
 export interface TagInputPartProps extends FieldPartProps {}
 
-export interface TagInputSlotProps extends FieldSlotProps<TagInputPartProps> {
-  list?: TagInputPartProps;
-  token?: TagInputPartProps;
-  remove?: TagInputPartProps;
-  input?: TagInputPartProps;
-  status?: TagInputPartProps;
-}
+export type TagInputSlotProps = FieldParts<TagInputAnatomy>;
+
+type TagInputAnatomy = {
+  root: 'div';
+  label: 'label';
+  control: 'div';
+  input: 'input';
+  list: 'ul';
+  token: 'li';
+  remove: 'button';
+  description: 'span';
+  error: 'span';
+  status: 'span';
+};
+export type TagInputSlots = FieldSlots<TagInputAnatomy>;
 
 export interface TagInputProps
-  extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'value' | 'defaultValue' | 'type' | 'children'>,
-    SxProps {
+  extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'value' | 'defaultValue' | 'type' | 'children'>, SxProps {
   /**
    * Tokens in order. Entries must be unique, nonempty and normalized. The list renders as supplied.
    */
@@ -103,6 +110,10 @@ export interface TagInputProps
   messages?: Partial<TagInputMessages>;
   /** Replaces the remove glyph; rendered decoratively inside each remove button. */
   removeIcon?: ReactNode;
+  /** Replace the wrapper div; `slots.root` takes precedence. */
+  component?: TagInputSlots['root'];
+  /** Replace generated parts with components that forward props and ref. */
+  slots?: TagInputSlots;
   slotProps?: TagInputSlotProps;
 }
 
@@ -315,6 +326,8 @@ export function TagInput({
   locale,
   messages: messagesProp,
   removeIcon = removeGlyph,
+  component,
+  slots,
   slotProps,
   className,
   sx,
@@ -570,11 +583,23 @@ export function TagInput({
   const describedBy = [field.describedBy, picked !== null && pickedId].filter(Boolean).join(' ') || undefined;
 
   return (
-    <FieldRoot data-ui="tag-input" dir={dir} className={className} sx={sx} part={slotProps?.root}>
-      <FieldLabel id={labelId} htmlFor={field.id} required={required} part={slotProps?.label}>
+    <FieldRoot
+      style={rest.style}
+      title={rest.title}
+      component={slots?.root ?? component}
+      data-ui="tag-input"
+      dir={dir}
+      className={className}
+      sx={sx}
+      part={slotProps?.root}
+    >
+      <FieldLabel component={slots?.label} id={labelId} htmlFor={field.id} required={required} part={slotProps?.label}>
         {label}
       </FieldLabel>
-      <div
+      <FieldSlot
+        element="div"
+        component={slots?.control}
+        slotProps={slotProps?.control}
         data-invalid={field.ariaInvalid === true || field.ariaInvalid === 'true' ? '' : undefined}
         data-disabled={disabled ? '' : undefined}
         onBlur={handleFieldBlur}
@@ -585,48 +610,56 @@ export function TagInput({
           event.preventDefault();
           if (!(event.target as Element).closest('button')) inputRef.current?.focus();
         }}
-        className={slotProps?.control?.className}
-        css={[inputControlStyle, shellStyle, shellSizeStyles[size], slotProps?.control?.css]}
+        styles={[inputControlStyle, shellStyle, shellSizeStyles[size]]}
       >
         {tokens.length > 0 && (
-          <ul
+          <FieldSlot
+            element="ul"
+            component={slots?.list}
+            slotProps={slotProps?.list}
             role="list"
             aria-label={text.listLabel}
-            className={slotProps?.list?.className}
-            css={[listStyle, slotProps?.list?.css]}
+            styles={[listStyle]}
           >
             {tokens.map((token) => (
-              <li
+              <FieldSlot
+                element="li"
+                component={slots?.token}
+                slotProps={slotProps?.token}
                 key={token}
                 data-picked={token === picked ? '' : undefined}
                 data-duplicate={token === duplicateOf ? '' : undefined}
                 data-readonly={readOnly ? '' : undefined}
                 data-enter={mounted.current ? '' : undefined}
-                className={slotProps?.token?.className}
-                css={[tokenStyle, tokenSizeStyles[size], slotProps?.token?.css]}
+                styles={[tokenStyle, tokenSizeStyles[size]]}
               >
                 <span id={token === picked ? pickedId : undefined} css={tokenTextStyle}>
                   {token}
                 </span>
                 {!readOnly && (
-                  <button
+                  <FieldSlot
+                    element="button"
+                    component={slots?.remove}
+                    slotProps={slotProps?.remove}
                     type="button"
                     disabled={disabled}
                     aria-label={text.remove(token)}
                     onClick={() => handleRemoveClick(token)}
-                    className={slotProps?.remove?.className}
-                    css={[removeStyle, slotProps?.remove?.css]}
+                    styles={[removeStyle]}
                   >
                     <span aria-hidden css={iconWrapperStyle}>
                       {removeIcon}
                     </span>
-                  </button>
+                  </FieldSlot>
                 )}
-              </li>
+              </FieldSlot>
             ))}
-          </ul>
+          </FieldSlot>
         )}
-        <input
+        <FieldSlot
+          element="input"
+          component={slots?.input}
+          slotProps={slotProps?.input}
           autoComplete="off"
           {...rest}
           ref={mergedRef}
@@ -646,26 +679,27 @@ export function TagInput({
           onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
           onBlur={onBlur}
-          className={slotProps?.input?.className}
-          css={[inputStyle, slotProps?.input?.css]}
+          styles={[inputStyle]}
         />
-      </div>
-      <FieldDescription id={field.descriptionId} part={slotProps?.description}>
+      </FieldSlot>
+      <FieldDescription component={slots?.description} id={field.descriptionId} part={slotProps?.description}>
         {description}
       </FieldDescription>
-      <FieldError id={field.errorId} part={slotProps?.error}>
+      <FieldError component={slots?.error} id={field.errorId} part={slotProps?.error}>
         {error}
       </FieldError>
-      <span
+      <FieldSlot
+        element="span"
+        component={slots?.status}
+        slotProps={slotProps?.status}
         role="status"
         aria-live="polite"
         aria-atomic="true"
         data-rejection={notice.rejection ? '' : undefined}
-        className={slotProps?.status?.className}
-        css={[notice.rejection ? statusStyle : visuallyHiddenStyle, slotProps?.status?.css]}
+        styles={[notice.rejection ? statusStyle : visuallyHiddenStyle]}
       >
         {notice.text}
-      </span>
+      </FieldSlot>
       {name !== undefined &&
         !disabled &&
         tokens.map((token) => <input key={token} type="hidden" name={name} form={form} value={token} />)}

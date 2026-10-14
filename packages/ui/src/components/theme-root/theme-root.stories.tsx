@@ -6,7 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
-import { Popover, type PopoverProps } from '../popover';
+import { Popover, type PopoverBaseProps } from '../popover';
 import { TextField } from '../text-field';
 import { ThemeProvider, useTheme } from '../theme-provider/theme-provider';
 import { ThemeRoot, type ThemeName, type ThemeRootProps } from './index';
@@ -33,7 +33,7 @@ const headingStyle = {
   fontSize: vars.textSize.md,
 } satisfies CSSProperties;
 
-function ThemedPopover({ label, ...props }: PopoverProps & { label: string }) {
+function ThemedPopover({ label, ...props }: PopoverBaseProps & { label: string }) {
   const headingId = useId();
   return (
     <Popover {...props}>
