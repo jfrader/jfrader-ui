@@ -320,7 +320,8 @@ export const Default: Story = {
       <GameCardStack.Pile {...pile} backPattern={CARD_BACK_PATTERNS.spanish} />
     </GameTable.Play>)}
   </GameTable>,
-  parameters: { docs: { description: { story: 'Two-player truco with Spanish-deck cards and a pile in front of each seat.' }, source: { language: 'tsx', code: `<GameCardStack piles={piles} />
+  parameters: { docs: { description: { story: 'Two-player truco with Spanish-deck cards and a pile in front of each seat.' }, source: { language: 'tsx', code: `<>
+<GameCardStack piles={piles} />
 
 <GameTable players={2} seats={players} viewport={viewport}>
   <GameTable.Seat slotKey="Luis">
@@ -330,7 +331,8 @@ export const Default: Story = {
   {piles.map((pile) => <GameTable.Play key={pile.playerKey} slotKey={pile.playerKey}>
     <GameCardStack.Pile {...pile} backPattern={CARD_BACK_PATTERNS.spanish} />
   </GameTable.Play>)}
-</GameTable>` } } },
+</GameTable>
+</>` } } },
   play: async ({ canvasElement, canvas, userEvent }) => {
     await waitFor(() => expect(canvasElement.querySelector('[data-game-surface]')).not.toHaveAttribute('data-layout-fit', 'measuring'));
     await expect(canvasElement.querySelectorAll('[data-ui="game-table-play"] [data-ui="game-card-stack-pile"]')).toHaveLength(2);

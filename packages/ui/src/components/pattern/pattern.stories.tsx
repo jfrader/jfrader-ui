@@ -36,14 +36,20 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Fill a surface with a repeating SVG pattern.' },
-      source: { language: 'tsx', code: `import { GameCard } from '@jfrader/ui/game-card';
+      source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
+import { GameCard } from '@jfrader/ui/game-card';
 import { vars } from '@jfrader/tokens/vars';
 
-<Pattern variant="diagonal" tone="accent" sx={{ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg }} />
-
-<GameCard label="Card back">
-  <Pattern variant="diagonal" tone="card" size="sm" />
-</GameCard>` },
+export function PatternExamples() {
+  return (
+    <>
+      <Pattern variant="diagonal" tone="accent" sx={{ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg }} />
+      <GameCard label="Card back">
+        <Pattern variant="diagonal" tone="card" size="sm" />
+      </GameCard>
+    </>
+  );
+}` },
       usage: `### Tiles and inks
 - Give the SVG a width and height through its parent or \`sx\`. It fills its parent by default.
 - \`size\` sets the tile side to 8, 16 or 24 CSS pixels. \`scale\` multiplies that side; nonpositive or nonfinite values fall back to 1.

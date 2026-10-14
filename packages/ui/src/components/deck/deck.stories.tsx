@@ -69,11 +69,16 @@ const meta = {
       source: { language: 'tsx', code: `import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
 
-<GameCard label="Queen of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
-
-<DeckProvider default="spanish">
-  <GameCard label="As de oros" value={{ suit: 'oros', rank: 1 }} />
-</DeckProvider>
+export function BuiltInCards() {
+  return (
+    <>
+      <GameCard label="Queen of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
+      <DeckProvider default="spanish">
+        <GameCard label="As de oros" value={{ suit: 'oros', rank: 1 }} />
+      </DeckProvider>
+    </>
+  );
+}
 
 const stars = defineDeck({
   id: 'stars',

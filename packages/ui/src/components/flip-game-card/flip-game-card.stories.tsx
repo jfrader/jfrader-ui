@@ -220,13 +220,15 @@ export const BackFinalStateLightTheme: Story = { ...BackFinalState, decorators: 
 export const ContentKeyboard: Story = {
   tags: ['!autodocs'],
   render: (args) => <ControlledFixture {...args} />,
-  parameters: { docs: { source: { code: `<FlipGameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }}
+  parameters: { docs: { source: { code: `<>
+<FlipGameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }}
   label="Ace of spades" backLabel="Card back" flipped={flipped} />
 
 <Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
 <FlipGameCard flipped={flipped}
   front={<GameCard label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />}
-  back={<GameCard label="Card back" />} />` } } },
+  back={<GameCard label="Card back" />} />
+</>` } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const trigger = canvas.getByRole('button', { name: 'Flip card' });
     const root = canvasElement.querySelector('[data-ui="flip-game-card"]');
@@ -277,10 +279,20 @@ function ControlledShorthand(args: FlipGameCardProps) {
 export const Default: Story = {
   name: 'Default',
   render: (args) => <ControlledShorthand {...args} />,
-  parameters: { docs: { source: { code: `const [flipped, setFlipped] = useState(false);
-<Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
-<FlipGameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }}
-  label="Ace of spades" backLabel="Card back" flipped={flipped} />` } } },
+  parameters: { docs: { source: { code: `import { useState } from 'react';
+import { Button } from '@jfrader/ui';
+import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+
+export function FlippableCard() {
+  const [flipped, setFlipped] = useState(false);
+  return (
+    <>
+      <Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
+      <FlipGameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }}
+        label="Ace of spades" backLabel="Card back" flipped={flipped} />
+    </>
+  );
+}` } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const trigger = canvas.getByRole('button', { name: 'Flip card' });
     const printed = canvasElement.querySelector('[data-ui="flip-game-card-front"] [data-ui="game-card"]');

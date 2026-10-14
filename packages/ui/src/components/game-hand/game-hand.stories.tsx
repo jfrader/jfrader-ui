@@ -37,14 +37,14 @@ const meta = {
 
 ### Selection and keyboard
 - Each card is a native toggle button (APG Button pattern, \`aria-pressed\`).
-- Tab and Shift+Tab follow card order, then the enabled confirmation action. Enter or Space selects or clears a card.
+- Tab and Shift+Tab follow card order, then confirmation. Enter or Space selects or clears a card.
 - Only confirmation calls \`onPlayIntent\`. There is no drag gesture.
 
 ### Values
 - Pass plain cards with a unique stable \`id\`, \`value\` and a \`label\` in your page’s language.
 - Keep \`id\` when reordering or removing cards. Selection follows the card id in both controlled and uncontrolled hands.
 - \`value\` and \`onValueChange\` control selection. \`defaultValue\` seeds uncontrolled selection. \`null\` clears selection.
-- Removing the selected card disables confirmation.
+- Removing the selected card makes confirmation unavailable with \`aria-disabled\` and keeps focus on it. Select another card before confirming again.
 - \`onPlayIntent\` receives the selected card, without an index.
 
 ### Geometry
@@ -118,7 +118,7 @@ export const KeyboardSelection: Story = {
   play: async ({ canvas, userEvent, args }) => {
     const cards = CARDS.slice(0, 3).map((card) => canvas.getByRole('button', { name: card.label }));
     const confirm = canvas.getByRole('button', { name: 'Play card' });
-    await expect(confirm).toBeDisabled();
+    await expect(confirm).toHaveAttribute('aria-disabled', 'true');
     await userEvent.tab();
     await expect(cards[0]!.ownerDocument.activeElement).toBe(cards[0]);
     await expect(getComputedStyle(cards[0]!).outlineStyle).not.toBe('none');
@@ -152,7 +152,7 @@ export const KeyboardSelection: Story = {
     await userEvent.keyboard(' ');
     await expect(args.onValueChange).toHaveBeenNthCalledWith(3, null);
     await expect(args.onValueChange).toHaveBeenCalledTimes(3);
-    await expect(confirm).toBeDisabled();
+    await expect(confirm).toHaveAttribute('aria-disabled', 'true');
   },
 };
 
@@ -173,6 +173,40 @@ function ControlledHand(args: GameHandProps) {
   const [value, setValue] = useState<string | null>(null);
   return <GameHand {...args} value={value} onValueChange={(id) => { setValue(id); args.onValueChange?.(id); }} />;
 }
+function AcceptedHand(args: GameHandProps) {
+  const [cards, setCards] = useState(args.cards);
+  return <GameHand {...args} cards={cards} onPlayIntent={(card) => {
+    setCards((current) => current.filter((item) => item.id !== card.id));
+    args.onPlayIntent?.(card);
+  }} />;
+}
+
+/** Confirm a card to remove it from your hand. */
+export const AcceptedPlay: Story = {
+  render: (args) => <AcceptedHand {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
+    await userEvent.tab();
+    await userEvent.tab();
+    await userEvent.tab();
+    const confirm = canvas.getByRole('button', { name: 'Play card' });
+    await expect(confirm).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await expect(canvas.queryByRole('button', { name: CARDS[0]!.label })).toBeNull();
+    await expect(args.onPlayIntent).toHaveBeenCalledTimes(1);
+    await expect(canvasElement.ownerDocument.activeElement).not.toBe(canvasElement.ownerDocument.body);
+    await expect(confirm).toHaveFocus();
+    await expect(confirm).toHaveAttribute('aria-disabled', 'true');
+    await expect(getComputedStyle(confirm).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Enter}');
+    await userEvent.keyboard(' ');
+    await userEvent.click(confirm);
+    await expect(args.onPlayIntent).toHaveBeenCalledTimes(1);
+    await userEvent.tab({ shift: true });
+    await expect(canvas.getByRole('button', { name: CARDS[2]!.label })).toHaveFocus();
+  },
+};
 export const Controlled: Story = {
   render: (args) => <ControlledHand {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -192,7 +226,7 @@ export const RejectedSelection: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenCalledWith(CARDS[0]!.id);
     await expect(canvas.getByRole('button', { name: CARDS[0]!.label })).toHaveAttribute('aria-pressed', 'false');
-    await expect(canvas.getByRole('button', { name: 'Play card' })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: 'Play card' })).toHaveAttribute('aria-disabled', 'true');
     await expect(args.onPlayIntent).not.toHaveBeenCalled();
   },
 };
@@ -225,7 +259,7 @@ export const StableIdentity: Story = {
     await expect(args.onPlayIntent).toHaveBeenNthCalledWith(2, CARDS[1]);
     await userEvent.click(canvas.getByRole('button', { name: 'Remove first card' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Remove first card' }));
-    await expect(canvas.getByRole('button', { name: 'Play card' })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: 'Play card' })).toHaveAttribute('aria-disabled', 'true');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
