@@ -11,7 +11,8 @@ import {
   buildAlternatingSlots, resolveTableTurnDirection, validateSlots,
   type GameTableSlot, type SeatLike, type TableTurnDirection,
 } from './table-slots';
-import type { BoardPlayerCount, BoardSeatGeometry, BoardSurface } from './types';
+import type { BoardSeatGeometry, BoardSurface } from './types';
+import { resolveSeatCount } from './viewport';
 
 type Part = 'surface' | 'seat' | 'play' | 'center' | 'header' | 'dock' | 'footer' | 'floating';
 export interface GameTablePartProps {
@@ -21,7 +22,7 @@ export interface GameTablePartProps {
 
 type SeatInput<T extends SeatLike> =
   | {
-    /** Alternating teams only: each team must fit its available places (players / 2); player keys must be unique. */
+    /** Round-robin teams: team j has the places whose index modulo teamCount is j. Player keys must be unique. */
     seats: readonly T[];
     slots?: never;
   }
@@ -33,8 +34,10 @@ type SeatInput<T extends SeatLike> =
 
 export type GameTableProps<T extends SeatLike = SeatLike> =
   Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps & SeatInput<T> & {
-    /** Number of places, including empty seats. */
-    players: BoardPlayerCount;
+    /** Integer number of places >= 2, including empty seats. */
+    players: number;
+    /** Number of round-robin teams for `seats`. Defaults to 2; use 1 for free-for-all. Prebuilt `slots` keep their teams. */
+    teamCount?: number;
     /** Viewport dimensions in CSS pixels; supplied by the consumer for SSR and resize updates. */
     viewport: { width: number; height: number };
     /** Match geometry or waiting-room geometry. Defaults to `match`. */
@@ -58,6 +61,7 @@ export type GameTableProps<T extends SeatLike = SeatLike> =
     /** Played content on the inward ring, measured and scaled independently per place. */
     renderPlay?: (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
     header?: ReactNode;
+    /** Shared community board (for example Hold'em cards), pot or deck. Measured with its own card/control size floor. */
     center?: ReactNode;
     dock?: ReactNode;
     footer?: ReactNode;
@@ -198,12 +202,13 @@ const floatingStyle = css({
 type TableVariables = CSSProperties & { [key: `--game-table-${string}`]: string };
 
 export function GameTable<T extends SeatLike>({
-  ref, seats, slots: suppliedSlots, players, viewport, surface = 'match', turnDirection, clearance = 0,
+  ref, seats, slots: suppliedSlots, players, teamCount = 2, viewport, surface = 'match', turnDirection, clearance = 0,
   renderSeat, renderPlay, seatPlacement = 'edge', header, center, dock, footer, floating, slotProps, className, sx, style, ...rest
 }: GameTableProps<T>) {
   const { surfaceRef, measurement } = useBoardMeasurements();
-  const slots = suppliedSlots ?? buildAlternatingSlots(seats ?? [], players, resolveTableTurnDirection(turnDirection));
-  if (slots.length !== players) {
+  const seatCount = resolveSeatCount(players);
+  const slots = suppliedSlots ?? buildAlternatingSlots(seats ?? [], seatCount, resolveTableTurnDirection(turnDirection), teamCount);
+  if (slots.length !== seatCount) {
     throw new Error('GameTable requires one slot per place. Pass fewer seats to fill empty places, or exactly players slots.');
   }
   validateSlots(slots);
