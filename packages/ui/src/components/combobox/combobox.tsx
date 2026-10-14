@@ -45,6 +45,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react';
+import { useFormReset } from '../../utils/use-form-reset';
 import {
   FloatingList,
   useDismiss,
@@ -171,6 +172,7 @@ interface ComboboxContextValue {
   selectValue: (value: string) => void;
   selectIndex: (index: number) => void;
   clearValue: () => void;
+  resetValue: () => void;
   requestOpenChange: (open: boolean) => void;
   registration: CollectionRegistration<OptionRecord>;
   setInputLabelling: (labelling: InputLabelling | null) => void;
@@ -221,7 +223,7 @@ function ComboboxOverlay({
   const [listId, setListId] = useState(`${baseId}-listbox`);
   const [inputDisabled, setInputDisabled] = useState(false);
   const [inputForm, setInputForm] = useState<string>();
-  const [selectedValue = null, requestValueChange] = useControlledState<string | null>(
+  const [selectedValue = null, requestValueChange, resetValue] = useControlledState<string | null>(
     valueProp,
     defaultValue ?? null,
     onValueChange,
@@ -325,6 +327,7 @@ function ComboboxOverlay({
         selectValue(next);
       },
       clearValue: () => requestValueChange(null),
+      resetValue,
       requestOpenChange,
       registration,
       setInputLabelling,
@@ -349,6 +352,7 @@ function ComboboxOverlay({
     valuesByIndex,
     skippedIndices,
     requestValueChange,
+    resetValue,
     requestOpenChange,
     registration,
   ]);
@@ -406,13 +410,15 @@ function ComboboxInput({
     setActiveIndex,
     selectIndex,
     clearValue,
+    resetValue,
     requestOpenChange,
     setInputLabelling,
     setInputDisabled,
     setInputForm,
   } = useComboboxContext('Input');
   // The floating reference is typed for button triggers; any element positions the same.
-  const mergedRef = useMergeRefs([refs.setReference as (node: Element | null) => void, ref]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const mergedRef = useMergeRefs([inputRef, refs.setReference as (node: Element | null) => void, ref]);
   const generatedId = useId();
   const id = idProp ?? generatedId;
   const labelId = `${id}-label`;
@@ -432,6 +438,15 @@ function ComboboxInput({
     if (inputValue === undefined) setTextState(next);
   };
   const query = inputValue !== undefined || editing ? text : '';
+
+  useFormReset(inputRef, () => {
+    resetValue();
+    setActiveIndex(null);
+    if (inputValue === undefined) {
+      setTextState(defaultInputValue);
+      setEditing(defaultInputValue !== undefined);
+    }
+  }, rest.form);
 
   const commitLabel = (nextLabel: string) => {
     setEditing(false);
