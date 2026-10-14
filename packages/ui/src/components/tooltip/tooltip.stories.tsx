@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
@@ -6,7 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
-import { Tooltip, type TooltipProps } from './index';
+import { Tooltip, type TooltipCompoundProps as TooltipProps, type TooltipEasyProps } from './index';
 
 const TRIGGER = 'Copy';
 const TIP = 'Copy to clipboard';
@@ -16,19 +16,52 @@ const rowStyle = {
   gap: vars.space[3],
 } satisfies CSSProperties;
 
-const meta = {
+const meta: Meta<TooltipProps> = {
   title: 'Surfaces/Tooltip',
   component: Tooltip,
   parameters: {
     docs: {
       description: { component: 'Show help when someone hovers over or focuses a control.' },
+      usage: '- Pass triggerLabel and content for a generated button and tooltip.\n- Customize them with slotProps. slots replaces their native button and div roots; replacements forward all received props and ref.',
     },
   },
-} satisfies Meta<typeof Tooltip>;
+};
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+type CheckedTooltip<Props extends import('./index').TooltipProps> = Props;
+export type TooltipTypeRegression = {
+  // @ts-expect-error The non-DOM provider root has no component sugar.
+  providerComponent: TooltipEasyProps['component'];
+  // @ts-expect-error Replace the native content or trigger, not the provider root.
+  providerRootSlot: NonNullable<TooltipEasyProps['slots']>['root'];
+  // @ts-expect-error The provider has no root element to receive native props.
+  providerRootProps: NonNullable<TooltipEasyProps['slotProps']>['root'];
+  // @ts-expect-error Easy help and compound children are mutually exclusive.
+  mixed: CheckedTooltip<{ triggerLabel: string; content: string; children: string }>;
+  // @ts-expect-error Easy mode needs both its trigger label and help text.
+  incomplete: CheckedTooltip<{ triggerLabel: string }>;
+  // @ts-expect-error Compound mode rejects generated-part props.
+  compoundSlots: CheckedTooltip<{ children: string; slotProps: { trigger: { disabled: true } } }>;
+};
+
+function EasyControlledTooltip(props: TooltipEasyProps) {
+  const [open, setOpen] = useState(false);
+  return <Tooltip {...props} open={open} onOpenChange={(next) => { setOpen(next); props.onOpenChange?.(next); }} />;
+}
+EasyControlledTooltip.displayName = 'EasyControlledTooltip';
+
+function TooltipButtonRoot(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-generated-trigger="" />;
+}
+TooltipButtonRoot.displayName = 'TooltipButtonRoot';
+
+function TooltipHelpRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-generated-help="" />;
+}
+TooltipHelpRoot.displayName = 'TooltipHelpRoot';
 
 function TooltipExample(props: TooltipProps) {
   return (
@@ -80,8 +113,28 @@ async function tabToOpen(canvasElement: HTMLElement) {
   return { trigger, tooltip };
 }
 
-export const Default: Story = {
+export const Default: StoryObj<TooltipEasyProps> = {
+  args: { triggerLabel: TRIGGER, content: TIP },
+  render: (args) => <Tooltip {...args} />,
+  parameters: { docs: { source: { code: '<Tooltip triggerLabel="Copy" content="Copy to clipboard" />' } } },
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await userEvent.tab();
+    const tooltip = await bodyOf(canvasElement).findByRole('tooltip');
+    await expect(trigger).toHaveAccessibleDescription(TIP);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+  },
+};
+
+/** Assemble the trigger and help text for a custom layout. */
+export const Compound: Story = {
   render: (args) => <TooltipExample {...args} />,
+  parameters: { docs: { source: { code: `<Tooltip>
+  <Tooltip.Trigger>Copy</Tooltip.Trigger>
+  <Tooltip.Content>Copy to clipboard</Tooltip.Content>
+</Tooltip>` } } },
   play: async ({ canvasElement }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.hover(trigger);
@@ -104,6 +157,57 @@ export const Default: Story = {
     await userEvent.unhover(tooltip);
     await userEvent.unhover(trigger);
     await expectClosed(canvasElement);
+  },
+};
+
+/** Set props on the generated button and tooltip. */
+export const CustomParts: StoryObj<TooltipEasyProps> = {
+  args: {
+    triggerLabel: TRIGGER,
+    content: TIP,
+    slots: { trigger: TooltipButtonRoot, content: TooltipHelpRoot },
+    slotProps: { trigger: { className: 'copy-trigger', ref: fn() }, content: { className: 'copy-help', ref: fn(), css: { padding: vars.space[4] }, sx: { padding: vars.space[3] } } },
+  },
+  render: (args) => <Tooltip {...args} />,
+  parameters: { docs: { source: { code: `<Tooltip triggerLabel="Copy" content="Copy to clipboard"
+  slotProps={{ content: { className: 'copy-help' } }} />` } } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveClass('copy-trigger');
+    await expect(trigger).toHaveAttribute('data-generated-trigger');
+    await expect(args.slotProps?.trigger?.ref).toHaveBeenLastCalledWith(trigger);
+    await userEvent.hover(trigger);
+    const tooltip = await bodyOf(canvasElement).findByRole('tooltip');
+    await expect(tooltip).toHaveClass('copy-help');
+    await expect(tooltip).toHaveAttribute('data-generated-help');
+    await expect(args.slotProps?.content?.ref).toHaveBeenLastCalledWith(tooltip);
+    await expect(getComputedStyle(tooltip).paddingBlockStart).toBe(getComputedStyle(tooltip).getPropertyValue('--ui-space-3').trim());
+    await userEvent.unhover(trigger);
+    await expectClosed(canvasElement);
+  },
+};
+
+export const EasyDisabled: StoryObj<TooltipEasyProps> = {
+  args: { triggerLabel: TRIGGER, content: TIP, slotProps: { trigger: { disabled: true } } },
+  render: (args) => <Tooltip {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await expect(getTrigger(canvasElement)).toBeDisabled();
+    await userEvent.tab();
+    await expect(bodyOf(canvasElement).queryByRole('tooltip')).toBeNull();
+  },
+};
+
+export const EasyControlled: StoryObj<TooltipEasyProps> = {
+  args: { triggerLabel: TRIGGER, content: TIP, onOpenChange: fn() },
+  render: (args) => <EasyControlledTooltip {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await userEvent.tab();
+    await bodyOf(canvasElement).findByRole('tooltip');
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
   },
 };
 

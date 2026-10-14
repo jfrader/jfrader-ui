@@ -51,6 +51,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
@@ -152,7 +153,7 @@ export interface DateRangePickerMessages {
   required?: string;
 }
 
-export interface DateRangePickerProps {
+export interface DateRangePickerBaseProps {
   value?: DateRangeValue | null;
   defaultValue?: DateRangeValue | null;
   /** Apply request; a structurally unchanged range is not requested. Controlled values may reject it. */
@@ -189,6 +190,35 @@ export interface DateRangePickerProps {
   children?: ReactNode;
 }
 
+export interface DateRangePickerCompoundProps extends DateRangePickerBaseProps {
+  label?: never;
+  placeholder?: never;
+  size?: never;
+  icon?: never;
+  slots?: never;
+  slotProps?: never;
+}
+
+export interface DateRangePickerEasyProps extends Omit<DateRangePickerBaseProps, 'children'> {
+  /** Name the generated range trigger and dialog. */
+  label: string;
+  placeholder?: ReactNode;
+  size?: DateRangePickerSize;
+  icon?: ReactNode;
+  children?: never;
+  /** Replace native roots with components that forward all supplied props and ref. */
+  slots?: {
+    trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
+    content?: ComponentType<ComponentPropsWithRef<'div'>>;
+  };
+  slotProps?: {
+    trigger?: DateRangePickerTriggerProps & DateRangePickerSlotProps;
+    content?: DateRangePickerContentProps & DateRangePickerSlotProps;
+  };
+}
+
+export type DateRangePickerProps = DateRangePickerCompoundProps | DateRangePickerEasyProps;
+
 export interface DateRangePickerTriggerProps
   extends Omit<ComponentPropsWithRef<'button'>, 'value' | 'defaultValue' | 'children'>,
     SxProps {
@@ -221,6 +251,7 @@ interface TriggerLabelling {
 }
 
 interface DateRangePickerContextValue {
+  slots: DateRangePickerEasyProps['slots'];
   open: boolean;
   disabled: boolean;
   readOnly: boolean;
@@ -485,7 +516,8 @@ function DateRangePickerLayer({
   endName,
   messages,
   children,
-}: DateRangePickerProps & { nodeId: string | undefined }) {
+  slots,
+}: DateRangePickerBaseProps & Pick<DateRangePickerEasyProps, 'slots'> & { nodeId: string | undefined }) {
   const [committed = null, requestValue, resetToDefault] = useControlledState<DateRangeValue | null>(
     valueProp,
     defaultValue ?? null,
@@ -598,6 +630,7 @@ function DateRangePickerLayer({
         else requestRange(defaultValue ?? null);
       },
       setTriggerLabelling,
+      slots,
     };
   }, [
     open,
@@ -630,6 +663,7 @@ function DateRangePickerLayer({
     resetToDefault,
     valueProp,
     defaultValue,
+    slots,
   ]);
 
   return (
@@ -640,7 +674,23 @@ function DateRangePickerLayer({
 }
 
 function DateRangePickerRoot(props: DateRangePickerProps) {
-  return <OverlayLayer>{(nodeId) => <DateRangePickerLayer {...props} nodeId={nodeId} />}</OverlayLayer>;
+  const children = props.label !== undefined ? (
+    <>
+      <DateRangePickerTrigger
+        aria-label={props.label}
+        placeholder={props.placeholder}
+        size={props.size}
+        icon={props.icon}
+        {...props.slotProps?.trigger}
+      />
+      <DateRangePickerContent {...props.slotProps?.content} />
+    </>
+  ) : props.children;
+  return (
+    <OverlayLayer>
+      {(nodeId) => <DateRangePickerLayer {...props} nodeId={nodeId}>{children}</DateRangePickerLayer>}
+    </OverlayLayer>
+  );
 }
 
 DateRangePickerRoot.displayName = 'DateRangePicker';
@@ -679,7 +729,9 @@ function DateRangePickerTrigger({
     requestOpen,
     resetValue,
     setTriggerLabelling,
+    slots,
   } = useDateRangePickerContext('Trigger');
+  const Root = slots?.trigger ?? 'button';
   const buttonRef = useRef<HTMLButtonElement>(null);
   const mergedRef = useMergeRefs([refs.setReference, ref, buttonRef]);
   const generatedId = useId();
@@ -748,7 +800,7 @@ function DateRangePickerTrigger({
     <>
       <WithSx className={className} styles={[triggerStyle, triggerSizeStyles[size]]} sx={sx}>
         {(className) => (
-          <button
+          <Root
             type="button"
             {...getReferenceProps({ ...rest, onKeyDown: handleKeyDown, onKeyUp: handleKeyUp })}
             ref={mergedRef}
@@ -783,7 +835,7 @@ function DateRangePickerTrigger({
                 {messages.required}
               </span>
             )}
-          </button>
+          </Root>
         )}
       </WithSx>
       {hasError && (
@@ -856,7 +908,9 @@ function DateRangePickerPanel({
     getFloatingProps,
     apply,
     cancel,
+    slots,
   } = useDateRangePickerContext('Content');
+  const Root = slots?.content ?? 'div';
   const summaryId = useId();
   const formatter = useMemo(() => dateTimeFormatter(locale, RANGE_FORMAT_OPTIONS), [locale]);
   const numberFormat = useMemo(() => numberFormatter(locale), [locale]);
@@ -1005,7 +1059,7 @@ function DateRangePickerPanel({
       <FloatingFocusManager context={floatingContext} modal={false} initialFocus={initialFocusRef} returnFocus={false}>
         <WithSx className={className} styles={contentStyle} sx={sx}>
           {(className) => (
-            <div
+            <Root
               {...getFloatingProps({
                 ...labelling,
                 'aria-describedby': [ariaDescribedBy, summaryId].filter(Boolean).join(' '),
@@ -1120,7 +1174,7 @@ function DateRangePickerPanel({
                   </Button>
                 </div>
               </div>
-            </div>
+            </Root>
           )}
         </WithSx>
       </FloatingFocusManager>

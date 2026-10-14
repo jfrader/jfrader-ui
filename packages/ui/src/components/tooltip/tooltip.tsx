@@ -11,6 +11,7 @@ import {
   useMemo,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type ReactNode,
 } from 'react';
@@ -26,7 +27,7 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { IsolatedOverlay } from '../../overlay/overlay-layer';
@@ -37,7 +38,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 const DEFAULT_OPEN_DELAY_MS = 300;
 const DEFAULT_CLOSE_DELAY_MS = 100;
 
-export interface TooltipProps {
+export interface TooltipBaseProps {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -49,12 +50,41 @@ export interface TooltipProps {
   children?: ReactNode;
 }
 
+export interface TooltipCompoundProps extends TooltipBaseProps {
+  triggerLabel?: never;
+  content?: never;
+  slots?: never;
+  slotProps?: never;
+}
+
+type TooltipGeneratedPartProps<Props> = Omit<Props, 'children'> & { css?: Interpolation<Theme> };
+
+export interface TooltipEasyProps extends Omit<TooltipBaseProps, 'children'> {
+  /** Name the generated trigger button. */
+  triggerLabel: ReactNode;
+  /** Show non-interactive help on hover or focus. */
+  content: ReactNode;
+  children?: never;
+  /** Replace native roots with components that forward all supplied props and ref. */
+  slots?: {
+    trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
+    content?: ComponentType<ComponentPropsWithRef<'div'>>;
+  };
+  slotProps?: {
+    trigger?: TooltipGeneratedPartProps<TooltipTriggerProps>;
+    content?: TooltipGeneratedPartProps<TooltipContentProps>;
+  };
+}
+
+export type TooltipProps = TooltipCompoundProps | TooltipEasyProps;
+
 export interface TooltipTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface TooltipContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
 interface TooltipContextValue {
+  slots: TooltipEasyProps['slots'];
   open: boolean;
   refs: OverlayFloating['refs'];
   floatingStyles: CSSProperties;
@@ -119,23 +149,30 @@ function TooltipOverlay({
   openDelay = DEFAULT_OPEN_DELAY_MS,
   closeDelay = DEFAULT_CLOSE_DELAY_MS,
   children,
-}: TooltipProps) {
+  slots,
+}: TooltipBaseProps & Pick<TooltipEasyProps, 'slots'>) {
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const { refs, floatingStyles, context } = useOverlayFloating({ open, placement, onOpenChange: requestOpenChange });
   const { getReferenceProps, getFloatingProps } = useTooltipInteractions(context, { openDelay, closeDelay });
 
   const value = useMemo(
-    () => ({ open, refs, floatingStyles, getReferenceProps, getFloatingProps }),
-    [open, refs, floatingStyles, getReferenceProps, getFloatingProps],
+    () => ({ open, refs, floatingStyles, getReferenceProps, getFloatingProps, slots }),
+    [open, refs, floatingStyles, getReferenceProps, getFloatingProps, slots],
   );
 
   return <TooltipContext.Provider value={value}>{children}</TooltipContext.Provider>;
 }
 
 function TooltipRoot(props: TooltipProps) {
+  const children = props.triggerLabel !== undefined ? (
+    <>
+      <TooltipTrigger {...props.slotProps?.trigger}>{props.triggerLabel}</TooltipTrigger>
+      <TooltipContent {...props.slotProps?.content}>{props.content}</TooltipContent>
+    </>
+  ) : props.children;
   return (
     <IsolatedOverlay>
-      <TooltipOverlay {...props} />
+      <TooltipOverlay {...props}>{children}</TooltipOverlay>
     </IsolatedOverlay>
   );
 }
@@ -143,7 +180,8 @@ function TooltipRoot(props: TooltipProps) {
 TooltipRoot.displayName = 'Tooltip';
 
 function TooltipTrigger({ ref, 'aria-describedby': ariaDescribedByProp, className, sx, ...rest }: TooltipTriggerProps) {
-  const { refs, getReferenceProps } = useTooltipContext('Trigger');
+  const { refs, getReferenceProps, slots } = useTooltipContext('Trigger');
+  const Root = slots?.trigger ?? 'button';
   const mergedRef = useMergeRefs([refs.setReference, ref]);
   const referenceProps = getReferenceProps(rest);
   // useRole sets aria-describedby on the reference; merge it with the consumer's ids.
@@ -154,7 +192,7 @@ function TooltipTrigger({ ref, 'aria-describedby': ariaDescribedByProp, classNam
   return (
     <WithSx className={className} styles={triggerStyle} sx={sx}>
       {(className) => (
-        <button
+        <Root
           type="button"
           {...referenceProps}
           ref={mergedRef}
@@ -170,7 +208,8 @@ function TooltipTrigger({ ref, 'aria-describedby': ariaDescribedByProp, classNam
 TooltipTrigger.displayName = 'Tooltip.Trigger';
 
 function TooltipSurface({ ref, style, className, sx, dir, ...rest }: TooltipContentProps) {
-  const { refs, floatingStyles, getFloatingProps } = useTooltipContext('Content');
+  const { refs, floatingStyles, getFloatingProps, slots } = useTooltipContext('Content');
+  const Root = slots?.content ?? 'div';
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
   const [direction] = useState(() => {
     const reference = refs.domReference.current;
@@ -185,7 +224,7 @@ function TooltipSurface({ ref, style, className, sx, dir, ...rest }: TooltipCont
   return (
     <WithSx className={className} styles={tooltipContentStyle} sx={sx}>
       {(className) => (
-        <div
+        <Root
           {...floatingProps}
           ref={mergedRef}
           dir={dir ?? direction}

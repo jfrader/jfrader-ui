@@ -43,11 +43,14 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type KeyboardEvent,
+  type ReactNode,
 } from 'react';
 
 import { WithSx, type SxProps } from '../../styling/sx';
 import { dateTimeFormatter } from '../../utils/intl';
+import type { Interpolation, Theme } from '../../styling/css';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
 import {
@@ -102,7 +105,7 @@ export interface CalendarRangeLabels {
   end: string;
 }
 
-export interface CalendarProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
+export interface CalendarBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   /** Selected date, 'YYYY-MM-DD'. */
   value?: string;
   defaultValue?: string;
@@ -135,6 +138,32 @@ export interface CalendarProps extends Omit<ComponentPropsWithRef<'div'>, 'defau
   rangeLabels?: CalendarRangeLabels;
 }
 
+export interface CalendarCompoundProps extends CalendarBaseProps {
+  children?: ReactNode;
+  component?: never;
+  slots?: never;
+  slotProps?: never;
+}
+
+export interface CalendarEasyProps extends CalendarBaseProps {
+  children?: never;
+  /** Replace the root div; equivalent to slots.root. Forward all props and ref. */
+  component?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replace native roots; the grid replacement renders a table. Forward props and ref. */
+  slots?: {
+    root?: ComponentType<ComponentPropsWithRef<'div'>>;
+    header?: ComponentType<ComponentPropsWithRef<'div'>>;
+    grid?: ComponentType<ComponentPropsWithRef<'table'>>;
+  };
+  slotProps?: {
+    root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps & { css?: Interpolation<Theme>; [attribute: `data-${string}`]: unknown };
+    header?: CalendarHeaderProps & { css?: Interpolation<Theme> };
+    grid?: Omit<CalendarGridProps, 'children'> & { css?: Interpolation<Theme> };
+  };
+}
+
+export type CalendarProps = CalendarCompoundProps | CalendarEasyProps;
+
 /** The header renders its own month buttons and label. */
 export type CalendarHeaderProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps;
 export type CalendarGridProps = ComponentPropsWithRef<'table'> & SxProps;
@@ -146,6 +175,7 @@ interface FocusTarget {
 }
 
 interface CalendarContextValue {
+  slots: CalendarEasyProps['slots'];
   value: string | undefined;
   selectionRange: CalendarRange | null | undefined;
   previewRange: CalendarRange | null | undefined;
@@ -206,8 +236,14 @@ function CalendarRoot({
   className,
   sx,
   children,
+  slots,
+  slotProps,
+  component,
   ...rest
 }: CalendarProps) {
+  const Root = slots?.root ?? component ?? 'div';
+  const { className: slotClassName, style: slotStyle, sx: slotSx, css: slotCss, ...slotRootProps } = slotProps?.root ?? {};
+  const rootProps = { ...rest, ref, ...slotRootProps };
   const baseId = useId();
   const labelId = `${baseId}-label`;
   const hasRangeLabels = rangeLabels !== undefined;
@@ -270,6 +306,7 @@ function CalendarRoot({
       labelId,
       hasHeader,
       setHasHeader,
+      slots,
     }),
     [
       value,
@@ -290,15 +327,20 @@ function CalendarRoot({
       requestVisibleMonth,
       labelId,
       hasHeader,
+      slots,
     ],
   );
 
   return (
     <CalendarContext.Provider value={context}>
-      <WithSx className={className} styles={rootStyle} sx={sx}>
+      <WithSx
+        className={[slotClassName, className].filter(Boolean).join(' ') || undefined}
+        styles={[rootStyle, slotCss, slotSx]}
+        sx={sx}
+      >
         {(className) => (
-          <div {...rest} ref={ref} data-ui="calendar" className={className}>
-            {children}
+          <Root {...rootProps} style={{ ...rest.style, ...slotStyle }} data-ui="calendar" className={className}>
+            {children === undefined ? <><CalendarHeader {...slotProps?.header} /><CalendarGrid {...slotProps?.grid} /></> : children}
             {rangeLabels && rangeLabelIds && (
               <>
                 <span id={rangeLabelIds.start} hidden>
@@ -309,7 +351,7 @@ function CalendarRoot({
                 </span>
               </>
             )}
-          </div>
+          </Root>
         )}
       </WithSx>
     </CalendarContext.Provider>
@@ -319,8 +361,9 @@ function CalendarRoot({
 CalendarRoot.displayName = 'Calendar';
 
 function CalendarHeader({ ref, className, sx, ...props }: CalendarHeaderProps) {
-  const { visibleMonth, min, max, formatters, requestVisibleMonth, labelId, setHasHeader } =
+  const { visibleMonth, min, max, formatters, requestVisibleMonth, labelId, setHasHeader, slots } =
     useCalendarContext('Header');
+  const Root = slots?.header ?? 'div';
 
   // The grid takes its name from the header label only while the label exists.
   useLayoutEffect(() => {
@@ -337,7 +380,7 @@ function CalendarHeader({ ref, className, sx, ...props }: CalendarHeaderProps) {
   return (
     <WithSx className={className} styles={headerStyle} sx={sx}>
       {(className) => (
-        <div {...props} ref={ref} data-ui="calendar-header" className={className}>
+        <Root {...props} ref={ref} data-ui="calendar-header" className={className}>
           <button
             type="button"
             data-ui="calendar-previous"
@@ -369,7 +412,7 @@ function CalendarHeader({ ref, className, sx, ...props }: CalendarHeaderProps) {
               {NEXT_GLYPH}
             </span>
           </button>
-        </div>
+        </Root>
       )}
     </WithSx>
   );
@@ -473,7 +516,9 @@ function CalendarGrid({
     onFocusedDateChange,
     labelId,
     hasHeader,
+    slots,
   } = useCalendarContext('Grid');
+  const Root = slots?.grid ?? 'table';
   const gridRef = useRef<HTMLTableElement>(null);
   useImperativeHandle(ref, () => gridRef.current as HTMLTableElement, []);
   // Set by keyboard moves: after the next commit, DOM focus follows the tab stop.
@@ -534,7 +579,7 @@ function CalendarGrid({
   return (
     <WithSx className={className} styles={gridStyle} sx={sx}>
       {(className) => (
-        <table
+        <Root
           {...rest}
           ref={gridRef}
           role="grid"
@@ -573,7 +618,7 @@ function CalendarGrid({
               </tr>
             ))}
           </tbody>
-        </table>
+        </Root>
       )}
     </WithSx>
   );
