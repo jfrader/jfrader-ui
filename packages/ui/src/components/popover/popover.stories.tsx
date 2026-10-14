@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef, CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties, ReactNode } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within, type Mock } from 'storybook/test';
@@ -53,11 +53,8 @@ type Story = StoryObj<typeof meta>;
 
 type CheckedPopover<Props extends import('./index').PopoverProps> = Props;
 export type PopoverTypeRegression = {
-  // @ts-expect-error The non-DOM provider root has no component sugar.
   providerComponent: PopoverEasyProps['component'];
-  // @ts-expect-error Replace the native content or trigger, not the provider root.
   providerRootSlot: NonNullable<PopoverEasyProps['slots']>['root'];
-  // @ts-expect-error The provider has no root element to receive native props.
   providerRootProps: NonNullable<PopoverEasyProps['slotProps']>['root'];
   // @ts-expect-error Easy presentation and compound children are mutually exclusive.
   mixed: CheckedPopover<{ triggerLabel: string; label: string; content: string; children: string }>;
@@ -175,7 +172,7 @@ async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 }
 
-export const Default: StoryObj<PopoverEasyProps> = {
+export const Default: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
   args: { triggerLabel: TRIGGER, label: HEADING, content: <Button size="sm">Copy link</Button> },
   render: (args) => <Popover {...args} />,
   parameters: { docs: { source: { code: '<Popover triggerLabel="Share" label="Share link" content={<Button>Copy link</Button>} />' } } },
@@ -222,7 +219,7 @@ export const Compound: Story = {
 };
 
 /** Set props on the generated trigger and panel. */
-export const CustomParts: StoryObj<PopoverEasyProps> = {
+export const CustomParts: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
   args: {
     triggerLabel: TRIGGER, label: HEADING, content: <Button size="sm">Copy link</Button>,
     slots: { trigger: PopoverButtonRoot, content: PopoverPanelRoot },
@@ -246,7 +243,7 @@ export const CustomParts: StoryObj<PopoverEasyProps> = {
   },
 };
 
-export const EasyDisabled: StoryObj<PopoverEasyProps> = {
+export const EasyDisabled: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
   args: { triggerLabel: TRIGGER, label: HEADING, content: 'Options', slotProps: { trigger: { disabled: true } } },
   render: (args) => <Popover {...args} />,
   play: async ({ canvasElement, userEvent }) => {
@@ -257,7 +254,7 @@ export const EasyDisabled: StoryObj<PopoverEasyProps> = {
   },
 };
 
-export const EasyControlled: StoryObj<PopoverEasyProps> = {
+export const EasyControlled: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
   args: { triggerLabel: TRIGGER, label: HEADING, content: 'Share options', onOpenChange: fn() },
   render: (args) => <EasyControlledPopover {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {

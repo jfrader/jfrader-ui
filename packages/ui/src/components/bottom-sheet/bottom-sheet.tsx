@@ -8,6 +8,7 @@
 // The shell clips instead of hiding overflow, so showModal()'s focus scroll cannot pull the
 // offscreen panel into view. Detents are stable fractions and each state axis has one owner.
 import {
+  type ComponentType,
   createContext,
   useCallback,
   useContext,
@@ -88,6 +89,7 @@ export interface BottomSheetCloseProps extends ComponentPropsWithRef<'button'>, 
 type GeneratedPartProps<Props> = Omit<Props, 'children'> & Pick<DrawerPanelProps, `data-${string}`>;
 
 export interface BottomSheetSlotProps {
+  root?: NonNullable<BottomSheetPanelProps['slotProps']>['root'];
   trigger?: GeneratedPartProps<BottomSheetTriggerProps>;
   content?: GeneratedPartProps<BottomSheetContentProps>;
   panel?: GeneratedPartProps<BottomSheetPanelProps>;
@@ -97,6 +99,19 @@ export interface BottomSheetSlotProps {
   description?: GeneratedPartProps<BottomSheetDescriptionProps>;
   close?: GeneratedPartProps<BottomSheetCloseProps>;
   body?: GeneratedPartProps<BottomSheetBodyProps>;
+  footer?: GeneratedPartProps<BottomSheetFooterProps>;
+}
+
+export interface BottomSheetSlots {
+  root?: NonNullable<BottomSheetPanelProps['slots']>['root'];
+  trigger?: ComponentType<BottomSheetTriggerProps>;
+  header?: ComponentType<BottomSheetHeaderProps>;
+  handle?: ComponentType<BottomSheetHandleProps>;
+  title?: ComponentType<BottomSheetTitleProps>;
+  description?: ComponentType<BottomSheetDescriptionProps>;
+  close?: ComponentType<BottomSheetCloseProps>;
+  body?: ComponentType<BottomSheetBodyProps>;
+  footer?: ComponentType<BottomSheetFooterProps>;
 }
 
 export interface BottomSheetCompoundProps extends BottomSheetBaseProps {
@@ -107,9 +122,12 @@ export interface BottomSheetCompoundProps extends BottomSheetBaseProps {
   content?: never;
   closeLabel?: never;
   slotProps?: never;
+  slots?: never;
+  component?: never;
+  footer?: never;
 }
 
-export interface BottomSheetEasyProps extends BottomSheetBaseProps {
+export interface BottomSheetEasyProps extends BottomSheetBaseProps, Omit<BottomSheetPanelProps, 'children' | 'title' | 'content' | 'defaultValue' | 'slots' | 'slotProps'> {
   /** Name the button that opens the bottom sheet. */
   triggerLabel: ReactNode;
   /** Name the bottom sheet with a visible heading. */
@@ -122,6 +140,10 @@ export interface BottomSheetEasyProps extends BottomSheetBaseProps {
   closeLabel: ReactNode;
   children?: never;
   slotProps?: BottomSheetSlotProps;
+  slots?: BottomSheetSlots;
+  component?: BottomSheetSlots['root'];
+  /** Place actions below the scrollable body. */
+  footer?: ReactNode;
 }
 
 export type BottomSheetProps = BottomSheetCompoundProps | BottomSheetEasyProps;
@@ -335,6 +357,19 @@ function validateDetents(detents: readonly number[]) {
   }
 }
 function SheetRoot(props: BottomSheetProps & { nodeId?: string }) {
+  const Trigger = props.slots?.trigger ?? BottomSheetTrigger;
+  const Header = props.slots?.header ?? BottomSheetHeader;
+  const Handle = props.slots?.handle ?? BottomSheetHandle;
+  const Title = props.slots?.title ?? BottomSheetTitle;
+  const Description = props.slots?.description ?? BottomSheetDescription;
+  const Close = props.slots?.close ?? BottomSheetClose;
+  const Body = props.slots?.body ?? BottomSheetBody;
+  const Footer = props.slots?.footer ?? BottomSheetFooter;
+  const { open: _open, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange,
+    detents: _detents, value: _value, defaultValue: _defaultValue, onValueChange: _onValueChange,
+    locale: _locale, getValueText: _getValueText, nodeId: _nodeId, children: _children,
+    triggerLabel: _triggerLabel, title: _title, description: _description, content: _content,
+    closeLabel: _closeLabel, slots: _slots, slotProps: _slotProps, component: _component, footer: _footer, ...rootProps } = props;
   const {
     nodeId,
     open: openProp,
@@ -442,23 +477,27 @@ function SheetRoot(props: BottomSheetProps & { nodeId?: string }) {
     <Context.Provider value={context}>
       {'content' in props ? (
         <>
-          <BottomSheetTrigger {...props.slotProps?.trigger}>{props.triggerLabel}</BottomSheetTrigger>
+          <Trigger {...props.slotProps?.trigger}>{props.triggerLabel}</Trigger>
           <BottomSheetContent {...props.slotProps?.content}>
-            <BottomSheetPanel {...props.slotProps?.panel}>
-              <BottomSheetHeader {...props.slotProps?.header}>
-                <BottomSheetHandle
+            <BottomSheetPanel {...rootProps} {...props.slotProps?.panel}
+              component={props.component ?? props.slotProps?.panel?.component}
+              slots={{ ...props.slotProps?.panel?.slots, root: props.slots?.root ?? props.slotProps?.panel?.slots?.root }}
+              slotProps={{ root: props.slotProps?.root ?? props.slotProps?.panel?.slotProps?.root }}>
+              <Header {...props.slotProps?.header}>
+                <Handle
                   aria-labelledby={props.slotProps?.handle?.['aria-label'] === undefined ? context.titleId : undefined}
                   {...props.slotProps?.handle}
                 />
-                <BottomSheetTitle {...props.slotProps?.title}>{props.title}</BottomSheetTitle>
+                <Title {...props.slotProps?.title}>{props.title}</Title>
                 {isRenderable(props.description) && (
-                  <BottomSheetDescription {...props.slotProps?.description}>
+                  <Description {...props.slotProps?.description}>
                     {props.description}
-                  </BottomSheetDescription>
+                  </Description>
                 )}
-                <BottomSheetClose {...props.slotProps?.close}>{props.closeLabel}</BottomSheetClose>
-              </BottomSheetHeader>
-              <BottomSheetBody {...props.slotProps?.body}>{props.content}</BottomSheetBody>
+                <Close {...props.slotProps?.close}>{props.closeLabel}</Close>
+              </Header>
+              <Body {...props.slotProps?.body}>{props.content}</Body>
+              {isRenderable(props.footer) && <Footer {...props.slotProps?.footer}>{props.footer}</Footer>}
             </BottomSheetPanel>
           </BottomSheetContent>
         </>

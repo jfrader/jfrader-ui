@@ -70,7 +70,7 @@ Root slot props win ordinary conflicts; className combines and style shallow-mer
   },
 } satisfies Meta<typeof BottomSheet>;
 export default meta;
-type Story = StoryObj<BottomSheetCompoundProps>;
+type Story = StoryObj<(props: BottomSheetCompoundProps) => ReactNode>;
 
 const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, borderRadius: vars.radius.full, boxShadow: 'none' });
 function SheetPaper({ className, ...props }: SurfacePartProps) {
@@ -268,7 +268,7 @@ function touch(
   return event;
 }
 
-export const Default: StoryObj<BottomSheetEasyProps> = {
+export const Default: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
   name: 'Easy mode',
   args: {
     triggerLabel: TRIGGER,
@@ -346,7 +346,7 @@ export const Compound: Story = {
   },
 };
 
-export const EasyModeKeyboard: StoryObj<BottomSheetEasyProps> = {
+export const EasyModeKeyboard: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
   name: 'Easy mode keyboard',
   args: {
     triggerLabel: TRIGGER,
@@ -404,7 +404,7 @@ function ControlledEasyBottomSheet(props: BottomSheetEasyProps) {
 }
 ControlledEasyBottomSheet.displayName = 'ControlledEasyBottomSheet';
 
-export const EasyModeControlled: StoryObj<BottomSheetEasyProps> = {
+export const EasyModeControlled: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
   name: 'Easy mode controlled',
   args: {
     triggerLabel: TRIGGER,
@@ -438,7 +438,7 @@ export const EasyModeControlled: StoryObj<BottomSheetEasyProps> = {
   },
 };
 
-export const EasyModeDisabled: StoryObj<BottomSheetEasyProps> = {
+export const EasyModeDisabled: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
   name: 'Easy mode disabled',
   args: {
     triggerLabel: TRIGGER,
@@ -468,7 +468,7 @@ export const EasyModeDisabled: StoryObj<BottomSheetEasyProps> = {
   },
 };
 
-export const EasyModeCustomizationSlotProps: StoryObj<BottomSheetEasyProps> = {
+export const EasyModeCustomizationSlotProps: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
   name: 'Easy mode customization slotProps',
   args: {
     triggerLabel: TRIGGER,
@@ -542,7 +542,7 @@ export const EasyModeCustomizationSlotProps: StoryObj<BottomSheetEasyProps> = {
   },
 };
 
-export const EasyModeWithoutDescription: StoryObj<BottomSheetEasyProps> = {
+export const EasyModeWithoutDescription: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
   name: 'Easy mode without description',
   args: {
     triggerLabel: TRIGGER,

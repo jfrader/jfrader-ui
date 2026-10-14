@@ -36,12 +36,14 @@ import {
   useState,
   useSyncExternalStore,
   type ComponentPropsWithRef,
+  type ComponentType,
   type HTMLProps,
   type KeyboardEvent,
   type MutableRefObject,
   type PointerEvent,
   type ReactNode,
 } from 'react';
+import { GeneratedRoot, type GeneratedRootProps, type GeneratedRootSlotProps } from '../../utils/generated-root';
 import { createPortal } from 'react-dom';
 import { FloatingFocusManager, useMergeRefs, type Placement } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
@@ -152,6 +154,7 @@ export interface UserMenuMessages {
 }
 
 export interface UserMenuSlotProps {
+  root?: GeneratedRootSlotProps;
   trigger?: Omit<UserMenuTriggerProps, 'aria-label'>;
   content?: Omit<UserMenuContentProps, 'children' | 'closeLabel'>;
   identity?: UserMenuIdentityProps;
@@ -160,6 +163,18 @@ export interface UserMenuSlotProps {
   themeGroup?: Partial<UserMenuThemeGroupProps>;
   statusGroup?: Partial<UserMenuStatusGroupProps>;
   signOut?: Omit<UserMenuSignOutProps, 'onSignOut' | 'pendingLabel' | 'errorMessage' | 'children'>;
+}
+
+export interface UserMenuSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  trigger?: ComponentType<UserMenuTriggerProps>;
+  content?: ComponentType<UserMenuContentProps>;
+  identity?: ComponentType<UserMenuIdentityProps>;
+  item?: ComponentType<UserMenuItemProps>;
+  separator?: ComponentType<UserMenuSeparatorProps>;
+  themeGroup?: ComponentType<UserMenuThemeGroupProps>;
+  statusGroup?: ComponentType<UserMenuStatusGroupProps>;
+  signOut?: ComponentType<UserMenuSignOutProps>;
 }
 
 export interface UserMenuBaseProps {
@@ -184,9 +199,11 @@ export interface UserMenuCompoundProps extends UserMenuBaseProps {
   showName?: never;
   variant?: never;
   slotProps?: never;
+  slots?: never;
+  component?: never;
 }
 
-export interface UserMenuEasyProps extends UserMenuBaseProps {
+export interface UserMenuEasyProps extends UserMenuBaseProps, Omit<GeneratedRootProps, 'children'> {
   /** Localized messages for trigger, close, signOut, pending, and error. */
   messages: UserMenuMessages;
   /** Command actions and separators. */
@@ -205,6 +222,8 @@ export interface UserMenuEasyProps extends UserMenuBaseProps {
   variant?: UserMenuVariant;
   children?: never;
   slotProps?: UserMenuSlotProps;
+  slots?: UserMenuSlots;
+  component?: UserMenuSlots['root'];
 }
 
 export type UserMenuProps = UserMenuCompoundProps | UserMenuEasyProps;
@@ -220,6 +239,11 @@ export interface UserMenuTriggerProps extends Omit<ComponentPropsWithRef<'button
 }
 
 interface UserMenuContentBaseProps extends ComponentPropsWithRef<'div'>, SxProps {
+  slots?: {
+    menu?: ComponentType<ComponentPropsWithRef<'div'>>;
+    handle?: ComponentType<ComponentPropsWithRef<'div'>>;
+    close?: ComponentType<ComponentPropsWithRef<'button'>>;
+  };
   slotProps?: {
     menu?: UserMenuPartProps;
     handle?: UserMenuPartProps;
@@ -798,6 +822,19 @@ function UserMenuRoot(props: UserMenuProps) {
     Number.isFinite(compactBreakpoint) && compactBreakpoint > 0 ? compactBreakpoint : DEFAULT_COMPACT_BREAKPOINT;
 
   const easyProps = props.messages !== undefined ? props : undefined;
+  const Trigger = easyProps?.slots?.trigger ?? UserMenuTrigger;
+  const Content = easyProps?.slots?.content ?? UserMenuContent;
+  const Identity = easyProps?.slots?.identity ?? UserMenuIdentity;
+  const Item = easyProps?.slots?.item ?? UserMenuItem;
+  const Separator = easyProps?.slots?.separator ?? UserMenuSeparator;
+  const ThemeGroup = easyProps?.slots?.themeGroup ?? UserMenuThemeGroup;
+  const StatusGroup = easyProps?.slots?.statusGroup ?? UserMenuStatusGroup;
+  const SignOut = easyProps?.slots?.signOut ?? UserMenuSignOut;
+  const { user: _user, open: _open, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange,
+    placement: _placement, compactBreakpoint: _compactBreakpoint, children: _children,
+    messages: _messages, items: _items, theme: _theme, status: _status, onSignOut: _onSignOut,
+    onSignOutError: _onSignOutError, showName: _showName, variant: _variant,
+    slotProps: _slotProps, slots: _slots, component: _component, ...rootProps } = props;
 
   const hasItems = Boolean(easyProps?.items && easyProps.items.length > 0);
   const lastItemIsSeparator = easyProps?.items?.at(-1)?.type === 'separator';
@@ -809,23 +846,23 @@ function UserMenuRoot(props: UserMenuProps) {
     <MenuController open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} placement={placement}>
       <UserMenuScope user={user} compactBreakpoint={breakpoint}>
         {easyProps ? (
-          <>
-            <UserMenuTrigger
+          <GeneratedRoot {...rootProps} component={easyProps.slots?.root ?? easyProps.component} rootSlot={easyProps.slotProps?.root} marker="user-menu-root">
+            <Trigger
               showName={easyProps.showName}
               {...easyProps.slotProps?.trigger}
               aria-label={easyProps.messages.trigger}
             />
-            <UserMenuContent
+            <Content
               variant={easyProps.variant}
               closeLabel={easyProps.messages.close}
               {...easyProps.slotProps?.content}
             >
-              <UserMenuIdentity {...easyProps.slotProps?.identity} />
+              <Identity {...easyProps.slotProps?.identity} />
               {easyProps.items?.map((item, index) =>
                 item.type === 'separator' ? (
-                  <UserMenuSeparator {...easyProps.slotProps?.separator} key={item.key ?? index} />
+                  <Separator {...easyProps.slotProps?.separator} key={item.key ?? index} />
                 ) : (
-                  <UserMenuItem
+                  <Item
                     {...easyProps.slotProps?.item}
                     key={item.key ?? index}
                     onSelect={item.onSelect}
@@ -835,15 +872,15 @@ function UserMenuRoot(props: UserMenuProps) {
                     keys={item.keys ?? easyProps.slotProps?.item?.keys}
                   >
                     {item.label}
-                  </UserMenuItem>
+                  </Item>
                 ),
               )}
-              {showGroupSeparator && <UserMenuSeparator {...easyProps.slotProps?.separator} />}
-              {easyProps.theme && <UserMenuThemeGroup {...easyProps.theme} {...easyProps.slotProps?.themeGroup} />}
-              {easyProps.status && <UserMenuStatusGroup {...easyProps.status} {...easyProps.slotProps?.statusGroup} />}
-              {showSignOutSeparator && <UserMenuSeparator {...easyProps.slotProps?.separator} />}
+              {showGroupSeparator && <Separator {...easyProps.slotProps?.separator} />}
+              {easyProps.theme && <ThemeGroup {...easyProps.theme} {...easyProps.slotProps?.themeGroup} />}
+              {easyProps.status && <StatusGroup {...easyProps.status} {...easyProps.slotProps?.statusGroup} />}
+              {showSignOutSeparator && <Separator {...easyProps.slotProps?.separator} />}
               {easyProps.onSignOut && (
-                <UserMenuSignOut
+                <SignOut
                   onSignOut={easyProps.onSignOut}
                   pendingLabel={easyProps.messages.pending}
                   errorMessage={easyProps.messages.error}
@@ -851,10 +888,10 @@ function UserMenuRoot(props: UserMenuProps) {
                   {...easyProps.slotProps?.signOut}
                 >
                   {easyProps.messages.signOut}
-                </UserMenuSignOut>
+                </SignOut>
               )}
-            </UserMenuContent>
-          </>
+            </Content>
+          </GeneratedRoot>
         ) : (
           props.children
         )}
@@ -942,6 +979,7 @@ function UserMenuSurface({
   variant,
   closeLabel,
   slotProps,
+  slots,
   style,
   dir,
   className,
@@ -952,6 +990,9 @@ function UserMenuSurface({
   'aria-describedby': ariaDescribedBy,
   ...rest
 }: SurfaceProps) {
+  const Menu = slots?.menu ?? 'div';
+  const Handle = slots?.handle ?? 'div';
+  const Close = slots?.close ?? 'button';
   const { compact, contentId, menuId, identityNameId, sessionRef, signOutFailure } = useUserMenu('Content');
   const { refs, floatingContext, floatingStyles, getFloatingProps, requestClose } = useMenuContext(FAMILY, 'Content');
   const sheet = presentationOf(variant, compact) === 'sheet';
@@ -1087,7 +1128,7 @@ function UserMenuSurface({
                 className={className}
               >
                 {sheet && (
-                  <div
+                  <Handle
                     {...handleGesture}
                     aria-hidden="true"
                     data-ui="user-menu-handle"
@@ -1098,7 +1139,7 @@ function UserMenuSurface({
                 <div css={headerStyle}>
                   <div ref={setIdentitySlot} css={identitySlotStyle} />
                   {sheet && (
-                    <button
+                    <Close
                       type="button"
                       ref={closeRef}
                       aria-label={closeLabel}
@@ -1108,10 +1149,10 @@ function UserMenuSurface({
                       css={[closeStyle, slotProps?.close?.css]}
                     >
                       {closeGlyph}
-                    </button>
+                    </Close>
                   )}
                 </div>
-                <div
+                <Menu
                   {...menuNaming}
                   ref={menuRef}
                   id={menuId}
@@ -1125,7 +1166,7 @@ function UserMenuSurface({
                   <IdentitySlotContext.Provider value={identitySlot}>
                     <MenuCollection family={FAMILY}>{children}</MenuCollection>
                   </IdentitySlotContext.Provider>
-                </div>
+                </Menu>
                 {/* Outside the menu, so it is announced and read as text, never navigated as a command. */}
                 <div role="alert" data-ui="user-menu-error" css={errorStyle}>
                   {failure}

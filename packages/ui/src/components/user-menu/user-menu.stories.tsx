@@ -266,7 +266,7 @@ function easyModeTypeContracts() {
 }
 void easyModeTypeContracts;
 
-export const Default: StoryObj<UserMenuEasyProps> = {
+export const Default: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   name: 'Easy mode',
   args: {
     user: USER,
@@ -346,7 +346,7 @@ export const Default: StoryObj<UserMenuEasyProps> = {
   },
 };
 
-export const EasyKeyboard: StoryObj<UserMenuEasyProps> = {
+export const EasyKeyboard: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   ...Default,
   name: 'Easy mode keyboard',
   play: async ({ canvasElement, userEvent }) => {
@@ -373,7 +373,7 @@ export const EasyKeyboard: StoryObj<UserMenuEasyProps> = {
   },
 };
 
-export const EasyDismissal: StoryObj<UserMenuEasyProps> = {
+export const EasyDismissal: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   ...Default,
   name: 'Easy mode dismissal',
   play: async ({ canvasElement, userEvent }) => {
@@ -386,7 +386,7 @@ export const EasyDismissal: StoryObj<UserMenuEasyProps> = {
   },
 };
 
-export const EasyControlled: StoryObj<UserMenuEasyProps> = {
+export const EasyControlled: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   ...Default,
   name: 'Easy mode controlled',
   args: {
@@ -404,7 +404,7 @@ export const EasyControlled: StoryObj<UserMenuEasyProps> = {
   },
 };
 
-export const EasyDisabled: StoryObj<UserMenuEasyProps> = {
+export const EasyDisabled: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   ...Default,
   name: 'Easy mode disabled',
   play: async ({ canvasElement, userEvent }) => {
@@ -422,7 +422,7 @@ export const EasyDisabled: StoryObj<UserMenuEasyProps> = {
   },
 };
 
-export const EasyAsyncSignOut: StoryObj<UserMenuEasyProps> = {
+export const EasyAsyncSignOut: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   ...Default,
   name: 'Easy mode async sign out',
   play: async ({ args, canvasElement, userEvent }) => {
@@ -445,7 +445,7 @@ export const EasyAsyncSignOut: StoryObj<UserMenuEasyProps> = {
   },
 };
 
-export const CustomSlots: StoryObj<UserMenuEasyProps> = {
+export const CustomSlots: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   ...Default,
   name: 'Easy mode custom slotProps',
   args: {

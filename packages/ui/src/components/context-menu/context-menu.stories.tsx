@@ -248,7 +248,7 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<StoryArgs>;
+type Story = StoryObj<(props: StoryArgs) => ReactNode>;
 
 function easyModeTypeContracts() {
   // @ts-expect-error Collection mode rejects compound children.
@@ -264,7 +264,7 @@ function easyModeTypeContracts() {
 }
 void easyModeTypeContracts;
 
-export const Default: StoryObj<ContextMenuEasyProps> = {
+export const Default: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
   name: 'Easy mode',
   args: {
     targetLabel: TARGET,
@@ -336,7 +336,7 @@ export const Default: StoryObj<ContextMenuEasyProps> = {
   },
 };
 
-export const EasyKeyboard: StoryObj<ContextMenuEasyProps> = {
+export const EasyKeyboard: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
   ...Default,
   name: 'Easy mode keyboard',
   play: async ({ canvasElement, userEvent }) => {
@@ -363,7 +363,7 @@ export const EasyKeyboard: StoryObj<ContextMenuEasyProps> = {
   },
 };
 
-export const EasyDismissal: StoryObj<ContextMenuEasyProps> = {
+export const EasyDismissal: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
   ...Default,
   name: 'Easy mode dismissal',
   play: async ({ canvasElement, userEvent }) => {
@@ -379,7 +379,7 @@ export const EasyDismissal: StoryObj<ContextMenuEasyProps> = {
   },
 };
 
-export const EasyControlled: StoryObj<ContextMenuEasyProps> = {
+export const EasyControlled: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
   ...Default,
   name: 'Easy mode controlled',
   args: {
@@ -402,7 +402,7 @@ export const EasyControlled: StoryObj<ContextMenuEasyProps> = {
   },
 };
 
-export const EasyDisabled: StoryObj<ContextMenuEasyProps> = {
+export const EasyDisabled: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
   ...Default,
   name: 'Easy mode disabled',
   args: {
@@ -418,7 +418,7 @@ export const EasyDisabled: StoryObj<ContextMenuEasyProps> = {
   },
 };
 
-export const CustomSlots: StoryObj<ContextMenuEasyProps> = {
+export const CustomSlots: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
   ...Default,
   name: 'Easy mode custom slotProps',
   args: {

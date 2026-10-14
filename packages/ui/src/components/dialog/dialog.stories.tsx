@@ -96,8 +96,8 @@ type Story = StoryObj<(props: DialogCompoundProps) => ReactNode>;
 type EasyStory = StoryObj<(props: DialogEasyProps) => ReactNode>;
 // @ts-expect-error Generated-part slot keys are closed.
 type UnknownSlot = NonNullable<DialogEasyProps['slotProps']>['unknown'];
-// @ts-expect-error The adopted panel only replaces its root.
-type UnknownReplacement = NonNullable<DialogEasyProps['slots']>['header'];
+// @ts-expect-error Replacement keys are closed.
+type UnknownReplacement = NonNullable<DialogEasyProps['slots']>['unknown'];
 
 function UnusedDialogRoot() { return null; }
 
