@@ -967,6 +967,10 @@ export const QuickInterruptedUpdates: Story = {
     const counter = canvas.getByRole('listitem').querySelector('[data-ui="activity-rings-count"]')!;
     const samples: { amount: number; sweep: number; target: number }[] = [];
     const view = canvasElement.ownerDocument.defaultView!;
+    // Same reason as Returning Below Goal: the click is not instant, so also watch every written value.
+    const written: number[] = [];
+    const observer = new view.MutationObserver(() => written.push(parseFloat(counter.textContent!)));
+    observer.observe(counter, { childList: true, characterData: true, subtree: true });
     const sampling = new Promise<void>((resolve) => {
       const start = view.performance.now();
       const sample = () => {
@@ -982,8 +986,10 @@ export const QuickInterruptedUpdates: Story = {
     });
     await userEvent.click(canvas.getByRole('button', { name: 'Interrupt' }));
     await sampling;
+    observer.disconnect();
     await expect(
-      samples.some((sample) => sample.target > 0.8 && sample.amount > 0 && sample.amount < 5),
+      samples.some((sample) => sample.target > 0.8 && sample.amount > 0 && sample.amount < 5)
+      || written.some((amount) => amount > 0 && amount < 5),
     ).toBe(true);
     await expect(
       samples.some(
@@ -1023,9 +1029,14 @@ export const ReturningBelowGoal: Story = {
     const fill = ringParts(canvasElement)[0]!;
     const counter = canvas.getByRole('listitem').querySelector('[data-ui="activity-rings-count"]')!;
     await waitFor(() => expect(counter).toHaveTextContent('9 km of 6 km'));
+    const view = canvasElement.ownerDocument.defaultView!;
+    // `userEvent.click` is not instant, so the sweep can already be under way before the frame sampling
+    // below starts. Watching the counter's writes catches every value the sweep painted, whenever it ran.
+    const written: number[] = [];
+    const observer = new view.MutationObserver(() => written.push(parseFloat(counter.textContent!)));
+    observer.observe(counter, { childList: true, characterData: true, subtree: true });
     await userEvent.click(canvas.getByRole('button', { name: 'Walk 3 km' }));
     const samples: { amount: number; fill: number }[] = [];
-    const view = canvasElement.ownerDocument.defaultView!;
     await new Promise<void>((resolve) => {
       const start = view.performance.now();
       const sample = () => {
@@ -1038,7 +1049,9 @@ export const ReturningBelowGoal: Story = {
       };
       view.requestAnimationFrame(sample);
     });
-    await expect(samples.some((sample) => sample.amount > 3 && sample.amount < 9)).toBe(true);
+    observer.disconnect();
+    await expect(samples.some((sample) => sample.amount > 3 && sample.amount < 9)
+      || written.some((amount) => amount > 3 && amount < 9)).toBe(true);
     for (const sample of samples) {
       await expect(Math.abs(sample.fill - Math.min(sample.amount / 6, 1))).toBeLessThan(0.04);
     }
