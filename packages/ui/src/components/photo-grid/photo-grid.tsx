@@ -480,7 +480,7 @@ function PhotoImage({
       src={photo.src}
       srcSet={photo.srcSet}
       sizes={photo.sizes}
-      alt=""
+      alt={full ? photo.alt : ''}
       width={photo.width}
       height={photo.height}
       loading={full ? 'eager' : 'lazy'}
@@ -768,8 +768,10 @@ function PhotoViewer({
                   !event.defaultPrevented &&
                   drag &&
                   Math.abs(event.clientX - drag.originX) > DISMISS_DISTANCE
-                )
-                  navigate(index + (event.clientX < drag.originX ? 1 : -1));
+                ) {
+                  const rtl = event.currentTarget.matches(':dir(rtl)') ? -1 : 1;
+                  navigate(index + (event.clientX < drag.originX ? 1 : -1) * rtl);
+                }
                 x.set(0);
                 y.set(0);
               }
