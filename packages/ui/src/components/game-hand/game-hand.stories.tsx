@@ -22,7 +22,20 @@ const meta = {
   args: { cards: CARDS.slice(0, 3), playLabel: 'Play card', onValueChange: fn(), onPlayIntent: fn() },
   parameters: { docs: {
     description: { component: 'Choose a card from your hand and confirm to play it. Show opponents’ hands as card backs with GameHand.Hidden.' },
-    usage: `### Selection and keyboard
+    source: {
+      language: 'tsx',
+      code: `import { GameHand } from '@jfrader/ui/game-hand';
+
+<GameHand
+  cards={cards}
+  playLabel="Play card"
+  onPlayIntent={handlePlay}
+/>`,
+    },
+    usage: `### Setup
+- Import from \`@jfrader/ui/game-hand\`. GameHand is an opt-in subpath and is not re-exported by the package root.
+
+### Selection and keyboard
 Each card is a native toggle button (APG Button pattern, aria-pressed). Tab and Shift+Tab follow card order, then the enabled confirmation action; Enter or Space selects or clears a card. Only confirmation calls onPlayIntent; there is no drag gesture.
 
 ### Values
