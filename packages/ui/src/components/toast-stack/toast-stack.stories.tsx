@@ -22,12 +22,14 @@ const meta = {
   tags: ['autodocs'],
   parameters: {
     docs: {
-      source: { code: '<Toast max={12}><PublishButton /><ToastStack maxVisible={3} /></Toast>' },
+      source: { code: '<Toast viewport="stack" viewportProps={{ maxVisible: 3 }}><PublishButton /></Toast>' },
       description: {
         component:
           'Show toast messages in a stack and dismiss them.',
       },
-      usage: `- Mount one queue renderer per Toast provider.
+      usage: `- Set \`Toast viewport="stack"\` to mount ToastStack automatically; \`viewportProps\` and \`slotProps.viewport\` configure it.
+- Use the renderer\'s \`component\` / \`slots.root\` to replace its div. \`slotProps\` exposes root, list, toggle and item styling. Declare replacement components outside render and forward all props and ref.
+- Without automatic rendering, mount one queue renderer per Toast provider.
 - Toasts land in the corner of the page. Set \`contained\` with a positioned host to keep the stack inside a panel.
 - Keep timed messages available elsewhere after they disappear.
 - Tab visits the toggle and controls from newest to oldest. Escape dismisses the focused toast.
@@ -164,7 +166,9 @@ async function settled(element: HTMLElement) {
 }
 
 export const Default: Story = {
-  render: (args) => <Harness {...args} />,
+  render: (args) => <Surface><Toast max={12} viewport="stack" viewportProps={{ contained: true, ...args }}>
+    <Controls initial={messages.slice(0, 3)} />
+  </Toast></Surface>,
   play: async ({ canvasElement }) => {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
@@ -183,6 +187,36 @@ export const Default: Story = {
     await expect(cards[1]?.querySelector('[role="status"]')).toBeEmptyDOMElement();
     await expect(within(region).getAllByRole('status')).toHaveLength(1);
     await expect(within(region).getByRole('status').querySelector('button')).toBeNull();
+  },
+};
+
+export const Compound: Story = { render: (args) => <Harness {...args} /> };
+
+export const GeneratedPartCustomization: Story = {
+  args: { slotProps: { root: { onKeyDown: fn() } } },
+  render: (args) => <Surface><Toast viewport="stack" viewportProps={{
+    contained: true,
+    variant: 'list',
+    slotProps: {
+      root: { ...args.slotProps?.root, className: 'custom-stack', title: 'Notifications panel', sx: { gap: vars.space[3] } },
+      list: { className: 'custom-stack-list' },
+      item: { className: 'custom-stack-card', css: { borderRadius: vars.radius.sm } },
+    },
+  }}><Controls initial={messages.slice(0, 2)} /><Toast.Viewport /><ToastStack /></Toast></Surface>,
+  play: async ({ canvasElement, args, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    await expect(region).toHaveClass('custom-stack');
+    await expect(region).toHaveAttribute('title', 'Notifications panel');
+    await expect(region.querySelector('[data-ui="toast-stack-list"]')).toHaveClass('custom-stack-list');
+    await expect(region.querySelectorAll('.custom-stack-card')).toHaveLength(2);
+    await expect(canvasElement.ownerDocument.querySelectorAll('[data-ui="toast-stack"]')).toHaveLength(1);
+    await expect(canvasElement.ownerDocument.querySelector('[data-ui="toast-viewport"]')).toBeNull();
+    const dismiss = within(region).getAllByRole('button', { name: 'Dismiss' })[0]!;
+    dismiss.focus();
+    await userEvent.keyboard('{Escape}');
+    await expect(args.slotProps?.root?.onKeyDown).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(1));
   },
 };
 const viewportTriggers: { label: string; options: ToastOptions }[] = [

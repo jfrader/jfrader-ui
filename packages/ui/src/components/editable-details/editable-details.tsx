@@ -11,6 +11,7 @@ import {
   useMemo,
   useRef,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
   type Ref,
   type RefCallback,
@@ -25,6 +26,8 @@ import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 
+declare const process: { env: { NODE_ENV?: string } };
+
 export interface EditableDetailsMessages {
   edit: string;
 }
@@ -32,9 +35,89 @@ export interface EditableDetailsPartProps {
   className?: string;
   css?: Interpolation<Theme>;
 }
-export interface EditableDetailsProps extends ComponentPropsWithRef<'div'>, SxProps {
-  messages?: Partial<EditableDetailsMessages>;
+
+export interface EditableDetailsItemRecord {
+  /** Stable identifier for this item, used as React key. */
+  value: string;
+  /** Label describing this detail. */
+  label: ReactNode;
+  /** Content rendered for this detail in summary/read view. */
+  content: ReactNode;
+  /** Custom editor renderer. When provided, renders the Edit button and manages editor session. */
+  renderEditor?: (props: EditableDetailsEditorProps) => ReactNode;
+  /** Controls editor open state. */
+  open?: boolean;
+  /** Initial editor open state. */
+  defaultOpen?: boolean;
+  /** Callback fired when editor open state changes. */
+  onOpenChange?: (open: boolean) => void;
+  /** Optional item-specific slotProps overrides. */
+  slotProps?: EditableDetailsItemProps['slotProps'];
 }
+
+export interface EditableDetailsSectionRecord {
+  /** Stable identifier for this section, used as React key. */
+  value: string;
+  /** Section heading title. */
+  title: ReactNode;
+  /** Items contained within this section. */
+  items: readonly EditableDetailsItemRecord[];
+  /** Heading level for this section (1-6). Defaults to 3. */
+  headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
+  /** Controls section disclosure open state. */
+  open?: boolean;
+  /** Initial section disclosure open state. */
+  defaultOpen?: boolean;
+  /** Callback fired when section open state changes. */
+  onOpenChange?: (open: boolean) => void;
+  /** Ref to the disclosure trigger button. */
+  triggerRef?: Ref<HTMLButtonElement>;
+  /** Optional section-specific slotProps overrides. */
+  slotProps?: EditableDetailsSectionProps['slotProps'];
+}
+
+export interface EditableDetailsSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  section?: ComponentType<EditableDetailsSectionProps>;
+  list?: ComponentType<EditableDetailsListProps>;
+  item?: ComponentType<EditableDetailsItemProps>;
+}
+
+export interface EditableDetailsSlotProps {
+  root?: ComponentPropsWithRef<'div'> &
+    SxProps & {
+      css?: Interpolation<Theme>;
+      [attribute: `data-${string}`]: unknown;
+    };
+  section?: Partial<Omit<EditableDetailsSectionProps, 'children' | 'title'>>;
+  list?: Partial<EditableDetailsListProps>;
+  item?: Partial<Omit<EditableDetailsItemProps, 'children' | 'label'>>;
+}
+
+export interface EditableDetailsBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  css?: Interpolation<Theme>;
+  messages?: Partial<EditableDetailsMessages>;
+  /** Replace the root. Exactly sugar for `slots.root`; declare the component outside render. */
+  component?: ComponentType<ComponentPropsWithRef<'div'>>;
+  [attribute: `data-${string}`]: unknown;
+}
+
+export interface EditableDetailsCompoundProps extends EditableDetailsBaseProps {
+  children?: ReactNode;
+  sections?: never;
+  slots?: EditableDetailsSlots;
+  slotProps?: EditableDetailsSlotProps;
+}
+
+export interface EditableDetailsEasyProps extends EditableDetailsBaseProps {
+  /** Structured section records to render. */
+  sections: readonly EditableDetailsSectionRecord[];
+  children?: never;
+  slots?: EditableDetailsSlots;
+  slotProps?: EditableDetailsSlotProps;
+}
+
+export type EditableDetailsProps = EditableDetailsCompoundProps | EditableDetailsEasyProps;
 export interface EditableDetailsSectionProps extends Omit<ComponentPropsWithRef<'section'>, 'title'>, SxProps {
   title: ReactNode;
   headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
@@ -166,13 +249,135 @@ function ownedFocus(element: HTMLElement, last: Element | null) {
   return element.contains(active) || (active === element.ownerDocument.body && last !== null && element.contains(last));
 }
 
-function EditableDetailsRoot({ messages, className, sx, ...rest }: EditableDetailsProps) {
+const tokens = (...values: Array<unknown>): string | undefined => {
+  const list = [...new Set(values.flatMap((v) => (typeof v === 'string' ? v.split(/\s+/) : [])))].filter(Boolean);
+  return list.join(' ') || undefined;
+};
+
+function EditableDetailsRoot(props: EditableDetailsProps) {
+  const {
+    ref,
+    component,
+    slots,
+    slotProps,
+    messages,
+    className,
+    style,
+    sx,
+    css: consumerCss,
+    'data-ui': consumerDataUi,
+    sections,
+    children,
+    ...restProps
+  } = props;
+
+  if (process.env.NODE_ENV !== 'production') {
+    if (component && slots?.root && component !== slots.root) {
+      console.warn('EditableDetails: component is redundant when slots.root is supplied; slots.root wins.');
+    }
+  }
+
+  const RootPart = slots?.root ?? component ?? 'div';
+  const rootSlot = slotProps?.root;
+  const {
+    css: slotCss,
+    className: slotClassName,
+    style: slotStyle,
+    ref: slotRef,
+    sx: slotSx,
+    'data-ui': slotDataUi,
+    ...slotRest
+  } = rootSlot ?? {};
+
+  const merged = { ref, ...restProps, ...slotRest };
+  const effectiveRef = slotRef ?? ref;
+  const mergedStyle = style || slotStyle ? { ...style, ...slotStyle } : undefined;
+  const mergedClassName = [slotClassName, className].filter(Boolean).join(' ') || undefined;
+
   const inherited = useContext(MessagesContext);
   const text = useMemo(() => ({ ...inherited, ...messages }), [inherited, messages]);
+
+  let renderedContent: ReactNode;
+  if (sections !== undefined) {
+    const SectionPart = slots?.section ?? EditableDetailsSection;
+    const ListPart = slots?.list ?? EditableDetailsList;
+    const ItemPart = slots?.item ?? EditableDetailsItem;
+
+    renderedContent = sections.map((section) => {
+      const {
+        value: sectionValue,
+        title: sectionTitle,
+        items: sectionItems,
+        headingLevel: sectionHeadingLevel,
+        open: sectionOpen,
+        defaultOpen: sectionDefaultOpen,
+        onOpenChange: sectionOnOpenChange,
+        triggerRef: sectionTriggerRef,
+        slotProps: sectionItemSlotProps,
+      } = section;
+
+      return (
+        <SectionPart
+          key={sectionValue}
+          {...slotProps?.section}
+          triggerRef={sectionTriggerRef ?? slotProps?.section?.triggerRef}
+          title={sectionTitle}
+          headingLevel={sectionHeadingLevel ?? slotProps?.section?.headingLevel}
+          open={sectionOpen !== undefined ? sectionOpen : slotProps?.section?.open}
+          defaultOpen={sectionDefaultOpen !== undefined ? sectionDefaultOpen : slotProps?.section?.defaultOpen}
+          onOpenChange={sectionOnOpenChange ?? slotProps?.section?.onOpenChange}
+          slotProps={sectionItemSlotProps ?? slotProps?.section?.slotProps}
+        >
+          <ListPart {...slotProps?.list}>
+            {sectionItems.map((item) => {
+              const {
+                value: itemValue,
+                label: itemLabel,
+                content: itemContent,
+                renderEditor: itemRenderEditor,
+                open: itemOpen,
+                defaultOpen: itemDefaultOpen,
+                onOpenChange: itemOnOpenChange,
+                slotProps: itemCustomSlotProps,
+              } = item;
+
+              return (
+                <ItemPart
+                  key={itemValue}
+                  {...slotProps?.item}
+                  label={itemLabel}
+                  renderEditor={itemRenderEditor ?? slotProps?.item?.renderEditor}
+                  open={itemOpen !== undefined ? itemOpen : slotProps?.item?.open}
+                  defaultOpen={itemDefaultOpen !== undefined ? itemDefaultOpen : slotProps?.item?.defaultOpen}
+                  onOpenChange={itemOnOpenChange ?? slotProps?.item?.onOpenChange}
+                  slotProps={itemCustomSlotProps ?? slotProps?.item?.slotProps}
+                >
+                  {itemContent}
+                </ItemPart>
+              );
+            })}
+          </ListPart>
+        </SectionPart>
+      );
+    });
+  } else {
+    renderedContent = children;
+  }
+
   return (
     <MessagesContext.Provider value={text}>
-      <WithSx className={className} styles={rootStyle} sx={sx}>
-        {(className) => <div {...rest} className={className} data-ui="editable-details" />}
+      <WithSx className={mergedClassName} styles={[rootStyle, slotCss, slotSx, consumerCss]} sx={sx}>
+        {(classes) => (
+          <RootPart
+            {...merged}
+            ref={effectiveRef}
+            style={mergedStyle}
+            className={classes}
+            data-ui={tokens('editable-details', consumerDataUi, slotDataUi)}
+          >
+            {renderedContent}
+          </RootPart>
+        )}
       </WithSx>
     </MessagesContext.Provider>
   );

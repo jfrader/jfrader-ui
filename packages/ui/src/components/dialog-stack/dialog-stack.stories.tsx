@@ -14,7 +14,14 @@ import { Surface, type SurfacePartProps } from '../surface';
 import { Card } from '../card';
 import { css } from '../../styling/css';
 import { WithSx } from '../../styling/sx';
-import { DialogStack, useDialogStack, type DialogStackContentProps, type DialogStackProps } from './index';
+import {
+  DialogStack,
+  useDialogStack,
+  type DialogStackCompoundProps,
+  type DialogStackContentProps,
+  type DialogStackEasyProps,
+  type DialogStackPageRecord,
+} from './index';
 
 const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
@@ -44,14 +51,19 @@ const meta = {
   title: 'Surfaces/DialogStack',
   component: DialogStack,
   tags: ['autodocs'],
-  args: { onValueChange: fn(), children: null },
+  args: { onValueChange: fn() },
   parameters: {
     docs: {
       description: {
         component:
           'Open settings or pickers in stacked panels, then go back one panel at a time.',
       },
-      usage: `### Values
+      usage: `### Composition
+Pass \`triggerLabel\` and \`pages\` (with optional \`initialPage\`) for a stacked multi-page dialog flow. Each page record provides \`value\`, \`title\`, \`content\`, and optional \`description\`, \`footer\`, \`back\`, and \`close\`. Navigation is handled automatically by the existing parts and controller: \`triggerLabel\` opens the initial page, triggers inside page content push child panels, Back pops to the parent, Close clears the stack, and Escape dismisses the topmost panel.
+
+Do not combine \`pages\` with \`children\`. Use \`slotProps.trigger\`, \`slotProps.content\`, \`slotProps.title\`, \`slotProps.back\`, \`slotProps.close\`, and \`slotProps.footer\` for part props, or \`slots\` to replace generated parts. For custom anatomy, use the compound parts (\`DialogStack.Trigger\`, \`DialogStack.Content\`, \`DialogStack.Title\`, etc.).
+
+### Values
 - Each \`Trigger\` pushes its matching \`Content\` onto the stack. Pushing an open key returns to that panel and removes the panels above it.
 - \`value\` lists open keys from bottom to top. Control it with \`onValueChange\`, or use \`defaultValue\` (empty by default). Rejected requests keep the committed stack.
 - Unknown and duplicate keys are ignored with a development warning. Requests that leave the ordered stack unchanged do not call \`onValueChange\`.
@@ -84,24 +96,25 @@ component is sugar for slots.root; only root is adopted, and slots.root wins. sl
 Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry/motion → slot css/classes → consumer css/classes → sx. Generated handle/body, IDs, active/parent state, inertness, native dismissal and depth variables stay authoritative. Select composed panels with [data-ui~="dialog-stack"].`,
       source: {
         language: 'tsx',
-        code: `import { DialogStack, TextField } from '@jfrader/ui';
+        code: `const pages = [
+  {
+    value: 'settings',
+    title: 'Settings',
+    description: 'Manage your workspace preferences.',
+    content: <DialogStack.Trigger value="account">Account</DialogStack.Trigger>,
+    close: 'Close settings',
+  },
+  {
+    value: 'account',
+    title: 'Account',
+    description: 'Sign-in details for this workspace.',
+    content: <TextField label="Display name" defaultValue="Alex" />,
+    back: 'Back to Settings',
+    footer: <DialogStack.Close label="Done">Done</DialogStack.Close>,
+  },
+];
 
-<DialogStack>
-  <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
-  <DialogStack.Content value="settings">
-    <DialogStack.Close label="Close settings" />
-    <DialogStack.Title>Settings</DialogStack.Title>
-    <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
-  </DialogStack.Content>
-  <DialogStack.Content value="account">
-    <DialogStack.Back label="Back to Settings" />
-    <DialogStack.Title>Account</DialogStack.Title>
-    <TextField label="Display name" defaultValue="Alex" />
-    <DialogStack.Footer>
-      <DialogStack.Close label="Done">Done</DialogStack.Close>
-    </DialogStack.Footer>
-  </DialogStack.Content>
-</DialogStack>`,
+<DialogStack triggerLabel="Open settings" pages={pages} />`,
       },
     },
   },
@@ -109,12 +122,12 @@ Root slot props win ordinary conflicts; className combines and style shallow-mer
 
 export default meta;
 
-type Story = Omit<StoryObj<DialogStackProps>, 'render' | 'play'> & {
-  render?: (args: DialogStackProps) => ReactNode;
-  play?: (context: StoryContext<DialogStackProps>) => Promise<void>;
+type Story = Omit<StoryObj<DialogStackCompoundProps>, 'render' | 'play'> & {
+  render?: (args: DialogStackCompoundProps) => ReactNode;
+  play?: (context: StoryContext<DialogStackCompoundProps>) => Promise<void>;
 };
 
-function DeclarationScopeFixture({ contained = false, ...props }: DialogStackProps) {
+function DeclarationScopeFixture({ contained = false, ...props }: DialogStackCompoundProps) {
   return <div style={containerStyle}>
     <DialogStack {...props} contained={contained} defaultValue={['scope']} variant="dialog">
       <ThemeRoot theme="light" tokens={{ radius: { lg: '3rem' } }}>
@@ -189,7 +202,7 @@ export const CardAdapter = rootAdapterStory(Card);
 export const IndependentMaterialAdapter = rootAdapterStory(StackPaper);
 export const SurfaceAdapterLight: Story = { ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
 
-interface LevelsProps extends Omit<DialogStackProps, 'children'> {
+interface LevelsProps extends Omit<DialogStackCompoundProps, 'children'> {
   contentProps?: Partial<Record<string, Partial<DialogStackContentProps>>>;
   body?: ReactNode;
   footer?: boolean;
@@ -323,7 +336,178 @@ function findConditionalRule(element: HTMLElement, condition: string, suffix = '
   return undefined;
 }
 
-export const Default: Story = {
+const EASY_PAGES: readonly DialogStackPageRecord[] = [
+  {
+    value: 'settings',
+    title: 'Settings',
+    description: 'Manage your workspace preferences.',
+    close: 'Close settings',
+    content: (
+      <div style={{ display: 'grid', gap: vars.space[3] }}>
+        <TextField label="Workspace name" defaultValue="Apollo" />
+        <DialogStack.Trigger value="account">Account settings</DialogStack.Trigger>
+      </div>
+    ),
+  },
+  {
+    value: 'account',
+    title: 'Account',
+    description: 'Sign-in details for this workspace.',
+    back: 'Back to Settings',
+    close: 'Close all',
+    content: <TextField label="Display name" defaultValue="Maya" />,
+    footer: <DialogStack.Close label="Done">Done</DialogStack.Close>,
+  },
+];
+
+export const Default: StoryObj<DialogStackEasyProps> = {
+  name: 'Easy mode',
+  args: {
+    triggerLabel: 'Open settings',
+    pages: EASY_PAGES,
+    onValueChange: fn(),
+  },
+  render: (args) => <DialogStack {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('button', { name: 'Open settings' });
+    await expect(canvas.queryByRole('dialog')).toBeNull();
+
+    await userEvent.click(trigger);
+    const shell = await canvas.findByRole('dialog');
+    await expect(shell).toBe(layer(canvasElement));
+    await expect(shell).toHaveAccessibleName('Settings');
+    await expect(shell).toHaveAccessibleDescription('Manage your workspace preferences.');
+    await waitFor(() => expect(within(shell).getByRole('heading', { name: 'Settings' })).toHaveFocus());
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['settings']);
+
+    // Navigation: click trigger to push account page
+    const accountTrigger = within(shell).getByRole('button', { name: 'Account settings' });
+    await userEvent.click(accountTrigger);
+    await waitFor(() => expect(within(shell).getByRole('heading', { name: 'Account' })).toHaveFocus());
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['settings', 'account']);
+
+    // Back button: click Back to pop to settings
+    const backButton = within(shell).getByRole('button', { name: 'Back to Settings' });
+    await userEvent.click(backButton);
+    await waitFor(() => expect(within(shell).getByRole('heading', { name: 'Settings' })).toBeVisible());
+    await expect(within(shell).getByRole('button', { name: 'Account settings' })).toHaveFocus();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['settings']);
+
+    // Push again and test keyboard dismiss (Escape)
+    await userEvent.click(within(shell).getByRole('button', { name: 'Account settings' }));
+    await waitFor(() => expect(within(shell).getByRole('heading', { name: 'Account' })).toHaveFocus());
+    requestEscape(shell);
+    await waitFor(() => expect(within(shell).getByRole('heading', { name: 'Settings' })).toBeVisible());
+    await expect(args.onValueChange).toHaveBeenCalledTimes(5);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['settings']);
+
+    // Close entire stack via Close button
+    const closeButton = within(shell).getByRole('button', { name: 'Close settings' });
+    await userEvent.click(closeButton);
+    await expectStackClosed(canvasElement, trigger);
+    await expect(trigger).toHaveFocus();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(6);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith([]);
+  },
+};
+
+function ControlledEasyStackFixture() {
+  const [value, setValue] = useState<string[]>([]);
+  return (
+    <div>
+      <DialogStack
+        triggerLabel="Open controlled"
+        value={value}
+        onValueChange={setValue}
+        pages={EASY_PAGES}
+      />
+    </div>
+  );
+}
+
+export const EasyModeControlled: StoryObj = {
+  name: 'Easy mode controlled',
+  render: () => <ControlledEasyStackFixture />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('button', { name: 'Open controlled' });
+    await userEvent.click(trigger);
+    const shell = await canvas.findByRole('dialog');
+    await waitFor(() => expect(within(shell).getByRole('heading', { name: 'Settings' })).toBeVisible());
+
+    const accountBtn = within(shell).getByRole('button', { name: 'Account settings' });
+    await userEvent.click(accountBtn);
+    await waitFor(() => expect(within(shell).getByRole('heading', { name: 'Account' })).toBeVisible());
+
+    const backBtn = within(shell).getByRole('button', { name: 'Back to Settings' });
+    await userEvent.click(backBtn);
+    await waitFor(() => expect(within(shell).getByRole('heading', { name: 'Settings' })).toBeVisible());
+
+    const closeBtn = within(shell).getByRole('button', { name: 'Close settings' });
+    await userEvent.click(closeBtn);
+    await expectStackClosed(canvasElement, trigger);
+  },
+};
+
+export const EasyModeSlotPropsOverrides: StoryObj<DialogStackEasyProps> = {
+  name: 'Easy mode slotProps overrides',
+  args: {
+    triggerLabel: 'Open settings',
+    pages: EASY_PAGES,
+    slotProps: {
+      trigger: { className: 'easy-trigger-class' },
+      content: { className: 'easy-content-class' },
+      title: { className: 'easy-title-class' },
+      back: { className: 'easy-back-class' },
+      close: { className: 'easy-close-class' },
+      footer: { className: 'easy-footer-class' },
+    },
+  },
+  render: (args) => <DialogStack {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('button', { name: 'Open settings' });
+    await expect(trigger).toHaveClass('easy-trigger-class');
+    await userEvent.click(trigger);
+    const shell = await canvas.findByRole('dialog');
+    const panel = activePanel(canvasElement);
+    await expect(panel).toHaveClass('easy-content-class');
+    await expect(within(shell).getByRole('heading', { name: 'Settings' })).toHaveClass('easy-title-class');
+    await expect(within(shell).getByRole('button', { name: 'Close settings' })).toHaveClass('easy-close-class');
+
+    // Go to account page to verify back and footer
+    await userEvent.click(within(shell).getByRole('button', { name: 'Account settings' }));
+    await waitFor(() => expect(within(shell).getByRole('button', { name: 'Back to Settings' })).toHaveClass('easy-back-class'));
+    const footer = canvasElement.ownerDocument.querySelector('[data-ui="dialog-stack-footer"]');
+    await expect(footer).toHaveClass('easy-footer-class');
+
+    // Clean up modal by closing
+    requestEscape(shell);
+    await waitFor(() => expect(within(shell).getByRole('heading', { name: 'Settings' })).toBeVisible());
+    const closeBtn = within(shell).getByRole('button', { name: 'Close settings' });
+    await userEvent.click(closeBtn);
+    await expectStackClosed(canvasElement, trigger);
+  },
+};
+
+function easyModeTypeContracts() {
+  // @ts-expect-error Presentation mode rejects compound children.
+  <DialogStack triggerLabel="Open" pages={EASY_PAGES}>Compound</DialogStack>;
+  // @ts-expect-error Presentation mode requires pages.
+  <DialogStack triggerLabel="Open" />;
+  // @ts-expect-error Page record requires value, title, and content.
+  <DialogStack triggerLabel="Open" pages={[{ value: 'settings' }]} />;
+  // @ts-expect-error Named presentation props cannot leak into compound mode.
+  <DialogStack pages={EASY_PAGES}><DialogStack.Content value="s" /></DialogStack>;
+}
+void easyModeTypeContracts;
+
+export const Compound: Story = {
+  name: 'Compound anatomy',
   render: (args) => <Levels {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -974,7 +1158,7 @@ function HookControls() {
 }
 HookControls.displayName = 'HookControls';
 
-function HookFixture(props: Omit<DialogStackProps, 'children'>) {
+function HookFixture(props: Omit<DialogStackCompoundProps, 'children'>) {
   return (
     <DialogStack {...props}>
       {['settings', 'account', 'password'].map((key) => (
@@ -1070,7 +1254,7 @@ export const NormalizedDefault: Story = {
   },
 };
 
-function RemovableFixture(props: Omit<DialogStackProps, 'children'>) {
+function RemovableFixture(props: Omit<DialogStackCompoundProps, 'children'>) {
   const [mounted, setMounted] = useState(true);
   return (
     <DialogStack {...props}>
@@ -1489,7 +1673,7 @@ export const ForcedColors: Story = {
   },
 };
 
-function UnmountFixture(props: Omit<DialogStackProps, 'children'>) {
+function UnmountFixture(props: Omit<DialogStackCompoundProps, 'children'>) {
   const [mounted, setMounted] = useState(true);
   return (
     <>
@@ -1625,7 +1809,7 @@ export const PartStyling: Story = {
   },
 };
 
-function DisconnectedInvokerFixture(props: Omit<DialogStackProps, 'children'>) {
+function DisconnectedInvokerFixture(props: Omit<DialogStackCompoundProps, 'children'>) {
   const [linked, setLinked] = useState(true);
   return (
     <DialogStack {...props}>

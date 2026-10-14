@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ComponentPropsWithRef } from 'react';
 import { StrictMode, useEffect, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
@@ -29,6 +29,13 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show messages when actions succeed, fail or need attention.' },
+      source: { code: '<Toast viewport="default" messages={{ dismiss: "Close notification" }}><App /></Toast>' },
+      usage: `- Set \`viewport="default"\` to mount the queue renderer, or \`viewport="stack"\` for ToastStack.
+- Call \`useToast()\` inside the provider to publish, update and dismiss messages.
+- Use \`slotProps.viewport\` for renderer props, and its \`slotProps.root\` / \`slotProps.item\` for generated roots and cards. \`viewportProps\` accepts the same renderer props.
+- The provider renders no DOM. Replace the renderer with \`slots.viewport\`, or its div with \`viewportProps.component\` / \`viewportProps.slots.root\`.
+- With automatic rendering, explicit Viewport/ToastStack descendants are suppressed. Without \`viewport\`, keep one explicit renderer.
+- Appearing messages never move focus. Tab reaches actions and dismiss buttons; Enter or Space activates them. Timed messages pause on hover and focus.`,
     },
   },
 } satisfies Meta<typeof Toast>;
@@ -36,6 +43,14 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+type CheckedToast<Props extends ToastProviderProps> = Props;
+export type ToastTypeRegression = {
+  // @ts-expect-error Renderer props require an explicit renderer selection.
+  propsWithoutViewport: CheckedToast<{ viewportProps: { className: string } }>;
+  // @ts-expect-error The default viewport does not accept stack options.
+  stackPropsOnDefault: CheckedToast<{ viewport: 'default'; viewportProps: { maxVisible: number } }>;
+};
 
 function Triggers({ options }: { options?: ToastOptions }) {
   const { toast } = useToast();
@@ -131,8 +146,8 @@ async function expectRemoved(toast: HTMLElement) {
 }
 
 export const Default: Story = {
-  args: { dismissLabel: 'Close notification' },
-  render: (args) => <ToastHarness {...args} />,
+  args: { viewport: 'default', messages: { dismiss: 'Close notification' } },
+  render: (args) => <Toast {...args}><Triggers /></Toast>,
   play: async ({ canvasElement }) => {
     const toast = await showToast(canvasElement, 'Show toast', TITLE);
     await expect(toast).not.toHaveAttribute('role');
@@ -149,6 +164,85 @@ export const Default: Story = {
 
     await userEvent.click(within(toast).getByRole('button', { name: 'Close notification' }));
     await expectRemoved(toast);
+  },
+};
+
+export const Compound: Story = {
+  render: () => <Toast.Provider><Triggers /><Toast.Viewport /></Toast.Provider>,
+};
+
+function NotificationViewport(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-custom-viewport="true" />;
+}
+
+export const GeneratedPartCustomization: Story = {
+  render: () => <Toast viewport="default" viewportProps={{
+    component: NotificationViewport,
+    className: 'consumer-viewport',
+    title: 'Consumer title',
+    style: { paddingInlineEnd: '8px' },
+    css: { marginBlockEnd: vars.space[3] },
+    sx: { marginBlockEnd: vars.space[4] },
+    slotProps: {
+      root: { className: 'custom-viewport', title: 'Slot title', style: { paddingInlineEnd: '24px' },
+        css: { marginBlockEnd: vars.space[2] } },
+      item: { className: 'custom-notification', css: { borderRadius: vars.radius.sm } },
+    },
+  }}><Triggers options={{ duration: null }} /></Toast>,
+  play: async ({ canvasElement }) => {
+    const toast = await showToast(canvasElement, 'Show toast', TITLE);
+    const viewport = toast.closest('[data-ui="toast-viewport"]');
+    await expect(viewport).toHaveClass('consumer-viewport', 'custom-viewport');
+    await expect(viewport).toHaveAttribute('data-custom-viewport', 'true');
+    await expect(viewport).toHaveAttribute('title', 'Slot title');
+    await expect(viewport).toHaveStyle({ paddingInlineEnd: '24px' });
+    if (!viewport) throw new Error('Missing customized viewport.');
+    await expect(getComputedStyle(viewport).marginBlockEnd).toBe('16px');
+    await expect(toast).toHaveClass('custom-notification');
+    const dismiss = within(toast).getByRole('button', { name: 'Dismiss' });
+    dismiss.focus();
+    await userEvent.keyboard('{Enter}');
+    await expectRemoved(toast);
+  },
+};
+
+export const OneAutomaticRenderer: Story = {
+  render: () => <StrictMode><Toast viewport="default"><Triggers options={{ duration: null }} />
+    <Toast.Viewport />
+  </Toast></StrictMode>,
+  play: async ({ canvasElement }) => {
+    const toast = await showToast(canvasElement, 'Show toast', TITLE);
+    await expect(canvasElement.ownerDocument.querySelectorAll('[data-ui="toast-viewport"]')).toHaveLength(1);
+    await expect(bodyOf(canvasElement).getAllByText(TITLE)).toHaveLength(1);
+    await userEvent.click(within(toast).getByRole('button', { name: 'Dismiss' }));
+    await expectRemoved(toast);
+  },
+};
+
+function RendererSwitcher() {
+  const [stack, setStack] = useState(false);
+  return <>
+    <Button onClick={() => setStack((value) => !value)}>Switch renderer</Button>
+    <Toast viewport={stack ? 'stack' : 'default'}>
+      <Triggers options={{ duration: null }} />
+    </Toast>
+  </>;
+}
+
+export const SharedQueue: Story = {
+  render: () => <RendererSwitcher />,
+  play: async ({ canvasElement }) => {
+    const toast = await showToast(canvasElement, 'Show toast', TITLE);
+    const id = toast.dataset.toastId;
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Switch renderer' }));
+    const text = await bodyOf(canvasElement).findByText(TITLE);
+    const card = text.closest<HTMLElement>('[data-ui="toast"]');
+    if (!card) throw new Error('The shared queue lost its toast after switching renderer.');
+    await expect(card).toHaveAttribute('data-toast-id', id);
+    await expect(card?.closest('[data-ui="toast-stack"]')).not.toBeNull();
+    await expect(canvasElement.ownerDocument.querySelectorAll('[data-ui="toast"]')).toHaveLength(1);
+    await userEvent.click(within(card).getByRole('button', { name: 'Dismiss' }));
+    await waitFor(() => expect(card?.isConnected).toBe(false));
   },
 };
 
