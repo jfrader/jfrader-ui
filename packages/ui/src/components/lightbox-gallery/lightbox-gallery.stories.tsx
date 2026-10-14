@@ -270,7 +270,7 @@ export const PersistentImageError: Story = {
     await expect(await canvas.findByRole('dialog')).toBeVisible();
     await settleMotion(viewer(canvasElement));
     await expect(within(stage(canvasElement)).getByText('Image unavailable')).toBeVisible();
-    const thumbnail = within(viewer(canvasElement)).getByRole('button', { name: 'Coast, 1 / 1' });
+    const thumbnail = within(viewer(canvasElement)).getByRole('button', { name: 'Highland pass, 1 / 1' });
     const fallback = thumbnail.querySelector('[data-image-state="error"]')!;
     const thumbnailBox = thumbnail.getBoundingClientRect();
     const fallbackBox = fallback.getBoundingClientRect();
