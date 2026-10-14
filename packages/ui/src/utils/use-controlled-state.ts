@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLatestCallback } from './use-latest-callback';
 
 /**
@@ -17,7 +17,9 @@ export function useControlledState<T>(
   const [internal, setInternal] = useState<T | undefined>(defaultValue);
   const current = isControlled ? value : internal;
   const currentRef = useRef(current);
-  currentRef.current = current;
+  useEffect(() => {
+    currentRef.current = current;
+  }, [current]);
   const notify = useLatestCallback(onChange);
 
   // Keyed on the mode only: an inline `onChange` must not give every render a new setter,
