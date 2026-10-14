@@ -114,13 +114,13 @@ export const vars = {
       "cardDealStagger": "var(--ui-motion-duration-card-deal-stagger)",
       "cardPlayOwn": "var(--ui-motion-duration-card-play-own)",
       "cardPlay": "var(--ui-motion-duration-card-play)",
-      "trickStack": "var(--ui-motion-duration-trick-stack)"
+      "playedPile": "var(--ui-motion-duration-played-pile)"
     },
     "easeStandard": "var(--ui-motion-ease-standard)",
     "easePresence": "var(--ui-motion-ease-presence)",
     "easeCardFlip": "var(--ui-motion-ease-card-flip)",
-    "easeTrickStack": "var(--ui-motion-ease-trick-stack)",
-    "easeTrickStackShadow": "var(--ui-motion-ease-trick-stack-shadow)"
+    "easePlayedPile": "var(--ui-motion-ease-played-pile)",
+    "easePlayedPileShadow": "var(--ui-motion-ease-played-pile-shadow)"
   },
   "size": {
     "emblemSm": "var(--ui-size-emblem-sm)",

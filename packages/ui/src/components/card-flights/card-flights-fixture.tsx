@@ -7,7 +7,7 @@ import { GameCard } from '../game-card';
 import { GameHand } from '../game-hand';
 import { GameTable } from '../game-table';
 import { ThemeRoot } from '../theme-root';
-import { TrickStacks } from '../trick-stacks';
+import { GameCardStack } from '../game-card-stack';
 import { CardFlight } from './card-flight';
 import { CardFlightsProvider, flightTarget, measureCardBox, useCardFlights, useDealFlights, usePlayedCardFlights,
   type CardFlightSpec, type DealFlightPlayer, type FlightCard, type PlayedFlightCard,
@@ -99,10 +99,10 @@ function FakeMatch({ scopeRef, initialDealt, initialPlayed }: {
     setPlays((current) => [...current, entry]);
   };
   const replace = () => {
-    const destination = scopeRef.current?.querySelector<HTMLElement>(`[data-trick-key="${OWN_PLAY.playedKey}"]`);
+    const destination = scopeRef.current?.querySelector<HTMLElement>(`[data-played-key="${OWN_PLAY.playedKey}"]`);
     const surface = scopeRef.current?.querySelector<HTMLElement>('[data-game-surface="true"]');
     if (!destination || !surface) return;
-    launch([{ ...OWN_PLAY, target: flightTarget.trick(OWN_PLAY.playedKey), destination,
+    launch([{ ...OWN_PLAY, target: flightTarget.played(OWN_PLAY.playedKey), destination,
       from: measureCardBox(surface), to: measureCardBox(destination), face: 'reveal', durationMs: motionDurationMs.cardPlay }]);
   };
   return <div ref={scopeRef}>
@@ -125,14 +125,19 @@ function FakeMatch({ scopeRef, initialDealt, initialPlayed }: {
         seats={[{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }]}
         renderSeat={(slot) => {
           const player = players.find((candidate) => candidate.key === slot.player?.key);
-          return player?.isOwn ? <GameHand playLabel="Play selected" cards={ownHand.filter((card) => player.cards.some((entry) => entry.key === card.id))} />
+          return player?.isOwn ? null
             : <GameHand.Hidden playerKey={player?.key} count={player?.cards.length ?? 0} label="Rival hand" />;
         }}
-        center={<TrickStacks viewport={{ width: 1000, height: 800 }}
-          stacks={players.map((player) => ({ playerKey: player.key, cards: plays.filter((entry) => entry.playerKey === player.key).map((entry) => ({
-            card: entry.key, roundIdx: 0, value: (player.isOwn ? ownHand : rivalHand).find((card) => card.id === entry.key)?.value,
-          })) }))}
-          labels={{ stacks: { own: 'Own stack', rival: 'Rival stack' }, cards: { [OWN_PLAY.playedKey]: 'A of spades', [RIVAL_PLAY.playedKey]: '4 of hearts' } }} />}
+        dock={<GameHand playLabel="Play selected" cards={ownHand.filter((card) => players[0]!.cards.some((entry) => entry.key === card.id))} />}
+        renderPlay={(slot) => {
+          const player = players.find((candidate) => candidate.key === slot.player?.key);
+          if (!player) return null;
+          return <GameCardStack.Pile playerKey={player.key} label={player.isOwn ? 'Own pile' : 'Rival pile'}
+            cards={plays.filter((entry) => entry.playerKey === player.key).map((entry) => ({
+              card: entry.key, roundIdx: 0, value: (player.isOwn ? ownHand : rivalHand).find((card) => card.id === entry.key)?.value,
+            }))}
+            labels={{ [OWN_PLAY.playedKey]: 'A of spades', [RIVAL_PLAY.playedKey]: '4 of hearts' }} />;
+        }}
       />
     </div>
   </div>;

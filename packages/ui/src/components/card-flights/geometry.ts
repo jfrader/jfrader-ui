@@ -29,16 +29,16 @@ export function measureCardBox(element: HTMLElement): CardBox {
   };
 }
 
-// GameTable supplies the surface; GameHand emits card IDs, Hidden emits playerKey + index; TrickStacks owns data-trick-key.
+// GameTable supplies the surface; GameHand emits card IDs, Hidden emits playerKey + index; GameCardStack owns data-played-key.
 export const CARD_FLIGHT_ATTRIBUTES = {
   surface: 'data-game-surface', handCard: 'data-hand-card', hiddenCard: 'data-seat-hidden-card',
-  hiddenCardIndex: 'data-seat-hidden-card-index', trickCard: 'data-trick-key',
+  hiddenCardIndex: 'data-seat-hidden-card-index', playedCard: 'data-played-key',
 } as const;
 
 export const flightTarget = {
   hand: (cardKey: string) => `hand:${cardKey}`,
   seatCard: (playerKey: string, cardIdx: number) => `seat:${playerKey}:${cardIdx}`,
-  trick: (playedKey: string) => `trick:${playedKey}`,
+  played: (playedKey: string) => `played:${playedKey}`,
 };
 
 export function findMarker(root: HTMLElement, attribute: string, value: string) {

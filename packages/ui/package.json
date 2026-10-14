@@ -67,6 +67,7 @@
     "./flex": { "types": "./src/components/flex/index.ts", "import": "./src/components/flex/index.ts" },
     "./flip-game-card": { "types": "./src/components/flip-game-card/index.ts", "import": "./src/components/flip-game-card/index.ts" },
     "./game-card": { "types": "./src/components/game-card/index.ts", "import": "./src/components/game-card/index.ts" },
+    "./game-card-stack": { "types": "./src/components/game-card-stack/index.ts", "import": "./src/components/game-card-stack/index.ts" },
     "./game-hand": { "types": "./src/components/game-hand/index.ts", "import": "./src/components/game-hand/index.ts" },
     "./game-table": { "types": "./src/components/game-table/index.ts", "import": "./src/components/game-table/index.ts" },
     "./hold-to-confirm": { "types": "./src/components/hold-to-confirm/index.ts", "import": "./src/components/hold-to-confirm/index.ts" },
@@ -127,7 +128,6 @@
     "./toggle-subscription": { "types": "./src/components/toggle-subscription/index.ts", "import": "./src/components/toggle-subscription/index.ts" },
     "./tooltip": { "types": "./src/components/tooltip/index.ts", "import": "./src/components/tooltip/index.ts" },
     "./tree-view": { "types": "./src/components/tree-view/index.ts", "import": "./src/components/tree-view/index.ts" },
-    "./trick-stacks": { "types": "./src/components/trick-stacks/index.ts", "import": "./src/components/trick-stacks/index.ts" },
     "./typewriter-terminal": { "types": "./src/components/typewriter-terminal/index.ts", "import": "./src/components/typewriter-terminal/index.ts" },
     "./usage-meter": { "types": "./src/components/usage-meter/index.ts", "import": "./src/components/usage-meter/index.ts" },
     "./user-menu": { "types": "./src/components/user-menu/index.ts", "import": "./src/components/user-menu/index.ts" }
