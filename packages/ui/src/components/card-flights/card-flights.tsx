@@ -5,20 +5,19 @@ import { MotionConfig, useReducedMotion } from 'motion/react';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { CardFlight } from './card-flight';
 import { FLIGHT_GEOMETRY, measureCardBox, type CardBox } from './geometry';
+import type { FlightCard } from './use-card-flights';
 
-export interface CardFlightSpec {
+export type CardFlightSpec = {
   target: string;
   /** Mounted destination. Its visibility is restored on landing, reset or replacement. */
   destination: HTMLElement;
   from: CardBox;
   to: CardBox;
   face: 'up' | 'down' | 'reveal';
-  front?: ReactNode;
-  back: ReactNode;
   /** Duration in milliseconds. Prefer the deal/play hooks' token timings. */
   durationMs: number;
   delayMs?: number;
-}
+} & ({ card: FlightCard; front?: ReactNode; back?: ReactNode } | { card?: never; front?: ReactNode; back: ReactNode });
 
 interface FlightRecord {
   id: number;

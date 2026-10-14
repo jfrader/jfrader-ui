@@ -16,20 +16,16 @@ const suits = ['spades', 'hearts', 'clubs'] as const;
 const ranks = ['A', 'Q', 'K'] as const;
 function players(count: number, cards: number): GameCardStackPile[] {
   return Array.from({ length: count }, (_, index) => ({ playerKey: names[index]!,
-    cards: Array.from({ length: cards }, (_, roundIdx) => ({ roundIdx,
-      card: `${suits[roundIdx % suits.length]}-${roundIdx}`,
+    label: `${names[index]}'s played cards`,
+    cards: Array.from({ length: cards }, (_, roundIdx) => ({
+      id: `play-${index}-${roundIdx}`,
+      label: `${ranks[roundIdx % ranks.length]} of ${suits[roundIdx % suits.length]}`,
       value: { deck: 'french', suit: suits[roundIdx % suits.length]!, rank: ranks[roundIdx % ranks.length]! },
     })) }));
 }
-function labels(piles: readonly GameCardStackPile[]): GameCardStackProps['labels'] {
-  return { piles: Object.fromEntries(piles.map(({ playerKey }) => [playerKey, `${playerKey}'s played cards`])),
-    cards: Object.fromEntries(piles.flatMap(({ playerKey, cards }) => cards.map((card) => [
-      getPlayedCardKey(card.roundIdx, { player: { key: playerKey }, card: card.card }), `${card.value?.rank} of ${card.value?.suit}`,
-    ]))) };
-}
 function counts(count: number, cards: number) {
   const piles = players(count, cards);
-  return { piles, labels: labels(piles) };
+  return { piles };
 }
 const preference = { matches: false, media: null as MediaQueryList | null };
 function mockPreference(reduced = false) {
@@ -56,8 +52,8 @@ const meta = {
 - The root defaults to \`placement="grid"\`: give it a definite width and height. Measurement chooses rows and columns and shrinks cards to reserve inspected fans. Include empty piles to reserve positions.
 - \`placement="free"\` and a pile's \`geometry\` use caller-owned normalized vectors. A supplied geometry always opts a pile out of fitting. The caller owns collisions in mixed or free placement.
 - \`cardWidth\` overrides inherited \`--game-card-width\`, falling back to the medium card token. Grid fitting treats it as a preferred width. \`maxCards\` defaults to three; non-finite values use that default and finite values are rounded down and clamped to zero.
-- Supply \`labels.piles\` by player key and \`labels.cards\` by \`getPlayedCardKey\`. The standalone part takes one \`label\` and its card \`labels\` map. Supply \`backPattern\` for hidden Spanish-deck cards, which carry no face value.
-- \`data-played-key\` marks card-flight destinations. \`playOrder\` supplies global closed-card layers. \`revealedKeys\` (or the part's \`revealed\`) keeps cards spread without enlargement.
+- Supply a \`label\` on every pile and card, in your page's language. Each card has a unique play \`id\` and an optional face \`value\`. Supply \`backPattern\` for hidden Spanish-deck cards, which carry no face value.
+- \`data-played-key\` uses the card's \`id\` for flight destinations. Cards stack in array order; a card's optional \`order\` sets its closed-pile layer. Each pile's \`revealed\` keeps its cards spread without enlargement.
 
 ### Inspection and keyboard
 - Native disclosure button with \`aria-expanded\` and \`aria-controls\`. Tab reaches each pile; Enter or Space toggles it. Escape closes and returns focus after acceptance. A root \`onKeyDown\` can prevent dismissal.
@@ -115,7 +111,7 @@ export const RTL: Story = { args: { ...counts(6, 3), dir: 'rtl', defaultValue: '
     await noOverlap(canvasElement);
     await expectMirroredDirection(canvasElement.querySelector<HTMLElement>('[data-ui="game-card-stack"]')!, '[data-played-key]');
   } };
-export const RevealedHands: Story = { args: { ...counts(6, 3), revealedKeys: names },
+export const RevealedHands: Story = { args: { piles: players(6, 3).map((pile) => ({ ...pile, revealed: true })) },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const trigger = canvas.getByRole('button', { name: "North's played cards" });
     await userEvent.click(trigger);
@@ -254,7 +250,7 @@ export const FreePlacement: Story = { args: { placement: 'free', piles: players(
   } };
 export const StandalonePile: Story = {
   render: (args) => <div style={{ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` }}>
-    <GameCardStack.Pile {...args.piles[0]!} label={args.labels.piles.North!} labels={args.labels.cards} onValueChange={args.onValueChange} />
+    <GameCardStack.Pile {...args.piles[0]!} onValueChange={args.onValueChange} />
   </div>,
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: "North's played cards" });
@@ -271,7 +267,7 @@ export const StandalonePile: Story = {
 };
 export const StandaloneControlled: Story = {
   render: (args) => <div style={{ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` }}>
-    <GameCardStack.Pile {...args.piles[0]!} label={args.labels.piles.North!} labels={args.labels.cards}
+    <GameCardStack.Pile {...args.piles[0]!}
       value="North" onValueChange={args.onValueChange} />
   </div>,
   play: async ({ canvas, userEvent, args }) => {
@@ -287,10 +283,9 @@ export const StandaloneControlled: Story = {
   },
 };
 const spanishPiles: readonly GameCardStackPile[] = [
-  { playerKey: 'Ana', cards: [{ card: 'oros-1', roundIdx: 0, value: { deck: 'spanish', suit: 'oros', rank: 1 } }] },
-  { playerKey: 'Luis', cards: [{ card: 'copas-10', roundIdx: 0, value: { deck: 'spanish', suit: 'copas', rank: 10 } }] },
+  { playerKey: 'Ana', label: 'Cartas jugadas de Ana', cards: [{ id: 'ana-play-1', label: 'as de oros', value: { deck: 'spanish', suit: 'oros', rank: 1 } }] },
+  { playerKey: 'Luis', label: 'Cartas jugadas de Luis', cards: [{ id: 'luis-play-1', label: 'sota de copas', value: { deck: 'spanish', suit: 'copas', rank: 10 } }] },
 ];
-const spanishLabels = { '0-Ana-oros-1': 'as de oros', '0-Luis-copas-10': 'sota de copas' };
 export const Truco: Story = {
   render: () => <GameTable players={2} viewport={{ width: 1000, height: 800 }}
     seats={[{ key: 'Ana', teamIdx: 0, isMe: true }, { key: 'Luis', teamIdx: 1 }]}
@@ -298,7 +293,7 @@ export const Truco: Story = {
       {!slot.player?.isMe && <GameCard label="Carta oculta de Luis" backPattern={CARD_BACK_PATTERNS.spanish} />}</>}
     renderPlay={(slot) => {
       const pile = spanishPiles.find((entry) => entry.playerKey === slot.player?.key);
-      return pile && <GameCardStack.Pile {...pile} label={`Cartas jugadas de ${pile.playerKey}`} labels={spanishLabels}
+      return pile && <GameCardStack.Pile {...pile}
         backPattern={CARD_BACK_PATTERNS.spanish} />;
     }} />,
   parameters: { docs: { description: { story: 'Two-player truco with Spanish-deck cards and a pile in front of each seat.' } } },
@@ -308,5 +303,22 @@ export const Truco: Story = {
     await expect(canvas.getByRole('img', { name: 'as de oros' })).toBeVisible();
     await userEvent.click(canvas.getByRole('button', { name: 'Cartas jugadas de Luis' }));
     await userEvent.keyboard('{Escape}');
+  },
+};
+
+export const ExplicitPlayIdentity: Story = {
+  args: { piles: [
+    { playerKey: 'north-east', label: 'North-east pile', cards: [{ id: 'play-north-east-1', label: 'First play' }] },
+    { playerKey: 'north', label: 'North pile', cards: [{ id: 'play-north-2', label: 'Second play' }] },
+  ] },
+  play: async ({ canvasElement, canvas }) => {
+    const first = { player: { key: 'north-east' }, card: 'ace' };
+    const second = { player: { key: 'north' }, card: 'east-ace' };
+    await expect(`0-${first.player.key}-${first.card}`).toBe(`0-${second.player.key}-${second.card}`);
+    await expect(getPlayedCardKey(0, first)).not.toBe(getPlayedCardKey(0, second));
+    const destinations = [...canvasElement.querySelectorAll<HTMLElement>('[data-played-key]')];
+    await expect(destinations.map((node) => node.dataset.playedKey)).toEqual(['play-north-east-1', 'play-north-2']);
+    await expect(canvas.getByRole('img', { name: 'First play' })).toBeVisible();
+    await expect(canvas.getByRole('img', { name: 'Second play' })).toBeVisible();
   },
 };

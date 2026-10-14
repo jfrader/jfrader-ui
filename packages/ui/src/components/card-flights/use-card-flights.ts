@@ -3,13 +3,15 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { CARD_FRAME } from '../game-card/card-frame';
+import type { GameCardProps } from '../game-card';
+import type { PlayedCard } from '../game-card-stack';
 import { useCardFlights, type CardFlightSpec } from './card-flights';
 import { CARD_FLIGHT_ATTRIBUTES as attributes, FLIGHT_GEOMETRY, dealSequence, findMarker, flightTarget, measureCardBox, type CardBox } from './geometry';
 
-export interface FlightCard {
-  key: string;
+export interface FlightCard extends Pick<PlayedCard, 'id' | 'label' | 'value'> {
   front?: ReactNode;
-  back: ReactNode;
+  back?: ReactNode;
+  backPattern?: GameCardProps['backPattern'];
 }
 export interface DealFlightPlayer {
   key: string;
@@ -72,20 +74,19 @@ export function useDealFlights({ handIndex, dealt, forehandIdx, players, resyncK
       const player = players.find((candidate) => candidate.key === playerKey)!;
       const card = player.cards[cardIdx];
       if (!card) return [];
-      // GameHand emits card.id = card.key; Hidden emits playerKey + zero-based card index.
-      const destination = player.isOwn ? findMarker(root, attributes.handCard, card.key)
+      const destination = player.isOwn ? findMarker(root, attributes.handCard, card.id)
         : [...root.querySelectorAll<HTMLElement>(`[${attributes.hiddenCard}]`)].find((node) =>
           node.getAttribute(attributes.hiddenCard) === playerKey && node.getAttribute(attributes.hiddenCardIndex) === String(cardIdx));
-      return destination ? [{ ...card, target: player.isOwn ? flightTarget.hand(card.key) : flightTarget.seatCard(playerKey, cardIdx),
+      return destination ? [{ card, target: player.isOwn ? flightTarget.hand(card.id) : flightTarget.seatCard(playerKey, cardIdx),
         destination, from, to: measureCardBox(destination), face: player.isOwn ? 'reveal' : 'down',
         durationMs: motionDurationMs.cardDeal, delayMs: order * motionDurationMs.cardDealStagger }] : [];
     }));
   }, [handIndex, dealt, forehandIdx, players, resyncKey, reducedMotion, resetEpoch, launch, scopeRef]);
 }
 
-export interface PlayedFlightCard extends FlightCard {
-  /** Exact data-played-key value from GameCardStack.Pile. */
-  playedKey: string;
+export interface PlayedFlightCard extends FlightCard, PlayedCard {
+  /** Source hand-card id when it differs from the play id. Defaults to `id`. */
+  cardId?: string;
   playerKey: string;
   isOwn: boolean;
 }
@@ -105,19 +106,20 @@ export function usePlayedCardFlights({ plays, playerCount, resyncKey }: PlayedCa
   useLayoutEffect(() => {
     const root = scopeRef.current;
     const baseline = previous.current;
-    const keys = new Set(plays.map((play) => play.playedKey));
+    const keys = new Set(plays.map((play) => play.id));
     const fresh = baseline && baseline.resyncKey === resyncKey && baseline.resetEpoch === resetEpoch
-      ? plays.filter((play) => !baseline.keys.has(play.playedKey)) : [];
+      ? plays.filter((play) => !baseline.keys.has(play.id)) : [];
     previous.current = { keys, resyncKey, resetEpoch };
     // A burst larger than one round is a resync, not a sequence of newly accepted plays.
     const newPlays = fresh.length <= playerCount ? fresh : [];
     const specs = newPlays.flatMap((play): CardFlightSpec[] => {
-      const captured = play.isOwn ? takePlayOrigin(play.key) : undefined;
+      const cardId = play.cardId ?? play.id;
+      const captured = play.isOwn ? takePlayOrigin(cardId) : undefined;
       if (!root || reducedMotion) return [];
-      const from = captured ?? sources.current.get(play.isOwn ? flightTarget.hand(play.key) : `seat:${play.playerKey}`);
-      const destination = findMarker(root, attributes.playedCard, play.playedKey);
-      return from && destination ? [{ ...play, from, to: measureCardBox(destination), destination,
-        target: flightTarget.played(play.playedKey), face: play.isOwn ? 'up' : 'reveal',
+      const from = captured ?? sources.current.get(play.isOwn ? flightTarget.hand(cardId) : `seat:${play.playerKey}`);
+      const destination = findMarker(root, attributes.playedCard, play.id);
+      return from && destination ? [{ card: play, from, to: measureCardBox(destination), destination,
+        target: flightTarget.played(play.id), face: play.isOwn ? 'up' : 'reveal',
         durationMs: play.isOwn ? motionDurationMs.cardPlayOwn : motionDurationMs.cardPlay }] : [];
     });
     launch(specs);

@@ -17,7 +17,7 @@ import {
 } from './hand-layout';
 
 export interface GameHandCard {
-  /** Unique, stable identity; match FlightCard.key when using CardFlights. */
+  /** Unique, stable identity; shared with FlightCard.id when using CardFlights. */
   id: string;
   value: GameCardValue;
   label: string;
@@ -104,7 +104,7 @@ export function GameHand({
             {cards.map((card, index) => {
               const angle = rotations[index] ?? 0;
               return (
-                // CardFlights measures this wrapper; card.id must match FlightCard.key.
+                // CardFlights measures this wrapper using the shared card id.
                 <button key={card.id} type="button" data-ui="game-hand-card" data-hand-card={card.id}
                   aria-pressed={selectedId === card.id} disabled={disabled}
                   onClick={() => select(selectedId === card.id ? null : card.id)}
