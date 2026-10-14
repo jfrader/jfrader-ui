@@ -1,5 +1,8 @@
 export { DateRangePicker } from './date-range-picker';
 export type {
+  DateRangePickerBaseProps,
+  DateRangePickerCompoundProps,
+  DateRangePickerEasyProps,
   DateRangePickerContentProps,
   DateRangePickerMessages,
   DateRangePickerMonths,

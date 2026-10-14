@@ -31,6 +31,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
@@ -48,7 +49,7 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { IsolatedOverlay } from '../../overlay/overlay-layer';
@@ -75,7 +76,7 @@ const CIVIL_DATE_FORMAT_OPTIONS = {
   dateStyle: 'medium',
 } satisfies Intl.DateTimeFormatOptions;
 
-export interface DatePickerProps {
+export interface DatePickerBaseProps {
   /** Selected date, 'YYYY-MM-DD'. */
   value?: string;
   defaultValue?: string;
@@ -101,6 +102,37 @@ export interface DatePickerProps {
   children?: ReactNode;
 }
 
+export interface DatePickerCompoundProps extends DatePickerBaseProps {
+  label?: never;
+  description?: never;
+  error?: never;
+  size?: never;
+  slots?: never;
+  slotProps?: never;
+}
+
+type DatePickerGeneratedPartProps<Props> = Omit<Props, 'children'> & { css?: Interpolation<Theme> };
+
+export interface DatePickerEasyProps extends Omit<DatePickerBaseProps, 'children'> {
+  /** Label the generated date field and its popup. */
+  label: string;
+  description?: ReactNode;
+  error?: ReactNode;
+  size?: DatePickerInputProps['size'];
+  children?: never;
+  /** Replace the field presentation or popup div; forward all supplied props and ref. */
+  slots?: {
+    input?: ComponentType<TextFieldProps>;
+    popup?: ComponentType<ComponentPropsWithRef<'div'>>;
+  };
+  slotProps?: {
+    input?: DatePickerGeneratedPartProps<DatePickerInputProps>;
+    popup?: DatePickerGeneratedPartProps<DatePickerPopupProps>;
+  };
+}
+
+export type DatePickerProps = DatePickerCompoundProps | DatePickerEasyProps;
+
 /** Value, placeholder and form name live on the root; the input is read-only in this version. */
 export interface DatePickerInputProps
   extends Omit<
@@ -119,6 +151,7 @@ interface InputLabelling {
 }
 
 interface DatePickerContextValue {
+  slots: DatePickerEasyProps['slots'];
   open: boolean;
   disabled: boolean;
   value: string | undefined;
@@ -227,7 +260,8 @@ function DatePickerOverlay({
   name,
   placeholder: placeholderProp,
   children,
-}: DatePickerProps) {
+  slots,
+}: DatePickerBaseProps & Pick<DatePickerEasyProps, 'slots'>) {
   const [value, requestValueChange] = useControlledState<string>(valueProp, defaultValue, onValueChange);
   const [requestedOpen = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const [inputDisabled, setInputDisabled] = useState(false);
@@ -312,6 +346,7 @@ function DatePickerOverlay({
       },
       setInputLabelling,
       setInputDisabled,
+      slots,
     }),
     [
       open,
@@ -333,6 +368,7 @@ function DatePickerOverlay({
       getFloatingProps,
       requestOpenChange,
       requestValueChange,
+      slots,
     ],
   );
 
@@ -345,9 +381,21 @@ function DatePickerOverlay({
 }
 
 function DatePickerRoot(props: DatePickerProps) {
+  const children = props.label !== undefined ? (
+    <>
+      <DatePickerInput
+        label={props.label}
+        description={props.description}
+        error={props.error}
+        size={props.size}
+        {...props.slotProps?.input}
+      />
+      <DatePickerPopup {...props.slotProps?.popup} />
+    </>
+  ) : props.children;
   return (
     <IsolatedOverlay>
-      <DatePickerOverlay {...props} />
+      <DatePickerOverlay {...props}>{children}</DatePickerOverlay>
     </IsolatedOverlay>
   );
 }
@@ -375,7 +423,9 @@ function DatePickerInput({
     requestOpenChange,
     setInputLabelling,
     setInputDisabled,
+    slots,
   } = useDatePickerContext('Input');
+  const Input = slots?.input ?? TextField;
   // The floating reference is typed for button triggers; any element positions the same.
   const mergedRef = useMergeRefs([refs.setReference as (node: Element | null) => void, ref]);
   const generatedId = useId();
@@ -434,7 +484,7 @@ function DatePickerInput({
   };
 
   return (
-    <TextField
+    <Input
       {...getReferenceProps({ ...rest, onKeyDown: handleKeyDown, onKeyUp: handleKeyUp } as unknown as Parameters<typeof getReferenceProps>[0])}
       ref={mergedRef}
       id={id}
@@ -471,7 +521,9 @@ function DatePickerPopup({ ref, style, className, sx, ...rest }: DatePickerPopup
     floatingStyles,
     getFloatingProps,
     selectDate,
+    slots,
   } = useDatePickerContext('Popup');
+  const Root = slots?.popup ?? 'div';
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
   // The grid mounts with every open (the portal attaches after its first commit, so an effect
   // here could run before the grid exists): focus its tab-stop day as it attaches, and hand
@@ -523,7 +575,7 @@ function DatePickerPopup({ ref, style, className, sx, ...rest }: DatePickerPopup
       >
         <WithSx className={className} styles={popupStyle} sx={sx}>
           {(className) => (
-            <div
+            <Root
               {...getFloatingProps({ ...labelling, ...rest })}
               ref={mergedRef}
               data-ui="date-picker-popup"
@@ -547,7 +599,7 @@ function DatePickerPopup({ ref, style, className, sx, ...rest }: DatePickerPopup
                   onPointerDownCapture={handleGridPointerDown}
                 />
               </Calendar>
-            </div>
+            </Root>
           )}
         </WithSx>
       </FloatingFocusManager>

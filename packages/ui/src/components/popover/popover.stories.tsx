@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within, type Mock } from 'storybook/test';
@@ -6,7 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
-import { Popover, type PopoverProps } from './index';
+import { Popover, type PopoverCompoundProps as PopoverProps, type PopoverEasyProps } from './index';
 
 const TRIGGER = 'Share';
 const HEADING = 'Share link';
@@ -31,24 +31,57 @@ const rowStyle = {
   alignItems: 'center',
 } satisfies CSSProperties;
 
-const meta = {
+const meta: Meta<PopoverProps> = {
   title: 'Surfaces/Popover',
   component: Popover,
   parameters: {
     docs: {
       description: { component: 'Open a panel beside a button without blocking the rest of the page.' },
-      usage: `- The panel uses a non-modal dialog role. Give it a name with aria-labelledby (preferred) or aria-label.
+      usage: `- Pass triggerLabel, label and content for a generated trigger and named panel. Use slots or slotProps to customize those parts.
+- With compound parts, give the panel a name with aria-labelledby (preferred) or aria-label.
 - Enter/Space toggles; Escape and outside press close.
 - Opening does not move focus or trap it. Tab follows page order across the portal and does not close the panel.
 - Escape returns focus to the trigger only after an accepted close. Outside press closes without moving focus.
 - Nested layers handle Escape and outside press before the parent.`,
     },
   },
-} satisfies Meta<typeof Popover>;
+};
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+type CheckedPopover<Props extends import('./index').PopoverProps> = Props;
+export type PopoverTypeRegression = {
+  // @ts-expect-error The non-DOM provider root has no component sugar.
+  providerComponent: PopoverEasyProps['component'];
+  // @ts-expect-error Replace the native content or trigger, not the provider root.
+  providerRootSlot: NonNullable<PopoverEasyProps['slots']>['root'];
+  // @ts-expect-error The provider has no root element to receive native props.
+  providerRootProps: NonNullable<PopoverEasyProps['slotProps']>['root'];
+  // @ts-expect-error Easy presentation and compound children are mutually exclusive.
+  mixed: CheckedPopover<{ triggerLabel: string; label: string; content: string; children: string }>;
+  // @ts-expect-error Easy mode requires a dialog name.
+  unnamed: CheckedPopover<{ triggerLabel: string; content: string }>;
+  // @ts-expect-error Compound mode rejects generated-part props.
+  compoundSlots: CheckedPopover<{ children: string; slotProps: { trigger: { disabled: true } } }>;
+};
+
+function EasyControlledPopover(props: PopoverEasyProps) {
+  const [open, setOpen] = useState(false);
+  return <Popover {...props} open={open} onOpenChange={(next) => { setOpen(next); props.onOpenChange?.(next); }} />;
+}
+EasyControlledPopover.displayName = 'EasyControlledPopover';
+
+function PopoverButtonRoot(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-generated-trigger="" />;
+}
+PopoverButtonRoot.displayName = 'PopoverButtonRoot';
+
+function PopoverPanelRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-generated-panel="" />;
+}
+PopoverPanelRoot.displayName = 'PopoverPanelRoot';
 
 function PopoverBody({ labelledBy }: { labelledBy: string }) {
   return (
@@ -142,8 +175,33 @@ async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 }
 
-export const Default: Story = {
+export const Default: StoryObj<PopoverEasyProps> = {
+  args: { triggerLabel: TRIGGER, label: HEADING, content: <Button size="sm">Copy link</Button> },
+  render: (args) => <Popover {...args} />,
+  parameters: { docs: { source: { code: '<Popover triggerLabel="Share" label="Share link" content={<Button>Copy link</Button>} />' } } },
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
+    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
+    const dialog = await bodyOf(canvasElement).findByRole('dialog', { name: HEADING });
+    await expect(trigger).toHaveAttribute('aria-controls', dialog.id);
+    await userEvent.tab();
+    await expect(canvasElement.ownerDocument.activeElement).toBe(within(dialog).getByRole('button', { name: 'Copy link' }));
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement, trigger);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+  },
+};
+
+/** Assemble a trigger and panel with a visible heading. */
+export const Compound: Story = {
   render: (args) => <PopoverExample {...args} />,
+  parameters: { docs: { source: { code: `<Popover>
+  <Popover.Trigger>Share</Popover.Trigger>
+  <Popover.Content aria-label="Share link">
+    <Button>Copy link</Button>
+  </Popover.Content>
+</Popover>` } } },
   play: async ({ canvasElement }) => {
     const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
     await expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull();
@@ -160,6 +218,57 @@ export const Default: Story = {
 
     await userEvent.click(trigger);
     await expectClosed(canvasElement, trigger);
+  },
+};
+
+/** Set props on the generated trigger and panel. */
+export const CustomParts: StoryObj<PopoverEasyProps> = {
+  args: {
+    triggerLabel: TRIGGER, label: HEADING, content: <Button size="sm">Copy link</Button>,
+    slots: { trigger: PopoverButtonRoot, content: PopoverPanelRoot },
+    slotProps: { trigger: { className: 'share-trigger', ref: fn() }, content: { className: 'share-panel', ref: fn(), sx: { padding: vars.space[6] } } },
+  },
+  render: (args) => <Popover {...args} />,
+  parameters: { docs: { source: { code: `<Popover triggerLabel="Share" label="Share link" content={<Button>Copy link</Button>}
+  slotProps={{ content: { sx: { padding: theme.space[6] } } }} />` } } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
+    await expect(trigger).toHaveClass('share-trigger');
+    await expect(trigger).toHaveAttribute('data-generated-trigger');
+    await expect(args.slotProps?.trigger?.ref).toHaveBeenLastCalledWith(trigger);
+    await userEvent.click(trigger);
+    const dialog = await bodyOf(canvasElement).findByRole('dialog', { name: HEADING });
+    await expect(dialog).toHaveClass('share-panel');
+    await expect(dialog).toHaveAttribute('data-generated-panel');
+    await expect(args.slotProps?.content?.ref).toHaveBeenLastCalledWith(dialog);
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const EasyDisabled: StoryObj<PopoverEasyProps> = {
+  args: { triggerLabel: TRIGGER, label: HEADING, content: 'Options', slotProps: { trigger: { disabled: true } } },
+  render: (args) => <Popover {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
+    await expect(trigger).toBeDisabled();
+    await userEvent.click(trigger);
+    await expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull();
+  },
+};
+
+export const EasyControlled: StoryObj<PopoverEasyProps> = {
+  args: { triggerLabel: TRIGGER, label: HEADING, content: 'Share options', onOpenChange: fn() },
+  render: (args) => <EasyControlledPopover {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
+    await userEvent.click(trigger);
+    await bodyOf(canvasElement).findByRole('dialog', { name: HEADING });
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement, trigger);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
   },
 };
 
