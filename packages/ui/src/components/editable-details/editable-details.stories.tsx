@@ -2,15 +2,21 @@ import { StrictMode, useRef, useState } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor, within } from 'storybook/test';
+import { expect, fn, mocked, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { TextField } from '../text-field';
-import { EditableDetails, type EditableDetailsEditorProps, type EditableDetailsProps } from './index';
+import {
+  EditableDetails,
+  type EditableDetailsCompoundProps,
+  type EditableDetailsEasyProps,
+  type EditableDetailsEditorProps,
+  type EditableDetailsSectionRecord,
+} from './index';
 
-type StoryArgs = EditableDetailsProps & {
+type StoryArgs = EditableDetailsCompoundProps & {
   onItemOpenChange: (open: boolean) => void;
   onSectionOpenChange: (open: boolean) => void;
   onRefCleanup: (part: string) => void;
@@ -29,7 +35,12 @@ const meta = {
     layout: 'padded',
     docs: {
       description: { component: 'Show grouped details and edit selected values in place with your own forms.' },
-      usage: `### Structure and editing
+      usage: `### Composition
+Pass \`sections\` to render grouped details from structured data. Each section record provides \`value\`, \`title\`, \`items\`, and optional \`headingLevel\`, \`open\`, \`defaultOpen\`, and \`onOpenChange\`. Each item record provides \`value\`, \`label\`, \`content\`, and optional \`renderEditor\`, \`open\`, \`defaultOpen\`, and \`onOpenChange\`.
+
+Do not combine \`sections\` with \`children\`. Use \`slotProps.root\`, \`slotProps.section\`, \`slotProps.list\`, and \`slotProps.item\` for part props, or \`slots\` to replace generated parts. \`component\` is sugar for \`slots.root\`. For custom hierarchy, keep the compound parts (\`EditableDetails.Section\`, \`EditableDetails.List\`, \`EditableDetails.Item\`).
+
+### Structure and editing
 - Use Lists for labelled values and Sections for groups of lists or nested sections. Rows use native description-list semantics.
 - Section disclosure and Item editing are independent. Each supports \`open\`, \`defaultOpen\` and \`onOpenChange\`.
 - Supply an editor through \`renderEditor\`. Your editor owns its draft, validation, confirmation, saving and errors. \`complete\` and \`cancel\` only request closure.
@@ -41,12 +52,36 @@ const meta = {
 - Attach \`initialFocusRef\` to the field that should receive focus after Edit. The labelled editor group is the fallback.
 - Do not nest a native form editor inside another form. Use form-associated controls or a non-form editor there.
 - Keep React Action drafts in controlled fields: React resets uncontrolled fields after an Action resolves, even when it returns a validation error.`,
-      source: { code: '<EditableDetails>\n  <EditableDetails.Section title="Project" defaultOpen headingLevel={2}>\n    <EditableDetails.List>\n      <EditableDetails.Item label="Name" renderEditor={(editor) => <ProjectNameEditor {...editor} />}>\n        {projectName}\n      </EditableDetails.Item>\n    </EditableDetails.List>\n  </EditableDetails.Section>\n</EditableDetails>' },
+      source: {
+        language: 'tsx',
+        code: `const sections = [
+  {
+    value: 'project',
+    title: 'Project settings',
+    items: [
+      {
+        value: 'name',
+        label: 'Project name',
+        content: 'Apollo',
+        renderEditor: (editor) => <ProjectNameEditor {...editor} />,
+      },
+      {
+        value: 'budget',
+        label: 'Budget',
+        content: '$50,000',
+      },
+    ],
+  },
+];
+
+<EditableDetails sections={sections} />`,
+      },
     },
   },
 } satisfies Meta<StoryArgs>;
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<Meta<StoryArgs>>;
+type EasyStory = StoryObj<Meta<EditableDetailsEasyProps>>;
 
 function DraftEditor({ initialFocusRef, cancel, complete, visible, onCapture }: EditableDetailsEditorProps & { onCapture?: (complete: () => void) => void }) {
   const [draft, setDraft] = useState('Apollo');
@@ -57,6 +92,213 @@ function DraftEditor({ initialFocusRef, cancel, complete, visible, onCapture }: 
     {onCapture && <Button onClick={() => onCapture(complete)}>Capture completion</Button>}
   </div>;
 }
+
+const EASY_SECTIONS: readonly EditableDetailsSectionRecord[] = [
+  {
+    value: 'settings',
+    title: 'Settings',
+    defaultOpen: true,
+    headingLevel: 2,
+    items: [
+      {
+        value: 'name',
+        label: 'Name',
+        content: 'Apollo',
+        renderEditor: (props) => <DraftEditor {...props} />,
+      },
+      {
+        value: 'count',
+        label: 'Active projects',
+        content: 0,
+      },
+      {
+        value: 'visibility',
+        label: 'Visibility',
+        content: 'Private',
+      },
+      {
+        value: 'region',
+        label: 'Region',
+        content: 'Europe',
+      },
+    ],
+  },
+];
+
+export const Default: EasyStory = {
+  name: 'Easy mode',
+  args: {
+    sections: EASY_SECTIONS,
+  },
+  render: (args) => <EditableDetails {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const section = canvas.getByRole('button', { name: 'Settings' });
+    await expect(section).toHaveAttribute('aria-expanded', 'true');
+    await expect(canvas.getAllByRole('term')).toHaveLength(4);
+    await expect(canvas.getAllByRole('definition')).toHaveLength(4);
+    await expect(canvas.getByText('0')).toBeVisible();
+    await expect(canvas.queryByRole('tree')).not.toBeInTheDocument();
+
+    // Toggle section with keyboard
+    await section.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(section).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.keyboard(' ');
+    await expect(section).toHaveAttribute('aria-expanded', 'true');
+
+    // Activate item edit
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Name' }));
+    const input = canvas.getByRole('textbox', { name: 'Project name' });
+    await expect(input).toHaveFocus();
+    await userEvent.clear(input);
+    await userEvent.type(input, 'Draft');
+
+    // Toggle section while editing keeps draft
+    await userEvent.click(section);
+    await expect(input).not.toBeVisible();
+    await userEvent.click(section);
+    await expect(input).toHaveValue('Draft');
+    await expect(section).toHaveFocus();
+
+    // Cancel dismisses editor and returns focus to Edit button
+    await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));
+    await expect(canvas.getByRole('button', { name: 'Edit Name' })).toHaveFocus();
+
+    // Reopen and complete
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Name' }));
+    await expect(canvas.getByRole('textbox', { name: 'Project name' })).toHaveFocus();
+    await userEvent.click(canvas.getByRole('button', { name: 'Complete' }));
+    await expect(canvas.getByRole('button', { name: 'Edit Name' })).toHaveFocus();
+  },
+};
+
+export const EasyFalsyContent: EasyStory = {
+  tags: ['!autodocs'],
+  args: { sections: [{ value: 'values', title: 'Values', defaultOpen: true, items: [
+    { value: 'zero', label: 'Zero', content: 0 },
+    { value: 'false', label: 'False', content: false },
+    { value: 'empty', label: 'Empty', content: '' },
+  ] }] },
+  render: (args) => <EditableDetails {...args} />,
+  play: async ({ canvas }) => {
+    const values = canvas.getAllByRole('definition');
+    await expect(values).toHaveLength(3);
+    await expect(values.map((value) => value.textContent)).toEqual(['0', '', '']);
+  },
+};
+
+function ControlledEasyFixture() {
+  const [sectionOpen, setSectionOpen] = useState(true);
+  const [itemOpen, setItemOpen] = useState(false);
+  const controlledSections: readonly EditableDetailsSectionRecord[] = [
+    {
+      value: 'profile',
+      title: 'Profile',
+      open: sectionOpen,
+      onOpenChange: setSectionOpen,
+      items: [
+        {
+          value: 'handle',
+          label: 'Handle',
+          content: '@apollo',
+          open: itemOpen,
+          onOpenChange: setItemOpen,
+          renderEditor: (props) => <DraftEditor {...props} />,
+        },
+      ],
+    },
+  ];
+  return <EditableDetails sections={controlledSections} />;
+}
+
+export const EasyModeControlled: StoryObj = {
+  name: 'Easy mode controlled',
+  render: () => <ControlledEasyFixture />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const section = canvas.getByRole('button', { name: 'Profile' });
+    await expect(section).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Handle' }));
+    await expect(canvas.getByRole('textbox', { name: 'Project name' })).toHaveFocus();
+    await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));
+    await expect(canvas.getByRole('button', { name: 'Edit Handle' })).toHaveFocus();
+  },
+};
+
+export const EasyModeSlotPropsOverrides: EasyStory = {
+  name: 'Easy mode slotProps overrides',
+  args: {
+    sections: EASY_SECTIONS,
+    slotProps: {
+      root: { className: 'custom-root-slot', 'data-testid': 'custom-root' },
+      section: { className: 'custom-section-slot' },
+      list: { className: 'custom-list-slot' },
+      item: { className: 'custom-item-slot' },
+    },
+  },
+  render: (args) => <EditableDetails {...args} />,
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector('[data-ui~="editable-details"]');
+    await expect(root).toHaveClass('custom-root-slot');
+    const section = canvasElement.querySelector('[data-ui="editable-details-section"]');
+    await expect(section).toHaveClass('custom-section-slot');
+    const list = canvasElement.querySelector('[data-ui="editable-details-list"]');
+    await expect(list).toHaveClass('custom-list-slot');
+    const item = canvasElement.querySelector('[data-ui="editable-details-item"]');
+    await expect(item).toHaveClass('custom-item-slot');
+  },
+};
+
+export const RootPropMerge: EasyStory = {
+  name: 'Root prop merge',
+  args: {
+    sections: EASY_SECTIONS,
+    id: 'host-id',
+    'data-origin': 'host',
+    className: 'host-class',
+    style: { paddingBlock: vars.space[4], fontWeight: 400 },
+    onClick: fn(),
+    ref: fn(),
+    slotProps: {
+      root: {
+        id: 'slot-id',
+        'data-origin': 'slot',
+        className: 'slot-class',
+        style: { paddingInline: vars.space[5], fontWeight: 600 },
+        onClick: fn(),
+        ref: fn(),
+      },
+    },
+  },
+  render: (args) => <EditableDetails {...args} />,
+  play: async ({ canvasElement, args, userEvent }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui~="editable-details"]');
+    if (!root) throw new Error('Missing EditableDetails root.');
+    await expect(root).toHaveAttribute('id', 'slot-id');
+    await expect(root).toHaveAttribute('data-origin', 'slot');
+    await expect(root).toHaveClass('host-class');
+    await expect(root).toHaveClass('slot-class');
+    await expect(root.style.paddingBlock).toBe(vars.space[4]);
+    await expect(root.style.paddingInline).toBe(vars.space[5]);
+    await expect(root.style.fontWeight).toBe('600');
+    await expect(args.slotProps!.root!.ref).toHaveBeenCalledWith(root);
+    await userEvent.click(root);
+    await expect(args.onClick).not.toHaveBeenCalled();
+    await expect(args.slotProps!.root!.onClick).toHaveBeenCalled();
+  },
+};
+
+function easyModeTypeContracts() {
+  // @ts-expect-error Presentation mode rejects compound children.
+  <EditableDetails sections={EASY_SECTIONS}>Compound</EditableDetails>;
+  <EditableDetails />;
+  // @ts-expect-error Section record requires value, title, and items.
+  <EditableDetails sections={[{ title: 'Settings' }]} />;
+  // @ts-expect-error Item record requires value, label, and content.
+  <EditableDetails sections={[{ value: 's', title: 'Settings', items: [{ label: 'L' }] }]} />;
+}
+void easyModeTypeContracts;
 
 function DetailsFixture() {
   return <EditableDetails>
@@ -73,28 +315,32 @@ function DetailsFixture() {
   </EditableDetails>;
 }
 
-export const Default: Story = { render: () => <DetailsFixture />, play: async ({ canvasElement, userEvent }) => {
-  const canvas = within(canvasElement);
-  const section = canvas.getByRole('button', { name: 'Settings' });
-  await expect(section).toHaveAttribute('aria-expanded', 'true');
-  await expect(canvas.getAllByRole('term')).toHaveLength(4);
-  await expect(canvas.getAllByRole('definition')).toHaveLength(4);
-  await expect(canvas.getByText('0')).toBeVisible();
-  await expect(canvas.queryByRole('tree')).not.toBeInTheDocument();
-  await userEvent.click(canvas.getByRole('button', { name: 'Edit Name' }));
-  const input = canvas.getByRole('textbox', { name: 'Project name' });
-  await expect(input).toHaveFocus();
-  await userEvent.clear(input); await userEvent.type(input, 'Draft');
-  await userEvent.click(section);
-  await expect(input).not.toBeVisible();
-  await userEvent.click(section);
-  await expect(input).toHaveValue('Draft');
-  await expect(section).toHaveFocus();
-  await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));
-  await expect(canvas.getByRole('button', { name: 'Edit Name' })).toHaveFocus();
-  await userEvent.click(canvas.getByRole('button', { name: 'Edit Name' }));
-  await expect(canvas.getByRole('textbox', { name: 'Project name' })).toHaveValue('Apollo');
-} };
+export const Compound: Story = {
+  name: 'Compound anatomy',
+  render: () => <DetailsFixture />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const section = canvas.getByRole('button', { name: 'Settings' });
+    await expect(section).toHaveAttribute('aria-expanded', 'true');
+    await expect(canvas.getAllByRole('term')).toHaveLength(4);
+    await expect(canvas.getAllByRole('definition')).toHaveLength(4);
+    await expect(canvas.getByText('0')).toBeVisible();
+    await expect(canvas.queryByRole('tree')).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Name' }));
+    const input = canvas.getByRole('textbox', { name: 'Project name' });
+    await expect(input).toHaveFocus();
+    await userEvent.clear(input); await userEvent.type(input, 'Draft');
+    await userEvent.click(section);
+    await expect(input).not.toBeVisible();
+    await userEvent.click(section);
+    await expect(input).toHaveValue('Draft');
+    await expect(section).toHaveFocus();
+    await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));
+    await expect(canvas.getByRole('button', { name: 'Edit Name' })).toHaveFocus();
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Name' }));
+    await expect(canvas.getByRole('textbox', { name: 'Project name' })).toHaveValue('Apollo');
+  },
+};
 export const Light: Story = { render: () => <DetailsFixture />, decorators: [withLightTheme] };
 export const Rtl: Story = { render: () => <div dir="rtl"><DetailsFixture /></div> };
 export const Narrow: Story = { render: () => <div style={{ inlineSize: '220px' }}><DetailsFixture /></div> };
@@ -291,10 +537,10 @@ function RefFixture({ onRefCleanup }: Pick<StoryArgs, 'onRefCleanup'>) {
   </EditableDetails>}<Button onClick={() => setMounted(false)}>Unmount refs</Button></StrictMode>;
 }
 export const StrictModeRefCleanup: Story = { render: (args) => <RefFixture {...args} />, play: async ({ canvasElement, userEvent, args }) => {
-  const before = args.onRefCleanup.mock.calls.length;
+  const before = mocked(args.onRefCleanup).mock.calls.length;
   await userEvent.click(within(canvasElement).getByRole('button', { name: 'Unmount refs' }));
   await expect(args.onRefCleanup).toHaveBeenCalledTimes(before + 5);
-  await expect(args.onRefCleanup.mock.calls.slice(before)).toEqual(expect.arrayContaining(['root', 'section', 'trigger', 'list', 'item'].map((part) => [part])));
+  await expect(mocked(args.onRefCleanup).mock.calls.slice(before)).toEqual(expect.arrayContaining(['root', 'section', 'trigger', 'list', 'item'].map((part) => [part])));
 } };
 
 export const HydrationRelationships: Story = { render: () => <DetailsFixture />, play: async ({ canvasElement, userEvent, args }) => {

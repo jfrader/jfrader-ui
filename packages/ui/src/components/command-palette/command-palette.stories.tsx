@@ -1,24 +1,93 @@
+import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
-import { CommandPalette, type CommandPaletteProps } from './index';
+import {
+  CommandPalette,
+  type CommandPaletteCompoundProps,
+  type CommandPaletteEasyProps,
+  type CommandPaletteItemRecord,
+  type CommandPaletteProps,
+} from './index';
 
 const LABEL = 'Command palette';
 const TRIGGER = 'Open commands';
 
-const meta = {
+interface CommandItem extends CommandPaletteItemRecord {
+  id: string;
+}
+
+const COMMANDS: readonly CommandItem[] = [
+  { value: 'open-file', label: 'Open file', group: 'Files', id: 'cmd-1' },
+  { value: 'save-file', label: 'Save file', keywords: 'write disk', group: 'Files', id: 'cmd-2' },
+  { value: 'toggle-theme', label: 'Toggle theme', keywords: 'dark light', group: 'View', id: 'cmd-3' },
+  { value: 'zoom-in', label: 'Zoom in', group: 'View', id: 'cmd-4' },
+];
+
+const snippet = `<CommandPalette
+  triggerLabel="Open commands"
+  label="Commands"
+  items={[
+    { value: 'open-file', label: 'Open file', group: 'Files' },
+    { value: 'save-file', label: 'Save file', keywords: 'write disk', group: 'Files' },
+    { value: 'toggle-theme', label: 'Toggle theme', keywords: 'dark light', group: 'View' },
+    { value: 'zoom-in', label: 'Zoom in', group: 'View' },
+  ]}
+  onSelect={(item) => runCommand(item)}
+/>`;
+
+const meta: Meta<CommandPaletteCompoundProps> = {
   title: 'Surfaces/CommandPalette',
   component: CommandPalette,
-  parameters: { docs: { description: { component: 'Search for a command and run it from a dialog.' } } },
-} satisfies Meta<typeof CommandPalette>;
+  parameters: {
+    docs: {
+      description: {
+        component: 'Search for a command and run it from a modal dialog.',
+      },
+      usage: `### Composition
+Pass triggerLabel, label, items and onSelect for a single-element command palette. Each item record provides a unique value and display label, with optional keywords, group and disabled state. Do not combine items with children. Use slotProps to pass props to generated parts, or use the compound parts (Trigger, Content, Input, List, Group, Item, Empty) for custom anatomy.
+
+### Activation and action ownership
+The app owns command execution: pass an onSelect callback on the root to handle selected item records, or provide onSelect on individual item records. Both are called upon activation, followed by dialog closure.
+
+### Keyboard and filtering
+- Typing in the input filters commands by label and keywords.
+- ArrowDown and ArrowUp navigate and wrap among matches.
+- Home and End jump to the first and last match.
+- Enter selects the active command and closes the palette.
+- Escape closes the palette and returns focus to the trigger.`,
+    },
+  },
+};
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<(props: CommandPaletteCompoundProps) => ReactNode>;
+type EasyStory = StoryObj<(props: CommandPaletteEasyProps<CommandItem>) => ReactNode>;
 
-function CommandPaletteExample(props: CommandPaletteProps) {
+type CheckedCommandPalette<Props extends CommandPaletteProps> = Props;
+export type CommandPaletteTypeRegression = {
+  // @ts-expect-error Items and children are mutually exclusive.
+  itemsWithChildren: CheckedCommandPalette<{ items: typeof COMMANDS; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects triggerLabel.
+  childrenWithTriggerLabel: CheckedCommandPalette<{ triggerLabel: string; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects onSelect.
+  childrenWithOnSelect: CheckedCommandPalette<{ onSelect: (item: unknown) => void; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects slots.
+  childrenWithSlots: CheckedCommandPalette<{ slots: { root?: () => null }; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects slotProps.
+  childrenWithSlotProps: CheckedCommandPalette<{ slotProps: { root?: {} }; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects component.
+  childrenWithComponent: CheckedCommandPalette<{ component: () => null; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects placeholder.
+  childrenWithPlaceholder: CheckedCommandPalette<{ placeholder: string; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects empty.
+  childrenWithEmpty: CheckedCommandPalette<{ empty: ReactNode; children: ReactNode }>;
+};
+
+function CommandPaletteExample(props: CommandPaletteCompoundProps) {
   const [selections, setSelections] = useState<string[]>([]);
   const select = (value: string) => () => setSelections((previous) => [...previous, value]);
   return (
@@ -89,7 +158,262 @@ async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
   await expect(trigger).toHaveFocus();
 }
 
-export const Default: Story = {
+export const Default: EasyStory = {
+  name: 'Easy mode',
+  args: {
+    triggerLabel: TRIGGER,
+    label: LABEL,
+    items: COMMANDS,
+    onSelect: fn(),
+  },
+  parameters: {
+    docs: {
+      source: { code: snippet },
+    },
+  },
+  render: (args) => <CommandPalette {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const { canvas, trigger, dialog, input } = await openPalette(canvasElement);
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(dialog).toHaveAttribute('aria-modal', 'true');
+    await expect(getComputedStyle(input).outlineStyle).not.toBe('none');
+
+    const listbox = canvas.getByRole('listbox', { name: LABEL });
+    await expect(input).toHaveAttribute('aria-controls', listbox.id);
+    await expect(input).toHaveAttribute('aria-autocomplete', 'list');
+    await expect(input).toHaveAttribute('aria-expanded', 'true');
+    await expect(within(listbox).getAllByRole('option')).toHaveLength(4);
+    await expect(canvas.getByRole('group', { name: 'Files' })).toBeVisible();
+    await expect(canvas.getByRole('group', { name: 'View' })).toBeVisible();
+
+    await expectActive(canvasElement, 'Open file');
+    await userEvent.keyboard('{ArrowDown}');
+    await expectActive(canvasElement, 'Save file');
+
+    await userEvent.keyboard('{Enter}');
+    await expectClosed(canvasElement, trigger);
+    await expect(args.onSelect).toHaveBeenCalledTimes(1);
+    await expect(args.onSelect).toHaveBeenLastCalledWith(COMMANDS[1]);
+  },
+};
+
+export const EasyModeFilterAndDismiss: EasyStory = {
+  name: 'Easy mode filter and dismiss',
+  args: {
+    triggerLabel: TRIGGER,
+    label: LABEL,
+    items: COMMANDS,
+    onSelect: fn(),
+  },
+  render: (args) => <CommandPalette {...args} />,
+  play: async ({ canvasElement }) => {
+    const { canvas, trigger, input } = await openPalette(canvasElement);
+    await userEvent.type(input, 'theme');
+    await waitFor(() => expect(canvas.getAllByRole('option')).toHaveLength(1));
+    await expectActive(canvasElement, 'Toggle theme');
+
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+function ControlledEasyFixture() {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<string>('none');
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>External open</button>
+      <CommandPalette
+        open={open}
+        onOpenChange={setOpen}
+        label={LABEL}
+        items={COMMANDS}
+        onSelect={(item) => setSelected(item.value)}
+      />
+      <output aria-label="Selected command">{selected}</output>
+    </>
+  );
+}
+
+export const EasyModeControlled: StoryObj = {
+  name: 'Easy mode controlled',
+  render: () => <ControlledEasyFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const opener = canvas.getByRole('button', { name: 'External open' });
+    await userEvent.click(opener);
+    const dialog = await canvas.findByRole('dialog', { name: LABEL });
+    await expect(dialog).toHaveAttribute('open');
+    await expectActive(canvasElement, 'Open file');
+
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
+    await expect(canvas.getByLabelText('Selected command')).toHaveTextContent('open-file');
+  },
+};
+
+export const EasyModeSlots: EasyStory = {
+  name: 'Easy mode slots',
+  args: {
+    triggerLabel: TRIGGER,
+    label: LABEL,
+    items: COMMANDS,
+    placeholder: 'Find an action...',
+    slotProps: {
+      trigger: { className: 'custom-palette-trigger' },
+      input: { 'aria-describedby': 'helper-note' },
+    },
+  },
+  render: (args) => (
+    <>
+      <span id="helper-note">Keyboard shortcuts active</span>
+      <CommandPalette {...args} />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
+    await expect(trigger).toHaveClass('custom-palette-trigger');
+    const { input } = await openPalette(canvasElement);
+    await expect(input).toHaveAttribute('placeholder', 'Find an action...');
+    await expect(input).toHaveAttribute('aria-describedby', 'helper-note');
+    await userEvent.keyboard('{Escape}');
+  },
+};
+
+function CustomRootBox({ children, ...props }: ComponentPropsWithRef<'div'>) {
+  return (
+    <div {...props} data-custom-root="true">
+      {children}
+    </div>
+  );
+}
+
+export const EasyModeOverrides: EasyStory = {
+  name: 'Easy mode overrides',
+  render: () => {
+    return (
+      <CommandPalette
+        triggerLabel={TRIGGER}
+        label={LABEL}
+        items={COMMANDS}
+        component={CustomRootBox}
+        className="host-root-class"
+        data-testid="host-root"
+        style={{ opacity: 0.85, zIndex: 1 }}
+        slotProps={{
+          root: {
+            className: 'slot-root-class',
+            'data-testid': 'slot-root-wins',
+            style: { zIndex: 2 },
+          },
+          trigger: { 'data-testid': 'slot-trigger' },
+          content: { 'data-testid': 'slot-content' },
+          input: { 'data-testid': 'slot-input' },
+          list: { 'data-testid': 'slot-list' },
+          group: { 'data-testid': 'slot-group' },
+          item: { 'data-testid': 'slot-item' },
+        }}
+      />
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const root = canvasElement.querySelector('[data-custom-root="true"]') as HTMLElement;
+    await expect(root).not.toBeNull();
+    // slotProps.root wins on conflict except merged className and style
+    await expect(root).toHaveAttribute('data-testid', 'slot-root-wins');
+    await expect(root).toHaveClass('host-root-class');
+    await expect(root).toHaveClass('slot-root-class');
+    await expect(root.style.opacity).toBe('0.85');
+    await expect(root.style.zIndex).toBe('2');
+
+    const trigger = canvas.getByTestId('slot-trigger');
+    await expect(trigger).toBeVisible();
+    await userEvent.click(trigger);
+
+    const dialog = await canvas.findByTestId('slot-content');
+    await expect(dialog).toBeVisible();
+    await settleMotion(dialog);
+
+    const input = canvas.getByTestId('slot-input');
+    await expect(input).toBeVisible();
+
+    const list = canvas.getByTestId('slot-list');
+    await expect(list).toBeVisible();
+
+    const groups = canvas.getAllByTestId('slot-group');
+    await expect(groups.length).toBeGreaterThan(0);
+
+    const items = canvas.getAllByTestId('slot-item');
+    await expect(items.length).toBe(4);
+
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+const itemSelectSpy = fn();
+
+export const EasyModeAppAndItemSelect: EasyStory = {
+  name: 'Easy mode app and item select',
+  args: {
+    triggerLabel: TRIGGER,
+    label: LABEL,
+    items: [
+      { value: 'run-audit', label: 'Run audit', id: 'cmd-audit', onSelect: itemSelectSpy },
+      { value: 'delete-all', label: 'Delete all', id: 'cmd-del', disabled: true },
+    ],
+    onSelect: fn(),
+  },
+  render: (args) => <CommandPalette {...args} />,
+  play: async ({ args, canvasElement }) => {
+    itemSelectSpy.mockClear();
+    const { trigger, dialog } = await openPalette(canvasElement);
+    const disabledOption = within(dialog).getByRole('option', { name: 'Delete all' });
+    await expect(disabledOption).toHaveAttribute('aria-disabled', 'true');
+
+    // Clicking disabled option does not select and does not close
+    await userEvent.click(disabledOption);
+    await expect(dialog).toHaveAttribute('open');
+    await expect(itemSelectSpy).toHaveBeenCalledTimes(0);
+    await expect(args.onSelect).toHaveBeenCalledTimes(0);
+
+    // Selecting enabled option calls both item.onSelect and app onSelect
+    const enabledOption = within(dialog).getByRole('option', { name: 'Run audit' });
+    await userEvent.click(enabledOption);
+    await expectClosed(canvasElement, trigger);
+
+    await expect(itemSelectSpy).toHaveBeenCalledTimes(1);
+    await expect(args.onSelect).toHaveBeenCalledTimes(1);
+    await expect(args.onSelect).toHaveBeenLastCalledWith(args.items[0]);
+  },
+};
+
+export const EasyModeUncontrolledDismiss: EasyStory = {
+  name: 'Easy mode uncontrolled dismiss',
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    label: LABEL,
+    items: COMMANDS,
+  },
+  render: (args) => <CommandPalette {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const dialog = await canvas.findByRole('dialog', { name: LABEL });
+    await settleMotion(dialog);
+    await expect(dialog).toHaveAttribute('open');
+
+    const input = getInput(canvasElement);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(input);
+
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
+  },
+};
+
+export const Compound: Story = {
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
     const { canvas, trigger, dialog, input } = await openPalette(canvasElement);
@@ -223,7 +547,7 @@ export const DisabledAndScrollable: Story = {
   },
 };
 
-function NativeCloseExample(props: CommandPaletteProps) {
+function NativeCloseExample(props: CommandPaletteCompoundProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   return (
     <CommandPalette {...props}>

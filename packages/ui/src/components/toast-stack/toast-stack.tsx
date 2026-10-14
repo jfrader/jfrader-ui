@@ -8,19 +8,21 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
 } from 'react';
+import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { Button } from '../button';
-import { ToastItem, ToastPortal, TOAST_VIEWPORT_INLINE_SIZE, useToastQueueContext } from '../toast/toast';
+import { ToastItem, ToastPortal, useToastQueueContext, useToastRenderer, type ToastPartProps } from '../toast/toast';
+import { TOAST_VIEWPORT_INLINE_SIZE } from '../toast/toast-layout';
 
 export type ToastStackVariant = 'stacked' | 'list';
 export type ToastStackPosition = 'bottom-start' | 'bottom-center' | 'bottom-end';
-type PartStyle = { className?: string; css?: Interpolation<Theme> };
-export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, ToastPartProps, SxProps {
   variant?: ToastStackVariant;
   position?: ToastStackPosition;
   contained?: boolean;
@@ -29,7 +31,14 @@ export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
   hotkey?: boolean;
   expandLabel?: string;
   collapseLabel?: string;
-  slotProps?: { list?: PartStyle; toggle?: PartStyle };
+  component?: ComponentType<ComponentPropsWithRef<'div'>>;
+  slots?: { root?: ComponentType<ComponentPropsWithRef<'div'>> };
+  slotProps?: {
+    root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & ToastPartProps & SxProps;
+    list?: ToastPartProps;
+    toggle?: ToastPartProps;
+    item?: ToastPartProps;
+  };
 }
 
 const NARROW_VIEWPORT = '@media (max-width: 30rem)';
@@ -101,6 +110,9 @@ function ToastStackContent({
   expandLabel = 'Expand notifications',
   collapseLabel = 'Collapse notifications',
   slotProps,
+  component,
+  slots,
+  css: consumerCss,
   onPointerEnter,
   onPointerLeave,
   onFocus,
@@ -109,7 +121,13 @@ function ToastStackContent({
   ...props
 }: ToastStackProps) {
   const { toasts, registerRenderer } = useToastQueueContext('Stack');
+  const Root = slots?.root ?? component ?? 'div';
+  const {
+    className: rootClass, style: rootSlotStyle, css: rootCss, sx: rootSx,
+    onKeyDown: slotKeyDown, onKeyDownCapture: slotKeyDownCapture, ...rootProps
+  } = slotProps?.root ?? {};
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const mergedRef = useMergeRefs([rootRef, rootProps.ref ?? ref]);
   const listRef = useRef<HTMLDivElement | null>(null);
   const listId = useId();
   const [hovered, setHovered] = useState(false);
@@ -214,42 +232,41 @@ function ToastStackContent({
     };
   }, [height, newestId, expanded, focused]);
   return (
-    <WithSx className={className} styles={rootStyle} sx={sx}>
+    <WithSx className={[rootClass, className].filter(Boolean).join(' ')} styles={[rootStyle, rootCss, rootSx, consumerCss]} sx={sx}>
       {(className) => (
-        <div
+        <Root
           {...props}
+          {...rootProps}
+          style={{ ...props.style, ...rootSlotStyle }}
           role="region"
-          aria-label={props['aria-label'] ?? (props['aria-labelledby'] ? undefined : label)}
+          aria-label={rootProps['aria-label'] ?? props['aria-label'] ??
+            ((rootProps['aria-labelledby'] ?? props['aria-labelledby']) ? undefined : label)}
           className={className}
           data-ui="toast-stack"
           data-empty={!open.length}
           data-contained={contained}
           data-position={position}
           data-expanded={expanded}
-          ref={(element) => {
-            rootRef.current = element;
-            if (typeof ref === 'function') return ref(element);
-            if (ref) ref.current = element;
-          }}
+          ref={mergedRef}
           onPointerEnter={(event) => {
-            onPointerEnter?.(event);
+            (rootProps.onPointerEnter ?? onPointerEnter)?.(event);
             if (!event.defaultPrevented && event.pointerType !== 'touch') setHovered(true);
           }}
           onPointerLeave={(event) => {
-            onPointerLeave?.(event);
+            (rootProps.onPointerLeave ?? onPointerLeave)?.(event);
             if (!event.defaultPrevented) setHovered(false);
           }}
           onFocus={(event) => {
-            onFocus?.(event);
+            (rootProps.onFocus ?? onFocus)?.(event);
             if (!event.defaultPrevented) setFocused(true);
           }}
           onBlur={(event) => {
-            onBlur?.(event);
+            (rootProps.onBlur ?? onBlur)?.(event);
             if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
           }}
           onKeyDownCapture={(event) => {
-            props.onKeyDownCapture?.(event);
-            onKeyDown?.(event);
+            (slotKeyDownCapture ?? props.onKeyDownCapture)?.(event);
+            (slotKeyDown ?? onKeyDown)?.(event);
           }}
         >
           {variant === 'stacked' && open.length > 1 && (
@@ -262,6 +279,7 @@ function ToastStackContent({
               aria-label={expanded ? collapseLabel : expandLabel}
               className={slotProps?.toggle?.className}
               css={[toggleStyle, slotProps?.toggle?.css]}
+              style={slotProps?.toggle?.style}
               onClick={() => setLatched((value) => !value)}
             >
               {expanded ? collapseLabel : expandLabel}
@@ -275,7 +293,7 @@ function ToastStackContent({
             data-expanded={expanded}
             className={slotProps?.list?.className}
             css={[listStyle, slotProps?.list?.css]}
-            style={{ '--toast-stack-height': height } as CSSProperties}
+            style={{ ...slotProps?.list?.style, '--toast-stack-height': height } as CSSProperties}
           >
             {records.map((record) => {
               const index = open.indexOf(record);
@@ -298,18 +316,21 @@ function ToastStackContent({
                     exposed={index >= 0 && (expanded || index === 0)}
                     paused={paused}
                     escapeDismiss
+                    partProps={slotProps?.item}
                     style={!expanded && index > 0 ? { minBlockSize: heights[open[0]!.id] } : undefined}
                   />
                 </div>
               );
             })}
           </div>
-        </div>
+        </Root>
       )}
     </WithSx>
   );
 }
 export function ToastStack(props: ToastStackProps) {
+  const enabled = useToastRenderer('Stack');
+  if (!enabled) return null;
   return (
     <ToastPortal contained={props.contained}>
       <ToastStackContent {...props} />

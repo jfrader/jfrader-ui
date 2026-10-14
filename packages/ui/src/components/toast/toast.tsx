@@ -27,6 +27,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type FocusEvent,
   type MouseEvent,
   type ReactNode,
@@ -34,13 +35,16 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type SerializedStyles } from '../../styling/css';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { ThemeBoundary, useThemeScope } from '../../styling/theme-scope';
 import { isRenderable } from '../../utils/renderable';
 import { Button } from '../button';
 import { Spinner } from '../spinner';
+import { ToastStack, type ToastStackProps } from '../toast-stack/toast-stack';
+import { TOAST_VIEWPORT_INLINE_SIZE } from './toast-layout';
+export { TOAST_VIEWPORT_INLINE_SIZE } from './toast-layout';
 
 // Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
 declare const process: { env: { NODE_ENV?: string } };
@@ -64,7 +68,11 @@ export interface ToastOptions {
   loading?: boolean;
 }
 
-export interface ToastProviderProps {
+export interface ToastMessages {
+  dismiss: string;
+}
+
+export interface ToastProviderBaseProps {
   children?: ReactNode;
   /** Maximum toasts kept. Adding beyond this count removes the oldest immediately. */
   max?: number;
@@ -72,9 +80,39 @@ export interface ToastProviderProps {
   duration?: number;
   /** Accessible label for each toast's close button. */
   dismissLabel?: string;
+  messages?: Partial<ToastMessages>;
 }
 
-export interface ToastViewportProps extends ComponentPropsWithRef<'div'>, SxProps {}
+export type ToastProviderProps = ToastProviderBaseProps &
+  (
+    | { viewport?: undefined; viewportProps?: never; slots?: never; slotProps?: never }
+    | {
+        viewport: 'default';
+        viewportProps?: ToastViewportProps;
+        slots?: { viewport?: ComponentType<ToastViewportProps> };
+        slotProps?: { viewport?: ToastViewportProps };
+      }
+    | {
+        viewport: 'stack';
+        viewportProps?: ToastStackProps;
+        slots?: { viewport?: ComponentType<ToastStackProps> };
+        slotProps?: { viewport?: ToastStackProps };
+      }
+  );
+
+export interface ToastPartProps {
+  className?: string;
+  css?: Interpolation<Theme>;
+  style?: CSSProperties;
+}
+export interface ToastViewportProps extends ComponentPropsWithRef<'div'>, ToastPartProps, SxProps {
+  component?: ComponentType<ComponentPropsWithRef<'div'>>;
+  slots?: { root?: ComponentType<ComponentPropsWithRef<'div'>> };
+  slotProps?: {
+    root?: ComponentPropsWithRef<'div'> & ToastPartProps & SxProps;
+    item?: ToastPartProps;
+  };
+}
 
 export interface ToastApi {
   toast: (options: ToastOptions) => string;
@@ -101,6 +139,7 @@ interface ToastQueueContextValue {
   registerRoot: (id: string, root: HTMLDivElement | null) => void;
   dismissLabel: string;
   registerRenderer: () => () => void;
+  automaticRenderer: boolean;
 }
 
 const DEFAULT_MAX = 4;
@@ -108,11 +147,11 @@ const DEFAULT_DURATION_MS = 5000;
 const DEFAULT_DISMISS_LABEL = 'Dismiss';
 /** Delay between mounting an empty live region and filling it, so the fill is announced. */
 const ANNOUNCE_DELAY_MS = 100;
-export const TOAST_VIEWPORT_INLINE_SIZE = 'min(380px, calc(100vw - 32px))';
 const TONE_STRIPE_WIDTH = '3px';
 
 const ToastApiContext = createContext<ToastApi | null>(null);
 const ToastQueueContext = createContext<ToastQueueContextValue | null>(null);
+const RendererScope = createContext(false);
 
 // Fixed + portaled at the end of the body (or the ThemeRoot's `portalContainer`): later in DOM
 // order than the page, so no z-index. ThemeBoundary carries the enclosing ThemeRoot's theme.
@@ -232,12 +271,41 @@ export function useToast(): ToastApi {
   return api;
 }
 
-function ToastProvider({
-  children,
-  max = DEFAULT_MAX,
-  duration = DEFAULT_DURATION_MS,
-  dismissLabel = DEFAULT_DISMISS_LABEL,
-}: ToastProviderProps) {
+export function useToastRenderer(part: string) {
+  const queue = useToastQueueContext(part);
+  const automatic = useContext(RendererScope);
+  return !queue.automaticRenderer || automatic;
+}
+
+function AutomaticViewport(props: ToastProviderProps) {
+  if (props.viewport === 'default') {
+    const Viewport = props.slots?.viewport ?? ToastViewport;
+    return <Viewport {...props.viewportProps} {...props.slotProps?.viewport}
+      className={[props.slotProps?.viewport?.className, props.viewportProps?.className].filter(Boolean).join(' ')}
+      css={[props.slotProps?.viewport?.css, props.viewportProps?.css]}
+      sx={[props.slotProps?.viewport?.sx, props.viewportProps?.sx]}
+      style={{ ...props.viewportProps?.style, ...props.slotProps?.viewport?.style }} />;
+  }
+  if (props.viewport === 'stack') {
+    const Stack = props.slots?.viewport ?? ToastStack;
+    return <Stack {...props.viewportProps} {...props.slotProps?.viewport}
+      className={[props.slotProps?.viewport?.className, props.viewportProps?.className].filter(Boolean).join(' ')}
+      css={[props.slotProps?.viewport?.css, props.viewportProps?.css]}
+      sx={[props.slotProps?.viewport?.sx, props.viewportProps?.sx]}
+      style={{ ...props.viewportProps?.style, ...props.slotProps?.viewport?.style }} />;
+  }
+  return null;
+}
+
+function ToastProvider(props: ToastProviderProps) {
+  const {
+    children,
+    max = DEFAULT_MAX,
+    duration = DEFAULT_DURATION_MS,
+    dismissLabel = DEFAULT_DISMISS_LABEL,
+    messages,
+    viewport,
+  } = props;
   const idPrefix = useId();
   const counterRef = useRef(0);
   const [toasts, setToasts] = useState<ToastRecord[]>([]);
@@ -374,31 +442,45 @@ function ToastProvider({
   // Two contexts: `useToast` consumers get a value that stays stable while the queue changes.
   const api = useMemo(() => ({ toast, dismiss, update }), [toast, dismiss, update]);
   const queue = useMemo(
-    () => ({ toasts, dismiss, remove, registerRoot, dismissLabel, registerRenderer }),
-    [toasts, dismiss, remove, registerRoot, dismissLabel, registerRenderer],
+    () => ({
+      toasts, dismiss, remove, registerRoot,
+      dismissLabel: messages?.dismiss ?? dismissLabel,
+      registerRenderer,
+      automaticRenderer: viewport !== undefined,
+    }),
+    [toasts, dismiss, remove, registerRoot, dismissLabel, messages?.dismiss, registerRenderer, viewport],
   );
 
   return (
     <ToastApiContext.Provider value={api}>
-      <ToastQueueContext.Provider value={queue}>{children}</ToastQueueContext.Provider>
+      <ToastQueueContext.Provider value={queue}>
+        {children}
+        <RendererScope.Provider value={true}>
+          <AutomaticViewport {...props} />
+        </RendererScope.Provider>
+      </ToastQueueContext.Provider>
     </ToastApiContext.Provider>
   );
 }
 
 ToastProvider.displayName = 'Toast.Provider';
 
-function ToastViewport({ ref, className, sx, ...props }: ToastViewportProps) {
+function ToastViewport({ component, slots, slotProps, className, style, css: consumerCss, sx, ...props }: ToastViewportProps) {
   const { toasts, registerRenderer } = useToastQueueContext('Viewport');
-  useEffect(registerRenderer, [registerRenderer]);
+  const enabled = useToastRenderer('Viewport');
+  useEffect(() => enabled ? registerRenderer() : undefined, [enabled, registerRenderer]);
+  const { className: slotClass, style: slotStyle, css: slotCss, sx: slotSx, ...root } = slotProps?.root ?? {};
+  const Root = slots?.root ?? component ?? 'div';
+  if (!enabled) return null;
   return (
     <ToastPortal>
-      <WithSx className={className} styles={viewportStyle} sx={sx}>
+      <WithSx className={[slotClass, className].filter(Boolean).join(' ')} styles={[viewportStyle, slotCss, slotSx, consumerCss]} sx={sx}>
         {(className) => (
-          <div {...props} ref={ref} data-ui="toast-viewport" className={className}>
+          <Root {...props} {...root} style={{ ...style, ...slotStyle }} data-ui="toast-viewport" className={className}>
             {toasts.map((record) => (
-              <ToastItem key={record.id} record={record} />
+              <ToastItem key={record.id} record={record} partProps={slotProps?.item} />
             ))}
-          </div>
+          </Root>
         )}
       </WithSx>
     </ToastPortal>
@@ -437,6 +519,7 @@ export function ToastItem({
   style,
   className,
   escapeDismiss = false,
+  partProps,
 }: {
   record: ToastRecord;
   exposed?: boolean;
@@ -444,6 +527,7 @@ export function ToastItem({
   style?: CSSProperties;
   className?: string;
   escapeDismiss?: boolean;
+  partProps?: ToastPartProps;
 }) {
   const { dismiss, remove, registerRoot, dismissLabel } = useToastQueueContext('Viewport');
   const { id, options, state } = record;
@@ -535,8 +619,8 @@ export function ToastItem({
       inert={state === 'closing' || !exposed}
       aria-hidden={state === 'closing' || !exposed ? true : undefined}
       data-toast-id={id}
-      style={style}
-      className={className}
+      style={{ ...partProps?.style, ...style }}
+      className={[className, partProps?.className].filter(Boolean).join(' ')}
       onKeyDown={(event) => {
         if (escapeDismiss && event.key === 'Escape' && !event.defaultPrevented) {
           event.preventDefault();
@@ -553,7 +637,7 @@ export function ToastItem({
       onPointerLeave={() => setPointerInside(false)}
       onFocus={handleFocus}
       onBlur={handleBlur}
-      css={[toastStyle, toneStyles[tone]]}
+      css={[toastStyle, toneStyles[tone], partProps?.css]}
     >
       <div role={tone === 'danger' ? 'alert' : 'status'} aria-atomic="true" css={bodyStyle}>
         {populated && (

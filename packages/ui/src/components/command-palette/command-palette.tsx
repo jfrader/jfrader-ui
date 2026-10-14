@@ -27,6 +27,7 @@ import {
   useState,
   type ChangeEvent,
   type ComponentPropsWithRef,
+  type ComponentType,
   type KeyboardEvent,
   type MouseEvent,
   type MutableRefObject,
@@ -40,6 +41,7 @@ import {
   useMergeRefs,
   type UseInteractionsReturn,
 } from '@floating-ui/react';
+import { type Interpolation, type Theme } from '../../styling/css';
 import { listboxItemStateStyle, listboxItemStyle } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
@@ -71,6 +73,7 @@ import {
   panelStyle,
 } from './command-palette.styles';
 
+declare const process: { env: { NODE_ENV?: string } };
 const DEFAULT_LABEL = 'Command palette';
 const DEFAULT_EMPTY_MESSAGE = 'No results';
 const RESULT_PLURALS = new Intl.PluralRules('en');
@@ -79,7 +82,50 @@ const defaultFilter = (text: string, query: string) => text.toLocaleLowerCase().
 const defaultFormatResultCount = (count: number) =>
   `${count} ${RESULT_PLURALS.select(count) === 'one' ? 'result' : 'results'}`;
 
-export interface CommandPaletteProps {
+export interface CommandPaletteItemRecord {
+  /** Unique within the palette. */
+  value: string;
+  /** Display label for the item. */
+  label: ReactNode;
+  /** Extra text the filter matches against (synonyms, aliases). */
+  keywords?: string;
+  /** Disables the item. */
+  disabled?: boolean;
+  /** Group name this item belongs to. */
+  group?: string;
+  /** Called when this specific item is activated. */
+  onSelect?: () => void;
+}
+
+export interface CommandPaletteSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  trigger?: ComponentType<CommandPaletteTriggerProps>;
+  content?: ComponentType<CommandPaletteContentProps>;
+  input?: ComponentType<CommandPaletteInputProps>;
+  list?: ComponentType<CommandPaletteListProps>;
+  group?: ComponentType<CommandPaletteGroupProps>;
+  item?: ComponentType<CommandPaletteItemProps>;
+  empty?: ComponentType<CommandPaletteEmptyProps>;
+}
+
+type GeneratedPartProps<Props> = Partial<Props> & { [attribute: `data-${string}`]: unknown };
+
+export interface CommandPaletteSlotProps {
+  root?: ComponentPropsWithRef<'div'> &
+    SxProps & {
+      css?: Interpolation<Theme>;
+      [attribute: `data-${string}`]: unknown;
+    };
+  trigger?: GeneratedPartProps<CommandPaletteTriggerProps>;
+  content?: GeneratedPartProps<CommandPaletteContentProps>;
+  input?: GeneratedPartProps<CommandPaletteInputProps>;
+  list?: GeneratedPartProps<CommandPaletteListProps>;
+  group?: GeneratedPartProps<Omit<CommandPaletteGroupProps, 'label' | 'children'>>;
+  item?: GeneratedPartProps<Omit<CommandPaletteItemProps, 'value' | 'id' | 'children' | 'keywords' | 'disabled' | 'onSelect'>>;
+  empty?: GeneratedPartProps<CommandPaletteEmptyProps>;
+}
+
+export interface CommandPaletteBaseProps {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -91,8 +137,49 @@ export interface CommandPaletteProps {
   emptyMessage?: ReactNode;
   /** Live region text announced after the query changes. */
   formatResultCount?: (count: number) => string;
-  children?: ReactNode;
 }
+
+export interface CommandPaletteCompoundProps extends CommandPaletteBaseProps {
+  children?: ReactNode;
+  items?: never;
+  triggerLabel?: never;
+  placeholder?: never;
+  empty?: never;
+  onSelect?: never;
+  slots?: never;
+  slotProps?: never;
+  component?: never;
+  className?: never;
+  sx?: never;
+  style?: never;
+}
+
+export interface CommandPaletteEasyProps<T extends CommandPaletteItemRecord = CommandPaletteItemRecord>
+  extends CommandPaletteBaseProps,
+    Omit<ComponentPropsWithRef<'div'>, keyof CommandPaletteBaseProps | 'children' | 'onSelect'>,
+    SxProps {
+  css?: Interpolation<Theme>;
+  [attribute: `data-${string}`]: unknown;
+  /** Items to search and run. */
+  items: readonly T[];
+  /** Called when an item is selected. */
+  onSelect?: (item: T) => void;
+  /** Name the trigger button that opens the palette. When omitted, no trigger is rendered. */
+  triggerLabel?: ReactNode;
+  /** Placeholder text for the command input. */
+  placeholder?: string;
+  /** Content to display when no commands match. Defaults to `emptyMessage` or 'No results'. */
+  empty?: ReactNode;
+  children?: never;
+  /** Replace the root container. Exactly sugar for `slots.root`. */
+  component?: ComponentType<ComponentPropsWithRef<'div'>>;
+  slots?: CommandPaletteSlots;
+  slotProps?: CommandPaletteSlotProps;
+}
+
+export type CommandPaletteProps<T extends CommandPaletteItemRecord = CommandPaletteItemRecord> =
+  | CommandPaletteCompoundProps
+  | CommandPaletteEasyProps<T>;
 
 export interface CommandPaletteTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface CommandPaletteContentProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'>, SxProps {}
@@ -111,6 +198,8 @@ export interface CommandPaletteItemProps extends Omit<ComponentPropsWithRef<'div
   onSelect?: () => void;
   /** Extra text the filter matches against (synonyms, aliases). */
   keywords?: string;
+  /** Disables the item. */
+  disabled?: boolean;
 }
 
 interface ItemRecord {
@@ -159,16 +248,24 @@ const setNativeAutofocus = (element: HTMLInputElement | null) => {
   element?.setAttribute('autofocus', '');
 };
 
-function CommandPaletteOverlay({
-  open: openProp,
-  defaultOpen = false,
-  onOpenChange,
-  label = DEFAULT_LABEL,
-  filter = defaultFilter,
-  emptyMessage = DEFAULT_EMPTY_MESSAGE,
-  formatResultCount = defaultFormatResultCount,
-  children,
-}: CommandPaletteProps) {
+const tokens = (...values: Array<unknown>): string | undefined => {
+  const list = [...new Set(values.flatMap((v) => (typeof v === 'string' ? v.split(/\s+/) : [])))].filter(Boolean);
+  return list.join(' ') || undefined;
+};
+
+function CommandPaletteOverlay<T extends CommandPaletteItemRecord = CommandPaletteItemRecord>(
+  props: CommandPaletteProps<T>,
+) {
+  const {
+    open: openProp,
+    defaultOpen = false,
+    onOpenChange,
+    label = DEFAULT_LABEL,
+    filter = defaultFilter,
+    emptyMessage = DEFAULT_EMPTY_MESSAGE,
+    formatResultCount = defaultFormatResultCount,
+    children,
+  } = props;
   const baseId = useId();
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const { dialogElementRef, setDialogElement, setOpen, requestClose, repairToken } = useNativeDialogRoot(
@@ -304,10 +401,144 @@ function CommandPaletteOverlay({
     ],
   );
 
-  return <CommandPaletteContext.Provider value={context}>{children}</CommandPaletteContext.Provider>;
+  let renderedContent: ReactNode = children;
+  if ('items' in props && props.items !== undefined) {
+    const {
+      items,
+      onSelect,
+      triggerLabel,
+      placeholder,
+      empty,
+      slots,
+      slotProps,
+      component,
+      className,
+      sx,
+      css: consumerCss,
+      style,
+      open: _open,
+      defaultOpen: _defaultOpen,
+      onOpenChange: _onOpenChange,
+      label: _label,
+      filter: _filter,
+      emptyMessage: _emptyMessage,
+      formatResultCount: _formatResultCount,
+      children: _children,
+      ...hostRest
+    } = props;
+
+    if (process.env.NODE_ENV !== 'production') {
+      if (component && slots?.root && component !== slots.root) {
+        console.warn('CommandPalette: component is redundant when slots.root is supplied; slots.root wins.');
+      }
+    }
+
+    const TriggerPart = slots?.trigger ?? CommandPaletteTrigger;
+    const ContentPart = slots?.content ?? CommandPaletteContent;
+    const InputPart = slots?.input ?? CommandPaletteInput;
+    const ListPart = slots?.list ?? CommandPaletteList;
+    const GroupPart = slots?.group ?? CommandPaletteGroup;
+    const ItemPart = slots?.item ?? CommandPaletteItem;
+    const EmptyPart = slots?.empty ?? CommandPaletteEmpty;
+    const RootPart = slots?.root ?? component ?? 'div';
+
+    const rootSlot = slotProps?.root;
+    const {
+      className: rootSlotClassName,
+      css: rootSlotCss,
+      sx: rootSlotSx,
+      style: rootSlotStyle,
+      'data-ui': rootSlotDataUi,
+      ...rootSlotRest
+    } = rootSlot ?? {};
+
+    const sections: Array<{ group?: string; items: T[] }> = [];
+    const groupMap = new Map<string, { group?: string; items: T[] }>();
+    let currentUngrouped: { group?: string; items: T[] } | null = null;
+
+    for (const item of items) {
+      if (item.group !== undefined) {
+        currentUngrouped = null;
+        let entry = groupMap.get(item.group);
+        if (!entry) {
+          entry = { group: item.group, items: [] };
+          groupMap.set(item.group, entry);
+          sections.push(entry);
+        }
+        entry.items.push(item);
+      } else {
+        if (!currentUngrouped) {
+          currentUngrouped = { items: [] };
+          sections.push(currentUngrouped);
+        }
+        currentUngrouped.items.push(item);
+      }
+    }
+
+    const renderItem = (item: T) => (
+      <ItemPart key={item.value} {...slotProps?.item} value={item.value}
+        keywords={item.keywords} disabled={item.disabled}
+        onSelect={() => {
+          item.onSelect?.();
+          onSelect?.(item);
+        }}>
+        {item.label}
+      </ItemPart>
+    );
+    const renderedList = sections.map((section) =>
+      section.group !== undefined ? (
+        <GroupPart key={section.group} label={section.group} {...slotProps?.group}>
+          {section.items.map(renderItem)}
+        </GroupPart>
+      ) : (
+        section.items.map(renderItem)
+      ),
+    );
+
+    const rendered = (
+      <>
+        {isRenderable(triggerLabel) && (
+          <TriggerPart {...slotProps?.trigger}>{triggerLabel}</TriggerPart>
+        )}
+        <ContentPart {...slotProps?.content}>
+          <InputPart placeholder={placeholder} {...slotProps?.input} />
+          <ListPart {...slotProps?.list}>{renderedList}</ListPart>
+          <EmptyPart {...slotProps?.empty}>{empty ?? emptyMessage}</EmptyPart>
+        </ContentPart>
+      </>
+    );
+
+    renderedContent = (
+      <WithSx styles={[rootSlotCss, rootSlotSx]} className={rootSlotClassName}>
+        {(slotClasses) => (
+          <WithSx styles={consumerCss} className={className} sx={sx}>
+            {(consumerClasses) => (
+              <WithSx styles={[]} className={[slotClasses, consumerClasses].filter(Boolean).join(' ')}>
+                {(classes) => (
+                  <RootPart
+                    {...hostRest}
+                    {...rootSlotRest}
+                    className={classes}
+                    style={{ ...style, ...rootSlotStyle }}
+                    data-ui={tokens('command-palette', hostRest['data-ui'], rootSlotDataUi)}
+                  >
+                    {rendered}
+                  </RootPart>
+                )}
+              </WithSx>
+            )}
+          </WithSx>
+        )}
+      </WithSx>
+    );
+  }
+
+  return <CommandPaletteContext.Provider value={context}>{renderedContent}</CommandPaletteContext.Provider>;
 }
 
-function CommandPaletteRoot(props: CommandPaletteProps) {
+function CommandPaletteRoot<T extends CommandPaletteItemRecord = CommandPaletteItemRecord>(
+  props: CommandPaletteProps<T>,
+) {
   return (
     <IsolatedOverlay>
       <CommandPaletteOverlay {...props} />
@@ -540,6 +771,7 @@ function CommandPaletteItem({
   onSelect,
   keywords,
   'aria-disabled': ariaDisabled,
+  disabled: disabledProp,
   onClick,
   children,
   className,
@@ -549,7 +781,7 @@ function CommandPaletteItem({
   const { baseId, activeIndex, matchedValues, getItemProps, setOpen, registration } =
     useCommandPaletteContext('Item');
   const groupId = useContext(CommandPaletteGroupContext);
-  const disabled = ariaDisabled === true || ariaDisabled === 'true';
+  const disabled = disabledProp === true || ariaDisabled === true || ariaDisabled === 'true';
   const elementRef = useRef<HTMLDivElement | null>(null);
   const { ref: listItemRef, index } = useCollectionItem(value, registration, elementRef, (itemIndex, label) => ({
     index: itemIndex,
@@ -575,7 +807,7 @@ function CommandPaletteItem({
           {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
           ref={mergedRef}
           role="option"
-          aria-disabled={ariaDisabled}
+          aria-disabled={disabled ? 'true' : undefined}
           aria-selected={isActive}
           hidden={!matchedValues.has(value)}
           data-active={isActive || undefined}
