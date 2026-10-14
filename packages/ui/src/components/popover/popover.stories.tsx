@@ -53,6 +53,12 @@ type Story = StoryObj<typeof meta>;
 
 type CheckedPopover<Props extends import('./index').PopoverProps> = Props;
 export type PopoverTypeRegression = {
+  // @ts-expect-error The non-DOM provider root has no component sugar.
+  providerComponent: PopoverEasyProps['component'];
+  // @ts-expect-error Replace the native content or trigger, not the provider root.
+  providerRootSlot: NonNullable<PopoverEasyProps['slots']>['root'];
+  // @ts-expect-error The provider has no root element to receive native props.
+  providerRootProps: NonNullable<PopoverEasyProps['slotProps']>['root'];
   // @ts-expect-error Easy presentation and compound children are mutually exclusive.
   mixed: CheckedPopover<{ triggerLabel: string; label: string; content: string; children: string }>;
   // @ts-expect-error Easy mode requires a dialog name.
@@ -220,19 +226,21 @@ export const CustomParts: StoryObj<PopoverEasyProps> = {
   args: {
     triggerLabel: TRIGGER, label: HEADING, content: <Button size="sm">Copy link</Button>,
     slots: { trigger: PopoverButtonRoot, content: PopoverPanelRoot },
-    slotProps: { trigger: { className: 'share-trigger' }, content: { className: 'share-panel', sx: { padding: vars.space[6] } } },
+    slotProps: { trigger: { className: 'share-trigger', ref: fn() }, content: { className: 'share-panel', ref: fn(), sx: { padding: vars.space[6] } } },
   },
   render: (args) => <Popover {...args} />,
   parameters: { docs: { source: { code: `<Popover triggerLabel="Share" label="Share link" content={<Button>Copy link</Button>}
   slotProps={{ content: { sx: { padding: theme.space[6] } } }} />` } } },
-  play: async ({ canvasElement, userEvent }) => {
+  play: async ({ args, canvasElement, userEvent }) => {
     const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
     await expect(trigger).toHaveClass('share-trigger');
     await expect(trigger).toHaveAttribute('data-generated-trigger');
+    await expect(args.slotProps?.trigger?.ref).toHaveBeenLastCalledWith(trigger);
     await userEvent.click(trigger);
     const dialog = await bodyOf(canvasElement).findByRole('dialog', { name: HEADING });
     await expect(dialog).toHaveClass('share-panel');
     await expect(dialog).toHaveAttribute('data-generated-panel');
+    await expect(args.slotProps?.content?.ref).toHaveBeenLastCalledWith(dialog);
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement, trigger);
   },

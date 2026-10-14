@@ -33,6 +33,12 @@ type Story = StoryObj<typeof meta>;
 
 type CheckedTooltip<Props extends import('./index').TooltipProps> = Props;
 export type TooltipTypeRegression = {
+  // @ts-expect-error The non-DOM provider root has no component sugar.
+  providerComponent: TooltipEasyProps['component'];
+  // @ts-expect-error Replace the native content or trigger, not the provider root.
+  providerRootSlot: NonNullable<TooltipEasyProps['slots']>['root'];
+  // @ts-expect-error The provider has no root element to receive native props.
+  providerRootProps: NonNullable<TooltipEasyProps['slotProps']>['root'];
   // @ts-expect-error Easy help and compound children are mutually exclusive.
   mixed: CheckedTooltip<{ triggerLabel: string; content: string; children: string }>;
   // @ts-expect-error Easy mode needs both its trigger label and help text.
@@ -160,19 +166,21 @@ export const CustomParts: StoryObj<TooltipEasyProps> = {
     triggerLabel: TRIGGER,
     content: TIP,
     slots: { trigger: TooltipButtonRoot, content: TooltipHelpRoot },
-    slotProps: { trigger: { className: 'copy-trigger' }, content: { className: 'copy-help', css: { padding: vars.space[4] }, sx: { padding: vars.space[3] } } },
+    slotProps: { trigger: { className: 'copy-trigger', ref: fn() }, content: { className: 'copy-help', ref: fn(), css: { padding: vars.space[4] }, sx: { padding: vars.space[3] } } },
   },
   render: (args) => <Tooltip {...args} />,
   parameters: { docs: { source: { code: `<Tooltip triggerLabel="Copy" content="Copy to clipboard"
   slotProps={{ content: { className: 'copy-help' } }} />` } } },
-  play: async ({ canvasElement, userEvent }) => {
+  play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await expect(trigger).toHaveClass('copy-trigger');
     await expect(trigger).toHaveAttribute('data-generated-trigger');
+    await expect(args.slotProps?.trigger?.ref).toHaveBeenLastCalledWith(trigger);
     await userEvent.hover(trigger);
     const tooltip = await bodyOf(canvasElement).findByRole('tooltip');
     await expect(tooltip).toHaveClass('copy-help');
     await expect(tooltip).toHaveAttribute('data-generated-help');
+    await expect(args.slotProps?.content?.ref).toHaveBeenLastCalledWith(tooltip);
     await expect(getComputedStyle(tooltip).paddingBlockStart).toBe(getComputedStyle(tooltip).getPropertyValue('--ui-space-3').trim());
     await userEvent.unhover(trigger);
     await expectClosed(canvasElement);

@@ -27,6 +27,15 @@ type Story = StoryObj<typeof meta>;
 
 type CheckedCalendar<Props extends import('./index').CalendarProps> = Props;
 export type CalendarTypeRegression = {
+  rootSugar: CheckedCalendar<{
+    component: (props: ComponentPropsWithRef<'div'>) => null;
+    slots: { root: (props: ComponentPropsWithRef<'div'>) => null };
+    slotProps: { root: { title: string; className: string } };
+    title: string;
+    className: string;
+  }>;
+  // @ts-expect-error Root replacements use component types, not intrinsic tag strings.
+  intrinsicRoot: CheckedCalendar<{ component: 'div' }>;
   // @ts-expect-error Compound children cannot accompany generated-part props.
   compoundSlots: CheckedCalendar<{ children: string; slotProps: { header: { className: string } } }>;
   // @ts-expect-error Compound children cannot accompany root replacement sugar.
@@ -226,7 +235,22 @@ export const CustomParts: StoryObj<Meta<CalendarEasyProps>> = {
 
 /** Replace the root div without changing the header or grid. */
 export const RootReplacement: StoryObj<Meta<CalendarEasyProps>> = {
-  args: { locale: LOCALE, defaultValue: '2026-10-14', component: CalendarRootReplacement, ref: fn(), slotProps: { root: { title: 'October calendar' } } },
+  args: {
+    locale: LOCALE,
+    defaultValue: '2026-10-14',
+    component: CalendarRootReplacement,
+    ref: fn(),
+    title: 'Consumer title',
+    className: 'calendar-consumer',
+    style: { marginBlock: 0, marginInline: vars.space[3] },
+    slotProps: {
+      root: {
+        title: 'October calendar',
+        className: 'calendar-slot',
+        style: { marginBlock: vars.space[2] },
+      },
+    },
+  },
   render: (args) => <Calendar {...args} />,
   parameters: { docs: { source: { code: `function CalendarRoot(props) {
   return <div {...props} data-custom-calendar-root="" />;
@@ -235,9 +259,13 @@ export const RootReplacement: StoryObj<Meta<CalendarEasyProps>> = {
 <Calendar locale="en-US" defaultValue="2026-10-14" component={CalendarRoot}
   slotProps={{ root: { title: 'October calendar' } }} />` } } },
   play: async ({ args, canvasElement }) => {
-    await expect(canvasElement.querySelector('[data-custom-calendar-root]')).toHaveAttribute('data-ui', 'calendar');
-    await expect(canvasElement.querySelector('[data-custom-calendar-root]')).toHaveAttribute('title', 'October calendar');
-    await expect(args.ref).toHaveBeenLastCalledWith(canvasElement.querySelector('[data-custom-calendar-root]'));
+    const root = canvasElement.querySelector<HTMLElement>('[data-custom-calendar-root]')!;
+    await expect(root).toHaveAttribute('data-ui', 'calendar');
+    await expect(root).toHaveAttribute('title', 'October calendar');
+    await expect(root).toHaveClass('calendar-consumer', 'calendar-slot');
+    await expect(root.style.marginBlock).toBe(vars.space[2]);
+    await expect(root.style.marginInline).toBe(vars.space[3]);
+    await expect(args.ref).toHaveBeenLastCalledWith(root);
     await expectMonth(canvasElement, 'October 2026');
   },
 };

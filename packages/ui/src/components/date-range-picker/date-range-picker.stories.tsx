@@ -135,6 +135,12 @@ type Story = StoryObj<typeof meta>;
 
 type CheckedDateRangePicker<Props extends import('./index').DateRangePickerProps> = Props;
 export type DateRangePickerTypeRegression = {
+  // @ts-expect-error The non-DOM provider root has no component sugar.
+  providerComponent: DateRangePickerEasyProps['component'];
+  // @ts-expect-error The semantic button and portaled panel have separate replacement seams.
+  providerRootSlot: NonNullable<DateRangePickerEasyProps['slots']>['root'];
+  // @ts-expect-error The provider has no root element to receive native props.
+  providerRootProps: NonNullable<DateRangePickerEasyProps['slotProps']>['root'];
   // @ts-expect-error Easy label and compound children are mutually exclusive.
   mixed: CheckedDateRangePicker<{ label: string; messages: DateRangePickerMessages; children: string }>;
   // @ts-expect-error Easy placeholder requires a label.
@@ -369,19 +375,21 @@ export const CustomParts: StoryObj<DateRangePickerEasyProps> = {
   args: {
     label: LABEL, placeholder: PLACEHOLDER, locale: LOCALE, today: TODAY, messages: rangeMessages, defaultValue: WEEK, months: 1,
     slots: { trigger: RangeButtonRoot, content: RangePanelRoot },
-    slotProps: { trigger: { className: 'report-trigger' }, content: { className: 'report-dialog', slotProps: { summary: { className: 'report-summary' } } } },
+    slotProps: { trigger: { className: 'report-trigger', ref: fn() }, content: { className: 'report-dialog', ref: fn(), slotProps: { summary: { className: 'report-summary' } } } },
   },
   render: (args) => <DateRangePicker {...args} />,
   parameters: { docs: { source: { code: `<DateRangePicker label="Report period" placeholder="Choose dates" messages={rangeMessages}
   slotProps={{ content: { slotProps: { summary: { className: 'report-summary' } } } }} />` } } },
-  play: async ({ canvasElement, userEvent }) => {
+  play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await expect(trigger).toHaveClass('report-trigger');
     await expect(trigger).toHaveAttribute('data-generated-trigger');
+    await expect(args.slotProps?.trigger?.ref).toHaveBeenLastCalledWith(trigger);
     await userEvent.click(trigger);
     const dialog = await findDialog(canvasElement);
     await expect(dialog).toHaveClass('report-dialog');
     await expect(dialog).toHaveAttribute('data-generated-panel');
+    await expect(args.slotProps?.content?.ref).toHaveBeenLastCalledWith(dialog);
     await expect(summary(canvasElement)).toHaveClass('report-summary');
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);

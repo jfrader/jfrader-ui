@@ -47,6 +47,12 @@ type Story = StoryObj<typeof meta>;
 
 type CheckedDatePicker<Props extends import('./index').DatePickerProps> = Props;
 export type DatePickerTypeRegression = {
+  // @ts-expect-error The non-DOM provider root has no component sugar.
+  providerComponent: DatePickerEasyProps['component'];
+  // @ts-expect-error The field and portaled popup have separate replacement seams.
+  providerRootSlot: NonNullable<DatePickerEasyProps['slots']>['root'];
+  // @ts-expect-error The provider has no root element to receive native props.
+  providerRootProps: NonNullable<DatePickerEasyProps['slotProps']>['root'];
   // @ts-expect-error Easy label and compound children are mutually exclusive.
   mixed: CheckedDatePicker<{ label: string; children: string }>;
   // @ts-expect-error Generated-part props require the easy label.
@@ -225,19 +231,21 @@ export const CustomParts: StoryObj<DatePickerEasyProps> = {
   args: {
     label: LABEL, locale: LOCALE, defaultValue: '2026-10-12',
     slots: { input: DateFieldReplacement, popup: DatePopupRoot },
-    slotProps: { input: { description: 'Travel date', className: 'departure-field' }, popup: { className: 'departure-calendar' } },
+    slotProps: { input: { description: 'Travel date', className: 'departure-field', ref: fn() }, popup: { className: 'departure-calendar', ref: fn() } },
   },
   render: (args) => <DatePicker {...args} />,
   parameters: { docs: { source: { code: `<DatePicker label="Departure" locale="en-US"
   slotProps={{ input: { description: 'Travel date' }, popup: { className: 'departure-calendar' } }} />` } } },
-  play: async ({ canvasElement, userEvent }) => {
+  play: async ({ args, canvasElement, userEvent }) => {
     const input = getInput(canvasElement);
     await expect(input).toHaveAccessibleDescription('Travel date');
     await expect(input).toHaveAttribute('data-generated-field');
+    await expect(args.slotProps?.input?.ref).toHaveBeenLastCalledWith(input);
     await userEvent.click(input);
     const dialog = await bodyOf(canvasElement).findByRole('dialog', { name: LABEL });
     await expect(dialog).toHaveClass('departure-calendar');
     await expect(dialog).toHaveAttribute('data-generated-popup');
+    await expect(args.slotProps?.popup?.ref).toHaveBeenLastCalledWith(dialog);
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);
   },
