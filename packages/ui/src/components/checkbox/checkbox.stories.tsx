@@ -32,7 +32,21 @@ export const SlotReplacement: Story = {
 const meta = {
   title: 'Inputs/Checkbox',
   component: Checkbox,
-  parameters: { docs: { description: { component: 'Turn an option on or off, or show that only some items are selected.' } } },
+  parameters: {
+    docs: {
+      description: { component: 'Turn an option on or off, or show that only some items are selected.' },
+      usage: `### Values
+- Use \`defaultChecked\` for an uncontrolled initial state. If you pass \`checked\`, update it from \`onCheckedChange\`; the callback receives a boolean after \`onChange\`.
+- Activation does not clear \`indeterminate\`. Clear that prop yourself when the selection should leave the mixed state.
+
+### Forms
+- Pass \`name\` and \`value\` to submit the native input's value when checked. An unchecked or disabled checkbox contributes no value.
+- If you omit \`label\`, supply \`aria-label\` or \`aria-labelledby\` to name the input.
+
+### Keyboard
+- Tab to the checkbox and press Space to toggle it. Set \`disabled\` to prevent changes and remove it from the tab order.`,
+    },
+  },
   args: { label: 'Email me updates', size: 'md' },
   argTypes: {
     size: { control: 'radio', options: SIZES },
