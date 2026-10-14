@@ -21,8 +21,8 @@ importers:
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.3.0)(react@19.3.0)
       '@jfrader/storybook-docs':
-        specifier: ^0.7.0
-        version: 0.7.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+        specifier: ^0.8.0
+        version: 0.8.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
       '@jfrader/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -713,8 +713,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@jfrader/storybook-docs@0.7.0':
-    resolution: {integrity: sha512-U85lQSSwqHPXoXXPmreKjznOUh1RRjvKw0b1BbVOOKq6UHWU5703E8/JflCB99Wf51R4gaZJO1umBept5Akcng==}
+  '@jfrader/storybook-docs@0.8.0':
+    resolution: {integrity: sha512-S+0gdnXvuO0ZoDP+O41lAwhvEH8umt1CgrJ6id5Fyi2EuFyNzJNR1lybrvh30cT+GLlEbR1ZbEyplknCux1FDQ==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       react: ^19.0.0
@@ -2964,7 +2964,7 @@ snapshots:
   '@img/sharp-win32-x64@0.35.5':
     optional: true
 
-  '@jfrader/storybook-docs@0.7.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))':
+  '@jfrader/storybook-docs@0.8.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))':
     dependencies:
       marked: 18.1.1
       react: 19.3.0
