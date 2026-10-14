@@ -147,7 +147,10 @@ const meta = {
 - Omit \`value\` or set \`face="back"\` to hide built-in rank and suit data. Back patterns come from the deck (e.g. Spanish diagonal, poker checks) or explicit \`backPattern\`, and \`children\` replaces either face’s artwork.
 
 ### Root customization
-Use \`component\` or \`slots.root\` to replace the root. Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`. \`slots.root\` wins when both are supplied. \`slotProps.root\` overrides root props; className and style merge. Style order is material → slot → consumer css → consumer sx.`,
+- Use \`component\` or \`slots.root\` to replace the root. \`slots.root\` wins when both are supplied.
+- Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`.
+- \`slotProps.root\` overrides root props. ClassName and style merge.
+- Style order is material → slot → consumer css → consumer sx.`,
     },
   },
 } satisfies Meta<typeof GameCard>;
@@ -176,8 +179,8 @@ async function expectDeckGrid(cards: NodeListOf<Element>) {
 }
 
 /** Spanish diagonal backs and poker checks beside their faces. */
-export const BackPatterns: Story = {
-  name: 'Deck backs',
+export const Default: Story = {
+  name: 'Default',
   render: () => (
     <div style={rowStyle}>
       {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => (
@@ -198,9 +201,10 @@ export const BackPatterns: Story = {
   },
 };
 
-export const BackPatternsLightTheme: Story = { ...BackPatterns, name: 'Deck backs light theme', decorators: [withLightTheme] };
+export const BackPatternsLightTheme: Story = { ...Default, name: 'Deck backs light theme', decorators: [withLightTheme] };
 
-export const Default: Story = {
+export const QueenOfHearts: Story = {
+  name: 'Queen of hearts',
   play: async ({ canvasElement }) => {
     const card = within(canvasElement).getByRole('img', { name: 'Q of hearts' });
     await expect(card).toHaveAttribute('data-deck', 'french');
@@ -219,6 +223,7 @@ function CardMaterial({ className, ...props }: GameCardRootProps) {
 }
 
 export const RootCustomization: Story = {
+  tags: ['!autodocs'],
   args: { ref: fn(), component: CardMaterial, slots: { root: CardMaterial }, 'data-ui': 'consumer game-card consumer',
     title: 'Host title', className: 'host-class', style: { marginInlineStart: 1, marginBlockStart: 2 },
     slotProps: { root: { 'data-ui': 'slot consumer', title: 'Slot title', className: 'slot-class',

@@ -120,7 +120,7 @@ export function GameHand({
             })}
           </div>
           <Button type="button" data-ui="game-hand-confirm" disabled={disabled || !selectedCard || !onPlayIntent}
-            render={(props) => <button {...props} data-ui="game-hand-confirm" disabled={disabled || !selectedCard || !onPlayIntent} />}
+            render={(props) => <button {...props} data-ui="game-hand-confirm" disabled={disabled} />}
             className={slotProps?.confirm?.className} css={slotProps?.confirm?.css}
             onClick={() => { if (!disabled && selectedCard) onPlayIntent?.(selectedCard); }}>
             {playLabel}

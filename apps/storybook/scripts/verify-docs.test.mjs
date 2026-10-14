@@ -3,7 +3,18 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { checkComponentDocs, checkIntroduction } from './verify-docs.mjs';
+import { checkComponentDocs, checkIntroduction, checkSnippets } from './verify-docs.mjs';
+
+test('parses every authored TSX snippet, including story overrides', () => {
+  const source = (first, second) => `
+    export default { parameters: { docs: { source: { code: ${JSON.stringify(first)} } } } };
+    export const Default = { parameters: { docs: { source: { code: ${JSON.stringify(second)} } } } };
+  `;
+  assert.deepEqual(checkSnippets(source('<A />', '<><A /><B /></>')), []);
+  assert.match(checkSnippets(source('<A />', '<A />\n<B />'))[0], /Adjacent JSX/);
+  assert.match(checkSnippets(source('<A', '<B />'))[0], /Unexpected token/);
+  assert.match(checkSnippets(source('<A />', 'function Example() { return <B />;'))[0], /Unexpected token/);
+});
 
 const story = (description) => `
   const meta = {
