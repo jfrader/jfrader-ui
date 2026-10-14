@@ -20,8 +20,7 @@
 // Native Date + Intl.DateTimeFormat: Temporal is not Baseline (MDN, checked 2026-10-10).
 // The week start comes from Intl.Locale#getWeekInfo (Baseline 2026), the older `weekInfo`
 // accessor, or Sunday when the engine exposes neither.
-// "Today" is read at render time unless `today` is supplied; server-rendered output can disagree
-// with the client across midnight or time zones.
+// The initial civil date is deterministic; the local clock is read after mounting.
 // Range mode (`selectionRange` defined, even null) is the APG multi-selection variant of the
 // grid: it sets aria-multiselectable, every enabled gridcell reports aria-selected true/false
 // for the inclusive interval, and the endpoint day buttons are described by `rangeLabels`.
@@ -46,6 +45,7 @@ import {
   type ComponentPropsWithRef,
   type KeyboardEvent,
 } from 'react';
+
 import { WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
@@ -83,6 +83,8 @@ import {
   weekColumn,
   type Formatters,
 } from './calendar.utils';
+
+const INITIAL_CIVIL_DATE = '1970-01-01';
 
 /** Day of the week as counted by `Date#getUTCDay`: 0 is Sunday, 6 is Saturday. */
 export type CalendarWeekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -214,11 +216,12 @@ function CalendarRoot({
   );
   const onDayActivate = useLatestCallback(onDayActivateProp);
   const onFocusedDateChange = useLatestCallback(onFocusedDateChangeProp);
-  // Today follows the user's local civil day, not the UTC day used for arithmetic.
-  const now = new Date();
-  const today = isIsoDate(todayProp)
-    ? todayProp
-    : isoFromDate(dateFromParts(now.getFullYear(), now.getMonth(), now.getDate()));
+  const [localToday, setLocalToday] = useState(INITIAL_CIVIL_DATE);
+  useEffect(() => {
+    const now = new Date();
+    setLocalToday(isoFromDate(dateFromParts(now.getFullYear(), now.getMonth(), now.getDate())));
+  }, []);
+  const today = isIsoDate(todayProp) ? todayProp : localToday;
   const locale = useMemo(
     () => new Intl.DateTimeFormat(localeProp ?? defaultLocale(), CIVIL_DATE_FORMAT_OPTIONS).resolvedOptions().locale,
     [localeProp],
@@ -229,9 +232,12 @@ function CalendarRoot({
 
   const [value, requestValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
   const initialValue = valueProp ?? defaultValue;
+  const initialMonth = isIsoDate(initialValue)
+    ? monthOf(initialValue)
+    : isIsoDate(todayProp) ? monthOf(todayProp) : undefined;
   const [visibleMonthState, requestVisibleMonth] = useControlledState<string>(
     visibleMonthProp,
-    defaultVisibleMonth ?? monthOf(isIsoDate(initialValue) ? initialValue : today),
+    defaultVisibleMonth ?? initialMonth,
     onVisibleMonthChange,
   );
   const visibleMonth = isIsoMonth(visibleMonthState) ? visibleMonthState : monthOf(today);

@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { act, useState } from 'react';
+import { renderToString } from 'react-dom/server';
+import { hydrateRoot } from 'react-dom/client';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, spyOn, userEvent, within } from 'storybook/test';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Calendar, type CalendarProps } from './index';
 
@@ -28,6 +30,40 @@ function CalendarExample(props: CalendarProps) {
   );
 }
 CalendarExample.displayName = 'CalendarExample';
+
+export const ClockHydration: Story = {
+  tags: ['!autodocs'],
+  render: () => <CalendarExample locale={LOCALE} />,
+  play: async ({ canvasElement }) => {
+    const year = spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026);
+    const month = spyOn(Date.prototype, 'getMonth').mockReturnValue(9);
+    const day = spyOn(Date.prototype, 'getDate').mockReturnValue(31);
+    const host = canvasElement.ownerDocument.createElement('div');
+    canvasElement.append(host);
+    const onRecoverableError = fn();
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    try {
+      const server = renderToString(<CalendarExample locale={LOCALE} />);
+      month.mockReturnValue(10);
+      day.mockReturnValue(1);
+      const client = renderToString(<CalendarExample locale={LOCALE} />);
+      await expect(client).toBe(server);
+      host.innerHTML = server;
+      await act(async () => {
+        root = hydrateRoot(host, <CalendarExample locale={LOCALE} />, { onRecoverableError });
+      });
+      await expect(onRecoverableError).not.toHaveBeenCalled();
+      await expect(within(host).getByText('November 2026')).toBeInTheDocument();
+      await expect(host.querySelector('[aria-current="date"]')).toHaveAttribute('data-date', '2026-11-01');
+    } finally {
+      await act(async () => root?.unmount());
+      host.remove();
+      year.mockRestore();
+      month.mockRestore();
+      day.mockRestore();
+    }
+  },
+};
 
 function ControlledCalendar({ onValueChange, onVisibleMonthChange, ...props }: CalendarProps) {
   const [value, setValue] = useState('2026-10-14');

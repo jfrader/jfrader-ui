@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Suspense, startTransition, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -42,6 +42,52 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+const suspendedTabRender = fn();
+const pendingTab = new Promise<never>(() => {});
+
+function PendingTab({ value }: { value: string }) {
+  if (value === 'two') {
+    suspendedTabRender();
+    throw pendingTab;
+  }
+  return null;
+}
+
+function SuspendedControlledTabs(props: TabsProps) {
+  const [value, setValue] = useState('one');
+  return <>
+    <button onClick={() => startTransition(() => setValue('two'))}>Load security</button>
+    <Suspense fallback={<p>Loading</p>}>
+      <Tabs {...props} value={value} activation="manual">
+        <Tabs.List aria-label="Pending settings">
+          <Tabs.Tab value="one">Account</Tabs.Tab>
+          <Tabs.Tab value="two">Security</Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="one">Account settings</Tabs.Panel>
+        <Tabs.Panel value="two">Security settings</Tabs.Panel>
+        <PendingTab value={value} />
+      </Tabs>
+    </Suspense>
+  </>;
+}
+
+export const SuspendedControlledRequest: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn() },
+  render: (args) => <SuspendedControlledTabs {...args} />,
+  play: async ({ canvasElement, args, userEvent }) => {
+    suspendedTabRender.mockClear();
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Load security' }));
+    await waitFor(() => expect(suspendedTabRender).toHaveBeenCalled());
+    await expect(canvas.getByRole('tab', { name: 'Account' })).toHaveAttribute('aria-selected', 'true');
+    await userEvent.click(canvas.getByRole('tab', { name: 'Security' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('two');
+    await expect(canvas.getByRole('tab', { name: 'Account' })).toHaveAttribute('aria-selected', 'true');
+  },
+};
 
 function TabsExample({ disabledValue, ...props }: TabsProps & { disabledValue?: string }) {
   return (

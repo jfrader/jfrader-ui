@@ -203,13 +203,16 @@ export function useNativeDialog(
   const isOwnEvent = (event: SyntheticEvent<HTMLDialogElement>) => event.target === dialogRef.current;
 
   const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
+    if (!isOwnEvent(event)) {
+      onCancel?.(event);
+      return;
+    }
     // Already closing: the accepted request is in progress.
     if (!open) {
       event.preventDefault();
       return;
     }
     onCancel?.(event);
-    if (!isOwnEvent(event)) return;
     const vetoed = event.defaultPrevented;
     // We own closure: block the browser's own close and route through the Root, unless the
     // consumer vetoed the cancellation. Noncancelable platform requests reconcile on `close`.

@@ -74,7 +74,6 @@ const DEFAULT_VALUE = '09:00';
 const VIEWPORT_PADDING = 8;
 const ANCHOR_GAP = 8;
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
-const defaultLocale = () => (typeof navigator === 'undefined' ? undefined : navigator.language);
 function minutes(time: string | undefined): number | undefined {
   if (time === undefined || !TIME_PATTERN.test(time)) return undefined;
   return Number(time.slice(0, 2)) * MINUTES_PER_HOUR + Number(time.slice(3));
@@ -211,7 +210,7 @@ export function TimePicker({
   const labelId = `${useId()}-label`;
   const formatter = useMemo(
     () =>
-      new Intl.DateTimeFormat(locale ?? defaultLocale(), {
+      new Intl.DateTimeFormat(locale, {
         hour: 'numeric',
         minute: '2-digit',
         timeZone: 'UTC',

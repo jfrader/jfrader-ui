@@ -1,11 +1,41 @@
-import { useState } from 'react';
+import { act, useState } from 'react';
+import { renderToString } from 'react-dom/server';
+import { hydrateRoot } from 'react-dom/client';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor, within } from 'storybook/test';
+import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { ThemeRoot } from '../theme-root';
 import { TimePicker, type TimePickerProps, type TimePickerMinuteStep } from './index';
+
+export const LocaleHydration: Story = {
+  tags: ['!autodocs'],
+  args: { locale: undefined },
+  play: async ({ canvasElement }) => {
+    const language = spyOn(navigator, 'language', 'get').mockReturnValue('en-US');
+    const host = canvasElement.ownerDocument.createElement('div');
+    canvasElement.append(host);
+    const onRecoverableError = fn();
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    try {
+      const element = <TimePicker label="Hydrated time" defaultValue="09:00" />;
+      const server = renderToString(element);
+      language.mockReturnValue('de-DE');
+      await expect(renderToString(element)).toBe(server);
+      host.innerHTML = server;
+      await act(async () => {
+        root = hydrateRoot(host, element, { onRecoverableError });
+      });
+      await expect(onRecoverableError).not.toHaveBeenCalled();
+      await expect(within(host).getByRole('combobox')).toHaveTextContent('9:00 AM');
+    } finally {
+      await act(async () => root?.unmount());
+      host.remove();
+      language.mockRestore();
+    }
+  },
+};
 
 const meta = {
   title: 'Pickers/TimePicker',

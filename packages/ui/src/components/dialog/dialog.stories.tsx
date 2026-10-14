@@ -14,6 +14,7 @@ import { Card } from '../card';
 import { css } from '../../styling/css';
 import { WithSx } from '../../styling/sx';
 import { OverlayPortal } from '../../overlay/overlay-portal';
+import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-dialog';
 import { Dialog, type DialogPanelProps, type DialogProps } from './index';
 
 const TITLE = 'Edit profile';
@@ -21,6 +22,38 @@ const DESCRIPTION = 'Update your display name and avatar.';
 const DELETE_LABEL = 'Delete account';
 const composedTriggerClick = fn();
 const composedTriggerRef = fn<(element: HTMLButtonElement | null) => void>();
+
+function ClosingParentFixture() {
+  const [open, setOpen] = useState(true);
+  const controller = useNativeDialogRoot(open, setOpen);
+  const shell = useNativeDialog({ ...controller, open }, {}, undefined, undefined, {
+    enter: () => {},
+    exit: () => new Promise(() => {}),
+  });
+  return <dialog {...shell} aria-label="Closing parent">
+    <button onClick={() => setOpen(false)}>Close parent</button>
+    <dialog aria-label="Nested native dialog"><button>Nested action</button></dialog>
+  </dialog>;
+}
+
+export const ClosingParentCancellation: Story = {
+  tags: ['!autodocs'],
+  render: () => <ClosingParentFixture />,
+  play: async ({ canvasElement, userEvent }) => {
+    const parent = canvasElement.querySelector<HTMLDialogElement>('dialog')!;
+    const nested = parent.querySelector<HTMLDialogElement>('dialog')!;
+    await waitFor(() => expect(parent).toHaveAttribute('open'));
+    await userEvent.click(within(parent).getByRole('button', { name: 'Close parent' }));
+    await waitFor(() => expect(parent).toHaveAttribute('data-state', 'closing'));
+    const cancel = new Event('cancel', { cancelable: true });
+    fireEvent(nested, cancel);
+    await expect(cancel.defaultPrevented).toBe(false);
+    fireEvent(nested, new Event('close'));
+    await expect(parent).toHaveAttribute('open');
+    await expect(parent).toHaveAttribute('data-state', 'closing');
+    parent.close();
+  },
+};
 
 const bodyStyle = {
   margin: 0,
