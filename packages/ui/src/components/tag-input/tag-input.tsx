@@ -1,4 +1,5 @@
 'use client';
+import { numberFormatter } from '../../utils/intl';
 
 // Pattern: native text input plus a named list of committed tokens, each with a native remove
 // button. No listbox, combobox or roving tabindex: DOM focus stays on the input while a token is
@@ -125,7 +126,7 @@ const invalidTokens = (tokens: readonly string[], normalize: (draft: string) => 
   );
 
 function defaultMessages(locale: Intl.LocalesArgument): TagInputMessages {
-  const count = new Intl.NumberFormat(locale);
+  const count = numberFormatter(locale);
   return {
     listLabel: 'Tags',
     remove: (token) => `Remove ${token}`,

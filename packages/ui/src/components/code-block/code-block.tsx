@@ -22,6 +22,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
 import { CopyButton, type CopyButtonProps } from '../copy-button';
@@ -274,7 +275,7 @@ export function CodeBlock({
   const collapsible = limit !== undefined && lines.length > limit;
   const effectiveOpen = !collapsible || expanded;
   const visibleLines = effectiveOpen ? lines : lines.slice(0, limit);
-  const formatter = new Intl.NumberFormat(locale);
+  const formatter = numberFormatter(locale);
   const focusSource = useRef<Document | null>(null);
   const toggleRef = useCallback((node: HTMLButtonElement | null) => {
     if (!node) return;

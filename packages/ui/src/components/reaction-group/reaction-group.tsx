@@ -2,6 +2,7 @@
 
 import { useId, useMemo, type ComponentPropsWithRef } from 'react';
 import type { SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { uniqueBy } from '../thread/thread-core';
 import { ReactionGroupView, type ReactionGroupLabels } from './reaction-group-view';
@@ -45,7 +46,7 @@ export function ReactionGroup({
   labels: labelProps, className, sx, ...rootProps
 }: ReactionGroupProps) {
   const id = useId();
-  const number = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const number = useMemo(() => numberFormatter(locale), [locale]);
   const plural = useMemo(() => new Intl.PluralRules(locale), [locale]);
   const labels: ReactionGroupLabels = {
     addReaction: 'Add reaction', closeReactions: 'Close reactions', reactions: 'Reactions',

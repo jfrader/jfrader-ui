@@ -1,3 +1,4 @@
+import { dateTimeFormatter, defaultLocale } from '../../utils/intl';
 import type { CalendarWeekday } from './calendar';
 
 // ---- Date-only arithmetic on 'YYYY-MM-DD' strings (UTC calendar fields).
@@ -97,15 +98,15 @@ export const CIVIL_DATE_FORMAT_OPTIONS = { calendar: 'gregory', timeZone: 'UTC' 
 
 export function createFormatters(locale: string): Formatters {
   return {
-    month: new Intl.DateTimeFormat(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, month: 'long', year: 'numeric' }),
-    day: new Intl.DateTimeFormat(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, day: 'numeric' }),
-    date: new Intl.DateTimeFormat(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, dateStyle: 'long' }),
-    weekdayShort: new Intl.DateTimeFormat(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, weekday: 'short' }),
-    weekdayLong: new Intl.DateTimeFormat(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, weekday: 'long' }),
+    month: dateTimeFormatter(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, month: 'long', year: 'numeric' }),
+    day: dateTimeFormatter(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, day: 'numeric' }),
+    date: dateTimeFormatter(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, dateStyle: 'long' }),
+    weekdayShort: dateTimeFormatter(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, weekday: 'short' }),
+    weekdayLong: dateTimeFormatter(locale, { ...CIVIL_DATE_FORMAT_OPTIONS, weekday: 'long' }),
   };
 }
 
-export const defaultLocale = () => (typeof navigator === 'undefined' ? undefined : navigator.language);
+export { defaultLocale };
 
 // ---- Keyboard moves.
 

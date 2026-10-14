@@ -5,6 +5,17 @@
 // concepts (resolution, reply disclosure, the comments card), which keeps that seam clean. Both
 // surfaces share this internal folder without exposing implementation parts as public exports.
 
+import {
+  DEFAULT_TIME_ZONE,
+  dateTimeFormatter,
+  numberFormatter,
+  relativeTime,
+  relativeTimeFormatter,
+  resolveTimeOptions,
+  toEpoch,
+  validEpoch,
+} from '../../utils/intl';
+
 export interface ThreadAuthor {
   /** Stable identity: ownership, reactions and mention candidates compare it. */
   id: string;
@@ -65,60 +76,15 @@ export interface ThreadFormatters {
   facts: Intl.ListFormat;
 }
 
-export const DEFAULT_TIME_ZONE = 'UTC';
+export { DEFAULT_TIME_ZONE, validEpoch, toEpoch, relativeTime };
+
 const NO_REPLIES: readonly ThreadComment[] = [];
-const MAX_EPOCH = 8.64e15;
-const SECOND = 1000;
-const MINUTE = 60 * SECOND;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
-/** Mean Gregorian year and month, so long spans round the way calendars read them. */
-const YEAR = 365.2425 * DAY;
-const MONTH = YEAR / 12;
-const WEEK = 7 * DAY;
-/** Largest unit first; each applies once the distance reaches one whole unit. */
-const RELATIVE_UNITS: readonly (readonly [Intl.RelativeTimeFormatUnit, number])[] = [
-  ['year', YEAR],
-  ['month', MONTH],
-  ['week', WEEK],
-  ['day', DAY],
-  ['hour', HOUR],
-  ['minute', MINUTE],
-];
-const ISO_DATE_TIME = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
-/** Machine-side locale used only to validate a time zone. */
-const VALIDATION_LOCALE = 'en-US';
-
-export const validEpoch = (epoch: number) => Number.isFinite(epoch) && Math.abs(epoch) <= MAX_EPOCH;
-
-export function toEpoch(value: ThreadTimestamp): number | null {
-  if (typeof value === 'number') return validEpoch(value) ? value : null;
-  if (value instanceof Date) return validEpoch(value.getTime()) ? value.getTime() : null;
-  if (typeof value !== 'string') return null;
-  const match = ISO_DATE_TIME.exec(value);
-  if (!match) return null;
-  // Date.parse rolls impossible calendar dates (Feb 30) over instead of rejecting them.
-  const [year, month, day] = match.slice(1, 4).map(Number) as [number, number, number];
-  const calendar = new Date(Date.UTC(year, month - 1, day));
-  if (calendar.getUTCMonth() !== month - 1 || calendar.getUTCDate() !== day) return null;
-  const epoch = Date.parse(value);
-  return validEpoch(epoch) ? epoch : null;
-}
-
-/** Signed relative text ("5 minutes ago", "in 2 days", "now") from the caller-owned clock. */
-export function relativeTime(epoch: number, now: number, format: Intl.RelativeTimeFormat) {
-  const distance = epoch - now;
-  for (const [unit, size] of RELATIVE_UNITS) {
-    if (Math.abs(distance) >= size) return format.format(Math.trunc(distance / size), unit);
-  }
-  return format.format(Math.trunc(distance / SECOND), 'second');
-}
 
 function createFormatters(locale: Intl.LocalesArgument, timeZone: string): ThreadFormatters {
   return {
-    relative: new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }),
-    full: new Intl.DateTimeFormat(locale, { timeZone, dateStyle: 'full', timeStyle: 'short' }),
-    number: new Intl.NumberFormat(locale),
+    relative: relativeTimeFormatter(locale),
+    full: dateTimeFormatter(locale, { timeZone, dateStyle: 'full', timeStyle: 'short' }),
+    number: numberFormatter(locale),
     plural: new Intl.PluralRules(locale),
     people: new Intl.ListFormat(locale, { type: 'conjunction' }),
     facts: new Intl.ListFormat(locale, { type: 'unit', style: 'short' }),
@@ -127,22 +93,8 @@ function createFormatters(locale: Intl.LocalesArgument, timeZone: string): Threa
 
 /** Formatters for the requested locale and zone; unusable values fall back and are reported. */
 export function resolveFormatters(owner: string, locale: Intl.LocalesArgument, timeZone: string) {
-  const problems: string[] = [];
-  let safeLocale = locale;
-  try {
-    Intl.getCanonicalLocales(locale as string | string[] | undefined);
-  } catch {
-    problems.push(`${owner}: locale ${JSON.stringify(String(locale))} is not a valid language tag; using the default locale.`);
-    safeLocale = undefined;
-  }
-  let safeTimeZone = timeZone;
-  try {
-    new Intl.DateTimeFormat(VALIDATION_LOCALE, { timeZone });
-  } catch {
-    problems.push(`${owner}: timeZone ${JSON.stringify(timeZone)} is not a valid IANA time zone; using ${DEFAULT_TIME_ZONE}.`);
-    safeTimeZone = DEFAULT_TIME_ZONE;
-  }
-  return { formatters: createFormatters(safeLocale, safeTimeZone), problems };
+  const resolved = resolveTimeOptions(owner, locale, timeZone);
+  return { formatters: createFormatters(resolved.locale, resolved.timeZone), problems: resolved.problems };
 }
 
 /** "1 reply" / "3 replies" through the locale's plural rules and digits. */

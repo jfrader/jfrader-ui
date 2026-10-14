@@ -44,6 +44,7 @@ import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { collectionItemId, useCollectionItem, useCollectionRegistry } from '../../utils/collection-registry';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 
 const EMPTY_VALUES: readonly string[] = [];
@@ -279,7 +280,7 @@ function useMultiSelectModel({
   const formatters = useMemo(
     () => ({
       list: new Intl.ListFormat(locale),
-      number: new Intl.NumberFormat(locale),
+      number: numberFormatter(locale),
       plural: new Intl.PluralRules(locale),
       collator: new Intl.Collator(locale, {
         usage: 'search',

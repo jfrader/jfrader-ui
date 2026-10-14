@@ -16,6 +16,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
@@ -287,7 +288,7 @@ function ResultCount({
 }: FilterToolbarResultCountProps) {
   useToolbar('ResultCount');
   const valid = count !== null && Number.isFinite(count) && Number.isInteger(count) && count >= 0;
-  const text = valid ? formatCount(count, new Intl.NumberFormat(locale).format(count)) : unknownLabel;
+  const text = valid ? formatCount(count, numberFormatter(locale).format(count)) : unknownLabel;
   return <WithSx className={className} styles={statusStyle} sx={sx}>{(className) =>
     <p aria-live="polite" aria-atomic="true" {...rest} role="status"
       aria-busy={loading || rest['aria-busy']} data-ui="filter-toolbar-result-count" className={className}>

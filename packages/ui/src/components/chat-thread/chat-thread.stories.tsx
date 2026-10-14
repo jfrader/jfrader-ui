@@ -407,6 +407,7 @@ export const InvalidDate: Story = {
     await expect(item(canvasElement, 'bad').querySelector('time')).toBeNull();
     await expect(item(canvasElement, 'bad').querySelector('article')).toHaveAccessibleName('Unknown author Unknown time');
     await expect(item(canvasElement, 'future').querySelector('time')).toHaveTextContent(new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' }).format(1, 'day'));
+    await expect(item(canvasElement, 'future').querySelector('time')!.firstChild!.textContent).toBe('tomorrow');
   },
 };
 export const LongContent: Story = {

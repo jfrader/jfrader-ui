@@ -8,6 +8,7 @@ import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { focusRingOutset } from '../../styling/focus-ring';
+import { dateTimeFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
 import {
@@ -465,13 +466,13 @@ function ChatThreadRoot({
   const listRef = useRef<HTMLOListElement>(null);
   const { formatters } = useMemo(() => resolveFormatters('ChatThread', locale, timeZone), [locale, timeZone]);
   const labels = { ...defaultLabels(formatters), ...labelProps };
-  const dateFormat = useMemo(() => new Intl.DateTimeFormat(formatters.full.resolvedOptions().locale, {
+  const dateFormat = useMemo(() => dateTimeFormatter(formatters.full.resolvedOptions().locale, {
     timeZone: formatters.full.resolvedOptions().timeZone,
     dateStyle: 'full',
   }), [formatters]);
   // Day grouping is keyed on a fixed ISO-8601 calendar with Latin digits so separators land on the same
   // instants for every locale; only the zone varies. Headings still render in the caller's locale and calendar.
-  const dayKeyFormat = useMemo(() => new Intl.DateTimeFormat('en-US-u-ca-iso8601-nu-latn', {
+  const dayKeyFormat = useMemo(() => dateTimeFormatter('en-US-u-ca-iso8601-nu-latn', {
     timeZone: formatters.full.resolvedOptions().timeZone,
     year: 'numeric',
     month: '2-digit',

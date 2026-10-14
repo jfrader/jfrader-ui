@@ -1,6 +1,7 @@
 // Shared numeric, pointer, keyboard and form engine behind every slider skin (Slider,
 // skins). The skin owns rendering and visual feedback; this module owns the value lattice,
 // the controlled/uncontrolled authority, gestures, key handling and commit semantics.
+import { numberFormatter } from '../../utils/intl';
 import {
   useEffect,
   useId,
@@ -61,7 +62,7 @@ export function useSliderFormat(
   formatOptions: Intl.NumberFormatOptions | undefined,
   formatValue: ((value: number, formatter: Intl.NumberFormat) => string) | undefined,
 ) {
-  const formatter = useMemo(() => new Intl.NumberFormat(locale, formatOptions), [locale, formatOptions]);
+  const formatter = useMemo(() => numberFormatter(locale, formatOptions), [locale, formatOptions]);
   const format = (n: number) => (formatValue ? formatValue(n, formatter) : formatter.format(n));
   return { formatter, format };
 }

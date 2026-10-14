@@ -15,6 +15,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { defaultLocale, numberFormatter } from '../../utils/intl';
 
 export interface PaginationProps extends Omit<ComponentPropsWithRef<'nav'>, 'onChange'>, SxProps {
   page: number;
@@ -131,7 +132,7 @@ export function Pagination({
   label = 'Pagination',
   previousLabel = 'Previous page',
   nextLabel = 'Next page',
-  locale = typeof navigator === 'undefined' ? undefined : navigator.language,
+  locale = defaultLocale(),
   className,
   sx,
   'aria-label': ariaLabel,
@@ -141,7 +142,7 @@ export function Pagination({
   const lastPage = normalizeCount(totalPages);
   const current = Math.min(Math.max(normalizeCount(page), 1), Math.max(lastPage, 1));
   const items = getPageItems(current, lastPage, Math.min(normalizeCount(siblingCount), MAX_SIBLING_COUNT));
-  const numberFormat = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const numberFormat = useMemo(() => numberFormatter(locale), [locale]);
 
   const navRef = useRef<HTMLElement>(null);
   useImperativeHandle(ref, () => navRef.current as HTMLElement, []);

@@ -27,6 +27,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
 
@@ -370,7 +371,7 @@ export function ImageCompare({
   const stretch = useMotionValue(1);
   const angle = useMotionValue(orientation === 'vertical' ? 90 : 0);
   const reducedMotion = useReducedMotion();
-  const percentFormat = useMemo(() => new Intl.NumberFormat(locale, PERCENT_FORMAT), [locale]);
+  const percentFormat = useMemo(() => numberFormatter(locale, PERCENT_FORMAT), [locale]);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const handleRef = useRef<HTMLDivElement | null>(null);
   const mergedFrameRef = useMergeRefs([frameRef, slotProps?.frame?.ref]);

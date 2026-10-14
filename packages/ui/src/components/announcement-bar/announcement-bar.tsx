@@ -17,6 +17,7 @@ import { css, keyframes, type Interpolation, type Theme } from '../../styling/cs
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
@@ -375,7 +376,7 @@ export function AnnouncementBar({
   if (!messages.length || (!open && !present)) return null;
   const announcement = messages[index]!;
   const { css: _rootCss, ...rootProps } = slotProps?.root ?? {};
-  const number = new Intl.NumberFormat(locale);
+  const number = numberFormatter(locale);
   const position =
     getMessageLabel?.(index, messages.length) ??
     `${number.format(index + 1)} of ${number.format(messages.length)}`;

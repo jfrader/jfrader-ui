@@ -24,6 +24,7 @@ import { css, keyframes, type Interpolation, type Theme } from '../../styling/cs
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION, REDUCED_TRANSPARENCY } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import {
@@ -959,7 +960,7 @@ export function PhotoGrid({
   const [open, setOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
   const lifecycle = useNativeDialogRoot((open ?? false) && photos.length > 0, setOpen);
   const labels = { ...defaultLabels, ...labelOverrides };
-  const format = new Intl.NumberFormat(locale);
+  const format = numberFormatter(locale);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLUListElement | null>(null);
   const rootMergedRef = useMergeRefs([rootRef, ref]);

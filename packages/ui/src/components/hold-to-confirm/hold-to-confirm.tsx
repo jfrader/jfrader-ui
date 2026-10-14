@@ -9,6 +9,7 @@ import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
@@ -346,7 +347,7 @@ export function HoldToConfirm({
       )}
     </>
   );
-  const formatted = new Intl.NumberFormat(locale, {
+  const formatted = numberFormatter(locale, {
     style: 'unit',
     unit: 'second',
     unitDisplay: 'long',

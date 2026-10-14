@@ -47,6 +47,7 @@ import {
 } from 'react';
 
 import { WithSx, type SxProps } from '../../styling/sx';
+import { dateTimeFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
 import {
@@ -223,7 +224,7 @@ function CalendarRoot({
   }, []);
   const today = isIsoDate(todayProp) ? todayProp : localToday;
   const locale = useMemo(
-    () => new Intl.DateTimeFormat(localeProp ?? defaultLocale(), CIVIL_DATE_FORMAT_OPTIONS).resolvedOptions().locale,
+    () => dateTimeFormatter(localeProp ?? defaultLocale(), CIVIL_DATE_FORMAT_OPTIONS).resolvedOptions().locale,
     [localeProp],
   );
   const formatters = useMemo(() => createFormatters(locale), [locale]);

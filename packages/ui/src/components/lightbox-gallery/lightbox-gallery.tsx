@@ -34,6 +34,7 @@ import {
   modalBackdropMotion,
 } from '../../styling/overlay-motion';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useImageStatus } from '../../utils/use-image-status';
@@ -399,9 +400,9 @@ function Viewer({
   reduced,
 }: ViewerProps) {
   const id = useId();
-  const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const format = useMemo(() => numberFormatter(locale), [locale]);
   const percentFormat = useMemo(
-    () => new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }),
+    () => numberFormatter(locale, { style: 'percent', maximumFractionDigits: 0 }),
     [locale],
   );
   const dialogRef = useRef<HTMLDialogElement | null>(null);
@@ -977,7 +978,7 @@ export function LightboxGallery({
   const [geometry, setGeometry] = useState({ columns: 2, width: MIN_COLUMN_WIDTH, gap: 0 });
   const width = validPositive(minColumnWidth, MIN_COLUMN_WIDTH);
   const zoomLimit = Math.max(1, validPositive(maxZoom, MAX_ZOOM));
-  const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const format = useMemo(() => numberFormatter(locale), [locale]);
 
   useEffect(() => {
     const query = rootRef.current?.ownerDocument.defaultView?.matchMedia(

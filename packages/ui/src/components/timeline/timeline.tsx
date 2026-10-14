@@ -38,6 +38,15 @@ import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import {
+  DEFAULT_TIME_ZONE,
+  dateTimeFormatter,
+  numberFormatter,
+  relativeTimeFormatter,
+  resolveTimeOptions,
+  toEpoch,
+  validEpoch,
+} from '../../utils/intl';
 import { partId } from '../../utils/part-id';
 import { isRenderable } from '../../utils/renderable';
 import { queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
@@ -148,10 +157,8 @@ interface Anchor {
 // Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
 declare const process: { env: { NODE_ENV?: string } };
 
-const DEFAULT_TIME_ZONE = 'UTC';
 const INVALID_GROUP_KEY = 'invalid';
 const EMPTY_IDS: readonly string[] = [];
-const MAX_EPOCH = 8.64e15;
 const MS_PER_SECOND = 1000;
 const MS_PER_DAY = 86_400_000;
 /** Same-day relative steps: each unit is used while its magnitude stays below the limit. */
@@ -160,7 +167,6 @@ const RELATIVE_STEPS: readonly (readonly [Intl.RelativeTimeFormatUnit, number])[
   ['minute', 60],
   ['hour', 24],
 ];
-const ISO_DATE_TIME = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
 /** Machine day keys stay Gregorian with Latin digits whatever the display locale. */
 const DAY_KEY_LOCALE = 'en-US';
 const ITEM_QUERY: OwnedItemsQuery = { itemSelector: '[data-ui="timeline-item"]', ownerSelector: '[data-ui="timeline"]' };
@@ -177,24 +183,10 @@ const KEY_TARGETS: Partial<Record<string, (index: number, count: number) => numb
 
 /** Empty strings render nothing, so they count as absent like false/null; 0 is content. */
 const hasContent = (node: ReactNode) => isRenderable(node) && node !== '';
-const validEpoch = (epoch: number) => Number.isFinite(epoch) && Math.abs(epoch) <= MAX_EPOCH;
-
-function toEpoch(at: TimelineEvent['at']): number | null {
-  if (typeof at === 'number') return validEpoch(at) ? at : null;
-  if (at instanceof Date) return validEpoch(at.getTime()) ? at.getTime() : null;
-  const match = ISO_DATE_TIME.exec(at);
-  if (!match) return null;
-  // Date.parse rolls impossible calendar dates (Feb 30) over instead of rejecting them.
-  const [year, month, day] = match.slice(1, 4).map(Number) as [number, number, number];
-  const calendar = new Date(Date.UTC(year, month - 1, day));
-  if (calendar.getUTCMonth() !== month - 1 || calendar.getUTCDate() !== day) return null;
-  const epoch = Date.parse(at);
-  return validEpoch(epoch) ? epoch : null;
-}
 
 function createFormatters(locale: Intl.LocalesArgument, timeZone: string): Formatters {
   return {
-    dayParts: new Intl.DateTimeFormat(DAY_KEY_LOCALE, {
+    dayParts: dateTimeFormatter(DAY_KEY_LOCALE, {
       timeZone,
       calendar: 'gregory',
       numberingSystem: 'latn',
@@ -202,33 +194,19 @@ function createFormatters(locale: Intl.LocalesArgument, timeZone: string): Forma
       month: '2-digit',
       day: '2-digit',
     }),
-    day: new Intl.DateTimeFormat(locale, { timeZone, dateStyle: 'full' }),
-    full: new Intl.DateTimeFormat(locale, { timeZone, dateStyle: 'full', timeStyle: 'long' }),
-    clock: new Intl.DateTimeFormat(locale, { timeZone, timeStyle: 'short' }),
-    relative: new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }),
-    number: new Intl.NumberFormat(locale),
+    day: dateTimeFormatter(locale, { timeZone, dateStyle: 'full' }),
+    full: dateTimeFormatter(locale, { timeZone, dateStyle: 'full', timeStyle: 'long' }),
+    clock: dateTimeFormatter(locale, { timeZone, timeStyle: 'short' }),
+    relative: relativeTimeFormatter(locale),
+    number: numberFormatter(locale),
     plural: new Intl.PluralRules(locale),
   };
 }
 
 /** Formatters for the requested locale and zone; unusable values fall back and are reported. */
 function resolveFormatters(locale: Intl.LocalesArgument, timeZone: string) {
-  const problems: string[] = [];
-  let safeLocale = locale;
-  try {
-    Intl.getCanonicalLocales(locale as string | string[] | undefined);
-  } catch {
-    problems.push(`Timeline: locale ${JSON.stringify(String(locale))} is not a valid language tag; using the default locale.`);
-    safeLocale = undefined;
-  }
-  let safeTimeZone = timeZone;
-  try {
-    new Intl.DateTimeFormat(DAY_KEY_LOCALE, { timeZone });
-  } catch {
-    problems.push(`Timeline: timeZone ${JSON.stringify(timeZone)} is not a valid IANA time zone; using ${DEFAULT_TIME_ZONE}.`);
-    safeTimeZone = DEFAULT_TIME_ZONE;
-  }
-  return { formatters: createFormatters(safeLocale, safeTimeZone), problems };
+  const resolved = resolveTimeOptions('Timeline', locale, timeZone);
+  return { formatters: createFormatters(resolved.locale, resolved.timeZone), problems: resolved.problems };
 }
 
 /** ISO calendar date (`YYYY-MM-DD`) of `epoch` in the formatter's zone. */

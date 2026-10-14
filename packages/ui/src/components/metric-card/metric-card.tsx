@@ -3,6 +3,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { Card, type CardHeadingLevel, type CardPartProps, type CardVariant } from '../card';
 import { Pill, type PillTone } from '../pill';
@@ -124,11 +125,11 @@ export function MetricCard({
   const Heading = `h${headingLevel}` as const;
   const hasFiniteValue = value !== null && Number.isFinite(value);
   const formattedValue = hasFiniteValue
-    ? new Intl.NumberFormat(locale, formatOptions).format(value)
+    ? numberFormatter(locale, formatOptions).format(value)
     : missingValueLabel;
   const formattedDelta =
     normalizedDelta !== undefined
-      ? new Intl.NumberFormat(locale, {
+      ? numberFormatter(locale, {
           ...deltaFormatOptions,
           signDisplay: normalizedDelta === 0 ? 'exceptZero' : 'always',
         }).format(normalizedDelta)

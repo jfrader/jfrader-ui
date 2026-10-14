@@ -32,6 +32,7 @@ import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { listboxSurfaceStyle, listboxItemStyle, listboxItemStateStyle } from '../../styling/listbox-style';
 import type { SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import {
@@ -136,7 +137,7 @@ function formatResults(count: number, numbers: Intl.NumberFormat, plurals: Intl.
 const DEFAULT_MESSAGES: MentionInputMessages = {
   peopleLabel: 'People',
   channelsLabel: 'Channels',
-  results: (count) => formatResults(count, new Intl.NumberFormat(), new Intl.PluralRules()),
+  results: (count) => formatResults(count, numberFormatter(), new Intl.PluralRules()),
   empty: () => 'No results',
   added: (mention) => `Added ${mentionText(mention.kind, mention.label)}`,
   removed: (mention) => `Removed ${mentionText(mention.kind, mention.label)}`,
@@ -422,7 +423,7 @@ export function MentionInput({
   const nativeEditRef = useRef<NativeEdit | null>(null);
   const trigger = findTrigger(documentValue, caret, people !== undefined, channels !== undefined);
   const effectiveOpen = permission && focused && !!trigger && !disabled && !readOnly && !composing;
-  const formatter = new Intl.NumberFormat(locale);
+  const formatter = numberFormatter(locale);
   const plurals = new Intl.PluralRules(locale);
   const copy = {
     ...DEFAULT_MESSAGES,

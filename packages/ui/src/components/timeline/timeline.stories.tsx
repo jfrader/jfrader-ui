@@ -5,6 +5,7 @@ import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storyb
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { dateTimeFormatter, numberFormatter, relativeTime, relativeTimeFormatter, resolveTimeOptions, toEpoch, validEpoch } from '../../utils/intl';
 import { Timeline, type TimelineEvent, type TimelineProps } from './index';
 
 const MINUTE = 60_000;
@@ -245,6 +246,8 @@ export const Default: Story = {
     const time = part(item(canvasElement, 'deploy'), 'time');
     await expect(time).toHaveAttribute('datetime', '2026-10-11T11:55:00.000Z');
     await expect(time.firstChild!.textContent).toBe(relative.format(-5, 'minute'));
+    await expect(time.firstChild!.textContent).toBe('5 minutes ago');
+    await expect(dayLabels(canvasElement)).toEqual(['today', 'yesterday', 'Thursday, October 8, 2026']);
     const deploy = triggerOf(canvasElement, 'deploy');
     await expect(deploy).toHaveAccessibleName('Deployed web 4.2 to production');
     await expect(deploy).toHaveAttribute('aria-expanded', 'false');
@@ -816,6 +819,51 @@ export const FocusRepair: Story = {
 
 export const SSRConsistency: Story = {
   play: async ({ canvasElement, args }) => {
+    for (const value of [NOW, new Date(NOW), '2026-10-11T12:00:00Z', '2026-10-11T14:00:00+02:00']) {
+      await expect(toEpoch(value)).toBe(NOW);
+    }
+    for (const value of [NaN, Infinity, 8.64e15 + 1, new Date(NaN), '2026-02-30T12:00:00Z', '2026-10-11', '2026-10-11T12:00:00']) {
+      await expect(toEpoch(value)).toBeNull();
+    }
+    await expect(validEpoch(8.64e15)).toBe(true);
+    await expect(validEpoch(-8.64e15)).toBe(true);
+    await expect(toEpoch('2026-10-11T24:00:00Z')).toBe(Date.parse('2026-10-12T00:00:00Z'));
+    await expect(toEpoch('0099-01-01T00:00:00Z')).toBe(Date.parse('0099-01-01T00:00:00Z'));
+    const resolved = resolveTimeOptions('Timeline', 'not_a_locale', 'not/a-zone');
+    await expect(resolved).toEqual({
+      locale: undefined,
+      timeZone: 'UTC',
+      problems: [
+        'Timeline: locale "not_a_locale" is not a valid language tag; using the default locale.',
+        'Timeline: timeZone "not/a-zone" is not a valid IANA time zone; using UTC.',
+      ],
+    });
+    for (const locale of ['en-US', 'en-GB', 'es-ES', 'ar-EG', 'ja-JP', undefined]) {
+      for (const options of [undefined, { style: 'percent', maximumFractionDigits: 0 }, { style: 'unit', unit: 'megabyte', maximumFractionDigits: 1 }, { style: 'currency', currency: 'EUR' }] satisfies (Intl.NumberFormatOptions | undefined)[]) {
+        const native = new Intl.NumberFormat(locale, options);
+        const shared = numberFormatter(locale, options);
+        for (const value of [-0, -1.25, 0, 12345.67, NaN, Infinity]) {
+          await expect(shared.format(value)).toBe(native.format(value));
+          await expect(shared.formatToParts(value)).toEqual(native.formatToParts(value));
+        }
+        await expect(shared.resolvedOptions()).toEqual(native.resolvedOptions());
+      }
+      for (const timeZone of ['UTC', 'America/New_York', 'Asia/Tokyo']) {
+        for (const timeStyle of ['short', 'long'] as const) {
+          const options = { timeZone, dateStyle: 'full', timeStyle } as const;
+          await expect(dateTimeFormatter(locale, options).format(NOW)).toBe(new Intl.DateTimeFormat(locale, options).format(NOW));
+        }
+      }
+      const shared = relativeTimeFormatter(locale);
+      const native = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+      for (const value of [-2, -1, 0, 1, 2]) await expect(shared.format(value, 'day')).toBe(native.format(value, 'day'));
+    }
+    await expect(() => numberFormatter('not_a_locale')).toThrow(RangeError);
+    await expect(() => dateTimeFormatter('en-US', { timeZone: 'not/a-zone' })).toThrow(RangeError);
+    const relativeFormat = relativeTimeFormatter('en-US');
+    await expect(relativeTime(NOW - 5 * MINUTE, NOW, relativeFormat)).toBe('5 minutes ago');
+    await expect(relativeTime(NOW + 7 * 24 * HOUR, NOW, relativeFormat)).toBe('next week');
+    await expect(relativeTime(NOW, NOW, relativeFormat)).toBe('now');
     const html = renderToString(<Timeline {...args} />);
     const template = canvasElement.ownerDocument.createElement('template');
     template.innerHTML = html;

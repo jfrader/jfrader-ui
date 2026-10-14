@@ -47,6 +47,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { numberFormatter } from '../../utils/intl';
 import { partId } from '../../utils/part-id';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -481,7 +482,7 @@ function ResizablePanelsRoot({
   const transition = useRef<{ from: number[]; to: number[] } | null>(null);
   const remembered = useRef(new Map<string, number>());
   const formatter = useMemo(
-    () => new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }),
+    () => numberFormatter(locale, { style: 'percent', maximumFractionDigits: 0 }),
     [locale],
   );
 
