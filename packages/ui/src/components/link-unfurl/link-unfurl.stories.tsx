@@ -15,16 +15,13 @@ import {
 
 const GUIDE = 'https://example.com/guide';
 const CHANGELOG = 'https://example.org/changelog';
-const svg = (markup: string) => `data:image/svg+xml,${encodeURIComponent(markup)}`;
-const COVER = svg(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 191 100"><rect width="191" height="100" opacity="0.25"/><circle cx="60" cy="50" r="24" opacity="0.5"/></svg>',
-);
-const FAVICON = svg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7"/></svg>');
+const COVER = new URL('/og-image.png', window.location.href).href;
+const FAVICON = COVER;
 const METADATA: Partial<LinkUnfurlPreview> = {
   site: 'example.com',
   title: 'Design guide',
   description: 'Spacing, color and type decisions for the product surfaces.',
-  image: { src: COVER, alt: 'Cover with a large dot on a gray field' },
+  image: { src: COVER, alt: 'React components built from scratch' },
   favicon: FAVICON,
 };
 const SETTLE_MS = 240;
@@ -96,6 +93,9 @@ function Demo({ outcome = 'ready', autoExpand = false, metadataFor = () => METAD
       />
       {outcome === 'manual' ? (
         <div>
+          <button css={fixtureStyle} onClick={() => settleRequest(requests.current.at(-1), 'pending')}>
+            Mark latest pending
+          </button>
           <button css={fixtureStyle} onClick={() => settleRequest(requests.current[0], 'ready')}>
             Resolve first request
           </button>
@@ -161,6 +161,7 @@ const meta = {
 - Fetch metadata in your app. LinkUnfurl never fetches.
 - \`onPreviewRequest(url, { linkId, requestId, signal })\` runs only after user actions: paste, typing past an address, blur, suggestions, or Retry. Add \`previews\` records with matching \`linkId\` and \`requestId\`. Older request ids are ignored. Retry creates a new request id.
 - The signal aborts when the address disappears through removal or editing, Retry replaces the request, a successful send clears the draft, or the composer unmounts.
+- Preview images and favicons require absolute HTTP(S) URLs. Other schemes are not rendered. For multiple records answering the same request, the latest record wins.
 
 ### Values
 - Control text with \`value\` and \`onValueChange\`, or start with \`defaultValue\` (empty by default).
@@ -488,6 +489,11 @@ async function expectTargets(root: HTMLElement) {
     await expect(rect.height).toBeGreaterThanOrEqual(32 - 1.1);
     await expect(rect.width).toBeGreaterThanOrEqual(24 - 1.1);
   }
+  for (const link of within(root).getAllByRole('link')) {
+    const rect = link.getBoundingClientRect();
+    await expect(rect.height).toBeGreaterThanOrEqual(24 - 1.1);
+    await expect(rect.width).toBeGreaterThanOrEqual(24 - 1.1);
+  }
 }
 
 export const Narrow: Story = {
@@ -557,7 +563,10 @@ export const BrokenImage: Story = {
     <Demo
       {...args}
       autoExpand
-      metadataFor={() => ({ ...METADATA, image: { src: 'data:image/png;base64,broken', alt: 'Cover' } })}
+      metadataFor={() => ({
+        ...METADATA,
+        image: { src: new URL('/missing-link-unfurl.png', window.location.href).href, alt: 'Cover' },
+      })}
     />
   ),
   play: async ({ canvasElement, canvas, userEvent }) => {
@@ -774,5 +783,83 @@ export const RefTarget: Story = {
     const root = canvasElement.querySelector('[data-ui="link-unfurl"]');
     await expect(root).toBeInstanceOf(HTMLDivElement);
     await expect(args.ref).toHaveBeenCalledWith(root);
+  },
+};
+
+export const ResolveWhileFocused: Story = {
+  render: (args) => <Demo {...args} outcome="manual" />,
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    await pasteInto(field(canvasElement), GUIDE, userEvent);
+    await userEvent.click(canvas.getByRole('button', { name: 'Mark latest pending' }));
+    const title = canvas.getByRole('link', { name: GUIDE });
+    title.focus();
+    await fireEvent.click(canvas.getByRole('button', { name: 'Resolve latest request' }));
+    await expect(await canvas.findByRole('link', { name: 'Design guide' })).toBe(title);
+    await expect(title.ownerDocument.activeElement).toBe(title);
+    await expect(items(canvasElement)[0]).toHaveAttribute('data-status', 'ready');
+  },
+};
+
+export const UnsafeMetadata: Story = {
+  args: { slotProps: { title: { target: '_BLANK', rel: 'nofollow' } } },
+  render: (args) => (
+    <Demo
+      {...args}
+      autoExpand
+      metadataFor={() => ({
+        title: '<script>alert(1)</script>',
+        description: '<img src=x onerror=alert(1)>',
+        url: 'javascript:alert(1)',
+        image: { src: 'data:image/svg+xml,<svg/>', alt: 'Unsafe image' },
+        favicon: 'javascript:alert(1)',
+      })}
+    />
+  ),
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    await pasteInto(field(canvasElement), GUIDE, userEvent);
+    const title = await canvas.findByRole('link', { name: '<script>alert(1)</script>' });
+    await expect(title).toHaveAttribute('href', GUIDE);
+    await expect(title.getAttribute('rel')).toContain('noopener noreferrer');
+    await expect(title.getAttribute('rel')).toContain('nofollow');
+    await expect(canvasElement.querySelector('[data-ui="link-unfurl-item"] img')).toBeNull();
+    await expect(canvasElement.querySelector('[data-ui="link-unfurl-card"]')).toHaveTextContent(
+      '<img src=x onerror=alert(1)>',
+    );
+  },
+};
+
+export const InternationalUrls: Story = {
+  args: { dir: 'rtl' },
+  render: (args) => <Demo {...args} autoExpand metadataFor={() => ({ title: 'International page' })} />,
+  play: async ({ canvasElement, canvas, args, userEvent }) => {
+    const urls = ['https://münich.example/guide_(test)', 'https://example.org/mañana'];
+    await pasteInto(field(canvasElement), urls.join(' '), userEvent);
+    await expect(args.onPreviewRequest).toHaveBeenCalledTimes(2);
+    const links = await canvas.findAllByRole('link', { name: 'International page' });
+    for (const [index, link] of links.entries()) {
+      await expect(link).toHaveAttribute('href', new URL(urls[index]!).href);
+    }
+    await expect(canvasElement.querySelector('[data-ui="link-unfurl-item"] bdi[dir="ltr"]')).toHaveTextContent(
+      'xn--mnich-kva.example',
+    );
+  },
+};
+
+export const LongCopy: Story = {
+  render: (args) => (
+    <Demo
+      {...args}
+      autoExpand
+      metadataFor={() => ({
+        title: 'A long title with enough words to wrap without hiding content '.repeat(4),
+        description: 'A detailed description with an unbroken address: ' + GUIDE + '/long-path'.repeat(30),
+      })}
+    />
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    await pasteInto(field(canvasElement), GUIDE, userEvent);
+    await settle();
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="link-unfurl"]')!;
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
   },
 };
