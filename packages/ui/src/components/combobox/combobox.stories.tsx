@@ -54,6 +54,34 @@ function ComboboxExample({ inputProps, listId, ...props }: ComboboxExampleProps)
 }
 ComboboxExample.displayName = 'ComboboxExample';
 
+function DisabledWhileOpenCombobox(props: ComboboxProps) {
+  const [disabled, setDisabled] = useState(false);
+  return (
+    <>
+      <ComboboxExample {...props} open inputProps={{ disabled }} />
+      <Button onClick={() => setDisabled(true)}>Disable</Button>
+    </>
+  );
+}
+
+export const DisabledWhileOpen: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn(), onInputChange: fn(), onOpenChange: fn() },
+  render: (args) => <DisabledWhileOpenCombobox {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const option = await bodyOf(canvasElement).findByRole('option', { name: 'Cherry' });
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Disable' }));
+    args.onOpenChange.mockClear();
+    await fireEvent.click(option);
+    await fireEvent.keyDown(getInput(canvasElement), { key: 'ArrowDown' });
+    await fireEvent.keyDown(getInput(canvasElement), { key: 'Enter' });
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onInputChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await expectClosed(canvasElement);
+  },
+};
+
 /** Portaled content lives in the story document's body, outside the canvas. */
 function bodyOf(canvasElement: HTMLElement) {
   return within(canvasElement.ownerDocument.body);

@@ -228,7 +228,12 @@ function ComboboxOverlay({
     defaultValue ?? null,
     onValueChange,
   );
-  const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
+  const [openState = false, requestOpen] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
+  const open = openState && !inputDisabled;
+  const requestOpenChange = useCallback((next: boolean) => {
+    if (next && inputDisabled) return;
+    requestOpen(next);
+  }, [inputDisabled, requestOpen]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   // The text that filters the options: what the user typed, or '' right after a selection.
   const [query, setQuery] = useState('');
@@ -267,6 +272,7 @@ function ComboboxOverlay({
 
   const dismiss = useDismiss(context, { escapeKey: true, outsidePress: true });
   const listNavigation = useListNavigation(context, {
+    enabled: !inputDisabled,
     listRef: elementsRef,
     activeIndex,
     onNavigate: setActiveIndex,
@@ -278,6 +284,7 @@ function ComboboxOverlay({
 
   const value = useMemo<ComboboxContextValue>(() => {
     const selectValue = (next: string) => {
+      if (inputDisabled) return;
       // Value, open and input text are independent requests: a controlled parent decides
       // each axis; rejecting the value does not cancel the close or the label commit.
       requestValueChange(next);
@@ -292,7 +299,7 @@ function ComboboxOverlay({
       setInputForm,
       open,
       selectedValue,
-      activeIndex,
+      activeIndex: inputDisabled ? null : activeIndex,
       options,
       matchCount,
       inputLabelling,
@@ -326,7 +333,9 @@ function ComboboxOverlay({
         if (next === undefined || skippedIndices.has(index)) return;
         selectValue(next);
       },
-      clearValue: () => requestValueChange(null),
+      clearValue: () => {
+        if (!inputDisabled) requestValueChange(null);
+      },
       resetValue,
       requestOpenChange,
       registration,
@@ -336,6 +345,7 @@ function ComboboxOverlay({
     baseId,
     listId,
     open,
+    inputDisabled,
     selectedValue,
     activeIndex,
     options,
@@ -503,7 +513,7 @@ function ComboboxInput({
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     onKeyDown?.(event);
-    if (event.defaultPrevented) return;
+    if (event.defaultPrevented || disabled) return;
     if (event.key === 'Escape') {
       if (editing && selectedLabel !== undefined) commitLabel(selectedLabel);
       return;
