@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -66,6 +66,30 @@ function SelectExample(props: SelectProps) {
   );
 }
 SelectExample.displayName = 'SelectExample';
+
+export const NativeFormReset: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn() },
+  render: (args) => (
+    <form aria-label="Fruit form">
+      <SelectExample {...args} name="fruit" defaultValue="apple" />
+      <Button type="reset">Reset</Button>
+    </form>
+  ),
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const form = canvas.getByRole('form', { name: 'Fruit form' }) as HTMLFormElement;
+    const trigger = canvas.getByRole('combobox', { name: LABEL });
+    await userEvent.click(trigger);
+    await userEvent.click(await bodyOf(canvasElement).findByRole('option', { name: 'Cherry' }));
+    await expect(new FormData(form).get('fruit')).toBe('cherry');
+    const calls = args.onValueChange.mock.calls.length;
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await waitFor(() => expect(new FormData(form).get('fruit')).toBe('apple'));
+    await expect(trigger).toHaveTextContent('Apple');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(calls);
+  },
+};
 
 function ControlledSelect(props: SelectProps) {
   const [value, setValue] = useState('apple');

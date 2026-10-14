@@ -18,6 +18,7 @@
 // can read option labels; it is only positioned while open.
 // Forms: `name` renders a hidden input carrying the selected value. Native constraint
 // validation (`required`) is not wired in this version.
+import { useFormReset } from '../../utils/use-form-reset';
 import {
   createContext,
   useContext,
@@ -131,6 +132,7 @@ interface SelectContextValue {
   getFloatingProps: UseInteractionsReturn['getFloatingProps'];
   getItemProps: UseInteractionsReturn['getItemProps'];
   selectValue: (value: string) => void;
+  resetValue: () => void;
   selectIndex: (index: number) => void;
   matchTypeahead: (search: string) => void;
   requestOpenChange: (open: boolean) => void;
@@ -185,7 +187,7 @@ function SelectOverlay({
   children,
 }: SelectProps) {
   const baseId = useId();
-  const [selectedValue, requestValueChange] = useControlledState<string>(valueProp, defaultValue, onValueChange);
+  const [selectedValue, requestValueChange, resetValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   // Typeahead on the closed trigger opens on the match, not on the selected option.
@@ -267,6 +269,7 @@ function SelectOverlay({
       getFloatingProps,
       getItemProps,
       selectValue,
+      resetValue,
       matchTypeahead: (search) => {
         const labels = labelsRef.current;
         const start = activeIndex ?? -1;
@@ -308,6 +311,7 @@ function SelectOverlay({
     valuesByIndex,
     disabledIndices,
     requestValueChange,
+    resetValue,
     requestOpenChange,
     registration,
   ]);
@@ -347,11 +351,14 @@ function SelectTrigger({
     refs,
     getReferenceProps,
     selectIndex,
+    resetValue,
     matchTypeahead,
     requestOpenChange,
     setTriggerLabelling,
   } = useSelectContext('Trigger');
-  const mergedRef = useMergeRefs([refs.setReference, ref]);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const mergedRef = useMergeRefs([triggerRef, refs.setReference, ref]);
+  useFormReset(triggerRef, resetValue, rest.form);
   const typeaheadRef = useRef({ search: '', lastKeyAt: 0 });
   const id = idProp ?? `${baseId}-trigger`;
   const labelledBy = rest['aria-labelledby'];
