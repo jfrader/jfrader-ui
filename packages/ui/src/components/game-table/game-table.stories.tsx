@@ -1145,11 +1145,11 @@ export const GeneralSeatCountsOutside = generalCountMatrix('outside');
 export const GeneralSeatCountsRtl = generalCountMatrix('edge', 'rtl');
 
 const POKER_BOARD = [
-  { key: 'as', label: 'Ace of spades', value: { suit: 'spades', rank: 'A' } },
-  { key: 'kh', label: 'King of hearts', value: { suit: 'hearts', rank: 'K' } },
-  { key: 'qc', label: 'Queen of clubs', value: { suit: 'clubs', rank: 'Q' } },
-  { key: 'jd', label: 'Jack of diamonds', value: { suit: 'diamonds', rank: 'J' } },
-  { key: 'ts', label: 'Ten of spades', value: { suit: 'spades', rank: 10 } },
+  { id: 'as', label: 'Ace of spades', value: { suit: 'spades', rank: 'A' } },
+  { id: 'kh', label: 'King of hearts', value: { suit: 'hearts', rank: 'K' } },
+  { id: 'qc', label: 'Queen of clubs', value: { suit: 'clubs', rank: 'Q' } },
+  { id: 'jd', label: 'Jack of diamonds', value: { suit: 'diamonds', rank: 'J' } },
+  { id: 'ts', label: 'Ten of spades', value: { suit: 'spades', rank: 10 } },
 ] as const;
 
 function PokerTable({ viewport }: { viewport: GameTableProps['viewport'] }) {
@@ -1162,7 +1162,7 @@ function PokerTable({ viewport }: { viewport: GameTableProps['viewport'] }) {
         <span>Pot: 240</span><div data-community-deck><GameCard size="sm" label="Deck" /></div>
       </div>
       <div style={{ display: 'flex', gap: vars.space[1] }}>
-        {POKER_BOARD.map((card) => <div key={card.key} data-community-card={card.key}><GameCard size="sm" value={card.value} label={card.label} /></div>)}
+        {POKER_BOARD.map((card) => <div key={card.id} data-community-card={card.id}><GameCard size="sm" value={card.value} label={card.label} /></div>)}
       </div>
     </div>}
     dock={<Button disabled={landingTargets.size > 0} onClick={() => {
@@ -1171,9 +1171,8 @@ function PokerTable({ viewport }: { viewport: GameTableProps['viewport'] }) {
       if (!root || !deck) return;
       const from = measureCardBox(deck);
       launch(POKER_BOARD.map((card, index) => {
-        const destination = required(root.querySelector<HTMLElement>(`[data-community-card="${card.key}"]`) ?? undefined);
-        return { target: `community:${card.key}`, destination, from, to: measureCardBox(destination), face: 'reveal',
-          front: <GameCard size="sm" value={card.value} label={card.label} />, back: <GameCard size="sm" label="Card back" />,
+        const destination = required(root.querySelector<HTMLElement>(`[data-community-card="${card.id}"]`) ?? undefined);
+        return { card, target: `community:${card.id}`, destination, from, to: measureCardBox(destination), face: 'reveal',
           durationMs: motionDurationMs.cardDeal, delayMs: index * motionDurationMs.cardDealStagger };
       }));
     }}>Deal board</Button>} />;

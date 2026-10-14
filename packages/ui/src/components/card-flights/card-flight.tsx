@@ -5,6 +5,7 @@ import { animate } from 'motion/mini';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { CARD_FRAME } from '../game-card/card-frame';
+import { GameCard } from '../game-card';
 import { FLIGHT_GEOMETRY as config } from './geometry';
 import type { CardFlightSpec } from './card-flights';
 
@@ -28,7 +29,9 @@ export function CardFlight({ flightId, spec, onStart, onFinish }: {
   const bodyRef = useRef<HTMLDivElement>(null);
   const shadowRef = useRef<HTMLDivElement>(null);
   const turnRef = useRef<HTMLDivElement>(null);
-  const { from, to, face, durationMs, delayMs = 0, front, back } = spec;
+  const { from, to, face, durationMs, delayMs = 0, card } = spec;
+  const front = spec.front ?? card?.front ?? (card && <GameCard label={card.label} value={card.value} />);
+  const back = spec.back ?? card?.back ?? (card && <GameCard label={card.label} backPattern={card.backPattern} />);
   const start = pose(from.cx - to.width / 2, from.cy - to.height / 2, from.rotate, from.width / to.width);
   // Only a new launch identity restarts tracks; equivalent spec objects do not.
   useLayoutEffect(() => {

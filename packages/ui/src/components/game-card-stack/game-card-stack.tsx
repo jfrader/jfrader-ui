@@ -11,11 +11,13 @@ import { useControlledState } from '../../utils/use-controlled-state';
 import { GameCard, type GameCardPartProps, type GameCardProps } from '../game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { DEFAULT_PILE_LAYOUT, PLAYED_PILE, getPilePosition, getPileOffset, getStableJitter,
-  getStableRotation, getPlayedCardKey, type PlayedCard, type PileLayout, type SeatVector } from './pile-layout';
+  getStableRotation, type PlayedCard, type PileLayout, type SeatVector } from './pile-layout';
 import { getAutoLayout } from './auto-layout';
 
 export interface GameCardStackPile {
   playerKey: string;
+  label: string;
+  revealed?: boolean;
   /** Caller-owned normalized position; opts this pile out of grid fitting. */
   geometry?: SeatVector;
   cards: readonly PlayedCard[];
@@ -33,7 +35,6 @@ interface InspectionProps {
   maxCards?: number;
   /** Preferred card width; defaults to the inherited width or the medium card token. */
   cardWidth?: string;
-  playOrder?: Readonly<Record<string, number>>;
   backPattern?: GameCardProps['backPattern'];
   slotProps?: { pile?: GameCardPartProps; trigger?: GameCardPartProps; card?: GameCardPartProps };
 }
@@ -43,16 +44,12 @@ export interface GameCardStackProps extends Omit<ComponentPropsWithRef<'div'>, '
   piles: readonly GameCardStackPile[];
   /** Measured grid fitting by default; free placement uses each pile's geometry. */
   placement?: 'grid' | 'free';
-  revealedKeys?: readonly string[];
-  labels: { piles: Readonly<Record<string, string>>; cards: Readonly<Record<string, string>> };
 }
 
 export interface GameCardStackPileProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps, InspectionProps {
   playerKey: string;
   cards: readonly PlayedCard[];
   label: string;
-  /** Accessible card names keyed by `getPlayedCardKey`. */
-  labels: Readonly<Record<string, string>>;
   revealed?: boolean;
 }
 
@@ -108,9 +105,9 @@ function cardLimit(maxCards: number) {
 }
 
 export function GameCardStack({
-  ref, piles, placement = 'grid', labels, revealedKeys = [], value, defaultValue = null, onValueChange,
+  ref, piles, placement = 'grid', value, defaultValue = null, onValueChange,
   layout, cardWidth = `var(--game-card-width, ${vars.size.gameCardMd})`, maxCards = PLAYED_PILE.maxCards,
-  playOrder, backPattern, className, sx, style, onKeyDown, slotProps, ...rest
+  backPattern, className, sx, style, onKeyDown, slotProps, ...rest
 }: GameCardStackProps) {
   const [inspected, inspect] = useControlledState(value, defaultValue, onValueChange);
   const returnFocus = useRef<HTMLButtonElement | null>(null);
@@ -173,9 +170,9 @@ export function GameCardStack({
             data-placement={position ? 'manual' : 'automatic'} css={slotStyle}
             style={{ '--pile-x': position ? `${position.x}%` : undefined, '--pile-y': position ? `${position.y}%` : undefined,
               '--game-card-width': position ? cardWidth : undefined } as CSSProperties}>
-            <GameCardStack.Pile playerKey={pile.playerKey} cards={pile.cards} label={labels.piles[pile.playerKey]!}
-              labels={labels.cards} value={inspected} onValueChange={inspect} revealed={revealedKeys.includes(pile.playerKey)}
-              layout={layout} maxCards={limit} playOrder={playOrder} backPattern={backPattern} slotProps={slotProps}
+            <GameCardStack.Pile playerKey={pile.playerKey} cards={pile.cards} label={pile.label}
+              value={inspected} onValueChange={inspect} revealed={pile.revealed}
+              layout={layout} maxCards={limit} backPattern={backPattern} slotProps={slotProps}
               style={{ '--pile-base-rotation': config.facePlayerRotation && pile.geometry ? `${(pile.geometry.angleDeg ?? 90) - 90}deg` : undefined } as CSSProperties} />
           </div>;
         })}
@@ -185,8 +182,8 @@ export function GameCardStack({
 }
 GameCardStack.displayName = 'GameCardStack';
 
-function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, labels, value, defaultValue = null,
-  onValueChange, revealed = false, maxCards = PLAYED_PILE.maxCards, cardWidth, layout, playOrder = {}, backPattern,
+function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, defaultValue = null,
+  onValueChange, revealed = false, maxCards = PLAYED_PILE.maxCards, cardWidth, layout, backPattern,
   className, sx, style, onKeyDown, slotProps, ...rest }: GameCardStackPileProps) {
   const [inspected, inspect] = useControlledState(value, defaultValue, onValueChange);
   const inspecting = inspected === playerKey;
@@ -224,7 +221,7 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, labels,
           aria-expanded={inspecting} aria-controls={cardsId} />
         <div id={cardsId} css={cardsStyle}>
           {cards.map((card, index) => {
-            const key = getPlayedCardKey(card.roundIdx, { player: { key: playerKey }, card: card.card });
+            const key = card.id;
             const jitter = getStableJitter({ seed: key, spread: config.maxJitterPx });
             const offset = getPileOffset({ index, total: cards.length, open: spread, openSpreadRatio: PLAYED_PILE.openSpreadRatio });
             const rotation = getStableRotation({ seed: inspecting ? `${key}:inspected` : key, maxRotationOffsetDeg: config.maxRotationOffsetDeg });
@@ -234,9 +231,9 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, labels,
                 '--card-x': `calc(${jitter.x}px + ${spread ? `${visibleCardWidth} * ${offset.xCardWidths}` : `${offset.xPx}px`})`,
                 '--card-y': `${jitter.y + offset.y}px`, '--card-rotation': `calc(${rotation}deg + var(--pile-base-rotation, 0deg))`,
                 '--card-shadow': spread ? vars.shadow.floating : index === cards.length - 1 ? vars.shadow.raised : 'none',
-                zIndex: spread ? PLAYED_PILE.zIndex.openCard + index : PLAYED_PILE.zIndex.card + (playOrder[key] ?? index),
+                zIndex: spread ? PLAYED_PILE.zIndex.openCard + index : PLAYED_PILE.zIndex.card + (card.order ?? index),
               } as CSSProperties}>
-              <GameCard label={labels[key]!} value={card.value} backPattern={backPattern} sx={faceStyle} />
+              <GameCard label={card.label} value={card.value} backPattern={backPattern} sx={faceStyle} />
             </div>;
           })}
         </div>

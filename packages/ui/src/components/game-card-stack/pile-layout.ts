@@ -1,13 +1,15 @@
 import type { GameCardValue } from '../game-card';
 
 export interface PlayedCard {
-  /** Stable identity of the card, independent of its rendered face. */
-  card: string;
-  roundIdx: number;
+  /** Unique identity of this play, also used by card-flight destinations. */
+  id: string;
+  label: string;
   value?: GameCardValue;
+  /** Closed-pile layer; defaults to the card's position in the pile. */
+  order?: number;
 }
 
-export interface PlayedCardEntry extends Omit<PlayedCard, 'roundIdx'> {
+export interface PlayedCardEntry extends PlayedCard {
   player: { key: string };
 }
 
@@ -67,42 +69,37 @@ export function getPilePosition({ geometry }: { geometry: SeatVector }) {
   return { x: (1 + geometry.cos) * 50, y: (1 + geometry.sin) * 50 };
 }
 
-export const getPlayedCardKey = (roundIdx: number, played: Pick<PlayedCardEntry, 'player' | 'card'>) =>
-  `${roundIdx}-${played.player.key}-${played.card}`;
+/** Derive an id when the application has no play id. Segments are encoded independently. */
+export const getPlayedCardKey = (roundIdx: number, played: { player: { key: string }; card: string }) =>
+  JSON.stringify([roundIdx, played.player.key, played.card]);
 
 export function buildPlayedCardOrder(rounds: readonly (readonly PlayedCardEntry[])[]) {
-  const playOrder: Record<string, number> = {};
-  let nextPlayOrder = 1;
-  rounds.forEach((round, roundIdx) => {
-    round.forEach((played) => {
-      playOrder[getPlayedCardKey(roundIdx, played)] = nextPlayOrder;
-      nextPlayOrder += 1;
-    });
-  });
-  return playOrder;
+  return Object.fromEntries(rounds.flat().map((played, index) => [played.id, index + 1]));
 }
 
 /** Groups up to three cards per player; revealed cards come from the caller, not a match. */
 export function getPlayerTableCards(
   rounds: readonly (readonly PlayedCardEntry[])[],
-  revealedCards: Readonly<Record<string, readonly Omit<PlayedCard, 'roundIdx'>[]>> = {},
+  revealedCards: Readonly<Record<string, readonly PlayedCard[]>> = {},
 ) {
   const cardsByPlayerKey: Record<string, PlayedCard[]> = Object.create(null);
-  rounds.forEach((round, roundIdx) => {
+  let order = 0;
+  rounds.forEach((round) => {
     round.forEach((played) => {
       const cards = cardsByPlayerKey[played.player.key] ??= [];
-      if (cards.length < PLAYED_PILE.maxCards) cards.push({ ...played, roundIdx });
+      if (cards.length < PLAYED_PILE.maxCards) cards.push({ ...played, order: played.order ?? order });
+      order += 1;
     });
   });
   const revealedPlayerKeys = new Set<string>();
   Object.entries(revealedCards).forEach(([playerKey, revealed]) => {
     revealedPlayerKeys.add(playerKey);
     const cards = cardsByPlayerKey[playerKey] ??= [];
-    const visibleCards = new Set(cards.map(({ card }) => card));
-    revealed.forEach((card, revealIdx) => {
-      if (visibleCards.has(card.card) || cards.length >= PLAYED_PILE.maxCards) return;
-      visibleCards.add(card.card);
-      cards.push({ ...card, roundIdx: rounds.length + revealIdx });
+    const visibleCards = new Set(cards.map(({ id }) => id));
+    revealed.forEach((card) => {
+      if (visibleCards.has(card.id) || cards.length >= PLAYED_PILE.maxCards) return;
+      visibleCards.add(card.id);
+      cards.push(card);
     });
   });
   return { cardsByPlayerKey, revealedPlayerKeys };
