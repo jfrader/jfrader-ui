@@ -1,3 +1,10 @@
+import {
+  FieldReplacementRoot,
+  FieldSugarRoot,
+  FieldReplacementLabel,
+  fieldRootStyles,
+  expectFieldSlotCustomization,
+} from '../../testing/field-slot-fixtures';
 import { useId, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, type Mock } from 'storybook/test';
@@ -684,4 +691,65 @@ export const LightTheme: Story = {
     await assertRevealed(input, button);
     await expect(input).toHaveAttribute('aria-invalid', 'true');
   },
+};
+
+/** Replace the wrapper and generated label; pass native props through slotProps. */
+export const SlotCustomization: Story = {
+  args: {
+    ref: fn(),
+    onClick: fn(),
+    className: 'consumer-root',
+    title: 'consumer title',
+    style: fieldRootStyles.consumer,
+    sx: { borderRadius: '11px' },
+    component: FieldSugarRoot,
+    slots: { root: FieldReplacementRoot, label: FieldReplacementLabel },
+    slotProps: {
+      root: {
+        onClick: fn(),
+        ref: fn(),
+        className: 'slot-root',
+        title: 'slot title',
+        style: fieldRootStyles.slot,
+        css: { borderRadius: '8px' },
+      },
+      label: { ref: fn(), title: 'generated part' },
+    },
+  },
+  render: (args) => <PasswordField {...args} css={{ borderRadius: '9px' }} />,
+  parameters: {
+    docs: {
+      source: {
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<PasswordField label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { className: 'custom-field' }, label: { title: 'Name' } }}\n/>",
+      },
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    await expectFieldSlotCustomization(
+      canvasElement,
+      {
+        rootEvent: args.slotProps?.root?.onClick,
+        consumerEvent: args.onClick,
+        root: args.slotProps?.root?.ref,
+        part: args.slotProps?.label?.ref,
+        consumer: args.ref,
+      },
+      'input',
+    );
+  },
+};
+
+/** Use component as shorthand for the wrapper's root slot. */
+export const ComponentRoot: Story = {
+  args: { component: FieldSugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();
+  },
+};
+
+export type PasswordFieldSlotTypeRegression = {
+  // @ts-expect-error Unknown structural keys are rejected.
+  unknownSlot: NonNullable<import('./index').PasswordFieldProps['slots']>['notASlot'];
+  // @ts-expect-error Unknown prop keys are rejected.
+  unknownSlotProps: NonNullable<import('./index').PasswordFieldProps['slotProps']>['notASlot'];
 };

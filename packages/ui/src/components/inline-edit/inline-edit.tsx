@@ -15,6 +15,7 @@
 // external value update or unmount while a save is pending drops that save's settlement.
 // Keyboard and button saves/cancels return focus to the trigger once the close is accepted, even
 // later, unless focus has moved elsewhere meanwhile; leaving saves never move focus.
+import type { ComponentType } from 'react';
 import {
   useEffect,
   useId,
@@ -39,11 +40,12 @@ import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { inputControlStyle } from '../../styling/input-control';
 import { loadingRing } from '../../styling/loading-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { FieldDescription, FieldError } from '../field/field-anatomy';
+import { FieldSlot, type FieldSlots, type FieldParts, type FieldElementProps } from '../field/field-slot';
 
 export type InlineEditVariant = 'title' | 'body';
 export type InlineEditSize = 'sm' | 'md' | 'lg';
@@ -72,29 +74,37 @@ export interface InlineEditPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface InlineEditSlotProps {
-  root?: InlineEditPartProps;
-  trigger?: InlineEditPartProps;
-  control?: InlineEditPartProps;
-  actions?: InlineEditPartProps;
-  save?: InlineEditPartProps;
-  cancel?: InlineEditPartProps;
-  retry?: InlineEditPartProps;
-  description?: InlineEditPartProps;
-  error?: InlineEditPartProps;
-  status?: InlineEditPartProps;
-}
+export type InlineEditSlotProps = Omit<FieldParts<InlineEditAnatomy>, 'control'> & {
+  control?: FieldElementProps<'input'> | FieldElementProps<'textarea'>;
+};
 
 /** Native editor attributes and handlers. The component sets value, editability and placeholder. */
-export interface InlineEditControlProps
-  extends Omit<
-    TextareaHTMLAttributes<ControlElement>,
-    'value' | 'defaultValue' | 'children' | 'disabled' | 'readOnly' | 'placeholder' | 'cols' | 'dangerouslySetInnerHTML'
-  > {}
+export interface InlineEditControlProps extends Omit<
+  TextareaHTMLAttributes<ControlElement>,
+  'value' | 'defaultValue' | 'children' | 'disabled' | 'readOnly' | 'placeholder' | 'cols' | 'dangerouslySetInnerHTML'
+> {}
+
+type InlineEditAnatomy = {
+  root: 'div';
+  label: 'label';
+  instructions: 'span';
+  editor: 'div';
+  trigger: 'button';
+  control: 'input';
+  actions: 'div';
+  save: 'button';
+  cancel: 'button';
+  retry: 'button';
+  description: 'span';
+  error: 'span';
+  status: 'span';
+};
+export type InlineEditSlots = Omit<FieldSlots<InlineEditAnatomy>, 'control'> & {
+  control?: ComponentType<ComponentPropsWithRef<'input'> | ComponentPropsWithRef<'textarea'>>;
+};
 
 export interface InlineEditProps
-  extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>,
-    SxProps {
+  extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>, SxProps {
   /** Saved value shown by the trigger, not the draft. */
   value?: string;
   defaultValue?: string;
@@ -134,6 +144,10 @@ export interface InlineEditProps
   editIcon?: ReactNode;
   saveIcon?: ReactNode;
   cancelIcon?: ReactNode;
+  /** Replace the wrapper div; `slots.root` takes precedence. */
+  component?: InlineEditSlots['root'];
+  /** Replace generated parts with components that forward props and ref. */
+  slots?: InlineEditSlots;
   slotProps?: InlineEditSlotProps;
 }
 
@@ -431,6 +445,8 @@ export function InlineEdit({
   editIcon = pencilGlyph,
   saveIcon = checkGlyph,
   cancelIcon = crossGlyph,
+  component,
+  slots,
   slotProps,
   className,
   sx,
@@ -613,7 +629,11 @@ export function InlineEdit({
       settle(false);
       return;
     }
-    if (isThenable(result)) result.then(() => settle(true), () => settle(false));
+    if (isThenable(result))
+      result.then(
+        () => settle(true),
+        () => settle(false),
+      );
     else settle(true);
   };
 
@@ -707,7 +727,6 @@ export function InlineEdit({
   // Only focus leaving the whole widget is a leave: it drops a pending focus intent and saves. A
   // window blur leaves the element focused in its document, so it is not a leave.
   const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
-    onBlur?.(event);
     // contains() works across documents, unlike an instanceof check against this window's Node.
     if (event.currentTarget.contains(event.relatedTarget)) return;
     if (event.currentTarget.ownerDocument.activeElement === event.target) return;
@@ -729,7 +748,6 @@ export function InlineEdit({
     .join(' ');
   const consumerLabelledBy = controlProps?.['aria-labelledby'];
   const isEmpty = committed === '';
-  const rootClassName = [className, slotProps?.root?.className].filter(Boolean).join(' ') || undefined;
 
   const controlAttributes = {
     ...controlProps,
@@ -746,158 +764,195 @@ export function InlineEdit({
     onKeyDown: handleControlKeyDown,
     onCompositionStart: handleCompositionStart,
     onCompositionEnd: handleCompositionEnd,
-    className: slotProps?.control?.className,
   };
   const { rows: _rows, wrap: _wrap, ...inputAttributes } = controlAttributes;
   const controlCss = [inputControlStyle, controlStyle, variantStyles[variant], minBlockStyles[size]];
 
   return (
-    <WithSx className={rootClassName} styles={[rootStyle, slotProps?.root?.css]} sx={sx}>
-      {(rootClass) => (
-        <div
-          {...rest}
-          ref={mergedRootRef}
-          data-ui="inline-edit"
-          data-state={isOpen ? 'open' : 'closed'}
-          data-phase={phase}
-          aria-busy={saving ? true : rest['aria-busy']}
-          onBlur={handleBlur}
-          className={rootClass}
-        >
-          {isOpen ? (
-            <>
-              <label id={labelId} htmlFor={controlId} css={visuallyHiddenStyle}>
-                {label}
-              </label>
-              <span id={instructionsId} css={visuallyHiddenStyle}>
-                {text.instructions({ multiline })}
-              </span>
-              <div css={editorStyle} onKeyDown={handleEditorKeyDown}>
-                {multiline ? (
-                  <textarea
-                    rows={3}
-                    {...controlAttributes}
-                    css={[...controlCss, multilineStyle, slotProps?.control?.css]}
-                  />
-                ) : (
-                  <input type="text" {...inputAttributes} css={[...controlCss, slotProps?.control?.css]} />
-                )}
-                <div
-                  className={slotProps?.actions?.className}
-                  css={[actionsStyle, actionsSizeStyles[size], slotProps?.actions?.css]}
-                >
-                  <button
-                    type="button"
-                    aria-label={text.save}
-                    aria-disabled={saving || readOnly || undefined}
-                    disabled={disabled}
-                    onMouseDown={keepFocus}
-                    onClick={() => save(true)}
-                    className={slotProps?.save?.className}
-                    css={[actionStyle, saveStyle, actionSizeStyles[size], slotProps?.save?.css]}
-                  >
-                    {isRenderable(saveIcon) && (
-                      <span aria-hidden css={iconWrapperStyle}>
-                        {saveIcon}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={text.cancel}
-                    aria-disabled={saving || readOnly || undefined}
-                    disabled={disabled}
-                    onMouseDown={keepFocus}
-                    onClick={cancel}
-                    className={slotProps?.cancel?.className}
-                    css={[actionStyle, actionSizeStyles[size], slotProps?.cancel?.css]}
-                  >
-                    {isRenderable(cancelIcon) && (
-                      <span aria-hidden css={iconWrapperStyle}>
-                        {cancelIcon}
-                      </span>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <button
-              ref={triggerRef}
-              type="button"
-              aria-label={isEmpty ? undefined : text.edit({ label, value: committed })}
-              aria-describedby={triggerDescribedBy}
-              aria-disabled={readOnly || saving || undefined}
-              disabled={disabled}
-              onPointerDown={() => {
-                pointerOpen.current = true;
-              }}
-              onKeyDown={() => {
-                pointerOpen.current = false;
-              }}
-              onClick={handleTriggerClick}
-              className={slotProps?.trigger?.className}
-              css={[
-                triggerStyle,
-                variantStyles[variant],
-                minBlockStyles[size],
-                triggerSizeStyles[size],
-                slotProps?.trigger?.css,
-              ]}
-            >
-              {isEmpty ? (
-                // Named by its content, so a visible placeholder is always part of the name.
-                <span css={[valueStyle, placeholderStyle]}>
-                  <span css={visuallyHiddenStyle}>{`${text.edit({ label, value: committed })} `}</span>
-                  {placeholder}
-                </span>
-              ) : (
-                <span css={valueStyle}>{committed}</span>
-              )}
-              {isRenderable(editIcon) && (
-                <span aria-hidden css={[iconWrapperStyle, editIconStyle]}>
-                  {editIcon}
-                </span>
-              )}
-            </button>
-          )}
-          <FieldDescription id={descriptionId} part={slotProps?.description}>
-            {description}
-          </FieldDescription>
-          <FieldError id={errorId} part={slotProps?.error}>
-            {errorContent}
-          </FieldError>
-          {!isOpen && failedDraft !== null && (
-            <button
-              type="button"
-              aria-disabled={saving || !editable || undefined}
-              disabled={disabled}
-              onClick={retry}
-              className={slotProps?.retry?.className}
-              css={[actionStyle, retryStyle, slotProps?.retry?.css]}
-            >
-              {text.retry}
-            </button>
-          )}
-          <span
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            className={slotProps?.status?.className}
-            css={[statusStyle, phase === 'failed' && failedStatusStyle, slotProps?.status?.css]}
+    <FieldSlot
+      behavior={{ onBlur: handleBlur }}
+      element="div"
+      component={slots?.root ?? component}
+      slotProps={slotProps?.root}
+      root
+      styles={rootStyle}
+      sx={sx}
+      {...rest}
+      ref={mergedRootRef}
+      data-ui="inline-edit"
+      data-state={isOpen ? 'open' : 'closed'}
+      data-phase={phase}
+      stateProps={{ 'aria-busy': saving ? true : (slotProps?.root?.['aria-busy'] ?? rest['aria-busy']) }}
+      onBlur={onBlur}
+      className={className}
+    >
+      {isOpen ? (
+        <>
+          <FieldSlot
+            element="label"
+            component={slots?.label}
+            slotProps={slotProps?.label}
+            id={labelId}
+            htmlFor={controlId}
+            styles={visuallyHiddenStyle}
           >
-            {phase !== 'idle' && (
-              <>
-                <span key={phase} aria-hidden css={glyphStyle}>
-                  {statusGlyphs[phase]}
-                </span>
-                {text[phase]}
-              </>
+            {label}
+          </FieldSlot>
+          <FieldSlot
+            element="span"
+            component={slots?.instructions}
+            slotProps={slotProps?.instructions}
+            id={instructionsId}
+            styles={visuallyHiddenStyle}
+          >
+            {text.instructions({ multiline })}
+          </FieldSlot>
+          <FieldSlot
+            element="div"
+            component={slots?.editor}
+            slotProps={slotProps?.editor}
+            styles={editorStyle}
+            onKeyDown={handleEditorKeyDown}
+          >
+            {multiline ? (
+              <FieldSlot
+                element="textarea"
+                component={slots?.control}
+                slotProps={slotProps?.control as FieldElementProps<'textarea'>}
+                rows={3}
+                {...controlAttributes}
+                styles={[...controlCss, multilineStyle]}
+              />
+            ) : (
+              <FieldSlot
+                element="input"
+                component={slots?.control}
+                slotProps={slotProps?.control as FieldElementProps<'input'>}
+                type="text"
+                {...inputAttributes}
+                styles={controlCss}
+              />
             )}
-          </span>
-        </div>
+            <FieldSlot
+              element="div"
+              component={slots?.actions}
+              slotProps={slotProps?.actions}
+              styles={[actionsStyle, actionsSizeStyles[size]]}
+            >
+              <FieldSlot
+                element="button"
+                component={slots?.save}
+                slotProps={slotProps?.save}
+                type="button"
+                aria-label={text.save}
+                aria-disabled={saving || readOnly || undefined}
+                disabled={disabled}
+                onMouseDown={keepFocus}
+                onClick={() => save(true)}
+                styles={[actionStyle, saveStyle, actionSizeStyles[size]]}
+              >
+                {isRenderable(saveIcon) && (
+                  <span aria-hidden css={iconWrapperStyle}>
+                    {saveIcon}
+                  </span>
+                )}
+              </FieldSlot>
+              <FieldSlot
+                element="button"
+                component={slots?.cancel}
+                slotProps={slotProps?.cancel}
+                type="button"
+                aria-label={text.cancel}
+                aria-disabled={saving || readOnly || undefined}
+                disabled={disabled}
+                onMouseDown={keepFocus}
+                onClick={cancel}
+                styles={[actionStyle, actionSizeStyles[size]]}
+              >
+                {isRenderable(cancelIcon) && (
+                  <span aria-hidden css={iconWrapperStyle}>
+                    {cancelIcon}
+                  </span>
+                )}
+              </FieldSlot>
+            </FieldSlot>
+          </FieldSlot>
+        </>
+      ) : (
+        <FieldSlot
+          element="button"
+          component={slots?.trigger}
+          slotProps={slotProps?.trigger}
+          ref={triggerRef}
+          type="button"
+          aria-label={isEmpty ? undefined : text.edit({ label, value: committed })}
+          aria-describedby={triggerDescribedBy}
+          aria-disabled={readOnly || saving || undefined}
+          disabled={disabled}
+          onPointerDown={() => {
+            pointerOpen.current = true;
+          }}
+          onKeyDown={() => {
+            pointerOpen.current = false;
+          }}
+          onClick={handleTriggerClick}
+          styles={[triggerStyle, variantStyles[variant], minBlockStyles[size], triggerSizeStyles[size]]}
+        >
+          {isEmpty ? (
+            // Named by its content, so a visible placeholder is always part of the name.
+            <span css={[valueStyle, placeholderStyle]}>
+              <span css={visuallyHiddenStyle}>{`${text.edit({ label, value: committed })} `}</span>
+              {placeholder}
+            </span>
+          ) : (
+            <span css={valueStyle}>{committed}</span>
+          )}
+          {isRenderable(editIcon) && (
+            <span aria-hidden css={[iconWrapperStyle, editIconStyle]}>
+              {editIcon}
+            </span>
+          )}
+        </FieldSlot>
       )}
-    </WithSx>
+      <FieldDescription component={slots?.description} id={descriptionId} part={slotProps?.description}>
+        {description}
+      </FieldDescription>
+      <FieldError component={slots?.error} id={errorId} part={slotProps?.error}>
+        {errorContent}
+      </FieldError>
+      {!isOpen && failedDraft !== null && (
+        <FieldSlot
+          element="button"
+          component={slots?.retry}
+          slotProps={slotProps?.retry}
+          type="button"
+          aria-disabled={saving || !editable || undefined}
+          disabled={disabled}
+          onClick={retry}
+          styles={[actionStyle, retryStyle]}
+        >
+          {text.retry}
+        </FieldSlot>
+      )}
+      <FieldSlot
+        element="span"
+        component={slots?.status}
+        slotProps={slotProps?.status}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        styles={[statusStyle, phase === 'failed' && failedStatusStyle]}
+      >
+        {phase !== 'idle' && (
+          <>
+            <span key={phase} aria-hidden css={glyphStyle}>
+              {statusGlyphs[phase]}
+            </span>
+            {text[phase]}
+          </>
+        )}
+      </FieldSlot>
+    </FieldSlot>
   );
 }
 

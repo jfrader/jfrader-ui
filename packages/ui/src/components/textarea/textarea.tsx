@@ -15,13 +15,23 @@ import {
   FieldRoot,
   useFieldAnatomy,
   type FieldPartProps,
-  type FieldSlotProps,
 } from '../field/field-anatomy';
+import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
 
 export type TextareaSize = 'sm' | 'md' | 'lg';
 export type TextareaResize = 'none' | 'vertical';
 
 export interface TextareaPartProps extends FieldPartProps {}
+
+type TextareaAnatomy = {
+  root: 'div';
+  label: 'label';
+  control: 'textarea';
+  description: 'span';
+  error: 'span';
+};
+export type TextareaSlots = FieldSlots<TextareaAnatomy>;
+export type TextareaSlotProps = FieldParts<TextareaAnatomy>;
 
 export interface TextareaProps extends ComponentPropsWithRef<'textarea'>, SxProps {
   label?: ReactNode;
@@ -31,7 +41,11 @@ export interface TextareaProps extends ComponentPropsWithRef<'textarea'>, SxProp
   resize?: TextareaResize;
   autoResize?: boolean;
   onValueChange?: (value: string) => void;
-  slotProps?: FieldSlotProps<TextareaPartProps>;
+  /** Replace the wrapper div; `slots.root` takes precedence. */
+  component?: TextareaSlots['root'];
+  /** Replace generated parts with components that forward props and ref. */
+  slots?: TextareaSlots;
+  slotProps?: TextareaSlotProps;
 }
 
 const controlStyle = css({
@@ -65,6 +79,8 @@ export function Textarea({
   rows = 3,
   onChange,
   onValueChange,
+  component,
+  slots,
   slotProps,
   className,
   sx,
@@ -89,11 +105,23 @@ export function Textarea({
   };
 
   return (
-    <FieldRoot data-ui="textarea" dir={dir} className={className} sx={sx} part={slotProps?.root}>
-      <FieldLabel htmlFor={field.id} required={required} part={slotProps?.label}>
+    <FieldRoot
+      style={rest.style}
+      title={rest.title}
+      component={slots?.root ?? component}
+      data-ui="textarea"
+      dir={dir}
+      className={className}
+      sx={sx}
+      part={slotProps?.root}
+    >
+      <FieldLabel component={slots?.label} htmlFor={field.id} required={required} part={slotProps?.label}>
         {label}
       </FieldLabel>
-      <textarea
+      <FieldSlot
+        element="textarea"
+        component={slots?.control}
+        slotProps={slotProps?.control}
         {...rest}
         ref={ref}
         id={field.id}
@@ -103,20 +131,18 @@ export function Textarea({
         aria-describedby={field.describedBy}
         aria-invalid={field.ariaInvalid}
         onChange={handleChange}
-        className={slotProps?.control?.className}
-        css={[
+        styles={[
           inputControlStyle,
           controlStyle,
           sizeStyles[size],
           resizeStyles[resize],
           autoResize && autoResizeStyle,
-          slotProps?.control?.css,
         ]}
       />
-      <FieldDescription id={field.descriptionId} part={slotProps?.description}>
+      <FieldDescription component={slots?.description} id={field.descriptionId} part={slotProps?.description}>
         {description}
       </FieldDescription>
-      <FieldError id={field.errorId} part={slotProps?.error}>
+      <FieldError component={slots?.error} id={field.errorId} part={slotProps?.error}>
         {error}
       </FieldError>
     </FieldRoot>
