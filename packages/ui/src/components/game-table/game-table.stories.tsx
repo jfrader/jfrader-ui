@@ -281,15 +281,10 @@ Native seat/play/center controls preserve at least 24px on both axes and 32px on
 ### Rival-card flight markers
 After commit, GameTable marks each actual \`GameCard\` back in an occupied non-own seat with \`data-seat-hidden-card={player.key}\` and \`data-seat-hidden-card-index={index}\`. Index is current zero-based DOM order within that seat, not seat index. Markers update on card/face/player changes and are removed when a card is revealed or a seat becomes empty/own. No opponent value is exposed. Own-hand markers remain the hand's responsibility; custom card renderers must provide their own markers. The flight consumer example is \`packages/ui/src/components/card-flights/card-flights-fixture.tsx\`.
 
-### Measuring flights
-Query from the root ref, never from the document (multiple tables may exist):
-\`\`\`tsx
-const surface = tableRef.current?.querySelector<HTMLElement>('[data-game-surface="true"]');
-const box = surface?.getBoundingClientRect();
-\`\`\`
-\`box\` is the transformed viewport border box, including borders (not outlines). Absolute-child percentages resolve against the padding box, excluding borders; do not multiply them by \`box.width\`. For an axis-aligned positive scale, use \`scaleX = box.width / surface.offsetWidth\` (and height/offsetHeight for Y); viewport-to-local border-box coordinates are \`(clientX - box.left) / scaleX\`, with the inverse \`box.left + localX * scaleX\`. Subtract the computed physical border widths for padding-box coordinates. RTL inline-start coordinates are \`paddingBoxWidth - physicalX\`; card flight viewport coordinates themselves are not mirrored. Measure both actual endpoints instead of deriving them from seat percentages. Rotation, skew and negative scale require the full transform matrix, not these scale formulas.
-Measure again after viewport updates, resize, scroll, zoom or ancestor transform changes. Measurements are snapshots, not a cache maintained by GameTable.
-\`offsetWidth\` and \`offsetHeight\` are integer-rounded; use a ResizeObserver border-box measurement if subpixel scale precision matters.
+### Flights
+\`CardFlightsProvider\` measures the destinations the library renders: \`GameHand\`, \`GameHand.Hidden\` and \`GameCardStack.Pile\` register their card nodes, and \`GameTable\` registers its seats and surface. A board composition calls \`useBoardFlights\` with the records it already renders and needs no measurements of its own.
+
+For a composition the library does not describe — a shared board dealt from a deck, for example — \`useCardFlights\` exposes \`launch\` for measured endpoints, and \`CARD_FLIGHT_ATTRIBUTES\` names the markers the built-in pieces emit. Measure the endpoints you own through refs, from the board root rather than the document, and measure them again after viewport, resize, scroll, zoom or ancestor transform changes: they are snapshots, not a cache.
 
 ### Keyboard
 The table is a passive layout, not an APG grid or application. It adds no roles, landmarks, focus movement, state or animation; supplied controls keep their own semantics and native tab order. Floating content is table-local, not a dialog or portal.`,
@@ -1346,27 +1341,32 @@ const POKER_BOARD = [
 ] as const;
 
 function PokerTable({ viewport }: { viewport: GameTableProps['viewport'] }) {
-  const { scopeRef, launch, landingTargets } = useCardFlights();
+  // Low-level escape hatch: the board is not a hand or a seat pile, so this story launches its own
+  // flight. It measures the endpoints it owns through refs; a board composition uses useBoardFlights.
+  const deckRef = useRef<HTMLDivElement>(null);
+  const boardRefs = useRef(new Map<string, HTMLDivElement>());
+  const { launch, landingTargets } = useCardFlights();
   return <Table players={6} teamCount={1} seats={generalSeats(6, 1)} viewport={viewport}>
     <Table.Header>Texas Hold'em · 10 / 20</Table.Header>
     <Table.Seat><PokerSeat /></Table.Seat>
     <Table.Center><div style={{ display: 'grid', justifyItems: 'center', gap: vars.space[2] }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: vars.space[2] }}>
-        <span>Pot: 240</span><div data-community-deck><GameCard size="sm" label="Deck" /></div>
+        <span>Pot: 240</span><div ref={deckRef} data-community-deck><GameCard size="sm" label="Deck" /></div>
       </div>
       <div style={{ display: 'flex', gap: vars.space[1] }}>
-        {POKER_BOARD.map((card) => <div key={card.id} data-community-card={card.id}><GameCard size="sm" value={card.value} label={card.label} /></div>)}
+        {POKER_BOARD.map((card) => <div key={card.id} data-community-card={card.id} ref={(node) => {
+          if (node) boardRefs.current.set(card.id, node); else boardRefs.current.delete(card.id);
+        }}><GameCard size="sm" value={card.value} label={card.label} /></div>)}
       </div>
     </div></Table.Center>
     <Table.Dock><Button disabled={landingTargets.size > 0} onClick={() => {
-      const root = scopeRef.current;
-      const deck = root?.querySelector<HTMLElement>('[data-community-deck]');
-      if (!root || !deck) return;
+      const deck = deckRef.current;
+      if (!deck) return;
       const from = measureCardBox(deck);
-      launch(POKER_BOARD.map((card, index) => {
-        const destination = required(root.querySelector<HTMLElement>(`[data-community-card="${card.id}"]`) ?? undefined);
-        return { card, target: `community:${card.id}`, destination, from, to: measureCardBox(destination), face: 'reveal',
-          durationMs: motionDurationMs.cardDeal, delayMs: index * motionDurationMs.cardDealStagger };
+      launch(POKER_BOARD.flatMap((card, index) => {
+        const destination = boardRefs.current.get(card.id);
+        return destination ? [{ card, target: `community:${card.id}`, destination, from, to: measureCardBox(destination), face: 'reveal' as const,
+          durationMs: motionDurationMs.cardDeal, delayMs: index * motionDurationMs.cardDealStagger }] : [];
       }));
     }}>Deal board</Button></Table.Dock>
   </Table>;
@@ -1378,12 +1378,9 @@ function PokerSeat() {
 }
 
 function PokerViewport({ viewport }: { viewport: GameTableProps['viewport'] }) {
-  const scopeRef = useRef<HTMLDivElement>(null);
-  return <div ref={scopeRef} style={{ inlineSize: viewport.width, blockSize: viewport.height }}>
-    <CardFlightsProvider scopeRef={scopeRef}>
-      <PokerTable viewport={viewport} />
-    </CardFlightsProvider>
-  </div>;
+  return <CardFlightsProvider style={{ inlineSize: viewport.width, blockSize: viewport.height }}>
+    <PokerTable viewport={viewport} />
+  </CardFlightsProvider>;
 }
 
 function PokerFixture() {

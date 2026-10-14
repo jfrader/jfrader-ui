@@ -1,6 +1,7 @@
 'use client';
 
-import { Children, Fragment, createContext, isValidElement, useContext, useMemo, type CSSProperties, type ReactNode, type ReactElement } from 'react';
+import { Children, Fragment, createContext, isValidElement, useContext, useLayoutEffect, useMemo, type CSSProperties, type ReactNode, type ReactElement } from 'react';
+import { useFlightRegistry } from '../card-flights/flight-registry';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import type { SxProps } from '../../styling/sx';
@@ -179,9 +180,13 @@ export interface GameTableSeatContext<T extends SeatLike = SeatLike> {
 const SeatContext = createContext<GameTableSeatContext | null>(null);
 const RegionContext = createContext<GameTableRootProps | undefined>(undefined);
 
+export function useOptionalGameTableSeat() {
+  return useContext(SeatContext);
+}
+
 /** Read the current place from children of Seat or Play. */
 export function useGameTableSeat<T extends SeatLike = SeatLike>(): GameTableSeatContext<T> {
-  const context = useContext(SeatContext);
+  const context = useOptionalGameTableSeat();
   if (!context) throw new Error('useGameTableSeat requires GameTable.Seat or GameTable.Play.');
   return context as GameTableSeatContext<T>;
 }
@@ -252,6 +257,13 @@ export function GameTable<T extends SeatLike>({
   const seatCount = resolveSeatCount(players);
   const slots = useMemo(() => suppliedSlots ?? buildAlternatingSlots(seats ?? [], seatCount, resolveTableTurnDirection(turnDirection), teamCount),
     [suppliedSlots, seats, seatCount, turnDirection, teamCount]);
+  const flightRegistry = useFlightRegistry();
+  useLayoutEffect(() => {
+    const node = surfaceRef.current;
+    if (!flightRegistry || !node) return;
+    flightRegistry.tables.set(node, { node, seats: slots.map((slot) => ({ key: slot.player?.key ?? slot.key, isMe: slot.player?.isMe })) });
+    return () => { flightRegistry.tables.delete(node); };
+  }, [flightRegistry, surfaceRef, slots]);
   if (slots.length !== seatCount) {
     throw new Error('GameTable requires one slot per place. Pass fewer seats to fill empty places, or exactly players seatSlots.');
   }

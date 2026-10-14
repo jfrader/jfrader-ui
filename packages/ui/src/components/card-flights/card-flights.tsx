@@ -9,6 +9,7 @@ import { OverlayPortal } from '../../overlay/overlay-portal';
 import { CardFlight } from './card-flight';
 import { FLIGHT_GEOMETRY, measureCardBox, type CardBox } from './geometry';
 import type { FlightCard } from './use-card-flights';
+import { createFlightRegistry, FlightRegistryContext } from './flight-registry';
 
 export type CardFlightSpec = {
   target: string;
@@ -41,6 +42,7 @@ interface CardFlightsContextValue {
   launch: (specs: readonly CardFlightSpec[]) => void;
   /** Cancels flights, shows their destinations and forgets captured origins/snapshot baselines. */
   reset: () => void;
+  synchronize: (key: string | number | undefined) => void;
   /** Capture before removing a hand card, on click or after a drag. */
   rememberPlayOrigin: (cardKey: string, elementOrBox: HTMLElement | CardBox) => void;
   takePlayOrigin: (cardKey: string) => CardBox | undefined;
@@ -99,8 +101,10 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, comp
   const nextId = useRef(0);
   const [flights, setFlights] = useState<FlightRecord[]>([]);
   const [resetEpoch, setResetEpoch] = useState(0);
+  const [registry] = useState(createFlightRegistry);
 
   const actions = useMemo(() => {
+    let snapshot: { key: string | number | undefined } | undefined;
     const restore = (record: FlightRecord) => {
       if (record.timer !== null) clearTimeout(record.timer);
       record.cancel?.();
@@ -114,6 +118,14 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, comp
     return {
       clear,
       reset: () => { clear(); setFlights([]); setResetEpoch((epoch) => epoch + 1); },
+      synchronize: (key: string | number | undefined) => {
+        if (snapshot && snapshot.key !== key) {
+          clear();
+          setFlights([]);
+          setResetEpoch((epoch) => epoch + 1);
+        }
+        snapshot = { key };
+      },
       launch: (specs: readonly CardFlightSpec[]) => {
         if (!specs.length) return;
         for (const spec of specs) {
@@ -169,7 +181,7 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, comp
   const value = useMemo(() => ({ scopeRef, reducedMotion, resetEpoch,
     landingTargets: new Set(flights.map((flight) => flight.spec.target)), ...actions,
   }), [scopeRef, reducedMotion, resetEpoch, flights, actions]);
-  return <MotionConfig reducedMotion="user"><Context.Provider value={value}>
+  return <MotionConfig reducedMotion="user"><Context.Provider value={value}><FlightRegistryContext value={registry}>
     {externalScopeRef ? children : <WithSx styles={slotCss} className={slotClassName}>
       {(slotClasses) => <WithSx className={className} sx={sx}>
         {(consumerClasses) => <WithSx styles={[]} className={[slotClasses, consumerClasses].filter(Boolean).join(' ')}>
@@ -181,6 +193,6 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, comp
     </WithSx>}
     {flights.length > 0 && <OverlayPortal>{flights.map((flight) =>
       <CardFlight key={flight.id} flightId={flight.id} spec={flight.spec} onStart={flight.start} onFinish={flight.finish} />)}</OverlayPortal>}
-  </Context.Provider></MotionConfig>;
+  </FlightRegistryContext></Context.Provider></MotionConfig>;
 }
 CardFlightsProvider.displayName = 'CardFlightsProvider';
