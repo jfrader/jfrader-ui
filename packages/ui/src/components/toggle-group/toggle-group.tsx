@@ -69,7 +69,10 @@ export interface ToggleGroupSlots {
   item?: ComponentType<ToggleGroupItemProps>;
 }
 export interface ToggleGroupSlotProps {
-  root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & { css?: Interpolation<Theme> };
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
   item?: Omit<ToggleGroupItemProps, 'value' | 'children' | 'disabled' | 'id'>;
 }
 type ToggleGroupComposition =

@@ -58,7 +58,10 @@ export interface RadioCardsSlots {
   error?: ComponentType<ComponentPropsWithRef<'span'>>;
 }
 export interface RadioCardsSlotProps {
-  root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & { css?: Interpolation<Theme> };
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
   label?: Omit<RadioCardsLabelProps, 'children'>;
   item?: Omit<RadioCardsItemProps, keyof RadioCardsOption>;
   error?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { css?: Interpolation<Theme> };

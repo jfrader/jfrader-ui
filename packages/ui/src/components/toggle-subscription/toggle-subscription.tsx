@@ -67,7 +67,10 @@ export interface ToggleSubscriptionSlots {
   price?: ComponentType<ToggleSubscriptionPriceProps>;
 }
 export interface ToggleSubscriptionSlotProps {
-  root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & { css?: Interpolation<Theme> };
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
   label?: Omit<ToggleSubscriptionLabelProps, 'children'>;
   list?: Omit<ToggleSubscriptionListProps, 'children'>;
   item?: Omit<ToggleSubscriptionItemProps, keyof ToggleSubscriptionOption | 'children'>;

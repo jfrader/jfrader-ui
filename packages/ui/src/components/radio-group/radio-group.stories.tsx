@@ -126,16 +126,22 @@ export const EasyCustomization: EasyStory = {
     style: { padding: 4 },
     sx: { borderRadius: 0 },
     slotProps: {
-      root: { className: 'slot-root', style: { padding: 8 }, css: { borderRadius: vars.radius.md } },
+      root: {
+        className: 'slot-root',
+        style: { padding: 8 },
+        css: { borderRadius: vars.radius.md },
+        'data-custom-root': 'slot-root',
+      },
       label: { title: 'Plan label' },
       radio: { slotProps: { control: { css: { borderRadius: vars.radius.sm } } } },
     },
   },
-  render: (args) => <RadioGroup {...args} css={{ borderRadius: vars.radius.sm }} component={EasyRoot} />,
+  render: (args) => <RadioGroup {...args} css={{ borderRadius: vars.radius.sm }} data-custom-root="consumer-root" component={EasyRoot} />,
   play: async (context) => {
     await Easy.play?.(context);
     const group = context.canvas.getByRole('radiogroup', { name: 'Plan' });
     await expect(group).toHaveAttribute('data-replacement', 'radio-group');
+    await expect(group).toHaveAttribute('data-custom-root', 'slot-root');
     await expect(context.args.ref).toHaveBeenCalledWith(group);
     await expect(group).toHaveClass('consumer-root', 'slot-root');
     await expect(group).toHaveStyle({ padding: '8px' });
