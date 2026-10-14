@@ -67,7 +67,7 @@ const meta = {
         component:
           'Choose, drop or paste files, then manage the selection and upload progress.',
       },
-      usage: '- The surface labels the native file input; it has no custom dropzone role or second picker button. Clicking the surface opens the picker.\n- Tab reaches the input, with a focus ring on the surface, then row actions. Enter/Space open the picker once. ArrowUp/Down preserve the row action without wrapping; Delete/Backspace remove. Escape passes through.\n- Paste accepts files only while focus is inside, excluding editable controls.\n- Upload requests and image previews start only for committed selections. Existing rows never auto-upload.\n- Submit `value` items, not `input.files`: dropped and accumulated files are absent from native FormData, and native required does not validate the list. Validate uploads on the server.\n- Sizes use Intl with decimal 1000 scaling.\n- Test the OS picker, screen readers, mobile devices and media settings in browser/manual QA.',
+      usage: '- The surface labels the native file input; it has no custom dropzone role or second picker button. Clicking the surface opens the picker.\n- Tab reaches the input, with a focus ring on the surface, then row actions. Enter/Space open the picker once. ArrowUp/Down preserve the row action without wrapping; Delete/Backspace remove. Escape passes through.\n- Paste accepts files only while focus is inside, excluding editable controls.\n- Upload requests and image previews start only for committed selections. Existing rows never auto-upload.\n- Submit `value` items, not `input.files`: dropped and accumulated files are absent from native FormData. Required validation checks the committed list. Validate uploads on the server.\n- Sizes use Intl with decimal 1000 scaling.\n- Test the OS picker, screen readers, mobile devices and media settings in browser/manual QA.',
       source: {
         code: `<FileDropzone label="Add receipts" accept="image/*,.pdf" maxFiles={3}
   value={items} onValueChange={setItems} messages={fileMessages}
@@ -135,6 +135,33 @@ export const Default: Story = {
     ]);
     await expect(inputOf(canvasElement).value).toBe('');
     await expect(args.onReject).not.toHaveBeenCalled();
+  },
+};
+
+export const RequiredCommittedItems: Story = {
+  tags: ['!autodocs'],
+  args: { required: true, accept: '.pdf' },
+  render: args => (
+    <form aria-label="Receipts form">
+      <FileDropzone {...args} />
+      <Button type="reset">Reset</Button>
+    </form>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const form = canvas.getByRole('form', { name: 'Receipts form' }) as HTMLFormElement;
+    await expect(form.checkValidity()).toBe(false);
+    await userEvent.upload(inputOf(canvasElement), file());
+    await expect(inputOf(canvasElement).value).toBe('');
+    await waitFor(() => expect(form.checkValidity()).toBe(true));
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove receipt.pdf' }));
+    await expect(form.checkValidity()).toBe(false);
+    await dispatchFiles(rootOf(canvasElement), 'drop', [file('bad.png', 'png', 'image/png')]);
+    await expect(form.checkValidity()).toBe(false);
+    await dispatchFiles(rootOf(canvasElement), 'drop', [file('dropped.pdf')]);
+    await waitFor(() => expect(form.checkValidity()).toBe(true));
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await waitFor(() => expect(form.checkValidity()).toBe(false));
   },
 };
 export const Single: Story = {
