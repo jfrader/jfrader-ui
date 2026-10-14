@@ -1,10 +1,10 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ComponentPropsWithRef } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { RadioGroup, type RadioGroupOrientation, type RadioGroupProps } from './index';
+import { RadioGroup, type RadioGroupOrientation, type RadioGroupCompoundProps as RadioGroupProps, type RadioGroupEasyProps } from './index';
 
 const OPTIONS = [
   { value: 'free', label: 'Free', description: 'Up to 3 projects.' },
@@ -34,18 +34,121 @@ const meta = {
   component: RadioGroup,
   parameters: {
     docs: {
+      source: { code: `const plans = [
+  { value: 'free', label: 'Free', description: 'Up to 3 projects.' },
+  { value: 'pro', label: 'Pro', description: 'Unlimited projects.' },
+] as const;
+
+<RadioGroup label="Plan" options={plans} name="plan" defaultValue="free" />` },
       description: { component: 'Choose one option from a group of radio buttons.' },
+      usage: '- Supply readonly `options` for the complete field. Use children instead for custom anatomy; the two modes cannot be mixed.\n- `slotProps` customizes the generated root, label and radios. `slots` replaces those parts; `component` is shorthand for `slots.root`. Replacement roots forward props and ref to one div.',
     },
   },
   argTypes: {
     orientation: { control: 'radio', options: ORIENTATIONS },
     disabled: { control: 'boolean' },
   },
-} satisfies Meta<typeof RadioGroup>;
+} satisfies Meta<RadioGroupProps>;
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<Omit<RadioGroupProps, 'component'>>;
+type EasyStory = StoryObj<Omit<RadioGroupEasyProps, 'component'>>;
+
+export const Easy: EasyStory = {
+  args: { label: 'Plan', options: OPTIONS, name: 'plan', defaultValue: 'free', onValueChange: fn() },
+  render: (args) => <RadioGroup {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const group = canvas.getByRole('radiogroup', { name: 'Plan' });
+    const free = canvas.getByRole('radio', { name: 'Free' });
+    const pro = canvas.getByRole('radio', { name: 'Pro' });
+    await expect(group).toHaveAttribute('aria-labelledby');
+    await expect(free).toHaveAttribute('name', 'plan');
+    await expect(free).toBeChecked();
+    await expect(pro).toHaveAccessibleDescription('Unlimited projects.');
+    await userEvent.click(pro);
+    await expect(pro).toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('pro');
+  },
+};
+
+function EasyControlledExample(args: RadioGroupEasyProps) {
+  const [value, setValue] = useState('free');
+  return (
+    <RadioGroup {...args} value={value} onValueChange={(next) => {
+      setValue(next);
+      args.onValueChange?.(next);
+    }} />
+  );
+}
+export const EasyControlled: EasyStory = { ...Easy, render: (args) => <EasyControlledExample {...args} /> };
+export const EasyRejected: EasyStory = {
+  ...Easy,
+  args: { ...Easy.args, value: 'free' },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('radio', { name: 'Pro' }));
+    await expect(canvas.getByRole('radio', { name: 'Free' })).toBeChecked();
+    await expect(canvas.getByRole('radio', { name: 'Pro' })).not.toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('pro');
+  },
+};
+export const EasyKeyboard: EasyStory = {
+  ...Easy,
+  args: { ...Easy.args, options: OPTIONS.map((option) => ({ ...option, disabled: option.value === 'pro' })) },
+  play: async ({ canvas, userEvent, args }) => {
+    const free = canvas.getByRole('radio', { name: 'Free' });
+    const team = canvas.getByRole('radio', { name: 'Team' });
+    await expect(canvas.getByRole('radio', { name: 'Pro' })).toBeDisabled();
+    await userEvent.tab();
+    await expect(free.ownerDocument.activeElement).toBe(free);
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(team.ownerDocument.activeElement).toBe(team);
+    await expect(team).toBeChecked();
+    await expect(getComputedStyle(team.nextElementSibling!).outlineStyle).not.toBe('none');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('team');
+  },
+};
+function EasyRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="radio-group" />;
+}
+export const EasyCustomization: EasyStory = {
+  ...Easy,
+  parameters: { docs: { source: { code: `<RadioGroup label="Plan" options={plans} defaultValue="free"
+  slotProps={{ label: { title: 'Plan label' }, radio: { slotProps: { control: { css: { borderRadius: theme.radius.sm } } } } }}
+/>` } } },
+  args: {
+    ...Easy.args,
+    ref: fn(),
+    className: 'consumer-root',
+    style: { padding: 4 },
+    sx: { borderRadius: 0 },
+    slotProps: {
+      root: { className: 'slot-root', style: { padding: 8 }, css: { borderRadius: vars.radius.md } },
+      label: { title: 'Plan label' },
+      radio: { slotProps: { control: { css: { borderRadius: vars.radius.sm } } } },
+    },
+  },
+  render: (args) => <RadioGroup {...args} css={{ borderRadius: vars.radius.sm }} component={EasyRoot} />,
+  play: async (context) => {
+    await Easy.play?.(context);
+    const group = context.canvas.getByRole('radiogroup', { name: 'Plan' });
+    await expect(group).toHaveAttribute('data-replacement', 'radio-group');
+    await expect(context.args.ref).toHaveBeenCalledWith(group);
+    await expect(group).toHaveClass('consumer-root', 'slot-root');
+    await expect(group).toHaveStyle({ padding: '8px' });
+    await expect(group).toHaveStyle({ borderRadius: '0px' });
+    await expect(context.canvas.getByTitle('Plan label')).toHaveTextContent('Plan');
+  },
+};
+
+type AssertRadioGroupProps<T extends import('./index').RadioGroupProps> = T;
+export type RadioGroupEasyTypeRegression = {
+  // @ts-expect-error Options and children are mutually exclusive.
+  mixed: AssertRadioGroupProps<{ options: typeof OPTIONS; children: string }>;
+};
 
 function RadioExample({
   groupLabel = 'Plan',
@@ -93,6 +196,7 @@ const getGroup = (canvasElement: HTMLElement, name = 'Plan') =>
   within(within(canvasElement).getByRole('radiogroup', { name }));
 
 export const Default: Story = {
+  parameters: { docs: { source: { code: '<RadioGroup aria-label="Plan" defaultValue="free">\n  <RadioGroup.Radio value="free" label="Free" />\n  <RadioGroup.Radio value="pro" label="Pro" />\n</RadioGroup>' } } },
   render: (args) => <RadioExample {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

@@ -1,9 +1,9 @@
-import { useId, useState } from 'react';
+import { useId, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor } from 'storybook/test';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
-import { SegmentedControl, type SegmentedControlProps } from './index';
+import { SegmentedControl, type SegmentedControlCompoundProps as SegmentedControlProps, type SegmentedControlEasyProps } from './index';
 
 const OPTIONS = ['List', 'Grid', 'Board', 'Table'];
 const LONG_OPTIONS = ['Recent projects', 'Assigned to me', 'Shared with the team', 'Archived projects'];
@@ -17,7 +17,7 @@ function Example({
   disabledOption = 'Board',
   allDisabled = false,
   ...args
-}: SegmentedControlProps & { options?: string[]; disabledOption?: string; allDisabled?: boolean }) {
+}: Omit<SegmentedControlProps, 'options'> & { options?: string[]; disabledOption?: string; allDisabled?: boolean }) {
   return (
     <SegmentedControl {...args}>
       {options.map((option) => (
@@ -41,21 +41,122 @@ const meta = {
   render: (args) => <Example {...args} />,
   parameters: {
     docs: {
-      source: { code: usage },
+      source: { code: `const layouts = [
+  { value: 'List', label: 'List' },
+  { value: 'Grid', label: 'Grid' },
+] as const;
+
+<SegmentedControl label="Layout" options={layouts} defaultValue="List" />` },
       description: {
         component:
           'Choose one option from a row of buttons.',
       },
-      usage: `- Selection changes on arrow movement and cannot be cleared. The group owns no panels; use Tabs for panels and RadioGroup for form values.
+      usage: `- Supply readonly options for the complete selector, or children for custom anatomy; do not mix them.
+- Use slotProps for the generated root, track, selection and items. slots replaces the root or items; component is shorthand for slots.root. Replacement roots forward props and ref to one div.
+- Selection changes on arrow movement and cannot be cleared. The group owns no panels; use Tabs for panels and RadioGroup for form values.
 - Tab enters the last focused enabled option, then exits.
 - Arrows select and wrap, skipping disabled options. Horizontal arrows reverse in RTL. Home/End select the first/last enabled option.
 - Space and Enter select once through a native button click.
 - Values must be unique. Accessories must not be interactive.`,
     },
   },
-} satisfies Meta<typeof SegmentedControl>;
+} satisfies Meta<SegmentedControlProps>;
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<Omit<SegmentedControlProps, 'component'>>;
+type EasyStory = StoryObj<Omit<SegmentedControlEasyProps, 'component'>>;
+const layouts = OPTIONS.map((value) => ({ value, label: value, disabled: value === 'Board' }));
+export const Easy: EasyStory = {
+  args: { label: 'Layout', options: layouts, defaultValue: 'List', onValueChange: fn() },
+  render: (args) => <SegmentedControl {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    await expect(canvas.getByRole('radiogroup', { name: 'Layout' })).toBeInTheDocument();
+    await expect(canvas.getByRole('radio', { name: 'List' })).toHaveAttribute('aria-checked', 'true');
+    await expect(canvas.getByRole('radio', { name: 'Board' })).toBeDisabled();
+    const grid = canvas.getByRole('radio', { name: 'Grid' });
+    await userEvent.click(grid);
+    await expect(grid).toHaveAttribute('aria-checked', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('Grid');
+  },
+};
+function EasyControlledExample(args: SegmentedControlEasyProps) {
+  const [value, setValue] = useState('List');
+  return (
+    <SegmentedControl {...args} value={value} onValueChange={(next) => {
+      setValue(next);
+      args.onValueChange?.(next);
+    }} />
+  );
+}
+export const EasyControlled: EasyStory = { ...Easy, render: (args) => <EasyControlledExample {...args} /> };
+export const EasyRejected: EasyStory = {
+  ...Easy, args: { ...Easy.args, value: 'List' },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('radio', { name: 'Grid' }));
+    await expect(canvas.getByRole('radio', { name: 'List' })).toHaveAttribute('aria-checked', 'true');
+    await expect(canvas.getByRole('radio', { name: 'Grid' })).toHaveAttribute('aria-checked', 'false');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('Grid');
+  },
+};
+export const EasyKeyboard: EasyStory = {
+  ...Easy,
+  play: async ({ canvas, userEvent, args }) => {
+    const list = canvas.getByRole('radio', { name: 'List' });
+    const table = canvas.getByRole('radio', { name: 'Table' });
+    await userEvent.tab();
+    await assertFocus(list);
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}');
+    await assertFocus(table);
+    await expect(table).toHaveAttribute('aria-checked', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('Table');
+  },
+};
+export const EasyRTL: EasyStory = {
+  ...Easy, args: { ...Easy.args, dir: 'rtl' },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowLeft}');
+    const grid = canvas.getByRole('radio', { name: 'Grid' });
+    await assertFocus(grid);
+    await expect(grid).toHaveAttribute('aria-checked', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('Grid');
+  },
+};
+function EasyRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="segmented-control" />;
+}
+export const EasyCustomization: EasyStory = {
+  ...Easy,
+  parameters: { docs: { source: { code: `<SegmentedControl label="Layout" options={layouts} defaultValue="List"
+  slotProps={{ root: { title: 'Layout selector' }, item: { sx: { borderRadius: 0 } } }}
+/>` } } },
+  args: {
+    ...Easy.args,
+    ref: fn(),
+    slotProps: {
+      root: { title: 'Layout selector' },
+      item: { sx: { borderRadius: 0 } },
+      track: { style: { gap: 8 } },
+    },
+  },
+  render: (args) => <SegmentedControl {...args} slots={{ root: EasyRoot }} />,
+  play: async (context) => {
+    await Easy.play?.(context);
+    const group = context.canvas.getByRole('radiogroup', { name: 'Layout' });
+    await expect(group).toHaveAttribute('data-replacement', 'segmented-control');
+    await expect(context.args.ref).toHaveBeenCalledWith(group);
+    await expect(group).toHaveAttribute('title', 'Layout selector');
+    await expect(context.canvas.getByRole('radio', { name: 'Grid' })).toHaveStyle({ borderRadius: '0px' });
+  },
+};
+type AssertSegmentedControlProps<T extends import('./index').SegmentedControlProps> = T;
+export type SegmentedControlEasyTypeRegression = {
+  // @ts-expect-error Options and children are mutually exclusive.
+  mixed: AssertSegmentedControlProps<{ options: typeof layouts; children: string }>;
+};
 
 async function assertFocus(item: HTMLElement) {
   await expect(item.ownerDocument.activeElement).toBe(item);
@@ -82,6 +183,7 @@ function contrastRatio(document: Document, first: string, second: string) {
 }
 
 export const Default: Story = {
+  parameters: { docs: { source: { code: usage } } },
   play: async ({ canvas }) => {
     const group = canvas.getByRole('radiogroup');
     const selected = canvas.getByRole('radio', { checked: true });

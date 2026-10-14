@@ -1,10 +1,10 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
-import { ToggleSubscription, type ToggleSubscriptionProps } from './index';
+import { ToggleSubscription, type ToggleSubscriptionCompoundProps as ToggleSubscriptionProps, type ToggleSubscriptionEasyProps } from './index';
 
 const saving = `Save ${new Intl.NumberFormat('en', { style: 'percent' }).format(0.2)}`;
 const usage = `<ToggleSubscription value={period} onValueChange={setPeriod} locale="en-US">
@@ -48,12 +48,23 @@ const meta = {
   render: (args) => <Example {...args} />,
   parameters: {
     docs: {
-      source: { code: usage },
+      source: { code: `const periods = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'annual', label: 'Annual' },
+] as const;
+const prices = {
+  monthly: { amount: 24, currency: 'USD', period: '/ month' },
+  annual: { amount: 200, currency: 'USD', period: '/ year' },
+} as const;
+
+<ToggleSubscription label="Billing period" options={periods} prices={prices} defaultValue="monthly" locale="en-US" />` },
       description: {
         component:
           'Choose a billing period and show its price, savings, or a previous price.',
       },
-      usage: `- Supply labels, savings, and prices. The component does not calculate prices or create a form field.
+      usage: `- Supply readonly options and an explicit prices map keyed by period value, or children for custom anatomy; do not mix them. No selection displays no price; a selected value without a mapped price throws.
+- slotProps customizes the generated root, label, list, items and price, including badge and price anatomy. slots replaces those parts; component is shorthand for slots.root. Replacement roots forward props and ref to one div.
+- Supply labels, savings, and prices. The component does not calculate prices or create a form field.
 - Controlled changes take effect when the parent updates \`value\`.
 - Price needs a finite amount and an ISO currency. Supply \`previousLabel\` when showing a previous price. Set \`locale\` for SSR.
 - Badges must not contain controls.
@@ -66,9 +77,142 @@ const meta = {
 - Tab enters the focused enabled item, then leaves the group.`,
     },
   },
-} satisfies Meta<typeof ToggleSubscription>;
+} satisfies Meta<ToggleSubscriptionProps>;
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<Omit<ToggleSubscriptionProps, 'component'>>;
+type EasyStory = StoryObj<Omit<ToggleSubscriptionEasyProps, 'component'>>;
+const periods = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly', disabled: true },
+  { value: 'annual', label: 'Annual', badge: saving },
+] as const;
+const prices = {
+  monthly: { amount: 24, currency: 'USD', period: '/ month' },
+  quarterly: { amount: 60, currency: 'USD', period: '/ quarter' },
+  annual: { amount: 200, currency: 'USD', period: '/ year' },
+} as const;
+async function expectSettledPrice(root: HTMLElement, formatted: string) {
+  await waitFor(async () => {
+    const visual = root.querySelector('[data-ui="toggle-subscription-amount"] [aria-hidden="true"]');
+    await expect(visual?.children).toHaveLength(1);
+    await expect(visual?.firstElementChild?.textContent).toBe(formatted);
+    await expect(getComputedStyle(visual!.firstElementChild!).opacity).toBe('1');
+  });
+}
+export const Easy: EasyStory = {
+  args: { label: 'Billing period', options: periods, prices, defaultValue: 'monthly', locale: 'en-US', onValueChange: fn() },
+  render: (args) => <ToggleSubscription {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await expect(canvas.getByRole('radiogroup', { name: 'Billing period' })).toBeInTheDocument();
+    await expect(canvas.getAllByText('$24.00').length).toBeGreaterThan(0);
+    await expect(canvas.getByRole('radio', { name: 'Quarterly' })).toBeDisabled();
+    const annual = canvas.getByRole('radio', { name: 'Annual' });
+    await userEvent.click(annual);
+    await expect(annual).toHaveAttribute('aria-checked', 'true');
+    await expect(canvas.getByText('/ year')).toBeInTheDocument();
+    await expect(canvas.getAllByText('$200.00').length).toBeGreaterThan(0);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('annual');
+    await expectSettledPrice(canvasElement, '$200.00');
+  },
+};
+function EasyControlledExample(args: ToggleSubscriptionEasyProps) {
+  const [value, setValue] = useState('monthly');
+  return (
+    <ToggleSubscription {...args} value={value} onValueChange={(next) => {
+      setValue(next);
+      args.onValueChange?.(next);
+    }} />
+  );
+}
+export const EasyControlled: EasyStory = { ...Easy, render: (args) => <EasyControlledExample {...args} /> };
+export const EasyNoSelection: EasyStory = {
+  ...Easy,
+  args: { ...Easy.args, defaultValue: undefined },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await expect(canvas.queryByText('/ month')).not.toBeInTheDocument();
+    await expect(canvasElement.querySelector('[data-ui="toggle-subscription-price"]')).not.toBeInTheDocument();
+    for (const radio of canvas.getAllByRole('radio')) {
+      await expect(radio).toHaveAttribute('aria-checked', 'false');
+    }
+    await userEvent.click(canvas.getByRole('radio', { name: 'Annual' }));
+    await expect(canvas.getByText('/ year')).toBeInTheDocument();
+    await expectSettledPrice(canvasElement, '$200.00');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+export const EasyRejected: EasyStory = {
+  ...Easy, args: { ...Easy.args, value: 'monthly' },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('radio', { name: 'Annual' }));
+    await expect(canvas.getByRole('radio', { name: 'Monthly' })).toHaveAttribute('aria-checked', 'true');
+    await expect(canvas.getByRole('radio', { name: 'Annual' })).toHaveAttribute('aria-checked', 'false');
+    await expect(canvas.getByText('/ month')).toBeInTheDocument();
+    await expect(canvas.queryByText('/ year')).not.toBeInTheDocument();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('annual');
+  },
+};
+export const EasyKeyboard: EasyStory = {
+  ...Easy,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await userEvent.tab();
+    await assertFocus(canvas.getByRole('radio', { name: 'Monthly' }));
+    await userEvent.keyboard('{ArrowRight}');
+    const annual = canvas.getByRole('radio', { name: 'Annual' });
+    await assertFocus(annual);
+    await expect(annual).toHaveAttribute('aria-checked', 'true');
+    await expect(canvas.getByText('/ year')).toBeInTheDocument();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('annual');
+    await expectSettledPrice(canvasElement, '$200.00');
+  },
+};
+export const EasyRTL: EasyStory = {
+  ...Easy, args: { ...Easy.args, dir: 'rtl', locale: 'de-DE' },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowLeft}');
+    await assertFocus(canvas.getByRole('radio', { name: 'Annual' }));
+    const formatted = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'USD' }).format(200);
+    await expectSettledPrice(canvasElement, formatted);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('annual');
+  },
+};
+function EasyRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="toggle-subscription" />;
+}
+export const EasyCustomization: EasyStory = {
+  ...Easy,
+  parameters: { docs: { source: { code: `<ToggleSubscription label="Billing period" options={periods} prices={prices} defaultValue="monthly" locale="en-US"
+  slotProps={{ label: { title: 'Billing label' }, item: { slotProps: { badge: { style: { borderRadius: 0 } } } } }}
+/>` } } },
+  args: {
+    ...Easy.args,
+    ref: fn(),
+    slotProps: {
+      root: { title: 'Billing selector' },
+      label: { title: 'Billing label' },
+      item: { slotProps: { badge: { style: { borderRadius: 0 } } } },
+      price: { slotProps: { amount: { style: { fontSize: vars.textSize.xl } } } },
+    },
+  },
+  render: (args) => <ToggleSubscription {...args} component={EasyRoot} />,
+  play: async (context) => {
+    await Easy.play?.(context);
+    await expect(context.canvas.getByTitle('Billing selector')).toHaveAttribute('data-replacement', 'toggle-subscription');
+    await expect(context.args.ref).toHaveBeenCalledWith(context.canvas.getByTitle('Billing selector'));
+    await expect(context.canvas.getByTitle('Billing label')).toHaveTextContent('Billing period');
+  },
+};
+type AssertToggleSubscriptionProps<T extends import('./index').ToggleSubscriptionProps> = T;
+export type ToggleSubscriptionEasyTypeRegression = {
+  // @ts-expect-error Options and children are mutually exclusive.
+  mixed: AssertToggleSubscriptionProps<{ options: typeof periods; prices: typeof prices; children: string }>;
+  // @ts-expect-error Easy mode requires an explicit price mapping.
+  missingPrices: AssertToggleSubscriptionProps<{ options: typeof periods }>;
+};
 function contrastRatio(document: Document, foreground: string, ...layers: string[]) {
   const context = document.createElement('canvas').getContext('2d')!;
   const luminance = (...colors: string[]) => {
@@ -98,6 +242,7 @@ async function assertFocus(item: HTMLElement) {
   await expect(Math.abs(parseFloat(getComputedStyle(item).outlineWidth) - 2)).toBeLessThan(1.1);
 }
 export const MonthlyYearly: Story = {
+  parameters: { docs: { source: { code: usage } } },
   play: async ({ canvas, userEvent, args }) => {
     const monthly = canvas.getByRole('radio', { name: 'Monthly' });
     const annual = canvas.getByRole('radio', { name: 'Annual' });

@@ -1,5 +1,10 @@
 export {
   RadioCards,
+  type RadioCardsCompoundProps,
+  type RadioCardsEasyProps,
+  type RadioCardsOption,
+  type RadioCardsSlots,
+  type RadioCardsSlotProps,
   type RadioCardsProps,
   type RadioCardsItemProps,
   type RadioCardsLabelProps,
