@@ -125,17 +125,15 @@ export function fitBoardContent(measurement: BoardMeasurements) {
       const length = Math.hypot(seat.x, seat.y);
       const ux = seat.x / length;
       const uy = seat.y / length;
-      const seatExtent = (Math.abs(ux) * seat.width + Math.abs(uy) * seat.height) / 2;
-      const playExtent = (Math.abs(ux) * seat.playWidth + Math.abs(uy) * seat.playHeight) / 2;
       const active = seat.playWidth > 0 && seat.playHeight > 0;
       const seatDistance = Math.hypot(regions[index]!.x, regions[index]!.y);
-      const distance = Math.min(seatDistance - seatExtent - gap - playExtent,
+      const separation = Math.min(along((seat.width + seat.playWidth) / 2 + gap, ux),
+        along((seat.height + seat.playHeight) / 2 + gap, uy));
+      const distance = Math.min(seatDistance - separation,
         along(halfWidth - seat.playWidth / 2 - gap, ux), along(halfHeight - seat.playHeight / 2 - gap, uy));
       const play = { x: ux * distance, y: uy * distance, width: seat.playWidth, height: seat.playHeight };
       if (active) {
         contained &&= distance >= 0 && Math.abs(play.x) + play.width / 2 <= halfWidth && Math.abs(play.y) + play.height / 2 <= halfHeight;
-        const centerExtent = (Math.abs(ux) * centerWidth + Math.abs(uy) * centerHeight) / 2;
-        if (centerWidth > 0 && centerHeight > 0) contained &&= distance - playExtent >= centerExtent + gap;
       }
       return { ...play, scale: seat.playScale, active, index };
     });

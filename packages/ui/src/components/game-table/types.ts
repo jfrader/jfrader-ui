@@ -1,6 +1,7 @@
 export type BoardSurface = 'match' | 'lobby';
 export type BoardViewportProfile = 'phoneCompact' | 'phoneTall' | 'phoneWide' | 'tablet' | 'tabletWide' | 'desktop';
-export type BoardPlayerCount = 2 | 4 | 6;
+/** @deprecated Use `number`; seat counts are any integer >= 2. Retained for compatibility. */
+export type BoardPlayerCount = number;
 export type BoardViewport = { width: number; height: number; aspectRatio: number };
 
 export interface BoardSeatGeometryConfig {
@@ -59,7 +60,7 @@ export interface BoardSurfaceFrameConfig {
 export interface BoardLayoutModel {
   surface: BoardSurface;
   profile: BoardViewportProfile;
-  playerCount: BoardPlayerCount;
+  playerCount: number;
   viewport: BoardViewport;
   frame: BoardSurfaceFrameConfig;
   boardTranslateY: string;
