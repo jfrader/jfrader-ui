@@ -4,15 +4,16 @@
 // suit watermarks are presentational children, so a screen reader hears the playing card once, in the
 // consumer's own words. A face-down card omits built-in rank, suit and deck data; consumer artwork
 // remains visible, so consumers must keep private values out of their own art.
-import type { ComponentPropsWithRef, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useDeck, type Deck } from '../deck';
 import { Pattern, type PatternTone, type PatternVariant } from '../pattern';
 import { CARD_FACE, CARD_FRAME } from './card-frame';
 import type { GameCardValue } from './decks';
+import { CardRoot, type GameCardRootCustomization, type GameCardRootProps, type GameCardRootSlotProps } from './game-card-root';
 
 export type GameCardSize = 'sm' | 'md' | 'lg';
 /**
@@ -36,8 +37,8 @@ export interface GameCardPartProps {
 }
 
 export interface GameCardProps
-  extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'color'>,
-    SxProps {
+  extends Omit<GameCardRootProps, 'children' | 'color'>,
+    SxProps, GameCardRootCustomization {
   /**
    * Accessible name, in the page's language and the consumer's grammar: "as de oros", "king of
    * hearts". A face-down card names the back, never the value.
@@ -58,6 +59,7 @@ export interface GameCardProps
   /** Your own art — an image, an SVG, anything. Replaces the emoji print or back pattern. */
   children?: ReactNode;
   slotProps?: {
+    root?: GameCardRootSlotProps;
     face?: GameCardPartProps;
     back?: GameCardPartProps;
   };
@@ -149,7 +151,13 @@ export const gameCardSizeStyles: Record<GameCardSize, SerializedStyles> = {
   lg: css({ '--game-card-width': vars.size.gameCardLg }),
 };
 
-export function GameCard({
+export function GameCard(props: GameCardProps) {
+  const deck = useDeck(props.value?.deck);
+  return <ResolvedGameCard {...props} deck={deck} />;
+}
+
+export function ResolvedGameCard({
+  deck,
   ref,
   label,
   value,
@@ -163,7 +171,7 @@ export function GameCard({
   className,
   sx,
   ...rest
-}: GameCardProps) {
+}: GameCardProps & { deck: Deck }) {
   const resolvedFace: 'print' | 'back' =
     face === 'back'
       ? 'back'
@@ -175,42 +183,33 @@ export function GameCard({
   const hidden = resolvedFace === 'back' || value === undefined;
   const artProps = hidden ? slotProps?.back : slotProps?.face;
 
-  const deck = useDeck(value?.deck);
-
   return (
-    <WithSx
+    <CardRoot
+      {...rest}
+      ref={ref}
+      marker="game-card"
+      rootSlot={slotProps?.root}
       className={className}
-      styles={[rootStyle, paperStyle, hidden && backMaterialStyle, gameCardSizeStyles[size], dimmed && dimmedStyle]}
+      structure={[rootStyle, gameCardSizeStyles[size], dimmed && dimmedStyle]}
+      material={[paperStyle, hidden && backMaterialStyle]}
+      attributes={{ role: 'img', 'aria-label': label, 'data-face': resolvedFace, 'data-deck': hidden ? undefined : deck.id }}
       sx={sx}
     >
-      {(rootClass) => (
-        <div
-          {...rest}
-          ref={ref}
-          role="img"
-          aria-label={label}
-          data-ui="game-card"
-          data-face={resolvedFace}
-          data-deck={hidden ? undefined : deck.id}
-          className={rootClass}
+      {isRenderable(children) ? (
+        <span
+          data-ui="game-card-art"
+          aria-hidden="true"
+          className={artProps?.className}
+          css={[layerStyle, artStyle, hidden && backMaterialStyle, artProps?.css]}
         >
-          {isRenderable(children) ? (
-            <span
-              data-ui="game-card-art"
-              aria-hidden="true"
-              className={artProps?.className}
-              css={[layerStyle, artStyle, hidden && backMaterialStyle, artProps?.css]}
-            >
-              {children}
-            </span>
-          ) : hidden ? (
-            <CardBack deck={deck} backPattern={backPattern} slotProps={slotProps} />
-          ) : (
-            <CardFront deck={deck} value={value!} rankLabel={rankLabel} slotProps={slotProps} />
-          )}
-        </div>
+          {children}
+        </span>
+      ) : hidden ? (
+        <CardBack deck={deck} backPattern={backPattern} slotProps={slotProps} />
+      ) : (
+        <CardFront deck={deck} value={value!} rankLabel={rankLabel} slotProps={slotProps} />
       )}
-    </WithSx>
+    </CardRoot>
   );
 }
 

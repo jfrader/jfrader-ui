@@ -14,6 +14,9 @@
 - `GameCardStack`: keep played cards grouped per player, inspect a pile with the keyboard and spread revealed hands. `GameCardStack.Pile` renders one player's pile where you place it — including inside a GameTable play region — while the root keeps a measured grid for standalone use. Supports any card limit, RTL and reduced motion. Replaces `TrickStacks`, which is gone.
 - `GameTable` renders one measured play region per place through `renderPlay(slot, index, geometry)`: the inward ring where a player's played cards belong, sharing the seat's direction and never overlapping seats, neighbours or the centre.
 - `GameTable` takes any seat count from 2 up and a `teamCount` for round-robin teams (default 2, `1` for free-for-all), with per-team capacity validation and seat teams named in the error. `GameTable`'s `center` is the measured community region — Hold'em board, pot or deck — and the poker example composes six seats, a five-card board and a dealt board through the existing flight API.
+- `FlipGameCard` renders both faces itself from a card and a deck: pass `value`, `label` and `backLabel` instead of building two `GameCard`s, and it resolves one deck and one size for front and back (`front` / `back` stay as the arbitrary-content escape hatch). A card that is face down is named by `backLabel`, never by the front's label.
+- `DeckProvider` takes `backLabel`, so a hidden card's name is declared once, in the consumer's language, instead of repeated per card.
+- `GameCard` and `FlipGameCard` accept `component`, `slots.root` and `slotProps.root` for root replacement, and preserve their `data-ui` identity tokens when composed.
 - `EditableDetails`: nested labelled details with independent app-owned editors, controlled disclosure, draft preservation on collapse, and keyboard focus recovery. Includes native form, React Action, React Hook Form, and overlay examples.
 - `Scene` and `sceneSource` take `grade: 'warm'` for a warmer final grade of the same scene. Geometry is unchanged, and the default `raw` grade renders the same markup as before. ImageCompare examples now compare one scene in raw and warm grades.
 - `GameTable.SeatChrome`: opt-in seat chrome subpart (`data-ui="game-table-seat-chrome"`) that positions names, avatars and badges out of flow above the seat cards, ensuring card block placement and curve geometry are measured independent of chrome.
@@ -47,6 +50,8 @@
 ### Fixed
 
 - `LightboxGallery` and `LinkUnfurl` images show without JavaScript and when they finish loading before hydration. They are hidden only while the client knows they are loading, marked `data-image-state="loading"`. `LinkUnfurl` images now carry `data-image-state` instead of `data-loaded`.
+- The Spanish `FlipGameCard` example keeps a Spanish back: the inherited back used to come from the default deck while the front was Spanish. Missing back names now raise `MissingBackLabelError` instead of silently leaving the card unnamed.
+- The deck and pattern examples no longer claim that custom artwork needs a `value`, and the deck example includes the required `label`.
 - GameCard's French and Spanish deck galleries wrap into multiple columns instead of a 32px strip. FlipGameCard faces inherit the frame width, keeping corner radii consistent across sizes.
 - Card flights wait for their animations before revealing landed cards, hide staggered cards until departure, and cancel replaced flights without a residual frame. GameHand supplies flight markers for visible cards and hidden hands with a player key.
 - ActivityRings no longer reports a goal crossing when a completed goal is restored after being unavailable.

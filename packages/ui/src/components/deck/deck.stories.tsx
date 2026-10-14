@@ -72,8 +72,8 @@ const meta = {
       usage: `### Defining decks with defineDeck
 Use \`defineDeck\` to declare suits, ranks, per-card face art, and back configuration with full type safety:
 - \`id\`: Unique string identifier referenced by serializable card props (\`value.deck\`).
-- \`suits\`: Suit definitions with an accessible \`label\`, optional \`glyph\` (\`ReactNode\`), and optional \`ink\` (\`'red' | 'ink'\`).
-- \`ranks\`: Rank definitions with an accessible \`label\` and optional \`mark\` (\`ReactNode\`).
+- \`suits\`: Suit definitions with a visual fallback \`label\`, optional \`glyph\` (\`ReactNode\`), and optional \`ink\` (\`'red' | 'ink'\`).
+- \`ranks\`: Rank definitions with a visual fallback \`label\` and optional \`mark\` (\`ReactNode\`). \`GameCard label\` names the whole card for assistive technology.
 - \`faces\`: Optional map of per-card artwork keyed \`\${suit}-\${rank}\`. Partial artwork sets are supported.
 - \`back\`: A patterned back (\`{ pattern, tone? }\`) or consumer \`ReactNode\` artwork.
 
@@ -84,8 +84,8 @@ Two standard decks are registered automatically:
 
 ### Serialization and client boundary
 \`Deck\` is a client-side definition that may hold non-serializable \`ReactNode\` elements (custom SVG art, icons).
-Card props stay serializable: \`<GameCard value={{ deck: 'my-deck', suit: 'stars', rank: 'I' }} />\` passes only string ids.
-The definitions are supplied via \`<DeckProvider decks={[myDeck]}>\`.
+Card props stay serializable: \`<GameCard label="One of stars" value={{ deck: 'my-deck', suit: 'stars', rank: 'I' }} />\` passes only string ids.
+The definitions are supplied via \`<DeckProvider decks={[myDeck]}>\`. Set \`backLabel\` on the provider to name backs for \`FlipGameCard\` shorthand. \`GameCard\` still requires its own \`label\`.
 
 ### Resolution order
 1. **Deck identity**: Explicit \`value.deck\` → provider's \`default\` → built-in French deck. Unknown ids throw a clear error naming the missing deck.
@@ -263,6 +263,7 @@ export const CustomDeckLightTheme: Story = {
  * Resolving an unregistered deck id throws a clear UnknownDeckError naming the missing deck.
  */
 export const UnknownDeckThrows: Story = {
+  tags: ['!autodocs'],
   render: () => {
     let errorName = '';
     let errorMessage = '';
