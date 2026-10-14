@@ -4,10 +4,15 @@
 
 ### Added
 
+- `Menu`, `Tabs` and `Dialog` accept one-element compositions through action/section collections or named dialog content props. Their compound parts remain available; incompatible children and easy-mode props are rejected by TypeScript.
+- `LinkPreview`: show supplied link metadata without a composer, with loading, unavailable and error states, image fallback, and truncated titles and descriptions. `LinkUnfurl` keeps its existing API and behavior.
+- `ReactionGroup`: standalone reaction pills with counts, current-user highlights, disabled and read-only states, and an optional keyboard-accessible emoji picker. Existing thread APIs remain unchanged.
+- `AttachmentList`: standalone file lists with localized sizes, type icons, image previews, safe download or navigation links, and expandable overflow. Message attachments and composer files share private file helpers.
 - `ChatMessage`: show a single message with author, avatar, body, timestamp, delivery status, attachments and reactions without adopting a conversation layout. `ChatThread` keeps its existing API.
 - `CodeBlock`'s optional Shiki adapter highlights JSX and TSX with their own grammars.
 - `Surface`: panel material with flat, raised and floating shadows, inherited or contrast appearance, and div-root replacement through `component` or `slots.root`. Card supports the same root replacement and native root `slotProps`.
 - Drawer.Panel, BottomSheet.Panel and DialogStack.Content support div-root material replacement. Dialog.Panel adds the same customization while plain Dialog.Content children keep their default panel.
+- The documentation front's overview page is the repository README: a build step in `apps/docs` syncs `README.md` into the docs guidance, so the introduction, install notes and package table live in one file. The README now leads with the hosted docs (**ui.jfrader.com**, workbench at `/storybook/`) and says what generates the site — `@jfrader/storybook-docs` reading the library's own story files — instead of pointing at a local Storybook.
 - `Deck`, `defineDeck` and `DeckProvider`: declare a card set — suits, ranks, per-card face art and a back — and register it by id. The built-in Spanish and French decks are two instances of the same API (`spanishDeck`, `frenchDeck`), and a partial set degrades to the printed face instead of an empty card.
 - `Pattern`: decorative SVG tiles (`stripes`, `diagonal`, `checks`, `dots`, `waves`, `chevron`) with continuous tile edges, token inks, tile sizes and scaling, including custom flipped-card artwork. Forced colors hides the pattern and preserves the enclosing surface and border.
 - `GameHand`: card fans with keyboard selection and an explicit play action, plus count-only hidden opponent hands.
@@ -53,6 +58,7 @@
 ### Fixed
 
 - `LightboxGallery` and `LinkUnfurl` images show without JavaScript and when they finish loading before hydration. They are hidden only while the client knows they are loading, marked `data-image-state="loading"`. `LinkUnfurl` images now carry `data-image-state` instead of `data-loaded`.
+- The docs front no longer shows a fabricated "Usage" snippet for entries whose subject is not a component with that page's name: `Games/Deck` used to read `import { Deck } from '@jfrader/ui'; <Deck>{null}</Deck>`. Deck, CardFlights, Theme, Custom accent, DialogStack and Next author their real examples instead, with their own imports.
 - Card-flight destinations are explicit ids: a play whose id no longer matched a rendered pile used to skip its flight in silence, and two plays could collide when their player or card keys contained hyphens. The regression story fails when the destination link is broken or the old concatenation is restored.
 - The Spanish `FlipGameCard` example keeps a Spanish back: the inherited back used to come from the default deck while the front was Spanish. Missing back names now raise `MissingBackLabelError` instead of silently leaving the card unnamed.
 - The deck and pattern examples no longer claim that custom artwork needs a `value`, and the deck example includes the required `label`.

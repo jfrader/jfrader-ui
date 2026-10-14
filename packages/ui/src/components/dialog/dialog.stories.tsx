@@ -8,6 +8,7 @@ import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../te
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
+import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
 import { Surface, type SurfacePartProps } from '../surface';
 import { Card } from '../card';
@@ -15,7 +16,7 @@ import { css } from '../../styling/css';
 import { WithSx } from '../../styling/sx';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-dialog';
-import { Dialog, type DialogPanelProps, type DialogProps } from './index';
+import { Dialog, type DialogPanelProps, type DialogCompoundProps, type DialogEasyProps } from './index';
 
 const TITLE = 'Edit profile';
 const DESCRIPTION = 'Update your display name and avatar.';
@@ -71,7 +72,10 @@ const meta = {
   component: Dialog,
   parameters: { docs: {
     description: { component: 'Open a dialog to show content or ask for a decision.' },
-    usage: `### Panel and shell
+    usage: `### Composition
+Pass triggerLabel, title, content and closeLabel for a standard dialog; description is optional. Do not combine these props with children. Use slotProps.trigger/content/title/description/close for part props. For custom hierarchy or panel material, keep the compound parts.
+
+### Panel and shell
 Plain Dialog.Content children get one default Dialog.Panel. For contrast or custom material, supply one direct Dialog.Panel child; fragments and whitespace are allowed, other substantive siblings are not. Put providers inside Panel or outside Content. Panel outside Content throws.
 
 Dialog.Content ref, css, sx and native callbacks target the real dialog shell, which owns the size limits. Dialog.Panel ref targets its div. Panel has inherited appearance by default; appearance="contrast" establishes fixed charcoal. Panel fills the shell and keeps padding and enter/exit motion.
@@ -88,7 +92,124 @@ Tab and Shift+Tab stay inside. Escape and Close request closure through the shel
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<DialogCompoundProps>;
+
+export const Default: StoryObj<DialogEasyProps> = {
+  name: 'Easy mode',
+  args: {
+    triggerLabel: 'Open profile',
+    title: TITLE,
+    description: DESCRIPTION,
+    content: <TextField label="Display name" defaultValue="Maya" />,
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+    slotProps: {
+      content: { className: 'easy-dialog-shell' },
+      title: { className: 'easy-dialog-title' },
+      close: { style: { marginBlockStart: vars.space[4] } },
+    },
+  },
+  parameters: { docs: { source: { language: 'tsx', code: `<Dialog
+  triggerLabel="Open profile"
+  title="Profile"
+  description="Update your display name and avatar."
+  content={<ProfileForm />}
+  closeLabel="Close"
+/>` } } },
+  render: (args) => <Dialog {...args} />,
+  play: async ({ canvasElement, canvas, args, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'Open profile' });
+    await userEvent.tab();
+    await expect(trigger).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    const dialog = await canvas.findByRole('dialog', { name: TITLE });
+    await expect(dialog).toHaveClass('easy-dialog-shell');
+    await expect(dialog.querySelectorAll('[data-ui~="dialog-panel"]')).toHaveLength(1);
+    const title = canvas.getByRole('heading', { name: TITLE });
+    await expect(title).toHaveClass('easy-dialog-title');
+    await expect(dialog).toHaveAttribute('aria-labelledby', title.id);
+    await expect(dialog).toHaveAccessibleDescription(DESCRIPTION);
+    await expect(dialog).toHaveAttribute('aria-describedby', dialog.querySelector('[data-ui="dialog-description"]')!.id);
+    await expect(canvas.getByRole('textbox', { name: 'Display name' })).toHaveFocus();
+    await userEvent.tab();
+    const close = canvas.getByRole('button', { name: 'Close' });
+    await expect(close).toHaveFocus();
+    await expect(getComputedStyle(close).outlineStyle).not.toBe('none');
+    await userEvent.tab({ shift: true });
+    await expect(canvas.getByRole('textbox', { name: 'Display name' })).toHaveFocus();
+    await userEvent.click(close);
+    await expectClosed(canvasElement, trigger);
+    await userEvent.click(trigger);
+    requestEscape(dialog);
+    await expectClosed(canvasElement, trigger);
+    await userEvent.click(trigger);
+    fireEvent.click(dialog);
+    await expectClosed(canvasElement, trigger);
+    await userEvent.click(trigger);
+    (dialog as HTMLDialogElement).close();
+    await expectClosed(canvasElement, trigger);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(8);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+  },
+};
+
+export const EasyModeNativeForm: StoryObj<DialogEasyProps> = {
+  ...Default,
+  name: 'Easy mode native form',
+  args: { ...Default.args, content: <form method="dialog"><button type="submit">Save profile</button></form> },
+  play: async ({ canvasElement, canvas, args, userEvent }) => {
+    const { trigger } = await openDialog(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Save profile' }));
+    await expectClosed(canvasElement, trigger);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+  },
+};
+export const EasyModeOpen: StoryObj<DialogEasyProps> = {
+  ...Default,
+  name: 'Easy mode open',
+  tags: ['!autodocs'],
+  args: { ...Default.args, defaultOpen: true },
+  play: async ({ canvas }) => { await settleMotion(canvas.getByRole('dialog')); },
+};
+export const EasyModeLight: StoryObj<DialogEasyProps> = { ...Default, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
+
+export const EasyModeVetoedClose: StoryObj<DialogEasyProps> = {
+  ...Default,
+  name: 'Easy mode vetoed close',
+  args: { ...Default.args, slotProps: { content: { onCancel: (event) => event.preventDefault() } } },
+  play: async ({ canvasElement, canvas, args, userEvent }) => {
+    const { trigger, dialog } = await openDialog(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+    requestEscape(dialog);
+    fireEvent.click(dialog);
+    await expect(dialog).toHaveAttribute('open');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    (dialog as HTMLDialogElement).close();
+    await expectClosed(canvasElement, trigger);
+  },
+};
+export const EasyModeWithoutDescription: StoryObj<DialogEasyProps> = {
+  ...EasyModeOpen,
+  name: 'Easy mode without description',
+  args: { ...EasyModeOpen.args, description: undefined, content: 0 },
+  play: async ({ canvas }) => {
+    const dialog = canvas.getByRole('dialog', { name: TITLE });
+    await expect(dialog).not.toHaveAttribute('aria-describedby');
+    await expect(dialog).toHaveTextContent('0');
+  },
+};
+
+function easyModeTypeContracts() {
+  // @ts-expect-error Presentation mode rejects compound children.
+  <Dialog triggerLabel="Open" title="Profile" content="Profile" closeLabel="Close">Compound</Dialog>;
+  // @ts-expect-error Presentation mode requires a title and close label.
+  <Dialog triggerLabel="Open" content="Profile" />;
+  // @ts-expect-error Named presentation props cannot leak into compound mode.
+  <Dialog description="Profile"><Dialog.Content /></Dialog>;
+}
+void easyModeTypeContracts;
 
 const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
 const shellStyleOverride = css({ outlineOffset: vars.space[3] });
@@ -169,7 +290,7 @@ export const PanelComposition: Story = {
   },
 };
 
-function ContrastPanelFixture({ theme = 'light', ...props }: DialogProps & { theme?: 'dark' | 'light' }) {
+function ContrastPanelFixture({ theme = 'light', ...props }: DialogCompoundProps & { theme?: 'dark' | 'light' }) {
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   return <ThemeRoot theme={theme} portalContainer={panel}>
     <Dialog {...props} defaultOpen>
@@ -204,7 +325,7 @@ export const DialogContrastPanelDark: Story = {
   render: (args) => <ContrastPanelFixture {...args} theme="dark" />,
 };
 
-function DialogExample(props: DialogProps) {
+function DialogExample(props: DialogCompoundProps) {
   return (
     <Dialog {...props}>
       <Dialog.Trigger>Open profile</Dialog.Trigger>
@@ -221,7 +342,7 @@ function DialogExample(props: DialogProps) {
 }
 DialogExample.displayName = 'DialogExample';
 
-function FormDialog(props: DialogProps) {
+function FormDialog(props: DialogCompoundProps) {
   return (
     <Dialog {...props}>
       <Dialog.Trigger>Open form</Dialog.Trigger>
@@ -236,7 +357,7 @@ function FormDialog(props: DialogProps) {
 }
 FormDialog.displayName = 'FormDialog';
 
-function ComposedDialog(props: DialogProps) {
+function ComposedDialog(props: DialogCompoundProps) {
   return (
     <Dialog {...props}>
       <Dialog.Trigger
@@ -266,7 +387,7 @@ function ComposedDialog(props: DialogProps) {
 }
 ComposedDialog.displayName = 'ComposedDialog';
 
-function ControlledDialog(props: DialogProps) {
+function ControlledDialog(props: DialogCompoundProps) {
   const [open, setOpen] = useState(false);
   return (
     <DialogExample
@@ -296,12 +417,14 @@ function requestEscape(dialog: HTMLElement) {
 }
 
 async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
-  await waitFor(() => expect(within(canvasElement).queryByRole('dialog')).toBeNull());
-  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  await expect(trigger).toHaveFocus();
+  await waitFor(() => {
+    expect(within(canvasElement).queryByRole('dialog')).toBeNull();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveFocus();
+  });
 }
 
-export const Default: Story = {
+export const Compound: Story = {
   render: (args) => <DialogExample {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -408,7 +531,7 @@ export const SizingOverrides: Story = {
   },
 };
 
-async function playMotion(canvasElement: HTMLElement, onOpenChange: DialogProps['onOpenChange']) {
+async function playMotion(canvasElement: HTMLElement, onOpenChange: DialogCompoundProps['onOpenChange']) {
   const { canvas, trigger, dialog } = await openDialog(canvasElement);
   const panel = dialog.firstElementChild!;
   await expectEntranceMotion(panel);

@@ -10,25 +10,71 @@ const meta = {
   render: () => <CardFlightsFixture />,
   parameters: { a11y: { test: 'error' }, docs: {
     description: { component: 'Deal cards to a hand and move played cards to their table piles.' },
-    source: { language: 'tsx', code: `// Full match: card-flights-fixture.tsx
-const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
-const { rememberPlayOrigin } = useCardFlights();
-usePlayedCardFlights({ plays, playerCount: 2 });
+    source: { language: 'tsx', code: `import { useRef, useState } from 'react';
+import {
+  Button, CardFlightsProvider, GameCardStack, GameHand, Stack,
+  useCardFlights, useDealFlights, usePlayedCardFlights,
+  type GameHandCard, type PlayedFlightCard,
+} from '@jfrader/ui';
 
-<GameTable players={2} seats={seats} viewport={viewport}>
-  <GameTable.Dock><GameHand cards={hand} playLabel="Play selected" onPlayIntent={(card) => {
-    const source = boardRef.current?.querySelector<HTMLElement>('[data-hand-card="' + CSS.escape(card.id) + '"]');
+import { useRef, useState } from 'react';
+import {
+  Button, CardFlightsProvider, GameCardStack, GameHand, GameTable,
+  useCardFlights, useDealFlights, usePlayedCardFlights,
+  type GameHandCard, type PlayedFlightCard,
+} from '@jfrader/ui';
+
+const seats = [{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }];
+const cards: GameHandCard[] = [
+  { id: 'ace', label: 'Ace of spades', value: { suit: 'spades', rank: 'A' } },
+  { id: 'queen', label: 'Queen of hearts', value: { suit: 'hearts', rank: 'Q' } },
+];
+
+function Match() {
+  const scopeRef = useRef<HTMLDivElement>(null);
+  const [hand, setHand] = useState(cards);
+  const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
+  const [handIndex, setHandIndex] = useState(1);
+  const { rememberPlayOrigin, landingTargets } = useCardFlights();
+  useDealFlights({
+    handIndex, dealt: plays.length === 0, forehandIdx: 0,
+    players: [{ key: 'own', idx: 0, isOwn: true, cards: hand }],
+  });
+  usePlayedCardFlights({ plays, playerCount: seats.length });
+
+  const play = (card: GameHandCard) => {
+    const source = scopeRef.current?.querySelector<HTMLElement>(
+      '[data-hand-card="' + CSS.escape(card.id) + '"]',
+    );
     if (source) rememberPlayOrigin(card.id, source);
     setPlays((current) => [...current, {
       ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true,
     }]);
     setHand((current) => current.filter((entry) => entry.id !== card.id));
-  }} /></GameTable.Dock>
-  {seats.map((player) => <GameTable.Play key={player.key} slotKey={player.key}>
-    <GameCardStack.Pile playerKey={player.key} label={player.name}
-      cards={plays.filter((play) => play.playerKey === player.key)} />
-  </GameTable.Play>)}
-</GameTable>` },
+  };
+
+  return (
+    <div ref={scopeRef}>
+      <CardFlightsProvider scopeRef={scopeRef}>
+        <GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}>
+          <GameTable.Seat slotKey="rival">
+            <GameHand.Hidden playerKey="rival" count={2} label="Rival hand" />
+          </GameTable.Seat>
+          <GameTable.Dock>
+            <GameHand cards={hand} playLabel="Play selected" disabled={landingTargets.size > 0}
+              onPlayIntent={play} />
+          </GameTable.Dock>
+          {seats.map((seat) => (
+            <GameTable.Play key={seat.key} slotKey={seat.key}>
+              <GameCardStack.Pile playerKey={seat.key} label={`${seat.key} pile`}
+                cards={plays.filter((entry) => entry.playerKey === seat.key)} />
+            </GameTable.Play>
+          ))}
+        </GameTable>
+      </CardFlightsProvider>
+    </div>
+  );
+}
     usage: `### Card records
 - Pass the same labeled records to GameHand and useDealFlights: each has an id, label and value. No face nodes are needed. Optional front, back and backPattern customize flight artwork.
 - Give each accepted play a unique id. Pass that record to both GameCardStack.Pile and usePlayedCardFlights. Set cardId to its source hand id when the play id differs. Labels come from your app, never from a suit or rank formatter in the library.

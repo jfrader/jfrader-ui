@@ -55,13 +55,46 @@ import {
   type NativeDialogController,
 } from '../../overlay/use-native-dialog';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { isRenderable } from '../../utils/renderable';
 
-export interface DialogProps {
+interface DialogStateProps {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
-  children?: ReactNode;
 }
+
+export interface DialogCompoundProps extends DialogStateProps {
+  children?: ReactNode;
+  triggerLabel?: never;
+  title?: never;
+  description?: never;
+  content?: never;
+  closeLabel?: never;
+  slotProps?: never;
+}
+
+export interface DialogEasyProps extends DialogStateProps {
+  /** Name the button that opens the dialog. */
+  triggerLabel: ReactNode;
+  /** Name the dialog with a visible heading. */
+  title: ReactNode;
+  /** Describe the dialog below its heading. */
+  description?: ReactNode;
+  /** Place content inside the default panel. */
+  content: ReactNode;
+  /** Name the close button. */
+  closeLabel: ReactNode;
+  children?: never;
+  slotProps?: {
+    trigger?: Omit<DialogTriggerProps, 'children'>;
+    content?: Omit<DialogContentProps, 'children'>;
+    title?: Omit<DialogTitleProps, 'children'>;
+    description?: Omit<DialogDescriptionProps, 'children'>;
+    close?: Omit<DialogCloseProps, 'children'>;
+  };
+}
+
+export type DialogProps = DialogCompoundProps | DialogEasyProps;
 
 /** Props a part's `render` callback spreads onto the element it returns (e.g. a `Button`). */
 export interface DialogPartRenderProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -195,7 +228,19 @@ const closeStyle = css({
   },
 });
 
-function DialogRoot({ open: openProp, defaultOpen = false, onOpenChange, children }: DialogProps) {
+function DialogRoot(props: DialogProps) {
+  const {
+    open: openProp,
+    defaultOpen = false,
+    onOpenChange,
+    children,
+    triggerLabel,
+    title,
+    description,
+    content,
+    closeLabel,
+    slotProps,
+  } = props;
   const baseId = useId();
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const { setDialogElement, setOpen, requestClose, repairToken } = useNativeDialogRoot(open, requestOpenChange);
@@ -219,7 +264,21 @@ function DialogRoot({ open: openProp, defaultOpen = false, onOpenChange, childre
     [open, setOpen, requestClose, repairToken, setDialogElement, baseId, hasTitle, hasDescription],
   );
 
-  return <DialogContext.Provider value={context}>{children}</DialogContext.Provider>;
+  return (
+    <DialogContext.Provider value={context}>
+      {'content' in props ? (
+        <>
+          <DialogTrigger {...slotProps?.trigger}>{triggerLabel}</DialogTrigger>
+          <DialogContent {...slotProps?.content}>
+            <DialogTitle {...slotProps?.title}>{title}</DialogTitle>
+            {isRenderable(description) && <DialogDescription {...slotProps?.description}>{description}</DialogDescription>}
+            {content}
+            <DialogClose {...slotProps?.close}>{closeLabel}</DialogClose>
+          </DialogContent>
+        </>
+      ) : children}
+    </DialogContext.Provider>
+  );
 }
 
 DialogRoot.displayName = 'Dialog';

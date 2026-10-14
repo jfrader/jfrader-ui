@@ -161,6 +161,17 @@ const meta = {
   tags: ['autodocs'],
   parameters: {
     docs: {
+      source: { language: 'tsx', code: `import { Button, createTheme, ThemeRoot } from '@jfrader/ui';
+
+const tokens = createTheme({ base: 'dark', accent: '#48b98a' });
+
+export function CustomAccent() {
+  return (
+    <ThemeRoot theme="dark" tokens={tokens}>
+      <Button tone="accent">Save</Button>
+    </ThemeRoot>
+  );
+}` },
       description: {
         component: 'Set an accent color for a section of your app.',
       },

@@ -28,6 +28,7 @@ import {
   type ThreadSize,
   type ThreadTextareaProps,
 } from '../thread/thread-parts';
+import { acceptsFile, fileSize } from '../../utils/attachment';
 import {
   ChatMessageView,
   reactToChatMessage,
@@ -37,7 +38,6 @@ import {
   rowStyle,
   errorStyle,
   previewStyle,
-  fileSize,
   fileStyle,
   type ChatAttachment,
   type ChatMessage,
@@ -212,15 +212,6 @@ const textareaControlStyle = css({ maxBlockSize: `calc(6lh + 2 * ${vars.space[2]
 const typingStyle = css({ color: vars.color.textMuted, transitionProperty: 'opacity', transitionDuration: vars.motion.duration.base, [REDUCED_MOTION]: { transitionDuration: '0s' } });
 const jumpStyle = css({ alignSelf: 'center' });
 
-function accepts(file: File, accept: string | undefined) {
-  if (!accept?.trim()) return true;
-  return accept.split(',').some((part) => {
-    const rule = part.trim().toLowerCase();
-    if (rule.startsWith('.')) return file.name.toLowerCase().endsWith(rule);
-    if (rule.endsWith('/*')) return file.type.toLowerCase().startsWith(rule.slice(0, -1));
-    return file.type.toLowerCase() === rule;
-  });
-}
 function useFilePreviews(files: readonly File[]) {
   const registry = useRef(new Map<File, string>());
   const [urls, setUrls] = useState<ReadonlyMap<File, string>>(new Map());
@@ -303,7 +294,7 @@ function ChatComposer({
     const errors: string[] = [];
     const limit = Number.isFinite(maxFiles) ? Math.max(0, Math.floor(maxFiles)) : MAX_FILES;
     for (const file of files) {
-      const reason = !accepts(file, accept) ? 'type' : file.size > Math.max(0, maxFileSize) ? 'size' : next.length >= limit ? 'count' : null;
+      const reason = !acceptsFile(file, accept) ? 'type' : file.size > Math.max(0, maxFileSize) ? 'size' : next.length >= limit ? 'count' : null;
       if (reason) errors.push(labels.fileRejected(reason, file.name)); else next.push(file);
     }
     if (next.length !== draft.files.length) change({ ...draft, files: next });
