@@ -80,6 +80,15 @@ const meta = {
   component: ThemeRoot,
   parameters: {
     docs: {
+      source: { language: 'tsx', code: `import { Button, ThemeRoot } from '@jfrader/ui';
+
+export function ThemedSection() {
+  return (
+    <ThemeRoot theme="light">
+      <Button tone="accent">Save</Button>
+    </ThemeRoot>
+  );
+}` },
       description: { component: 'Apply a theme to part of a page and its overlays.' },
       usage: 'For setup, light/dark switching, custom palettes and portal behavior, start with the [Theming guide](./?path=/docs/foundations-theming--docs). The examples below cover ThemeRoot itself.',
     },

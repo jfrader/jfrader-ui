@@ -66,6 +66,22 @@ const meta = {
   args: { children: null },
   parameters: {
     docs: {
+      source: { language: 'tsx', code: `import { DeckProvider, defineDeck, GameCard } from '@jfrader/ui';
+
+const stars = defineDeck({
+  id: 'stars',
+  suits: { stars: { label: 'stars', glyph: '★', ink: 'red' } },
+  ranks: { I: { label: 'one', mark: 'I' } },
+  back: { pattern: 'dots', tone: 'accent' },
+});
+
+export function StarCard() {
+  return (
+    <DeckProvider decks={[stars]} default="stars">
+      <GameCard label="One of stars" value={{ suit: 'stars', rank: 'I' }} />
+    </DeckProvider>
+  );
+}` },
       description: {
         component: 'Declare card decks with suits, ranks, custom artwork, and backs.',
       },
