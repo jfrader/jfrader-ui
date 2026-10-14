@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ComponentPropsWithoutRef,
   type ReactNode,
   type Dispatch,
@@ -30,7 +31,7 @@ type SlotProps<Element extends 'span' | 'del'> = ComponentPropsWithoutRef<Elemen
   css?: Interpolation<Theme>;
 };
 
-export interface ToggleSubscriptionProps
+export interface ToggleSubscriptionCompoundProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
   value?: string;
   defaultValue?: string;
@@ -39,7 +40,52 @@ export interface ToggleSubscriptionProps
   size?: ToggleSubscriptionSize;
   tone?: ToggleSubscriptionTone;
   locale?: Intl.LocalesArgument;
+  options?: never;
+  prices?: never;
+  label?: never;
+  slots?: never;
+  component?: never;
+  slotProps?: never;
 }
+export interface ToggleSubscriptionOption {
+  value: string;
+  label: ReactNode;
+  disabled?: boolean;
+  id?: string;
+  badge?: ReactNode;
+  activeBadge?: ReactNode;
+}
+export type ToggleSubscriptionPriceDefinition = Pick<
+  ToggleSubscriptionPriceProps,
+  'amount' | 'currency' | 'formatOptions' | 'was' | 'period' | 'previousLabel'
+>;
+export interface ToggleSubscriptionSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  label?: ComponentType<ToggleSubscriptionLabelProps>;
+  list?: ComponentType<ToggleSubscriptionListProps>;
+  item?: ComponentType<ToggleSubscriptionItemProps>;
+  price?: ComponentType<ToggleSubscriptionPriceProps>;
+}
+export interface ToggleSubscriptionSlotProps {
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
+  label?: Omit<ToggleSubscriptionLabelProps, 'children'>;
+  list?: Omit<ToggleSubscriptionListProps, 'children'>;
+  item?: Omit<ToggleSubscriptionItemProps, keyof ToggleSubscriptionOption | 'children'>;
+  price?: Omit<ToggleSubscriptionPriceProps, keyof ToggleSubscriptionPriceDefinition>;
+}
+export interface ToggleSubscriptionEasyProps extends Omit<ToggleSubscriptionCompoundProps, 'children' | 'options' | 'prices' | 'label' | 'slots' | 'slotProps' | 'component'> {
+  options: readonly ToggleSubscriptionOption[];
+  prices: Readonly<Record<string, ToggleSubscriptionPriceDefinition>>;
+  label?: ReactNode;
+  children?: never;
+  slots?: ToggleSubscriptionSlots;
+  component?: ToggleSubscriptionSlots['root'];
+  slotProps?: ToggleSubscriptionSlotProps;
+}
+export type ToggleSubscriptionProps = ToggleSubscriptionCompoundProps | ToggleSubscriptionEasyProps;
 export interface ToggleSubscriptionListProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {}
 export interface ToggleSubscriptionLabelProps extends ComponentPropsWithRef<'span'>, SxProps {}
@@ -171,6 +217,8 @@ function PriceSurface({
 const MotionPriceSurface = motion.create(PriceSurface);
 
 function ToggleSubscriptionRoot({
+  rootElement: Root = 'div',
+  rootCss,
   ref,
   value: valueProp,
   defaultValue,
@@ -183,7 +231,7 @@ function ToggleSubscriptionRoot({
   sx,
   children,
   ...rest
-}: ToggleSubscriptionProps) {
+}: ToggleSubscriptionCompoundProps & { rootElement?: 'div' | ToggleSubscriptionSlots['root']; rootCss?: Interpolation<Theme> }) {
   const [value, requestChange] = useControlledState(valueProp, defaultValue, onValueChange);
   const [labels, setLabels] = useState<string[]>([]);
   const [selections, setSelections] = useState<ReadonlyMap<string, SlotProps<'span'>>>(new Map());
@@ -207,11 +255,11 @@ function ToggleSubscriptionRoot({
   return (
     <Context.Provider value={context}>
       <MotionConfig reducedMotion="user">
-        <WithSx className={className} styles={rootStyle} sx={sx}>
+        <WithSx className={className} styles={[rootStyle, rootCss]} sx={sx}>
           {(className) => (
-            <div {...rest} ref={ref} className={className} data-ui="toggle-subscription">
+            <Root {...rest} ref={ref} className={className} data-ui="toggle-subscription">
               {children}
-            </div>
+            </Root>
           )}
         </WithSx>
       </MotionConfig>
@@ -451,7 +499,51 @@ function ToggleSubscriptionPrice({
 }
 ToggleSubscriptionPrice.displayName = 'ToggleSubscription.Price';
 
-export const ToggleSubscription = Object.assign(ToggleSubscriptionRoot, {
+function ToggleSubscriptionEasyPrice({
+  prices,
+  slots,
+  slotProps,
+}: Pick<ToggleSubscriptionEasyProps, 'prices' | 'slots' | 'slotProps'>) {
+  const { value } = useToggleSubscription();
+  if (value === undefined) return null;
+  const price = Object.hasOwn(prices, value) ? prices[value] : undefined;
+  if (!price) {
+    throw new Error(`ToggleSubscription requires a price for selected period "${value}".`);
+  }
+  const Price = slots?.price ?? ToggleSubscriptionPrice;
+  return <Price {...slotProps?.price} {...price} />;
+}
+function ToggleSubscriptionComponent(props: ToggleSubscriptionProps) {
+  if (props.options === undefined) return <ToggleSubscriptionRoot {...props} />;
+  const { options, prices, label, component, slots, slotProps, ...rest } = props;
+  const { css: rootCss, className, style, sx, ...rootProps } = slotProps?.root ?? {};
+  const Label = slots?.label ?? ToggleSubscriptionLabel;
+  const List = slots?.list ?? ToggleSubscriptionList;
+  const Item = slots?.item ?? ToggleSubscriptionItem;
+  return (
+    <ToggleSubscriptionRoot
+      {...rest}
+      {...rootProps}
+      rootElement={slots?.root ?? component}
+      rootCss={rootCss}
+      className={[className, rest.className].filter(Boolean).join(' ') || undefined}
+      style={{ ...rest.style, ...style }}
+      sx={[sx, rest.sx]}
+    >
+      {isRenderable(label) && <Label {...slotProps?.label}>{label}</Label>}
+      <List {...slotProps?.list}>
+        {options.map(({ label, ...option }) => (
+          <Item {...slotProps?.item} {...option} key={option.value}>
+            {label}
+          </Item>
+        ))}
+      </List>
+      <ToggleSubscriptionEasyPrice prices={prices} slots={slots} slotProps={slotProps} />
+    </ToggleSubscriptionRoot>
+  );
+}
+ToggleSubscriptionComponent.displayName = 'ToggleSubscription';
+export const ToggleSubscription = Object.assign(ToggleSubscriptionComponent, {
   List: ToggleSubscriptionList,
   Item: ToggleSubscriptionItem,
   Label: ToggleSubscriptionLabel,

@@ -18,12 +18,14 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
+  type ReactNode,
   type FocusEvent,
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type SerializedStyles } from '../../styling/css';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -56,7 +58,35 @@ export interface ToggleGroupMultipleProps extends ToggleGroupBaseProps {
   onValueChange?: (value: string[]) => void;
 }
 
-export type ToggleGroupProps = ToggleGroupSingleProps | ToggleGroupMultipleProps;
+export interface ToggleGroupOption {
+  value: string;
+  label: ReactNode;
+  disabled?: boolean;
+  id?: string;
+}
+export interface ToggleGroupSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  item?: ComponentType<ToggleGroupItemProps>;
+}
+export interface ToggleGroupSlotProps {
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
+  item?: Omit<ToggleGroupItemProps, 'value' | 'children' | 'disabled' | 'id'>;
+}
+type ToggleGroupComposition =
+  | { options?: never; children?: ReactNode; component?: never; slots?: never; slotProps?: never }
+  | {
+      options: readonly ToggleGroupOption[];
+      children?: never;
+      component?: ToggleGroupSlots['root'];
+      slots?: ToggleGroupSlots;
+      slotProps?: ToggleGroupSlotProps;
+    };
+export type ToggleGroupCompoundProps = ToggleGroupSingleProps | ToggleGroupMultipleProps;
+export type ToggleGroupProps = (Omit<ToggleGroupSingleProps, 'children'> | Omit<ToggleGroupMultipleProps, 'children'>) & ToggleGroupComposition;
+export type ToggleGroupEasyProps = Extract<ToggleGroupProps, { options: readonly ToggleGroupOption[] }>;
 
 export interface ToggleGroupItemProps extends Omit<ComponentPropsWithRef<'button'>, 'value'>, SxProps {
   value: string;
@@ -165,6 +195,8 @@ const itemStyle = css({
 });
 
 function ToggleGroupRoot({
+  rootElement: Root = 'div',
+  rootCss,
   ref,
   type = 'single',
   value: valueProp,
@@ -179,7 +211,7 @@ function ToggleGroupRoot({
   className,
   sx,
   ...rest
-}: ToggleGroupProps) {
+}: ToggleGroupCompoundProps & { rootElement?: 'div' | ToggleGroupSlots['root']; rootCss?: Interpolation<Theme> }) {
   // `toggle` only emits the shape that matches `type`, so either callback accepts it.
   const [value, setValue] = useControlledState<ToggleGroupValue>(
     valueProp,
@@ -228,9 +260,9 @@ function ToggleGroupRoot({
 
   return (
     <ToggleGroupContext.Provider value={context}>
-      <WithSx className={className} styles={[rootStyle, rootOrientationStyles[orientation]]} sx={sx}>
+      <WithSx className={className} styles={[rootStyle, rootOrientationStyles[orientation], rootCss]} sx={sx}>
         {(className) => (
-          <div
+          <Root
             {...rest}
             ref={rootRef}
             role="group"
@@ -300,4 +332,28 @@ function ToggleGroupItem({
 
 ToggleGroupItem.displayName = 'ToggleGroup.Item';
 
-export const ToggleGroup = Object.assign(ToggleGroupRoot, { Item: ToggleGroupItem });
+function ToggleGroupComponent(props: ToggleGroupProps) {
+  if (props.options === undefined) return <ToggleGroupRoot {...props} />;
+  const { options, component, slots, slotProps, ...rest } = props;
+  const { css: rootCss, className, style, sx, ...rootProps } = slotProps?.root ?? {};
+  const Item = slots?.item ?? ToggleGroupItem;
+  return (
+    <ToggleGroupRoot
+      {...rest}
+      {...rootProps}
+      rootElement={slots?.root ?? component}
+      rootCss={rootCss}
+      className={[className, rest.className].filter(Boolean).join(' ') || undefined}
+      style={{ ...rest.style, ...style }}
+      sx={[sx, rest.sx]}
+    >
+      {options.map(({ label, ...option }) => (
+        <Item {...slotProps?.item} {...option} key={option.value}>
+          {label}
+        </Item>
+      ))}
+    </ToggleGroupRoot>
+  );
+}
+ToggleGroupComponent.displayName = 'ToggleGroup';
+export const ToggleGroup = Object.assign(ToggleGroupComponent, { Item: ToggleGroupItem });

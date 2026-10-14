@@ -12,6 +12,7 @@ import {
   useMemo,
   type ChangeEvent,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
@@ -24,14 +25,46 @@ import { useControlledState } from '../../utils/use-controlled-state';
 
 export type RadioGroupOrientation = 'vertical' | 'horizontal';
 
-export interface RadioGroupProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
+export interface RadioGroupCompoundProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
   name?: string;
   disabled?: boolean;
   orientation?: RadioGroupOrientation;
+  options?: never;
+  label?: never;
+  slots?: never;
+  component?: never;
+  slotProps?: never;
 }
+
+export type RadioGroupOption = Pick<
+  RadioGroupRadioProps,
+  'value' | 'description' | 'disabled' | 'id'
+> & { label: ReactNode };
+export interface RadioGroupSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  label?: ComponentType<ComponentPropsWithRef<'span'>>;
+  radio?: ComponentType<RadioGroupRadioProps>;
+}
+export interface RadioGroupSlotProps {
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
+  label?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { css?: Interpolation<Theme> };
+  radio?: Omit<RadioGroupRadioProps, 'value' | 'label' | 'description' | 'disabled' | 'id' | 'children'>;
+}
+export interface RadioGroupEasyProps extends Omit<RadioGroupCompoundProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
+  options: readonly RadioGroupOption[];
+  label?: ReactNode;
+  children?: never;
+  slots?: RadioGroupSlots;
+  component?: RadioGroupSlots['root'];
+  slotProps?: RadioGroupSlotProps;
+}
+export type RadioGroupProps = RadioGroupCompoundProps | RadioGroupEasyProps;
 
 export interface RadioGroupRadioPartProps {
   className?: string;
@@ -124,6 +157,13 @@ const circleStyle = css({
 const labelStyle = css({
   fontSize: vars.textSize.sm,
 });
+const groupLabelStyle = css({
+  flexBasis: '100%',
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  fontWeight: vars.fontWeight.medium,
+  color: vars.color.text,
+});
 
 const descriptionStyle = css({
   marginInlineStart: `calc(${CONTROL_SIZE} + ${vars.space[2]})`,
@@ -132,6 +172,8 @@ const descriptionStyle = css({
 });
 
 function RadioGroupRoot({
+  rootElement: Root = 'div',
+  rootCss,
   ref,
   value: valueProp,
   defaultValue,
@@ -142,7 +184,7 @@ function RadioGroupRoot({
   className,
   sx,
   ...rest
-}: RadioGroupProps) {
+}: RadioGroupCompoundProps & { rootElement?: 'div' | RadioGroupSlots['root']; rootCss?: Interpolation<Theme> }) {
   const generatedName = useId();
   const name = nameProp ?? generatedName;
   const [value, setValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
@@ -151,9 +193,9 @@ function RadioGroupRoot({
 
   return (
     <RadioGroupContext.Provider value={context}>
-      <WithSx className={className} styles={rootStyles[orientation]} sx={sx}>
+      <WithSx className={className} styles={[rootStyles[orientation], rootCss]} sx={sx}>
         {(className) => (
-          <div
+          <Root
             {...rest}
             ref={ref}
             role="radiogroup"
@@ -256,4 +298,36 @@ function RadioGroupRadio({
 
 RadioGroupRadio.displayName = 'RadioGroup.Radio';
 
-export const RadioGroup = Object.assign(RadioGroupRoot, { Radio: RadioGroupRadio });
+function RadioGroupComponent(props: RadioGroupProps) {
+  const labelId = useId();
+  if (props.options === undefined) return <RadioGroupRoot {...props} />;
+  const { options, label, component, slots, slotProps, ...rest } = props;
+  const { css: rootCss, className, style, sx, ...rootProps } = slotProps?.root ?? {};
+  const Label = slots?.label ?? 'span';
+  const Radio = slots?.radio ?? RadioGroupRadio;
+  const hasLabel = isRenderable(label);
+  const resolvedLabelId = slotProps?.label?.id ?? labelId;
+  return (
+    <RadioGroupRoot
+      {...rest}
+      {...rootProps}
+      rootElement={slots?.root ?? component}
+      rootCss={rootCss}
+      className={[className, rest.className].filter(Boolean).join(' ') || undefined}
+      style={{ ...rest.style, ...style }}
+      sx={[sx, rest.sx]}
+      aria-labelledby={[rootProps['aria-labelledby'] ?? rest['aria-labelledby'], hasLabel && resolvedLabelId].filter(Boolean).join(' ') || undefined}
+    >
+      {hasLabel && (
+        <Label {...slotProps?.label} id={resolvedLabelId} css={[groupLabelStyle, slotProps?.label?.css]}>
+          {label}
+        </Label>
+      )}
+      {options.map((option) => (
+        <Radio {...slotProps?.radio} {...option} key={option.value} />
+      ))}
+    </RadioGroupRoot>
+  );
+}
+RadioGroupComponent.displayName = 'RadioGroup';
+export const RadioGroup = Object.assign(RadioGroupComponent, { Radio: RadioGroupRadio });

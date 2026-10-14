@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ComponentPropsWithoutRef,
   type CSSProperties,
   type KeyboardEvent,
@@ -27,7 +28,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 
 export type RadioCardsLayout = 'grid' | 'list';
 export type RadioCardsSize = 'sm' | 'md';
-export interface RadioCardsProps
+export interface RadioCardsCompoundProps
   extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
   value?: string;
   defaultValue?: string;
@@ -40,7 +41,40 @@ export interface RadioCardsProps
   layout?: RadioCardsLayout;
   minColumnWidth?: CSSProperties['inlineSize'];
   size?: RadioCardsSize;
+  options?: never;
+  label?: never;
+  slots?: never;
+  component?: never;
+  slotProps?: never;
 }
+export type RadioCardsOption = Pick<
+  RadioCardsItemProps,
+  'value' | 'label' | 'description' | 'meta' | 'icon' | 'disabled' | 'disabledReason' | 'id'
+>;
+export interface RadioCardsSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  label?: ComponentType<RadioCardsLabelProps>;
+  item?: ComponentType<RadioCardsItemProps>;
+  error?: ComponentType<ComponentPropsWithRef<'span'>>;
+}
+export interface RadioCardsSlotProps {
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
+  label?: Omit<RadioCardsLabelProps, 'children'>;
+  item?: Omit<RadioCardsItemProps, keyof RadioCardsOption>;
+  error?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { css?: Interpolation<Theme> };
+}
+export interface RadioCardsEasyProps extends Omit<RadioCardsCompoundProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
+  options: readonly RadioCardsOption[];
+  label?: ReactNode;
+  children?: never;
+  slots?: RadioCardsSlots;
+  component?: RadioCardsSlots['root'];
+  slotProps?: RadioCardsSlotProps;
+}
+export type RadioCardsProps = RadioCardsCompoundProps | RadioCardsEasyProps;
 export type RadioCardsPartProps = ComponentPropsWithoutRef<'span'> & { css?: Interpolation<Theme> };
 export interface RadioCardsItemProps
   extends
@@ -283,6 +317,10 @@ function SelectionRing({
 }
 
 function RadioCardsRoot({
+  rootElement: Root = 'div',
+  rootCss,
+  errorElement: Error = 'span',
+  errorSlotProps,
   ref,
   value: valueProp,
   defaultValue,
@@ -304,7 +342,12 @@ function RadioCardsRoot({
   'aria-describedby': describedBy,
   'aria-invalid': ariaInvalid,
   ...rest
-}: RadioCardsProps) {
+}: RadioCardsCompoundProps & {
+  rootElement?: 'div' | RadioCardsSlots['root'];
+  rootCss?: Interpolation<Theme>;
+  errorElement?: 'span' | RadioCardsSlots['error'];
+  errorSlotProps?: RadioCardsSlotProps['error'];
+}) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(ref, () => rootRef.current as HTMLDivElement, []);
@@ -314,6 +357,7 @@ function RadioCardsRoot({
     description: [],
   });
   const hasError = isRenderable(error);
+  const { css: errorCss, ...errorProps } = errorSlotProps ?? {};
   const register = useCallback((kind: Relationship, partId: string) => {
     setRelationships((current) => ({ ...current, [kind]: [...current[kind], partId] }));
     return () =>
@@ -381,9 +425,9 @@ function RadioCardsRoot({
   };
   return (
     <Context.Provider value={context}>
-      <WithSx className={className} styles={[rootStyle, layoutStyles[layout]]} sx={sx}>
+      <WithSx className={className} styles={[rootStyle, layoutStyles[layout], rootCss]} sx={sx}>
         {(className) => (
-          <div
+          <Root
             {...rest}
             ref={rootRef}
             role="radiogroup"
@@ -406,14 +450,20 @@ function RadioCardsRoot({
           >
             {children}
             {hasError && (
-              <span id={`${id}-error`} role="alert" data-ui="radio-cards-error" css={errorStyle}>
+              <Error
+                {...errorProps}
+                id={`${id}-error`}
+                role="alert"
+                data-ui="radio-cards-error"
+                css={[errorStyle, errorCss]}
+              >
                 {error}
-              </span>
+              </Error>
             )}
             <MotionConfig reducedMotion="user">
               <SelectionRing root={rootRef} value={value} content={children} />
             </MotionConfig>
-          </div>
+          </Root>
         )}
       </WithSx>
     </Context.Provider>
@@ -572,7 +622,33 @@ function RadioCardsDescription(props: RadioCardsDescriptionProps) {
 }
 RadioCardsLabel.displayName = 'RadioCards.Label';
 RadioCardsDescription.displayName = 'RadioCards.Description';
-export const RadioCards = Object.assign(RadioCardsRoot, {
+function RadioCardsComponent(props: RadioCardsProps) {
+  if (props.options === undefined) return <RadioCardsRoot {...props} />;
+  const { options, label, component, slots, slotProps, ...rest } = props;
+  const { css: rootCss, className, style, sx, ...rootProps } = slotProps?.root ?? {};
+  const Label = slots?.label ?? RadioCardsLabel;
+  const Item = slots?.item ?? RadioCardsItem;
+  return (
+    <RadioCardsRoot
+      {...rest}
+      {...rootProps}
+      rootElement={slots?.root ?? component}
+      rootCss={rootCss}
+      errorElement={slots?.error}
+      errorSlotProps={slotProps?.error}
+      className={[className, rest.className].filter(Boolean).join(' ') || undefined}
+      style={{ ...rest.style, ...style }}
+      sx={[sx, rest.sx]}
+    >
+      {isRenderable(label) && <Label {...slotProps?.label}>{label}</Label>}
+      {options.map((option) => (
+        <Item {...slotProps?.item} {...option} key={option.value} />
+      ))}
+    </RadioCardsRoot>
+  );
+}
+RadioCardsComponent.displayName = 'RadioCards';
+export const RadioCards = Object.assign(RadioCardsComponent, {
   Item: RadioCardsItem,
   Label: RadioCardsLabel,
   Description: RadioCardsDescription,

@@ -1,11 +1,11 @@
-import { StrictMode, useId, useState, type ReactNode } from 'react';
+import { StrictMode, useId, useState, type ReactNode, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
-import { RadioCards, type RadioCardsProps } from './index';
+import { RadioCards, type RadioCardsCompoundProps as RadioCardsProps, type RadioCardsEasyProps } from './index';
 
 const usage = `<RadioCards name="shipping" defaultValue="standard" layout="list" required>
   <RadioCards.Label>Shipping speed</RadioCards.Label>
@@ -58,12 +58,21 @@ const meta = {
   render: (args) => <Example {...args} />,
   parameters: {
     docs: {
-      source: { code: usage },
+      source: { code: `const shipping = [
+  { value: 'standard', label: 'Standard', description: '4–6 business days' },
+  { value: 'express', label: 'Express', disabled: true },
+  { value: 'pickup', label: 'Pickup' },
+] as const;
+
+<RadioCards label="Shipping speed" options={shipping} name="shipping" defaultValue="standard" />` },
       description: {
         component:
           'Choose one option from cards that can include a description and supporting details.',
       },
-      usage: `### Keyboard
+      usage: `- Supply readonly options for the complete field, or children for custom anatomy; do not mix them.
+- slotProps customizes the generated root, label and items, including item anatomy. slots replaces those parts; component is shorthand for slots.root. Replacement roots forward props and ref to one div.
+
+### Keyboard
 - Native radios provide validation and form submission. Tab enters the checked enabled radio. Without a selection, Tab enters the first enabled radio and Shift+Tab the last.
 - Arrows select in DOM order, wrap and skip disabled options. Horizontal arrows reverse in RTL.
 - Home/End select the first/last option. Enter selects without submitting; Space follows native radio behavior.
@@ -75,9 +84,109 @@ const meta = {
 - Reduced motion removes ring animation. The border and dot show the accepted selection.`,
     },
   },
-} satisfies Meta<typeof RadioCards>;
+} satisfies Meta<RadioCardsProps>;
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<Omit<RadioCardsProps, 'component'>>;
+type EasyStory = StoryObj<Omit<RadioCardsEasyProps, 'component'>>;
+const shipping = [
+  { value: 'standard', label: 'Standard', description: '4–6 business days' },
+  { value: 'express', label: 'Express', disabled: true },
+  { value: 'pickup', label: 'Pickup', description: 'Collect at the store' },
+] as const;
+export const Easy: EasyStory = {
+  args: { label: 'Shipping speed', options: shipping, name: 'shipping', defaultValue: 'standard', layout: 'list', onValueChange: fn() },
+  render: (args) => <RadioCards {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    await expect(canvas.getByRole('radiogroup', { name: 'Shipping speed' })).toBeInTheDocument();
+    const standard = canvas.getByRole('radio', { name: 'Standard' });
+    await expect(standard).toBeChecked();
+    await expect(standard).toHaveAttribute('name', 'shipping');
+    await expect(standard).toHaveAccessibleDescription('4–6 business days');
+    await expect(canvas.getByRole('radio', { name: 'Express' })).toBeDisabled();
+    const pickup = canvas.getByRole('radio', { name: 'Pickup' });
+    await userEvent.click(pickup);
+    await expect(pickup).toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('pickup');
+  },
+};
+function EasyControlledExample(args: RadioCardsEasyProps) {
+  const [value, setValue] = useState('standard');
+  return (
+    <RadioCards {...args} value={value} onValueChange={(next) => {
+      setValue(next);
+      args.onValueChange?.(next);
+    }} />
+  );
+}
+export const EasyControlled: EasyStory = { ...Easy, render: (args) => <EasyControlledExample {...args} /> };
+export const EasyRejected: EasyStory = {
+  ...Easy, args: { ...Easy.args, value: 'standard' },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('radio', { name: 'Pickup' }));
+    await expect(canvas.getByRole('radio', { name: 'Standard' })).toBeChecked();
+    await expect(canvas.getByRole('radio', { name: 'Pickup' })).not.toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('pickup');
+  },
+};
+export const EasyKeyboard: EasyStory = {
+  ...Easy,
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.tab();
+    await assertFocus(canvas.getByRole('radio', { name: 'Standard' }));
+    await userEvent.keyboard('{ArrowRight}');
+    const pickup = canvas.getByRole('radio', { name: 'Pickup' });
+    await assertFocus(pickup);
+    await expect(pickup).toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('pickup');
+  },
+};
+export const EasyRTL: EasyStory = {
+  ...EasyKeyboard, args: { ...Easy.args, dir: 'rtl' },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowLeft}');
+    const pickup = canvas.getByRole('radio', { name: 'Pickup' });
+    await assertFocus(pickup);
+    await expect(pickup).toBeChecked();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('pickup');
+  },
+};
+function EasyRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="radio-cards" />;
+}
+export const EasyCustomization: EasyStory = {
+  ...Easy,
+  parameters: { docs: { source: { code: `<RadioCards label="Shipping speed" options={shipping} defaultValue="standard"
+  slotProps={{ label: { title: 'Shipping label' }, item: { slotProps: { control: { css: { borderRadius: 0 } } } } }}
+/>` } } },
+  args: {
+    ...Easy.args,
+    ref: fn(),
+    slotProps: {
+      root: { title: 'Shipping choices' },
+      label: { title: 'Shipping label' },
+      item: { slotProps: { control: { css: { borderRadius: 0 } } } },
+    },
+  },
+  render: (args) => <RadioCards {...args} component={EasyRoot} />,
+  play: async (context) => {
+    await Easy.play?.(context);
+    await expect(context.canvas.getByRole('radiogroup', { name: 'Shipping speed' })).toHaveAttribute('data-replacement', 'radio-cards');
+    await expect(context.args.ref).toHaveBeenCalledWith(context.canvas.getByRole('radiogroup', { name: 'Shipping speed' }));
+    await expect(context.canvas.getByTitle('Shipping label')).toHaveTextContent('Shipping speed');
+    const input = context.canvas.getByRole('radio', { name: 'Pickup' });
+    await expect(input.nextElementSibling).toHaveStyle({ borderRadius: '0px' });
+  },
+};
+type AssertRadioCardsProps<T extends import('./index').RadioCardsProps> = T;
+export type RadioCardsEasyTypeRegression = {
+  // @ts-expect-error Options and children are mutually exclusive.
+  mixed: AssertRadioCardsProps<{ options: typeof shipping; children: string }>;
+};
 
 async function assertFocus(input: HTMLElement) {
   await expect(input.ownerDocument.activeElement).toBe(input);
@@ -140,6 +249,7 @@ async function assertRing(group: HTMLElement, input: HTMLElement) {
   );
 }
 export const DefaultGrid: Story = {
+  parameters: { docs: { source: { code: usage } } },
   play: async ({ canvas, args, userEvent }) => {
     const group = canvas.getByRole('radiogroup', { name: 'Shipping speed' });
     const radios = canvas.getAllByRole('radio') as HTMLInputElement[];

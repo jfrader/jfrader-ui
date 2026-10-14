@@ -1,10 +1,10 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
-import { ToggleGroup, type ToggleGroupProps, type ToggleGroupSingleProps } from './index';
+import { ToggleGroup, type ToggleGroupCompoundProps as ToggleGroupProps, type ToggleGroupProps as PublicToggleGroupProps, type ToggleGroupSingleProps } from './index';
 
 interface Option {
   value: string;
@@ -42,7 +42,14 @@ const meta = {
   component: ToggleGroup,
   parameters: {
     docs: {
+      source: { code: `const views = [
+  { value: 'list', label: 'List' },
+  { value: 'grid', label: 'Grid' },
+] as const;
+
+<ToggleGroup label="View" options={views} defaultValue="list" />` },
       description: { component: 'Choose one or more options from a group of toggle buttons.' },
+      usage: '- Supply readonly options for the complete group, or children for custom anatomy; do not mix them.\n- Use slotProps for the generated root and items. slots replaces those parts; component is shorthand for slots.root. Replacement roots forward props and ref to one div.\n- Single selection cannot be cleared unless allowEmpty is set. Multiple selection reports an array in activation order.\n- Arrows, Home and End move focus without selecting; horizontal arrows reverse in RTL. Space and Enter toggle the focused item.',
     },
   },
   argTypes: {
@@ -56,7 +63,7 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta<typeof ToggleGroup>;
+} satisfies Meta<ToggleGroupProps>;
 
 export default meta;
 
@@ -66,6 +73,132 @@ type Story = Omit<StoryObj<ToggleGroupProps>, 'render' | 'play'> & {
 };
 
 type CheckedToggleGroupArgs<Args extends NonNullable<Story['args']>> = Args;
+
+type EasyProps = Extract<PublicToggleGroupProps, { options: readonly unknown[] }>;
+type EasyStory = Omit<StoryObj<ToggleGroupProps>, 'args' | 'render' | 'play'> & {
+  args?: Partial<EasyProps>;
+  render?: (args: EasyProps) => ReactNode;
+  play?: (context: StoryContext<EasyProps>) => Promise<void>;
+};
+const views = VIEWS.map((option) => ({ ...option, disabled: option.value === 'board' }));
+const easyArgs = { label: 'View', options: views, defaultValue: 'list', onValueChange: fn() };
+export const Easy: EasyStory = {
+  args: easyArgs,
+  render: (args) => <ToggleGroup {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    await expect(canvas.getByRole('group', { name: 'View' })).toBeInTheDocument();
+    await expect(canvas.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(canvas.getByRole('button', { name: 'Board' })).toBeDisabled();
+    const grid = canvas.getByRole('button', { name: 'Grid' });
+    await userEvent.click(grid);
+    await expect(grid).toHaveAttribute('aria-pressed', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('grid');
+  },
+};
+function EasyControlledExample(args: EasyProps) {
+  const [value, setValue] = useState('list');
+  if (args.type === 'multiple') return <ToggleGroup {...args} />;
+  return (
+    <ToggleGroup {...args} value={value} onValueChange={(next) => {
+      setValue(next);
+      args.onValueChange?.(next);
+    }} />
+  );
+}
+export const EasyControlled: EasyStory = { ...Easy, render: (args) => <EasyControlledExample {...args} /> };
+export const EasyRejected: EasyStory = {
+  ...Easy, args: { ...easyArgs, value: 'list' },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Grid' }));
+    await expect(canvas.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(canvas.getByRole('button', { name: 'Grid' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('grid');
+  },
+};
+export const EasyMultiple: EasyStory = {
+  ...Easy, args: { type: 'multiple', label: 'View', options: views, defaultValue: ['list'], onValueChange: fn() },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Grid' }));
+    await expect(canvas.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(canvas.getByRole('button', { name: 'Grid' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['list', 'grid']);
+  },
+};
+export const EasyAllowEmpty: EasyStory = {
+  ...Easy, args: { ...easyArgs, allowEmpty: true },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'List' }));
+    await expect(canvas.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('');
+  },
+};
+export const EasyKeyboard: EasyStory = {
+  ...Easy,
+  play: async ({ canvas, userEvent, args }) => {
+    const list = canvas.getByRole('button', { name: 'List' });
+    const table = canvas.getByRole('button', { name: 'Table' });
+    await userEvent.tab();
+    await expect(list.ownerDocument.activeElement).toBe(list);
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}');
+    await expect(table.ownerDocument.activeElement).toBe(table);
+    await expect(getComputedStyle(table).outlineStyle).not.toBe('none');
+    await expect(list).toHaveAttribute('aria-pressed', 'true');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.keyboard(' ');
+    await expect(table).toHaveAttribute('aria-pressed', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('table');
+  },
+};
+export const EasyRTL: EasyStory = {
+  ...Easy, args: { ...easyArgs, dir: 'rtl' },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowLeft}');
+    const grid = canvas.getByRole('button', { name: 'Grid' });
+    await expect(grid.ownerDocument.activeElement).toBe(grid);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.keyboard('{Enter}');
+    await expect(grid).toHaveAttribute('aria-pressed', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('grid');
+  },
+};
+function EasyRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="toggle-group" />;
+}
+export const EasyCustomization: EasyStory = {
+  ...Easy,
+  parameters: { docs: { source: { code: `<ToggleGroup label="View" options={views} defaultValue="list"
+  slotProps={{ root: { title: 'View selector' }, item: { sx: { borderRadius: 0 } } }}
+/>` } } },
+  args: {
+    ...easyArgs,
+    ref: fn(),
+    slotProps: {
+      root: { title: 'View selector' },
+      item: { sx: { borderRadius: 0 } },
+    },
+  },
+  render: (args) => <ToggleGroup {...args} component={EasyRoot} />,
+  play: async (context) => {
+    await Easy.play?.(context);
+    await expect(context.canvas.getByRole('group', { name: 'View' })).toHaveAttribute('data-replacement', 'toggle-group');
+    await expect(context.args.ref).toHaveBeenCalledWith(context.canvas.getByRole('group', { name: 'View' }));
+    await expect(context.canvas.getByRole('button', { name: 'Grid' })).toHaveStyle({ borderRadius: '0px' });
+  },
+};
+type AssertToggleGroupProps<T extends PublicToggleGroupProps> = T;
+export type ToggleGroupEasyTypeRegression = {
+  // @ts-expect-error Options and children are mutually exclusive.
+  mixed: AssertToggleGroupProps<{ options: typeof views; children: string }>;
+  // @ts-expect-error Multiple mode requires an array value.
+  multipleString: AssertToggleGroupProps<{ type: 'multiple'; options: typeof views; value: string }>;
+};
 
 export type ToggleGroupTypeRegression = {
   // @ts-expect-error An array value in single mode is a type error.
@@ -79,7 +212,7 @@ export type ToggleGroupTypeRegression = {
   narrowing: typeof narrowToggleGroupProps;
 };
 
-function narrowToggleGroupProps(props: ToggleGroupProps) {
+function narrowToggleGroupProps(props: PublicToggleGroupProps) {
   if (props.type === 'multiple') {
     const value: string[] | undefined = props.value;
     const onValueChange: ((value: string[]) => void) | undefined = props.onValueChange;
@@ -129,6 +262,7 @@ function expectPressed(canvasElement: HTMLElement, pressed: readonly boolean[]) 
 }
 
 export const Single: Story = {
+  parameters: { docs: { source: { code: '<ToggleGroup label="View" defaultValue="list">\n  <ToggleGroup.Item value="list">List</ToggleGroup.Item>\n  <ToggleGroup.Item value="grid">Grid</ToggleGroup.Item>\n</ToggleGroup>' } } },
   args: { defaultValue: 'list', onValueChange: fn() },
   render: (args) => <ToggleGroupExample {...args} />,
   play: async ({ args, canvasElement }) => {

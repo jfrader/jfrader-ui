@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ComponentPropsWithoutRef,
   type KeyboardEvent,
   type ReactNode,
@@ -36,7 +37,7 @@ type SlotProps<Element extends 'div' | 'span'> = ComponentPropsWithoutRef<Elemen
   css?: Interpolation<Theme>;
 };
 
-export interface SegmentedControlProps
+export interface SegmentedControlCompoundProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
   value?: string;
   defaultValue?: string;
@@ -47,7 +48,36 @@ export interface SegmentedControlProps
   label?: string;
   onOptionIntent?: (value: string) => void;
   slotProps?: { track?: SlotProps<'div'>; selection?: SlotProps<'span'> };
+  options?: never;
+  slots?: never;
+  component?: never;
 }
+export interface SegmentedControlOption {
+  value: string;
+  label: ReactNode;
+  disabled?: boolean;
+  id?: string;
+  accessory?: ReactNode;
+}
+export interface SegmentedControlSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  item?: ComponentType<SegmentedControlItemProps>;
+}
+export interface SegmentedControlSlotProps extends NonNullable<SegmentedControlCompoundProps['slotProps']> {
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
+  item?: Omit<SegmentedControlItemProps, 'value' | 'children' | 'disabled' | 'id' | 'accessory'>;
+}
+export interface SegmentedControlEasyProps extends Omit<SegmentedControlCompoundProps, 'children' | 'options' | 'slots' | 'slotProps' | 'component'> {
+  options: readonly SegmentedControlOption[];
+  children?: never;
+  slots?: SegmentedControlSlots;
+  component?: SegmentedControlSlots['root'];
+  slotProps?: SegmentedControlSlotProps;
+}
+export type SegmentedControlProps = SegmentedControlCompoundProps | SegmentedControlEasyProps;
 
 export interface SegmentedControlItemProps extends Omit<ComponentPropsWithRef<'button'>, 'value'>, SxProps {
   value: string;
@@ -201,6 +231,8 @@ function SelectionSurface({
 const MotionSelection = motion.create(SelectionSurface);
 
 function SegmentedControlRoot({
+  rootElement: Root = 'div',
+  rootCss,
   ref,
   value: valueProp,
   defaultValue,
@@ -216,7 +248,7 @@ function SegmentedControlRoot({
   children,
   onKeyDown,
   ...rest
-}: SegmentedControlProps) {
+}: SegmentedControlCompoundProps & { rootElement?: 'div' | SegmentedControlSlots['root']; rootCss?: Interpolation<Theme> }) {
   const [value, requestChange] = useControlledState(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState<string | null>(null);
   const [tabStop, setTabStop] = useState<string>();
@@ -345,9 +377,9 @@ function SegmentedControlRoot({
     <Context.Provider value={context}>
       <MotionConfig reducedMotion="user">
         <LayoutGroup id={instanceId}>
-          <WithSx className={className} styles={rootStyle} sx={sx}>
+          <WithSx className={className} styles={[rootStyle, rootCss]} sx={sx}>
             {(className) => (
-              <div
+              <Root
                 {...rest}
                 ref={rootRef}
                 role="radiogroup"
@@ -369,7 +401,7 @@ function SegmentedControlRoot({
                 >
                   {children}
                 </div>
-              </div>
+              </Root>
             )}
           </WithSx>
         </LayoutGroup>
@@ -457,4 +489,29 @@ function SegmentedControlItem({
 }
 SegmentedControlItem.displayName = 'SegmentedControl.Item';
 
-export const SegmentedControl = Object.assign(SegmentedControlRoot, { Item: SegmentedControlItem });
+function SegmentedControlComponent(props: SegmentedControlProps) {
+  if (props.options === undefined) return <SegmentedControlRoot {...props} />;
+  const { options, component, slots, slotProps, ...rest } = props;
+  const { css: rootCss, className, style, sx, ...rootProps } = slotProps?.root ?? {};
+  const Item = slots?.item ?? SegmentedControlItem;
+  return (
+    <SegmentedControlRoot
+      {...rest}
+      {...rootProps}
+      rootElement={slots?.root ?? component}
+      rootCss={rootCss}
+      slotProps={slotProps}
+      className={[className, rest.className].filter(Boolean).join(' ') || undefined}
+      style={{ ...rest.style, ...style }}
+      sx={[sx, rest.sx]}
+    >
+      {options.map(({ label, ...option }) => (
+        <Item {...slotProps?.item} {...option} key={option.value}>
+          {label}
+        </Item>
+      ))}
+    </SegmentedControlRoot>
+  );
+}
+SegmentedControlComponent.displayName = 'SegmentedControl';
+export const SegmentedControl = Object.assign(SegmentedControlComponent, { Item: SegmentedControlItem });
