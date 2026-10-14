@@ -1,4 +1,4 @@
-import { act, useState } from 'react';
+import { act, useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -162,6 +162,42 @@ export const RequiredCommittedItems: Story = {
     await waitFor(() => expect(form.checkValidity()).toBe(true));
     await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
     await waitFor(() => expect(form.checkValidity()).toBe(false));
+  },
+};
+
+function RequiredControlledDropzone(props: FileDropzoneProps) {
+  const formId = useId();
+  const [items, setItems] = useState<FileDropzoneItem[]>([]);
+  const [disabled, setDisabled] = useState(false);
+  return (
+    <>
+      <form id={formId} aria-label="Receipts form" />
+      <FileDropzone {...props} required value={items} disabled={disabled} slotProps={{ input: { form: formId } }} />
+      <Button onClick={() => setItems(existing)}>Commit</Button>
+      <Button onClick={() => setItems([])}>Clear</Button>
+      <Button onClick={() => setDisabled(true)}>Disable</Button>
+    </>
+  );
+}
+
+export const RequiredControlledCommit: Story = {
+  tags: ['!autodocs'],
+  render: args => <RequiredControlledDropzone {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const form = canvas.getByRole('form', { name: 'Receipts form' }) as HTMLFormElement;
+    await expect(form.reportValidity()).toBe(false);
+    await expect(inputOf(canvasElement)).toHaveFocus();
+    await userEvent.upload(inputOf(canvasElement), file());
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(form.checkValidity()).toBe(false);
+    await userEvent.click(canvas.getByRole('button', { name: 'Commit' }));
+    await expect(form.checkValidity()).toBe(true);
+    await expect([...new FormData(form).keys()]).toEqual([]);
+    await userEvent.click(canvas.getByRole('button', { name: 'Clear' }));
+    await expect(form.checkValidity()).toBe(false);
+    await userEvent.click(canvas.getByRole('button', { name: 'Disable' }));
+    await expect(form.checkValidity()).toBe(true);
   },
 };
 export const Single: Story = {
