@@ -547,7 +547,7 @@ export function ChatMessageView({
         'data-size': size,
         style: { ...restProps.style, ...slotProps?.article?.style },
         className: [className, slotProps?.article?.className].filter(Boolean).join(' ') || undefined,
-        css: [messageShellStyle, owner === 'chat-message' && typographyStyle, isOwn && ownShellStyle, threadSizeStyles[size], slotProps?.article?.css],
+        css: [messageShellStyle, owner === 'chat-message' && [typographyStyle, threadSizeStyles[size]], isOwn && ownShellStyle, slotProps?.article?.css],
         sx,
       }}
       slots={{ time: slotProps?.time, avatar: slotProps?.avatar }}

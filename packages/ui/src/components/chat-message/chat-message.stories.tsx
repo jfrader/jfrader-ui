@@ -430,12 +430,13 @@ export const RepeatedMessage: Story = {
 
 /** Set conversation typography once for all its messages. */
 export const ThreadTypography: Story = {
-  render: () => <ChatThread participants={[{ id: 'ada', name: 'Ada Lovelace' }]} currentUserId="ada" defaultValue={[{ id: 'type', authorId: 'ada', text: 'The build is ready.', createdAt: NOW }]} now={NOW} composer={false} reactions={[]} sx={{ fontFamily: 'serif', fontSize: vars.textSize.lg }} />,
+  render: () => <ChatThread participants={[{ id: 'ada', name: 'Ada Lovelace' }]} currentUserId="ada" defaultValue={[{ id: 'type', authorId: 'ada', text: 'The build is ready.', createdAt: NOW }]} now={NOW} composer={false} reactions={[]} sx={{ fontFamily: 'serif', fontSize: vars.textSize.lg, '--thread-column-gap': vars.space[8] }} />,
   parameters: { docs: { source: { code: '<ChatThread participants={people} currentUserId="ada" defaultValue={messages} now={now} composer={false} sx={{ fontFamily: "serif" }} />' } } },
   play: async ({ canvas, canvasElement }) => {
     const author = canvas.getByText('Ada Lovelace');
     const thread = canvasElement.querySelector('[data-ui="chat-thread"]')!;
     await expect(getComputedStyle(author).fontFamily).toBe(getComputedStyle(thread).fontFamily);
     await expect(getComputedStyle(author).fontSize).toBe(getComputedStyle(thread).fontSize);
+    await expect(getComputedStyle(canvas.getByRole('article')).getPropertyValue('--thread-column-gap')).toBe(getComputedStyle(thread).getPropertyValue('--thread-column-gap'));
   },
 };
