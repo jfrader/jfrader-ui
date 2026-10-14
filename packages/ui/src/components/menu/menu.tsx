@@ -69,13 +69,49 @@ import { useControlledState } from '../../utils/use-controlled-state';
 
 const TYPEAHEAD_RESET_MS = 500;
 
-export interface MenuProps {
+interface MenuStateProps {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   placement?: Placement;
-  children?: ReactNode;
 }
+
+export type MenuAction = {
+  type: 'item';
+  key?: string;
+  label: ReactNode;
+  onSelect?: () => void;
+  disabled?: boolean;
+} | {
+  type: 'separator';
+  key?: string;
+  label?: never;
+  onSelect?: never;
+  disabled?: never;
+};
+
+export interface MenuCompoundProps extends MenuStateProps {
+  children?: ReactNode;
+  items?: never;
+  triggerLabel?: never;
+  slotProps?: never;
+}
+
+export interface MenuEasyProps extends MenuStateProps {
+  /** Name the button that opens the menu. */
+  triggerLabel: ReactNode;
+  /** Render actions and separators in order. */
+  items: readonly MenuAction[];
+  children?: never;
+  slotProps?: {
+    trigger?: Omit<MenuTriggerProps, 'children'>;
+    content?: Omit<MenuContentProps, 'children'>;
+    item?: Omit<MenuItemProps, 'children' | 'onSelect' | 'disabled'>;
+    separator?: MenuSeparatorProps;
+  };
+}
+
+export type MenuProps = MenuCompoundProps | MenuEasyProps;
 
 export interface MenuTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface MenuContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
@@ -92,7 +128,8 @@ export type MenuItemTone = 'neutral' | 'danger';
 /** Positioning options a family may set on the shared controller; Menu keeps the defaults. */
 export type MenuPositioning = Pick<OverlayFloatingOptions, 'strategy' | 'gap' | 'transform' | 'onAvailableSize'>;
 
-export interface MenuControllerProps extends MenuProps {
+export interface MenuControllerProps extends MenuStateProps {
+  children?: ReactNode;
   positioning?: MenuPositioning;
 }
 
@@ -362,8 +399,25 @@ export function MenuController(props: MenuControllerProps) {
   return <MenuLayer>{(nodeId) => <MenuOverlay {...props} nodeId={nodeId} />}</MenuLayer>;
 }
 
-function MenuRoot(props: MenuProps) {
-  return <MenuController {...props} />;
+function MenuRoot({ items, triggerLabel, slotProps, children, ...state }: MenuProps) {
+  return (
+    <MenuController {...state}>
+      {items !== undefined ? (
+        <>
+          <MenuTrigger {...slotProps?.trigger}>{triggerLabel}</MenuTrigger>
+          <MenuContent {...slotProps?.content}>
+            {items.map((item, index) => item.type === 'separator' ? (
+              <MenuSeparator {...slotProps?.separator} key={item.key ?? index} />
+            ) : (
+              <MenuItem {...slotProps?.item} key={item.key ?? index} onSelect={item.onSelect} disabled={item.disabled}>
+                {item.label}
+              </MenuItem>
+            ))}
+          </MenuContent>
+        </>
+      ) : children}
+    </MenuController>
+  );
 }
 
 MenuRoot.displayName = 'Menu';
