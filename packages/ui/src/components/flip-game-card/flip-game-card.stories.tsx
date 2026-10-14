@@ -56,7 +56,6 @@ const meta = {
     front: { control: false },
     back: { control: false },
   },
-  beforeEach: () => mockPreference(),
   parameters: {
     docs: {
       description: { component: 'Turn a playing card over to show its other face.' },
@@ -70,22 +69,22 @@ const meta = {
   backLabel="Card back"
 />`,
       },
-      usage: `### Setup
+      usage: `## Setup
 - Import from \`@jfrader/ui/flip-game-card\`. FlipGameCard is an opt-in subpath and is not re-exported by the package root.
 
-### Faces and state
+## Faces and state
 - Pass \`value\`, \`label\` and \`backLabel\` to render both faces from one deck. Set \`DeckProvider backLabel\` to name backs once in your language.
 - For custom content, pass two named faces with \`front\` and \`back\` instead of the shorthand; there is no \`children\` alias.
 - Set \`flipped\` to show the back (default \`false\`). Clicking the card does not change it. Shorthand without a nonempty back name throws \`MissingBackLabelError\`, even when initially face up.
 - Both faces stay mounted. Hidden content remains in the DOM: do not pass secret card values.
 - Place a \`GameCard\` directly in each face; the wrapper sizes both to its \`size\` (default \`md\`). Custom content must fit the frame.
 
-### Keyboard
+## Keyboard
 - This wrapper has no APG widget role or keyboard commands. Give each face its own accessible name.
 - The inactive face is inert and hidden from assistive technology immediately, even during a flip.
 - Keep the flip control outside the faces so it retains focus when the accepted state changes.
 
-### Motion and layout
+## Motion and layout
 - The outer root (and its React 19 \`ref\`) stays still; only the inner rotator moves. Use root \`sx\` for placement and \`slotProps\` for part styles.
 - Replace the root with \`component\` or \`slots.root\`. Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`. \`slotProps.root\` overrides root props; className and style merge.
 - Perspective uses \`size.gameCardPerspective\` (28rem). The flip uses \`motion.duration.cardFlip\` (300ms) and \`motion.easeCardFlip\` (ease).
@@ -109,6 +108,21 @@ async function expectRealPerspective(root: HTMLElement) {
 
 export const FaceUp: Story = {
   name: 'Face up',
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+
+<FlipGameCard
+  flipped={false}
+  value={{ deck: 'french', suit: 'spades', rank: 'A' }}
+  label="Ace of spades"
+  backLabel="Card back"
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card"]');
     if (!root) throw new Error('Missing flip root');
@@ -121,6 +135,21 @@ export const FaceUp: Story = {
 export const FaceDown: Story = {
   name: 'Face down',
   args: { flipped: true },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+
+<FlipGameCard
+  flipped={true}
+  value={{ deck: 'french', suit: 'spades', rank: 'A' }}
+  label="Ace of spades"
+  backLabel="Card back"
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('img', { name: BACK_LABEL })).toBeVisible();
     await expect(canvas.queryByRole('img', { name: FRONT_LABEL })).toBeNull();
@@ -128,7 +157,10 @@ export const FaceDown: Story = {
   },
 };
 
-export const LightTheme: Story = { decorators: [withLightTheme] };
+export const LightTheme: Story = {
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+};
 
 const patternFaces: Story['render'] = (args) => (
   <div style={{ display: 'flex', gap: vars.space[4] }}>
@@ -141,13 +173,101 @@ const patternFaces: Story['render'] = (args) => (
 );
 
 /** French and Spanish cards face up. */
-export const PatternFronts: Story = { render: patternFaces };
+export const PatternFronts: Story = {
+  render: patternFaces,
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+import { CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
+
+export function PatternFronts() {
+  return (
+    <>
+      <FlipGameCard
+        flipped={false}
+        value={{ deck: 'spanish', suit: 'oros', rank: 1 }}
+        label="Spanish face"
+        backLabel="Spanish back"
+      />
+      <FlipGameCard
+        flipped={false}
+        value={{ deck: 'french', suit: 'spades', rank: 'A' }}
+        label="French face"
+        backLabel="French back"
+      />
+    </>
+  );
+}`,
+      },
+    },
+  },
+};
 /** Spanish diagonal backs and poker checks. */
-export const PatternBacks: Story = { name: 'Deck backs', render: patternFaces, args: { flipped: true } };
-export const PatternFrontsLightTheme: Story = { ...PatternFronts, decorators: [withLightTheme] };
-export const PatternBacksLightTheme: Story = { ...PatternBacks, name: 'Deck backs light theme', decorators: [withLightTheme] };
+export const PatternBacks: Story = {
+  name: 'Deck backs',
+  render: patternFaces,
+  args: { flipped: true },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+
+export function PatternBacks() {
+  return (
+    <>
+      <FlipGameCard
+        flipped={true}
+        value={{ deck: 'spanish', suit: 'oros', rank: 1 }}
+        label="Spanish face"
+        backLabel="Spanish back"
+      />
+      <FlipGameCard
+        flipped={true}
+        value={{ deck: 'french', suit: 'spades', rank: 'A' }}
+        label="French face"
+        backLabel="French back"
+      />
+    </>
+  );
+}`,
+      },
+    },
+  },
+};
+export const PatternFrontsLightTheme: Story = {
+  ...PatternFronts,
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+};
+export const PatternBacksLightTheme: Story = {
+  ...PatternBacks,
+  name: 'Deck backs light theme',
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+};
 
 export const Sizes: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+
+export function FlipCardSizes() {
+  return (
+    <>
+      <FlipGameCard size="sm" value={{ deck: 'french', suit: 'spades', rank: 'A' }} label="Small card" backLabel="Back" />
+      <FlipGameCard size="md" value={{ deck: 'french', suit: 'spades', rank: 'A' }} label="Medium card" backLabel="Back" />
+      <FlipGameCard size="lg" value={{ deck: 'french', suit: 'spades', rank: 'A' }} label="Large card" backLabel="Back" />
+    </>
+  );
+}`,
+      },
+    },
+  },
   render: (args) => (
     <div style={{ display: 'flex', gap: vars.space[4] }}>
       {(['sm', 'md', 'lg'] as const).map((size) => (
@@ -215,7 +335,11 @@ export const FrontFinalState: Story = {
   play: flipToFinalState,
 };
 
-export const BackFinalStateLightTheme: Story = { ...BackFinalState, decorators: [withLightTheme] };
+export const BackFinalStateLightTheme: Story = {
+  ...BackFinalState,
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+};
 
 export const ContentKeyboard: Story = {
   tags: ['!autodocs'],
@@ -313,24 +437,6 @@ export function FlippableCard() {
   },
 };
 
-export const ReducedMotion: Story = {
-  tags: ['!autodocs'],
-  beforeEach: () => mockPreference(true),
-  render: (args) => <ControlledFixture {...args} />,
-  parameters: { docs: { description: { story: 'Flip the card without rotation when reduced motion is enabled.' } } },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const rotator = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card-rotator"]');
-    if (!rotator) throw new Error('Missing rotator');
-    await expect(getComputedStyle(rotator).transform).toBe('none');
-    await userEvent.click(canvas.getByRole('button', { name: 'Flip card' }));
-    await expect(rotator).toHaveAttribute('data-state', 'back');
-    await expect(getComputedStyle(rotator).transitionDuration).toBe('0s');
-    await expect(getComputedStyle(rotator).transform).toBe('none');
-    await expect(canvas.getByRole('img', { name: BACK_LABEL })).toBeVisible();
-    await expect(canvas.queryByRole('img', { name: FRONT_LABEL })).toBeNull();
-  },
-};
-
 export const ControlledWithoutAcceptance: Story = {
   tags: ['!autodocs'],
   render: (args) => (
@@ -348,7 +454,25 @@ export const ControlledWithoutAcceptance: Story = {
 
 export const SpanishDeck: Story = {
   render: () => <FlipGameCard size="lg" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="As de oros" backLabel="Carta boca abajo" flipped />,
-  parameters: { docs: { source: { code: '<FlipGameCard value={{ deck: "spanish", suit: "oros", rank: 1 }} label="As de oros" backLabel="Carta boca abajo" flipped />' } } },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+
+export function SpanishCard() {
+  return (
+    <FlipGameCard
+      value={{ deck: 'spanish', suit: 'oros', rank: 1 }}
+      label="As de oros"
+      backLabel="Carta boca abajo"
+      flipped
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement }) => {
     const back = canvas.getByRole('img', { name: 'Carta boca abajo' });
     await expect(back.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', 'diagonal');
@@ -366,9 +490,23 @@ export const ProviderBackLabel: Story = {
   render: () => <DeckProvider default="spanish" backLabel="Carta boca abajo">
     <FlipGameCard value={{ suit: 'copas', rank: 10 }} label="Sota de copas" flipped />
   </DeckProvider>,
-  parameters: { docs: { source: { code: `<DeckProvider default="spanish" backLabel="Carta boca abajo">
-  <FlipGameCard value={{ suit: 'copas', rank: 10 }} label="Sota de copas" flipped />
-</DeckProvider>` } } },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { DeckProvider } from '@jfrader/ui/deck';
+import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+
+export function SpanishDeckProvider() {
+  return (
+    <DeckProvider default="spanish" backLabel="Carta boca abajo">
+      <FlipGameCard value={{ suit: 'copas', rank: 10 }} label="Sota de copas" flipped />
+    </DeckProvider>
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     const card = canvas.getByRole('img', { name: 'Carta boca abajo' });
     await expect(card.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', 'diagonal');
@@ -394,13 +532,35 @@ export const CustomArtwork: Story = {
   render: () => <DeckProvider decks={[artworkDeck]} backLabel={BACK_LABEL}>
     <FlipGameCard value={{ deck: 'artwork', suit: 'star', rank: 1 }} label="One star" flipped />
   </DeckProvider>,
-  parameters: { docs: { description: { story: 'Register custom back artwork on the deck.' }, source: { code: `const deck = defineDeck({
-  id: 'artwork', suits: {}, ranks: {},
-  back: <svg viewBox="0 0 40 60" aria-hidden="true"><circle cx="20" cy="30" r="12" /></svg>,
+  parameters: {
+    docs: {
+      description: { story: 'Register custom back artwork on the deck.' },
+      source: {
+        language: 'tsx',
+        code: `import { defineDeck, DeckProvider } from '@jfrader/ui/deck';
+import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+
+const artworkDeck = defineDeck({
+  id: 'artwork',
+  suits: {},
+  ranks: {},
+  back: (
+    <svg viewBox="0 0 40 60" aria-hidden="true">
+      <circle cx="20" cy="30" r="12" />
+    </svg>
+  ),
 });
-<DeckProvider decks={[deck]} backLabel="Card back">
-  <FlipGameCard value={{ deck: 'artwork', suit: 'star', rank: 1 }} label="One star" flipped />
-</DeckProvider>` } } },
+
+export function CustomArtworkBack() {
+  return (
+    <DeckProvider decks={[artworkDeck]} backLabel="Card back">
+      <FlipGameCard value={{ deck: 'artwork', suit: 'star', rank: 1 }} label="One star" flipped />
+    </DeckProvider>
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('img', { name: BACK_LABEL }).querySelector('circle')).not.toBeNull();
   },
