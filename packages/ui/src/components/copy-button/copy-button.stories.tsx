@@ -168,7 +168,25 @@ CustomIcon.displayName = 'CustomIcon';
 const meta = {
   title: 'Actions/CopyButton',
   component: CopyButton,
-  parameters: { docs: { description: { component: 'Copy text to the clipboard and show whether it succeeded.' } } },
+  parameters: { docs: {
+    description: { component: 'Copy text to the clipboard and show whether it succeeded.' },
+    usage: `### Values
+- Pass \`text\` and all four labels: \`label\`, \`pendingLabel\`, \`copiedLabel\` and \`errorLabel\`. An empty \`text\` string is a valid clipboard payload.
+- The button starts at \`idle\`. Use \`defaultValue\` to seed its face, or pair \`value\` with \`onValueChange\` to control it. Controlling the face does not prevent a clipboard write; update \`value\` to display each requested state.
+- A write requests \`pending\`, then \`copied\` or \`error\`. After the result request, \`onCopied\` receives the text captured at activation or \`onCopyError\` receives the failure.
+- \`resetAfterMs\` defaults to 1900 milliseconds after a result commits. Set it to \`0\` to keep the result face. Negative or non-finite values also disable reset.
+
+### Keyboard
+- Press Enter or Space to copy. While a write is in flight, further activations do nothing and focus stays on the button.
+- The accessible name stays at \`label\` while a polite status region announces the changing face. Keep \`label\` about the action, not its result.
+
+### Limits
+- If the Clipboard API is unavailable or the browser rejects the write, the button requests \`error\` and calls \`onCopyError\`. Provide an error label and a way for the reader to copy the text themselves.
+
+### Customization
+- \`variant\`, \`tone\` and \`size\` default to \`outline\`, \`neutral\` and \`sm\`. Set \`iconOnly\` to hide the visible label while keeping its accessible name and announcements.
+- Use \`icons\` to replace state glyphs; \`null\` removes a glyph. Use \`slotProps\` for the icon, label and status spans, and \`sx\` for the button.`,
+  } },
   tags: ['autodocs'],
   args: {
     text: INSTALL_COMMAND,
@@ -201,8 +219,9 @@ export const Default: Story = {
   parameters: {
     docs: {
       source: {
+        language: 'tsx',
         code: `<CopyButton
-  text={installCommand}
+  text="pnpm add @jfrader/ui"
   label="Copy command"
   pendingLabel="Copying"
   copiedLabel="Copied"
