@@ -24,6 +24,12 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show that an action is loading.' },
+      usage: `### Loading
+- \`label\` supplies hidden text in a \`status\` region and defaults to \`Loading\`. Set it to the operation, such as \`Saving changes\`; the spinner does not show progress or mark other content busy.
+- Mounting a status region does not guarantee an announcement. If an announcement is required, update text in a live region that was already mounted.
+
+### Appearance
+- \`size\` is \`sm\` (16px), \`md\` (20px, the default) or \`lg\` (24px). The ring inherits text color. Reduced motion replaces rotation with an opacity pulse.`,
     },
   },
   tags: ['autodocs'],
