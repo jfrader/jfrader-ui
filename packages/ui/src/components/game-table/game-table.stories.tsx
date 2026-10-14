@@ -3,6 +3,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { Avatar, type AvatarSize } from '../avatar';
+import { Badge } from '../badge';
+import { GameSeat } from '../game-seat';
+import { GameHand } from '../game-hand';
 import { Button } from '../button';
 import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
 import { DeckProvider } from '../deck';
@@ -1045,6 +1048,59 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
     ? <GameCard size="sm" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="as de oros" />
     : <GameCard size="sm" value={{ deck: 'spanish', suit: 'copas', rank: 10 }} label="sota de copas" />
 );
+
+function TrucoPlayerSeat() {
+  const { player, index } = useGameTableSeat<Player>();
+  const name = player?.name ?? 'Lugar libre';
+  const now = Date.parse('2026-10-14T12:00:00Z');
+  return <GameSeat name={name} avatar={<Avatar name={name} size="sm" aria-hidden="true" />}
+    badges={<Badge>{player?.isMe ? 'Vos' : index === 1 ? 'Anfitrión' : 'Jugador'}</Badge>}
+    points={index === 0 ? '12' : undefined}
+    hand={<GameHand.Hidden count={3} size="sm" label="Tres cartas ocultas" playerKey={player?.key} />}
+    turn={index === 1 ? { deadline: now + 60000, durationMs: 60000, now: now + 15000 } : undefined}
+    chat={index === 1 ? <span aria-live="polite">Tu turno</span> : undefined} />;
+}
+
+/** Cada plaza muestra al jugador, sus insignias, la mano oculta y el turno. */
+export const TrucoPlayerChrome: Story = {
+  args: { viewport: VIEWPORTS.desktop, players: 4, seats: seatsFor(4) },
+  render: (args) => <DeckProvider default="spanish">
+    <div style={{ inlineSize: args.viewport.width, blockSize: args.viewport.height }}>
+      <Table players={args.players} seats={args.seats ?? []} viewport={args.viewport}>
+        <Table.Seat><TrucoPlayerSeat /></Table.Seat>
+        <Table.Play><FixtureContent content={spanishPlay} /></Table.Play>
+        <Table.Center>Truco</Table.Center>
+        <Table.Header>Nosotros 12 · Ellos 8</Table.Header>
+        <Table.Dock><Button>Quiero</Button></Table.Dock>
+      </Table>
+    </div>
+  </DeckProvider>,
+  parameters: { docs: { source: { language: 'tsx', code: `<GameSeat name="Alex" avatar={<Avatar name="Alex" aria-hidden="true" />}
+  handCount={3} badges={<Badge>Anfitrión</Badge>} turn={{ deadline, durationMs, now }} />
+
+function PlayerSeat() {
+  const { player } = useGameTableSeat();
+  return <GameSeat name={player.name} avatar={<Avatar name={player.name} aria-hidden="true" />}
+    badges={<Badge>{player.badgeLabel}</Badge>}
+    hand={<GameHand.Hidden count={3} size="sm" label="Tres cartas ocultas" playerKey={player.key} />}
+    turn={player.turn} />;
+}
+
+<DeckProvider default="spanish">
+  <GameTable players={4} seats={players} viewport={viewport}>
+    <GameTable.Seat><PlayerSeat /></GameTable.Seat>
+    <GameTable.Center>Truco</GameTable.Center>
+    <GameTable.Dock><Button>Quiero</Button></GameTable.Dock>
+  </GameTable>
+</DeckProvider>` } } },
+  play: async ({ canvasElement }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await expectSeatFraming(table, 4, 'desktop');
+    await expect(table.querySelectorAll('[data-ui="game-seat"]')).toHaveLength(4);
+    await expect(table.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(12);
+    await expect(table.querySelectorAll('[data-ui="game-seat-timer"]')).toHaveLength(1);
+  },
+};
 
 /** Cartas ocultas al borde y jugadas hacia el centro, en los seis tamaños. */
 export const TrucoPlayRing: Story = {

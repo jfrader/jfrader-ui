@@ -1,6 +1,9 @@
 'use client';
 
-import { createContext, useContext, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
+import { createContext, useContext, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentPropsWithRef, type ComponentType, type ReactNode, type RefObject } from 'react';
+import { useMergeRefs } from '@floating-ui/react';
+import { WithSx, type SxProps } from '../../styling/sx';
+import type { Interpolation, Theme } from '../../styling/css';
 import { MotionConfig, useReducedMotion } from 'motion/react';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { CardFlight } from './card-flight';
@@ -52,10 +55,16 @@ export function useCardFlights() {
   return context;
 }
 
-export interface CardFlightsProviderProps {
-  children: ReactNode;
-  /** Board wrapper ref. Measurements and markers are scoped to this board, not the document. */
-  scopeRef: RefObject<HTMLElement | null>;
+type ScopeRootProps = ComponentPropsWithRef<'div'> & { [attribute: `data-${string}`]: string | number | boolean | undefined };
+
+export interface CardFlightsProviderProps extends ScopeRootProps, SxProps {
+  /** Use a consumer-owned scope instead of rendering a root div. Root customization is ignored in this mode. */
+  scopeRef?: RefObject<HTMLElement | null>;
+  /** Replace the root div. Exactly sugar for `slots.root`; declare replacements outside render. */
+  component?: ComponentType<ScopeRootProps>;
+  slots?: { root?: ComponentType<ScopeRootProps> };
+  /** Root props win conflicts; className and style merge. */
+  slotProps?: { root?: ScopeRootProps & { css?: Interpolation<Theme> } };
 }
 
 function useFlightReducedMotion() {
@@ -75,7 +84,13 @@ function useFlightReducedMotion() {
 }
 
 /** Own card flights for one board. Remount or call reset() when replacing a match. */
-export function CardFlightsProvider({ children, scopeRef }: CardFlightsProviderProps) {
+export function CardFlightsProvider({ children, scopeRef: externalScopeRef, component, slots, slotProps, className, style, sx, ...rest }: CardFlightsProviderProps) {
+  const internalScopeRef = useRef<HTMLDivElement>(null);
+  const scopeRef = externalScopeRef ?? internalScopeRef;
+  const { css: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = slotProps?.root ?? {};
+  const rootProps = { ...rest, children, ...slotRest };
+  const rootRef = useMergeRefs([internalScopeRef, rootProps.ref]);
+  const Root = slots?.root ?? component ?? 'div';
   const reducedMotion = useFlightReducedMotion();
   const reducedRef = useRef(reducedMotion);
   reducedRef.current = reducedMotion;
@@ -155,7 +170,15 @@ export function CardFlightsProvider({ children, scopeRef }: CardFlightsProviderP
     landingTargets: new Set(flights.map((flight) => flight.spec.target)), ...actions,
   }), [scopeRef, reducedMotion, resetEpoch, flights, actions]);
   return <MotionConfig reducedMotion="user"><Context.Provider value={value}>
-    {children}
+    {externalScopeRef ? children : <WithSx styles={slotCss} className={slotClassName}>
+      {(slotClasses) => <WithSx className={className} sx={sx}>
+        {(consumerClasses) => <WithSx styles={[]} className={[slotClasses, consumerClasses].filter(Boolean).join(' ')}>
+          {(classes) => <Root {...rootProps} ref={rootRef}
+            data-ui={[...new Set(['card-flights', rest['data-ui'], slotRest['data-ui']].flatMap((value) => String(value ?? '').split(/\s+/).filter(Boolean)))].join(' ')}
+            className={classes} style={{ ...style, ...slotStyle }}>{rootProps.children}</Root>}
+        </WithSx>}
+      </WithSx>}
+    </WithSx>}
     {flights.length > 0 && <OverlayPortal>{flights.map((flight) =>
       <CardFlight key={flight.id} flightId={flight.id} spec={flight.spec} onStart={flight.start} onFinish={flight.finish} />)}</OverlayPortal>}
   </Context.Provider></MotionConfig>;
