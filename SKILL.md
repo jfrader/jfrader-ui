@@ -502,6 +502,20 @@ Length, sentence count, and prose formatting are editorial choices, not build ga
 Review clarity and completeness in context. Open the rendered docs, try the usage
 disclosure with the keyboard, and check the first example and prop table still appear.
 
+**What consumers of these stories assume**
+
+- **A story that measures its own width will not get a shrink-wrapped canvas.** The default example surface is a block lane; only `layout: 'centered'` shrinks to fit. A component that measures a probe or a lane to compute its expanded size (as ExpandingSearch does) must not depend on being shrink-wrapped, or it will compute its collapsed size and never grow.
+- **Do not hide the only rendered state behind `play`, `beforeEach`, `loaders` or `viewport`.** Consumers that render stories as documentation do not execute them or emulate the viewport, so a state that exists only after an interaction shows as an empty or bare example. Render the state directly (an `open`/`defaultOpen` variant), or exclude the story with `tags: ['!autodocs']`.
+- **Author `parameters.docs.source.code` when the anatomy matters.** Consumers can derive a snippet from a story's `args`, and some read the story's own JSX, but neither can describe a compound: an args-derived snippet cannot invent `Dialog` + `Dialog.Content` + `Dialog.Footer`, and an extractor stops at conditional or multiple returns and at maps over data it does not define. A single literal JSX return per story, or an authored `source.code` (with `source.language`), is what makes a usable code example.
+- **Examples are style-isolated from the page around them.** A story that renders bare `<a>`, `<code>`, `<table>`, `<h3>` or `<li>` elements gets the browser's defaults, not the host's typography — a raw link inside an example renders in the user agent's blue. Use the library's own components inside examples, and style anything you render raw.
+- **A story's `name:` is what readers see in navigation and in the page's table of contents.** Keep display names unique per component; when two stories share one, consumers have to disambiguate them. A component that renders its own `h3` headings will also have those headings confused with the page's sections unless the consumer filters them out.
+- **A component's page opens with one story chosen for it, and a state or environment story is not it.** Consumers pick a primary or rich composition and skip `Loading`, `Disabled`, `Error`, `RTL`, `ForcedColors`, `Keyboard…`-style states. Keep one obvious primary story per component so that choice is deliberate rather than accidental.
+
+**Maintenance prose**
+
+- A story description describes the state a reader sees, never the test that guards it. Frame-counting rules, assertion narration and pixel checks belong in comments beside the assertions.
+- Never compare against an unnamed "old reference", and never justify a removal ("deliberately removed"). State the current contract.
+
 ### Component review
 
 - [ ] Need + API approved; no duplicate component; contract worksheet filled.
