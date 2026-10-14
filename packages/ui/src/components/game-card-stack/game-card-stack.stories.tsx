@@ -57,17 +57,26 @@ const meta = {
 
 ### Placement and cards
 - Render \`GameCardStack.Pile\` inside \`GameTable.Play\` to put each player's cards in front of their seat. The part fills its host in normal flow; it owns no table placement.
-- This deliberately replaces the reference's per-profile preset placement, following GameTable's circular-layout deviation policy. Card mathematics stay unchanged: closed offsets are delta × 4px and |delta| × 1.5px; open offsets are delta × 0.52 card widths and −|delta| × 4px; inspection scale is 1.45, deterministic jitter is at most 4px and rotation offset at most 6 degrees.
 - The root defaults to \`placement="grid"\`: give it a definite width and height. Measurement chooses rows and columns and shrinks cards to reserve inspected fans. Include empty piles to reserve positions.
 - \`placement="free"\` and a pile's \`geometry\` use caller-owned normalized vectors. A supplied geometry always opts a pile out of fitting. The caller owns collisions in mixed or free placement.
 - \`cardWidth\` overrides inherited \`--game-card-width\`, falling back to the medium card token. Grid fitting treats it as a preferred width. \`maxCards\` defaults to three; non-finite values use that default and finite values are rounded down and clamped to zero.
 - Supply a \`label\` on every pile and card, in your page's language. Each card has a unique play \`id\` and an optional face \`value\`. Supply \`backPattern\` for hidden Spanish-deck cards, which carry no face value.
 - \`data-played-key\` uses the card's \`id\` for flight destinations. Cards stack in array order; a card's optional \`order\` sets its closed-pile layer. Each pile's \`revealed\` keeps its cards spread without enlargement.
 
+### Card spacing
+- Closed cards use offsets of delta × 4px horizontally and |delta| × 1.5px vertically.
+- Open cards use offsets of delta × 0.52 card widths horizontally and −|delta| × 4px vertically.
+- Inspection enlarges cards by 1.45. Each card has stable jitter of at most 4px and a rotation offset of at most 6 degrees.
+
 ### Inspection and keyboard
-- Native disclosure button with \`aria-expanded\` and \`aria-controls\`. Tab reaches each pile; Enter or Space toggles it. Escape closes and returns focus after acceptance. A root \`onKeyDown\` can prevent dismissal.
-- \`defaultValue\` seeds uncontrolled inspection; \`value\` and \`onValueChange\` control it. A player key opens that pile; \`null\` closes it. The root shares one inspected key. Standalone parts can share the same controlled state.
-- Automatically revealed cards stay spread after inspection closes. Closed cards remain visible to assistive technology. Reduced motion completes size changes and focus without waiting for animation.`,
+- Each pile has a native disclosure button with \`aria-expanded\` and \`aria-controls\`.
+- Tab reaches each pile. Enter or Space toggles it.
+- Escape closes and returns focus after acceptance. A root \`onKeyDown\` can prevent dismissal.
+- \`defaultValue\` seeds uncontrolled inspection. \`value\` and \`onValueChange\` control it.
+- A player key opens that pile. \`null\` closes it. The root shares one inspected key. Standalone parts can share the same controlled state.
+- Automatically revealed cards stay spread after inspection closes.
+- Closed cards remain visible to assistive technology.
+- Reduced motion completes size changes and focus without waiting for animation.`,
   } },
 } satisfies Meta<typeof GameCardStack>;
 export default meta;
@@ -85,7 +94,8 @@ async function noOverlap(root: HTMLElement) {
     }
   }
 }
-export const Default: Story = {
+export const PlayedPiles: Story = {
+  name: 'Played piles',
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: "North's played cards" });
     await expect(canvas.getAllByRole('img')).toHaveLength(6);
@@ -143,7 +153,7 @@ export const Controlled: Story = { render: (args) => <ControlledFixture {...args
     await expect(trigger).toHaveFocus();
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
   } };
-export const RejectedControlledClose: Story = { args: { value: 'North' },
+export const RejectedControlledClose: Story = { tags: ['!autodocs'], args: { value: 'North' },
   play: async ({ canvas, userEvent, args }) => {
     const other = canvas.getByRole('button', { name: "East's played cards" });
     other.focus();
@@ -153,7 +163,7 @@ export const RejectedControlledClose: Story = { args: { value: 'North' },
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenCalledWith(null);
   } };
-export const RejectedControlledOpen: Story = { args: { value: null },
+export const RejectedControlledOpen: Story = { tags: ['!autodocs'], args: { value: null },
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: "North's played cards" });
     await userEvent.click(trigger);
@@ -170,6 +180,7 @@ export const PreventEscape: Story = { args: { defaultValue: 'North', onKeyDown: 
     await expect(args.onValueChange).not.toHaveBeenCalled();
   } };
 export const ReducedMotion: Story = {
+  tags: ['!autodocs'],
   beforeEach: () => mockPreference(true),
   play: async ({ canvas, canvasElement, userEvent }) => {
     const card = canvasElement.querySelector<HTMLElement>('[data-played-key]')!;
@@ -181,7 +192,7 @@ export const ReducedMotion: Story = {
     await expect(trigger).toHaveFocus();
   },
 };
-export const RenderedGeometry: Story = { play: async ({ canvas, canvasElement, userEvent }) => {
+export const RenderedGeometry: Story = { tags: ['!autodocs'], play: async ({ canvas, canvasElement, userEvent }) => {
   await expect(getPileOffset({ index: 0, total: 3, open: false, openSpreadRatio: 0.52 }))
     .toEqual({ xCardWidths: 0, xPx: -4, y: 1.5 });
   await expect(getPileOffset({ index: 2, total: 3, open: true, openSpreadRatio: 0.52 }))
@@ -275,6 +286,7 @@ export const StandalonePile: Story = {
   },
 };
 export const StandaloneControlled: Story = {
+  tags: ['!autodocs'],
   render: (args) => <div style={{ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` }}>
     <GameCardStack.Pile {...args.piles[0]!}
       value="North" onValueChange={args.onValueChange} />
@@ -295,7 +307,8 @@ const spanishPiles: readonly GameCardStackPile[] = [
   { playerKey: 'Ana', label: 'Cartas jugadas de Ana', cards: [{ id: 'ana-play-1', label: 'as de oros', value: { deck: 'spanish', suit: 'oros', rank: 1 } }] },
   { playerKey: 'Luis', label: 'Cartas jugadas de Luis', cards: [{ id: 'luis-play-1', label: 'sota de copas', value: { deck: 'spanish', suit: 'copas', rank: 10 } }] },
 ];
-export const Truco: Story = {
+export const Default: Story = {
+  name: 'Default',
   render: () => <GameTable players={2} viewport={{ width: 1000, height: 800 }}
     seats={[{ key: 'Ana', teamIdx: 0, isMe: true }, { key: 'Luis', teamIdx: 1 }]}
   >
@@ -307,7 +320,9 @@ export const Truco: Story = {
       <GameCardStack.Pile {...pile} backPattern={CARD_BACK_PATTERNS.spanish} />
     </GameTable.Play>)}
   </GameTable>,
-  parameters: { docs: { description: { story: 'Two-player truco with Spanish-deck cards and a pile in front of each seat.' }, source: { language: 'tsx', code: `<GameTable players={2} seats={players} viewport={viewport}>
+  parameters: { docs: { description: { story: 'Two-player truco with Spanish-deck cards and a pile in front of each seat.' }, source: { language: 'tsx', code: `<GameCardStack piles={piles} />
+
+<GameTable players={2} seats={players} viewport={viewport}>
   <GameTable.Seat slotKey="Luis">
     <GameTable.SeatChrome>Luis</GameTable.SeatChrome>
     <GameCard label="Carta oculta de Luis" backPattern={CARD_BACK_PATTERNS.spanish} />
@@ -326,6 +341,7 @@ export const Truco: Story = {
 };
 
 export const ExplicitPlayIdentity: Story = {
+  tags: ['!autodocs'],
   args: { piles: [
     { playerKey: 'north-east', label: 'North-east pile', cards: [{ id: 'play-north-east-1', label: 'First play' }] },
     { playerKey: 'north', label: 'North pile', cards: [{ id: 'play-north-2', label: 'Second play' }] },

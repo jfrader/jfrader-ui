@@ -36,6 +36,14 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Fill a surface with a repeating SVG pattern.' },
+      source: { language: 'tsx', code: `import { GameCard } from '@jfrader/ui/game-card';
+import { vars } from '@jfrader/tokens/vars';
+
+<Pattern variant="diagonal" tone="accent" sx={{ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg }} />
+
+<GameCard label="Card back">
+  <Pattern variant="diagonal" tone="card" size="sm" />
+</GameCard>` },
       usage: `### Tiles and inks
 - Give the SVG a width and height through its parent or \`sx\`. It fills its parent by default.
 - \`size\` sets the tile side to 8, 16 or 24 CSS pixels. \`scale\` multiplies that side; nonpositive or nonfinite values fall back to 1.
@@ -57,7 +65,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
+export const Diagonal: Story = {
+  name: 'Diagonal',
   render: (args) => <Pattern {...args} css={sampleStyle} />,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui="pattern"]');
@@ -67,7 +76,8 @@ export const Default: Story = {
   },
 };
 
-export const Gallery: Story = {
+export const Default: Story = {
+  name: 'Default',
   render: (args) => <div css={galleryStyle}>
     {variants.map((variant) => <section key={variant}>
       <h3 css={labelStyle}>{variant}</h3>
@@ -94,7 +104,7 @@ export const Gallery: Story = {
   },
 };
 
-export const GalleryLight: Story = { ...Gallery, decorators: [withLightTheme] };
+export const GalleryLight: Story = { ...Default, name: 'Gallery light theme', decorators: [withLightTheme] };
 
 export const Tones: Story = {
   render: (args) => <div css={rowStyle}>{(['neutral', 'accent', 'card'] as const).map((tone) =>
@@ -147,6 +157,7 @@ export const FlippedCard: Story = {
 
 export const ForcedColors: Story = {
   ...FlippedCard,
+  tags: ['!autodocs'],
   parameters: { docs: { description: { story: 'Forced colors hides the decorative ink; the card supplies its surface and border.' } } },
   play: async ({ canvasElement }) => {
     const media = Array.from(canvasElement.ownerDocument.styleSheets)

@@ -36,16 +36,30 @@ const meta = {
 - Import from \`@jfrader/ui/game-hand\`. GameHand is an opt-in subpath and is not re-exported by the package root.
 
 ### Selection and keyboard
-Each card is a native toggle button (APG Button pattern, aria-pressed). Tab and Shift+Tab follow card order, then the enabled confirmation action; Enter or Space selects or clears a card. Only confirmation calls onPlayIntent; there is no drag gesture.
+- Each card is a native toggle button (APG Button pattern, \`aria-pressed\`).
+- Tab and Shift+Tab follow card order, then the enabled confirmation action. Enter or Space selects or clears a card.
+- Only confirmation calls \`onPlayIntent\`. There is no drag gesture.
 
 ### Values
-Pass plain cards with unique stable id, value and a label in your page’s language. Keep id when reordering or removing cards; selection follows the card id in both controlled and uncontrolled hands. value/onValueChange control selection; defaultValue seeds uncontrolled selection. null clears selection. Removing the selected card disables confirmation. onPlayIntent receives the selected card, without an index.
+- Pass plain cards with a unique stable \`id\`, \`value\` and a \`label\` in your page’s language.
+- Keep \`id\` when reordering or removing cards. Selection follows the card id in both controlled and uncontrolled hands.
+- \`value\` and \`onValueChange\` control selection. \`defaultValue\` seeds uncontrolled selection. \`null\` clears selection.
+- Removing the selected card disables confirmation.
+- \`onPlayIntent\` receives the selected card, without an index.
 
 ### Geometry
-size uses the GameCard scale. The reference fan turns 3 cards by −10/0/10° and 2 by −7/7°; other counts stay straight, including the five-card example. Cards overlap by 1.32 spacing steps (10.56px) at md and lg. At sm, cards do not overlap, leaving a 32px strip for pointer selection. No opening animation runs, including with reduced motion. Roots accept ref, css and sx; slotProps styles the fan, card buttons and confirmation.
+- \`size\` uses the GameCard scale.
+- The fan turns 3 cards by −10/0/10° and 2 by −7/7°. Other counts stay straight.
+- Cards overlap by 1.32 spacing steps (10.56px) at \`md\` and \`lg\`. At \`sm\`, cards do not overlap, leaving a 32px strip for pointer selection.
+- Hands have no opening animation, including with reduced motion.
+- Roots accept \`ref\`, \`css\` and \`sx\`. \`slotProps\` styles the fan, card buttons and confirmation.
 
 ### Hidden hands
-GameHand.Hidden takes count, never card values; it renders 0–3 backs and needs a label naming the hand. Omit polar for a standalone fan. With polar, the root moves inward from a caller-positioned seat using the reference’s 56px avatar and 28px name block. rules and scale configure radial geometry; size controls the card width. Seat positioning belongs to the caller. slotProps.card styles each hidden-card wrapper; root styles use css and sx.`,
+- \`GameHand.Hidden\` takes \`count\`, never card values. It renders 0–3 backs and needs a \`label\` naming the hand.
+- Omit \`polar\` for a standalone fan.
+- With \`polar\`, the root moves inward from a caller-positioned seat, allowing for a 56px avatar and a 28px name block. Position the seat yourself.
+- \`rules\` and \`scale\` configure radial geometry. \`size\` controls the card width.
+- \`slotProps.card\` styles each hidden-card wrapper. Root styles use \`css\` and \`sx\`.`,
   } },
 } satisfies Meta<typeof GameHand>;
 export default meta;
@@ -171,6 +185,7 @@ export const Controlled: Story = {
   },
 };
 export const RejectedSelection: Story = {
+  tags: ['!autodocs'],
   args: { value: null },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: CARDS[0]!.label }));
@@ -191,6 +206,7 @@ function MutableHand(args: GameHandProps) {
   </div>;
 }
 export const StableIdentity: Story = {
+  name: 'Remove and reorder cards',
   render: (args) => <MutableHand {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     const card = canvas.getByRole('button', { name: CARDS[1]!.label });
@@ -222,6 +238,7 @@ function ReorderedControlledHand(args: GameHandProps) {
   </>;
 }
 export const ControlledReorder: Story = {
+  name: 'Reorder a selected hand',
   render: (args) => <ReorderedControlledHand {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     const selected = canvas.getByRole('button', { name: CARDS[0]!.label });

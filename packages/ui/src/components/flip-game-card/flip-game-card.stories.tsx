@@ -107,7 +107,8 @@ async function expectRealPerspective(root: HTMLElement) {
   await expect(Number.parseFloat(perspective)).toBeCloseTo(expectedPixels, 2);
 }
 
-export const Default: Story = {
+export const FaceUp: Story = {
+  name: 'Face up',
   play: async ({ canvas, canvasElement }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card"]');
     if (!root) throw new Error('Missing flip root');
@@ -139,9 +140,9 @@ const patternFaces: Story['render'] = (args) => (
   </div>
 );
 
-/** Both card faces with their deck's back kept mounted. */
+/** French and Spanish cards face up. */
 export const PatternFronts: Story = { render: patternFaces };
-/** Spanish diagonal backs and poker checks in flip frames. */
+/** Spanish diagonal backs and poker checks. */
 export const PatternBacks: Story = { name: 'Deck backs', render: patternFaces, args: { flipped: true } };
 export const PatternFrontsLightTheme: Story = { ...PatternFronts, decorators: [withLightTheme] };
 export const PatternBacksLightTheme: Story = { ...PatternBacks, name: 'Deck backs light theme', decorators: [withLightTheme] };
@@ -219,7 +220,10 @@ export const BackFinalStateLightTheme: Story = { ...BackFinalState, decorators: 
 export const ContentKeyboard: Story = {
   tags: ['!autodocs'],
   render: (args) => <ControlledFixture {...args} />,
-  parameters: { docs: { source: { code: `<Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
+  parameters: { docs: { source: { code: `<FlipGameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }}
+  label="Ace of spades" backLabel="Card back" flipped={flipped} />
+
+<Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
 <FlipGameCard flipped={flipped}
   front={<GameCard label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />}
   back={<GameCard label="Card back" />} />` } } },
@@ -270,8 +274,8 @@ function ControlledShorthand(args: FlipGameCardProps) {
   </div>;
 }
 
-export const Controlled: Story = {
-  name: 'Controlled flip',
+export const Default: Story = {
+  name: 'Default',
   render: (args) => <ControlledShorthand {...args} />,
   parameters: { docs: { source: { code: `const [flipped, setFlipped] = useState(false);
 <Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
@@ -298,6 +302,7 @@ export const Controlled: Story = {
 };
 
 export const ReducedMotion: Story = {
+  tags: ['!autodocs'],
   beforeEach: () => mockPreference(true),
   render: (args) => <ControlledFixture {...args} />,
   parameters: { docs: { description: { story: 'Flip the card without rotation when reduced motion is enabled.' } } },
@@ -397,6 +402,7 @@ function ReplacementRoot({ className, ...props }: GameCardRootProps) {
 }
 
 export const RootCustomization: Story = {
+  tags: ['!autodocs'],
   args: { ref: fn(), component: ReplacementRoot, 'data-ui': 'consumer flip-game-card consumer',
     title: 'Host title', className: 'host-class', style: { marginInlineStart: 1, marginBlockStart: 2 },
     slotProps: { root: { 'data-ui': 'slot consumer', title: 'Slot title', className: 'slot-class',
