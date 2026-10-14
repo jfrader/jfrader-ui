@@ -13,6 +13,7 @@ export * from './components/calendar';
 export * from './components/card';
 export * from './components/card-flights';
 export * from './components/carousel';
+export * from './components/chat-message';
 export * from './components/chat-thread';
 export * from './components/checkbox';
 export * from './components/chip-group';

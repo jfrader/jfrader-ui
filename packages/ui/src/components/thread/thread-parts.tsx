@@ -20,6 +20,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type ComponentPropsWithRef,
   type FocusEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -29,6 +30,7 @@ import {
 import { autoUpdate, flip, offset, shift, useDismiss, useFloating, useInteractions, useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS } from '../../styling/media';
 import {
   listboxItemStateStyle,
@@ -140,7 +142,17 @@ export interface ThreadMessageViewProps {
   messageId: string;
   /** Body, editor and footer rows. */
   children: ReactNode;
-  slots?: { article?: ThreadPartProps; time?: ThreadPartProps };
+  avatar?: ReactNode;
+  articleProps?: ComponentPropsWithRef<'article'> & ThreadPartProps & SxProps & {
+    'data-ui'?: string;
+    'data-own'?: boolean;
+    'data-size'?: ThreadSize;
+  };
+  slots?: {
+    article?: ThreadPartProps;
+    time?: ThreadPartProps;
+    avatar?: ThreadPartProps;
+  };
 }
 
 const articleStyle = css({
@@ -148,6 +160,7 @@ const articleStyle = css({
   gridTemplateColumns: 'auto minmax(0, 1fr)',
   columnGap: 'var(--thread-column-gap)',
   alignItems: 'start',
+  '&[data-avatar="none"]': { gridTemplateColumns: 'minmax(0, 1fr)' },
 });
 
 const avatarColumnStyle = css({ display: 'inline-flex' });
@@ -188,44 +201,74 @@ export function ThreadMessageView({
   baseId,
   messageId,
   children,
+  avatar,
+  articleProps,
   slots,
 }: ThreadMessageViewProps) {
   const authorId = partId(baseId, 'author', messageId);
   const timeId = partId(baseId, 'time', messageId);
   const fullId = partId(baseId, 'when', messageId);
+
+  const mergedArticle = { ...articleProps, ...slots?.article };
+  const {
+    ref: articleRef,
+    className: articleClassName,
+    css: articleCss,
+    sx,
+    'aria-label': customAriaLabel,
+    'aria-labelledby': customAriaLabelledby,
+    'aria-describedby': customAriaDescribedby,
+    ...restArticleProps
+  } = mergedArticle;
+
+  const effectiveLabel = customAriaLabel ?? label;
+  const defaultLabelledBy = effectiveLabel === undefined ? `${authorId} ${timeId}` : undefined;
+  const mergedLabelledBy = [customAriaLabelledby, defaultLabelledBy].filter(Boolean).join(' ') || undefined;
+
+  const defaultDescribedBy = epoch === null ? undefined : fullId;
+  const mergedDescribedBy = [customAriaDescribedby, defaultDescribedBy].filter(Boolean).join(' ') || undefined;
+
   return (
-    <article
-      aria-label={label}
-      aria-labelledby={label === undefined ? `${authorId} ${timeId}` : undefined}
-      aria-describedby={epoch === null ? undefined : fullId}
-      data-ui={ui(owner, 'article')}
-      className={slots?.article?.className}
-      css={[articleStyle, slots?.article?.css]}
-    >
-      {/* The author's name is the adjacent text; the portrait only decorates it. */}
-      <span aria-hidden="true" css={avatarColumnStyle}>
-        <Avatar name={author.name} src={author.avatar} size={avatarSizes[size]} />
-      </span>
-      <div css={mainStyle}>
-        <div css={headerLineStyle}>
-          <span id={authorId} data-ui={ui(owner, 'author')} css={authorStyle}>
-            {author.name}
-          </span>
-          <ThreadTime
-            epoch={epoch}
-            now={now}
-            formatters={formatters}
-            invalidLabel={invalidTimeLabel}
-            id={timeId}
-            fullId={fullId}
-            ui={owner}
-            part={slots?.time}
-          />
-          {meta ? <span css={metaStyle}>{meta}</span> : null}
-        </div>
-        {children}
-      </div>
-    </article>
+    <WithSx className={articleClassName} styles={[articleStyle, articleCss]} sx={sx}>
+      {(rootClass) => (
+        <article
+          {...restArticleProps}
+          ref={articleRef}
+          aria-label={effectiveLabel}
+          aria-labelledby={mergedLabelledBy}
+          aria-describedby={mergedDescribedBy}
+          data-ui={articleProps?.['data-ui'] ?? ui(owner, 'article')}
+          data-avatar={avatar === null ? 'none' : undefined}
+          className={rootClass}
+        >
+          {/* The author's name is the adjacent text; the portrait only decorates it. */}
+          {avatar !== null ? (
+            <span aria-hidden="true" className={slots?.avatar?.className} css={[avatarColumnStyle, slots?.avatar?.css]}>
+              {avatar !== undefined ? avatar : <Avatar name={author.name} src={author.avatar} size={avatarSizes[size]} />}
+            </span>
+          ) : null}
+          <div css={mainStyle}>
+            <div css={headerLineStyle}>
+              <span id={authorId} data-ui={ui(owner, 'author')} css={authorStyle}>
+                {author.name}
+              </span>
+              <ThreadTime
+                epoch={epoch}
+                now={now}
+                formatters={formatters}
+                invalidLabel={invalidTimeLabel}
+                id={timeId}
+                fullId={fullId}
+                ui={owner}
+                part={slots?.time}
+              />
+              {meta ? <span css={metaStyle}>{meta}</span> : null}
+            </div>
+            {children}
+          </div>
+        </article>
+      )}
+    </WithSx>
   );
 }
 

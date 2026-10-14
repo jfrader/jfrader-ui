@@ -3,32 +3,24 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ComponentPropsWithRef } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes } from '../../styling/css';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { css } from '../../styling/css';
+import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { focusRingOutset } from '../../styling/focus-ring';
-import { partId } from '../../utils/part-id';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
-import { Card } from '../card';
 import {
   DEFAULT_TIME_ZONE,
   formatCount,
   resolveFormatters,
   toEpoch,
-  toggleReaction,
   uniqueBy,
   validEpoch,
-  type ThreadAuthor,
   type ThreadFormatters,
-  type ThreadReaction,
-  type ThreadTimestamp,
 } from '../thread/thread-core';
 import {
   ThreadComposer,
-  ThreadMessageView,
-  ThreadReactions,
   threadSizeStyles,
   type ThreadButtonProps,
   type ThreadPartProps,
@@ -36,34 +28,32 @@ import {
   type ThreadSize,
   type ThreadTextareaProps,
 } from '../thread/thread-parts';
+import {
+  ChatMessageView,
+  reactToChatMessage,
+  DEFAULT_CHAT_EMOJI,
+  defaultChatMessageLabels,
+  fadeStyle,
+  rowStyle,
+  errorStyle,
+  previewStyle,
+  fileSize,
+  fileStyle,
+  type ChatAttachment,
+  type ChatMessage,
+  type ChatMessageStatus,
+  type ChatParticipant,
+  type ChatReaction,
+} from '../chat-message/chat-message';
 
-export type ChatParticipant = ThreadAuthor;
+export type {
+  ChatAttachment,
+  ChatMessage,
+  ChatMessageStatus,
+  ChatParticipant,
+  ChatReaction,
+} from '../chat-message';
 export type ChatThreadSize = ThreadSize;
-export type ChatMessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
-export interface ChatAttachment {
-  id: string;
-  name: string;
-  kind: 'image' | 'file';
-  url?: string;
-  size?: number;
-  width?: number;
-  height?: number;
-  alt?: string;
-}
-export interface ChatReaction {
-  emoji: string;
-  count: number;
-  mine?: boolean;
-}
-export interface ChatMessage {
-  id: string;
-  authorId: string;
-  text?: string;
-  createdAt: ThreadTimestamp;
-  attachments?: readonly ChatAttachment[];
-  reactions?: readonly ChatReaction[];
-  status?: ChatMessageStatus;
-}
 export interface ChatDraft {
   text: string;
   files: File[];
@@ -155,44 +145,28 @@ const UI = 'chat-thread';
 const EMPTY_MESSAGES: readonly ChatMessage[] = [];
 const EMPTY_DRAFT: ChatDraft = { text: '', files: [] };
 const EMPTY_IDS: readonly string[] = [];
-const EMOJI = ['👍', '❤️', '🎉', '👀', '🚀', '✅'];
+const EMPTY_REACTIONS: readonly ChatReaction[] = [];
 const GROUP_WINDOW = 300_000;
 const PIN_THRESHOLD = 48;
-const PREVIEW_COUNT = 4;
 const MAX_FILES = 10;
 const newId = () => crypto.randomUUID();
 
 function defaultLabels(format: ThreadFormatters): ChatThreadLabels {
   const count = (n: number, one: string, other: string) => formatCount(format, n, one, other);
   return {
+    ...defaultChatMessageLabels(format),
     conversation: 'Conversation',
     transcript: 'Conversation transcript',
     composer: 'Message',
     placeholder: 'Write a message',
     send: 'Send',
     attach: 'Attach files',
-    attachments: 'Attachments',
-    sending: 'Sending',
-    sent: 'Sent',
-    delivered: 'Delivered',
-    read: 'Read',
-    failed: 'Failed',
-    retry: 'Retry',
-    jumpToLatest: 'Jump to latest',
-    unknownAuthor: 'Unknown author',
-    empty: 'No messages yet',
-    invalidTime: 'Unknown time',
-    sendFailed: 'Message could not be sent',
-    addReaction: 'Add reaction',
-    closeReactions: 'Close reactions',
-    reactions: 'Reactions',
     removeFile: (name) => `Remove ${name}`,
-    readBy: (names) => `Read by ${names}`,
+    jumpToLatest: 'Jump to latest',
+    empty: 'No messages yet',
+    sendFailed: 'Message could not be sent',
     typing: (names) => `Typing: ${names}`,
     newMessages: (n) => count(n, 'new message', 'new messages'),
-    showAttachments: (n) => `Show ${count(n, 'more attachment', 'more attachments')}`,
-    reactWith: (emoji) => `React with ${emoji}`,
-    reactionCount: (emoji, n, mine) => `${emoji} ${count(n, 'reaction', 'reactions')}${mine ? ', including you' : ''}`,
     fileRejected: (reason, name) => ({
       type: `${name}: file type not accepted`,
       size: `${name}: file too large`,
@@ -225,59 +199,19 @@ const scrollerStyle = css({
 });
 const listStyle = css({ display: 'flex', flexDirection: 'column', gap: vars.space[4], listStyle: 'none', margin: 0, padding: 0 });
 const compactListStyle = css({ gap: vars.space[2] });
-const arrival = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
-const fadeStyle = css({
-  animationName: arrival,
-  animationDuration: vars.motion.duration.base,
-  animationTimingFunction: vars.motion.easeStandard,
-  [REDUCED_MOTION]: { animation: 'none' },
-});
 const messageStyle = css({
   minInlineSize: 0,
   inlineSize: '100%',
   display: 'grid',
   '&[data-grouped="true"]': { marginBlockStart: `calc(-1 * ${vars.space[2]})` },
 });
-const messageShellStyle = css({ inlineSize: 'min(78%, 34rem)', minInlineSize: 0, '@container (max-width: 28rem)': { inlineSize: '84%' } });
-const ownShellStyle = css({ justifySelf: 'end' });
-const bubbleStyle = css({ padding: vars.space[3], minInlineSize: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', backgroundColor: vars.color.surfaceRaised });
-const ownBubbleStyle = css({ backgroundColor: vars.color.accentSoft, color: vars.color.text });
 const dateStyle = css({ marginBlock: vars.space[3], fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.medium, textAlign: 'center', color: vars.color.textMuted });
-const rowStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[2] });
-const receiptStyle = css({ fontSize: vars.textSize.xs, color: vars.color.textMuted, overflowWrap: 'anywhere' });
-const errorStyle = css({ color: vars.color.dangerText, margin: 0, overflowWrap: 'anywhere' });
 const composerRootStyle = css({ display: 'grid', gap: vars.space[2], minInlineSize: 0, flexShrink: 0 });
 const trayStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], margin: 0, padding: vars.space[2], listStyle: 'none', maxBlockSize: '12rem', overflow: 'auto' });
-const fileStyle = css({
-  display: 'flex',
-  alignItems: 'center',
-  flexWrap: 'wrap',
-  gap: vars.space[2],
-  padding: vars.space[2],
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.sm,
-  minInlineSize: 0,
-  overflowWrap: 'anywhere',
-  [FORCED_COLORS]: { borderColor: 'CanvasText' },
-});
-const imageStyle = css({ display: 'block', maxInlineSize: '100%', blockSize: 'auto', aspectRatio: '4 / 3', objectFit: 'contain', borderRadius: vars.radius.sm });
-const previewStyle = css({ inlineSize: vars.space[12], blockSize: vars.space[12], objectFit: 'cover' });
-const attachmentsStyle = css({ display: 'grid', gap: vars.space[2], listStyle: 'none', padding: 0, margin: 0 });
-const linkStyle = css({ color: vars.color.accentText, overflowWrap: 'anywhere', '&:focus-visible': focusRingOutset });
 const textareaControlStyle = css({ maxBlockSize: `calc(6lh + 2 * ${vars.space[2]})`, overflowY: 'auto' });
 const typingStyle = css({ color: vars.color.textMuted, transitionProperty: 'opacity', transitionDuration: vars.motion.duration.base, [REDUCED_MOTION]: { transitionDuration: '0s' } });
 const jumpStyle = css({ alignSelf: 'center' });
 
-function safeUrl(url: string | undefined) {
-  if (!url || /[\u0000-\u0020\u007f\\]/u.test(url)) return undefined;
-  try {
-    return ['http:', 'https:', 'blob:'].includes(new URL(url, 'https://attachments.invalid/').protocol) ? url : undefined;
-  } catch { return undefined; }
-}
-function fileSize(size: number, locale: Intl.LocalesArgument) {
-  const units = size >= 1_000_000 ? { size: 1_000_000, unit: 'megabyte' } : size >= 1_000 ? { size: 1_000, unit: 'kilobyte' } : { size: 1, unit: 'byte' };
-  return new Intl.NumberFormat(locale, { style: 'unit', unit: units.unit, maximumFractionDigits: 1 }).format(size / units.size);
-}
 function accepts(file: File, accept: string | undefined) {
   if (!accept?.trim()) return true;
   return accept.split(',').some((part) => {
@@ -505,46 +439,6 @@ function ChatComposer({
 function Composer(props: ChatThreadComposerProps) { return <ChatComposer {...props} />; }
 Composer.displayName = 'ChatThread.Composer';
 
-function AttachmentList({ attachments, labels, locale, part }: {
-  attachments: readonly ChatAttachment[];
-  labels: ChatThreadLabels;
-  locale: Intl.LocalesArgument;
-  part?: ThreadPartProps;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const shown = expanded ? attachments : attachments.slice(0, PREVIEW_COUNT);
-  return <>
-    <ul role="list" aria-label={labels.attachments} data-ui={`${UI}-attachments`} className={part?.className} css={[attachmentsStyle, part?.css]}>
-      {shown.map((attachment) => {
-        const url = safeUrl(attachment.url);
-        const content = <>
-          {attachment.kind === 'image' && url ? (
-            <img
-              src={url}
-              alt={attachment.alt ?? attachment.name}
-              width={attachment.width}
-              height={attachment.height}
-              style={attachment.width && attachment.height ? { aspectRatio: `${attachment.width} / ${attachment.height}` } : undefined}
-              css={imageStyle}
-            />
-          ) : null}
-          <span>{attachment.name}{attachment.size !== undefined ? ` · ${fileSize(attachment.size, locale)}` : ''}</span>
-        </>;
-        return (
-          <li key={attachment.id} css={fileStyle}>
-            {url ? <a href={url} download={attachment.name} css={linkStyle}>{content}</a> : content}
-          </li>
-        );
-      })}
-    </ul>
-    {!expanded && attachments.length > PREVIEW_COUNT ? <Button size="sm" variant="outline" onClick={() => setExpanded(true)}>{labels.showAttachments(attachments.length - PREVIEW_COUNT)}</Button> : null}
-  </>;
-}
-
-function chatReactions(reactions: readonly ChatReaction[], currentUserId: string): ThreadReaction[] {
-  return uniqueBy(reactions, (reaction) => reaction.emoji).map(({ emoji, mine }) => ({ emoji, users: mine ? [currentUserId] : [] }));
-}
-
 function ChatThreadRoot({
   ref,
   participants,
@@ -560,7 +454,7 @@ function ChatThreadRoot({
   onSend,
   onReact,
   onRetry,
-  reactions = EMOJI,
+  reactions = DEFAULT_CHAT_EMOJI,
   groupWindow = GROUP_WINDOW,
   composer = true,
   disabled = false,
@@ -768,15 +662,8 @@ function ChatThreadRoot({
   const react = (message: ChatMessage, emoji: string) => {
     if (disabled) return;
     const previous = message.reactions ?? [];
-    const core = chatReactions(previous, currentUserId);
-    const toggled = toggleReaction(core, emoji, currentUserId);
-    const existing = previous.find((reaction) => reaction.emoji === emoji);
-    const count = Math.max(0, (existing?.count ?? 0) + (toggled.added ? 1 : -1));
-    const replacement: ChatReaction = { emoji, count, mine: toggled.added };
-    const nextReactions = existing
-      ? previous.flatMap((reaction) => reaction.emoji !== emoji ? [reaction] : count > 0 ? [replacement] : [])
-      : [...previous, replacement];
-    commit(messages.map((entry) => entry.id === message.id ? { ...entry, reactions: nextReactions } : entry), { type: 'react', id: message.id, emoji, added: toggled.added });
+    const result = reactToChatMessage(previous, emoji, currentUserId);
+    commit(messages.map((entry) => entry.id === message.id ? { ...entry, reactions: result.reactions } : entry), { type: 'react', id: message.id, emoji, added: result.added });
     onReact?.(message.id, emoji);
   };
   const retry = async (id: string) => {
@@ -839,62 +726,39 @@ function ChatThreadRoot({
                 const grouped = sameDay && previous?.authorId === message.authorId && epoch! - previousEpoch! >= 0 && epoch! - previousEpoch! <= (Number.isFinite(groupWindow) && groupWindow >= 0 ? groupWindow : GROUP_WINDOW);
                 const own = message.authorId === currentUserId;
                 const author = people.get(message.authorId) ?? { id: message.authorId, name: labels.unknownAuthor };
-                const actionName = (action: string) => formatters.facts.format([
-                  action,
-                  author.name,
-                  epoch === null ? labels.invalidTime : formatters.full.format(epoch),
-                  ...(message.text ? [message.text] : []),
-                ]);
-                const reactionLabels: ThreadReactionLabels = {
-                  ...labels,
-                  addReaction: actionName(labels.addReaction),
-                  closeReactions: actionName(labels.closeReactions),
-                  reactions: actionName(labels.reactions),
-                  reactWith: (emoji) => actionName(labels.reactWith(emoji)),
-                  reactionCount: (emoji, count, mine) => actionName(labels.reactionCount(emoji, count, mine)),
-                };
                 const readers = Object.entries(readBy ?? {}).filter(([id, last]) => id !== currentUserId && people.has(id) && last === message.id).map(([id]) => people.get(id)!.name);
                 return <li key={message.id} data-ui={`${UI}-message`} data-message-id={message.id} data-own={own} data-grouped={grouped} className={slotProps?.message?.className} css={[messageStyle, entering.has(message.id) && message.status !== 'failed' && fadeStyle, slotProps?.message?.css]}>
                   {!sameDay ? <h3 data-ui={`${UI}-day`} css={dateStyle}>{epoch === null ? labels.invalidTime : dateFormat.format(epoch)}</h3> : null}
-                  <ThreadMessageView
-                    ui={UI}
-                    author={author}
-                    epoch={epoch}
-                    now={validEpoch(now) ? now : null}
-                    formatters={formatters}
-                    invalidTimeLabel={labels.invalidTime}
-                    size={size}
+                  <ChatMessageView
+                    _ui={UI}
+                    message={message}
                     baseId={baseId}
-                    messageId={message.id}
-                    slots={{ article: { css: [messageShellStyle, own && ownShellStyle] }, time: slotProps?.time }}
-                  >
-                    <Card data-part="chat-thread-bubble" className={slotProps?.bubble?.className} css={[bubbleStyle, own && ownBubbleStyle, slotProps?.bubble?.css]}>
-                      {message.text !== undefined && message.text !== '' ? <span data-ui={`${UI}-text`}>{message.text}</span> : null}
-                      {message.attachments?.length ? <AttachmentList attachments={message.attachments} labels={labels} locale={locale} part={slotProps?.attachments} /> : null}
-                    </Card>
-                    <ThreadReactions
-                      ui={UI}
-                      reactions={chatReactions(message.reactions ?? [], currentUserId)}
-                      counts={new Map(message.reactions?.map((reaction) => [reaction.emoji, Math.max(0, reaction.count)]))}
-                      offered={uniqueBy(reactions, (emoji) => emoji)}
-                      currentUserId={currentUserId}
-                      formatters={formatters}
-                      labels={reactionLabels}
-                      readOnly={false}
-                      disabled={disabled}
-                      pickerOpen={picker === message.id}
-                      onPickerOpenChange={(open) => setPicker(open ? message.id : null)}
-                      onToggle={(emoji) => react(message, emoji)}
-                      pickerId={partId(baseId, 'picker', message.id)}
-                      part={slotProps?.reaction}
-                      overlay
-                    />
-                    <div className={slotProps?.receipt?.className} data-ui={`${UI}-receipt`} css={[receiptStyle, rowStyle, slotProps?.receipt?.css]}>
-                      {message.status ? <span key={message.status} data-state={message.status} css={[message.status !== 'failed' && fadeStyle, message.status === 'failed' && errorStyle]}>{labels[message.status]}</span> : null}
-                      {readers.length ? <span>{labels.readBy(formatters.people.format(readers))}</span> : null}
-                      {message.status === 'failed' && onRetry ? <Button size="sm" variant="outline" aria-label={actionName(labels.retry)} disabled={disabled} loading={retrying === message.id} onClick={() => { void retry(message.id); }}>{labels.retry}</Button> : null}
-                    </div>
-                  </ThreadMessageView>
+                    author={author}
+                    now={validEpoch(now) ? now : null}
+                    reactions={message.reactions ?? EMPTY_REACTIONS}
+                    offeredReactions={reactions}
+                    currentUserId={currentUserId}
+                    readers={readers}
+                    own={own}
+                    size={size}
+                    locale={locale}
+                    timeZone={timeZone}
+                    formatters={formatters}
+                    disabled={disabled}
+                    pickerOpen={picker === message.id}
+                    onPickerOpenChange={(open) => setPicker(open ? message.id : null)}
+                    onReact={(emoji) => react(message, emoji)}
+                    onRetry={onRetry ? () => retry(message.id) : undefined}
+                    retryLoading={retrying === message.id}
+                    labels={labels}
+                    slotProps={{
+                      bubble: slotProps?.bubble,
+                      time: slotProps?.time,
+                      attachments: slotProps?.attachments,
+                      reactions: slotProps?.reaction,
+                      receipt: slotProps?.receipt,
+                    }}
+                  />
                 </li>;
               })}
             </ol>
