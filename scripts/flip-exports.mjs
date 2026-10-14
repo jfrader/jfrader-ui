@@ -3,7 +3,7 @@
 // Defaults to both packages. If packing fails after prepack, restore with node scripts/flip-exports.mjs src.
 // Idempotent; fails without
 // writing when an entry matches neither layout or a target file of the requested layout is missing.
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
@@ -60,12 +60,14 @@ const serialize = (manifest) => {
   )}\n`;
 };
 
-const [layout, ...args] = process.argv.slice(2);
+const [layout, ...rawArgs] = process.argv.slice(2);
+const dryRun = rawArgs.includes('--dry-run');
+const args = rawArgs.filter((arg) => arg !== '--dry-run');
 const scopedPackage = args.length === 2 && args[0] === '--package'
   ? packages.find(({ dir }) => dir === args[1])
   : undefined;
 if (!LAYOUTS.includes(layout) || (args.length > 0 && !scopedPackage)) {
-  console.error(`usage: node scripts/flip-exports.mjs <${LAYOUTS.join('|')}> [--package ui|tokens]`);
+  console.error(`usage: node scripts/flip-exports.mjs <${LAYOUTS.join('|')}> [--package ui|tokens] [--dry-run]`);
   process.exit(1);
 }
 
@@ -90,7 +92,7 @@ for (const { dir, layoutsOf } of scopedPackage ? [scopedPackage] : packages) {
         return [subpath, entry];
       }
       for (const target of targetsOf(layouts[layout])) {
-        if (!existsSync(path.join(packageDir, target))) {
+        if (!statSync(path.join(packageDir, target), { throwIfNoEntry: false })?.isFile()) {
           errors.push(`${manifest.name}: export "${subpath}" ${layout} target ${target} does not exist`);
         }
       }
@@ -99,7 +101,7 @@ for (const { dir, layoutsOf } of scopedPackage ? [scopedPackage] : packages) {
   );
 
   const next = serialize({ ...manifest, exports: flipped });
-  if (next !== current) writes.push([manifestPath, next]);
+  if (next !== current) writes.push([manifestPath, next, current]);
 }
 
 if (errors.length > 0) {
@@ -107,6 +109,20 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-for (const [manifestPath, contents] of writes) writeFileSync(manifestPath, contents);
+if (!dryRun) {
+  const attempted = [];
+  try {
+    for (const [manifestPath, contents, original] of writes) {
+      attempted.push([manifestPath, original]);
+      writeFileSync(manifestPath, contents);
+    }
+  } catch (error) {
+    const failures = [error];
+    for (const [manifestPath, original] of attempted.reverse()) {
+      try { writeFileSync(manifestPath, original); } catch (restoreError) { failures.push(restoreError); }
+    }
+    throw new AggregateError(failures, 'flip-exports failed; attempted to restore original manifests');
+  }
+}
 
-console.log(`flip-exports: ${layout} layout, ${writes.length} package.json file(s) rewritten`);
+console.log(`flip-exports: ${layout} layout, ${writes.length} package.json file(s) ${dryRun ? 'would be rewritten' : 'rewritten'}`);
