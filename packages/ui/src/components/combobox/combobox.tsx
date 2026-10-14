@@ -36,6 +36,7 @@ import {
   useState,
   type ChangeEvent,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type Dispatch,
   type FocusEvent,
@@ -54,7 +55,7 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import {
   listboxItemStateStyle,
   listboxItemStyle,
@@ -78,7 +79,7 @@ import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useFormReset } from '../../utils/use-form-reset';
 import { useLatestCallback } from '../../utils/use-latest-callback';
-import { TextField, type TextFieldProps } from '../text-field';
+import { TextField, type TextFieldProps, type TextFieldSize } from '../text-field';
 
 const PLACEMENT = 'bottom-start';
 const SELECTED_GLYPH = '✓';
@@ -88,7 +89,40 @@ const DEFAULT_EMPTY_LABEL = 'No results';
 const defaultFilter = (label: string, query: string) =>
   label.toLocaleLowerCase().includes(query.toLocaleLowerCase());
 
-export interface ComboboxProps {
+const tokens = (...values: Array<unknown>): string | undefined => {
+  const list = [...new Set(values.flatMap((v) => (typeof v === 'string' ? v.split(/\s+/) : [])))].filter(Boolean);
+  return list.join(' ') || undefined;
+};
+
+export interface ComboboxOption {
+  value: string;
+  label: ReactNode;
+  disabled?: boolean;
+  textValue?: string;
+  id?: string;
+}
+
+export interface ComboboxSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  input?: ComponentType<ComboboxInputProps>;
+  list?: ComponentType<ComboboxListProps>;
+  item?: ComponentType<ComboboxItemProps>;
+  empty?: ComponentType<ComboboxEmptyProps>;
+}
+
+export interface ComboboxSlotProps {
+  root?: ComponentPropsWithRef<'div'> &
+    SxProps & {
+      css?: Interpolation<Theme>;
+      [attribute: `data-${string}`]: unknown;
+    };
+  input?: Partial<ComboboxInputProps>;
+  list?: Partial<ComboboxListProps>;
+  item?: Partial<Omit<ComboboxItemProps, 'value' | 'id' | 'disabled' | 'textValue'>>;
+  empty?: Partial<ComboboxEmptyProps>;
+}
+
+export interface ComboboxBaseProps {
   /** `null` is the controlled "nothing selected" state. */
   value?: string | null;
   defaultValue?: string;
@@ -103,8 +137,43 @@ export interface ComboboxProps {
   filter?: (label: string, query: string) => boolean;
   /** Fires with the new input text when the user types and when a selection or Escape writes a label. */
   onInputChange?: (query: string) => void;
-  children?: ReactNode;
 }
+
+export interface ComboboxCompoundProps extends ComboboxBaseProps {
+  options?: never;
+  children?: ReactNode;
+  label?: never;
+  description?: never;
+  error?: never;
+  placeholder?: never;
+  size?: never;
+  disabled?: never;
+  readOnly?: never;
+  empty?: never;
+  inputValue?: never;
+  defaultInputValue?: never;
+  slots?: never;
+  slotProps?: never;
+}
+
+export interface ComboboxEasyProps extends ComboboxBaseProps {
+  options: readonly ComboboxOption[];
+  children?: never;
+  label?: ReactNode;
+  description?: ReactNode;
+  error?: ReactNode;
+  placeholder?: string;
+  size?: TextFieldSize;
+  disabled?: boolean;
+  readOnly?: boolean;
+  empty?: ReactNode;
+  inputValue?: string;
+  defaultInputValue?: string;
+  slots?: ComboboxSlots;
+  slotProps?: ComboboxSlotProps;
+}
+
+export type ComboboxProps = ComboboxCompoundProps | ComboboxEasyProps;
 
 export interface ComboboxInputProps extends Omit<TextFieldProps, 'value' | 'defaultValue' | 'onValueChange'> {
   /** Root `name` submits the selected value. Input `name` submits an extra text entry. */
@@ -119,6 +188,7 @@ export interface ComboboxItemProps extends ComponentPropsWithRef<'div'>, SxProps
   /** Unique within the combobox. */
   value: string;
   disabled?: boolean;
+  textValue?: string;
 }
 export interface ComboboxEmptyProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
@@ -128,6 +198,7 @@ interface OptionRecord {
   index: number;
   label: string;
   disabled: boolean;
+  textValue?: string;
 }
 
 interface InputLabelling {
@@ -208,18 +279,18 @@ const emptyStyle = css({
   color: vars.color.textMuted,
 });
 
-function ComboboxOverlay({
-  value: valueProp,
-  defaultValue,
-  onValueChange,
-  open: openProp,
-  defaultOpen = false,
-  onOpenChange,
-  name,
-  filter = defaultFilter,
-  onInputChange,
-  children,
-}: ComboboxProps) {
+function ComboboxOverlay(props: ComboboxProps) {
+  const {
+    value: valueProp,
+    defaultValue,
+    onValueChange,
+    open: openProp,
+    defaultOpen = false,
+    onOpenChange,
+    name,
+    filter = defaultFilter,
+    onInputChange,
+  } = props;
   const baseId = useId();
   const [listId, setListId] = useState(`${baseId}-listbox`);
   const [inputDisabled, setInputDisabled] = useState(false);
@@ -371,9 +442,91 @@ function ComboboxOverlay({
     registration,
   ]);
 
+  let renderedContent: ReactNode;
+  if ('options' in props && props.options !== undefined) {
+    const {
+      options: optionsList,
+      label,
+      description,
+      error,
+      placeholder,
+      size,
+      disabled,
+      readOnly,
+      empty,
+      inputValue,
+      defaultInputValue,
+      slots,
+      slotProps,
+    } = props;
+    const InputPart = slots?.input ?? ComboboxInput;
+    const ListPart = slots?.list ?? ComboboxList;
+    const ItemPart = slots?.item ?? ComboboxItem;
+    const EmptyPart = slots?.empty ?? ComboboxEmpty;
+    const RootPart = slots?.root ?? 'div';
+    const hasRootSlot = slots?.root !== undefined || slotProps?.root !== undefined;
+    const {
+      className: rootClassName,
+      css: rootCss,
+      sx: rootSx,
+      'data-ui': rootDataUi,
+      ...rootRest
+    } = slotProps?.root ?? {};
+
+    const rendered = (
+      <>
+        <InputPart
+          label={label}
+          description={description}
+          error={error}
+          placeholder={placeholder}
+          size={size}
+          disabled={disabled}
+          readOnly={readOnly}
+          inputValue={inputValue}
+          defaultInputValue={defaultInputValue}
+          {...slotProps?.input}
+        />
+        <ListPart {...slotProps?.list}>
+          {optionsList.map((option) => (
+            <ItemPart
+              key={option.value}
+              {...slotProps?.item}
+              id={option.id}
+              value={option.value}
+              disabled={option.disabled}
+              textValue={option.textValue}
+            >
+              {option.label}
+            </ItemPart>
+          ))}
+          <EmptyPart {...slotProps?.empty}>{empty}</EmptyPart>
+        </ListPart>
+      </>
+    );
+
+    renderedContent = hasRootSlot ? (
+      <WithSx className={rootClassName} styles={rootCss} sx={rootSx}>
+        {(className) => (
+          <RootPart
+            {...rootRest}
+            className={className}
+            data-ui={tokens('combobox', rootDataUi)}
+          >
+            {rendered}
+          </RootPart>
+        )}
+      </WithSx>
+    ) : (
+      rendered
+    );
+  } else {
+    renderedContent = props.children;
+  }
+
   return (
     <ComboboxContext.Provider value={value}>
-      {children}
+      {renderedContent}
       {name !== undefined && (
         <input type="hidden" name={name} form={inputForm} value={selectedValue ?? ''} disabled={inputDisabled} />
       )}
@@ -643,14 +796,27 @@ function ComboboxList({ ref, id: idProp, style, onMouseDown, children, className
 
 ComboboxList.displayName = 'Combobox.List';
 
-function ComboboxItem({ ref, value, disabled = false, onClick, children, className, sx, ...rest }: ComboboxItemProps) {
+function ComboboxItem({
+  ref,
+  value,
+  id: idProp,
+  disabled = false,
+  textValue,
+  onClick,
+  children,
+  className,
+  sx,
+  ...rest
+}: ComboboxItemProps) {
   const { baseId, selectedValue, activeIndex, options, isVisible, getItemProps, selectValue, registration } =
     useComboboxListContext('Item');
   const textRef = useRef<HTMLSpanElement>(null);
+  const id = idProp ?? collectionItemId(baseId, value);
   const { ref: listItemRef, index } = useCollectionItem(value, registration, textRef, (itemIndex, itemLabel) => ({
     index: itemIndex,
-    label: itemLabel,
+    label: textValue ?? itemLabel,
     disabled,
+    textValue,
   }));
   const mergedRef = useMergeRefs([listItemRef, ref]);
   const label = options.get(value)?.label;
@@ -672,7 +838,7 @@ function ComboboxItem({ ref, value, disabled = false, onClick, children, classNa
     >
       {(className) => (
         <div
-          {...getItemProps({ id: collectionItemId(baseId, value), ...rest, onClick: handleClick })}
+          {...getItemProps({ ...rest, id, onClick: handleClick })}
           ref={mergedRef}
           role="option"
           hidden={hidden}

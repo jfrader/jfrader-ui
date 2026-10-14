@@ -4,6 +4,7 @@
 
 ### Added
 
+- `MultiSelect`, `Select` and `Combobox` accept `options` and field presentation props for a single-element field, with typed `slots`/`slotProps` customization. Compound children and dotted parts remain available; types reject mixing modes. `MultiSelect` also supports `clearable`.
 - `Menu`, `Tabs` and `Dialog` accept one-element compositions through action/section collections or named dialog content props. Their compound parts remain available; incompatible children and easy-mode props are rejected by TypeScript.
 - `LinkPreview`: show supplied link metadata without a composer, with loading, unavailable and error states, image fallback, and truncated titles and descriptions. `LinkUnfurl` keeps its existing API and behavior.
 - `ReactionGroup`: standalone reaction pills with counts, current-user highlights, disabled and read-only states, and an optional keyboard-accessible emoji picker. Existing thread APIs remain unchanged.

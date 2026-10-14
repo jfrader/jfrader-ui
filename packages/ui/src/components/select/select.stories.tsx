@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties, ReactNode } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, mocked, userEvent, waitFor, within } from 'storybook/test';
@@ -6,11 +6,36 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
-import { Select, type SelectProps } from './index';
+import {
+  Select,
+  type SelectCompoundProps,
+  type SelectEasyProps,
+  type SelectItemProps,
+  type SelectOption,
+  type SelectProps,
+  type SelectLabelProps,
+  type SelectTriggerProps,
+} from './index';
 
 const LABEL = 'Fruit';
 const PLACEHOLDER = 'Pick a fruit';
 const TYPEAHEAD_PAUSE_MS = 550;
+
+const FRUITS: readonly SelectOption[] = [
+  { value: 'apple', label: 'Apple' },
+  { value: 'banana', label: 'Banana', disabled: true },
+  { value: 'cherry', label: 'Cherry' },
+];
+
+const snippet = `<Select
+  label="Fruit"
+  options={[
+    { value: 'apple', label: 'Apple' },
+    { value: 'banana', label: 'Banana', disabled: true },
+    { value: 'cherry', label: 'Cherry' },
+  ]}
+  defaultValue="apple"
+/>`;
 
 const rowStyle = {
   display: 'flex',
@@ -18,12 +43,15 @@ const rowStyle = {
   gap: vars.space[3],
 } satisfies CSSProperties;
 
-const meta = {
+const meta: Meta<SelectCompoundProps> = {
   title: 'Inputs/Select',
   component: Select,
   parameters: {
     docs: {
-      description: { component: 'Choose one option from a dropdown list.' },
+      description: {
+        component:
+          'Choose one option from a dropdown list using either a single element with options or compound parts for custom anatomy.',
+      },
       usage: `### Keyboard and focus
 - The trigger is a select-only combobox with a listbox. DOM focus stays on the trigger; aria-activedescendant identifies the highlighted option.
 - Enter/Space/ArrowDown opens on the selected or first enabled option. ArrowUp opens on the selected or last enabled option.
@@ -37,13 +65,26 @@ const meta = {
 - name adds a hidden form input. Native required validation is not supported.`,
     },
   },
-} satisfies Meta<typeof Select>;
+};
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+type EasyStory = StoryObj<SelectEasyProps>;
 
-function SelectExample(props: SelectProps) {
+type CheckedSelect<Props extends SelectProps> = Props;
+export type SelectTypeRegression = {
+  // @ts-expect-error Options and children are mutually exclusive.
+  optionsWithChildren: CheckedSelect<{ options: readonly SelectOption[]; children: ReactNode }>;
+  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  childrenWithLabel: CheckedSelect<{ label: string; children: ReactNode }>;
+  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  childrenWithPlaceholder: CheckedSelect<{ placeholder: string; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects slots and slotProps.
+  childrenWithSlots: CheckedSelect<{ slots: { root?: () => null }; children: ReactNode }>;
+};
+
+function SelectExample(props: SelectCompoundProps) {
   const labelId = useId();
   return (
     <div style={rowStyle}>
@@ -67,7 +108,261 @@ function SelectExample(props: SelectProps) {
 }
 SelectExample.displayName = 'SelectExample';
 
-function DisabledWhileOpenSelect(props: SelectProps) {
+/** Portaled content lives in the story document's body, outside the canvas. */
+function bodyOf(canvasElement: HTMLElement) {
+  return within(canvasElement.ownerDocument.body);
+}
+
+function getTrigger(canvasElement: HTMLElement) {
+  return within(canvasElement).getByRole('combobox', { name: LABEL });
+}
+
+function getOption(canvasElement: HTMLElement, name: string) {
+  return bodyOf(canvasElement).getByRole('option', { name });
+}
+
+/** Virtual focus: the option is referenced by aria-activedescendant while DOM focus stays on the trigger. */
+async function expectActive(canvasElement: HTMLElement, name: string) {
+  const trigger = getTrigger(canvasElement);
+  await waitFor(() => expect(trigger).toHaveAttribute('aria-activedescendant', getOption(canvasElement, name).id));
+  await expect(getOption(canvasElement, name)).toHaveAttribute('data-active');
+  await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+}
+
+async function expectClosed(canvasElement: HTMLElement) {
+  await waitFor(() => expect(bodyOf(canvasElement).queryByRole('listbox')).toBeNull());
+  const trigger = getTrigger(canvasElement);
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(trigger).not.toHaveAttribute('aria-activedescendant');
+}
+
+async function focusTrigger(canvasElement: HTMLElement) {
+  const trigger = getTrigger(canvasElement);
+  await userEvent.tab();
+  await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+  return trigger;
+}
+
+export const Default: EasyStory = {
+  args: {
+    label: LABEL,
+    placeholder: PLACEHOLDER,
+    options: FRUITS,
+    defaultValue: 'apple',
+    onValueChange: fn(),
+  },
+  render: (args) => (
+    <div style={rowStyle}>
+      <Select {...args} />
+      <Button>After</Button>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      source: {
+        code: snippet,
+      },
+    },
+  },
+  play: async ({ args, canvasElement }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger.tagName).toBe('BUTTON');
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).not.toHaveAttribute('aria-controls');
+    await waitFor(() => expect(trigger).toHaveTextContent('Apple'));
+
+    await userEvent.click(trigger);
+    const listbox = await bodyOf(canvasElement).findByRole('listbox', { name: LABEL });
+    await expect(canvasElement.contains(listbox)).toBe(false);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(trigger).toHaveAttribute('aria-controls', listbox.id);
+    await expect(within(listbox).getAllByRole('option')).toHaveLength(3);
+    await expect(getOption(canvasElement, 'Apple')).toHaveAttribute('aria-selected', 'true');
+    await expect(getOption(canvasElement, 'Cherry')).toHaveAttribute('aria-selected', 'false');
+    // Pointer open highlights the selected option.
+    await expectActive(canvasElement, 'Apple');
+
+    await userEvent.click(getOption(canvasElement, 'Cherry'));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('cherry');
+    await expectClosed(canvasElement);
+    await expect(trigger).toHaveTextContent('Cherry');
+    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+  },
+};
+
+export const Compound: Story = {
+  args: { defaultValue: 'apple', onValueChange: fn() },
+  render: (args) => <SelectExample {...args} />,
+  parameters: {
+    docs: {
+      source: {
+        code: `function FruitPicker() {
+  const labelId = useId();
+
+  return (
+    <>
+      <span id={labelId}>Fruit</span>
+      <Select defaultValue="apple">
+        <Select.Trigger aria-labelledby={labelId}>
+          <Select.Value placeholder="Pick a fruit" />
+        </Select.Trigger>
+        <Select.Content>
+          <Select.Item value="apple">Apple</Select.Item>
+          <Select.Item value="banana" disabled>Banana</Select.Item>
+          <Select.Item value="cherry">Cherry</Select.Item>
+        </Select.Content>
+      </Select>
+    </>
+  );
+}`,
+      },
+    },
+  },
+};
+
+function CustomSelectRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="custom-root" />;
+}
+function CustomSelectLabel(props: SelectLabelProps) {
+  return <Select.Label {...props} data-testid="custom-label" />;
+}
+function CustomSelectTrigger(props: SelectTriggerProps) {
+  return <Select.Trigger {...props} data-testid="custom-trigger" />;
+}
+
+export const CustomSlots: EasyStory = {
+  render: () => (
+    <Select
+      label="Fruit"
+      options={FRUITS}
+      defaultValue="apple"
+      slots={{
+        root: CustomSelectRoot,
+        label: CustomSelectLabel,
+        trigger: CustomSelectTrigger,
+      }}
+      slotProps={{
+        root: { sx: { border: '1px solid red' } },
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const root = canvas.getByTestId('custom-root');
+    await expect(root).toBeInTheDocument();
+    await expect(root).toHaveAttribute('data-ui', 'select');
+    await expect(canvas.getByTestId('custom-label')).toBeInTheDocument();
+    await expect(canvas.getByTestId('custom-trigger')).toBeInTheDocument();
+  },
+};
+
+function EasyControlledSelect(props: SelectEasyProps) {
+  const [value, setValue] = useState('apple');
+  const [open, setOpen] = useState(false);
+  return (
+    <Select
+      {...props}
+      value={value}
+      onValueChange={(next) => {
+        setValue(next);
+        props.onValueChange?.(next);
+      }}
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        props.onOpenChange?.(next);
+      }}
+    />
+  );
+}
+
+export const EasyControlled: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: LABEL, options: FRUITS, onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <EasyControlledSelect {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const trigger = getTrigger(canvasElement);
+    await waitFor(() => expect(trigger).toHaveTextContent('Apple'));
+    await userEvent.click(trigger);
+    await userEvent.click(await bodyOf(canvasElement).findByRole('option', { name: 'Cherry' }));
+    await expect(args.onValueChange).toHaveBeenCalledWith('cherry');
+    await expect(trigger).toHaveTextContent('Cherry');
+    await expectClosed(canvasElement);
+  },
+};
+
+export const EasyRejectedControlled: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: LABEL, options: FRUITS, value: 'apple', onValueChange: fn() },
+  render: (args) => <Select {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const trigger = getTrigger(canvasElement);
+    await userEvent.click(trigger);
+    await userEvent.click(await bodyOf(canvasElement).findByRole('option', { name: 'Cherry' }));
+    await expect(args.onValueChange).toHaveBeenCalledWith('cherry');
+    await expect(trigger).toHaveTextContent('Apple');
+    await expectClosed(canvasElement);
+  },
+};
+
+export const EasyDisabledOption: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn() },
+  render: (args) => <Select {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const trigger = getTrigger(canvasElement);
+    await userEvent.click(trigger);
+    const disabled = await bodyOf(canvasElement).findByRole('option', { name: 'Banana' });
+    await expect(disabled).toHaveAttribute('aria-disabled', 'true');
+    await fireEvent.click(disabled);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(trigger).toHaveTextContent('Apple');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  },
+};
+
+export const EasyKeyboard: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn() },
+  render: (args) => <Select {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const trigger = await focusTrigger(canvasElement);
+    await userEvent.keyboard('{ArrowDown}');
+    await expectActive(canvasElement, 'Apple');
+    // Arrow down skips disabled Banana to Cherry
+    await userEvent.keyboard('{ArrowDown}');
+    await expectActive(canvasElement, 'Cherry');
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onValueChange).toHaveBeenCalledWith('cherry');
+    await expect(trigger).toHaveTextContent('Cherry');
+    await expectClosed(canvasElement);
+  },
+};
+
+const CUSTOM_SELECT_OPTIONS: readonly SelectOption[] = [
+  { value: 'apple', label: 'Apple', id: 'custom-apple-opt' },
+  { value: 'cherry', label: 'Cherry', id: 'custom-cherry-opt', textValue: 'Zucchini' },
+];
+
+export const EasyOptionIdsAndTextValue: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: LABEL, options: CUSTOM_SELECT_OPTIONS, defaultValue: 'apple' },
+  render: (args) => <Select {...args} />,
+  play: async ({ canvasElement }) => {
+    const trigger = await focusTrigger(canvasElement);
+    await userEvent.click(trigger);
+    const apple = getOption(canvasElement, 'Apple');
+    const cherry = getOption(canvasElement, 'Cherry');
+    await expect(apple).toHaveAttribute('id', 'custom-apple-opt');
+    await expect(cherry).toHaveAttribute('id', 'custom-cherry-opt');
+    await userEvent.keyboard('z');
+    await expectActive(canvasElement, 'Cherry');
+  },
+};
+
+function DisabledWhileOpenSelect(props: SelectCompoundProps) {
   const [disabled, setDisabled] = useState(false);
   return (
     <>
@@ -124,7 +419,7 @@ export const NativeFormReset: Story = {
   },
 };
 
-function AssociatedFormResetSelect(props: SelectProps) {
+function AssociatedFormResetSelect(props: SelectCompoundProps) {
   const formId = useId();
   const [cancelReset, setCancelReset] = useState(true);
   return (
@@ -167,7 +462,7 @@ export const AssociatedFormReset: Story = {
   },
 };
 
-function ControlledSelect(props: SelectProps) {
+function ControlledSelect(props: SelectCompoundProps) {
   const [value, setValue] = useState('apple');
   const [open, setOpen] = useState(false);
   const [callbackOrder, setCallbackOrder] = useState<string[]>([]);
@@ -194,94 +489,28 @@ function ControlledSelect(props: SelectProps) {
 }
 ControlledSelect.displayName = 'ControlledSelect';
 
-/** Portaled content lives in the story document's body, outside the canvas. */
-function bodyOf(canvasElement: HTMLElement) {
-  return within(canvasElement.ownerDocument.body);
-}
-
-function getTrigger(canvasElement: HTMLElement) {
-  return within(canvasElement).getByRole('combobox', { name: LABEL });
-}
-
-function getOption(canvasElement: HTMLElement, name: string) {
-  return bodyOf(canvasElement).getByRole('option', { name });
-}
-
-/** Virtual focus: the option is referenced by aria-activedescendant while DOM focus stays on the trigger. */
-async function expectActive(canvasElement: HTMLElement, name: string) {
-  const trigger = getTrigger(canvasElement);
-  await waitFor(() => expect(trigger).toHaveAttribute('aria-activedescendant', getOption(canvasElement, name).id));
-  await expect(getOption(canvasElement, name)).toHaveAttribute('data-active');
-  await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
-}
-
-async function expectClosed(canvasElement: HTMLElement) {
-  await waitFor(() => expect(bodyOf(canvasElement).queryByRole('listbox')).toBeNull());
-  const trigger = getTrigger(canvasElement);
-  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  await expect(trigger).not.toHaveAttribute('aria-activedescendant');
-}
-
-async function focusTrigger(canvasElement: HTMLElement) {
-  const trigger = getTrigger(canvasElement);
-  await userEvent.tab();
-  await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
-  return trigger;
-}
-
-export const Default: Story = {
-  args: { defaultValue: 'apple', onValueChange: fn() },
-  render: (args) => <SelectExample {...args} />,
-  parameters: {
-    docs: {
-      source: {
-        code: `function FruitPicker() {
-  const labelId = useId();
-
-  return (
-    <>
-      <span id={labelId}>Fruit</span>
-      <Select defaultValue="apple">
-        <Select.Trigger aria-labelledby={labelId}>
-          <Select.Value placeholder="Pick a fruit" />
-        </Select.Trigger>
-        <Select.Content>
-          <Select.Item value="apple">Apple</Select.Item>
-          <Select.Item value="banana" disabled>Banana</Select.Item>
-          <Select.Item value="cherry">Cherry</Select.Item>
-        </Select.Content>
-      </Select>
-    </>
-  );
-}`,
-      },
-    },
-  },
-  play: async ({ args, canvasElement }) => {
+export const EasyFormReset: EasyStory = {
+  render: () => (
+    <form aria-label="Fruit form">
+      <Select
+        label={LABEL}
+        name="fruit"
+        options={FRUITS}
+        defaultValue="apple"
+      />
+      <Button type="reset">Reset</Button>
+    </form>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const form = canvas.getByRole('form', { name: 'Fruit form' }) as HTMLFormElement;
     const trigger = getTrigger(canvasElement);
-    await expect(trigger.tagName).toBe('BUTTON');
-    await expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    await expect(trigger).not.toHaveAttribute('aria-controls');
-    await waitFor(() => expect(trigger).toHaveTextContent('Apple'));
-
     await userEvent.click(trigger);
-    const listbox = await bodyOf(canvasElement).findByRole('listbox', { name: LABEL });
-    await expect(canvasElement.contains(listbox)).toBe(false);
-    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    await expect(trigger).toHaveAttribute('aria-controls', listbox.id);
-    await expect(within(listbox).getAllByRole('option')).toHaveLength(3);
-    await expect(getOption(canvasElement, 'Apple')).toHaveAttribute('aria-selected', 'true');
-    await expect(getOption(canvasElement, 'Cherry')).toHaveAttribute('aria-selected', 'false');
-    // Pointer open highlights the selected option.
-    await expectActive(canvasElement, 'Apple');
-
     await userEvent.click(getOption(canvasElement, 'Cherry'));
-    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('cherry');
-    await expectClosed(canvasElement);
-    await expect(trigger).toHaveTextContent('Cherry');
-    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+    await expect(new FormData(form).get('fruit')).toBe('cherry');
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await waitFor(() => expect(new FormData(form).get('fruit')).toBe('apple'));
+    await expect(trigger).toHaveTextContent('Apple');
   },
 };
 
