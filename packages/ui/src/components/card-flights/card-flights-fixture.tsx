@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { Button } from '../button';
@@ -25,10 +25,9 @@ const hands = {
 const seats = [{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }];
 
 export function CardFlightsFixture({ theme = 'dark' }: { theme?: 'dark' | 'light' }) {
-  const scopeRef = useRef<HTMLDivElement>(null);
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return <div ref={setHost}><ThemeRoot theme={theme} portalContainer={host}>
-    <div ref={scopeRef}><CardFlightsProvider scopeRef={scopeRef}><Match /></CardFlightsProvider></div>
+    <CardFlightsProvider><Match /></CardFlightsProvider>
   </ThemeRoot></div>;
 }
 
