@@ -90,6 +90,11 @@ export const GeneratedPartProps: StoryObj<Omit<BreadcrumbsEasyProps, 'component'
 };
 
 export const Compound: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Breadcrumbs>
+  <Breadcrumbs.Item href="/">Home</Breadcrumbs.Item>
+  <Breadcrumbs.Item href="/projects">Projects</Breadcrumbs.Item>
+  <Breadcrumbs.Item>jfrader-ui</Breadcrumbs.Item>
+</Breadcrumbs>` } } },
   render: (args) => (
     <Breadcrumbs {...args}>
       <Breadcrumbs.Item href={LEVELS[0].href}>{LEVELS[0].label}</Breadcrumbs.Item>

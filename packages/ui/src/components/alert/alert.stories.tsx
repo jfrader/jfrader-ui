@@ -95,6 +95,12 @@ async function expectToneRoles(canvasElement: HTMLElement) {
 }
 
 export const Tones: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<>
+  <Alert tone="info" title="Maintenance tonight">Sync pauses from 02:00 to 03:00 UTC.</Alert>
+  <Alert tone="success" title="Invite sent">ana@example.com can join the workspace now.</Alert>
+  <Alert tone="warning" title="Storage almost full">92% of 10 GB used.</Alert>
+  <Alert tone="danger" title="Payment failed">Update your card to keep the Pro plan.</Alert>
+</>` } } },
   render: (args) => <ToneMatrix {...args} />,
   play: async ({ canvasElement }) => {
     await expectToneRoles(canvasElement);
