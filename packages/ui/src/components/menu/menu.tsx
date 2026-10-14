@@ -416,7 +416,7 @@ export function MenuController(props: MenuControllerProps) {
   return <MenuLayer>{(nodeId) => <MenuOverlay {...props} nodeId={nodeId} />}</MenuLayer>;
 }
 
-function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, open, defaultOpen, onOpenChange, ...rootProps }: MenuProps) {
+function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, open, defaultOpen, onOpenChange, placement, ...rootProps }: MenuProps) {
   const TriggerPart = slots?.trigger ?? MenuTrigger;
   const ContentPart = slots?.content ?? MenuContent;
   const ItemPart = slots?.item ?? MenuItem;
@@ -436,7 +436,7 @@ function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, 
     </>
   ) : children;
   return (
-    <MenuController open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
+    <MenuController open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} placement={placement}>
       {items !== undefined ? (
         <GeneratedRoot {...rootProps} component={slots?.root ?? component} rootSlot={slotProps?.root} marker="menu">
           {generated}
