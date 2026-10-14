@@ -1,10 +1,12 @@
+import { resolveSeatCount } from './viewport';
+
 /** The seat after yours appears on the right or the left. */
 export type TableTurnDirection = 'clockwise' | 'counterclockwise';
 
-export type SeatLike = { key: string; teamIdx: 0 | 1; isMe?: boolean };
+export type SeatLike = { key: string; teamIdx: number; isMe?: boolean };
 export type GameTableSlot<T extends SeatLike = SeatLike> = {
   key: string;
-  teamIdx: 0 | 1;
+  teamIdx: number;
   player: T | null;
 };
 
@@ -44,27 +46,35 @@ export const buildTableOrderSlots = <T extends SeatLike>(
   return applyTableTurnDirection(rotatedSlots, direction);
 };
 
+/** Fill round-robin team places, rotate the local player first, then apply direction. */
 export const buildAlternatingSlots = <T extends SeatLike>(
   players: readonly T[],
   fill: number | undefined,
   direction: TableTurnDirection,
+  teamCount = 2,
 ): GameTableSlot<T>[] => {
   validateSeatKeys(players);
-  const length = Math.max(fill && players.length < fill ? fill : players.length, 2);
-  const teamPlayers: Record<0 | 1, T[]> = { 0: [], 1: [] };
-  players.forEach((player) => teamPlayers[player.teamIdx].push(player));
-  for (const teamIdx of [0, 1] as const) {
-    const capacity = teamIdx === 0 ? Math.ceil(length / 2) : Math.floor(length / 2);
-    if (teamPlayers[teamIdx].length > capacity) {
-      throw new Error(`GameTable alternating team ${teamIdx} capacity is ${capacity}; received ${teamPlayers[teamIdx].length} players. Use slots for arbitrary orders.`);
+  const length = resolveSeatCount(fill ?? Math.max(players.length, 2));
+  if (!Number.isInteger(teamCount) || teamCount < 1) throw new Error('GameTable requires an integer teamCount >= 1.');
+  const teamPlayers = new Map<number, T[]>();
+  for (const player of players) {
+    if (!Number.isInteger(player.teamIdx) || player.teamIdx < 0 || player.teamIdx >= teamCount) {
+      throw new Error(`GameTable team ${player.teamIdx} is outside the round-robin range 0–${teamCount - 1}. Use slots for arbitrary teams.`);
+    }
+    const team = teamPlayers.get(player.teamIdx) ?? [];
+    team.push(player);
+    teamPlayers.set(player.teamIdx, team);
+  }
+  for (const [teamIdx, team] of teamPlayers) {
+    const capacity = Math.max(0, Math.ceil((length - teamIdx) / teamCount));
+    if (team.length > capacity) {
+      throw new Error(`GameTable alternating team ${teamIdx} capacity is ${capacity}; received ${team.length} players. Use slots for arbitrary orders.`);
     }
   }
   const keys = new Set(players.map((player) => player.key));
-  const teamIndex: Record<0 | 1, number> = { 0: 0, 1: 0 };
   const slots = Array.from({ length }, (_, i): GameTableSlot<T> => {
-    const teamIdx = (i % 2) as 0 | 1;
-    const player = teamPlayers[teamIdx][teamIndex[teamIdx]] || null;
-    if (player) teamIndex[teamIdx] += 1;
+    const teamIdx = i % teamCount;
+    const player = teamPlayers.get(teamIdx)?.[Math.floor(i / teamCount)] ?? null;
     let key = player?.key ?? `slot-${i}`;
     if (!player) {
       while (keys.has(key)) key += '-empty';
@@ -77,7 +87,11 @@ export const buildAlternatingSlots = <T extends SeatLike>(
   return applyTableTurnDirection(rotatedSlots, direction);
 };
 
-export const getTablePointSeatIndexes = <T extends SeatLike>(slots: readonly GameTableSlot<T>[]) => {
+/** Bottom is the local/first occupied seat. Front is the nearest occupied rival to its antipode.
+ * With teamCount=1 there is no team leader opposite: frontLeaderSeatIndex is -1.
+ * Equal-distance rivals use visual slot order, including on odd-sized tables.
+ */
+export const getTablePointSeatIndexes = <T extends SeatLike>(slots: readonly GameTableSlot<T>[], teamCount = 2) => {
   const mySeatIndex = slots.findIndex((slot) => Boolean(slot.player?.isMe));
   const bottomLeaderSeatIndex = mySeatIndex >= 0 ? mySeatIndex : slots.findIndex((slot) => Boolean(slot.player));
   if (bottomLeaderSeatIndex < 0 || !slots.length) {
@@ -86,10 +100,15 @@ export const getTablePointSeatIndexes = <T extends SeatLike>(slots: readonly Gam
   const bottomSlot = slots[bottomLeaderSeatIndex];
   if (!bottomSlot) return { bottomLeaderSeatIndex: -1, frontLeaderSeatIndex: -1 };
   const bottomTeamIdx = bottomSlot.teamIdx;
-  const oppositeSeatIndex = (bottomLeaderSeatIndex + Math.floor(slots.length / 2)) % slots.length;
-  const oppositeSlot = slots[oppositeSeatIndex];
-  const frontLeaderSeatIndex = oppositeSlot?.player && oppositeSlot.teamIdx !== bottomTeamIdx
-    ? oppositeSeatIndex
-    : slots.findIndex((slot) => Boolean(slot.player) && slot.teamIdx !== bottomTeamIdx);
+  let frontLeaderSeatIndex = -1;
+  let nearestDistance = Infinity;
+  if (teamCount !== 1) slots.forEach((slot, index) => {
+    if (!slot.player || slot.teamIdx === bottomTeamIdx) return;
+    const distance = Math.abs(((index - bottomLeaderSeatIndex + slots.length) % slots.length) - slots.length / 2);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      frontLeaderSeatIndex = index;
+    }
+  });
   return { bottomLeaderSeatIndex, frontLeaderSeatIndex };
 };

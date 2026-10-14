@@ -5,6 +5,9 @@ import { vars } from '@jfrader/tokens/vars';
 import { Avatar, type AvatarSize } from '../avatar';
 import { Button } from '../button';
 import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
+import { DeckProvider } from '../deck';
+import { CardFlightsProvider, measureCardBox, useCardFlights } from '../card-flights';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { ThemeRoot } from '../theme-root';
 import {
   GameTable, buildAlternatingSlots, buildBoardLayoutModel, buildTableOrderSlots,
@@ -36,7 +39,7 @@ function required<T>(value: T | undefined): T {
   return value;
 }
 
-async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, profile: BoardViewportProfile, expectedFit = 'fitted') {
+async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, profile: BoardViewportProfile, expectedFit = 'fitted', checkInsufficientGeometry = false) {
   await table.ownerDocument.fonts.ready;
   await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', expectedFit));
   for (const card of table.querySelectorAll<HTMLElement>('[data-ui~="game-card"]')) {
@@ -47,7 +50,7 @@ async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, 
     await expect(table).toHaveAttribute('data-clearance-start', String(GAME_TABLE_LIMITS.minimumClearancePx));
     await expect(table).toHaveAttribute('data-clearance-end', String(GAME_TABLE_LIMITS.minimumClearancePx));
     // The floor remains visible in geometry even when containment cannot be promised.
-    return;
+    if (!checkInsufficientGeometry) return;
   }
   const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined);
   const frame = surface.getBoundingClientRect();
@@ -171,15 +174,15 @@ const meta = {
     docs: {
       description: { component: 'Arrange players around a game surface. Add cards, controls and floating content to named regions.' },
       usage: `### Regions
-Pass intrinsic seat content through \`renderSeat(slot, index, geometry)\` and played cards through \`renderPlay(slot, index, geometry)\`. There is one measured play region per place. Empty play content reserves nothing. Use \`header\`, \`center\`, \`dock\`, \`footer\` and \`floating\` for other content. Keep seat, play and center footprints in normal flow; absolute artwork must reserve its full footprint in its parent.
+Pass intrinsic seat content through \`renderSeat(slot, index, geometry)\` and played cards through \`renderPlay(slot, index, geometry)\`. There is one measured play region per place. Empty play content reserves nothing. Use \`center\` for shared cards (for example the five-card Hold'em board), the pot or deck; it is measured independently with its own size floor. Use \`header\`, \`dock\`, \`footer\` and \`floating\` for other content. Keep seat, play and center footprints in normal flow; absolute artwork must reserve its full footprint in its parent.
 
 ### Geometry
 Give the parent a block size and pass current viewport dimensions in CSS pixels. Update \`viewport\` on resize; it selects the surface frame. ResizeObserver measures the actual root, shell, surface and intrinsic regions, including when the parent is smaller than the viewport. Regions remain hidden until measurement; the server does not guess their dimensions.
 \`seatPlacement\` defaults to \`edge\`: the content centre sits on the felt boundary. \`inside\` keeps content contained with its outer edge inset by the gap; \`outside\` moves the inner edge to the boundary, using the directional box support as an outward offset. This deliberately replaces the previous containment-only default. The felt keeps its profile frame's size and aspect; edge/outside placement follows its measured ellipse. The shell reserves the outboard footprint at each region's minimum scale. If the root cannot hold a placement at its floor, the table declares insufficient space rather than calling an inward fallback fitted.
-The play anchor shares its seat's physical polar direction on an inward ring. Its distance subtracts the seat's directional box support, the gap and the play's directional box support, moving farther inward when the surface border requires it. Plays must stay inside the surface, clear of other regions and the measured centre; no invisible centre-size percentage is reserved.
-\`seats\` fills empty places, alternates teams and puts your seat first. \`slots\` preserves a prebuilt visual order and must contain exactly \`players\` places; order it with the exported builders when needed. Do not pass both.
+The play anchor shares its seat's physical polar direction on an inward ring. Its distance leaves the measured seat/play boxes separated by the content gap on at least one axis, moving farther inward when the surface border requires it. Plays must stay inside the surface, clear of other regions and the measured centre; no invisible centre-size percentage is reserved.
+\`players\` accepts any integer >= 2. \`seats\` fills empty places, distributes teams round-robin and puts your seat first. \`teamCount\` defaults to 2; use 1 for free-for-all with every seat's \`teamIdx: 0\`. \`slots\` preserves a prebuilt visual order and any team numbers, and must contain exactly \`players\` places; order it with the exported builders when needed. Do not pass both.
 The curve uses θᵢ = π/2 + 2πi/N and Pᵢ = C + (Rx cosθᵢ, Ry sinθᵢ). C is the surface border-box center. In edge/outside modes Rx and Ry are the measured surface half-extents; the ring follows the felt's aspect, including landscape frames. Only inside mode bounds the available-area axis stretch: near-square areas (axis ratio ≤1.15) give a circle, growing continuously up to 1.5. On an ellipse the physical polar-angle gaps differ from the equal parametric gaps; no per-seat angular correction is applied. Content stays upright, with zero seat rotation; RTL mirrors placement only. No table-owned decoration requires rotation.
-\`seats\` requires compatible alternating teams (at most half the places per team for 2/4/6); incompatible capacities and duplicate player/slot keys throw. Use \`slots\` for arbitrary orders or teams.
+\`seats\` requires team indices in [0, teamCount). Team j has as many places as indices i in [0, players) with i % teamCount === j; odd seat counts can give teams different capacities. Incompatible capacities and duplicate player/slot keys throw. Use \`slots\` for arbitrary orders or teams. \`buildAlternatingSlots(seats, players, direction, teamCount)\` follows the same policy. \`getTablePointSeatIndexes(slots, teamCount)\` selects the occupied rival nearest the bottom seat's antipode (ties use visual order); with teamCount=1 there is no front team leader and its index is -1.
 \`clearance\` requests additional block-axis space. Header, dock and footer remain unscaled, outside the surface. The request is a preference: if the content floors cannot fit, both clearance edges yield to \`GAME_TABLE_LIMITS.minimumClearancePx\` (0). The table retries the requested CSS padding on content/size changes, so the request is restored when space returns. This is a two-step policy (requested, then minimum), not a search for the largest feasible clearance.
 Coordinates are measured from inline-start and mirror with \`dir="rtl"\`. \`data-game-surface="true"\` marks the surface for measuring future card flights.
 
@@ -971,8 +974,7 @@ export const TrucoPlayRing: Story = {
         seatOutset: Number((own.bottom - surface.bottom).toFixed(2)),
         playRadius: Number(playRadius.toFixed(2)), freeInnerRadius: Number(innerRadius(plays, surface).toFixed(2)),
         seatInnerRadius: Number((seatRadius - own.height / 2).toFixed(2)), viewport });
-      const expectedFit = profile === 'phoneTall' && players === 6 ? 'insufficient-space' : 'fitted';
-      await expectSeatFraming(table, players, profile as BoardViewportProfile, expectedFit);
+      await expectSeatFraming(table, players, profile as BoardViewportProfile);
       if (table.dataset.layoutFit === 'fitted') {
         await expect(own.bottom - surface.bottom, `${profile}/${players} crosses felt border`).toBeGreaterThan(0.5);
         await expect(playRadius).toBeGreaterThan(0);
@@ -1018,6 +1020,221 @@ export const SeatPlacementModes: Story = {
         if (table.dataset.seatPlacement === 'edge') await expect(Math.abs(distance - edge)).toBeLessThan(GEOMETRY_TOLERANCE_PX);
         if (table.dataset.seatPlacement === 'outside') await expect(distance - extent).toBeGreaterThanOrEqual(edge - GEOMETRY_TOLERANCE_PX);
       }
+    }
+  },
+};
+
+const GENERAL_COUNTS = [2, 3, 4, 5, 6, 7, 9] as const;
+const GENERAL_PROFILES = ['phoneCompact', 'desktop'] as const;
+const generalSeats = (count: number, teamCount: number): Player[] => Array.from({ length: count }, (_, index) => ({
+  key: `player-${index}`, name: `P${index + 1}`, teamIdx: index % teamCount, isMe: index === count - 1,
+}));
+
+export const RoundRobinTeams: Story = {
+  args: { players: 9, teamCount: 3, seats: generalSeats(9, 3), viewport: VIEWPORTS.desktop },
+  play: async ({ canvasElement }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await expectSeatFraming(table, 9, 'desktop');
+    await expect(Array.from(table.querySelectorAll<HTMLElement>('[data-slot-team]'), (seat) => seat.dataset.slotTeam))
+      .toEqual(['2', '1', '0', '2', '1', '0', '2', '1', '0']);
+    for (const count of GENERAL_COUNTS) for (const teamCount of [1, 2, 3, 4, count + 1]) {
+      const players = generalSeats(count, teamCount);
+      for (const direction of ['clockwise', 'counterclockwise'] as const) {
+        const slots = buildAlternatingSlots(players, count, direction, teamCount);
+        await expect(slots).toHaveLength(count);
+        await expect(slots[0]?.player?.key).toBe(`player-${count - 1}`);
+        await expect(slots.flatMap((slot) => slot.player ? [slot.player.key] : []).sort()).toEqual(players.map((player) => player.key).sort());
+        for (let team = 0; team < teamCount; team++) {
+          const capacity = Array.from({ length: count }, (_, index) => index).filter((index) => index % teamCount === team).length;
+          await expect(slots.filter((slot) => slot.teamIdx === team)).toHaveLength(capacity);
+        }
+        await expect(buildBoardLayoutModel({ surface: 'match', totalSeats: count,
+          viewport: { ...VIEWPORTS.desktop, aspectRatio: VIEWPORTS.desktop.width / VIEWPORTS.desktop.height } }).playerCount).toBe(count);
+      }
+    }
+    const teams = generalSeats(5, 3);
+    await expect(buildAlternatingSlots(teams, 5, 'clockwise', 3).map((slot) => slot.teamIdx)).toEqual([1, 0, 1, 2, 0]);
+    await expect(() => buildAlternatingSlots([{ key: 'a', teamIdx: 2 }, { key: 'b', teamIdx: 2 }], 5, 'clockwise', 3)).toThrow('team 2 capacity is 1');
+    await expect(() => buildAlternatingSlots([{ key: 'a', teamIdx: 2 }, { key: 'b', teamIdx: 2 }, { key: 'c', teamIdx: 2 }], 5, 'clockwise', 3)).toThrow('team 2 capacity is 1; received 3 players');
+    await expect(() => buildAlternatingSlots([{ key: 'a', teamIdx: 3 }], 3, 'clockwise', 4)).toThrow('team 3 capacity is 0');
+    for (const teamCount of [0, -1, 1.5, NaN, Infinity]) {
+      await expect(() => buildAlternatingSlots([], 5, 'clockwise', teamCount)).toThrow('integer teamCount >= 1');
+    }
+    for (const teamIdx of [-1, 3, 0.5, NaN, Infinity]) {
+      await expect(() => buildAlternatingSlots([{ key: 'invalid', teamIdx }], 5, 'clockwise', 3)).toThrow('outside the round-robin range');
+    }
+    for (const count of [0, 1, -2, 2.5, NaN, Infinity]) {
+      await expect(() => buildAlternatingSlots([], count, 'clockwise')).toThrow('integer seat count >= 2');
+      await expect(() => buildBoardLayoutModel({ surface: 'match', totalSeats: count,
+        viewport: { ...VIEWPORTS.desktop, aspectRatio: 1.6 } })).toThrow('integer seat count >= 2');
+    }
+    const freeForAll = buildAlternatingSlots(generalSeats(5, 1), 5, 'clockwise', 1);
+    await expect(getTablePointSeatIndexes(freeForAll, 1)).toEqual({ bottomLeaderSeatIndex: 0, frontLeaderSeatIndex: -1 });
+    const threeTeams = buildAlternatingSlots(generalSeats(9, 3), 9, 'clockwise', 3);
+    await expect(getTablePointSeatIndexes(threeTeams, 3)).toEqual({ bottomLeaderSeatIndex: 0, frontLeaderSeatIndex: 4 });
+  },
+};
+
+/** An arbitrary visual order and team numbers do not go through round-robin validation. */
+export const ArbitraryPrebuiltTeams: Story = {
+  args: { players: 3, seats: undefined, slots: [
+    { key: 'third', teamIdx: 42, player: { key: 'c', name: 'Casey', teamIdx: 42 } },
+    { key: 'first', teamIdx: 7, player: { key: 'a', name: 'Alex', teamIdx: 7 } },
+    { key: 'empty', teamIdx: 99, player: null },
+  ] },
+  play: async ({ canvasElement }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await expectSeatFraming(table, 3, 'phoneCompact');
+    await expect(Array.from(table.querySelectorAll<HTMLElement>('[data-slot-team]'), (seat) => [seat.dataset.slotKey, seat.dataset.slotTeam]))
+      .toEqual([['third', '42'], ['first', '7'], ['empty', '99']]);
+  },
+};
+
+const generalCountMatrix = (seatPlacement: NonNullable<GameTableProps['seatPlacement']>, dir = 'ltr'): Story => ({
+  args: { seatPlacement, dir, center: <span>Pot: 240</span>, renderPlay: spanishPlay },
+  render: (args) => <div style={{ inlineSize: 'max-content' }}>
+    {GENERAL_PROFILES.map((profile) => GENERAL_COUNTS.map((players) => (
+      <div key={`${profile}-${players}`} data-general-count={players} style={{ inlineSize: VIEWPORTS[profile].width, blockSize: VIEWPORTS[profile].height }}>
+        <GameTable {...args} viewport={VIEWPORTS[profile]} players={players} teamCount={3} slots={undefined} seats={generalSeats(players, 3)} />
+      </div>
+    )))}
+  </div>,
+  play: async ({ canvasElement }) => {
+    const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]'));
+    await expect(tables).toHaveLength(GENERAL_PROFILES.length * GENERAL_COUNTS.length);
+    const measurements = [];
+    let index = 0;
+    for (const profile of GENERAL_PROFILES) for (const players of GENERAL_COUNTS) {
+      const table = required(tables[index++]);
+      const expectedFit = seatPlacement === 'inside' && profile === 'phoneCompact' && players === 9 ? 'insufficient-space' : 'fitted';
+      await expectSeatFraming(table, players, profile, expectedFit, true);
+      const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
+      const plays = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-play"]'));
+      await expect(plays).toHaveLength(players);
+      const innerRadii = plays.map((play) => {
+        const box = play.getBoundingClientRect();
+        const dx = box.x + box.width / 2 - surface.x - surface.width / 2;
+        const dy = box.y + box.height / 2 - surface.y - surface.height / 2;
+        const radius = Math.hypot(dx, dy);
+        return radius - (Math.abs(dx / radius) * box.width + Math.abs(dy / radius) * box.height) / 2;
+      });
+      const freeInnerRadius = Math.min(...innerRadii);
+      await expect(freeInnerRadius, `${profile}/${players} free inner radius`).toBeGreaterThan(0);
+      const regions = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"], [data-ui="game-table-play"], [data-ui="game-table-center"]'));
+      const separations = regions.flatMap((region, index) => regions.slice(index + 1).map((other) => {
+        const a = region.getBoundingClientRect();
+        const b = other.getBoundingClientRect();
+        return Math.max(Math.max(a.left - b.right, b.left - a.right), Math.max(a.top - b.bottom, b.top - a.bottom));
+      }));
+      const minimumSeparation = Math.min(...separations);
+      const gap = Number.parseFloat(getComputedStyle(table).getPropertyValue('--game-table-content-gap'));
+      if (expectedFit === 'fitted') await expect(minimumSeparation).toBeGreaterThanOrEqual(gap - GEOMETRY_TOLERANCE_PX);
+      else await expect(minimumSeparation, 'insufficient space has a measurable gap violation at the preserved floor').toBeLessThan(gap - GEOMETRY_TOLERANCE_PX);
+      measurements.push({ profile, players, seatPlacement, fit: table.dataset.layoutFit,
+        surface: [surface.width, surface.height], freeInnerRadius, minimumSeparation,
+        scale: Number.parseFloat(getComputedStyle(table).getPropertyValue('--game-table-content-scale')) });
+    }
+    console.info('GAME_TABLE_GENERAL_MEASUREMENTS', JSON.stringify(measurements));
+  },
+});
+
+/** Three round-robin teams, 2–9 places, and one played card per seat. */
+export const GeneralSeatCounts = generalCountMatrix('edge');
+export const GeneralSeatCountsInside = generalCountMatrix('inside');
+export const GeneralSeatCountsOutside = generalCountMatrix('outside');
+export const GeneralSeatCountsRtl = generalCountMatrix('edge', 'rtl');
+
+const POKER_BOARD = [
+  { key: 'as', label: 'Ace of spades', value: { suit: 'spades', rank: 'A' } },
+  { key: 'kh', label: 'King of hearts', value: { suit: 'hearts', rank: 'K' } },
+  { key: 'qc', label: 'Queen of clubs', value: { suit: 'clubs', rank: 'Q' } },
+  { key: 'jd', label: 'Jack of diamonds', value: { suit: 'diamonds', rank: 'J' } },
+  { key: 'ts', label: 'Ten of spades', value: { suit: 'spades', rank: 10 } },
+] as const;
+
+function PokerTable({ viewport }: { viewport: GameTableProps['viewport'] }) {
+  const { scopeRef, launch, landingTargets } = useCardFlights();
+  return <GameTable players={6} teamCount={1} seats={generalSeats(6, 1)} viewport={viewport}
+    header="Texas Hold'em · 10 / 20"
+    renderSeat={(slot) => <div data-poker-seat style={{ display: 'grid', justifyItems: 'center' }}><span>{slot.player?.name}</span><span>1,200 chips</span></div>}
+    center={<div style={{ display: 'grid', justifyItems: 'center', gap: vars.space[2] }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: vars.space[2] }}>
+        <span>Pot: 240</span><div data-community-deck><GameCard size="sm" label="Deck" /></div>
+      </div>
+      <div style={{ display: 'flex', gap: vars.space[1] }}>
+        {POKER_BOARD.map((card) => <div key={card.key} data-community-card={card.key}><GameCard size="sm" value={card.value} label={card.label} /></div>)}
+      </div>
+    </div>}
+    dock={<Button disabled={landingTargets.size > 0} onClick={() => {
+      const root = scopeRef.current;
+      const deck = root?.querySelector<HTMLElement>('[data-community-deck]');
+      if (!root || !deck) return;
+      const from = measureCardBox(deck);
+      launch(POKER_BOARD.map((card, index) => {
+        const destination = required(root.querySelector<HTMLElement>(`[data-community-card="${card.key}"]`) ?? undefined);
+        return { target: `community:${card.key}`, destination, from, to: measureCardBox(destination), face: 'reveal',
+          front: <GameCard size="sm" value={card.value} label={card.label} />, back: <GameCard size="sm" label="Card back" />,
+          durationMs: motionDurationMs.cardDeal, delayMs: index * motionDurationMs.cardDealStagger };
+      }));
+    }}>Deal board</Button>} />;
+}
+
+function PokerViewport({ viewport }: { viewport: GameTableProps['viewport'] }) {
+  const scopeRef = useRef<HTMLDivElement>(null);
+  return <div ref={scopeRef} style={{ inlineSize: viewport.width, blockSize: viewport.height }}>
+    <CardFlightsProvider scopeRef={scopeRef}>
+      <PokerTable viewport={viewport} />
+    </CardFlightsProvider>
+  </div>;
+}
+
+function PokerFixture() {
+  return <DeckProvider default="french"><div style={{ inlineSize: 'max-content' }}>
+    {(['phoneCompact', 'phoneTall', 'phoneWide', 'desktop'] as const).map((profile) => <PokerViewport key={profile} viewport={VIEWPORTS[profile]} />)}
+  </div></DeckProvider>;
+}
+
+/** Six free-for-all seats, five community cards and a pot. Press Deal board to replay the deal. */
+export const PokerCommunityBoard: Story = {
+  render: () => <PokerFixture />,
+  parameters: { a11y: { test: 'error' }, docs: { source: { code: `<DeckProvider default="french">
+  <GameTable players={6} teamCount={1} seats={players} viewport={viewport}
+    renderSeat={(slot) => <div>{slot.player?.name} · 1,200 chips</div>}
+    center={<div><span>Pot: 240</span>{board.map((card) => <GameCard key={card.id} size="sm" value={card.value} label={card.label} />)}</div>} />
+</DeckProvider>` } } },
+  play: async ({ canvasElement, userEvent }) => {
+    const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]'));
+    await expect(tables).toHaveLength(4);
+    for (const table of tables) {
+      const profile = table.dataset.profile as BoardViewportProfile;
+      await expectSeatFraming(table, 6, profile);
+      await expect(table.querySelectorAll('[data-ui="game-table-seat"] [data-ui~="game-card"]')).toHaveLength(0);
+      await expect(table.querySelectorAll('[data-slot-team="0"]')).toHaveLength(6);
+      const community = required(table.querySelector<HTMLElement>('[data-ui="game-table-center"]') ?? undefined);
+      await expect(community.querySelectorAll('[data-community-card]')).toHaveLength(5);
+      await expectInside(community, required(table.querySelector('[data-game-surface]') ?? undefined));
+      for (const card of community.querySelectorAll('[data-community-card] [data-ui~="game-card"]')) {
+        await expect(card).toHaveAttribute('data-deck', 'french');
+      }
+      const chrome = Array.from(table.querySelectorAll<HTMLElement>('[data-poker-seat]'));
+      await expect(chrome).toHaveLength(6);
+      for (const [index, seat] of chrome.entries()) {
+        await expectInside(seat, table);
+        for (const other of [...chrome.slice(index + 1), community,
+          required(table.querySelector('[data-ui="game-table-header"]') ?? undefined),
+          required(table.querySelector('[data-ui="game-table-dock"]') ?? undefined)]) await expectNoOverlap(seat, other);
+      }
+    }
+    const first = required(tables[0]);
+    const deal = within(first).getByRole('button', { name: 'Deal board' });
+    await userEvent.click(deal);
+    await expect(deal).toBeDisabled();
+    await expect(canvasElement.ownerDocument.querySelectorAll('[data-ui="card-flight"][data-flight-target^="community:"]')).toHaveLength(5);
+    await waitFor(() => expect(canvasElement.ownerDocument.querySelectorAll('[data-ui="card-flight"]')).toHaveLength(0));
+    await expect(deal).toBeEnabled();
+    for (const card of first.querySelectorAll<HTMLElement>('[data-community-card]')) {
+      await expect(card).toBeVisible();
+      await expect(card.style.visibility).toBe('');
     }
   },
 };

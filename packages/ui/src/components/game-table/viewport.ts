@@ -1,9 +1,11 @@
-import type { BoardPlayerCount, BoardViewportProfile } from './types';
+import type { BoardViewportProfile } from './types';
 
-export const normalizeBoardPlayerCount = (totalSeats: number): BoardPlayerCount => {
-  if (totalSeats >= 6) return 6;
-  if (totalSeats >= 4) return 4;
-  return 2;
+/** Validates a seat count and returns it. Any integer >= 2 is a valid table. */
+export const resolveSeatCount = (totalSeats: number): number => {
+  if (!Number.isInteger(totalSeats) || totalSeats < 2) {
+    throw new Error('GameTable requires an integer seat count >= 2.');
+  }
+  return totalSeats;
 };
 
 export const resolveBoardViewportProfile = ({ width, height }: { width: number; height: number }): BoardViewportProfile => {
