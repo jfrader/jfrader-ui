@@ -1,0 +1,312 @@
+import { useState } from 'react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, fn, spyOn, waitFor } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
+import { expectInside, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
+import { GameCard, CARD_BACK_PATTERNS } from '../game-card';
+import { CARD_FRAME } from '../game-card/card-frame';
+import { GameTable } from '../game-table';
+import { Button } from '../button';
+import { GameCardStack, getPlayedCardKey, getPileOffset, getStableJitter, getStableRotation,
+  type GameCardStackPile, type GameCardStackProps } from './index';
+
+const names = ['North', 'East', 'South', 'West', 'Avery', 'Robin'];
+const suits = ['spades', 'hearts', 'clubs'] as const;
+const ranks = ['A', 'Q', 'K'] as const;
+function players(count: number, cards: number): GameCardStackPile[] {
+  return Array.from({ length: count }, (_, index) => ({ playerKey: names[index]!,
+    cards: Array.from({ length: cards }, (_, roundIdx) => ({ roundIdx,
+      card: `${suits[roundIdx % suits.length]}-${roundIdx}`,
+      value: { deck: 'french', suit: suits[roundIdx % suits.length]!, rank: ranks[roundIdx % ranks.length]! },
+    })) }));
+}
+function labels(piles: readonly GameCardStackPile[]): GameCardStackProps['labels'] {
+  return { piles: Object.fromEntries(piles.map(({ playerKey }) => [playerKey, `${playerKey}'s played cards`])),
+    cards: Object.fromEntries(piles.flatMap(({ playerKey, cards }) => cards.map((card) => [
+      getPlayedCardKey(card.roundIdx, { player: { key: playerKey }, card: card.card }), `${card.value?.rank} of ${card.value?.suit}`,
+    ]))) };
+}
+function counts(count: number, cards: number) {
+  const piles = players(count, cards);
+  return { piles, labels: labels(piles) };
+}
+const preference = { matches: false, media: null as MediaQueryList | null };
+function mockPreference(reduced = false) {
+  const original = window.matchMedia.bind(window);
+  preference.matches = reduced;
+  if (!preference.media) {
+    preference.media = original('(prefers-reduced-motion)');
+    Object.defineProperty(preference.media, 'matches', { get: () => preference.matches });
+  }
+  preference.media.dispatchEvent(new MediaQueryListEvent('change', { matches: reduced }));
+  const spy = spyOn(window, 'matchMedia').mockImplementation((query) => query.includes('prefers-reduced-motion') ? preference.media! : original(query));
+  return () => spy.mockRestore();
+}
+const meta = {
+  title: 'Games/GameCardStack', component: GameCardStack, tags: ['autodocs'],
+  args: { ...counts(2, 3), onInspect: fn() },
+  beforeEach: () => mockPreference(),
+  decorators: [(Story) => <div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}><Story /></div>],
+  parameters: { layout: 'fullscreen', a11y: { test: 'error' }, docs: {
+    description: { component: 'Keep played cards grouped by player. Open a pile to read its cards.' },
+    usage: `### Placement and cards
+- Render \`GameCardStack.Pile\` in GameTable's \`renderPlay\` to put each player's cards in front of their seat. The part fills its host in normal flow; it owns no table placement.
+- This deliberately replaces the reference's per-profile preset placement, following GameTable's circular-layout deviation policy. Card mathematics stay unchanged: closed offsets are delta × 4px and |delta| × 1.5px; open offsets are delta × 0.52 card widths and −|delta| × 4px; inspection scale is 1.45, deterministic jitter is at most 4px and rotation offset at most 6 degrees.
+- The root defaults to \`placement="grid"\`: give it a definite width and height. Measurement chooses rows and columns and shrinks cards to reserve inspected fans. Include empty piles to reserve positions.
+- \`placement="free"\` and a pile's \`geometry\` use caller-owned normalized vectors. A supplied geometry always opts a pile out of fitting. The caller owns collisions in mixed or free placement.
+- \`cardWidth\` overrides inherited \`--game-card-width\`, falling back to the medium card token. Grid fitting treats it as a preferred width. \`maxCards\` defaults to three; non-finite values use that default and finite values are rounded down and clamped to zero.
+- Supply \`labels.piles\` by player key and \`labels.cards\` by \`getPlayedCardKey\`. The standalone part takes one \`label\` and its card \`labels\` map. Supply \`backPattern\` for hidden Spanish-deck cards, which carry no face value.
+- \`data-played-key\` marks card-flight destinations. \`playOrder\` supplies global closed-card layers. \`revealedKeys\` (or the part's \`revealed\`) keeps cards spread without enlargement.
+
+### Inspection and keyboard
+- Native disclosure button with \`aria-expanded\` and \`aria-controls\`. Tab reaches each pile; Enter or Space toggles it. Escape closes and returns focus after acceptance. A root \`onKeyDown\` can prevent dismissal.
+- \`defaultValue\` seeds uncontrolled inspection; \`value\` and \`onInspect\` control it. A player key opens that pile; \`null\` closes it. The root shares one inspected key. Standalone parts can share the same controlled state.
+- Automatically revealed cards stay spread after inspection closes. Closed cards remain visible to assistive technology. Reduced motion completes size changes and focus without waiting for animation.`,
+  } },
+} satisfies Meta<typeof GameCardStack>;
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+async function noOverlap(root: HTMLElement) {
+  await waitFor(() => expect(root.querySelector('[data-ui="game-card-stack-stage"]')).toHaveAttribute('data-measured', 'true'));
+  await settleMotion(root);
+  const piles = [...root.querySelectorAll('[data-ui="game-card-stack-pile"]')];
+  for (let first = 0; first < piles.length; first++) {
+    for (let second = first + 1; second < piles.length; second++) {
+      for (const a of piles[first]!.querySelectorAll('[data-played-key]')) {
+        for (const b of piles[second]!.querySelectorAll('[data-played-key]')) await expectNoOverlap(a, b);
+      }
+    }
+  }
+}
+export const Default: Story = {
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: "North's played cards" });
+    await expect(canvas.getAllByRole('img')).toHaveLength(6);
+    await userEvent.tab();
+    await expect(trigger).toHaveFocus();
+    await expect(getComputedStyle(trigger).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Enter}');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const cards = trigger.ownerDocument.getElementById(trigger.getAttribute('aria-controls')!)!;
+    cards.tabIndex = -1;
+    cards.focus();
+    await userEvent.keyboard('{Escape}');
+    await expect(trigger).toHaveFocus();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard(' ');
+    await expect(args.onInspect).toHaveBeenCalledTimes(4);
+    await expect(args.onInspect).toHaveBeenNthCalledWith(1, 'North');
+    await expect(args.onInspect).toHaveBeenNthCalledWith(2, null);
+    await noOverlap(canvasElement);
+  },
+};
+export const OneCard: Story = { args: counts(2, 1) };
+export const TwoCards: Story = { args: counts(2, 2) };
+export const TwoVersusTwo: Story = { args: counts(4, 3), play: async ({ canvasElement }) => noOverlap(canvasElement) };
+export const ThreeVersusThree: Story = { args: counts(6, 3), play: async ({ canvasElement }) => noOverlap(canvasElement) };
+export const Open: Story = { args: { defaultValue: 'North' }, play: async ({ canvasElement }) => noOverlap(canvasElement) };
+export const LightTheme: Story = { globals: { theme: 'light' } };
+export const OpenLightTheme: Story = { ...Open, globals: { theme: 'light' } };
+export const RTL: Story = { args: { ...counts(6, 3), dir: 'rtl', defaultValue: 'East' },
+  play: async ({ canvasElement }) => {
+    await noOverlap(canvasElement);
+    await expectMirroredDirection(canvasElement.querySelector<HTMLElement>('[data-ui="game-card-stack"]')!, '[data-played-key]');
+  } };
+export const RevealedHands: Story = { args: { ...counts(6, 3), revealedKeys: names },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: "North's played cards" });
+    await userEvent.click(trigger);
+    await userEvent.keyboard('{Escape}');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger.parentElement).toHaveAttribute('data-spread', 'true');
+    await noOverlap(canvasElement);
+  } };
+function ControlledFixture(args: GameCardStackProps) {
+  const [value, setValue] = useState<string | null>(null);
+  return <GameCardStack {...args} value={value} onInspect={(next) => { args.onInspect?.(next); setValue(next); }} />;
+}
+export const Controlled: Story = { render: (args) => <ControlledFixture {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: "North's played cards" });
+    await userEvent.click(trigger);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.keyboard('{Escape}');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).toHaveFocus();
+    await expect(args.onInspect).toHaveBeenCalledTimes(2);
+  } };
+export const RejectedControlledClose: Story = { args: { value: 'North' },
+  play: async ({ canvas, userEvent, args }) => {
+    const other = canvas.getByRole('button', { name: "East's played cards" });
+    other.focus();
+    await userEvent.keyboard('{Escape}');
+    await expect(other).toHaveFocus();
+    await expect(canvas.getByRole('button', { name: "North's played cards" })).toHaveAttribute('aria-expanded', 'true');
+    await expect(args.onInspect).toHaveBeenCalledTimes(1);
+    await expect(args.onInspect).toHaveBeenCalledWith(null);
+  } };
+export const RejectedControlledOpen: Story = { args: { value: null },
+  play: async ({ canvas, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: "North's played cards" });
+    await userEvent.click(trigger);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(args.onInspect).toHaveBeenCalledTimes(1);
+    await expect(args.onInspect).toHaveBeenCalledWith('North');
+  } };
+export const PreventEscape: Story = { args: { defaultValue: 'North', onKeyDown: (event) => event.preventDefault() },
+  play: async ({ canvas, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: "North's played cards" });
+    trigger.focus();
+    await userEvent.keyboard('{Escape}');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(args.onInspect).not.toHaveBeenCalled();
+  } };
+export const ReducedMotion: Story = {
+  beforeEach: () => mockPreference(true),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const card = canvasElement.querySelector<HTMLElement>('[data-played-key]')!;
+    const trigger = canvas.getByRole('button', { name: "North's played cards" });
+    await expect(card).toHaveAttribute('data-reduced-motion', 'true');
+    await userEvent.click(trigger);
+    await expect(getComputedStyle(card).transitionDuration).toBe('0s');
+    await userEvent.keyboard('{Escape}');
+    await expect(trigger).toHaveFocus();
+  },
+};
+export const RenderedGeometry: Story = { play: async ({ canvas, canvasElement, userEvent }) => {
+  await expect(getPileOffset({ index: 0, total: 3, open: false, openSpreadRatio: 0.52 }))
+    .toEqual({ xCardWidths: 0, xPx: -4, y: 1.5 });
+  await expect(getPileOffset({ index: 2, total: 3, open: true, openSpreadRatio: 0.52 }))
+    .toEqual({ xCardWidths: 0.52, xPx: 0, y: -4 });
+  await noOverlap(canvasElement);
+  const trigger = canvas.getByRole('button', { name: "North's played cards" });
+  const cards = [...trigger.parentElement!.querySelectorAll<HTMLElement>('[data-played-key]')];
+  const closedWidth = Number.parseFloat(getComputedStyle(cards[0]!).width);
+  for (const open of [false, true]) {
+    if (open) await userEvent.click(trigger);
+    await settleMotion(canvasElement);
+    for (const [index, card] of cards.entries()) {
+      const key = card.dataset.playedKey!;
+      const offset = getPileOffset({ index, total: 3, open, openSpreadRatio: 0.52 });
+      const jitter = getStableJitter({ seed: key, spread: 4 });
+      const rotation = getStableRotation({ seed: open ? `${key}:inspected` : key, maxRotationOffsetDeg: 6 });
+      const style = getComputedStyle(card);
+      const width = Number.parseFloat(style.width);
+      await expect(width).toBeCloseTo(closedWidth * (open ? 1.45 : 1), 1);
+      await expect(Number.parseFloat(style.height)).toBeCloseTo(width * CARD_FRAME.ratio, 1);
+      const transform = new DOMMatrixReadOnly(style.transform);
+      await expect(transform.m41).toBeCloseTo(-width / 2 + jitter.x + offset.xPx + width * offset.xCardWidths, 1);
+      await expect(transform.m42).toBeCloseTo(-width * CARD_FRAME.ratio / 2 + jitter.y + offset.y, 1);
+      await expect(Math.atan2(transform.m12, transform.m11) * 180 / Math.PI).toBeCloseTo(rotation, 2);
+    }
+  }
+} };
+function GrowingFixture(args: GameCardStackProps) {
+  const [show, setShow] = useState(true);
+  return <><GameCardStack {...args} piles={args.piles.map((pile, index) => index === 0 && !show ? { ...pile, cards: [] } : pile)} />
+    <Button onClick={() => setShow(!show)}>Toggle North cards</Button></>;
+}
+export const MaximumThree: Story = { args: counts(2, 4), render: (args) => <GrowingFixture {...args} />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await noOverlap(canvasElement);
+    await expect(canvas.getAllByRole('img')).toHaveLength(6);
+    const east = canvasElement.querySelector('[data-ui="game-card-stack-pile"][data-player-key="East"]')!;
+    const original = east.getBoundingClientRect().toJSON();
+    await userEvent.click(canvas.getByRole('button', { name: 'Toggle North cards' }));
+    await expect(canvas.queryByRole('button', { name: "North's played cards" })).toBeNull();
+    await expect(east.getBoundingClientRect().toJSON()).toEqual(original);
+  } };
+export const MaximumOne: Story = { args: { maxCards: 1 }, play: async ({ canvas }) => { await expect(canvas.getAllByRole('img')).toHaveLength(2); } };
+function grid(count: number, width: number, height: number): Story {
+  return { args: { ...counts(count, 3), style: { inlineSize: width, blockSize: height } },
+    play: async ({ canvasElement, canvas, userEvent }) => {
+      await noOverlap(canvasElement);
+      const root = canvasElement.querySelector('[data-ui="game-card-stack"]')!;
+      for (const button of canvas.getAllByRole('button')) {
+        await userEvent.click(button);
+        await settleMotion(canvasElement);
+        for (const card of root.querySelectorAll('[data-played-key]')) await expectInside(card, root);
+        await noOverlap(canvasElement);
+      }
+    } };
+}
+export const Grid: Story = grid(6, 320, 280);
+export const GridSixMedium: Story = grid(6, 640, 360);
+export const GridSixLarge: Story = grid(6, 900, 432);
+export const GridFourCompact: Story = grid(4, 320, 280);
+export const GridFourMedium: Story = grid(4, 640, 360);
+export const GridFourLarge: Story = grid(4, 900, 432);
+export const GridTwoCompact: Story = grid(2, 320, 280);
+export const GridTwoMedium: Story = grid(2, 640, 360);
+export const GridTwoLarge: Story = grid(2, 900, 432);
+export const FreePlacement: Story = { args: { placement: 'free', piles: players(2, 3).map((pile, index) => ({ ...pile,
+  geometry: { cos: index ? 0.5 : -0.5, sin: 0, sideStrength: 1 } })) },
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector('[data-ui="game-card-stack"]')!.getBoundingClientRect();
+    const piles = canvasElement.querySelectorAll('[data-ui="game-card-stack-pile"]');
+    for (const [index, pile] of [...piles].entries()) {
+      const box = pile.getBoundingClientRect();
+      await expect(box.x + box.width / 2).toBeCloseTo(root.x + root.width * (index ? 0.75 : 0.25), 1);
+    }
+  } };
+export const StandalonePile: Story = {
+  render: (args) => <div style={{ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` }}>
+    <GameCardStack.Pile {...args.piles[0]!} label={args.labels.piles.North!} labels={args.labels.cards} onInspect={args.onInspect} />
+  </div>,
+  play: async ({ canvas, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: "North's played cards" });
+    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const cards = trigger.ownerDocument.getElementById(trigger.getAttribute('aria-controls')!)!;
+    cards.tabIndex = -1;
+    cards.focus();
+    await userEvent.keyboard('{Escape}');
+    await expect(trigger).toHaveFocus();
+    await expect(args.onInspect).toHaveBeenCalledTimes(2);
+  },
+};
+export const StandaloneControlled: Story = {
+  render: (args) => <div style={{ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` }}>
+    <GameCardStack.Pile {...args.piles[0]!} label={args.labels.piles.North!} labels={args.labels.cards}
+      value="North" onInspect={args.onInspect} />
+  </div>,
+  play: async ({ canvas, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: "North's played cards" });
+    const cards = trigger.ownerDocument.getElementById(trigger.getAttribute('aria-controls')!)!;
+    cards.tabIndex = -1;
+    cards.focus();
+    await userEvent.keyboard('{Escape}');
+    await expect(cards).toHaveFocus();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(args.onInspect).toHaveBeenCalledTimes(1);
+    await expect(args.onInspect).toHaveBeenCalledWith(null);
+  },
+};
+const spanishPiles: readonly GameCardStackPile[] = [
+  { playerKey: 'Ana', cards: [{ card: 'oros-1', roundIdx: 0, value: { deck: 'spanish', suit: 'oros', rank: 1 } }] },
+  { playerKey: 'Luis', cards: [{ card: 'copas-10', roundIdx: 0, value: { deck: 'spanish', suit: 'copas', rank: 10 } }] },
+];
+const spanishLabels = { '0-Ana-oros-1': 'as de oros', '0-Luis-copas-10': 'sota de copas' };
+export const Truco: Story = {
+  render: () => <GameTable players={2} viewport={{ width: 1000, height: 800 }}
+    seats={[{ key: 'Ana', teamIdx: 0, isMe: true }, { key: 'Luis', teamIdx: 1 }]}
+    renderSeat={(slot) => <><GameTable.SeatChrome>{slot.player?.key}</GameTable.SeatChrome>
+      {!slot.player?.isMe && <GameCard label="Carta oculta de Luis" backPattern={CARD_BACK_PATTERNS.spanish} />}</>}
+    renderPlay={(slot) => {
+      const pile = spanishPiles.find((entry) => entry.playerKey === slot.player?.key);
+      return pile && <GameCardStack.Pile {...pile} label={`Cartas jugadas de ${pile.playerKey}`} labels={spanishLabels}
+        backPattern={CARD_BACK_PATTERNS.spanish} />;
+    }} />,
+  parameters: { docs: { description: { story: 'Two-player truco with Spanish-deck cards and a pile in front of each seat.' } } },
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    await waitFor(() => expect(canvasElement.querySelector('[data-game-surface]')).not.toHaveAttribute('data-layout-fit', 'measuring'));
+    await expect(canvasElement.querySelectorAll('[data-ui="game-table-play"] [data-ui="game-card-stack-pile"]')).toHaveLength(2);
+    await expect(canvas.getByRole('img', { name: 'as de oros' })).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: 'Cartas jugadas de Luis' }));
+    await userEvent.keyboard('{Escape}');
+  },
+};

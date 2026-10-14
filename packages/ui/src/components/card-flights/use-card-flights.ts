@@ -27,9 +27,30 @@ export interface DealFlightsOptions {
   resyncKey?: string | number;
 }
 
+function useMeasuredLaunch(resyncKey: string | number | undefined) {
+  const { launch, resetEpoch } = useCardFlights();
+  const generation = useRef(0);
+  useLayoutEffect(() => {
+    generation.current += 1;
+    return () => { generation.current += 1; };
+  }, [resetEpoch, resyncKey]);
+  return (specs: readonly CardFlightSpec[]) => {
+    if (!specs.length) return;
+    const current = generation.current;
+    // A measured host can commit a fitted scale from its layout effect. Finish that commit
+    // before reading destinations; the microtask still hides them before the browser paints.
+    queueMicrotask(() => {
+      if (current !== generation.current) return;
+      launch(specs.filter((spec) => spec.destination.isConnected)
+        .map((spec) => ({ ...spec, to: measureCardBox(spec.destination) })));
+    });
+  };
+}
+
 /** Deal a changed hand in forehand order. Initial and resync snapshots appear in place. */
 export function useDealFlights({ handIndex, dealt, forehandIdx, players, resyncKey }: DealFlightsOptions) {
-  const { scopeRef, reducedMotion, resetEpoch, launch } = useCardFlights();
+  const { scopeRef, reducedMotion, resetEpoch } = useCardFlights();
+  const launch = useMeasuredLaunch(resyncKey);
   const previous = useRef<{ handIndex: number | null; resyncKey: typeof resyncKey; resetEpoch: number } | null>(null);
   useLayoutEffect(() => {
     const baseline = previous.current;
@@ -63,7 +84,7 @@ export function useDealFlights({ handIndex, dealt, forehandIdx, players, resyncK
 }
 
 export interface PlayedFlightCard extends FlightCard {
-  /** Exact data-trick-key value from TrickStacks. */
+  /** Exact data-played-key value from GameCardStack.Pile. */
   playedKey: string;
   playerKey: string;
   isOwn: boolean;
@@ -76,7 +97,8 @@ export interface PlayedCardFlightsOptions {
 
 /** Fly new plays from a captured click/drag origin or the preceding render's hand/seat box. */
 export function usePlayedCardFlights({ plays, playerCount, resyncKey }: PlayedCardFlightsOptions) {
-  const { scopeRef, reducedMotion, resetEpoch, launch, takePlayOrigin } = useCardFlights();
+  const { scopeRef, reducedMotion, resetEpoch, takePlayOrigin } = useCardFlights();
+  const launch = useMeasuredLaunch(resyncKey);
   const previous = useRef<{ keys: Set<string>; resyncKey: typeof resyncKey; resetEpoch: number } | null>(null);
   const sources = useRef(new Map<string, CardBox>());
   // Capture hand/seat positions after every render for the next accepted play's origin.
@@ -93,9 +115,9 @@ export function usePlayedCardFlights({ plays, playerCount, resyncKey }: PlayedCa
       const captured = play.isOwn ? takePlayOrigin(play.key) : undefined;
       if (!root || reducedMotion) return [];
       const from = captured ?? sources.current.get(play.isOwn ? flightTarget.hand(play.key) : `seat:${play.playerKey}`);
-      const destination = findMarker(root, attributes.trickCard, play.playedKey);
+      const destination = findMarker(root, attributes.playedCard, play.playedKey);
       return from && destination ? [{ ...play, from, to: measureCardBox(destination), destination,
-        target: flightTarget.trick(play.playedKey), face: play.isOwn ? 'up' : 'reveal',
+        target: flightTarget.played(play.playedKey), face: play.isOwn ? 'up' : 'reveal',
         durationMs: play.isOwn ? motionDurationMs.cardPlayOwn : motionDurationMs.cardPlay }] : [];
     });
     launch(specs);

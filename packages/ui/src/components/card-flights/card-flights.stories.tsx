@@ -25,7 +25,7 @@ const meta = {
   render: () => <CardFlightsFixture />,
   beforeEach: () => mockPreference(),
   parameters: { docs: {
-    description: { component: 'Deal cards to a hand and move played cards to their table stacks.' },
+    description: { component: 'Deal cards to a hand and move played cards to their table piles.' },
     source: { code: `const boardRef = useRef<HTMLDivElement>(null);
 
 <ThemeRoot theme="dark">
@@ -42,7 +42,7 @@ usePlayedCardFlights({ plays, playerCount, resyncKey });` },
     usage: `### Setup
 - Wrap one board in \`CardFlightsProvider\` with its wrapper \`scopeRef\`. Portals inherit ThemeRoot tokens, appearance and portalContainer.
 - Call \`useDealFlights\` and \`usePlayedCardFlights\` below the provider with your snapshots and front/back content. Keep game rules and snapshot parsing in your app.
-- GameTable supplies \`data-game-surface="true"\`. GameHand supplies \`data-hand-card={card.id}\`; match its IDs to FlightCard keys. Pass \`playerKey\` to GameHand.Hidden for \`data-seat-hidden-card\` and zero-based \`data-seat-hidden-card-index\`. Played destinations use TrickStacks' \`data-trick-key\` value.
+- GameTable supplies \`data-game-surface="true"\`. Put the local GameHand in its \`dock\`; GameHand supplies \`data-hand-card={card.id}\`, matched to FlightCard keys. Pass \`playerKey\` to a rival's GameHand.Hidden in its seat for \`data-seat-hidden-card\` and zero-based \`data-seat-hidden-card-index\`. Render GameCardStack.Pile in \`renderPlay\` for each player's \`data-played-key\` destinations.
 - Destinations must be mounted and measurable in the same commit as the snapshot. Missing origins or destinations appear in place. A down flight never mounts its front content.
 
 ### Snapshots and landing
@@ -175,7 +175,7 @@ export const ReducedMotion: Story = {
     preference.media?.dispatchEvent(new MediaQueryListEvent('change', { matches: false }));
     await userEvent.click(canvas.getByRole('button', { name: 'Play rival' }));
     await expect(flights(canvasElement)).toHaveLength(1);
-    await expect(flights(canvasElement)[0]?.dataset.flightTarget).toBe('trick:0-rival-rival:0');
+    await expect(flights(canvasElement)[0]?.dataset.flightTarget).toBe('played:0-rival-rival:0');
     await landed(canvasElement);
   },
 };
@@ -277,7 +277,7 @@ export const CapturedOrigin: Story = {
     const box = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-hand-card="own:0"]')));
     await userEvent.click(canvas.getByRole('button', { name: 'Capture moved origin' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Play without capture' }));
-    const destination = required(canvasElement.querySelector<HTMLElement>('[data-trick-key="0-own-own:0"]'));
+    const destination = required(canvasElement.querySelector<HTMLElement>('[data-played-key="0-own-own:0"]'));
     await expectOrigin(required(flights(canvasElement)[0]), { ...box, cx: box.cx - 200, cy: box.cy - 100 }, destination);
     await landed(canvasElement);
     await expect(destination).toBeVisible();
@@ -290,7 +290,7 @@ export const ExpiredOrigin: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Capture moved origin' }));
     await new Promise((resolve) => setTimeout(resolve, FLIGHT_GEOMETRY.originTtlMs + 30));
     await userEvent.click(canvas.getByRole('button', { name: 'Play without capture' }));
-    const destination = required(canvasElement.querySelector<HTMLElement>('[data-trick-key="0-own-own:0"]'));
+    const destination = required(canvasElement.querySelector<HTMLElement>('[data-played-key="0-own-own:0"]'));
     await expectOrigin(required(flights(canvasElement)[0]), box, destination);
     await landed(canvasElement);
     await expect(destination).toBeVisible();
@@ -305,7 +305,7 @@ export const LandingWaitsForAnimationCompletion: Story = {
     tracks.forEach((track) => track.pause());
     await new Promise((resolve) => setTimeout(resolve, motionDurationMs.cardPlay + 80));
     await expect(flights(canvasElement)).toHaveLength(1);
-    await expect(getComputedStyle(required(canvasElement.querySelector('[data-trick-key="0-own-own:0"]'))).visibility).toBe('hidden');
+    await expect(getComputedStyle(required(canvasElement.querySelector('[data-played-key="0-own-own:0"]'))).visibility).toBe('hidden');
     tracks.forEach((track) => track.play());
     await landed(canvasElement);
     await expect(canvas.getByRole('img', { name: 'A of spades' })).toBeVisible();
@@ -316,6 +316,7 @@ export const LandingWaitsForAnimationCompletion: Story = {
 export const RealComponentsAndStagger: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     const departures = new Map<string, number>();
+    const scheduledDelays = new Map<string, number>();
     const pendingPaints: string[] = [];
     const started = performance.now();
     const sampling = new Promise<void>((resolve) => {
@@ -324,6 +325,8 @@ export const RealComponentsAndStagger: Story = {
           const track = node.getAnimations()[0];
           const visible = getComputedStyle(node).visibility === 'visible';
           const progress = track?.effect?.getComputedTiming().progress;
+          const delay = Number(track?.effect?.getTiming().delay);
+          if (Number.isFinite(delay) && !scheduledDelays.has(node.dataset.flightTarget!)) scheduledDelays.set(node.dataset.flightTarget!, delay);
           if (visible && Number(track?.currentTime) < Number(track?.effect?.getTiming().delay)) pendingPaints.push(node.dataset.flightTarget!);
           if (visible && progress !== null && progress !== undefined && progress > 0 && !departures.has(node.dataset.flightTarget!)) departures.set(node.dataset.flightTarget!, performance.now());
         }
@@ -339,16 +342,18 @@ export const RealComponentsAndStagger: Story = {
     await sampling;
     await expect(pendingPaints).toEqual([]);
     await expect(departures.size).toBe(6);
-    await expect(required(departures.get('hand:own:0')) - required(departures.get('seat:rival:0'))).toBeGreaterThan(motionDurationMs.cardDealStagger / 2);
+    // Order is observed from real frames; the magnitude comes from the scheduled delays, which frames cannot compress.
+    await expect(required(departures.get('hand:own:0'))).toBeGreaterThan(required(departures.get('seat:rival:0')));
+    await expect(required(scheduledDelays.get('hand:own:0')) - required(scheduledDelays.get('seat:rival:0'))).toBe(motionDurationMs.cardDealStagger);
     const origin = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-hand-card="own:0"]')));
     await userEvent.click(canvas.getByRole('button', { name: 'Play without capture' }));
-    const destination = required(canvasElement.querySelector<HTMLElement>('[data-trick-key="0-own-own:0"]'));
+    const destination = required(canvasElement.querySelector<HTMLElement>('[data-played-key="0-own-own:0"]'));
     await expectOrigin(required(flights(canvasElement)[0]), origin, destination);
     await landed(canvasElement);
     const hiddenOrigin = measureCardBox(required([...canvasElement.querySelectorAll<HTMLElement>('[data-seat-hidden-card="rival"]')].at(-1)));
     await userEvent.click(canvas.getByRole('button', { name: 'Play rival' }));
     await expectOrigin(required(flights(canvasElement)[0]), hiddenOrigin,
-      required(canvasElement.querySelector<HTMLElement>('[data-trick-key="0-rival-rival:0"]')));
+      required(canvasElement.querySelector<HTMLElement>('[data-played-key="0-rival-rival:0"]')));
     await landed(canvasElement);
   },
 };
@@ -356,7 +361,7 @@ export const RealComponentsAndStagger: Story = {
 export const LandingFrameContinuity: Story = {
   render: () => <CardFlightsFixture initialPlayed />,
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const destination = required(canvasElement.querySelector<HTMLElement>('[data-trick-key="0-own-own:0"]'));
+    const destination = required(canvasElement.querySelector<HTMLElement>('[data-played-key="0-own-own:0"]'));
     const counts: number[] = [];
     const premature: number[] = [];
     let launched = false;
@@ -392,7 +397,7 @@ export const WaitingPortalStillLands: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Replace flight' }));
     await expect(flights(canvasElement)).toHaveLength(0);
     await expect(canvasElement.querySelector('output')).toHaveTextContent('1');
-    const destination = required(canvasElement.querySelector<HTMLElement>('[data-trick-key="0-own-own:0"]'));
+    const destination = required(canvasElement.querySelector<HTMLElement>('[data-played-key="0-own-own:0"]'));
     await expect(getComputedStyle(destination).visibility).toBe('hidden');
     await waitFor(() => expect(canvasElement.querySelector('output')).toHaveTextContent('0'));
     await expect(destination).toBeVisible();
@@ -406,7 +411,7 @@ export const ResetForgetsOrigins: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Capture moved origin' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Reset flights' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Play without capture' }));
-    const destination = required(canvasElement.querySelector<HTMLElement>('[data-trick-key="0-own-own:0"]'));
+    const destination = required(canvasElement.querySelector<HTMLElement>('[data-played-key="0-own-own:0"]'));
     await expectOrigin(required(flights(canvasElement)[0]), box, destination);
     await landed(canvasElement);
     await expect(destination).toBeVisible();

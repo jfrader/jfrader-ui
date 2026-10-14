@@ -13,7 +13,7 @@ import {
 } from './table-slots';
 import type { BoardPlayerCount, BoardSeatGeometry, BoardSurface } from './types';
 
-type Part = 'surface' | 'seat' | 'center' | 'header' | 'dock' | 'footer' | 'floating';
+type Part = 'surface' | 'seat' | 'play' | 'center' | 'header' | 'dock' | 'footer' | 'floating';
 export interface GameTablePartProps {
   className?: string;
   css?: Interpolation<Theme>;
@@ -39,6 +39,8 @@ export type GameTableProps<T extends SeatLike = SeatLike> =
     viewport: { width: number; height: number };
     /** Match geometry or waiting-room geometry. Defaults to `match`. */
     surface?: BoardSurface;
+    /** Content inside the felt, centred on its edge (default), or outside it. */
+    seatPlacement?: 'inside' | 'edge' | 'outside';
     /** Preferred block-axis space. Yields to zero before cards cross GAME_TABLE_LIMITS.minimumCardWidthPx.
      * data-clearance="reduced" declares this concession. If floors still cannot fit,
      * data-layout-fit="insufficient-space" declares possible overflow/collisions; floors are preserved.
@@ -53,6 +55,8 @@ export type GameTableProps<T extends SeatLike = SeatLike> =
      * GameCard backs in occupied rival seats receive hidden-card flight markers in DOM order.
      */
     renderSeat: (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
+    /** Played content on the inward ring, measured and scaled independently per place. */
+    renderPlay?: (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
     header?: ReactNode;
     center?: ReactNode;
     dock?: ReactNode;
@@ -87,7 +91,8 @@ const shellStyle = css({
   minBlockSize: 0,
   inlineSize: '100%',
   boxSizing: 'border-box',
-  paddingBlock: 'var(--game-table-seat-clearance)',
+  paddingBlock: 'calc(var(--game-table-seat-clearance) + var(--game-table-reserve-block, 0px))',
+  paddingInline: 'var(--game-table-reserve-inline, 0px)',
   maxInlineSize: 'var(--game-table-shell-max-width)',
   marginInline: 'auto',
   alignItems: 'center',
@@ -106,7 +111,7 @@ const surfaceStyle = css({
   outline: `var(--game-table-outline) solid ${vars.color.surfaceRaised}`,
   backgroundColor: vars.color.surfaceInset,
   columnGap: vars.space[2],
-  '&[data-layout-fit="measuring"] > [data-ui="game-table-seat"], &[data-layout-fit="measuring"] > [data-ui="game-table-center"]': {
+  '&[data-layout-fit="measuring"] > [data-ui="game-table-seat"], &[data-layout-fit="measuring"] > [data-ui="game-table-center"], &[data-layout-fit="measuring"] > [data-ui="game-table-play"]': {
     visibility: 'hidden',
   },
 });
@@ -171,6 +176,12 @@ const centerStyle = css({
   transform: 'translate(-50%, -50%) scale(var(--game-table-center-scale))',
   '&:dir(rtl)': { transform: 'translate(50%, -50%) scale(var(--game-table-center-scale))' },
 });
+const playStyle = css({
+  position: 'absolute', zIndex: 1, inlineSize: 'max-content',
+  insetInlineStart: 'var(--game-table-play-inline)', insetBlockStart: 'var(--game-table-play-block)',
+  transform: 'translate(-50%, -50%) scale(var(--game-table-play-scale))',
+  '&:dir(rtl)': { transform: 'translate(50%, -50%) scale(var(--game-table-play-scale))' },
+});
 const stripStyle = css({ position: 'relative', flexShrink: 0, zIndex: 3, textAlign: 'center' });
 const headerStyle = css({
   display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'center',
@@ -188,7 +199,7 @@ type TableVariables = CSSProperties & { [key: `--game-table-${string}`]: string 
 
 export function GameTable<T extends SeatLike>({
   ref, seats, slots: suppliedSlots, players, viewport, surface = 'match', turnDirection, clearance = 0,
-  renderSeat, header, center, dock, footer, floating, slotProps, className, sx, style, ...rest
+  renderSeat, renderPlay, seatPlacement = 'edge', header, center, dock, footer, floating, slotProps, className, sx, style, ...rest
 }: GameTableProps<T>) {
   const { surfaceRef, measurement } = useBoardMeasurements();
   const slots = suppliedSlots ?? buildAlternatingSlots(seats ?? [], players, resolveTableTurnDirection(turnDirection));
@@ -222,7 +233,6 @@ export function GameTable<T extends SeatLike>({
     '--game-table-outline': frame.boardOutlineWidth,
     '--game-table-seat-width': frame.seatWidth,
     '--game-table-seat-max-width': frame.seatMaxWidth,
-    '--game-table-center-size': frame.centerSize,
     '--game-table-content-scale': String(layout.seatConfig.scale),
     '--game-table-center-scale': String(layout.seatConfig.centerScale),
     '--game-table-radius-x': `${layout.seatConfig.radiusX}px`,
@@ -237,7 +247,7 @@ export function GameTable<T extends SeatLike>({
       {(rootClass) => (
         <div
           {...rest} ref={ref} className={rootClass} style={variables}
-          data-ui="game-table" data-profile={layout.profile} data-surface={surface} data-layout-fit={layout.fit}
+          data-ui="game-table" data-profile={layout.profile} data-surface={surface} data-seat-placement={seatPlacement} data-layout-fit={layout.fit}
           data-clearance={measurement?.clearance && (measurement.clearance.start < measurement.clearance.requestedStart || measurement.clearance.end < measurement.clearance.requestedEnd) ? 'reduced' : 'requested'}
           data-clearance-start={measurement?.clearance?.start} data-clearance-end={measurement?.clearance?.end}
         >
@@ -279,6 +289,21 @@ export function GameTable<T extends SeatLike>({
                     {renderSeat(slot, index, geometry)}
                   </div>
                 );
+              })}
+              {slots.map((slot, index) => {
+                const geometry = layout.seatGeometries[index]!;
+                const playCos = measurement?.direction === 'rtl' ? -geometry.cos : geometry.cos;
+                const playVariables: TableVariables = {
+                  '--game-table-play-inline': `${geometry.playLeftPercent}%`,
+                  '--game-table-play-block': `${geometry.playTopPercent}%`,
+                  '--game-table-play-scale': String(geometry.playScale),
+                  '--game-table-play-angle': `${Math.atan2(geometry.sin, playCos) * 180 / Math.PI}deg`,
+                  '--game-table-play-cos': String(playCos), '--game-table-play-sin': String(geometry.sin),
+                };
+                return <div key={slot.key} data-ui="game-table-play" data-play-slot-key={slot.key}
+                  style={playVariables} className={slotProps?.play?.className} css={[playStyle, slotProps?.play?.css]}>
+                  {renderPlay?.(slot, index, geometry)}
+                </div>;
               })}
               <div data-ui="game-table-center" className={slotProps?.center?.className} css={[centerStyle, slotProps?.center?.css]}>
                 {center}

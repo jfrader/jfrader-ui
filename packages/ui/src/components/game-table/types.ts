@@ -7,6 +7,8 @@ export interface BoardSeatGeometryConfig {
   /** Derived from measured content and space; no per-profile position overrides. */
   radiusX: number;
   radiusY: number;
+  playRadiusX: number;
+  playRadiusY: number;
   scale: number;
   centerScale: number;
   gap: number;
@@ -21,6 +23,9 @@ export interface BoardSeatGeometry {
   sideStrength: number;
   leftPercent: number;
   topPercent: number;
+  playLeftPercent: number;
+  playTopPercent: number;
+  playScale: number;
   rotationDeg: number;
   /** Already applied by the table. Do not apply again in renderSeat. */
   scale: number;

@@ -1,5 +1,5 @@
 import { CARD_FRAME } from '../game-card/card-frame';
-import { TRICK_STACK, getStackOffset } from './trick-layout';
+import { PLAYED_PILE, getPileOffset } from './pile-layout';
 
 interface AutoLayoutInput {
   count: number;
@@ -10,6 +10,7 @@ interface AutoLayoutInput {
   rowGap: number;
   maxJitterPx: number;
   maxRotationOffsetDeg: number;
+  maxCards: number;
 }
 
 function projection(horizontal: number, vertical: number, angle: number) {
@@ -21,13 +22,13 @@ function projection(horizontal: number, vertical: number, angle: number) {
 /** Reserve the largest inspected fan in every cell, including rotation, jitter and closed offsets. */
 export function getAutoLayout(input: AutoLayoutInput) {
   const { count, width, height, preferredCardWidth, columnGap, rowGap, maxJitterPx, maxRotationOffsetDeg } = input;
-  const horizontalSpread = (TRICK_STACK.maxCards - 1) * TRICK_STACK.openSpreadRatio;
-  const widthRatio = TRICK_STACK.openScale *
+  const horizontalSpread = Math.max(0, input.maxCards - 1) * PLAYED_PILE.openSpreadRatio;
+  const widthRatio = PLAYED_PILE.openScale *
     (horizontalSpread + projection(1, CARD_FRAME.ratio, maxRotationOffsetDeg));
-  const heightRatio = TRICK_STACK.openScale * projection(CARD_FRAME.ratio, 1, maxRotationOffsetDeg);
+  const heightRatio = PLAYED_PILE.openScale * projection(CARD_FRAME.ratio, 1, maxRotationOffsetDeg);
   const edgeJitter = Math.abs(maxJitterPx) * 2;
-  const closedOffset = getClosedEnvelope();
-  const verticalOffset = getOpenEnvelope();
+  const closedOffset = getClosedEnvelope(input.maxCards);
+  const verticalOffset = getOpenEnvelope(input.maxCards);
   let best = { columns: 1, rows: Math.max(1, count), cardWidth: 0, capacity: 0 };
   for (let columns = 1; columns <= Math.max(1, count); columns++) {
     const rows = Math.max(1, Math.ceil(count / columns));
@@ -42,12 +43,12 @@ export function getAutoLayout(input: AutoLayoutInput) {
   return { columns: best.columns, rows: best.rows, cardWidth: best.cardWidth };
 }
 
-function getClosedEnvelope() {
-  const edge = getStackOffset({ index: 0, total: TRICK_STACK.maxCards, open: false, openSpreadRatio: TRICK_STACK.openSpreadRatio });
+function getClosedEnvelope(total: number) {
+  const edge = getPileOffset({ index: 0, total, open: false, openSpreadRatio: PLAYED_PILE.openSpreadRatio });
   return Math.abs(edge.xPx) * 2;
 }
 
-function getOpenEnvelope() {
-  const edge = getStackOffset({ index: 0, total: TRICK_STACK.maxCards, open: true, openSpreadRatio: TRICK_STACK.openSpreadRatio });
+function getOpenEnvelope(total: number) {
+  const edge = getPileOffset({ index: 0, total, open: true, openSpreadRatio: PLAYED_PILE.openSpreadRatio });
   return Math.abs(edge.y) * 2;
 }
