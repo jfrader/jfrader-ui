@@ -1,0 +1,66 @@
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, within } from 'storybook/test';
+import { GameRounds } from './index';
+
+const rounds = [
+  { key: 'first', label: 'Opening', outcome: 'won' },
+  { key: 'second', label: 'Middle', outcome: 'lost' },
+  { key: 'third', label: 'Final', outcome: 'pending' },
+] as const;
+const outcomeLabels = { won: 'Ganada', lost: 'Perdida', pending: 'Pendiente' };
+const source = `import { GameRounds } from '@jfrader/ui/game-rounds';
+
+<GameRounds label="Rounds" rounds={[
+  { key: 'first', label: 'Opening', outcome: 'won' },
+  { key: 'second', label: 'Middle', outcome: 'lost' },
+  { key: 'third', label: 'Final', outcome: 'pending' },
+]} outcomeLabels={{ won: 'Ganada', lost: 'Perdida', pending: 'Pendiente' }} />`;
+const meta = {
+  title: 'Games/GameRounds', component: GameRounds, tags: ['autodocs'],
+  args: { label: 'Rounds', rounds, outcomeLabels },
+  parameters: { docs: {
+    description: { component: 'Show each round and its result in play order.' },
+    usage: `### Results
+Pass rounds in display order with stable keys, labels and won, lost or pending outcomes. Supply nonempty outcomeLabels in your game's language. Every result shows that text as well as its tone; pending also has a dashed boundary. No rules or automatic transitions run here.
+
+### Accessibility
+The named group contains an ordered list. There is no APG widget, focus target, keyboard binding, animation or live announcement. Choose announcements in your application. The list preserves input order in RTL.
+
+### Customization
+Use slotProps for root, label, list, round and outcome. Repeated slots apply to every round; data-outcome remains authoritative. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. css and sx apply after slot styles.`,
+    source: { language: 'tsx', code: source },
+  } },
+} satisfies Meta<typeof GameRounds>;
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const group = within(canvasElement).getByRole('group', { name: 'Rounds' });
+    const items = within(group).getAllByRole('listitem');
+    await expect(items.map((item) => item.getAttribute('data-outcome'))).toEqual(['won', 'lost', 'pending']);
+    await expect(items.map((item) => item.textContent)).toEqual(['OpeningGanada', 'MiddlePerdida', 'FinalPendiente']);
+    await expect(getComputedStyle(items[2]!).borderTopStyle).toBe('dashed');
+    await expect(within(group).getByRole('list')).toBeVisible();
+  },
+};
+export const LightRtl: Story = {
+  globals: { theme: 'light' }, args: { dir: 'rtl' },
+  parameters: { docs: { source: { language: 'tsx', code: source.replace('label="Rounds"', 'label="Rounds" dir="rtl"') } } },
+  play: async ({ canvasElement }) => {
+    const group = within(canvasElement).getByRole('group', { name: 'Rounds' });
+    await expect(getComputedStyle(group).direction).toBe('rtl');
+    const items = within(group).getAllByRole('listitem');
+    await expect(items[0]!.getBoundingClientRect().left).toBeGreaterThan(items[1]!.getBoundingClientRect().left);
+    await expect(items.map((item) => item.getAttribute('data-outcome'))).toEqual(['won', 'lost', 'pending']);
+  },
+};
+export const Empty: Story = {
+  args: { rounds: [] },
+  parameters: { docs: { source: { language: 'tsx', code: '<GameRounds label="Rounds" rounds={[]} outcomeLabels={{ won: "Won", lost: "Lost", pending: "Pending" }} />' } } },
+  play: async ({ canvasElement }) => {
+    const group = within(canvasElement).getByRole('group', { name: 'Rounds' });
+    await expect(within(group).queryAllByRole('listitem')).toHaveLength(0);
+    await expect(within(group).getByRole('list')).toBeVisible();
+  },
+};
