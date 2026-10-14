@@ -65,7 +65,7 @@ const DEFAULT_INTENT_DELAY_MS = 80;
 /** Preferred card width; narrower viewports keep a `space[4]` gutter on each side. */
 const CARD_INLINE_SIZE = '18.5rem';
 
-export interface HoverCardProps {
+export interface HoverCardBaseProps {
   /** Standalone only: controlled open state. Not allowed inside `HoverCard.Group`. */
   open?: boolean;
   /** Standalone only: initial open state when uncontrolled. Not allowed inside `HoverCard.Group`. */
@@ -79,8 +79,31 @@ export interface HoverCardProps {
   openDelay?: number;
   /** Delay before closing after the pointer leaves trigger and card, in ms. */
   closeDelay?: number;
-  children?: ReactNode;
 }
+
+export interface HoverCardCompoundProps extends HoverCardBaseProps {
+  children?: ReactNode;
+  triggerLabel?: never;
+  profile?: never;
+  slotProps?: never;
+}
+
+export interface HoverCardSlotProps {
+  trigger?: Omit<HoverCardTriggerProps, 'children'>;
+  content?: Omit<HoverCardContentProps, 'children'>;
+  profile?: Partial<HoverCardProfileProps>;
+}
+
+export interface HoverCardEasyProps extends HoverCardBaseProps {
+  /** Label or element that triggers the hover card. */
+  triggerLabel: ReactNode;
+  /** Profile attributes to render inside the card. */
+  profile: HoverCardProfileProps;
+  children?: never;
+  slotProps?: HoverCardSlotProps;
+}
+
+export type HoverCardProps = HoverCardCompoundProps | HoverCardEasyProps;
 
 export interface HoverCardGroupProps {
   /** The open member's `value`, or `null` when none is open. */
@@ -343,7 +366,7 @@ function HoverCardLayer({
   openDelay = DEFAULT_OPEN_DELAY_MS,
   closeDelay = DEFAULT_CLOSE_DELAY_MS,
   children,
-}: HoverCardProps & { nodeId: string | undefined }) {
+}: HoverCardBaseProps & { children?: ReactNode; nodeId: string | undefined }) {
   const group = useContext(HoverCardGroupContext);
   if (group) {
     if (openProp !== undefined || defaultOpen !== undefined || onOpenChange !== undefined) {
@@ -417,7 +440,43 @@ function HoverCardLayer({
 }
 
 function HoverCardRoot(props: HoverCardProps) {
-  return <OverlayLayer>{(nodeId) => <HoverCardLayer {...props} nodeId={nodeId} />}</OverlayLayer>;
+  const { open, defaultOpen, onOpenChange, value, placement, openDelay, closeDelay } = props;
+  const easyProps = props.profile !== undefined ? props : undefined;
+
+  return (
+    <OverlayLayer>
+      {(nodeId) => (
+        <HoverCardLayer
+          open={open}
+          defaultOpen={defaultOpen}
+          onOpenChange={onOpenChange}
+          value={value}
+          placement={placement}
+          openDelay={openDelay}
+          closeDelay={closeDelay}
+          nodeId={nodeId}
+        >
+          {easyProps ? (
+            <>
+              <HoverCardTrigger {...easyProps.slotProps?.trigger}>{easyProps.triggerLabel}</HoverCardTrigger>
+              <HoverCardContent {...easyProps.slotProps?.content}>
+                <HoverCardProfile
+                  {...easyProps.profile}
+                  {...easyProps.slotProps?.profile}
+                  slotProps={{
+                    ...easyProps.profile.slotProps,
+                    ...easyProps.slotProps?.profile?.slotProps,
+                  }}
+                />
+              </HoverCardContent>
+            </>
+          ) : (
+            props.children
+          )}
+        </HoverCardLayer>
+      )}
+    </OverlayLayer>
+  );
 }
 
 HoverCardRoot.displayName = 'HoverCard';

@@ -114,7 +114,55 @@ export interface UserMenuPartProps {
   css?: Interpolation<Theme>;
 }
 
-export interface UserMenuProps {
+export type UserMenuItemAction = {
+  type?: 'item';
+  key?: string;
+  label: ReactNode;
+  onSelect?: () => void;
+  disabled?: boolean;
+  tone?: UserMenuItemTone;
+  icon?: ReactNode;
+  keys?: readonly string[];
+};
+
+export type UserMenuSeparatorAction = {
+  type: 'separator';
+  key?: string;
+  label?: never;
+  onSelect?: never;
+  disabled?: never;
+  tone?: never;
+  icon?: never;
+  keys?: never;
+};
+
+export type UserMenuAction = UserMenuItemAction | UserMenuSeparatorAction;
+
+export interface UserMenuMessages {
+  /** Translated name of the trigger button, e.g. "Account menu, Ada Lovelace". */
+  trigger: string;
+  /** Translated name of the sheet's Close button. */
+  close: string;
+  /** Label for the sign out button. */
+  signOut: string;
+  /** Label shown while sign out is pending. */
+  pending: string;
+  /** Message announced when sign out fails. */
+  error: string;
+}
+
+export interface UserMenuSlotProps {
+  trigger?: Omit<UserMenuTriggerProps, 'aria-label'>;
+  content?: Omit<UserMenuContentProps, 'children' | 'closeLabel'>;
+  identity?: UserMenuIdentityProps;
+  item?: Omit<UserMenuItemProps, 'children' | 'onSelect' | 'disabled'>;
+  separator?: UserMenuSeparatorProps;
+  themeGroup?: Partial<UserMenuThemeGroupProps>;
+  statusGroup?: Partial<UserMenuStatusGroupProps>;
+  signOut?: Omit<UserMenuSignOutProps, 'onSignOut' | 'pendingLabel' | 'errorMessage' | 'children'>;
+}
+
+export interface UserMenuBaseProps {
   user: UserMenuUser;
   open?: boolean;
   defaultOpen?: boolean;
@@ -123,8 +171,43 @@ export interface UserMenuProps {
   placement?: Placement;
   /** Viewport width in px below which `variant="adaptive"` content becomes a sheet. */
   compactBreakpoint?: number;
-  children?: ReactNode;
 }
+
+export interface UserMenuCompoundProps extends UserMenuBaseProps {
+  children?: ReactNode;
+  messages?: never;
+  items?: never;
+  theme?: never;
+  status?: never;
+  onSignOut?: never;
+  onSignOutError?: never;
+  showName?: never;
+  variant?: never;
+  slotProps?: never;
+}
+
+export interface UserMenuEasyProps extends UserMenuBaseProps {
+  /** Localized messages for trigger, close, signOut, pending, and error. */
+  messages: UserMenuMessages;
+  /** Command actions and separators. */
+  items?: readonly UserMenuAction[];
+  /** Theme preference choices. */
+  theme?: UserMenuThemeGroupProps;
+  /** Status / presence preference choices. */
+  status?: UserMenuStatusGroupProps;
+  /** Signs the user out. A returned promise keeps the item busy until it settles. */
+  onSignOut?: () => void | PromiseLike<unknown>;
+  /** Receives the failure (a rejection or a synchronous throw). */
+  onSignOutError?: (error: unknown) => void;
+  /** Shows the user's name next to the avatar outside compact viewports. */
+  showName?: boolean;
+  /** Surface presentation variant (adaptive, menu, or sheet). */
+  variant?: UserMenuVariant;
+  children?: never;
+  slotProps?: UserMenuSlotProps;
+}
+
+export type UserMenuProps = UserMenuCompoundProps | UserMenuEasyProps;
 
 export interface UserMenuTriggerProps extends Omit<ComponentPropsWithRef<'button'>, 'children'>, SxProps {
   /** Translated name of the button, e.g. "Account menu, Ada Lovelace". */
@@ -702,21 +785,79 @@ function UserMenuScope({
   return <UserMenuContext.Provider value={value}>{children}</UserMenuContext.Provider>;
 }
 
-function UserMenuRoot({
-  user,
-  open,
-  defaultOpen = false,
-  onOpenChange,
-  placement = 'bottom-end',
-  compactBreakpoint = DEFAULT_COMPACT_BREAKPOINT,
-  children,
-}: UserMenuProps) {
+function UserMenuRoot(props: UserMenuProps) {
+  const {
+    user,
+    open,
+    defaultOpen = false,
+    onOpenChange,
+    placement = 'bottom-end',
+    compactBreakpoint = DEFAULT_COMPACT_BREAKPOINT,
+  } = props;
   const breakpoint =
     Number.isFinite(compactBreakpoint) && compactBreakpoint > 0 ? compactBreakpoint : DEFAULT_COMPACT_BREAKPOINT;
+
+  const easyProps = props.messages !== undefined ? props : undefined;
+
+  const hasItems = Boolean(easyProps?.items && easyProps.items.length > 0);
+  const lastItemIsSeparator = easyProps?.items?.at(-1)?.type === 'separator';
+  const hasGroups = Boolean(easyProps?.theme || easyProps?.status);
+  const showGroupSeparator = hasItems && !lastItemIsSeparator && hasGroups;
+  const showSignOutSeparator = Boolean(easyProps?.onSignOut && (hasGroups || (hasItems && !lastItemIsSeparator)));
+
   return (
     <MenuController open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} placement={placement}>
       <UserMenuScope user={user} compactBreakpoint={breakpoint}>
-        {children}
+        {easyProps ? (
+          <>
+            <UserMenuTrigger
+              showName={easyProps.showName}
+              {...easyProps.slotProps?.trigger}
+              aria-label={easyProps.messages.trigger}
+            />
+            <UserMenuContent
+              variant={easyProps.variant}
+              closeLabel={easyProps.messages.close}
+              {...easyProps.slotProps?.content}
+            >
+              <UserMenuIdentity {...easyProps.slotProps?.identity} />
+              {easyProps.items?.map((item, index) =>
+                item.type === 'separator' ? (
+                  <UserMenuSeparator {...easyProps.slotProps?.separator} key={item.key ?? index} />
+                ) : (
+                  <UserMenuItem
+                    {...easyProps.slotProps?.item}
+                    key={item.key ?? index}
+                    onSelect={item.onSelect}
+                    disabled={item.disabled}
+                    tone={item.tone ?? easyProps.slotProps?.item?.tone}
+                    icon={item.icon !== undefined ? item.icon : easyProps.slotProps?.item?.icon}
+                    keys={item.keys ?? easyProps.slotProps?.item?.keys}
+                  >
+                    {item.label}
+                  </UserMenuItem>
+                ),
+              )}
+              {showGroupSeparator && <UserMenuSeparator {...easyProps.slotProps?.separator} />}
+              {easyProps.theme && <UserMenuThemeGroup {...easyProps.theme} {...easyProps.slotProps?.themeGroup} />}
+              {easyProps.status && <UserMenuStatusGroup {...easyProps.status} {...easyProps.slotProps?.statusGroup} />}
+              {showSignOutSeparator && <UserMenuSeparator {...easyProps.slotProps?.separator} />}
+              {easyProps.onSignOut && (
+                <UserMenuSignOut
+                  onSignOut={easyProps.onSignOut}
+                  pendingLabel={easyProps.messages.pending}
+                  errorMessage={easyProps.messages.error}
+                  onSignOutError={easyProps.onSignOutError}
+                  {...easyProps.slotProps?.signOut}
+                >
+                  {easyProps.messages.signOut}
+                </UserMenuSignOut>
+              )}
+            </UserMenuContent>
+          </>
+        ) : (
+          props.children
+        )}
       </UserMenuScope>
     </MenuController>
   );

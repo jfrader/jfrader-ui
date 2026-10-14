@@ -81,12 +81,67 @@ const AVAILABLE_BLOCK_VAR = '--context-menu-available-block';
 
 export type ContextMenuItemTone = MenuItemTone;
 
-export interface ContextMenuProps {
+export type ContextMenuItemAction = {
+  type?: 'item';
+  key?: string;
+  label: ReactNode;
+  onSelect?: () => void;
+  disabled?: boolean;
+  tone?: ContextMenuItemTone;
+  icon?: ReactNode;
+};
+
+export type ContextMenuSeparatorAction = {
+  type: 'separator';
+  key?: string;
+  label?: never;
+  onSelect?: never;
+  disabled?: never;
+  tone?: never;
+  icon?: never;
+};
+
+export type ContextMenuAction = ContextMenuItemAction | ContextMenuSeparatorAction;
+
+export interface ContextMenuStateProps {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
-  children?: ReactNode;
 }
+
+export interface ContextMenuCompoundProps extends ContextMenuStateProps {
+  children?: ReactNode;
+  targetLabel?: never;
+  items?: never;
+  content?: never;
+  disabled?: never;
+  openOnClick?: never;
+  slotProps?: never;
+}
+
+export interface ContextMenuSlotProps {
+  target?: Omit<ContextMenuTargetProps, 'children' | 'aria-label'>;
+  content?: Omit<ContextMenuContentProps, 'children'>;
+  item?: Omit<ContextMenuItemProps, 'children' | 'onSelect' | 'disabled'>;
+  separator?: ContextMenuSeparatorProps;
+}
+
+export interface ContextMenuEasyProps extends ContextMenuStateProps {
+  /** Name the context target for assistive technologies. */
+  targetLabel: string;
+  /** Actions and separators displayed in the menu. */
+  items: readonly ContextMenuAction[];
+  /** Content rendered inside the target area. */
+  content: ReactNode;
+  /** Also open on a plain click or tap (and Enter/Space on the Target). */
+  openOnClick?: boolean;
+  /** Leave the browser's native context menu alone. */
+  disabled?: boolean;
+  children?: never;
+  slotProps?: ContextMenuSlotProps;
+}
+
+export type ContextMenuProps = ContextMenuCompoundProps | ContextMenuEasyProps;
 
 export interface ContextMenuTargetProps extends ComponentPropsWithRef<'div'>, SxProps {
   /** Also open on a plain click or tap (and Enter/Space on the Target). Only for inert objects:
@@ -340,7 +395,7 @@ function ContextMenuScope({
   return <ContextMenuContext.Provider value={value}>{children}</ContextMenuContext.Provider>;
 }
 
-function ContextMenuRoot({ open, defaultOpen = false, onOpenChange, children }: ContextMenuProps) {
+function ContextMenuRoot(props: ContextMenuProps) {
   const [available, setAvailable] = useState<OverlayAvailableSize>();
   const positioning: MenuPositioning = {
     strategy: 'fixed',
@@ -353,6 +408,8 @@ function ContextMenuRoot({ open, defaultOpen = false, onOpenChange, children }: 
       ),
   };
 
+  const { open, defaultOpen = false, onOpenChange } = props;
+
   return (
     <MenuController
       open={open}
@@ -361,7 +418,40 @@ function ContextMenuRoot({ open, defaultOpen = false, onOpenChange, children }: 
       placement="bottom-start"
       positioning={positioning}
     >
-      <ContextMenuScope available={available}>{children}</ContextMenuScope>
+      <ContextMenuScope available={available}>
+        {props.items !== undefined ? (
+          <>
+            <ContextMenuTarget
+              {...props.slotProps?.target}
+              {...(props.openOnClick !== undefined && { openOnClick: props.openOnClick })}
+              {...(props.disabled !== undefined && { disabled: props.disabled })}
+              aria-label={props.targetLabel}
+            >
+              {props.content}
+            </ContextMenuTarget>
+            <ContextMenuContent {...props.slotProps?.content}>
+              {props.items.map((item, index) =>
+                item.type === 'separator' ? (
+                  <ContextMenuSeparator {...props.slotProps?.separator} key={item.key ?? index} />
+                ) : (
+                  <ContextMenuItem
+                    {...props.slotProps?.item}
+                    key={item.key ?? index}
+                    onSelect={item.onSelect}
+                    disabled={item.disabled}
+                    tone={item.tone ?? props.slotProps?.item?.tone}
+                    icon={item.icon !== undefined ? item.icon : props.slotProps?.item?.icon}
+                  >
+                    {item.label}
+                  </ContextMenuItem>
+                ),
+              )}
+            </ContextMenuContent>
+          </>
+        ) : (
+          props.children
+        )}
+      </ContextMenuScope>
     </MenuController>
   );
 }
