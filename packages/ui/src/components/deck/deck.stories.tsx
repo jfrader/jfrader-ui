@@ -66,7 +66,8 @@ const meta = {
   args: { children: null },
   parameters: {
     docs: {
-      source: { language: 'tsx', code: `import { DeckProvider, defineDeck, GameCard } from '@jfrader/ui';
+      source: { language: 'tsx', code: `import { DeckProvider, defineDeck } from '@jfrader/ui';
+import { GameCard } from '@jfrader/ui/game-card';
 
 const stars = defineDeck({
   id: 'stars',
