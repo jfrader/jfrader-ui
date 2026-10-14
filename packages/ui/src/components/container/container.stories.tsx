@@ -102,6 +102,35 @@ async function expectCentred(element: HTMLElement) {
 }
 
 export const Sizes: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { CSSProperties } from 'react';
+import { vars } from '@jfrader/tokens/vars';
+import { Container } from '@jfrader/ui';
+
+const boxStyle = {
+  boxSizing: 'border-box',
+  paddingBlock: vars.space[2],
+  paddingInline: vars.space[3],
+  backgroundColor: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.text,
+} satisfies CSSProperties;
+
+<>
+  <Container size="sm"><div style={boxStyle}>Container sm</div></Container>
+  <Container size="md"><div style={boxStyle}>Container md</div></Container>
+  <Container size="lg"><div style={boxStyle}>Container lg</div></Container>
+  <Container size="xl"><div style={boxStyle}>Container xl</div></Container>
+</>`,
+      },
+    },
+  },
   render: (args) => (
     <>
       {SIZES.map((size) => (
