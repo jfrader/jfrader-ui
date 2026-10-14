@@ -4,6 +4,7 @@
 
 ### Added
 
+- `LinkPreview`: show supplied link metadata without a composer, with loading, unavailable and error states, image fallback, and truncated titles and descriptions. `LinkUnfurl` keeps its existing API and behavior.
 - `ChatMessage`: show a single message with author, avatar, body, timestamp, delivery status, attachments and reactions without adopting a conversation layout. `ChatThread` keeps its existing API.
 - `CodeBlock`'s optional Shiki adapter highlights JSX and TSX with their own grammars.
 - `Surface`: panel material with flat, raised and floating shadows, inherited or contrast appearance, and div-root replacement through `component` or `slots.root`. Card supports the same root replacement and native root `slotProps`.
