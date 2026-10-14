@@ -8,9 +8,15 @@ export type SpanishRank = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 10 | 11 | 12;
 export type FrenchRank = 'A' | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 'J' | 'Q' | 'K';
 export type GameCardRank = SpanishRank | FrenchRank;
 
-export type GameCardValue =
-  | { deck: 'spanish'; suit: SpanishSuit; rank: SpanishRank }
-  | { deck: 'french'; suit: FrenchSuit; rank: FrenchRank };
+/**
+ * Plain serializable representation of a playing card's identity.
+ * `deck` names a registered deck id; omitting it resolves the deck from `<DeckProvider>`.
+ */
+export interface GameCardValue {
+  deck?: string;
+  suit: string;
+  rank: string | number;
+}
 
 /**
  * Suit glyphs, keyed by suit (the two decks never share a suit name). The Spanish set is the one in
