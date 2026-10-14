@@ -360,7 +360,7 @@ const EASY_PAGES: readonly DialogStackPageRecord[] = [
   },
 ];
 
-export const Default: StoryObj<DialogStackEasyProps> = {
+export const Default: StoryObj<(props: DialogStackEasyProps) => ReactNode> = {
   name: 'Easy mode',
   args: {
     triggerLabel: 'Open settings',
@@ -453,7 +453,7 @@ export const EasyModeControlled: StoryObj = {
   },
 };
 
-export const EasyModeSlotPropsOverrides: StoryObj<DialogStackEasyProps> = {
+export const EasyModeSlotPropsOverrides: StoryObj<(props: DialogStackEasyProps) => ReactNode> = {
   name: 'Easy mode slotProps overrides',
   args: {
     triggerLabel: 'Open settings',

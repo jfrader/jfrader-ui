@@ -12,6 +12,7 @@ export type {
   ContextMenuSeparatorAction,
   ContextMenuSeparatorProps,
   ContextMenuSlotProps,
+  ContextMenuSlots,
   ContextMenuStateProps,
   ContextMenuTargetProps,
   ContextMenuTriggerProps,

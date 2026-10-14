@@ -23,6 +23,7 @@
 // start a drag. Reduced motion disables the gesture; Close and Escape always remain.
 
 import {
+  type ComponentType,
   createContext,
   useCallback,
   useContext,
@@ -79,6 +80,7 @@ export interface DrawerBaseProps {
 type GeneratedPartProps<Props> = Omit<Props, 'children'> & Pick<DrawerPanelProps, `data-${string}`>;
 
 export interface DrawerSlotProps {
+  root?: NonNullable<DrawerPanelProps['slotProps']>['root'];
   trigger?: GeneratedPartProps<DrawerTriggerProps>;
   content?: GeneratedPartProps<DrawerContentProps>;
   panel?: GeneratedPartProps<DrawerPanelProps>;
@@ -87,6 +89,18 @@ export interface DrawerSlotProps {
   description?: GeneratedPartProps<DrawerDescriptionProps>;
   close?: GeneratedPartProps<DrawerCloseProps>;
   body?: GeneratedPartProps<DrawerBodyProps>;
+  footer?: GeneratedPartProps<DrawerFooterProps>;
+}
+
+export interface DrawerSlots {
+  root?: NonNullable<DrawerPanelProps['slots']>['root'];
+  trigger?: ComponentType<DrawerTriggerProps>;
+  header?: ComponentType<DrawerHeaderProps>;
+  title?: ComponentType<DrawerTitleProps>;
+  description?: ComponentType<DrawerDescriptionProps>;
+  close?: ComponentType<DrawerCloseProps>;
+  body?: ComponentType<DrawerBodyProps>;
+  footer?: ComponentType<DrawerFooterProps>;
 }
 
 export interface DrawerCompoundProps extends DrawerBaseProps {
@@ -97,9 +111,12 @@ export interface DrawerCompoundProps extends DrawerBaseProps {
   content?: never;
   closeLabel?: never;
   slotProps?: never;
+  slots?: never;
+  component?: never;
+  footer?: never;
 }
 
-export interface DrawerEasyProps extends DrawerBaseProps {
+export interface DrawerEasyProps extends DrawerBaseProps, Omit<DrawerPanelProps, 'children' | 'title' | 'content' | 'slots' | 'slotProps' | 'draggable'> {
   /** Name the button that opens the drawer. */
   triggerLabel: ReactNode;
   /** Name the drawer with a visible heading. */
@@ -112,6 +129,10 @@ export interface DrawerEasyProps extends DrawerBaseProps {
   closeLabel: ReactNode;
   children?: never;
   slotProps?: DrawerSlotProps;
+  slots?: DrawerSlots;
+  component?: DrawerSlots['root'];
+  /** Place actions below the scrollable body. */
+  footer?: ReactNode;
 }
 
 export type DrawerProps = DrawerCompoundProps | DrawerEasyProps;
@@ -408,6 +429,18 @@ function hasText(children: ReactNode) {
 }
 
 function DrawerRoot(props: DrawerProps) {
+  const Trigger = props.slots?.trigger ?? DrawerTrigger;
+  const Header = props.slots?.header ?? DrawerHeader;
+  const Title = props.slots?.title ?? DrawerTitle;
+  const Description = props.slots?.description ?? DrawerDescription;
+  const Close = props.slots?.close ?? DrawerClose;
+  const Body = props.slots?.body ?? DrawerBody;
+  const Footer = props.slots?.footer ?? DrawerFooter;
+  const { open: _open, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange,
+    side: _side, size: _size, draggable: _draggable, children: _children,
+    triggerLabel: _triggerLabel, title: _title, description: _description,
+    content: _content, closeLabel: _closeLabel, slots: _slots, slotProps: _slotProps,
+    component: _component, footer: _footer, ...rootProps } = props;
   const {
     open: openProp,
     defaultOpen = false,
@@ -446,17 +479,21 @@ function DrawerRoot(props: DrawerProps) {
     <DrawerContext.Provider value={context}>
       {'content' in props ? (
         <>
-          <DrawerTrigger {...props.slotProps?.trigger}>{props.triggerLabel}</DrawerTrigger>
+          <Trigger {...props.slotProps?.trigger}>{props.triggerLabel}</Trigger>
           <DrawerContent {...props.slotProps?.content}>
-            <DrawerPanel {...props.slotProps?.panel}>
-              <DrawerHeader {...props.slotProps?.header}>
-                <DrawerTitle {...props.slotProps?.title}>{props.title}</DrawerTitle>
+            <DrawerPanel {...rootProps} {...props.slotProps?.panel}
+              component={props.component ?? props.slotProps?.panel?.component}
+              slots={{ ...props.slotProps?.panel?.slots, root: props.slots?.root ?? props.slotProps?.panel?.slots?.root }}
+              slotProps={{ root: props.slotProps?.root ?? props.slotProps?.panel?.slotProps?.root }}>
+              <Header {...props.slotProps?.header}>
+                <Title {...props.slotProps?.title}>{props.title}</Title>
                 {isRenderable(props.description) && (
-                  <DrawerDescription {...props.slotProps?.description}>{props.description}</DrawerDescription>
+                  <Description {...props.slotProps?.description}>{props.description}</Description>
                 )}
-                <DrawerClose {...props.slotProps?.close}>{props.closeLabel}</DrawerClose>
-              </DrawerHeader>
-              <DrawerBody {...props.slotProps?.body}>{props.content}</DrawerBody>
+                <Close {...props.slotProps?.close}>{props.closeLabel}</Close>
+              </Header>
+              <Body {...props.slotProps?.body}>{props.content}</Body>
+              {isRenderable(props.footer) && <Footer {...props.slotProps?.footer}>{props.footer}</Footer>}
             </DrawerPanel>
           </DrawerContent>
         </>

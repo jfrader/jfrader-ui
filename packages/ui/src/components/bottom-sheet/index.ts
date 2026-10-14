@@ -13,6 +13,7 @@ export type {
   BottomSheetPanelProps,
   BottomSheetProps,
   BottomSheetSlotProps,
+  BottomSheetSlots,
   BottomSheetTitleProps,
   BottomSheetTriggerProps,
 } from './bottom-sheet';

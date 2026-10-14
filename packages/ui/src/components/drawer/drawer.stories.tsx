@@ -330,7 +330,7 @@ async function expectInlineSize(panel: HTMLElement, dialog: HTMLElement, size: D
   await expect(rect(panel).height).toBeCloseTo(rect(dialog).height, 0);
 }
 
-export const Default: StoryObj<DrawerEasyProps> = {
+export const Default: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   name: 'Easy mode',
   args: {
     triggerLabel: TRIGGER,
@@ -427,7 +427,7 @@ function ControlledEasyDrawer(props: DrawerEasyProps) {
 }
 ControlledEasyDrawer.displayName = 'ControlledEasyDrawer';
 
-export const EasyModeControlled: StoryObj<DrawerEasyProps> = {
+export const EasyModeControlled: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   name: 'Easy mode controlled',
   args: {
     triggerLabel: TRIGGER,
@@ -453,7 +453,7 @@ export const EasyModeControlled: StoryObj<DrawerEasyProps> = {
   },
 };
 
-export const EasyModeDisabled: StoryObj<DrawerEasyProps> = {
+export const EasyModeDisabled: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   name: 'Easy mode disabled',
   args: {
     triggerLabel: TRIGGER,
@@ -478,7 +478,7 @@ export const EasyModeDisabled: StoryObj<DrawerEasyProps> = {
   },
 };
 
-export const EasyModeCustomizationSlotProps: StoryObj<DrawerEasyProps> = {
+export const EasyModeCustomizationSlotProps: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   name: 'Easy mode customization slotProps',
   args: {
     triggerLabel: TRIGGER,
@@ -538,7 +538,7 @@ export const EasyModeCustomizationSlotProps: StoryObj<DrawerEasyProps> = {
   },
 };
 
-export const EasyModeWithoutDescription: StoryObj<DrawerEasyProps> = {
+export const EasyModeWithoutDescription: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   name: 'Easy mode without description',
   args: {
     triggerLabel: TRIGGER,

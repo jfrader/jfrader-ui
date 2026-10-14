@@ -52,6 +52,7 @@ import {
   type RefObject,
   type SyntheticEvent,
 } from 'react';
+import { GeneratedRoot, type GeneratedRootSlotProps } from '../../utils/generated-root';
 import { createPortal } from 'react-dom';
 import { FloatingFocusManager, useFloating, useMergeRefs } from '@floating-ui/react';
 import { animate, type AnimationPlaybackControls } from 'motion/react';
@@ -105,6 +106,9 @@ export interface DialogStackPageRecord {
 }
 
 export interface DialogStackSlots {
+  root?: NonNullable<DialogStackContentProps['slots']>['root'];
+  header?: ComponentType<ComponentPropsWithRef<'div'>>;
+  body?: ComponentType<ComponentPropsWithRef<'div'>>;
   trigger?: ComponentType<DialogStackTriggerProps>;
   content?: ComponentType<DialogStackContentProps>;
   title?: ComponentType<DialogStackTitleProps>;
@@ -115,6 +119,9 @@ export interface DialogStackSlots {
 }
 
 export interface DialogStackSlotProps {
+  root?: NonNullable<DialogStackContentProps['slotProps']>['root'];
+  header?: GeneratedRootSlotProps;
+  body?: GeneratedRootSlotProps;
   trigger?: Partial<Omit<DialogStackTriggerProps, 'value' | 'children'>>;
   content?: Partial<Omit<DialogStackContentProps, 'value' | 'children'>>;
   title?: Partial<DialogStackTitleProps>;
@@ -146,6 +153,7 @@ export interface DialogStackCompoundProps extends DialogStackBaseProps {
   initialPage?: never;
   slots?: never;
   slotProps?: never;
+  component?: never;
 }
 
 export interface DialogStackEasyProps extends DialogStackBaseProps {
@@ -158,6 +166,7 @@ export interface DialogStackEasyProps extends DialogStackBaseProps {
   children?: never;
   slots?: DialogStackSlots;
   slotProps?: DialogStackSlotProps;
+  component?: DialogStackSlots['root'];
 }
 
 export type DialogStackProps = DialogStackCompoundProps | DialogStackEasyProps;
@@ -735,6 +744,7 @@ function DialogStackRoot(props: DialogStackProps) {
       initialPage,
       slots,
       slotProps,
+      component,
     } = props;
 
     const TriggerPart = slots?.trigger ?? DialogStackTrigger;
@@ -789,6 +799,9 @@ function DialogStackRoot(props: DialogStackProps) {
               appearance={pageAppearance}
               withDescription={pageWithDescription}
               {...mergedSlotProps.content}
+              component={component ?? mergedSlotProps.content?.component}
+              slots={{ ...mergedSlotProps.content?.slots, root: slots?.root ?? mergedSlotProps.content?.slots?.root }}
+              slotProps={{ root: mergedSlotProps.root ?? mergedSlotProps.content?.slotProps?.root }}
             >
               {pageBack !== undefined && (
                 <BackPart label={pageBack} {...mergedSlotProps.back} />
@@ -796,11 +809,15 @@ function DialogStackRoot(props: DialogStackProps) {
               {pageClose !== undefined && (
                 <ClosePart label={pageClose} {...mergedSlotProps.close} />
               )}
-              <TitlePart {...mergedSlotProps.title}>{pageTitle}</TitlePart>
-              {isRenderable(pageDescription) && (
-                <DescriptionPart {...mergedSlotProps.description}>{pageDescription}</DescriptionPart>
-              )}
-              {pageContent}
+              <GeneratedRoot component={slots?.header} rootSlot={mergedSlotProps.header} marker="dialog-stack-header">
+                <TitlePart {...mergedSlotProps.title}>{pageTitle}</TitlePart>
+                {isRenderable(pageDescription) && (
+                  <DescriptionPart {...mergedSlotProps.description}>{pageDescription}</DescriptionPart>
+                )}
+              </GeneratedRoot>
+              <GeneratedRoot component={slots?.body} rootSlot={mergedSlotProps.body} marker="dialog-stack-body">
+                {pageContent}
+              </GeneratedRoot>
               {isRenderable(pageFooter) && (
                 <FooterPart {...mergedSlotProps.footer}>{pageFooter}</FooterPart>
               )}

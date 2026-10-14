@@ -23,6 +23,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
+import { GeneratedRoot, type GeneratedRootProps, type GeneratedRootSlotProps } from '../../utils/generated-root';
 import {
   FloatingFocusManager,
   useClick,
@@ -56,11 +57,12 @@ export interface PopoverCompoundProps extends PopoverBaseProps {
   content?: never;
   slots?: never;
   slotProps?: never;
+  component?: never;
 }
 
 type PopoverGeneratedPartProps<Props> = Omit<Props, 'children'> & { css?: Interpolation<Theme> };
 
-export interface PopoverEasyProps extends Omit<PopoverBaseProps, 'children'> {
+export interface PopoverEasyProps extends Omit<PopoverBaseProps, 'children'>, Omit<GeneratedRootProps, 'children' | 'content'> {
   /** Name the generated trigger button. */
   triggerLabel: ReactNode;
   /** Name the non-modal dialog. */
@@ -69,13 +71,16 @@ export interface PopoverEasyProps extends Omit<PopoverBaseProps, 'children'> {
   children?: never;
   /** Replace native roots with components that forward all supplied props and ref. */
   slots?: {
+    root?: ComponentType<ComponentPropsWithRef<'div'>>;
     trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
     content?: ComponentType<ComponentPropsWithRef<'div'>>;
   };
   slotProps?: {
+    root?: GeneratedRootSlotProps;
     trigger?: PopoverGeneratedPartProps<PopoverTriggerProps>;
     content?: PopoverGeneratedPartProps<PopoverContentProps>;
   };
+  component?: NonNullable<PopoverEasyProps['slots']>['root'];
 }
 
 export type PopoverProps = PopoverCompoundProps | PopoverEasyProps;
@@ -169,13 +174,16 @@ function PopoverLayer({
 }
 
 function PopoverRoot(props: PopoverProps) {
+  const { open: _open, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, placement: _placement,
+    children: _children, triggerLabel: _triggerLabel, label: _label, content: _content,
+    slots: _slots, slotProps: _slotProps, component: _component, ...rootProps } = props;
   const children = props.triggerLabel !== undefined ? (
-    <>
+    <GeneratedRoot {...rootProps} component={props.slots?.root ?? props.component} rootSlot={props.slotProps?.root} marker="popover-root">
       <PopoverTrigger {...props.slotProps?.trigger}>{props.triggerLabel}</PopoverTrigger>
       <PopoverContent aria-label={props.label} {...props.slotProps?.content}>
         {props.content}
       </PopoverContent>
-    </>
+    </GeneratedRoot>
   ) : props.children;
   return (
     <OverlayLayer>

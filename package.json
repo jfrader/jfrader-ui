@@ -26,6 +26,7 @@
     ]
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "typescript-compiler": "npm:typescript@5.9.3"
   }
 }
