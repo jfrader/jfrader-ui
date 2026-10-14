@@ -422,6 +422,30 @@ export const EasyModeUncontrolledDismiss: EasyStory = {
 };
 
 export const Compound: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `function Commands() {
+  const [selections, setSelections] = useState<string[]>([]);
+  const select = (value: string) => () => setSelections((previous) => [...previous, value]);
+  return <>
+    <CommandPalette>
+      <CommandPalette.Trigger>Open commands</CommandPalette.Trigger>
+      <CommandPalette.Content>
+        <CommandPalette.Input placeholder="Type a command" />
+        <CommandPalette.List>
+          <CommandPalette.Group label="Files">
+            <CommandPalette.Item value="open-file" onSelect={select('open-file')}>Open file</CommandPalette.Item>
+            <CommandPalette.Item value="save-file" keywords="write disk" onSelect={select('save-file')}>Save file</CommandPalette.Item>
+          </CommandPalette.Group>
+          <CommandPalette.Group label="View">
+            <CommandPalette.Item value="toggle-theme" keywords="dark light" onSelect={select('toggle-theme')}>Toggle theme</CommandPalette.Item>
+            <CommandPalette.Item value="zoom-in" onSelect={select('zoom-in')}>Zoom in</CommandPalette.Item>
+          </CommandPalette.Group>
+        </CommandPalette.List>
+        <CommandPalette.Empty />
+      </CommandPalette.Content>
+    </CommandPalette>
+    <output aria-label="Selections">{selections.join(',')}</output>
+  </>;
+}` } } },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
     const { canvas, trigger, dialog, input } = await openPalette(canvasElement);

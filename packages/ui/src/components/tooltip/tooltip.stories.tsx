@@ -143,7 +143,7 @@ export const Default: StoryObj<TooltipEasyProps> = {
 /** Assemble the trigger and help text for a custom layout. */
 export const Compound: Story = {
   render: (args) => <TooltipExample {...args} />,
-   parameters: { docs: { source: { language: 'tsx', code: `<Tooltip>
+  parameters: { docs: { source: { language: 'tsx', code: `<Tooltip>
   <Tooltip.Trigger>Copy</Tooltip.Trigger>
   <Tooltip.Content>Copy to clipboard</Tooltip.Content>
 </Tooltip>` } } },

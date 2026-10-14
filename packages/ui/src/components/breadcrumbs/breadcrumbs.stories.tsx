@@ -30,7 +30,7 @@ const meta = {
     description: { component: 'Show where a page sits and link to the pages above it.' },
     usage: `### Items
 - Pass \`items\` with \`label\` and optional \`href\`, \`current\` and \`key\`, or compose \`Breadcrumbs.Item\` with \`children\`. Do not combine the two modes.
-- Without an item set to \`current={true}\`, the last item whose \`current\` is omitted becomes current when it is last in DOM order. Set \`current\` explicitly if you need \`aria-current\` in server-rendered markup.
+- If no item sets \`current={true}\`, the last item in DOM order is current unless it sets \`current={false}\`. Set \`current\` explicitly if you need \`aria-current\` in server-rendered markup.
 - An item with \`href\` renders a link, including the current item. Omit \`href\` to render text instead.
 
 ### Keyboard
