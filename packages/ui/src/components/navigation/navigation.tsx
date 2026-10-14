@@ -16,14 +16,18 @@
 import {
   useId,
   type AnchorHTMLAttributes,
+  type CSSProperties,
   type ComponentPropsWithRef,
+  type ComponentType,
   type MouseEvent,
+  type MouseEventHandler,
   type ReactNode,
   type Ref,
   type RefAttributes,
 } from 'react';
+import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
@@ -31,10 +35,86 @@ import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 
-export interface NavigationProps extends ComponentPropsWithRef<'nav'>, SxProps {
-  /** Accessible name of the navigation landmark. */
+const tokens = (...values: Array<unknown>): string | undefined => {
+  const list = [...new Set(values.flatMap((v) => (typeof v === 'string' ? v.split(/\s+/) : [])))].filter(Boolean);
+  return list.join(' ') || undefined;
+};
+
+export type NavigationItemRecord = Readonly<{
+  key?: string;
+  href?: string;
+  label: ReactNode;
+  disabled?: boolean;
+  icon?: ReactNode;
+  active?: boolean;
+  target?: string;
+  rel?: string;
+  onClick?: MouseEventHandler<HTMLElement>;
+  id?: string;
+  className?: string;
+  style?: CSSProperties;
+  css?: Interpolation<Theme>;
+  sx?: SxProps['sx'];
+  'aria-current'?: 'page' | 'step' | 'location' | 'date' | 'time' | 'true' | 'false';
+  'aria-label'?: string;
+}>;
+
+export type NavigationGroupRecord = Readonly<{
+  key?: string;
+  label?: ReactNode;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
+  items: readonly NavigationItemRecord[];
+  className?: string;
+  style?: CSSProperties;
+  css?: Interpolation<Theme>;
+  sx?: SxProps['sx'];
+}>;
+
+export interface NavigationSlots {
+  root?: ComponentType<ComponentPropsWithRef<'nav'>>;
+  group?: ComponentType<NavigationGroupProps>;
+  item?: ComponentType<NavigationItemProps>;
+}
+
+export interface NavigationSlotProps {
+  root?: Omit<ComponentPropsWithRef<'nav'>, 'children'> &
+    SxProps & {
+      css?: Interpolation<Theme>;
+      [attribute: `data-${string}`]: unknown;
+    };
+  group?: Partial<Omit<NavigationGroupProps, 'children' | 'label' | 'collapsible' | 'defaultOpen'>> & { css?: Interpolation<Theme> };
+  item?: Partial<Omit<NavigationItemProps, 'children' | 'href' | 'active' | 'disabled' | 'icon'>> & { css?: Interpolation<Theme> };
+}
+
+export interface NavigationBaseProps extends Omit<ComponentPropsWithRef<'nav'>, 'children'>, SxProps {
+  /** Accessible name of the navigation landmark. Defaults to 'Main'. */
   label?: string;
 }
+
+export interface NavigationCompoundProps extends NavigationBaseProps {
+  children?: ReactNode;
+  groups?: never;
+  activeHref?: never;
+  component?: never;
+  slots?: never;
+  slotProps?: never;
+}
+
+export interface NavigationEasyProps extends NavigationBaseProps {
+  /** Accessible name of the navigation landmark. Defaults to 'Main'. */
+  label?: string;
+  /** Navigation groups rendered in order. */
+  groups: readonly NavigationGroupRecord[];
+  /** Mark the item matching this href as active (aria-current="page"). */
+  activeHref?: string;
+  children?: never;
+  component?: NavigationSlots['root'];
+  slots?: NavigationSlots;
+  slotProps?: NavigationSlotProps;
+}
+
+export type NavigationProps = NavigationCompoundProps | NavigationEasyProps;
 
 export interface NavigationGroupProps extends ComponentPropsWithRef<'section'>, SxProps {
   label?: ReactNode;
@@ -180,11 +260,125 @@ const itemStyle = css({
   },
 });
 
-function NavigationRoot({ ref, label = 'Main', className, sx, ...rest }: NavigationProps) {
+function NavigationRoot({
+  ref,
+  label = 'Main',
+  className,
+  sx,
+  style,
+  groups,
+  activeHref,
+  children,
+  component,
+  slots,
+  slotProps,
+  ...rest
+}: NavigationProps) {
+  const isEasyMode = groups !== undefined;
+  const Root = component ?? slots?.root ?? 'nav';
+  const Group = slots?.group ?? NavigationGroup;
+  const Item = slots?.item ?? NavigationItem;
+
+  const {
+    className: rootSlotClassName,
+    style: rootSlotStyle,
+    css: rootSlotCss,
+    sx: rootSlotSx,
+    ref: rootSlotRef,
+    'data-ui': rootSlotDataUi,
+    ...rootSlotRest
+  } = slotProps?.root ?? {};
+
+  const mergedRef = useMergeRefs([ref, rootSlotRef]);
+  const mergedClassName = [rootSlotClassName, className].filter(Boolean).join(' ') || undefined;
+  const mergedStyle = { ...style, ...rootSlotStyle };
+
   return (
-    <WithSx className={className} styles={rootStyle} sx={sx}>
-      {(className) => (
-        <nav {...rest} ref={ref} aria-label={rest['aria-label'] ?? label} data-ui="navigation" className={className} />
+    <WithSx className={mergedClassName} styles={[rootStyle, rootSlotCss, rootSlotSx]} sx={sx}>
+      {(resolvedClassName) => (
+        <Root
+          {...rest}
+          {...rootSlotRest}
+          ref={mergedRef}
+          aria-label={rootSlotRest['aria-label'] ?? rest['aria-label'] ?? label}
+          data-ui={tokens('navigation', rootSlotDataUi) ?? 'navigation'}
+          style={mergedStyle}
+          className={resolvedClassName}
+        >
+          {isEasyMode ? (
+            groups.map((group, groupIndex) => {
+              const groupKey = group.key ?? (typeof group.label === 'string' ? group.label : groupIndex);
+              const {
+                className: groupSlotClassName,
+                css: groupSlotCss,
+                sx: groupSlotSx,
+                style: groupSlotStyle,
+                ...groupSlotRest
+              } = slotProps?.group ?? {};
+              const mergedGroupClassName = [groupSlotClassName, group.className].filter(Boolean).join(' ') || undefined;
+              const mergedGroupStyle = { ...groupSlotStyle, ...group.style };
+              return (
+                <Group
+                  key={groupKey}
+                  {...groupSlotRest}
+                  label={group.label}
+                  collapsible={group.collapsible}
+                  defaultOpen={group.defaultOpen}
+                  className={mergedGroupClassName}
+                  style={mergedGroupStyle}
+                  css={[groupSlotCss, groupSlotSx, group.css]}
+                  sx={group.sx}
+                >
+                  {group.items.map((item, itemIndex) => {
+                    const itemKey = item.key ?? (item.href ?? (typeof item.label === 'string' ? item.label : itemIndex));
+                    const isActive = item.active ?? (activeHref !== undefined && item.href !== undefined && item.href === activeHref);
+                    const {
+                      className: itemSlotClassName,
+                      css: itemSlotCss,
+                      sx: itemSlotSx,
+                      style: itemSlotStyle,
+                      ...itemSlotRest
+                    } = slotProps?.item ?? {};
+                    const {
+                      label: itemLabel,
+                      href,
+                      disabled,
+                      icon,
+                      active: _a,
+                      key: _k,
+                      className: itemClassName,
+                      style: itemStyleProp,
+                      css: itemCssProp,
+                      sx: itemSxProp,
+                      ...itemRest
+                    } = item;
+                    const mergedItemClassName = [itemSlotClassName, itemClassName].filter(Boolean).join(' ') || undefined;
+                    const mergedItemStyle = { ...itemSlotStyle, ...itemStyleProp };
+                    return (
+                      <Item
+                        key={itemKey}
+                        {...itemSlotRest}
+                        {...itemRest}
+                        href={href}
+                        active={isActive}
+                        disabled={disabled}
+                        icon={icon}
+                        className={mergedItemClassName}
+                        style={mergedItemStyle}
+                        css={[itemSlotCss, itemSlotSx, itemCssProp]}
+                        sx={itemSxProp}
+                      >
+                        {itemLabel}
+                      </Item>
+                    );
+                  })}
+                </Group>
+              );
+            })
+          ) : (
+            children
+          )}
+        </Root>
       )}
     </WithSx>
   );

@@ -5,13 +5,14 @@
 // the card is placed (a card under an h2 section keeps h3, a top-level card grid may need h2).
 // slotProps on the root style the parts rendered inside it, so a consumer can theme a card's
 // anatomy from one place; a part's own className/css still merges last.
-import { createContext, useContext, type ComponentPropsWithRef } from 'react';
+import { createContext, useContext, type ComponentPropsWithRef, type ReactElement, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import type { SurfaceAppearance } from '../../styling/surface';
 import type { SurfacePartProps, SurfaceRootCustomization, SurfaceRootSlotProps } from '../surface';
 import { SurfaceRoot, resolveSurfaceValue } from '../surface/surface-root';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { isRenderable } from '../../utils/renderable';
 
 export type CardVariant = 'flat' | 'raised';
 
@@ -31,7 +32,11 @@ export interface CardSlotProps {
   footer?: CardPartProps;
 }
 
-export interface CardProps extends SurfacePartProps, SxProps, Omit<SurfaceRootCustomization, 'slotProps'> {
+interface CardBaseProps
+  extends Omit<SurfacePartProps, 'children' | 'title' | 'content'>,
+    SxProps,
+    Omit<SurfaceRootCustomization, 'slotProps'> {
+  'data-variant'?: string;
   variant?: CardVariant;
   /**
    * `contrast` uses the dark palette with a charcoal surface on any page theme.
@@ -41,6 +46,28 @@ export interface CardProps extends SurfacePartProps, SxProps, Omit<SurfaceRootCu
   slotProps?: CardSlotProps;
   css?: Interpolation<Theme>;
 }
+
+export interface CardCompoundProps extends CardBaseProps {
+  children?: ReactNode;
+  title?: string;
+  description?: never;
+  content?: string;
+  footer?: never;
+}
+
+export interface CardEasyProps extends CardBaseProps {
+  /** Show a heading in the generated header. */
+  title?: ReactNode;
+  /** Describe the card below its heading. */
+  description?: ReactNode;
+  /** Render the body with Card.Content. */
+  content: ReactNode;
+  /** Render actions below the body. */
+  footer?: ReactNode;
+  children?: never;
+}
+
+export type CardProps = CardCompoundProps | CardEasyProps;
 
 export type CardHeaderProps = ComponentPropsWithRef<'div'> & SxProps;
 
@@ -107,11 +134,29 @@ const footerStyle = css({
   '& > :only-child': { marginInlineStart: 'auto' },
 });
 
-function CardRoot({ variant: variantProp, slotProps, ...props }: CardProps) {
+function CardRoot(props: CardEasyProps): ReactElement;
+function CardRoot(props: CardCompoundProps): ReactElement;
+function CardRoot(allProps: CardProps) {
+  const easy = 'content' in allProps && allProps.children === undefined;
+  const { variant: variantProp, slotProps, children, title, description, content, footer, ...props } = allProps;
   const variant = resolveSurfaceValue('Card', 'variant', variantProp, variants, 'raised');
   return (
     <SurfaceRoot
       {...props}
+      title={!easy && typeof title === 'string' ? title : undefined}
+      content={!easy && typeof content === 'string' ? content : undefined}
+      children={easy ? (
+        <>
+          {(isRenderable(title) || isRenderable(description)) && (
+            <CardHeader>
+              {isRenderable(title) && <CardTitle>{title}</CardTitle>}
+              {isRenderable(description) && <CardDescription>{description}</CardDescription>}
+            </CardHeader>
+          )}
+          <CardContent>{content}</CardContent>
+          {isRenderable(footer) && <CardFooter>{footer}</CardFooter>}
+        </>
+      ) : children}
       slotProps={slotProps}
       owner="Card"
       marker="card"

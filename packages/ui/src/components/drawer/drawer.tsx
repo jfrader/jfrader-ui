@@ -64,7 +64,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 export type DrawerSide = 'inline-start' | 'inline-end' | 'top' | 'bottom';
 export type DrawerSize = 'sm' | 'md' | 'lg';
 
-export interface DrawerProps {
+export interface DrawerBaseProps {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -74,8 +74,47 @@ export interface DrawerProps {
   size?: DrawerSize;
   /** Lets the header drag the panel toward its edge to dismiss. Ignored under reduced motion. */
   draggable?: boolean;
-  children?: ReactNode;
 }
+
+type GeneratedPartProps<Props> = Omit<Props, 'children'> & Pick<DrawerPanelProps, `data-${string}`>;
+
+export interface DrawerSlotProps {
+  trigger?: GeneratedPartProps<DrawerTriggerProps>;
+  content?: GeneratedPartProps<DrawerContentProps>;
+  panel?: GeneratedPartProps<DrawerPanelProps>;
+  header?: GeneratedPartProps<DrawerHeaderProps>;
+  title?: GeneratedPartProps<DrawerTitleProps>;
+  description?: GeneratedPartProps<DrawerDescriptionProps>;
+  close?: GeneratedPartProps<DrawerCloseProps>;
+  body?: GeneratedPartProps<DrawerBodyProps>;
+}
+
+export interface DrawerCompoundProps extends DrawerBaseProps {
+  children?: ReactNode;
+  triggerLabel?: never;
+  title?: never;
+  description?: never;
+  content?: never;
+  closeLabel?: never;
+  slotProps?: never;
+}
+
+export interface DrawerEasyProps extends DrawerBaseProps {
+  /** Name the button that opens the drawer. */
+  triggerLabel: ReactNode;
+  /** Name the drawer with a visible heading. */
+  title: ReactNode;
+  /** Describe the drawer below its heading. */
+  description?: ReactNode;
+  /** Place content inside the drawer body. */
+  content: ReactNode;
+  /** Name the close button. */
+  closeLabel: ReactNode;
+  children?: never;
+  slotProps?: DrawerSlotProps;
+}
+
+export type DrawerProps = DrawerCompoundProps | DrawerEasyProps;
 
 export interface DrawerTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface DrawerContentProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'>, SxProps {
@@ -368,15 +407,15 @@ function hasText(children: ReactNode) {
   return isRenderable(children) && children !== '';
 }
 
-function DrawerRoot({
-  open: openProp,
-  defaultOpen = false,
-  onOpenChange,
-  side = 'inline-end',
-  size = 'md',
-  draggable = false,
-  children,
-}: DrawerProps) {
+function DrawerRoot(props: DrawerProps) {
+  const {
+    open: openProp,
+    defaultOpen = false,
+    onOpenChange,
+    side = 'inline-end',
+    size = 'md',
+    draggable = false,
+  } = props;
   const baseId = useId();
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const { setDialogElement, setOpen, requestClose, repairToken } = useNativeDialogRoot(open, requestOpenChange);
@@ -403,7 +442,29 @@ function DrawerRoot({
     [open, setOpen, requestClose, repairToken, setDialogElement, side, size, draggable, baseId, hasTitle, hasDescription],
   );
 
-  return <DrawerContext.Provider value={context}>{children}</DrawerContext.Provider>;
+  return (
+    <DrawerContext.Provider value={context}>
+      {'content' in props ? (
+        <>
+          <DrawerTrigger {...props.slotProps?.trigger}>{props.triggerLabel}</DrawerTrigger>
+          <DrawerContent {...props.slotProps?.content}>
+            <DrawerPanel {...props.slotProps?.panel}>
+              <DrawerHeader {...props.slotProps?.header}>
+                <DrawerTitle {...props.slotProps?.title}>{props.title}</DrawerTitle>
+                {isRenderable(props.description) && (
+                  <DrawerDescription {...props.slotProps?.description}>{props.description}</DrawerDescription>
+                )}
+                <DrawerClose {...props.slotProps?.close}>{props.closeLabel}</DrawerClose>
+              </DrawerHeader>
+              <DrawerBody {...props.slotProps?.body}>{props.content}</DrawerBody>
+            </DrawerPanel>
+          </DrawerContent>
+        </>
+      ) : (
+        props.children
+      )}
+    </DrawerContext.Provider>
+  );
 }
 
 DrawerRoot.displayName = 'Drawer';

@@ -46,7 +46,16 @@ const meta = {
   decorators: [(Story) => <div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}><Story /></div>],
   parameters: { layout: 'fullscreen', a11y: { test: 'error' }, docs: {
     description: { component: 'Keep played cards grouped by player. Open a pile to read its cards.' },
-    usage: `### Placement and cards
+    source: {
+      language: 'tsx',
+      code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+<GameCardStack piles={piles} onValueChange={handleInspectionChange} />`,
+    },
+    usage: `### Setup
+- Import from \`@jfrader/ui/game-card-stack\`. GameCardStack is an opt-in subpath and is not re-exported by the package root.
+
+### Placement and cards
 - Render \`GameCardStack.Pile\` inside \`GameTable.Play\` to put each player's cards in front of their seat. The part fills its host in normal flow; it owns no table placement.
 - This deliberately replaces the reference's per-profile preset placement, following GameTable's circular-layout deviation policy. Card mathematics stay unchanged: closed offsets are delta × 4px and |delta| × 1.5px; open offsets are delta × 0.52 card widths and −|delta| × 4px; inspection scale is 1.45, deterministic jitter is at most 4px and rotation offset at most 6 degrees.
 - The root defaults to \`placement="grid"\`: give it a definite width and height. Measurement chooses rows and columns and shrinks cards to reserve inspected fans. Include empty piles to reserve positions.

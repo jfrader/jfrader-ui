@@ -246,7 +246,10 @@ const meta = {
     layout: 'fullscreen',
     docs: {
       description: { component: 'Arrange players around a game surface. Add cards, controls and floating content to named regions.' },
-      usage: `### Regions
+      usage: `### Setup
+- Import from \`@jfrader/ui/game-table\`. GameTable is an opt-in subpath and is not re-exported by the package root.
+
+### Regions
 Compose direct \`GameTable.Seat\`, \`GameTable.Play\`, \`GameTable.Center\`, \`GameTable.Header\`, \`GameTable.Dock\`, \`GameTable.Footer\` and \`GameTable.Floating\` children in any order (fragments are accepted). Seat and Play repeat at every place unless you pass \`slotKey\`. Their children read \`{ player, slot, index, geometry }\` with \`useGameTableSeat<Player>()\`. Empty play content reserves nothing. Center holds shared cards, the pot or deck and is measured independently. Keep measured footprints in normal flow; absolute artwork must reserve its footprint in its parent. The node-region props and seat/play callbacks have been replaced by these parts.
 
 Each public part accepts native div props, ref and sx. \`component\` is sugar for \`slots.root\`; \`slotProps.root\` passes root props, with slot conflicts winning except merged className/style. Geometry variables and measurement markers remain table-owned. Use \`seatSlots\` for prebuilt player order; \`slots\` now replaces structure.
@@ -287,7 +290,11 @@ Measure again after viewport updates, resize, scroll, zoom or ancestor transform
 
 ### Keyboard
 The table is a passive layout, not an APG grid or application. It adds no roles, landmarks, focus movement, state or animation; supplied controls keep their own semantics and native tab order. Floating content is table-local, not a dialog or portal.`,
-      source: { language: 'tsx', code: `function SeatCards() {
+      source: { language: 'tsx', code: `import { Button } from '@jfrader/ui';
+import { GameCard } from '@jfrader/ui/game-card';
+import { GameTable, useGameTableSeat } from '@jfrader/ui/game-table';
+
+function SeatCards() {
   const { player } = useGameTableSeat<Player>();
   return <GameCard label={player?.name ?? 'Open seat'} />;
 }
@@ -1332,7 +1339,11 @@ function PokerFixture() {
 /** Six free-for-all seats, five community cards and a pot. Press Deal board to replay the deal. */
 export const PokerCommunityBoard: Story = {
   render: () => <PokerFixture />,
-  parameters: { a11y: { test: 'error' }, docs: { source: { language: 'tsx', code: `function PokerSeat() {
+  parameters: { a11y: { test: 'error' }, docs: { source: { language: 'tsx', code: `import { DeckProvider } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+import { GameTable, useGameTableSeat } from '@jfrader/ui/game-table';
+
+function PokerSeat() {
   const { player } = useGameTableSeat<Player>();
   return <div>{player?.name} · 1,200 chips</div>;
 }

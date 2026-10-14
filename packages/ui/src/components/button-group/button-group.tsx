@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
 } from 'react';
 import { useMergeRefs, type Placement } from '@floating-ui/react';
@@ -41,8 +42,39 @@ import {
 } from '../menu/menu';
 import { tooltipContentStyle, useTooltipInteractions } from '../tooltip/tooltip';
 
+const tokens = (...values: Array<unknown>): string | undefined => {
+  const list = [...new Set(values.flatMap((v) => (typeof v === 'string' ? v.split(/\s+/) : [])))].filter(Boolean);
+  return list.join(' ') || undefined;
+};
+
 export type ButtonGroupOrientation = 'horizontal' | 'vertical';
-export interface ButtonGroupProps extends Omit<ComponentPropsWithRef<'div'>, 'role'>, SxProps {
+
+export type ButtonGroupItemRecord =
+  | Readonly<Omit<ButtonGroupItemProps, 'children' | 'label'> & {
+      label: ReactNode;
+      href?: never;
+    }>
+  | Readonly<Omit<ButtonGroupLinkProps, 'children' | 'label'> & {
+      label: ReactNode;
+    }>;
+
+export interface ButtonGroupSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  item?: ComponentType<ButtonGroupItemProps>;
+  link?: ComponentType<ButtonGroupLinkProps>;
+}
+
+export interface ButtonGroupSlotProps {
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children'> &
+    SxProps & {
+      css?: Interpolation<Theme>;
+      [attribute: `data-${string}`]: unknown;
+    };
+  item?: Partial<Omit<ButtonGroupItemProps, 'children' | 'label' | 'onClick' | 'disabled'>>;
+  link?: Partial<Omit<ButtonGroupLinkProps, 'children' | 'label' | 'href' | 'onClick' | 'disabled'>>;
+}
+
+export interface ButtonGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'role' | 'children'>, SxProps {
   variant?: ButtonVariant;
   tone?: ButtonTone;
   size?: ButtonSize;
@@ -54,6 +86,28 @@ export interface ButtonGroupProps extends Omit<ComponentPropsWithRef<'div'>, 'ro
   onOpenChange?: (open: boolean) => void;
   placement?: Placement;
 }
+
+export interface ButtonGroupCompoundProps extends ButtonGroupBaseProps {
+  children?: ReactNode;
+  label?: never;
+  items?: never;
+  component?: never;
+  slots?: never;
+  slotProps?: never;
+}
+
+export interface ButtonGroupEasyProps extends ButtonGroupBaseProps {
+  /** Accessible name for the group landmark/widget. */
+  label?: string;
+  /** Action items or links rendered in order. */
+  items: readonly ButtonGroupItemRecord[];
+  children?: never;
+  component?: ButtonGroupSlots['root'];
+  slots?: ButtonGroupSlots;
+  slotProps?: ButtonGroupSlotProps;
+}
+
+export type ButtonGroupProps = ButtonGroupCompoundProps | ButtonGroupEasyProps;
 export interface ButtonGroupItemProps extends Omit<ButtonProps, 'render'> {
   iconOnly?: boolean;
   label?: string;
@@ -104,7 +158,7 @@ function useGroup(part: string) {
   if (!context) throw new Error(`ButtonGroup.${part} must be rendered inside <ButtonGroup>.`);
   return context;
 }
-const OWNER = '[data-ui="button-group"]';
+const OWNER = '[data-ui~="button-group"]';
 const OWNED_ACTIONS = {
   ownerSelector: OWNER,
   itemSelector: '[data-button-group-action]:not(:disabled):not([aria-disabled="true"])',
@@ -217,7 +271,7 @@ const highlightStyle = css({
   zIndex: -1,
   pointerEvents: 'none',
   backgroundColor: vars.color.surfaceHover,
-  '[data-ui="button-group"]:has(> [data-button-group-action]:active) > &': {
+  '[data-ui~="button-group"]:has(> [data-button-group-action]:active) > &': {
     backgroundColor: vars.color.surfaceRaised,
   },
   borderRadius: vars.radius.md,
@@ -338,19 +392,48 @@ function ButtonGroupRoot({
   defaultOpen,
   onOpenChange,
   placement,
-  children,
   className,
   sx,
+  style,
   onKeyDown,
   onPointerOver,
   onPointerLeave,
   onPointerCancel,
   onFocus,
   onBlur,
+  label,
+  items,
+  children,
+  component,
+  slots,
+  slotProps,
   ...rest
 }: ButtonGroupProps) {
+  const Root = component ?? slots?.root ?? 'div';
+  const Item = slots?.item ?? ButtonGroupItem;
+  const Link = slots?.link ?? ButtonGroupLink;
+
+  const {
+    className: rootSlotClassName,
+    style: rootSlotStyle,
+    css: rootSlotCss,
+    sx: rootSlotSx,
+    ref: rootSlotRef,
+    'data-ui': rootSlotDataUi,
+    onKeyDown: rootSlotOnKeyDown,
+    onPointerOver: rootSlotOnPointerOver,
+    onPointerLeave: rootSlotOnPointerLeave,
+    onPointerCancel: rootSlotOnPointerCancel,
+    onFocus: rootSlotOnFocus,
+    onBlur: rootSlotOnBlur,
+    ...rootSlotRest
+  } = slotProps?.root ?? {};
+
+  const mergedClassName = [rootSlotClassName, className].filter(Boolean).join(' ') || undefined;
+  const mergedStyle = { ...style, ...rootSlotStyle };
+
   const rootRef = useRef<HTMLDivElement>(null);
-  const mergedRef = useMergeRefs([rootRef, ref]);
+  const mergedRef = useMergeRefs([rootRef, ref, rootSlotRef]);
   const [compact, setCompact] = useState(false);
   const [direction, setDirection] = useState<'ltr' | 'rtl'>();
   const [triggerLabelledBy, setTriggerLabelledBy] = useState<string>();
@@ -369,11 +452,11 @@ function ButtonGroupRoot({
         itemSelector: '[data-button-group-segment]',
       });
       const fullWidth = segments.reduce((sum, node) => {
-        const label = node.querySelector<HTMLElement>('[data-button-group-labels][data-collapsed]');
+        const labelEl = node.querySelector<HTMLElement>('[data-button-group-labels][data-collapsed]');
         return (
           sum +
           node.getBoundingClientRect().width / (root.getBoundingClientRect().width / root.offsetWidth || 1) +
-          (label ? label.scrollWidth + parseFloat(getComputedStyle(node).columnGap || '0') : 0)
+          (labelEl ? labelEl.scrollWidth + parseFloat(getComputedStyle(node).columnGap || '0') : 0)
         );
       }, 0);
       setCompact((current) =>
@@ -388,14 +471,14 @@ function ButtonGroupRoot({
     }).forEach((node) => observer.observe(node));
     measure();
     return () => observer.disconnect();
-  }, [collapseLabels, orientation, children, rest.dir]);
+  }, [collapseLabels, orientation, children, items, rest.dir]);
   useEffect(() => {
     if (
       disabled ||
       (target && (!target.matches(OWNED_ACTIONS.itemSelector) || target.closest(OWNER) !== rootRef.current))
     )
       setTarget(null);
-  }, [disabled, children, target]);
+  }, [disabled, children, items, target]);
   const context = useMemo(
     () => ({
       variant,
@@ -424,36 +507,39 @@ function ButtonGroupRoot({
     >
       <Context.Provider value={context}>
         <MotionConfig reducedMotion="user">
-          <WithSx className={className} styles={rootStyle} sx={sx}>
-            {(className) => (
-              <div
+          <WithSx className={mergedClassName} styles={[rootStyle, rootSlotCss, rootSlotSx]} sx={sx}>
+            {(resolvedClassName) => (
+              <Root
                 {...rest}
+                {...rootSlotRest}
                 ref={mergedRef}
                 role="group"
-                data-ui="button-group"
+                aria-label={rootSlotRest['aria-label'] ?? rest['aria-label'] ?? label}
+                data-ui={tokens('button-group', rootSlotDataUi) ?? 'button-group'}
                 data-orientation={orientation}
                 data-compact={compact || undefined}
-                className={className}
+                style={mergedStyle}
+                className={resolvedClassName}
                 onKeyDown={(event) => {
-                  onKeyDown?.(event);
+                  (rootSlotOnKeyDown ?? onKeyDown)?.(event);
                   if (!event.defaultPrevented && rootRef.current)
                     moveRovingFocus(event, rootRef.current, orientation, OWNED_ACTIONS);
                 }}
                 onPointerOver={(event) => {
-                  onPointerOver?.(event);
+                  (rootSlotOnPointerOver ?? onPointerOver)?.(event);
                   if (!event.defaultPrevented && !disabled) setTarget(owned(event.target));
                 }}
                 onPointerLeave={(event) => {
-                  onPointerLeave?.(event);
+                  (rootSlotOnPointerLeave ?? onPointerLeave)?.(event);
                   if (!event.defaultPrevented)
                     setTarget(owned(rootRef.current?.ownerDocument.activeElement ?? null));
                 }}
                 onPointerCancel={(event) => {
-                  onPointerCancel?.(event);
+                  (rootSlotOnPointerCancel ?? onPointerCancel)?.(event);
                   if (!event.defaultPrevented) setTarget(null);
                 }}
                 onFocus={(event) => {
-                  onFocus?.(event);
+                  (rootSlotOnFocus ?? onFocus)?.(event);
                   const item = owned(event.target);
                   if (!event.defaultPrevented && item) {
                     setTarget(item);
@@ -464,13 +550,92 @@ function ButtonGroupRoot({
                   }
                 }}
                 onBlur={(event) => {
-                  onBlur?.(event);
+                  (rootSlotOnBlur ?? onBlur)?.(event);
                   if (!event.defaultPrevented) setTarget(owned(event.relatedTarget));
                 }}
               >
                 <Highlight root={rootRef.current} target={target} />
-                {children}
-              </div>
+                {items !== undefined ? (
+                  items.map((item, index) => {
+                    const itemKey = item.key ?? (typeof item.label === 'string' ? item.label : index);
+                    const isItemDisabled = item.disabled;
+                    if (item.href !== undefined) {
+                      const {
+                        className: linkSlotClassName,
+                        css: linkSlotCss,
+                        sx: linkSlotSx,
+                        style: linkSlotStyle,
+                        ...linkSlotRest
+                      } = slotProps?.link ?? {};
+                      const {
+                        label: itemLabel,
+                        href,
+                        disabled: _d,
+                        key: _k,
+                        className: itemClassName,
+                        style: itemStyleProp,
+                        css: itemCssProp,
+                        sx: itemSxProp,
+                        ...itemRest
+                      } = item;
+                      const mergedLinkClassName = [linkSlotClassName, itemClassName].filter(Boolean).join(' ') || undefined;
+                      const mergedLinkStyle = { ...linkSlotStyle, ...itemStyleProp };
+                      return (
+                        <Link
+                          key={itemKey}
+                          {...linkSlotRest}
+                          {...itemRest}
+                          href={href}
+                          disabled={isItemDisabled}
+                          label={typeof itemLabel === 'string' ? itemLabel : undefined}
+                          className={mergedLinkClassName}
+                          style={mergedLinkStyle}
+                           css={[linkSlotCss, linkSlotSx, itemCssProp]}
+                           sx={itemSxProp}
+                        >
+                          {itemLabel}
+                        </Link>
+                      );
+                    }
+                    const {
+                      className: itemSlotClassName,
+                      css: itemSlotCss,
+                      sx: itemSlotSx,
+                      style: itemSlotStyle,
+                      ...itemSlotRest
+                    } = slotProps?.item ?? {};
+                    const {
+                      label: itemLabel,
+                      disabled: _d,
+                      key: _k,
+                      className: itemClassName,
+                      style: itemStyleProp,
+                      css: itemCssProp,
+                      sx: itemSxProp,
+                      ...itemRest
+                    } = item;
+                    const mergedItemClassName = [itemSlotClassName, itemClassName].filter(Boolean).join(' ') || undefined;
+                    const mergedItemStyle = { ...itemSlotStyle, ...itemStyleProp };
+                    return (
+                      <Item
+                        key={itemKey}
+                        {...itemSlotRest}
+                        {...itemRest}
+                        disabled={isItemDisabled}
+                        label={typeof itemLabel === 'string' ? itemLabel : undefined}
+                        className={mergedItemClassName}
+                        style={mergedItemStyle}
+                         css={[itemSlotCss, itemSlotSx, itemCssProp]}
+                         sx={itemSxProp}
+                      >
+                        {itemLabel}
+                      </Item>
+                    );
+                  })
+                ) : (
+                  children
+                )}
+              </Root>
             )}
           </WithSx>
         </MotionConfig>

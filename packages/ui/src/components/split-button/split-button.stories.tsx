@@ -1,4 +1,4 @@
-import { Component, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
+import { Component, useState, type CSSProperties, type ComponentPropsWithRef, type MouseEvent, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -6,7 +6,14 @@ import { css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button, type ButtonSize, type ButtonTone, type ButtonVariant } from '../button';
 import { ThemeRoot } from '../theme-root';
-import { SplitButton, type SplitButtonProps } from './index';
+import {
+  SplitButton,
+  type SplitButtonActionProps,
+  type SplitButtonActionRecord,
+  type SplitButtonCompoundProps,
+  type SplitButtonEasyProps,
+  type SplitButtonItemRecord,
+} from './index';
 
 const GROUP = 'Export options';
 const ACTION = 'Export PDF';
@@ -39,11 +46,11 @@ const stackStyle = {
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ marginInlineStart: vars.space[2] });
 
-interface StoryArgs extends SplitButtonProps {
-  onAction: (event: MouseEvent<HTMLButtonElement>) => void;
-  onCsv: () => void;
-  onJson: () => void;
-  onDelete: () => void;
+interface StoryArgs extends SplitButtonCompoundProps {
+  onAction?: (event: MouseEvent<HTMLButtonElement>) => void;
+  onCsv?: () => void;
+  onJson?: () => void;
+  onDelete?: () => void;
 }
 
 function PdfIcon() {
@@ -144,7 +151,9 @@ const meta = {
         component:
           'Run an action or choose another action from the menu beside it.',
       },
-      usage: `- Action and Trigger are buttons in a labelled group. Trigger opens the menu without running Action.
+      usage: `- Pass label, native onClick, menuLabel and readonly action/separator items, or compose the dotted parts with children. The easy onClick belongs only to the primary action.
+- Use slotProps for generated root, action, trigger, content, item and separator props. component replaces the root, as does slots.root. Other replacements compose the corresponding dotted part and forward received props/ref. Declare replacements outside render.
+- Action and Trigger are buttons in a labelled group. Trigger opens the menu without running Action.
 - Choosing a menu item does not replace the default action.
 - Give Trigger a translated \`aria-label\` or \`aria-labelledby\`; it has no text.
 - Use Menu when there is no default action. Use Button when there are no alternatives.`,
@@ -180,9 +189,107 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+function SplitButtonHost(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="split-button-host" />;
+}
+function CustomAction(props: SplitButtonActionProps) {
+  return <SplitButton.Action {...props} data-testid="custom-split-action" />;
+}
 
-export const Default: Story = {
+type Story = StoryObj<Omit<StoryArgs, 'component'>>;
+
+export const Default: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
+  name: 'Easy mode',
+  args: {
+    label: ACTION,
+    onClick: fn(),
+    menuLabel: TRIGGER,
+    'aria-label': GROUP,
+    items: [
+      { label: 'CSV', onSelect: fn() },
+      { label: 'Excel', disabled: true },
+      { label: 'JSON', onSelect: fn() },
+      { type: 'separator' },
+      { label: 'Delete export', tone: 'danger', onSelect: fn() },
+    ],
+    onOpenChange: fn(),
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `const items = [
+  { label: 'CSV', onSelect: exportCsv },
+  { label: 'Excel', disabled: true },
+  { label: 'JSON', onSelect: exportJson },
+  { type: 'separator' },
+  { label: 'Delete export', tone: 'danger', onSelect: deleteExport },
+] satisfies readonly SplitButtonItemRecord[];
+
+<SplitButton
+  label="Export PDF"
+  onClick={exportPdf}
+  menuLabel="Other export formats"
+  aria-label="Export options"
+  items={items}
+/>`,
+      },
+    },
+  },
+  render: (args) => (
+    <div style={rowStyle}>
+      <SplitButton {...args} />
+      <Button>After</Button>
+    </div>
+  ),
+  play: async ({ args, canvasElement, userEvent }) => {
+    const group = within(canvasElement).getByRole('group', { name: GROUP });
+    const action = getAction(canvasElement);
+    const trigger = getTrigger(canvasElement);
+    await expect(group).toHaveAttribute('data-ui', 'split-button');
+    await expect(group.contains(action) && group.contains(trigger)).toBe(true);
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).not.toHaveAttribute('aria-controls');
+    await expect(action).not.toHaveAttribute('aria-haspopup');
+
+    // The Action runs the main action and never opens the menu.
+    await userEvent.click(action);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await expect(bodyOf(canvasElement).queryByRole('menu')).toBeNull();
+
+    // The Trigger opens the menu and never runs the main action.
+    await userEvent.click(trigger);
+    const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
+    await expect(canvasElement.contains(menu)).toBe(false);
+    await expect(menu).toHaveAttribute('data-ui', 'split-button-content');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(trigger).toHaveAttribute('aria-controls', menu.id);
+    await expectItemFocused(canvasElement, 'CSV');
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+    await expect(callValues(args.onOpenChange)).toEqual([true]);
+
+    // Keyboard navigation skips disabled item
+    const disabled = within(menu).getByRole('menuitem', { name: 'Excel' });
+    await expect(disabled).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.keyboard('{ArrowDown}');
+    await expectItemFocused(canvasElement, 'JSON');
+
+    // Activating item selects it, closes menu, returns focus to trigger without running main onClick
+    const csvItem = within(menu).getByRole('menuitem', { name: 'CSV' });
+    await userEvent.click(csvItem);
+    const firstActionItem = args.items[0] as SplitButtonActionRecord;
+    await expect(firstActionItem.onSelect).toHaveBeenCalledTimes(1);
+    await expectClosed(canvasElement);
+    await expectActive(canvasElement, trigger);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+    await expect(callValues(args.onOpenChange)).toEqual([true, false]);
+  },
+};
+
+export const Compound: Story = {
+  name: 'Compound',
   parameters: {
     docs: {
       source: {
@@ -232,6 +339,136 @@ export const Default: Story = {
     await expect(callValues(args.onOpenChange)).toEqual([true, false]);
   },
 };
+
+export const GeneratedPartProps: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
+  name: 'Generated part props',
+  args: {
+    label: ACTION,
+    onClick: fn(),
+    menuLabel: TRIGGER,
+    'aria-label': GROUP,
+    items: [
+      { label: 'CSV', onSelect: fn() },
+      { type: 'separator' },
+      { label: 'JSON', onSelect: fn() },
+    ],
+    slotProps: {
+      root: { 'data-testid': 'custom-split-root', className: 'custom-split-class' },
+      action: { className: 'custom-action-class' },
+      trigger: { className: 'custom-trigger-class' },
+      content: { className: 'custom-content-class' },
+      item: { className: 'custom-item-class' },
+      separator: { className: 'custom-separator-class' },
+    },
+  },
+  render: (args) => <SplitButton {...args} />,
+  parameters: { docs: { source: { code: `<SplitButton label="Export PDF" onClick={exportPdf} menuLabel="Other export formats" items={formats}
+  slotProps={{ action: { className: 'custom-action-class' }, content: { className: 'custom-content-class' } }} />` } } },
+  play: async ({ canvasElement, userEvent }) => {
+    const root = within(canvasElement).getByTestId('custom-split-root');
+    await expect(root).toHaveClass('custom-split-class');
+    await expect(root).toHaveAttribute('data-ui', 'split-button');
+
+    const action = within(root).getByRole('button', { name: ACTION });
+    await expect(action).toHaveClass('custom-action-class');
+
+    const trigger = within(root).getByRole('button', { name: TRIGGER });
+    await expect(trigger).toHaveClass('custom-trigger-class');
+
+    await userEvent.click(trigger);
+    const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
+    await expect(menu).toHaveClass('custom-content-class');
+
+    const item = within(menu).getByRole('menuitem', { name: 'CSV' });
+    await expect(item).toHaveClass('custom-item-class');
+
+    const separator = menu.querySelector('[data-ui="split-button-separator"]');
+    await expect(separator).toHaveClass('custom-separator-class');
+
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const ReplacedParts: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
+  name: 'Replaced parts',
+  args: {
+    label: ACTION,
+    onClick: fn(),
+    menuLabel: TRIGGER,
+    items: [
+      { label: 'CSV', onSelect: fn() },
+      { label: 'JSON', onSelect: fn() },
+    ],
+    slots: { root: SplitButtonHost, action: CustomAction },
+    className: 'consumer-root',
+    style: { fontStyle: 'normal' },
+    sx: { fontStyle: 'normal' },
+    slotProps: {
+      root: { className: 'slot-root', style: { fontStyle: 'italic' }, sx: { fontStyle: 'italic' }, 'aria-label': 'Custom export' },
+    },
+  },
+  render: (args) => <SplitButton {...args} component={SplitButtonHost} />,
+  parameters: {
+    docs: {
+      source: {
+        code: `<SplitButton label="Export PDF" menuLabel="Other export formats" items={items} component={SplitButtonHost} slots={{ action: CustomAction }} slotProps={{ root: { 'aria-label': 'Custom export' } }} />`,
+      },
+    },
+  },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const canvas = within(canvasElement);
+    const host = canvas.getByTestId('split-button-host');
+    await expect(host).toHaveClass('consumer-root', 'slot-root');
+    await expect(host).toHaveStyle({ fontStyle: 'italic' });
+    await expect(host).toHaveAttribute('aria-label', 'Custom export');
+    await expect(host).toHaveAttribute('data-ui', 'split-button');
+    const action = canvas.getByTestId('custom-split-action');
+    await expect(action).toBeVisible();
+    await userEvent.click(action);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+    const trigger = canvas.getByRole('button', { name: TRIGGER });
+    await userEvent.click(trigger);
+    const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
+    await expect(menu).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+  },
+};
+
+export const GeneratedItemEvents: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
+  args: {
+    label: ACTION,
+    menuLabel: TRIGGER,
+    items: [{ label: 'CSV', onSelect: fn() }],
+    slotProps: { item: { onClick: fn((event: MouseEvent<HTMLButtonElement>) => event.preventDefault()) } },
+  },
+  render: (args) => <SplitButton {...args} />,
+  parameters: { docs: { source: { code: `<SplitButton label="Export PDF" menuLabel="Other export formats" items={formats}
+  slotProps={{ item: { onClick: (event) => event.preventDefault() } }} />` } } },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: TRIGGER }));
+    const doc = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await doc.findByRole('menuitem', { name: 'CSV' }));
+    await expect(args.slotProps?.item?.onClick).toHaveBeenCalledTimes(1);
+    await expect(args.items[0]?.onSelect).toHaveBeenCalledTimes(1);
+    await expect(doc.getByRole('menu')).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    await expect(canvas.getByRole('button', { name: TRIGGER })).toHaveFocus();
+  },
+};
+
+function easyModeTypeContracts() {
+  const items: readonly SplitButtonItemRecord[] = [{ label: 'CSV' }];
+  // @ts-expect-error Easy mode rejects compound children.
+  <SplitButton label="Export" menuLabel="More" items={items}>Child</SplitButton>;
+  // @ts-expect-error Compound mode rejects items.
+  <SplitButton items={items}>Child</SplitButton>;
+  // @ts-expect-error Compound mode rejects slotProps.
+  <SplitButton slotProps={{ root: {} }}>Child</SplitButton>;
+}
+void easyModeTypeContracts;
+
 
 // Room beside the Trigger and off the viewport edge, so the end-aligned menu is neither flipped nor shifted.
 const roomyStyle = {
@@ -1039,7 +1276,7 @@ function ReservedLabelsHarness(args: StoryArgs) {
       {...args}
       label={RESERVED[step]!}
       onAction={(event) => {
-        args.onAction(event);
+        args.onAction?.(event);
         setStep((current) => (current + 1) % RESERVED.length);
       }}
     />
@@ -1047,7 +1284,7 @@ function ReservedLabelsHarness(args: StoryArgs) {
 }
 ReservedLabelsHarness.displayName = 'ReservedLabelsHarness';
 
-function ExportSplitButtonWithLabel({ label, onAction, onCsv, ...args }: StoryArgs & { label: string }) {
+function ExportSplitButtonWithLabel({ label, onAction, onCsv, ...args }: Omit<StoryArgs, 'label'> & { label: string }) {
   const { onJson: _onJson, onDelete: _onDelete, ...props } = args;
   return (
     <SplitButton {...props}>

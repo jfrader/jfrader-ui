@@ -7,6 +7,8 @@ export type {
   CardHeadingLevel,
   CardPartProps,
   CardProps,
+  CardEasyProps,
+  CardCompoundProps,
   CardSlotProps,
   CardTitleProps,
   CardVariant,

@@ -15,7 +15,17 @@ import { Surface, type SurfacePartProps } from '../surface';
 import { Card } from '../card';
 import { css } from '../../styling/css';
 import { WithSx } from '../../styling/sx';
-import { Drawer, type DrawerContentProps, type DrawerPanelProps, type DrawerProps, type DrawerSize } from './index';
+import {
+  Drawer,
+  type DrawerCompoundProps,
+  type DrawerContentProps,
+  type DrawerEasyProps,
+  type DrawerPanelProps,
+  type DrawerProps,
+  type DrawerSide,
+  type DrawerSize,
+  type DrawerSlotProps,
+} from './index';
 
 const TITLE = 'Filters';
 const DESCRIPTION = 'Narrow the issue list by owner and status.';
@@ -100,27 +110,29 @@ const meta = {
         component:
           'Open a panel from the edge of the page to show settings, filters or details.',
       },
-      usage: '- Modal only: the page behind is inert, Tab/Shift+Tab stay inside, and closing returns focus to the invoker. Escape, Close and backdrop clicks share the cancelable close request.\n- `side` accepts `inline-start`, `inline-end` (default), `top` or `bottom`. Inline sides follow text direction. `size` caps inline panels; top/bottom panels span the viewport and cap their height.\n- Body scrolls while Header and Footer stay visible.\n- `draggable` lets the header pull the panel toward its edge to dismiss. Close and Escape remain available.\n- The panel slides in and finishes sliding out before the dialog closes. Reduced motion disables dragging and opens/closes instantly.\n- Floating overlays need a `ThemeRoot portalContainer` host inside the drawer. A nested overlay handles Escape first.\n- Give Close visible text or a localized `aria-label`.' + `
+      usage: `### Composition
+Pass triggerLabel, title, content and closeLabel for a standard drawer; description is optional. Do not combine these props with children. Use slotProps.trigger/content/panel/header/title/description/close/body for part props. For custom hierarchy, keep the compound parts.
+
+- Modal only: the page behind is inert, Tab/Shift+Tab stay inside, and closing returns focus to the invoker. Escape, Close and backdrop clicks share the cancelable close request.
+- \`side\` accepts \`inline-start\`, \`inline-end\` (default), \`top\` or \`bottom\`. Inline sides follow text direction. \`size\` caps inline panels; top/bottom panels span the viewport and cap their height.
+- Body scrolls while Header and Footer stay visible.
+- \`draggable\` lets the header pull the panel toward its edge to dismiss. Close and Escape remain available.
+- The panel slides in and finishes sliding out before the dialog closes. Reduced motion disables dragging and opens/closes instantly.
+- Floating overlays need a \`ThemeRoot portalContainer\` host inside the drawer. A nested overlay handles Escape first.
+- Give Close visible text or a localized \`aria-label\`.
 
 ### Panel material
 Panel defaults to contrast; appearance="default" inherits the enclosing appearance. component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and css, not sx. Declare adapters outside render, render one div, forward every supplied prop/ref, and apply material before className. Changing the adapter type remounts children and resets focus and uncontrolled inputs.
 
 Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry → slot css/classes → consumer css/classes → sx. Content stays the native dialog shell. Panel's registered div keeps attached-edge corners, size caps and motion; its translate is host-owned. Select composed panels with [data-ui~="drawer-panel"].`,
       source: {
-        code: `<Drawer>
-  <Drawer.Trigger>Filters</Drawer.Trigger>
-  <Drawer.Content>
-    <Drawer.Panel>
-      <Drawer.Header>
-        <Drawer.Title>Filters</Drawer.Title>
-        <Drawer.Close>Close</Drawer.Close>
-      </Drawer.Header>
-      <Drawer.Body>
-        <FilterForm />
-      </Drawer.Body>
-    </Drawer.Panel>
-  </Drawer.Content>
-</Drawer>`,
+        code: `<Drawer
+  triggerLabel="Open filters"
+  title="Filters"
+  description="Narrow the issue list by owner and status."
+  content={<FilterFields />}
+  closeLabel="Close"
+/>`,
       },
     },
   },
@@ -128,12 +140,12 @@ Root slot props win ordinary conflicts; className combines and style shallow-mer
 
 export default meta;
 
-type Story = Omit<StoryObj<DrawerProps>, 'render' | 'play'> & {
-  render?: (args: DrawerProps) => ReactNode;
-  play?: (context: StoryContext<DrawerProps>) => Promise<void>;
+type Story = Omit<StoryObj<DrawerCompoundProps>, 'render' | 'play'> & {
+  render?: (args: DrawerCompoundProps) => ReactNode;
+  play?: (context: StoryContext<DrawerCompoundProps>) => Promise<void>;
 };
 
-interface ExampleProps extends DrawerProps {
+interface ExampleProps extends DrawerCompoundProps {
   contentProps?: DrawerContentProps;
   panelProps?: DrawerPanelProps;
   body?: ReactNode;
@@ -245,7 +257,7 @@ function isMonotonic(values: number[], direction: 1 | -1) {
   return values.every((value, index) => index === 0 || (value - values[index - 1]!) * direction >= -0.01);
 }
 
-async function openDrawer({ canvasElement, userEvent }: Pick<StoryContext<DrawerProps>, 'canvasElement' | 'userEvent'>) {
+async function openDrawer({ canvasElement, userEvent }: Pick<StoryContext<DrawerCompoundProps>, 'canvasElement' | 'userEvent'>) {
   const canvas = within(canvasElement);
   const trigger = canvas.getByRole('button', { name: TRIGGER });
   await userEvent.click(trigger);
@@ -318,7 +330,60 @@ async function expectInlineSize(panel: HTMLElement, dialog: HTMLElement, size: D
   await expect(rect(panel).height).toBeCloseTo(rect(dialog).height, 0);
 }
 
-export const Default: Story = {
+export const Default: StoryObj<DrawerEasyProps> = {
+  name: 'Easy mode',
+  args: {
+    triggerLabel: TRIGGER,
+    title: TITLE,
+    description: DESCRIPTION,
+    content: <FilterFields />,
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `<Drawer
+  triggerLabel="Open filters"
+  title="Filters"
+  description="Narrow the issue list by owner and status."
+  content={<FilterFields />}
+  closeLabel="Close"
+/>`,
+      },
+    },
+  },
+  render: (args) => <Drawer {...args} />,
+  play: async ({ canvasElement, canvas, args, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: TRIGGER });
+    await userEvent.tab();
+    await expect(trigger).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    const dialog = await canvas.findByRole('dialog', { name: TITLE });
+    await settle(dialog);
+    await expect(dialog).toHaveAttribute('data-ui', 'drawer');
+    await expect(dialog).toHaveAttribute('aria-modal', 'true');
+    await expect(dialog).toHaveAccessibleName(TITLE);
+    await expect(dialog).toHaveAccessibleDescription(DESCRIPTION);
+    await expect(dialog.contains(canvasElement.ownerDocument.activeElement)).toBe(true);
+
+    const close = canvas.getByRole('button', { name: 'Close' });
+    await userEvent.click(close);
+    await expectClosed(canvasElement, trigger);
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false);
+
+    await userEvent.click(trigger);
+    const reopened = await canvas.findByRole('dialog', { name: TITLE });
+    await settle(reopened);
+    requestEscape(reopened);
+    await expectClosed(canvasElement, trigger);
+    await expect(trigger).toHaveFocus();
+  },
+};
+
+export const Compound: Story = {
+  name: 'Compound',
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -346,6 +411,161 @@ export const Default: Story = {
     await expect(args.onOpenChange).toHaveBeenNthCalledWith(2, false);
   },
 };
+
+function ControlledEasyDrawer(props: DrawerEasyProps) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Drawer
+      {...props}
+      open={open}
+      onOpenChange={(next) => {
+        props.onOpenChange?.(next);
+        setOpen(next);
+      }}
+    />
+  );
+}
+ControlledEasyDrawer.displayName = 'ControlledEasyDrawer';
+
+export const EasyModeControlled: StoryObj<DrawerEasyProps> = {
+  name: 'Easy mode controlled',
+  args: {
+    triggerLabel: TRIGGER,
+    title: TITLE,
+    description: DESCRIPTION,
+    content: <FilterFields />,
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+  },
+  render: (args) => <ControlledEasyDrawer {...args} />,
+  play: async ({ canvasElement, canvas, args, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: TRIGGER });
+    await userEvent.click(trigger);
+    const dialog = await canvas.findByRole('dialog', { name: TITLE });
+    await settle(dialog);
+    await expect(dialog).toHaveAttribute('open');
+    await expect(args.onOpenChange).toHaveBeenCalledWith(true);
+
+    const close = canvas.getByRole('button', { name: 'Close' });
+    await userEvent.click(close);
+    await expectClosed(canvasElement, trigger);
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false);
+  },
+};
+
+export const EasyModeDisabled: StoryObj<DrawerEasyProps> = {
+  name: 'Easy mode disabled',
+  args: {
+    triggerLabel: TRIGGER,
+    title: TITLE,
+    description: DESCRIPTION,
+    content: <FilterFields />,
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+    slotProps: {
+      trigger: {
+        disabled: true,
+      },
+    },
+  },
+  render: (args) => <Drawer {...args} />,
+  play: async ({ canvas, args, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: TRIGGER });
+    await expect(trigger).toBeDisabled();
+    await userEvent.click(trigger);
+    await expect(canvas.queryByRole('dialog')).toBeNull();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+
+export const EasyModeCustomizationSlotProps: StoryObj<DrawerEasyProps> = {
+  name: 'Easy mode customization slotProps',
+  args: {
+    triggerLabel: TRIGGER,
+    title: TITLE,
+    description: DESCRIPTION,
+    content: <FilterFields />,
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+    slotProps: {
+      trigger: { className: 'custom-trigger', 'data-testid': 'custom-trigger' },
+      content: { className: 'custom-content', 'data-testid': 'custom-content' },
+      panel: {
+        slots: { root: DrawerPaper },
+        className: 'custom-panel',
+        'data-testid': 'custom-panel',
+      },
+      header: { className: 'custom-header', 'data-testid': 'custom-header' },
+      title: { className: 'custom-title', 'data-testid': 'custom-title' },
+      description: { className: 'custom-description', 'data-testid': 'custom-description' },
+      close: { className: 'custom-close', 'data-testid': 'custom-close' },
+      body: { className: 'custom-body', 'data-testid': 'custom-body' },
+    },
+  },
+  render: (args) => <Drawer {...args} />,
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    const trigger = canvas.getByTestId('custom-trigger');
+    await expect(trigger).toHaveClass('custom-trigger');
+    await userEvent.click(trigger);
+    const dialog = await canvas.findByRole('dialog', { name: TITLE });
+    await settle(dialog);
+    await expect(dialog).toHaveClass('custom-content');
+    await expect(dialog).toHaveAttribute('data-testid', 'custom-content');
+
+    const panel = canvasElement.querySelector<HTMLElement>('[data-testid="custom-panel"]')!;
+    await expect(panel).toHaveClass('custom-panel');
+    await expect(getComputedStyle(panel).borderInlineStartStyle).toBe('dashed');
+
+    const header = canvasElement.querySelector<HTMLElement>('[data-testid="custom-header"]')!;
+    await expect(header).toHaveClass('custom-header');
+
+    const title = canvas.getByRole('heading', { name: TITLE });
+    await expect(title).toHaveClass('custom-title');
+    await expect(title).toHaveAttribute('data-testid', 'custom-title');
+
+    const desc = canvasElement.querySelector<HTMLElement>('[data-testid="custom-description"]')!;
+    await expect(desc).toHaveClass('custom-description');
+
+    const close = canvas.getByRole('button', { name: 'Close' });
+    await expect(close).toHaveClass('custom-close');
+    await expect(close).toHaveAttribute('data-testid', 'custom-close');
+
+    const body = canvasElement.querySelector<HTMLElement>('[data-testid="custom-body"]')!;
+    await expect(body).toHaveClass('custom-body');
+
+    await userEvent.click(close);
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const EasyModeWithoutDescription: StoryObj<DrawerEasyProps> = {
+  name: 'Easy mode without description',
+  args: {
+    triggerLabel: TRIGGER,
+    title: TITLE,
+    description: undefined,
+    content: <FilterFields />,
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+  },
+  render: (args) => <Drawer {...args} defaultOpen />,
+  play: async ({ canvas, canvasElement }) => {
+    const dialog = await canvas.findByRole('dialog', { name: TITLE });
+    await settle(dialog);
+    await expect(dialog).not.toHaveAttribute('aria-describedby');
+    await expect(canvasElement.querySelector('[data-ui="drawer-description"]')).toBeNull();
+  },
+};
+
+function easyModeTypeContracts() {
+  // @ts-expect-error Presentation mode rejects compound children.
+  <Drawer triggerLabel="Open" title="Filters" content="Filters" closeLabel="Close">Compound</Drawer>;
+  // @ts-expect-error Presentation mode requires title and closeLabel.
+  <Drawer triggerLabel="Open" content="Filters" />;
+  // @ts-expect-error Named presentation props cannot leak into compound mode.
+  <Drawer title="Filters"><Drawer.Content /></Drawer>;
+}
+void easyModeTypeContracts;
 
 export const InlineStart: Story = {
   args: { side: 'inline-start' },
@@ -863,7 +1083,7 @@ export const RefClose: Story = {
   },
 };
 
-function UnmountFixture({ removeTrigger = false, ...props }: DrawerProps & { removeTrigger?: boolean }) {
+function UnmountFixture({ removeTrigger = false, ...props }: DrawerCompoundProps & { removeTrigger?: boolean }) {
   const [mounted, setMounted] = useState(true);
   return (
     <Drawer {...props}>

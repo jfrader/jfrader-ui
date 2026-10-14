@@ -26,10 +26,12 @@ const meta = {
     description: { component: 'Deal cards to a hand and move played cards to their table piles.' },
     source: { language: 'tsx', code: `import { useState } from 'react';
 import {
-  CardFlightsProvider, GameCardStack, GameHand, GameTable,
-  useBoardFlights,
-  type GameHandCard, type PlayedFlightCard,
-} from '@jfrader/ui';
+  CardFlightsProvider, useBoardFlights,
+  type PlayedFlightCard,
+} from '@jfrader/ui/card-flights';
+import { GameCardStack } from '@jfrader/ui/game-card-stack';
+import { GameHand, type GameHandCard } from '@jfrader/ui/game-hand';
+import { GameTable } from '@jfrader/ui/game-table';
 
 function App() {
   return <CardFlightsProvider><Match /></CardFlightsProvider>;
@@ -72,10 +74,14 @@ function Match() {
     </GameTable>
   );
 }` },
-    usage: `### Card records
+    usage: `### Setup
+- Import from \`@jfrader/ui/card-flights\`. Card flights are an opt-in subpath and are not re-exported by the package root.
+
+### Card records
 - Pass the same labeled records to GameHand and useBoardFlights: each has an id, label and value. Optional front, back and backPattern customize flight artwork.
 - Give each accepted play a unique id in your app. Pass that record to both GameCardStack.Pile and useBoardFlights. Set cardId to its source hand id when the play id differs, playerKey to its seat, and isOwn for local plays.
 - GameHand, GameHand.Hidden and GameCardStack.Pile register their card nodes inside CardFlightsProvider. GameTable registers the seat order and surface; hidden hands supply their rendered count. No DOM lookup or separate player list is needed. data-* markers remain available for inspection and tests.
+
 
 ### Match state
 - Wrap one board in CardFlightsProvider and call flight hooks in a child of the provider. It renders the scope div; ref points to that div.

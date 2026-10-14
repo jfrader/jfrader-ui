@@ -16,6 +16,7 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - Generated typed vars: packages/tokens/src/generated/vars.ts (import as @jfrader/tokens/vars)
 - Styling seam: packages/ui/src/styling/css.ts
 - Components: packages/ui/src/components/<name>/
+- Game components and procedural scene: opt-in subpaths (@jfrader/ui/game-table, @jfrader/ui/scene, etc.), not re-exported by the root barrel
 - EditableDetails: nested description lists with app-owned editors; lifecycle and overlay recipes in docs/consuming-jfrader-ui.md#editable-details
 - Storybook config: apps/storybook/.storybook/
 - Agent conventions: AGENTS.md

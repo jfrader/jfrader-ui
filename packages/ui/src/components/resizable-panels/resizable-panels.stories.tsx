@@ -1,10 +1,16 @@
-import { Component, useState, type ReactNode } from 'react';
+import { Component, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fireEvent, fn, mocked, waitFor } from 'storybook/test';
+import { expect, fireEvent, fn, mocked, userEvent, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
-import { ResizablePanels, type ResizablePanelsProps } from './index';
+import {
+  ResizablePanels,
+  type ResizablePanelsCompoundProps,
+  type ResizablePanelsEasyProps,
+  type ResizablePanelsPanelItem,
+  type ResizablePanelsProps,
+} from './index';
 
 const frameStyle = css({
   inlineSize: '24rem',
@@ -26,7 +32,45 @@ const buttonStyle = css({
   font: 'inherit',
 });
 
-const meta = {
+function Folders({ onHide }: { onHide?: () => void }) {
+  return (
+    <div css={paneStyle}>
+      <ul css={listStyle}>
+        <li>Inbox</li>
+        <li>Archive</li>
+      </ul>
+      {onHide && (
+        <button type="button" css={buttonStyle} onClick={onHide}>
+          Hide
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Messages() {
+  return (
+    <div css={paneStyle}>
+      <p css={textStyle}>Select a conversation</p>
+    </div>
+  );
+}
+
+const PANELS: readonly ResizablePanelsPanelItem[] = [
+  { value: 'folders', label: 'Folders', minSize: 96, collapsible: true, content: <Folders /> },
+  { value: 'messages', label: 'Messages', content: <Messages /> },
+];
+
+const snippet = `<ResizablePanels
+  label="Mail"
+  panels={[
+    { value: 'folders', label: 'Folders', minSize: 96, collapsible: true, content: <Folders /> },
+    { value: 'messages', label: 'Messages', content: <Messages /> },
+  ]}
+  defaultValue={[30, 70]}
+/>`;
+
+const meta: Meta<ResizablePanelsCompoundProps> = {
   title: 'Layout/ResizablePanels',
   component: ResizablePanels,
   tags: ['autodocs'],
@@ -57,63 +101,47 @@ const meta = {
   parameters: {
     docs: {
       source: {
-        code: `<ResizablePanels defaultValue={[30, 70]} aria-label="Mail">
-  <ResizablePanels.Panel value="folders" aria-label="Folders" minSize={96} collapsible>
-    <FolderList />
-  </ResizablePanels.Panel>
-  <ResizablePanels.Panel value="messages" aria-label="Messages">
-    <MessageList />
-  </ResizablePanels.Panel>
-</ResizablePanels>`,
+        code: snippet,
       },
       description: {
         component:
           'Resize or collapse side-by-side panels by dragging a separator or using the keyboard.',
       },
-      usage: `### Layout and values
-- Uses the WAI-ARIA window splitter pattern, horizontally only. Give the group a definite block size. On small screens, use Tabs to show one pane at a time.
-- Children must be ResizablePanels.Panel elements with stable, unique values and aria-label or aria-labelledby. Remount with a new key when changing the panel set or order.
-- value/defaultValue hold one weight per panel. Callbacks return percentages totalling 100 of the usable width (group minus separators); these can be saved and passed back.
+      usage: `### Composition
+Pass label, panels and optional defaultValue to configure side-by-side resizable panes. Each panel record defines value, label and content, with optional minSize, maxSize and collapsible. Dividers are generated between adjacent panels. Do not combine panels with children. Use slots and slotProps to customize panels, separators or the root container. For custom anatomy, use the compound parts (ResizablePanels.Panel).
+
+### Layout and values
+- Uses the WAI-ARIA window splitter pattern, horizontally only. Give the group a definite block size.
+- value/defaultValue hold one weight per panel. Callbacks return percentages totalling 100 of the usable width (group minus separators).
 - A zero share collapses a collapsible panel. Its content stays mounted but inert.
 - minSize/maxSize are pixels. Minima shrink together when they do not fit; space beyond every maximum stays empty.
 - Separator value text uses an Intl percentage. Supply getValueText to translate state wording.
 
 ### Keyboard and gestures
-- Left/Right move the separator 16px in screen direction; Shift increases this to 64px.
+- Left/Right move the separator 16px in screen direction (Shift: 64px).
 - At a limit, the next press collapses a collapsible pane; a press back restores it.
 - Home/End reach the smallest/largest open size. Enter collapses or restores.
 - Ctrl/Meta+Home or double click resets the initial layout.
 - Escape cancels a drag, requests the pre-drag layout and does not commit.`,
     },
   },
-} satisfies Meta<typeof ResizablePanels>;
+};
 export default meta;
-type Story = StoryObj<typeof ResizablePanels>;
+type Story = StoryObj<(props: ResizablePanelsCompoundProps) => ReactNode>;
+type EasyStory = StoryObj<(props: ResizablePanelsEasyProps) => ReactNode>;
 
-function Folders({ onHide }: { onHide?: () => void }) {
-  return (
-    <div css={paneStyle}>
-      <ul css={listStyle}>
-        <li>Inbox</li>
-        <li>Archive</li>
-      </ul>
-      {onHide && (
-        <button type="button" css={buttonStyle} onClick={onHide}>
-          Hide
-        </button>
-      )}
-    </div>
-  );
-}
+type CheckedResizablePanels<Props extends ResizablePanelsProps> = Props;
+export type ResizablePanelsTypeRegression = {
+  // @ts-expect-error Panels and children are mutually exclusive.
+  panelsWithChildren: CheckedResizablePanels<{ panels: typeof PANELS; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects label.
+  childrenWithLabel: CheckedResizablePanels<{ label: string; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects slots.
+  childrenWithSlots: CheckedResizablePanels<{ slots: { panel?: () => null }; children: ReactNode }>;
+  // @ts-expect-error Compound mode rejects component.
+  childrenWithComponent: CheckedResizablePanels<{ component: () => null; children: ReactNode }>;
+};
 
-function Messages() {
-  return (
-    <div css={paneStyle}>
-      <p css={textStyle}>Quarterly report</p>
-      <p css={textStyle}>Team lunch</p>
-    </div>
-  );
-}
 
 function Pane({ children }: { children: ReactNode }) {
   return (
@@ -177,7 +205,211 @@ function pointerOn(separator: HTMLElement) {
   };
 }
 
-export const Default: Story = {
+export const Default: EasyStory = {
+  name: 'Easy mode',
+  args: {
+    label: 'Mail',
+    panels: PANELS,
+    defaultValue: [30, 70],
+    locale: 'en-US',
+    onValueChange: fn(),
+    onValueCommit: fn(),
+  },
+  parameters: {
+    docs: {
+      source: { code: snippet },
+    },
+  },
+  render: (args) => <ResizablePanels {...args} />,
+  play: async ({ canvas, canvasElement, args }) => {
+    const root = rootOf(canvasElement);
+    await expect(root).toHaveAccessibleName('Mail');
+    const separator = canvas.getByRole('separator', { name: 'Folders' });
+    const folders = canvas.getByRole('group', { name: 'Folders' });
+    await expect(separator).toHaveAttribute('aria-controls', folders.id);
+    await expect(separator).toHaveAttribute('aria-orientation', 'vertical');
+    await expect(separator).toHaveAttribute('tabindex', '0');
+    await expect(separator).toHaveAttribute('aria-valuenow', '30');
+    await expect(separator).toHaveAttribute('aria-valuetext', '30%');
+    await expect(Number(separator.getAttribute('aria-valuemin'))).toBe(0);
+    const usable = usableOf(root);
+    await near(Number(separator.getAttribute('aria-valuemax')), ((usable - 80) / usable) * 100, 0.02);
+    await expect(widthOf(separator)).toBeGreaterThanOrEqual(31);
+    await near(separator.getBoundingClientRect().height, root.clientHeight);
+    const [first, second] = panelsOf(root);
+    await near(widthOf(first!), usable * 0.3);
+    await near(widthOf(second!), usable * 0.7);
+    await expect(root.scrollWidth - root.clientWidth).toBeLessThan(1.1);
+
+    // Keyboard activation and navigation on separator
+    separator.focus();
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(args.onValueCommit).toHaveBeenCalled();
+
+    // Toggle collapse with Enter
+    await userEvent.keyboard('{Enter}');
+    await expect(separator).toHaveAttribute('data-collapsed', 'start');
+    await userEvent.keyboard('{Enter}');
+    await expect(separator).not.toHaveAttribute('data-collapsed');
+  },
+};
+
+export const EasyModeControlled: EasyStory = {
+  name: 'Easy mode controlled',
+  render: () => {
+    function ControlledFixture() {
+      const [value, setValue] = useState([40, 60]);
+      return (
+        <ResizablePanels
+          label="Mail"
+          panels={PANELS}
+          value={value}
+          onValueChange={setValue}
+        />
+      );
+    }
+    return <ControlledFixture />;
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const root = rootOf(canvasElement);
+    const separator = canvas.getByRole('separator', { name: 'Folders' });
+    await expect(separator).toHaveAttribute('aria-valuenow', '40');
+    const usable = usableOf(root);
+    const [first, second] = panelsOf(root);
+    await near(widthOf(first!), usable * 0.4);
+    await near(widthOf(second!), usable * 0.6);
+  },
+};
+
+export const EasyModeSlots: EasyStory = {
+  name: 'Easy mode slots',
+  args: {
+    label: 'Mail',
+    panels: PANELS,
+    defaultValue: [30, 70],
+    slotProps: {
+      root: { className: 'custom-panels-root' },
+      separator: { className: 'custom-separator' },
+    },
+  },
+  render: (args) => <ResizablePanels {...args} />,
+  play: async ({ canvas, canvasElement }) => {
+    const root = rootOf(canvasElement);
+    await expect(root).toHaveClass('custom-panels-root');
+    const separator = canvas.getByRole('separator', { name: 'Folders' });
+    await expect(separator).toHaveClass('custom-separator');
+  },
+};
+
+function CustomPanelsRootBox({ children, ...props }: ComponentPropsWithRef<'div'>) {
+  return (
+    <div {...props} data-custom-panels-root="true">
+      {children}
+    </div>
+  );
+}
+
+function CustomPanelBox(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-custom-panel="true" />;
+}
+
+export const EasyModeOverrides: EasyStory = {
+  name: 'Easy mode overrides',
+  render: () => {
+    return (
+      <ResizablePanels
+        label="Mail"
+        panels={PANELS}
+        defaultValue={[30, 70]}
+        component={CustomPanelsRootBox}
+        slots={{ panel: CustomPanelBox }}
+        className="host-root-class"
+        data-testid="host-root"
+        style={{ opacity: 0.85, zIndex: 1 }}
+        slotProps={{
+          root: {
+            className: 'slot-root-class',
+            'data-testid': 'slot-root-wins',
+            'aria-label': 'Overridden Mail',
+            style: { zIndex: 2 },
+          },
+          panel: {
+            className: 'slot-panel-class',
+          },
+          separator: {
+            className: 'slot-separator-class',
+            'data-testid': 'slot-separator',
+          },
+        }}
+      />
+    );
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const root = rootOf(canvasElement);
+    await expect(root).toHaveAttribute('data-custom-panels-root', 'true');
+    // slotProps.root wins on conflict except merged className and style
+    await expect(root).toHaveAttribute('data-testid', 'slot-root-wins');
+    await expect(root).toHaveAttribute('aria-label', 'Overridden Mail');
+    await expect(root).toHaveClass('host-root-class');
+    await expect(root).toHaveClass('slot-root-class');
+    await expect(root.style.opacity).toBe('0.85');
+    await expect(root.style.zIndex).toBe('2');
+
+    const separator = canvas.getByTestId('slot-separator');
+    await expect(separator).toHaveClass('slot-separator-class');
+
+    const panels = panelsOf(root);
+    for (const panel of panels) {
+      await expect(panel).toHaveClass('slot-panel-class');
+      await expect(panel).toHaveAttribute('data-custom-panel', 'true');
+    }
+    await expect(root).not.toHaveAttribute('panels');
+    await expect(root).not.toHaveAttribute('slots');
+    const before = Number(separator.getAttribute('aria-valuenow'));
+    separator.focus();
+    await userEvent.keyboard('{ArrowRight}');
+    await waitFor(() => expect(Number(separator.getAttribute('aria-valuenow'))).toBeGreaterThan(before));
+  },
+};
+
+export const EasyModeKeyboard: EasyStory = {
+  name: 'Easy mode keyboard',
+  args: {
+    label: 'Mail',
+    panels: PANELS,
+    defaultValue: [30, 70],
+    onValueChange: fn(),
+    onValueCommit: fn(),
+  },
+  render: (args) => <ResizablePanels {...args} />,
+  play: async ({ canvas, canvasElement, args }) => {
+    const separator = canvas.getByRole('separator', { name: 'Folders' });
+    separator.focus();
+    await expect(separator).toHaveFocus();
+    await expect(separator).toHaveAttribute('aria-valuenow', '30');
+
+    // Right arrow expands primary panel
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(args.onValueCommit).toHaveBeenCalled();
+
+    // Home jumps to smallest open size (minSize: 96px)
+    await userEvent.keyboard('{Home}');
+    const valAfterHome = Number(separator.getAttribute('aria-valuenow'));
+    await expect(valAfterHome).toBeLessThanOrEqual(30);
+
+    // Enter collapses collapsible panel
+    await userEvent.keyboard('{Enter}');
+    await expect(separator).toHaveAttribute('data-collapsed', 'start');
+    await expect(separator).toHaveAttribute('aria-valuenow', '0');
+
+    // Enter restores it
+    await userEvent.keyboard('{Enter}');
+    await expect(separator).not.toHaveAttribute('data-collapsed');
+    await expect(Number(separator.getAttribute('aria-valuenow'))).toBeGreaterThan(0);
+  },
+};
+
+export const Compound: Story = {
   play: async ({ canvas, canvasElement }) => {
     const root = rootOf(canvasElement);
     await expect(root).toHaveAccessibleName('Mail');
@@ -997,7 +1229,7 @@ const twoPanels = [
   <ResizablePanels.Panel key="a" value="a" aria-label="A" />,
   <ResizablePanels.Panel key="b" value="b" aria-label="B" />,
 ];
-const invalidConfigurations: { props?: Partial<ResizablePanelsProps>; children: ReactNode }[] = [
+const invalidConfigurations: { props?: Partial<ResizablePanelsCompoundProps>; children: ReactNode }[] = [
   { children: [twoPanels[0], <div key="x">Stray</div>] },
   { children: [] },
   {

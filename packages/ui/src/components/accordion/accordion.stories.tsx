@@ -1,10 +1,10 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
-import { Accordion, type AccordionProps } from './index';
+import { Accordion, type AccordionCompoundProps as AccordionProps, type AccordionEasyProps } from './index';
 
 const ITEMS = [
   { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
@@ -25,7 +25,10 @@ const frameStyle = css({
 const meta = {
   title: 'Surfaces/Accordion',
   component: Accordion,
-  parameters: { docs: { description: { component: 'Open and close sections of content.' } } },
+  parameters: { docs: {
+    description: { component: 'Open and close sections of content.' },
+    usage: '- Pass `items` with `value`, `label`, `panel` and optional `disabled`, or compose the dotted parts with `children`.\n- Single mode uses a string value; `type="multiple"` uses an array.\n- Use `slotProps` to customize generated parts. `component` replaces the root, as does `slots.root`. Replacements receive the wired native element props; forward all props and ref to that element. Declare replacements outside render.',
+  } },
   argTypes: {
     type: { control: 'radio', options: ['single', 'multiple'] },
     collapsible: { control: 'boolean' },
@@ -37,16 +40,31 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta<typeof Accordion>;
+} satisfies Meta<AccordionProps>;
 
 export default meta;
 
-type Story = Omit<StoryObj<AccordionProps>, 'render' | 'play'> & {
+type Story = Omit<StoryObj<Omit<AccordionProps, 'component'>>, 'render' | 'play'> & {
   render?: (args: AccordionProps) => ReactNode;
   play?: (context: StoryContext<AccordionProps>) => Promise<void>;
 };
 
-type CheckedAccordionArgs<Args extends NonNullable<Story['args']>> = Args;
+type CheckedAccordionArgs<Args extends Partial<AccordionProps>> = Args;
+type EasySingleProps = Omit<Extract<AccordionEasyProps, { type?: 'single' }>, 'component'>;
+type CheckedEasyArgs<Args extends AccordionEasyProps> = Args;
+export type EasyModeTypeRegression = {
+  // @ts-expect-error Easy items cannot be combined with compound children.
+  mixed: CheckedEasyArgs<{ items: typeof ITEMS; children: string }>;
+  // @ts-expect-error Multiple selection still requires array values.
+  multiple: CheckedEasyArgs<{ items: typeof ITEMS; type: 'multiple'; value: string }>;
+};
+
+function AccordionHost(props: ComponentPropsWithRef<'div'> & { 'data-ui'?: string }) {
+  return <div {...props} data-ui={`${props['data-ui']} custom-root`} data-testid="accordion-host" />;
+}
+function SectionTrigger(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-testid="section-trigger" />;
+}
 
 export type AccordionTypeRegression = {
   // @ts-expect-error An array value in single mode is a type error.
@@ -138,7 +156,33 @@ async function expectExpanded(canvasElement: HTMLElement, openLabels: readonly I
   await expect(canvas.queryAllByRole('region')).toHaveLength(openLabels.length);
 }
 
-export const Default: Story = {
+export const Default: StoryObj<EasySingleProps> = {
+  args: { items: ITEMS, defaultValue: 'one', onValueChange: fn() },
+  render: (args) => <Accordion {...args} />,
+  parameters: { docs: { source: { code: `<Accordion items={sections} defaultValue="one" />` } } },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await expectExpanded(canvasElement, ['Account']);
+    const account = canvas.getByRole('button', { name: 'Account' });
+    account.focus();
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await expectExpanded(canvasElement, ['Security']);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('two');
+    await userEvent.keyboard(' ');
+    await expectExpanded(canvasElement, []);
+  },
+};
+
+export const GeneratedPartProps: StoryObj<EasySingleProps> = {
+  args: { items: ITEMS, defaultValue: 'one', slotProps: { trigger: { sx: { fontWeight: vars.fontWeight.semibold } } } },
+  render: (args) => <Accordion {...args} />,
+  parameters: { docs: { source: { code: `<Accordion items={sections} slotProps={{ trigger: { sx: { fontWeight: vars.fontWeight.semibold } } }} />` } } },
+  play: async ({ canvas }) => {
+    await expect(getComputedStyle(canvas.getByRole('button', { name: 'Account' })).fontWeight).toBe('600');
+  },
+};
+
+export const Compound: Story = {
   args: { defaultValue: 'one' },
   render: (args) => <AccordionExample {...args} count={2} />,
   play: async ({ canvasElement }) => {
@@ -151,6 +195,67 @@ export const Default: Story = {
     await expectExpanded(canvasElement, ['Security']);
     await userEvent.click(canvas.getByRole('button', { name: 'Security' }));
     await expectExpanded(canvasElement, []);
+  },
+};
+
+export const EasyMultiple: StoryObj<Omit<Extract<AccordionEasyProps, { type: 'multiple' }>, 'component'>> = {
+  args: { items: ITEMS.map((item) => ({ ...item, disabled: item.value === 'two' })), type: 'multiple', defaultValue: ['one'], onValueChange: fn() },
+  render: (args) => <Accordion {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await expect(canvas.getByRole('button', { name: 'Security' })).toBeDisabled();
+    canvas.getByRole('button', { name: 'Account' }).focus();
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'Billing' }));
+    await userEvent.keyboard('{Enter}');
+    await expectExpanded(canvasElement, ['Account', 'Billing']);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(['one', 'three']);
+  },
+};
+
+export const EasyControlled: StoryObj<EasySingleProps> = {
+  args: { items: ITEMS, value: 'one', onValueChange: fn() },
+  render: (args) => <Accordion {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Security' }));
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('two');
+    await expectExpanded(canvasElement, ['Account']);
+  },
+};
+
+export const ReplacedParts: StoryObj<EasySingleProps> = {
+  args: {
+    items: ITEMS,
+    ref: fn(),
+    slots: { root: AccordionHost, trigger: SectionTrigger },
+    className: 'consumer-root',
+    style: { fontStyle: 'normal' },
+    sx: { fontWeight: vars.fontWeight.semibold },
+    slotProps: {
+      root: {
+        className: 'slot-root',
+        style: { fontStyle: 'italic' },
+        css: { fontWeight: vars.fontWeight.regular },
+        sx: { fontWeight: vars.fontWeight.medium },
+        'aria-label': 'Sections',
+        'data-ui': 'root-extra accordion',
+      },
+    },
+  },
+  render: (args) => <Accordion {...args} component={AccordionHost} css={{ fontWeight: vars.fontWeight.regular }} />,
+  parameters: { docs: { source: { code: `<Accordion items={sections} component={AccordionHost} slots={{ trigger: SectionTrigger }} slotProps={{ root: { 'aria-label': 'Sections' } }} />` } } },
+  play: async ({ canvas, userEvent, args }) => {
+    const host = canvas.getByTestId('accordion-host');
+    await expect(host).toHaveClass('consumer-root', 'slot-root');
+    await expect(host).toHaveStyle({ fontStyle: 'italic' });
+    await expect(getComputedStyle(host).fontWeight).toBe('600');
+    await expect(args.ref).toHaveBeenCalledWith(host);
+    await expect(host).toHaveAttribute('aria-label', 'Sections');
+    await expect(host).toHaveAttribute('data-ui', 'accordion root-extra custom-root');
+    await expect(canvas.getAllByTestId('section-trigger')).toHaveLength(3);
+    await userEvent.click(canvas.getByRole('button', { name: 'Account' }));
+    await expect(canvas.getByRole('button', { name: 'Account' })).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(canvas.getByRole('button', { name: 'Security' })).toHaveFocus();
   },
 };
 
