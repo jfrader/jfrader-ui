@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
-import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
+import { useId, useState } from 'react';
+import { expect, fireEvent, fn, mocked, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -53,6 +53,51 @@ function ComboboxExample({ inputProps, listId, ...props }: ComboboxExampleProps)
   );
 }
 ComboboxExample.displayName = 'ComboboxExample';
+
+function DisabledWhileOpenCombobox(props: ComboboxProps) {
+  const [disabled, setDisabled] = useState(false);
+  return (
+    <>
+      <ComboboxExample {...props} open inputProps={{ disabled }} />
+      <Button onClick={() => setDisabled(true)}>Disable</Button>
+    </>
+  );
+}
+
+export const DisabledWhileOpen: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn(), onInputChange: fn(), onOpenChange: fn() },
+  render: (args) => <DisabledWhileOpenCombobox {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const option = await bodyOf(canvasElement).findByRole('option', { name: 'Cherry' });
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Disable' }));
+    mocked(args.onOpenChange!).mockClear();
+    await fireEvent.click(option);
+    await fireEvent.keyDown(getInput(canvasElement), { key: 'ArrowDown' });
+    await fireEvent.keyDown(getInput(canvasElement), { key: 'Enter' });
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onInputChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await expectClosed(canvasElement);
+  },
+};
+
+export const ReadOnlySelection: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn(), onInputChange: fn(), onOpenChange: fn() },
+  render: (args) => <ComboboxExample {...args} open defaultValue="apple" inputProps={{ readOnly: true }} />,
+  play: async ({ args, canvasElement }) => {
+    const input = getInput(canvasElement);
+    const option = bodyOf(canvasElement).getByRole('option', { name: 'Cherry', hidden: true });
+    await fireEvent.click(option);
+    await userEvent.click(input);
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await expect(input).toHaveValue('Apple');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onInputChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
 
 /** Portaled content lives in the story document's body, outside the canvas. */
 function bodyOf(canvasElement: HTMLElement) {
@@ -149,6 +194,75 @@ export const Default: Story = {
     await expectClosed(canvasElement);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(canvasElement.ownerDocument.activeElement).toBe(within(canvasElement).getByRole('button', { name: 'After' }));
+  },
+};
+
+export const NativeFormReset: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn(), onInputChange: fn() },
+  render: (args) => (
+    <form aria-label="Fruit form">
+      <ComboboxExample {...args} name="fruit" defaultValue="apple" inputProps={{ defaultInputValue: 'ap' }} />
+      <Button type="reset">Reset</Button>
+    </form>
+  ),
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const form = canvas.getByRole('form', { name: 'Fruit form' }) as HTMLFormElement;
+    const input = getInput(canvasElement);
+    await userEvent.click(input);
+    await userEvent.clear(input);
+    await userEvent.type(input, 'ch');
+    await userEvent.click(getOption(canvasElement, 'Cherry'));
+    await expect(new FormData(form).get('fruit')).toBe('cherry');
+    const valueCalls = mocked(args.onValueChange!).mock.calls.length;
+    const textCalls = mocked(args.onInputChange!).mock.calls.length;
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await waitFor(() => expect(new FormData(form).get('fruit')).toBe('apple'));
+    await expect(input).toHaveValue('ap');
+    await userEvent.click(input);
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(getOption(canvasElement, 'Apple')).toBeVisible();
+    await expect(bodyOf(canvasElement).queryByRole('option', { name: 'Cherry' })).toBeNull();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(valueCalls);
+    await expect(args.onInputChange).toHaveBeenCalledTimes(textCalls);
+  },
+};
+
+function AssociatedFormResetCombobox(props: ComboboxProps) {
+  const formId = useId();
+  const [cancelReset, setCancelReset] = useState(true);
+  return (
+    <>
+      <form id={formId} onReset={event => { if (cancelReset) event.preventDefault(); }}>
+        <Button type="reset">Reset</Button>
+      </form>
+      <Button onClick={() => setCancelReset(false)}>Allow reset</Button>
+      <ComboboxExample {...props} defaultValue="apple" inputProps={{ form: formId }} />
+      <ComboboxExample {...props} value="cherry" inputProps={{ form: formId, label: 'Controlled fruit', inputValue: 'Controlled query' }} />
+    </>
+  );
+}
+
+export const AssociatedFormReset: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn(), onInputChange: fn() },
+  render: args => <AssociatedFormResetCombobox {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const input = getInput(canvasElement);
+    await userEvent.click(input);
+    await userEvent.type(input, ' edited');
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await expect(input).toHaveValue('Apple edited');
+    const valueCalls = mocked(args.onValueChange!).mock.calls.length;
+    const textCalls = mocked(args.onInputChange!).mock.calls.length;
+    await userEvent.click(canvas.getByRole('button', { name: 'Allow reset' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await waitFor(() => expect(input).toHaveValue('Apple'));
+    await expect(canvas.getByRole('combobox', { name: 'Controlled fruit' })).toHaveValue('Controlled query');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(valueCalls);
+    await expect(args.onInputChange).toHaveBeenCalledTimes(textCalls);
   },
 };
 

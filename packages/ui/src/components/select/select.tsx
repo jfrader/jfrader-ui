@@ -20,6 +20,7 @@
 // validation (`required`) is not wired in this version.
 import {
   createContext,
+  useCallback,
   useContext,
   useId,
   useLayoutEffect,
@@ -67,6 +68,7 @@ import {
   type CollectionRegistration,
 } from '../../utils/collection-registry';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useFormReset } from '../../utils/use-form-reset';
 
 const TYPEAHEAD_RESET_MS = 500;
 const TYPEAHEAD_COLLATOR = new Intl.Collator(undefined, { usage: 'search', sensitivity: 'base' });
@@ -131,6 +133,7 @@ interface SelectContextValue {
   getFloatingProps: UseInteractionsReturn['getFloatingProps'];
   getItemProps: UseInteractionsReturn['getItemProps'];
   selectValue: (value: string) => void;
+  resetValue: () => void;
   selectIndex: (index: number) => void;
   matchTypeahead: (search: string) => void;
   requestOpenChange: (open: boolean) => void;
@@ -185,8 +188,13 @@ function SelectOverlay({
   children,
 }: SelectProps) {
   const baseId = useId();
-  const [selectedValue, requestValueChange] = useControlledState<string>(valueProp, defaultValue, onValueChange);
-  const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
+  const [selectedValue, requestValueChange, resetValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
+  const [openState = false, requestOpen] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
+  const open = openState && !disabled;
+  const requestOpenChange = useCallback((next: boolean) => {
+    if (next && disabled) return;
+    requestOpen(next);
+  }, [disabled, requestOpen]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   // Typeahead on the closed trigger opens on the match, not on the selected option.
   const [openedByTypeahead, setOpenedByTypeahead] = useState(false);
@@ -222,10 +230,11 @@ function SelectOverlay({
     onOpenChange: (next) => requestOpenChange(next),
   });
 
-  const click = useClick(context);
+  const click = useClick(context, { enabled: !disabled });
   const role = useRole(context, { role: 'listbox' });
   const dismiss = useDismiss(context, { escapeKey: true, outsidePress: true });
   const listNavigation = useListNavigation(context, {
+    enabled: !disabled,
     listRef: elementsRef,
     activeIndex,
     onNavigate: setActiveIndex,
@@ -246,6 +255,7 @@ function SelectOverlay({
 
   const value = useMemo<SelectContextValue>(() => {
     const selectValue = (next: string) => {
+      if (disabled) return;
       // Value and open are independent requests: selection closes an uncontrolled list.
       // A controlled parent decides each axis; rejecting the value does not cancel the close.
       requestValueChange(next);
@@ -256,7 +266,7 @@ function SelectOverlay({
       open,
       disabled,
       selectedValue,
-      activeIndex,
+      activeIndex: disabled ? null : activeIndex,
       options,
       triggerLabelling,
       refs,
@@ -267,7 +277,9 @@ function SelectOverlay({
       getFloatingProps,
       getItemProps,
       selectValue,
+      resetValue,
       matchTypeahead: (search) => {
+        if (disabled) return;
         const labels = labelsRef.current;
         const start = activeIndex ?? -1;
         for (let offset = 1; offset <= labels.length; offset += 1) {
@@ -308,6 +320,7 @@ function SelectOverlay({
     valuesByIndex,
     disabledIndices,
     requestValueChange,
+    resetValue,
     requestOpenChange,
     registration,
   ]);
@@ -347,11 +360,14 @@ function SelectTrigger({
     refs,
     getReferenceProps,
     selectIndex,
+    resetValue,
     matchTypeahead,
     requestOpenChange,
     setTriggerLabelling,
   } = useSelectContext('Trigger');
-  const mergedRef = useMergeRefs([refs.setReference, ref]);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const mergedRef = useMergeRefs([triggerRef, refs.setReference, ref]);
+  useFormReset(triggerRef, resetValue, rest.form);
   const typeaheadRef = useRef({ search: '', lastKeyAt: 0 });
   const id = idProp ?? `${baseId}-trigger`;
   const labelledBy = rest['aria-labelledby'];

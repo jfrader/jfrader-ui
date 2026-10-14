@@ -734,6 +734,28 @@ export function FileDropzone({
             }
           }}
         >
+          {required && (
+            <input
+              type="text"
+              form={inputProps?.form}
+              required={required}
+              disabled={disabled}
+              value={items.length ? 'selected' : ''}
+              tabIndex={-1}
+              aria-label={inputProps?.['aria-label'] ?? messages.browse}
+              aria-labelledby={labelledBy}
+              aria-describedby={describedBy}
+              css={visuallyHiddenStyle}
+              onChange={event => {
+                event.currentTarget.value = items.length ? 'selected' : '';
+              }}
+              onInvalid={event => {
+                inputProps?.onInvalid?.(event);
+                event.preventDefault();
+                input.current?.focus();
+              }}
+            />
+          )}
           <div
             {...slotProps?.target}
             data-dragging={dragging}
@@ -759,7 +781,8 @@ export function FileDropzone({
                 name={name}
                 accept={accept}
                 multiple={multiple}
-                required={required}
+                aria-required={required || inputProps?.['aria-required']}
+                required={false}
                 disabled={disabled}
                 aria-disabled={readOnly || inputProps?.['aria-disabled']}
                 aria-labelledby={labelledBy}
