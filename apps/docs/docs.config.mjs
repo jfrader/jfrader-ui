@@ -14,6 +14,9 @@ export default {
       { label: 'GitHub', href: 'https://github.com/jfrader/jfrader-ui' },
     ],
   },
+  guidance: {
+    dir: './guidance',
+  },
   stories: {
     from: '@jfrader/ui',
     pattern: 'src/components/*/*.stories.tsx',
