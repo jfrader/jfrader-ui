@@ -163,7 +163,8 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - `options` is a readonly array of `{ value, label, disabled?, textValue?, id? }`.
 - Presentation props (`label`, `description`, `error`, `placeholder`, `size`, plus `clearable` on MultiSelect only) configure the generated field anatomy.
 - Easy mode composes the existing compound parts internally (no parallel implementations) and preserves existing state, controlled/uncontrolled axes, and native form reset semantics.
-- Generated parts support typed replacement and customization via `slots` and `slotProps`.
+- Generated parts expose typed `slotProps` with singular, lower-camel-case anatomy keys: `root`, `label`, `description`, `error`, `trigger`, `value`, `content`, `item`, `empty`, and family parts such as `clear`, `input`, `list`, `tab`, `panel`, `separator`, `header`, `title`, `close`. Expose only parts the family generates; provider-only roots need no DOM slot. Repeated parts share one props object; record values, ids and disabled state remain authoritative. Part props accept `className` and `css` plus the existing part API; unknown keys are rejected.
+- `slots` replaces generated compound parts with adapters that forward props/ref to the original part; `component` is sugar for `slots.root`, and `slots.root` wins. Preserve existing leaf `render` APIs. Dialog adopts only its Panel div for `slots.root` / `slotProps.root`; `slotProps.content` targets the native shell. Combobox's direct field `label` / `description` / `error` props win over the same nested `slotProps.input.slotProps` keys. Provider families may add an optional easy-mode wrapper only when a root override is supplied.
 - Component documentation and the primary story snippet show the easy path first as the default usage, followed by compound examples for custom anatomy.
 - Incompatible modes (passing both `options` and `children`) are rejected at compile time with TypeScript type errors.
 

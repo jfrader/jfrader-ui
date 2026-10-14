@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, mocked, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -132,7 +132,35 @@ const meta: Meta<MultiSelectCompoundProps> = {
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
-type EasyStory = StoryObj<MultiSelectEasyProps>;
+type EasyStory = StoryObj<(props: MultiSelectEasyProps) => ReactNode>;
+// @ts-expect-error Generated-part slot keys are closed.
+type UnknownSlot = NonNullable<MultiSelectEasyProps['slotProps']>['unknown'];
+// @ts-expect-error Replacement slot keys are closed.
+type UnknownReplacement = NonNullable<MultiSelectEasyProps['slots']>['unknown'];
+
+function MultiSelectRootAdapter(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="custom-multi-select-root" />;
+}
+
+/** Restyle the generated label and every option with slotProps. */
+export const SlotProps: EasyStory = {
+  args: {
+    label: 'Labels', options: OPTIONS,
+    component: MultiSelectRootAdapter,
+    slotProps: { label: { css: { fontStyle: 'italic' } }, item: { className: 'label-option' } },
+  },
+  render: (args) => <MultiSelect {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Labels')).toHaveStyle({ fontStyle: 'italic' });
+    await expect(canvas.getByTestId('custom-multi-select-root')).toHaveAttribute('data-ui', 'multi-select');
+    await userEvent.click(canvas.getByRole('combobox'));
+    await expect(body(canvasElement).getByRole('option', { name: 'Bug' })).toHaveClass('label-option');
+    await userEvent.click(body(canvasElement).getByRole('option', { name: 'Bug' }));
+    await expect(body(canvasElement).getByRole('option', { name: 'Bug' })).toHaveAttribute('aria-selected', 'true');
+    await userEvent.keyboard('{Escape}');
+  },
+};
 const body = (canvasElement: HTMLElement) => within(canvasElement.ownerDocument.body);
 const triggerOf = (canvasElement: HTMLElement) =>
   within(canvasElement).getByRole('combobox', { name: LABEL });

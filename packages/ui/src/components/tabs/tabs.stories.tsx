@@ -1,4 +1,4 @@
-import { Suspense, startTransition, useState } from 'react';
+import { Suspense, startTransition, useState, type ComponentPropsWithRef, type ComponentProps, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -24,7 +24,7 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Switch between panels by choosing a tab.' },
-      usage: `Pass label and items to pair each tab with its panel. Each item has value, label, panel and optional disabled. Do not combine items with children. Use slotProps.list/tab/panel for part props, or the compound parts for custom structure.
+      usage: `Pass label and items to pair each tab with its panel. Each item has value, label, panel and optional disabled. Do not combine items with children. Use slotProps.root/list/tab/panel for part props and slots for replacement adapters. component aliases slots.root; slots.root wins. Use the compound parts for custom structure.
 
 Arrow keys skip disabled tabs; Home and End reach the ends. With activation="manual", press Enter or Space to select. Panels stay mounted while hidden.`,
     },
@@ -44,9 +44,53 @@ Arrow keys skip disabled tabs; Home and End reach the ends. With activation="man
 
 export default meta;
 
-type Story = StoryObj<TabsCompoundProps>;
+type Story = StoryObj<(props: TabsCompoundProps) => ReactNode>;
+type EasyStory = StoryObj<(props: TabsEasyProps) => ReactNode>;
+// @ts-expect-error Generated-part slot keys are closed.
+type UnknownSlot = NonNullable<TabsEasyProps['slotProps']>['unknown'];
+// @ts-expect-error Replacement slot keys are closed.
+type UnknownReplacement = NonNullable<TabsEasyProps['slots']>['unknown'];
 
-export const Default: StoryObj<TabsEasyProps> = {
+function TabsRootAdapter(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="custom-tabs-root" />;
+}
+function TabsTabAdapter(props: ComponentProps<typeof Tabs.Tab>) {
+  return <Tabs.Tab {...props} className={[props.className, 'custom-tab'].filter(Boolean).join(' ')} />;
+}
+function UnusedTabsRoot() { return null; }
+
+/** Restyle every generated tab and pass props to the root and panels. */
+export const SlotProps: EasyStory = {
+  args: {
+    label: 'Settings', items: ITEMS, defaultValue: 'one',
+    component: UnusedTabsRoot,
+    slots: { root: TabsRootAdapter, tab: TabsTabAdapter },
+    className: 'consumer-tabs', style: { paddingBlock: vars.space[1] },
+    slotProps: {
+      root: { className: 'custom-tabs', 'data-ui': 'tabs-root custom', style: { paddingInline: vars.space[2] }, css: { borderRadius: vars.radius.md } },
+      list: { className: 'custom-list' },
+      tab: { css: { fontStyle: 'italic' } },
+      panel: { className: 'custom-panel' },
+    },
+  },
+  render: (args) => <Tabs {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const list = canvas.getByRole('tablist', { name: 'Settings' });
+    await expect(canvas.getByTestId('custom-tabs-root')).toHaveAttribute('data-ui', 'tabs-root custom');
+    await expect(list).toHaveClass('custom-list');
+    await expect(list.parentElement).toHaveClass('consumer-tabs', 'custom-tabs');
+    await expect(list.parentElement?.style.paddingBlock).toBe(vars.space[1]);
+    await expect(list.parentElement?.style.paddingInline).toBe(vars.space[2]);
+    const tab = canvas.getByRole('tab', { name: 'Billing' });
+    await expect(tab).toHaveClass('custom-tab');
+    await expect(tab).toHaveStyle({ fontStyle: 'italic' });
+    await userEvent.click(tab);
+    await expect(canvas.getByRole('tabpanel', { name: 'Billing' })).toHaveClass('custom-panel');
+  },
+};
+
+export const Default: EasyStory = {
   name: 'Easy mode',
   args: {
     label: 'Settings',
@@ -81,7 +125,7 @@ export const Default: StoryObj<TabsEasyProps> = {
   },
 };
 
-export const EasyModeManual: StoryObj<TabsEasyProps> = {
+export const EasyModeManual: EasyStory = {
   ...Default,
   name: 'Easy mode manual',
   args: { ...Default.args, activation: 'manual' },
@@ -96,9 +140,9 @@ export const EasyModeManual: StoryObj<TabsEasyProps> = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
-export const EasyModeLight: StoryObj<TabsEasyProps> = { ...Default, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
+export const EasyModeLight: EasyStory = { ...Default, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
 
-export const EasyModeRejectedSelection: StoryObj<TabsEasyProps> = {
+export const EasyModeRejectedSelection: EasyStory = {
   ...Default,
   name: 'Easy mode rejected selection',
   args: { ...Default.args, value: 'one' },

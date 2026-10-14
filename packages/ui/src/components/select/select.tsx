@@ -124,14 +124,14 @@ export interface SelectSlotProps {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
-  label?: Partial<SelectLabelProps>;
-  description?: Partial<SelectDescriptionProps>;
-  error?: Partial<SelectErrorProps>;
-  trigger?: Partial<SelectTriggerProps>;
-  value?: Partial<SelectValueProps>;
-  content?: Partial<SelectContentProps>;
-  item?: Partial<Omit<SelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>>;
-  empty?: Partial<SelectEmptyProps>;
+  label?: Partial<SelectLabelProps> & { css?: Interpolation<Theme> };
+  description?: Partial<SelectDescriptionProps> & { css?: Interpolation<Theme> };
+  error?: Partial<SelectErrorProps> & { css?: Interpolation<Theme> };
+  trigger?: Partial<SelectTriggerProps> & { css?: Interpolation<Theme> };
+  value?: Partial<SelectValueProps> & { css?: Interpolation<Theme> };
+  content?: Partial<SelectContentProps> & { css?: Interpolation<Theme> };
+  item?: Partial<Omit<SelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>> & { css?: Interpolation<Theme> };
+  empty?: Partial<SelectEmptyProps> & { css?: Interpolation<Theme> };
 }
 
 export interface SelectBaseProps {
@@ -158,6 +158,7 @@ export interface SelectCompoundProps extends SelectBaseProps {
   size?: never;
   empty?: never;
   slots?: never;
+  component?: never;
   slotProps?: never;
 }
 
@@ -171,6 +172,7 @@ export interface SelectEasyProps extends SelectBaseProps {
   size?: SelectSize;
   empty?: ReactNode;
   slots?: SelectSlots;
+  component?: SelectSlots['root'];
   slotProps?: SelectSlotProps;
 }
 
@@ -479,6 +481,7 @@ function SelectOverlay(props: SelectProps) {
       size = 'md',
       empty,
       slots,
+      component,
       slotProps,
     } = props;
     const LabelPart = slots?.label ?? SelectLabel;
@@ -489,7 +492,7 @@ function SelectOverlay(props: SelectProps) {
     const DescriptionPart = slots?.description ?? SelectDescription;
     const ErrorPart = slots?.error ?? SelectError;
     const EmptyPart = slots?.empty ?? SelectEmpty;
-    const RootPart = slots?.root ?? 'div';
+    const RootPart = slots?.root ?? component ?? 'div';
     const {
       className: rootClassName,
       css: rootCss,
@@ -503,6 +506,7 @@ function SelectOverlay(props: SelectProps) {
       isRenderable(description) ||
       isRenderable(error) ||
       slots?.root !== undefined ||
+      component !== undefined ||
       slotProps?.root !== undefined;
 
     const controlParts = (

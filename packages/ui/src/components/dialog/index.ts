@@ -8,6 +8,7 @@ export type {
   DialogPartRenderProps,
   DialogPanelProps,
   DialogProps,
+  DialogSlotProps,
   DialogTitleProps,
   DialogTriggerProps,
 } from './dialog';

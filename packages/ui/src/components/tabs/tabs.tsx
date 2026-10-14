@@ -18,13 +18,15 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type FocusEvent,
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type SerializedStyles } from '../../styling/css';
+import { useMergeRefs } from '@floating-ui/react';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -55,6 +57,8 @@ export interface TabsCompoundProps extends TabsStateProps {
   items?: never;
   label?: never;
   slotProps?: never;
+  slots?: never;
+  component?: never;
 }
 
 export interface TabsEasyProps extends TabsStateProps {
@@ -63,11 +67,23 @@ export interface TabsEasyProps extends TabsStateProps {
   /** Pair each tab with its panel by value. */
   items: readonly TabsSection[];
   children?: never;
-  slotProps?: {
-    list?: Omit<TabsListProps, 'children' | 'aria-label'>;
-    tab?: Omit<TabsTabProps, 'children' | 'value' | 'disabled'>;
-    panel?: Omit<TabsPanelProps, 'children' | 'value'>;
-  };
+  slotProps?: TabsSlotProps;
+  slots?: TabsSlots;
+  component?: TabsSlots['root'];
+}
+
+export interface TabsSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  list?: ComponentType<TabsListProps>;
+  tab?: ComponentType<TabsTabProps>;
+  panel?: ComponentType<TabsPanelProps>;
+}
+
+export interface TabsSlotProps {
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { css?: Interpolation<Theme>; 'data-ui'?: string };
+  list?: Omit<TabsListProps, 'children' | 'aria-label'> & { css?: Interpolation<Theme> };
+  tab?: Omit<TabsTabProps, 'children' | 'value' | 'disabled'> & { css?: Interpolation<Theme> };
+  panel?: Omit<TabsPanelProps, 'children' | 'value'> & { css?: Interpolation<Theme> };
 }
 
 export type TabsProps = TabsCompoundProps | TabsEasyProps;
@@ -201,6 +217,8 @@ function TabsRoot({
   items,
   label,
   slotProps,
+  slots,
+  component,
   children,
   ...rest
 }: TabsProps) {
@@ -212,29 +230,36 @@ function TabsRoot({
     () => ({ value, setValue, focused, setFocused, orientation, activation, baseId }),
     [value, setValue, focused, orientation, activation, baseId],
   );
+  const { css: rootCss, className: rootClassName, style: rootStyleProp, ref: rootRef, 'data-ui': rootDataUi, ...rootProps } = slotProps?.root ?? {};
+  const rootMarker = [...new Set(['tabs-root', ...(rootDataUi?.split(/\s+/).filter(Boolean) ?? [])])].join(' ');
+  const mergedRef = useMergeRefs([ref, rootRef]);
+  const RootPart = slots?.root ?? component ?? 'div';
+  const ListPart = slots?.list ?? TabsList;
+  const TabPart = slots?.tab ?? TabsTab;
+  const PanelPart = slots?.panel ?? TabsPanel;
 
   return (
     <TabsContext.Provider value={context}>
-      <WithSx className={className} styles={rootStyle} sx={sx}>
+      <WithSx className={[rootClassName, className].filter(Boolean).join(' ')} styles={[rootStyle, rootCss]} sx={sx}>
         {(className) => (
-          <div {...rest} ref={ref} data-ui="tabs-root" data-orientation={orientation} className={className}>
+          <RootPart {...rest} {...rootProps} style={{ ...rest.style, ...rootStyleProp }} ref={mergedRef} data-ui={rootMarker} data-orientation={orientation} className={className}>
             {items !== undefined ? (
               <>
-                <TabsList {...slotProps?.list} aria-label={label}>
+                <ListPart {...slotProps?.list} aria-label={label}>
                   {items.map((item) => (
-                    <TabsTab {...slotProps?.tab} key={item.value} value={item.value} disabled={item.disabled}>
+                    <TabPart {...slotProps?.tab} key={item.value} value={item.value} disabled={item.disabled}>
                       {item.label}
-                    </TabsTab>
+                    </TabPart>
                   ))}
-                </TabsList>
+                </ListPart>
                 {items.map((item) => (
-                  <TabsPanel {...slotProps?.panel} key={item.value} value={item.value}>
+                  <PanelPart {...slotProps?.panel} key={item.value} value={item.value}>
                     {item.panel}
-                  </TabsPanel>
+                  </PanelPart>
                 ))}
               </>
             ) : children}
-          </div>
+          </RootPart>
         )}
       </WithSx>
     </TabsContext.Provider>

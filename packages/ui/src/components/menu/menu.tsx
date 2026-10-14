@@ -31,6 +31,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type HTMLAttributes,
   type HTMLProps,
@@ -95,6 +96,8 @@ export interface MenuCompoundProps extends MenuStateProps {
   items?: never;
   triggerLabel?: never;
   slotProps?: never;
+  slots?: never;
+  component?: never;
 }
 
 export interface MenuEasyProps extends MenuStateProps {
@@ -103,12 +106,25 @@ export interface MenuEasyProps extends MenuStateProps {
   /** Render actions and separators in order. */
   items: readonly MenuAction[];
   children?: never;
-  slotProps?: {
-    trigger?: Omit<MenuTriggerProps, 'children'>;
-    content?: Omit<MenuContentProps, 'children'>;
-    item?: Omit<MenuItemProps, 'children' | 'onSelect' | 'disabled'>;
-    separator?: MenuSeparatorProps;
-  };
+  slotProps?: MenuSlotProps;
+  slots?: MenuSlots;
+  component?: MenuSlots['root'];
+}
+
+export interface MenuSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  trigger?: ComponentType<MenuTriggerProps>;
+  content?: ComponentType<MenuContentProps>;
+  item?: ComponentType<MenuItemProps>;
+  separator?: ComponentType<MenuSeparatorProps>;
+}
+
+export interface MenuSlotProps {
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { css?: Interpolation<Theme>; 'data-ui'?: string };
+  trigger?: Omit<MenuTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  content?: Omit<MenuContentProps, 'children'> & { css?: Interpolation<Theme> };
+  item?: Omit<MenuItemProps, 'children' | 'onSelect' | 'disabled'> & { css?: Interpolation<Theme> };
+  separator?: MenuSeparatorProps & { css?: Interpolation<Theme> };
 }
 
 export type MenuProps = MenuCompoundProps | MenuEasyProps;
@@ -399,23 +415,36 @@ export function MenuController(props: MenuControllerProps) {
   return <MenuLayer>{(nodeId) => <MenuOverlay {...props} nodeId={nodeId} />}</MenuLayer>;
 }
 
-function MenuRoot({ items, triggerLabel, slotProps, children, ...state }: MenuProps) {
+function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, ...state }: MenuProps) {
+  const RootPart = slots?.root ?? component ?? 'div';
+  const TriggerPart = slots?.trigger ?? MenuTrigger;
+  const ContentPart = slots?.content ?? MenuContent;
+  const ItemPart = slots?.item ?? MenuItem;
+  const SeparatorPart = slots?.separator ?? MenuSeparator;
+  const { css: rootCss, className: rootClassName, 'data-ui': rootDataUi, ...rootProps } = slotProps?.root ?? {};
+  const rootMarker = [...new Set(['menu', ...(rootDataUi?.split(/\s+/).filter(Boolean) ?? [])])].join(' ');
+  const generated = items !== undefined ? (
+    <>
+      <TriggerPart {...slotProps?.trigger}>{triggerLabel}</TriggerPart>
+      <ContentPart {...slotProps?.content}>
+        {items.map((item, index) => item.type === 'separator' ? (
+          <SeparatorPart {...slotProps?.separator} key={item.key ?? index} />
+        ) : (
+          <ItemPart {...slotProps?.item} key={item.key ?? index} onSelect={item.onSelect} disabled={item.disabled}>
+            {item.label}
+          </ItemPart>
+        ))}
+      </ContentPart>
+    </>
+  ) : children;
+  const hasRootSlot = items !== undefined && (component !== undefined || slots?.root !== undefined || slotProps?.root !== undefined);
   return (
     <MenuController {...state}>
-      {items !== undefined ? (
-        <>
-          <MenuTrigger {...slotProps?.trigger}>{triggerLabel}</MenuTrigger>
-          <MenuContent {...slotProps?.content}>
-            {items.map((item, index) => item.type === 'separator' ? (
-              <MenuSeparator {...slotProps?.separator} key={item.key ?? index} />
-            ) : (
-              <MenuItem {...slotProps?.item} key={item.key ?? index} onSelect={item.onSelect} disabled={item.disabled}>
-                {item.label}
-              </MenuItem>
-            ))}
-          </MenuContent>
-        </>
-      ) : children}
+      {hasRootSlot ? (
+        <WithSx className={rootClassName} styles={rootCss}>
+          {(className) => <RootPart {...rootProps} className={className} data-ui={rootMarker}>{generated}</RootPart>}
+        </WithSx>
+      ) : generated}
     </MenuController>
   );
 }

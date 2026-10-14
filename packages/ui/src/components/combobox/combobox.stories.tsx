@@ -61,7 +61,40 @@ const meta: Meta<ComboboxCompoundProps> = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-type EasyStory = StoryObj<ComboboxEasyProps>;
+type EasyStory = StoryObj<(props: ComboboxEasyProps) => ReactNode>;
+// @ts-expect-error Generated-part slot keys are closed.
+type UnknownSlot = NonNullable<ComboboxEasyProps['slotProps']>['unknown'];
+// @ts-expect-error Replacement slot keys are closed.
+type UnknownReplacement = NonNullable<ComboboxEasyProps['slots']>['unknown'];
+
+/** Restyle the generated field label without nesting input slotProps. */
+export const SlotProps: EasyStory = {
+  args: {
+    label: 'Fruit', description: 'Type to search', options: FRUITS,
+    component: CustomComboboxRoot,
+    slotProps: {
+      label: { css: { fontStyle: 'italic' } },
+      description: { className: 'fruit-description' },
+      input: { slotProps: { label: { css: { fontStyle: 'normal' } }, control: { className: 'fruit-input' } } },
+      item: { className: 'fruit-option' },
+    },
+  },
+  render: (args) => <Combobox {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Fruit')).toHaveStyle({ fontStyle: 'italic' });
+    await expect(canvas.getByTestId('custom-root')).toHaveAttribute('data-ui', 'combobox');
+    await expect(canvas.getByText('Type to search')).toHaveClass('fruit-description');
+    const input = canvas.getByRole('combobox');
+    await expect(input).toHaveClass('fruit-input');
+    await userEvent.click(input);
+    await userEvent.type(input, 'Ch');
+    const body = within(canvasElement.ownerDocument.body);
+    await expect(body.getByRole('option', { name: 'Cherry' })).toHaveClass('fruit-option');
+    await userEvent.click(body.getByRole('option', { name: 'Cherry' }));
+    await expect(input).toHaveValue('Cherry');
+  },
+};
 
 type CheckedCombobox<Props extends ComboboxProps> = Props;
 export type ComboboxTypeRegression = {

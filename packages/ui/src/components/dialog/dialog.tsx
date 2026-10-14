@@ -37,7 +37,7 @@ import {
   type RefObject,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
 import { MODAL_ENTER_SCALE, modalBackdropMotion, modalPanelMotion } from '../../styling/overlay-motion';
@@ -71,6 +71,8 @@ export interface DialogCompoundProps extends DialogStateProps {
   content?: never;
   closeLabel?: never;
   slotProps?: never;
+  slots?: never;
+  component?: never;
 }
 
 export interface DialogEasyProps extends DialogStateProps {
@@ -85,13 +87,21 @@ export interface DialogEasyProps extends DialogStateProps {
   /** Name the close button. */
   closeLabel: ReactNode;
   children?: never;
-  slotProps?: {
-    trigger?: Omit<DialogTriggerProps, 'children'>;
-    content?: Omit<DialogContentProps, 'children'>;
-    title?: Omit<DialogTitleProps, 'children'>;
-    description?: Omit<DialogDescriptionProps, 'children'>;
-    close?: Omit<DialogCloseProps, 'children'>;
-  };
+  slots?: DialogPanelProps['slots'];
+  component?: DialogPanelProps['component'];
+  slotProps?: DialogSlotProps;
+}
+
+export interface DialogSlotProps {
+  /** Customize the panel's adopted div, not the native dialog shell. */
+  root?: NonNullable<DialogPanelProps['slotProps']>['root'];
+  trigger?: Omit<DialogTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  content?: Omit<DialogContentProps, 'children'> & { css?: Interpolation<Theme> };
+  panel?: Omit<DialogPanelProps, 'children'>;
+  header?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { css?: Interpolation<Theme> };
+  title?: Omit<DialogTitleProps, 'children'> & { css?: Interpolation<Theme> };
+  description?: Omit<DialogDescriptionProps, 'children'> & { css?: Interpolation<Theme> };
+  close?: Omit<DialogCloseProps, 'children'> & { css?: Interpolation<Theme> };
 }
 
 export type DialogProps = DialogCompoundProps | DialogEasyProps;
@@ -240,6 +250,8 @@ function DialogRoot(props: DialogProps) {
     content,
     closeLabel,
     slotProps,
+    slots,
+    component,
   } = props;
   const baseId = useId();
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
@@ -270,10 +282,19 @@ function DialogRoot(props: DialogProps) {
         <>
           <DialogTrigger {...slotProps?.trigger}>{triggerLabel}</DialogTrigger>
           <DialogContent {...slotProps?.content}>
-            <DialogTitle {...slotProps?.title}>{title}</DialogTitle>
-            {isRenderable(description) && <DialogDescription {...slotProps?.description}>{description}</DialogDescription>}
-            {content}
-            <DialogClose {...slotProps?.close}>{closeLabel}</DialogClose>
+            <DialogPanel
+              {...slotProps?.panel}
+              component={component ?? slotProps?.panel?.component}
+              slots={slots ?? slotProps?.panel?.slots}
+              slotProps={{ root: slotProps?.root ?? slotProps?.panel?.slotProps?.root }}
+            >
+              <div {...slotProps?.header} data-ui="dialog-header">
+                <DialogTitle {...slotProps?.title}>{title}</DialogTitle>
+                {isRenderable(description) && <DialogDescription {...slotProps?.description}>{description}</DialogDescription>}
+              </div>
+              {content}
+              <DialogClose {...slotProps?.close}>{closeLabel}</DialogClose>
+            </DialogPanel>
           </DialogContent>
         </>
       ) : children}
