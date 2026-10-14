@@ -107,9 +107,10 @@ export const EasyMode: StoryObj<SwipeActionsEasyProps> = {
     trigger.focus();
     await userEvent.keyboard('{ArrowDown}');
     const page = within(canvasElement.ownerDocument.body);
-    await expect(await page.findByRole('menuitem', { name: 'Archive' })).toHaveFocus();
+    const first = await page.findByRole('menuitem', { name: 'Archive' });
+    await waitFor(() => expect(first).toHaveFocus());
     await userEvent.keyboard('{Escape}');
-    await expect(trigger).toHaveFocus();
+    await waitFor(() => expect(trigger).toHaveFocus());
   },
 };
 
@@ -164,9 +165,10 @@ export const EasyControlled: Story = {
     const trigger = canvas.getByRole('button', { name: 'Actions for Invoice' });
     trigger.focus();
     await userEvent.keyboard('{ArrowDown}');
-    await expect(await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: 'Archive' })).toHaveFocus();
+    const first = await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: 'Archive' });
+    await waitFor(() => expect(first).toHaveFocus());
     await userEvent.keyboard('{Escape}');
-    await expect(trigger).toHaveFocus();
+    await waitFor(() => expect(trigger).toHaveFocus());
   },
 };
 const rowOf = (canvas: HTMLElement) =>
