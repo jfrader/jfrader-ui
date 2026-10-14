@@ -29,7 +29,7 @@ GameTable.Seat is the region that places a player around the table. GameSeat is 
 Pass name and any avatar, badges, points, chat or hand nodes. The shell does not choose avatar sizes, badge meanings or chat behavior. handCount renders a decorative GameHand.Hidden when hand is absent. Supply a labeled GameHand.Hidden through hand if the count needs an accessible description. null explicitly suppresses the hand shorthand.
 
 ### Turn
-deadline and now are epoch milliseconds; durationMs is the full positive turn length. Inject now for server rendering and deterministic synchronization. Without now, the clock is sampled once per deadline. CSS drains the ring with no React ticks. Reduced motion keeps the sampled geometry without movement. A changed now resynchronizes it.
+deadline and now are epoch milliseconds; durationMs is the full positive turn length. Inject now for server rendering and deterministic synchronization. Without now, the clock is sampled when deadline or durationMs changes. CSS drains the ring with no React ticks. Reduced motion keeps the sampled geometry without movement. A changed now resynchronizes it.
 onTurnMilestone schedules at most three one-shot deadlines, never an interval: half (50% remaining), quarter (25%) and ending (zero). Past thresholds are skipped. Increasing a still-live deadline emits extended and starts a new threshold schedule. Removing the turn or callback cancels pending notifications. Callbacks may run late in background tabs.
 
 ### Accessibility
@@ -200,5 +200,80 @@ export const SampledClock: Story = {
       flushSync(() => root.unmount()); host.remove(); Date.now = originalClock;
     }
     await expect(samples).toEqual([1, 1, 2]);
+  },
+};
+
+export const RescheduledClock: Story = {
+  tags: ['!autodocs'],
+  args: { turn: undefined, chat: undefined },
+  play: async ({ canvasElement }) => {
+    const host = canvasElement.ownerDocument.createElement('div');
+    canvasElement.append(host);
+    const root = createRoot(host);
+    let now = NOW;
+    let timerId = 0;
+    const pending = new Map<number, { at: number; notify: () => void }>();
+    const originalClock = Date.now;
+    Date.now = () => now;
+    const timeout = spyOn(window, 'setTimeout').mockImplementation((handler, delay) => {
+      if (typeof handler !== 'function') throw new Error('Expected function timer');
+      const id = ++timerId;
+      pending.set(id, { at: now + (delay ?? 0), notify: () => handler() });
+      return id as unknown as ReturnType<typeof window.setTimeout>;
+    });
+    const clear = spyOn(window, 'clearTimeout').mockImplementation((id) => {
+      if (typeof id === 'number') pending.delete(id);
+    });
+    const advance = (target: number) => {
+      for (;;) {
+        const next = [...pending].sort((a, b) => a[1].at - b[1].at)[0];
+        if (!next || next[1].at > target) break;
+        now = next[1].at;
+        pending.delete(next[0]);
+        next[1].notify();
+      }
+      now = target;
+    };
+    const notifications: { milestone: string; at: number }[] = [];
+    const callback = (milestone: string) => { notifications.push({ milestone, at: now }); };
+    let transition = '';
+    let remainingOffset = '';
+    let due: number[] = [];
+    let lateDue: number[] = [];
+    const lateNotifications: string[] = [];
+    try {
+      const sampledTurn = { deadline: NOW + DURATION, durationMs: DURATION };
+      flushSync(() => root.render(<GameSeat name="Rescheduled" turn={sampledTurn} />));
+      advance(NOW + DURATION / 4);
+      flushSync(() => root.render(<GameSeat name="Rescheduled" turn={sampledTurn} onTurnMilestone={callback} />));
+      due = [...pending.values()].map(({ at }) => at);
+      advance(NOW + DURATION);
+      flushSync(() => root.render(<GameSeat name="Duration" turn={{ deadline: NOW + DURATION * 2, durationMs: DURATION }} />));
+      advance(NOW + DURATION * 1.5);
+      flushSync(() => root.render(<GameSeat name="Duration" turn={{ deadline: NOW + DURATION * 2, durationMs: DURATION * 2 }} />));
+      const circle = host.querySelector('circle')!;
+      transition = circle.style.transitionDuration;
+      remainingOffset = circle.getAttribute('stroke-dashoffset')!;
+      advance(NOW + DURATION * 2);
+      const lateTurn = { deadline: NOW + DURATION * 3, durationMs: DURATION };
+      flushSync(() => root.render(<GameSeat name="Late" turn={lateTurn} />));
+      advance(NOW + DURATION * 2.625);
+      flushSync(() => root.render(<GameSeat name="Late" turn={lateTurn} onTurnMilestone={(milestone) => lateNotifications.push(milestone)} />));
+      lateDue = [...pending.values()].map(({ at }) => at);
+      advance(lateTurn.deadline);
+    } finally {
+      flushSync(() => root.unmount()); host.remove();
+      Date.now = originalClock; timeout.mockRestore(); clear.mockRestore();
+    }
+    await expect(due).toEqual([NOW + DURATION / 2, NOW + DURATION * 3 / 4, NOW + DURATION]);
+    await expect(notifications).toEqual([
+      { milestone: 'half', at: NOW + DURATION / 2 },
+      { milestone: 'quarter', at: NOW + DURATION * 3 / 4 },
+      { milestone: 'ending', at: NOW + DURATION },
+    ]);
+    await expect(transition).toBe('30000ms');
+    await expect(remainingOffset).toBe('75');
+    await expect(lateDue).toEqual([NOW + DURATION * 2.75, NOW + DURATION * 3]);
+    await expect(lateNotifications).toEqual(['quarter', 'ending']);
   },
 };
