@@ -64,7 +64,15 @@ const meta = {
   component: Container,
   parameters: {
     layout: 'fullscreen',
-    docs: { description: { component: 'Center page content and limit its width. Set the space on either side.' } },
+    docs: {
+      description: { component: 'Center page content and limit its width. Set the space on either side.' },
+      usage: `### Width
+- The container fills its parent up to \`size\`: \`sm\` 640px, \`md\` 768px, \`lg\` 1024px, or \`xl\` 1280px. The default is \`lg\`. Choose a cap, not a viewport breakpoint.
+- \`paddingInline\` defaults to \`md\` (16px) and is included in the width cap. Use \`none\`, \`xs\`, \`sm\`, \`md\`, \`lg\` or \`xl\` to change the inset.
+
+### Layout
+- Container adds no vertical spacing or landmark role. Put a \`Stack\` inside for spacing and provide page semantics yourself.`,
+    },
   },
   argTypes: {
     size: { control: 'radio', options: SIZES },
@@ -187,6 +195,7 @@ export const CenteredPage: Story = {
   parameters: {
     docs: {
       source: {
+        language: 'tsx',
         code: `<Container size="sm">
   <Stack gap="lg">
     <h2>Workspace settings</h2>
