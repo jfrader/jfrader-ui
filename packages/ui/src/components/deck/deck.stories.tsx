@@ -66,7 +66,7 @@ const meta = {
   args: { children: null },
   parameters: {
     docs: {
-      source: { language: 'tsx', code: `import { DeckProvider, defineDeck } from '@jfrader/ui';
+      source: { language: 'tsx', code: `import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
 
 const stars = defineDeck({
@@ -103,6 +103,9 @@ Two standard decks are registered automatically:
 \`Deck\` is a client-side definition that may hold non-serializable \`ReactNode\` elements (custom SVG art, icons).
 Card props stay serializable: \`<GameCard label="One of stars" value={{ deck: 'my-deck', suit: 'stars', rank: 'I' }} />\` passes only string ids.
 The definitions are supplied via \`<DeckProvider decks={[myDeck]}>\`. Set \`backLabel\` on the provider to name backs for \`FlipGameCard\` shorthand. \`GameCard\` still requires its own \`label\`.
+
+### Import
+- Import from \`@jfrader/ui/deck\`. Decks are an opt-in subpath and are not re-exported by the package root.
 
 ### Resolution order
 1. **Deck identity**: Explicit \`value.deck\` → provider's \`default\` → built-in French deck. Unknown ids throw a clear error naming the missing deck.

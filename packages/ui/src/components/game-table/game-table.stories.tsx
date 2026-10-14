@@ -1339,7 +1339,7 @@ function PokerFixture() {
 /** Six free-for-all seats, five community cards and a pot. Press Deal board to replay the deal. */
 export const PokerCommunityBoard: Story = {
   render: () => <PokerFixture />,
-  parameters: { a11y: { test: 'error' }, docs: { source: { language: 'tsx', code: `import { DeckProvider } from '@jfrader/ui';
+  parameters: { a11y: { test: 'error' }, docs: { source: { language: 'tsx', code: `import { DeckProvider } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
 import { GameTable, useGameTableSeat } from '@jfrader/ui/game-table';
 

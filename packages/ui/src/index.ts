@@ -27,7 +27,6 @@ export * from './components/copy-button';
 export * from './components/countdown';
 export * from './components/date-picker';
 export * from './components/date-range-picker';
-export * from './components/deck';
 export * from './components/dialog';
 export * from './components/dialog-stack';
 export * from './components/divider';
