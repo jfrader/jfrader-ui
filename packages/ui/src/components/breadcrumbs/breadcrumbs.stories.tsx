@@ -1,11 +1,11 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ComponentPropsWithRef } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
-import { Breadcrumbs } from './index';
+import { Breadcrumbs, type BreadcrumbsCompoundProps, type BreadcrumbsEasyProps } from './index';
 
 const LEVELS = [
   { label: 'Home', href: '/' },
@@ -22,18 +22,55 @@ const stackStyle = {
 const meta = {
   title: 'Navigation/Breadcrumbs',
   component: Breadcrumbs,
-  parameters: { docs: { description: { component: 'Show where a page sits and link to the pages above it.' } } },
-} satisfies Meta<typeof Breadcrumbs>;
+  parameters: { docs: {
+    description: { component: 'Show where a page sits and link to the pages above it.' },
+    usage: '- Pass `items` with `label`, optional `href`, `current` and `key`, or compose `Breadcrumbs.Item` with `children`.\n- The last item becomes current unless an item explicitly sets `current`. A current item with `href` stays a link.\n- Use `slotProps` for the root, items and separators. `component` replaces the root, as does `slots.root`. Replacements receive native element props; forward all props and ref to that element. Declare replacements outside render.',
+  } },
+} satisfies Meta<BreadcrumbsCompoundProps>;
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<Omit<BreadcrumbsCompoundProps, 'component'>>;
+type CheckedEasyArgs<Args extends BreadcrumbsEasyProps> = Args;
+export type EasyModeTypeRegression = {
+  // @ts-expect-error Easy items cannot be combined with compound children.
+  mixed: CheckedEasyArgs<{ items: readonly []; children: string }>;
+};
+function BreadcrumbHost(props: ComponentPropsWithRef<'nav'>) {
+  return <nav {...props} data-testid="breadcrumb-host" />;
+}
+function PathItem(props: ComponentPropsWithRef<'li'>) {
+  return <li {...props} data-testid="path-item" />;
+}
 
 const getSeparators = (nav: HTMLElement) =>
   Array.from(nav.querySelectorAll<HTMLElement>('[data-ui="breadcrumbs-separator"]'));
 
 // The last level renders as plain text: it is the current page.
-export const Default: Story = {
+export const Default: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = {
+  args: { items: [ { key: 'home', label: 'Home', href: '/' }, { key: 'projects', label: 'Projects', href: '/projects' }, { key: 'current', label: 'jfrader-ui' } ] },
+  render: (args) => <Breadcrumbs {...args} />,
+  parameters: { docs: { source: { code: `<Breadcrumbs items={path} />` } } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(canvas.getByText('jfrader-ui')).toHaveAttribute('aria-current', 'page');
+    await expect(canvas.getAllByRole('link')).toHaveLength(2);
+    await userEvent.tab();
+    await expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('link', { name: 'Home' }));
+    await userEvent.tab();
+    await expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('link', { name: 'Projects' }));
+  },
+};
+
+export const GeneratedPartProps: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = {
+  args: { items: [ { key: 'home', label: 'Home', href: '/' }, { key: 'current', label: 'Project' } ], slotProps: { separator: { style: { fontWeight: 700 } }, item: { style: { fontStyle: 'italic' } } } },
+  render: (args) => <Breadcrumbs {...args} />,
+  parameters: { docs: { source: { code: `<Breadcrumbs items={path} slotProps={{ item: { sx: { fontStyle: 'italic' } } }} />` } } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByRole('listitem')[0]).toHaveStyle({ fontStyle: 'italic' });
+  },
+};
+
+export const Compound: Story = {
   render: (args) => (
     <Breadcrumbs {...args}>
       <Breadcrumbs.Item href={LEVELS[0].href}>{LEVELS[0].label}</Breadcrumbs.Item>
@@ -66,6 +103,17 @@ export const Default: Story = {
       'flex',
     ]);
     await expect(separators[1]).toHaveTextContent('/');
+  },
+};
+
+export const ReplacedParts: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = {
+  args: { items: [ { key: 'home', label: 'Home', href: '/' }, { key: 'current', label: 'Project', href: '/project' } ], slots: { root: BreadcrumbHost, item: PathItem }, slotProps: { root: { 'aria-label': 'Project path' } } },
+  render: (args) => <Breadcrumbs {...args} />,
+  parameters: { docs: { source: { code: `<Breadcrumbs items={path} component={BreadcrumbHost} slotProps={{ root: { 'aria-label': 'Project path' } }} />` } } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByTestId('breadcrumb-host')).toHaveAccessibleName('Project path');
+    await expect(canvas.getByRole('link', { name: 'Project' })).toHaveAttribute('aria-current', 'page');
+    await expect(canvas.getAllByTestId('path-item')).toHaveLength(2);
   },
 };
 

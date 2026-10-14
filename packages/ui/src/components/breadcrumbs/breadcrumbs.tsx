@@ -20,20 +20,57 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { useMergeRefs } from '@floating-ui/react';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 
-export interface BreadcrumbsProps extends ComponentPropsWithRef<'nav'>, SxProps {
+export interface BreadcrumbsBaseProps extends Omit<ComponentPropsWithRef<'nav'>, 'children'>, SxProps {
   /** Accessible name of the navigation landmark. */
   label?: string;
   /** Rendered (aria-hidden) between items. */
   separator?: ReactNode;
 }
+
+export interface BreadcrumbsEntry {
+  readonly key?: string;
+  readonly label: ReactNode;
+  readonly href?: string;
+  readonly current?: boolean;
+}
+export interface BreadcrumbsSlots {
+  root?: ComponentType<ComponentPropsWithRef<'nav'>>;
+  item?: ComponentType<ComponentPropsWithRef<'li'>>;
+  separator?: ComponentType<ComponentPropsWithRef<'span'>>;
+}
+export interface BreadcrumbsSlotProps {
+  root?: Omit<ComponentPropsWithRef<'nav'>, 'children'> & SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
+  item?: Omit<BreadcrumbsItemProps, 'children' | 'href' | 'current'> & { css?: Interpolation<Theme> };
+  separator?: Omit<ComponentPropsWithRef<'span'>, 'children' | 'aria-hidden'> & SxProps & { css?: Interpolation<Theme> };
+}
+export interface BreadcrumbsCompoundProps extends BreadcrumbsBaseProps {
+  children?: ReactNode;
+  items?: never;
+  component?: never;
+  slots?: never;
+  slotProps?: never;
+}
+export interface BreadcrumbsEasyProps extends BreadcrumbsBaseProps {
+  items: readonly BreadcrumbsEntry[];
+  children?: never;
+  component?: BreadcrumbsSlots['root'];
+  slots?: BreadcrumbsSlots;
+  slotProps?: BreadcrumbsSlotProps;
+}
+export type BreadcrumbsProps = BreadcrumbsCompoundProps | BreadcrumbsEasyProps;
 
 export interface BreadcrumbsItemProps extends ComponentPropsWithRef<'li'>, SxProps {
   href?: string;
@@ -48,6 +85,9 @@ interface ItemRecord {
 
 interface BreadcrumbsContextValue {
   separator: ReactNode;
+  separatorProps?: BreadcrumbsSlotProps['separator'];
+  separatorComponent?: BreadcrumbsSlots['separator'];
+  itemComponent?: BreadcrumbsSlots['item'];
   autoCurrentId: string | null;
   register: (id: string, record: ItemRecord) => void;
   unregister: (id: string) => void;
@@ -84,7 +124,7 @@ const itemStyle = css({
   alignItems: 'center',
   gap: vars.space[2],
   color: vars.color.textMuted,
-  '&:first-of-type > [data-ui="breadcrumbs-separator"]': {
+  '&:first-of-type > [data-ui~="breadcrumbs-separator"]': {
     display: 'none',
   },
 });
@@ -136,8 +176,17 @@ function BreadcrumbsRoot({
   children,
   className,
   sx,
+  items,
+  component,
+  slots,
+  slotProps,
   ...rest
 }: BreadcrumbsProps) {
+  const Root = component ?? slots?.root ?? 'nav';
+  const { className: slotClassName, style: slotStyle, css: slotCss, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
+  const marker = typeof rootProps['data-ui'] === 'string' ? rootProps['data-ui'] : '';
+  const rootDataUi = [...new Set(['breadcrumbs', ...marker.split(/\s+/)])].filter(Boolean).join(' ');
+  const mergedRef = useMergeRefs([ref, rootProps.ref]);
   const records = useRef(new Map<string, ItemRecord>());
   const [autoCurrentId, setAutoCurrentId] = useState<string | null>(null);
   const resolvedId = useRef<string | null>(null);
@@ -168,17 +217,41 @@ function BreadcrumbsRoot({
   );
 
   const context = useMemo(
-    () => ({ separator, autoCurrentId, register, unregister }),
-    [separator, autoCurrentId, register, unregister],
+    () => ({
+      separator,
+      separatorProps: slotProps?.separator,
+      separatorComponent: slots?.separator,
+      itemComponent: slots?.item,
+      autoCurrentId,
+      register,
+      unregister,
+    }),
+    [separator, slotProps?.separator, slots?.separator, slots?.item, autoCurrentId, register, unregister],
   );
 
   return (
     <BreadcrumbsContext.Provider value={context}>
-      <WithSx className={className} sx={sx}>
+      <WithSx className={[slotClassName, className].filter(Boolean).join(' ')} styles={[slotCss, slotSx]} sx={sx}>
         {(className) => (
-          <nav {...rest} ref={ref} aria-label={rest['aria-label'] ?? label} data-ui="breadcrumbs" className={className}>
-            <ol css={listStyle}>{children}</ol>
-          </nav>
+          <Root
+            {...rest}
+            {...rootProps}
+            ref={mergedRef}
+            style={{ ...rest.style, ...slotStyle }}
+            aria-label={rootProps['aria-label'] ?? rest['aria-label'] ?? label}
+            data-ui={rootDataUi}
+            className={className}
+          >
+            <ol css={listStyle}>
+              {items !== undefined
+                ? items.map((item, index) => (
+                    <BreadcrumbsItem {...slotProps?.item} key={item.key ?? item.href ?? index} href={item.href} current={item.current}>
+                      {item.label}
+                    </BreadcrumbsItem>
+                  ))
+                : children}
+            </ol>
+          </Root>
         )}
       </WithSx>
     </BreadcrumbsContext.Provider>
@@ -188,7 +261,10 @@ function BreadcrumbsRoot({
 BreadcrumbsRoot.displayName = 'Breadcrumbs';
 
 function BreadcrumbsItem({ ref, href, current, children, className, sx, ...rest }: BreadcrumbsItemProps) {
-  const { separator, autoCurrentId, register, unregister } = useBreadcrumbsContext('Item');
+  const { separator, separatorProps, separatorComponent, itemComponent, autoCurrentId, register, unregister } = useBreadcrumbsContext('Item');
+  const Root = itemComponent ?? 'li';
+  const Separator = separatorComponent ?? 'span';
+  const { css: separatorCss, sx: separatorSx, ...separatorRest } = separatorProps ?? {};
   const id = useId();
   const itemRef = useRef<HTMLLIElement>(null);
   useImperativeHandle(ref, () => itemRef.current as HTMLLIElement, []);
@@ -207,10 +283,14 @@ function BreadcrumbsItem({ ref, href, current, children, className, sx, ...rest 
   return (
     <WithSx className={className} styles={itemStyle} sx={sx}>
       {(className) => (
-        <li {...rest} ref={itemRef} data-ui="breadcrumbs-item" className={className}>
-          <span aria-hidden="true" data-ui="breadcrumbs-separator" css={separatorStyle}>
-            {separator}
-          </span>
+        <Root {...rest} ref={itemRef} data-ui="breadcrumbs-item" className={className}>
+          <WithSx className={separatorRest.className} styles={[separatorStyle, separatorCss]} sx={separatorSx}>
+            {(className) => (
+              <Separator {...separatorRest} aria-hidden="true" data-ui="breadcrumbs-separator" className={className}>
+                {separator}
+              </Separator>
+            )}
+          </WithSx>
           {href !== undefined ? (
             <a href={href} aria-current={ariaCurrent} css={[contentStyle, linkStyle]}>
               {children}
@@ -220,7 +300,7 @@ function BreadcrumbsItem({ ref, href, current, children, className, sx, ...rest 
               {children}
             </span>
           )}
-        </li>
+        </Root>
       )}
     </WithSx>
   );

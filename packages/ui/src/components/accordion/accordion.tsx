@@ -17,11 +17,14 @@ import {
   useId,
   useMemo,
   type ComponentPropsWithRef,
+  type ComponentType,
   type KeyboardEvent,
   type MouseEvent,
+  type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { useMergeRefs } from '@floating-ui/react';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -32,12 +35,13 @@ import { useControlledState } from '../../utils/use-controlled-state';
 export type AccordionType = 'single' | 'multiple';
 export type AccordionValue = string | string[];
 
-interface AccordionBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
+interface AccordionBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue' | 'children'>, SxProps {
   /** Allow closing the last open panel. */
   collapsible?: boolean;
 }
 
 export interface AccordionSingleProps extends AccordionBaseProps {
+  children?: ReactNode;
   type?: 'single';
   value?: string;
   defaultValue?: string;
@@ -45,6 +49,7 @@ export interface AccordionSingleProps extends AccordionBaseProps {
 }
 
 export interface AccordionMultipleProps extends AccordionBaseProps {
+  children?: ReactNode;
   /** Allow several panels open at once. */
   type: 'multiple';
   value?: string[];
@@ -52,7 +57,46 @@ export interface AccordionMultipleProps extends AccordionBaseProps {
   onValueChange?: (value: string[]) => void;
 }
 
-export type AccordionProps = AccordionSingleProps | AccordionMultipleProps;
+export interface AccordionSection {
+  readonly value: string;
+  readonly label: ReactNode;
+  readonly panel: ReactNode;
+  readonly disabled?: boolean;
+}
+
+export interface AccordionSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  item?: ComponentType<ComponentPropsWithRef<'div'>>;
+  trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
+  panel?: ComponentType<ComponentPropsWithRef<'div'>>;
+}
+
+export interface AccordionSlotProps {
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
+  item?: Omit<AccordionItemProps, 'children' | 'value' | 'disabled'> & { css?: Interpolation<Theme> };
+  trigger?: Omit<AccordionTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  panel?: Omit<AccordionPanelProps, 'children'> & { css?: Interpolation<Theme> };
+}
+
+type AccordionStateProps = Omit<AccordionSingleProps, 'children'> | Omit<AccordionMultipleProps, 'children'>;
+export type AccordionCompoundProps = AccordionStateProps & {
+  children?: ReactNode;
+  items?: never;
+  component?: never;
+  slots?: never;
+  slotProps?: never;
+};
+export type AccordionEasyProps = AccordionStateProps & {
+  items: readonly AccordionSection[];
+  children?: never;
+  component?: AccordionSlots['root'];
+  slots?: AccordionSlots;
+  slotProps?: AccordionSlotProps;
+};
+export type AccordionProps = AccordionCompoundProps | AccordionEasyProps;
 
 export interface AccordionItemProps extends ComponentPropsWithRef<'div'>, SxProps {
   value: string;
@@ -64,6 +108,7 @@ export type AccordionTriggerProps = ComponentPropsWithRef<'button'> & SxProps;
 export type AccordionPanelProps = ComponentPropsWithRef<'div'> & SxProps;
 
 interface AccordionContextValue {
+  slots?: AccordionSlots;
   openValues: readonly string[];
   toggle: (itemValue: string) => void;
   canCollapse: boolean;
@@ -94,8 +139,8 @@ function useAccordionItemContext(part: string): AccordionItemContextValue {
 
 const EMPTY_SINGLE_VALUE = '';
 const TRIGGER_QUERY: OwnedItemsQuery = {
-  itemSelector: '[data-ui="accordion-trigger"]:not([disabled])',
-  ownerSelector: '[data-ui="accordion"]',
+  itemSelector: '[data-ui~="accordion-trigger"]:not([disabled])',
+  ownerSelector: '[data-ui~="accordion"]',
 };
 
 const toOpenValues = (value: AccordionValue | undefined, type: AccordionType): string[] => {
@@ -196,8 +241,18 @@ function AccordionRoot({
   onKeyDown,
   className,
   sx,
+  children,
+  items,
+  component,
+  slots,
+  slotProps,
   ...rest
 }: AccordionProps) {
+  const Root = component ?? slots?.root ?? 'div';
+  const { className: slotClassName, style: slotStyle, css: slotCss, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
+  const marker = typeof rootProps['data-ui'] === 'string' ? rootProps['data-ui'] : '';
+  const rootDataUi = [...new Set(['accordion', ...marker.split(/\s+/)])].filter(Boolean).join(' ');
+  const mergedRef = useMergeRefs([ref, rootProps.ref]);
   // `toggle` only emits the shape that matches `type`, so either callback accepts it.
   const [value, setValue] = useControlledState<AccordionValue>(
     valueProp,
@@ -217,11 +272,11 @@ function AccordionRoot({
         setValue(isOpen ? EMPTY_SINGLE_VALUE : itemValue);
       }
     };
-    return { openValues, toggle, canCollapse };
-  }, [value, setValue, type, collapsible]);
+    return { openValues, toggle, canCollapse, slots };
+  }, [value, setValue, type, collapsible, slots]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    onKeyDown?.(event);
+    (rootProps.onKeyDown ?? onKeyDown)?.(event);
     if (event.defaultPrevented) return;
     // Scope to this accordion's own triggers so a nested accordion keeps its own focus order.
     moveRovingFocus(event, event.currentTarget, 'vertical', TRIGGER_QUERY);
@@ -229,9 +284,26 @@ function AccordionRoot({
 
   return (
     <AccordionContext.Provider value={context}>
-      <WithSx className={className} sx={sx}>
+      <WithSx className={[slotClassName, className].filter(Boolean).join(' ')} styles={[slotCss, slotSx]} sx={sx}>
         {(className) => (
-          <div {...rest} ref={ref} data-ui="accordion" onKeyDown={handleKeyDown} className={className} />
+          <Root
+            {...rest}
+            {...rootProps}
+            ref={mergedRef}
+            style={{ ...rest.style, ...slotStyle }}
+            data-ui={rootDataUi}
+            onKeyDown={handleKeyDown}
+            className={className}
+          >
+            {items !== undefined
+              ? items.map((item) => (
+                  <AccordionItem {...slotProps?.item} key={item.value} value={item.value} disabled={item.disabled}>
+                    <AccordionTrigger {...slotProps?.trigger}>{item.label}</AccordionTrigger>
+                    <AccordionPanel {...slotProps?.panel}>{item.panel}</AccordionPanel>
+                  </AccordionItem>
+                ))
+              : children}
+          </Root>
         )}
       </WithSx>
     </AccordionContext.Provider>
@@ -241,7 +313,8 @@ function AccordionRoot({
 AccordionRoot.displayName = 'Accordion';
 
 function AccordionItem({ ref, value, disabled = false, className, sx, ...rest }: AccordionItemProps) {
-  const { openValues } = useAccordionContext('Item');
+  const { openValues, slots } = useAccordionContext('Item');
+  const Root = slots?.item ?? 'div';
   const id = useId();
   const expanded = openValues.includes(value);
 
@@ -254,7 +327,7 @@ function AccordionItem({ ref, value, disabled = false, className, sx, ...rest }:
     <AccordionItemContext.Provider value={context}>
       <WithSx className={className} styles={itemStyle} sx={sx}>
         {(className) => (
-          <div
+          <Root
             {...rest}
             ref={ref}
             data-ui="accordion-item"
@@ -271,7 +344,8 @@ function AccordionItem({ ref, value, disabled = false, className, sx, ...rest }:
 AccordionItem.displayName = 'Accordion.Item';
 
 function AccordionTrigger({ ref, onClick, disabled: disabledProp, className, sx, ...rest }: AccordionTriggerProps) {
-  const { toggle, canCollapse } = useAccordionContext('Trigger');
+  const { toggle, canCollapse, slots } = useAccordionContext('Trigger');
+  const Root = slots?.trigger ?? 'button';
   const { value, disabled: itemDisabled, expanded, triggerId, panelId } = useAccordionItemContext('Trigger');
   const locked = expanded && !canCollapse;
 
@@ -285,7 +359,7 @@ function AccordionTrigger({ ref, onClick, disabled: disabledProp, className, sx,
     <h3 data-ui="accordion-heading" css={headingStyle}>
       <WithSx className={className} styles={triggerStyle} sx={sx}>
         {(className) => (
-          <button
+          <Root
             {...rest}
             ref={ref}
             type="button"
@@ -308,13 +382,14 @@ function AccordionTrigger({ ref, onClick, disabled: disabledProp, className, sx,
 AccordionTrigger.displayName = 'Accordion.Trigger';
 
 function AccordionPanel({ ref, 'aria-labelledby': ariaLabelledByProp, className, sx, ...rest }: AccordionPanelProps) {
+  const Root = useAccordionContext('Panel').slots?.panel ?? 'div';
   const { expanded, triggerId, panelId } = useAccordionItemContext('Panel');
   const ariaLabelledBy = [ariaLabelledByProp, triggerId].filter(Boolean).join(' ');
 
   return (
     <WithSx className={className} styles={panelStyle} sx={sx}>
       {(className) => (
-        <div
+        <Root
           {...rest}
           ref={ref}
           role="region"

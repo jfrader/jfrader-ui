@@ -18,12 +18,15 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ComponentPropsWithRef,
+  type ComponentType,
+  type MouseEventHandler,
   type ReactNode,
 } from 'react';
 import { useMergeRefs, type Placement } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type SerializedStyles } from '../../styling/css';
+import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { listboxSurfaceStyle } from '../../styling/listbox-style';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -45,11 +48,68 @@ import {
   type MenuSeparatorProps,
 } from '../menu/menu';
 
+const tokens = (...values: Array<unknown>): string | undefined => {
+  const list = [...new Set(values.flatMap((v) => (typeof v === 'string' ? v.split(/\s+/) : [])))].filter(Boolean);
+  return list.join(' ') || undefined;
+};
+
 const FAMILY = 'SplitButton';
 
 export type SplitButtonItemTone = MenuItemTone;
 
-export interface SplitButtonProps extends Omit<ComponentPropsWithRef<'div'>, 'role'>, SxProps {
+export type SplitButtonActionRecord = Readonly<{
+  type?: 'item';
+  key?: string;
+  label: ReactNode;
+  onSelect?: () => void;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
+  disabled?: boolean;
+  tone?: SplitButtonItemTone;
+}>;
+
+export type SplitButtonSeparatorRecord = Readonly<{
+  type: 'separator';
+  key?: string;
+  label?: never;
+  onSelect?: never;
+  onClick?: never;
+  disabled?: never;
+  tone?: never;
+}>;
+
+export type SplitButtonItemRecord = SplitButtonActionRecord | SplitButtonSeparatorRecord;
+
+type SplitButtonTriggerBaseProps = Omit<
+  ButtonProps,
+  'render' | 'variant' | 'tone' | 'size' | 'loading' | 'startIcon' | 'endIcon' | 'aria-haspopup' | 'aria-expanded' | 'aria-controls'
+>;
+
+export interface SplitButtonSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  action?: ComponentType<SplitButtonActionProps>;
+  trigger?: ComponentType<SplitButtonTriggerProps>;
+  content?: ComponentType<SplitButtonContentProps>;
+  item?: ComponentType<SplitButtonItemProps>;
+  separator?: ComponentType<SplitButtonSeparatorProps>;
+}
+
+export interface SplitButtonSlotProps {
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children'> &
+    SxProps & {
+      css?: Interpolation<Theme>;
+      [attribute: `data-${string}`]: unknown;
+    };
+  action?: Partial<Omit<SplitButtonActionProps, 'children' | 'onClick' | 'disabled'>>;
+  trigger?: Partial<Omit<SplitButtonTriggerBaseProps, 'children' | 'disabled'>> & {
+    'aria-label'?: string;
+    'aria-labelledby'?: string;
+  };
+  content?: Partial<Omit<SplitButtonContentProps, 'children'>>;
+  item?: Partial<Omit<SplitButtonItemProps, 'children' | 'onSelect' | 'disabled'>>;
+  separator?: Partial<SplitButtonSeparatorProps>;
+}
+
+export interface SplitButtonBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'role' | 'onClick' | 'children'>, SxProps {
   /** Appearance of the Action; the Trigger uses the matching subdued fill. */
   variant?: ButtonVariant;
   tone?: ButtonTone;
@@ -61,8 +121,35 @@ export interface SplitButtonProps extends Omit<ComponentPropsWithRef<'div'>, 'ro
   onOpenChange?: (open: boolean) => void;
   /** Menu placement relative to the Trigger; `start`/`end` follow the group's direction. */
   placement?: Placement;
-  children?: ReactNode;
 }
+
+export interface SplitButtonCompoundProps extends SplitButtonBaseProps {
+  children?: ReactNode;
+  label?: never;
+  onClick?: ComponentPropsWithRef<'div'>['onClick'];
+  menuLabel?: never;
+  items?: never;
+  component?: never;
+  slots?: never;
+  slotProps?: never;
+}
+
+export interface SplitButtonEasyProps extends SplitButtonBaseProps {
+  /** Name the primary action. */
+  label: ReactNode;
+  /** Called only when the primary action is activated; does NOT bubble from or attach to the root. */
+  onClick?: MouseEventHandler<HTMLButtonElement>;
+  /** Accessible name for the dropdown trigger. */
+  menuLabel: string;
+  /** Alternative actions and separators rendered in the dropdown menu. */
+  items: readonly SplitButtonItemRecord[];
+  children?: never;
+  component?: SplitButtonSlots['root'];
+  slots?: SplitButtonSlots;
+  slotProps?: SplitButtonSlotProps;
+}
+
+export type SplitButtonProps = SplitButtonCompoundProps | SplitButtonEasyProps;
 
 export interface SplitButtonActionProps extends Omit<ButtonProps, 'render'> {
   /**
@@ -70,11 +157,6 @@ export interface SplitButtonActionProps extends Omit<ButtonProps, 'render'> {
    */
   reserveLabels?: readonly string[];
 }
-
-type SplitButtonTriggerBaseProps = Omit<
-  ButtonProps,
-  'render' | 'variant' | 'tone' | 'size' | 'loading' | 'startIcon' | 'endIcon' | 'aria-haspopup' | 'aria-expanded' | 'aria-controls'
->;
 
   /** Trigger has no text. Supply a translated `aria-label` or `aria-labelledby`. */
 export type SplitButtonTriggerProps = SplitButtonTriggerBaseProps &
@@ -232,12 +314,27 @@ function SplitButtonRoot({
   placement = 'bottom-end',
   className,
   sx,
+  style,
+  label,
+  onClick,
+  menuLabel,
+  items,
   children,
+  component,
+  slots,
+  slotProps,
   ...rest
 }: SplitButtonProps) {
+  const isEasyMode = items !== undefined;
+  const Root = component ?? slots?.root ?? 'div';
+  const Action = slots?.action ?? SplitButtonAction;
+  const Trigger = slots?.trigger ?? SplitButtonTrigger;
+  const Content = slots?.content ?? SplitButtonContent;
+  const Item = slots?.item ?? SplitButtonItem;
+  const Separator = slots?.separator ?? SplitButtonSeparator;
+
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const groupRef = useRef<HTMLDivElement>(null);
-  const mergedRef = useMergeRefs([groupRef, ref]);
   const [direction, setDirection] = useState<Direction>();
   const [triggerLabelledBy, setTriggerLabelledBy] = useState<string>();
   const closeRequestedRef = useRef(false);
@@ -271,14 +368,84 @@ function SplitButtonRoot({
     [variant, tone, size, disabled, direction, triggerLabelledBy],
   );
 
+  const {
+    className: rootSlotClassName,
+    style: rootSlotStyle,
+    css: rootSlotCss,
+    sx: rootSlotSx,
+    ref: rootSlotRef,
+    'data-ui': rootSlotDataUi,
+    onClick: rootSlotOnClick,
+    ...rootSlotRest
+  } = slotProps?.root ?? {};
+
+  const mergedRef = useMergeRefs([groupRef, ref, rootSlotRef]);
+  const mergedClassName = [rootSlotClassName, className].filter(Boolean).join(' ') || undefined;
+  const mergedStyle = { ...style, ...rootSlotStyle };
+
+  const rootOnClick = isEasyMode
+    ? rootSlotOnClick
+    : (rootSlotOnClick ?? (onClick as ComponentPropsWithRef<'div'>['onClick']));
+
   return (
     <Menu open={open} onOpenChange={handleOpenChange} placement={placement}>
       <SplitButtonContext.Provider value={context}>
-        <WithSx className={className} styles={rootStyle} sx={sx}>
-          {(className) => (
-            <div {...rest} ref={mergedRef} role="group" data-ui="split-button" className={className}>
-              {children}
-            </div>
+        <WithSx className={mergedClassName} styles={[rootStyle, rootSlotCss, rootSlotSx]} sx={sx}>
+          {(resolvedClassName) => (
+            <Root
+              {...rest}
+              {...rootSlotRest}
+              ref={mergedRef}
+              role="group"
+              data-ui={tokens('split-button', rootSlotDataUi) ?? 'split-button'}
+              style={mergedStyle}
+              className={resolvedClassName}
+              onClick={rootOnClick}
+            >
+              {isEasyMode ? (
+                <>
+                  <Action
+                    {...slotProps?.action}
+                    disabled={disabled}
+                    onClick={onClick as MouseEventHandler<HTMLButtonElement> | undefined}
+                  >
+                    {label}
+                  </Action>
+                  <Trigger
+                    {...slotProps?.trigger}
+                    disabled={disabled}
+                    aria-label={slotProps?.trigger?.['aria-label'] ?? menuLabel}
+                  />
+                  <Content {...slotProps?.content}>
+                    {items.map((item, index) => {
+                      const key = item.key ?? (item.type === 'separator' ? `sep-${index}` : (typeof item.label === 'string' ? item.label : index));
+                      if (item.type === 'separator') {
+                        return (
+                          <Separator
+                            key={key}
+                            {...slotProps?.separator}
+                          />
+                        );
+                      }
+                      return (
+                        <Item
+                          key={key}
+                          {...slotProps?.item}
+                          disabled={item.disabled}
+                          tone={item.tone ?? slotProps?.item?.tone}
+                          onSelect={item.onSelect}
+                          onClick={item.onClick ?? slotProps?.item?.onClick}
+                        >
+                          {item.label}
+                        </Item>
+                      );
+                    })}
+                  </Content>
+                </>
+              ) : (
+                children
+              )}
+            </Root>
           )}
         </WithSx>
       </SplitButtonContext.Provider>

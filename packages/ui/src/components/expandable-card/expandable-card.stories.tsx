@@ -1,11 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Popover } from '../popover';
-import { ExpandableCard, type ExpandableCardProps } from './index';
+import { ExpandableCard, type ExpandableCardCompoundProps as ExpandableCardProps, type ExpandableCardEasyProps } from './index';
 
 const frameStyle = css({
   inlineSize: 'min(100%, 640px)',
@@ -69,12 +69,23 @@ const meta = {
         component:
           'Show or hide details inside a card.',
       },
-      usage: '- Follows the APG disclosure pattern. Enter and Space toggle; Escape requests collapse. Tab and Shift+Tab follow document order.\n- Details remain mounted. Controlled requests take effect when `open` changes.\n- Choose `headingLevel` to match the page hierarchy.',
+      usage: '- Pass `title`, optional `description` and `content`, or compose the dotted parts with `children`.\n- Follows the APG disclosure pattern. Enter and Space toggle; Escape requests collapse. Tab and Shift+Tab follow document order.\n- Details remain mounted. Controlled requests take effect when `open` changes.\n- Choose `headingLevel` to match the page hierarchy.\n- Use `slotProps` to customize generated parts. `component` replaces the root, as does `slots.root`. Replacements receive the wired native element props; forward all props and ref to that element. Declare replacements outside render.',
     },
   },
-} satisfies Meta<typeof ExpandableCard>;
+} satisfies Meta<ExpandableCardProps>;
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<Omit<ExpandableCardProps, 'component'>>;
+type CheckedEasyArgs<Args extends ExpandableCardEasyProps> = Args;
+export type EasyModeTypeRegression = {
+  // @ts-expect-error Presentation props cannot be combined with compound children.
+  mixed: CheckedEasyArgs<{ title: string; content: string; children: string }>;
+};
+function ExpandableHost(props: ComponentPropsWithRef<'article'> & { 'data-ui'?: string }) {
+  return <article {...props} data-ui={`${props['data-ui']} custom-root`} data-testid="expandable-host" />;
+}
+function DetailsPanel(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="details-panel" />;
+}
 async function settled(panel: HTMLElement, open: boolean) {
   await waitFor(
     async () => {
@@ -104,7 +115,31 @@ async function settledAt(measure: () => number, expected: () => number) {
     { timeout: 4000, interval: 50 },
   );
 }
-export const Default: Story = {
+export const Default: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+  args: { title: 'Studio plan', description: 'Billing and team details', content: 'Plan details', onOpenChange: fn() },
+  render: (args) => <ExpandableCard {...args} />,
+  parameters: { docs: { source: { code: `<ExpandableCard title="Studio plan" description="Billing and team details" content={details} />` } } },
+  play: async ({ canvas, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: /^Studio plan/ });
+    const panel = trigger.ownerDocument.getElementById(trigger.getAttribute('aria-controls')!)!;
+    trigger.focus();
+    await userEvent.keyboard('{Enter}');
+    await settled(panel, true);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+    await userEvent.keyboard('{Escape}');
+    await settled(panel, false);
+  },
+};
+
+export const GeneratedPartProps: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+  args: { title: 'Studio plan', content: 'Plan details', defaultOpen: true, slotProps: { title: { style: { fontStyle: 'italic' } }, content: { sx: { color: vars.color.accentText } } } },
+  render: (args) => <ExpandableCard {...args} />,
+  parameters: { docs: { source: { code: `<ExpandableCard title="Studio plan" content={details} slotProps={{ title: { sx: { fontStyle: 'italic' } } }} />` } } },
+  play: async ({ canvas }) => { await expect(canvas.getByText('Studio plan')).toHaveStyle({ fontStyle: 'italic' }); },
+};
+
+export const Compound: Story = {
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: /^Studio plan/ });
     const panel = trigger.ownerDocument.getElementById(trigger.getAttribute('aria-controls')!)!;
@@ -124,6 +159,43 @@ export const Default: Story = {
     await expect(args.onOpenChange).toHaveBeenNthCalledWith(1, true);
     await expect(args.onOpenChange).toHaveBeenNthCalledWith(2, false);
     await expect(args.onOpenChange).toHaveBeenNthCalledWith(3, true);
+  },
+};
+
+export const EasyControlled: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+  args: { title: 'Studio plan', content: 0, open: false, onOpenChange: fn() },
+  render: (args) => <ExpandableCard {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: 'Studio plan' });
+    await userEvent.click(trigger);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  },
+};
+export const EasyDisabled: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+  args: { title: 'Studio plan', content: 'Details', disabled: true, onOpenChange: fn() },
+  render: (args) => <ExpandableCard {...args} />,
+  play: async ({ canvas, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: 'Studio plan' });
+    await expect(trigger).toBeDisabled();
+    await userEvent.click(trigger);
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+export const ReplacedParts: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+  args: { title: 'Studio plan', content: 0, slots: { root: ExpandableHost, content: DetailsPanel }, defaultOpen: true, slotProps: { root: { 'aria-label': 'Plan details' } } },
+  render: (args) => <ExpandableCard {...args} />,
+  parameters: { docs: { source: { code: `<ExpandableCard title="Studio plan" content={details} component={ExpandableHost} slotProps={{ root: { 'aria-label': 'Plan details' } }} />` } } },
+  play: async ({ canvas, userEvent }) => {
+    await expect(canvas.getByTestId('expandable-host')).toHaveAccessibleName('Plan details');
+    await expect(canvas.getByText('0')).toBeVisible();
+    const panel = canvas.getByTestId('details-panel');
+    await settled(panel, true);
+    canvas.getByRole('button', { name: 'Studio plan' }).focus();
+    await userEvent.keyboard('{Escape}');
+    await settled(panel, false);
+    await expect(panel.inert).toBe(true);
   },
 };
 export const Small: Story = { args: { size: 'sm' } };
