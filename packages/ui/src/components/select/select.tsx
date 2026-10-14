@@ -18,7 +18,6 @@
 // can read option labels; it is only positioned while open.
 // Forms: `name` renders a hidden input carrying the selected value. Native constraint
 // validation (`required`) is not wired in this version.
-import { useFormReset } from '../../utils/use-form-reset';
 import {
   createContext,
   useCallback,
@@ -69,6 +68,7 @@ import {
   type CollectionRegistration,
 } from '../../utils/collection-registry';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useFormReset } from '../../utils/use-form-reset';
 
 const TYPEAHEAD_RESET_MS = 500;
 const TYPEAHEAD_COLLATOR = new Intl.Collator(undefined, { usage: 'search', sensitivity: 'base' });

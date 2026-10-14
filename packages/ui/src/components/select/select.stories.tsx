@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fireEvent, fn, mocked, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -86,7 +86,7 @@ export const DisabledWhileOpen: Story = {
     const trigger = canvas.getByRole('combobox', { name: LABEL });
     const option = await bodyOf(canvasElement).findByRole('option', { name: 'Cherry' });
     await userEvent.click(canvas.getByRole('button', { name: 'Disable' }));
-    args.onOpenChange.mockClear();
+    mocked(args.onOpenChange!).mockClear();
     await fireEvent.click(option);
     await fireEvent.keyDown(trigger, { key: 'ArrowDown' });
     await fireEvent.keyDown(trigger, { key: 'Enter' });
@@ -116,11 +116,54 @@ export const NativeFormReset: Story = {
     await userEvent.click(trigger);
     await userEvent.click(await bodyOf(canvasElement).findByRole('option', { name: 'Cherry' }));
     await expect(new FormData(form).get('fruit')).toBe('cherry');
-    const calls = args.onValueChange.mock.calls.length;
+    const calls = mocked(args.onValueChange!).mock.calls.length;
     await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
     await waitFor(() => expect(new FormData(form).get('fruit')).toBe('apple'));
     await expect(trigger).toHaveTextContent('Apple');
     await expect(args.onValueChange).toHaveBeenCalledTimes(calls);
+  },
+};
+
+function AssociatedFormResetSelect(props: SelectProps) {
+  const formId = useId();
+  const [cancelReset, setCancelReset] = useState(true);
+  return (
+    <>
+      <form id={formId} onReset={event => { if (cancelReset) event.preventDefault(); }}>
+        <Button type="reset">Reset</Button>
+      </form>
+      <Button onClick={() => setCancelReset(false)}>Allow reset</Button>
+      <Select {...props} defaultValue="apple">
+        <Select.Trigger form={formId} aria-label={LABEL}><Select.Value /></Select.Trigger>
+        <Select.Content>
+          <Select.Item value="apple">Apple</Select.Item>
+          <Select.Item value="cherry">Cherry</Select.Item>
+        </Select.Content>
+      </Select>
+      <Select {...props} value="cherry">
+        <Select.Trigger form={formId} aria-label="Controlled fruit"><Select.Value /></Select.Trigger>
+        <Select.Content><Select.Item value="cherry">Cherry</Select.Item></Select.Content>
+      </Select>
+    </>
+  );
+}
+
+export const AssociatedFormReset: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn() },
+  render: args => <AssociatedFormResetSelect {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('combobox', { name: LABEL });
+    await userEvent.click(trigger);
+    await userEvent.click(await bodyOf(canvasElement).findByRole('option', { name: 'Cherry' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await expect(trigger).toHaveTextContent('Cherry');
+    await userEvent.click(canvas.getByRole('button', { name: 'Allow reset' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await waitFor(() => expect(trigger).toHaveTextContent('Apple'));
+    await expect(canvas.getByRole('combobox', { name: 'Controlled fruit' })).toHaveTextContent('Cherry');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
 
