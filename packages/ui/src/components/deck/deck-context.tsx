@@ -6,6 +6,7 @@ import { BUILTIN_DECKS, type Deck } from './deck';
 interface DeckContextValue {
   decks: Record<string, Deck>;
   defaultDeckId?: string;
+  backLabel?: string;
 }
 
 const DeckContext = createContext<DeckContextValue | null>(null);
@@ -21,6 +22,8 @@ export interface DeckProviderProps {
    * When omitted across all providers, defaults to `'french'`.
    */
   default?: string;
+  /** Name of a face-down card, in your language. Inherited by FlipGameCard shorthand. */
+  backLabel?: string;
   children: ReactNode;
 }
 
@@ -36,6 +39,7 @@ export interface DeckProviderProps {
 export function DeckProvider({
   decks,
   default: defaultDeckId,
+  backLabel,
   children,
 }: DeckProviderProps): ReactElement {
   const parent = useContext(DeckContext);
@@ -53,13 +57,18 @@ export function DeckProvider({
     return {
       decks: merged,
       defaultDeckId: defaultDeckId ?? parent?.defaultDeckId,
+      backLabel: backLabel ?? parent?.backLabel,
     };
-  }, [parent, decks, defaultDeckId]);
+  }, [parent, decks, defaultDeckId, backLabel]);
 
   return <DeckContext.Provider value={value}>{children}</DeckContext.Provider>;
 }
 
 DeckProvider.displayName = 'DeckProvider';
+
+export function useDeckBackLabel(): string | undefined {
+  return useContext(DeckContext)?.backLabel;
+}
 
 export class UnknownDeckError extends Error {
   constructor(deckId: string) {

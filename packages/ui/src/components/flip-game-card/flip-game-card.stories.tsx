@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { StrictMode, useCallback, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, spyOn, within } from 'storybook/test';
+import { expect, fn, spyOn, within } from 'storybook/test';
+import { renderToString } from 'react-dom/server';
 import { vars } from '@jfrader/tokens/vars';
 import { base } from '@jfrader/tokens';
 import { css } from '../../styling/css';
@@ -9,7 +10,10 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
-import { FlipGameCard, type FlipGameCardProps } from './index';
+import { DeckProvider, defineDeck } from '../deck';
+import { WithSx } from '../../styling/sx';
+import type { GameCardRootProps } from '../game-card';
+import { FlipGameCard, MissingBackLabelError, type FlipGameCardProps } from './index';
 
 const FRONT_LABEL = 'Ace of spades';
 const BACK_LABEL = 'Card back';
@@ -46,7 +50,7 @@ const meta = {
   title: 'Games/FlipGameCard',
   component: FlipGameCard,
   tags: ['autodocs'],
-  args: { flipped: false, front, back },
+  args: { value: { deck: 'french', suit: 'spades', rank: 'A' }, label: FRONT_LABEL, backLabel: BACK_LABEL },
   argTypes: {
     size: { control: 'radio', options: ['sm', 'md', 'lg'] },
     front: { control: false },
@@ -57,8 +61,9 @@ const meta = {
     docs: {
       description: { component: 'Turn a playing card over to show its other face.' },
       usage: `### Faces and state
-- Pass two named faces with \`front\` and \`back\`; there is no \`children\` alias.
-- Set \`flipped\` to show the back. Clicking the card does not change it.
+- Pass \`value\`, \`label\` and \`backLabel\` to render both faces from one deck. Set \`DeckProvider backLabel\` to name backs once in your language.
+- For custom content, pass two named faces with \`front\` and \`back\` instead of the shorthand; there is no \`children\` alias.
+- Set \`flipped\` to show the back (default \`false\`). Clicking the card does not change it. Shorthand without a nonempty back name throws \`MissingBackLabelError\`, even when initially face up.
 - Both faces stay mounted. Hidden content remains in the DOM: do not pass secret card values.
 - Place a \`GameCard\` directly in each face; the wrapper sizes both to its \`size\` (default \`md\`). Custom content must fit the frame.
 
@@ -69,6 +74,7 @@ const meta = {
 
 ### Motion and layout
 - The outer root (and its React 19 \`ref\`) stays still; only the inner rotator moves. Use root \`sx\` for placement and \`slotProps\` for part styles.
+- Replace the root with \`component\` or \`slots.root\`. Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`. \`slotProps.root\` overrides root props; className and style merge.
 - Perspective uses \`size.gameCardPerspective\` (28rem). The flip uses \`motion.duration.cardFlip\` (300ms) and \`motion.easeCardFlip\` (ease).
 - Reduced motion switches faces immediately without rotation. No render-time measurements are needed.`,
     },
@@ -98,14 +104,24 @@ export const Default: Story = {
   },
 };
 
+export const FaceDown: Story = {
+  name: 'Face down',
+  args: { flipped: true },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getByRole('img', { name: BACK_LABEL })).toBeVisible();
+    await expect(canvas.queryByRole('img', { name: FRONT_LABEL })).toBeNull();
+    await expect(canvasElement.querySelector('[data-ui="flip-game-card-front"]')).toHaveAttribute('inert');
+  },
+};
+
 export const LightTheme: Story = { decorators: [withLightTheme] };
 
 const patternFaces: Story['render'] = (args) => (
   <div style={{ display: 'flex', gap: vars.space[4] }}>
     {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => (
-      <FlipGameCard {...args} key={deck} data-test-pattern={pattern}
-        front={<GameCard label={`${deck} face`} value={deck === 'spanish' ? { deck: 'spanish', suit: 'oros', rank: 1 } : { deck: 'french', suit: 'spades', rank: 'A' }} />}
-        back={<GameCard label={`${deck} back`} backPattern={pattern} />} />
+      <FlipGameCard flipped={args.flipped} size={args.size} key={deck} data-test-pattern={pattern}
+        value={deck === 'spanish' ? { deck: 'spanish', suit: 'oros', rank: 1 } : { deck: 'french', suit: 'spades', rank: 'A' }}
+        label={`${deck} face`} backLabel={`${deck} back`} />
     ))}
   </div>
 );
@@ -113,9 +129,9 @@ const patternFaces: Story['render'] = (args) => (
 /** Both card faces with their deck's back kept mounted. */
 export const PatternFronts: Story = { render: patternFaces };
 /** Spanish diagonal backs and poker checks in flip frames. */
-export const PatternBacks: Story = { render: patternFaces, args: { flipped: true } };
+export const PatternBacks: Story = { name: 'Deck backs', render: patternFaces, args: { flipped: true } };
 export const PatternFrontsLightTheme: Story = { ...PatternFronts, decorators: [withLightTheme] };
-export const PatternBacksLightTheme: Story = { ...PatternBacks, decorators: [withLightTheme] };
+export const PatternBacksLightTheme: Story = { ...PatternBacks, name: 'Deck backs light theme', decorators: [withLightTheme] };
 
 export const Sizes: Story = {
   render: (args) => (
@@ -145,17 +161,16 @@ export const Sizes: Story = {
   },
 };
 
-function ControlledFixture(args: FlipGameCardProps) {
+function ControlledFixture(args: Pick<FlipGameCardProps, 'flipped'>) {
   const [flipped, setFlipped] = useState(args.flipped);
   return (
     <div style={{ display: 'grid', gap: vars.space[4], justifyItems: 'start' }}>
       <Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
       <FlipGameCard
-        {...args}
         flipped={flipped}
         size="lg"
-        front={<>{args.front}<Button size="sm" css={faceActionStyle}>Front action</Button></>}
-        back={<>{args.back}<Button size="sm" css={faceActionStyle}>Back action</Button></>}
+        front={<>{front}<Button size="sm" css={faceActionStyle}>Front action</Button></>}
+        back={<>{back}<Button size="sm" css={faceActionStyle}>Back action</Button></>}
       />
       <Button>Continue</Button>
     </div>
@@ -173,14 +188,14 @@ const flipToFinalState: NonNullable<Story['play']> = async ({ args, canvas, canv
   await expect(canvas.getByRole('img', { name: args.flipped ? FRONT_LABEL : BACK_LABEL })).toBeVisible();
 };
 
-/** Flip from the front and leave the controlled card face down. */
 export const BackFinalState: Story = {
+  tags: ['!autodocs'],
   render: (args) => <ControlledFixture {...args} />,
   play: flipToFinalState,
 };
 
-/** Flip from the back and leave the controlled card face up. */
 export const FrontFinalState: Story = {
+  tags: ['!autodocs'],
   args: { flipped: true },
   render: (args) => <ControlledFixture {...args} />,
   play: flipToFinalState,
@@ -188,7 +203,8 @@ export const FrontFinalState: Story = {
 
 export const BackFinalStateLightTheme: Story = { ...BackFinalState, decorators: [withLightTheme] };
 
-export const Controlled: Story = {
+export const ContentKeyboard: Story = {
+  tags: ['!autodocs'],
   render: (args) => <ControlledFixture {...args} />,
   parameters: { docs: { source: { code: `<Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
 <FlipGameCard flipped={flipped}
@@ -233,10 +249,45 @@ export const Controlled: Story = {
   },
 };
 
+function ControlledShorthand(args: FlipGameCardProps) {
+  const [flipped, setFlipped] = useState(args.flipped ?? false);
+  return <div style={{ display: 'grid', gap: vars.space[4], justifyItems: 'start' }}>
+    <Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
+    <FlipGameCard {...args} flipped={flipped} />
+  </div>;
+}
+
+export const Controlled: Story = {
+  name: 'Controlled flip',
+  render: (args) => <ControlledShorthand {...args} />,
+  parameters: { docs: { source: { code: `const [flipped, setFlipped] = useState(false);
+<Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
+<FlipGameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }}
+  label="Ace of spades" backLabel="Card back" flipped={flipped} />` } } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'Flip card' });
+    const printed = canvasElement.querySelector('[data-ui="flip-game-card-front"] [data-ui="game-card"]');
+    const back = canvasElement.querySelector('[data-ui="flip-game-card-back"] [data-ui="game-card"]');
+    await userEvent.tab();
+    await expect(trigger).toHaveFocus();
+    await expect(getComputedStyle(trigger).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Enter}');
+    await expect(canvas.getByRole('img', { name: BACK_LABEL })).toBe(back);
+    await expect(canvas.queryByRole('img', { name: FRONT_LABEL })).toBeNull();
+    await expect(printed?.parentElement).toHaveAttribute('inert');
+    await expect(printed?.parentElement).toHaveAttribute('aria-hidden', 'true');
+    await userEvent.keyboard(' ');
+    await expect(canvas.getByRole('img', { name: FRONT_LABEL })).toBe(printed);
+    await expect(back?.parentElement).toHaveAttribute('inert');
+    await expect(back?.parentElement).toHaveAttribute('aria-hidden', 'true');
+    await expect(trigger).toHaveFocus();
+  },
+};
+
 export const ReducedMotion: Story = {
   beforeEach: () => mockPreference(true),
   render: (args) => <ControlledFixture {...args} />,
-  parameters: { docs: { description: { story: 'Flip the card without rotation. This play test stubs the reduced-motion media preference.' } } },
+  parameters: { docs: { description: { story: 'Flip the card without rotation when reduced motion is enabled.' } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const rotator = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card-rotator"]');
     if (!rotator) throw new Error('Missing rotator');
@@ -251,6 +302,7 @@ export const ReducedMotion: Story = {
 };
 
 export const ControlledWithoutAcceptance: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <div style={{ display: 'grid', gap: vars.space[4], justifyItems: 'start' }}>
       <Button>Request flip</Button>
@@ -265,10 +317,136 @@ export const ControlledWithoutAcceptance: Story = {
 };
 
 export const SpanishDeck: Story = {
-  args: { front: <GameCard label="As de oros" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} /> },
+  render: () => <FlipGameCard size="lg" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="As de oros" backLabel="Carta boca abajo" flipped />,
+  parameters: { docs: { source: { code: '<FlipGameCard value={{ deck: "spanish", suit: "oros", rank: 1 }} label="As de oros" backLabel="Carta boca abajo" flipped />' } } },
+  play: async ({ canvas, canvasElement }) => {
+    const back = canvas.getByRole('img', { name: 'Carta boca abajo' });
+    await expect(back.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', 'diagonal');
+    await expect(back).not.toHaveAttribute('data-deck');
+    await expect(canvas.queryByRole('img', { name: 'As de oros' })).toBeNull();
+    const frontFace = canvasElement.querySelector('[data-ui="flip-game-card-front"]');
+    await expect(frontFace).toHaveAttribute('inert');
+    await expect(frontFace).toHaveAttribute('aria-hidden', 'true');
+    await expect(frontFace?.querySelector('[data-ui="game-card"]')).toHaveAttribute('data-deck', 'spanish');
+    await expect(canvasElement.querySelectorAll('[data-ui="game-card"]')).toHaveLength(2);
+  },
+};
+
+export const ProviderBackLabel: Story = {
+  render: () => <DeckProvider default="spanish" backLabel="Carta boca abajo">
+    <FlipGameCard value={{ suit: 'copas', rank: 10 }} label="Sota de copas" flipped />
+  </DeckProvider>,
+  parameters: { docs: { source: { code: `<DeckProvider default="spanish" backLabel="Carta boca abajo">
+  <FlipGameCard value={{ suit: 'copas', rank: 10 }} label="Sota de copas" flipped />
+</DeckProvider>` } } },
+  play: async ({ canvas }) => {
+    const card = canvas.getByRole('img', { name: 'Carta boca abajo' });
+    await expect(card.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', 'diagonal');
+    await expect(canvas.queryByRole('img', { name: 'Sota de copas' })).toBeNull();
+  },
+};
+
+export const MissingBackName: Story = {
+  tags: ['!autodocs'],
+  play: async () => {
+    for (const flipped of [false, true]) {
+      await expect(() => renderToString(<FlipGameCard value={{ suit: 'spades', rank: 'A' }} label={FRONT_LABEL} flipped={flipped} />)).toThrow(MissingBackLabelError);
+    }
+    await expect(() => renderToString(<FlipGameCard value={{ suit: 'spades', rank: 'A' }} label={FRONT_LABEL} backLabel="  " />)).toThrow('provide a nonempty backLabel');
+  },
+};
+
+const artworkDeck = defineDeck({ id: 'artwork', suits: {}, ranks: {},
+  back: <svg viewBox="0 0 40 60" aria-hidden="true"><circle cx="20" cy="30" r="12" fill={vars.color.cardFace} /></svg> });
+
+export const CustomArtwork: Story = {
+  name: 'Custom artwork',
+  render: () => <DeckProvider decks={[artworkDeck]} backLabel={BACK_LABEL}>
+    <FlipGameCard value={{ deck: 'artwork', suit: 'star', rank: 1 }} label="One star" flipped />
+  </DeckProvider>,
+  parameters: { docs: { description: { story: 'Register custom back artwork on the deck.' }, source: { code: `const deck = defineDeck({
+  id: 'artwork', suits: {}, ranks: {},
+  back: <svg viewBox="0 0 40 60" aria-hidden="true"><circle cx="20" cy="30" r="12" /></svg>,
+});
+<DeckProvider decks={[deck]} backLabel="Card back">
+  <FlipGameCard value={{ deck: 'artwork', suit: 'star', rank: 1 }} label="One star" flipped />
+</DeckProvider>` } } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('img', { name: BACK_LABEL }).querySelector('circle')).not.toBeNull();
+  },
+};
+
+const replacementMaterial = css({ backgroundColor: vars.color.cardFace, border: `1px solid ${vars.color.cardInk}`, opacity: 0.9 });
+function ReplacementRoot({ className, ...props }: GameCardRootProps) {
+  return <WithSx styles={replacementMaterial} className={className}>
+    {(classes) => <div {...props} className={classes} data-replacement="true" />}
+  </WithSx>;
+}
+
+export const RootCustomization: Story = {
+  args: { ref: fn(), component: ReplacementRoot, 'data-ui': 'consumer flip-game-card consumer',
+    title: 'Host title', className: 'host-class', style: { marginInlineStart: 1, marginBlockStart: 2 },
+    slotProps: { root: { 'data-ui': 'slot consumer', title: 'Slot title', className: 'slot-class',
+      style: { marginInlineStart: 3 }, css: css({ opacity: 0.8 }) } },
+    css: css({ opacity: 0.7 }), sx: { opacity: 0.6 } },
+  play: async ({ args, canvasElement }) => {
+    const root = canvasElement.querySelector('[data-ui~="flip-game-card"]');
+    await expect(root).toHaveAttribute('data-ui', 'flip-game-card consumer slot');
+    await expect(root).toHaveAttribute('data-replacement', 'true');
+    await expect(root).toHaveAttribute('title', 'Slot title');
+    await expect(root).toHaveClass('host-class', 'slot-class');
+    if (!(root instanceof HTMLElement)) throw new Error('Missing replacement root');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(root.style.marginInlineStart).toBe('3px');
+    await expect(root.style.marginBlockStart).toBe('2px');
+    await expect(getComputedStyle(root).opacity).toBe('0.6');
+    await expectRealPerspective(root);
+    await expect(root.querySelectorAll('[data-ui="game-card"]')).toHaveLength(2);
+  },
+};
+
+function UnusedRoot(): never {
+  throw new Error('slots.root must take precedence over component');
+}
+
+function RefCleanupFixture() {
+  const [visible, setVisible] = useState(true);
+  const counts = useRef({ attaches: 0, cleanups: 0 });
+  const [result, setResult] = useState('');
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    counts.current.attaches++;
+    return () => { counts.current.cleanups++; };
+  }, []);
+  return <>
+    <StrictMode>{visible && <>
+      <GameCard label="Named back" component={UnusedRoot} slots={{ root: ReplacementRoot }} ref={ref} />
+      <FlipGameCard value={{ suit: 'spades', rank: 'A' }} label={FRONT_LABEL} backLabel={BACK_LABEL}
+        component={UnusedRoot} slots={{ root: ReplacementRoot }} ref={ref} />
+    </>}</StrictMode>
+    <Button onClick={() => setVisible(false)}>Unmount roots</Button>
+    <Button onClick={() => setVisible(true)}>Mount roots</Button>
+    <Button onClick={() => setResult(JSON.stringify(counts.current))}>Read refs</Button>
+    <output data-testid="ref-result">{result}</output>
+  </>;
+}
+
+export const RootRefCleanup: Story = {
+  tags: ['!autodocs'],
+  render: () => <RefCleanupFixture />,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Unmount roots' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Mount roots' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Unmount roots' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Read refs' }));
+    const counts = JSON.parse(canvas.getByTestId('ref-result').textContent ?? '{}');
+    await expect(counts.attaches).toBeGreaterThan(2);
+    await expect(counts.cleanups).toBe(counts.attaches);
+  },
 };
 
 export const StationaryRoot: Story = {
+  tags: ['!autodocs'],
   render: (args) => <ControlledFixture {...args} />,
   play: async ({ canvas, canvasElement, userEvent }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card"]');
@@ -330,9 +508,9 @@ async function sampleFlip(
 }
 
 export const FlipFrames: Story = {
+  tags: ['!autodocs'],
   beforeEach: () => mockPreference(false),
   render: (args) => <ControlledFixture {...args} />,
-  parameters: { docs: { description: { story: 'Inspect both directions at 45° and 135°. The play test pauses the native transition and seeks bounded samples without changing its easing.' } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card"]');
     const rotator = canvasElement.querySelector<HTMLElement>('[data-ui="flip-game-card-rotator"]');

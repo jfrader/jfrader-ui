@@ -1,9 +1,11 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, within } from 'storybook/test';
+import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { CARD_BACK_PATTERNS, GameCard, type GameCardSize, type GameCardSuit, type GameCardValue } from './index';
+import { CARD_BACK_PATTERNS, GameCard, type GameCardRootProps, type GameCardSize, type GameCardSuit, type GameCardValue } from './index';
+import { css } from '../../styling/css';
+import { WithSx } from '../../styling/sx';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly GameCardSize[];
 const SIZE_PX = { sm: 32, md: 72, lg: 112 } as const;
@@ -84,7 +86,10 @@ const meta = {
       description: {
         component: 'Show a French or Spanish playing card with a red-and-paper back or your own artwork.',
       },
-      usage: 'Omit `value` or set `face="back"` to hide built-in rank and suit data. Back patterns come from the deck (e.g. Spanish diagonal, poker checks) or explicit `backPattern`, and `children` replaces either face’s artwork.',
+      usage: `Omit \`value\` or set \`face="back"\` to hide built-in rank and suit data. Back patterns come from the deck (e.g. Spanish diagonal, poker checks) or explicit \`backPattern\`, and \`children\` replaces either face’s artwork.
+
+### Root customization
+Use \`component\` or \`slots.root\` to replace the root. Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`. \`slots.root\` wins when both are supplied. \`slotProps.root\` overrides root props; className and style merge. Style order is material → slot → consumer css → consumer sx.`,
     },
   },
 } satisfies Meta<typeof GameCard>;
@@ -114,6 +119,7 @@ async function expectDeckGrid(cards: NodeListOf<Element>) {
 
 /** Spanish diagonal backs and poker checks beside their faces. */
 export const BackPatterns: Story = {
+  name: 'Deck backs',
   render: () => (
     <div style={rowStyle}>
       {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => (
@@ -134,7 +140,7 @@ export const BackPatterns: Story = {
   },
 };
 
-export const BackPatternsLightTheme: Story = { ...BackPatterns, decorators: [withLightTheme] };
+export const BackPatternsLightTheme: Story = { ...BackPatterns, name: 'Deck backs light theme', decorators: [withLightTheme] };
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {
@@ -144,6 +150,34 @@ export const Default: Story = {
     await expect(card).toHaveTextContent(EXPECTED_SUITS.hearts);
     // The print is decorative: the card is announced once, by its name.
     await expect(within(card).queryByRole('img')).toBeNull();
+  },
+};
+
+const customMaterial = css({ backgroundColor: vars.color.cardFace, border: `1px solid ${vars.color.cardInk}`, opacity: 0.9 });
+function CardMaterial({ className, ...props }: GameCardRootProps) {
+  return <WithSx styles={customMaterial} className={className}>
+    {(classes) => <div {...props} className={classes} data-custom-material="true" />}
+  </WithSx>;
+}
+
+export const RootCustomization: Story = {
+  args: { ref: fn(), component: CardMaterial, slots: { root: CardMaterial }, 'data-ui': 'consumer game-card consumer',
+    title: 'Host title', className: 'host-class', style: { marginInlineStart: 1, marginBlockStart: 2 },
+    slotProps: { root: { 'data-ui': 'slot consumer', title: 'Slot title', className: 'slot-class',
+      style: { marginInlineStart: 3 }, css: css({ opacity: 0.8 }) } },
+    css: css({ opacity: 0.7 }), sx: { opacity: 0.6 } },
+  play: async ({ args, canvas }) => {
+    const card = canvas.getByRole('img', { name: 'Q of hearts' });
+    await expect(card).toHaveAttribute('data-ui', 'game-card consumer slot');
+    await expect(card).toHaveAttribute('data-custom-material', 'true');
+    await expect(card).toHaveAttribute('title', 'Slot title');
+    await expect(card).toHaveClass('host-class', 'slot-class');
+    await expect(args.ref).toHaveBeenCalledWith(card);
+    await expect(card.style.marginInlineStart).toBe('3px');
+    await expect(card.style.marginBlockStart).toBe('2px');
+    await expect(getComputedStyle(card).opacity).toBe('0.6');
+    await expect(card.getBoundingClientRect().width).toBe(72);
+    await expect(card.querySelector('[data-ui="game-card-print"]')).not.toBeNull();
   },
 };
 
@@ -205,6 +239,7 @@ export const SpanishDeck: Story = {
 };
 
 export const FaceDown: Story = {
+  name: 'Face down',
   args: { label: BACK_LABEL, value: QUEEN_OF_HEARTS, face: 'back', rankLabel: 'SECRET-RANK' },
   render: (args) => (
     <div style={rowStyle}>
@@ -263,6 +298,7 @@ export const Sizes: Story = {
 };
 
 export const NarrowFlexRow: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <div style={{ ...rowStyle, inlineSize: vars.size.gameCardLg }}>
       <GameCard {...args} size="md" label="First card" />
@@ -279,6 +315,7 @@ export const NarrowFlexRow: Story = {
 };
 
 export const OptionalArt: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <div style={rowStyle}>
       <GameCard {...args} label="Null art" children={null} />
@@ -307,6 +344,7 @@ export const OptionalArt: Story = {
 };
 
 export const CustomArt: Story = {
+  name: 'Custom artwork',
   args: {
     label: 'Carta con arte propio',
     value: QUEEN_OF_HEARTS,

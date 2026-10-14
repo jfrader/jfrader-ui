@@ -49,7 +49,7 @@ const meta = {
 - Patterns have no motion. IDs come from React \`useId\`; give separate SSR roots distinct \`identifierPrefix\` values and reuse them during hydration.
 
 ### Card artwork
-- Pass a Pattern as consumer artwork to a \`GameCard\` face, then pass that named face as \`FlipGameCard back\`. Custom artwork needs a value to select the art path; never put secret card data in a flipped wrapper, whose two faces stay mounted.`,
+- Pass a Pattern as \`GameCard children\`, then pass that named card as \`FlipGameCard back\`. Artwork replaces either face without requiring a \`value\`. Never put secret card data in a flipped wrapper, whose two faces stay mounted.`,
     },
   },
 } satisfies Meta<typeof Pattern>;
@@ -136,7 +136,7 @@ export const FlippedCard: Story = {
   render: (args) => <div css={rowStyle}>{(['sm', 'md', 'lg'] as const).map((size) =>
     <FlipGameCard key={size} size={size} flipped
       front={<GameCard label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />}
-      back={<GameCard label="Patterned card back" value={{ deck: 'french', suit: 'spades', rank: 'A' }}>
+      back={<GameCard label="Patterned card back">
         <Pattern {...args} tone="card" size="sm" />
       </GameCard>} />)}</div>,
   play: async ({ canvas }) => {
@@ -221,6 +221,7 @@ async function rasterize(root: SVGSVGElement) {
 }
 
 export const SeamContinuity: Story = {
+  tags: ['!autodocs'],
   render: (args) => <div style={{ display: 'grid', gap: vars.space[6] }}>
     {seamVariants.map((variant) => <section key={variant}>
       <h3 css={labelStyle}>{variant} — 8 / 16 / 24 px</h3>
@@ -229,7 +230,7 @@ export const SeamContinuity: Story = {
           scale={1} tone="card" css={repeatedStyle} />)}</div>
     </section>)}
   </div>,
-  parameters: { docs: { description: { story: 'Repeated surfaces at all three tile sizes. Tests sample opposite tile edges and rasterized ink on both sides of every vertical seam at ×4.' } } },
+  parameters: { docs: { description: { story: 'Repeated surfaces at all three tile sizes.' } } },
   play: async ({ canvasElement }) => {
     for (const root of canvasElement.querySelectorAll<SVGSVGElement>('[data-ui="pattern"]')) {
       const variant = seamVariants.find((variant) => variant === root.getAttribute('data-variant'));
@@ -272,6 +273,7 @@ export const SeamContinuity: Story = {
 };
 
 export const HydrationRoots: Story = {
+  tags: ['!autodocs'],
   render: (args) => <Pattern {...args} css={sampleStyle} />,
   play: async ({ canvasElement }) => {
     const errors = fn();

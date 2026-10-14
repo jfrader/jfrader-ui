@@ -1,29 +1,80 @@
 'use client';
 
-import { useEffect, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { MotionConfig, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
-import type { GameCardPartProps, GameCardSize } from '../game-card';
+import type { SxProps } from '../../styling/sx';
+import type { GameCardPartProps, GameCardSize, GameCardValue } from '../game-card';
+import { useDeck } from '../deck';
+import { useDeckBackLabel } from '../deck/deck-context';
+import type { PatternVariant } from '../pattern';
+import { CardRoot, type GameCardRootCustomization, type GameCardRootProps, type GameCardRootSlotProps } from '../game-card/game-card-root';
 import { CARD_FRAME, CARD_PERSPECTIVE } from '../game-card/card-frame';
-import { gameCardSizeStyles } from '../game-card/game-card';
+import { gameCardSizeStyles, ResolvedGameCard } from '../game-card/game-card';
 
-export interface FlipGameCardProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
-  /** Shows `back` when true and `front` when false. No interaction changes this prop. */
-  flipped: boolean;
-  /** Content shown when `flipped` is false. */
-  front: ReactNode;
-  /** Content shown when `flipped` is true. Both faces stay mounted. */
-  back: ReactNode;
+interface FlipGameCardBaseProps extends Omit<GameCardRootProps, 'children'>, SxProps, GameCardRootCustomization {
+  /** Shows the back when true. Defaults to false; no interaction changes this prop. */
+  flipped?: boolean;
   /** Card width, using the GameCard scale. Defaults to `md`. */
   size?: GameCardSize;
   slotProps?: {
+    root?: GameCardRootSlotProps;
     rotator?: GameCardPartProps;
     front?: GameCardPartProps;
     back?: GameCardPartProps;
   };
+}
+
+export type FlipGameCardProps = FlipGameCardBaseProps & (
+  | {
+    /** Card identity; one resolved deck supplies both faces. */
+    value: GameCardValue;
+    /** Accessible name of the printed face, in your language. */
+    label: string;
+    /** Accessible name of the back. Required here or on DeckProvider. */
+    backLabel?: string;
+    rankLabel?: string;
+    dimmed?: boolean;
+    backPattern?: PatternVariant;
+    front?: never;
+    back?: never;
+  }
+  | {
+    /** Content shown when flipped is false. Both faces stay mounted. */
+    front: ReactNode;
+    /** Content shown when flipped is true. */
+    back: ReactNode;
+    value?: never;
+    label?: never;
+    backLabel?: never;
+    rankLabel?: never;
+    dimmed?: never;
+    backPattern?: never;
+  }
+);
+
+export class MissingBackLabelError extends Error {
+  constructor() {
+    super('FlipGameCard: provide a nonempty backLabel or DeckProvider backLabel to name the card back.');
+    this.name = 'MissingBackLabelError';
+  }
+}
+
+export function FlipGameCard(props: FlipGameCardProps) {
+  return props.value !== undefined ? <ShorthandCard {...props} /> : <FlipCardContent {...props} />;
+}
+
+function ShorthandCard({ value, label, backLabel, rankLabel, dimmed, backPattern, size = 'md', ...props }:
+  FlipGameCardBaseProps & { value: GameCardValue; label: string; backLabel?: string; rankLabel?: string; dimmed?: boolean; backPattern?: PatternVariant }) {
+  const deck = useDeck(value.deck);
+  const inheritedBackLabel = useDeckBackLabel();
+  const name = backLabel ?? inheritedBackLabel;
+  if (name === undefined || name.trim() === '') throw new MissingBackLabelError();
+  return <FlipCardContent {...props} size={size}
+    front={<ResolvedGameCard deck={deck} size={size} value={value} label={label} rankLabel={rankLabel} dimmed={dimmed} />}
+    back={<ResolvedGameCard deck={deck} size={size} face="back" label={name} dimmed={dimmed} backPattern={backPattern} />} />;
 }
 
 const rootStyle = css({
@@ -72,9 +123,9 @@ const backStyle = css({
   [REDUCED_MOTION]: { transform: 'none' },
 });
 
-export function FlipGameCard({
+function FlipCardContent({
   ref,
-  flipped,
+  flipped = false,
   front,
   back,
   size = 'md',
@@ -82,7 +133,7 @@ export function FlipGameCard({
   className,
   sx,
   ...rest
-}: FlipGameCardProps) {
+}: FlipGameCardBaseProps & { front: ReactNode; back: ReactNode }) {
   const reducedMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -90,46 +141,43 @@ export function FlipGameCard({
 
   return (
     <MotionConfig reducedMotion="user">
-      <WithSx className={className} styles={[rootStyle, gameCardSizeStyles[size], reducedStyle]} sx={sx}>
-        {(rootClass) => (
+      <CardRoot
+        {...rest}
+        ref={ref}
+        marker="flip-game-card"
+        rootSlot={slotProps?.root}
+        className={className}
+        structure={[rootStyle, gameCardSizeStyles[size], reducedStyle]}
+        sx={sx}
+        attributes={{ 'data-state': state, 'data-size': size, 'data-reduced-motion': (mounted && reducedMotion) || undefined }}
+      >
+        <div
+          data-ui="flip-game-card-rotator"
+          data-state={state}
+          className={slotProps?.rotator?.className}
+          css={[rotatorStyle, slotProps?.rotator?.css]}
+        >
           <div
-            {...rest}
-            ref={ref}
-            className={rootClass}
-            data-ui="flip-game-card"
-            data-state={state}
-            data-size={size}
-            data-reduced-motion={(mounted && reducedMotion) || undefined}
+            data-ui="flip-game-card-front"
+            inert={flipped}
+            aria-hidden={flipped || undefined}
+            className={slotProps?.front?.className}
+            css={[faceStyle, slotProps?.front?.css]}
           >
-            <div
-              data-ui="flip-game-card-rotator"
-              data-state={state}
-              className={slotProps?.rotator?.className}
-              css={[rotatorStyle, slotProps?.rotator?.css]}
-            >
-              <div
-                data-ui="flip-game-card-front"
-                inert={flipped}
-                aria-hidden={flipped || undefined}
-                className={slotProps?.front?.className}
-                css={[faceStyle, slotProps?.front?.css]}
-              >
-                {front}
-              </div>
-              <div
-                data-ui="flip-game-card-back"
-                data-reduced-motion={(mounted && reducedMotion) || undefined}
-                inert={!flipped}
-                aria-hidden={!flipped || undefined}
-                className={slotProps?.back?.className}
-                css={[faceStyle, backStyle, slotProps?.back?.css]}
-              >
-                {back}
-              </div>
-            </div>
+            {front}
           </div>
-        )}
-      </WithSx>
+          <div
+            data-ui="flip-game-card-back"
+            data-reduced-motion={(mounted && reducedMotion) || undefined}
+            inert={!flipped}
+            aria-hidden={!flipped || undefined}
+            className={slotProps?.back?.className}
+            css={[faceStyle, backStyle, slotProps?.back?.css]}
+          >
+            {back}
+          </div>
+        </div>
+      </CardRoot>
     </MotionConfig>
   );
 }
