@@ -38,6 +38,7 @@
     "./card": { "types": "./src/components/card/index.ts", "import": "./src/components/card/index.ts" },
     "./card-flights": { "types": "./src/components/card-flights/index.ts", "import": "./src/components/card-flights/index.ts" },
     "./carousel": { "types": "./src/components/carousel/index.ts", "import": "./src/components/carousel/index.ts" },
+    "./chat-message": { "types": "./src/components/chat-message/index.ts", "import": "./src/components/chat-message/index.ts" },
     "./chat-thread": { "types": "./src/components/chat-thread/index.ts", "import": "./src/components/chat-thread/index.ts" },
     "./checkbox": { "types": "./src/components/checkbox/index.ts", "import": "./src/components/checkbox/index.ts" },
     "./chip-group": { "types": "./src/components/chip-group/index.ts", "import": "./src/components/chip-group/index.ts" },
