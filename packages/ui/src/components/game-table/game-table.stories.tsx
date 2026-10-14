@@ -4,7 +4,7 @@ import { expect, fn, within, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { Avatar, type AvatarSize } from '../avatar';
 import { Button } from '../button';
-import { GameCard } from '../game-card';
+import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
 import { ThemeRoot } from '../theme-root';
 import {
   GameTable, buildAlternatingSlots, buildBoardLayoutModel, buildTableOrderSlots,
@@ -29,6 +29,7 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 const COUNTS = [2, 4, 6] as const;
 const GEOMETRY_TOLERANCE_PX = 0.5;
+const PHONE_WIDE_FELT_ASPECT_RATIO = 2.15;
 const measurementFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 function required<T>(value: T | undefined): T {
   if (value === undefined) throw new Error('Missing fixture item');
@@ -50,6 +51,9 @@ async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, 
   }
   const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined);
   const frame = surface.getBoundingClientRect();
+  if (profile === 'phoneWide' && table.dataset.surface === 'match') {
+    await expect(frame.width / frame.height, 'landscape felt keeps its profile aspect').toBeCloseTo(PHONE_WIDE_FELT_ASPECT_RATIO, 2);
+  }
   const style = getComputedStyle(table);
   const rx = Number.parseFloat(style.getPropertyValue('--game-table-radius-x'));
   const ry = Number.parseFloat(style.getPropertyValue('--game-table-radius-y'));
@@ -57,7 +61,15 @@ async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, 
   const direction = isRtl ? -1 : 1;
   await expect(rx).toBeGreaterThan(0);
   await expect(ry).toBeGreaterThan(0);
-  await expect(Math.max(rx, ry) / Math.min(rx, ry)).toBeLessThanOrEqual(1.5 + Number.EPSILON);
+  if (table.dataset.seatPlacement === 'inside') {
+    await expect(Math.max(rx, ry) / Math.min(rx, ry)).toBeLessThanOrEqual(1.5 + Number.EPSILON);
+  } else {
+    await expect(rx / ry).toBeCloseTo(frame.width / frame.height, 3);
+    await expect(Math.abs(rx - frame.width / 2)).toBeLessThan(GEOMETRY_TOLERANCE_PX);
+    await expect(Math.abs(ry - frame.height / 2)).toBeLessThan(GEOMETRY_TOLERANCE_PX);
+    await expect(surface.style.inlineSize).toBe('');
+    await expect(surface.style.blockSize).toBe('');
+  }
   const seats = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
   await expect(seats).toHaveLength(players);
   const obstacles = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-dock"], [data-ui="game-table-header"], [data-ui="game-table-center"], [data-ui="game-table-footer"]'));
@@ -68,19 +80,44 @@ async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, 
     const dy = box.y + box.height / 2 - frame.y - frame.height / 2;
     const theta = Math.PI / 2 + 2 * Math.PI * index / players;
     const label = `${profile}/${players} seat ${index}`;
-    await expect(Math.abs(dx - direction * rx * Math.cos(theta)), `${label} regular-angle X`).toBeLessThan(GEOMETRY_TOLERANCE_PX);
-    await expect(Math.abs(dy - ry * Math.sin(theta)), `${label} regular-angle Y`).toBeLessThan(GEOMETRY_TOLERANCE_PX);
-    await expect(Math.abs(Math.hypot(dx / rx, dy / ry) - 1), `${label} on curve`).toBeLessThan(0.01);
+    const length = Math.hypot(rx * Math.cos(theta), ry * Math.sin(theta));
+    const ux = rx * Math.cos(theta) / length;
+    const uy = ry * Math.sin(theta) / length;
+    const offset = table.dataset.seatPlacement === 'outside' ? (Math.abs(ux) * box.width + Math.abs(uy) * box.height) / 2 : 0;
+    await expect(Math.abs(dx - direction * (rx * Math.cos(theta) + ux * offset)), `${label} regular-angle X`).toBeLessThan(GEOMETRY_TOLERANCE_PX);
+    await expect(Math.abs(dy - (ry * Math.sin(theta) + uy * offset)), `${label} regular-angle Y`).toBeLessThan(GEOMETRY_TOLERANCE_PX);
+    await expect(Math.abs(Math.hypot((dx - direction * ux * offset) / rx, (dy - uy * offset) / ry) - 1), `${label} on placement curve`).toBeLessThan(0.01);
 
     // All seats remain upright for spectator: no rotation
     const matrix = new DOMMatrix(getComputedStyle(seat).transform);
     const rotationDeg = Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
     await expect(Math.abs(rotationDeg), `${label} upright (no rotation)`).toBeLessThan(0.01);
 
-    await expectInside(seat, surface, { tolerancePx: GEOMETRY_TOLERANCE_PX });
+    await expectInside(seat, table, { tolerancePx: GEOMETRY_TOLERANCE_PX });
+    if (table.dataset.seatPlacement === 'inside') await expectInside(seat, surface, { tolerancePx: GEOMETRY_TOLERANCE_PX });
     for (const other of [...seats.slice(index + 1), ...obstacles]) {
       const otherBox = other.getBoundingClientRect();
       if (otherBox.width > 0 && otherBox.height > 0) await expectNoOverlap(seat, other, { tolerancePx: GEOMETRY_TOLERANCE_PX });
+    }
+  }
+  const plays = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-play"]')).filter((play) => play.getBoundingClientRect().width > 0 && play.getBoundingClientRect().height > 0);
+  for (const [index, play] of plays.entries()) {
+    const playBox = play.getBoundingClientRect();
+    const seat = required(seats.find((seat) => seat.dataset.slotKey === play.dataset.playSlotKey));
+    const seatBox = seat.getBoundingClientRect();
+    const px = playBox.x + playBox.width / 2 - frame.x - frame.width / 2;
+    const py = playBox.y + playBox.height / 2 - frame.y - frame.height / 2;
+    const sx = seatBox.x + seatBox.width / 2 - frame.x - frame.width / 2;
+    const sy = seatBox.y + seatBox.height / 2 - frame.y - frame.height / 2;
+    await expect(Math.abs(px * sy - py * sx) / Math.max(1, Math.hypot(sx, sy)), 'play shares seat direction').toBeLessThan(GEOMETRY_TOLERANCE_PX);
+    await expect(Math.hypot(px, py)).toBeLessThan(Math.hypot(sx, sy));
+    const angle = Number.parseFloat(play.style.getPropertyValue('--game-table-play-angle')) * Math.PI / 180;
+    await expect(Math.abs(Math.cos(angle) - px / Math.hypot(px, py))).toBeLessThan(0.01);
+    await expect(Math.abs(Math.sin(angle) - py / Math.hypot(px, py))).toBeLessThan(0.01);
+    await expectInside(play, surface, { tolerancePx: GEOMETRY_TOLERANCE_PX });
+    for (const other of [...plays.slice(index + 1), ...seats, ...obstacles]) {
+      const otherBox = other.getBoundingClientRect();
+      if (otherBox.width && otherBox.height) await expectNoOverlap(play, other, { tolerancePx: GEOMETRY_TOLERANCE_PX });
     }
   }
 }
@@ -134,29 +171,31 @@ const meta = {
     docs: {
       description: { component: 'Arrange players around a game surface. Add cards, controls and floating content to named regions.' },
       usage: `### Regions
-Pass intrinsic seat content through \`renderSeat(slot, index, geometry)\`. Use \`header\`, \`center\`, \`dock\`, \`footer\` and \`floating\` for other content. Seat and center border boxes are measured; keep their content in normal flow. Absolutely positioned artwork must reserve its full footprint in its parent.
+Pass intrinsic seat content through \`renderSeat(slot, index, geometry)\` and played cards through \`renderPlay(slot, index, geometry)\`. There is one measured play region per place. Empty play content reserves nothing. Use \`header\`, \`center\`, \`dock\`, \`footer\` and \`floating\` for other content. Keep seat, play and center footprints in normal flow; absolute artwork must reserve its full footprint in its parent.
 
 ### Geometry
-Give the parent a block size and pass current viewport dimensions in CSS pixels. Update \`viewport\` on resize; it selects the surface frame. ResizeObserver measures the actual local surface and intrinsic content, including when the parent is smaller than the viewport. Seats and center remain hidden until the first measurement; the server does not guess their dimensions.
+Give the parent a block size and pass current viewport dimensions in CSS pixels. Update \`viewport\` on resize; it selects the surface frame. ResizeObserver measures the actual root, shell, surface and intrinsic regions, including when the parent is smaller than the viewport. Regions remain hidden until measurement; the server does not guess their dimensions.
+\`seatPlacement\` defaults to \`edge\`: the content centre sits on the felt boundary. \`inside\` keeps content contained with its outer edge inset by the gap; \`outside\` moves the inner edge to the boundary, using the directional box support as an outward offset. This deliberately replaces the previous containment-only default. The felt keeps its profile frame's size and aspect; edge/outside placement follows its measured ellipse. The shell reserves the outboard footprint at each region's minimum scale. If the root cannot hold a placement at its floor, the table declares insufficient space rather than calling an inward fallback fitted.
+The play anchor shares its seat's physical polar direction on an inward ring. Its distance subtracts the seat's directional box support, the gap and the play's directional box support, moving farther inward when the surface border requires it. Plays must stay inside the surface, clear of other regions and the measured centre; no invisible centre-size percentage is reserved.
 \`seats\` fills empty places, alternates teams and puts your seat first. \`slots\` preserves a prebuilt visual order and must contain exactly \`players\` places; order it with the exported builders when needed. Do not pass both.
-The curve uses θᵢ = π/2 + 2πi/N and Pᵢ = C + (Rx cosθᵢ, Ry sinθᵢ). C is the surface border-box center. A near-square available area (axis ratio ≤1.15) gives a circle; beyond that the shared axis ratio grows continuously up to 1.5. On an ellipse the physical polar-angle gaps differ from the equal parametric gaps; no per-seat angular correction is applied. Content stays upright, with zero seat rotation; RTL mirrors placement only. No table-owned decoration requires rotation.
+The curve uses θᵢ = π/2 + 2πi/N and Pᵢ = C + (Rx cosθᵢ, Ry sinθᵢ). C is the surface border-box center. In edge/outside modes Rx and Ry are the measured surface half-extents; the ring follows the felt's aspect, including landscape frames. Only inside mode bounds the available-area axis stretch: near-square areas (axis ratio ≤1.15) give a circle, growing continuously up to 1.5. On an ellipse the physical polar-angle gaps differ from the equal parametric gaps; no per-seat angular correction is applied. Content stays upright, with zero seat rotation; RTL mirrors placement only. No table-owned decoration requires rotation.
 \`seats\` requires compatible alternating teams (at most half the places per team for 2/4/6); incompatible capacities and duplicate player/slot keys throw. Use \`slots\` for arbitrary orders or teams.
 \`clearance\` requests additional block-axis space. Header, dock and footer remain unscaled, outside the surface. The request is a preference: if the content floors cannot fit, both clearance edges yield to \`GAME_TABLE_LIMITS.minimumClearancePx\` (0). The table retries the requested CSS padding on content/size changes, so the request is restored when space returns. This is a two-step policy (requested, then minimum), not a search for the largest feasible clearance.
 Coordinates are measured from inline-start and mirror with \`dir="rtl"\`. \`data-game-surface="true"\` marks the surface for measuring future card flights.
 
 ### Content size
-\`GAME_TABLE_LIMITS.minimumCardWidthPx\` is 32px, matching the existing GameCard sm width. It is a product size floor, not a universal legibility guarantee for arbitrary artwork. Each seat and the center have their own minimum scale: max(32 / intrinsic card width) over that region's GameCards, combined with its control-size floor. Thus lg seat cards can shrink without shrinking sm community cards below their floor. Custom artwork without GameCard markers is not covered by the card floor.
-Size seat and center content in normal flow and inspect \`data-layout-fit\` for the result. Each region keeps its minimum scale; cards smaller than the floor are enlarged to it. The outer space-2 gap remains unscaled. Content is never substituted or truncated to obtain a fit. The solver chooses the largest shared preferred scale t in [0,1] that keeps upright border boxes inside the surface and seats and center separate; each region uses max(t, its minimum scale).
-Precedence: preserve card/control floors → try requested clearance → retry at clearance zero → declare insufficient space if the floors still do not fit. \`data-clearance="requested" | "reduced"\` and numeric \`data-clearance-start/end\` report effective local CSS pixels. \`data-layout-fit="measuring" | "fitted" | "insufficient-space"\` reports card geometry independently. The 840×360 match matrix now fits with upright cards and out-of-flow chrome. The square lobby frame at that viewport remains insufficient for 4/6 seats; insufficient space also has an oversized-content regression. Floors remain intact rather than hiding overflow or collisions.
+\`GAME_TABLE_LIMITS.minimumCardWidthPx\` is 32px, matching GameCard sm. Each seat, play and centre has its own minimum scale: max(32 / intrinsic card width), combined with its control-size floor. Chrome is excluded. Regions without cards or controls retain intrinsic size. Custom artwork without GameCard markers is not covered by the card floor.
+The solver chooses the largest shared preferred scale t in [0,1]; each region uses max(t, its minimum scale). It pushes the seat ring outward within placement and measured shell constraints, separates neighbours and plays, and keeps the inward play ring clear of the measured centre. The space-2 gap stays unscaled. Content is never substituted or truncated.
+Precedence: preserve card/control floors → try requested clearance → retry at clearance zero → declare insufficient space if floors still cannot fit. \`data-clearance="requested" | "reduced"\` and numeric \`data-clearance-start/end\` report effective local CSS pixels. \`data-layout-fit="measuring" | "fitted" | "insufficient-space"\` reports geometry. Insufficient space means the composition cannot satisfy all clearances at its floors, including the play-to-centre band; overflow or collisions may remain. Give the parent more space or reduce the composition.
 
 ### Seat chrome
 Put names, avatars and non-layout adornments inside \`<GameTable.SeatChrome>…</GameTable.SeatChrome>\` within renderSeat. The part is absolutely positioned: it reserves no space and its descendants do not constrain card scale. It floats on the outward side; when a side label does not fit horizontally inside the root, only the chrome moves above/below the cards. No card-anchor compensation is applied. Removing the part from the DOM does not move the card block. Unmarked in-flow content still counts as content; the table does not guess which arbitrary text is a player name. Avoid wrappers that reserve padding/gaps for the chrome.
 Chrome is independent of card fit: \`fitted\` does not guarantee arbitrary oversized labels or controls fit. Keep chrome concise and respect control/card minimum sizes within your custom content. The table does not rotate names, avatars, or faces; user-supplied transforms are the consumer's responsibility.
-\`--game-table-content-scale\` on each seat and \`--game-table-center-scale\` on the root expose actual region scales; the root content-scale value is only the preferred t. \`--game-table-radius-x/y\` and \`--game-table-content-gap\` expose local geometry. \`geometry.scale\` is informational: never multiply child sizes by it again. Floors are local CSS-pixel sizes before external ancestor transforms; a consumer scaling the entire table must account for its own scale.
-Native seat/center controls preserve at least 24px on both axes and 32px on their main axis, unless already smaller intrinsically. Regions without GameCards or controls retain their intrinsic size rather than disappearing at a zero floor. \`fitted\` covers normal-flow border boxes, not overflowing artwork, shadows or floating overlays. Keep absolute artwork's full footprint reserved in normal flow.
+\`--game-table-content-scale\` on each seat and \`--game-table-center-scale\` on the root expose actual region scales; the root content-scale value is only the preferred t. \`--game-table-radius-x/y\` and \`--game-table-content-gap\` expose local geometry. Each play publishes \`--game-table-play-inline/block\` (logical percentages), \`--game-table-play-scale\`, \`--game-table-play-angle\` (outward physical degrees) and \`--game-table-play-cos/sin\`. \`geometry.scale\` and \`geometry.playScale\` are informational: never multiply child sizes by them again. Floors are local CSS-pixel sizes before external ancestor transforms; a consumer scaling the entire table must account for its own scale.
+Native seat/play/center controls preserve at least 24px on both axes and 32px on their main axis, unless already smaller intrinsically. Regions without GameCards or controls retain their intrinsic size rather than disappearing at a zero floor. \`fitted\` covers normal-flow border boxes, not overflowing artwork, shadows or floating overlays. Keep absolute artwork's full footprint reserved in normal flow.
 
 ### Rival-card flight markers
-After commit, GameTable marks each actual \`GameCard\` back in an occupied non-own seat with \`data-seat-hidden-card={player.key}\` and \`data-seat-hidden-card-index={index}\`. Index is current zero-based DOM order within that seat, not seat index. Markers update on card/face/player changes and are removed when a card is revealed or a seat becomes empty/own. No opponent value is exposed. Own-hand markers remain the hand's responsibility; custom card renderers must provide their own markers. The flight consumer example is \`apps/storybook/stories/card-flights-fixture.tsx\`.
+After commit, GameTable marks each actual \`GameCard\` back in an occupied non-own seat with \`data-seat-hidden-card={player.key}\` and \`data-seat-hidden-card-index={index}\`. Index is current zero-based DOM order within that seat, not seat index. Markers update on card/face/player changes and are removed when a card is revealed or a seat becomes empty/own. No opponent value is exposed. Own-hand markers remain the hand's responsibility; custom card renderers must provide their own markers. The flight consumer example is \`packages/ui/src/components/card-flights/card-flights-fixture.tsx\`.
 
 ### Measuring flights
 Query from the root ref, never from the document (multiple tables may exist):
@@ -310,6 +349,7 @@ export const ExplicitRegionsAndRtl: Story = {
 };
 
 export const MirroredSeats: Story = {
+  args: { renderPlay: (slot, index, geometry) => spanishPlay?.(slot, index, geometry), renderSeat: fn((slot, index, geometry) => spanishSeat(slot, index, geometry)), center: <span>Truco</span>, header: 'Truco', dock: <Button>Quiero</Button> },
   render: (args) => (
     <div style={{ display: 'flex', inlineSize: 'max-content' }}>
       {(['ltr', 'rtl'] as const).map((dir) => (
@@ -327,8 +367,8 @@ export const MirroredSeats: Story = {
     await expectSeatFraming(rtl, 6, 'phoneCompact');
     const ltrBox = required(ltr.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
     const rtlBox = required(rtl.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
-    const ltrSeats = ltr.querySelectorAll('[data-ui="game-table-seat"]');
-    const rtlSeats = rtl.querySelectorAll('[data-ui="game-table-seat"]');
+    const ltrSeats = ltr.querySelectorAll('[data-ui="game-table-seat"], [data-ui="game-table-play"]');
+    const rtlSeats = rtl.querySelectorAll('[data-ui="game-table-seat"], [data-ui="game-table-play"]');
     for (const [index, seat] of Array.from(ltrSeats).entries()) {
       const a = seat.getBoundingClientRect();
       const b = required(rtlSeats[index]).getBoundingClientRect();
@@ -362,6 +402,11 @@ export const MeasuredModel: Story = {
     await expect(grownContent.scale).toBeLessThan(circle.scale);
     const wide = fitBoardContent({ ...measured, width: 2000, centerX: 1000 });
     await expect(wide.radiusX / wide.radiusY).toBeCloseTo(1.5, 8);
+    const wideEdge = fitBoardContent({ ...measured, width: 2000, centerX: 1000, seatPlacement: 'edge',
+      surfaceBorderBox: { width: 2000, height: 500 }, available: { left: 1200, right: 1200, top: 350, bottom: 350 } });
+    await expect(wideEdge.fits).toBe(true);
+    await expect(wideEdge.radiusX).toBeCloseTo(1000, 8);
+    await expect(wideEdge.radiusY).toBeCloseTo(250, 8);
     const mixed = fitBoardContent({ ...measured, width: 500, height: 240, centerX: 250, centerY: 120,
       seats: [{ width: 112, height: 165.75, minimumScale: 32 / 112 }, { width: 112, height: 165.75, minimumScale: 32 / 112 }],
       center: { width: 104, height: 77.36, minimumScale: 1 } });
@@ -369,6 +414,49 @@ export const MeasuredModel: Story = {
     await expect(mixed.centerScale).toBe(1);
     await expect(required(mixed.positions[0]).scale).toBeLessThan(1);
     await expect(required(mixed.positions[0]).scale * 112).toBeGreaterThanOrEqual(GAME_TABLE_LIMITS.minimumCardWidthPx);
+    const emptyPlays = fitBoardContent({ ...measured, plays: measured.seats.map(() => ({ width: 0, height: 0, minimumScale: 1 })) });
+    await expect(emptyPlays.radiusX).toBe(circle.radiusX);
+    await expect(emptyPlays.scale).toBe(circle.scale);
+    const blockedPlays = fitBoardContent({ ...measured, plays: measured.seats.map(() => ({ width: 200, height: 200, minimumScale: 1 })) });
+    await expect(blockedPlays.fits).toBe(false);
+    await expect(blockedPlays.positions.map((position) => position.playScale)).toEqual(Array(6).fill(1));
+    const centerBand = { width: 300, height: 300, centerX: 150, centerY: 150,
+      seatPlacement: 'edge' as const, available: { left: 300, right: 300, top: 300, bottom: 300 },
+      seats: Array.from({ length: 2 }, () => ({ width: 32, height: 47, minimumScale: 1 })),
+      center: { width: 200, height: 180, minimumScale: 1 }, gap: 8, minimumScale: 1 };
+    await expect(fitBoardContent(centerBand).fits).toBe(true);
+    await expect(fitBoardContent({ ...centerBand, plays: centerBand.seats }).fits).toBe(false);
+  },
+};
+
+function ChangingPlays() {
+  const [empty, setEmpty] = useState(false);
+  return <>
+    <Button onClick={() => setEmpty(true)}>Retirar jugadas</Button>
+    <div style={{ inlineSize: VIEWPORTS.phoneCompact.width, blockSize: VIEWPORTS.phoneCompact.height }}>
+      <GameTable players={6} seats={SEATS} viewport={VIEWPORTS.phoneCompact} renderSeat={spanishSeat}
+        center={<span>Truco</span>} header="Truco" dock={<Button>Quiero</Button>}
+        renderPlay={() => empty ? null : <GameCard size="lg" value={{ deck: 'spanish', suit: 'bastos', rank: 12 }} label="rey de bastos" />} />
+    </div>
+  </>;
+}
+
+/** Large played cards scale to their own floor; empty regions release their footprint. */
+export const PlayRegionResizeAndFloors: Story = {
+  render: () => <ChangingPlays />,
+  play: async ({ canvasElement, userEvent }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await expectSeatFraming(table, 6, 'phoneCompact');
+    const play = required(table.querySelector<HTMLElement>('[data-ui="game-table-play"]') ?? undefined);
+    const scale = Number.parseFloat(play.style.getPropertyValue('--game-table-play-scale'));
+    await expect(scale).toBeLessThan(1);
+    await expect(scale * 112).toBeGreaterThanOrEqual(GAME_TABLE_LIMITS.minimumCardWidthPx - 0.01);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Retirar jugadas' }));
+    await waitFor(() => expect(table.querySelectorAll('[data-ui="game-table-play"] [data-ui~="game-card"]')).toHaveLength(0));
+    await expectSeatFraming(table, 6, 'phoneCompact');
+    await expect(play.getBoundingClientRect().width).toBe(0);
+    await expect(play.getBoundingClientRect().height).toBe(0);
+    await expect(Number.parseFloat(getComputedStyle(table).getPropertyValue('--game-table-content-scale'))).toBe(1);
   },
 };
 
@@ -416,7 +504,7 @@ export const LobbyMatrix: Story = {
     let index = 0;
     for (const viewport of Object.values(VIEWPORTS)) for (const players of COUNTS) {
       const profile = resolveBoardViewportProfile(viewport);
-      const expectedFit = profile === 'phoneWide' && players > 2 ? 'insufficient-space' : 'fitted';
+      const expectedFit = profile === 'phoneWide' && players === 6 ? 'insufficient-space' : 'fitted';
       await expectSeatFraming(required(tables[index++]), players, profile, expectedFit);
     }
   },
@@ -558,7 +646,7 @@ export const ContentResizeAndFlightMarkers: Story = {
     await expectSeatFraming(table, 2, 'desktop');
     await userEvent.click(canvas.getByRole('button', { name: 'Restore room' }));
     await waitFor(() => expect(table).toHaveAttribute('data-clearance', 'requested'));
-    await expect(table).toHaveAttribute('data-clearance-start', '96');
+    await expect(Number(table.dataset.clearanceStart)).toBeCloseTo(96, 2);
     await expectSeatFraming(table, 2, 'desktop');
   },
 };
@@ -774,6 +862,8 @@ export const OversizedInsufficientSpace: Story = {
         <GameCard size="lg" label={`${slot.player?.name}: card 2`} />
         <GameCard size="lg" label={`${slot.player?.name}: card 3`} />
         <GameCard size="lg" label={`${slot.player?.name}: card 4`} />
+        <GameCard size="lg" label={`${slot.player?.name}: card 5`} />
+        <GameCard size="lg" label={`${slot.player?.name}: card 6`} />
       </div>
     )),
   },
@@ -801,5 +891,133 @@ export const StateStability: Story = {
       states.add(table.getAttribute('data-layout-fit'));
     }
     await expect([...states]).toEqual(['fitted']);
+  },
+};
+
+const spanishSeat = fn<GameTableProps<Player>['renderSeat']>((slot) => (
+  <div style={{ display: 'flex', gap: vars.space[1] }}>
+    <GameCard size="sm" backPattern={CARD_BACK_PATTERNS.spanish} label={`${slot.player?.name ?? 'Lugar libre'}: carta oculta`} />
+    <GameCard size="sm" backPattern={CARD_BACK_PATTERNS.spanish} label={`${slot.player?.name ?? 'Lugar libre'}: segunda carta oculta`} />
+  </div>
+));
+const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
+  index % 2 === 0
+    ? <GameCard size="sm" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="as de oros" />
+    : <GameCard size="sm" value={{ deck: 'spanish', suit: 'copas', rank: 10 }} label="sota de copas" />
+);
+
+/** Cartas ocultas al borde y jugadas hacia el centro, en los seis tamaños. */
+export const TrucoPlayRing: Story = {
+  args: { seatPlacement: 'edge', renderSeat: spanishSeat, renderPlay: spanishPlay, center: <span>Truco</span>, header: 'Truco', dock: <Button>Quiero</Button> },
+  render: (args) => <div style={{ inlineSize: 'max-content' }}>
+    {Object.entries(VIEWPORTS).map(([profile, viewport]) => COUNTS.map((players) => (
+      <div key={`${profile}-${players}`} style={{ display: 'flex' }}>
+        <div data-measurement="before" style={{ inlineSize: viewport.width, blockSize: viewport.height }}>
+          <GameTable {...args} seatPlacement="inside" renderPlay={undefined} viewport={viewport} players={players} slots={undefined} seats={seatsFor(players)} />
+        </div>
+        <div data-measurement="after" style={{ inlineSize: viewport.width, blockSize: viewport.height }}>
+          <GameTable {...args} viewport={viewport} players={players} slots={undefined} seats={seatsFor(players)} />
+        </div>
+      </div>
+    )))}
+  </div>,
+  play: async ({ canvasElement }) => {
+    const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-measurement="after"] [data-ui="game-table"]'));
+    const previousTables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-measurement="before"] [data-ui="game-table"]'));
+    await expect(tables).toHaveLength(18);
+    const measurements = [];
+    let index = 0;
+    for (const [profile, viewport] of Object.entries(VIEWPORTS)) for (const players of COUNTS) {
+      const table = required(tables[index++]);
+      const previous = required(previousTables[index - 1]);
+      await expectSeatFraming(previous, players, profile as BoardViewportProfile);
+      await waitFor(() => expect(table.dataset.layoutFit).not.toBe('measuring'));
+      const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
+      const seats = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
+      const plays = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-play"]'));
+      await expect(plays).toHaveLength(players);
+      const own = required(seats[0]).getBoundingClientRect();
+      const play = required(plays[0]).getBoundingClientRect();
+      const seatRadius = own.y + own.height / 2 - surface.y - surface.height / 2;
+      const playRadius = play.y + play.height / 2 - surface.y - surface.height / 2;
+      const innerRadius = (regions: HTMLElement[], frame: DOMRect) => Math.min(...regions.map((region) => {
+        const box = region.getBoundingClientRect();
+        const dx = box.x + box.width / 2 - frame.x - frame.width / 2;
+        const dy = box.y + box.height / 2 - frame.y - frame.height / 2;
+        const distance = Math.hypot(dx, dy);
+        return distance - (Math.abs(dx / distance) * box.width + Math.abs(dy / distance) * box.height) / 2;
+      }));
+      const previousSurface = required(previous.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
+      const previousSeats = Array.from(previous.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
+      const previousOwn = required(previousSeats[0]).getBoundingClientRect();
+      const radialMetrics = (regions: HTMLElement[]) => regions.map((region) => {
+        const box = region.getBoundingClientRect();
+        const dx = box.x + box.width / 2 - surface.x - surface.width / 2;
+        const dy = box.y + box.height / 2 - surface.y - surface.height / 2;
+        const radius = Math.hypot(dx, dy);
+        const ux = dx / radius;
+        const uy = dy / radius;
+        const extent = (Math.abs(ux) * box.width + Math.abs(uy) * box.height) / 2;
+        const edge = 1 / Math.hypot(ux / (surface.width / 2), uy / (surface.height / 2));
+        return { radius: Number(radius.toFixed(2)), overhang: Number((radius + extent - edge).toFixed(2)) };
+      });
+      measurements.push({ profile, players, fit: table.dataset.layoutFit,
+        beforeSurface: [Number(previousSurface.width.toFixed(2)), Number(previousSurface.height.toFixed(2))],
+        afterSurface: [Number(surface.width.toFixed(2)), Number(surface.height.toFixed(2))],
+        seatOverhangs: radialMetrics(seats).map((metric) => metric.overhang),
+        playRadii: radialMetrics(plays).map((metric) => metric.radius),
+        beforeInset: Number((previousSurface.bottom - previousOwn.bottom).toFixed(2)),
+        beforeFreeInnerRadius: Number(innerRadius(previousSeats, previousSurface).toFixed(2)),
+        seatOutset: Number((own.bottom - surface.bottom).toFixed(2)),
+        playRadius: Number(playRadius.toFixed(2)), freeInnerRadius: Number(innerRadius(plays, surface).toFixed(2)),
+        seatInnerRadius: Number((seatRadius - own.height / 2).toFixed(2)), viewport });
+      const expectedFit = profile === 'phoneTall' && players === 6 ? 'insufficient-space' : 'fitted';
+      await expectSeatFraming(table, players, profile as BoardViewportProfile, expectedFit);
+      if (table.dataset.layoutFit === 'fitted') {
+        await expect(own.bottom - surface.bottom, `${profile}/${players} crosses felt border`).toBeGreaterThan(0.5);
+        await expect(playRadius).toBeGreaterThan(0);
+        await expect(playRadius).toBeLessThan(seatRadius);
+      }
+    }
+    console.info('GAME_TABLE_PLAY_MEASUREMENTS', JSON.stringify(measurements));
+  },
+};
+
+/** Compare legacy containment, edge-centred cards and cards outside the felt. */
+export const SeatPlacementModes: Story = {
+  args: { players: 2, seats: seatsFor(2), renderSeat: spanishSeat, renderPlay: spanishPlay, center: <span>Truco</span>, header: 'Truco', dock: <Button>Quiero</Button> },
+  render: (args) => <div style={{ display: 'flex', inlineSize: 'max-content' }}>
+    {COUNTS.map((players) => (['inside', 'edge', 'outside'] as const).map((seatPlacement) => (
+      <div key={`${players}-${seatPlacement}`} data-placement-count={players} style={{ inlineSize: args.viewport.width, blockSize: args.viewport.height }}>
+        <GameTable {...args} players={players} slots={undefined} seats={seatsFor(players)} seatPlacement={seatPlacement} />
+      </div>
+    )))}
+  </div>,
+  play: async ({ canvasElement }) => {
+    for (const table of canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]')) {
+      const players = Number(table.parentElement?.dataset.placementCount) as BoardPlayerCount;
+      await expectSeatFraming(table, players, 'phoneCompact');
+      const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
+      const seat = required(table.querySelector<HTMLElement>('[data-ui="game-table-seat"]') ?? undefined).getBoundingClientRect();
+      if (table.dataset.seatPlacement === 'inside') await expect(seat.bottom).toBeLessThan(surface.bottom - 1);
+      if (table.dataset.seatPlacement === 'edge') {
+        await expect(seat.top).toBeLessThan(surface.bottom);
+        await expect(seat.bottom).toBeGreaterThan(surface.bottom);
+        await expect(Math.abs(seat.top + seat.height / 2 - surface.bottom)).toBeLessThan(0.5);
+      }
+      if (table.dataset.seatPlacement === 'outside') await expect(seat.top).toBeGreaterThanOrEqual(surface.bottom - GEOMETRY_TOLERANCE_PX);
+      for (const content of table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]')) {
+        const box = content.getBoundingClientRect();
+        const dx = box.x + box.width / 2 - surface.x - surface.width / 2;
+        const dy = box.y + box.height / 2 - surface.y - surface.height / 2;
+        const distance = Math.hypot(dx, dy);
+        const ux = dx / distance;
+        const uy = dy / distance;
+        const edge = 1 / Math.hypot(ux / (surface.width / 2), uy / (surface.height / 2));
+        const extent = (Math.abs(ux) * box.width + Math.abs(uy) * box.height) / 2;
+        if (table.dataset.seatPlacement === 'edge') await expect(Math.abs(distance - edge)).toBeLessThan(GEOMETRY_TOLERANCE_PX);
+        if (table.dataset.seatPlacement === 'outside') await expect(distance - extent).toBeGreaterThanOrEqual(edge - GEOMETRY_TOLERANCE_PX);
+      }
+    }
   },
 };

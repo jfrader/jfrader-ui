@@ -88,7 +88,14 @@ export function useBoardMeasurements() {
       const center = surface.querySelector<HTMLElement>(CENTER_SELECTOR);
       if (!center) return;
       const shell = surface.parentElement!;
-      const elements = new Set([shell, surface, center, ...seats, ...surface.querySelectorAll<HTMLElement>(CHROME_SELECTOR)]);
+      const root = shell.parentElement!;
+      const plays = Array.from(surface.querySelectorAll<HTMLElement>('[data-ui="game-table-play"]'));
+      const seatPlacement = root.dataset.seatPlacement as NonNullable<BoardMeasurements['seatPlacement']>;
+      const reserve = { inside: 0, edge: 0.5, outside: 1 }[seatPlacement];
+      const seatSizes = seats.map(regionSize);
+      shell.style.setProperty('--game-table-reserve-inline', `${Math.max(0, ...seatSizes.map((seat) => seat.width * (seat.minimumScale ?? 1))) * reserve}px`);
+      shell.style.setProperty('--game-table-reserve-block', `${Math.max(0, ...seatSizes.map((seat) => seat.height * (seat.minimumScale ?? 1))) * reserve}px`);
+      const elements = new Set([root, shell, surface, center, ...seats, ...plays, ...surface.querySelectorAll<HTMLElement>(CHROME_SELECTOR)]);
       for (const element of observed) if (!elements.has(element)) {
         resize.unobserve(element);
         observed.delete(element);
@@ -123,12 +130,22 @@ export function useBoardMeasurements() {
         const box = naturalSize(surface);
         const left = Number.parseFloat(style.borderLeftWidth);
         const top = Number.parseFloat(style.borderTopWidth);
+        const surfaceBox = surface.getBoundingClientRect();
+        const shellBox = shell.getBoundingClientRect();
+        const localScaleX = surfaceBox.width / box.width;
+        const localScaleY = surfaceBox.height / box.height;
+        const middleX = surfaceBox.left + surfaceBox.width / 2;
+        const middleY = surfaceBox.top + surfaceBox.height / 2;
         return {
           width: box.width - left - Number.parseFloat(style.borderRightWidth),
           height: box.height - top - Number.parseFloat(style.borderBottomWidth),
           centerX: box.width / 2 - (style.direction === 'rtl' ? Number.parseFloat(style.borderRightWidth) : left),
           centerY: box.height / 2 - top,
-          seats: seats.map(regionSize), center: regionSize(center),
+          seats: seats.map(regionSize), plays: plays.map(regionSize), center: regionSize(center), seatPlacement,
+          surfaceBorderBox: box,
+          direction: style.direction === 'rtl' ? 'rtl' : 'ltr',
+          available: { left: (middleX - shellBox.left) / localScaleX, right: (shellBox.right - middleX) / localScaleX,
+            top: (middleY - shellBox.top) / localScaleY, bottom: (shellBox.bottom - middleY) / localScaleY },
           gap: Number.parseFloat(style.columnGap), minimumScale: 0,
         };
       };
@@ -136,14 +153,15 @@ export function useBoardMeasurements() {
       // If floors do not fit, surrender optional clearance to its documented minimum.
       shell.style.removeProperty('padding-block');
       const requested = view.getComputedStyle(shell);
-      const requestedStart = Number.parseFloat(requested.paddingBlockStart);
-      const requestedEnd = Number.parseFloat(requested.paddingBlockEnd);
+      const reservedBlock = Number.parseFloat(shell.style.getPropertyValue('--game-table-reserve-block'));
+      const requestedStart = Number.parseFloat(requested.paddingBlockStart) - reservedBlock;
+      const requestedEnd = Number.parseFloat(requested.paddingBlockEnd) - reservedBlock;
       let next = read();
       let start = requestedStart;
       let end = requestedEnd;
       if (!fitBoardContent(next).fits) {
         start = end = GAME_TABLE_LIMITS.minimumClearancePx;
-        shell.style.paddingBlock = `${start}px`;
+        shell.style.paddingBlock = `${start + reservedBlock}px`;
         next = read();
       }
       next.clearance = { requestedStart, requestedEnd, start, end };
