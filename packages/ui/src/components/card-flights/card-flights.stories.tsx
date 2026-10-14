@@ -11,6 +11,7 @@ import { Button } from '../button';
 import { GameCard } from '../game-card';
 import { GameHand } from '../game-hand';
 import { GameTable } from '../game-table';
+import { GameSeat } from '../game-seat';
 import { ThemeRoot } from '../theme-root';
 import { GameCardStack } from '../game-card-stack';
 import { CardFlight } from './card-flight';
@@ -239,6 +240,7 @@ interface CardFlightsFixtureProps {
   initialPlayed?: boolean;
   portalReady?: boolean;
   externalScope?: boolean;
+  seatShorthand?: boolean;
 }
 
 function FlightIdentityProbe() {
@@ -262,7 +264,7 @@ function FlightIdentityProbe() {
   </div>;
 }
 
-function FlightScenarios({ theme = 'dark', initialDealt = false, initialPlayed = false, portalReady = true, externalScope = false }: CardFlightsFixtureProps) {
+function FlightScenarios({ theme = 'dark', initialDealt = false, initialPlayed = false, portalReady = true, externalScope = false, seatShorthand = false }: CardFlightsFixtureProps) {
   const scopeRef = useRef<HTMLDivElement>(null);
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const [mounted, setMounted] = useState(true);
@@ -271,20 +273,20 @@ function FlightScenarios({ theme = 'dark', initialDealt = false, initialPlayed =
       <Button onClick={() => setMounted(!mounted)}>{mounted ? 'Unmount board' : 'Mount board'}</Button>
       {mounted && <div ref={externalScope ? scopeRef : undefined}>
         <CardFlightsProvider scopeRef={externalScope ? scopeRef : undefined}>
-          <FlightBoard initialDealt={initialDealt} initialPlayed={initialPlayed} />
+          <FlightBoard initialDealt={initialDealt} initialPlayed={initialPlayed} seatShorthand={seatShorthand} />
         </CardFlightsProvider>
       </div>}
     </ThemeRoot>
   </div>;
 }
 
-function FlightBoard({ initialDealt, initialPlayed }: {
-  initialDealt: boolean; initialPlayed: boolean;
+function FlightBoard({ initialDealt, initialPlayed, seatShorthand }: {
+  initialDealt: boolean; initialPlayed: boolean; seatShorthand: boolean;
 }) {
   const [handIndex, setHandIndex] = useState(initialDealt || initialPlayed ? 1 : 0);
   const [plays, setPlays] = useState<PlayedFlightCard[]>(initialPlayed ? [OWN_PLAY, RIVAL_PLAY] : []);
   const [resyncKey, setResyncKey] = useState(0);
-  const { scopeRef, rememberPlayOrigin, launch } = useCardFlights();
+  const { scopeRef, rememberPlayOrigin, launch, resetEpoch } = useCardFlights();
   const ownPlayed = plays.some((play) => play.isOwn);
   const rivalPlayed = plays.some((play) => !play.isOwn);
   const hand = handIndex ? ownHand.filter((card) => !plays.some((entry) => entry.cardId === card.id)) : [];
@@ -314,13 +316,13 @@ function FlightBoard({ initialDealt, initialPlayed }: {
         if (node) { const box = measureCardBox(node); rememberPlayOrigin('own:0', { ...box, cx: box.cx - 200, cy: box.cy - 100 }); }
       }}>Capture moved origin</Button>
       <Button disabled={!handIndex || ownPlayed || landingTargets.size > 0} onClick={() => play(OWN_PLAY)}>Play without capture</Button>
-      <output aria-label="Flights in air">{landingTargets.size}</output>
+      <output aria-label="Flights in air" data-reset-epoch={resetEpoch}>{landingTargets.size}</output>
     </div>
     <div css={boardStyle}>
       <GameTable players={2} viewport={{ width: 1000, height: 800 }}
         seats={[{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }]}
       >
-        <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rival.length} label="Rival hand" /></GameTable.Seat>
+        <GameTable.Seat slotKey="rival">{seatShorthand ? <GameSeat name="Rival" handCount={rival.length} /> : <GameHand.Hidden playerKey="rival" count={rival.length} label="Rival hand" />}</GameTable.Seat>
         <GameTable.Dock><GameHand playLabel="Play selected" disabled={landingTargets.size > 0}
           onPlayIntent={(card) => play({ ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true })}
            cards={hand} /></GameTable.Dock>
@@ -759,5 +761,107 @@ export const OwnedScopeCustomization: Story = {
     await expect(root.style.paddingBlock).toBe('3px');
     await expect(root.style.paddingInline).toBe('8px');
     await expect(canvas.getByLabelText('Root ref')).toHaveTextContent('card-flights');
+  },
+};
+
+export const ResyncDuringDeal: Story = {
+  tags: ['!autodocs'],
+  beforeEach: () => mockPreference(),
+  render: () => <FlightScenarios />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
+    const active = flights(canvasElement);
+    await expect(active).toHaveLength(6);
+    const tracks = active.flatMap((node) => node.getAnimations({ subtree: true }));
+    tracks.forEach((track) => track.pause());
+    const destinations = [...canvasElement.querySelectorAll<HTMLElement>('[data-hand-card], [data-seat-hidden-card]')];
+    for (const node of destinations) await expect(getComputedStyle(node).visibility).toBe('hidden');
+    await userEvent.click(canvas.getByRole('button', { name: 'Resync hand' }));
+    await expect(flights(canvasElement)).toHaveLength(0);
+    await expect(canvas.getByLabelText('Flights in air')).toHaveTextContent('0');
+    await expect(canvas.getByLabelText('Flights in air')).toHaveAttribute('data-reset-epoch', '1');
+    await expect(tracks.every((track) => track.playState === 'idle')).toBe(true);
+    for (const node of active) await expect(node.isConnected).toBe(false);
+    for (const node of destinations) {
+      await expect(node.isConnected).toBe(true);
+      await expect(node.style.visibility).toBe('');
+      await expect(node).toBeVisible();
+    }
+    await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
+    await expect(flights(canvasElement)).toHaveLength(6);
+    await landed(canvasElement);
+  },
+};
+
+export const SeatShorthandDealAndPlay: Story = {
+  tags: ['!autodocs'],
+  beforeEach: () => mockPreference(),
+  render: () => <FlightScenarios seatShorthand />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
+    await expect(flights(canvasElement)).toHaveLength(6);
+    const hidden = [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand-hidden-card"][data-seat-hidden-card="rival"]')];
+    await expect(hidden).toHaveLength(3);
+    for (const [index, node] of hidden.entries()) {
+      await expect(getComputedStyle(node).visibility).toBe('hidden');
+      await expect(flights(canvasElement).some((flight) => flight.dataset.flightTarget === `seat:rival:${index}`)).toBe(true);
+    }
+    await landed(canvasElement);
+    const origin = measureCardBox(required(hidden.at(-1)));
+    await userEvent.click(canvas.getByRole('button', { name: 'Play rival' }));
+    await expect(flights(canvasElement)).toHaveLength(1);
+    await expectOrigin(required(flights(canvasElement)[0]), origin,
+      required(canvasElement.querySelector<HTMLElement>('[data-played-key="0-rival-rival:0"]')));
+    await landed(canvasElement);
+  },
+};
+
+function SpanishFlightProbe() {
+  const [destination, setDestination] = useState<HTMLDivElement | null>(null);
+  const value = { deck: 'spanish', suit: 'oros', rank: 1 } as const;
+  return <>
+    <div ref={setDestination}><GameCard label="Spanish back" value={value} face="back" /></div>
+    {destination && <CardFlight flightId={1} spec={{ destination, target: 'spanish',
+      from: { cx: 200, cy: 200, width: 140, height: 200, rotate: 0 },
+      to: { cx: 400, cy: 200, width: 140, height: 200, rotate: 0 },
+      card: { id: 'spanish', label: 'Spanish card', value }, face: 'down', durationMs: 10000,
+    }} onFinish={() => undefined} />}
+  </>;
+}
+
+export const SpanishFlightBack: Story = {
+  tags: ['!autodocs'],
+  render: () => <SpanishFlightProbe />,
+  play: async ({ canvasElement }) => {
+    const flight = required(flights(canvasElement)[0]);
+    await expect(flight.querySelector('[data-face="print"]')).toBeNull();
+    await expect(required(flight.querySelector('[data-ui="pattern"]'))).toHaveAttribute('data-variant', 'diagonal');
+    await expect(flight.querySelector('[data-deck]')).toBeNull();
+    const card = required(flight.querySelector<HTMLElement>('[data-ui~="game-card"]'));
+    card.setAttribute('data-ui', 'game-card custom-card');
+    await expect(parseFloat(getComputedStyle(card).width)).toBeCloseTo(parseFloat(getComputedStyle(flight).width), 2);
+    await expect(parseFloat(getComputedStyle(card).height)).toBeCloseTo(parseFloat(getComputedStyle(flight).height), 2);
+  },
+};
+
+export const ComposedRootIdentities: Story = {
+  tags: ['!autodocs'],
+  render: () => <>
+    <GameHand data-ui="custom-hand game-hand custom-hand" cards={[]} playLabel="Play composed card" />
+    <GameHand.Hidden data-ui="custom-hidden game-hand-hidden custom-hidden" count={1} label="Hidden composed hand" />
+    <GameCardStack data-ui="custom-stack game-card-stack custom-stack" piles={[]} />
+    <GameCardStack.Pile data-ui="custom-pile game-card-stack-pile custom-pile" playerKey="own" label="Composed pile"
+      cardWidth="140px" cards={[OWN_PLAY]} />
+  </>,
+  play: async ({ canvasElement }) => {
+    for (const [marker, extra] of [['game-hand', 'custom-hand'], ['game-hand-hidden', 'custom-hidden'],
+      ['game-card-stack', 'custom-stack'], ['game-card-stack-pile', 'custom-pile']]) {
+      await expect(required(canvasElement.querySelector(`[data-ui~="${marker}"]`))).toHaveAttribute('data-ui', `${marker} ${extra}`);
+    }
+    const frame = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-card-stack-card"]'));
+    const card = required(frame.querySelector<HTMLElement>('[data-ui~="game-card"]'));
+    card.setAttribute('data-ui', 'game-card custom-card');
+    await expect(parseFloat(getComputedStyle(card).width)).toBeCloseTo(parseFloat(getComputedStyle(frame).width), 2);
+    await expect(parseFloat(getComputedStyle(card).height)).toBeCloseTo(parseFloat(getComputedStyle(frame).height), 2);
   },
 };

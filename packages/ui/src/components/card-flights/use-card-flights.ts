@@ -31,12 +31,13 @@ export interface DealFlightsOptions {
 }
 
 function useMeasuredLaunch(resyncKey: string | number | undefined) {
-  const { launch, resetEpoch } = useCardFlights();
+  const { launch, resetEpoch, synchronize } = useCardFlights();
   const generation = useRef(0);
   useLayoutEffect(() => {
+    synchronize(resyncKey);
     generation.current += 1;
     return () => { generation.current += 1; };
-  }, [resetEpoch, resyncKey]);
+  }, [resetEpoch, resyncKey, synchronize]);
   return (specs: readonly CardFlightSpec[]) => {
     if (!specs.length) return;
     const current = generation.current;

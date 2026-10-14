@@ -180,9 +180,13 @@ export interface GameTableSeatContext<T extends SeatLike = SeatLike> {
 const SeatContext = createContext<GameTableSeatContext | null>(null);
 const RegionContext = createContext<GameTableRootProps | undefined>(undefined);
 
+export function useOptionalGameTableSeat() {
+  return useContext(SeatContext);
+}
+
 /** Read the current place from children of Seat or Play. */
 export function useGameTableSeat<T extends SeatLike = SeatLike>(): GameTableSeatContext<T> {
-  const context = useContext(SeatContext);
+  const context = useOptionalGameTableSeat();
   if (!context) throw new Error('useGameTableSeat requires GameTable.Seat or GameTable.Play.');
   return context as GameTableSeatContext<T>;
 }

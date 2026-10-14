@@ -42,6 +42,7 @@ interface CardFlightsContextValue {
   launch: (specs: readonly CardFlightSpec[]) => void;
   /** Cancels flights, shows their destinations and forgets captured origins/snapshot baselines. */
   reset: () => void;
+  synchronize: (key: string | number | undefined) => void;
   /** Capture before removing a hand card, on click or after a drag. */
   rememberPlayOrigin: (cardKey: string, elementOrBox: HTMLElement | CardBox) => void;
   takePlayOrigin: (cardKey: string) => CardBox | undefined;
@@ -103,6 +104,7 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, comp
   const [registry] = useState(createFlightRegistry);
 
   const actions = useMemo(() => {
+    let snapshot: { key: string | number | undefined } | undefined;
     const restore = (record: FlightRecord) => {
       if (record.timer !== null) clearTimeout(record.timer);
       record.cancel?.();
@@ -116,6 +118,14 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, comp
     return {
       clear,
       reset: () => { clear(); setFlights([]); setResetEpoch((epoch) => epoch + 1); },
+      synchronize: (key: string | number | undefined) => {
+        if (snapshot && snapshot.key !== key) {
+          clear();
+          setFlights([]);
+          setResetEpoch((epoch) => epoch + 1);
+        }
+        snapshot = { key };
+      },
       launch: (specs: readonly CardFlightSpec[]) => {
         if (!specs.length) return;
         for (const spec of specs) {

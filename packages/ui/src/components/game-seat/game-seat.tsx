@@ -8,6 +8,7 @@ import type { SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { CardRoot, type GameCardRootProps, type GameCardRootCustomization, type GameCardRootSlotProps } from '../game-card/game-card-root';
 import { GameHand } from '../game-hand';
+import { useOptionalGameTableSeat } from '../game-table/game-table';
 
 export type GameSeatTurnMilestone = 'half' | 'quarter' | 'extended' | 'ending';
 export interface GameSeatTurn {
@@ -130,10 +131,11 @@ function TurnRing({ turn, onMilestone, ...props }: { turn: GameSeatTurn; onMiles
 export function GameSeat({ name, avatar, badges, points, hand, handCount, chat, turn, onTurnMilestone,
   turned = turn !== undefined, offline = false, dimmed = false, slotProps, ...props }: GameSeatProps) {
   const nameId = useId();
+  const seat = useOptionalGameTableSeat();
   const labelId = slotProps?.name?.id ?? nameId;
   const externalLabel = slotProps?.root?.['aria-labelledby'] ?? props['aria-labelledby'];
   const handContent = hand !== undefined ? hand : handCount !== undefined
-    ? <GameHand.Hidden count={handCount} label="" aria-hidden="true" /> : undefined;
+    ? <GameHand.Hidden playerKey={seat?.player?.key} count={handCount} label="" aria-hidden="true" /> : undefined;
   return <CardRoot {...props} marker="game-seat" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' '),
       'data-turned': String(turned), 'data-offline': String(offline), 'data-dimmed': String(dimmed) }}>

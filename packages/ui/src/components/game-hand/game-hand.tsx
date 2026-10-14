@@ -25,6 +25,7 @@ export interface GameHandCard {
 }
 
 export interface GameHandProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
+  'data-ui'?: string;
   cards: readonly GameHandCard[];
   size?: GameCardSize;
   /** Selected card id. `null` clears selection. */
@@ -101,7 +102,7 @@ export function GameHand({
   return (
     <WithSx className={className} styles={[rootStyle, gameCardSizeStyles[size]]} sx={sx}>
       {(rootClass) => (
-        <div {...rest} ref={ref} data-ui="game-hand" className={rootClass}>
+        <div {...rest} ref={ref} data-ui={[...new Set(`game-hand ${rest['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ')} className={rootClass}>
           <div data-ui="game-hand-fan" className={slotProps?.fan?.className} css={[fanStyle, slotProps?.fan?.css]}>
             {cards.map((card, index) => {
               const angle = rotations[index] ?? 0;
@@ -132,6 +133,7 @@ export function GameHand({
 GameHand.displayName = 'GameHand';
 
 export interface GameHandHiddenProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  'data-ui'?: string;
   /** Number of backs, clamped to 0–3 and rounded down. */
   count: number;
   label: string;
@@ -179,7 +181,7 @@ function GameHandHidden({
   return (
     <WithSx className={className} styles={[hiddenStyle, gameCardSizeStyles[size]]} sx={sx}>
       {(rootClass) => (
-        <div {...rest} ref={ref} data-ui="game-hand-hidden" role="img" aria-label={label} className={rootClass}
+        <div {...rest} ref={ref} data-ui={[...new Set(`game-hand-hidden ${rest['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ')} role="img" aria-label={label} className={rootClass}
           style={{ transform: anchor ? `translate(${anchor.x}px, ${anchor.y}px) rotate(${anchor.rotateDeg}deg)` : undefined,
             transformOrigin: anchor?.origin, ...style }}>
           {layout.cards.map((card, index) => (
