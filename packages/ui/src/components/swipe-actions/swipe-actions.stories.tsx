@@ -2,15 +2,19 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, fireEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import {
   SwipeActions,
   type SwipeAction,
-  type SwipeActionsProps,
+  type SwipeActionsCompoundProps,
+  type SwipeActionsEasyProps,
+  type SwipeActionsRecord,
   type SwipeActionsValue,
 } from './index';
 
 const select = fn();
+const easyRowStyle = css({ paddingBlock: vars.space[2] });
 const change = fn();
 const leading: readonly SwipeAction[] = [
   {
@@ -34,12 +38,17 @@ const trailing: readonly SwipeAction[] = [
     onSelect: () => select('delete'),
   },
 ];
-const snippet = `<SwipeActions aria-label="Inbox">
-  <SwipeActions.Row id="invoice" label="Invoice" actionsLabel="Actions for Invoice"
-    trailing={[{ id: 'archive', label: 'Archive', onSelect: archive }]}>
-    Invoice
-  </SwipeActions.Row>
-</SwipeActions>`;
+const invoiceRow: SwipeActionsRecord = {
+  id: 'invoice',
+  label: 'Invoice',
+  actionsLabel: 'Actions for Invoice',
+  content: 'Invoice from Morgan',
+  trailing,
+};
+const snippet = `<SwipeActions aria-label="Inbox" rows={[
+  { id: 'invoice', label: 'Invoice', actionsLabel: 'Actions for Invoice', content: 'Invoice',
+    trailing: [{ id: 'archive', label: 'Archive', onSelect: archive }] },
+]} />`;
 const meta = {
   title: 'Actions/SwipeActions',
   component: SwipeActions,
@@ -52,7 +61,8 @@ const meta = {
         component:
           'Swipe a row to reveal actions, or open its actions menu.',
       },
-      usage: `- Use keyed Row children directly inside SwipeActions. Paginate long lists.
+      usage: `- Pass rows with stable id, label, actionsLabel, content, and leading/trailing action arrays. Use compound Row children for custom composition. Paginate long lists.
+- Customize generated rows through slotProps.row, including its existing interior slotProps. slotProps.root configures the list.
 - Handle removal, confirmation, errors and undo in your app. Actions do not delete rows.
 - The actions button offers the same commands as swiping.
 
@@ -85,9 +95,82 @@ const meta = {
       </SwipeActions.Row>
     </SwipeActions>
   ),
-} satisfies Meta<typeof SwipeActions>;
+} satisfies Meta<SwipeActionsCompoundProps>;
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<SwipeActionsCompoundProps>;
+export const EasyMode: StoryObj<SwipeActionsEasyProps> = {
+  args: { 'aria-label': 'Inbox', rows: [invoiceRow] },
+  render: (args) => <SwipeActions {...args} />,
+  parameters: { docs: { source: { code: '<SwipeActions aria-label="Inbox" rows={[{ id: "invoice", label: "Invoice", actionsLabel: "Actions for Invoice", content: "Invoice from Morgan", trailing: [{ id: "archive", label: "Archive", onSelect: archive }] }]} />' } } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'Actions for Invoice' });
+    trigger.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    const page = within(canvasElement.ownerDocument.body);
+    const first = await page.findByRole('menuitem', { name: 'Archive' });
+    await waitFor(() => expect(first).toHaveFocus());
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(trigger).toHaveFocus());
+  },
+};
+
+export const EasyCustomization: Story = {
+  render: () => (
+    <SwipeActions
+      aria-label="Inbox"
+      className="incoming-list"
+      rows={[{ ...invoiceRow, disabled: true }]}
+      slotProps={{
+        root: { className: 'inbox-list' },
+        row: { sx: easyRowStyle, slotProps: { body: { className: 'invoice-body' } } },
+      }}
+    />
+  ),
+  parameters: { docs: { source: { code: '<SwipeActions aria-label="Inbox" rows={rows} slotProps={{ root: { className: "inbox-list" }, row: { sx: css({ paddingBlock: vars.space[2] }), slotProps: { body: { className: "invoice-body" } } } }} />' } } },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getByRole('list', { name: 'Inbox' })).toHaveClass('incoming-list', 'inbox-list');
+    await expect(canvasElement.querySelector('[data-ui="swipe-actions-body"]')).toHaveClass('invoice-body');
+    await expect(canvas.getByRole('button', { name: 'Actions for Invoice' })).toBeDisabled();
+  },
+};
+
+export const EasyControlled: Story = {
+  args: { onValueChange: fn() },
+  render: (args) => (
+    <SwipeActions
+      value={null}
+      onValueChange={args.onValueChange}
+      aria-label="Inbox"
+      rows={[{
+        ...invoiceRow,
+        trailing: [{ id: 'disabled', label: 'Unavailable', disabled: true, onSelect: select }, ...trailing],
+      }]}
+    />
+  ),
+  parameters: { docs: { source: { code: '<SwipeActions value={value} onValueChange={setValue} aria-label="Inbox" rows={rows} />' } } },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const row = rowOf(canvasElement);
+    const rail = row.querySelector<HTMLElement>('[data-ui="swipe-actions-rail"][data-side="trailing"]')!;
+    const travel = -rail.getBoundingClientRect().width * 0.75;
+    const gesture = pointer(row);
+    try {
+      gesture.fire('pointerdown', 0);
+      gesture.fire('pointermove', travel);
+      gesture.fire('pointerup', travel);
+    } finally {
+      gesture.restore();
+    }
+    await expect(args.onValueChange).toHaveBeenCalledWith({ id: 'invoice', side: 'trailing' });
+    await near(row, 0);
+    const trigger = canvas.getByRole('button', { name: 'Actions for Invoice' });
+    trigger.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    const first = await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: 'Archive' });
+    await waitFor(() => expect(first).toHaveFocus());
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(trigger).toHaveFocus());
+  },
+};
 const rowOf = (canvas: HTMLElement) =>
   canvas.querySelector<HTMLElement>('[data-ui="swipe-actions-row"]')!;
 const offset = (row: HTMLElement) =>
@@ -153,6 +236,13 @@ async function reveal(row: HTMLElement, dx: number) {
 }
 
 export const Default: Story = {
+  name: 'Compound rows',
+  parameters: { docs: { source: { code: `<SwipeActions aria-label="Inbox">
+  <SwipeActions.Row id="invoice" label="Invoice" actionsLabel="Actions for Invoice"
+    trailing={[{ id: 'archive', label: 'Archive', onSelect: archive }]}>
+    Invoice from Morgan
+  </SwipeActions.Row>
+</SwipeActions>` } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('list', { name: 'Inbox' })).toBeInTheDocument();
     const trigger = canvas.getByRole('button', { name: 'Actions for Invoice' });
@@ -454,7 +544,7 @@ export const DisabledRow: Story = {
     </SwipeActions>
   ),
 };
-function Controlled(props: SwipeActionsProps) {
+function Controlled(props: SwipeActionsCompoundProps) {
   const [value, setValue] = useState<SwipeActionsValue>(null);
   return (
     <SwipeActions
@@ -749,7 +839,7 @@ export const FalsyAndAria: Story = {
     ).toHaveLength(1);
   },
 };
-function RemovalExample(props: SwipeActionsProps) {
+function RemovalExample(props: SwipeActionsCompoundProps) {
   const [ids, setIds] = useState(['first', 'second', 'third']);
   return (
     <>
@@ -906,7 +996,7 @@ export const FlickAndClickSuppression: Story = {
     }
   },
 };
-function ExternalStateExample(props: SwipeActionsProps) {
+function ExternalStateExample(props: SwipeActionsCompoundProps) {
   const [value, setValue] = useState<SwipeActionsValue>({ id: 'invoice', side: 'leading' });
   return (
     <>

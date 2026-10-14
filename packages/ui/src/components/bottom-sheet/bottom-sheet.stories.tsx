@@ -11,7 +11,15 @@ import { css } from '../../styling/css';
 import { WithSx } from '../../styling/sx';
 import { ThemeRoot } from '../theme-root';
 import { Popover } from '../popover';
-import { BottomSheet, type BottomSheetContentProps, type BottomSheetPanelProps, type BottomSheetProps } from './index';
+import {
+  BottomSheet,
+  type BottomSheetCompoundProps,
+  type BottomSheetContentProps,
+  type BottomSheetEasyProps,
+  type BottomSheetPanelProps,
+  type BottomSheetProps,
+  type BottomSheetSlotProps,
+} from './index';
 
 const TITLE = 'Trip details';
 const TRIGGER = 'Open trip';
@@ -20,17 +28,13 @@ const FIXTURE_BUTTON = {
   minWidth: '24px',
   padding: '4px 10px',
 } as const;
-const USAGE = `<BottomSheet detents={[0.4, 0.9]}>
-  <BottomSheet.Trigger>Trip details</BottomSheet.Trigger>
-  <BottomSheet.Content><BottomSheet.Panel>
-    <BottomSheet.Header>
-      <BottomSheet.Handle aria-label="Resize sheet" />
-      <BottomSheet.Title>Trip</BottomSheet.Title>
-      <BottomSheet.Close>Close</BottomSheet.Close>
-    </BottomSheet.Header>
-    <BottomSheet.Body>Departure details</BottomSheet.Body>
-  </BottomSheet.Panel></BottomSheet.Content>
-</BottomSheet>`;
+const USAGE = `<BottomSheet
+  triggerLabel="Open trip"
+  title="Trip details"
+  description="Departure and arrival information."
+  content={<TripDetails />}
+  closeLabel="Close"
+/>`;
 const meta = {
   title: 'Surfaces/BottomSheet',
   component: BottomSheet,
@@ -43,7 +47,10 @@ const meta = {
         component:
           'Open content from the bottom of the screen. Drag the handle or use the keyboard to change its height.',
       },
-      usage: `- The sheet is always modal. Its native dialog contains focus and blocks the background, even at peek height.
+      usage: `### Composition
+Pass triggerLabel, title, content and closeLabel for a standard bottom sheet; description is optional. Do not combine these props with children. Use slotProps.trigger/content/panel/header/handle/title/description/close/body for part props. For custom hierarchy, keep the compound parts.
+
+- The sheet is always modal. Its native dialog contains focus and blocks the background, even at peek height.
 - Detents are stable, ascending fractions. \`value/defaultValue/onValueChange\` manages their numeric index independently of open state. Remount to change detent values.
 - The panel rises to its detent on open and slides down before the dialog closes. Reduced motion skips spring travel on open, close, and accepted height changes.
 - Supply translated Handle/Close names. \`getValueText\` and \`locale\` customize height text; the default uses Intl percentages.
@@ -63,7 +70,7 @@ Root slot props win ordinary conflicts; className combines and style shallow-mer
   },
 } satisfies Meta<typeof BottomSheet>;
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<BottomSheetCompoundProps>;
 
 const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, borderRadius: vars.radius.full, boxShadow: 'none' });
 function SheetPaper({ className, ...props }: SurfacePartProps) {
@@ -111,7 +118,7 @@ export const CardAdapter = rootAdapterStory(Card);
 export const IndependentMaterialAdapter = rootAdapterStory(SheetPaper);
 export const SurfaceAdapterLight: Story = { ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
 
-function ContrastPortalFixture({ theme = 'light', ...props }: BottomSheetProps & { theme?: 'dark' | 'light' }) {
+function ContrastPortalFixture({ theme = 'light', ...props }: BottomSheetCompoundProps & { theme?: 'dark' | 'light' }) {
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   return <ThemeRoot theme={theme} portalContainer={panel}>
     <BottomSheet {...props} defaultOpen>
@@ -261,7 +268,65 @@ function touch(
   return event;
 }
 
-export const Default: Story = {
+export const Default: StoryObj<BottomSheetEasyProps> = {
+  name: 'Easy mode',
+  args: {
+    triggerLabel: TRIGGER,
+    title: TITLE,
+    description: 'Departure and arrival information.',
+    content: (
+      <>
+        <p>Train 42 · Platform 3</p>
+        <button style={FIXTURE_BUTTON}>Save trip</button>
+      </>
+    ),
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `<BottomSheet
+  triggerLabel="Open trip"
+  title="Trip details"
+  description="Departure and arrival information."
+  content={<TripDetails />}
+  closeLabel="Close"
+/>`,
+      },
+    },
+  },
+  render: (args) => <BottomSheet {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: TRIGGER });
+    await userEvent.tab();
+    await expect(trigger).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    const dialog = dialogIn(canvasElement);
+    await expect(dialog.open).toBe(true);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+    await settled(canvasElement, 0.45);
+
+    await expect(dialog).toHaveAccessibleName(TITLE);
+    await expect(dialog).toHaveAccessibleDescription('Departure and arrival information.');
+    const handle = canvas.getByRole('button', { name: TITLE });
+    await expect(handle).toBeInTheDocument();
+
+    const close = canvas.getByRole('button', { name: 'Close' });
+    await userEvent.click(close);
+    await waitFor(async () => {
+      await expect(dialog.open).toBe(false);
+    });
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+  },
+};
+
+export const Compound: Story = {
+  name: 'Compound',
   render,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: TRIGGER }));
@@ -280,6 +345,235 @@ export const Default: Story = {
     );
   },
 };
+
+export const EasyModeKeyboard: StoryObj<BottomSheetEasyProps> = {
+  name: 'Easy mode keyboard',
+  args: {
+    triggerLabel: TRIGGER,
+    title: TITLE,
+    description: 'Departure and arrival information.',
+    content: (
+      <>
+        <p>Train 42 · Platform 3</p>
+        <button style={FIXTURE_BUTTON}>Save trip</button>
+      </>
+    ),
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+  },
+  render: (args) => <BottomSheet {...args} />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: TRIGGER });
+    await userEvent.tab();
+    await expect(trigger).toHaveFocus();
+    await userEvent.keyboard(' ');
+    const dialog = dialogIn(canvasElement);
+    await expect(dialog.open).toBe(true);
+    await settled(canvasElement, 0.45);
+
+    const handle = canvas.getByRole('button', { name: TITLE });
+    await userEvent.click(handle);
+    await userEvent.keyboard('{ArrowUp}');
+    await settled(canvasElement, 0.92);
+    await expect(handle).toHaveAttribute('aria-expanded', 'true');
+
+    await userEvent.keyboard('{ArrowDown}');
+    await settled(canvasElement, 0.45);
+    await expect(handle).toHaveAttribute('aria-expanded', 'false');
+
+    await userEvent.keyboard('{Escape}');
+    await waitFor(async () => {
+      await expect(dialog.open).toBe(false);
+    });
+    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+  },
+};
+
+function ControlledEasyBottomSheet(props: BottomSheetEasyProps) {
+  const [open, setOpen] = useState(false);
+  return (
+    <BottomSheet
+      {...props}
+      open={open}
+      onOpenChange={(next) => {
+        props.onOpenChange?.(next);
+        setOpen(next);
+      }}
+    />
+  );
+}
+ControlledEasyBottomSheet.displayName = 'ControlledEasyBottomSheet';
+
+export const EasyModeControlled: StoryObj<BottomSheetEasyProps> = {
+  name: 'Easy mode controlled',
+  args: {
+    triggerLabel: TRIGGER,
+    title: TITLE,
+    description: 'Departure and arrival information.',
+    content: (
+      <>
+        <p>Train 42 · Platform 3</p>
+        <button style={FIXTURE_BUTTON}>Save trip</button>
+      </>
+    ),
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+  },
+  render: (args) => <ControlledEasyBottomSheet {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: TRIGGER });
+    await userEvent.click(trigger);
+    const dialog = dialogIn(canvasElement);
+    await expect(dialog.open).toBe(true);
+    await expect(args.onOpenChange).toHaveBeenCalledWith(true);
+    await settled(canvasElement, 0.45);
+
+    const close = canvas.getByRole('button', { name: 'Close' });
+    await userEvent.click(close);
+    await waitFor(async () => {
+      await expect(dialog.open).toBe(false);
+    });
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+  },
+};
+
+export const EasyModeDisabled: StoryObj<BottomSheetEasyProps> = {
+  name: 'Easy mode disabled',
+  args: {
+    triggerLabel: TRIGGER,
+    title: TITLE,
+    description: 'Departure and arrival information.',
+    content: (
+      <>
+        <p>Train 42 · Platform 3</p>
+        <button style={FIXTURE_BUTTON}>Save trip</button>
+      </>
+    ),
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+    slotProps: {
+      trigger: {
+        disabled: true,
+      },
+    },
+  },
+  render: (args) => <BottomSheet {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: TRIGGER });
+    await expect(trigger).toBeDisabled();
+    await userEvent.click(trigger);
+    await expect(dialogIn(canvasElement).open).toBe(false);
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+
+export const EasyModeCustomizationSlotProps: StoryObj<BottomSheetEasyProps> = {
+  name: 'Easy mode customization slotProps',
+  args: {
+    triggerLabel: TRIGGER,
+    title: TITLE,
+    description: 'Departure and arrival information.',
+    content: (
+      <>
+        <p>Train 42 · Platform 3</p>
+        <button style={FIXTURE_BUTTON}>Save trip</button>
+      </>
+    ),
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+    slotProps: {
+      trigger: { className: 'custom-trigger', 'data-testid': 'custom-trigger' },
+      content: { className: 'custom-content', 'data-testid': 'custom-content' },
+      panel: {
+        slots: { root: SheetPaper },
+        className: 'custom-panel',
+        'data-testid': 'custom-panel',
+      },
+      header: { className: 'custom-header', 'data-testid': 'custom-header' },
+      handle: { className: 'custom-handle', 'data-testid': 'custom-handle', 'aria-label': 'Adjust height' },
+      title: { className: 'custom-title', 'data-testid': 'custom-title' },
+      description: { className: 'custom-description', 'data-testid': 'custom-description' },
+      close: { className: 'custom-close', 'data-testid': 'custom-close' },
+      body: { className: 'custom-body', 'data-testid': 'custom-body' },
+    },
+  },
+  render: (args) => <BottomSheet {...args} />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByTestId('custom-trigger');
+    await expect(trigger).toHaveClass('custom-trigger');
+    await userEvent.click(trigger);
+    const dialog = dialogIn(canvasElement);
+    await expect(dialog.open).toBe(true);
+    await settled(canvasElement, 0.45);
+    await expect(dialog).toHaveClass('custom-content');
+    await expect(dialog).toHaveAttribute('data-testid', 'custom-content');
+
+    const panel = canvasElement.querySelector<HTMLElement>('[data-testid="custom-panel"]')!;
+    await expect(panel).toHaveClass('custom-panel');
+    await expect(getComputedStyle(panel).borderTopStyle).toBe('dashed');
+
+    const header = canvasElement.querySelector<HTMLElement>('[data-testid="custom-header"]')!;
+    await expect(header).toHaveClass('custom-header');
+
+    const handle = canvas.getByTestId('custom-handle');
+    await expect(handle).toHaveClass('custom-handle');
+    await expect(handle).toHaveAttribute('aria-label', 'Adjust height');
+
+    const title = canvas.getByRole('heading', { name: TITLE });
+    await expect(title).toHaveClass('custom-title');
+    await expect(title).toHaveAttribute('data-testid', 'custom-title');
+
+    const desc = canvasElement.querySelector<HTMLElement>('[data-testid="custom-description"]')!;
+    await expect(desc).toHaveClass('custom-description');
+
+    const close = canvas.getByRole('button', { name: 'Close' });
+    await expect(close).toHaveClass('custom-close');
+    await expect(close).toHaveAttribute('data-testid', 'custom-close');
+
+    const body = canvasElement.querySelector<HTMLElement>('[data-testid="custom-body"]')!;
+    await expect(body).toHaveClass('custom-body');
+
+    await userEvent.click(close);
+    await waitFor(async () => {
+      await expect(dialog.open).toBe(false);
+    });
+    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+  },
+};
+
+export const EasyModeWithoutDescription: StoryObj<BottomSheetEasyProps> = {
+  name: 'Easy mode without description',
+  args: {
+    triggerLabel: TRIGGER,
+    title: TITLE,
+    description: undefined,
+    content: (
+      <>
+        <p>Train 42 · Platform 3</p>
+      </>
+    ),
+    closeLabel: 'Close',
+    onOpenChange: fn(),
+  },
+  render: (args) => <BottomSheet {...args} defaultOpen />,
+  play: async ({ canvas, canvasElement }) => {
+    const dialog = dialogIn(canvasElement);
+    await settled(canvasElement, 0.45);
+    await expect(dialog).not.toHaveAttribute('aria-describedby');
+    await expect(canvasElement.querySelector('[data-ui="bottom-sheet-description"]')).toBeNull();
+  },
+};
+
+function easyModeTypeContracts() {
+  // @ts-expect-error Presentation mode rejects compound children.
+  <BottomSheet triggerLabel="Open" title="Trip" content="Trip" closeLabel="Close">Compound</BottomSheet>;
+  // @ts-expect-error Presentation mode requires title and closeLabel.
+  <BottomSheet triggerLabel="Open" content="Trip" />;
+  // @ts-expect-error Named presentation props cannot leak into compound mode.
+  <BottomSheet title="Trip"><BottomSheet.Content /></BottomSheet>;
+}
+void easyModeTypeContracts;
 interface SheetFrame {
   open: boolean;
   top: number;
@@ -469,7 +763,7 @@ export const NoDescription: Story = {
   },
 };
 
-function ControlledExample(args: BottomSheetProps) {
+function ControlledExample(args: BottomSheetCompoundProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(0);
   return (
@@ -747,7 +1041,7 @@ export const DynamicViewport: Story = {
   },
 };
 
-function NativeCloseExample({ mode, ...args }: BottomSheetProps & { mode: 'form' | 'ref' }) {
+function NativeCloseExample({ mode, ...args }: BottomSheetCompoundProps & { mode: 'form' | 'ref' }) {
   const ref = useRef<HTMLDialogElement>(null);
   return (
     <BottomSheet {...args}>
@@ -769,7 +1063,7 @@ function NativeCloseExample({ mode, ...args }: BottomSheetProps & { mode: 'form'
 // `close` event, so wait for the notification itself, then assert its exact count.
 async function nativeClosed(
   canvasElement: HTMLElement,
-  onOpenChange: BottomSheetProps['onOpenChange'],
+  onOpenChange: BottomSheetCompoundProps['onOpenChange'],
   calls: number,
 ) {
   await waitFor(async () => {
@@ -812,7 +1106,7 @@ export const CancelVeto: Story = {
     await expect(args.onOpenChange).not.toHaveBeenCalled();
   },
 };
-function UnmountExample(args: BottomSheetProps) {
+function UnmountExample(args: BottomSheetCompoundProps) {
   const [mounted, setMounted] = useState(true);
   return (
     <BottomSheet {...args}>
@@ -883,7 +1177,7 @@ export const ExternalARIA: Story = {
     );
   },
 };
-function FalsyExample(args: BottomSheetProps) {
+function FalsyExample(args: BottomSheetCompoundProps) {
   const [content, setContent] = useState<ReactNode>(false);
   return (
     <BottomSheet {...args}>
@@ -935,7 +1229,7 @@ export const FalsyContent: Story = {
   },
 };
 
-function NestedExample(args: BottomSheetProps) {
+function NestedExample(args: BottomSheetCompoundProps) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
     <BottomSheet {...args}>
@@ -1064,7 +1358,7 @@ export const StylingAndRefs: Story = {
 };
 const contentRefSpy = fn();
 
-function ExternalValueExample(args: BottomSheetProps) {
+function ExternalValueExample(args: BottomSheetCompoundProps) {
   const [value, setValue] = useState(0);
   return (
     <BottomSheet {...args} value={value} detents={[0.45, 0.92]}>

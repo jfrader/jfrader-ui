@@ -9,7 +9,8 @@ import { Button } from '../button';
 import { ThemeRoot } from '../theme-root';
 import {
   UserMenu,
-  type UserMenuProps,
+  type UserMenuEasyProps,
+  type UserMenuBaseProps,
   type UserMenuStatus,
   type UserMenuTheme,
   type UserMenuUser,
@@ -50,7 +51,7 @@ const frameStyle = {
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ marginInlineStart: vars.space[2] });
 
-interface StoryArgs extends Omit<UserMenuProps, 'children'> {
+interface StoryArgs extends UserMenuBaseProps {
   variant: UserMenuVariant;
   showName?: boolean;
   onProfile: () => void;
@@ -248,13 +249,254 @@ const meta = {
     ),
   ],
   render: (args) => <AccountMenu {...args} />,
-} satisfies Meta<StoryArgs>;
+} satisfies Omit<Meta<StoryArgs>, 'component'> & { component: typeof UserMenu };
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<Omit<typeof meta, 'component'>>;
 
-export const Default: Story = {
+function easyModeTypeContracts() {
+  const messages = { trigger: 'Account', close: 'Close', signOut: 'Sign out', pending: 'Signing out', error: 'Try again' };
+  // @ts-expect-error Easy mode rejects compound children.
+  <UserMenu user={USER} messages={messages}>Children</UserMenu>;
+  // @ts-expect-error Easy mode requires messages.
+  <UserMenu user={USER} items={[]} />;
+  // @ts-expect-error Easy mode requires user.
+  <UserMenu messages={messages} />;
+}
+void easyModeTypeContracts;
+
+export const Default: StoryObj<UserMenuEasyProps> = {
+  name: 'Easy mode',
+  args: {
+    user: USER,
+    variant: 'menu',
+    messages: {
+      trigger: TRIGGER_LABEL,
+      close: CLOSE_LABEL,
+      signOut: 'Sign out',
+      pending: PENDING_LABEL,
+      error: ERROR_MESSAGE,
+    },
+    items: [
+      { type: 'item', label: 'Profile', icon: <ProfileIcon />, onSelect: fn() },
+      { type: 'item', label: 'Settings', keys: ['Ctrl', ','], onSelect: fn() },
+      { type: 'item', label: 'Billing', disabled: true },
+    ],
+    theme: { labels: THEME_LABELS, onValueChange: fn() },
+    status: { labels: STATUS_LABELS, onValueChange: fn() },
+    onSignOut: fn(),
+    onOpenChange: fn(),
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `<UserMenu
+  user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}
+  messages={{
+    trigger: 'Account menu, Ada Lovelace',
+    close: 'Close account menu',
+    signOut: 'Sign out',
+    pending: 'Signing out',
+    error: 'Sign out failed. Try again.',
+  }}
+  items={[
+    { label: 'Profile', onSelect: openProfile },
+    { label: 'Settings', keys: ['Ctrl', ','], onSelect: openSettings },
+    { label: 'Billing', disabled: true },
+  ]}
+  theme={{ labels: themeLabels, onValueChange: setTheme }}
+  status={{ labels: statusLabels, onValueChange: setStatus }}
+  onSignOut={signOut}
+/>`,
+      },
+    },
+  },
+  render: (args) => (
+    <div style={rowStyle}>
+      <UserMenu {...args} />
+      <Button>After</Button>
+    </div>
+  ),
+  play: async ({ args, canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveAttribute('data-ui', 'user-menu-trigger');
+    await expect(trigger).toHaveAttribute('type', 'button');
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await userEvent.click(trigger);
+    const menu = await findMenu(canvasElement);
+    const shell = shellOf(canvasElement)!;
+    await expect(canvasElement.contains(shell)).toBe(false);
+    await expect(shell).toHaveAttribute('data-presentation', 'menu');
+    await expect(menu).toHaveAttribute('data-ui', 'user-menu-list');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Identity
+    const identity = shell.querySelector('[data-ui="user-menu-identity"]')!;
+    await expect(identity).toHaveTextContent(`${USER.name}${USER.email}Pro`);
+
+    await expectFocused(canvasElement, 'Profile');
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Profile' }));
+    await expect(args.items?.[0]?.onSelect).toHaveBeenCalledTimes(1);
+    await expectClosed(canvasElement);
+    await expectActive(canvasElement, trigger);
+  },
+};
+
+export const EasyKeyboard: StoryObj<UserMenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode keyboard',
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await userEvent.tab();
+    await expectActive(canvasElement, trigger);
+    await userEvent.keyboard('{Enter}');
+    const menu = await findMenu(canvasElement);
+    await expect(menu).toHaveAttribute('data-ui', 'user-menu-list');
+    await expectFocused(canvasElement, 'Profile');
+
+    await userEvent.keyboard('{ArrowDown}');
+    await expectFocused(canvasElement, 'Settings');
+    // Skips disabled 'Billing' and moves to Light radio
+    await userEvent.keyboard('{ArrowDown}');
+    await expectFocused(canvasElement, 'Light', 'menuitemradio');
+
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expectActive(canvasElement, trigger);
+
+    await userEvent.tab();
+    await expectActive(canvasElement, getAfter(canvasElement));
+  },
+};
+
+export const EasyDismissal: StoryObj<UserMenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode dismissal',
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await userEvent.click(trigger);
+    await findMenu(canvasElement);
+
+    await userEvent.click(getAfter(canvasElement));
+    await expectClosed(canvasElement);
+  },
+};
+
+export const EasyControlled: StoryObj<UserMenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode controlled',
+  args: {
+    ...Default.args,
+    open: true,
+  },
+  play: async ({ canvasElement, args, userEvent }) => {
+    const menu = await findMenu(canvasElement);
+    await expectFocused(canvasElement, 'Profile');
+
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false);
+    await expect(bodyOf(canvasElement).getByRole('menu', { name: TRIGGER_LABEL })).toBe(menu);
+    await expectFocused(canvasElement, 'Profile');
+  },
+};
+
+export const EasyDisabled: StoryObj<UserMenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode disabled',
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await userEvent.click(trigger);
+    const menu = await findMenu(canvasElement);
+
+    const disabledItem = within(menu).getByRole('menuitem', { name: 'Billing' });
+    await expect(disabledItem).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(disabledItem);
+    await expect(bodyOf(canvasElement).getByRole('menu', { name: TRIGGER_LABEL })).toBe(menu);
+
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+  },
+};
+
+export const EasyAsyncSignOut: StoryObj<UserMenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode async sign out',
+  play: async ({ args, canvasElement, userEvent }) => {
+    const pending = deferred();
+    (args.onSignOut as Mock).mockImplementation(() => pending.promise);
+    const trigger = getTrigger(canvasElement);
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowUp}');
+    await expectFocused(canvasElement, 'Sign out');
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onSignOut).toHaveBeenCalledTimes(1);
+
+    const busy = await bodyOf(canvasElement).findByRole('menuitem', { name: PENDING_LABEL });
+    await expect(busy).toHaveAttribute('aria-busy', 'true');
+    await expect(busy).toHaveAttribute('aria-disabled', 'true');
+
+    pending.resolve();
+    await expectClosed(canvasElement);
+    await expectActive(canvasElement, trigger);
+  },
+};
+
+export const CustomSlots: StoryObj<UserMenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode custom slotProps',
+  args: {
+    ...Default.args,
+    slotProps: {
+      trigger: { className: 'custom-trigger' },
+      content: { className: 'custom-content' },
+      identity: { className: 'custom-identity' },
+      item: { className: 'custom-item' },
+      separator: { className: 'custom-separator' },
+      themeGroup: { className: 'custom-theme-group' },
+      statusGroup: { className: 'custom-status-group' },
+      signOut: { className: 'custom-sign-out' },
+    },
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = getTrigger(canvasElement);
+    await expect(trigger).toHaveClass('custom-trigger');
+
+    await userEvent.click(trigger);
+    const menu = await findMenu(canvasElement);
+    const shell = shellOf(canvasElement)!;
+    await expect(shell).toHaveClass('custom-content');
+
+    const identity = shell.querySelector('[data-ui="user-menu-identity"]')!;
+    await expect(identity).toHaveClass('custom-identity');
+
+    const items = within(menu).getAllByRole('menuitem');
+    await expect(items[0]).toHaveClass('custom-item');
+    await expect(items[1]).toHaveClass('custom-item');
+    await expect(items[2]).toHaveClass('custom-item');
+
+    const signOut = within(menu).getByRole('menuitem', { name: 'Sign out' });
+    await expect(signOut).toHaveClass('custom-sign-out');
+
+    for (const separator of within(shell).getAllByRole('separator')) {
+      await expect(separator).toHaveClass('custom-separator');
+    }
+
+    const themeGroup = shell.querySelector('[data-ui="user-menu-theme-group"]');
+    await expect(themeGroup).toHaveClass('custom-theme-group');
+
+    const statusGroup = shell.querySelector('[data-ui="user-menu-status-group"]');
+    await expect(statusGroup).toHaveClass('custom-status-group');
+
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+  },
+};
+
+export const Compound: Story = {
   parameters: {
     docs: {
       source: {
@@ -475,8 +717,8 @@ export const PhotoFallback: Story = {
 
 export const GraphemeInitials: Story = {
   args: { user: { name: '👩‍💻 Élodie', email: 'elodie@example.com' } },
-  render: ({ user, ...args }) => (
-    <UserMenu {...args} user={user}>
+  render: ({ user, open, defaultOpen, onOpenChange }) => (
+    <UserMenu user={user} open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
       <UserMenu.Trigger aria-label="Account menu, Élodie" />
       <UserMenu.Content variant="menu">
         <UserMenu.Item>Profile</UserMenu.Item>

@@ -5,10 +5,18 @@ import { expect, fireEvent, fn, waitFor, within, type Mock } from 'storybook/tes
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
 import { ThemeRoot } from '../theme-root';
-import { ContextMenu, type ContextMenuProps, type ContextMenuTargetProps } from './index';
+import {
+  ContextMenu,
+  type ContextMenuAction,
+  type ContextMenuCompoundProps,
+  type ContextMenuEasyProps,
+  type ContextMenuProps,
+  type ContextMenuTargetProps,
+} from './index';
 
 const TARGET = 'report.pdf actions';
 // Sub-pixel layout and fractional devicePixelRatios: geometry is compared with a tolerance.
@@ -65,7 +73,7 @@ const frameBoxStyle = {
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ marginInlineStart: vars.space[2] });
 
-interface StoryArgs extends ContextMenuProps {
+interface StoryArgs extends ContextMenuCompoundProps {
   onCopy: () => void;
   onRename: () => void;
   onDelete: () => void;
@@ -240,9 +248,210 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<StoryArgs>;
 
-export const Default: Story = {
+function easyModeTypeContracts() {
+  // @ts-expect-error Collection mode rejects compound children.
+  <ContextMenu targetLabel="Actions" items={[]} content="Box">Compound</ContextMenu>;
+  // @ts-expect-error Collection mode requires targetLabel.
+  <ContextMenu items={[]} content="Box" />;
+  // @ts-expect-error Collection mode requires items.
+  <ContextMenu targetLabel="Actions" content="Box" />;
+  // @ts-expect-error Collection mode requires content.
+  <ContextMenu targetLabel="Actions" items={[]} />;
+  // @ts-expect-error Separators cannot carry selection callbacks.
+  <ContextMenu targetLabel="Actions" content="Box" items={[{ type: 'separator', onSelect: fn() }]} />;
+}
+void easyModeTypeContracts;
+
+export const Default: StoryObj<ContextMenuEasyProps> = {
+  name: 'Easy mode',
+  args: {
+    targetLabel: TARGET,
+    content: (
+      <>
+        <strong>report.pdf</strong>
+        <Button size="sm" variant="outline">
+          Open
+        </Button>
+      </>
+    ),
+    items: [
+      { type: 'item', label: 'Copy link', icon: <LinkIcon />, onSelect: fn() },
+      { type: 'item', label: 'Rename', onSelect: fn() },
+      { type: 'item', label: 'Move', disabled: true },
+      { type: 'separator' },
+      { type: 'item', label: 'Delete file', tone: 'danger', onSelect: fn() },
+    ],
+    onOpenChange: fn(),
+    slotProps: {
+      target: { style: targetBoxStyle },
+    },
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `const items: readonly ContextMenuAction[] = [
+  { type: 'item', label: 'Copy link', icon: <LinkIcon />, onSelect: copyLink },
+  { type: 'item', label: 'Rename', onSelect: rename },
+  { type: 'item', label: 'Move', disabled: true },
+  { type: 'separator' },
+  { type: 'item', label: 'Delete file', tone: 'danger', onSelect: removeFile },
+];
+
+<ContextMenu
+  targetLabel="report.pdf actions"
+  items={items}
+  content={<FilePreview />}
+/>`,
+      },
+    },
+  },
+  render: (args) => (
+    <div style={rowStyle}>
+      <ContextMenu {...args} />
+      <Button>After</Button>
+    </div>
+  ),
+  play: async ({ args, canvasElement, userEvent }) => {
+    const target = getTarget(canvasElement);
+    await expect(target).toHaveAttribute('data-ui', 'context-menu-target');
+    await expect(target).toHaveAttribute('tabindex', '0');
+    await expect(target).toHaveAttribute('aria-haspopup', 'menu');
+    await expect(target).toHaveAttribute('aria-expanded', 'false');
+
+    const box = target.getBoundingClientRect();
+    await contextClick(userEvent, target, box.left + 40, box.top + 20);
+    const menu = await findMenu(canvasElement);
+    await expect(menu).toHaveAttribute('data-ui', 'context-menu');
+    await expect(target).toHaveAttribute('aria-expanded', 'true');
+    await expect(within(menu).getAllByRole('menuitem')).toHaveLength(4);
+    await expectItemFocused(canvasElement, 'Copy link');
+
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Rename' }));
+    await expect(args.items[1]?.onSelect).toHaveBeenCalledTimes(1);
+    await expectClosed(canvasElement);
+    await expectActive(canvasElement, target);
+  },
+};
+
+export const EasyKeyboard: StoryObj<ContextMenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode keyboard',
+  play: async ({ canvasElement, userEvent }) => {
+    const target = getTarget(canvasElement);
+    await userEvent.tab();
+    await expectActive(canvasElement, target);
+    await userEvent.keyboard('{Shift>}{F10}{/Shift}');
+    const menu = await findMenu(canvasElement);
+    await settleMotion(menu);
+    await expect(menu).toBeVisible();
+    await expectItemFocused(canvasElement, 'Copy link');
+
+    await userEvent.keyboard('{ArrowDown}');
+    await expectItemFocused(canvasElement, 'Rename');
+    // Skips disabled 'Move'
+    await userEvent.keyboard('{ArrowDown}');
+    await expectItemFocused(canvasElement, 'Delete file');
+    await userEvent.keyboard('{ArrowUp}');
+    await expectItemFocused(canvasElement, 'Rename');
+
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expectActive(canvasElement, target);
+  },
+};
+
+export const EasyDismissal: StoryObj<ContextMenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode dismissal',
+  play: async ({ canvasElement, userEvent }) => {
+    const target = getTarget(canvasElement);
+    const box = target.getBoundingClientRect();
+    await contextClick(userEvent, target, box.left + 40, box.top + 20);
+    const menu = await findMenu(canvasElement);
+    await expect(menu).toHaveAttribute('data-ui', 'context-menu');
+    await expectItemFocused(canvasElement, 'Copy link');
+
+    await userEvent.click(getAfter(canvasElement));
+    await expectClosed(canvasElement);
+  },
+};
+
+export const EasyControlled: StoryObj<ContextMenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode controlled',
+  args: {
+    ...Default.args,
+    open: true,
+  },
+  play: async ({ canvasElement, args, userEvent }) => {
+    const target = getTarget(canvasElement);
+    const menu = await findMenu(canvasElement);
+    const box = target.getBoundingClientRect();
+    await waitFor(() => {
+      expect(near(menu.getBoundingClientRect().left, box.left)).toBe(true);
+      expect(near(menu.getBoundingClientRect().top, box.bottom + ANCHOR_GAP)).toBe(true);
+    });
+    await expectItemFocused(canvasElement, 'Copy link');
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false);
+    await expect(bodyOf(canvasElement).getByRole('menu')).toBe(menu);
+    await expectItemFocused(canvasElement, 'Copy link');
+  },
+};
+
+export const EasyDisabled: StoryObj<ContextMenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode disabled',
+  args: {
+    ...Default.args,
+    disabled: true,
+  },
+  play: async ({ canvasElement, args, userEvent }) => {
+    const target = getTarget(canvasElement);
+    const box = target.getBoundingClientRect();
+    await contextClick(userEvent, target, box.left + 40, box.top + 20);
+    await expect(bodyOf(canvasElement).queryByRole('menu', { name: TARGET })).toBeNull();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+
+export const CustomSlots: StoryObj<ContextMenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode custom slotProps',
+  args: {
+    ...Default.args,
+    slotProps: {
+      target: { className: 'custom-target', style: targetBoxStyle },
+      content: { className: 'custom-content' },
+      item: { className: 'custom-item' },
+      separator: { className: 'custom-separator' },
+    },
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const target = getTarget(canvasElement);
+    await expect(target).toHaveClass('custom-target');
+
+    const box = target.getBoundingClientRect();
+    await contextClick(userEvent, target, box.left + 40, box.top + 20);
+    const menu = await findMenu(canvasElement);
+    await expect(menu).toHaveClass('custom-content');
+
+    const items = within(menu).getAllByRole('menuitem');
+    for (const item of items) {
+      await expect(item).toHaveClass('custom-item');
+    }
+    const separator = within(menu).getByRole('separator');
+    await expect(separator).toHaveClass('custom-separator');
+
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+  },
+};
+
+export const Compound: Story = {
   parameters: {
     docs: {
       source: {
