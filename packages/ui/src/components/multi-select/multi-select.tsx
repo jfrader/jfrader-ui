@@ -80,15 +80,15 @@ export interface MultiSelectSlotProps {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
-  label?: Partial<MultiSelectLabelProps>;
-  description?: Partial<MultiSelectDescriptionProps>;
-  error?: Partial<MultiSelectErrorProps>;
-  trigger?: Partial<MultiSelectTriggerProps>;
-  value?: Partial<MultiSelectValueProps>;
-  clear?: Partial<MultiSelectClearProps>;
-  content?: Partial<MultiSelectContentProps>;
-  item?: Partial<Omit<MultiSelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>>;
-  empty?: Partial<MultiSelectEmptyProps>;
+  label?: Partial<MultiSelectLabelProps> & { css?: Interpolation<Theme> };
+  description?: Partial<MultiSelectDescriptionProps> & { css?: Interpolation<Theme> };
+  error?: Partial<MultiSelectErrorProps> & { css?: Interpolation<Theme> };
+  trigger?: Partial<MultiSelectTriggerProps> & { css?: Interpolation<Theme> };
+  value?: Partial<MultiSelectValueProps> & { css?: Interpolation<Theme> };
+  clear?: Partial<MultiSelectClearProps> & { css?: Interpolation<Theme> };
+  content?: Partial<MultiSelectContentProps> & { css?: Interpolation<Theme> };
+  item?: Partial<Omit<MultiSelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>> & { css?: Interpolation<Theme> };
+  empty?: Partial<MultiSelectEmptyProps> & { css?: Interpolation<Theme> };
 }
 export interface MultiSelectBaseProps {
   value?: readonly string[];
@@ -116,6 +116,7 @@ export interface MultiSelectCompoundProps extends MultiSelectBaseProps {
   clearable?: never;
   empty?: never;
   slots?: never;
+  component?: never;
   slotProps?: never;
 }
 export interface MultiSelectEasyProps extends MultiSelectBaseProps {
@@ -130,6 +131,7 @@ export interface MultiSelectEasyProps extends MultiSelectBaseProps {
   clearable?: boolean;
   empty?: ReactNode;
   slots?: MultiSelectSlots;
+  component?: MultiSelectSlots['root'];
   slotProps?: MultiSelectSlotProps;
 }
 export type MultiSelectProps = MultiSelectCompoundProps | MultiSelectEasyProps;
@@ -482,6 +484,7 @@ function MultiSelectOverlay(props: MultiSelectProps) {
       clearable,
       empty,
       slots,
+      component,
       slotProps,
     } = props;
     const LabelPart = slots?.label ?? MultiSelectLabel;
@@ -493,7 +496,7 @@ function MultiSelectOverlay(props: MultiSelectProps) {
     const EmptyPart = slots?.empty ?? MultiSelectEmpty;
     const DescriptionPart = slots?.description ?? MultiSelectDescription;
     const ErrorPart = slots?.error ?? MultiSelectError;
-    const RootPart = slots?.root ?? 'div';
+    const RootPart = slots?.root ?? component ?? 'div';
     const {
       className: rootClassName,
       css: rootCss,
@@ -508,6 +511,7 @@ function MultiSelectOverlay(props: MultiSelectProps) {
       isRenderable(error) ||
       clearable ||
       slots?.root !== undefined ||
+      component !== undefined ||
       slotProps?.root !== undefined;
 
     const controlRow = clearable ? (

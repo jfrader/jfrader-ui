@@ -1,4 +1,4 @@
-import type { CSSProperties, SyntheticEvent } from 'react';
+import type { CSSProperties, ReactNode, SyntheticEvent } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, userEvent, waitFor, within } from 'storybook/test';
@@ -73,7 +73,7 @@ const meta = {
   parameters: { docs: {
     description: { component: 'Open a dialog to show content or ask for a decision.' },
     usage: `### Composition
-Pass triggerLabel, title, content and closeLabel for a standard dialog; description is optional. Do not combine these props with children. Use slotProps.trigger/content/title/description/close for part props. For custom hierarchy or panel material, keep the compound parts.
+Pass triggerLabel, title, content and closeLabel for a standard dialog; description is optional. Do not combine these props with children. Use slotProps.trigger/content/panel/header/title/description/close for part props. component aliases slots.root; slots.root wins. slots.root and slotProps.root customize the panel div; content targets the native shell. Use the compound parts for custom hierarchy.
 
 ### Panel and shell
 Plain Dialog.Content children get one default Dialog.Panel. For contrast or custom material, supply one direct Dialog.Panel child; fragments and whitespace are allowed, other substantive siblings are not. Put providers inside Panel or outside Content. Panel outside Content throws.
@@ -92,9 +92,45 @@ Tab and Shift+Tab stay inside. Escape and Close request closure through the shel
 
 export default meta;
 
-type Story = StoryObj<DialogCompoundProps>;
+type Story = StoryObj<(props: DialogCompoundProps) => ReactNode>;
+type EasyStory = StoryObj<(props: DialogEasyProps) => ReactNode>;
+// @ts-expect-error Generated-part slot keys are closed.
+type UnknownSlot = NonNullable<DialogEasyProps['slotProps']>['unknown'];
+// @ts-expect-error The adopted panel only replaces its root.
+type UnknownReplacement = NonNullable<DialogEasyProps['slots']>['header'];
 
-export const Default: StoryObj<DialogEasyProps> = {
+function UnusedDialogRoot() { return null; }
+
+/** Restyle the generated header and replace the panel's material root. */
+export const SlotProps: EasyStory = {
+  args: {
+    triggerLabel: 'Open profile', title: TITLE, description: DESCRIPTION,
+    content: <TextField label="Display name" defaultValue="Maya" />, closeLabel: 'Close',
+    slots: { root: Surface },
+    component: UnusedDialogRoot,
+    slotProps: {
+      root: { className: 'custom-dialog-panel', css: { borderRadius: vars.radius.sm } },
+      header: { className: 'custom-dialog-header', css: { fontStyle: 'italic' } },
+      title: { className: 'custom-dialog-title' },
+      close: { css: { marginBlockStart: vars.space[4] } },
+    },
+  },
+  render: (args) => <Dialog {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Open profile' }));
+    const dialog = await canvas.findByRole('dialog', { name: TITLE });
+    const heading = within(dialog).getByRole('heading', { name: TITLE });
+    await expect(heading).toHaveClass('custom-dialog-title');
+    await expect(heading.parentElement).toHaveClass('custom-dialog-header');
+    await expect(heading.parentElement).toHaveStyle({ fontStyle: 'italic' });
+    await expect(dialog.querySelector('.custom-dialog-panel')).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
+  },
+};
+
+export const Default: EasyStory = {
   name: 'Easy mode',
   args: {
     triggerLabel: 'Open profile',
@@ -153,7 +189,7 @@ export const Default: StoryObj<DialogEasyProps> = {
   },
 };
 
-export const EasyModeNativeForm: StoryObj<DialogEasyProps> = {
+export const EasyModeNativeForm: EasyStory = {
   ...Default,
   name: 'Easy mode native form',
   args: { ...Default.args, content: <form method="dialog"><button type="submit">Save profile</button></form> },
@@ -165,16 +201,16 @@ export const EasyModeNativeForm: StoryObj<DialogEasyProps> = {
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
   },
 };
-export const EasyModeOpen: StoryObj<DialogEasyProps> = {
+export const EasyModeOpen: EasyStory = {
   ...Default,
   name: 'Easy mode open',
   tags: ['!autodocs'],
   args: { ...Default.args, defaultOpen: true },
   play: async ({ canvas }) => { await settleMotion(canvas.getByRole('dialog')); },
 };
-export const EasyModeLight: StoryObj<DialogEasyProps> = { ...Default, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
+export const EasyModeLight: EasyStory = { ...Default, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
 
-export const EasyModeVetoedClose: StoryObj<DialogEasyProps> = {
+export const EasyModeVetoedClose: EasyStory = {
   ...Default,
   name: 'Easy mode vetoed close',
   args: { ...Default.args, slotProps: { content: { onCancel: (event) => event.preventDefault() } } },
@@ -190,7 +226,7 @@ export const EasyModeVetoedClose: StoryObj<DialogEasyProps> = {
     await expectClosed(canvasElement, trigger);
   },
 };
-export const EasyModeWithoutDescription: StoryObj<DialogEasyProps> = {
+export const EasyModeWithoutDescription: EasyStory = {
   ...EasyModeOpen,
   name: 'Easy mode without description',
   args: { ...EasyModeOpen.args, description: undefined, content: 0 },

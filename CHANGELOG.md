@@ -4,6 +4,7 @@
 
 ### Added
 
+- Easy-mode part props accept `css` overrides across MultiSelect, Select, Combobox, Menu, Tabs and Dialog, with `component` as `slots.root` sugar. Combobox adds direct label, description and error slots; Menu and Tabs add generated-part replacement and root props; Dialog adds panel/header props and its existing panel-root replacement seam. Each component has a slot-props example.
 - `MultiSelect`, `Select` and `Combobox` accept `options` and field presentation props for a single-element field, with typed `slots`/`slotProps` customization. Compound children and dotted parts remain available; types reject mixing modes. `MultiSelect` also supports `clearable`.
 - `Menu`, `Tabs` and `Dialog` accept one-element compositions through action/section collections or named dialog content props. Their compound parts remain available; incompatible children and easy-mode props are rejected by TypeScript.
 - `LinkPreview`: show supplied link metadata without a composer, with loading, unavailable and error states, image fallback, and truncated titles and descriptions. `LinkUnfurl` keeps its existing API and behavior.

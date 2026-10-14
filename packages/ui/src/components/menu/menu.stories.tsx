@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties, ReactNode } from 'react';
 import { useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within, type Mock } from 'storybook/test';
@@ -26,7 +26,7 @@ const meta = {
     docs: {
       description: { component: 'Open a menu and choose an action.' },
       usage: `### Composition
-Pass triggerLabel and items for an action menu. Each record has type="item" with label, onSelect and optional disabled, or type="separator". Do not combine items with children. Use slotProps.trigger/content/item/separator for part props; use the compound parts for custom structure.
+Pass triggerLabel and items for an action menu. Each record has type="item" with label, onSelect and optional disabled, or type="separator". Do not combine items with children. Use slotProps.root/trigger/content/item/separator for part props and slots for replacement adapters. component aliases slots.root; a root override adds a wrapper around the trigger. Use the compound parts for custom structure.
 
 - Uses menu/menuitem semantics, labelled by the trigger. The trigger exposes aria-haspopup, aria-expanded and aria-controls.
 - Enter, Space or ArrowDown opens on the first enabled item; ArrowUp opens on the last. Pointer opening also focuses the first item.
@@ -49,9 +49,41 @@ Pass triggerLabel and items for an action menu. Each record has type="item" with
 
 export default meta;
 
-type Story = StoryObj<MenuCompoundProps>;
+type Story = StoryObj<(props: MenuCompoundProps) => ReactNode>;
+type EasyStory = StoryObj<(props: MenuEasyProps) => ReactNode>;
+// @ts-expect-error Generated-part slot keys are closed.
+type UnknownSlot = NonNullable<MenuEasyProps['slotProps']>['unknown'];
+// @ts-expect-error Replacement slot keys are closed.
+type UnknownReplacement = NonNullable<MenuEasyProps['slots']>['unknown'];
 
-export const Default: StoryObj<MenuEasyProps> = {
+function MenuRootAdapter(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="custom-menu-root" />;
+}
+function UnusedMenuRoot() { return null; }
+
+/** Restyle the generated trigger and every action with slotProps. */
+export const SlotProps: EasyStory = {
+  args: {
+    triggerLabel: 'Actions',
+    component: UnusedMenuRoot,
+    slots: { root: MenuRootAdapter },
+    items: [{ type: 'item', label: 'Edit' }, { type: 'separator' }, { type: 'item', label: 'Delete' }],
+    slotProps: { root: { 'data-ui': 'menu custom' }, trigger: { css: { fontStyle: 'italic' } }, item: { className: 'custom-action' } },
+  },
+  render: (args) => <Menu {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await expect(within(canvasElement).getByTestId('custom-menu-root')).toHaveAttribute('data-ui', 'menu custom');
+    const trigger = within(canvasElement).getByRole('button', { name: 'Actions' });
+    await expect(trigger).toHaveStyle({ fontStyle: 'italic' });
+    await userEvent.click(trigger);
+    const body = within(canvasElement.ownerDocument.body);
+    await expect(body.getByRole('menuitem', { name: 'Edit' })).toHaveClass('custom-action');
+    await userEvent.click(body.getByRole('menuitem', { name: 'Edit' }));
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  },
+};
+
+export const Default: EasyStory = {
   name: 'Easy mode',
   args: {
     triggerLabel: TRIGGER,
@@ -116,10 +148,10 @@ export const Default: StoryObj<MenuEasyProps> = {
   },
 };
 
-export const EasyModeOpen: StoryObj<MenuEasyProps> = { ...Default, name: 'Easy mode open', args: { ...Default.args, defaultOpen: true }, play: undefined };
-export const EasyModeLight: StoryObj<MenuEasyProps> = { ...EasyModeOpen, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
+export const EasyModeOpen: EasyStory = { ...Default, name: 'Easy mode open', args: { ...Default.args, defaultOpen: true }, play: undefined };
+export const EasyModeLight: EasyStory = { ...EasyModeOpen, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
 
-export const EasyModeRejectedClose: StoryObj<MenuEasyProps> = {
+export const EasyModeRejectedClose: EasyStory = {
   ...Default,
   name: 'Easy mode rejected close',
   args: { ...Default.args, open: true },

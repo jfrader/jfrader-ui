@@ -111,15 +111,18 @@ export interface ComboboxSlots {
 }
 
 export interface ComboboxSlotProps {
+  label?: NonNullable<TextFieldProps['slotProps']>['label'];
+  description?: NonNullable<TextFieldProps['slotProps']>['description'];
+  error?: NonNullable<TextFieldProps['slotProps']>['error'];
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
-  input?: Partial<ComboboxInputProps>;
-  list?: Partial<ComboboxListProps>;
-  item?: Partial<Omit<ComboboxItemProps, 'value' | 'id' | 'disabled' | 'textValue'>>;
-  empty?: Partial<ComboboxEmptyProps>;
+  input?: Partial<ComboboxInputProps> & { css?: Interpolation<Theme> };
+  list?: Partial<ComboboxListProps> & { css?: Interpolation<Theme> };
+  item?: Partial<Omit<ComboboxItemProps, 'value' | 'id' | 'disabled' | 'textValue'>> & { css?: Interpolation<Theme> };
+  empty?: Partial<ComboboxEmptyProps> & { css?: Interpolation<Theme> };
 }
 
 export interface ComboboxBaseProps {
@@ -153,6 +156,7 @@ export interface ComboboxCompoundProps extends ComboboxBaseProps {
   inputValue?: never;
   defaultInputValue?: never;
   slots?: never;
+  component?: never;
   slotProps?: never;
 }
 
@@ -170,6 +174,7 @@ export interface ComboboxEasyProps extends ComboboxBaseProps {
   inputValue?: string;
   defaultInputValue?: string;
   slots?: ComboboxSlots;
+  component?: ComboboxSlots['root'];
   slotProps?: ComboboxSlotProps;
 }
 
@@ -457,14 +462,15 @@ function ComboboxOverlay(props: ComboboxProps) {
       inputValue,
       defaultInputValue,
       slots,
+      component,
       slotProps,
     } = props;
     const InputPart = slots?.input ?? ComboboxInput;
     const ListPart = slots?.list ?? ComboboxList;
     const ItemPart = slots?.item ?? ComboboxItem;
     const EmptyPart = slots?.empty ?? ComboboxEmpty;
-    const RootPart = slots?.root ?? 'div';
-    const hasRootSlot = slots?.root !== undefined || slotProps?.root !== undefined;
+    const RootPart = slots?.root ?? component ?? 'div';
+    const hasRootSlot = slots?.root !== undefined || component !== undefined || slotProps?.root !== undefined;
     const {
       className: rootClassName,
       css: rootCss,
@@ -486,6 +492,12 @@ function ComboboxOverlay(props: ComboboxProps) {
           inputValue={inputValue}
           defaultInputValue={defaultInputValue}
           {...slotProps?.input}
+          slotProps={{
+            ...slotProps?.input?.slotProps,
+            label: slotProps?.label ?? slotProps?.input?.slotProps?.label,
+            description: slotProps?.description ?? slotProps?.input?.slotProps?.description,
+            error: slotProps?.error ?? slotProps?.input?.slotProps?.error,
+          }}
         />
         <ListPart {...slotProps?.list}>
           {optionsList.map((option) => (
