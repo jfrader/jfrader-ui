@@ -62,6 +62,11 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button } from '@jfrader/ui';
+
+<Button variant="solid" tone="accent" type="submit">
+  Save changes
+</Button>` } } },
   render: (args) => <Button {...args} data-ui="custom" />,
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('button')).toHaveAttribute('data-ui', 'button');

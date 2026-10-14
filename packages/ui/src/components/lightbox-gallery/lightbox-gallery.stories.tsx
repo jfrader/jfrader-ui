@@ -113,7 +113,15 @@ const meta = {
       description: {
         component: 'Browse an image gallery, open a photo, and zoom or move through the collection.',
       },
-      usage: `- Images appear in a row-major masonry list and open in a full-screen native dialog. Supply unique IDs, meaningful alt text and positive intrinsic dimensions. \`srcSet\` and \`sizes\` are supported. Paginate large collections; there is no virtualization or image-provider integration.
+      usage: `### Images
+- Images form a row-major masonry list. Open an image to view it in a full-screen native dialog.
+- Supply unique IDs, meaningful alt text and positive intrinsic dimensions.
+- Use \`srcSet\` and \`sizes\` for responsive image sources.
+
+### Limits
+- Paginate large collections. Images are not virtualized, and there is no image-provider integration.
+
+### Selection and visibility
 - Selection (\`value/defaultValue/onValueChange\`) and visibility (\`open/defaultOpen/onOpenChange\`) are independent. Controlled requests take effect only when accepted. \`null\` means no selection; an invalid ID shows an unavailable state without opening a modal. Navigation stops at each end.
 
 ### Keyboard and gestures

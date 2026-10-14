@@ -80,7 +80,7 @@ const meta = {
         component:
           'Choose more than one option from a list without closing it after each choice.',
       },
-      usage: `- The select-only combobox uses virtual focus and a listbox that stays open when options are toggled.
+      usage: `- MultiSelect is a select-only combobox with a listbox. It uses virtual focus: DOM focus stays on the trigger while an option is highlighted. Toggling an option leaves the list open.
 - Arrows and Home/End move the highlight. Prefix typeahead keeps a 500ms buffer.
 - Enter and Space toggle the highlighted option. Escape and Tab close without changing selection.
 - Clear keeps disabled selections.

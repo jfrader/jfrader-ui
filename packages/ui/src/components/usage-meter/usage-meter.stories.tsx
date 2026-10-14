@@ -47,13 +47,15 @@ const meta = {
     docs: {
       description: {
         component:
-          'See how much of an allowance is used, including its percentage and category amounts. Categories use neutral shades by default; set a segment’s tone for a semantic color. Hover the bar or legend to highlight a category, and tap or click to pin it. Status changes and growing overage are announced by default.',
+          'Show how much of an allowance is used, with its percentage and category amounts.',
       },
       usage: `- Supply quota data from your app. Use this meter for an allowance, not task progress.
+- Categories use neutral shades by default. Set a segment's \`tone\` when its color carries meaning.
+- Hover the bar or legend to highlight a category. Tap or click to pin it.
 - Numeric ARIA values stop at the limit. Value text reports usage, including overage, following the APG meter contract.
 - Translate status and comparison text with \`labels\`, \`getValueLabel\` and \`getItemLabel\`.
 - Supply \`locale\` for server rendering.
-- Status transitions and growing overage are announced by default. Rapid updates are coalesced; set \`announceChanges={false}\` to turn announcements off.
+- Status changes and growing overage are announced by default. Rapid updates are coalesced; set \`announceChanges={false}\` to turn announcements off.
 - Translate “of” and “used” with \`labels.of\` and \`labels.used\`. \`labels.normal\` follows the free amount in the status.
 
 ### Keyboard

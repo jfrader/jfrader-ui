@@ -67,6 +67,16 @@ export const DefaultSingle: Story = {
   },
 };
 export const Range: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+
+<Slider
+  type="range"
+  label="Price"
+  defaultValue={[20, 80]}
+  step={5}
+  thumbLabels={['Minimum price', 'Maximum price']}
+  locale="en-GB"
+/>` } } },
   args: {
     type: 'range',
     label: 'Price',

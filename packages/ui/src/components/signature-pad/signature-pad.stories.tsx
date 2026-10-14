@@ -567,7 +567,7 @@ export const ReplayIgnoresObservers: Story = {
     docs: {
       description: {
         story:
-          'Resizing or changing styles during replay must keep the current frame. The test advances frames by hand, checks pixels after ResizeObserver and MutationObserver run, and checks that replay continues until Escape cancels its pending frame. It counts only frames requested synchronously by `replay()` or a replay frame; host-page frames run in the browser without being counted.',
+          'Resize the pad or change its styles during replay, then press Escape to cancel. This fixture advances frames manually and checks pixels after resize and style observers run; check normal browser replay separately.',
       },
     },
   },
@@ -613,6 +613,8 @@ export const ReplayIgnoresObservers: Story = {
           replayApi.current!.replay();
         }),
       );
+      // Count only frames requested synchronously by replay() or a replay frame;
+      // host-page frames run in the browser without being counted.
       await expect(owned).toHaveLength(1);
       const MID_REPLAY_MS = 120;
       await act(async () => attribute(() => owned[0]!(replayStart + MID_REPLAY_MS)));
