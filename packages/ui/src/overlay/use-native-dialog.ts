@@ -4,7 +4,7 @@
 // - Every dismissal path requests `onOpenChange(false)`; native closure caused by
 //   <form method="dialog"> or a forwarded ref .close() reconciles through the `close` event.
 // - Close requests prefer `dialog.requestClose()` (Baseline since May 2025; older Safari falls
-//   back to the state close) so a consumer preventDefault on `cancel` vetoes every request.
+//   back to a synthetic cancel request) so a consumer can veto cancelable requests.
 //   Platform close requests can be noncancelable under CloseWatcher safeguards; the `close`
 //   reconciliation covers those.
 // - If a controlled parent rejects a request while the native dialog already closed, scroll
@@ -70,6 +70,10 @@ export function requestNativeDialogClose(dialog: HTMLDialogElement | null, setOp
     dialog.requestClose();
     return;
   }
+  if (dialog?.open) {
+    const EventConstructor = dialog.ownerDocument.defaultView?.Event ?? Event;
+    if (!dialog.dispatchEvent(new EventConstructor('cancel', { cancelable: true }))) return;
+  }
   setOpen(false);
 }
 
@@ -98,7 +102,7 @@ export function useNativeDialogRoot(open: boolean, requestOpenChange: (open: boo
   );
 
   // One dismissal path: prefer the native close request so `cancel` (and any consumer veto)
-  // applies; fall back to the state close on engines without requestClose.
+  // applies; dispatch an equivalent cancel request on engines without requestClose.
   const requestClose = useCallback(() => {
     requestNativeDialogClose(dialogElementRef.current, setOpen);
   }, [setOpen]);
@@ -213,6 +217,7 @@ export function useNativeDialog(
       return;
     }
     onCancel?.(event);
+    if (!event.cancelable) return;
     const vetoed = event.defaultPrevented;
     // We own closure: block the browser's own close and route through the Root, unless the
     // consumer vetoed the cancellation. Noncancelable platform requests reconcile on `close`.

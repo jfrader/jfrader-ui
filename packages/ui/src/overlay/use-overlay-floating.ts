@@ -66,7 +66,7 @@ export function useOverlayFloating({
     middleware: [
       offset(gap),
       flip(detectOverflow),
-      shift(detectOverflow),
+      shift({ ...detectOverflow, crossAxis: true }),
       onAvailableSize &&
         size({
           ...detectOverflow,
