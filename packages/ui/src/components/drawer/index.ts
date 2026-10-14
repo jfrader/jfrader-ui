@@ -14,6 +14,7 @@ export type {
   DrawerSide,
   DrawerSize,
   DrawerSlotProps,
+  DrawerSlots,
   DrawerTitleProps,
   DrawerTriggerProps,
 } from './drawer';

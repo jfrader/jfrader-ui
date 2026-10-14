@@ -4,6 +4,7 @@
 
 ### Added
 
+- Dialog, Drawer, BottomSheet, ContextMenu and UserMenu easy compositions accept interior replacement slots. Drawer and BottomSheet add footer content; DialogStack adds header/body slots. Overlay easy roots accept `component` as `slots.root` sugar, and UserMenu.Content adds replacements for its list, handle and close button.
 - TextField, Textarea, PasswordField, SearchField, MentionInput, TagInput, InlineEdit, FileDropzone and ExpandingSearch accept typed `component`, `slots` and native `slotProps` for wrapper and generated-part customization. Existing control refs and leaf renderers remain available.
 - Easy-mode part props accept `css` overrides across MultiSelect, Select, Combobox, Menu, Tabs and Dialog, with `component` as `slots.root` sugar. Combobox adds direct label, description and error slots; Menu and Tabs add generated-part replacement and root props; Dialog adds panel/header props and its existing panel-root replacement seam. Each component has a slot-props example.
 - `CommandPalette`, `ResizablePanels`, `EditableDetails`, `DialogStack` and `FilterToolbar` accept data-driven easy compositions with typed generated-part `slots`/`slotProps`. Existing compound anatomy stays available.

@@ -17,6 +17,7 @@ export type {
   UserMenuSeparatorProps,
   UserMenuSignOutProps,
   UserMenuSlotProps,
+  UserMenuSlots,
   UserMenuStatus,
   UserMenuStatusGroupProps,
   UserMenuTheme,

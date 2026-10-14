@@ -43,6 +43,7 @@ import {
   type ReactNode,
   type RefCallback,
 } from 'react';
+import { GeneratedRoot, type GeneratedRootProps, type GeneratedRootSlotProps } from '../../utils/generated-root';
 import {
   FloatingFocusManager,
   FloatingList,
@@ -100,7 +101,7 @@ export interface MenuCompoundProps extends MenuStateProps {
   component?: never;
 }
 
-export interface MenuEasyProps extends MenuStateProps {
+export interface MenuEasyProps extends MenuStateProps, Omit<GeneratedRootProps, 'children'> {
   /** Name the button that opens the menu. */
   triggerLabel: ReactNode;
   /** Render actions and separators in order. */
@@ -120,7 +121,7 @@ export interface MenuSlots {
 }
 
 export interface MenuSlotProps {
-  root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { css?: Interpolation<Theme>; 'data-ui'?: string };
+  root?: GeneratedRootSlotProps;
   trigger?: Omit<MenuTriggerProps, 'children'> & { css?: Interpolation<Theme> };
   content?: Omit<MenuContentProps, 'children'> & { css?: Interpolation<Theme> };
   item?: Omit<MenuItemProps, 'children' | 'onSelect' | 'disabled'> & { css?: Interpolation<Theme> };
@@ -415,14 +416,11 @@ export function MenuController(props: MenuControllerProps) {
   return <MenuLayer>{(nodeId) => <MenuOverlay {...props} nodeId={nodeId} />}</MenuLayer>;
 }
 
-function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, ...state }: MenuProps) {
-  const RootPart = slots?.root ?? component ?? 'div';
+function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, open, defaultOpen, onOpenChange, placement, ...rootProps }: MenuProps) {
   const TriggerPart = slots?.trigger ?? MenuTrigger;
   const ContentPart = slots?.content ?? MenuContent;
   const ItemPart = slots?.item ?? MenuItem;
   const SeparatorPart = slots?.separator ?? MenuSeparator;
-  const { css: rootCss, className: rootClassName, 'data-ui': rootDataUi, ...rootProps } = slotProps?.root ?? {};
-  const rootMarker = [...new Set(['menu', ...(rootDataUi?.split(/\s+/).filter(Boolean) ?? [])])].join(' ');
   const generated = items !== undefined ? (
     <>
       <TriggerPart {...slotProps?.trigger}>{triggerLabel}</TriggerPart>
@@ -437,13 +435,12 @@ function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, 
       </ContentPart>
     </>
   ) : children;
-  const hasRootSlot = items !== undefined && (component !== undefined || slots?.root !== undefined || slotProps?.root !== undefined);
   return (
-    <MenuController {...state}>
-      {hasRootSlot ? (
-        <WithSx className={rootClassName} styles={rootCss}>
-          {(className) => <RootPart {...rootProps} className={className} data-ui={rootMarker}>{generated}</RootPart>}
-        </WithSx>
+    <MenuController open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} placement={placement}>
+      {items !== undefined ? (
+        <GeneratedRoot {...rootProps} component={slots?.root ?? component} rootSlot={slotProps?.root} marker="menu">
+          {generated}
+        </GeneratedRoot>
       ) : generated}
     </MenuController>
   );

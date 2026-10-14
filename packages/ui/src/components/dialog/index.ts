@@ -9,6 +9,7 @@ export type {
   DialogPanelProps,
   DialogProps,
   DialogSlotProps,
+  DialogSlots,
   DialogTitleProps,
   DialogTriggerProps,
 } from './dialog';

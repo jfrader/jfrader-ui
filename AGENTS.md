@@ -65,6 +65,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 - `react-hook-form` is approved only as an `apps/storybook` devDependency for app-owned editor fixtures. No runtime or peer dependency, import, or declaration in `@jfrader/ui` may depend on it.
 - `next` and `@emotion/cache` are optional peers (`peerDependenciesMeta.optional`; devDependencies for build and stories). Only `packages/ui/src/components/next/`, published as the `./next` subpath, may import them; nothing in the main graph does.
 - Any other dependency requires updating this file first.
+- `typescript-compiler` (an alias of TypeScript 5.9) is development-only for the customization inventory; TypeScript 7 remains the typecheck command.
 
 ## Generated files
 

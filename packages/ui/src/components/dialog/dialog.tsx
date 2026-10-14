@@ -30,6 +30,7 @@ import {
   useState,
   type ButtonHTMLAttributes,
   type ComponentPropsWithRef,
+  type ComponentType,
   type MouseEvent,
   type MouseEventHandler,
   type ReactNode,
@@ -75,7 +76,7 @@ export interface DialogCompoundProps extends DialogStateProps {
   component?: never;
 }
 
-export interface DialogEasyProps extends DialogStateProps {
+export interface DialogEasyProps extends DialogStateProps, Omit<DialogPanelProps, 'children' | 'title' | 'content' | 'slots' | 'slotProps'> {
   /** Name the button that opens the dialog. */
   triggerLabel: ReactNode;
   /** Name the dialog with a visible heading. */
@@ -87,7 +88,7 @@ export interface DialogEasyProps extends DialogStateProps {
   /** Name the close button. */
   closeLabel: ReactNode;
   children?: never;
-  slots?: DialogPanelProps['slots'];
+  slots?: DialogSlots;
   component?: DialogPanelProps['component'];
   slotProps?: DialogSlotProps;
 }
@@ -102,6 +103,15 @@ export interface DialogSlotProps {
   title?: Omit<DialogTitleProps, 'children'> & { css?: Interpolation<Theme> };
   description?: Omit<DialogDescriptionProps, 'children'> & { css?: Interpolation<Theme> };
   close?: Omit<DialogCloseProps, 'children'> & { css?: Interpolation<Theme> };
+}
+
+export interface DialogSlots {
+  root?: NonNullable<DialogPanelProps['slots']>['root'];
+  header?: ComponentType<ComponentPropsWithRef<'div'>>;
+  title?: ComponentType<DialogTitleProps>;
+  description?: ComponentType<DialogDescriptionProps>;
+  trigger?: ComponentType<DialogTriggerProps>;
+  close?: ComponentType<DialogCloseProps>;
 }
 
 export type DialogProps = DialogCompoundProps | DialogEasyProps;
@@ -252,7 +262,13 @@ function DialogRoot(props: DialogProps) {
     slotProps,
     slots,
     component,
+    ...rootProps
   } = props;
+  const Header = slots?.header ?? 'div';
+  const Title = slots?.title ?? DialogTitle;
+  const Description = slots?.description ?? DialogDescription;
+  const Trigger = slots?.trigger ?? DialogTrigger;
+  const Close = slots?.close ?? DialogClose;
   const baseId = useId();
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const { setDialogElement, setOpen, requestClose, repairToken } = useNativeDialogRoot(open, requestOpenChange);
@@ -280,20 +296,21 @@ function DialogRoot(props: DialogProps) {
     <DialogContext.Provider value={context}>
       {'content' in props ? (
         <>
-          <DialogTrigger {...slotProps?.trigger}>{triggerLabel}</DialogTrigger>
+          <Trigger {...slotProps?.trigger}>{triggerLabel}</Trigger>
           <DialogContent {...slotProps?.content}>
             <DialogPanel
+              {...rootProps}
               {...slotProps?.panel}
               component={component ?? slotProps?.panel?.component}
-              slots={slots ?? slotProps?.panel?.slots}
+              slots={{ ...slotProps?.panel?.slots, root: slots?.root ?? slotProps?.panel?.slots?.root }}
               slotProps={{ root: slotProps?.root ?? slotProps?.panel?.slotProps?.root }}
             >
-              <div {...slotProps?.header} data-ui="dialog-header">
-                <DialogTitle {...slotProps?.title}>{title}</DialogTitle>
-                {isRenderable(description) && <DialogDescription {...slotProps?.description}>{description}</DialogDescription>}
-              </div>
+              <Header {...slotProps?.header} data-ui="dialog-header">
+                <Title {...slotProps?.title}>{title}</Title>
+                {isRenderable(description) && <Description {...slotProps?.description}>{description}</Description>}
+              </Header>
               {content}
-              <DialogClose {...slotProps?.close}>{closeLabel}</DialogClose>
+              <Close {...slotProps?.close}>{closeLabel}</Close>
             </DialogPanel>
           </DialogContent>
         </>

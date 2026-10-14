@@ -22,6 +22,7 @@
 // Scrolling outside the menu or resizing the window asks once to close it (the anchor is a fixed
 // point); scrolling inside the menu does not.
 import {
+  type ComponentType,
   createContext,
   useCallback,
   useContext,
@@ -41,6 +42,7 @@ import {
   type ReactNode,
   type SyntheticEvent,
 } from 'react';
+import { GeneratedRoot, type GeneratedRootProps, type GeneratedRootSlotProps } from '../../utils/generated-root';
 import { useMergeRefs } from '@floating-ui/react';
 import { isEventTargetWithin } from '@floating-ui/react/utils';
 import { vars } from '@jfrader/tokens/vars';
@@ -117,16 +119,19 @@ export interface ContextMenuCompoundProps extends ContextMenuStateProps {
   disabled?: never;
   openOnClick?: never;
   slotProps?: never;
+  slots?: never;
+  component?: never;
 }
 
 export interface ContextMenuSlotProps {
+  root?: GeneratedRootSlotProps;
   target?: Omit<ContextMenuTargetProps, 'children' | 'aria-label'>;
   content?: Omit<ContextMenuContentProps, 'children'>;
   item?: Omit<ContextMenuItemProps, 'children' | 'onSelect' | 'disabled'>;
   separator?: ContextMenuSeparatorProps;
 }
 
-export interface ContextMenuEasyProps extends ContextMenuStateProps {
+export interface ContextMenuEasyProps extends ContextMenuStateProps, Omit<GeneratedRootProps, 'children' | 'content'> {
   /** Name the context target for assistive technologies. */
   targetLabel: string;
   /** Actions and separators displayed in the menu. */
@@ -139,6 +144,16 @@ export interface ContextMenuEasyProps extends ContextMenuStateProps {
   disabled?: boolean;
   children?: never;
   slotProps?: ContextMenuSlotProps;
+  slots?: ContextMenuSlots;
+  component?: ContextMenuSlots['root'];
+}
+
+export interface ContextMenuSlots {
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  target?: ComponentType<ContextMenuTargetProps>;
+  content?: ComponentType<ContextMenuContentProps>;
+  item?: ComponentType<ContextMenuItemProps>;
+  separator?: ComponentType<ContextMenuSeparatorProps>;
 }
 
 export type ContextMenuProps = ContextMenuCompoundProps | ContextMenuEasyProps;
@@ -396,6 +411,14 @@ function ContextMenuScope({
 }
 
 function ContextMenuRoot(props: ContextMenuProps) {
+  const Target = props.slots?.target ?? ContextMenuTarget;
+  const Content = props.slots?.content ?? ContextMenuContent;
+  const Item = props.slots?.item ?? ContextMenuItem;
+  const Separator = props.slots?.separator ?? ContextMenuSeparator;
+  const { open: _open, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange,
+    children: _children, targetLabel: _targetLabel, items: _items, content: _content,
+    openOnClick: _openOnClick, disabled: _disabled, slotProps: _slotProps, slots: _slots,
+    component: _component, ...rootProps } = props;
   const [available, setAvailable] = useState<OverlayAvailableSize>();
   const positioning: MenuPositioning = {
     strategy: 'fixed',
@@ -420,21 +443,21 @@ function ContextMenuRoot(props: ContextMenuProps) {
     >
       <ContextMenuScope available={available}>
         {props.items !== undefined ? (
-          <>
-            <ContextMenuTarget
+          <GeneratedRoot {...rootProps} component={props.slots?.root ?? props.component} rootSlot={props.slotProps?.root} marker="context-menu-root">
+            <Target
               {...props.slotProps?.target}
               {...(props.openOnClick !== undefined && { openOnClick: props.openOnClick })}
               {...(props.disabled !== undefined && { disabled: props.disabled })}
               aria-label={props.targetLabel}
             >
               {props.content}
-            </ContextMenuTarget>
-            <ContextMenuContent {...props.slotProps?.content}>
+            </Target>
+            <Content {...props.slotProps?.content}>
               {props.items.map((item, index) =>
                 item.type === 'separator' ? (
-                  <ContextMenuSeparator {...props.slotProps?.separator} key={item.key ?? index} />
+                  <Separator {...props.slotProps?.separator} key={item.key ?? index} />
                 ) : (
-                  <ContextMenuItem
+                  <Item
                     {...props.slotProps?.item}
                     key={item.key ?? index}
                     onSelect={item.onSelect}
@@ -443,11 +466,11 @@ function ContextMenuRoot(props: ContextMenuProps) {
                     icon={item.icon !== undefined ? item.icon : props.slotProps?.item?.icon}
                   >
                     {item.label}
-                  </ContextMenuItem>
+                  </Item>
                 ),
               )}
-            </ContextMenuContent>
-          </>
+            </Content>
+          </GeneratedRoot>
         ) : (
           props.children
         )}
