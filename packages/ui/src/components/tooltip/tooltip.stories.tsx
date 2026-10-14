@@ -22,7 +22,19 @@ const meta: Meta<TooltipProps> = {
   parameters: {
     docs: {
       description: { component: 'Show help when someone hovers over or focuses a control.' },
-      usage: '- Pass triggerLabel and content for a generated button and tooltip.\n- Customize them with slotProps. slots replaces their native button and div roots; replacements forward all received props and ref.',
+      usage: `### Composition
+- Pass \`triggerLabel\` and \`content\` for a generated button and tooltip. For custom anatomy, use \`Tooltip.Trigger\` and \`Tooltip.Content\` as \`children\` instead; do not combine the two modes.
+- Keep content non-interactive: the tooltip has no tab stop. If you need a link, button or input in the popup, use \`Popover\` instead.
+
+### Opening
+- The tooltip starts closed. Use \`defaultOpen\` to start open, or pair \`open\` with \`onOpenChange\` and update \`open\` to accept requests.
+- Hover opens after \`openDelay\`, which defaults to 300 milliseconds. Focus opens immediately. Leaving both the trigger and content closes after \`closeDelay\`, which defaults to 100 milliseconds; you can move the pointer onto the content to keep reading.
+- Press Escape to close without moving focus. Moving focus away from the trigger also closes it.
+
+### Customization
+- \`placement\` defaults to \`top\`. Set it to choose the preferred side of the trigger.
+- In generated mode, use \`slotProps\` for trigger and content props and \`slots\` to replace their button and div roots. Declare replacements outside render and forward every received prop and ref to the matching element.
+- While open, the tooltip's description joins any \`aria-describedby\` you supply on the trigger. Keep the trigger's accessible name about its action.`,
     },
   },
 };
@@ -116,7 +128,7 @@ async function tabToOpen(canvasElement: HTMLElement) {
 export const Default: StoryObj<TooltipEasyProps> = {
   args: { triggerLabel: TRIGGER, content: TIP },
   render: (args) => <Tooltip {...args} />,
-  parameters: { docs: { source: { code: '<Tooltip triggerLabel="Copy" content="Copy to clipboard" />' } } },
+  parameters: { docs: { source: { language: 'tsx', code: '<Tooltip triggerLabel="Copy" content="Copy to clipboard" />' } } },
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.tab();
@@ -131,7 +143,7 @@ export const Default: StoryObj<TooltipEasyProps> = {
 /** Assemble the trigger and help text for a custom layout. */
 export const Compound: Story = {
   render: (args) => <TooltipExample {...args} />,
-  parameters: { docs: { source: { code: `<Tooltip>
+   parameters: { docs: { source: { language: 'tsx', code: `<Tooltip>
   <Tooltip.Trigger>Copy</Tooltip.Trigger>
   <Tooltip.Content>Copy to clipboard</Tooltip.Content>
 </Tooltip>` } } },
