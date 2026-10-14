@@ -160,6 +160,7 @@ const thumbGeometry: Record<Axis, CSSProperties> = {
     position: 'absolute',
     insetBlockStart: 0,
     insetBlockEnd: 'auto',
+    // translateX uses a physical left-origin offset normalized from scrollLeft, including in RTL.
     left: 0,
     right: 'auto',
     blockSize: '100%',
@@ -261,8 +262,10 @@ export function ScrollArea({
       frame = 0;
       const maxY = orientation === 'horizontal' ? 0 : Math.max(0, node.scrollHeight - node.clientHeight);
       const maxX = orientation === 'vertical' ? 0 : Math.max(0, node.scrollWidth - node.clientWidth);
+      // Normalize RTL scrollLeft to distance from the physical left edge for the thumb and fades.
       const x = Math.max(0, Math.min(maxX, rtl() ? maxX + node.scrollLeft : node.scrollLeft));
       const y = Math.max(0, Math.min(maxY, node.scrollTop));
+      // These are physical overflow edges: the mask gradients and onEdgeChange use left/right, not start/end.
       const edges = {
         top: y > EDGE_TOLERANCE,
         bottom: maxY - y > EDGE_TOLERANCE,
@@ -307,6 +310,7 @@ export function ScrollArea({
     };
     const setOffset = (axis: Axis, offset: number, behavior: ScrollBehavior = 'auto') => {
       const bounded = Math.max(0, Math.min(geometry[axis].maximum, offset));
+      // scrollTo takes physical top/left coordinates; convert the left-origin offset back to RTL scrollLeft.
       node.scrollTo(
         axis === 'block'
           ? { top: bounded, behavior }

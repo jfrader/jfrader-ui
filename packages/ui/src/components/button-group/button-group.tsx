@@ -266,6 +266,7 @@ const labelStyle = css({
 });
 const highlightStyle = css({
   position: 'absolute',
+  // Motion x/y use physical DOMRect deltas from the group's top-left, including in RTL.
   top: 0,
   left: 0,
   zIndex: -1,
