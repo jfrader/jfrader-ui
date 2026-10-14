@@ -6,7 +6,7 @@ import { GameHand, type GameHandCard } from '../game-hand';
 import { GameTable } from '../game-table';
 import { GameCardStack } from '../game-card-stack';
 import { ThemeRoot } from '../theme-root';
-import { CardFlightsProvider, useCardFlights, useDealFlights, usePlayedCardFlights, type PlayedFlightCard } from './index';
+import { CardFlightsProvider, useBoardFlights, type PlayedFlightCard } from './index';
 
 const controlsStyle = css({ display: 'flex', gap: vars.space[2], padding: vars.space[3] });
 const boardStyle = css({ blockSize: '600px', maxInlineSize: '850px' });
@@ -34,32 +34,24 @@ export function CardFlightsFixture({ theme = 'dark' }: { theme?: 'dark' | 'light
 function Match() {
   const [handIndex, setHandIndex] = useState(1);
   const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
-  const { scopeRef, landingTargets, rememberPlayOrigin } = useCardFlights();
   const remaining = (playerKey: keyof typeof hands) => hands[playerKey].filter((card) =>
     !plays.some((play) => play.cardId === card.id));
   const ownCards = remaining('own');
   const rivalCards = remaining('rival');
-  const players = [
-    { key: 'own', idx: 0, isOwn: true, cards: ownCards },
-    { key: 'rival', idx: 1, isOwn: false, cards: rivalCards },
-  ];
-  useDealFlights({ handIndex, players, forehandIdx: 0, dealt: plays.length === 0 });
-  usePlayedCardFlights({ plays, playerCount: players.length });
+  const { landing } = useBoardFlights({ hand: ownCards, handKey: handIndex, plays });
   const acceptPlay = (card: GameHandCard) => {
-    const source = scopeRef.current?.querySelector<HTMLElement>(`[data-hand-card="${CSS.escape(card.id)}"]`);
-    if (source) rememberPlayOrigin(card.id, source);
     const own: PlayedFlightCard = { ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true };
     const rival = rivalCards[0];
     setPlays((current) => [...current, own, ...(rival ? [{ ...rival, cardId: rival.id, id: crypto.randomUUID(), playerKey: 'rival', isOwn: false }] : [])]);
   };
   return <>
-    <div css={controlsStyle}><Button disabled={landingTargets.size > 0} onClick={() => {
+    <div css={controlsStyle}><Button disabled={landing.size > 0} onClick={() => {
       setPlays([]); setHandIndex((index) => index + 1);
     }}>Deal hand</Button></div>
     <div css={boardStyle}><GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}
     >
       <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rivalCards.length} label="Rival hand" /></GameTable.Seat>
-      <GameTable.Dock><GameHand cards={ownCards} playLabel="Play selected" onPlayIntent={acceptPlay} disabled={landingTargets.size > 0} /></GameTable.Dock>
+      <GameTable.Dock><GameHand cards={ownCards} playLabel="Play selected" onPlayIntent={acceptPlay} disabled={landing.size > 0} /></GameTable.Dock>
       {seats.map((player) => <GameTable.Play key={player.key} slotKey={player.key}>
         <GameCardStack.Pile playerKey={player.key} label={player.isMe ? 'Own pile' : 'Rival pile'}
           cards={plays.filter((play) => play.playerKey === player.key)} />

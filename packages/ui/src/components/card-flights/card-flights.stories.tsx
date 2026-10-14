@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, spyOn, waitFor } from 'storybook/test';
+import { expect, spyOn, waitFor, within } from 'storybook/test';
 import { CardFlightsFixture } from './card-flights-fixture';
+import fixtureSource from './card-flights-fixture.tsx?raw';
 import { FLIGHT_GEOMETRY, dealSequence } from './geometry';
 import { StrictMode, useRef, useState, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
@@ -13,8 +14,8 @@ import { GameTable } from '../game-table';
 import { ThemeRoot } from '../theme-root';
 import { GameCardStack } from '../game-card-stack';
 import { CardFlight } from './card-flight';
-import { CardFlightsProvider, flightTarget, measureCardBox, useCardFlights, useDealFlights, usePlayedCardFlights,
-  type CardFlightSpec, type DealFlightPlayer, type PlayedFlightCard,
+import { CardFlightsProvider, flightTarget, measureCardBox, useBoardFlights, useCardFlights, useDealFlights, usePlayedCardFlights,
+  type CardFlightSpec, type PlayedFlightCard,
 } from './index';
 
 const meta = {
@@ -26,7 +27,7 @@ const meta = {
     source: { language: 'tsx', code: `import { useState } from 'react';
 import {
   CardFlightsProvider, GameCardStack, GameHand, GameTable,
-  useCardFlights, useDealFlights, usePlayedCardFlights,
+  useBoardFlights,
   type GameHandCard, type PlayedFlightCard,
 } from '@jfrader/ui';
 
@@ -43,19 +44,10 @@ const cards: GameHandCard[] = [
 function Match() {
   const [hand, setHand] = useState(cards);
   const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
-  const handIndex = 1;
-  const { scopeRef, rememberPlayOrigin, landingTargets } = useCardFlights();
-  useDealFlights({
-    handIndex, dealt: plays.length === 0, forehandIdx: 0,
-    players: [{ key: 'own', idx: 0, isOwn: true, cards: hand }],
-  });
-  usePlayedCardFlights({ plays, playerCount: seats.length });
+  const [handKey, setHandKey] = useState(1);
+  const { landing, reset } = useBoardFlights({ hand, handKey, plays });
 
   const play = (card: GameHandCard) => {
-    const source = scopeRef.current?.querySelector<HTMLElement>(
-      '[data-hand-card="' + CSS.escape(card.id) + '"]',
-    );
-    if (source) rememberPlayOrigin(card.id, source);
     setPlays((current) => [...current, {
       ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true,
     }]);
@@ -68,7 +60,7 @@ function Match() {
         <GameHand.Hidden playerKey="rival" count={2} label="Rival hand" />
       </GameTable.Seat>
       <GameTable.Dock>
-        <GameHand cards={hand} playLabel="Play selected" disabled={landingTargets.size > 0}
+        <GameHand cards={hand} playLabel="Play selected" disabled={landing.size > 0}
           onPlayIntent={play} />
       </GameTable.Dock>
       {seats.map((seat) => (
@@ -81,18 +73,22 @@ function Match() {
   );
 }` },
     usage: `### Card records
-- Pass the same labeled records to GameHand and useDealFlights: each has an id, label and value. No face nodes are needed. Optional front, back and backPattern customize flight artwork.
-- Give each accepted play a unique id. Pass that record to both GameCardStack.Pile and usePlayedCardFlights. Set cardId to its source hand id when the play id differs. Labels come from your app, never from a suit or rank formatter in the library.
-- The pile's data-played-key is the play id. GameHand's data-hand-card is the hand id. Hidden hands keep playerKey and zero-based card-index markers; no opponent value is exposed.
+- Pass the same labeled records to GameHand and useBoardFlights: each has an id, label and value. Optional front, back and backPattern customize flight artwork.
+- Give each accepted play a unique id in your app. Pass that record to both GameCardStack.Pile and useBoardFlights. Set cardId to its source hand id when the play id differs, playerKey to its seat, and isOwn for local plays.
+- GameHand, GameHand.Hidden and GameCardStack.Pile register their card nodes inside CardFlightsProvider. GameTable registers the seat order and surface; hidden hands supply their rendered count. No DOM lookup or separate player list is needed. data-* markers remain available for inspection and tests.
 
 ### Match state
 - Wrap one board in CardFlightsProvider and call flight hooks in a child of the provider. It renders the scope div; ref points to that div.
 - Use component or slots.root to replace the root, and slotProps.root, className or sx to customize it. To use an existing wrapper instead, pass its scopeRef; no root div is rendered in that mode.
-- Initial and resync snapshots appear in place. Change resyncKey when applying a server snapshot; bursts larger than playerCount also appear in place.
-- Deal order starts at forehandIdx, sorts player idx and deals at most three cards per player. Deal duration is 380ms with 70ms stagger; own plays take 400ms and rival plays 520ms.
-- Capture the hand origin with rememberPlayOrigin(card.id, element) before accepting onPlayIntent. Captures expire after 4000ms; otherwise the preceding render supplies the origin. Mount measurable destinations in the same commit as the new plays. Missing endpoints appear in place.
-- landingTargets contains destinations still in flight. Disable play while necessary for your rules. reset() cancels flights and forgets origins and snapshot baselines; remount for a new match.
+- Change handKey when the next hand is ready, with plays empty. Initial and resync snapshots appear in place. Change resyncKey when applying a server snapshot; bursts larger than the seat count also appear in place.
+- Deal order starts at foregroundIdx (default zero), follows the registered seat order and deals at most three cards per player. seats can override that order with records containing key and isMe. Deal duration is 380ms with 70ms stagger; own plays take 400ms and rival plays 520ms.
+- The previous hand nodes supply play origins. Mount measurable destinations in the same commit as new plays. Missing endpoints appear in place.
+- landing contains destinations still in flight. Disable play while necessary for your rules. reset() cancels flights and forgets origins and snapshot baselines; remount for a new match.
 - Destinations stay hidden until the tracks finish. Replacements cancel old tracks. A waiting portal completes at the duration deadline. Reduced motion completes without a flight, including preference changes during animation.
+
+### Low-level escape hatches
+- useDealFlights and usePlayedCardFlights remain available for custom compositions using the exported CARD_FLIGHT_ATTRIBUTES markers. They accept explicit players and playerCount instead of the internal registry.
+- useCardFlights exposes launch for measured endpoints and rememberPlayOrigin(card.id, elementOrBox) for a dragged origin. Captures expire after 4000ms. Use one deal/play hook pair per board, not both levels together.
 
 ### Accessibility and artwork
 - Flights are decorative and aria-hidden. Name final cards and controls. GameHand uses native selection buttons and an explicit play button; selecting a card does not play it.
@@ -104,6 +100,7 @@ type Story = StoryObj<typeof meta>;
 
 export const DealAndPlay: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(fixtureSource).not.toContain('querySelector');
     await waitFor(() => expect(canvasElement.querySelector('[data-ui="game-table"]')).not.toHaveAttribute('data-layout-fit', 'measuring'));
     await userEvent.click(canvas.getByRole('button', { name: 'Ace of spades' }));
     const source = canvasElement.querySelector<HTMLElement>('[data-hand-card="own-ace"]');
@@ -143,6 +140,67 @@ export const DealAndPlay: Story = {
   },
 };
 export const Light: Story = { render: () => <CardFlightsFixture theme="light" /> };
+
+export const StrictRegistryCleanup: Story = {
+  ...DealAndPlay,
+  tags: ['!autodocs'],
+  render: () => <StrictMode><CardFlightsFixture /></StrictMode>,
+};
+
+export const SeparateBoardRegistries: Story = {
+  tags: ['!autodocs'],
+  render: () => <><section aria-label="First board"><CardFlightsFixture /></section><section aria-label="Second board"><CardFlightsFixture /></section></>,
+  play: async ({ canvas, userEvent }) => {
+    const first = canvas.getByRole('region', { name: 'First board' });
+    const second = canvas.getByRole('region', { name: 'Second board' });
+    await userEvent.click(within(first).getByRole('button', { name: 'Deal hand' }));
+    await expect(flights(first)).toHaveLength(6);
+    await expect(flights(second)).toHaveLength(0);
+    await expect(within(second).getByRole('button', { name: 'Ace of spades' })).toBeVisible();
+    await waitFor(() => expect(flights(first)).toHaveLength(0));
+    await userEvent.click(within(first).getByRole('button', { name: 'Ace of spades' }));
+    await userEvent.click(within(first).getByRole('button', { name: 'Play selected' }));
+    await expect(flights(first)).toHaveLength(2);
+    await expect(flights(second)).toHaveLength(0);
+    await waitFor(() => expect(flights(first)).toHaveLength(0));
+    await expect(within(first).getByRole('img', { name: 'Ace of spades' })).toBeVisible();
+    await expect(within(second).getByRole('button', { name: 'Ace of spades' })).toBeEnabled();
+  },
+};
+
+function LowLevelBoard() {
+  const [handIndex, setHandIndex] = useState(0);
+  const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
+  const hand = handIndex && !plays.length ? ownHand : [];
+  const { landingTargets } = useCardFlights();
+  useDealFlights({ handIndex, dealt: !plays.length, forehandIdx: 0,
+    players: [{ key: 'own', idx: 0, isOwn: true, cards: hand }] });
+  usePlayedCardFlights({ plays, playerCount: 1 });
+  return <>
+    <Button onClick={() => { setPlays([]); setHandIndex((key) => key + 1); }}>Deal custom board</Button>
+    <div data-game-surface="true" css={boardStyle}>
+      <GameHand cards={hand} disabled={landingTargets.size > 0} playLabel="Play custom card"
+        onPlayIntent={(card) => setPlays([{ ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true }])} />
+      <GameCardStack.Pile playerKey="own" label="Custom pile" cards={plays} />
+    </div>
+  </>;
+}
+
+export const LowLevelEscapeHatch: Story = {
+  tags: ['!autodocs'],
+  render: () => <CardFlightsProvider><LowLevelBoard /></CardFlightsProvider>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const root = canvasElement.ownerDocument.body;
+    await userEvent.click(canvas.getByRole('button', { name: 'Deal custom board' }));
+    await expect(flights(root)).toHaveLength(3);
+    await waitFor(() => expect(flights(root)).toHaveLength(0));
+    await userEvent.click(canvas.getByRole('button', { name: 'A of spades' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Play custom card' }));
+    await expect(flights(root)).toHaveLength(1);
+    await waitFor(() => expect(flights(root)).toHaveLength(0));
+    await expect(canvas.getByRole('img', { name: 'A of spades' })).toBeVisible();
+  },
+};
 
 const preference = { matches: false, media: null as MediaQueryList | null };
 function mockPreference(reduced = false) {
@@ -220,21 +278,14 @@ function FlightBoard({ initialDealt, initialPlayed }: {
   const [handIndex, setHandIndex] = useState(initialDealt || initialPlayed ? 1 : 0);
   const [plays, setPlays] = useState<PlayedFlightCard[]>(initialPlayed ? [OWN_PLAY, RIVAL_PLAY] : []);
   const [resyncKey, setResyncKey] = useState(0);
-  const { scopeRef, landingTargets, rememberPlayOrigin, launch, reset } = useCardFlights();
+  const { scopeRef, rememberPlayOrigin, launch } = useCardFlights();
   const ownPlayed = plays.some((play) => play.isOwn);
   const rivalPlayed = plays.some((play) => !play.isOwn);
-  const players: DealFlightPlayer[] = [
-    { key: 'own', idx: 0, isOwn: true, cards: handIndex ? ownHand.filter((card) => !plays.some((entry) => entry.cardId === card.id)) : [] },
-    { key: 'rival', idx: 1, isOwn: false, cards: handIndex ? rivalHand.filter((card) => !plays.some((entry) => entry.cardId === card.id)) : [] },
-  ];
-  useDealFlights({ handIndex, players, forehandIdx: 1, dealt: handIndex > 0 && !plays.length, resyncKey });
-  usePlayedCardFlights({ plays, playerCount: 2, resyncKey });
+  const hand = handIndex ? ownHand.filter((card) => !plays.some((entry) => entry.cardId === card.id)) : [];
+  const rival = handIndex ? rivalHand.filter((card) => !plays.some((entry) => entry.cardId === card.id)) : [];
+  const { landing: landingTargets, reset } = useBoardFlights({ hand, handKey: handIndex, plays, foregroundIdx: 1, resyncKey });
   const deal = () => { setPlays([]); setHandIndex((index) => index + 1); };
-  const play = (entry: PlayedFlightCard, capture = true) => {
-    if (entry.isOwn && capture) {
-      const element = scopeRef.current?.querySelector<HTMLElement>(`[data-hand-card="${CSS.escape(entry.cardId ?? entry.id)}"]`);
-      if (element) rememberPlayOrigin(entry.cardId ?? entry.id, element);
-    }
+  const play = (entry: PlayedFlightCard) => {
     setPlays((current) => [...current, entry]);
   };
   const replace = () => {
@@ -256,18 +307,18 @@ function FlightBoard({ initialDealt, initialPlayed }: {
         const node = scopeRef.current?.querySelector<HTMLElement>('[data-hand-card="own:0"]');
         if (node) { const box = measureCardBox(node); rememberPlayOrigin('own:0', { ...box, cx: box.cx - 200, cy: box.cy - 100 }); }
       }}>Capture moved origin</Button>
-      <Button disabled={!handIndex || ownPlayed || landingTargets.size > 0} onClick={() => play(OWN_PLAY, false)}>Play without capture</Button>
+      <Button disabled={!handIndex || ownPlayed || landingTargets.size > 0} onClick={() => play(OWN_PLAY)}>Play without capture</Button>
       <output aria-label="Flights in air">{landingTargets.size}</output>
     </div>
     <div css={boardStyle}>
       <GameTable players={2} viewport={{ width: 1000, height: 800 }}
         seats={[{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }]}
       >
-        <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={players[1]!.cards.length} label="Rival hand" /></GameTable.Seat>
+        <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rival.length} label="Rival hand" /></GameTable.Seat>
         <GameTable.Dock><GameHand playLabel="Play selected" disabled={landingTargets.size > 0}
           onPlayIntent={(card) => play({ ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true })}
-          cards={ownHand.filter((card) => players[0]!.cards.some((entry) => entry.id === card.id))} /></GameTable.Dock>
-        {players.map((player) => <GameTable.Play key={player.key} slotKey={player.key}>
+           cards={hand} /></GameTable.Dock>
+        {[{ key: 'own', isOwn: true }, { key: 'rival', isOwn: false }].map((player) => <GameTable.Play key={player.key} slotKey={player.key}>
           <GameCardStack.Pile playerKey={player.key} label={player.isOwn ? 'Own pile' : 'Rival pile'}
             cards={plays.filter((entry) => entry.playerKey === player.key)} />
         </GameTable.Play>)}

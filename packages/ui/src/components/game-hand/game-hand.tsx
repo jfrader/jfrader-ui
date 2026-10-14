@@ -10,6 +10,7 @@ import { Button } from '../button';
 import { GameCard, type GameCardPartProps, type GameCardSize, type GameCardValue } from '../game-card';
 import { gameCardSizeStyles } from '../game-card/game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
+import { registerFlightNode, registerHiddenFlightNode, useFlightRegistry } from '../card-flights/flight-registry';
 import {
   buildOpponentHiddenHandLayout, DEFAULT_HIDDEN_HAND_RULES, getHandFanRotations,
   HAND_CARD_OVERLAP_SPACING, HAND_FAN_DROP_PX, HAND_SELECTION_TARGET_PX, OPPONENT_SEAT_METRICS,
@@ -93,6 +94,7 @@ export function GameHand({
   sx,
   ...rest
 }: GameHandProps) {
+  const registry = useFlightRegistry();
   const [selectedId, select] = useControlledState<string | null>(value, defaultValue, onValueChange);
   const selectedCard = cards.find((card) => card.id === selectedId);
   const rotations = getHandFanRotations(cards.length);
@@ -106,6 +108,7 @@ export function GameHand({
               return (
                 // CardFlights measures this wrapper using the shared card id.
                 <button key={card.id} type="button" data-ui="game-hand-card" data-hand-card={card.id}
+                  ref={(node) => registerFlightNode(registry?.hand, card.id, node)}
                   aria-pressed={selectedId === card.id} disabled={disabled}
                   onClick={() => select(selectedId === card.id ? null : card.id)}
                   className={slotProps?.card?.className} css={[cardStyle, slotProps?.card?.css]}
@@ -164,6 +167,7 @@ function GameHandHidden({
   ref, count, label, playerKey, size = 'md', polar, scale = 1, rules = DEFAULT_HIDDEN_HAND_RULES,
   className, sx, style, slotProps, ...rest
 }: GameHandHiddenProps) {
+  const registry = useFlightRegistry();
   const layout = buildOpponentHiddenHandLayout({
     geometry: polar ?? STANDALONE_POLAR,
     profileRules: rules,
@@ -181,6 +185,7 @@ function GameHandHidden({
           {layout.cards.map((card, index) => (
             // CardFlights pairs the player key and zero-based index on the measured wrapper.
             <div key={`hidden-${index}`} data-ui="game-hand-hidden-card" data-seat-hidden-card={playerKey}
+              ref={(node) => registerHiddenFlightNode(registry, playerKey, index, node)}
               data-seat-hidden-card-index={playerKey === undefined ? undefined : index} aria-hidden="true"
               className={slotProps?.card?.className} css={[hiddenCardStyle, slotProps?.card?.css]}
               style={{ '--hidden-x': `${card.x}px`, '--hidden-y': `${card.y}px`, '--hidden-angle': `${card.rotateDeg}deg`, zIndex: card.zIndex } as CSSProperties}>

@@ -13,6 +13,7 @@ import { CARD_FRAME } from '../game-card/card-frame';
 import { DEFAULT_PILE_LAYOUT, PLAYED_PILE, getPilePosition, getPileOffset, getStableJitter,
   getStableRotation, type PlayedCard, type PileLayout, type SeatVector } from './pile-layout';
 import { getAutoLayout } from './auto-layout';
+import { registerFlightNode, useFlightRegistry } from '../card-flights/flight-registry';
 
 export interface GameCardStackPile {
   playerKey: string;
@@ -185,6 +186,7 @@ GameCardStack.displayName = 'GameCardStack';
 function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, defaultValue = null,
   onValueChange, revealed = false, maxCards = PLAYED_PILE.maxCards, cardWidth, layout, backPattern,
   className, sx, style, onKeyDown, slotProps, ...rest }: GameCardStackPileProps) {
+  const registry = useFlightRegistry();
   const [inspected, inspect] = useControlledState(value, defaultValue, onValueChange);
   const inspecting = inspected === playerKey;
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -226,6 +228,7 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
             const offset = getPileOffset({ index, total: cards.length, open: spread, openSpreadRatio: PLAYED_PILE.openSpreadRatio });
             const rotation = getStableRotation({ seed: inspecting ? `${key}:inspected` : key, maxRotationOffsetDeg: config.maxRotationOffsetDeg });
             return <div key={key} data-ui="game-card-stack-card" data-played-key={key}
+              ref={(node) => registerFlightNode(registry?.played, key, node)}
               data-reduced-motion={mounted && !!reducedMotion || undefined} className={slotProps?.card?.className}
               css={[cardStyle, slotProps?.card?.css]} style={{
                 '--card-x': `calc(${jitter.x}px + ${spread ? `${visibleCardWidth} * ${offset.xCardWidths}` : `${offset.xPx}px`})`,
