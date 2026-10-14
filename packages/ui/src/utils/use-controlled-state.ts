@@ -27,14 +27,20 @@ export function useControlledState<T>(
   const requestChange = useCallback(
     (next: T) => {
       if (next === currentRef.current) return;
-      if (!isControlled) setInternal(next);
+      if (!isControlled) {
+        currentRef.current = next;
+        setInternal(next);
+      }
       notify(next);
     },
     [isControlled, notify],
   );
 
   const resetToDefault = useCallback(() => {
-    if (!isControlled) setInternal(defaultValue);
+    if (!isControlled) {
+      currentRef.current = defaultValue;
+      setInternal(defaultValue);
+    }
   }, [isControlled, defaultValue]);
 
   return [current, requestChange, resetToDefault] as const;
