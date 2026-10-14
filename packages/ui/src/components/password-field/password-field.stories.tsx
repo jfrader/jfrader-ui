@@ -57,7 +57,7 @@ const meta = {
           'Enter a password, token or API key and toggle whether it is visible.',
       },
       usage: `- One native input switches between password and text, preserving value, selection, focus and password-manager support.
-- The reveal button keeps its name. aria-pressed exposes its state; aria-controls points to the input.
+- The reveal button's accessible name stays the same when visibility changes. Its \`aria-pressed\` state indicates whether the password is revealed, and \`aria-controls\` identifies the input.
 - Tab moves from input to reveal to page. Enter or Space on reveal toggles once without submitting. Enter in the input submits the form; Escape does nothing. Text editing follows browser behavior.
 - value and revealed support controlled and uncontrolled state independently. Form reset restores uncontrolled state without callbacks.
 - Use TextField for other text.`,

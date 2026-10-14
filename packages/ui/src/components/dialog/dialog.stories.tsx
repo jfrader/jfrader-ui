@@ -110,6 +110,19 @@ export const IndependentMaterialAdapter = rootAdapterStory(DialogPaper);
 export const SurfaceAdapterLight: Story = { ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
 
 export const PanelComposition: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
+
+<Dialog>
+  <Dialog.Trigger>Open profile</Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Title>Edit profile</Dialog.Title>
+    <Dialog.Description>
+      Update your display name and avatar.
+    </Dialog.Description>
+    <p>Your display name appears on comments and mentions.</p>
+    <Dialog.Close>Close</Dialog.Close>
+  </Dialog.Content>
+</Dialog>` } } },
   render: (args) => <DialogExample {...args} />,
   play: async ({ canvasElement }) => {
     const shell = canvasElement.querySelector('dialog')!;

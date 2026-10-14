@@ -118,6 +118,21 @@ export const BooleanNodes: Story = {
 };
 
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { TextField } from '@jfrader/ui';
+
+export function EmailField() {
+  const [email, setEmail] = useState('');
+
+  return (
+    <TextField
+      label="Email"
+      placeholder="you@example.com"
+      value={email}
+      onValueChange={setEmail}
+    />
+  );
+}` } } },
   args: { onChange: fn(), onValueChange: fn() },
   render: (args) => <ControlledTextField {...args} />,
   play: async ({ args, canvasElement }) => {

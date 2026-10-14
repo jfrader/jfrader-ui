@@ -54,7 +54,7 @@ const meta = {
 - Set a height limit. History is not virtualized and keeps the order you supply.
 - Scrolling stays pinned within 48px of the bottom or after a send/jump. Incoming updates never move focus.
 - Root and Composer refs target divs. \`composerProps.slotProps.textarea.ref\` targets the textarea.
-- Component-created object URLs are released on removal, failure, and unmount. Caller URLs are never revoked. Image previews and accepted local messages each retain their own URL lease.
+- ChatThread releases object URLs it creates on removal, failure and unmount. It never revokes URLs supplied by your app. Image previews and accepted local messages each retain a separate lease on their object URL.
 - Dates, counts, byte sizes, and names use Intl. Update \`now\` yourself with epoch milliseconds; \`timeZone\` defaults to UTC.
 
 ### Keyboard

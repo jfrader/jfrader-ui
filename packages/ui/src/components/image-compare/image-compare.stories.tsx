@@ -85,7 +85,12 @@ const meta = {
       description: {
         component: 'Compare two images by dragging a divider to reveal more of either image.',
       },
-      usage: `- Images are aligned and cropped the same way. The divider follows the APG slider pattern. \`value\` is the percentage of Before visible from inline-start horizontally or the top vertically: 0 shows After; 100 shows Before. The slider reports the accepted value; after a drag, the divider settles back to that value.
+      usage: `Images share the same alignment and crop. The divider follows the APG slider pattern.
+
+\`value\` is the percentage of the Before image that is visible. Horizontal comparisons reveal from inline-start; vertical comparisons reveal from the top. At 0, only After is visible. At 100, only Before is visible.
+
+The slider reports the accepted value. After a drag, the divider settles back to that value.
+
 - Arrows move one \`step\`; horizontal Left/Right follow physical direction in RTL, and Up always increases. Shift+arrows and PageUp/PageDown move \`largeStep\`; Home/End go to 0/100. Center divider and double-clicking the handle request 50.
 - Tap the frame to jump or drag anywhere on it. Touch dragging starts along the reveal axis, so a vertical swipe over a horizontal comparison scrolls the page.
 - Both images stay mounted. Give each a meaningful, different \`alt\`; do not put interactive content inside them. Captions are decorative and describe the slider.

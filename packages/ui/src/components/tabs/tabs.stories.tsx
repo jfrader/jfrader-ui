@@ -118,6 +118,18 @@ async function expectSelected(canvasElement: HTMLElement, selectedIndex: number)
 }
 
 export const Default: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Tabs } from '@jfrader/ui';
+
+<Tabs defaultValue="one">
+  <Tabs.List aria-label="Settings">
+    <Tabs.Tab value="one">Account</Tabs.Tab>
+    <Tabs.Tab value="two">Security</Tabs.Tab>
+    <Tabs.Tab value="three">Billing</Tabs.Tab>
+  </Tabs.List>
+  <Tabs.Panel value="one">Name, email and avatar.</Tabs.Panel>
+  <Tabs.Panel value="two">Password and two-factor sign-in.</Tabs.Panel>
+  <Tabs.Panel value="three">Plan, invoices and payment method.</Tabs.Panel>
+</Tabs>` } } },
   args: { defaultValue: 'one' },
   render: (args) => <TabsExample {...args} />,
   play: async ({ canvasElement }) => {
