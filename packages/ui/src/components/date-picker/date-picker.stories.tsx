@@ -1,11 +1,13 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties } from 'react';
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
-import { DatePicker, type DatePickerProps } from './index';
+import { TextField, type TextFieldProps } from '../text-field';
+import { DatePicker, type DatePickerCompoundProps as DatePickerProps, type DatePickerEasyProps } from './index';
 
 const LABEL = 'Departure';
 const LOCALE = 'en-US';
@@ -19,12 +21,15 @@ const stackStyle = {
   inlineSize: '320px',
 } satisfies CSSProperties;
 
-const meta = {
+const meta: Meta<DatePickerProps> = {
   title: 'Pickers/DatePicker',
   component: DatePicker,
   args: { locale: LOCALE },
   parameters: {
-    docs: { description: { component: 'Choose a date from a calendar.' } },
+    docs: {
+      description: { component: 'Choose a date from a calendar.' },
+      usage: '- Pass label to generate the input and calendar popup. Customize them through slots or slotProps.\n- Use DatePicker.Input and DatePicker.Popup as children for a custom field layout.',
+    },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
     // aria-hidden element is still checked.
@@ -34,11 +39,40 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof DatePicker>;
+};
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+type CheckedDatePicker<Props extends import('./index').DatePickerProps> = Props;
+export type DatePickerTypeRegression = {
+  // @ts-expect-error Easy label and compound children are mutually exclusive.
+  mixed: CheckedDatePicker<{ label: string; children: string }>;
+  // @ts-expect-error Generated-part props require the easy label.
+  incomplete: CheckedDatePicker<{ slotProps: { input: { description: string } } }>;
+  // @ts-expect-error Compound mode rejects generated-part props.
+  compoundSlots: CheckedDatePicker<{ children: string; slotProps: { popup: { className: string } } }>;
+};
+
+function EasyControlledDatePicker(props: DatePickerEasyProps) {
+  const [value, setValue] = useState('2026-10-12');
+  const [open, setOpen] = useState(false);
+  return <DatePicker {...props} value={value} open={open}
+    onValueChange={(next) => { setValue(next); props.onValueChange?.(next); }}
+    onOpenChange={(next) => { setOpen(next); props.onOpenChange?.(next); }} />;
+}
+EasyControlledDatePicker.displayName = 'EasyControlledDatePicker';
+
+function DateFieldReplacement(props: TextFieldProps) {
+  return <TextField {...props} data-generated-field="" />;
+}
+DateFieldReplacement.displayName = 'DateFieldReplacement';
+
+function DatePopupRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-generated-popup="" />;
+}
+DatePopupRoot.displayName = 'DatePopupRoot';
 
 function DatePickerExample(props: DatePickerProps) {
   return (
@@ -98,7 +132,28 @@ async function focusInput(canvasElement: HTMLElement) {
   return input;
 }
 
-export const Default: Story = {
+export const Default: StoryObj<DatePickerEasyProps> = {
+  args: { label: LABEL, locale: LOCALE, defaultValue: '2026-10-12', onValueChange: fn() },
+  render: (args) => <DatePicker {...args} />,
+  parameters: { docs: { source: { code: '<DatePicker label="Departure" locale="en-US" defaultValue="2026-10-12" />' } } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const input = getInput(canvasElement);
+    await expect(input).toHaveValue(formatted('2026-10-12'));
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowDown}');
+    await bodyOf(canvasElement).findByRole('dialog', { name: LABEL });
+    await expectDayFocused(canvasElement, 'October 12, 2026');
+    await userEvent.keyboard('{ArrowRight}{Enter}');
+    await expectClosed(canvasElement);
+    await expect(input).toHaveValue(formatted('2026-10-13'));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('2026-10-13');
+    await expect(canvasElement.ownerDocument.activeElement).toBe(input);
+  },
+};
+
+/** Assemble the date field and popup for a custom layout. */
+export const Compound: Story = {
   args: { defaultValue: '2026-10-12', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <DatePickerExample {...args} />,
   parameters: {
@@ -162,6 +217,69 @@ export const Default: Story = {
     await expectDayFocused(canvasElement, 'October 13, 2026');
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);
+  },
+};
+
+/** Set props on the generated input and popup. */
+export const CustomParts: StoryObj<DatePickerEasyProps> = {
+  args: {
+    label: LABEL, locale: LOCALE, defaultValue: '2026-10-12',
+    slots: { input: DateFieldReplacement, popup: DatePopupRoot },
+    slotProps: { input: { description: 'Travel date', className: 'departure-field' }, popup: { className: 'departure-calendar' } },
+  },
+  render: (args) => <DatePicker {...args} />,
+  parameters: { docs: { source: { code: `<DatePicker label="Departure" locale="en-US"
+  slotProps={{ input: { description: 'Travel date' }, popup: { className: 'departure-calendar' } }} />` } } },
+  play: async ({ canvasElement, userEvent }) => {
+    const input = getInput(canvasElement);
+    await expect(input).toHaveAccessibleDescription('Travel date');
+    await expect(input).toHaveAttribute('data-generated-field');
+    await userEvent.click(input);
+    const dialog = await bodyOf(canvasElement).findByRole('dialog', { name: LABEL });
+    await expect(dialog).toHaveClass('departure-calendar');
+    await expect(dialog).toHaveAttribute('data-generated-popup');
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+  },
+};
+
+export const EasyDisabled: StoryObj<DatePickerEasyProps> = {
+  args: { label: LABEL, locale: LOCALE, disabled: true, open: true },
+  render: (args) => <DatePicker {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await expect(getInput(canvasElement)).toBeDisabled();
+    await userEvent.click(getInput(canvasElement));
+    await expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull();
+  },
+};
+
+export const EasyControlled: StoryObj<DatePickerEasyProps> = {
+  args: { label: LABEL, locale: LOCALE, onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <EasyControlledDatePicker {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    await userEvent.click(getInput(canvasElement));
+    await bodyOf(canvasElement).findByRole('dialog', { name: LABEL });
+    await userEvent.keyboard('{ArrowRight}{Enter}');
+    await expectClosed(canvasElement);
+    await expect(getInput(canvasElement)).toHaveValue(formatted('2026-10-13'));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('2026-10-13');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+  },
+};
+
+/** Dates follow the field's locale. */
+export const EasyLocale: StoryObj<DatePickerEasyProps> = {
+  args: { label: 'Salida', locale: 'es-ES', defaultValue: '2026-10-12' },
+  render: (args) => <DatePicker {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const input = within(canvasElement).getByRole('combobox', { name: 'Salida' });
+    const expected = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', calendar: 'gregory', timeZone: 'UTC' }).format(new Date('2026-10-12T00:00:00Z'));
+    await expect(input).toHaveValue(expected);
+    await userEvent.click(input);
+    await expect(await bodyOf(canvasElement).findByRole('dialog', { name: 'Salida' })).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    await expect(input).toHaveAttribute('aria-expanded', 'false');
   },
 };
 

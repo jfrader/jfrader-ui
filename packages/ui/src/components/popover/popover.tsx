@@ -19,6 +19,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type ReactNode,
 } from 'react';
@@ -32,7 +33,7 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
@@ -41,7 +42,7 @@ import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
 
-export interface PopoverProps {
+export interface PopoverBaseProps {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -49,12 +50,43 @@ export interface PopoverProps {
   children?: ReactNode;
 }
 
+export interface PopoverCompoundProps extends PopoverBaseProps {
+  triggerLabel?: never;
+  label?: never;
+  content?: never;
+  slots?: never;
+  slotProps?: never;
+}
+
+type PopoverGeneratedPartProps<Props> = Omit<Props, 'children'> & { css?: Interpolation<Theme> };
+
+export interface PopoverEasyProps extends Omit<PopoverBaseProps, 'children'> {
+  /** Name the generated trigger button. */
+  triggerLabel: ReactNode;
+  /** Name the non-modal dialog. */
+  label: string;
+  content: ReactNode;
+  children?: never;
+  /** Replace native roots with components that forward all supplied props and ref. */
+  slots?: {
+    trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
+    content?: ComponentType<ComponentPropsWithRef<'div'>>;
+  };
+  slotProps?: {
+    trigger?: PopoverGeneratedPartProps<PopoverTriggerProps>;
+    content?: PopoverGeneratedPartProps<PopoverContentProps>;
+  };
+}
+
+export type PopoverProps = PopoverCompoundProps | PopoverEasyProps;
+
 export interface PopoverTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface PopoverContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
 interface PopoverContextValue {
+  slots: PopoverEasyProps['slots'];
   open: boolean;
   refs: OverlayFloating['refs'];
   floatingContext: OverlayFloating['context'];
@@ -89,7 +121,8 @@ function PopoverLayer({
   onOpenChange,
   placement = 'bottom',
   children,
-}: PopoverProps & { nodeId: string | undefined }) {
+  slots,
+}: PopoverBaseProps & Pick<PopoverEasyProps, 'slots'> & { nodeId: string | undefined }) {
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const pendingFocusRestoreRef = useRef(false);
   const [availableHeight, setAvailableHeight] = useState<number>();
@@ -127,27 +160,41 @@ function PopoverLayer({
       floatingStyles: { ...floatingStyles, maxBlockSize: availableHeight },
       getReferenceProps,
       getFloatingProps,
+      slots,
     }),
-    [open, refs, context, floatingStyles, availableHeight, getReferenceProps, getFloatingProps],
+    [open, refs, context, floatingStyles, availableHeight, getReferenceProps, getFloatingProps, slots],
   );
 
   return <PopoverContext.Provider value={value}>{children}</PopoverContext.Provider>;
 }
 
 function PopoverRoot(props: PopoverProps) {
-  return <OverlayLayer>{(nodeId) => <PopoverLayer {...props} nodeId={nodeId} />}</OverlayLayer>;
+  const children = props.triggerLabel !== undefined ? (
+    <>
+      <PopoverTrigger {...props.slotProps?.trigger}>{props.triggerLabel}</PopoverTrigger>
+      <PopoverContent aria-label={props.label} {...props.slotProps?.content}>
+        {props.content}
+      </PopoverContent>
+    </>
+  ) : props.children;
+  return (
+    <OverlayLayer>
+      {(nodeId) => <PopoverLayer {...props} nodeId={nodeId}>{children}</PopoverLayer>}
+    </OverlayLayer>
+  );
 }
 
 PopoverRoot.displayName = 'Popover';
 
 function PopoverTrigger({ ref, className, sx, ...props }: PopoverTriggerProps) {
-  const { refs, getReferenceProps } = usePopoverContext('Trigger');
+  const { refs, getReferenceProps, slots } = usePopoverContext('Trigger');
+  const Root = slots?.trigger ?? 'button';
   const mergedRef = useMergeRefs([refs.setReference, ref]);
 
   return (
     <WithSx className={className} styles={triggerStyle} sx={sx}>
       {(className) => (
-        <button
+        <Root
           type="button"
           {...getReferenceProps(props)}
           ref={mergedRef}
@@ -162,7 +209,8 @@ function PopoverTrigger({ ref, className, sx, ...props }: PopoverTriggerProps) {
 PopoverTrigger.displayName = 'Popover.Trigger';
 
 function PopoverContent({ ref, style, className, sx, ...rest }: PopoverContentProps) {
-  const { open, refs, floatingContext, floatingStyles, getFloatingProps } = usePopoverContext('Content');
+  const { open, refs, floatingContext, floatingStyles, getFloatingProps, slots } = usePopoverContext('Content');
+  const Root = slots?.content ?? 'div';
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
 
   if (!open) return null;
@@ -180,7 +228,7 @@ function PopoverContent({ ref, style, className, sx, ...rest }: PopoverContentPr
       >
         <WithSx className={className} styles={contentStyle} sx={sx}>
           {(className) => (
-            <div
+            <Root
               {...getFloatingProps(rest)}
               ref={mergedRef}
               data-ui="popover"
