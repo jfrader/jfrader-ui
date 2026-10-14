@@ -103,7 +103,18 @@ const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[
 const meta = {
   title: 'Data display/AvatarGroup',
   component: AvatarGroup,
-  parameters: { docs: { description: { component: 'Show people together, with a count for those who do not fit.' } } },
+  parameters: {
+    docs: {
+      description: { component: 'Show people together, with a count for those who do not fit.' },
+      usage: `### Members
+- Pass \`members\` in display order with a unique \`id\` for each person. \`max\` defaults to 4 people, with an additional overflow count. Set \`max={0}\` to show only the count.
+- \`max\` does not respond to available width. Set it yourself for your layout. Fractions round down, negative values become 0, and non-finite values fall back to 4.
+
+### Labels
+- The group and overflow are not controls. If you need to open a member list, provide a separate button.
+- For another language, set \`label\`, \`getOverflowLabel\` and \`getSummaryLabel\`. \`locale\` formats numbers only. Set it explicitly for server rendering.`,
+    },
+  },
   tags: ['autodocs'],
   args: {
     members: SAMPLE_MEMBERS,
@@ -125,7 +136,19 @@ export const Default: Story = {
   parameters: {
     docs: {
       source: {
-        code: `<AvatarGroup\n  members={[\n    { id: 'ada', name: 'Ada Lovelace' },\n    { id: 'grace', name: 'Grace Hopper' },\n  ]}\n  max={1}\n  label="Editors"\n  locale="en-GB"\n/>`,
+        language: 'tsx',
+        code: `<AvatarGroup
+  members={[
+    { id: 'ada', name: 'Ada Lovelace', src: '${PHOTO_SRC}' },
+    { id: 'grace', name: 'Grace Hopper', status: 'online' },
+    { id: 'margaret', name: 'Margaret Hamilton', status: 'busy' },
+    { id: 'katherine', name: 'Katherine Johnson' },
+    { id: 'hedy', name: 'Hedy Lamarr', status: 'away' },
+  ]}
+  max={4}
+  size="md"
+  label="Team members"
+/>`,
       },
     },
   },
