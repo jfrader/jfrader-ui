@@ -12,13 +12,15 @@ import {
   useEffect,
   useLayoutEffect,
   type ComponentPropsWithRef,
+  type ComponentType,
+  type ReactNode,
   type RefObject,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { MotionConfig, animate, useMotionValue, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { base } from '@jfrader/tokens';
-import { css } from '../../styling/css';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { raisedSurface } from '../../styling/surface';
 import { disclosureCaret } from '../../styling/disclosure-caret';
@@ -27,8 +29,8 @@ import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { isRenderable } from '../../utils/renderable';
 
-export interface ExpandableCardProps
-  extends Omit<ComponentPropsWithRef<'article'>, 'defaultValue' | 'onChange'>, SxProps {
+export interface ExpandableCardBaseProps
+  extends Omit<ComponentPropsWithRef<'article'>, 'defaultValue' | 'onChange' | 'children' | 'title' | 'content'>, SxProps {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -38,12 +40,49 @@ export interface ExpandableCardProps
   disabled?: boolean;
   headingLevel?: 2 | 3 | 4;
 }
+export interface ExpandableCardSlots {
+  root?: ComponentType<ComponentPropsWithRef<'article'>>;
+  trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
+  title?: ComponentType<ComponentPropsWithRef<'span'>>;
+  description?: ComponentType<ComponentPropsWithRef<'span'>>;
+  content?: ComponentType<ComponentPropsWithRef<'div'>>;
+}
+export interface ExpandableCardSlotProps {
+  root?: Omit<ComponentPropsWithRef<'article'>, 'children'> & SxProps & {
+    css?: Interpolation<Theme>;
+    [attribute: `data-${string}`]: unknown;
+  };
+  trigger?: Omit<ExpandableCardTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  title?: Omit<ExpandableCardTitleProps, 'children'> & { css?: Interpolation<Theme> };
+  description?: Omit<ExpandableCardDescriptionProps, 'children'> & { css?: Interpolation<Theme> };
+  content?: Omit<ExpandableCardContentProps, 'children'> & { css?: Interpolation<Theme> };
+}
+export interface ExpandableCardCompoundProps extends ExpandableCardBaseProps {
+  children?: ReactNode;
+  title?: string;
+  description?: never;
+  content?: never;
+  component?: never;
+  slots?: never;
+  slotProps?: never;
+}
+export interface ExpandableCardEasyProps extends ExpandableCardBaseProps {
+  title: ReactNode;
+  description?: ReactNode;
+  content: ReactNode;
+  children?: never;
+  component?: ExpandableCardSlots['root'];
+  slots?: ExpandableCardSlots;
+  slotProps?: ExpandableCardSlotProps;
+}
+export type ExpandableCardProps = ExpandableCardCompoundProps | ExpandableCardEasyProps;
 export type ExpandableCardTriggerProps = ComponentPropsWithRef<'button'> & SxProps;
 export type ExpandableCardTitleProps = ComponentPropsWithRef<'span'> & SxProps;
 export type ExpandableCardDescriptionProps = ComponentPropsWithRef<'span'> & SxProps;
 export type ExpandableCardContentProps = Omit<ComponentPropsWithRef<'div'>, 'hidden'> & SxProps;
 
 interface CardContext {
+  slots?: ExpandableCardSlots;
   open: boolean;
   request: (open: boolean) => void;
   disabled: boolean;
@@ -161,29 +200,41 @@ function ids(...values: (string | false | undefined)[]) {
   return values.filter(Boolean).join(' ') || undefined;
 }
 
-function ExpandableCardRoot({
-  ref,
-  open: openProp,
-  defaultOpen = false,
-  onOpenChange,
-  collapsedInlineSize,
-  expandedInlineSize,
-  size = 'md',
-  disabled = false,
-  headingLevel = 3,
-  className,
-  sx,
-  onKeyDown,
-  children,
-  ...rest
-}: ExpandableCardProps) {
+function ExpandableCardRoot(props: ExpandableCardProps) {
+  const {
+    ref,
+    open: openProp,
+    defaultOpen = false,
+    onOpenChange,
+    collapsedInlineSize,
+    expandedInlineSize,
+    size = 'md',
+    disabled = false,
+    headingLevel = 3,
+    className,
+    sx,
+    onKeyDown,
+    children,
+    title,
+    description,
+    content,
+    component,
+    slots,
+    slotProps,
+    ...rest
+  } = props;
+  const easy = 'content' in props;
+  const Root = component ?? slots?.root ?? 'article';
+  const { className: slotClassName, style: slotStyle, css: slotCss, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
+  const marker = typeof rootProps['data-ui'] === 'string' ? rootProps['data-ui'] : '';
+  const rootDataUi = [...new Set(['expandable-card', ...marker.split(/\s+/)])].filter(Boolean).join(' ');
   const [state, request] = useControlledState(openProp, defaultOpen, onOpenChange);
   const open = Boolean(state);
   const id = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const articleRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const mergedRef = useMergeRefs([articleRef, ref]);
+  const mergedRef = useMergeRefs([articleRef, ref, rootProps.ref]);
   const [hasTitle, setHasTitle] = useState(false);
   const [hasDescription, setHasDescription] = useState(false);
   const [room, setRoom] = useState<number>();
@@ -249,29 +300,33 @@ function ExpandableCardRoot({
       setHasDescription,
       triggerRef,
       expandedWidth,
+      slots,
     }),
-    [open, request, disabled, headingLevel, id, hasTitle, hasDescription, expandedWidth],
+    [open, request, disabled, headingLevel, id, hasTitle, hasDescription, expandedWidth, slots],
   );
   return (
     <MotionConfig reducedMotion="user">
       <Context.Provider value={context}>
         <div ref={trackRef} css={trackStyle}>
-          <WithSx className={className} styles={rootStyle} sx={sx}>
+          <WithSx className={[slotClassName, className].filter(Boolean).join(' ')} styles={[rootStyle, slotCss, slotSx]} sx={sx}>
             {(className) => (
-              <article
+              <Root
                 {...rest}
+                {...rootProps}
                 ref={mergedRef}
-                data-ui="expandable-card"
+                title={rootProps.title ?? (!easy && typeof title === 'string' ? title : undefined)}
+                style={{ ...rest.style, ...slotStyle }}
+                data-ui={rootDataUi}
                 data-size={size}
                 data-state={open ? 'open' : 'closed'}
                 className={className}
                 onKeyDown={(event) => {
-                  onKeyDown?.(event);
+                  (rootProps.onKeyDown ?? onKeyDown)?.(event);
                   if (event.defaultPrevented || event.key !== 'Escape' || !open) return;
                   const target = event.target as Element;
                   const layer = target.closest('dialog, [role="dialog"], [role="menu"], [role="listbox"]');
                   if (
-                    target.closest('[data-ui="expandable-card"]') !== event.currentTarget ||
+                    target.closest('[data-ui~="expandable-card"]') !== event.currentTarget ||
                     (layer && event.currentTarget.contains(layer))
                   )
                     return;
@@ -279,8 +334,18 @@ function ExpandableCardRoot({
                   request(false);
                 }}
               >
-                {children}
-              </article>
+                {easy ? (
+                  <>
+                    <ExpandableCardTrigger {...slotProps?.trigger}>
+                      <ExpandableCardTitle {...slotProps?.title}>{title}</ExpandableCardTitle>
+                      {isRenderable(description) && (
+                        <ExpandableCardDescription {...slotProps?.description}>{description}</ExpandableCardDescription>
+                      )}
+                    </ExpandableCardTrigger>
+                    <ExpandableCardContent {...slotProps?.content}>{content}</ExpandableCardContent>
+                  </>
+                ) : children}
+              </Root>
             )}
           </WithSx>
         </div>
@@ -301,6 +366,7 @@ function ExpandableCardTrigger({
   ...rest
 }: ExpandableCardTriggerProps) {
   const c = useCard('Trigger');
+  const Root = c.slots?.trigger ?? 'button';
   const mergedRef = useMergeRefs([c.triggerRef, ref]);
   const Heading = `h${c.headingLevel}` as const;
   return (
@@ -309,7 +375,7 @@ function ExpandableCardTrigger({
     <Heading css={headingStyle} aria-labelledby={c.triggerId}>
       <WithSx className={className} styles={triggerStyle} sx={sx}>
         {(className) => (
-          <button
+          <Root
             {...rest}
             ref={mergedRef}
             type="button"
@@ -334,7 +400,8 @@ function ExpandableCardTrigger({
 ExpandableCardTrigger.displayName = 'ExpandableCard.Trigger';
 
 function ExpandableCardTitle({ ref, className, sx, children, ...rest }: ExpandableCardTitleProps) {
-  const { titleId, setHasTitle } = useCard('Title');
+  const { titleId, setHasTitle, slots } = useCard('Title');
+  const Root = slots?.title ?? 'span';
   const present = isRenderable(children);
   useEffect(() => {
     setHasTitle(present);
@@ -344,9 +411,9 @@ function ExpandableCardTitle({ ref, className, sx, children, ...rest }: Expandab
   return (
     <WithSx className={className} styles={titleStyle} sx={sx}>
       {(className) => (
-        <span {...rest} ref={ref} id={titleId} className={className} data-ui="expandable-card-title">
+        <Root {...rest} ref={ref} id={titleId} className={className} data-ui="expandable-card-title">
           {children}
-        </span>
+        </Root>
       )}
     </WithSx>
   );
@@ -359,7 +426,8 @@ function ExpandableCardDescription({
   children,
   ...rest
 }: ExpandableCardDescriptionProps) {
-  const { descriptionId, setHasDescription } = useCard('Description');
+  const { descriptionId, setHasDescription, slots } = useCard('Description');
+  const Root = slots?.description ?? 'span';
   const present = isRenderable(children);
   useEffect(() => {
     setHasDescription(present);
@@ -369,7 +437,7 @@ function ExpandableCardDescription({
   return (
     <WithSx className={className} styles={descriptionStyle} sx={sx}>
       {(className) => (
-        <span
+        <Root
           {...rest}
           ref={ref}
           id={descriptionId}
@@ -378,7 +446,7 @@ function ExpandableCardDescription({
         >
           {' '}
           {children}
-        </span>
+        </Root>
       )}
     </WithSx>
   );
@@ -395,6 +463,7 @@ function ExpandableCardContent({
   ...rest
 }: ExpandableCardContentProps) {
   const c = useCard('Content');
+  const Root = c.slots?.content ?? 'div';
   const panelRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const mergedRef = useMergeRefs([panelRef, ref]);
@@ -471,7 +540,7 @@ function ExpandableCardContent({
   return (
     <WithSx className={className} styles={contentStyle} sx={sx}>
       {(className) => (
-        <div
+        <Root
           {...rest}
           ref={mergedRef}
           id={c.panelId}
@@ -486,7 +555,7 @@ function ExpandableCardContent({
           <div ref={innerRef} css={innerStyle} style={{ inlineSize: c.expandedWidth }}>
             {children}
           </div>
-        </div>
+        </Root>
       )}
     </WithSx>
   );
