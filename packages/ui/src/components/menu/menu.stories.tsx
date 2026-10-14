@@ -7,7 +7,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
-import { Menu, type MenuProps } from './index';
+import { Menu, type MenuCompoundProps, type MenuEasyProps } from './index';
 
 const TRIGGER = 'Options';
 
@@ -25,7 +25,10 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Open a menu and choose an action.' },
-      usage: `- Uses menu/menuitem semantics, labelled by the trigger. The trigger exposes aria-haspopup, aria-expanded and aria-controls.
+      usage: `### Composition
+Pass triggerLabel and items for an action menu. Each record has type="item" with label, onSelect and optional disabled, or type="separator". Do not combine items with children. Use slotProps.trigger/content/item/separator for part props; use the compound parts for custom structure.
+
+- Uses menu/menuitem semantics, labelled by the trigger. The trigger exposes aria-haspopup, aria-expanded and aria-controls.
 - Enter, Space or ArrowDown opens on the first enabled item; ArrowUp opens on the last. Pointer opening also focuses the first item.
 - Arrows wrap and skip disabled items; Home/End reach the ends. Typeahead resets after 500ms (the upstream default is 750ms).
 - Escape or selection returns focus to the trigger after an accepted close. Outside press and Tab out close without moving focus.
@@ -46,9 +49,100 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<MenuCompoundProps>;
 
-function MenuExample(props: MenuProps) {
+export const Default: StoryObj<MenuEasyProps> = {
+  name: 'Easy mode',
+  args: {
+    triggerLabel: TRIGGER,
+    items: [
+      { type: 'item', label: 'Edit', onSelect: onEdit },
+      { type: 'item', label: 'Duplicate', disabled: true },
+      { type: 'separator' },
+      { type: 'item', label: 'Delete', onSelect: onDelete },
+    ],
+    onOpenChange: fn(),
+    slotProps: { content: { className: 'easy-menu-content' } },
+  },
+  parameters: { docs: { source: { language: 'tsx', code: `const actions = [
+  { type: 'item', label: 'Edit', onSelect: edit },
+  { type: 'item', label: 'Duplicate', disabled: true },
+  { type: 'separator' },
+  { type: 'item', label: 'Delete', onSelect: remove },
+] satisfies MenuAction[];
+
+<Menu triggerLabel="Actions" items={actions} />` } } },
+  render: (args) => <div style={rowStyle}><Menu {...args} /><Button>After</Button></div>,
+  play: async ({ canvasElement, args, userEvent }) => {
+    onEdit.mockClear();
+    onDelete.mockClear();
+    const trigger = await focusTrigger(canvasElement);
+    await userEvent.keyboard('{ArrowDown}');
+    const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
+    await expect(menu).toHaveClass('easy-menu-content');
+    await expect(trigger).toHaveAttribute('aria-controls', menu.id);
+    await expect(menu).toHaveAttribute('aria-labelledby', trigger.id);
+    await expectFocused(canvasElement, 'Edit');
+    await expect(getComputedStyle(canvasElement.ownerDocument.activeElement!).outlineStyle).not.toBe('none');
+    const disabled = within(menu).getByRole('menuitem', { name: 'Duplicate' });
+    await expect(disabled).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(disabled);
+    await expect(menu).toBeVisible();
+    await userEvent.keyboard('{End}');
+    await expectFocused(canvasElement, 'Delete');
+    await userEvent.keyboard('{Home}{ArrowDown}');
+    await expectFocused(canvasElement, 'Delete');
+    await userEvent.keyboard('{Enter}');
+    await expect(onDelete).toHaveBeenCalledTimes(1);
+    await expectClosed(canvasElement);
+    await expect(trigger).toHaveFocus();
+    await userEvent.keyboard('{ArrowUp}');
+    await expectFocused(canvasElement, 'Delete');
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expect(trigger).toHaveFocus();
+    await userEvent.click(trigger);
+    await expectFocused(canvasElement, 'Edit');
+    await userEvent.keyboard('d');
+    await expectFocused(canvasElement, 'Delete');
+    await userEvent.tab();
+    await expectClosed(canvasElement);
+    await expect(within(canvasElement).getByRole('button', { name: 'After' })).toHaveFocus();
+    await userEvent.click(trigger);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'After' }));
+    await expectClosed(canvasElement);
+    await expect(within(canvasElement).getByRole('button', { name: 'After' })).toHaveFocus();
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+  },
+};
+
+export const EasyModeOpen: StoryObj<MenuEasyProps> = { ...Default, name: 'Easy mode open', args: { ...Default.args, defaultOpen: true }, play: undefined };
+export const EasyModeLight: StoryObj<MenuEasyProps> = { ...EasyModeOpen, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
+
+export const EasyModeRejectedClose: StoryObj<MenuEasyProps> = {
+  ...Default,
+  name: 'Easy mode rejected close',
+  args: { ...Default.args, open: true },
+  play: async ({ canvasElement, args, userEvent }) => {
+    await expectFocused(canvasElement, 'Edit');
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false);
+    await expect(bodyOf(canvasElement).getByRole('menu')).toBeVisible();
+    await expectFocused(canvasElement, 'Edit');
+  },
+};
+
+function easyModeTypeContracts() {
+  // @ts-expect-error Collection mode rejects compound children.
+  <Menu triggerLabel="Actions" items={[]}>Compound</Menu>;
+  // @ts-expect-error Collection mode requires its trigger label.
+  <Menu items={[]} />;
+  // @ts-expect-error Separators cannot carry selection callbacks.
+  <Menu triggerLabel="Actions" items={[{ type: 'separator', onSelect: onEdit }]} />;
+}
+void easyModeTypeContracts;
+
+function MenuExample(props: MenuCompoundProps) {
   return (
     <div style={rowStyle}>
       <Menu {...props}>
@@ -66,7 +160,7 @@ function MenuExample(props: MenuProps) {
 }
 MenuExample.displayName = 'MenuExample';
 
-function ControlledMenu(props: MenuProps) {
+function ControlledMenu(props: MenuCompoundProps) {
   const [open, setOpen] = useState(false);
   return (
     <MenuExample
@@ -126,7 +220,17 @@ async function focusTrigger(canvasElement: HTMLElement) {
   return trigger;
 }
 
-export const Default: Story = {
+export const Compound: Story = {
+  name: 'Compound',
+  parameters: { docs: { source: { language: 'tsx', code: `<Menu>
+  <Menu.Trigger>Actions</Menu.Trigger>
+  <Menu.Content>
+    <Menu.Item onSelect={edit}>Edit</Menu.Item>
+    <Menu.Item disabled>Duplicate</Menu.Item>
+    <Menu.Separator />
+    <Menu.Item onSelect={remove}>Delete</Menu.Item>
+  </Menu.Content>
+</Menu>` } } },
   render: (args) => <MenuExample {...args} />,
   play: async ({ canvasElement }) => {
     onEdit.mockClear();
@@ -422,7 +526,7 @@ export const SelectPreventDefault: Story = {
   },
 };
 
-function RenameExample(props: MenuProps) {
+function RenameExample(props: MenuCompoundProps) {
   const input = useRef<HTMLInputElement>(null);
   return (
     <div style={rowStyle}>
@@ -500,7 +604,7 @@ export const TriggerRole: Story = {
 
 const popoverOpenChange = fn<(open: boolean) => void>();
 
-function PopoverHost(props: MenuProps) {
+function PopoverHost(props: MenuCompoundProps) {
   return (
     <div style={rowStyle}>
       <Popover defaultOpen onOpenChange={popoverOpenChange}>
