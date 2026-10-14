@@ -134,6 +134,13 @@ export const BooleanNodes: Story = {
 };
 
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Checkbox } from '@jfrader/ui';
+
+function EmailUpdates() {
+  const [checked, setChecked] = useState(false);
+  return <Checkbox label="Email me updates" checked={checked} onCheckedChange={setChecked} />;
+}` } } },
   args: { onCheckedChange: fn() },
   render: (args) => <ControlledCheckbox {...args} />,
   play: async ({ args, canvasElement }) => {

@@ -125,6 +125,15 @@ export const WithError: Story = {
 };
 
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Textarea } from '@jfrader/ui';
+
+function MessageField() {
+  const [value, setValue] = useState('');
+  return (
+    <Textarea label="Message" placeholder="Write a message" value={value} onValueChange={setValue} />
+  );
+}` } } },
   args: { onChange: fn(), onValueChange: fn() },
   render: (args) => <ControlledTextarea {...args} />,
   play: async ({ args, canvasElement }) => {

@@ -701,6 +701,17 @@ export const LightTheme: Story = {
 
 /** Range mode: multi-selection semantics, endpoint descriptions, preview without selection. */
 export const RangeSelection: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Calendar
+  locale="en-US"
+  visibleMonth="2026-10"
+  today="2026-10-11"
+  selectionRange={{ start: '2026-10-12', end: '2026-10-14' }}
+  previewRange={{ start: '2026-10-14', end: '2026-10-16' }}
+  rangeLabels={{ start: 'Start date', end: 'End date' }}
+>
+  <Calendar.Header />
+  <Calendar.Grid />
+</Calendar>` } } },
   args: {
     visibleMonth: '2026-10',
     today: '2026-10-11',

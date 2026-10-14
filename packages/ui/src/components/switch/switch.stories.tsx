@@ -104,6 +104,13 @@ export const BooleanNodes: Story = {
 };
 
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Switch } from '@jfrader/ui';
+
+function AirplaneMode() {
+  const [checked, setChecked] = useState(false);
+  return <Switch label="Airplane mode" checked={checked} onCheckedChange={setChecked} />;
+}` } } },
   args: { onCheckedChange: fn() },
   render: (args) => <ControlledSwitch {...args} />,
   play: async ({ args, canvasElement }) => {
