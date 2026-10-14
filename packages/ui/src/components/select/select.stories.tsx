@@ -67,6 +67,39 @@ function SelectExample(props: SelectProps) {
 }
 SelectExample.displayName = 'SelectExample';
 
+function DisabledWhileOpenSelect(props: SelectProps) {
+  const [disabled, setDisabled] = useState(false);
+  return (
+    <>
+      <SelectExample {...props} open disabled={disabled} />
+      <Button onClick={() => setDisabled(true)}>Disable</Button>
+    </>
+  );
+}
+
+export const DisabledWhileOpen: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <DisabledWhileOpenSelect {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('combobox', { name: LABEL });
+    const option = await bodyOf(canvasElement).findByRole('option', { name: 'Cherry' });
+    await userEvent.click(canvas.getByRole('button', { name: 'Disable' }));
+    args.onOpenChange.mockClear();
+    await fireEvent.click(option);
+    await fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+    await fireEvent.keyDown(trigger, { key: 'Enter' });
+    await fireEvent.keyDown(trigger, { key: 'c' });
+    await fireEvent.click(trigger);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await waitFor(() => expect(bodyOf(canvasElement).queryByRole('listbox')).toBeNull());
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).not.toHaveAttribute('aria-activedescendant');
+  },
+};
+
 export const NativeFormReset: Story = {
   tags: ['!autodocs'],
   args: { onValueChange: fn() },
