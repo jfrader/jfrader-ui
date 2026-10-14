@@ -44,7 +44,20 @@ const Stack = styled.div({
 const meta = {
   title: 'Feedback/Alert',
   component: Alert,
-  parameters: { docs: { description: { component: 'Show a message about an update, a problem, or an action to take.' } } },
+  parameters: { docs: {
+    description: { component: 'Show a message about an update, a problem, or an action to take.' },
+    usage: `### Announcements
+- \`tone\` defaults to \`info\`. Use \`danger\` for urgent messages: it uses an assertive \`alert\` region. Other tones use a polite \`status\` region.
+- Screen readers may not announce content that is already present when a region mounts. If you need to announce an update, mount the alert first, then change its content.
+- Put the meaning in your visible \`title\` or body. Use \`toneLabel\` to translate the announced tone word and \`dismissLabel\` to translate the button name, which defaults to "Dismiss".
+
+### Dismissal
+- Pass \`onDismiss\` to show the dismiss button. Activation only calls your callback; remove the alert in your parent state to dismiss it.
+- Press Tab to reach the dismiss button, then Enter or Space to activate it.
+
+### Customization
+- Use \`sx\` for the root and \`slotProps\` to style the root, title, body or dismiss button.`,
+  } },
   args: { tone: 'info', title: TONE_COPY.info.title, children: TONE_COPY.info.body },
   argTypes: {
     tone: { control: 'radio', options: TONES },
