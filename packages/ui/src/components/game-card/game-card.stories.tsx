@@ -76,7 +76,7 @@ const meta = {
   args: { label: 'Q of hearts', value: QUEEN_OF_HEARTS },
   argTypes: {
     size: { control: 'radio', options: SIZES },
-    face: { control: 'radio', options: ['emoji', 'back'] },
+    face: { control: 'radio', options: ['print', 'back'] },
     value: { control: 'object' },
   },
   parameters: {
@@ -84,7 +84,7 @@ const meta = {
       description: {
         component: 'Show a French or Spanish playing card with a red-and-paper back or your own artwork.',
       },
-      usage: 'Omit `value` or set `face="back"` to hide built-in rank and suit data. Pass `backPattern={CARD_BACK_PATTERNS.spanish}` for Spanish backs; poker defaults to `checks`, and `children` replaces either face’s artwork.',
+      usage: 'Omit `value` or set `face="back"` to hide built-in rank and suit data. Back patterns come from the deck (e.g. Spanish diagonal, poker checks) or explicit `backPattern`, and `children` replaces either face’s artwork.',
     },
   },
 } satisfies Meta<typeof GameCard>;
@@ -225,8 +225,6 @@ export const FaceDown: Story = {
       if (paint === null) throw new Error('Missing back paint');
       await expect(getComputedStyle(back).backgroundColor).toBe(getComputedStyle(paint).backgroundColor);
       await expect(getComputedStyle(paint).backgroundColor).toBe('rgb(200, 16, 46)');
-      await expect(getComputedStyle(paint).backgroundImage).toBe('none');
-      await expect(paint.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', CARD_BACK_PATTERNS.french);
       await expect(getComputedStyle(paint, '::after').content).toBe('none');
       const attributes = [back, ...back.querySelectorAll('*')]
         .flatMap((element) => Array.from(element.attributes, (attribute) => attribute.value))
@@ -235,6 +233,11 @@ export const FaceDown: Story = {
         await expect(attributes).not.toContain(secret);
       }
     }
+    // Queen of hearts (French deck) and card with no value (defaults to French) inherit checks
+    await expect(backs[0]!.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', CARD_BACK_PATTERNS.french);
+    await expect(backs[1]!.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', CARD_BACK_PATTERNS.french);
+    // Ace of oros (Spanish deck) inherits Spanish diagonal back from its deck
+    await expect(backs[2]!.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', CARD_BACK_PATTERNS.spanish);
   },
 };
 

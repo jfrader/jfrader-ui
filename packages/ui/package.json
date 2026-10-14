@@ -52,6 +52,7 @@
     "./countdown": { "types": "./src/components/countdown/index.ts", "import": "./src/components/countdown/index.ts" },
     "./date-picker": { "types": "./src/components/date-picker/index.ts", "import": "./src/components/date-picker/index.ts" },
     "./date-range-picker": { "types": "./src/components/date-range-picker/index.ts", "import": "./src/components/date-range-picker/index.ts" },
+    "./deck": { "types": "./src/components/deck/index.ts", "import": "./src/components/deck/index.ts" },
     "./dialog": { "types": "./src/components/dialog/index.ts", "import": "./src/components/dialog/index.ts" },
     "./dialog-stack": { "types": "./src/components/dialog-stack/index.ts", "import": "./src/components/dialog-stack/index.ts" },
     "./divider": { "types": "./src/components/divider/index.ts", "import": "./src/components/divider/index.ts" },
