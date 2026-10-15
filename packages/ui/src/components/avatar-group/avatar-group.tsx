@@ -4,7 +4,7 @@
 // from `getOverflowLabel`, with visible count aria-hidden.
 // A visually hidden summary span describes the total member count once for assistive tech.
 // Not interactive; skips tab sequence.
-import { useId, type ComponentPropsWithRef } from 'react';
+import { useId, type ComponentPropsWithRef, type ComponentType } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
@@ -26,6 +26,15 @@ export interface AvatarGroupPartProps {
   css?: Interpolation<Theme>;
 }
 
+export interface AvatarGroupSlots {
+  /** Wrapper span around each rendered avatar. */
+  member?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Counter element displaying the count of hidden members. */
+  overflow?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Screen-reader element describing the total membership count. */
+  summary?: ComponentType<ComponentPropsWithRef<'span'>>;
+}
+
 export interface AvatarGroupProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'role'>,
     SxProps {
@@ -43,6 +52,7 @@ export interface AvatarGroupProps
   getOverflowLabel?: (hidden: number, formatted: string) => string;
   /** Formats the total count summary description. Defaults to English plural wording. */
   getSummaryLabel?: (total: number, formatted: string) => string;
+  slots?: AvatarGroupSlots;
   /** Style overrides for internal parts. */
   slotProps?: {
     /** Wrapper span around each rendered avatar. */
@@ -160,6 +170,7 @@ export function AvatarGroup({
   locale,
   getOverflowLabel = defaultGetOverflowLabel,
   getSummaryLabel = defaultGetSummaryLabel,
+  slots,
   slotProps,
   avatarProps,
   className,
@@ -167,6 +178,9 @@ export function AvatarGroup({
   ...rest
 }: AvatarGroupProps) {
   const summaryId = useId();
+  const Member = slots?.member ?? 'span';
+  const Overflow = slots?.overflow ?? 'span';
+  const Summary = slots?.summary ?? 'span';
 
   const normalizedMax =
     typeof max === 'number' && Number.isFinite(max)
@@ -205,7 +219,7 @@ export function AvatarGroup({
           className={className}
         >
           {visibleMembers.map((member) => (
-            <span
+            <Member
               key={member.id}
               data-ui="avatar-group-member"
               className={slotProps?.member?.className}
@@ -221,10 +235,10 @@ export function AvatarGroup({
                 className={avatarProps?.className}
                 sx={[avatarSeparationStyle, avatarProps?.sx]}
               />
-            </span>
+            </Member>
           ))}
           {hasOverflow && (
-            <span
+            <Overflow
               data-ui="avatar-group-overflow"
               role="img"
               aria-label={overflowLabel}
@@ -232,16 +246,16 @@ export function AvatarGroup({
               css={[overflowBaseStyle, overflowSizeStyles[size], slotProps?.overflow?.css]}
             >
               <span aria-hidden="true">+{formattedHidden}</span>
-            </span>
+            </Overflow>
           )}
-          <span
+          <Summary
             id={summaryId}
             data-ui="avatar-group-summary"
             className={slotProps?.summary?.className}
             css={[visuallyHiddenStyle, slotProps?.summary?.css]}
           >
             {summaryLabel}
-          </span>
+          </Summary>
         </div>
       )}
     </WithSx>

@@ -6,7 +6,7 @@
 // The spec maps danger to alert only for genuinely urgent content; consumers own that judgment.
 // Keyboard map: the dismiss button is a native button (Tab to reach, Enter/Space to activate).
 // Dismissal is a request: `onDismiss` fires and the parent removes the alert.
-import type { ComponentPropsWithRef, ReactNode } from 'react';
+import type { ComponentPropsWithRef, ComponentType, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -22,6 +22,17 @@ export interface AlertPartProps {
   css?: Interpolation<Theme>;
 }
 
+export interface AlertSlots {
+  /** Outer container element holding the alert message and dismiss button. */
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Title heading element rendered above the alert body. */
+  title?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Body container holding the alert message content. */
+  body?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Button element that dismisses the alert. */
+  dismiss?: ComponentType<ComponentPropsWithRef<'button'>>;
+}
+
 export interface AlertProps extends Omit<ComponentPropsWithRef<'div'>, 'title' | 'role'>, SxProps {
   tone?: AlertTone;
   /** Announced tone word. Put visible meaning in the title text. */
@@ -30,6 +41,7 @@ export interface AlertProps extends Omit<ComponentPropsWithRef<'div'>, 'title' |
   children?: ReactNode;
   onDismiss?: () => void;
   dismissLabel?: string;
+  slots?: AlertSlots;
   slotProps?: {
     /** Outer container element holding the alert message and dismiss button. */
     root?: AlertPartProps;
@@ -141,12 +153,17 @@ export function Alert({
   children,
   onDismiss,
   dismissLabel = 'Dismiss',
+  slots,
   slotProps,
   className,
   sx,
   ...rest
 }: AlertProps) {
   const dismissible = onDismiss !== undefined;
+  const Root = slots?.root ?? 'div';
+  const Title = slots?.title ?? 'div';
+  const Body = slots?.body ?? 'div';
+  const Dismiss = slots?.dismiss ?? 'button';
 
   return (
     <WithSx
@@ -155,22 +172,22 @@ export function Alert({
       sx={sx}
     >
       {(className) => (
-        <div {...rest} ref={ref} data-ui="alert" data-tone={tone} className={className}>
+        <Root {...rest} ref={ref} data-ui="alert" data-tone={tone} className={className}>
           <div role={tone === 'danger' ? 'alert' : 'status'} aria-atomic="true" css={messageStyle}>
             <span css={visuallyHiddenStyle}>{toneLabel}</span>
             {isRenderable(title) && (
-              <div className={slotProps?.title?.className} css={[titleStyle, slotProps?.title?.css]}>
+              <Title className={slotProps?.title?.className} css={[titleStyle, slotProps?.title?.css]}>
                 {title}
-              </div>
+              </Title>
             )}
             {isRenderable(children) && (
-              <div className={slotProps?.body?.className} css={[bodyStyle, slotProps?.body?.css]}>
+              <Body className={slotProps?.body?.className} css={[bodyStyle, slotProps?.body?.css]}>
                 {children}
-              </div>
+              </Body>
             )}
           </div>
           {dismissible && (
-            <button
+            <Dismiss
               type="button"
               data-ui="alert-dismiss"
               aria-label={dismissLabel}
@@ -179,9 +196,9 @@ export function Alert({
               css={[dismissStyle, slotProps?.dismiss?.css]}
             >
               <span aria-hidden>×</span>
-            </button>
+            </Dismiss>
           )}
-        </div>
+        </Root>
       )}
     </WithSx>
   );

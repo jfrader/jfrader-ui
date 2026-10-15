@@ -9,9 +9,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 ## Counts
 
 - Public callable families: **126**; public callable parts: **156**.
-- Families exposing `slots.root`: **56**; remaining without a family-level root slot: **70** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **42**; remaining without family-level interior slots: **84** (includes components without generated anatomy).
-- Rows with styling-only `slotProps` keys: **76**.
+- Families exposing `slots.root`: **58**; remaining without a family-level root slot: **68** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **48**; remaining without family-level interior slots: **78** (includes components without generated anatomy).
+- Rows with styling-only `slotProps` keys: **70**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
 behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, TrickStacks and CardFlights are owner-held;
@@ -30,12 +30,12 @@ may exist and is listed on the corresponding public part).
 | [Accordion.Panel](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
 | [Accordion.Trigger](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
 | [ActivityRings](../packages/ui/src/components/activity-rings/activity-rings.tsx) | — | — | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | — | — |
-| [Alert](../packages/ui/src/components/alert/alert.tsx) | — | — | `body`, `dismiss`, `root`, `title` | `body`, `dismiss`, `root`, `title` | — | — |
+| [Alert](../packages/ui/src/components/alert/alert.tsx) | — | `body`, `dismiss`, `root`, `title` | `body`, `dismiss`, `root`, `title` | — | — | — |
 | [AnnouncementBar](../packages/ui/src/components/announcement-bar/announcement-bar.tsx) | — | — | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | — | — |
-| [AttachmentList](../packages/ui/src/components/attachment-list/attachment-list.tsx) | — | — | `expandButton`, `item`, `link` | `expandButton`, `item`, `link` | — | — |
-| [Avatar](../packages/ui/src/components/avatar/avatar.tsx) | — | — | `fallback`, `image`, `status` | `fallback`, `image`, `status` | — | — |
-| [AvatarGroup](../packages/ui/src/components/avatar-group/avatar-group.tsx) | — | — | `member`, `overflow`, `summary` | `member`, `overflow`, `summary` | `avatarProps` | — |
-| [Badge](../packages/ui/src/components/badge/badge.tsx) | — | — | `badge`, `root` | `badge`, `root` | — | — |
+| [AttachmentList](../packages/ui/src/components/attachment-list/attachment-list.tsx) | — | `expandButton`, `item`, `link` | `expandButton`, `item`, `link` | — | — | — |
+| [Avatar](../packages/ui/src/components/avatar/avatar.tsx) | — | `fallback`, `image`, `status` | `fallback`, `image`, `status` | — | — | — |
+| [AvatarGroup](../packages/ui/src/components/avatar-group/avatar-group.tsx) | — | `member`, `overflow`, `summary` | `member`, `overflow`, `summary` | — | `avatarProps` | — |
+| [Badge](../packages/ui/src/components/badge/badge.tsx) | — | `badge`, `root` | `badge`, `root` | — | — | — |
 | [BottomSheet](../packages/ui/src/components/bottom-sheet/bottom-sheet.tsx) | yes | `body`, `close`, `description`, `footer`, `handle`, `header`, `root`, `title`, `trigger` | `body`, `close`, `content`, `description`, `footer`, `handle`, `header`, `panel`, `root`, `title`, `trigger` | `content`, `panel` | — | `Body`, `Close`, `Content`, `Description`, `Footer`, `Handle`, `Header`, `Panel`, `Title`, `Trigger` |
 | [BottomSheet.Body](../packages/ui/src/components/bottom-sheet/bottom-sheet.tsx) | — | — | — | — | — | — |
 | [BottomSheet.Close](../packages/ui/src/components/bottom-sheet/bottom-sheet.tsx) | — | — | — | — | — | — |
@@ -68,7 +68,7 @@ may exist and is listed on the corresponding public part).
 | [Card.Header](../packages/ui/src/components/card/card.tsx) | — | — | — | — | — | — |
 | [Card.Title](../packages/ui/src/components/card/card.tsx) | — | — | — | — | — | — |
 | [CardFlightsProvider](../packages/ui/src/components/card-flights/card-flights.tsx) | yes | `root` | `root` | — | — | — |
-| [Carousel](../packages/ui/src/components/carousel/carousel.tsx) | — | — | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | — | — |
+| [Carousel](../packages/ui/src/components/carousel/carousel.tsx) | — | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | — | — | — |
 | [ChatMessage](../packages/ui/src/components/chat-message/chat-message.tsx) | — | — | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | — | — |
 | [ChatThread](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | — | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `scroller`, `time`, `viewport` | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `scroller`, `time`, `viewport` | `composerProps` | `Composer` |
 | [ChatThread.Composer](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | — | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | — | — |

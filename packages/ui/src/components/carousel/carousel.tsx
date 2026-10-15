@@ -29,6 +29,7 @@ import {
   useState,
   useSyncExternalStore,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type FocusEvent,
   type KeyboardEvent,
@@ -87,6 +88,31 @@ type IndicatorSlot = Omit<
   StyleSlot;
 type ButtonSlot = Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'aria-disabled' | 'render' | 'sx'>;
 
+export interface CarouselSlots {
+  /** Replaces the button that toggles auto-rotation on and off; renders `Button` by default. */
+  rotationButton?: ComponentType<ButtonProps>;
+  /** Replaces the scrollable clipping container that holds the track; renders `div` by default. */
+  viewport?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the flex row that aligns and lays out the slides; renders `div` by default. */
+  track?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the individual slide container holding one item of content; renders `div` by default. */
+  slide?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the bar that groups the tab list and pagination buttons; renders `div` by default. */
+  controls?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the roving tab list containing the slide indicator buttons; renders `div` by default. */
+  tabList?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the tab button that selects and indicates a specific slide; renders `button` by default. */
+  indicator?: ComponentType<ComponentPropsWithRef<'button'>>;
+  /** Replaces the button that advances to the previous slide; renders `Button` by default. */
+  previousButton?: ComponentType<ButtonProps>;
+  /** Replaces the button that advances to the next slide; renders `Button` by default. */
+  nextButton?: ComponentType<ButtonProps>;
+  /** Replaces the live region that announces the current slide to assistive technologies; renders `div` by default. */
+  status?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the empty state container displayed when no slides are provided; renders `div` by default. */
+  empty?: ComponentType<ComponentPropsWithRef<'div'>>;
+}
+
 export interface CarouselSlotProps {
   /** Button that toggles auto-rotation on and off. */
   rotationButton?: ButtonSlot;
@@ -137,6 +163,8 @@ export interface CarouselProps extends Omit<ComponentPropsWithRef<'section'>, 'd
   labels?: Partial<CarouselLabels>;
   /** Blocks navigation and rotation; the active slide's content stays operable. */
   disabled?: boolean;
+  /** Replacement components for interior parts. */
+  slots?: CarouselSlots;
   slotProps?: CarouselSlotProps;
 }
 
