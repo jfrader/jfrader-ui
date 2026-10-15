@@ -23,8 +23,8 @@ export interface Deck {
   id: string;
   suits: Readonly<Record<string, DeckSuit>>;
   ranks: Readonly<Record<string, DeckRank>>;
-  /** Per-card artwork, partial, keyed `${suit}-${rank}`. */
-  faces?: Readonly<Record<string, ReactNode>>;
+  /** Per-card artwork, partial, nested suit -> rank -> ReactNode. */
+  faces?: Readonly<Record<string, Readonly<Record<string, ReactNode>>>>;
   /** The deck's back: a Pattern with a tone, or consumer artwork. */
   back?: { pattern: PatternVariant; tone?: PatternTone } | ReactNode;
 }

@@ -4,7 +4,105 @@ import { fileURLToPath } from 'node:url';
 import { loadCsf, metaObjectPath } from 'storybook/internal/csf-tools';
 
 const DESCRIPTION_PATH = ['parameters', 'docs', 'description', 'component'];
-const SNIPPET_COMPONENTS = new Set(['game-card', 'flip-game-card', 'game-hand', 'game-card-stack', 'deck', 'pattern']);
+const SNIPPET_COMPONENTS = new Set(['game-card', 'flip-game-card', 'game-hand', 'game-card-stack', 'deck', 'pattern', 'card-flights']);
+const GAME_COMPONENTS = new Set([...SNIPPET_COMPONENTS, 'game-table', 'game-seat']);
+const gameSymbols = new Set([...GAME_COMPONENTS].flatMap((component) => {
+  const file = path.resolve(import.meta.dirname, '../../../packages/ui/src/components', component, 'index.ts');
+  const ast = loadCsf(readFileSync(file, 'utf8'), { fileName: file, makeTitle: () => component })._ast;
+  return ast.program.body.flatMap((node) => node.type === 'ExportNamedDeclaration'
+    ? node.specifiers.map((specifier) => specifier.exported.name ?? specifier.exported.value) : []);
+}));
+
+function walk(node, visit, seen = new WeakSet()) {
+  if (!node || typeof node !== 'object' || seen.has(node)) return;
+  seen.add(node);
+  visit(node);
+  for (const value of Object.values(node)) {
+    if (Array.isArray(value)) value.forEach((child) => walk(child, visit, seen));
+    else if (value && typeof value === 'object') walk(value, visit, seen);
+  }
+}
+
+export function checkGameStories(source, fileName, component) {
+  const csf = loadCsf(source, { fileName, makeTitle: (title) => title ?? fileName }).parse();
+  const bindings = new Map();
+  for (const statement of csf._ast.program.body) {
+    const node = statement.type === 'ExportNamedDeclaration' ? statement.declaration : statement;
+    if (node?.type === 'VariableDeclaration') {
+      for (const declaration of node.declarations) bindings.set(declaration.id.name, declaration.init);
+    }
+    if (node?.type === 'FunctionDeclaration') bindings.set(node.id.name, node);
+  }
+  function resolve(node, seen = new Set()) {
+    if (!node || seen.has(node)) return undefined;
+    seen = new Set(seen).add(node);
+    if (node.type === 'Identifier') return resolve(bindings.get(node.name), seen) ?? { type: 'UnresolvedMetadata' };
+    if (['TSAsExpression', 'TSSatisfiesExpression', 'ParenthesizedExpression'].includes(node.type)) return resolve(node.expression, seen);
+    if (node.type === 'MemberExpression' && !node.computed) return resolve(property(node.object, node.property.name, seen), seen);
+    if (node.type === 'CallExpression') {
+      const fn = resolve(node.callee, seen);
+      const returns = fn?.body?.body?.filter((entry) => entry.type === 'ReturnStatement');
+      if (returns?.length === 1) return resolve(returns[0].argument, seen);
+      if (fn?.type === 'ArrowFunctionExpression') return resolve(fn.body, seen);
+      return { type: 'UnresolvedMetadata' };
+    }
+    return node;
+  }
+  function property(node, name, seen = new Set()) {
+    node = resolve(node, seen);
+    if (node?.type === 'UnresolvedMetadata') return node;
+    let found;
+    for (const entry of node?.properties ?? []) {
+      if (entry.type === 'SpreadElement') found = property(entry.argument, name, new Set(seen).add(node)) ?? found;
+      else if (!entry.computed && (entry.key?.name ?? entry.key?.value) === name) found = entry.value ?? entry;
+    }
+    return found;
+  }
+  const at = (node, names) => names.reduce((value, name) => property(value, name), node);
+  const tags = (node) => resolve(property(node, 'tags'))?.elements?.map((tag) => tag.value) ?? [];
+  const meta = metaObjectPath(csf)?.node;
+  const errors = [];
+  for (const [name, declaration] of Object.entries(csf._storyExports)) {
+    const story = declaration.init ?? declaration;
+    const included = new Set();
+    for (const tag of [...tags(meta), ...tags(story)]) {
+      if (tag.startsWith('!')) included.delete(tag.slice(1));
+      else included.add(tag);
+    }
+    if (!included.has('autodocs')) continue;
+    if (!resolve(story) || resolve(story).type === 'UnresolvedMetadata') {
+      errors.push(`${name}: docs metadata must be statically inspectable.`);
+      continue;
+    }
+    if (SNIPPET_COMPONENTS.has(component)) {
+      const code = resolve(at(story, ['parameters', 'docs', 'source', 'code']) ?? at(meta, ['parameters', 'docs', 'source', 'code']));
+      const text = code?.type === 'StringLiteral' ? code.value : code?.type === 'TemplateLiteral' && code.expressions.length === 0 ? code.quasis[0].value.cooked : null;
+      if (!text?.trim()) errors.push(`${name}: published docs require authored parameters.docs.source.code.`);
+    }
+    for (const key of ['beforeEach', 'loaders']) {
+      if (property(meta, key) || property(story, key)) errors.push(`${name}: published docs cannot declare ${key}. Use !autodocs for runtime-only tests.`);
+    }
+    if (at(meta, ['parameters', 'viewport']) || at(story, ['parameters', 'viewport'])) {
+      errors.push(`${name}: published docs cannot declare parameters.viewport. Use !autodocs for viewport tests.`);
+    }
+  }
+  walk(csf._ast, (node) => {
+    if (node.type !== 'ObjectExpression') return;
+    const code = at(node, ['source', 'code']);
+    const text = code?.type === 'StringLiteral' ? code.value : code?.type === 'TemplateLiteral' && code.expressions.length === 0 ? code.quasis[0].value.cooked : null;
+    if (!text) return;
+    let snippet;
+    try { snippet = loadCsf(text, { fileName: 'snippet.tsx', makeTitle: () => 'Snippet' })._ast; }
+    catch { return; } // checkSnippets reports syntax errors.
+    walk(snippet, (entry) => {
+      if (entry.type !== 'ImportDeclaration' || entry.source.value !== '@jfrader/ui') return;
+      if (entry.specifiers.some((specifier) => specifier.type !== 'ImportSpecifier' || gameSymbols.has(specifier.imported.name ?? specifier.imported.value))) {
+        errors.push(`source.code at line ${code.loc.start.line}: import Games symbols from their @jfrader/ui/<component> subpath, not the barrel.`);
+      }
+    });
+  });
+  return errors;
+}
 
 export function checkSnippets(source, fileName = 'component.stories.tsx') {
   const csf = loadCsf(source, { fileName, makeTitle: () => fileName });
@@ -82,8 +180,10 @@ export function checkComponentDocs(componentsDir) {
       try {
         errors.push(...checkIntroduction(readFileSync(fileName, 'utf8'), fileName)
           .map((error) => `${dir.name}/${story}: ${error}`));
-        if (SNIPPET_COMPONENTS.has(dir.name)) {
+        if (GAME_COMPONENTS.has(dir.name)) {
           errors.push(...checkSnippets(readFileSync(fileName, 'utf8'), fileName)
+            .map((error) => `${dir.name}/${story}: ${error}`));
+          errors.push(...checkGameStories(readFileSync(fileName, 'utf8'), fileName, dir.name)
             .map((error) => `${dir.name}/${story}: ${error}`));
         }
       } catch (error) {
