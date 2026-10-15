@@ -59,14 +59,27 @@ export function useCardFlights() {
 
 type ScopeRootProps = ComponentPropsWithRef<'div'> & { [attribute: `data-${string}`]: string | number | boolean | undefined };
 
+/** Replace the root div; declare replacements outside render. */
+export interface CardFlightsSlots {
+  /** Replaces the root div. Exactly sugar for `slots.root`. */
+  root?: ComponentType<ScopeRootProps>;
+}
+
+/** Root props win conflicts; className and style merge. */
+export interface CardFlightsSlotProps {
+  /** Root props win conflicts; className and style merge. */
+  root?: ScopeRootProps & { css?: Interpolation<Theme> };
+}
+
 export interface CardFlightsProviderProps extends ScopeRootProps, SxProps {
   /** Use a consumer-owned scope instead of rendering a root div. Root customization is ignored in this mode. */
   scopeRef?: RefObject<HTMLElement | null>;
   /** Replace the root div. Exactly sugar for `slots.root`; declare replacements outside render. */
   component?: ComponentType<ScopeRootProps>;
-  slots?: { root?: ComponentType<ScopeRootProps> };
-  /** Root props win conflicts; className and style merge. */
-  slotProps?: { root?: ScopeRootProps & { css?: Interpolation<Theme> } };
+  /** Every part that takes props is also replaceable; keys match `slotProps`. */
+  slots?: CardFlightsSlots;
+  /** Every part that takes props is also replaceable; keys match `slots`. */
+  slotProps?: CardFlightsSlotProps;
 }
 
 function useFlightReducedMotion() {
