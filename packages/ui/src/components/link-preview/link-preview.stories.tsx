@@ -202,11 +202,11 @@ export const Keyboard: Story = {
   },
 };
 
-/** Apply root and part styles and take a ref to the root div. */
 function ReplacementTitle(props: ComponentPropsWithRef<'a'>) {
   return <a {...props} data-slot="link-preview-title" />;
 }
 
+/** Apply root and part styles and take a ref to the root div. */
 export const Customization: Story = {
   render: (args) => <LinkPreview {...args} slots={{ title: ReplacementTitle }} />,
   args: { ref: fn(), sx: { borderStyle: 'dashed' }, slotProps: { title: { css: { textDecoration: 'underline' }, target: '_blank', rel: 'noreferrer' }, body: { css: { padding: vars.space[4] } }, image: { onLoad: fn() } } },

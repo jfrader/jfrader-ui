@@ -215,7 +215,7 @@ export function KeycapKeyboard({
                 inlineSize: `calc((100% - ${maxGaps} * ${vars.space[1]}) * ${(rowUnits[rowIndex] ?? 0) / widest} + ${Math.max(0, row.length - 1)} * ${vars.space[1]})`,
               } satisfies CSSProperties}>
               {row.map((key, keyIndex) => (
-                <Key {...slotProps?.key} key={`${key.code}-${keyIndex}`} data-code={key.code} data-state={active.includes(key.code) ? 'pressed' : 'idle'}
+                <Key {...slotProps?.key} key={`${key.code}-${keyIndex}`} data-ui="keycap-keyboard-key" data-code={key.code} data-state={active.includes(key.code) ? 'pressed' : 'idle'}
                   className={slotProps?.key?.className} css={[keyStyle, slotProps?.key?.css]}>
                   {isRenderable(key.legend) && key.legend !== '' && <Legend {...slotProps?.legend} data-ui="keycap-keyboard-legend" className={slotProps?.legend?.className}
                     css={[legendStyle, slotProps?.legend?.css]}>{key.legend}</Legend>}

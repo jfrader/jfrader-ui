@@ -177,6 +177,7 @@ export function Checkbox({
             <Control
               {...slotProps?.control}
               aria-hidden="true"
+              data-ui="checkbox-control"
               className={slotProps?.control?.className}
               css={[boxStyle, boxSizeStyles[size], slotProps?.control?.css]}
             >

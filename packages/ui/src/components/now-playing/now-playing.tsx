@@ -327,6 +327,7 @@ function Artwork({ track, slot, component }: { track: NowPlayingTrack; slot?: Pa
     <Image
       {...slot}
       draggable={false}
+      data-ui="now-playing-artwork-image"
       css={[artworkStyle, slot?.css]}
       src={track.artwork}
       alt={track.artworkAlt ?? ''}

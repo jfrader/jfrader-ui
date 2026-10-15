@@ -437,6 +437,7 @@ export const PlaybackError: Story = {
   args: { error: 'Playback could not start.', defaultOpen: true },
 };
 export const FailedArtwork: Story = {
+  render: (args) => <NowPlaying {...args} slots={{ artwork: ReplacementArtwork }} />,
   args: {
     tracks: [{ ...tracks[0]!, artwork: 'data:image/png;base64,broken', artworkAlt: 'Album cover' }],
     defaultOpen: true,
@@ -446,6 +447,7 @@ export const FailedArtwork: Story = {
       async () =>
         await expect(canvas.getByRole('img', { name: 'Album cover' }).tagName).toBe('SPAN'),
     );
+    await expect(canvas.getByRole('img', { name: 'Album cover' })).not.toHaveAttribute('data-slot');
     await expect(canvas.getByText('Night Signal')).toBeVisible();
   },
 };
@@ -660,6 +662,16 @@ function ReplacementWaveform(props: ComponentPropsWithRef<'div'>) {
 function ReplacementArtwork(props: ComponentPropsWithRef<'img'>) {
   return <img {...props} data-slot="now-playing-artwork" />;
 }
+
+export const ArtworkPlaceholderReplacement: Story = {
+  render: (args) => (
+    <NowPlaying {...args} tracks={[{ ...tracks[0]!, artwork: undefined, artworkAlt: 'Album cover' }]} slots={{ artwork: ReplacementArtwork }} />
+  ),
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getByRole('img', { name: 'Album cover' }).tagName).toBe('SPAN');
+    await expect(canvasElement.querySelector('[data-slot="now-playing-artwork"]')).toBeNull();
+  },
+};
 
 export const NativeCustomization: Story = {
   render: (args) => <NowPlaying {...args} slots={{ waveform: ReplacementWaveform, artwork: ReplacementArtwork }} />,

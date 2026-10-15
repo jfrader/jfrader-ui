@@ -500,6 +500,7 @@ export function HoldToConfirm({
         role="status"
         aria-live="polite"
         aria-atomic="true"
+        data-ui="hold-to-confirm-status"
         className={slotProps?.status?.className}
         css={[visuallyHiddenStyle, slotProps?.status?.css]}
       >
