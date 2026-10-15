@@ -24,11 +24,17 @@ export interface CardPartProps {
 }
 
 export interface CardSlotProps {
+  /** Root surface element; renders `Surface`. */
   root?: SurfaceRootSlotProps;
+  /** Header container wrapping the title and description. */
   header?: CardPartProps;
+  /** Heading element displaying the card title. */
   title?: CardPartProps;
+  /** Paragraph displaying the card description. */
   description?: CardPartProps;
+  /** Main body container holding the card content. */
   content?: CardPartProps;
+  /** Holds the actions at the end of the card. */
   footer?: CardPartProps;
 }
 

@@ -89,10 +89,15 @@ type DataSource =
       values?: never;
     };
 interface ActivityRingsSlotProps {
+  /** SVG element rendering concentric ring tracks and progress strokes. */
   rings?: ActivityRingsPartProps<'svg'>;
+  /** List element presenting the metric items and swatches. */
   legend?: ActivityRingsPartProps<'ul'>;
+  /** Fieldset grouping the daily history radio options. */
   dayPicker?: ActivityRingsPartProps<'fieldset'>;
+  /** Label wrapping each daily history radio option. */
   dayLabel?: ActivityRingsPartProps<'label'>;
+  /** Paragraph displaying the active day or completion summary. */
   summary?: ActivityRingsPartProps<'p'>;
 }
 /** Metric slot props shared by the toggle-button and plain-row legend elements. */
@@ -108,15 +113,24 @@ type LegendMode =
   | {
       /** Legend rows become toggle buttons that isolate one ring. */
       interactiveLegend: true;
-      slotProps?: ActivityRingsSlotProps & { metric?: ActivityRingsPartProps<'button'> };
+      slotProps?: ActivityRingsSlotProps & {
+        /** Toggle button isolating an individual metric in the legend. */
+        metric?: ActivityRingsPartProps<'button'>;
+      };
     }
   | {
       interactiveLegend?: false;
-      slotProps?: ActivityRingsSlotProps & { metric?: ActivityRingsPartProps<'div'> };
+      slotProps?: ActivityRingsSlotProps & {
+        /** Row element presenting an individual metric in the legend. */
+        metric?: ActivityRingsPartProps<'div'>;
+      };
     }
   | {
       interactiveLegend?: boolean;
-      slotProps?: ActivityRingsSlotProps & { metric?: ActivityRingsMetricProps };
+      slotProps?: ActivityRingsSlotProps & {
+        /** Legend row or toggle button presenting an individual metric. */
+        metric?: ActivityRingsMetricProps;
+      };
     };
 export type ActivityRingsProps = Omit<
   ComponentPropsWithRef<'section'>,

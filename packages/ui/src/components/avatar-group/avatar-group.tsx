@@ -45,8 +45,11 @@ export interface AvatarGroupProps
   getSummaryLabel?: (total: number, formatted: string) => string;
   /** Style overrides for internal parts. */
   slotProps?: {
+    /** Wrapper span around each rendered avatar. */
     member?: AvatarGroupPartProps;
+    /** Counter element displaying the count of hidden members. */
     overflow?: AvatarGroupPartProps;
+    /** Screen-reader element describing the total membership count. */
     summary?: AvatarGroupPartProps;
   };
   /** Style overrides for each Avatar. Cannot override id/name/status. */

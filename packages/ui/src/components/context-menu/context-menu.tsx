@@ -124,10 +124,15 @@ export interface ContextMenuCompoundProps extends ContextMenuStateProps {
 }
 
 export interface ContextMenuSlotProps {
+  /** Generated wrapper element rendered around the target area. */
   root?: GeneratedRootSlotProps;
+  /** Interactive area that listens for right-click or long-press gestures. */
   target?: Omit<ContextMenuTargetProps, 'children' | 'aria-label'>;
+  /** Floating menu overlay that displays actions and separators. */
   content?: Omit<ContextMenuContentProps, 'children'>;
+  /** Each selectable action item in the menu list. */
   item?: Omit<ContextMenuItemProps, 'children' | 'onSelect' | 'disabled'>;
+  /** Decorative dividing line between menu items. */
   separator?: ContextMenuSeparatorProps;
 }
 
@@ -149,10 +154,15 @@ export interface ContextMenuEasyProps extends ContextMenuStateProps, Omit<Genera
 }
 
 export interface ContextMenuSlots {
+  /** Replaces the generated wrapper element; renders a `div` by default. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the interactive area that listens for right-click gestures. */
   target?: ComponentType<ContextMenuTargetProps>;
+  /** Replaces the floating menu overlay that displays actions. */
   content?: ComponentType<ContextMenuContentProps>;
+  /** Replaces each selectable action item in the menu list. */
   item?: ComponentType<ContextMenuItemProps>;
+  /** Replaces the decorative dividing line between menu items. */
   separator?: ComponentType<ContextMenuSeparatorProps>;
 }
 

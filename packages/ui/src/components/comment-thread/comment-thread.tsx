@@ -132,24 +132,37 @@ export interface CommentThreadLabels extends ThreadReactionLabels {
 }
 
 type CommentThreadPart =
-  | 'header'
-  | 'title'
-  | 'list'
-  | 'item'
-  | 'article'
-  | 'time'
-  | 'body'
-  | 'replies'
-  | 'actions'
-  | 'reaction'
-  | 'composer'
-  | 'resolved'
-  | 'status';
+  | /** Header container wrapping thread title and summary info. */
+    'header'
+  | /** Heading element displaying the comment thread title. */
+    'title'
+  | /** List element rendering root comments or nested replies. */
+    'list'
+  | /** List item element wrapping an individual comment. */
+    'item'
+  | /** Article element containing comment author, body, and actions. */
+    'article'
+  | /** Timestamp element displaying when the comment was posted. */
+    'time'
+  | /** Text container displaying the rendered comment body. */
+    'body'
+  | /** Container grouping nested reply comments. */
+    'replies'
+  | /** Action bar holding reply, edit, delete, and reaction controls. */
+    'actions'
+  | /** Reaction button element displaying an emoji reaction count. */
+    'reaction'
+  | /** Form container for composing a new comment or reply. */
+    'composer'
+  | /** Indicator badge displaying whether the thread is resolved. */
+    'resolved'
+  | /** Live region announcing new incoming comments. */
+    'status';
 
 export type CommentThreadSlotProps = Partial<Record<CommentThreadPart, CommentThreadPartProps>> & {
-  /** Textarea props for every composer and editor. Handlers are combined with the thread's handlers. */
+  /** Multiline textarea input for composing or editing comments. */
   textarea?: ThreadTextareaProps;
-  /** Button props for Send/Save. `onClick` runs first and can call `preventDefault()`. */
+  /** Button element submitting or saving a comment. */
   send?: ThreadButtonProps;
 };
 

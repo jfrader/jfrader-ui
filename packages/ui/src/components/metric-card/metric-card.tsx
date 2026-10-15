@@ -9,11 +9,17 @@ import { Card, type CardHeadingLevel, type CardPartProps, type CardVariant } fro
 import { Pill, type PillTone } from '../pill';
 
 export interface MetricCardSlotProps {
+  /** Card surface element; renders `Card`. */
   surface?: CardPartProps;
+  /** Header container wrapping the metric label and delta pill. */
   header?: CardPartProps;
+  /** Heading element displaying the metric name. */
   label?: CardPartProps;
+  /** Container element displaying the formatted metric value. */
   value?: CardPartProps;
+  /** Trend pill element displaying change; renders `Pill`. */
   delta?: CardPartProps;
+  /** Paragraph element displaying supplementary metric details. */
   description?: CardPartProps;
 }
 

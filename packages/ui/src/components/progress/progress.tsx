@@ -25,6 +25,7 @@ export interface ProgressProps extends Omit<ComponentPropsWithRef<'div'>, 'child
   /** Value text for assistive technology (aria-valuetext). */
   getValueLabel?: (value: number, max: number) => string;
   slotProps?: {
+    /** Indicator bar element displaying the filled progress portion. */
     indicator?: ProgressPartProps;
   };
 }

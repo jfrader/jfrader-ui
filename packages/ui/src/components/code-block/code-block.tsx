@@ -37,13 +37,21 @@ export interface CodeBlockSlotPartProps {
 }
 
 export interface CodeBlockSlotProps {
+  /** Header bar holding the label, language tag, and copy button. */
   header?: CodeBlockSlotPartProps;
+  /** Label element displaying the filename or snippet caption. */
   label?: CodeBlockSlotPartProps;
+  /** Badge element displaying the programming language name. */
   language?: CodeBlockSlotPartProps;
+  /** Frame container wrapping the line-number gutter and code block. */
   sourceFrame?: CodeBlockSlotPartProps;
+  /** Gutter element displaying formatted line numbers. */
   gutter?: CodeBlockSlotPartProps;
+  /** Preformatted container element wrapping the source code. */
   pre?: CodeBlockSlotPartProps;
+  /** Code element containing highlighted tokens or raw text. */
   code?: CodeBlockSlotPartProps;
+  /** Button element expanding or collapsing the code block. */
   toggle?: CodeBlockSlotPartProps;
 }
 

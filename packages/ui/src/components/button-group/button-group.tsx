@@ -59,18 +59,24 @@ export type ButtonGroupItemRecord =
     }>;
 
 export interface ButtonGroupSlots {
+  /** Container element wrapping the grouped buttons. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Action button inside the group. Default: `Button`. */
   item?: ComponentType<ButtonGroupItemProps>;
+  /** Navigation link button inside the group. */
   link?: ComponentType<ButtonGroupLinkProps>;
 }
 
 export interface ButtonGroupSlotProps {
+  /** Container element wrapping the grouped buttons. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
+  /** Action button inside the group. Default: `Button`. */
   item?: Partial<Omit<ButtonGroupItemProps, 'children' | 'label' | 'onClick' | 'disabled'>>;
+  /** Navigation link button inside the group. */
   link?: Partial<Omit<ButtonGroupLinkProps, 'children' | 'label' | 'href' | 'onClick' | 'disabled'>>;
 }
 

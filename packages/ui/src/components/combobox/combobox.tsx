@@ -103,25 +103,38 @@ export interface ComboboxOption {
 }
 
 export interface ComboboxSlots {
+  /** Replaces the root wrapper element; renders a `div` by default. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the text input field that controls the query. */
   input?: ComponentType<ComboboxInputProps>;
+  /** Replaces the listbox container for popup suggestions. */
   list?: ComponentType<ComboboxListProps>;
+  /** Replaces each suggestion item in the popup listbox. */
   item?: ComponentType<ComboboxItemProps>;
+  /** Replaces the container displayed when no suggestions match. */
   empty?: ComponentType<ComboboxEmptyProps>;
 }
 
 export interface ComboboxSlotProps {
+  /** Label element rendered above or alongside the input field. */
   label?: NonNullable<TextFieldProps['slotProps']>['label'];
+  /** Helper text element displayed below the input field. */
   description?: NonNullable<TextFieldProps['slotProps']>['description'];
+  /** Validation error message element displayed below the input field. */
   error?: NonNullable<TextFieldProps['slotProps']>['error'];
+  /** Root wrapper element around the input and listbox. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
+  /** Text input field that controls the query. */
   input?: Partial<ComboboxInputProps> & { css?: Interpolation<Theme> };
+  /** Listbox container for popup suggestions. */
   list?: Partial<ComboboxListProps> & { css?: Interpolation<Theme> };
+  /** Each suggestion item in the popup listbox. */
   item?: Partial<Omit<ComboboxItemProps, 'value' | 'id' | 'disabled' | 'textValue'>> & { css?: Interpolation<Theme> };
+  /** Container displayed when no suggestions match. */
   empty?: Partial<ComboboxEmptyProps> & { css?: Interpolation<Theme> };
 }
 

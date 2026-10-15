@@ -93,9 +93,13 @@ export interface FilterToolbarControlsProps
 
 type StyleSlot = { className?: string; css?: Interpolation<Theme> };
 export interface FilterToolbarActiveFiltersSlotProps {
+  /** List container element for active filter chips. */
   list?: StyleSlot;
+  /** Each active filter chip element. */
   chip?: StyleSlot;
+  /** Text label element inside a filter chip. */
   label?: StyleSlot;
+  /** Remove button element on a filter chip. */
   remove?: StyleSlot;
 }
 
@@ -121,12 +125,19 @@ export interface FilterToolbarResultCountProps
 }
 
 export interface FilterToolbarSlots {
+  /** Replaces the root container; renders a `div` by default. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the filter controls container. */
   controls?: ComponentType<FilterToolbarControlsProps>;
+  /** Replaces the single-select filter dropdown. */
   select?: ComponentType<SelectEasyProps>;
+  /** Replaces the multi-select filter dropdown. */
   multiSelect?: ComponentType<MultiSelectEasyProps>;
+  /** Replaces the active filter chips summary. */
   activeFilters?: ComponentType<FilterToolbarActiveFiltersProps>;
+  /** Replaces the clear-all filters button. */
   clear?: ComponentType<FilterToolbarClearProps>;
+  /** Replaces the matching results counter. */
   resultCount?: ComponentType<FilterToolbarResultCountProps>;
 }
 
@@ -147,16 +158,23 @@ export type FilterToolbarMultiSelectSlotProps = Partial<Omit<MultiSelectEasyProp
   };
 
 export interface FilterToolbarSlotProps {
+  /** Root toolbar container element. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
+  /** Container grouping the filter controls. */
   controls?: Partial<Omit<FilterToolbarControlsProps, 'children'>>;
+  /** Single-select filter dropdown. */
   select?: FilterToolbarSelectSlotProps;
+  /** Multi-select filter dropdown. */
   multiSelect?: FilterToolbarMultiSelectSlotProps;
+  /** Active filter chips summary container. */
   activeFilters?: Partial<FilterToolbarActiveFiltersProps>;
+  /** Button that resets all active filters. */
   clear?: Partial<FilterToolbarClearProps>;
+  /** Counter displaying matching result count. */
   resultCount?: Partial<FilterToolbarResultCountProps>;
 }
 

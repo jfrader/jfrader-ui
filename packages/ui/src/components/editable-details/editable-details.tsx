@@ -77,20 +77,28 @@ export interface EditableDetailsSectionRecord {
 }
 
 export interface EditableDetailsSlots {
+  /** Replaces the root container element; renders a `div` by default. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the collapsible section container. */
   section?: ComponentType<EditableDetailsSectionProps>;
+  /** Replaces the definition list container for items. */
   list?: ComponentType<EditableDetailsListProps>;
+  /** Replaces each detail item row in the list. */
   item?: ComponentType<EditableDetailsItemProps>;
 }
 
 export interface EditableDetailsSlotProps {
+  /** Root container element around the sections. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
+  /** Collapsible section container. */
   section?: Partial<Omit<EditableDetailsSectionProps, 'children' | 'title'>>;
+  /** Definition list container for items. */
   list?: Partial<EditableDetailsListProps>;
+  /** Each detail item row in the list. */
   item?: Partial<Omit<EditableDetailsItemProps, 'children' | 'label'>>;
 }
 
@@ -126,8 +134,11 @@ export interface EditableDetailsSectionProps extends Omit<ComponentPropsWithRef<
   onOpenChange?: (open: boolean) => void;
   triggerRef?: Ref<HTMLButtonElement>;
   slotProps?: {
+    /** Heading element wrapping the disclosure trigger button. */
     heading?: EditableDetailsPartProps;
+    /** Button that toggles the section open and closed. */
     trigger?: EditableDetailsPartProps;
+    /** Collapsible panel containing the section body. */
     panel?: EditableDetailsPartProps;
   };
 }
@@ -145,10 +156,15 @@ export interface EditableDetailsItemProps extends ComponentPropsWithRef<'div'>, 
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   slotProps?: {
+    /** Definition term (`<dt>`) displaying the item label. */
     label?: EditableDetailsPartProps;
+    /** Definition description (`<dd>`) holding the summary or editor. */
     description?: EditableDetailsPartProps;
+    /** Container holding the read-only value and edit button. */
     summary?: EditableDetailsPartProps;
+    /** Button that switches the item into edit mode. */
     edit?: EditableDetailsPartProps;
+    /** Container holding the active editor form fields. */
     editor?: EditableDetailsPartProps;
   };
 }

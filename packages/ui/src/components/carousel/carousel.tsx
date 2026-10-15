@@ -88,16 +88,27 @@ type IndicatorSlot = Omit<
 type ButtonSlot = Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'aria-disabled' | 'render' | 'sx'>;
 
 export interface CarouselSlotProps {
+  /** Button that toggles auto-rotation on and off. */
   rotationButton?: ButtonSlot;
+  /** Scrollable clipping container that holds the track. */
   viewport?: PartSlot;
+  /** Flex row that aligns and lays out the slides. */
   track?: PartSlot;
+  /** Individual slide container holding one item of content. */
   slide?: SlideSlot;
+  /** Bar that groups the tab list and pagination buttons. */
   controls?: PartSlot;
+  /** Roving tab list containing the slide indicator buttons. */
   tabList?: PartSlot;
+  /** Tab button that selects and indicates a specific slide. */
   indicator?: IndicatorSlot;
+  /** Button that advances to the previous slide. */
   previousButton?: ButtonSlot;
+  /** Button that advances to the next slide. */
   nextButton?: ButtonSlot;
+  /** Live region that announces the current slide to assistive technologies. */
   status?: PartSlot;
+  /** Empty state container displayed when no slides are provided. */
   empty?: PartSlot;
 }
 

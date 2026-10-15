@@ -52,14 +52,21 @@ type HandleSlot = Omit<
 type ButtonSlot = Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'aria-disabled' | 'render' | 'sx'>;
 
 export interface ImageCompareSlotProps {
+  /** Outer frame element constraining the compared images and handle. */
   frame?: PartSlot;
+  /** Clipped container layer displaying the before image. */
   before?: PartSlot;
+  /** Base container layer displaying the after image. */
   after?: PartSlot;
+  /** Caption element labeling the before image. */
   beforeLabel?: CaptionSlot;
+  /** Caption element labeling the after image. */
   afterLabel?: CaptionSlot;
+  /** Visual divider line separating the before and after images. */
   divider?: Omit<PartSlot, 'aria-hidden'>;
   /** The `role="slider"` element. Slider naming and descriptions (`aria-label`, `aria-labelledby`, `aria-describedby`) go here. */
   handle?: HandleSlot;
+  /** Button element resetting the comparison split to center; renders `Button`. */
   resetButton?: ButtonSlot;
 }
 

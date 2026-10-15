@@ -77,11 +77,26 @@ export interface ChatMessageLabels extends ThreadReactionLabels {
   showAttachments: (count: number) => string;
 }
 
-export type ChatMessagePart = 'bubble' | 'time' | 'attachments' | 'receipt' | 'reactions' | 'avatar';
+export type ChatMessagePart =
+  | /** Bubble container wrapping the message body and attachments. */
+    'bubble'
+  | /** Timestamp element displaying when the message was sent. */
+    'time'
+  | /** Container rendering the list of file attachments. */
+    'attachments'
+  | /** Delivery receipt element displaying message status. */
+    'receipt'
+  | /** Reactions bar displaying emoji reactions and picker. */
+    'reactions'
+  | /** Avatar element representing the message author. */
+    'avatar';
 
 export type ChatMessageSlotProps = Partial<Record<ChatMessagePart, ThreadPartProps>> & {
+  /** Root article element representing the message shell. */
   article?: ThreadPartProps & ComponentPropsWithRef<'article'>;
+  /** Delivery receipt container displaying message status. */
   receipt?: ThreadPartProps & ComponentPropsWithRef<'div'>;
+  /** Button element triggering a retry for failed messages. */
   retryButton?: ThreadButtonProps;
 };
 

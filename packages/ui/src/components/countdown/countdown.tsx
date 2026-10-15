@@ -46,7 +46,20 @@ export interface CountdownProps extends Omit<ComponentPropsWithRef<'div'>, 'chil
   completionIcon?: ReactNode;
   slotProps?: Partial<
     Record<
-      'label' | 'content' | 'unit' | 'number' | 'complete' | 'icon' | 'description',
+      | /** Header label displayed above the countdown. */
+        'label'
+      | /** Container wrapping the rendered time units. */
+        'content'
+      | /** Individual time unit cell holding a number and unit label. */
+        'unit'
+      | /** Numeric value displayed inside a time unit cell. */
+        'number'
+      | /** Completion text displayed when the countdown reaches zero. */
+        'complete'
+      | /** Icon displayed when the countdown reaches zero. */
+        'icon'
+      | /** Screen-reader description text explaining the countdown target. */
+        'description',
       CountdownPartProps
     >
   >;

@@ -44,16 +44,22 @@ export interface BreadcrumbsEntry {
   readonly current?: boolean;
 }
 export interface BreadcrumbsSlots {
+  /** Nav landmark wrapping the breadcrumbs trail. */
   root?: ComponentType<ComponentPropsWithRef<'nav'>>;
+  /** List item representing a single trail entry. Default: `Breadcrumbs.Item`. */
   item?: ComponentType<ComponentPropsWithRef<'li'>>;
+  /** Decorative separator element rendered between trail entries. */
   separator?: ComponentType<ComponentPropsWithRef<'span'>>;
 }
 export interface BreadcrumbsSlotProps {
+  /** Nav landmark wrapping the breadcrumbs trail. */
   root?: Omit<ComponentPropsWithRef<'nav'>, 'children'> & SxProps & {
     css?: Interpolation<Theme>;
     [attribute: `data-${string}`]: unknown;
   };
+  /** List item representing a single trail entry. Default: `Breadcrumbs.Item`. */
   item?: Omit<BreadcrumbsItemProps, 'children' | 'href' | 'current'> & { css?: Interpolation<Theme> };
+  /** Decorative separator element rendered between trail entries. */
   separator?: Omit<ComponentPropsWithRef<'span'>, 'children' | 'aria-hidden'> & SxProps & { css?: Interpolation<Theme> };
 }
 export interface BreadcrumbsCompoundProps extends BreadcrumbsBaseProps {

@@ -88,16 +88,53 @@ export interface ChatThreadLabels extends ThreadReactionLabels {
   showAttachments: (count: number) => string;
   fileRejected: (reason: 'type' | 'size' | 'count', name: string) => string;
 }
-type ChatThreadPart = 'viewport' | 'scroller' | 'log' | 'list' | 'message' | 'bubble' | 'time' | 'attachments' | 'receipt' | 'reaction';
+type ChatThreadPart =
+  | /** Container constraining the scrollable chat thread view. */
+    'viewport'
+  | /** Scroller element managing message log scroll position. */
+    'scroller'
+  | /** Message log container holding thread messages and alerts. */
+    'log'
+  | /** List element rendering chat message items. */
+    'list'
+  | /** Message item element wrapping an individual chat message. */
+    'message'
+  | /** Container bubble holding message body content. */
+    'bubble'
+  | /** Timestamp element displaying when the message was sent. */
+    'time'
+  | /** Container rendering message file attachments. */
+    'attachments'
+  | /** Delivery receipt element displaying message status. */
+    'receipt'
+  | /** Reaction button element displaying an emoji reaction. */
+    'reaction';
 export type ChatThreadSlotProps = Partial<Record<ChatThreadPart, ThreadPartProps>> & {
+  /** Floating button that scrolls the thread to the latest message. */
   jumpButton?: ThreadButtonProps;
 };
-export type ChatThreadComposerSlotProps = Partial<Record<'tray' | 'file' | 'error', ThreadPartProps>> & {
+export type ChatThreadComposerSlotProps = Partial<
+  Record<
+    | /** Tray container holding staged attachment items. */
+      'tray'
+    | /** Attachment item preview chip in the composer tray. */
+      'file'
+    | /** Error message element displaying validation or upload errors. */
+      'error',
+    ThreadPartProps
+  >
+> & {
+  /** Form element wrapping composer inputs and action buttons. */
   form?: ComponentPropsWithRef<'form'>;
+  /** Multiline textarea input for typing messages. */
   textarea?: ThreadTextareaProps;
+  /** Button element opening the file attachment picker. */
   attachButton?: ThreadButtonProps;
+  /** Hidden file input element handling attachment selection. */
   fileInput?: Omit<ComponentPropsWithRef<'input'>, 'type' | 'multiple' | 'accept' | 'disabled'>;
+  /** Button element removing a staged attachment from the tray. */
   removeButton?: ThreadButtonProps;
+  /** Button element submitting and sending the message. */
   sendButton?: ThreadButtonProps;
 };
 export interface ChatThreadComposerProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {

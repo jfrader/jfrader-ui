@@ -65,19 +65,27 @@ export interface AccordionSection {
 }
 
 export interface AccordionSlots {
+  /** Container element wrapping all accordion items. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Collapsible section item enclosing a trigger and panel. Default: `Accordion.Item`. */
   item?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Header button that toggles expansion of the section. Default: `Accordion.Trigger`. */
   trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
+  /** Expandable container holding the section content. Default: `Accordion.Panel`. */
   panel?: ComponentType<ComponentPropsWithRef<'div'>>;
 }
 
 export interface AccordionSlotProps {
+  /** Container element wrapping all accordion items. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps & {
     css?: Interpolation<Theme>;
     [attribute: `data-${string}`]: unknown;
   };
+  /** Collapsible section item enclosing a trigger and panel. Default: `Accordion.Item`. */
   item?: Omit<AccordionItemProps, 'children' | 'value' | 'disabled'> & { css?: Interpolation<Theme> };
+  /** Header button that toggles expansion of the section. Default: `Accordion.Trigger`. */
   trigger?: Omit<AccordionTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  /** Expandable container holding the section content. Default: `Accordion.Panel`. */
   panel?: Omit<AccordionPanelProps, 'children'> & { css?: Interpolation<Theme> };
 }
 
