@@ -786,6 +786,9 @@ const invalidConfigurations: SliderProps[] = [
   { label: 'Negative gap', type: 'range', minStepsBetweenThumbs: -1, thumbLabels: ['Start', 'End'] },
 ];
 export const ConfigurationErrors: Story = {
+  // Verification, not an example: the canvas is six error alerts and the console carries the
+  // component's own reports. The constraints are documented in the usage notes and the props.
+  tags: ['!autodocs'],
   render: () => (
     <>
       {invalidConfigurations.map((props, index) => (
