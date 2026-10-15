@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -7,6 +7,22 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Badge, type BadgeTone } from './index';
 
 const TONES = ['accent', 'danger', 'neutral'] as const satisfies readonly BadgeTone[];
+
+function SlotBadge(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="badge-marker" />;
+}
+
+export const MarkerReplacement: Story = {
+  render: (args) => <Badge {...args} variant="dot" slots={{ badge: SlotBadge }} />,
+  play: async ({ canvasElement }) => {
+    const marker = canvasElement.querySelector('[data-slot="badge-marker"]');
+    await expect(marker).toBeInTheDocument();
+    await expect(marker).toHaveAttribute('data-ui', 'badge-marker');
+    await expect(getComputedStyle(marker!).position).toBe('absolute');
+    await expect(marker).toHaveAttribute('aria-hidden', 'true');
+    await expect(canvasElement.querySelector('[data-ui="badge-marker"]:not([data-slot])')).toBeNull();
+  },
+};
 const MARKER = '[data-ui="badge-marker"]';
 const DOT_PX = 8;
 const POSITION_TOLERANCE_PX = 1;

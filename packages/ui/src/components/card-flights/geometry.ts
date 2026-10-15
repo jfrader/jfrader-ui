@@ -42,8 +42,7 @@ export const flightTarget = {
 };
 
 export function findMarker(root: HTMLElement, attribute: string, value: string) {
-  return [...root.querySelectorAll<HTMLElement>(`[${attribute}]`)]
-    .find((node) => node.getAttribute(attribute) === value);
+  return root.querySelector<HTMLElement>(`[${attribute}="${CSS.escape(value)}"]`);
 }
 
 export const FLIGHT_GEOMETRY = {
@@ -51,7 +50,7 @@ export const FLIGHT_GEOMETRY = {
   shadowFadeRatio: 1.5,
   spinDeg: -20,
   flipDurationRatio: 0.7, flipDelayRatio: 0.15, deckWidthRatio: 0.085,
-  maxCards: 3, originTtlMs: 4000,
+  originTtlMs: 4000,
   easing: [0.22, 1, 0.36, 1] as const,
   offsets: [0, 0.45, 1],
 };
@@ -60,7 +59,8 @@ export function dealSequence(players: readonly { key: string; idx: number; handS
   const seated = [...players].sort((a, b) => a.idx - b.idx);
   const start = Math.max(0, seated.findIndex((player) => player.idx === forehandIdx));
   const order = [...seated.slice(start), ...seated.slice(0, start)];
-  return Array.from({ length: FLIGHT_GEOMETRY.maxCards }, (_, cardIdx) => order
+  const handSize = players.reduce((size, player) => Math.max(size, player.handSize), 0);
+  return Array.from({ length: handSize }, (_, cardIdx) => order
     .filter((player) => cardIdx < player.handSize)
     .map((player) => ({ playerKey: player.key, cardIdx }))).flat();
 }

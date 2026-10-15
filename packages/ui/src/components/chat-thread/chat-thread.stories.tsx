@@ -1,10 +1,36 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock, type MockInstance } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ChatThread, type ChatMessage, type ChatThreadProps } from './index';
+import { Button, type ButtonProps } from '../button';
+import { Textarea, type TextareaProps } from '../textarea';
+
+function ReplacementViewport(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="custom-viewport" />;
+}
+
+function ReplacementTextarea(props: TextareaProps) {
+  return <Textarea {...props} data-testid="custom-textarea" />;
+}
+
+function ReplacementSend(props: ButtonProps) {
+  return <Button {...props} data-testid="custom-send" />;
+}
+
+export const InteriorReplacements: StoryObj<typeof ChatThread> = {
+  render: (args) => <ChatThread {...args} slots={{ viewport: ReplacementViewport }} composerProps={{ slots: { textarea: ReplacementTextarea, sendButton: ReplacementSend } }} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const viewport = canvas.getByTestId('custom-viewport');
+    await expect(viewport).toHaveAttribute('data-ui', 'chat-thread-viewport');
+    await expect(viewport.className).not.toBe('');
+    await expect(canvas.getByTestId('custom-textarea')).toHaveAttribute('aria-label', 'Message');
+    await expect(canvas.getByTestId('custom-send')).toHaveAttribute('data-action', 'submit');
+  },
+};
 
 const NOW = Date.parse('2026-10-12T12:00:00Z');
 const MINUTE = 60_000;
@@ -559,10 +585,20 @@ export const FalsyContent: Story = {
 const rootSpy = fn();
 const composerSpy = fn();
 const fieldSpy = fn();
+function SlotList(props: ComponentPropsWithRef<'ol'>) {
+  return <ol {...props} data-slot="chat-thread-list" />;
+}
 export const RefAndStyling: Story = {
+  args: { slots: { list: SlotList } },
   render: (args) => <ChatThread {...args} ref={rootSpy} css={css({ outlineStyle: 'dotted' })} sx={{ outlineStyle: 'dashed' }} slotProps={{ list: { css: css({ gap: vars.space[8] }) }, bubble: { css: css({ textDecorationLine: 'underline' }) } }} composerProps={{ ref: composerSpy, sx: { outlineStyle: 'dashed' }, slotProps: { textarea: { ref: fieldSpy } } }} />,
   play: async ({ canvasElement, canvas }) => {
     const root = canvasElement.querySelector('[data-ui="chat-thread"]')!;
+    const replacement = root.querySelector('[data-slot="chat-thread-list"]')!;
+    await expect(replacement).toBeInTheDocument();
+    await expect(replacement).toHaveAttribute('data-ui', 'chat-thread-list');
+    await expect(replacement).toHaveAttribute('role', 'list');
+    await expect(getComputedStyle(replacement).display).toBe('flex');
+    await expect(root.querySelector('[data-ui="chat-thread-list"]:not([data-slot])')).toBeNull();
     await expect(rootSpy.mock.calls.map(([element]) => element)).toContain(root);
     await expect(composerSpy.mock.calls.map(([element]) => element)).toContain(part(canvasElement, 'composer'));
     await expect(fieldSpy.mock.calls.map(([element]) => element)).toContain(canvas.getByRole('textbox'));

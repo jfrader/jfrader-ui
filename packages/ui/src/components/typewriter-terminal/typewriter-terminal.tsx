@@ -9,11 +9,12 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
-  type ComponentPropsWithoutRef,
+  type ComponentType,
   type CSSProperties,
   type JSX,
   type ReactNode,
 } from 'react';
+import { useMergeRefs } from '@floating-ui/react';
 import { animate, MotionConfig, useMotionValue, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
@@ -23,7 +24,7 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { Button } from '../button';
+import { Button, type ButtonProps } from '../button';
 import { Spinner } from '../spinner';
 
 export type TerminalTone = 'neutral' | 'muted' | 'success' | 'warning' | 'danger' | 'accent';
@@ -66,7 +67,7 @@ export interface TypewriterTerminalLabels {
   tones: Record<TerminalTone, string>;
   completed: string;
 }
-type Slot<E extends keyof JSX.IntrinsicElements> = ComponentPropsWithoutRef<E> & {
+type Slot<E extends keyof JSX.IntrinsicElements> = ComponentPropsWithRef<E> & {
   css?: Interpolation<Theme>;
 };
 export interface TypewriterTerminalSlotProps {
@@ -81,15 +82,37 @@ export interface TypewriterTerminalSlotProps {
   /** Slider range input element seeking across animation steps. */
   scrubber?: Slot<'input'>;
   /** Button element toggling playback between pause and play. */
-  playButton?: Slot<'button'>;
+  playButton?: ButtonProps;
   /** Button element restarting the terminal animation. */
-  replayButton?: Slot<'button'>;
+  replayButton?: ButtonProps;
   /** Button element copying the terminal session transcript. */
-  copyButton?: Slot<'button'>;
+  copyButton?: ButtonProps;
   /** Figcaption element describing the terminal figure. */
   caption?: Slot<'figcaption'>;
   /** Live region element announcing terminal playback updates. */
   status?: Slot<'div'>;
+}
+export interface TypewriterTerminalSlots {
+  /** Header holding the terminal title and copy action. */
+  header?: ComponentType<Slot<'header'>>;
+  /** Viewport displaying terminal output. */
+  screen?: ComponentType<Slot<'div'>>;
+  /** List of executed terminal steps. */
+  transcript?: ComponentType<Slot<'ol'>>;
+  /** Toolbar holding playback controls. */
+  controls?: ComponentType<Slot<'div'>>;
+  /** Range input seeking through the session. */
+  scrubber?: ComponentType<Slot<'input'>>;
+  /** Button toggling playback. */
+  playButton?: ComponentType<ButtonProps>;
+  /** Button restarting playback. */
+  replayButton?: ComponentType<ButtonProps>;
+  /** Button copying the transcript. */
+  copyButton?: ComponentType<ButtonProps>;
+  /** Caption describing the terminal session. */
+  caption?: ComponentType<Slot<'figcaption'>>;
+  /** Live region announcing playback updates. */
+  status?: ComponentType<Slot<'div'>>;
 }
 export interface TypewriterTerminalProps
   extends Omit<ComponentPropsWithRef<'figure'>, 'children' | 'onChange'>, SxProps {
@@ -114,6 +137,7 @@ export interface TypewriterTerminalProps
   };
   locale?: Intl.LocalesArgument;
   slotProps?: TypewriterTerminalSlotProps;
+  slots?: TypewriterTerminalSlots;
 }
 
 /** Commands advance one grapheme every 40ms; output pauses default to 160ms, tasks to 1200ms. */
@@ -416,6 +440,7 @@ export function TypewriterTerminal({
   labels: labelsProp,
   locale,
   slotProps,
+  slots,
   className,
   sx,
   style,
@@ -423,6 +448,16 @@ export function TypewriterTerminal({
   'aria-describedby': describedBy,
   ...rest
 }: TypewriterTerminalProps) {
+  const Header = slots?.header ?? 'header';
+  const Screen = slots?.screen ?? 'div';
+  const Transcript = slots?.transcript ?? 'ol';
+  const Controls = slots?.controls ?? 'div';
+  const Scrubber = slots?.scrubber ?? 'input';
+  const PlayButton = slots?.playButton ?? Button;
+  const ReplayButton = slots?.replayButton ?? Button;
+  const CopyButton = slots?.copyButton ?? Button;
+  const Caption = slots?.caption ?? 'figcaption';
+  const Status = slots?.status ?? 'div';
   const labels = {
     ...DEFAULT_LABELS,
     ...labelsProp,
@@ -447,6 +482,7 @@ export function TypewriterTerminal({
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [copying, setCopying] = useState(false);
   const screen = useRef<HTMLDivElement>(null);
+  const mergedScreenRef = useMergeRefs([screen, slotProps?.screen?.ref]);
   const copyGuard = useRef(0);
   const pendingCopy = useRef(false);
   const completionPending = useRef<typeof session | null>(null);
@@ -677,10 +713,10 @@ export function TypewriterTerminal({
             aria-describedby={joined(describedBy, captionPresent ? captionId : undefined)}
             style={{ ...style, '--terminal-rows': normalizedRows } as CSSProperties}
           >
-            <header {...slotProps?.header} role="group" css={[headerStyle, slotProps?.header?.css]}>
+            <Header {...slotProps?.header} role="group" css={[headerStyle, slotProps?.header?.css]}>
               <span>{title}</span>
               {copyable && (
-                <Button
+                <CopyButton
                   {...slotProps?.copyButton}
                   css={[buttonStyle, slotProps?.copyButton?.css]}
                   variant="ghost"
@@ -691,12 +727,12 @@ export function TypewriterTerminal({
                   }}
                 >
                   {labels.copy}
-                </Button>
+                </CopyButton>
               )}
-            </header>
-            <div
+            </Header>
+            <Screen
               {...slotProps?.screen}
-              ref={screen}
+              ref={mergedScreenRef}
               css={[screenStyle, slotProps?.screen?.css]}
               data-ui="typewriter-terminal-screen"
               aria-hidden="true"
@@ -747,9 +783,9 @@ export function TypewriterTerminal({
                     </div>
                   );
                 })}
-            </div>
-            <div {...slotProps?.controls} css={[controlsStyle, slotProps?.controls?.css]}>
-              <Button
+            </Screen>
+            <Controls {...slotProps?.controls} css={[controlsStyle, slotProps?.controls?.css]}>
+              <PlayButton
                 {...slotProps?.playButton}
                 css={[buttonStyle, slotProps?.playButton?.css]}
                 variant="outline"
@@ -760,8 +796,8 @@ export function TypewriterTerminal({
                 }}
               >
                 {isPaused ? labels.play : labels.pause}
-              </Button>
-              <Button
+              </PlayButton>
+              <ReplayButton
                 {...slotProps?.replayButton}
                 css={[buttonStyle, slotProps?.replayButton?.css]}
                 variant="ghost"
@@ -777,9 +813,9 @@ export function TypewriterTerminal({
                 }}
               >
                 {labels.replay}
-              </Button>
+              </ReplayButton>
               <div css={rangeWrapStyle}>
-                <input
+                <Scrubber
                   {...slotProps?.scrubber}
                   css={[rangeStyle, slotProps?.scrubber?.css]}
                   type="range"
@@ -831,8 +867,8 @@ export function TypewriterTerminal({
               <span css={timeStyle}>
                 {seconds.format(current / 1000)} / {seconds.format(session.duration / 1000)} s
               </span>
-            </div>
-            <ol
+            </Controls>
+            <Transcript
               {...slotProps?.transcript}
               css={[transcriptStyle, slotProps?.transcript?.css]}
               data-ui="typewriter-terminal-transcript"
@@ -870,8 +906,8 @@ export function TypewriterTerminal({
                   })}
                 </li>
               ))}
-            </ol>
-            <div
+            </Transcript>
+            <Status
               {...slotProps?.status}
               css={[statusStyle, slotProps?.status?.css]}
               role="status"
@@ -879,15 +915,15 @@ export function TypewriterTerminal({
               aria-atomic="true"
             >
               {status}
-            </div>
+            </Status>
             {captionPresent && (
-              <figcaption
+              <Caption
                 {...slotProps?.caption}
                 id={captionId}
                 css={[captionStyle, slotProps?.caption?.css]}
               >
                 {caption}
-              </figcaption>
+              </Caption>
             )}
           </figure>
         )}

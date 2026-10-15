@@ -2,7 +2,7 @@
 // marker's text follows the child in reading order, so assistive tech reads "child, count";
 // the dot carries no text and is hidden from AT. Pass words in `badgeContent` when the number
 // alone is ambiguous. Not interactive.
-import type { ComponentPropsWithRef, ReactNode } from 'react';
+import type { ComponentPropsWithRef, ComponentType, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
@@ -19,6 +19,13 @@ export interface BadgePartProps {
   css?: Interpolation<Theme>;
 }
 
+export interface BadgeSlots {
+  /** Root container element wrapping the anchored child content. */
+  root?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Badge marker element positioned over the anchored child. */
+  badge?: ComponentType<ComponentPropsWithRef<'span'>>;
+}
+
 export interface BadgeProps extends ComponentPropsWithRef<'span'>, SxProps {
   children: ReactNode;
   badgeContent?: ReactNode;
@@ -31,6 +38,7 @@ export interface BadgeProps extends ComponentPropsWithRef<'span'>, SxProps {
   tone?: BadgeTone;
   anchor?: BadgeAnchor;
   overlap?: BadgeOverlap;
+  slots?: BadgeSlots;
   slotProps?: {
     /** Root container element wrapping the anchored child content. */
     root?: BadgePartProps;
@@ -159,6 +167,7 @@ export function Badge({
   tone = 'accent',
   anchor,
   overlap = 'rectangular',
+  slots,
   slotProps,
   className,
   sx,
@@ -173,14 +182,16 @@ export function Badge({
   const content = typeof badgeContent === 'number' && badgeContent > max ? `${max}+` : badgeContent;
   const anchorKey: AnchorKey = `${anchor?.vertical ?? 'top'}-${anchor?.horizontal ?? 'end'}`;
   const rootClassName = [className, slotProps?.root?.className].filter(Boolean).join(' ') || undefined;
+  const Root = slots?.root ?? 'span';
+  const BadgeMarker = slots?.badge ?? 'span';
 
   return (
     <WithSx className={rootClassName} styles={[rootStyle, slotProps?.root?.css]} sx={sx}>
       {(className) => (
-        <span {...rest} ref={ref} data-ui="badge" className={className}>
+        <Root {...rest} ref={ref} data-ui="badge" className={className}>
           {children}
           {!hidden && (
-            <span
+            <BadgeMarker
               data-ui="badge-marker"
               data-variant={variant}
               data-tone={tone}
@@ -196,9 +207,9 @@ export function Badge({
               ]}
             >
               {isDot ? null : content}
-            </span>
+            </BadgeMarker>
           )}
-        </span>
+        </Root>
       )}
     </WithSx>
   );

@@ -13,3 +13,4 @@ export {
   type RadioCardsLayout,
   type RadioCardsSize,
 } from './radio-cards';
+export type { RadioCardsItemSlots } from './radio-cards';

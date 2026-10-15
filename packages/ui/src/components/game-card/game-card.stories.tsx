@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { DeckProvider, UnknownDeckError, defineDeck, frenchDeck, useDeck } from '../deck';
@@ -8,7 +8,12 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { CARD_BACK_PATTERNS, GameCard, type GameCardRootProps, type GameCardSize, type GameCardSuit, type GameCardValue } from './index';
 import { css } from '../../styling/css';
-import { WithSx } from '../../styling/sx';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+import { GameHand } from '../game-hand';
+import { GameCardStack } from '../game-card-stack';
+import { FlipGameCard } from '../flip-game-card';
+import { createFlightRegistry, FlightRegistryContext } from '../card-flights/flight-registry';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly GameCardSize[];
 const SIZE_PX = { sm: 32, md: 72, lg: 112 } as const;
@@ -100,7 +105,7 @@ function DeckProbe({ id, onResolved }: { id: string; onResolved: (deck: ReturnTy
   return null;
 }
 
-const gridStyle = {
+const DeckGrid = styled.div({
   display: 'grid',
   inlineSize: `calc(${vars.size.gameCardSm} * ${FRENCH_RANKS.length} + ${vars.space[2]} * ${FRENCH_RANKS.length - 1})`,
   maxInlineSize: '100%',
@@ -108,13 +113,14 @@ const gridStyle = {
   gridTemplateColumns: `repeat(auto-fit, minmax(${vars.size.gameCardSm}, max-content))`,
   gap: vars.space[2],
   alignItems: 'center',
-} satisfies CSSProperties;
+});
 
-const rowStyle = {
+const Row = styled.div({
   display: 'flex',
   alignItems: 'center',
   gap: vars.space[4],
-} satisfies CSSProperties;
+});
+const NarrowRow = styled(Row)({ inlineSize: vars.size.gameCardLg });
 
 const meta = {
   title: 'Games/GameCard',
@@ -158,6 +164,62 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+function ReplacementSpan(props: ComponentPropsWithRef<'span'>) { return <span {...props} data-replacement="span" />; }
+function ReplacementDiv(props: ComponentPropsWithRef<'div'>) { return <div {...props} data-replacement="div" />; }
+function ReplacementButton(props: ComponentPropsWithRef<'button'>) { return <button {...props} data-replacement="button" />; }
+
+export const ArtSetsAndRegistrations: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvasElement }) => {
+    const host = canvasElement.ownerDocument.createElement('div');
+    canvasElement.append(host);
+    const root = createRoot(host);
+    const registry = createFlightRegistry();
+    const deck = defineDeck({ ...frenchDeck, id: 'art-test', cardId: (suit, rank) => `${rank}:${suit}`,
+      art: { 'Q:hearts': 'Base art' }, artSets: { special: { 'Q:hearts': 'Special art' } },
+      backs: { special: 'Special back' } });
+    const value: GameCardValue = { deck: deck.id, suit: 'hearts', rank: 'Q' };
+    const cards = [{ id: 'queen', value, label: 'Queen' }];
+    const overrides = { 'Q:hearts': 'special' };
+    const render = () => <DeckProvider decks={[deck]} backLabel="Back">
+      <FlightRegistryContext value={registry}>
+        <GameCard value={value} label="Art" cardArtSets={overrides} slots={{ face: ReplacementSpan }} />
+        <GameCard value={value} label="Consumer" cardArtSets={overrides}>Consumer art</GameCard>
+        <GameHand cards={cards} playLabel="Play" cardArtSets={overrides} slots={{ fan: ReplacementDiv, card: ReplacementButton, confirm: ReplacementButton }} slotProps={{ confirm: { 'data-ui': 'custom custom' } }} />
+        <GameHand.Hidden count={5} playerKey="opponent" label="Five cards" artSet="special" slots={{ card: ReplacementDiv }} />
+        <GameCardStack.Pile playerKey="player" cards={cards} label="Pile" cardArtSets={overrides} slots={{ pile: ReplacementDiv, trigger: ReplacementButton, card: ReplacementDiv }} />
+        <FlipGameCard value={value} label="Flip" cardArtSets={overrides} slots={{ rotator: ReplacementDiv, front: ReplacementDiv, back: ReplacementDiv }} />
+        <GameCard label="Replacement back" slots={{ back: ReplacementSpan }} />
+      </FlightRegistryContext>
+    </DeckProvider>;
+    try {
+      flushSync(() => root.render(render()));
+      await expect(host.querySelectorAll('[data-ui~="game-card-art"]')).toHaveLength(5);
+      await expect(host.querySelector('[aria-label="Consumer"]')).toHaveTextContent('Consumer art');
+      await expect(host.querySelectorAll('[data-ui~="game-hand-hidden-card"]')).toHaveLength(5);
+      await expect(host.querySelector('[data-ui~="game-hand-confirm"]')).toHaveAttribute('data-ui', 'game-hand-confirm custom button');
+      await expect(host.querySelector('[data-ui~="flip-game-card-back"]')).toHaveTextContent('Special back');
+      await expect(host.querySelectorAll('[data-replacement]')).toHaveLength(16);
+      const measurements = fn(() => new DOMRect());
+      const hand = registry.hand.get('queen')!.node;
+      const played = registry.played.get('queen')!.node;
+      hand.getBoundingClientRect = measurements;
+      played.getBoundingClientRect = measurements;
+      for (const entry of registry.hidden.get('opponent')!.values()) entry.node.getBoundingClientRect = measurements;
+      flushSync(() => root.render(render()));
+      await expect(measurements).not.toHaveBeenCalled();
+      flushSync(() => root.render(null));
+      await expect(measurements).toHaveBeenCalledTimes(7);
+      await expect(registry.hand.size).toBe(0);
+      await expect(registry.played.size).toBe(0);
+      await expect(registry.hidden.size).toBe(0);
+    } finally {
+      flushSync(() => root.unmount());
+      host.remove();
+    }
+  },
+};
 
 async function expectDeckGrid(cards: NodeListOf<Element>) {
   const firstCard = cards[0];
@@ -215,14 +277,14 @@ export function CardPatterns() {
     },
   },
   render: () => (
-    <div style={rowStyle}>
+    <Row>
       {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => (
-        <div key={deck} style={rowStyle}>
+        <Row key={deck}>
           <GameCard data-test-pattern={pattern} value={deck === 'spanish' ? ACE_OF_OROS : QUEEN_OF_HEARTS} label={`${deck} face`} backPattern={pattern} />
           <GameCard data-test-pattern={pattern} label={`${deck} back`} backPattern={pattern} />
-        </div>
+        </Row>
       ))}
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     for (const pattern of Object.values(CARD_BACK_PATTERNS)) {
@@ -241,13 +303,14 @@ export const BackPatternsLightTheme: Story = {
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 import { vars } from '@jfrader/tokens/vars';
 
-const row = { display: 'flex', alignItems: 'center', gap: vars.space[4] };
-<ThemeRoot theme="light"><div style={row}>
-  {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => <div key={deck} style={row}>
+import { styled } from '@jfrader/ui';
+const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+<ThemeRoot theme="light"><Row>
+  {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => <Row key={deck}>
     <GameCard value={deck === 'spanish' ? { deck, suit: 'oros', rank: 1 } : { deck, suit: 'hearts', rank: 'Q' }} label={deck + ' face'} backPattern={pattern} />
     <GameCard label={deck + ' back'} backPattern={pattern} />
-  </div>)}
-</div></ThemeRoot>` } } },
+  </Row>)}
+</Row></ThemeRoot>` } } },
   decorators: [withLightTheme],
 };
 
@@ -276,13 +339,12 @@ export const QueenOfHearts: Story = {
   },
 };
 
-const customMaterial = css({ backgroundColor: vars.color.cardFace, border: `1px solid ${vars.color.cardInk}`, opacity: 0.9 });
-function CardMaterial({ className, ...props }: GameCardRootProps) {
-  return <WithSx styles={customMaterial} className={className}>
-    {(classes) => <div {...props} className={classes} data-custom-material="true" />}
-  </WithSx>;
+const CustomMaterial = styled.div({ backgroundColor: vars.color.cardFace, border: `1px solid ${vars.color.cardInk}`, opacity: 0.9 });
+function CardMaterial(props: GameCardRootProps) {
+  return <CustomMaterial {...props} data-custom-material="true" />;
 }
 
+// This story exercises slot css, consumer css/style and sx precedence.
 export const RootCustomization: Story = {
   tags: ['!autodocs'],
   args: { ref: fn(), component: CardMaterial, slots: { root: CardMaterial }, 'data-ui': 'consumer game-card consumer',
@@ -318,11 +380,14 @@ import { vars } from '@jfrader/tokens/vars';
 const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'] as const;
 const RANKS = ['A', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K'] as const;
 
+import { styled } from '@jfrader/ui';
+const DeckGrid = styled.div({ display: 'grid', gap: vars.space[2], maxInlineSize: '100%', marginInline: 'auto',
+      inlineSize: 'calc(' + vars.size.gameCardSm + ' * 13 + ' + vars.space[2] + ' * 12)',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(' + vars.size.gameCardSm + ', max-content))', alignItems: 'center' });
+
 export function FrenchDeckGrid() {
   return (
-    <div style={{ display: 'grid', gap: vars.space[2], maxInlineSize: '100%', marginInline: 'auto',
-      inlineSize: 'calc(' + vars.size.gameCardSm + ' * 13 + ' + vars.space[2] + ' * 12)',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(' + vars.size.gameCardSm + ', max-content))', alignItems: 'center' }}>
+    <DeckGrid>
       {SUITS.flatMap((suit) =>
         RANKS.map((rank) => (
           <GameCard
@@ -333,21 +398,21 @@ export function FrenchDeckGrid() {
           />
         ))
       )}
-    </div>
+    </DeckGrid>
   );
 }`,
       },
     },
   },
   render: () => (
-    <div style={gridStyle}>
+    <DeckGrid>
       {FRENCH_SUITS.flatMap((suit) =>
         FRENCH_RANKS.map((rank) => {
           const value: GameCardValue = { deck: 'french', suit, rank };
           return <GameCard key={`${suit}-${rank}`} size="sm" label={`${rank} of ${suit}`} value={value} />;
         }),
       )}
-    </div>
+    </DeckGrid>
   ),
   play: async ({ canvasElement }) => {
     const cards = canvasElement.querySelectorAll('[data-ui="game-card"]');
@@ -381,11 +446,14 @@ const SUITS = ['oros', 'copas', 'espadas', 'bastos'] as const;
 const RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12] as const;
 const names: Record<number, string> = { 1: 'as', 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco', 6: 'seis', 7: 'siete', 10: 'sota', 11: 'caballo', 12: 'rey' };
 
+import { styled } from '@jfrader/ui';
+const DeckGrid = styled.div({ display: 'grid', gap: vars.space[2], maxInlineSize: '100%', marginInline: 'auto',
+      inlineSize: 'calc(' + vars.size.gameCardSm + ' * 13 + ' + vars.space[2] + ' * 12)',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(' + vars.size.gameCardSm + ', max-content))', alignItems: 'center' });
+
 export function SpanishDeckGrid() {
   return (
-    <div style={{ display: 'grid', gap: vars.space[2], maxInlineSize: '100%', marginInline: 'auto',
-      inlineSize: 'calc(' + vars.size.gameCardSm + ' * 13 + ' + vars.space[2] + ' * 12)',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(' + vars.size.gameCardSm + ', max-content))', alignItems: 'center' }}>
+    <DeckGrid>
       {SUITS.flatMap((suit) =>
         RANKS.map((rank) => (
           <GameCard
@@ -396,21 +464,21 @@ export function SpanishDeckGrid() {
           />
         ))
       )}
-    </div>
+    </DeckGrid>
   );
 }`,
       },
     },
   },
   render: () => (
-    <div style={gridStyle}>
+    <DeckGrid>
       {SPANISH_SUITS.flatMap((suit) =>
         SPANISH_RANKS.map((rank) => {
           const value: GameCardValue = { deck: 'spanish', suit, rank };
           return <GameCard key={`${suit}-${rank}`} size="sm" label={cardLabel(value)} value={value} />;
         }),
       )}
-    </div>
+    </DeckGrid>
   ),
   play: async ({ canvasElement }) => {
     const cards = canvasElement.querySelectorAll('[data-ui="game-card"]');
@@ -457,12 +525,12 @@ export function FaceDownExamples() {
     },
   },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <GameCard {...args} />
       {/* A card with no value is face down: the caller cannot leak what it does not pass. */}
       <GameCard label={BACK_LABEL} />
       <GameCard label={BACK_LABEL} face="back" value={ACE_OF_OROS} />
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     const backs = within(canvasElement).getAllByRole('img', { name: BACK_LABEL });
@@ -511,11 +579,11 @@ export function CardSizes() {
     },
   },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       {SIZES.map((size) => (
         <GameCard {...args} key={size} size={size} label={`${size} card`} />
       ))}
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     for (const size of SIZES) {
@@ -533,10 +601,10 @@ export function CardSizes() {
 export const NarrowFlexRow: Story = {
   tags: ['!autodocs'],
   render: (args) => (
-    <div style={{ ...rowStyle, inlineSize: vars.size.gameCardLg }}>
+    <NarrowRow>
       <GameCard {...args} size="md" label="First card" />
       <GameCard {...args} size="md" label="Second card" />
-    </div>
+    </NarrowRow>
   ),
   play: async ({ canvasElement }) => {
     for (const card of within(canvasElement).getAllByRole('img')) {
@@ -550,14 +618,14 @@ export const NarrowFlexRow: Story = {
 export const OptionalArt: Story = {
   tags: ['!autodocs'],
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <GameCard {...args} label="Null art" children={null} />
       <GameCard {...args} label="False art" children={false} />
       <GameCard {...args} label="True art" children={true} />
       <GameCard {...args} label="Zero art" children={0} />
       <GameCard label="Zero back art" face="back" children={0} />
       <GameCard label="False back art" face="back" children={false} />
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -690,10 +758,10 @@ export function RankLabelAndDimmedExample() {
     },
   },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <GameCard {...args} rankLabel="Sota" label="sota de copas" value={{ deck: 'spanish', suit: 'copas', rank: 10 }} />
       <GameCard {...args} dimmed label="as de espadas" value={{ deck: 'spanish', suit: 'espadas', rank: 1 }} />
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('img', { name: 'sota de copas' })).toHaveTextContent('Sota');
@@ -707,18 +775,21 @@ export const LightTheme: Story = {
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 import { vars } from '@jfrader/tokens/vars';
 
-<ThemeRoot theme="light"><div style={{ display: 'flex', alignItems: 'center', gap: vars.space[4] }}>
+import { styled } from '@jfrader/ui';
+const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+
+<ThemeRoot theme="light"><Row>
   <GameCard size="lg" label="Q of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
   <GameCard size="lg" label="as de oros" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} />
   <GameCard size="lg" label="Carta boca abajo" />
-</div></ThemeRoot>` } } },
+</Row></ThemeRoot>` } } },
   decorators: [withLightTheme],
   render: () => (
-    <div style={rowStyle}>
+    <Row>
       <GameCard size="lg" label="Q of hearts" value={QUEEN_OF_HEARTS} />
       <GameCard size="lg" label={cardLabel(ACE_OF_OROS)} value={ACE_OF_OROS} />
       <GameCard size="lg" label={BACK_LABEL} />
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     // A card is its own material: the paper face reads the same in both themes.

@@ -1,4 +1,4 @@
-import { useId, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useId, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
@@ -23,6 +23,21 @@ export interface MetricCardSlotProps {
   description?: CardPartProps;
 }
 
+export interface MetricCardSlots {
+  /** Replaces the card surface. */
+  surface?: ComponentType<CardPartProps & ComponentPropsWithRef<typeof Card>>;
+  /** Replaces the header container. */
+  header?: ComponentType<CardPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces the metric heading. Receives `headingLevel`. */
+  label?: ComponentType<CardPartProps & ComponentPropsWithRef<'h3'> & { headingLevel?: CardHeadingLevel }>;
+  /** Replaces the metric value container. */
+  value?: ComponentType<CardPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces the change pill. */
+  delta?: ComponentType<CardPartProps & ComponentPropsWithRef<typeof Pill>>;
+  /** Replaces the description paragraph. */
+  description?: ComponentType<CardPartProps & ComponentPropsWithRef<'p'>>;
+}
+
 export interface MetricCardProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   label: ReactNode;
   value: number | null;
@@ -41,6 +56,7 @@ export interface MetricCardProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
   deltaDescription?: string;
   loading?: boolean;
   missingValueLabel?: string;
+  slots?: MetricCardSlots;
   slotProps?: MetricCardSlotProps;
 }
 
@@ -107,6 +123,7 @@ export function MetricCard({
   deltaDescription,
   loading = false,
   missingValueLabel = 'Unavailable',
+  slots,
   slotProps,
   className,
   sx,
@@ -128,7 +145,13 @@ export function MetricCard({
       : normalizedDelta !== undefined && normalizedDelta > 0
         ? 'up'
         : 'down';
-  const Heading = `h${headingLevel}` as const;
+  const Surface = slots?.surface ?? Card;
+  const Header = slots?.header ?? 'div';
+  // The native heading carries the level in its own name; a replacement is told the level instead.
+  const Heading = slots?.label ?? (`h${headingLevel}` as const);
+  const Value = slots?.value ?? 'div';
+  const Delta = slots?.delta ?? Pill;
+  const Description = slots?.description ?? 'p';
   const hasFiniteValue = value !== null && Number.isFinite(value);
   const formattedValue = hasFiniteValue
     ? numberFormatter(locale, formatOptions).format(value)
@@ -158,12 +181,12 @@ export function MetricCard({
             [describedBy, hasDescription && descriptionId].filter(Boolean).join(' ') || undefined
           }
         >
-          <Card
+          <Surface
             variant={variant}
             className={slotProps?.surface?.className}
             css={[surfaceStyle, slotProps?.surface?.css]}
           >
-            <div
+            <Header
               data-ui="metric-card-header"
               className={slotProps?.header?.className}
               css={[headerStyle, slotProps?.header?.css]}
@@ -172,6 +195,7 @@ export function MetricCard({
                 <Heading
                   id={labelId}
                   data-ui="metric-card-label"
+                  {...(slots?.label ? { headingLevel } : {})}
                   className={slotProps?.label?.className}
                   css={[labelStyle, slotProps?.label?.css]}
                 >
@@ -179,7 +203,7 @@ export function MetricCard({
                 </Heading>
               )}
               {normalizedDelta !== undefined && (
-                <Pill
+                <Delta
                   tone={deltaTone}
                   data-direction={direction}
                   className={slotProps?.delta?.className}
@@ -192,28 +216,28 @@ export function MetricCard({
                     {formattedDelta}
                     {deltaDescription ? ` ${deltaDescription}` : ''}
                   </span>
-                </Pill>
+                </Delta>
               )}
-            </div>
-            <div
+            </Header>
+            <Value
               data-ui="metric-card-value"
               className={slotProps?.value?.className}
               css={[valueStyle, slotProps?.value?.css]}
             >
               {formattedValue}
               {hasFiniteValue && unitLabel ? ` ${unitLabel}` : ''}
-            </div>
+            </Value>
             {hasDescription && (
-              <p
+              <Description
                 id={descriptionId}
                 data-ui="metric-card-description"
                 className={slotProps?.description?.className}
                 css={[descriptionStyle, slotProps?.description?.css]}
               >
                 {description}
-              </p>
+              </Description>
             )}
-          </Card>
+          </Surface>
         </div>
       )}
     </WithSx>

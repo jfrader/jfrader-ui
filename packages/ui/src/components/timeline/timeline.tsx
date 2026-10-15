@@ -17,6 +17,8 @@
 // bounded scroller) the visible row keeps its position. `scrollToNew` opts into scrolling to a newer
 // event. Genuinely new ids are announced through a text-only status region.
 import {
+  type ComponentType,
+  type ComponentProps,
   useEffect,
   useId,
   useLayoutEffect,
@@ -91,32 +93,32 @@ export interface TimelinePartProps {
   className?: string;
   css?: Interpolation<Theme>;
 }
+export interface TimelineSlots {
+  /** Scrollable container holding the day groups. */
+  scroller?: ComponentType<ComponentPropsWithRef<'div'> & TimelinePartProps>;
+  /** Section containing one day of events. */
+  group?: ComponentType<ComponentPropsWithRef<'section'> & TimelinePartProps>;
+  /** Heading naming a day group. */
+  heading?: ComponentType<ComponentPropsWithRef<'h3'> & TimelinePartProps>;
+  /** Ordered list of events. */
+  list?: ComponentType<ComponentPropsWithRef<'ol'> & TimelinePartProps>;
+  /** List item containing one event. */
+  item?: ComponentType<ComponentPropsWithRef<'li'> & TimelinePartProps>;
+  /** Decorative event marker. */
+  marker?: ComponentType<ComponentPropsWithRef<'span'> & TimelinePartProps>;
+  /** Button expanding event details. */
+  trigger?: ComponentType<ComponentPropsWithRef<'button'> & TimelinePartProps>;
+  /** Timestamp of an event. */
+  time?: ComponentType<ComponentPropsWithRef<'time'> & TimelinePartProps>;
+  /** Collapsible event details. */
+  detail?: ComponentType<ComponentPropsWithRef<'div'> & TimelinePartProps>;
+  /** Live region announcing timeline updates. */
+  status?: ComponentType<ComponentPropsWithRef<'div'> & TimelinePartProps>;
+}
 
-export type TimelineSlotProps = Partial<
-  Record<
-    | /** Scrollable container managing the timeline events scroll position. */
-      'scroller'
-    | /** Section container element grouping events by day. */
-      'group'
-    | /** Heading element displaying the day group label. */
-      'heading'
-    | /** Ordered list element (`ol`) containing day event items. */
-      'list'
-    | /** List item element (`li`) representing an individual timeline event. */
-      'item'
-    | /** Bullet dot or icon indicator on the timeline axis. */
-      'marker'
-    | /** Interactive button element expanding or collapsing event details. */
-      'trigger'
-    | /** Timestamp element displaying the event time. */
-      'time'
-    | /** Collapsible container holding expanded event details. */
-      'detail'
-    | /** Live region element announcing timeline updates and empty state. */
-      'status',
-    TimelinePartProps
-  >
->;
+export type TimelineSlotProps = {
+  [Part in keyof TimelineSlots]?: ComponentProps<NonNullable<TimelineSlots[Part]>>;
+};
 
 export interface TimelineProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>,
@@ -142,6 +144,7 @@ export interface TimelineProps
   size?: TimelineSize;
   labels?: Partial<TimelineLabels>;
   slotProps?: TimelineSlotProps;
+  slots?: TimelineSlots;
 }
 
 interface Row {
@@ -528,7 +531,7 @@ const emptyStyle = css({
   color: vars.color.textMuted,
 });
 
-function TimelineMarker({ event, part }: { event: TimelineEvent; part?: TimelinePartProps }) {
+function TimelineMarker({ event, part, component: Marker = 'span' }: { event: TimelineEvent; part?: TimelineSlotProps['marker']; component?: TimelineSlots['marker'] | 'span' }) {
   const tone = event.tone ?? 'neutral';
   const kind = event.avatar ? 'avatar' : hasContent(event.icon) ? 'icon' : event.actor ? 'avatar' : 'dot';
   const content = {
@@ -538,7 +541,8 @@ function TimelineMarker({ event, part }: { event: TimelineEvent; part?: Timeline
   }[kind];
   // The adjacent actor and title text identify the event; the marker only decorates it.
   return (
-    <span
+    <Marker
+      {...part}
       aria-hidden="true"
       data-ui="timeline-marker"
       data-kind={kind}
@@ -547,7 +551,7 @@ function TimelineMarker({ event, part }: { event: TimelineEvent; part?: Timeline
       css={[markerStyle, markerToneStyles[tone], part?.css]}
     >
       {content}
-    </span>
+    </Marker>
   );
 }
 
@@ -566,6 +570,7 @@ export function Timeline({
   size = 'md',
   labels: labelProps,
   slotProps,
+  slots,
   className,
   sx,
   onKeyDown,
@@ -576,9 +581,20 @@ export function Timeline({
   'aria-describedby': ariaDescribedBy,
   ...rest
 }: TimelineProps) {
+  const Scroller = slots?.scroller ?? 'div';
+  const Group = slots?.group ?? 'section';
+  const Heading = slots?.heading ?? `h${headingLevel}`;
+  const List = slots?.list ?? 'ol';
+  const Item = slots?.item ?? 'li';
+  const Marker = slots?.marker ?? 'span';
+  const Trigger = slots?.trigger ?? 'button';
+  const Time = slots?.time ?? 'time';
+  const Detail = slots?.detail ?? 'div';
+  const Status = slots?.status ?? 'div';
   const baseId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const mergedScrollerRef = useMergeRefs([scrollerRef, slotProps?.scroller?.ref]);
   const mergedRef = useMergeRefs([ref, rootRef]);
   const bounded = maxHeight !== undefined;
   const validNow = validEpoch(now) ? now : null;
@@ -737,7 +753,6 @@ export function Timeline({
 
   const empty = events.length === 0;
   const emptyId = `${baseId}-empty`;
-  const Heading = `h${headingLevel}` as const;
   const name = {
     'aria-label': ariaLabelProp ?? (ariaLabelledBy ? undefined : labels.region),
     'aria-labelledby': ariaLabelledBy,
@@ -760,15 +775,19 @@ export function Timeline({
           onBlur={handleBlur}
           className={rootClassName}
         >
-          <div
-            ref={scrollerRef}
+          <Scroller
+            {...slotProps?.scroller}
+            ref={mergedScrollerRef}
             data-ui="timeline-scroller"
             data-bounded={bounded ? '' : undefined}
             // A bounded scroller must be scrollable from the keyboard even without disclosures, so it
             // is a tab stop and carries the timeline's name.
             {...(bounded ? { tabIndex: 0, role: 'group', ...name } : undefined)}
-            style={bounded ? { maxBlockSize: maxHeight } : undefined}
-            onScroll={captureAnchor}
+            style={bounded ? { ...slotProps?.scroller?.style, maxBlockSize: maxHeight } : slotProps?.scroller?.style}
+            onScroll={(event) => {
+              slotProps?.scroller?.onScroll?.(event);
+              captureAnchor();
+            }}
             className={slotProps?.scroller?.className}
             css={[scrollerStyle, slotProps?.scroller?.css]}
           >
@@ -781,7 +800,8 @@ export function Timeline({
                 const headingId = partId(baseId, 'day', group.key);
                 return (
                   // A group, not a named section: one region landmark per day would flood landmark navigation.
-                  <section
+                  <Group
+                    {...slotProps?.group}
                     key={group.key}
                     role="group"
                     aria-labelledby={headingId}
@@ -791,6 +811,7 @@ export function Timeline({
                     css={[groupStyle, slotProps?.group?.css]}
                   >
                     <Heading
+                      {...slotProps?.heading}
                       id={headingId}
                       data-ui="timeline-heading"
                       className={slotProps?.heading?.className}
@@ -803,7 +824,8 @@ export function Timeline({
                       )}
                       <span css={dayCountStyle}>{labels.dayCount(group.rows.length)}</span>
                     </Heading>
-                    <ol
+                    <List
+                      {...slotProps?.list}
                       data-ui="timeline-list"
                       className={slotProps?.list?.className}
                       css={[listStyle, slotProps?.list?.css]}
@@ -814,25 +836,30 @@ export function Timeline({
                         const detailId = partId(baseId, 'detail', event.id);
                         const fullDateId = partId(baseId, 'when', event.id);
                         const title = expandable ? (
-                          <button
+                          <Trigger
+                            {...slotProps?.trigger}
                             type="button"
                             data-ui="timeline-trigger"
                             aria-expanded={expanded}
                             aria-controls={detailId}
                             aria-describedby={epoch === null ? undefined : fullDateId}
-                            onClick={() => toggle(event.id)}
+                            onClick={(click) => {
+                              slotProps?.trigger?.onClick?.(click);
+                              if (!click.defaultPrevented) toggle(event.id);
+                            }}
                             className={slotProps?.trigger?.className}
                             css={[triggerStyle, slotProps?.trigger?.css]}
                           >
                             {event.title}
-                          </button>
+                          </Trigger>
                         ) : (
                           <span data-ui="timeline-title" css={titleStyle}>
                             {event.title}
                           </span>
                         );
                         return (
-                          <li
+                          <Item
+                            {...slotProps?.item}
                             key={event.id}
                             data-ui="timeline-item"
                             data-event-id={event.id}
@@ -842,7 +869,7 @@ export function Timeline({
                             className={slotProps?.item?.className}
                             css={[itemStyle, slotProps?.item?.css]}
                           >
-                            <TimelineMarker event={event} part={slotProps?.marker} />
+                            <TimelineMarker event={event} part={slotProps?.marker} component={Marker} />
                             <div css={bodyStyle}>
                               <div css={contentStyle}>
                                 <div css={titleLineStyle}>
@@ -860,7 +887,8 @@ export function Timeline({
                                 ) : null}
                               </div>
                               {epoch === null ? null : (
-                                <time
+                                <Time
+                                  {...slotProps?.time}
                                   dateTime={new Date(epoch).toISOString()}
                                   data-ui="timeline-time"
                                   className={slotProps?.time?.className}
@@ -872,11 +900,12 @@ export function Timeline({
                                   <span id={fullDateId} css={visuallyHiddenStyle}>
                                     {formatters.full.format(epoch)}
                                   </span>
-                                </time>
+                                </Time>
                               )}
                             </div>
                             {expandable ? (
-                              <div
+                              <Detail
+                                {...slotProps?.detail}
                                 id={detailId}
                                 hidden={!expanded}
                                 data-ui="timeline-detail"
@@ -885,18 +914,19 @@ export function Timeline({
                                 css={[detailStyle, slotProps?.detail?.css]}
                               >
                                 {event.detail}
-                              </div>
+                              </Detail>
                             ) : null}
-                          </li>
+                          </Item>
                         );
                       })}
-                    </ol>
-                  </section>
+                    </List>
+                  </Group>
                 );
               })
             )}
-          </div>
-          <div
+          </Scroller>
+          <Status
+            {...slotProps?.status}
             role="status"
             aria-atomic="true"
             data-ui="timeline-status"
@@ -904,7 +934,7 @@ export function Timeline({
             css={[visuallyHiddenStyle, slotProps?.status?.css]}
           >
             {announcement.text ? <span key={announcement.key}>{announcement.text}</span> : null}
-          </div>
+          </Status>
         </div>
       )}
     </WithSx>

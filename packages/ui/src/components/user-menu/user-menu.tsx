@@ -74,6 +74,7 @@ import {
   restoreTriggerFocus,
   useMenuContext,
   type MenuItemTone,
+  type MenuItemRenderProps,
 } from '../menu/menu';
 import { Pill } from '../pill';
 import { Spinner } from '../spinner';
@@ -304,8 +305,15 @@ export interface UserMenuGroupSlotProps {
   /** Radio option button element within the choice group. */
   option?: UserMenuPartProps;
 }
+export interface UserMenuGroupSlots {
+  /** Text naming the choice group. */
+  label?: ComponentType<ComponentPropsWithRef<'span'> & UserMenuPartProps>;
+  /** Radio option inside the choice group. */
+  option?: ComponentType<MenuItemRenderProps & UserMenuPartProps>;
+}
 
 interface ChoiceGroupProps<V extends string> extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue'>, SxProps {
+  slots?: UserMenuGroupSlots;
   value?: V;
   defaultValue?: V;
   onValueChange?: (value: V) => void;
@@ -1155,6 +1163,7 @@ function UserMenuSurface({
               >
                 {sheet && (
                   <Handle
+                    {...slotProps?.handle}
                     {...handleGesture}
                     aria-hidden="true"
                     data-ui="user-menu-handle"
@@ -1166,6 +1175,7 @@ function UserMenuSurface({
                   <div ref={setIdentitySlot} css={identitySlotStyle} />
                   {sheet && (
                     <Close
+                      {...slotProps?.close}
                       type="button"
                       ref={closeRef}
                       aria-label={closeLabel}
@@ -1179,6 +1189,7 @@ function UserMenuSurface({
                   )}
                 </div>
                 <Menu
+                  {...slotProps?.menu}
                   {...menuNaming}
                   ref={menuRef}
                   id={menuId}
@@ -1296,6 +1307,7 @@ function ChoiceGroup<V extends string>({
   onValueChange,
   labels,
   slotProps,
+  slots,
   ref,
   onKeyDown,
   'aria-label': ariaLabel,
@@ -1304,6 +1316,8 @@ function ChoiceGroup<V extends string>({
   sx,
   ...rest
 }: ChoiceGroupProps<V> & { part: string; marker: string; options: readonly V[]; fallback: V }) {
+  const Label = slots?.label ?? 'span';
+  const Option = slots?.option;
   useUserMenu(part);
   const [current, requestValue] = useControlledState<V>(value, defaultValue, onValueChange);
   const labelId = useId();
@@ -1331,17 +1345,19 @@ function ChoiceGroup<V extends string>({
           data-ui={marker}
           className={className}
         >
-          <span
+          <Label
+            {...slotProps?.label}
             id={labelId}
             data-ui="user-menu-group-label"
             className={slotProps?.label?.className}
             css={[groupLabelStyle, slotProps?.label?.css]}
           >
             {labels.group}
-          </span>
+          </Label>
           <div css={optionsStyle}>
             {options.map((option) => (
               <MenuItemPart
+                {...slotProps?.option}
                 key={option}
                 aria-checked={current === option}
                 data-value={option}
@@ -1353,6 +1369,7 @@ function ChoiceGroup<V extends string>({
                 marker="user-menu-option"
                 className={slotProps?.option?.className}
                 styles={[menuItemStyles, optionStyle, slotProps?.option?.css]}
+                render={Option ? (props) => <Option {...props} /> : undefined}
               >
                 {labels[option]}
               </MenuItemPart>

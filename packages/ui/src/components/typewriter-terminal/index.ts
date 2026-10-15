@@ -3,6 +3,7 @@ export type {
   TypewriterTerminalProps,
   TypewriterTerminalLabels,
   TypewriterTerminalSlotProps,
+  TypewriterTerminalSlots,
   TerminalStep,
   TerminalOutput,
   TerminalLine,

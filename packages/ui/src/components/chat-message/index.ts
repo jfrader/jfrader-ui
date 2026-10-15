@@ -5,6 +5,7 @@ export type {
   ChatMessagePart,
   ChatMessageProps,
   ChatMessageSlotProps,
+  ChatMessageSlots,
   ChatMessageStatus,
   ChatParticipant,
   ChatReaction,

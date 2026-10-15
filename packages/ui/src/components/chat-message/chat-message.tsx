@@ -4,6 +4,7 @@ import {
   useId,
   useMemo,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
@@ -100,6 +101,25 @@ export type ChatMessageSlotProps = Partial<Record<ChatMessagePart, ThreadPartPro
   retryButton?: ThreadButtonProps;
 };
 
+export interface ChatMessageSlots {
+  /** Replaces the attachment list. */
+  attachments?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'ul'>>;
+  /** Replaces the message article. */
+  article?: ComponentType<NonNullable<ChatMessageSlotProps['article']>>;
+  /** Replaces the message bubble. */
+  bubble?: ComponentType<ThreadPartProps & ComponentPropsWithRef<typeof Card>>;
+  /** Replaces the message timestamp. */
+  time?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'time'>>;
+  /** Replaces the delivery receipt container. */
+  receipt?: ComponentType<NonNullable<ChatMessageSlotProps['receipt']>>;
+  /** Replaces the reactions container. */
+  reactions?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces the author avatar container. */
+  avatar?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'span'>>;
+  /** Replaces the retry button. */
+  retryButton?: ComponentType<ThreadButtonProps & ComponentPropsWithRef<typeof Button>>;
+}
+
 export interface ChatMessageProps extends Omit<ComponentPropsWithRef<'article'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   /** Optional message data record to seed defaults. */
   message?: ChatMessage;
@@ -157,6 +177,7 @@ export interface ChatMessageProps extends Omit<ComponentPropsWithRef<'article'>,
   readOnly?: boolean;
   /** Localized string overrides. */
   labels?: Partial<ChatMessageLabels>;
+  slots?: ChatMessageSlots;
   /** Props forwarded to internal parts. */
   slotProps?: ChatMessageSlotProps;
   /** Text after the time, e.g. "(edited)". */
@@ -307,6 +328,7 @@ export function ChatMessageView({
   disabled = false,
   readOnly = false,
   labels: labelProps,
+  slots,
   slotProps,
   meta,
   className,
@@ -405,6 +427,9 @@ export function ChatMessageView({
     ) : null;
 
   const articleRef = useMergeRefs([ref, slotProps?.article?.ref]);
+  const Bubble = slots?.bubble ?? Card;
+  const Receipt = slots?.receipt ?? 'div';
+  const RetryButton = slots?.retryButton ?? Button;
 
   return (
     <ThreadMessageView
@@ -433,17 +458,19 @@ export function ChatMessageView({
         sx,
       }}
       slots={{ time: slotProps?.time, avatar: slotProps?.avatar }}
+      components={{ article: slots?.article, time: slots?.time, avatar: slots?.avatar }}
     >
-      <Card
+      <Bubble
+        {...slotProps?.bubble}
         data-part={`${owner}-bubble`}
         className={slotProps?.bubble?.className}
         css={[bubbleStyle, isOwn && ownBubbleStyle, slotProps?.bubble?.css]}
       >
         {bodyContent}
         {effectiveAttachments?.length ? (
-          <AttachmentListView attachments={effectiveAttachments} labels={labels} locale={locale} owner={owner} partProps={slotProps?.attachments} />
+          <AttachmentListView attachments={effectiveAttachments} labels={labels} locale={locale} owner={owner} partProps={slotProps?.attachments} component={slots?.attachments} />
         ) : null}
-      </Card>
+      </Bubble>
       <ThreadReactions
         ui={owner}
         reactions={chatReactions(reactions, currentUserId)}
@@ -459,9 +486,10 @@ export function ChatMessageView({
         onToggle={handleToggleReaction}
         pickerId={partId(computedBaseId, 'picker', id)}
         part={slotProps?.reactions}
+        component={slots?.reactions}
         overlay
       />
-      <div
+      <Receipt
         {...slotProps?.receipt}
         className={slotProps?.receipt?.className}
         data-ui={`${owner}-receipt`}
@@ -472,7 +500,7 @@ export function ChatMessageView({
         ) : null}
         {readReceiptText ? <span>{readReceiptText}</span> : null}
         {status === 'failed' && onRetry ? (
-          <Button
+          <RetryButton
             size="sm"
             variant="outline"
             aria-label={retryAriaLabel}
@@ -485,9 +513,9 @@ export function ChatMessageView({
             }}
           >
             {labels.retry}
-          </Button>
+          </RetryButton>
         ) : null}
-      </div>
+      </Receipt>
     </ThreadMessageView>
   );
 }

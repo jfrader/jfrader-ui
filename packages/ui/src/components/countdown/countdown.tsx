@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
@@ -23,6 +24,23 @@ export interface CountdownPartProps {
   className?: string;
   css?: Interpolation<Theme>;
 }
+export interface CountdownSlots {
+  /** Replaces the header label. */
+  label?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
+  /** Replaces the time unit container. */
+  content?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces each time unit cell. */
+  unit?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'bdi'>>;
+  /** Replaces each numeric value. */
+  number?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
+  /** Replaces the completion text container. */
+  complete?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
+  /** Replaces the completion icon container. */
+  icon?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
+  /** Replaces the target description. */
+  description?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
+}
+
 export interface CountdownProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   /** Exact instant: epoch milliseconds, Date, or an ISO date-time with Z or an explicit offset. */
   target: Date | number | string;
@@ -44,6 +62,7 @@ export interface CountdownProps extends Omit<ComponentPropsWithRef<'div'>, 'chil
   onComplete?: (targetEpochMs: number) => void;
   announceCompletion?: boolean;
   completionIcon?: ReactNode;
+  slots?: CountdownSlots;
   slotProps?: Partial<
     Record<
       | /** Header label displayed above the countdown. */
@@ -252,18 +271,21 @@ function NumericRun({
   value,
   variant,
   slot,
+  component,
 }: {
   value: string;
   variant: CountdownVariant;
   slot?: CountdownPartProps;
+  component?: NonNullable<CountdownProps['slots']>['number'];
 }) {
+  const Number = component ?? 'span';
   const previous = useRef(value);
   const changed = previous.current !== value;
   useEffect(() => {
     previous.current = value;
   }, [value]);
   return (
-    <span
+    <Number
       key={value}
       data-ui="countdown-number"
       className={slot?.className}
@@ -275,7 +297,7 @@ function NumericRun({
       ]}
     >
       {value}
-    </span>
+    </Number>
   );
 }
 
@@ -298,6 +320,7 @@ export function Countdown({
   onComplete,
   announceCompletion = false,
   completionIcon,
+  slots,
   slotProps,
   className,
   sx,
@@ -306,6 +329,12 @@ export function Countdown({
   'aria-label': ariaLabel,
   ...rest
 }: CountdownProps) {
+  const Label = slots?.label ?? 'span';
+  const Content = slots?.content ?? 'div';
+  const Unit = slots?.unit ?? 'bdi';
+  const Complete = slots?.complete ?? 'span';
+  const Icon = slots?.icon ?? 'span';
+  const Description = slots?.description ?? 'span';
   const labelId = `${useId()}-label`;
   const descriptionId = `${useId()}-description`;
   const epoch = resolveTarget(target);
@@ -389,14 +418,14 @@ export function Countdown({
   const completionContent = (
     <>
       {hasContent(completionIcon) && (
-        <span
+        <Icon
           data-ui="countdown-icon"
           aria-hidden="true"
           className={slotProps?.icon?.className}
           css={[iconStyle, slotProps?.icon?.css]}
         >
           {completionIcon}
-        </span>
+        </Icon>
       )}
       {hasContent(completeLabel) ? (
         <span aria-hidden={!completionIsText || undefined}>{completeLabel}</span>
@@ -435,17 +464,17 @@ export function Countdown({
             }
           >
             {hasContent(label) && (
-              <span
+              <Label
                 id={labelId}
                 data-ui="countdown-label"
                 className={slotProps?.label?.className}
                 css={[labelStyle, slotProps?.label?.css]}
               >
                 {label}
-              </span>
+              </Label>
             )}
             {state === 'running' && (
-              <div
+              <Content
                 data-ui="countdown-content"
                 aria-hidden="true"
                 className={slotProps?.content?.className}
@@ -461,7 +490,7 @@ export function Countdown({
                   });
                   const resolved = formatter.resolvedOptions();
                   return (
-                    <bdi
+                    <Unit
                       key={`${unit}-${resolved.locale}-${resolved.numberingSystem}`}
                       data-ui="countdown-unit"
                       className={slotProps?.unit?.className}
@@ -476,26 +505,27 @@ export function Countdown({
                               value={part.value}
                               variant={variant}
                               slot={slotProps?.number}
+                              component={slots?.number}
                             />
                           ) : (
                             <span key={index}>{part.value}</span>
                           ),
                         )}
-                    </bdi>
+                    </Unit>
                   );
                 })}
-              </div>
+              </Content>
             )}
             {state === 'complete' &&
               !announce &&
               (hasContent(completeLabel) || hasContent(completionIcon)) && (
-                <span
+                <Complete
                   data-ui="countdown-complete"
                   className={slotProps?.complete?.className}
                   css={[completeStyle, slotProps?.complete?.css]}
                 >
                   {completionContent}
-                </span>
+                </Complete>
               )}
             {state === 'pending' && hasContent(pendingLabel) && (
               <span data-ui="countdown-pending">{pendingLabel}</span>
@@ -506,18 +536,18 @@ export function Countdown({
               </span>
             )}
             {description !== undefined && (
-              <span
+              <Description
                 id={descriptionId}
                 data-ui="countdown-description"
                 className={slotProps?.description?.className}
                 css={[visuallyHiddenStyle, slotProps?.description?.css]}
               >
                 {description}
-              </span>
+              </Description>
             )}
           </div>
           {announceCompletion && (
-            <span
+            <Complete
               role="status"
               aria-live="polite"
               aria-atomic="true"
@@ -526,7 +556,7 @@ export function Countdown({
               css={announce ? [completeStyle, slotProps?.complete?.css] : visuallyHiddenStyle}
             >
               {announce ? completionContent : null}
-            </span>
+            </Complete>
           )}
         </>
       )}

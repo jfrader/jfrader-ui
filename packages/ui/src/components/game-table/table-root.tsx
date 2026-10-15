@@ -9,14 +9,14 @@ export interface GameTableRootProps extends ComponentPropsWithRef<'div'> {
   [attribute: `data-${string}`]: string | number | boolean | undefined;
 }
 export type GameTableRootSlotProps = Partial<GameTableRootProps>;
+export interface GameTableSlots {
+  root?: ComponentType<GameTableRootProps>;
+}
 export interface GameTableRootCustomization {
   /** Replace the root. Exactly sugar for `slots.root`; forward all props/ref to one div. */
   component?: ComponentType<GameTableRootProps>;
   /** Replace root structure; declare replacements outside render. */
-  slots?: {
-    /** Replaces the outer table container; renders a `div` by default. */
-    root?: ComponentType<GameTableRootProps>;
-  };
+  slots?: GameTableSlots;
   /** Root props; conflicts win except merged className/style and table-owned geometry/markers. */
   slotProps?: {
     /** Outer table container element. */

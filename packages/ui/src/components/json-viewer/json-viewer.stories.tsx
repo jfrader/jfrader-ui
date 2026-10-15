@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { vars } from '@jfrader/tokens/vars';
 import { expect, fn, waitFor, within } from 'storybook/test';
@@ -677,10 +677,21 @@ const slotRow = css({ minBlockSize: '48px' });
 const slotValue = css({ fontWeight: 600 });
 const consumer = css({ borderRadius: '20px' });
 const override = css({ borderRadius: '24px' });
+function ReplacementStatus(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="json-viewer-status" />;
+}
+
 export const SlotStyles: Story = {
   args: { slotProps: { row: { css: slotRow }, value: { css: slotValue } }, sx: override },
-  render: (args) => <JsonViewer {...args} css={consumer} />,
+  render: (args) => <JsonViewer {...args} css={consumer} slots={{ status: ReplacementStatus }} />,
   play: async ({ canvasElement }) => {
+    const status = canvasElement.querySelector('[data-slot="json-viewer-status"]');
+    await expect(status).toBeInTheDocument();
+    await expect(status).toHaveAttribute('data-ui', 'json-viewer-status');
+    await expect(status).toHaveAttribute('role', 'status');
+    await expect(status).toHaveAttribute('aria-live', 'polite');
+    await expect(getComputedStyle(status!).fontSize).toBe('12px');
+    await expect(canvasElement.querySelector('[data-ui="json-viewer-status"]:not([data-slot])')).toBeNull();
     const view = canvasElement.ownerDocument.defaultView!;
     await waitFor(async () => {
       await expect(

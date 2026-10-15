@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState, type ComponentPropsWithRef, type KeyboardEvent, type ReactElement } from 'react';
+import { useLayoutEffect, useRef, useState, type ComponentPropsWithRef, type ComponentType, type KeyboardEvent, type ReactElement } from 'react';
 import { autoUpdate, flip, offset, shift, useDismiss, useFloating, useInteractions, useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
@@ -35,6 +35,7 @@ export interface ReactionGroupViewProps extends Omit<ComponentPropsWithRef<'div'
   pickerId: string;
   partProps?: { className?: string; css?: Interpolation<Theme> };
   overlay?: boolean;
+  component?: ComponentType<ComponentPropsWithRef<'div'>>;
 }
 
 const PICKER_GAP = 4;
@@ -74,8 +75,9 @@ const closeGlyph = (
 
 export function ReactionGroupView({
   ui: owner, counts, offered, number, labels, readOnly, disabled, pickerOpen, onPickerOpenChange,
-  onToggle, onSelect = onToggle, pickerId, partProps, overlay = false, className, sx, ...rootProps
+  onToggle, onSelect = onToggle, pickerId, partProps, overlay = false, component, className, sx, ...rootProps
 }: ReactionGroupViewProps) {
+  const Root = component ?? 'div';
   const rootUi = owner ? `${owner}-reactions` : 'reaction-group';
   const pickerUi = owner ? `${owner}-picker` : 'reaction-group-picker';
   const addRef = useRef<HTMLButtonElement>(null);
@@ -111,7 +113,7 @@ export function ReactionGroupView({
   return (
     <WithSx className={[className, partProps?.className].filter(Boolean).join(' ') || undefined} styles={[reactionsStyle, partProps?.css]} sx={sx}>
       {(rootClass) => (
-        <div {...rootProps} data-ui={rootUi} className={rootClass}>
+        <Root {...rootProps} data-ui={rootUi} className={rootClass}>
           {counts.map(({ emoji, count, mine = false }) => {
             const name = labels.reactionCount(emoji, count, mine);
             const content = <><span aria-hidden="true">{emoji}</span><span aria-hidden="true">{number.format(count)}</span></>;
@@ -157,7 +159,7 @@ export function ReactionGroupView({
               </div>
             </PickerOverlay>
           ) : null}
-        </div>
+        </Root>
       )}
     </WithSx>
   );

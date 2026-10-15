@@ -5,4 +5,5 @@ export {
   type SliderMark,
   type SliderSize,
   type SliderSlotProps,
+  type SliderSlots,
 } from './slider';

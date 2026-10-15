@@ -9,6 +9,8 @@ export type {
   DateRangePickerProps,
   DateRangePickerSize,
   DateRangePickerSlotProps,
+  DateRangePickerSlots,
+  DateRangePickerContentSlots,
   DateRangePickerSummaryDetails,
   DateRangePickerTriggerProps,
   DateRangePreset,

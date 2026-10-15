@@ -7,6 +7,7 @@ import {
   useState,
   type ComponentPropsWithoutRef,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
 } from 'react';
@@ -113,6 +114,10 @@ type LegendMode =
   | {
       /** Legend rows become toggle buttons that isolate one ring. */
       interactiveLegend: true;
+      slots?: ActivityRingsSlots & {
+        /** Toggle button isolating an individual metric in the legend. */
+        metric?: ComponentType<ComponentPropsWithoutRef<'button'>>;
+      };
       slotProps?: ActivityRingsSlotProps & {
         /** Toggle button isolating an individual metric in the legend. */
         metric?: ActivityRingsPartProps<'button'>;
@@ -120,6 +125,10 @@ type LegendMode =
     }
   | {
       interactiveLegend?: false;
+      slots?: ActivityRingsSlots & {
+        /** Row element presenting an individual metric in the legend. */
+        metric?: ComponentType<ComponentPropsWithoutRef<'div'>>;
+      };
       slotProps?: ActivityRingsSlotProps & {
         /** Row element presenting an individual metric in the legend. */
         metric?: ActivityRingsPartProps<'div'>;
@@ -127,11 +136,30 @@ type LegendMode =
     }
   | {
       interactiveLegend?: boolean;
+      slots?: ActivityRingsSlots & {
+        /** Legend row or toggle button presenting an individual metric. */
+        metric?: ComponentType<ComponentPropsWithoutRef<'button'>> | ComponentType<ComponentPropsWithoutRef<'div'>>;
+      };
       slotProps?: ActivityRingsSlotProps & {
         /** Legend row or toggle button presenting an individual metric. */
         metric?: ActivityRingsMetricProps;
       };
     };
+export interface ActivityRingsSlots {
+  /** SVG element rendering ring tracks and progress strokes. */
+  rings?: ComponentType<ComponentPropsWithoutRef<'svg'>>;
+  /** List element presenting the metric items and swatches. */
+  legend?: ComponentType<ComponentPropsWithoutRef<'ul'>>;
+  /** Fieldset grouping the daily history radio options. */
+  dayPicker?: ComponentType<ComponentPropsWithoutRef<'fieldset'>>;
+  /** Label wrapping each daily history radio option. */
+  dayLabel?: ComponentType<ComponentPropsWithoutRef<'label'>>;
+  /** Paragraph displaying the active day or completion summary. */
+  summary?: ComponentType<ComponentPropsWithoutRef<'p'>>;
+  /** Legend row or toggle button presenting an individual metric. */
+  metric?: ComponentType<ComponentPropsWithoutRef<'button'>> | ComponentType<ComponentPropsWithoutRef<'div'>>;
+}
+
 export type ActivityRingsProps = Omit<
   ComponentPropsWithRef<'section'>,
   'children' | 'defaultValue' | 'onChange'
@@ -682,6 +710,7 @@ export function ActivityRings({
   locale,
   labels: labelsProp,
   hideLegend = false,
+  slots,
   slotProps,
   className,
   sx,
@@ -793,13 +822,20 @@ export function ActivityRings({
   const stroke = Math.min(MAX_STROKE[size], band * STROKE_SHARE);
   const ringsSlot = slotProps?.rings;
   const legendSlot = slotProps?.legend;
-  // Re-pair the destructured props so the metric slot narrows with the legend mode.
-  const legendMode = { interactiveLegend, slotProps } as LegendMode;
+  // Re-pair the destructured props so the metric props narrow with the legend mode.
+  const legendMode = { interactiveLegend, slots, slotProps } as LegendMode;
   const metricButtonSlot = legendMode.interactiveLegend ? (legendMode.slotProps?.metric ?? {}) : null;
   const metricRowSlot = legendMode.interactiveLegend ? undefined : legendMode.slotProps?.metric;
   const pickerSlot = slotProps?.dayPicker;
   const dayLabelSlot = slotProps?.dayLabel;
   const summarySlot = slotProps?.summary;
+  const Rings = slots?.rings ?? 'svg';
+  const Legend = slots?.legend ?? 'ul';
+  const DayPicker = slots?.dayPicker ?? 'fieldset';
+  const DayLabel = slots?.dayLabel ?? 'label';
+  const Summary = slots?.summary ?? 'p';
+  const MetricButton = (slots?.metric as ComponentType<ComponentPropsWithoutRef<'button'>> | undefined) ?? 'button';
+  const MetricRow = (slots?.metric as ComponentType<ComponentPropsWithoutRef<'div'>> | undefined) ?? 'div';
 
   return (
     <WithSx className={className} styles={[rootStyle, sizeStyles[size]]} sx={sx}>
@@ -822,7 +858,7 @@ export function ActivityRings({
             <div css={layoutStyle}>
               {rings.length > 0 && (
                 <div css={dialStyle}>
-                  <svg
+                  <Rings
                     {...ringsSlot}
                     data-ui="activity-rings-rings"
                     viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
@@ -842,7 +878,7 @@ export function ActivityRings({
                         />
                       ))}
                     </g>
-                  </svg>
+                  </Rings>
                   <div
                     aria-hidden="true"
                     css={centerStyle}
@@ -880,7 +916,7 @@ export function ActivityRings({
                 </div>
               )}
               <div css={bodyStyle}>
-                <p {...summarySlot} data-ui="activity-rings-summary" css={[summaryStyle, summarySlot?.css]}>
+                <Summary {...summarySlot} data-ui="activity-rings-summary" css={[summaryStyle, summarySlot?.css]}>
                   {day && <>{dayName(day)} · </>}
                   {summaryText}
                   {completion !== null && (
@@ -889,9 +925,9 @@ export function ActivityRings({
                       {createUsageFormats(locale).percent.format(completion)} {labels.completion}
                     </span>
                   )}
-                </p>
+                </Summary>
                 {rings.length > 0 && (
-                  <ul
+                  <Legend
                     {...legendSlot}
                     data-ui="activity-rings-legend"
                     aria-label={legendSlot?.['aria-label'] ?? labels.legend}
@@ -963,7 +999,7 @@ export function ActivityRings({
                       return (
                         <li key={metric.id}>
                           {metricButtonSlot ? (
-                            <button
+                            <MetricButton
                               {...metricButtonSlot}
                               type="button"
                               data-ui="activity-rings-metric"
@@ -997,26 +1033,26 @@ export function ActivityRings({
                               }}
                             >
                               {contents}
-                            </button>
+                            </MetricButton>
                           ) : (
-                            <div
+                            <MetricRow
                               {...metricRowSlot}
                               data-ui="activity-rings-metric"
                               data-status={status}
                               css={[metricStyle, metricRowSlot?.css]}
                             >
                               {contents}
-                            </div>
+                            </MetricRow>
                           )}
                         </li>
                       );
                     })}
-                  </ul>
+                  </Legend>
                 )}
               </div>
             </div>
             {hasDays && (
-              <fieldset
+              <DayPicker
                 {...pickerSlot}
                 data-ui="activity-rings-days"
                 css={[dayPickerStyle, pickerSlot?.css]}
@@ -1026,7 +1062,7 @@ export function ActivityRings({
                 {days.map((item) => {
                   const civil = isIsoDate(item.date) ? dateFromIso(item.date) : null;
                   return (
-                    <label
+                    <DayLabel
                       {...dayLabelSlot}
                       key={item.id}
                       data-ui="activity-rings-day"
@@ -1055,10 +1091,10 @@ export function ActivityRings({
                           {dateFormats.day.format(civil)}
                         </span>
                       )}
-                    </label>
+                    </DayLabel>
                   );
                 })}
-              </fieldset>
+              </DayPicker>
             )}
           </MotionConfig>
         </section>

@@ -1,4 +1,4 @@
-import { StrictMode, useState, type ReactNode } from 'react';
+import { StrictMode, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within, waitFor } from 'storybook/test';
 import { base } from '@jfrader/tokens';
@@ -16,6 +16,24 @@ const OPTIONS = [
   { value: 'delivery', label: 'Delivery' },
 ];
 const SIZE_PX = { sm: Number.parseFloat(base.space[8]), md: Number.parseFloat(base.space[10]) };
+
+function SlotChip(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-slot="chip-group-chip" />;
+}
+
+export const ChipReplacement: Story = {
+  render: (args) => <ChipGroup {...args} slots={{ chip: SlotChip }} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const chip = within(canvasElement).getByRole('button', { name: 'Design' });
+    await expect(chip).toHaveAttribute('data-slot', 'chip-group-chip');
+    await expect(chip).toHaveAttribute('data-ui', 'chip-group-chip');
+    await expect(getComputedStyle(chip).alignItems).toBe('center');
+    await expect(chip).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(chip);
+    await expect(chip).toHaveAttribute('aria-pressed', 'true');
+    await expect(canvasElement.querySelector('[data-ui="chip-group-chip"]:not([data-slot])')).toBeNull();
+  },
+};
 const OVERFLOW = { maxVisible: 2, moreLabel: (count: string) => `+${count} more`, lessLabel: 'Show less' };
 const meta = {
   title: 'Inputs/ChipGroup',

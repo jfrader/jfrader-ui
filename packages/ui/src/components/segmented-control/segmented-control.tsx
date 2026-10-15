@@ -12,11 +12,11 @@ import {
   useState,
   type ComponentPropsWithRef,
   type ComponentType,
-  type ComponentPropsWithoutRef,
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
 import { LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/react';
+import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -33,7 +33,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 
 export type SegmentedControlSize = 'sm' | 'md' | 'lg';
 export type SegmentedControlVariant = 'solid' | 'soft';
-type SlotProps<Element extends 'div' | 'span'> = ComponentPropsWithoutRef<Element> & {
+type SlotProps<Element extends 'div' | 'span'> = ComponentPropsWithRef<Element> & {
   css?: Interpolation<Theme>;
 };
 
@@ -54,7 +54,7 @@ export interface SegmentedControlCompoundProps
     selection?: SlotProps<'span'>;
   };
   options?: never;
-  slots?: never;
+  slots?: Pick<SegmentedControlSlots, 'track' | 'selection'>;
   component?: never;
 }
 export interface SegmentedControlOption {
@@ -65,6 +65,10 @@ export interface SegmentedControlOption {
   accessory?: ReactNode;
 }
 export interface SegmentedControlSlots {
+  /** Inner track holding the segment buttons. */
+  track?: ComponentType<SlotProps<'div'>>;
+  /** Sliding background marking the selected segment. */
+  selection?: ComponentType<SlotProps<'span'>>;
   /** Outer container wrapping the segmented control. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Button representing an individual segment option. Default: `SegmentedControl.Item`. */
@@ -103,6 +107,7 @@ interface ControlContext {
   variant: SegmentedControlVariant;
   onOptionIntent: SegmentedControlProps['onOptionIntent'];
   selection: SlotProps<'span'> | undefined;
+  selectionComponent: SegmentedControlSlots['selection'];
   reducedMotion: boolean | null;
 }
 
@@ -204,20 +209,23 @@ const selectionVariants: Record<SegmentedControlVariant, SerializedStyles> = {
 };
 
 function SelectionSurface({
+  component: Selection = 'span',
   ref,
   variant,
   slotProps,
   style,
   ...rest
 }: ComponentPropsWithRef<'span'> & {
+  component?: 'span' | SegmentedControlSlots['selection'];
   variant: SegmentedControlVariant;
   slotProps?: SlotProps<'span'>;
 }) {
+  const mergedRef = useMergeRefs([ref, slotProps?.ref]);
   return (
-    <span
+    <Selection
       {...slotProps}
       {...rest}
-      ref={ref}
+      ref={mergedRef}
       aria-hidden="true"
       hidden={false}
       role={undefined}
@@ -252,17 +260,20 @@ function SegmentedControlRoot({
   label,
   onOptionIntent,
   slotProps,
+  slots,
   className,
   sx,
   children,
   onKeyDown,
   ...rest
 }: SegmentedControlCompoundProps & { rootElement?: 'div' | SegmentedControlSlots['root']; rootCss?: Interpolation<Theme> }) {
+  const Track = slots?.track ?? 'div';
   const [value, requestChange] = useControlledState(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState<string | null>(null);
   const [tabStop, setTabStop] = useState<string>();
   const rootRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const mergedTrackRef = useMergeRefs([trackRef, slotProps?.track?.ref]);
   useImperativeHandle(ref, () => rootRef.current as HTMLDivElement, []);
   const instanceId = useId();
   const reducedMotion = useReducedMotion();
@@ -350,6 +361,7 @@ function SegmentedControlRoot({
       variant,
       onOptionIntent,
       selection: slotProps?.selection,
+      selectionComponent: slots?.selection,
       reducedMotion,
     }),
     [
@@ -361,6 +373,7 @@ function SegmentedControlRoot({
       variant,
       onOptionIntent,
       slotProps?.selection,
+      slots?.selection,
       reducedMotion,
     ],
   );
@@ -398,9 +411,9 @@ function SegmentedControlRoot({
                 onKeyDown={handleKeyDown}
                 className={className}
               >
-                <div
+                <Track
                   {...slotProps?.track}
-                  ref={trackRef}
+                  ref={mergedTrackRef}
                   aria-hidden={undefined}
                   hidden={false}
                   role={undefined}
@@ -409,7 +422,7 @@ function SegmentedControlRoot({
                   css={[trackStyle, slotProps?.track?.css]}
                 >
                   {children}
-                </div>
+                </Track>
               </Root>
             )}
           </WithSx>
@@ -482,6 +495,7 @@ function SegmentedControlItem({
         >
           {selected && (
             <MotionSelection
+              component={context.selectionComponent}
               variant={context.variant}
               slotProps={context.selection}
               layoutId="selection"
@@ -510,6 +524,7 @@ function SegmentedControlComponent(props: SegmentedControlProps) {
       rootElement={slots?.root ?? component}
       rootCss={rootCss}
       slotProps={slotProps}
+      slots={slots}
       className={[className, rest.className].filter(Boolean).join(' ') || undefined}
       style={{ ...rest.style, ...style }}
       sx={[sx, rest.sx]}

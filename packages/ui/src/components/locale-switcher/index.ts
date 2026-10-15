@@ -5,5 +5,6 @@ export type {
   LocaleSwitcherProps,
   LocaleSwitcherSize,
   LocaleSwitcherSlotProps,
+  LocaleSwitcherSlots,
   LocaleSwitcherVariant,
 } from './locale-switcher';

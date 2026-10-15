@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ComponentPropsWithRef, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, type ComponentPropsWithRef, type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -20,6 +20,15 @@ export interface KeycapKeyboardSlotProps {
   css?: Interpolation<Theme>;
 }
 
+export interface KeycapKeyboardSlots {
+  /** Groups a horizontal row of keycaps. */
+  row?: ComponentType<KeycapKeyboardSlotProps>;
+  /** Displays a keyboard key. */
+  key?: ComponentType<KeycapKeyboardSlotProps>;
+  /** Displays the key legend. */
+  legend?: ComponentType<KeycapKeyboardSlotProps>;
+}
+
 export interface KeycapKeyboardProps extends Omit<ComponentPropsWithRef<'div'>,
   'children' | 'defaultValue' | 'onChange' | 'tabIndex' | 'role' | 'onKeyDown' | 'onKeyUp'>, SxProps {
   layout?: 'compact' | 'letters';
@@ -30,6 +39,7 @@ export interface KeycapKeyboardProps extends Omit<ComponentPropsWithRef<'div'>,
   eventTarget?: HTMLInputElement | HTMLTextAreaElement | null;
   tone?: 'neutral' | 'accent';
   paused?: boolean;
+  slots?: KeycapKeyboardSlots;
   slotProps?: {
     /** Horizontal row container grouping keycaps. */
     row?: KeycapKeyboardSlotProps;
@@ -123,7 +133,7 @@ function unitsOf(key: KeycapSpec) {
 /** Show a keyboard illustration. Supply text input, focus and shortcut descriptions separately. */
 export function KeycapKeyboard({
   ref, layout = 'compact', rows = layouts[layout], value, defaultValue = EMPTY_CODES,
-  onValueChange, eventTarget = null, tone = 'accent', paused = false, slotProps, className, sx, style, ...rest
+  onValueChange, eventTarget = null, tone = 'accent', paused = false, slotProps, slots, className, sx, style, ...rest
 }: KeycapKeyboardProps) {
   const silent = useRef(false);
   const [active = EMPTY_CODES, requestChange] = useControlledState(value, normalize(defaultValue), (codes) => {
@@ -194,6 +204,9 @@ export function KeycapKeyboard({
   }, [eventTarget, paused, requestChange, value === undefined]);
 
   const rowUnits = rows.map((row) => row.reduce((sum, key) => sum + unitsOf(key), 0));
+  const Key = slots?.key ?? Kbd;
+  const Row = slots?.row ?? 'div';
+  const Legend = slots?.legend ?? 'span';
   const widest = Math.max(DEFAULT_UNITS, ...rowUnits);
   const maxGaps = Math.max(0, ...rows.map((row) => row.length - 1));
   return (
@@ -201,19 +214,19 @@ export function KeycapKeyboard({
       {(rootClass) => (
         <div {...rest} ref={ref} aria-hidden="true" data-ui="keycap-keyboard" data-tone={tone} className={rootClass} style={style}>
           {rows.map((row, rowIndex) => (
-            <div key={rowIndex} data-ui="keycap-keyboard-row" className={slotProps?.row?.className}
+            <Row {...slotProps?.row} key={rowIndex} data-ui="keycap-keyboard-row" className={slotProps?.row?.className}
               css={[rowStyle, slotProps?.row?.css]} style={{
                 gridTemplateColumns: row.map((key) => `minmax(0, ${unitsOf(key)}fr)`).join(' '),
                 inlineSize: `calc((100% - ${maxGaps} * ${vars.space[1]}) * ${(rowUnits[rowIndex] ?? 0) / widest} + ${Math.max(0, row.length - 1)} * ${vars.space[1]})`,
               } satisfies CSSProperties}>
               {row.map((key, keyIndex) => (
-                <Kbd key={`${key.code}-${keyIndex}`} data-code={key.code} data-state={active.includes(key.code) ? 'pressed' : 'idle'}
+                <Key {...slotProps?.key} key={`${key.code}-${keyIndex}`} data-ui="keycap-keyboard-key" data-code={key.code} data-state={active.includes(key.code) ? 'pressed' : 'idle'}
                   className={slotProps?.key?.className} css={[keyStyle, slotProps?.key?.css]}>
-                  {isRenderable(key.legend) && key.legend !== '' && <span data-ui="keycap-keyboard-legend" className={slotProps?.legend?.className}
-                    css={[legendStyle, slotProps?.legend?.css]}>{key.legend}</span>}
-                </Kbd>
+                  {isRenderable(key.legend) && key.legend !== '' && <Legend {...slotProps?.legend} data-ui="keycap-keyboard-legend" className={slotProps?.legend?.className}
+                    css={[legendStyle, slotProps?.legend?.css]}>{key.legend}</Legend>}
+                </Key>
               ))}
-            </div>
+            </Row>
           ))}
         </div>
       )}

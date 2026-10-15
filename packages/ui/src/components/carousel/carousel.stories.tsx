@@ -1,4 +1,4 @@
-import { StrictMode, useState, type ReactNode } from 'react';
+import { StrictMode, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
@@ -216,6 +216,44 @@ function ControlledCarousel(props: CarouselProps) {
   );
 }
 ControlledCarousel.displayName = 'ControlledCarousel';
+
+function CustomTrack(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="carousel-track" />;
+}
+CustomTrack.displayName = 'CustomTrack';
+
+export const TrackReplacement: Story = {
+  args: { slots: { track: CustomTrack } },
+  parameters: {
+    docs: {
+      description: { story: 'Replace the track with a component that forwards its props and ref.' },
+      source: {
+        code: `function CustomTrack(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="carousel-track" />;
+}
+
+<Carousel aria-label="Harbour suites" slots={{ track: CustomTrack }}>
+  <SuiteCard name="Harbour suite" detail="Balcony over the marina, sleeps two." />
+  <SuiteCard name="Garden suite" detail="Ground floor, opens onto the lemon trees." />
+</Carousel>`,
+      },
+    },
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const track = canvasElement.querySelector('[data-slot="carousel-track"]');
+    await expect(track).toBeInTheDocument();
+    await expect(track).toHaveAttribute('data-ui', 'carousel-track');
+    await expect(canvasElement.querySelector('[data-ui="carousel-track"]:not([data-slot])')).not.toBeInTheDocument();
+    await expect(track?.children).toHaveLength(SUITES.length);
+    await expect(track).toHaveTextContent('Harbour suite');
+    await expect(getComputedStyle(track!).display).toBe('flex');
+    await expect(within(canvasElement).getByRole('region')).not.toHaveAttribute('slots');
+    await expectCentred(canvasElement, 0);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Next slide' }));
+    await expectActive(canvasElement, 1);
+    await expectCentred(canvasElement, 1);
+  },
+};
 
 export const Default: Story = {
   args: { onValueChange: fn() },

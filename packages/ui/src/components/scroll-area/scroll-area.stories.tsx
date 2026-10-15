@@ -1,9 +1,27 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ScrollArea, type ScrollAreaProps } from './index';
+
+function ReplacementScrollPart(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replaced="true" />;
+}
+export const ReplaceScrollParts: Story = {
+  args: { scrollbars: 'always', slots: { viewport: ReplacementScrollPart, track: ReplacementScrollPart, thumb: ReplacementScrollPart } },
+  render: (args) => <ScrollArea {...args}><Items /></ScrollArea>,
+  play: async ({ canvasElement }) => {
+    const parts = canvasElement.querySelectorAll<HTMLElement>('[data-replaced]');
+    await expect(parts).toHaveLength(5);
+    for (const part of parts) {
+      await expect(part).toHaveAttribute('data-ui');
+      await expect(part.className).not.toBe('');
+    }
+    await expect(viewport(canvasElement)).toHaveAttribute('aria-label', 'Activity');
+    await expect(viewport(canvasElement)).toHaveAttribute('tabindex', '0');
+  },
+};
 
 const meta = {
   title: 'Layout/ScrollArea',

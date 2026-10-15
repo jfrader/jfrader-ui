@@ -105,6 +105,10 @@ export interface DrawerSlotProps {
 export interface DrawerSlots {
   /** Replaces the panel's adopted div; renders a `div` by default. */
   root?: NonNullable<DrawerPanelProps['slots']>['root'];
+  /** Replaces the native dialog shell through a Drawer.Content adapter. */
+  content?: ComponentType<DrawerContentProps>;
+  /** Replaces the sliding panel through a Drawer.Panel adapter. */
+  panel?: ComponentType<DrawerPanelProps>;
   /** Replaces the button that opens the drawer. */
   trigger?: ComponentType<DrawerTriggerProps>;
   /** Replaces the top bar containing title, description, and close button. */
@@ -448,6 +452,8 @@ function hasText(children: ReactNode) {
 
 function DrawerRoot(props: DrawerProps) {
   const Trigger = props.slots?.trigger ?? DrawerTrigger;
+  const Content = props.slots?.content ?? DrawerContent;
+  const Panel = props.slots?.panel ?? DrawerPanel;
   const Header = props.slots?.header ?? DrawerHeader;
   const Title = props.slots?.title ?? DrawerTitle;
   const Description = props.slots?.description ?? DrawerDescription;
@@ -498,8 +504,8 @@ function DrawerRoot(props: DrawerProps) {
       {'content' in props ? (
         <>
           <Trigger {...props.slotProps?.trigger}>{props.triggerLabel}</Trigger>
-          <DrawerContent {...props.slotProps?.content}>
-            <DrawerPanel {...rootProps} {...props.slotProps?.panel}
+          <Content {...props.slotProps?.content}>
+            <Panel {...rootProps} {...props.slotProps?.panel}
               component={props.component ?? props.slotProps?.panel?.component}
               slots={{ ...props.slotProps?.panel?.slots, root: props.slots?.root ?? props.slotProps?.panel?.slots?.root }}
               slotProps={{ root: props.slotProps?.root ?? props.slotProps?.panel?.slotProps?.root }}>
@@ -512,8 +518,8 @@ function DrawerRoot(props: DrawerProps) {
               </Header>
               <Body {...props.slotProps?.body}>{props.content}</Body>
               {isRenderable(props.footer) && <Footer {...props.slotProps?.footer}>{props.footer}</Footer>}
-            </DrawerPanel>
-          </DrawerContent>
+            </Panel>
+          </Content>
         </>
       ) : (
         props.children

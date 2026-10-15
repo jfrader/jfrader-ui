@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { ChromeAction, chromeIcons as icons, filmstripStyle, thumbStyle } from '../viewer-chrome/viewer-chrome';
-import type { LightboxGalleryImage, LightboxGalleryLabels, LightboxGallerySlotProps } from './lightbox-gallery';
+import type { LightboxGalleryImage, LightboxGalleryLabels, LightboxGallerySlotProps, LightboxGallerySlots } from './lightbox-gallery';
 
 const headerStyle = css({
   display: 'flex',
@@ -59,19 +59,22 @@ export function ViewerHeader({
   titleId,
   labels,
   slot,
+  component,
   onClose,
 }: {
   title: string;
   titleId: string;
   labels: LightboxGalleryLabels;
   slot?: LightboxGallerySlotProps['title'];
+  component?: LightboxGallerySlots['title'];
   onClose: () => void;
 }) {
+  const Title = component ?? 'h2';
   return (
     <div css={headerStyle}>
-      <h2 {...slot} id={titleId} css={[titleStyle, slot?.css]}>
+      <Title {...slot} id={titleId} css={[titleStyle, slot?.css]}>
         {title}
-      </h2>
+      </Title>
       <ChromeAction ref={autofocus} label={labels.close} icon={icons.close} placement="bottom" onClick={onClose} />
     </div>
   );
@@ -81,7 +84,8 @@ export interface ViewerToolbarProps {
   position: string;
   zoomText: string;
   labels: LightboxGalleryLabels;
-  slots?: Pick<LightboxGallerySlotProps, 'controls' | 'status'>;
+  slotProps?: Pick<LightboxGallerySlotProps, 'controls' | 'status'>;
+  slots?: Pick<LightboxGallerySlots, 'controls' | 'status'>;
   canPrevious: boolean;
   canNext: boolean;
   canZoomIn: boolean;
@@ -97,6 +101,7 @@ export function ViewerToolbar({
   position,
   zoomText,
   labels,
+  slotProps,
   slots,
   canPrevious,
   canNext,
@@ -108,12 +113,14 @@ export function ViewerToolbar({
   onZoomOut,
   onReset,
 }: ViewerToolbarProps) {
+  const Status = slots?.status ?? 'div';
+  const Controls = slots?.controls ?? 'div';
   return (
     <div css={toolbarStyle}>
-      <div {...slots?.status} role="status" aria-live="polite" aria-atomic="true" css={[counterStyle, slots?.status?.css]}>
+      <Status {...slotProps?.status} role="status" aria-live="polite" aria-atomic="true" css={[counterStyle, slotProps?.status?.css]}>
         {position}
-      </div>
-      <div {...slots?.controls} css={[controlsStyle, slots?.controls?.css]}>
+      </Status>
+      <Controls {...slotProps?.controls} css={[controlsStyle, slotProps?.controls?.css]}>
         <ChromeAction label={labels.previous} icon={icons.previous} disabled={!canPrevious} onClick={onPrevious} />
         <ChromeAction label={labels.next} icon={icons.next} disabled={!canNext} onClick={onNext} />
         <span aria-hidden="true" css={dividerStyle} />
@@ -121,7 +128,7 @@ export function ViewerToolbar({
         <span css={readoutStyle}>{zoomText}</span>
         <ChromeAction label={labels.zoomIn} icon={icons.zoomIn} disabled={!canZoomIn} onClick={onZoomIn} />
         <ChromeAction label={labels.reset} icon={icons.reset} disabled={!zoomed} onClick={onReset} />
-      </div>
+      </Controls>
     </div>
   );
 }
@@ -132,6 +139,7 @@ export function Filmstrip({
   labels,
   format,
   slot,
+  component,
   onSelect,
   thumbnail,
 }: {
@@ -140,11 +148,13 @@ export function Filmstrip({
   labels: LightboxGalleryLabels;
   format: Intl.NumberFormat;
   slot?: LightboxGallerySlotProps['thumbnails'];
+  component?: LightboxGallerySlots['thumbnails'];
   onSelect: (id: string) => void;
   thumbnail: (image: LightboxGalleryImage) => ReactNode;
 }) {
+  const Thumbnails = component ?? 'div';
   return (
-    <div {...slot} role="group" aria-label={slot?.['aria-label'] ?? labels.thumbnails} css={[filmstripStyle, slot?.css]}>
+    <Thumbnails {...slot} role="group" aria-label={slot?.['aria-label'] ?? labels.thumbnails} css={[filmstripStyle, slot?.css]}>
       {images.map((item, index) => (
         <button
           key={item.id}
@@ -157,6 +167,6 @@ export function Filmstrip({
           {thumbnail(item)}
         </button>
       ))}
-    </div>
+    </Thumbnails>
   );
 }

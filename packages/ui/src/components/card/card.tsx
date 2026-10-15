@@ -4,8 +4,10 @@
 // Card.Title renders an h3 by default; pass `level` so the heading fits the page outline where
 // the card is placed (a card under an h2 section keeps h3, a top-level card grid may need h2).
 // slotProps on the root style the parts rendered inside it, so a consumer can theme a card's
-// anatomy from one place; a part's own className/css still merges last.
-import { createContext, useContext, type ComponentPropsWithRef, type ReactElement, type ReactNode } from 'react';
+// anatomy from one place; a part's own className/css still merges last. `slots` replaces a part
+// with the consumer's component, which receives the part's props and the className its styles
+// resolve to.
+import { createContext, useContext, useMemo, type ComponentPropsWithRef, type ComponentType, type ReactElement, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import type { SurfaceAppearance } from '../../styling/surface';
@@ -38,10 +40,25 @@ export interface CardSlotProps {
   footer?: CardPartProps;
 }
 
+export interface CardSlots {
+  /** Replaces the panel material. Same seam as `component`; `slots.root` wins. */
+  root?: ComponentType<SurfacePartProps>;
+  /** Replaces the header band that wraps the title and description. */
+  header?: ComponentType<CardHeaderProps>;
+  /** Replaces the heading element. */
+  title?: ComponentType<CardTitleProps>;
+  /** Replaces the description paragraph. */
+  description?: ComponentType<CardDescriptionProps>;
+  /** Replaces the body container. */
+  content?: ComponentType<CardContentProps>;
+  /** Replaces the actions band. */
+  footer?: ComponentType<CardFooterProps>;
+}
+
 interface CardBaseProps
   extends Omit<SurfacePartProps, 'children' | 'title' | 'content'>,
     SxProps,
-    Omit<SurfaceRootCustomization, 'slotProps'> {
+    Omit<SurfaceRootCustomization, 'slots' | 'slotProps'> {
   'data-variant'?: string;
   variant?: CardVariant;
   /**
@@ -49,6 +66,7 @@ interface CardBaseProps
    * Omit this prop or use `default` to inherit the enclosing appearance, including contrast.
    */
   appearance?: SurfaceAppearance;
+  slots?: CardSlots;
   slotProps?: CardSlotProps;
   css?: Interpolation<Theme>;
 }
@@ -87,7 +105,7 @@ export type CardContentProps = ComponentPropsWithRef<'div'> & SxProps;
 
 export type CardFooterProps = ComponentPropsWithRef<'div'> & SxProps;
 
-const CardSlotContext = createContext<CardSlotProps | undefined>(undefined);
+const CardSlotContext = createContext<{ slots?: CardSlots; slotProps?: CardSlotProps }>({});
 
 function joinClassNames(...names: (string | undefined)[]) {
   return names.filter(Boolean).join(' ') || undefined;
@@ -144,7 +162,8 @@ function CardRoot(props: CardEasyProps): ReactElement;
 function CardRoot(props: CardCompoundProps): ReactElement;
 function CardRoot(allProps: CardProps) {
   const easy = 'content' in allProps && allProps.children === undefined;
-  const { variant: variantProp, slotProps, children, title, description, content, footer, ...props } = allProps;
+  const { variant: variantProp, slots, slotProps, children, title, description, content, footer, ...props } = allProps;
+  const customization = useMemo(() => ({ slots, slotProps }), [slots, slotProps]);
   const variant = resolveSurfaceValue('Card', 'variant', variantProp, variants, 'raised');
   return (
     <SurfaceRoot
@@ -164,12 +183,13 @@ function CardRoot(allProps: CardProps) {
         </>
       ) : children}
       slotProps={slotProps}
+      slots={slots}
       owner="Card"
       marker="card"
       variant={variant}
       structure={rootStyle}
       attributes={{ 'data-variant': props['data-variant'] ?? variant }}
-      wrapChildren={(children) => <CardSlotContext.Provider value={slotProps}>{children}</CardSlotContext.Provider>}
+      wrapChildren={(children) => <CardSlotContext.Provider value={customization}>{children}</CardSlotContext.Provider>}
     />
   );
 }
@@ -177,10 +197,12 @@ function CardRoot(allProps: CardProps) {
 CardRoot.displayName = 'Card';
 
 function CardHeader({ ref, className, sx, ...rest }: CardHeaderProps) {
-  const slot = useContext(CardSlotContext)?.header;
+  const { slots, slotProps } = useContext(CardSlotContext);
+  const slot = slotProps?.header;
+  const Header = slots?.header ?? 'div';
   return (
     <WithSx className={joinClassNames(slot?.className, className)} styles={[headerStyle, slot?.css]} sx={sx}>
-      {(className) => <div {...rest} ref={ref} data-ui="card-header" className={className} />}
+      {(className) => <Header {...rest} ref={ref} data-ui="card-header" className={className} />}
     </WithSx>
   );
 }
@@ -188,11 +210,15 @@ function CardHeader({ ref, className, sx, ...rest }: CardHeaderProps) {
 CardHeader.displayName = 'Card.Header';
 
 function CardTitle({ ref, level = 3, className, sx, ...rest }: CardTitleProps) {
-  const slot = useContext(CardSlotContext)?.title;
-  const Heading = `h${level}` as const;
+  const { slots, slotProps } = useContext(CardSlotContext);
+  const slot = slotProps?.title;
+  // The native element carries the level in its own name; a replacement is told the level
+  // instead, so `<Card.Title level={2}>` keeps its heading level after the swap.
+  const Heading = slots?.title ?? (`h${level}` as const);
+  const props = slots?.title ? { ...rest, level } : rest;
   return (
     <WithSx className={joinClassNames(slot?.className, className)} styles={[titleStyle, slot?.css]} sx={sx}>
-      {(className) => <Heading {...rest} ref={ref} data-ui="card-title" className={className} />}
+      {(className) => <Heading {...props} ref={ref} data-ui="card-title" className={className} />}
     </WithSx>
   );
 }
@@ -200,10 +226,12 @@ function CardTitle({ ref, level = 3, className, sx, ...rest }: CardTitleProps) {
 CardTitle.displayName = 'Card.Title';
 
 function CardDescription({ ref, className, sx, ...rest }: CardDescriptionProps) {
-  const slot = useContext(CardSlotContext)?.description;
+  const { slots, slotProps } = useContext(CardSlotContext);
+  const slot = slotProps?.description;
+  const Description = slots?.description ?? 'p';
   return (
     <WithSx className={joinClassNames(slot?.className, className)} styles={[descriptionStyle, slot?.css]} sx={sx}>
-      {(className) => <p {...rest} ref={ref} data-ui="card-description" className={className} />}
+      {(className) => <Description {...rest} ref={ref} data-ui="card-description" className={className} />}
     </WithSx>
   );
 }
@@ -211,10 +239,12 @@ function CardDescription({ ref, className, sx, ...rest }: CardDescriptionProps) 
 CardDescription.displayName = 'Card.Description';
 
 function CardContent({ ref, className, sx, ...rest }: CardContentProps) {
-  const slot = useContext(CardSlotContext)?.content;
+  const { slots, slotProps } = useContext(CardSlotContext);
+  const slot = slotProps?.content;
+  const Content = slots?.content ?? 'div';
   return (
     <WithSx className={joinClassNames(slot?.className, className)} styles={[contentStyle, slot?.css]} sx={sx}>
-      {(className) => <div {...rest} ref={ref} data-ui="card-content" className={className} />}
+      {(className) => <Content {...rest} ref={ref} data-ui="card-content" className={className} />}
     </WithSx>
   );
 }
@@ -222,10 +252,12 @@ function CardContent({ ref, className, sx, ...rest }: CardContentProps) {
 CardContent.displayName = 'Card.Content';
 
 function CardFooter({ ref, className, sx, ...rest }: CardFooterProps) {
-  const slot = useContext(CardSlotContext)?.footer;
+  const { slots, slotProps } = useContext(CardSlotContext);
+  const slot = slotProps?.footer;
+  const Footer = slots?.footer ?? 'div';
   return (
     <WithSx className={joinClassNames(slot?.className, className)} styles={[footerStyle, slot?.css]} sx={sx}>
-      {(className) => <div {...rest} ref={ref} data-ui="card-footer" className={className} />}
+      {(className) => <Footer {...rest} ref={ref} data-ui="card-footer" className={className} />}
     </WithSx>
   );
 }

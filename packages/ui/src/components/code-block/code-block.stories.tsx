@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -9,6 +9,20 @@ import { CodeBlock, type CodeBlockProps, type CodeHighlightLines, type CodeHighl
 import { loadShikiHighlight } from './shiki';
 
 const SOURCE = 'export const answer = 42;\nconsole.log(answer);\n';
+function CustomSourceFrame(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="custom-source-frame" />;
+}
+
+export const SourceFrameReplacement: StoryObj<typeof CodeBlock> = {
+  args: { code: SOURCE, slots: { sourceFrame: CustomSourceFrame }, slotProps: { sourceFrame: { className: 'source-frame-slot' } } },
+  play: async ({ canvasElement }) => {
+    const frame = within(canvasElement).getByTestId('custom-source-frame');
+    await expect(frame).toHaveAttribute('data-ui', 'code-block-source-frame');
+    await expect(frame).toHaveClass('source-frame-slot');
+    await expect(getComputedStyle(frame).display).toBe('flex');
+    await expect(frame.querySelector('pre')).not.toBeNull();
+  },
+};
 const LONG_SOURCE = `${SOURCE}\nexport function double(value: number) {\n\treturn value * 2;\n}\n`;
 const MIXED_SOURCE = '\tconst title = "café ✓ 𝔘 שלום";\r\n  console.log(title);\r\n';
 const SAMPLES = {
@@ -436,8 +450,12 @@ export const ExternalAria: Story = {
 const consumerCss = css({ paddingInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ paddingInlineStart: vars.space[2] });
 const slotStyle = css({ fontWeight: vars.fontWeight.semibold });
+function SlotPre(props: ComponentPropsWithRef<'pre'>) {
+  return <pre {...props} data-slot="code-block-pre" />;
+}
 export const ConsumerStylePrecedence: Story = {
   args: {
+    slots: { pre: SlotPre },
     css: consumerCss,
     sx: consumerSx,
     slotProps: { label: { css: slotStyle, className: 'consumer-label' }, pre: { css: slotStyle } },
@@ -445,6 +463,13 @@ export const ConsumerStylePrecedence: Story = {
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('section')!;
     // Layout lengths are not DPR-snapped: compare numerically, derived from the token scale (space[2] = 8).
+    const replacement = root.querySelector('[data-slot="code-block-pre"]')!;
+    await expect(replacement).toBeInTheDocument();
+    await expect(replacement).toHaveAttribute('data-ui', 'code-block-pre');
+    await expect(replacement).toHaveAttribute('role', 'group');
+    await expect(replacement).toHaveAttribute('tabindex', '0');
+    await expect(getComputedStyle(replacement).overflow).toBe('auto');
+    await expect(root.querySelector('[data-ui="code-block-pre"]:not([data-slot])')).toBeNull();
     await expect(parseFloat(getComputedStyle(root).paddingInlineStart)).toBe(8);
     await expect(getComputedStyle(root).letterSpacing).not.toBe('normal');
     await expect(getComputedStyle(source(canvasElement)).fontWeight).toBe('600');

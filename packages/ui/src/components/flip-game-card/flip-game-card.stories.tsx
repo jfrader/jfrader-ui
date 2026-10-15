@@ -5,13 +5,14 @@ import { renderToString } from 'react-dom/server';
 import { vars } from '@jfrader/tokens/vars';
 import { base } from '@jfrader/tokens';
 import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { DeckProvider, defineDeck } from '../deck';
-import { WithSx } from '../../styling/sx';
 import type { GameCardRootProps } from '../game-card';
 import { FlipGameCard, MissingBackLabelError, type FlipGameCardProps } from './index';
 
@@ -19,7 +20,9 @@ const FRONT_LABEL = 'Ace of spades';
 const BACK_LABEL = 'Card back';
 const front = <GameCard label={FRONT_LABEL} value={{ deck: 'french', suit: 'spades', rank: 'A' }} />;
 const back = <GameCard label={BACK_LABEL} />;
-const faceActionStyle = css({
+const Row = styled.div({ display: 'flex', gap: vars.space[4] });
+const Controls = styled.div({ display: 'grid', gap: vars.space[4], justifyItems: 'start' });
+const FaceAction = styled(Button)({
   position: 'absolute',
   insetBlockEnd: vars.space[2],
   insetInline: vars.space[1],
@@ -168,13 +171,13 @@ import { ThemeRoot } from '@jfrader/ui/theme-root';
 };
 
 const patternFaces: Story['render'] = (args) => (
-  <div style={{ display: 'flex', gap: vars.space[4] }}>
+  <Row>
     {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => (
       <FlipGameCard flipped={args.flipped} size={args.size} key={deck} data-test-pattern={pattern}
         value={deck === 'spanish' ? { deck: 'spanish', suit: 'oros', rank: 1 } : { deck: 'french', suit: 'spades', rank: 'A' }}
         label={`${deck} face`} backLabel={`${deck} back`} />
     ))}
-  </div>
+  </Row>
 );
 
 /** French and Spanish cards face up. */
@@ -248,10 +251,13 @@ export const PatternFrontsLightTheme: Story = {
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 import { vars } from '@jfrader/tokens/vars';
 
-<ThemeRoot theme="light"><div style={{ display: 'flex', gap: vars.space[4] }}>
+import { styled } from '@jfrader/ui';
+const Row = styled.div({ display: 'flex', gap: vars.space[4] });
+
+<ThemeRoot theme="light"><Row>
   <FlipGameCard value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="spanish face" backLabel="spanish back" />
   <FlipGameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }} label="french face" backLabel="french back" />
-</div></ThemeRoot>` } } },
+</Row></ThemeRoot>` } } },
   decorators: [withLightTheme],
 };
 export const PatternBacksLightTheme: Story = {
@@ -261,10 +267,13 @@ export const PatternBacksLightTheme: Story = {
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 import { vars } from '@jfrader/tokens/vars';
 
-<ThemeRoot theme="light"><div style={{ display: 'flex', gap: vars.space[4] }}>
+import { styled } from '@jfrader/ui';
+const Row = styled.div({ display: 'flex', gap: vars.space[4] });
+
+<ThemeRoot theme="light"><Row>
   <FlipGameCard flipped value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="spanish face" backLabel="spanish back" />
   <FlipGameCard flipped value={{ deck: 'french', suit: 'spades', rank: 'A' }} label="french face" backLabel="french back" />
-</div></ThemeRoot>` } } },
+</Row></ThemeRoot>` } } },
   decorators: [withLightTheme],
 };
 
@@ -288,11 +297,11 @@ export function FlipCardSizes() {
     },
   },
   render: (args) => (
-    <div style={{ display: 'flex', gap: vars.space[4] }}>
+    <Row>
       {(['sm', 'md', 'lg'] as const).map((size) => (
         <FlipGameCard {...args} key={size} size={size} />
       ))}
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     const widths = {
@@ -317,16 +326,16 @@ export function FlipCardSizes() {
 function ControlledFixture(args: Pick<FlipGameCardProps, 'flipped'>) {
   const [flipped, setFlipped] = useState(args.flipped);
   return (
-    <div style={{ display: 'grid', gap: vars.space[4], justifyItems: 'start' }}>
+    <Controls>
       <Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
       <FlipGameCard
         flipped={flipped}
         size="lg"
-        front={<>{front}<Button size="sm" css={faceActionStyle}>Front action</Button></>}
-        back={<>{back}<Button size="sm" css={faceActionStyle}>Back action</Button></>}
+        front={<>{front}<FaceAction size="sm">Front action</FaceAction></>}
+        back={<>{back}<FaceAction size="sm">Back action</FaceAction></>}
       />
       <Button>Continue</Button>
-    </div>
+    </Controls>
   );
 }
 
@@ -413,10 +422,10 @@ export const ContentKeyboard: Story = {
 
 function ControlledShorthand(args: FlipGameCardProps) {
   const [flipped, setFlipped] = useState(args.flipped ?? false);
-  return <div style={{ display: 'grid', gap: vars.space[4], justifyItems: 'start' }}>
+  return <Controls>
     <Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
     <FlipGameCard {...args} flipped={flipped} />
-  </div>;
+  </Controls>;
 }
 
 export const Default: Story = {
@@ -459,10 +468,10 @@ export function FlippableCard() {
 export const ControlledWithoutAcceptance: Story = {
   tags: ['!autodocs'],
   render: (args) => (
-    <div style={{ display: 'grid', gap: vars.space[4], justifyItems: 'start' }}>
+    <Controls>
       <Button>Request flip</Button>
       <FlipGameCard {...args} />
-    </div>
+    </Controls>
   ),
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Request flip' }));
@@ -585,13 +594,12 @@ export function CustomArtworkBack() {
   },
 };
 
-const replacementMaterial = css({ backgroundColor: vars.color.cardFace, border: `1px solid ${vars.color.cardInk}`, opacity: 0.9 });
-function ReplacementRoot({ className, ...props }: GameCardRootProps) {
-  return <WithSx styles={replacementMaterial} className={className}>
-    {(classes) => <div {...props} className={classes} data-replacement="true" />}
-  </WithSx>;
+const ReplacementMaterial = styled.div({ backgroundColor: vars.color.cardFace, border: `1px solid ${vars.color.cardInk}`, opacity: 0.9 });
+function ReplacementRoot(props: GameCardRootProps) {
+  return <ReplacementMaterial {...props} data-replacement="true" />;
 }
 
+// This story exercises slot css, consumer css/style and sx precedence.
 export const RootCustomization: Story = {
   tags: ['!autodocs'],
   args: { ref: fn(), component: ReplacementRoot, 'data-ui': 'consumer flip-game-card consumer',

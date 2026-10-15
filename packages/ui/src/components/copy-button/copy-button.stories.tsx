@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type MouseEvent } from 'react';
+import { useState, type ComponentPropsWithRef, type CSSProperties, type MouseEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -974,8 +974,12 @@ export const IconNodes: Story = {
   },
 };
 
+function SlotStatus(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="copy-button-status" />;
+}
 export const SxPrecedence: Story = {
   args: {
+    slots: { status: SlotStatus },
     className: 'consumer-class',
     css: consumerCss,
     sx: consumerSx,
@@ -994,5 +998,12 @@ export const SxPrecedence: Story = {
     await expect(label).toHaveClass('slot-label');
     await expect(getComputedStyle(label).fontWeight).toBe('600');
     await expect(getStatus(canvasElement)).toHaveAttribute('id', 'copy-status');
+    const replacement = canvasElement.querySelector('[data-slot="copy-button-status"]')!;
+    await expect(replacement).toBeInTheDocument();
+    await expect(replacement).toHaveAttribute('data-ui', 'copy-button-status');
+    await expect(replacement).toHaveAttribute('role', 'status');
+    await expect(replacement).toHaveAttribute('aria-live', 'polite');
+    await expect(getComputedStyle(replacement).position).toBe('absolute');
+    await expect(canvasElement.querySelector('[data-ui="copy-button-status"]:not([data-slot])')).toBeNull();
   },
 };

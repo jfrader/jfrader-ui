@@ -15,6 +15,7 @@ import {
 import type { BoardSeatGeometry, BoardSurface } from './types';
 import { resolveSeatCount } from './viewport';
 import { TableRoot, type GameTableRootProps, type GameTableRootCustomization } from './table-root';
+import { DeckArtProvider, type DeckArtOptions } from '../deck/art-context';
 
 export type GameTablePartProps = GameTableRootProps & GameTableRootCustomization & SxProps;
 
@@ -31,7 +32,7 @@ type SeatInput<T extends SeatLike> =
   };
 
 export type GameTableProps<T extends SeatLike = SeatLike> =
-  GameTablePartProps & SeatInput<T> & {
+  GameTablePartProps & SeatInput<T> & DeckArtOptions & {
     /** Integer number of places >= 2, including empty seats. */
     players: number;
     /** Number of round-robin teams for `seats`. Defaults to 2; use 1 for free-for-all. Prebuilt `seatSlots` keep their teams. */
@@ -162,8 +163,8 @@ const headerStyle = css({
   gap: 'var(--game-table-top-gap)', marginBlockEnd: 'var(--game-table-top-margin)',
   transform: 'translateY(var(--game-table-top-translate-y))',
 });
-const dockStyle = css({ marginBlockStart: 'var(--game-table-bottom-margin)', inlineSize: '100%', maxInlineSize: '58rem', marginInline: 'auto' });
-const footerStyle = css({ marginBlockStart: '0.8rem', inlineSize: '100%', maxInlineSize: '56rem', marginInline: 'auto' });
+const dockStyle = css({ marginBlockStart: 'var(--game-table-bottom-margin)', inlineSize: '100%', maxInlineSize: `calc(${vars.space[4]} * 58)`, marginInline: 'auto' });
+const footerStyle = css({ marginBlockStart: `calc(${vars.space[4]} * 0.8)`, inlineSize: '100%', maxInlineSize: `calc(${vars.space[4]} * 56)`, marginInline: 'auto' });
 const floatingStyle = css({
   position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none',
   '& > *': { pointerEvents: 'auto' },
@@ -251,7 +252,7 @@ function collectRegions(children: ReactNode): ReactElement<GameTableSeatProps>[]
 
 export function GameTable<T extends SeatLike>({
   seats, seatSlots: suppliedSlots, players, teamCount = 2, viewport, surface = 'match', turnDirection, clearance = 0,
-  children, seatPlacement = 'edge', style, ...rest
+  children, seatPlacement = 'edge', style, artSet, cardArtSets, ...rest
 }: GameTableProps<T>) {
   const { surfaceRef, measurement } = useBoardMeasurements(rest.slots?.root ?? rest.component);
   const seatCount = resolveSeatCount(players);
@@ -313,7 +314,7 @@ export function GameTable<T extends SeatLike>({
     '--game-table-center-block': `${measurement?.height ? measurement.centerY / measurement.height * 100 : 50}%`,
   };
   return (
-    <TableRoot {...rest} marker="game-table" structure={rootStyle} style={style} attributes={{ style: variables,
+    <DeckArtProvider artSet={artSet} cardArtSets={cardArtSets}><TableRoot {...rest} marker="game-table" structure={rootStyle} style={style} attributes={{ style: variables,
       'data-profile': layout.profile, 'data-surface': surface, 'data-seat-placement': seatPlacement, 'data-layout-fit': layout.fit,
       'data-clearance': measurement?.clearance && (measurement.clearance.start < measurement.clearance.requestedStart || measurement.clearance.end < measurement.clearance.requestedEnd) ? 'reduced' : 'requested',
       'data-clearance-start': measurement?.clearance?.start, 'data-clearance-end': measurement?.clearance?.end,
@@ -371,7 +372,7 @@ export function GameTable<T extends SeatLike>({
       {one(GameTableFooter)}
       {one(GameTableDock)}
       {one(GameTableFloating)}
-    </TableRoot>
+    </TableRoot></DeckArtProvider>
   );
 }
 GameTable.displayName = 'GameTable';

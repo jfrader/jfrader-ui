@@ -34,6 +34,7 @@ import {
   type CSSProperties,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
@@ -82,6 +83,10 @@ export interface ToastProviderBaseProps {
   dismissLabel?: string;
   messages?: Partial<ToastMessages>;
 }
+export interface ToastSlots<ViewportProps = ToastViewportProps> {
+  /** Viewport rendering the active notifications. */
+  viewport?: ComponentType<ViewportProps>;
+}
 
 export type ToastProviderProps = ToastProviderBaseProps &
   (
@@ -89,10 +94,7 @@ export type ToastProviderProps = ToastProviderBaseProps &
     | {
         viewport: 'default';
         viewportProps?: ToastViewportProps;
-        slots?: {
-          /** Replaces the viewport container rendering active toasts. */
-          viewport?: ComponentType<ToastViewportProps>;
-        };
+        slots?: ToastSlots;
         slotProps?: {
           /** Viewport container element rendering active toasts. */
           viewport?: ToastViewportProps;
@@ -101,10 +103,7 @@ export type ToastProviderProps = ToastProviderBaseProps &
     | {
         viewport: 'stack';
         viewportProps?: ToastStackProps;
-        slots?: {
-          /** Replaces the stacked viewport container rendering active toasts. */
-          viewport?: ComponentType<ToastStackProps>;
-        };
+        slots?: ToastSlots<ToastStackProps>;
         slotProps?: {
           /** Stacked viewport container element rendering active toasts. */
           viewport?: ToastStackProps;
@@ -112,17 +111,20 @@ export type ToastProviderProps = ToastProviderBaseProps &
       }
   );
 
-export interface ToastPartProps {
+export interface ToastPartProps extends ComponentPropsWithRef<'div'> {
   className?: string;
   css?: Interpolation<Theme>;
   style?: CSSProperties;
 }
+export interface ToastViewportSlots {
+  /** Container holding the toast notifications. */
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Container wrapping one toast notification. */
+  item?: ComponentType<ToastPartProps>;
+}
 export interface ToastViewportProps extends ComponentPropsWithRef<'div'>, ToastPartProps, SxProps {
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
-  slots?: {
-    /** Replaces the outer viewport element; renders a `div` by default. */
-    root?: ComponentType<ComponentPropsWithRef<'div'>>;
-  };
+  slots?: ToastViewportSlots;
   slotProps?: {
     /** Outer viewport container element holding toasts. */
     root?: ComponentPropsWithRef<'div'> & ToastPartProps & SxProps;
@@ -488,6 +490,7 @@ function ToastViewport({ component, slots, slotProps, className, style, css: con
   useEffect(() => enabled ? registerRenderer() : undefined, [enabled, registerRenderer]);
   const { className: slotClass, style: slotStyle, css: slotCss, sx: slotSx, ...root } = slotProps?.root ?? {};
   const Root = slots?.root ?? component ?? 'div';
+  const Item = slots?.item ?? 'div';
   if (!enabled) return null;
   return (
     <ToastPortal>
@@ -495,7 +498,7 @@ function ToastViewport({ component, slots, slotProps, className, style, css: con
         {(className) => (
           <Root {...props} {...root} style={{ ...style, ...slotStyle }} data-ui="toast-viewport" className={className}>
             {toasts.map((record) => (
-              <ToastItem key={record.id} record={record} partProps={slotProps?.item} />
+              <ToastItem key={record.id} record={record} partProps={slotProps?.item} component={Item} />
             ))}
           </Root>
         )}
@@ -537,6 +540,7 @@ export function ToastItem({
   className,
   escapeDismiss = false,
   partProps,
+  component: Root = 'div',
 }: {
   record: ToastRecord;
   exposed?: boolean;
@@ -545,6 +549,7 @@ export function ToastItem({
   className?: string;
   escapeDismiss?: boolean;
   partProps?: ToastPartProps;
+  component?: ToastViewportSlots['item'] | 'div';
 }) {
   const { dismiss, remove, registerRoot, dismissLabel } = useToastQueueContext('Viewport');
   const { id, options, state } = record;
@@ -559,6 +564,7 @@ export function ToastItem({
     },
     [id, registerRoot],
   );
+  const mergedRootRef = useMergeRefs([setRoot, partProps?.ref]);
   const [populated, setPopulated] = useState(false);
   const [pointerInside, setPointerInside] = useState(false);
   const [focusInside, setFocusInside] = useState(false);
@@ -631,14 +637,16 @@ export function ToastItem({
   };
 
   return (
-    <div
-      ref={setRoot}
+    <Root
+      {...partProps}
+      ref={mergedRootRef}
       inert={state === 'closing' || !exposed}
       aria-hidden={state === 'closing' || !exposed ? true : undefined}
       data-toast-id={id}
       style={{ ...partProps?.style, ...style }}
       className={[className, partProps?.className].filter(Boolean).join(' ')}
       onKeyDown={(event) => {
+        partProps?.onKeyDown?.(event);
         if (escapeDismiss && event.key === 'Escape' && !event.defaultPrevented) {
           event.preventDefault();
           event.stopPropagation();
@@ -650,10 +658,22 @@ export function ToastItem({
       data-state={state}
       data-populated={populated}
       data-exposed={exposed}
-      onPointerEnter={() => setPointerInside(true)}
-      onPointerLeave={() => setPointerInside(false)}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
+      onPointerEnter={(event) => {
+        partProps?.onPointerEnter?.(event);
+        setPointerInside(true);
+      }}
+      onPointerLeave={(event) => {
+        partProps?.onPointerLeave?.(event);
+        setPointerInside(false);
+      }}
+      onFocus={(event) => {
+        partProps?.onFocus?.(event);
+        handleFocus();
+      }}
+      onBlur={(event) => {
+        partProps?.onBlur?.(event);
+        handleBlur(event);
+      }}
       css={[toastStyle, toneStyles[tone], partProps?.css]}
     >
       <div role={tone === 'danger' ? 'alert' : 'status'} aria-atomic="true" css={bodyStyle}>
@@ -686,7 +706,7 @@ export function ToastItem({
           )}
         </div>
       )}
-    </div>
+    </Root>
   );
 }
 

@@ -20,6 +20,7 @@ export {
   type FilterToolbarControlsProps,
   type FilterToolbarActiveFiltersProps,
   type FilterToolbarActiveFiltersSlotProps,
+  type FilterToolbarActiveFiltersSlots,
   type FilterToolbarClearProps,
   type FilterToolbarResultCountProps,
 } from './filter-toolbar';

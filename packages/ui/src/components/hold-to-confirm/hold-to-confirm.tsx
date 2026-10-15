@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
@@ -20,6 +20,25 @@ export interface HoldToConfirmPartProps {
   className?: string;
   css?: Interpolation<Theme>;
 }
+export interface HoldToConfirmSlots {
+  /** Displays the button face. */
+  face?: ComponentType<HoldToConfirmPartProps>;
+  /** Clips the progress face over the button. */
+  fill?: ComponentType<HoldToConfirmPartProps>;
+  /** Displays the idle or confirmed glyph. */
+  icon?: ComponentType<HoldToConfirmPartProps>;
+  /** Displays the progress face glyph. */
+  fillIcon?: ComponentType<HoldToConfirmPartProps>;
+  /** Displays the button state label. */
+  label?: ComponentType<HoldToConfirmPartProps>;
+  /** Displays the progress face label. */
+  fillLabel?: ComponentType<HoldToConfirmPartProps>;
+  /** Describes the hold duration. */
+  hint?: ComponentType<HoldToConfirmPartProps>;
+  /** Announces completion. */
+  status?: ComponentType<HoldToConfirmPartProps>;
+}
+
 export interface HoldToConfirmProps
   extends Omit<ComponentPropsWithRef<'button'>, 'children' | 'value' | 'defaultValue'>, SxProps {
   label: ReactNode;
@@ -37,14 +56,19 @@ export interface HoldToConfirmProps
   size?: HoldToConfirmSize;
   icon?: ReactNode;
   confirmedIcon?: ReactNode;
+  slots?: HoldToConfirmSlots;
   slotProps?: Partial<
     Record<
       | /** Face layer displaying the button icon and label. */
         'face'
       | /** Icon element displaying the idle or confirmed glyph. */
         'icon'
+      | /** Icon in the clipped progress face. */
+        'fillIcon'
       | /** Text label displaying the button state. */
         'label'
+      | /** Label in the clipped progress face. */
+        'fillLabel'
       | /** Progress fill layer clipping over the button face. */
         'fill'
       | /** Screen-reader hint describing the required hold duration. */
@@ -187,6 +211,7 @@ export function HoldToConfirm({
   confirmedIcon = '✓',
   disabled = false,
   slotProps,
+  slots,
   className,
   sx,
   onPointerDown,
@@ -339,30 +364,46 @@ export function HoldToConfirm({
     if (origin && 'pointerId' in origin && origin.pointerId === pointerId) finish();
   };
   const visibleLabel = confirmed ? confirmedLabel : label;
+  const Icon = slots?.icon ?? 'span';
+  const Label = slots?.label ?? 'span';
+  const FillIcon = slots?.fillIcon ?? 'span';
+  const FillLabel = slots?.fillLabel ?? 'span';
+  const Face = slots?.face ?? 'span';
+  const Fill = slots?.fill ?? 'span';
+  const Hint = slots?.hint ?? 'span';
+  const Status = slots?.status ?? 'span';
   const visibleIcon = confirmed ? confirmedIcon : icon;
-  const face = (
-    <>
-      {isRenderable(visibleIcon) && (
-        <span
-          key={`icon-${confirmed}`}
-          aria-hidden="true"
-          className={slotProps?.icon?.className}
-          css={[iconWrapperStyle, swapStyle, slotProps?.icon?.css]}
-        >
-          {visibleIcon}
-        </span>
-      )}
-      {isRenderable(visibleLabel) && (
-        <span
-          key={`label-${confirmed}`}
-          className={slotProps?.label?.className}
-          css={[swapStyle, slotProps?.label?.css]}
-        >
-          {visibleLabel}
-        </span>
-      )}
-    </>
-  );
+  const renderFace = (filled: boolean) => {
+    const FaceIcon = filled ? FillIcon : Icon;
+    const FaceLabel = filled ? FillLabel : Label;
+    const iconProps = filled ? slotProps?.fillIcon : slotProps?.icon;
+    const labelProps = filled ? slotProps?.fillLabel : slotProps?.label;
+    return (
+      <>
+        {isRenderable(visibleIcon) && (
+          <FaceIcon
+            {...iconProps}
+            key={`icon-${confirmed}`}
+            aria-hidden="true"
+            className={iconProps?.className}
+            css={[iconWrapperStyle, swapStyle, iconProps?.css]}
+          >
+            {visibleIcon}
+          </FaceIcon>
+        )}
+        {isRenderable(visibleLabel) && (
+          <FaceLabel
+            {...labelProps}
+            key={`label-${confirmed}`}
+            className={labelProps?.className}
+            css={[swapStyle, labelProps?.css]}
+          >
+            {visibleLabel}
+          </FaceLabel>
+        )}
+      </>
+    );
+  };
   const formatted = numberFormatter(locale, {
     style: 'unit',
     unit: 'second',
@@ -452,40 +493,41 @@ export function HoldToConfirm({
                 event.preventDefault();
             }}
           >
-            <span className={slotProps?.face?.className} css={[faceStyle, slotProps?.face?.css]}>
-              {face}
-            </span>
-            <span
+            <Face {...slotProps?.face} className={slotProps?.face?.className} css={[faceStyle, slotProps?.face?.css]}>
+              {renderFace(false)}
+            </Face>
+            <Fill
+              {...slotProps?.fill}
               data-ui="hold-to-confirm-fill"
               aria-hidden="true"
-              className={
-                [slotProps?.face?.className, slotProps?.fill?.className].filter(Boolean).join(' ') ||
-                undefined
-              }
-              css={[faceStyle, slotProps?.face?.css, fillStyle, slotProps?.fill?.css]}
+              className={slotProps?.fill?.className}
+              css={[faceStyle, fillStyle, slotProps?.fill?.css]}
             >
-              {face}
-            </span>
+              {renderFace(true)}
+            </Fill>
           </button>
         )}
       </WithSx>
-      <span
+      <Hint
+        {...slotProps?.hint}
         id={hintId}
         data-holding={holding || undefined}
         className={slotProps?.hint?.className}
         css={[hintStyle, slotProps?.hint?.css]}
       >
         {getHoldDescription(formatted)}
-      </span>
-      <span
+      </Hint>
+      <Status
+        {...slotProps?.status}
         role="status"
         aria-live="polite"
         aria-atomic="true"
+        data-ui="hold-to-confirm-status"
         className={slotProps?.status?.className}
         css={[visuallyHiddenStyle, slotProps?.status?.css]}
       >
         {announcement}
-      </span>
+      </Status>
     </>
   );
 }

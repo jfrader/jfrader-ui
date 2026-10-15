@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type PointerEvent,
   type ReactNode,
 } from 'react';
@@ -29,10 +30,29 @@ import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
 
-type Slot<E extends 'div' | 'header' | 'h2' | 'ul' | 'li'> = Omit<
-  ComponentPropsWithRef<E>,
-  'children'
-> & { css?: Interpolation<Theme> };
+type Slot<E extends 'div' | 'header' | 'h2' | 'ul' | 'li'> = ComponentPropsWithRef<E> & { css?: Interpolation<Theme> };
+export interface StretchRefreshSlots {
+  /** Header holding the title and refresh action. */
+  header?: ComponentType<Slot<'header'>>;
+  /** Heading naming the feed. */
+  title?: ComponentType<Slot<'h2'>>;
+  /** Text below the feed title. */
+  subtitle?: ComponentType<Slot<'div'>>;
+  /** Scrollable feed container. */
+  feed?: ComponentType<Slot<'div'>>;
+  /** List containing feed items. */
+  list?: ComponentType<Slot<'ul'>>;
+  /** List item containing a feed entry. */
+  item?: ComponentType<Slot<'li'>>;
+  /** Pull progress indicator. */
+  indicator?: ComponentType<Slot<'div'>>;
+  /** Button requesting a refresh. */
+  refreshButton?: ComponentType<ButtonProps>;
+  /** Live region announcing refresh state. */
+  status?: ComponentType<Slot<'div'>>;
+  /** Empty feed content. */
+  empty?: ComponentType<Slot<'div'>>;
+}
 export interface StretchRefreshSlotProps<T> {
   /** Header container element holding the title and refresh button. */
   header?: Slot<'header'>;
@@ -80,6 +100,7 @@ export interface StretchRefreshProps<T>
   emptyContent?: ReactNode;
   labels?: StretchRefreshLabels;
   slotProps?: StretchRefreshSlotProps<T>;
+  slots?: StretchRefreshSlots;
 }
 
 declare const process: { env: { NODE_ENV?: string } };
@@ -220,14 +241,24 @@ export function StretchRefresh<T>({
   emptyContent,
   labels,
   slotProps,
+  slots,
   ref,
   className,
   sx,
   onKeyDown,
   ...props
 }: StretchRefreshProps<T>) {
+  const Header = slots?.header ?? 'header';
+  const Subtitle = slots?.subtitle ?? 'div';
+  const Feed = slots?.feed ?? 'div';
+  const List = slots?.list ?? 'ul';
+  const Item = slots?.item ?? 'li';
+  const Indicator = slots?.indicator ?? 'div';
+  const RefreshButton = slots?.refreshButton ?? Button;
+  const Status = slots?.status ?? 'div';
+  const Empty = slots?.empty ?? 'div';
   const id = useId();
-  const Heading = `h${headingLevel}` as const;
+  const Heading = slots?.title ?? `h${headingLevel}`;
   const copy = { ...LABELS, ...labels };
   const threshold =
     Number.isFinite(thresholdProp) && thresholdProp > 0 ? thresholdProp : DEFAULT_THRESHOLD;
@@ -485,7 +516,7 @@ export function StretchRefresh<T>({
               }
             }}
           >
-            <header
+            <Header
               {...slotProps?.header}
               role={slotProps?.header?.role ?? 'presentation'}
               css={[headerStyle, slotProps?.header?.css]}
@@ -497,7 +528,7 @@ export function StretchRefresh<T>({
               >
                 {title}
               </Heading>
-              <Button
+              <RefreshButton
                 variant="outline"
                 size="sm"
                 {...slotProps?.refreshButton}
@@ -513,19 +544,19 @@ export function StretchRefresh<T>({
                 }}
               >
                 {copy.refresh}
-              </Button>
+              </RefreshButton>
               {subtitlePresent && (
-                <div
+                <Subtitle
                   {...slotProps?.subtitle}
                   id={subtitleId}
                   data-ui="stretch-refresh-subtitle"
                   css={[subtitleStyle, slotProps?.subtitle?.css]}
                 >
                   {subtitle}
-                </div>
+                </Subtitle>
               )}
-            </header>
-            <div
+            </Header>
+            <Feed
               {...feedSlot}
               ref={mergedFeedRef}
               role="region"
@@ -560,7 +591,7 @@ export function StretchRefresh<T>({
                 if (gesture.current?.pointer === event.pointerId) finish(false);
               }}
             >
-              <div
+              <Indicator
                 {...slotProps?.indicator}
                 aria-hidden="true"
                 data-ui="stretch-refresh-indicator"
@@ -572,9 +603,9 @@ export function StretchRefresh<T>({
                   css={lineStyle}
                   style={{ scaleX: busy ? 1 : progress }}
                 />
-              </div>
+              </Indicator>
               <motion.div style={{ y }}>
-                <ul
+                <List
                   {...slotProps?.list}
                   aria-busy={busy}
                   data-ui="stretch-refresh-list"
@@ -586,24 +617,24 @@ export function StretchRefresh<T>({
                         ? slotProps.item(item, index)
                         : slotProps?.item;
                     return (
-                      <li {...itemSlot} key={getKey(item)} css={[itemStyle, itemSlot?.css]}>
+                      <Item {...itemSlot} key={getKey(item)} css={[itemStyle, itemSlot?.css]}>
                         {renderItem(item, index)}
-                      </li>
+                      </Item>
                     );
                   })}
-                </ul>
+                </List>
                 {items.length === 0 && isRenderable(emptyContent) && emptyContent !== '' && (
-                  <div
+                  <Empty
                     {...slotProps?.empty}
                     data-ui="stretch-refresh-empty"
                     css={[emptyStyle, slotProps?.empty?.css]}
                   >
                     {emptyContent}
-                  </div>
+                  </Empty>
                 )}
               </motion.div>
-            </div>
-            <div
+            </Feed>
+            <Status
               {...slotProps?.status}
               id={slotProps?.status?.id ?? `${id}-status`}
               role="status"
@@ -612,7 +643,7 @@ export function StretchRefresh<T>({
               css={[statusStyle, slotProps?.status?.css]}
             >
               <motion.span style={{ opacity }}>{status}</motion.span>
-            </div>
+            </Status>
           </div>
         )}
       </WithSx>

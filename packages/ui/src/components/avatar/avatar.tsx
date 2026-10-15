@@ -2,7 +2,7 @@
 // the status word when a status is set ("Ada Lovelace, online"). The photo, initials and status
 // badge are presentational children of that root. Status uses shape and color for sighted users
 // and text for AT; the name stays unchanged when a broken photo falls back to initials. Not interactive.
-import { useState, type ComponentPropsWithRef } from 'react';
+import { useState, type ComponentPropsWithRef, type ComponentType } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -17,6 +17,15 @@ export interface AvatarPartProps {
   css?: Interpolation<Theme>;
 }
 
+export interface AvatarSlots {
+  /** Image element displaying the avatar photo. */
+  image?: ComponentType<ComponentPropsWithRef<'img'>>;
+  /** Span element displaying initials when no image loads. */
+  fallback?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Presence indicator dot reflecting online or busy status. */
+  status?: ComponentType<ComponentPropsWithRef<'span'>>;
+}
+
 export interface AvatarProps
   extends Omit<ComponentPropsWithRef<'span'>, 'children' | 'role' | 'aria-label'>,
     SxProps {
@@ -29,6 +38,7 @@ export interface AvatarProps
   pulse?: boolean;
   /** Spoken status word; defaults to the `status` value. Pass a translated word for other locales. */
   statusLabel?: string;
+  slots?: AvatarSlots;
   slotProps?: {
     /** Image element displaying the avatar photo. */
     image?: AvatarPartProps;
@@ -164,6 +174,7 @@ export function Avatar({
   status,
   pulse = false,
   statusLabel,
+  slots,
   slotProps,
   className,
   sx,
@@ -174,27 +185,32 @@ export function Avatar({
   const [failedSrc, setFailedSrc] = useState<string>();
   const showImage = src !== undefined && src !== '' && src !== failedSrc;
   const label = status === undefined ? name : `${name}, ${statusLabel ?? status}`;
+  const Image = slots?.image ?? 'img';
+  const Fallback = slots?.fallback ?? 'span';
+  const Status = slots?.status ?? 'span';
 
   return (
     <WithSx className={className} styles={[rootStyle, sizeStyles[size]]} sx={sx}>
       {(className) => (
         <span {...rest} ref={ref} data-ui="avatar" role="img" aria-label={label} className={className}>
           {showImage ? (
-            <img
+            <Image
               src={src}
               alt=""
               onError={() => setFailedSrc(src)}
+              data-ui="avatar-image"
               className={slotProps?.image?.className}
               css={[imageStyle, slotProps?.image?.css]}
             />
           ) : (
-            <span aria-hidden="true" className={slotProps?.fallback?.className} css={slotProps?.fallback?.css}>
+            <Fallback aria-hidden="true" data-ui="avatar-fallback" className={slotProps?.fallback?.className} css={slotProps?.fallback?.css}>
               {getInitials(name, MAX_INITIALS)}
-            </span>
+            </Fallback>
           )}
           {status !== undefined && (
-            <span
+            <Status
               aria-hidden="true"
+              data-ui="avatar-status"
               data-status={status}
               data-pulse={pulse && status === 'online' ? '' : undefined}
               className={slotProps?.status?.className}

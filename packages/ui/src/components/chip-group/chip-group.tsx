@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
 } from 'react';
 import { animate, motion, MotionConfig, useReducedMotion } from 'motion/react';
@@ -49,6 +50,21 @@ export interface ChipGroupSlotProps {
   overflow?: StyledSlot<'button'>;
 }
 
+export interface ChipGroupSlots {
+  /** Container frame clipping expanding chip rows. */
+  frame?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Container holding the chip buttons and overflow toggle. */
+  row?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Toggle button representing an individual chip option. */
+  chip?: ComponentType<ComponentPropsWithRef<'button'>>;
+  /** Text label displayed inside a chip. */
+  label?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Checkmark glyph displayed when a chip is selected. */
+  check?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Button that expands or collapses hidden overflow chips. */
+  overflow?: ComponentType<ComponentPropsWithRef<'button'>>;
+}
+
 interface ChipGroupBaseProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   options: readonly ChipGroupOption[];
@@ -63,6 +79,7 @@ interface ChipGroupBaseProps
   locale?: Intl.LocalesArgument;
   moreLabel?: (formattedCount: string, count: number) => string;
   lessLabel?: string;
+  slots?: ChipGroupSlots;
   slotProps?: ChipGroupSlotProps;
 }
 
@@ -166,6 +183,7 @@ export function ChipGroup({
   locale,
   moreLabel,
   lessLabel,
+  slots,
   slotProps,
   className,
   sx,
@@ -175,6 +193,10 @@ export function ChipGroup({
   'aria-labelledby': ariaLabelledBy,
   ...rest
 }: ChipGroupProps) {
+  const Row = slots?.row ?? 'div';
+  const Chip = slots?.chip ?? 'button';
+  const Label = slots?.label ?? 'span';
+  const Overflow = slots?.overflow ?? 'button';
   if (
     maxVisible !== undefined &&
     (!Number.isInteger(maxVisible) || maxVisible < 1 || !moreLabel || lessLabel === undefined)
@@ -267,12 +289,13 @@ export function ChipGroup({
             }}
           >
             <HeightFrame
+              component={slots?.frame}
               frameRef={frameRef}
               rowRef={rowRef}
               frameProps={slotProps?.frame}
               signature={JSON.stringify([expanded, selected])}
             >
-              <div {...slotProps?.row} ref={rowRef} id={rowId} css={[rowStyle, slotProps?.row?.css]}>
+              <Row {...slotProps?.row} ref={rowRef} id={rowId} css={[rowStyle, slotProps?.row?.css]}>
                 {visible.map((option, index) => {
                   const chip = typeof slotProps?.chip === 'function' ? slotProps.chip(option) : slotProps?.chip;
                   const pressed = selected.includes(option.value);
@@ -292,7 +315,7 @@ export function ChipGroup({
                       ]}
                       style={{ animationDelay: `${Math.min(index * REVEAL_STEP_MS, MAX_REVEAL_STAGGER_MS)}ms` }}
                     >
-                      <button
+                      <Chip
                         {...chip}
                         type="button"
                         disabled={disabled || option.disabled}
@@ -328,19 +351,19 @@ export function ChipGroup({
                           }
                         }}
                       >
-                        <Check pressed={pressed} slot={slotProps?.check} />
+                        <Check pressed={pressed} slot={slotProps?.check} component={slots?.check} />
                         {isRenderable(option.label) && (
-                          <span {...slotProps?.label} css={[labelStyle, slotProps?.label?.css]}>
+                          <Label {...slotProps?.label} css={[labelStyle, slotProps?.label?.css]}>
                             {option.label}
-                          </span>
+                          </Label>
                         )}
-                      </button>
+                      </Chip>
                     </motion.div>
                   );
                 })}
                 {hasOverflow && (
                   <motion.div layout="position" transition={LAYOUT_SPRING} css={itemFrameStyle}>
-                    <button
+                    <Overflow
                       {...slotProps?.overflow}
                       type="button"
                       disabled={disabled}
@@ -363,10 +386,10 @@ export function ChipGroup({
                       {expanded
                         ? lessLabel
                         : moreLabel!(numberFormatter(locale).format(hiddenCount), hiddenCount)}
-                    </button>
+                    </Overflow>
                   </motion.div>
                 )}
-              </div>
+              </Row>
             </HeightFrame>
           </div>
         )}
@@ -376,9 +399,14 @@ export function ChipGroup({
 }
 ChipGroup.displayName = 'ChipGroup';
 
-function Check({ pressed, slot }: { pressed: boolean; slot?: StyledSlot<'span'> }) {
+function Check({ pressed, slot, component }: {
+  pressed: boolean;
+  slot?: StyledSlot<'span'>;
+  component?: ComponentType<ComponentPropsWithRef<'span'>>;
+}) {
+  const Component = component ?? 'span';
   return (
-    <span {...slot} aria-hidden="true" css={[checkStyle, slot?.css]}>
+    <Component {...slot} aria-hidden="true" css={[checkStyle, slot?.css]}>
       <motion.span
         css={checkStyle}
         layout
@@ -389,23 +417,26 @@ function Check({ pressed, slot }: { pressed: boolean; slot?: StyledSlot<'span'> 
           <path d="m3 8 3 3 7-7" stroke="currentColor" strokeWidth="2" />
         </svg>
       </motion.span>
-    </span>
+    </Component>
   );
 }
 
 function HeightFrame({
+  component,
   frameRef,
   rowRef,
   frameProps,
   signature,
   children,
 }: {
+  component?: ComponentType<ComponentPropsWithRef<'div'>>;
   frameRef: { current: HTMLDivElement | null };
   rowRef: { current: HTMLDivElement | null };
   frameProps?: StyledSlot<'div'>;
   signature: string;
   children: ReactNode;
 }) {
+  const Component = component ?? 'div';
   const reduced = useReducedMotion();
   useImperativeHandle(frameProps?.ref, () => frameRef.current!, [frameRef]);
   const previousHeight = useRef<number | null>(null);
@@ -446,8 +477,8 @@ function HeightFrame({
     };
   }, [signature, reduced, frameRef, rowRef]);
   return (
-    <div {...frameProps} ref={frameRef} css={frameProps?.css}>
+    <Component {...frameProps} ref={frameRef} css={frameProps?.css}>
       {children}
-    </div>
+    </Component>
   );
 }

@@ -5,6 +5,8 @@ export type {
   ToggleSubscriptionOption,
   ToggleSubscriptionPriceDefinition,
   ToggleSubscriptionSlots,
+  ToggleSubscriptionItemSlots,
+  ToggleSubscriptionPriceSlots,
   ToggleSubscriptionSlotProps,
   ToggleSubscriptionProps,
   ToggleSubscriptionListProps,

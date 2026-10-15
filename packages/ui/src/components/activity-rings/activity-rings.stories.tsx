@@ -1,4 +1,4 @@
-import { StrictMode, useState, type ComponentType, type MouseEvent } from 'react';
+import { StrictMode, useState, type ComponentPropsWithRef, type ComponentType, type MouseEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -13,6 +13,24 @@ import {
   type ActivityRingsProps,
   type ActivityValues,
 } from './index';
+
+function SlotMetric(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-slot="activity-rings-metric" />;
+}
+
+export const MetricReplacement: Story = {
+  render: (args) => <Rings {...args} interactiveLegend slots={{ metric: SlotMetric }} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const metric = canvasElement.querySelector('[data-slot="activity-rings-metric"]');
+    await expect(metric).toBeInTheDocument();
+    await expect(metric).toHaveAttribute('data-ui', 'activity-rings-metric');
+    await expect(getComputedStyle(metric!).display).toBe('grid');
+    await expect(metric).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(metric!);
+    await expect(metric).toHaveAttribute('aria-pressed', 'true');
+    await expect(canvasElement.querySelector('[data-ui="activity-rings-metric"]:not([data-slot])')).toBeNull();
+  },
+};
 
 /** Story args flatten the props' data-source and legend-mode unions, which Storybook's arg types cannot carry. */
 type RingsArgs = Omit<ActivityRingsProps, 'values' | 'days' | 'interactiveLegend' | 'slotProps'> & {

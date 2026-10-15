@@ -3,4 +3,5 @@ export type {
   AvatarGroupMember,
   AvatarGroupPartProps,
   AvatarGroupProps,
+  AvatarGroupSlots,
 } from './avatar-group';

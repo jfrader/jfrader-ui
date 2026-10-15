@@ -518,8 +518,13 @@ export const UploadFailed: Story = {
   },
 };
 const retriedFiles = new WeakSet<File>();
+function RetryAction(props: ButtonProps) {
+  return <Button {...props} data-slot="upload-retry" />;
+}
 export const UploadRetry: Story = {
   args: {
+    slots: { retry: RetryAction },
+    slotProps: { retry: { ref: fn(), className: 'custom-retry' } },
     onUpload: fn(async (item, { onProgress }) => {
       if (item.file && !retriedFiles.has(item.file)) {
         retriedFiles.add(item.file);
@@ -534,6 +539,10 @@ export const UploadRetry: Story = {
     const retry = await within(canvasElement).findByRole('button', {
       name: 'Retry receipt.pdf',
     });
+    await expect(retry).toHaveAttribute('data-slot', 'upload-retry');
+    await expect(retry).toHaveClass('custom-retry');
+    await expect(args.slotProps?.retry?.ref).toHaveBeenCalledWith(retry);
+    await expect(within(canvasElement).getByRole('button', { name: 'Remove receipt.pdf' })).not.toHaveAttribute('data-slot', 'upload-retry');
     retry.focus();
     await userEvent.keyboard('{Enter}');
     await waitFor(async () => {

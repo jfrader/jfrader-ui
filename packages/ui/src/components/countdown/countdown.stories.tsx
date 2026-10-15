@@ -1,4 +1,4 @@
-import { StrictMode, useRef, useState } from 'react';
+import { StrictMode, useRef, useState, type ComponentPropsWithRef } from 'react';
 import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
@@ -565,7 +565,12 @@ export const ExternalAria: Story = {
     await expect(args.ref).toHaveBeenCalledWith(timer);
   },
 };
+function ReplacementContent(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="countdown-content" />;
+}
+
 export const SlotStyling: Story = {
+  render: (args) => <Countdown {...args} slots={{ content: ReplacementContent }} />,
   args: {
     sx: { paddingInline: vars.space[4] },
     slotProps: {
@@ -577,6 +582,12 @@ export const SlotStyling: Story = {
   },
   play: async ({ canvasElement }) => {
     const timer = within(canvasElement).getByRole('timer');
+    const content = timer.querySelector('[data-slot="countdown-content"]');
+    await expect(content).toBeInTheDocument();
+    await expect(content).toHaveAttribute('data-ui', 'countdown-content');
+    await expect(content).toHaveAttribute('aria-hidden', 'true');
+    await expect(getComputedStyle(content!).display).toBe('flex');
+    await expect(timer.querySelector('[data-ui="countdown-content"]:not([data-slot])')).toBeNull();
     await expect(parseFloat(getComputedStyle(timer).paddingInlineStart)).toBeCloseTo(16, 0);
     await expect(parseFloat(getComputedStyle(queryPart(timer, 'label')).fontSize)).toBeCloseTo(
       28,

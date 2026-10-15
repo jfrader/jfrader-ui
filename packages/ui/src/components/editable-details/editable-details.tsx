@@ -126,7 +126,30 @@ export interface EditableDetailsEasyProps extends EditableDetailsBaseProps {
 }
 
 export type EditableDetailsProps = EditableDetailsCompoundProps | EditableDetailsEasyProps;
+export interface EditableDetailsSectionSlots {
+  /** Groups the section disclosure trigger. */
+  heading?: ComponentType<EditableDetailsPartProps>;
+  /** Toggles the section disclosure. */
+  trigger?: ComponentType<EditableDetailsPartProps>;
+  /** Contains the collapsible section body. */
+  panel?: ComponentType<EditableDetailsPartProps>;
+}
+
+export interface EditableDetailsItemSlots {
+  /** Displays the detail label. */
+  label?: ComponentType<EditableDetailsPartProps>;
+  /** Contains the detail summary or editor. */
+  description?: ComponentType<EditableDetailsPartProps>;
+  /** Groups the read-only value and edit button. */
+  summary?: ComponentType<EditableDetailsPartProps>;
+  /** Opens the detail editor. */
+  edit?: ComponentType<EditableDetailsPartProps>;
+  /** Contains the active editor. */
+  editor?: ComponentType<EditableDetailsPartProps>;
+}
+
 export interface EditableDetailsSectionProps extends Omit<ComponentPropsWithRef<'section'>, 'title'>, SxProps {
+  slots?: EditableDetailsSectionSlots;
   title: ReactNode;
   headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
   open?: boolean;
@@ -150,6 +173,7 @@ export interface EditableDetailsEditorProps {
   visible: boolean;
 }
 export interface EditableDetailsItemProps extends ComponentPropsWithRef<'div'>, SxProps {
+  slots?: EditableDetailsItemSlots;
   label: ReactNode;
   renderEditor?: (props: EditableDetailsEditorProps) => ReactNode;
   open?: boolean;
@@ -402,7 +426,7 @@ EditableDetailsRoot.displayName = 'EditableDetails';
 
 function EditableDetailsSection({
   ref, title, headingLevel = 3, open: openProp, defaultOpen = false, onOpenChange,
-  triggerRef, slotProps, children, className, sx, ...rest
+  triggerRef, slotProps, slots, children, className, sx, ...rest
 }: EditableDetailsSectionProps) {
   const [open, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
   const parent = useContext(DisclosureContext);
@@ -411,7 +435,9 @@ function EditableDetailsSection({
   const panel = useRef<HTMLDivElement>(null);
   const memory = useFocusMemory(panel);
   const id = useId();
-  const Heading = HEADINGS[headingLevel];
+  const Heading = slots?.heading ?? HEADINGS[headingLevel];
+  const Trigger = slots?.trigger ?? 'button';
+  const Panel = slots?.panel ?? 'div';
   const visible = parent.visible && !!open;
   const triggers = useMemo(() => [button, ...parent.triggers], [parent.triggers]);
   const scope = useMemo(() => ({ visible, triggers }), [visible, triggers]);
@@ -423,8 +449,9 @@ function EditableDetailsSection({
     <WithSx className={className} styles={sectionStyle} sx={sx}>
       {(className) => (
         <section {...rest} ref={ref} className={className} data-ui="editable-details-section" data-state={open ? 'open' : 'closed'}>
-          <Heading css={[headingStyle, slotProps?.heading?.css]} className={slotProps?.heading?.className}>
-            <button
+          <Heading {...slotProps?.heading} css={[headingStyle, slotProps?.heading?.css]} className={slotProps?.heading?.className}>
+            <Trigger
+              {...slotProps?.trigger}
               ref={mergedTrigger}
               type="button"
               id={`${id}-trigger`}
@@ -436,10 +463,11 @@ function EditableDetailsSection({
               data-ui="editable-details-section-trigger"
             >
               {title}
-            </button>
+            </Trigger>
           </Heading>
           <DisclosureContext.Provider value={scope}>
-            <div
+            <Panel
+              {...slotProps?.panel}
               ref={panel}
               id={`${id}-panel`}
               hidden={!open}
@@ -448,7 +476,7 @@ function EditableDetailsSection({
               data-ui="editable-details-section-panel"
             >
               {children}
-            </div>
+            </Panel>
           </DisclosureContext.Provider>
         </section>
       )}
@@ -471,12 +499,14 @@ interface SessionProps {
   labelId: string;
   hostId: string;
   part?: EditableDetailsPartProps;
+  component?: EditableDetailsItemSlots['editor'];
   edit: RefObject<HTMLButtonElement | null>;
   requestClose: () => void;
   focusIntent: RefObject<boolean>;
   acceptedClose: RefObject<boolean>;
 }
-function EditorSession({ renderEditor, labelId, hostId, part, edit, requestClose, focusIntent, acceptedClose }: SessionProps) {
+function EditorSession({ renderEditor, labelId, hostId, part, component, edit, requestClose, focusIntent, acceptedClose }: SessionProps) {
+  const Editor = component ?? 'div';
   const scope = useContext(DisclosureContext);
   const host = useRef<HTMLDivElement>(null);
   const target = useRef<HTMLElement | null>(null);
@@ -522,7 +552,8 @@ function EditorSession({ renderEditor, labelId, hostId, part, edit, requestClose
     element.focus();
   }, [focusIntent, scope.visible]);
   return (
-    <div
+    <Editor
+      {...part}
       ref={host}
       id={hostId}
       role="group"
@@ -533,14 +564,18 @@ function EditorSession({ renderEditor, labelId, hostId, part, edit, requestClose
       data-ui="editable-details-editor"
     >
       {renderEditor({ initialFocusRef, complete: close, cancel: close, visible: scope.visible })}
-    </div>
+    </Editor>
   );
 }
 
 function EditableDetailsItem({
   ref, label, renderEditor, open: openProp, defaultOpen = false, onOpenChange,
-  children, slotProps, className, sx, ...rest
+  children, slotProps, slots, className, sx, ...rest
 }: EditableDetailsItemProps) {
+  const Label = slots?.label ?? 'dt';
+  const Description = slots?.description ?? 'dd';
+  const Summary = slots?.summary ?? 'div';
+  const Edit = slots?.edit ?? 'button';
   const [open, requestOpen, resetOpen] = useControlledState(openProp, renderEditor ? defaultOpen : false, onOpenChange);
   const scope = useContext(DisclosureContext);
   const text = useContext(MessagesContext);
@@ -576,26 +611,28 @@ function EditableDetailsItem({
     <WithSx className={className} styles={itemStyle} sx={sx}>
       {(className) => (
         <div {...rest} ref={mergedRef} className={className} data-ui="editable-details-item" data-state={editing ? 'open' : 'closed'}>
-          <dt id={`${id}-label`} css={[labelStyle, slotProps?.label?.css]} className={slotProps?.label?.className}>
+          <Label {...slotProps?.label} id={`${id}-label`} css={[labelStyle, slotProps?.label?.css]} className={slotProps?.label?.className}>
             {label}
-          </dt>
-          <dd css={[descriptionStyle, slotProps?.description?.css]} className={slotProps?.description?.className}>
+          </Label>
+          <Description {...slotProps?.description} css={[descriptionStyle, slotProps?.description?.css]} className={slotProps?.description?.className}>
             {editing ? (
               <EditorSession
                 renderEditor={renderEditor}
                 labelId={`${id}-label`}
                 hostId={`${id}-editor`}
                 part={slotProps?.editor}
+                component={slots?.editor}
                 edit={edit}
                 requestClose={requestClose}
                 focusIntent={memory.intent}
                 acceptedClose={acceptedClose}
               />
             ) : (
-              <div css={[summaryStyle, slotProps?.summary?.css]} className={slotProps?.summary?.className}>
+              <Summary {...slotProps?.summary} css={[summaryStyle, slotProps?.summary?.css]} className={slotProps?.summary?.className}>
                 <div css={valueStyle}>{children}</div>
                 {renderEditor && (
-                  <button
+                  <Edit
+                    {...slotProps?.edit}
                     ref={edit}
                     type="button"
                     id={`${id}-edit`}
@@ -606,11 +643,11 @@ function EditableDetailsItem({
                     data-ui="editable-details-edit"
                   >
                     {text.edit}
-                  </button>
+                  </Edit>
                 )}
-              </div>
+              </Summary>
             )}
-          </dd>
+          </Description>
         </div>
       )}
     </WithSx>

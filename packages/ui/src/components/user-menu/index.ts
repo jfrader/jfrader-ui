@@ -6,6 +6,7 @@ export type {
   UserMenuContentProps,
   UserMenuEasyProps,
   UserMenuGroupSlotProps,
+  UserMenuGroupSlots,
   UserMenuIdentityProps,
   UserMenuItemAction,
   UserMenuItemProps,

@@ -3,7 +3,7 @@
 // (`value` undefined): no aria-valuenow. An accessible name is required in every usage:
 // provide `label` (rendered visually hidden inside the bar), `aria-label`, or `aria-labelledby`
 // pointing at a visible label (`label` and `aria-labelledby` merge when given).
-import { useId, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useId, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -11,9 +11,14 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 
-export interface ProgressPartProps {
+export interface ProgressPartProps extends ComponentPropsWithRef<'div'> {
   className?: string;
   css?: Interpolation<Theme>;
+}
+
+export interface ProgressSlots {
+  /** Indicator bar displaying the filled progress portion. */
+  indicator?: ComponentType<ProgressPartProps>;
 }
 
 export interface ProgressProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
@@ -24,6 +29,7 @@ export interface ProgressProps extends Omit<ComponentPropsWithRef<'div'>, 'child
   label?: ReactNode;
   /** Value text for assistive technology (aria-valuetext). */
   getValueLabel?: (value: number, max: number) => string;
+  slots?: ProgressSlots;
   slotProps?: {
     /** Indicator bar element displaying the filled progress portion. */
     indicator?: ProgressPartProps;
@@ -99,11 +105,13 @@ export function Progress({
   label,
   getValueLabel,
   slotProps,
+  slots,
   'aria-labelledby': ariaLabelledByProp,
   className,
   sx,
   ...rest
 }: ProgressProps) {
+  const Indicator = slots?.indicator ?? 'div';
   const labelId = `${useId()}-label`;
   const hasLabel = isRenderable(label);
   const ariaLabelledBy = [ariaLabelledByProp, hasLabel && labelId].filter(Boolean).join(' ') || undefined;
@@ -134,10 +142,11 @@ export function Progress({
               {label}
             </span>
           )}
-          <div
+          <Indicator
+            {...slotProps?.indicator}
             data-ui="progress-indicator"
             className={slotProps?.indicator?.className}
-            style={isIndeterminate ? undefined : { width: `${percent}%` }}
+            style={{ ...slotProps?.indicator?.style, ...(isIndeterminate ? {} : { width: `${percent}%` }) }}
             css={[indicatorStyle, isIndeterminate && indeterminateIndicatorStyle, slotProps?.indicator?.css]}
           />
         </div>

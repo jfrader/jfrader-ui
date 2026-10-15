@@ -103,6 +103,12 @@ export interface ComboboxOption {
 }
 
 export interface ComboboxSlots {
+  /** Displays the field label. */
+  label?: ComponentType<ComponentPropsWithRef<'label'>>;
+  /** Displays the field description. */
+  description?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Displays the field error. */
+  error?: ComponentType<ComponentPropsWithRef<'span'>>;
   /** Replaces the root wrapper element; renders a `div` by default. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Replaces the text input field that controls the query. */
@@ -505,6 +511,7 @@ function ComboboxOverlay(props: ComboboxProps) {
           inputValue={inputValue}
           defaultInputValue={defaultInputValue}
           {...slotProps?.input}
+          slots={{ ...slotProps?.input?.slots, label: slots?.label ?? slotProps?.input?.slots?.label, description: slots?.description ?? slotProps?.input?.slots?.description, error: slots?.error ?? slotProps?.input?.slots?.error }}
           slotProps={{
             ...slotProps?.input?.slotProps,
             label: slotProps?.label ?? slotProps?.input?.slotProps?.label,
@@ -578,6 +585,7 @@ function ComboboxInput({
   error,
   size,
   slotProps,
+  slots,
   className,
   sx,
   id: idProp,
@@ -752,6 +760,7 @@ function ComboboxInput({
       error={error}
       size={size}
       slotProps={slotProps}
+      slots={slots}
       className={className}
       sx={sx}
       value={text}

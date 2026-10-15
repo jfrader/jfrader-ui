@@ -19,6 +19,7 @@ import {
   useState,
   type ComponentPropsWithoutRef,
   type ComponentPropsWithRef,
+  type ComponentType,
   type MouseEvent,
   type ReactNode,
 } from 'react';
@@ -80,6 +81,14 @@ export interface CopyButtonProps
   tone?: ButtonTone;
   size?: ButtonSize;
   slotProps?: CopyButtonSlotProps;
+  slots?: {
+    /** Displays the copy state icons. */
+    icon?: ComponentType<CopyButtonSlotPartProps>;
+    /** Displays the copy state labels. */
+    label?: ComponentType<CopyButtonSlotPartProps>;
+    /** Announces copy feedback. */
+    status?: ComponentType<CopyButtonSlotPartProps>;
+  };
   /** Consumer style overrides, merged after the component's own styles. */
   css?: Interpolation<Theme>;
 }
@@ -231,6 +240,7 @@ export function CopyButton({
   tone = 'neutral',
   size = 'sm',
   slotProps,
+  slots,
   disabled,
   onClick,
   className,
@@ -327,6 +337,9 @@ export function CopyButton({
   const { css: iconSlotCss, ...iconSlotProps } = slotProps?.icon ?? {};
   const { css: labelSlotCss, ...labelSlotProps } = slotProps?.label ?? {};
   const { css: statusSlotCss, ...statusSlotProps } = slotProps?.status ?? {};
+  const Icon = slots?.icon ?? 'span';
+  const Label = slots?.label ?? 'span';
+  const Status = slots?.status ?? 'span';
 
   return (
     <>
@@ -349,7 +362,7 @@ export function CopyButton({
       >
         <span css={visuallyHiddenStyle}>{label}</span>
         {hasIcons && (
-          <span
+          <Icon
             {...iconSlotProps}
             aria-hidden="true"
             data-ui="copy-button-icon"
@@ -364,10 +377,10 @@ export function CopyButton({
                 {faceIcons[index]}
               </span>
             ))}
-          </span>
+          </Icon>
         )}
         {!iconOnly && (
-          <span
+          <Label
             {...labelSlotProps}
             aria-hidden="true"
             data-ui="copy-button-label"
@@ -378,10 +391,10 @@ export function CopyButton({
                 {faceLabels[face]}
               </span>
             ))}
-          </span>
+          </Label>
         )}
       </Button>
-      <span
+      <Status
         {...statusSlotProps}
         role="status"
         aria-live="polite"
@@ -390,7 +403,7 @@ export function CopyButton({
         css={[visuallyHiddenStyle, statusSlotCss]}
       >
         {current === 'idle' ? '' : faceLabels[current]}
-      </span>
+      </Status>
     </>
   );
 }

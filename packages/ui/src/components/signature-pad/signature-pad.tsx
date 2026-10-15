@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
   type Ref,
   type PointerEvent as ReactPointerEvent,
@@ -71,29 +72,46 @@ export interface SignaturePadPartProps {
   className?: string;
   css?: Interpolation<Theme>;
 }
-export type SignaturePadSlotProps = Partial<
-  Record<
-    | /** Outer container element wrapping the signature pad and toolbar. */
-      'root'
-    | /** Label element naming the signature pad. */
-      'label'
-    | /** Interactive canvas element capturing user signature strokes. */
-      'canvas'
-    | /** Baseline guideline indicator rendered behind the canvas. */
-      'guide'
-    | /** Toolbar container holding signature actions and tools. */
-      'toolbar'
-    | /** Action button inside the toolbar. */
-      'action'
-    | /** Helper text element displayed below the canvas. */
-      'description'
-    | /** Validation error message displayed when invalid. */
-      'error'
-    | /** Screen-reader live region announcing stroke and action updates. */
-      'status',
-    SignaturePadPartProps
-  >
->;
+export interface SignaturePadSlotProps {
+  /** Outer container wrapping the pad and toolbar. */
+  root?: ComponentPropsWithRef<'div'> & SignaturePadPartProps;
+  /** Label naming the signature pad. */
+  label?: ComponentPropsWithRef<'span'> & SignaturePadPartProps;
+  /** Canvas capturing signature strokes. */
+  canvas?: ComponentPropsWithRef<'canvas'> & SignaturePadPartProps;
+  /** Baseline guide behind the canvas. */
+  guide?: ComponentPropsWithRef<'div'> & SignaturePadPartProps;
+  /** Toolbar holding signature tools. */
+  toolbar?: ComponentPropsWithRef<'div'> & SignaturePadPartProps;
+  /** Button invoking a signature action. */
+  action?: ComponentPropsWithRef<typeof Button> & SignaturePadPartProps;
+  /** Supporting text below the canvas. */
+  description?: ComponentPropsWithRef<'div'> & SignaturePadPartProps;
+  /** Validation error message. */
+  error?: ComponentPropsWithRef<'div'> & SignaturePadPartProps;
+  /** Live region announcing signature updates. */
+  status?: ComponentPropsWithRef<'div'> & SignaturePadPartProps;
+}
+export interface SignaturePadSlots {
+  /** Outer container wrapping the pad and toolbar. */
+  root?: ComponentType<NonNullable<SignaturePadSlotProps['root']>>;
+  /** Label naming the signature pad. */
+  label?: ComponentType<NonNullable<SignaturePadSlotProps['label']>>;
+  /** Canvas capturing signature strokes. */
+  canvas?: ComponentType<NonNullable<SignaturePadSlotProps['canvas']>>;
+  /** Baseline guide behind the canvas. */
+  guide?: ComponentType<NonNullable<SignaturePadSlotProps['guide']>>;
+  /** Toolbar holding signature tools. */
+  toolbar?: ComponentType<NonNullable<SignaturePadSlotProps['toolbar']>>;
+  /** Button invoking a signature action. */
+  action?: ComponentType<NonNullable<SignaturePadSlotProps['action']>>;
+  /** Supporting text below the canvas. */
+  description?: ComponentType<NonNullable<SignaturePadSlotProps['description']>>;
+  /** Validation error message. */
+  error?: ComponentType<NonNullable<SignaturePadSlotProps['error']>>;
+  /** Live region announcing signature updates. */
+  status?: ComponentType<NonNullable<SignaturePadSlotProps['status']>>;
+}
 export interface SignaturePadHandle {
   focus(): void;
   clear(): void;
@@ -138,6 +156,7 @@ export interface SignaturePadProps
   exportOptions?: SignatureExportOptions;
   apiRef?: Ref<SignaturePadHandle>;
   slotProps?: SignaturePadSlotProps;
+  slots?: SignaturePadSlots;
 }
 
 const PAD_WIDTH = 600;
@@ -493,6 +512,7 @@ export function SignaturePad({
   icons,
   exportOptions,
   slotProps,
+  slots,
   className,
   sx,
   dir,
@@ -507,9 +527,18 @@ export function SignaturePad({
   'aria-describedby': describedBy,
   ...rest
 }: SignaturePadProps) {
+  const Root = slots?.root ?? 'div';
+  const Label = slots?.label ?? 'span';
+  const Canvas = slots?.canvas ?? 'canvas';
+  const Guide = slots?.guide ?? 'div';
+  const Toolbar = slots?.toolbar ?? 'div';
+  const Action = slots?.action ?? Button;
+  const Description = slots?.description ?? 'div';
+  const Error = slots?.error ?? 'div';
+  const Status = slots?.status ?? 'div';
   const id = useId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mergedRef = useMergeRefs([canvasRef, ref]);
+  const mergedRef = useMergeRefs([canvasRef, ref, slotProps?.canvas?.ref]);
   const seed = useRef(defaultValue);
   const [current = EMPTY, requestValue] = useControlledState(valueProp, seed.current, onValueChange);
   const [color = 'black', requestColor] = useControlledState(colorProp, defaultColor, onColorChange);
@@ -892,21 +921,24 @@ export function SignaturePad({
       sx={sx}
     >
       {(rootClass) => (
-        <div
+        <Root
+          {...slotProps?.root}
           data-ui="signature-pad"
           data-state={current.length ? 'signed' : 'empty'}
           className={rootClass}
+          css={undefined}
           dir={dir}
-          style={style}
+          style={{ ...style, ...slotProps?.root?.style }}
         >
           {hasContent(label) && (
-            <span
+            <Label
+              {...slotProps?.label}
               id={`${id}-label`}
               className={slotProps?.label?.className}
               css={[labelStyle, slotProps?.label?.css]}
             >
               {label}
-            </span>
+            </Label>
           )}
           <span id={`${id}-state`} css={visuallyHiddenStyle}>
             {current.length ? messages.signed : messages.empty}
@@ -915,7 +947,8 @@ export function SignaturePad({
             {messages.shortcuts}
           </span>
           <div css={surfaceStyle}>
-            <canvas
+            <Canvas
+              {...slotProps?.canvas}
               {...rest}
               ref={mergedRef}
               role="img"
@@ -1025,9 +1058,10 @@ export function SignaturePad({
               }}
             >
               {messages.fallback}
-            </canvas>
+            </Canvas>
             {(hasContent(hint) || hasContent(signer)) && (
-              <div
+              <Guide
+                {...slotProps?.guide}
                 aria-hidden="true"
                 data-ui="signature-pad-guide"
                 className={slotProps?.guide?.className}
@@ -1035,10 +1069,11 @@ export function SignaturePad({
               >
                 {!current.length && hasContent(hint) && <span>{hint}</span>}
                 {hasContent(signer) && <span>{signer}</span>}
-              </div>
+              </Guide>
             )}
           </div>
-          <div
+          <Toolbar
+            {...slotProps?.toolbar}
             data-ui="signature-pad-toolbar"
             className={slotProps?.toolbar?.className}
             css={[toolbarStyle, slotProps?.toolbar?.css]}
@@ -1068,7 +1103,8 @@ export function SignaturePad({
               ))}
             </RadioGroup>
             {actions.map(({ action, disabled: inactive, run }) => (
-              <Button
+              <Action
+                {...slotProps?.action}
                 key={action}
                 size="sm"
                 variant="outline"
@@ -1079,34 +1115,37 @@ export function SignaturePad({
               >
                 {hasContent(icons?.[action]) && <span aria-hidden="true">{icons?.[action]}</span>}
                 {messages.actions[action]}
-              </Button>
+              </Action>
             ))}
-          </div>
+          </Toolbar>
           {required && (
             <span id={`${id}-required`} css={visuallyHiddenStyle}>
               {messages.required}
             </span>
           )}
           {hasContent(description) && (
-            <div
+            <Description
+              {...slotProps?.description}
               id={`${id}-description`}
               className={slotProps?.description?.className}
               css={[descriptionStyle, slotProps?.description?.css]}
             >
               {description}
-            </div>
+            </Description>
           )}
           {hasContent(error) && (
-            <div
+            <Error
+              {...slotProps?.error}
               id={`${id}-error`}
               role="alert"
               className={slotProps?.error?.className}
               css={[errorStyle, slotProps?.error?.css]}
             >
               {error}
-            </div>
+            </Error>
           )}
-          <div
+          <Status
+            {...slotProps?.status}
             role="status"
             aria-live="polite"
             aria-atomic="true"
@@ -1114,8 +1153,8 @@ export function SignaturePad({
             css={[visuallyHiddenStyle, slotProps?.status?.css]}
           >
             {announcement.text && <span key={announcement.revision}>{announcement.text}</span>}
-          </div>
-        </div>
+          </Status>
+        </Root>
       )}
     </WithSx>
   );

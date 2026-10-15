@@ -12,3 +12,4 @@ export type {
   SignaturePadHandle,
   SignaturePadProps,
 } from './signature-pad';
+export type { SignaturePadSlots } from './signature-pad';

@@ -30,6 +30,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type FocusEvent,
   type KeyboardEvent,
   type MouseEvent,
@@ -209,6 +210,40 @@ export interface CommentThreadProps
   size?: CommentThreadSize;
   labels?: Partial<CommentThreadLabels>;
   slotProps?: CommentThreadSlotProps;
+  slots?: CommentThreadSlots;
+}
+
+export interface CommentThreadSlots {
+    /** Holds the comment composer. */
+    composer?: ComponentType<CommentThreadPartProps & ComponentPropsWithRef<'div'>>;
+    /** Displays the comment field. */
+    textarea?: ComponentType<ThreadTextareaProps>;
+    /** Submits the comment. */
+    send?: ComponentType<ThreadButtonProps>;
+    /** Holds the thread heading and actions. */
+    header?: ComponentType<CommentThreadPartProps>;
+    /** Displays the thread title. */
+    title?: ComponentType<CommentThreadPartProps>;
+    /** Lists the root comments. */
+    list?: ComponentType<CommentThreadPartProps>;
+    /** Holds a comment and its replies. */
+    item?: ComponentType<CommentThreadPartProps>;
+    /** Holds the comment author, body and actions. */
+    article?: ComponentType<CommentThreadPartProps>;
+    /** Displays the comment timestamp. */
+    time?: ComponentType<CommentThreadPartProps>;
+    /** Displays the comment text. */
+    body?: ComponentType<CommentThreadPartProps>;
+    /** Lists replies to a comment. */
+    replies?: ComponentType<CommentThreadPartProps>;
+    /** Holds the comment actions. */
+    actions?: ComponentType<CommentThreadPartProps>;
+    /** Holds the comment reactions. */
+    reaction?: ComponentType<CommentThreadPartProps>;
+    /** Displays the resolved thread summary. */
+    resolved?: ComponentType<CommentThreadPartProps>;
+    /** Announces arriving comments. */
+    status?: ComponentType<CommentThreadPartProps>;
 }
 
 type Pending = { kind: 'add'; id: string } | { kind: 'edit'; id: string; body: string };
@@ -502,6 +537,7 @@ export function CommentThread({
   size = 'md',
   labels: labelProps,
   slotProps,
+  slots,
   className,
   sx,
   onFocus,
@@ -832,7 +868,18 @@ export function CommentThread({
     size,
     textareaProps: slotProps?.textarea,
     submitProps: slotProps?.send,
+    component: slots?.composer,
+    slots: { textarea: slots?.textarea, submit: slots?.send },
   };
+  const Header = slots?.header ?? Card.Header;
+  const Title = slots?.title ?? Card.Title;
+  const List = slots?.list ?? 'ul';
+  const Item = slots?.item ?? 'li';
+  const Body = slots?.body ?? 'p';
+  const Replies = slots?.replies ?? 'ul';
+  const Actions = slots?.actions ?? 'div';
+  const Resolved = slots?.resolved ?? 'div';
+  const Status = slots?.status ?? 'div';
 
   const renderComment = (comment: ThreadComment, depth: number, ancestors: ReadonlySet<ThreadComment>): ReactNode => {
     // Repeated ids and cyclic references are diagnosed and shown once.
@@ -859,7 +906,8 @@ export function CommentThread({
     };
 
     return (
-      <li
+      <Item
+        {...slotProps?.item}
         key={id}
         data-ui={`${UI}-item`}
         data-comment-id={id}
@@ -882,6 +930,7 @@ export function CommentThread({
           baseId={baseId}
           messageId={id}
           slots={{ article: slotProps?.article, time: slotProps?.time }}
+          components={{ article: slots?.article, time: slots?.time }}
         >
           {editing ? (
             <ThreadComposer
@@ -900,14 +949,15 @@ export function CommentThread({
               part={slotProps?.composer}
             />
           ) : (
-            <p
+            <Body
+              {...slotProps?.body}
               data-ui={`${UI}-body`}
               data-deleted={deleted ? '' : undefined}
               className={slotProps?.body?.className}
               css={[bodyStyle, slotProps?.body?.css]}
             >
               {deleted ? labels.deletedText : comment.body}
-            </p>
+            </Body>
           )}
           {deleted || editing ? null : (
             <ThreadReactions
@@ -926,6 +976,7 @@ export function CommentThread({
               onToggle={(emoji) => react(id, emoji)}
               pickerId={partId(baseId, 'picker', id)}
               part={slotProps?.reaction}
+              component={slots?.reaction}
             />
           )}
           {deleted || editing || readOnly ? null : confirming ? (
@@ -962,7 +1013,8 @@ export function CommentThread({
               </Button>
             </div>
           ) : (
-            <div
+            <Actions
+              {...slotProps?.actions}
               key="actions"
               data-ui={`${UI}-actions`}
               className={slotProps?.actions?.className}
@@ -1007,7 +1059,7 @@ export function CommentThread({
                   </Button>
                 </>
               ) : null}
-            </div>
+            </Actions>
           )}
         </ThreadMessageView>
         {ui.replyTo === id && !deleted && !readOnly ? (
@@ -1045,7 +1097,8 @@ export function CommentThread({
             >
               {open ? labels.hideReplies : labels.showReplies(replies.length)}
             </Button>
-            <ul
+            <Replies
+              {...slotProps?.replies}
               role="list"
               id={repliesId}
               hidden={!open}
@@ -1055,10 +1108,10 @@ export function CommentThread({
               css={[repliesStyle, slotProps?.replies?.css]}
             >
               {replies.map((reply) => renderComment(reply, depth + 1, lineage))}
-            </ul>
+            </Replies>
           </>
         ) : null}
-      </li>
+      </Item>
     );
   };
 
@@ -1079,17 +1132,18 @@ export function CommentThread({
           className={rootClassName}
         >
           <Card>
-            <Card.Header className={slotProps?.header?.className} css={[headerStyle, slotProps?.header?.css]}>
+            <Header {...slotProps?.header} className={slotProps?.header?.className} css={[headerStyle, slotProps?.header?.css]}>
               <div css={headingGroupStyle}>
                 {hasTitle ? (
-                  <Card.Title
+                  <Title
+                    {...slotProps?.title}
                     id={titleId}
                     level={headingLevel}
                     className={slotProps?.title?.className}
                     css={[titleStyle, slotProps?.title?.css]}
                   >
                     {title}
-                  </Card.Title>
+                  </Title>
                 ) : null}
                 <p data-ui={`${UI}-count`} css={countStyle}>
                   {summary}
@@ -1107,7 +1161,7 @@ export function CommentThread({
                   {labels.resolve}
                 </Button>
               ) : null}
-            </Card.Header>
+            </Header>
             <Card.Content>
               <div data-ui={`${UI}-content`} hidden={resolved} css={hiddenStyle}>
                 {empty ? (
@@ -1115,18 +1169,20 @@ export function CommentThread({
                     {labels.empty}
                   </p>
                 ) : (
-                  <ul
+                  <List
+                    {...slotProps?.list}
                     role="list"
                     data-ui={`${UI}-list`}
                     className={slotProps?.list?.className}
                     css={[listStyle, slotProps?.list?.css]}
                   >
                     {tree.map((comment) => renderComment(comment, 0, new Set()))}
-                  </ul>
+                  </List>
                 )}
               </div>
               {resolved ? (
-                <div
+                <Resolved
+                  {...slotProps?.resolved}
                   data-ui={`${UI}-resolved`}
                   className={slotProps?.resolved?.className}
                   css={[resolvedStyle, slotProps?.resolved?.css]}
@@ -1152,7 +1208,7 @@ export function CommentThread({
                       {labels.reopen}
                     </Button>
                   )}
-                </div>
+                </Resolved>
               ) : null}
             </Card.Content>
             {readOnly ? null : (
@@ -1177,7 +1233,8 @@ export function CommentThread({
               </Card.Footer>
             )}
           </Card>
-          <div
+          <Status
+            {...slotProps?.status}
             role="status"
             aria-atomic="true"
             data-ui={`${UI}-status`}
@@ -1185,7 +1242,7 @@ export function CommentThread({
             css={[visuallyHiddenStyle, slotProps?.status?.css]}
           >
             {announcement.text ? <span key={announcement.key}>{announcement.text}</span> : null}
-          </div>
+          </Status>
         </section>
       )}
     </WithSx>

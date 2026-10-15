@@ -4,6 +4,9 @@
 
 ### Added
 
+- AnnouncementBar, ChatThread, Checkbox, CodeBlock, CommentThread, CopyButton, HoldToConfirm, HoverCard, KeycapKeyboard and LightboxGallery accept typed interior `slots` alongside `slotProps` for their text, controls, lists and panels. Layout-only `AnnouncementBar.content`, `ChatThread.viewport`, `CodeBlock.sourceFrame`, `HoldToConfirm.face`/`fill`, `HoverCard.Profile.avatar`/`identity` and `KeycapKeyboard.row` remain styling-only; existing root APIs are unchanged. Shared-helper targets `ChatThread.attachments`, composer `textarea`/`sendButton`, and `CommentThread.composer`/`textarea`/`send` retain their existing props API.
+- Alert, Avatar, AvatarGroup, Badge, AttachmentList and Carousel accept a replacement slot for every part they already styled through `slotProps`, so a consumer can pass props or swap the element.
+- Card accepts `slots.header`, `slots.title`, `slots.description`, `slots.content` and `slots.footer` replacements while preserving each part's styles.
 - Component docs list each slot and link it when the slot type is another public component. Components that render another public component link to it.
 - Dialog, Drawer, BottomSheet, ContextMenu and UserMenu easy compositions accept interior replacement slots. Drawer and BottomSheet add footer content; DialogStack adds header/body slots. Overlay easy roots accept `component` as `slots.root` sugar, and UserMenu.Content adds replacements for its list, handle and close button.
 - TextField, Textarea, PasswordField, SearchField, MentionInput, TagInput, InlineEdit, FileDropzone and ExpandingSearch accept typed `component`, `slots` and native `slotProps` for wrapper and generated-part customization. Existing control refs and leaf renderers remain available.
@@ -46,6 +49,7 @@
 
 ### Changed
 
+- `Deck` addresses card art by id, with named art sets, per-card set overrides and set-specific backs. Missing art falls back to the printed face; `cardId` supports custom card keys.
 - Button's first example says Save changes, and its code matches that button. Card's slot example shows `slotProps`.
 - ActivityRings aligns the goal summary with the legend's shared row inset, including narrow and RTL layouts.
 

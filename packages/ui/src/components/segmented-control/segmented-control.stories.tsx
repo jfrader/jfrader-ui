@@ -5,6 +5,30 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
 import { SegmentedControl, type SegmentedControlCompoundProps as SegmentedControlProps, type SegmentedControlEasyProps } from './index';
 
+function ReplacementSegmentTrack(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replaced="track" />;
+}
+function ReplacementSelection(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replaced="selection" />;
+}
+export const ReplaceTrackAndSelection: Story = {
+  render: () => (
+    <SegmentedControl label="Layout" defaultValue="list" slots={{ track: ReplacementSegmentTrack, selection: ReplacementSelection }}>
+      <SegmentedControl.Item value="list">List</SegmentedControl.Item>
+      <SegmentedControl.Item value="grid">Grid</SegmentedControl.Item>
+    </SegmentedControl>
+  ),
+  play: async ({ canvasElement }) => {
+    const track = canvasElement.querySelector<HTMLElement>('[data-replaced="track"]');
+    const selection = canvasElement.querySelector<HTMLElement>('[data-replaced="selection"]');
+    await expect(track).toHaveAttribute('data-ui', 'segmented-control-track');
+    await expect(selection).toHaveAttribute('data-ui', 'segmented-control-selection');
+    await expect(track?.className).not.toBe('');
+    await expect(selection?.className).not.toBe('');
+    await expect(selection).toHaveAttribute('aria-hidden', 'true');
+  },
+};
+
 const OPTIONS = ['List', 'Grid', 'Board', 'Table'];
 const LONG_OPTIONS = ['Recent projects', 'Assigned to me', 'Shared with the team', 'Archived projects'];
 const usage = `<SegmentedControl label="Layout" defaultValue="List">

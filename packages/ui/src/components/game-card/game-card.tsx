@@ -4,12 +4,15 @@
 // suit watermarks are presentational children, so a screen reader hears the playing card once, in the
 // consumer's own words. A face-down card omits built-in rank, suit and deck data; consumer artwork
 // remains visible, so consumers must keep private values out of their own art.
-import type { ReactNode } from 'react';
+import type { ComponentPropsWithRef, ComponentType, HTMLAttributes, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import type { SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useDeck, type Deck } from '../deck';
+import { useDeckArt } from '../deck/art-context';
+import { cardArtId, resolveCardArt, resolveDeckBack } from '../deck/deck';
+import { cardPartIdentity } from './card-parts';
 import { Pattern, type PatternTone, type PatternVariant } from '../pattern';
 import { CARD_FACE, CARD_FRAME } from './card-frame';
 import type { GameCardValue } from './decks';
@@ -31,9 +34,15 @@ export const CARD_BACK_PATTERNS = {
   french: 'checks',
 } as const;
 
-export interface GameCardPartProps {
-  className?: string;
+export interface GameCardPartProps extends HTMLAttributes<HTMLElement> {
+  'data-ui'?: string;
   css?: Interpolation<Theme>;
+}
+
+export interface GameCardSlots {
+  root?: ComponentType<GameCardRootProps>;
+  face?: ComponentType<ComponentPropsWithRef<'span'> & GameCardPartProps>;
+  back?: ComponentType<ComponentPropsWithRef<'span'> & GameCardPartProps>;
 }
 
 export interface GameCardProps
@@ -46,6 +55,9 @@ export interface GameCardProps
   label: string;
   /** What the card is. Omit it, or set `face="back"`, for a card that stays hidden. */
   value?: GameCardValue;
+  artSet?: string;
+  cardArtSets?: Readonly<Record<string, string>>;
+  slots?: GameCardSlots;
   /** Defaults to `print` with a value and `back` without one. `'emoji'` is accepted as a deprecated alias for `'print'`. */
   face?: GameCardFace;
   /** Explicit back tile override. When omitted, the back is determined by the card's deck. */
@@ -165,6 +177,9 @@ export function ResolvedGameCard({
   label,
   value,
   face,
+  artSet: explicitArtSet,
+  cardArtSets: explicitCardArtSets,
+  slots,
   backPattern,
   size = 'md',
   rankLabel,
@@ -175,20 +190,24 @@ export function ResolvedGameCard({
   sx,
   ...rest
 }: GameCardProps & { deck: Deck }) {
+  const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
+  // Asking for `print` is a request for the printed face, so art stands aside for that card.
+  const requestedPrint = face === 'print' || face === 'emoji';
   const resolvedFace: 'print' | 'back' =
     face === 'back'
       ? 'back'
-      : face === 'print' || face === 'emoji'
+      : requestedPrint || value !== undefined
         ? 'print'
-        : value === undefined
-          ? 'back'
-          : 'print';
+        : 'back';
   const hidden = resolvedFace === 'back' || value === undefined;
   const artProps = hidden ? slotProps?.back : slotProps?.face;
+  const Art = hidden ? slots?.back ?? 'span' : slots?.face ?? 'span';
+  const selectedSet = value ? cardArtSets?.[cardArtId(deck, value.suit, String(value.rank))] ?? artSet : artSet;
 
   return (
     <CardRoot
       {...rest}
+      slots={slots}
       ref={ref}
       marker="game-card"
       rootSlot={slotProps?.root}
@@ -199,18 +218,19 @@ export function ResolvedGameCard({
       sx={sx}
     >
       {isRenderable(children) ? (
-        <span
-          data-ui="game-card-art"
+        <Art
+          {...artProps}
+          data-ui={cardPartIdentity('game-card-art', artProps?.['data-ui'])}
           aria-hidden="true"
           className={artProps?.className}
           css={[layerStyle, artStyle, hidden && backMaterialStyle, artProps?.css]}
         >
           {children}
-        </span>
+        </Art>
       ) : hidden ? (
-        <CardBack deck={deck} backPattern={backPattern} slotProps={slotProps} />
+        <CardBack deck={deck} backPattern={backPattern} artSet={selectedSet} slots={slots} slotProps={slotProps} />
       ) : (
-        <CardFront deck={deck} value={value!} rankLabel={rankLabel} slotProps={slotProps} />
+        <CardFront deck={deck} value={value!} rankLabel={rankLabel} artSet={selectedSet} printed={requestedPrint} slots={slots} slotProps={slotProps} />
       )}
     </CardRoot>
   );
@@ -220,25 +240,29 @@ GameCard.displayName = 'GameCard';
 
 interface CardBackProps {
   deck: Deck;
+  artSet?: string;
+  slots?: GameCardSlots;
   backPattern?: PatternVariant;
   slotProps?: GameCardProps['slotProps'];
 }
 
-function CardBack({ deck, backPattern, slotProps }: CardBackProps) {
+function CardBack({ deck, backPattern, artSet, slots, slotProps }: CardBackProps) {
+  const Back = slots?.back ?? 'span';
   if (backPattern !== undefined) {
     return (
-      <span
-        data-ui="game-card-back"
+      <Back
+        {...slotProps?.back}
+        data-ui={cardPartIdentity('game-card-back', slotProps?.back?.['data-ui'])}
         aria-hidden="true"
         className={slotProps?.back?.className}
         css={[layerStyle, backMaterialStyle, slotProps?.back?.css]}
       >
         <Pattern variant={backPattern} tone="card" />
-      </span>
+      </Back>
     );
   }
 
-  const deckBack = deck.back;
+  const deckBack = resolveDeckBack(deck, artSet);
   const isPatternObj =
     typeof deckBack === 'object' && deckBack !== null && 'pattern' in deckBack;
 
@@ -246,76 +270,87 @@ function CardBack({ deck, backPattern, slotProps }: CardBackProps) {
     const patternVariant = (deckBack as { pattern: PatternVariant; tone?: PatternTone }).pattern;
     const patternTone = (deckBack as { pattern: PatternVariant; tone?: PatternTone }).tone ?? 'card';
     return (
-      <span
-        data-ui="game-card-back"
+      <Back
+        {...slotProps?.back}
+        data-ui={cardPartIdentity('game-card-back', slotProps?.back?.['data-ui'])}
         aria-hidden="true"
         className={slotProps?.back?.className}
         css={[layerStyle, backMaterialStyle, slotProps?.back?.css]}
       >
         <Pattern variant={patternVariant} tone={patternTone} />
-      </span>
+      </Back>
     );
   }
 
   if (isRenderable(deckBack)) {
     return (
-      <span
-        data-ui="game-card-back"
+      <Back
+        {...slotProps?.back}
+        data-ui={cardPartIdentity('game-card-back', slotProps?.back?.['data-ui'])}
         aria-hidden="true"
         className={slotProps?.back?.className}
         css={[layerStyle, artStyle, backMaterialStyle, slotProps?.back?.css]}
       >
         {deckBack}
-      </span>
+      </Back>
     );
   }
 
   return (
-    <span
-      data-ui="game-card-back"
+    <Back
+      {...slotProps?.back}
+      data-ui={cardPartIdentity('game-card-back', slotProps?.back?.['data-ui'])}
       aria-hidden="true"
       className={slotProps?.back?.className}
       css={[layerStyle, backMaterialStyle, slotProps?.back?.css]}
     >
       <Pattern variant="checks" tone="card" />
-    </span>
+    </Back>
   );
 }
 
 interface CardFrontProps {
   deck: Deck;
+  artSet?: string;
+  slots?: GameCardSlots;
   value: GameCardValue;
   rankLabel?: string;
+  /** The consumer asked for the printed face, so deck art stands aside. */
+  printed?: boolean;
   slotProps?: GameCardProps['slotProps'];
 }
 
-function CardFront({ deck, value, rankLabel, slotProps }: CardFrontProps) {
-  const customFace = deck.faces?.[value.suit]?.[String(value.rank)];
+function CardFront({ deck, value, rankLabel, artSet, printed = false, slots, slotProps }: CardFrontProps) {
+  const Face = slots?.face ?? 'span';
+  const customFace = resolveCardArt(deck, { suit: value.suit, rank: String(value.rank), artSet, mode: printed ? 'print' : 'art' });
 
   if (isRenderable(customFace)) {
     return (
-      <span
-        data-ui="game-card-art"
+      <Face
+        {...slotProps?.face}
+        data-ui={cardPartIdentity('game-card-art', slotProps?.face?.['data-ui'])}
         aria-hidden="true"
         className={slotProps?.face?.className}
         css={[layerStyle, artStyle, slotProps?.face?.css]}
       >
         {customFace}
-      </span>
+      </Face>
     );
   }
 
-  return <PrintedFace deck={deck} value={value} rankLabel={rankLabel} slotProps={slotProps} />;
+  return <PrintedFace deck={deck} value={value} rankLabel={rankLabel} slots={slots} slotProps={slotProps} />;
 }
 
 interface PrintedFaceProps {
   deck: Deck;
+  slots?: GameCardSlots;
   value: GameCardValue;
   rankLabel?: string;
   slotProps?: GameCardProps['slotProps'];
 }
 
-function PrintedFace({ deck, value, rankLabel, slotProps }: PrintedFaceProps) {
+function PrintedFace({ deck, value, rankLabel, slots, slotProps }: PrintedFaceProps) {
+  const Face = slots?.face ?? 'span';
   const suitConfig = deck.suits[value.suit];
   const rankConfig = deck.ranks[String(value.rank)];
 
@@ -339,8 +374,9 @@ function PrintedFace({ deck, value, rankLabel, slotProps }: PrintedFaceProps) {
   const ink = suitConfig?.ink;
 
   return (
-    <span
-      data-ui="game-card-print"
+    <Face
+      {...slotProps?.face}
+      data-ui={cardPartIdentity('game-card-print', slotProps?.face?.['data-ui'])}
       aria-hidden="true"
       className={slotProps?.face?.className}
       css={[layerStyle, printStyle, ink !== undefined && suitInkStyles[ink], slotProps?.face?.css]}
@@ -351,6 +387,6 @@ function PrintedFace({ deck, value, rankLabel, slotProps }: PrintedFaceProps) {
         <span>{suitGlyph}</span>
       </span>
       {hasGlyph && <span css={[watermarkStyle, watermarkBottomStyle]}>{suitGlyph}</span>}
-    </span>
+    </Face>
   );
 }

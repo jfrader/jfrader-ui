@@ -478,6 +478,13 @@ export const EasyModeDisabled: StoryObj<(props: DrawerEasyProps) => ReactNode> =
   },
 };
 
+function CustomDrawerContent(props: DrawerContentProps) {
+  return <Drawer.Content {...props} data-slot="drawer-content" />;
+}
+function CustomDrawerPanel(props: DrawerPanelProps) {
+  return <Drawer.Panel {...props} data-slot="drawer-panel" />;
+}
+
 export const EasyModeCustomizationSlotProps: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   name: 'Easy mode customization slotProps',
   args: {
@@ -487,6 +494,7 @@ export const EasyModeCustomizationSlotProps: StoryObj<(props: DrawerEasyProps) =
     content: <FilterFields />,
     closeLabel: 'Close',
     onOpenChange: fn(),
+    slots: { content: CustomDrawerContent, panel: CustomDrawerPanel },
     slotProps: {
       trigger: { className: 'custom-trigger', 'data-testid': 'custom-trigger' },
       content: { className: 'custom-content', 'data-testid': 'custom-content' },
@@ -510,10 +518,12 @@ export const EasyModeCustomizationSlotProps: StoryObj<(props: DrawerEasyProps) =
     const dialog = await canvas.findByRole('dialog', { name: TITLE });
     await settle(dialog);
     await expect(dialog).toHaveClass('custom-content');
+    await expect(dialog).toHaveAttribute('data-slot', 'drawer-content');
     await expect(dialog).toHaveAttribute('data-testid', 'custom-content');
 
     const panel = canvasElement.querySelector<HTMLElement>('[data-testid="custom-panel"]')!;
     await expect(panel).toHaveClass('custom-panel');
+    await expect(panel).toHaveAttribute('data-slot', 'drawer-panel');
     await expect(getComputedStyle(panel).borderInlineStartStyle).toBe('dashed');
 
     const header = canvasElement.querySelector<HTMLElement>('[data-testid="custom-header"]')!;

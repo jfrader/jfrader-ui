@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { Button } from '../button';
 import { GameHand, type GameHandCard } from '../game-hand';
 import { GameTable } from '../game-table';
@@ -8,8 +9,8 @@ import { GameCardStack } from '../game-card-stack';
 import { ThemeRoot } from '../theme-root';
 import { CardFlightsProvider, useBoardFlights, type PlayedFlightCard } from './index';
 
-const controlsStyle = css({ display: 'flex', gap: vars.space[2], padding: vars.space[3] });
-const boardStyle = css({ blockSize: '600px', maxInlineSize: '850px' });
+const Controls = styled.div({ display: 'flex', gap: vars.space[2], padding: vars.space[3] });
+const Board = styled.div({ blockSize: '600px', maxInlineSize: '850px' });
 const hands = {
   own: [
     { id: 'own-ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
@@ -45,10 +46,10 @@ function Match() {
     setPlays((current) => [...current, own, ...(rival ? [{ ...rival, cardId: rival.id, id: crypto.randomUUID(), playerKey: 'rival', isOwn: false }] : [])]);
   };
   return <>
-    <div css={controlsStyle}><Button disabled={landing.size > 0} onClick={() => {
+    <Controls><Button disabled={landing.size > 0} onClick={() => {
       setPlays([]); setHandIndex((index) => index + 1);
-    }}>Deal hand</Button></div>
-    <div css={boardStyle}><GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}
+    }}>Deal hand</Button></Controls>
+    <Board><GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}
     >
       <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rivalCards.length} label="Rival hand" /></GameTable.Seat>
       <GameTable.Dock><GameHand cards={ownCards} playLabel="Play selected" onPlayIntent={acceptPlay} disabled={landing.size > 0} /></GameTable.Dock>
@@ -56,6 +57,6 @@ function Match() {
         <GameCardStack.Pile playerKey={player.key} label={player.isMe ? 'Own pile' : 'Rival pile'}
           cards={plays.filter((play) => play.playerKey === player.key)} />
       </GameTable.Play>)}
-    </GameTable></div>
+    </GameTable></Board>
   </>;
 }

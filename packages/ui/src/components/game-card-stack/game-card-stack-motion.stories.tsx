@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, spyOn } from 'storybook/test';
 import { GameCardStack } from './game-card-stack';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const StackFrame = styled.div({ inlineSize: 900, blockSize: 432 });
 
 const meta = {
   title: 'Games/GameCardStack', component: GameCardStack, tags: ['!autodocs'],
@@ -10,7 +14,7 @@ const meta = {
     { id: 'queen', label: 'Queen of hearts', value: { suit: 'hearts', rank: 'Q' } },
     { id: 'king', label: 'King of clubs', value: { suit: 'clubs', rank: 'K' } },
   ] }] },
-  decorators: [(Story) => <div style={{ inlineSize: 900, blockSize: 432 }}><Story /></div>],
+  decorators: [(Story) => <StackFrame><Story /></StackFrame>],
   beforeEach: () => {
     const original = window.matchMedia.bind(window);
     const media = original('(prefers-reduced-motion)');

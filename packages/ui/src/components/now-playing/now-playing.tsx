@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
@@ -95,6 +96,33 @@ export interface NowPlayingLabels {
   paused: string;
   position: (elapsed: string, duration: string) => string;
 }
+export interface NowPlayingSlots {
+  /** Replaces the mini-player container. */
+  mini?: ComponentType<Part<'div'>>;
+  /** Replaces the full-player container. */
+  full?: ComponentType<Part<'div'>>;
+  /** Replaces the artwork image. */
+  artwork?: ComponentType<Part<'img'>>;
+  /** Replaces the track title. */
+  title?: ComponentType<Part<'span'>>;
+  /** Replaces the artist name. */
+  artist?: ComponentType<Part<'span'>>;
+  /** Replaces the expand button. */
+  expand?: ComponentType<NonNullable<NowPlayingSlotProps['expand']>>;
+  /** Replaces the collapse button. */
+  collapse?: ComponentType<NonNullable<NowPlayingSlotProps['collapse']>>;
+  /** Replaces the timeline slider. */
+  seek?: ComponentType<NonNullable<NowPlayingSlotProps['seek']> & Extract<SliderProps, { type?: 'single' }>>;
+  /** Replaces the waveform container. */
+  waveform?: ComponentType<Part<'div'>>;
+  /** Replaces the playback controls container. */
+  controls?: ComponentType<Part<'div'>>;
+  /** Replaces the playback status. */
+  status?: ComponentType<Part<'span'>>;
+  /** Replaces the error container. */
+  error?: ComponentType<Part<'div'>>;
+}
+
 export interface NowPlayingProps
   extends
     Omit<ComponentPropsWithRef<'section'>, 'defaultValue' | 'children' | 'onChange'>,
@@ -125,6 +153,7 @@ export interface NowPlayingProps
    */
   seekStep?: number;
   seekLargeStep?: number;
+  slots?: NowPlayingSlots;
   slotProps?: NowPlayingSlotProps;
 }
 export interface NowPlayingLevelsProps extends ComponentPropsWithRef<'span'>, SxProps {
@@ -279,10 +308,14 @@ function seekLattice(duration: number, step?: number) {
 function joinIds(...ids: (string | false | undefined)[]) {
   return ids.filter(Boolean).join(' ') || undefined;
 }
-function Artwork({ track, slot }: { track: NowPlayingTrack; slot?: Part<'img'> }) {
+function Artwork({ track, slot, component }: { track: NowPlayingTrack; slot?: Part<'img'>; component?: NonNullable<NowPlayingProps['slots']>['artwork'] }) {
   const [failed, setFailed] = useState(false);
+  const Image = component ?? 'img';
+  // The no-artwork and failed-load branch is never the consumer's replacement: an img-shaped
+  // component there would render an empty image.
+  const Placeholder = 'span';
   return failed || !track.artwork ? (
-    <span
+    <Placeholder
       className={slot?.className}
       style={slot?.style}
       css={[artworkStyle, slot?.css]}
@@ -291,9 +324,10 @@ function Artwork({ track, slot }: { track: NowPlayingTrack; slot?: Part<'img'> }
       aria-label={track.artworkAlt}
     />
   ) : (
-    <img
+    <Image
       {...slot}
       draggable={false}
+      data-ui="now-playing-artwork-image"
       css={[artworkStyle, slot?.css]}
       src={track.artwork}
       alt={track.artworkAlt ?? ''}
@@ -378,6 +412,7 @@ function NowPlayingRoot({
   locale,
   seekStep,
   seekLargeStep = 30,
+  slots,
   slotProps,
   className,
   sx,
@@ -451,15 +486,26 @@ function NowPlayingRoot({
     requestPosition(0);
   };
   const close = () => requestOpen(false);
+  const Mini = slots?.mini ?? 'div';
+  const Full = slots?.full ?? 'div';
+  const Title = slots?.title ?? 'span';
+  const Artist = slots?.artist ?? 'span';
+  const Expand = slots?.expand ?? Button;
+  const Collapse = slots?.collapse ?? Button;
+  const Seek = slots?.seek ?? Slider;
+  const Waveform = slots?.waveform ?? 'div';
+  const Controls = slots?.controls ?? 'div';
+  const Status = slots?.status ?? 'span';
+  const Error = slots?.error ?? 'div';
   const metadata = (
     <div css={metadataStyle}>
-      <span {...slotProps?.title} css={[titleStyle, slotProps?.title?.css]}>
+      <Title {...slotProps?.title} css={[titleStyle, slotProps?.title?.css]}>
         {track?.title ?? labels.empty}
-      </span>
+      </Title>
       {track && (
-        <span {...slotProps?.artist} css={[artistStyle, slotProps?.artist?.css]}>
+        <Artist {...slotProps?.artist} css={[artistStyle, slotProps?.artist?.css]}>
           {track.artist}
-        </span>
+        </Artist>
       )}
     </div>
   );
@@ -499,7 +545,7 @@ function NowPlayingRoot({
           initial={reduced ? false : { x: direction * ARTWORK_TRAVEL, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
         >
-          <Artwork key={track.artwork} track={track} slot={slotProps?.artwork} />
+          <Artwork key={track.artwork} track={track} slot={slotProps?.artwork} component={slots?.artwork} />
         </motion.div>
       </motion.div>
     );
@@ -532,7 +578,7 @@ function NowPlayingRoot({
             >
               <motion.div layout={!reduced} transition={reduced ? { duration: 0 } : SHELL_SPRING}>
                 <Card css={surfaceStyle}>
-                  <div {...slotProps?.mini} css={[miniStyle, slotProps?.mini?.css]} hidden={isOpen}>
+                  <Mini {...slotProps?.mini} css={[miniStyle, slotProps?.mini?.css]} hidden={isOpen}>
                     {!isOpen && artwork(true)}
                     {!isOpen && metadata}
                     <NowPlayingLevels />
@@ -540,7 +586,7 @@ function NowPlayingRoot({
                     <Button disabled={!track || busy} onClick={() => skip(1)}>
                       {labels.next}
                     </Button>
-                    <Button
+                    <Expand
                       {...slotProps?.expand}
                       ref={expandRef}
                       aria-expanded={isOpen}
@@ -554,9 +600,9 @@ function NowPlayingRoot({
                       }}
                     >
                       {labels.expand}
-                    </Button>
-                  </div>
-                  <div
+                    </Expand>
+                  </Mini>
+                  <Full
                     {...slotProps?.full}
                     ref={fullRef}
                     id={id}
@@ -576,7 +622,7 @@ function NowPlayingRoot({
                       slotProps?.full?.onBlurCapture?.(e);
                     }}
                   >
-                    <Button
+                    <Collapse
                       {...slotProps?.collapse}
                       ref={collapseRef}
                       aria-expanded={isOpen}
@@ -587,10 +633,10 @@ function NowPlayingRoot({
                       }}
                     >
                       {labels.collapse}
-                    </Button>
+                    </Collapse>
                     {isOpen && artwork(false)}
                     {isOpen && metadata}
-                    <div
+                    <Waveform
                       {...slotProps?.waveform}
                       data-ui="now-playing-waveform"
                       aria-hidden="true"
@@ -605,8 +651,8 @@ function NowPlayingRoot({
                           }}
                         />
                       ))}
-                    </div>
-                    <Slider
+                    </Waveform>
+                    <Seek
                       {...slotProps?.seek}
                       dir="ltr"
                       label={
@@ -643,7 +689,7 @@ function NowPlayingRoot({
                           : formatDuration(duration - bounded, locale)}
                       </output>
                     </div>
-                    <div {...slotProps?.controls} css={[controlsStyle, slotProps?.controls?.css]}>
+                    <Controls {...slotProps?.controls} css={[controlsStyle, slotProps?.controls?.css]}>
                       <Button disabled={!track || busy} onClick={() => skip(-1)}>
                         {labels.previous}
                       </Button>
@@ -651,11 +697,11 @@ function NowPlayingRoot({
                       <Button disabled={!track || busy} onClick={() => skip(1)}>
                         {labels.next}
                       </Button>
-                    </div>
+                    </Controls>
                     <NowPlayingLevels />
-                  </div>
+                  </Full>
                   {busy && <Progress label={labels.busy} />}
-                  <span
+                  <Status
                     {...slotProps?.status}
                     role="status"
                     aria-live="polite"
@@ -665,16 +711,16 @@ function NowPlayingRoot({
                     {track
                       ? `${track.title} — ${isPlaying ? labels.playing : labels.paused}`
                       : labels.empty}
-                  </span>
+                  </Status>
                   {errorVisible && (
-                    <div
+                    <Error
                       {...slotProps?.error}
                       id={`${id}-error`}
                       role="alert"
                       css={[errorStyle, slotProps?.error?.css]}
                     >
                       {error}
-                    </div>
+                    </Error>
                   )}
                 </Card>
               </motion.div>

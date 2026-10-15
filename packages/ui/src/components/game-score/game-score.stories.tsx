@@ -7,10 +7,14 @@ import { GameMarks } from '../game-marks';
 import { GameRounds } from '../game-rounds';
 import { Button } from '../button';
 import type { GameCardRootProps } from '../game-card/game-card-root';
-import { css } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
-const forcedColorStyle = css({ [FORCED_COLORS]: { color: 'CanvasText', backgroundColor: 'Canvas' } });
+const forcedColorStyle = { [FORCED_COLORS]: { color: 'CanvasText', backgroundColor: 'Canvas' } };
+const Summary = styled.div({ display: 'grid', gap: vars.space[4] });
+const ContractScope = styled.div(forcedColorStyle);
+const ContractButton = styled(Button)(forcedColorStyle);
 
 const rows = [
   { key: 'north', label: 'North', value: 1234.5, stage: 'Final' },
@@ -76,12 +80,12 @@ export const Empty: Story = {
 };
 /** Keep a team's score, awards and round history together. */
 export const MatchSummary: Story = {
-  render: (args) => <div style={{ display: 'grid', gap: vars.space[4] }}>
+  render: (args) => <Summary>
     <GameScore {...args} />
     <GameMarks label="North awards" count={3} mark={<span>◆</span>} />
     <GameRounds label="North rounds" rounds={[{ key: 'opening', label: 'Opening', outcome: 'won' }]}
       outcomeLabels={{ won: 'Won', lost: 'Lost', pending: 'Pending' }} />
-  </div>,
+  </Summary>,
   parameters: { docs: { source: { language: 'tsx', code: `import { GameMarks } from '@jfrader/ui/game-marks';
 import { GameRounds } from '@jfrader/ui/game-rounds';
 ${source}
@@ -103,6 +107,7 @@ function Replacement(props: GameCardRootProps) {
 function UnusedReplacement(props: GameCardRootProps) {
   return <div {...props} data-replacement="component" />;
 }
+// This fixture exercises slot css, consumer css/style and sx precedence.
 function ContractFixture() {
   const externalId = useId();
   const scoreRef = useRef<HTMLDivElement>(null);
@@ -119,7 +124,7 @@ function ContractFixture() {
     css: { padding: vars.space[4] }, sx: { padding: vars.space[6] },
   };
   const rootSlot = { className: 'slot-root', style: { margin: vars.space[2] }, 'data-lane': 'slot', css: { padding: vars.space[2] } };
-  return <div css={forcedColorStyle}>
+  return <ContractScope>
     <span id={externalId}>Match</span>
     <GameScore {...customization} ref={scoreRef} label="Score contract" rows={updated ? [{ key: 'south', label: 0, value: 42 }] : rows} locale="en-US"
       slotProps={{ root: rootSlot, name: { className: 'score-name' }, value: { className: 'score-value' } }} />
@@ -129,12 +134,12 @@ function ContractFixture() {
       rounds={[{ key: 'same', label: 0, outcome: updated ? 'won' : 'pending' }]}
       outcomeLabels={{ won: 'Victory', lost: 'Defeat', pending: 'Waiting' }}
       slotProps={{ root: rootSlot, round: { className: 'round' } }} />
-    <Button sx={forcedColorStyle} onClick={() => {
+    <ContractButton onClick={() => {
       setUpdated(true);
       setRefs([scoreRef, marksRef, roundsRef].every((ref) => ref.current?.dataset.replacement === 'slot'));
-    }}>Update summary</Button>
+    }}>Update summary</ContractButton>
     <span>{refs ? 'Refs connected' : 'Refs unchecked'}</span>
-  </div>;
+  </ContractScope>;
 }
 
 export const Contract: Story = {

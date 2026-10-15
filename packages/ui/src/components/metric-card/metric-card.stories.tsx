@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -12,6 +12,22 @@ const consumerStyle = css({ fontStyle: 'italic' });
 const finalStyle = css({ fontStyle: 'normal' });
 const slotStyle = css({ textTransform: 'uppercase' });
 const slotValueStyle = css({ fontWeight: vars.fontWeight.medium });
+
+function ReplacementDescription(props: ComponentPropsWithRef<'p'>) {
+  return <p {...props} data-slot="metric-card-description" />;
+}
+
+export const DescriptionReplacement: Story = {
+  render: (args) => <MetricCard {...args} slots={{ description: ReplacementDescription }} />,
+  play: async ({ canvasElement }) => {
+    const description = canvasElement.querySelector('[data-slot="metric-card-description"]');
+    await expect(description).toBeInTheDocument();
+    await expect(description).toHaveAttribute('data-ui', 'metric-card-description');
+    await expect(canvasElement.querySelector('[data-ui="metric-card"]')).toHaveAttribute('aria-describedby', description!.id);
+    await expect(getComputedStyle(description!).marginTop).toBe('0px');
+    await expect(canvasElement.querySelector('[data-ui="metric-card-description"]:not([data-slot])')).toBeNull();
+  },
+};
 const meta = {
   title: 'Data display/MetricCard',
   component: MetricCard,

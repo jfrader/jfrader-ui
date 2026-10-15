@@ -115,6 +115,10 @@ export interface DialogSlotProps {
 export interface DialogSlots {
   /** Replaces the panel's adopted div; renders a `div` by default. */
   root?: NonNullable<DialogPanelProps['slots']>['root'];
+  /** Replaces the shell with one native dialog, forwarding every prop and its dialog ref. */
+  content?: ComponentType<ComponentPropsWithRef<'dialog'>>;
+  /** Replaces the panel div through the Surface root seam; slots.root wins. */
+  panel?: NonNullable<DialogPanelProps['slots']>['root'];
   /** Replaces the header container for title, description, and close button. */
   header?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Replaces the accessible heading element naming the dialog. */
@@ -177,6 +181,7 @@ export interface DialogCloseProps extends ComponentPropsWithRef<'button'>, SxPro
 }
 
 interface DialogContextValue extends NativeDialogController {
+  shell?: DialogSlots['content'];
   titleId: string;
   descriptionId: string;
   hasTitle: boolean;
@@ -282,6 +287,7 @@ function DialogRoot(props: DialogProps) {
   const Description = slots?.description ?? DialogDescription;
   const Trigger = slots?.trigger ?? DialogTrigger;
   const Close = slots?.close ?? DialogClose;
+  const shell = slots?.content;
   const baseId = useId();
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const { setDialogElement, setOpen, requestClose, repairToken } = useNativeDialogRoot(open, requestOpenChange);
@@ -290,6 +296,7 @@ function DialogRoot(props: DialogProps) {
 
   const context = useMemo(
     () => ({
+      shell,
       open,
       setOpen,
       requestClose,
@@ -302,7 +309,7 @@ function DialogRoot(props: DialogProps) {
       setHasTitle,
       setHasDescription,
     }),
-    [open, setOpen, requestClose, repairToken, setDialogElement, baseId, hasTitle, hasDescription],
+    [shell, open, setOpen, requestClose, repairToken, setDialogElement, baseId, hasTitle, hasDescription],
   );
 
   return (
@@ -315,7 +322,7 @@ function DialogRoot(props: DialogProps) {
               {...rootProps}
               {...slotProps?.panel}
               component={component ?? slotProps?.panel?.component}
-              slots={{ ...slotProps?.panel?.slots, root: slots?.root ?? slotProps?.panel?.slots?.root }}
+              slots={{ ...slotProps?.panel?.slots, root: slots?.root ?? slots?.panel ?? slotProps?.panel?.slots?.root }}
               slotProps={{ root: slotProps?.root ?? slotProps?.panel?.slotProps?.root }}
             >
               <Header {...slotProps?.header} data-ui="dialog-header">
@@ -379,6 +386,7 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
   } = omitNativeOpen(props);
 
   const context = useDialogContext('Content');
+  const Shell = context.shell ?? 'dialog';
   const { setOpen, titleId, descriptionId, hasTitle, hasDescription } = context;
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -402,7 +410,7 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
   return (
     <WithSx className={className} styles={dialogStyle} sx={sx}>
       {(className) => (
-        <dialog
+        <Shell
           {...rest}
           {...dialogProps}
           data-ui="dialog"
@@ -416,7 +424,7 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
               {dialogPanelChildren(children)}
             </DialogPanelContext.Provider>
           </DialogRequestCloseContext.Provider>
-        </dialog>
+        </Shell>
       )}
     </WithSx>
   );

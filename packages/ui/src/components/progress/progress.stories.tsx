@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -11,6 +11,21 @@ const frameStyle = css({
   gap: vars.space[4],
   inlineSize: `min(20rem, calc(100vw - ${vars.space[8]}))`,
 });
+
+function ReplacementIndicator(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="replacement-indicator" />;
+}
+
+export const ReplaceIndicator: Story = {
+  args: { value: 40, label: 'Uploading', slots: { indicator: ReplacementIndicator }, slotProps: { indicator: { title: 'Upload progress' } } },
+  play: async ({ canvasElement }) => {
+    const indicator = within(canvasElement).getByTestId('replacement-indicator');
+    await expect(indicator).toHaveAttribute('data-ui', 'progress-indicator');
+    await expect(indicator).toHaveAttribute('title', 'Upload progress');
+    await expect(indicator.style.width).toBe('40%');
+    await expect(indicator.className).not.toBe('');
+  },
+};
 
 const fieldStyle = {
   display: 'grid',

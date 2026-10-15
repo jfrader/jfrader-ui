@@ -6,6 +6,8 @@ export type {
   SwipeActionsEasyProps,
   SwipeActionsRecord,
   SwipeActionsSlotProps,
+  SwipeActionsSlots,
+  SwipeActionsRowSlots,
   SwipeActionsRowProps,
   SwipeActionsSide,
   SwipeActionsValue,

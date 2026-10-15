@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type ComponentPropsWithRef } from 'react';
+import { useMemo, useState, type ComponentPropsWithRef, type ComponentType } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -34,6 +34,24 @@ export interface AttachmentListLabels {
 
 type PartProps = { className?: string; css?: Interpolation<Theme> };
 
+export interface AttachmentListSlots {
+  /** Replaces the list item wrapping an individual attachment; renders `li` by default. */
+  item?: ComponentType<ComponentPropsWithRef<'li'>>;
+  /** Replaces the anchor element wrapping a downloadable attachment link; renders `a` by default. */
+  link?: ComponentType<ComponentPropsWithRef<'a'>>;
+  /** Replaces the button revealing remaining hidden attachments; renders `Button` by default. */
+  expandButton?: ComponentType<ButtonProps>;
+}
+
+export interface AttachmentListSlotProps {
+  /** List item wrapping an individual attachment. */
+  item?: PartProps;
+  /** Anchor element wrapping a downloadable attachment link. */
+  link?: PartProps;
+  /** Button revealing remaining hidden attachments; renders `Button`. */
+  expandButton?: Omit<ButtonProps, 'children' | 'type' | 'render'>;
+}
+
 export interface AttachmentListProps extends Omit<ComponentPropsWithRef<'ul'>, 'children'>, SxProps {
   /** Files and images to display. */
   attachments: readonly Attachment[];
@@ -43,20 +61,16 @@ export interface AttachmentListProps extends Omit<ComponentPropsWithRef<'ul'>, '
   labels?: Partial<AttachmentListLabels>;
   /** Maximum visible items before expansion. Defaults to 4; Infinity shows all. */
   previewCount?: number;
+  /** Replacement components for interior parts. */
+  slots?: AttachmentListSlots;
   /** Style items and links, or pass props to the expand button. */
-  slotProps?: {
-    /** List item wrapping an individual attachment. */
-    item?: PartProps;
-    /** Anchor element wrapping a downloadable attachment link. */
-    link?: PartProps;
-    /** Button revealing remaining hidden attachments; renders `Button`. */
-    expandButton?: Omit<ButtonProps, 'children' | 'type' | 'render'>;
-  };
+  slotProps?: AttachmentListSlotProps;
 }
 
 interface AttachmentListViewProps extends AttachmentListProps {
   owner?: string;
-  partProps?: PartProps;
+  partProps?: PartProps & ComponentPropsWithRef<'ul'>;
+  component?: ComponentType<ComponentPropsWithRef<'ul'> & PartProps>;
 }
 
 export const DEFAULT_PREVIEW_COUNT = 4;
@@ -89,8 +103,13 @@ const imageGlyph = (
 
 export function AttachmentListView({
   attachments, locale, labels: labelProps, previewCount = DEFAULT_PREVIEW_COUNT,
-  owner, partProps, slotProps, className, sx, ...rootProps
+  owner, partProps, component, slots, slotProps, className, sx, ...rootProps
 }: AttachmentListViewProps) {
+  const Root = component ?? 'ul';
+  const { css: _partCss, ...partRootProps } = partProps ?? {};
+  const Item = slots?.item ?? 'li';
+  const Link = slots?.link ?? 'a';
+  const ExpandButton = slots?.expandButton ?? Button;
   const [expanded, setExpanded] = useState(false);
   const limit = previewCount === Infinity ? Infinity : Number.isFinite(previewCount) ? Math.max(0, Math.floor(previewCount)) : DEFAULT_PREVIEW_COUNT;
   const shown = expanded ? attachments : attachments.slice(0, limit);
@@ -109,7 +128,7 @@ export function AttachmentListView({
       <WithSx className={[className, partProps?.className].filter(Boolean).join(' ') || undefined}
         styles={[attachmentsStyle, !owner && typographyStyle, partProps?.css]} sx={sx}>
         {(rootClass) => (
-          <ul role="list" aria-label={labels.attachments} {...rootProps}
+          <Root {...partRootProps} role="list" aria-label={labels.attachments} {...rootProps}
             data-ui={owner ? `${owner}-attachments` : 'attachment-list'} className={rootClass}>
             {shown.map((attachment) => {
               const url = safeUrl(attachment.url);
@@ -127,23 +146,24 @@ export function AttachmentListView({
                 </>
               );
               return (
-                <li key={attachment.id} className={slotProps?.item?.className} css={[fileStyle, slotProps?.item?.css]}>
+                <Item key={attachment.id} data-ui="attachment-list-item" className={slotProps?.item?.className} css={[fileStyle, slotProps?.item?.css]}>
                   {url ? (
-                    <a href={url} download={attachment.download === false ? undefined : attachment.download ?? attachment.name}
+                    <Link href={url} download={attachment.download === false ? undefined : attachment.download ?? attachment.name}
                       target={attachment.target} rel={attachment.target === '_blank' ? 'noopener noreferrer' : undefined}
-                      className={slotProps?.link?.className} css={[linkStyle, slotProps?.link?.css]}>{content}</a>
+                      data-ui="attachment-list-link"
+                      className={slotProps?.link?.className} css={[linkStyle, slotProps?.link?.css]}>{content}</Link>
                   ) : content}
-                </li>
+                </Item>
               );
             })}
-          </ul>
+          </Root>
         )}
       </WithSx>
       {!expanded && attachments.length > limit ? (
-        <Button size="sm" variant="outline" {...slotProps?.expandButton} onClick={(event) => {
+        <ExpandButton size="sm" variant="outline" data-ui="attachment-list-expand" {...slotProps?.expandButton} onClick={(event) => {
           slotProps?.expandButton?.onClick?.(event);
           if (!event.defaultPrevented) setExpanded(true);
-        }}>{labels.showAttachments(attachments.length - limit)}</Button>
+        }}>{labels.showAttachments(attachments.length - limit)}</ExpandButton>
       ) : null}
     </>
   );

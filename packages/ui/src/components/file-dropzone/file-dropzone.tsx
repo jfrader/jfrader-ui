@@ -56,8 +56,10 @@ export interface FileDropzoneMessages {
   uploadError: string;
 }
 export type FileDropzoneSlotProps = FieldParts<FileDropzoneAnatomy> & {
-  /** Action button for retrying or removing a file item. Default: `Button`. */
+  /** Action button for removing a file item. Default: `Button`. */
   action?: ButtonProps;
+  /** Action button for retrying a failed upload. Default: `Button`. */
+  retry?: ButtonProps;
   /** Progress bar indicating upload completion. Default: `Progress`. */
   progress?: Omit<ProgressProps, 'value' | 'max'>;
 };
@@ -84,7 +86,7 @@ type FileDropzoneAnatomy = {
   preview: 'img';
   /** Progress bar indicating upload completion. Default: `Progress`. */
   progress: 'div';
-  /** Action button for retrying or removing a file item. Default: `Button`. */
+  /** Action button for removing a file item. Default: `Button`. */
   action: 'button';
   /** Error message banner displayed on validation or upload failure. */
   error: 'div';
@@ -92,8 +94,10 @@ type FileDropzoneAnatomy = {
   status: 'div';
 };
 export type FileDropzoneSlots = Omit<FieldSlots<FileDropzoneAnatomy>, 'action' | 'progress'> & {
-  /** Action button for retrying or removing a file item. Default: `Button`. */
+  /** Action button for removing a file item. Default: `Button`. */
   action?: ComponentType<ButtonProps>;
+  /** Retries a failed upload. */
+  retry?: ComponentType<ButtonProps>;
   /** Progress bar indicating upload completion. Default: `Progress`. */
   progress?: ComponentType<ProgressProps>;
 };
@@ -339,6 +343,7 @@ export function FileDropzone({
   ...rest
 }: FileDropzoneProps) {
   const Action = slots?.action ?? Button;
+  const Retry = slots?.retry ?? Button;
   const UploadProgress = slots?.progress ?? Progress;
   const id = useId();
   const seed = useRef(defaultValue);
@@ -641,17 +646,17 @@ export function FileDropzone({
             </div>
             <div css={actionsStyle}>
               {status === 'failed' && item.file && onUpload && (
-                <Action
+                <Retry
                   variant="outline"
                   size="sm"
-                  {...slotProps?.action}
-                  css={[actionStyle, slotProps?.action?.css]}
+                  {...slotProps?.retry}
+                  css={[actionStyle, slotProps?.retry?.css]}
                   disabled={disabled}
-                  aria-disabled={readOnly || slotProps?.action?.['aria-disabled']}
+                  aria-disabled={readOnly || slotProps?.retry?.['aria-disabled']}
                   data-action="retry"
-                  aria-label={slotProps?.action?.['aria-label'] ?? messages.retry(item.name)}
+                  aria-label={slotProps?.retry?.['aria-label'] ?? messages.retry(item.name)}
                   onClick={(event) => {
-                    slotProps?.action?.onClick?.(event);
+                    slotProps?.retry?.onClick?.(event);
                     if (!event.defaultPrevented && !inactive) {
                       startUpload(item);
                       event.currentTarget.parentElement
@@ -661,7 +666,7 @@ export function FileDropzone({
                   }}
                 >
                   {messages.retry(item.name)}
-                </Action>
+                </Retry>
               )}
               <Action
                 variant="outline"

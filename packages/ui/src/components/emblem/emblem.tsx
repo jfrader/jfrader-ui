@@ -7,6 +7,7 @@
 import {
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type HTMLAttributes,
   type ReactNode,
@@ -40,6 +41,13 @@ export interface EmblemRenderProps extends Omit<HTMLAttributes<HTMLElement>, 'co
   children: ReactNode;
 }
 
+export interface EmblemSlots {
+  /** Image element displaying the crest artwork. */
+  image?: ComponentType<ComponentPropsWithRef<'img'>>;
+  /** Span element displaying initials when no crest image is provided. */
+  monogram?: ComponentType<ComponentPropsWithRef<'span'>>;
+}
+
 export interface EmblemProps
   extends Omit<ComponentPropsWithRef<'span'>, 'children' | 'role' | 'aria-label' | 'color'>,
     SxProps {
@@ -64,6 +72,7 @@ export interface EmblemProps
   size?: EmblemSize;
   /** Pattern over the fill. `none` leaves the plain gradient. */
   pattern?: EmblemPattern;
+  slots?: EmblemSlots;
   slotProps?: {
     /** Image element displaying the crest artwork. */
     image?: EmblemPartProps;
@@ -228,6 +237,7 @@ export function Emblem({
   shape = 'shield',
   size = 'md',
   pattern = 'none',
+  slots,
   slotProps,
   className,
   style,
@@ -235,6 +245,8 @@ export function Emblem({
   render,
   ...rest
 }: EmblemProps) {
+  const Image = slots?.image ?? 'img';
+  const Monogram = slots?.monogram ?? 'span';
   // Keyed by URL so a new `src` gets a fresh attempt without an effect.
   const [failedSrc, setFailedSrc] = useState<string>();
   const renderRef = useMergeRefs<HTMLElement>([ref]);
@@ -257,7 +269,7 @@ export function Emblem({
   const content = (
     <span data-ui="emblem-plate" aria-hidden="true" css={plateStyle}>
       {showImage ? (
-        <img
+        <Image
           src={src}
           alt=""
           onError={() => setFailedSrc(src)}
@@ -265,14 +277,14 @@ export function Emblem({
           css={[imageStyle, slotProps?.image?.css]}
         />
       ) : (
-        <span
+        <Monogram
           data-ui="emblem-ink"
           aria-hidden="true"
           className={slotProps?.monogram?.className}
           css={[monogramStyle, inkStyle, slotProps?.monogram?.css]}
         >
           {monogram}
-        </span>
+        </Monogram>
       )}
     </span>
   );

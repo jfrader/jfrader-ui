@@ -1756,6 +1756,14 @@ export const UniqueIds: Story = {
   },
 };
 
+function CustomRangePart(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replaced="range-part" />;
+}
+
+function CustomRangeSummary(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replaced="range-summary" />;
+}
+
 export const RefsAndStyling: Story = {
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => (
@@ -1768,6 +1776,7 @@ export const RefsAndStyling: Story = {
       />
       <DateRangePicker.Content
         ref={contentRef}
+        slots={{ presets: CustomRangePart, calendars: CustomRangePart, summary: CustomRangeSummary, actions: CustomRangePart }}
         sx={{ letterSpacing: '1px' }}
         slotProps={{ summary: { className: 'summary-slot', css: { textTransform: 'uppercase' } } }}
       />
@@ -1786,6 +1795,12 @@ export const RefsAndStyling: Story = {
     await expect(parseFloat(getComputedStyle(trigger).letterSpacing)).toBeCloseTo(1, 1);
     await expect(parseFloat(getComputedStyle(dialog).letterSpacing)).toBeCloseTo(1, 1);
     const status = summary(canvasElement);
+    await expect(status).toHaveAttribute('data-replaced', 'range-summary');
+    for (const part of ['calendars', 'actions']) {
+      const element = dialog.querySelector(`[data-ui="date-range-picker-${part}"]`)!;
+      await expect(element).toHaveAttribute('data-replaced', 'range-part');
+      await expect(element.className).not.toBe('');
+    }
     await expect(status).toHaveClass('summary-slot');
     await expect(getComputedStyle(status).textTransform).toBe('uppercase');
   },

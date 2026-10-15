@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
@@ -79,6 +80,29 @@ export interface LightboxGallerySlotProps {
   status?: Slot<'div'>;
 }
 
+export interface LightboxGallerySlots {
+  /** Lists the gallery thumbnails. */
+  grid?: ComponentType<NonNullable<LightboxGallerySlotProps['grid']>>;
+  /** Opens an image in the viewer. */
+  tile?: ComponentType<NonNullable<LightboxGallerySlotProps['tile']>>;
+  /** Displays a gallery image. */
+  image?: ComponentType<NonNullable<LightboxGallerySlotProps['image']>>;
+  /** Hosts the image viewer dialog. */
+  viewer?: ComponentType<NonNullable<LightboxGallerySlotProps['viewer']>>;
+  /** Holds the pannable image. */
+  stage?: ComponentType<NonNullable<LightboxGallerySlotProps['stage']>>;
+  /** Displays the image title. */
+  title?: ComponentType<NonNullable<LightboxGallerySlotProps['title']>>;
+  /** Displays the image caption. */
+  caption?: ComponentType<NonNullable<LightboxGallerySlotProps['caption']>>;
+  /** Holds the image thumbnail strip. */
+  thumbnails?: ComponentType<NonNullable<LightboxGallerySlotProps['thumbnails']>>;
+  /** Holds the viewer controls. */
+  controls?: ComponentType<NonNullable<LightboxGallerySlotProps['controls']>>;
+  /** Announces image position. */
+  status?: ComponentType<NonNullable<LightboxGallerySlotProps['status']>>;
+}
+
 export interface LightboxGalleryLabels {
   open: string;
   close: string;
@@ -123,6 +147,7 @@ export interface LightboxGalleryProps
   labels?: Partial<LightboxGalleryLabels>;
   locale?: Intl.LocalesArgument;
   slotProps?: LightboxGallerySlotProps;
+  slots?: LightboxGallerySlots;
 }
 
 const MIN_COLUMN_WIDTH = 150;
@@ -318,12 +343,15 @@ function GalleryImage({
   decorative = false,
   labels,
   slot,
+  component,
 }: {
   image: LightboxGalleryImage;
   decorative?: boolean;
   labels: LightboxGalleryLabels;
   slot?: LightboxGallerySlotProps['image'];
+  component?: LightboxGallerySlots['image'];
 }) {
+  const Image = component ?? 'img';
   const status = useImageStatus(image.src);
   const { ref, onLoad, onError, ...rest } = slot ?? {};
   const mergedRef = useMergeRefs([status.ref, ref]);
@@ -336,7 +364,7 @@ function GalleryImage({
         </span>
       )}
       {state !== 'error' && (
-        <img
+        <Image
           {...rest}
           ref={mergedRef}
           css={[imageStyle, loadingStyle, slot?.css]}
@@ -368,12 +396,15 @@ function GalleryImage({
 function Tile({
   ref,
   register,
+  component,
   ...props
 }: ComponentPropsWithRef<'button'> & {
   register: (element: HTMLButtonElement | null) => void | (() => void);
+  component?: LightboxGallerySlots['tile'];
 }) {
+  const Root = component ?? 'button';
   const merged = useMergeRefs([ref, register]);
-  return <button {...props} ref={merged} />;
+  return <Root {...props} ref={merged} />;
 }
 
 interface ViewerProps {
@@ -388,7 +419,8 @@ interface ViewerProps {
   labels: LightboxGalleryLabels;
   locale?: Intl.LocalesArgument;
   maxZoom: number;
-  slots?: LightboxGallerySlotProps;
+  slotProps?: LightboxGallerySlotProps;
+  slots?: LightboxGallerySlots;
   returnFlight: (flight: ReturnFlight) => void;
   reduced: boolean;
 }
@@ -405,10 +437,14 @@ function Viewer({
   labels,
   locale,
   maxZoom,
+  slotProps,
   slots,
   returnFlight,
   reduced,
 }: ViewerProps) {
+  const ViewerDialog = slots?.viewer ?? 'dialog';
+  const Stage = slots?.stage ?? 'div';
+  const Caption = slots?.caption ?? 'p';
   const id = useId();
   const format = useMemo(() => numberFormatter(locale), [locale]);
   const percentFormat = useMemo(
@@ -417,8 +453,8 @@ function Viewer({
   );
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
-  const stageMerged = useMergeRefs([stageRef, slots?.stage?.ref]);
-  const { withDescription = true, ...viewerSlot } = omitNativeOpen(slots?.viewer ?? {});
+  const stageMerged = useMergeRefs([stageRef, slotProps?.stage?.ref]);
+  const { withDescription = true, ...viewerSlot } = omitNativeOpen(slotProps?.viewer ?? {});
   const lastStageBox = useRef<DOMRect | null>(null);
   const completeClose = () => {
     const target = home();
@@ -485,8 +521,8 @@ function Viewer({
   const lastTap = useRef<{ x: number; y: number; time: number } | null>(null);
   const touchZoomTime = useRef(-Infinity);
   const suppressClick = useRef(false);
-  const titleId = slots?.title?.id ?? `${id}-title`;
-  const captionId = slots?.caption?.id ?? `${id}-caption`;
+  const titleId = slotProps?.title?.id ?? `${id}-title`;
+  const captionId = slotProps?.caption?.id ?? `${id}-caption`;
   const hasCaption = image && isRenderable(image.caption) && image.caption !== '';
   const position = image
     ? labels.position(format.format(index + 1), format.format(images.length))
@@ -808,7 +844,7 @@ function Viewer({
     settlePan(drag.zoom > 1 ? velocityX : 0, drag.zoom > 1 ? velocityY : 0);
   };
   return (
-    <dialog
+    <ViewerDialog
       {...viewerSlot}
       {...native}
       data-ui="lightbox-gallery-viewer"
@@ -833,40 +869,41 @@ function Viewer({
           title={image?.title ? `${label} — ${image.title}` : label}
           titleId={titleId}
           labels={labels}
-          slot={slots?.title}
+          slot={slotProps?.title}
+          component={slots?.title}
           onClose={controller.requestClose}
         />
-        <div
-          {...slots?.stage}
+        <Stage
+          {...slotProps?.stage}
           ref={stageMerged}
           role="group"
-          aria-label={slots?.stage?.['aria-label'] ?? image?.alt ?? labels.unavailable}
+          aria-label={slotProps?.stage?.['aria-label'] ?? image?.alt ?? labels.unavailable}
           tabIndex={0}
           data-ui="lightbox-gallery-stage"
           data-zoom={zoom}
           data-reduced-motion={reduced}
-          css={[stageStyle, slots?.stage?.css]}
+          css={[stageStyle, slotProps?.stage?.css]}
           onKeyDown={(event) => {
-            slots?.stage?.onKeyDown?.(event);
+            slotProps?.stage?.onKeyDown?.(event);
           }}
           onPointerDown={(event) => {
-            slots?.stage?.onPointerDown?.(event);
+            slotProps?.stage?.onPointerDown?.(event);
             pointerDown(event);
           }}
           onPointerMove={(event) => {
-            slots?.stage?.onPointerMove?.(event);
+            slotProps?.stage?.onPointerMove?.(event);
             pointerMove(event);
           }}
           onPointerUp={(event) => {
-            slots?.stage?.onPointerUp?.(event);
+            slotProps?.stage?.onPointerUp?.(event);
             pointerUp(event);
           }}
           onPointerCancel={(event) => {
-            slots?.stage?.onPointerCancel?.(event);
+            slotProps?.stage?.onPointerCancel?.(event);
             cancelGesture();
           }}
           onLostPointerCapture={(event) => {
-            slots?.stage?.onLostPointerCapture?.(event);
+            slotProps?.stage?.onLostPointerCapture?.(event);
             if (pointers.current.has(event.pointerId)) cancelGesture();
           }}
           onClick={(event) => {
@@ -874,10 +911,10 @@ function Viewer({
               event.preventDefault();
               event.stopPropagation();
               suppressClick.current = false;
-            } else slots?.stage?.onClick?.(event);
+            } else slotProps?.stage?.onClick?.(event);
           }}
           onDoubleClick={(event) => {
-            slots?.stage?.onDoubleClick?.(event);
+            slotProps?.stage?.onDoubleClick?.(event);
             if (
               !event.defaultPrevented &&
               !suppressClick.current &&
@@ -903,21 +940,23 @@ function Viewer({
                   key={`${image.id}\u0000${image.src}\u0000${image.srcSet ?? ''}`}
                   image={image}
                   labels={labels}
-                  slot={slots?.image}
+                  slot={slotProps?.image}
+                  component={slots?.image}
                 />
               </motion.div>
             </motion.div>
           )}
-        </div>
+        </Stage>
         {hasCaption && (
-          <p {...slots?.caption} id={captionId} css={[captionStyle, slots?.caption?.css]}>
+          <Caption {...slotProps?.caption} id={captionId} css={[captionStyle, slotProps?.caption?.css]}>
             {image.caption}
-          </p>
+          </Caption>
         )}
         <ViewerToolbar
           position={position}
           zoomText={zoomText}
           labels={labels}
+          slotProps={slotProps}
           slots={slots}
           canPrevious={index > 0}
           canNext={index < images.length - 1}
@@ -934,14 +973,15 @@ function Viewer({
           selected={selected}
           labels={labels}
           format={format}
-          slot={slots?.thumbnails}
+          slot={slotProps?.thumbnails}
+          component={slots?.thumbnails}
           onSelect={select}
           thumbnail={(item) => (
             <GalleryImage key={`${item.id}\u0000${item.src}`} image={item} decorative labels={labels} />
           )}
         />
       </div>
-    </dialog>
+    </ViewerDialog>
   );
 }
 
@@ -961,10 +1001,12 @@ export function LightboxGallery({
   labels: labelOverrides,
   locale,
   slotProps,
+  slots,
   className,
   sx,
   ...rest
 }: LightboxGalleryProps) {
+  const Grid = slots?.grid ?? 'ul';
   const [selected, select] = useControlledState<string | null>(
     value,
     defaultValue === undefined ? (images[0]?.id ?? null) : defaultValue,
@@ -1043,7 +1085,7 @@ export function LightboxGallery({
             data-columns={geometry.columns}
           >
             {images.length ? (
-              <ul
+              <Grid
                 {...slotProps?.grid}
                 ref={mergedGrid}
                 css={[gridStyle, slotProps?.grid?.css]}
@@ -1062,6 +1104,7 @@ export function LightboxGallery({
                     <li key={image.id} style={{ gridRowEnd: `span ${span}`, minInlineSize: 0 }}>
                       <Tile
                         {...slotProps?.tile}
+                        component={slots?.tile}
                         register={(node) => {
                           if (node) tiles.current.set(image.id, node);
                           return () => {
@@ -1099,12 +1142,13 @@ export function LightboxGallery({
                           decorative
                           labels={labels}
                           slot={slotProps?.image}
+                          component={slots?.image}
                         />
                       </Tile>
                     </li>
                   );
                 })}
-              </ul>
+              </Grid>
             ) : (
               <p css={captionStyle}>{labels.empty}</p>
             )}
@@ -1125,7 +1169,8 @@ export function LightboxGallery({
               labels={labels}
               locale={locale}
               maxZoom={zoomLimit}
-              slots={slotProps}
+              slotProps={slotProps}
+              slots={slots}
               returnFlight={setReturnFlight}
               reduced={reduced}
             />

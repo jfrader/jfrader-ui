@@ -16,12 +16,22 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { Button } from '../button';
+import { Button, type ButtonProps } from '../button';
 import { ToastItem, ToastPortal, useToastQueueContext, useToastRenderer, type ToastPartProps } from '../toast/toast';
 import { TOAST_VIEWPORT_INLINE_SIZE } from '../toast/toast-layout';
 
 export type ToastStackVariant = 'stacked' | 'list';
 export type ToastStackPosition = 'bottom-start' | 'bottom-center' | 'bottom-end';
+export interface ToastStackSlots {
+  /** Container holding the toast stack. */
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Container holding the stacked notifications. */
+  list?: ComponentType<ToastPartProps>;
+  /** Button expanding or collapsing notifications. */
+  toggle?: ComponentType<ButtonProps>;
+  /** Container wrapping one notification. */
+  item?: ComponentType<ToastPartProps>;
+}
 export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, ToastPartProps, SxProps {
   variant?: ToastStackVariant;
   position?: ToastStackPosition;
@@ -32,17 +42,14 @@ export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
   expandLabel?: string;
   collapseLabel?: string;
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
-  slots?: {
-    /** Replaces the outer toast stack container; renders a `div` by default. */
-    root?: ComponentType<ComponentPropsWithRef<'div'>>;
-  };
+  slots?: ToastStackSlots;
   slotProps?: {
     /** Outer toast stack container element. */
     root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & ToastPartProps & SxProps;
     /** Container element holding the list of stacked toast items. */
     list?: ToastPartProps;
     /** Button element expanding or collapsing the stacked toasts. */
-    toggle?: ToastPartProps;
+    toggle?: ButtonProps;
     /** Container element wrapping an individual toast notification. */
     item?: ToastPartProps;
   };
@@ -129,6 +136,9 @@ function ToastStackContent({
 }: ToastStackProps) {
   const { toasts, registerRenderer } = useToastQueueContext('Stack');
   const Root = slots?.root ?? component ?? 'div';
+  const List = slots?.list ?? 'div';
+  const Toggle = slots?.toggle ?? Button;
+  const Item = slots?.item ?? 'div';
   const {
     className: rootClass, style: rootSlotStyle, css: rootCss, sx: rootSx,
     onKeyDown: slotKeyDown, onKeyDownCapture: slotKeyDownCapture, ...rootProps
@@ -136,6 +146,7 @@ function ToastStackContent({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mergedRef = useMergeRefs([rootRef, rootProps.ref ?? ref]);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const mergedListRef = useMergeRefs([listRef, slotProps?.list?.ref]);
   const listId = useId();
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -277,7 +288,8 @@ function ToastStackContent({
           }}
         >
           {variant === 'stacked' && open.length > 1 && (
-            <Button
+            <Toggle
+              {...slotProps?.toggle}
               variant="outline"
               size="sm"
               data-ui="toast-stack-toggle"
@@ -291,11 +303,12 @@ function ToastStackContent({
             >
               {expanded ? collapseLabel : expandLabel}
               {overflow > 0 && ` (+${numberFormatter().format(overflow)})`}
-            </Button>
+            </Toggle>
           )}
-          <div
+          <List
+            {...slotProps?.list}
             id={listId}
-            ref={listRef}
+            ref={mergedListRef}
             data-ui="toast-stack-list"
             data-expanded={expanded}
             className={slotProps?.list?.className}
@@ -324,12 +337,13 @@ function ToastStackContent({
                     paused={paused}
                     escapeDismiss
                     partProps={slotProps?.item}
+                    component={Item}
                     style={!expanded && index > 0 ? { minBlockSize: heights[open[0]!.id] } : undefined}
                   />
                 </div>
               );
             })}
-          </div>
+          </List>
         </Root>
       )}
     </WithSx>

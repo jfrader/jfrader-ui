@@ -6,6 +6,29 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { RadioGroup, type RadioGroupOrientation, type RadioGroupCompoundProps as RadioGroupProps, type RadioGroupEasyProps } from './index';
 
+function ReplacementRadioLabel(props: ComponentPropsWithRef<'label'>) {
+  return <label {...props} data-replaced="root" />;
+}
+function ReplacementRadioPart(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replaced="part" />;
+}
+export const ReplaceRadioParts: Story = {
+  render: () => (
+    <RadioGroup defaultValue="free" aria-label="Plan">
+      <RadioGroup.Radio value="free" label="Free" description="Three projects"
+        slots={{ root: ReplacementRadioLabel, label: ReplacementRadioPart, control: ReplacementRadioPart, description: ReplacementRadioPart }}
+        slotProps={{ control: { title: 'Selection' } }} />
+    </RadioGroup>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvasElement.querySelectorAll('[data-replaced]')).toHaveLength(4);
+    await expect(canvas.getByRole('radio', { name: 'Free' })).toBeChecked();
+    await expect(canvas.getByRole('radio')).toHaveAccessibleDescription('Three projects');
+    await expect(canvasElement.querySelector('[title="Selection"]')?.className).not.toBe('');
+  },
+};
+
 const OPTIONS = [
   { value: 'free', label: 'Free', description: 'Up to 3 projects.' },
   { value: 'pro', label: 'Pro', description: 'Unlimited projects.' },

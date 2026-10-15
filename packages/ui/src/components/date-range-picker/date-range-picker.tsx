@@ -207,12 +207,7 @@ export interface DateRangePickerEasyProps extends Omit<DateRangePickerBaseProps,
   icon?: ReactNode;
   children?: never;
   /** Replace native roots with components that forward all supplied props and ref. */
-  slots?: {
-    /** Button trigger opening the date range dialog. */
-    trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
-    /** Dialog popup containing calendar grids and actions. */
-    content?: ComponentType<ComponentPropsWithRef<'div'>>;
-  };
+  slots?: DateRangePickerSlots;
   slotProps?: {
     /** Button trigger opening the date range dialog. */
     trigger?: DateRangePickerTriggerProps & DateRangePickerSlotProps;
@@ -222,6 +217,24 @@ export interface DateRangePickerEasyProps extends Omit<DateRangePickerBaseProps,
 }
 
 export type DateRangePickerProps = DateRangePickerCompoundProps | DateRangePickerEasyProps;
+
+export interface DateRangePickerSlots {
+  /** Opens the date range dialog. */
+  trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
+  /** Holds the date range dialog. */
+  content?: ComponentType<ComponentPropsWithRef<'div'>>;
+}
+
+export interface DateRangePickerContentSlots {
+  /** Lists the quick-selection presets. */
+  presets?: ComponentType<DateRangePickerSlotProps>;
+  /** Holds the month calendars. */
+  calendars?: ComponentType<DateRangePickerSlotProps>;
+  /** Announces the drafted range. */
+  summary?: ComponentType<DateRangePickerSlotProps>;
+  /** Holds the cancel and apply actions. */
+  actions?: ComponentType<DateRangePickerSlotProps>;
+}
 
 export interface DateRangePickerTriggerProps
   extends Omit<ComponentPropsWithRef<'button'>, 'value' | 'defaultValue' | 'children'>,
@@ -239,6 +252,7 @@ export interface DateRangePickerSlotProps {
 }
 
 export interface DateRangePickerContentProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  slots?: DateRangePickerContentSlots;
   slotProps?: {
     /** List of quick-selection date range presets. */
     presets?: DateRangePickerSlotProps;
@@ -891,6 +905,7 @@ function DateRangePickerPanel({
   className,
   sx,
   slotProps,
+  slots: contentSlots,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
@@ -919,6 +934,10 @@ function DateRangePickerPanel({
     slots,
   } = useDateRangePickerContext('Content');
   const Root = slots?.content ?? 'div';
+  const Presets = contentSlots?.presets ?? 'div';
+  const Calendars = contentSlots?.calendars ?? 'div';
+  const Summary = contentSlots?.summary ?? 'span';
+  const Actions = contentSlots?.actions ?? 'div';
   const summaryId = useId();
   const formatter = useMemo(() => dateTimeFormatter(locale, RANGE_FORMAT_OPTIONS), [locale]);
   const numberFormat = useMemo(() => numberFormatter(locale), [locale]);
@@ -1089,7 +1108,8 @@ function DateRangePickerPanel({
               className={className}
             >
               {presetItems.length > 0 && (
-                <div
+                <Presets
+                  {...slotProps?.presets}
                   role="group"
                   aria-label={messages.presets}
                   data-ui="date-range-picker-presets"
@@ -1116,9 +1136,10 @@ function DateRangePickerPanel({
                       {preset.label}
                     </button>
                   ))}
-                </div>
+                </Presets>
               )}
-              <div
+              <Calendars
+                {...slotProps?.calendars}
                 data-ui="date-range-picker-calendars"
                 className={slotProps?.calendars?.className}
                 css={[calendarsStyle, slotProps?.calendars?.css]}
@@ -1145,9 +1166,10 @@ function DateRangePickerPanel({
                     <Calendar.Grid onPointerMove={handleGridPointerMove} onPointerLeave={() => setPointerDate(null)} />
                   </Calendar>
                 ))}
-              </div>
+              </Calendars>
               <div data-ui="date-range-picker-footer" css={footerStyle}>
-                <span
+                <Summary
+                  {...slotProps?.summary}
                   id={summaryId}
                   role="status"
                   data-ui="date-range-picker-summary"
@@ -1161,8 +1183,9 @@ function DateRangePickerPanel({
                         formattedDays: numberFormat.format(dayCount(summarized)),
                       })
                     : messages.empty}
-                </span>
-                <div
+                </Summary>
+                <Actions
+                  {...slotProps?.actions}
                   data-ui="date-range-picker-actions"
                   className={slotProps?.actions?.className}
                   css={[actionsStyle, slotProps?.actions?.css]}
@@ -1180,7 +1203,7 @@ function DateRangePickerPanel({
                   >
                     {messages.apply}
                   </Button>
-                </div>
+                </Actions>
               </div>
             </Root>
           )}

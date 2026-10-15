@@ -21,6 +21,7 @@ import {
   useState,
   type ChangeEvent,
   type ComponentPropsWithRef,
+  type ComponentType,
   type FocusEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -85,7 +86,8 @@ export interface ThreadTimeProps {
   /** Id of the hidden full date, for the message's `aria-describedby`. */
   fullId: string;
   ui: string;
-  part?: ThreadPartProps;
+  part?: ThreadPartProps & ComponentPropsWithRef<'time'>;
+  component?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'time'>>;
 }
 
 const timeStyle = css({
@@ -95,17 +97,20 @@ const timeStyle = css({
   whiteSpace: 'nowrap',
 });
 
-export function ThreadTime({ epoch, now, formatters, invalidLabel, id, fullId, ui: owner, part }: ThreadTimeProps) {
+export function ThreadTime({ epoch, now, formatters, invalidLabel, id, fullId, ui: owner, part, component }: ThreadTimeProps) {
+  const Time = component ?? 'time';
+  const InvalidTime = component ?? 'span';
   if (epoch === null) {
     return (
-      <span id={id} data-ui={ui(owner, 'time')} className={part?.className} css={[timeStyle, part?.css]}>
+      <InvalidTime {...part} id={id} data-ui={ui(owner, 'time')} className={part?.className} css={[timeStyle, part?.css]}>
         {invalidLabel}
-      </span>
+      </InvalidTime>
     );
   }
   return (
     <>
-      <time
+      <Time
+        {...part}
         id={id}
         dateTime={new Date(epoch).toISOString()}
         data-ui={ui(owner, 'time')}
@@ -113,7 +118,7 @@ export function ThreadTime({ epoch, now, formatters, invalidLabel, id, fullId, u
         css={[timeStyle, part?.css]}
       >
         {now === null ? formatters.full.format(epoch) : relativeTime(epoch, now, formatters.relative)}
-      </time>
+      </Time>
       <span id={fullId} css={visuallyHiddenStyle}>
         {formatters.full.format(epoch)}
       </span>
@@ -148,8 +153,13 @@ export interface ThreadMessageViewProps {
   };
   slots?: {
     article?: ThreadPartProps;
-    time?: ThreadPartProps;
-    avatar?: ThreadPartProps;
+    time?: ThreadPartProps & ComponentPropsWithRef<'time'>;
+    avatar?: ThreadPartProps & ComponentPropsWithRef<'span'>;
+  };
+  components?: {
+    article?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'article'>>;
+    time?: ThreadTimeProps['component'];
+    avatar?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'span'>>;
   };
 }
 
@@ -202,7 +212,10 @@ export function ThreadMessageView({
   avatar,
   articleProps,
   slots,
+  components,
 }: ThreadMessageViewProps) {
+  const Article = components?.article ?? 'article';
+  const AvatarColumn = components?.avatar ?? 'span';
   const authorId = partId(baseId, 'author', messageId);
   const timeId = partId(baseId, 'time', messageId);
   const fullId = partId(baseId, 'when', messageId);
@@ -229,7 +242,7 @@ export function ThreadMessageView({
   return (
     <WithSx className={articleClassName} styles={[articleStyle, articleCss]} sx={sx}>
       {(rootClass) => (
-        <article
+        <Article
           {...restArticleProps}
           ref={articleRef}
           aria-label={effectiveLabel}
@@ -241,9 +254,9 @@ export function ThreadMessageView({
         >
           {/* The author's name is the adjacent text; the portrait only decorates it. */}
           {avatar !== null ? (
-            <span aria-hidden="true" className={slots?.avatar?.className} css={[avatarColumnStyle, slots?.avatar?.css]}>
+            <AvatarColumn {...slots?.avatar} aria-hidden="true" className={slots?.avatar?.className} css={[avatarColumnStyle, slots?.avatar?.css]}>
               {avatar !== undefined ? avatar : <Avatar name={author.name} src={author.avatar} size={avatarSizes[size]} />}
-            </span>
+            </AvatarColumn>
           ) : null}
           <div css={mainStyle}>
             <div css={headerLineStyle}>
@@ -259,12 +272,13 @@ export function ThreadMessageView({
                 fullId={fullId}
                 ui={owner}
                 part={slots?.time}
+                component={components?.time}
               />
               {meta ? <span css={metaStyle}>{meta}</span> : null}
             </div>
             {children}
           </div>
-        </article>
+        </Article>
       )}
     </WithSx>
   );
@@ -299,6 +313,7 @@ export interface ThreadReactionsProps {
   part?: ThreadPartProps;
   overlay?: boolean;
   counts?: ReadonlyMap<string, number>;
+  component?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'div'>>;
 }
 
 export function ThreadReactions({
@@ -317,6 +332,7 @@ export function ThreadReactions({
   part,
   overlay = false,
   counts,
+  component,
 }: ThreadReactionsProps) {
   const mappedCounts = reactions.map(({ emoji, users }) => ({
     emoji,
@@ -338,6 +354,7 @@ export function ThreadReactions({
       pickerId={pickerId}
       overlay={overlay}
       partProps={part}
+      component={component}
       number={formatters.number}
     />
   );
@@ -375,7 +392,12 @@ export interface ThreadComposerProps {
   author?: ThreadAuthor;
   textareaProps?: ThreadTextareaProps;
   submitProps?: ThreadButtonProps;
-  part?: ThreadPartProps;
+  part?: ThreadPartProps & ComponentPropsWithRef<'div'>;
+  component?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'div'>>;
+  slots?: {
+    textarea?: ComponentType<ThreadTextareaProps>;
+    submit?: ComponentType<ThreadButtonProps>;
+  };
   /** Distinguishes composers inside one thread (`data-composer`). */
   kind: string;
   submitOnEnter?: boolean;
@@ -480,13 +502,19 @@ export function ThreadComposer({
   textareaProps,
   submitProps,
   part,
+  component,
+  slots,
   kind,
   submitOnEnter = false,
   allowEmpty = false,
   lockWhilePending = false,
 }: ThreadComposerProps) {
+  const Root = component ?? 'div';
+  const Field = slots?.textarea ?? Textarea;
+  const Submit = slots?.submit ?? Button;
   const baseId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
+  const containerRefs = useMergeRefs([containerRef, part?.ref]);
   const fieldRef = useRef<HTMLTextAreaElement>(null);
   const pendingCaret = useRef<number | null>(null);
   const [caret, setCaret] = useState<number | null>(null);
@@ -589,8 +617,9 @@ export function ThreadComposer({
   const showAvatar = author !== undefined;
 
   return (
-    <div
-      ref={containerRef}
+    <Root
+      {...part}
+      ref={containerRefs}
       data-ui={ui(owner, 'composer')}
       data-composer={kind}
       data-avatar={showAvatar}
@@ -603,7 +632,7 @@ export function ThreadComposer({
         </span>
       ) : null}
       <div css={composerFieldStyle}>
-        <Textarea
+        <Field
           aria-label={label}
           placeholder={placeholder}
           size={textareaSizes[size]}
@@ -634,7 +663,7 @@ export function ThreadComposer({
               {cancelLabel}
             </Button>
           ) : null}
-          <Button
+          <Submit
             variant="solid"
             tone="accent"
             size="sm"
@@ -649,7 +678,7 @@ export function ThreadComposer({
             }}
           >
             {submitLabel}
-          </Button>
+          </Submit>
         </div>
       </div>
       {open ? (
@@ -685,6 +714,6 @@ export function ThreadComposer({
           </div>
         </OverlayPortal>
       ) : null}
-    </div>
+    </Root>
   );
 }

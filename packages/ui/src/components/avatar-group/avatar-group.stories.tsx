@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -9,6 +9,23 @@ import type { AvatarSize, AvatarStatus } from '../avatar';
 import { AvatarGroup, type AvatarGroupMember } from './index';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly AvatarSize[];
+
+function SlotOverflow(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="avatar-group-overflow" />;
+}
+
+export const OverflowReplacement: Story = {
+  render: (args) => <AvatarGroup {...args} max={1} slots={{ overflow: SlotOverflow }} />,
+  play: async ({ canvasElement }) => {
+    const overflow = canvasElement.querySelector('[data-slot="avatar-group-overflow"]');
+    await expect(overflow).toBeInTheDocument();
+    await expect(overflow).toHaveAttribute('data-ui', 'avatar-group-overflow');
+    await expect(getComputedStyle(overflow!).alignItems).toBe('center');
+    await expect(overflow).toHaveAttribute('role', 'img');
+    await expect(overflow).toHaveAccessibleName(/more members?/);
+    await expect(canvasElement.querySelector('[data-ui="avatar-group-overflow"]:not([data-slot])')).toBeNull();
+  },
+};
 const SIZE_PX = { sm: 24, md: 32, lg: 40 } as const;
 const SEPARATION_BORDER_WIDTH = '2px';
 const CSS_PIXEL = 1;

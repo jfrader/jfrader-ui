@@ -1,4 +1,4 @@
-import { Profiler, useState, type ReactNode } from 'react';
+import { Profiler, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -1122,7 +1122,12 @@ export const OutOfRangeValues: Story = {
 const rootRef = fn();
 const handleRef = fn();
 const frameRef = fn();
+function ReplacementHandle(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="image-compare-handle" />;
+}
+
 export const SlotStylingAndRefs: Story = {
+  render: (args) => <ImageCompare {...args} slots={{ handle: ReplacementHandle }} />,
   args: {
     ref: rootRef,
     sx: { paddingBlock: '7px' },
@@ -1139,6 +1144,11 @@ export const SlotStylingAndRefs: Story = {
     const root = part(canvasElement, 'image-compare');
     const frame = part(canvasElement, 'image-compare-frame');
     const handle = canvas.getByRole('slider');
+    await expect(handle).toHaveAttribute('data-slot', 'image-compare-handle');
+    await expect(handle).toHaveAttribute('data-ui', 'image-compare-handle');
+    await expect(handle).toHaveAttribute('aria-valuemin', '0');
+    await expect(getComputedStyle(handle).display).toBe('grid');
+    await expect(canvasElement.querySelector('[data-ui="image-compare-handle"]:not([data-slot])')).toBeNull();
     await expect(rootRef.mock.calls.at(-1)?.[0]).toBe(root);
     await expect(frameRef.mock.calls.at(-1)?.[0]).toBe(frame);
     await expect(handleRef.mock.calls.at(-1)?.[0]).toBe(handle);

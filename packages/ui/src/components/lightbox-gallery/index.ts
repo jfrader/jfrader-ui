@@ -4,4 +4,5 @@ export type {
   LightboxGalleryLabels,
   LightboxGalleryProps,
   LightboxGallerySlotProps,
+  LightboxGallerySlots,
 } from './lightbox-gallery';

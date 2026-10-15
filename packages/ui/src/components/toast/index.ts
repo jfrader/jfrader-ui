@@ -9,4 +9,6 @@ export type {
   ToastPartProps,
   ToastTone,
   ToastViewportProps,
+  ToastSlots,
+  ToastViewportSlots,
 } from './toast';

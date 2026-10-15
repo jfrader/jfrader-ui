@@ -10,6 +10,7 @@ export type {
   CardEasyProps,
   CardCompoundProps,
   CardSlotProps,
+  CardSlots,
   CardTitleProps,
   CardVariant,
 } from './card';

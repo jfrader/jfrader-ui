@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode, SyntheticEvent } from 'react';
+import type { ComponentPropsWithRef, CSSProperties, ReactNode, SyntheticEvent } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, userEvent, waitFor, within } from 'storybook/test';
@@ -100,6 +100,67 @@ type UnknownSlot = NonNullable<DialogEasyProps['slotProps']>['unknown'];
 type UnknownReplacement = NonNullable<DialogEasyProps['slots']>['unknown'];
 
 function UnusedDialogRoot() { return null; }
+
+function ReplacementShell(props: ComponentPropsWithRef<'dialog'>) {
+  return <dialog {...props} data-testid="replacement-shell"
+    data-has-cancel={typeof props.onCancel === 'function'}
+    data-has-close={typeof props.onClose === 'function'} />;
+}
+
+function ReplacementPanel(props: SurfacePartProps) {
+  return <div {...props} data-testid="replacement-panel" />;
+}
+
+export const ShellAndPanelSlots: EasyStory = {
+  tags: ['!autodocs'],
+  args: {
+    triggerLabel: 'Open profile', title: TITLE, description: DESCRIPTION,
+    content: <TextField label="Display name" />, closeLabel: 'Close',
+    slots: { content: ReplacementShell, panel: ReplacementPanel },
+    onOpenChange: fn(),
+    slotProps: {
+      content: {
+        className: 'replacement-shell-class',
+        ref: (node) => { if (node) node.dataset.shellRef = node.tagName; },
+        onCancel: fn(), onClose: fn(),
+      },
+      panel: { className: 'replacement-panel-class' },
+      root: { ref: (node) => { if (node) node.dataset.panelRef = node.tagName; } },
+    },
+  },
+  render: (args) => <Dialog {...args} />,
+  play: async ({ canvas, canvasElement, args, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'Open profile' });
+    await userEvent.click(trigger);
+    const shell = await canvas.findByRole('dialog', { name: TITLE });
+    const panel = within(shell).getByTestId('replacement-panel');
+    await expect(shell).toBe(canvas.getByTestId('replacement-shell'));
+    await expect(shell).toHaveAttribute('data-ui', 'dialog');
+    await expect(shell).toHaveClass('replacement-shell-class');
+    await expect(shell.className).toMatch(/css-/);
+    await expect(shell).toHaveAttribute('data-shell-ref', 'DIALOG');
+    await expect(shell).toHaveAttribute('data-has-cancel', 'true');
+    await expect(shell).toHaveAttribute('data-has-close', 'true');
+    await expect(shell).toHaveAttribute('data-state', 'open');
+    await expect(shell).toHaveAttribute('aria-modal', 'true');
+    await expect(shell).toHaveAccessibleDescription(DESCRIPTION);
+    await expect(canvasElement.querySelectorAll('dialog')).toHaveLength(1);
+    await expect(panel).toHaveAttribute('data-ui', 'dialog-panel');
+    await expect(panel).toHaveClass('replacement-panel-class');
+    await expect(panel.className).toMatch(/css-/);
+    await expect(panel).toHaveAttribute('data-panel-ref', 'DIV');
+    await expect(shell.querySelectorAll('[data-ui~="dialog-panel"]')).toHaveLength(1);
+    await expect(shell.firstElementChild).toBe(panel);
+    requestEscape(shell);
+    await expectClosed(canvasElement, trigger);
+    await expect(args.slotProps?.content?.onCancel).toHaveBeenCalledTimes(1);
+    await expect(args.slotProps?.content?.onClose).toHaveBeenCalledTimes(1);
+    await userEvent.click(trigger);
+    (shell as HTMLDialogElement).close();
+    await expectClosed(canvasElement, trigger);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+  },
+};
 
 /** Restyle the generated header and replace the panel's material root. */
 export const SlotProps: EasyStory = {

@@ -1,1 +1,1 @@
-export { MetricCard, type MetricCardProps, type MetricCardSlotProps } from './metric-card';
+export { MetricCard, type MetricCardProps, type MetricCardSlotProps, type MetricCardSlots } from './metric-card';

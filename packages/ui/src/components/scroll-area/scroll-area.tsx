@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type PointerEvent,
   type Ref,
@@ -32,6 +33,14 @@ export interface ScrollAreaSlotProps {
   /** Scrollbar thumb element indicating scroll position. */
   thumb?: Slot;
 }
+export interface ScrollAreaSlots {
+  /** Scrollable viewport holding the content. */
+  viewport?: ComponentType<Slot>;
+  /** Scrollbar track along which the thumb moves. */
+  track?: ComponentType<Slot>;
+  /** Scrollbar thumb indicating scroll position. */
+  thumb?: ComponentType<Slot>;
+}
 export interface ScrollAreaProps extends Omit<ComponentPropsWithRef<'div'>, 'onScroll'>, SxProps {
   orientation?: 'vertical' | 'horizontal' | 'both';
   fade?: number;
@@ -43,6 +52,7 @@ export interface ScrollAreaProps extends Omit<ComponentPropsWithRef<'div'>, 'onS
   onScroll?: (event: UIEvent<HTMLDivElement>) => void;
   onEdgeChange?: (edges: ScrollAreaEdges) => void;
   slotProps?: ScrollAreaSlotProps;
+  slots?: ScrollAreaSlots;
 }
 
 const DEFAULT_HIDE_DELAY = 900;
@@ -211,6 +221,7 @@ export function ScrollArea({
   onScroll,
   onEdgeChange,
   slotProps,
+  slots,
   ...rest
 }: ScrollAreaProps) {
   const viewport = useRef<HTMLDivElement>(null);
@@ -224,6 +235,9 @@ export function ScrollArea({
     end: (event?: PointerEvent<HTMLDivElement>) => void;
   }>(null);
   const notifyEdges = useLatestCallback(onEdgeChange);
+  const Viewport = slots?.viewport ?? 'div';
+  const Track = slots?.track ?? 'div';
+  const Thumb = slots?.thumb ?? 'div';
   const viewportRef = slotProps?.viewport?.ref;
   const attachViewport = useCallback(
     (node: HTMLDivElement | null) => {
@@ -469,7 +483,7 @@ export function ScrollArea({
             if (event.defaultPrevented) wheelVetoes.current.add(event.nativeEvent);
           }}
         >
-          <div
+          <Viewport
             {...viewportProps}
             ref={attachViewport}
             css={[viewportStyle, viewportCss]}
@@ -508,9 +522,9 @@ export function ScrollArea({
             >
               {children}
             </div>
-          </div>
+          </Viewport>
           {(['block', 'inline'] as const).map((axis) => (
-            <div
+            <Track
               {...track}
               key={axis}
               ref={(node) => {
@@ -549,7 +563,7 @@ export function ScrollArea({
                 actions.current?.end(event);
               }}
             >
-              <div
+              <Thumb
                 {...thumb}
                 ref={(node) => {
                   if (node) thumbs.current[axis] = node;
@@ -566,7 +580,7 @@ export function ScrollArea({
                 aria-hidden="true"
                 tabIndex={undefined}
               />
-            </div>
+            </Track>
           ))}
         </div>
       )}
