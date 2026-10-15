@@ -147,6 +147,15 @@ function SlotLink({ component }: { component: CatalogRef }) {
   return <Link href={`#/components/${component.slug}`}>{component.name}</Link>;
 }
 
+/** Says how many parts there are and how they can be customized, without an empty "the rest". */
+function summarize(slots: SlotRow[]): string {
+  const total = `${slots.length} ${slots.length === 1 ? 'part' : 'parts'}`;
+  const replaceable = slots.filter((slot) => slot.replaced).length;
+  if (replaceable === 0) return `${total}, styles only.`;
+  if (replaceable === slots.length) return `${total}, all replaceable.`;
+  return `${total}, ${replaceable} replaceable; the rest take styles only.`;
+}
+
 function SlotDefault({ slot }: { slot: SlotRow }) {
   if (slot.component) return <>Default: <SlotLink component={slot.component} /></>;
   if (slot.part) return <>Default part: <Name>{`data-ui="${slot.part}"`}</Name></>;
@@ -177,16 +186,13 @@ export default function Composition({ entry, components, uses }: CompositionProp
   ));
   const related = uses.filter((item) => item.slug !== entry.slug);
   if (slots.length === 0 && related.length === 0) return null;
-  const replaceable = slots.filter((slot) => slot.replaced).length;
   return (
     <>
       {slots.length > 0 ? (
         <section>
           <h2>Slots</h2>
           <Panel variant="flat">
-            <Intro>
-              {`${slots.length} parts, ${replaceable} of them replaceable. The rest take styles only.`}
-            </Intro>
+            <Intro>{summarize(slots)}</Intro>
             <List>
               {slots.map((slot, index) => (
                 <Slot key={slot.name}>
