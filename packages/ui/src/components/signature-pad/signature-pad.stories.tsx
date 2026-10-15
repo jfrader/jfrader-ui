@@ -3,6 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, within, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Dialog } from '../dialog';
@@ -98,12 +100,12 @@ const seeded: SignatureStroke[] = [
     ],
   },
 ];
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: 'min(100%, 42rem)',
   display: 'grid',
   gap: vars.space[4],
 });
-const narrowStyle = css({ inlineSize: 'min(100%, 18rem)' });
+const NarrowFrame = styled.div({ inlineSize: 'min(100%, 18rem)' });
 const meta = {
   title: 'Inputs/SignaturePad',
   component: SignaturePad,
@@ -118,9 +120,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -313,9 +315,9 @@ export const Narrow: Story = {
   args: { signer: 'Alexandra with a long surname' },
   decorators: [
     (Story) => (
-      <div css={narrowStyle}>
+      <NarrowFrame>
         <Story />
-      </div>
+      </NarrowFrame>
     ),
   ],
 };
@@ -934,6 +936,7 @@ export const ExternalReplacement: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
+// The hidden-canvas and customization stories exercise the documented slot `css` API.
 const hiddenApi = createRef<SignaturePadHandle>();
 export const HiddenCanvas: Story = {
   args: {

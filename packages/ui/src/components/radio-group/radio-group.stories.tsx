@@ -1,4 +1,4 @@
-import type { CSSProperties, ComponentPropsWithRef } from 'react';
+import type { ComponentPropsWithRef } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
@@ -29,6 +29,9 @@ export const ReplaceRadioParts: Story = {
   },
 };
 
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
 const OPTIONS = [
   { value: 'free', label: 'Free', description: 'Up to 3 projects.' },
   { value: 'pro', label: 'Pro', description: 'Unlimited projects.' },
@@ -37,20 +40,20 @@ const OPTIONS = [
 
 const ORIENTATIONS = ['vertical', 'horizontal'] as const satisfies readonly RadioGroupOrientation[];
 
-const fieldStyle = {
+const Field = styled.div({
   display: 'grid',
   gap: vars.space[2],
-} satisfies CSSProperties;
+});
 
-const groupLabelStyle = {
+const GroupLabel = styled.span({
   fontSize: vars.textSize.sm,
   fontWeight: vars.fontWeight.medium,
-} satisfies CSSProperties;
+});
 
-const stackStyle = {
+const Stack = styled.div({
   display: 'grid',
   gap: vars.space[6],
-} satisfies CSSProperties;
+});
 
 const meta = {
   title: 'Inputs/RadioGroup',
@@ -137,6 +140,7 @@ export const EasyKeyboard: EasyStory = {
 function EasyRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="radio-group" />;
 }
+// This story exercises consumer/slot `css`, `sx` and inline-style precedence.
 export const EasyCustomization: EasyStory = {
   ...Easy,
   parameters: { docs: { source: { code: `<RadioGroup label="Plan" options={plans} defaultValue="free"
@@ -186,10 +190,10 @@ function RadioExample({
 }: RadioGroupProps & { groupLabel?: string; disabledValue?: string }) {
   const labelId = useId();
   return (
-    <div style={fieldStyle}>
-      <span id={labelId} style={groupLabelStyle}>
+    <Field>
+      <GroupLabel id={labelId}>
         {groupLabel}
-      </span>
+      </GroupLabel>
       <RadioGroup {...props} aria-labelledby={labelId}>
         {OPTIONS.map((option) => (
           <RadioGroup.Radio
@@ -201,7 +205,7 @@ function RadioExample({
           />
         ))}
       </RadioGroup>
-    </div>
+    </Field>
   );
 }
 RadioExample.displayName = 'RadioExample';
@@ -265,10 +269,10 @@ export const WithoutDescriptions: Story = {
 export const Controlled: Story = {
   args: { onValueChange: fn() },
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       <ControlledRadioGroup {...args} />
       <RadioExample groupLabel="Locked plan" value="free" onValueChange={args.onValueChange} />
-    </div>
+    </Stack>
   ),
   play: async ({ args, canvasElement }) => {
     const plan = getGroup(canvasElement);

@@ -2,6 +2,8 @@ import { StrictMode, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ScrollArea, type ScrollAreaProps } from './index';
 
@@ -23,6 +25,13 @@ export const ReplaceScrollParts: Story = {
   },
 };
 
+const Frame = styled.div({ inlineSize: `min(32rem, calc(100vw - ${vars.space[8]}))`, color: vars.color.text, fontFamily: vars.font.sans, lineHeight: vars.lineHeight.base });
+const ActivityList = styled.ol({ margin: 0, padding: vars.space[4], listStyle: 'none', display: 'grid', gap: vars.space[4] });
+const HorizontalActivityList = styled(ActivityList)({ display: 'flex' });
+const ActivityItem = styled.li({ padding: vars.space[4], background: vars.color.surfaceRaised, border: `1px solid ${vars.color.border}`, borderRadius: vars.radius.sm });
+const HorizontalActivityItem = styled(ActivityItem)({ minInlineSize: '12rem', scrollSnapAlign: 'start' });
+const WideContent = styled.div({ minInlineSize: '60rem' });
+const Description = styled.span({ backgroundColor: vars.color.surfaceInset });
 const meta = {
   title: 'Layout/ScrollArea',
   component: ScrollArea,
@@ -44,16 +53,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div
-        style={{
-          inlineSize: `min(32rem, calc(100vw - ${vars.space[8]}))`,
-          color: vars.color.text,
-          fontFamily: vars.font.sans,
-          lineHeight: vars.lineHeight.base,
-        }}
-      >
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
 } satisfies Meta<typeof ScrollArea>;
@@ -61,31 +63,16 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 function Items({ count = 30, horizontal = false }: { count?: number; horizontal?: boolean }) {
+  const List = horizontal ? HorizontalActivityList : ActivityList;
+  const Item = horizontal ? HorizontalActivityItem : ActivityItem;
   return (
-    <ol
-      style={{
-        margin: 0,
-        padding: vars.space[4],
-        listStyle: 'none',
-        display: horizontal ? 'flex' : 'grid',
-        gap: vars.space[4],
-      }}
-    >
+    <List>
       {Array.from({ length: count }, (_, index) => (
-        <li
-          key={index}
-          style={{
-            padding: vars.space[4],
-            background: vars.color.surfaceRaised,
-            border: `1px solid ${vars.color.border}`,
-            borderRadius: vars.radius.sm,
-            ...(horizontal ? { minInlineSize: '12rem', scrollSnapAlign: 'start' } : {}),
-          }}
-        >
+        <Item key={index}>
           Activity {index + 1}
-        </li>
+        </Item>
       ))}
-    </ol>
+    </List>
   );
 }
 const viewport = (element: HTMLElement) =>
@@ -113,7 +100,7 @@ const expectAtMost = async (actual: number, bound: number) => {
 const expectAtLeast = async (actual: number, bound: number) => {
   await expect(actual).toBeGreaterThanOrEqual(bound - SUBPIXEL_TOLERANCE);
 };
-const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
+const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], paddingBlock: vars.space[1], paddingInline: `calc(${vars.space[5]} / 2)`, boxSizing: 'border-box' });
 /** Story-only: the computed value an authored length (a token or rem) resolves to on a throwaway probe. */
 const resolveLength = (document: Document, property: string, value: string) => {
   const probe = document.createElement('div');
@@ -187,9 +174,9 @@ export const BothAxes: Story = {
   args: { orientation: 'both' },
   render: (args) => (
     <ScrollArea {...args}>
-      <div style={{ minInlineSize: '60rem' }}>
+      <WideContent>
         <Items />
-      </div>
+      </WideContent>
     </ScrollArea>
   ),
   play: async ({ canvasElement }) => {
@@ -262,9 +249,9 @@ function DynamicExample(args: ScrollAreaProps) {
   const [count, setCount] = useState(1);
   return (
     <>
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => setCount(count === 1 ? 30 : 1)}>
+      <FixtureButton type="button" onClick={() => setCount(count === 1 ? 30 : 1)}>
         Toggle content
-      </button>
+      </FixtureButton>
       <ScrollArea {...args}>
         <Items count={count} />
       </ScrollArea>
@@ -406,19 +393,19 @@ export const KeyboardNavigation: Story = {
   args: { onEdgeChange: fn() },
   render: (args) => (
     <>
-      <button style={FIXTURE_BUTTON} type="button">
+      <FixtureButton type="button">
         Before
-      </button>
+      </FixtureButton>
       <ScrollArea {...args}>
         <Items />
-        <button style={FIXTURE_BUTTON} type="button" onClick={insideActivation}>
+        <FixtureButton type="button" onClick={insideActivation}>
           Inside
-        </button>
+        </FixtureButton>
         <textarea aria-label="Notes" defaultValue="Notes" />
       </ScrollArea>
-      <button style={FIXTURE_BUTTON} type="button">
+      <FixtureButton type="button">
         After
-      </button>
+      </FixtureButton>
     </>
   ),
   play: async ({ args, canvas, canvasElement, userEvent }) => {
@@ -518,6 +505,7 @@ export const KeyboardNavigation: Story = {
 };
 const rootAttachment = fn((_node: HTMLDivElement | null) => {});
 const viewportAttachment = fn((_node: HTMLDivElement | null) => {});
+// This story exercises the documented viewport, track and thumb slot `css` API.
 export const RefsAndSlots: Story = {
   args: {
     ref: rootAttachment,
@@ -538,9 +526,9 @@ export const RefsAndSlots: Story = {
   render: (args) => (
     <StrictMode>
       <span id="external-title">Updates</span>
-      <span id="external-description" style={{ backgroundColor: vars.color.surfaceInset }}>
+      <Description id="external-description">
         Recent activity
-      </span>
+      </Description>
       <ScrollArea {...args}>
         <Items />
       </ScrollArea>
@@ -722,9 +710,9 @@ function UnmountExample(args: ScrollAreaProps) {
   const [mounted, setMounted] = useState(true);
   return (
     <StrictMode>
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => setMounted(false)}>
+      <FixtureButton type="button" onClick={() => setMounted(false)}>
         Remove panel
-      </button>
+      </FixtureButton>
       {mounted && (
         <ScrollArea {...args}>
           <Items />

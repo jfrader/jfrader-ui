@@ -2,6 +2,9 @@ import { useId, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor } from 'storybook/test';
 import { withLightTheme } from '../../testing/story-decorators';
+import { vars } from '@jfrader/tokens/vars';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { ThemeRoot } from '../theme-root';
 import { SegmentedControl, type SegmentedControlCompoundProps as SegmentedControlProps, type SegmentedControlEasyProps } from './index';
 
@@ -29,6 +32,7 @@ export const ReplaceTrackAndSelection: Story = {
   },
 };
 
+const Stack = styled.div({ display: 'grid', gap: vars.space[4], justifyItems: 'start' });
 const OPTIONS = ['List', 'Grid', 'Board', 'Table'];
 const LONG_OPTIONS = ['Recent projects', 'Assigned to me', 'Shared with the team', 'Archived projects'];
 const usage = `<SegmentedControl label="Layout" defaultValue="List">
@@ -238,11 +242,11 @@ export const ScopedTheme: Story = {
 };
 export const Sizes: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: 16, justifyItems: 'start' }}>
+    <Stack>
       {(['sm', 'md', 'lg'] as const).map((size) => (
         <Example {...args} key={size} size={size} label={`${size} layout`} />
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvas }) => {
     for (const [index, group] of canvas.getAllByRole('radiogroup').entries()) {
@@ -563,10 +567,10 @@ export const ForcedColors: Story = {
 };
 export const MultipleInstances: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: 16, justifyItems: 'start' }}>
+    <Stack>
       <Example {...args} label="Primary layout" />
       <Example {...args} label="Secondary layout" />
-    </div>
+    </Stack>
   ),
   play: async ({ canvas, userEvent }) => {
     const radios = canvas.getAllByRole('radio');

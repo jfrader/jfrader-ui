@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef, CSSProperties, ReactNode } from 'react';
+import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within, type Mock } from 'storybook/test';
@@ -8,28 +8,31 @@ import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Popover, type PopoverCompoundProps as PopoverProps, type PopoverEasyProps } from './index';
 
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
 const TRIGGER = 'Share';
 const HEADING = 'Share link';
 const AFTER = 'After popover';
 const OUTSIDE = 'Outside target';
 
-const headingStyle = {
+const Heading = styled.h2({
   margin: 0,
   marginBlockEnd: vars.space[3],
   fontSize: vars.textSize.md,
   fontWeight: vars.fontWeight.semibold,
-} satisfies CSSProperties;
+});
 
-const actionsStyle = {
+const Actions = styled.div({
   display: 'flex',
   gap: vars.space[2],
-} satisfies CSSProperties;
+});
 
-const rowStyle = {
+const Row = styled.div({
   display: 'flex',
   gap: vars.space[3],
   alignItems: 'center',
-} satisfies CSSProperties;
+});
 
 const meta: Meta<PopoverProps> = {
   title: 'Surfaces/Popover',
@@ -83,13 +86,13 @@ PopoverPanelRoot.displayName = 'PopoverPanelRoot';
 function PopoverBody({ labelledBy }: { labelledBy: string }) {
   return (
     <>
-      <h2 id={labelledBy} style={headingStyle}>
+      <Heading id={labelledBy}>
         {HEADING}
-      </h2>
-      <div style={actionsStyle}>
+      </Heading>
+      <Actions>
         <Button size="sm">Copy link</Button>
         <Button size="sm">Email link</Button>
-      </div>
+      </Actions>
     </>
   );
 }
@@ -111,7 +114,7 @@ PopoverExample.displayName = 'PopoverExample';
 function PopoverWithAfter(props: PopoverProps) {
   const headingId = useId();
   return (
-    <div style={rowStyle}>
+    <Row>
       <Popover {...props}>
         <Popover.Trigger>{TRIGGER}</Popover.Trigger>
         <Popover.Content aria-labelledby={headingId}>
@@ -119,7 +122,7 @@ function PopoverWithAfter(props: PopoverProps) {
         </Popover.Content>
       </Popover>
       <Button>{AFTER}</Button>
-    </div>
+    </Row>
   );
 }
 PopoverWithAfter.displayName = 'PopoverWithAfter';
@@ -127,7 +130,7 @@ PopoverWithAfter.displayName = 'PopoverWithAfter';
 function PopoverWithOutside(props: PopoverProps) {
   const headingId = useId();
   return (
-    <div style={rowStyle}>
+    <Row>
       <Popover {...props}>
         <Popover.Trigger>{TRIGGER}</Popover.Trigger>
         <Popover.Content aria-labelledby={headingId}>
@@ -135,7 +138,7 @@ function PopoverWithOutside(props: PopoverProps) {
         </Popover.Content>
       </Popover>
       <Button>{OUTSIDE}</Button>
-    </div>
+    </Row>
   );
 }
 PopoverWithOutside.displayName = 'PopoverWithOutside';
@@ -284,7 +287,7 @@ export const LongContent: Story = {
     <Popover {...args} defaultOpen>
       <Popover.Trigger>{TRIGGER}</Popover.Trigger>
       <Popover.Content aria-label={HEADING}>
-        <h2 style={headingStyle}>{HEADING}</h2>
+        <Heading>{HEADING}</Heading>
         {Array.from({ length: 40 }, (_, index) => <p key={index}>Link {index + 1}</p>)}
         <Button size="sm">Copy link</Button>
       </Popover.Content>
@@ -410,7 +413,7 @@ function NestedPopovers() {
     <Popover onOpenChange={outerOpenChange}>
       <Popover.Trigger>{TRIGGER}</Popover.Trigger>
       <Popover.Content aria-label={HEADING}>
-        <div style={actionsStyle}>
+        <Actions>
           <Button size="sm">Copy link</Button>
           <Popover onOpenChange={innerOpenChange}>
             <Popover.Trigger>Link settings</Popover.Trigger>
@@ -418,7 +421,7 @@ function NestedPopovers() {
               <Button size="sm">Expire link</Button>
             </Popover.Content>
           </Popover>
-        </div>
+        </Actions>
       </Popover.Content>
     </Popover>
   );

@@ -3,6 +3,8 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { Button } from '../button';
 import {
   createRefCleanupTracker,
@@ -30,6 +32,8 @@ function CustomPopoverContent({ className, ref, ...props }: ComponentPropsWithRe
   return <div ref={ref} {...props} className={className} data-slot="custom-popover-content" />;
 }
 
+const Frame = styled.div({ padding: vars.space[4] });
+// Inline styles here are the subject of the root/slot style-merge contract.
 const rootRefTracker = createRefCleanupTracker<HTMLDivElement>();
 
 function PopoverCustomizationFixture() {
@@ -37,7 +41,7 @@ function PopoverCustomizationFixture() {
   const [count, setCount] = useState(0);
 
   return (
-    <div style={{ padding: vars.space[4] }}>
+    <Frame>
       <Button onClick={() => setCount((c) => c + 1)}>Rerender ({count})</Button>
       <Button onClick={() => setMounted((m) => !m)}>Toggle mount</Button>
       {mounted && (
@@ -63,7 +67,7 @@ function PopoverCustomizationFixture() {
           }}
         />
       )}
-    </div>
+    </Frame>
   );
 }
 

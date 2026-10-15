@@ -5,6 +5,8 @@ import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { base } from '@jfrader/tokens';
 import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { FlipGameCard } from '../flip-game-card';
 import { GameCard } from '../game-card';
@@ -17,11 +19,14 @@ const tileSides: Record<PatternSize, number> = {
   md: Number.parseFloat(base.space[4]),
   lg: Number.parseFloat(base.space[6]),
 };
+// The SSR probe retains `css` to leave its hydration play function unchanged.
 const sampleStyle = css({ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg });
-const smallSampleStyle = css({ inlineSize: vars.size.gameCardSm, blockSize: vars.size.gameCardSm });
-const galleryStyle = css({ display: 'grid', gap: vars.space[6], gridTemplateColumns: 'repeat(2, max-content)' });
-const rowStyle = css({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
-const labelStyle = css({ marginBlock: vars.space[2], color: vars.color.text, fontSize: vars.textSize.sm });
+const Sample = styled(Pattern)({ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg });
+const SmallSample = styled(Sample)({ inlineSize: vars.size.gameCardSm, blockSize: vars.size.gameCardSm });
+const Gallery = styled.div({ display: 'grid', gap: vars.space[6], gridTemplateColumns: 'repeat(2, max-content)' });
+const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+const Label = styled.h2({ marginBlock: vars.space[2], color: vars.color.text, fontSize: vars.textSize.sm });
+const SeamStack = styled.div({ display: 'grid', gap: vars.space[6] });
 
 const meta = {
   title: 'Media/Pattern',
@@ -39,11 +44,14 @@ const meta = {
       source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
 import { GameCard } from '@jfrader/ui/game-card';
 import { vars } from '@jfrader/tokens/vars';
+import { styled } from '@jfrader/ui';
+
+const Sample = styled(Pattern)({ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg });
 
 export function PatternExamples() {
   return (
     <>
-      <Pattern variant="diagonal" tone="accent" sx={{ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg }} />
+      <Sample variant="diagonal" tone="accent" />
       <GameCard label="Card back">
         <Pattern variant="diagonal" tone="card" size="sm" />
       </GameCard>
@@ -75,10 +83,12 @@ export const Diagonal: Story = {
   name: 'Diagonal',
   parameters: { docs: { source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
 import { vars } from '@jfrader/tokens/vars';
+import { styled } from '@jfrader/ui';
 
-<Pattern variant="diagonal" size="md" tone="accent"
-  sx={{ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg }} />` } } },
-  render: (args) => <Pattern {...args} css={sampleStyle} />,
+const Sample = styled(Pattern)({ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg });
+
+<Sample variant="diagonal" size="md" tone="accent" />` } } },
+  render: (args) => <Sample {...args} />,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui="pattern"]');
     await expect(root).toHaveAttribute('aria-hidden', 'true');
@@ -91,32 +101,37 @@ export const Default: Story = {
   name: 'Default',
   parameters: { docs: { source: { language: 'tsx', code: `import { Pattern, type PatternVariant } from '@jfrader/ui/pattern';
 import { vars } from '@jfrader/tokens/vars';
+import { styled } from '@jfrader/ui';
 
 const variants: PatternVariant[] = ['stripes', 'diagonal', 'checks', 'dots', 'waves', 'chevron'];
-const sample = { inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg };
+const Sample = styled(Pattern)({ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg });
+const SmallSample = styled(Sample)({ inlineSize: vars.size.gameCardSm, blockSize: vars.size.gameCardSm });
+const Gallery = styled.div({ display: 'grid', gap: vars.space[6], gridTemplateColumns: 'repeat(2, max-content)' });
+const Label = styled.h2({ marginBlock: vars.space[2], color: vars.color.text, fontSize: vars.textSize.sm });
+const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
 
 export function PatternGallery() {
-  return <div style={{ display: 'grid', gap: vars.space[6], gridTemplateColumns: 'repeat(2, max-content)' }}>
+  return <Gallery>
     {variants.map((variant) => <section key={variant}>
-      <h2 style={{ marginBlock: vars.space[2], color: vars.color.text, fontSize: vars.textSize.sm }}>{variant}</h2>
-      <div style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
-        <Pattern variant={variant} size="sm" tone="accent" sx={{ inlineSize: vars.size.gameCardSm, blockSize: vars.size.gameCardSm }} />
-        <Pattern variant={variant} size="sm" tone="accent" sx={sample} />
-        <Pattern variant={variant} size="lg" tone="accent" sx={sample} />
-      </div>
+      <Label>{variant}</Label>
+      <Row>
+        <SmallSample variant={variant} size="sm" tone="accent" />
+        <Sample variant={variant} size="sm" tone="accent" />
+        <Sample variant={variant} size="lg" tone="accent" />
+      </Row>
     </section>)}
-  </div>;
+  </Gallery>;
 }` } } },
-  render: (args) => <div css={galleryStyle}>
+  render: (args) => <Gallery>
     {variants.map((variant) => <section key={variant}>
-      <h2 css={labelStyle}>{variant}</h2>
-      <div css={rowStyle}>
-        <Pattern {...args} variant={variant} size="sm" css={smallSampleStyle} />
-        <Pattern {...args} variant={variant} size="sm" css={sampleStyle} />
-        <Pattern {...args} variant={variant} size="lg" css={sampleStyle} />
-      </div>
+      <Label>{variant}</Label>
+      <Row>
+        <SmallSample {...args} variant={variant} size="sm" />
+        <Sample {...args} variant={variant} size="sm" />
+        <Sample {...args} variant={variant} size="lg" />
+      </Row>
     </section>)}
-  </div>,
+  </Gallery>,
   play: async ({ canvasElement }) => {
     const roots = canvasElement.querySelectorAll('[data-ui="pattern"]');
     const ids = Array.from(canvasElement.querySelectorAll('pattern'), (tile) => tile.id);
@@ -138,28 +153,34 @@ export const GalleryLight: Story = { ...Default, name: 'Gallery light theme', de
 export const Tones: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
 import { vars } from '@jfrader/tokens/vars';
+import { styled } from '@jfrader/ui';
 
-<div style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
+const Sample = styled(Pattern)({ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg });
+const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+
+<Row>
   {(['neutral', 'accent', 'card'] as const).map((tone) =>
-    <Pattern key={tone} variant="diagonal" size="md" tone={tone}
-      sx={{ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg }} />)}
-</div>` } } },
-  render: (args) => <div css={rowStyle}>{(['neutral', 'accent', 'card'] as const).map((tone) =>
-    <Pattern {...args} key={tone} tone={tone} css={sampleStyle} />)}</div>,
+    <Sample key={tone} variant="diagonal" size="md" tone={tone} />)}
+</Row>` } } },
+  render: (args) => <Row>{(['neutral', 'accent', 'card'] as const).map((tone) =>
+    <Sample {...args} key={tone} tone={tone} />)}</Row>,
 };
 export const TonesLight: Story = { ...Tones, decorators: [withLightTheme] };
 
 export const TileScale: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
 import { vars } from '@jfrader/tokens/vars';
+import { styled } from '@jfrader/ui';
 
-<div style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
+const Sample = styled(Pattern)({ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg });
+const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+
+<Row>
   {[0.5, 1, 2, 0, -1, Infinity].map((scale) =>
-    <Pattern key={scale} variant="diagonal" size="md" tone="accent" scale={scale}
-      sx={{ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg }} />)}
-</div>` } } },
-  render: (args) => <div css={rowStyle}>{[0.5, 1, 2, 0, -1, Infinity].map((scale) =>
-    <Pattern {...args} key={scale} scale={scale} css={sampleStyle} />)}</div>,
+    <Sample key={scale} variant="diagonal" size="md" tone="accent" scale={scale} />)}
+</Row>` } } },
+  render: (args) => <Row>{[0.5, 1, 2, 0, -1, Infinity].map((scale) =>
+    <Sample {...args} key={scale} scale={scale} />)}</Row>,
   play: async ({ canvasElement }) => {
     for (const root of canvasElement.querySelectorAll('[data-ui="pattern"]')) {
       const scale = Number(root.getAttribute('data-scale'));
@@ -175,22 +196,25 @@ import { vars } from '@jfrader/tokens/vars';
 export const Direction: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { Pattern, type PatternVariant } from '@jfrader/ui/pattern';
 import { vars } from '@jfrader/tokens/vars';
+import { styled } from '@jfrader/ui';
 
 const variants: PatternVariant[] = ['stripes', 'diagonal', 'checks', 'dots', 'waves', 'chevron'];
-const sample = { inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg };
+const Sample = styled(Pattern)({ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg });
+const Gallery = styled.div({ display: 'grid', gap: vars.space[6], gridTemplateColumns: 'repeat(2, max-content)' });
+const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
 
-<div style={{ display: 'grid', gap: vars.space[6], gridTemplateColumns: 'repeat(2, max-content)' }}>
-  {variants.map((variant) => <div key={variant} style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
-    <div dir="rtl"><Pattern variant={variant} tone="accent" dir="ltr" sx={sample} /></div>
-    <div dir="rtl"><Pattern variant={variant} tone="accent" sx={sample} /></div>
-    <Pattern variant={variant} tone="accent" dir="rtl" sx={sample} />
-  </div>)}
-</div>` } } },
-  render: (args) => <div css={galleryStyle}>{variants.map((variant) => <div css={rowStyle} key={variant}>
-    <div dir="rtl"><Pattern {...args} variant={variant} dir="ltr" css={sampleStyle} /></div>
-    <div dir="rtl"><Pattern {...args} variant={variant} css={sampleStyle} /></div>
-    <Pattern {...args} variant={variant} dir="rtl" css={sampleStyle} />
-  </div>)}</div>,
+<Gallery>
+  {variants.map((variant) => <Row key={variant}>
+    <div dir="rtl"><Sample variant={variant} tone="accent" dir="ltr" /></div>
+    <div dir="rtl"><Sample variant={variant} tone="accent" /></div>
+    <Sample variant={variant} tone="accent" dir="rtl" />
+  </Row>)}
+</Gallery>` } } },
+  render: (args) => <Gallery>{variants.map((variant) => <Row key={variant}>
+    <div dir="rtl"><Sample {...args} variant={variant} dir="ltr" /></div>
+    <div dir="rtl"><Sample {...args} variant={variant} /></div>
+    <Sample {...args} variant={variant} dir="rtl" />
+  </Row>)}</Gallery>,
   play: async ({ canvasElement }) => {
     for (const root of canvasElement.querySelectorAll('[data-ui="pattern"]')) {
       const direction = root.getAttribute('dir') ?? root.parentElement?.closest('[dir]')?.getAttribute('dir');
@@ -205,19 +229,22 @@ export const FlippedCard: Story = {
 import { GameCard } from '@jfrader/ui/game-card';
 import { FlipGameCard } from '@jfrader/ui/flip-game-card';
 import { vars } from '@jfrader/tokens/vars';
+import { styled } from '@jfrader/ui';
 
-<div style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
+const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+
+<Row>
   {(['sm', 'md', 'lg'] as const).map((size) =>
     <FlipGameCard key={size} size={size} flipped
       front={<GameCard label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />}
       back={<GameCard label="Patterned card back"><Pattern variant="diagonal" tone="card" size="sm" /></GameCard>} />)}
-</div>` } } },
-  render: (args) => <div css={rowStyle}>{(['sm', 'md', 'lg'] as const).map((size) =>
+</Row>` } } },
+  render: (args) => <Row>{(['sm', 'md', 'lg'] as const).map((size) =>
     <FlipGameCard key={size} size={size} flipped
       front={<GameCard label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />}
       back={<GameCard label="Patterned card back">
         <Pattern {...args} tone="card" size="sm" />
-      </GameCard>} />)}</div>,
+      </GameCard>} />)}</Row>,
   play: async ({ canvas }) => {
     await expect(canvas.getAllByRole('img', { name: 'Patterned card back' })).toHaveLength(3);
     await expect(canvas.queryByRole('img', { name: 'Ace of spades' })).toBeNull();
@@ -264,7 +291,7 @@ const seamContracts = {
 const seamVariants = ['diagonal', 'waves', 'chevron'] as const satisfies readonly PatternVariant[];
 const repeatSide = 192;
 const rasterZoom = 4;
-const repeatedStyle = css({ inlineSize: repeatSide, blockSize: repeatSide });
+const RepeatedSample = styled(Pattern)({ inlineSize: repeatSide, blockSize: repeatSide });
 
 async function rasterize(root: SVGSVGElement) {
   const clone = root.cloneNode(true) as SVGSVGElement;
@@ -302,14 +329,14 @@ async function rasterize(root: SVGSVGElement) {
 
 export const SeamContinuity: Story = {
   tags: ['!autodocs'],
-  render: (args) => <div style={{ display: 'grid', gap: vars.space[6] }}>
+  render: (args) => <SeamStack>
     {seamVariants.map((variant) => <section key={variant}>
-      <h2 css={labelStyle}>{variant} — 8 / 16 / 24 px</h2>
-      <div css={rowStyle}>{sizes.map((size) =>
-        <Pattern {...args} key={size} variant={variant} size={size}
-          scale={1} tone="card" css={repeatedStyle} />)}</div>
+      <Label>{variant} — 8 / 16 / 24 px</Label>
+      <Row>{sizes.map((size) =>
+        <RepeatedSample {...args} key={size} variant={variant} size={size}
+          scale={1} tone="card" />)}</Row>
     </section>)}
-  </div>,
+  </SeamStack>,
   parameters: { docs: { description: { story: 'Repeated surfaces at all three tile sizes.' } } },
   play: async ({ canvasElement }) => {
     for (const root of canvasElement.querySelectorAll<SVGSVGElement>('[data-ui="pattern"]')) {
@@ -354,7 +381,7 @@ export const SeamContinuity: Story = {
 
 export const HydrationRoots: Story = {
   tags: ['!autodocs'],
-  render: (args) => <Pattern {...args} css={sampleStyle} />,
+  render: (args) => <Sample {...args} />,
   play: async ({ canvasElement }) => {
     const errors = fn();
     const roots: ReturnType<typeof hydrateRoot>[] = [];

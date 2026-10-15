@@ -9,12 +9,14 @@ import { useId, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { PasswordField, type PasswordFieldProps, type PasswordFieldSize } from './index';
 
 // Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
-const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
+const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], paddingBlock: vars.space[1], paddingInline: `calc(${vars.space[5]} / 2)`, boxSizing: 'border-box' });
+const NarrowFrame = styled.div({ inlineSize: 200 });
 
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly PasswordFieldSize[];
@@ -24,7 +26,7 @@ const REVEAL_SIZES = { sm: 24, md: 32, lg: 40 } as const;
 const SLASH_SETTLE_MS = 200;
 const usage = `<PasswordField label="Password" name="password" autoComplete="current-password" required />`;
 
-const stackStyle = css({
+const Stack = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '320px',
@@ -51,9 +53,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={stackStyle}>
+      <Stack>
         <Story />
-      </div>
+      </Stack>
     ),
   ],
   parameters: {
@@ -256,9 +258,9 @@ export const Uncontrolled: Story = {
 function FormExample({ children }: { children: ReactNode }) {
   return (
     <>
-      <button style={FIXTURE_BUTTON} type="button">Before</button>
+      <FixtureButton type="button">Before</FixtureButton>
       <form onSubmit={(event) => event.preventDefault()}>{children}</form>
-      <button style={FIXTURE_BUTTON} type="button">After</button>
+      <FixtureButton type="button">After</FixtureButton>
     </>
   );
 }
@@ -325,12 +327,12 @@ function ControlledExample(args: PasswordFieldProps) {
           setRevealed(next);
         }}
       />
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => setValue('from-parent')}>
+      <FixtureButton type="button" onClick={() => setValue('from-parent')}>
         Fill from parent
-      </button>
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => setRevealed((current) => !current)}>
+      </FixtureButton>
+      <FixtureButton type="button" onClick={() => setRevealed((current) => !current)}>
         Toggle from parent
-      </button>
+      </FixtureButton>
     </>
   );
 }
@@ -390,7 +392,7 @@ function ResetExample({ cancelReset, ...args }: PasswordFieldProps & { cancelRes
       }}
     >
       <PasswordField {...args} />
-      <button style={FIXTURE_BUTTON} type="reset">Reset</button>
+      <FixtureButton type="reset">Reset</FixtureButton>
     </form>
   );
 }
@@ -559,9 +561,9 @@ export const LongCopy: Story = {
     defaultValue: 'una-contraseña-muy-larga-que-supera-el-ancho-del-campo',
   },
   render: (args) => (
-    <div style={{ inlineSize: 200 }}>
+    <NarrowFrame>
       <PasswordField {...args} />
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvasElement }) => {
     const { root, input, button } = parts(canvasElement);
@@ -694,6 +696,7 @@ export const LightTheme: Story = {
 };
 
 /** Replace the wrapper and generated label; pass native props through slotProps. */
+// The consumer/slot `css`, `sx` and inline styles are precedence-test sentinels.
 export const SlotCustomization: Story = {
   args: {
     ref: fn(),
