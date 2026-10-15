@@ -22,6 +22,7 @@ import {
 import { BREAKPOINT_CASES, REFERENCE_SLOT_KEYS } from './reference-fixtures';
 import { fitBoardContent, GAME_TABLE_LIMITS } from './fit-layout';
 import { validateSlots } from './table-slots';
+import { FRAMES } from './layout-config';
 import { expectInside, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
 
 type RegionFixture<T extends SeatLike> = (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
@@ -520,7 +521,31 @@ export const MirroredSeats: Story = {
 };
 
 export const MeasuredModel: Story = {
-  play: async () => {
+  play: async ({ canvasElement }) => {
+    const originalSpacing: Record<BoardViewportProfile, readonly [string, string, string, string, string, string]> = {
+      phoneTall: ['0.5rem 0.22rem 0.78rem', '0.78rem', '0.42rem', '0.42rem', '0.72rem', '0.22rem'],
+      phoneCompact: ['0.5rem 0.22rem 0.78rem', '0.66rem', '0.3rem', '0.42rem', '0.72rem', '0.22rem'],
+      phoneWide: ['0.55rem 0.25rem 0.95rem', '0.82rem', '0.52rem', '0.5rem', '0.72rem', '0.22rem'],
+      tablet: ['0.86rem 0.35rem 1.12rem', '0.92rem', '0.7rem', '0.82rem', '0.9rem', '0.24rem'],
+      tabletWide: ['1rem 0.45rem 1.2rem', '0.94rem', '0.72rem', '0.9rem', '0.86rem', '0.23rem'],
+      desktop: ['1rem 0.6rem 1.35rem', '1rem', '0.72rem', '0.92rem', '0.9rem', '0.24rem'],
+    };
+    const actual = canvasElement.ownerDocument.createElement('div');
+    const previous = actual.cloneNode() as HTMLDivElement;
+    canvasElement.append(actual, previous);
+    try {
+      for (const [profile, spacing] of Object.entries(originalSpacing)) {
+        const frame = FRAMES[profile as BoardViewportProfile];
+        for (const [element, values] of [[actual, [frame.rootPadding, frame.topStripGap, frame.topStripMarginBottom,
+          frame.bottomStripMarginTop, frame.boardBorderWidth, frame.boardOutlineWidth]], [previous, spacing]] as const) {
+          const [padding, gap, marginBottom, marginTop, borderWidth, outlineWidth] = values;
+          Object.assign(element.style, { padding, gap, marginBottom, marginTop, borderWidth, outlineWidth, borderStyle: 'solid', outlineStyle: 'solid' });
+        }
+        for (const property of ['padding', 'gap', 'marginBottom', 'marginTop', 'borderWidth', 'outlineWidth'] as const) {
+          await expect(getComputedStyle(actual)[property]).toBe(getComputedStyle(previous)[property]);
+        }
+      }
+    } finally { actual.remove(); previous.remove(); }
     for (const [width, height, profile] of BREAKPOINT_CASES) {
       await expect(resolveBoardViewportProfile({ width, height })).toBe(profile);
     }

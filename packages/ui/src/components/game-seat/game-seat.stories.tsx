@@ -9,6 +9,7 @@ import { Badge } from '../badge';
 import { GameHand } from '../game-hand';
 import { GameSeat } from './index';
 import type { GameCardRootProps } from '../game-card/game-card-root';
+import type { GameSeatPartProps, GameSeatSlotProps } from './game-seat';
 
 const NOW = Date.parse('2026-10-14T12:00:00Z');
 const DURATION = 60000;
@@ -56,6 +57,46 @@ export const Default: Story = {
 };
 export const Light: Story = { globals: { theme: 'light' } };
 export const Offline: Story = { args: { turn: undefined, offline: true, dimmed: true, badges: <Badge>Disconnected</Badge>, chat: undefined } };
+
+export const TimerOnly: Story = {
+  args: { avatar: undefined },
+  play: async ({ canvasElement }) => {
+    const anchor = canvasElement.querySelector<HTMLElement>('[data-ui~="game-seat-avatar"]')!;
+    const probe = anchor.ownerDocument.createElement('div');
+    probe.style.inlineSize = vars.space[10];
+    probe.style.blockSize = vars.space[10];
+    anchor.ownerDocument.body.append(probe);
+    try {
+      const expected = probe.getBoundingClientRect();
+      const actual = anchor.getBoundingClientRect();
+      await expect(actual.width).toBe(expected.width);
+      await expect(actual.height).toBe(expected.height);
+      await expect(anchor.querySelector('[data-ui~="game-seat-timer"]')).not.toBeNull();
+    } finally { probe.remove(); }
+  },
+};
+
+function ReplacementDiv(props: GameSeatPartProps) { return <div {...props} data-replacement="true" />; }
+function ReplacementName(props: NonNullable<GameSeatSlotProps['name']>) { return <span {...props} data-replacement="true" />; }
+function ReplacementTimer(props: NonNullable<GameSeatSlotProps['timer']>) { return <svg {...props} data-replacement="true" />; }
+
+export const InteriorReplacements: Story = {
+  args: {
+    slots: { avatar: ReplacementDiv, name: ReplacementName, badges: ReplacementDiv, points: ReplacementDiv,
+      hand: ReplacementDiv, timer: ReplacementTimer, chat: ReplacementDiv },
+    slotProps: { avatar: { 'data-ui': 'consumer consumer game-seat-avatar' }, name: { 'data-ui': 'consumer consumer' } },
+  },
+  play: async ({ canvasElement }) => {
+    for (const part of ['avatar', 'name', 'badges', 'points', 'hand', 'timer', 'chat']) {
+      const element = canvasElement.querySelector<HTMLElement>(`[data-ui~="game-seat-${part}"]`)!;
+      await expect(element).toHaveAttribute('data-replacement', 'true');
+      await expect(element.className).not.toBe('');
+    }
+    const avatar = canvasElement.querySelector('[data-ui~="game-seat-avatar"]')!;
+    await expect(avatar).toHaveAttribute('data-ui', 'game-seat-avatar consumer');
+    await expect(within(canvasElement).getByRole('group', { name: 'Alex' })).toBeVisible();
+  },
+};
 
 /** Two seats show different remaining portions of the same turn. */
 export const InjectedClock: Story = {

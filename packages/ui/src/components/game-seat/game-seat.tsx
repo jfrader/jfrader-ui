@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
-import type { SxProps } from '../../styling/sx';
+import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { CardRoot, type GameCardRootProps, type GameCardRootCustomization, type GameCardRootSlotProps } from '../game-card/game-card-root';
 import { GameHand } from '../game-hand';
 import { useOptionalGameTableSeat } from '../game-table/game-table';
+import { GameTableArtProvider, type GameTableArtOptions } from '../game-table/art-context';
 
 export type GameSeatTurnMilestone = 'half' | 'quarter' | 'extended' | 'ending';
 export interface GameSeatTurn {
@@ -19,14 +20,15 @@ export interface GameSeatTurn {
   /** Current epoch milliseconds. Omit to sample the clock when deadline or duration changes. */
   now?: number;
 }
-export type GameSeatPartProps = ComponentPropsWithRef<'div'> & { css?: Interpolation<Theme> };
+type SeatPartStyling = { css?: Interpolation<Theme>; 'data-ui'?: string };
+export type GameSeatPartProps = ComponentPropsWithRef<'div'> & SeatPartStyling;
 export interface GameSeatSlotProps {
   /** Outer card container wrapping the player seat elements. */
   root?: GameCardRootSlotProps;
   /** Avatar container holding the player picture and turn timer ring. */
   avatar?: GameSeatPartProps;
   /** Text element displaying the player name. */
-  name?: ComponentPropsWithRef<'span'> & { css?: Interpolation<Theme> };
+  name?: ComponentPropsWithRef<'span'> & SeatPartStyling;
   /** Container element holding player badges. */
   badges?: GameSeatPartProps;
   /** Container element displaying player points or score. */
@@ -34,11 +36,21 @@ export interface GameSeatSlotProps {
   /** Container element holding player cards or hidden hand indicator. */
   hand?: GameSeatPartProps;
   /** SVG element displaying the animated countdown turn timer ring. */
-  timer?: ComponentPropsWithRef<'svg'> & { css?: Interpolation<Theme> };
+  timer?: ComponentPropsWithRef<'svg'> & SeatPartStyling;
   /** Container element holding speech bubbles or chat messages. */
   chat?: GameSeatPartProps;
 }
-export interface GameSeatProps extends Omit<GameCardRootProps, 'children'>, GameCardRootCustomization, SxProps {
+export interface GameSeatSlots {
+  root?: ComponentType<GameCardRootProps>;
+  avatar?: ComponentType<GameSeatPartProps>;
+  name?: ComponentType<NonNullable<GameSeatSlotProps['name']>>;
+  badges?: ComponentType<GameSeatPartProps>;
+  points?: ComponentType<GameSeatPartProps>;
+  hand?: ComponentType<GameSeatPartProps>;
+  timer?: ComponentType<NonNullable<GameSeatSlotProps['timer']>>;
+  chat?: ComponentType<GameSeatPartProps>;
+}
+export interface GameSeatProps extends Omit<GameCardRootProps, 'children'>, Omit<GameCardRootCustomization, 'slots'>, GameTableArtOptions, SxProps {
   /** Player name, used to name this seat. */
   name: string;
   avatar?: ReactNode;
@@ -56,6 +68,7 @@ export interface GameSeatProps extends Omit<GameCardRootProps, 'children'>, Game
   offline?: boolean;
   dimmed?: boolean;
   slotProps?: GameSeatSlotProps;
+  slots?: GameSeatSlots;
 }
 
 const rootStyle = css({
@@ -64,7 +77,9 @@ const rootStyle = css({
   '&[data-dimmed="true"]': { color: vars.color.textMuted },
   '&[data-offline="true"]': { outline: `1px dashed ${vars.color.borderControl}`, outlineOffset: vars.space[1] },
 });
-const avatarStyle = css({ position: 'relative', display: 'grid', placeItems: 'center' });
+const avatarStyle = css({ position: 'relative', display: 'grid', placeItems: 'center',
+  '&[data-timer-only="true"]': { inlineSize: vars.space[10], blockSize: vars.space[10] },
+});
 const nameStyle = css({ fontWeight: vars.fontWeight.semibold });
 const badgesStyle = css({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: vars.space[1] });
 const timerStyle = css({
@@ -78,13 +93,18 @@ const timerStyle = css({
 });
 const emptyStyle = css({});
 
-function SeatPart({ marker, styles = emptyStyle, children, css: slotCss, ...props }: GameSeatPartProps & {
-  marker: string; styles?: Interpolation<Theme>;
+function SeatPart({ marker, component, styles = emptyStyle, children, css: slotCss, className, ...props }: GameSeatPartProps & {
+  marker: string; styles?: Interpolation<Theme>; component?: ComponentType<GameSeatPartProps>;
 }) {
-  return <div {...props} data-ui={`game-seat-${marker}`} css={[styles, slotCss]}>{children}</div>;
+  const Part = component ?? 'div';
+  const identity = [...new Set([`game-seat-${marker}`, props['data-ui']].flatMap((value) => value?.split(/\s+/).filter(Boolean) ?? []))].join(' ');
+  return <WithSx styles={[styles, slotCss]} className={className}>
+    {(classes) => <Part {...props} data-ui={identity} className={classes}>{children}</Part>}
+  </WithSx>;
 }
 
-function TurnRing({ turn, onMilestone, ...props }: { turn: GameSeatTurn; onMilestone?: GameSeatProps['onTurnMilestone'] } & NonNullable<GameSeatSlotProps['timer']>) {
+function TurnRing({ turn, onMilestone, component, ...props }: { turn: GameSeatTurn; onMilestone?: GameSeatProps['onTurnMilestone']; component?: GameSeatSlots['timer'] } & NonNullable<GameSeatSlotProps['timer']>) {
+  const Timer = component ?? 'svg';
   const circle = useRef<SVGCircleElement>(null);
   const [sample, setSample] = useState<{ deadline: number; durationMs: number; now: number }>();
   useLayoutEffect(() => {
@@ -130,33 +150,38 @@ function TurnRing({ turn, onMilestone, ...props }: { turn: GameSeatTurn; onMiles
     });
     return () => timers.forEach(clearTimeout);
   }, [turn.deadline, turn.durationMs, now, !!onMilestone, synchronized]);
-  const { css: slotCss, ...native } = props;
-  return <svg {...native} data-ui="game-seat-timer" aria-hidden="true" focusable="false" viewBox="0 0 100 100" css={[timerStyle, slotCss]}>
+  const { css: slotCss, className, ...native } = props;
+  const identity = [...new Set(['game-seat-timer', native['data-ui']].flatMap((value) => value?.split(/\s+/).filter(Boolean) ?? []))].join(' ');
+  return <WithSx styles={[timerStyle, slotCss]} className={className}>{(classes) => <Timer {...native} data-ui={identity} aria-hidden="true" focusable="false" viewBox="0 0 100 100" className={classes}>
     <circle ref={circle} cx="50" cy="50" r="48" pathLength="100" strokeWidth="3" strokeDasharray="100"
       strokeDashoffset={offset} data-turn-remaining={remaining} />
-  </svg>;
+  </Timer>}</WithSx>;
 }
 
 export function GameSeat({ name, avatar, badges, points, hand, handCount, chat, turn, onTurnMilestone,
-  turned = turn !== undefined, offline = false, dimmed = false, slotProps, ...props }: GameSeatProps) {
+  turned = turn !== undefined, offline = false, dimmed = false, slotProps, slots, artSet, cardArtSets, ...props }: GameSeatProps) {
   const nameId = useId();
   const seat = useOptionalGameTableSeat();
   const labelId = slotProps?.name?.id ?? nameId;
   const externalLabel = slotProps?.root?.['aria-labelledby'] ?? props['aria-labelledby'];
   const handContent = hand !== undefined ? hand : handCount !== undefined
-    ? <GameHand.Hidden playerKey={seat?.player?.key} count={handCount} label="" aria-hidden="true" /> : undefined;
-  return <CardRoot {...props} marker="game-seat" structure={rootStyle} rootSlot={slotProps?.root}
+    ? <GameHand.Hidden playerKey={seat?.player?.key} count={handCount} label="" aria-hidden="true" artSet={artSet} cardArtSets={cardArtSets} /> : undefined;
+  const Name = slots?.name ?? 'span';
+  const nameIdentity = [...new Set(['game-seat-name', slotProps?.name?.['data-ui']].flatMap((value) => value?.split(/\s+/).filter(Boolean) ?? []))].join(' ');
+  return <GameTableArtProvider artSet={artSet} cardArtSets={cardArtSets}><CardRoot {...props} slots={slots} marker="game-seat" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' '),
       'data-turned': String(turned), 'data-offline': String(offline), 'data-dimmed': String(dimmed) }}>
-    {(isRenderable(avatar) || turn) && <SeatPart {...slotProps?.avatar} marker="avatar" styles={avatarStyle}>
+    {(isRenderable(avatar) || turn) && <SeatPart {...slotProps?.avatar} component={slots?.avatar} marker="avatar" styles={avatarStyle} data-timer-only={!isRenderable(avatar) && turn ? 'true' : undefined}>
       {avatar}
-      {turn && <TurnRing {...slotProps?.timer} turn={turn} onMilestone={onTurnMilestone} />}
+      {turn && <TurnRing {...slotProps?.timer} component={slots?.timer} turn={turn} onMilestone={onTurnMilestone} />}
     </SeatPart>}
-    <span {...slotProps?.name} id={labelId} data-ui="game-seat-name" css={[nameStyle, slotProps?.name?.css]}>{name}</span>
-    {isRenderable(badges) && <SeatPart {...slotProps?.badges} marker="badges" styles={badgesStyle}>{badges}</SeatPart>}
-    {isRenderable(points) && <SeatPart {...slotProps?.points} marker="points">{points}</SeatPart>}
-    {isRenderable(handContent) && <SeatPart {...slotProps?.hand} marker="hand">{handContent}</SeatPart>}
-    {isRenderable(chat) && <SeatPart {...slotProps?.chat} marker="chat">{chat}</SeatPart>}
-  </CardRoot>;
+    <WithSx styles={[nameStyle, slotProps?.name?.css]} className={slotProps?.name?.className}>
+      {(classes) => <Name {...slotProps?.name} css={undefined} id={labelId} data-ui={nameIdentity} className={classes}>{name}</Name>}
+    </WithSx>
+    {isRenderable(badges) && <SeatPart {...slotProps?.badges} component={slots?.badges} marker="badges" styles={badgesStyle}>{badges}</SeatPart>}
+    {isRenderable(points) && <SeatPart {...slotProps?.points} component={slots?.points} marker="points">{points}</SeatPart>}
+    {isRenderable(handContent) && <SeatPart {...slotProps?.hand} component={slots?.hand} marker="hand">{handContent}</SeatPart>}
+    {isRenderable(chat) && <SeatPart {...slotProps?.chat} component={slots?.chat} marker="chat">{chat}</SeatPart>}
+  </CardRoot></GameTableArtProvider>;
 }
 GameSeat.displayName = 'GameSeat';
