@@ -136,17 +136,17 @@ const meta = {
         code: `import { GameCard } from '@jfrader/ui/game-card';
 
 <GameCard
-  label="Queen of hearts"
+  label="Q of hearts"
   value={{ deck: 'french', suit: 'hearts', rank: 'Q' }}
 />`,
       },
-      usage: `### Setup
+      usage: `## Setup
 - Import from \`@jfrader/ui/game-card\`. GameCard is an opt-in subpath and is not re-exported by the package root.
 
-### Faces and artwork
+## Faces and artwork
 - Omit \`value\` or set \`face="back"\` to hide built-in rank and suit data. Back patterns come from the deck (e.g. Spanish diagonal, poker checks) or explicit \`backPattern\`, and \`children\` replaces either face’s artwork.
 
-### Root customization
+## Root customization
 - Use \`component\` or \`slots.root\` to replace the root. \`slots.root\` wins when both are supplied.
 - Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`.
 - \`slotProps.root\` overrides root props. ClassName and style merge.
@@ -181,6 +181,39 @@ async function expectDeckGrid(cards: NodeListOf<Element>) {
 /** Spanish diagonal backs and poker checks beside their faces. */
 export const Default: Story = {
   name: 'Default',
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
+
+export function CardPatterns() {
+  return (
+    <>
+      <GameCard
+        label="Spanish face"
+        value={{ deck: 'spanish', suit: 'oros', rank: 1 }}
+        backPattern={CARD_BACK_PATTERNS.spanish}
+      />
+      <GameCard
+        label="Spanish back"
+        backPattern={CARD_BACK_PATTERNS.spanish}
+      />
+      <GameCard
+        label="French face"
+        value={{ deck: 'french', suit: 'hearts', rank: 'Q' }}
+        backPattern={CARD_BACK_PATTERNS.french}
+      />
+      <GameCard
+        label="French back"
+        backPattern={CARD_BACK_PATTERNS.french}
+      />
+    </>
+  );
+}`,
+      },
+    },
+  },
   render: () => (
     <div style={rowStyle}>
       {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => (
@@ -201,10 +234,38 @@ export const Default: Story = {
   },
 };
 
-export const BackPatternsLightTheme: Story = { ...Default, name: 'Deck backs light theme', decorators: [withLightTheme] };
+export const BackPatternsLightTheme: Story = {
+  ...Default,
+  name: 'Deck backs light theme',
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { vars } from '@jfrader/tokens/vars';
+
+const row = { display: 'flex', alignItems: 'center', gap: vars.space[4] };
+<ThemeRoot theme="light"><div style={row}>
+  {Object.entries(CARD_BACK_PATTERNS).map(([deck, pattern]) => <div key={deck} style={row}>
+    <GameCard value={deck === 'spanish' ? { deck, suit: 'oros', rank: 1 } : { deck, suit: 'hearts', rank: 'Q' }} label={deck + ' face'} backPattern={pattern} />
+    <GameCard label={deck + ' back'} backPattern={pattern} />
+  </div>)}
+</div></ThemeRoot>` } } },
+  decorators: [withLightTheme],
+};
 
 export const QueenOfHearts: Story = {
   name: 'Queen of hearts',
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { GameCard } from '@jfrader/ui/game-card';
+
+<GameCard
+  label="Queen of hearts"
+  value={{ deck: 'french', suit: 'hearts', rank: 'Q' }}
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const card = within(canvasElement).getByRole('img', { name: 'Q of hearts' });
     await expect(card).toHaveAttribute('data-deck', 'french');
@@ -245,7 +306,39 @@ export const RootCustomization: Story = {
 };
 
 export const FrenchDeck: Story = {
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { GameCard } from '@jfrader/ui/game-card';
+
+import { vars } from '@jfrader/tokens/vars';
+
+const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'] as const;
+const RANKS = ['A', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K'] as const;
+
+export function FrenchDeckGrid() {
+  return (
+    <div style={{ display: 'grid', gap: vars.space[2], maxInlineSize: '100%', marginInline: 'auto',
+      inlineSize: 'calc(' + vars.size.gameCardSm + ' * 13 + ' + vars.space[2] + ' * 12)',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(' + vars.size.gameCardSm + ', max-content))', alignItems: 'center' }}>
+      {SUITS.flatMap((suit) =>
+        RANKS.map((rank) => (
+          <GameCard
+            key={\`\${suit}-\${rank}\`}
+            size="sm"
+            label={\`\${rank} of \${suit}\`}
+            value={{ deck: 'french', suit, rank }}
+          />
+        ))
+      )}
+    </div>
+  );
+}`,
+      },
+    },
+  },
   render: () => (
     <div style={gridStyle}>
       {FRENCH_SUITS.flatMap((suit) =>
@@ -275,7 +368,40 @@ export const FrenchDeck: Story = {
 };
 
 export const SpanishDeck: Story = {
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { GameCard } from '@jfrader/ui/game-card';
+
+import { vars } from '@jfrader/tokens/vars';
+
+const SUITS = ['oros', 'copas', 'espadas', 'bastos'] as const;
+const RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12] as const;
+const names: Record<number, string> = { 1: 'as', 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco', 6: 'seis', 7: 'siete', 10: 'sota', 11: 'caballo', 12: 'rey' };
+
+export function SpanishDeckGrid() {
+  return (
+    <div style={{ display: 'grid', gap: vars.space[2], maxInlineSize: '100%', marginInline: 'auto',
+      inlineSize: 'calc(' + vars.size.gameCardSm + ' * 13 + ' + vars.space[2] + ' * 12)',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(' + vars.size.gameCardSm + ', max-content))', alignItems: 'center' }}>
+      {SUITS.flatMap((suit) =>
+        RANKS.map((rank) => (
+          <GameCard
+            key={\`\${suit}-\${rank}\`}
+            size="sm"
+            label={\`\${names[rank]} de \${suit}\`}
+            value={{ deck: 'spanish', suit, rank }}
+          />
+        ))
+      )}
+    </div>
+  );
+}`,
+      },
+    },
+  },
   render: () => (
     <div style={gridStyle}>
       {SPANISH_SUITS.flatMap((suit) =>
@@ -304,6 +430,32 @@ export const SpanishDeck: Story = {
 export const FaceDown: Story = {
   name: 'Face down',
   args: { label: BACK_LABEL, value: QUEEN_OF_HEARTS, face: 'back', rankLabel: 'SECRET-RANK' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
+
+export function FaceDownExamples() {
+  return (
+    <>
+      <GameCard label="Card back" />
+      <GameCard
+        label="Spanish card back"
+        face="back"
+        value={{ deck: 'spanish', suit: 'oros', rank: 1 }}
+      />
+      <GameCard
+        label="Custom checks back"
+        face="back"
+        backPattern={CARD_BACK_PATTERNS.french}
+      />
+    </>
+  );
+}`,
+      },
+    },
+  },
   render: (args) => (
     <div style={rowStyle}>
       <GameCard {...args} />
@@ -340,6 +492,24 @@ export const FaceDown: Story = {
 };
 
 export const Sizes: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { GameCard } from '@jfrader/ui/game-card';
+
+export function CardSizes() {
+  return (
+    <>
+      <GameCard size="sm" label="Small card" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
+      <GameCard size="md" label="Medium card" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
+      <GameCard size="lg" label="Large card" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
+    </>
+  );
+}`,
+      },
+    },
+  },
   render: (args) => (
     <div style={rowStyle}>
       {SIZES.map((size) => (
@@ -412,6 +582,22 @@ export const CustomArt: Story = {
     label: 'Carta con arte propio',
     value: QUEEN_OF_HEARTS,
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { GameCard } from '@jfrader/ui/game-card';
+import { vars } from '@jfrader/tokens/vars';
+
+<GameCard label="Carta con arte propio" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }}>
+  <svg viewBox="0 0 40 60" aria-hidden="true">
+    <rect width="40" height="60" fill={vars.color.surfaceInset} />
+    <circle cx="20" cy="30" r="12" fill={vars.color.accent} />
+  </svg>
+</GameCard>`,
+      },
+    },
+  },
   render: (args) => (
     <GameCard {...args}>
       <svg viewBox="0 0 40 60" aria-hidden="true">
@@ -430,6 +616,22 @@ export const CustomArt: Story = {
 /** Custom artwork replaces the pattern even when the card is face down. */
 export const CustomBackArt: Story = {
   args: { label: BACK_LABEL, face: 'back', backPattern: CARD_BACK_PATTERNS.spanish },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { GameCard } from '@jfrader/ui/game-card';
+import { vars } from '@jfrader/tokens/vars';
+
+<GameCard label="Card back with custom artwork" face="back">
+  <svg viewBox="0 0 40 60" aria-hidden="true">
+    <rect width="40" height="60" fill={vars.color.cardRed} />
+    <circle cx="20" cy="30" r="12" fill={vars.color.cardFace} />
+  </svg>
+</GameCard>`,
+      },
+    },
+  },
   render: (args) => (
     <GameCard {...args}>
       <svg viewBox="0 0 40 60" aria-hidden="true">
@@ -446,9 +648,47 @@ export const CustomBackArt: Story = {
   },
 };
 
-export const CustomBackArtLightTheme: Story = { ...CustomBackArt, decorators: [withLightTheme] };
+export const CustomBackArtLightTheme: Story = {
+  ...CustomBackArt,
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { vars } from '@jfrader/tokens/vars';
+
+<ThemeRoot theme="light"><GameCard label="Carta boca abajo" face="back" backPattern={CARD_BACK_PATTERNS.spanish}>
+  <svg viewBox="0 0 40 60" aria-hidden="true">
+    <rect width="40" height="60" fill={vars.color.cardRed} />
+    <circle cx="20" cy="30" r="12" fill={vars.color.cardFace} />
+  </svg>
+</GameCard></ThemeRoot>` } } },
+  decorators: [withLightTheme],
+};
 
 export const RankLabelAndDimmed: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { GameCard } from '@jfrader/ui/game-card';
+
+export function RankLabelAndDimmedExample() {
+  return (
+    <>
+      <GameCard
+        rankLabel="Sota"
+        label="sota de copas"
+        value={{ deck: 'spanish', suit: 'copas', rank: 10 }}
+      />
+      <GameCard
+        dimmed
+        label="as de espadas"
+        value={{ deck: 'spanish', suit: 'espadas', rank: 1 }}
+      />
+    </>
+  );
+}`,
+      },
+    },
+  },
   render: (args) => (
     <div style={rowStyle}>
       <GameCard {...args} rankLabel="Sota" label="sota de copas" value={{ deck: 'spanish', suit: 'copas', rank: 10 }} />
@@ -463,6 +703,15 @@ export const RankLabelAndDimmed: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCard } from '@jfrader/ui/game-card';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { vars } from '@jfrader/tokens/vars';
+
+<ThemeRoot theme="light"><div style={{ display: 'flex', alignItems: 'center', gap: vars.space[4] }}>
+  <GameCard size="lg" label="Q of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
+  <GameCard size="lg" label="as de oros" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} />
+  <GameCard size="lg" label="Carta boca abajo" />
+</div></ThemeRoot>` } } },
   decorators: [withLightTheme],
   render: () => (
     <div style={rowStyle}>

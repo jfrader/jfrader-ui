@@ -290,8 +290,7 @@ interface CardFrontProps {
 }
 
 function CardFront({ deck, value, rankLabel, slotProps }: CardFrontProps) {
-  const cardKey = `${value.suit}-${value.rank}`;
-  const customFace = deck.faces?.[cardKey];
+  const customFace = deck.faces?.[value.suit]?.[String(value.rank)];
 
   if (isRenderable(customFace)) {
     return (

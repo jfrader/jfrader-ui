@@ -8,10 +8,10 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **122**; public callable parts: **156**.
-- Families exposing `slots.root`: **53**; remaining without a family-level root slot: **69** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **41**; remaining without family-level interior slots: **81** (includes components without generated anatomy).
-- Rows with styling-only `slotProps` keys: **73**.
+- Public callable families: **126**; public callable parts: **156**.
+- Families exposing `slots.root`: **56**; remaining without a family-level root slot: **70** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **41**; remaining without family-level interior slots: **85** (includes components without generated anatomy).
+- Rows with styling-only `slotProps` keys: **77**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
 behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, TrickStacks and CardFlights are owner-held;
@@ -158,6 +158,10 @@ may exist and is listed on the corresponding public part).
 | [GameCardStack.Pile](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | — | — | `card`, `pile`, `trigger` | `card`, `pile`, `trigger` | — | — |
 | [GameHand](../packages/ui/src/components/game-hand/game-hand.tsx) | — | — | `card`, `confirm`, `fan` | `card`, `confirm`, `fan` | — | `Hidden` |
 | [GameHand.Hidden](../packages/ui/src/components/game-hand/game-hand.tsx) | — | — | `card` | `card` | — | — |
+| [GameMarks](../packages/ui/src/components/game-marks/game-marks.tsx) | yes | `root` | `count`, `label`, `mark`, `marks`, `root` | `count`, `label`, `mark`, `marks` | — | — |
+| [GameResult](../packages/ui/src/components/game-result/game-result.tsx) | — | — | `actions`, `celebration`, `eyebrow`, `reward`, `summary`, `title` | `actions`, `celebration`, `eyebrow`, `reward`, `summary`, `title` | — | — |
+| [GameRounds](../packages/ui/src/components/game-rounds/game-rounds.tsx) | yes | `root` | `label`, `list`, `outcome`, `root`, `round` | `label`, `list`, `outcome`, `round` | — | — |
+| [GameScore](../packages/ui/src/components/game-score/game-score.tsx) | yes | `root` | `label`, `list`, `name`, `root`, `row`, `stage`, `value` | `label`, `list`, `name`, `row`, `stage`, `value` | — | — |
 | [GameSeat](../packages/ui/src/components/game-seat/game-seat.tsx) | yes | `root` | `avatar`, `badges`, `chat`, `hand`, `name`, `points`, `root`, `timer` | `avatar`, `badges`, `chat`, `hand`, `name`, `points`, `timer` | — | — |
 | [GameTable](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | `Center`, `Dock`, `Floating`, `Footer`, `Header`, `Play`, `Seat`, `SeatChrome` |
 | [GameTable.Center](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |

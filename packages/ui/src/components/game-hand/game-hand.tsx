@@ -84,7 +84,7 @@ const cardStyle = css({
     outlineOffset: '2px',
   },
   '&:focus-visible': { ...focusRingOutset, zIndex: 1000 },
-  '&:disabled': { cursor: 'default' },
+  '&[aria-disabled="true"]': { cursor: 'default' },
 });
 
 export function GameHand({
@@ -117,8 +117,8 @@ export function GameHand({
                 // CardFlights measures this wrapper using the shared card id.
                 <button key={card.id} type="button" data-ui="game-hand-card" data-hand-card={card.id}
                   ref={(node) => registerFlightNode(registry?.hand, card.id, node)}
-                  aria-pressed={selectedId === card.id} disabled={disabled}
-                  onClick={() => select(selectedId === card.id ? null : card.id)}
+                   aria-pressed={selectedId === card.id} aria-disabled={disabled || undefined}
+                   onClick={() => { if (!disabled) select(selectedId === card.id ? null : card.id); }}
                   className={slotProps?.card?.className} css={[cardStyle, slotProps?.card?.css]}
                   style={{ '--hand-angle': `${angle}deg`, '--hand-drop': `${angle ? HAND_FAN_DROP_PX : 0}px` } as CSSProperties}>
                   <GameCard value={card.value} label={card.label} size={size} dimmed={disabled} />
@@ -126,8 +126,8 @@ export function GameHand({
               );
             })}
           </div>
-          <Button type="button" data-ui="game-hand-confirm" disabled={disabled || !selectedCard || !onPlayIntent}
-            render={(props) => <button {...props} data-ui="game-hand-confirm" disabled={disabled} />}
+           <Button type="button" data-ui="game-hand-confirm" aria-disabled={disabled || !selectedCard || !onPlayIntent}
+             render={(props) => <button {...props} data-ui="game-hand-confirm" />}
             className={slotProps?.confirm?.className} css={slotProps?.confirm?.css}
             onClick={() => { if (!disabled && selectedCard) onPlayIntent?.(selectedCard); }}>
             {playLabel}

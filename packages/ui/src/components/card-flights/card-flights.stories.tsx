@@ -33,34 +33,56 @@ import {
 import { GameCardStack } from '@jfrader/ui/game-card-stack';
 import { GameHand, type GameHandCard } from '@jfrader/ui/game-hand';
 import { GameTable } from '@jfrader/ui/game-table';
+import { Button } from '@jfrader/ui/button';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { vars } from '@jfrader/tokens/vars';
 
 function App() {
-  return <CardFlightsProvider><Match /></CardFlightsProvider>;
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return <div ref={setHost}><ThemeRoot theme="dark" portalContainer={host}>
+    <CardFlightsProvider><Match /></CardFlightsProvider>
+  </ThemeRoot></div>;
 }
 
 const seats = [{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }];
-const cards: GameHandCard[] = [
-  { id: 'ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
-  { id: 'queen', label: 'Queen of hearts', value: { deck: 'french', suit: 'hearts', rank: 'Q' } },
-];
+const hands = {
+  own: [
+    { id: 'own-ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+    { id: 'own-two', label: 'Two of spades', value: { deck: 'french', suit: 'spades', rank: 2 } },
+    { id: 'own-three', label: 'Three of spades', value: { deck: 'french', suit: 'spades', rank: 3 } },
+  ],
+  rival: [
+    { id: 'rival-four', label: 'Four of hearts', value: { deck: 'french', suit: 'hearts', rank: 4 } },
+    { id: 'rival-five', label: 'Five of hearts', value: { deck: 'french', suit: 'hearts', rank: 5 } },
+    { id: 'rival-six', label: 'Six of hearts', value: { deck: 'french', suit: 'hearts', rank: 6 } },
+  ],
+} satisfies Record<string, GameHandCard[]>;
 
 function Match() {
-  const [hand, setHand] = useState(cards);
   const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
   const [handKey, setHandKey] = useState(1);
-  const { landing, reset } = useBoardFlights({ hand, handKey, plays });
+  const remaining = (player: keyof typeof hands) => hands[player].filter((card) => !plays.some((play) => play.cardId === card.id));
+  const hand = remaining('own');
+  const rivalCards = remaining('rival');
+  const { landing } = useBoardFlights({ hand, handKey, plays });
 
   const play = (card: GameHandCard) => {
-    setPlays((current) => [...current, {
-      ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true,
-    }]);
-    setHand((current) => current.filter((entry) => entry.id !== card.id));
+    const own: PlayedFlightCard = { ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true };
+    const rival = rivalCards[0];
+    setPlays((current) => [...current, own, ...(rival ? [{
+      ...rival, cardId: rival.id, id: crypto.randomUUID(), playerKey: 'rival', isOwn: false,
+    }] : [])]);
   };
 
   return (
+    <>
+    <div style={{ display: 'flex', gap: vars.space[2], padding: vars.space[3] }}>
+      <Button disabled={landing.size > 0} onClick={() => { setPlays([]); setHandKey((key) => key + 1); }}>Deal hand</Button>
+    </div>
+    <div style={{ blockSize: '600px', maxInlineSize: '850px' }}>
     <GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}>
       <GameTable.Seat slotKey="rival">
-        <GameHand.Hidden playerKey="rival" count={2} label="Rival hand" />
+        <GameHand.Hidden playerKey="rival" count={rivalCards.length} label="Rival hand" />
       </GameTable.Seat>
       <GameTable.Dock>
         <GameHand cards={hand} playLabel="Play selected" disabled={landing.size > 0}
@@ -68,23 +90,25 @@ function Match() {
       </GameTable.Dock>
       {seats.map((seat) => (
         <GameTable.Play key={seat.key} slotKey={seat.key}>
-          <GameCardStack.Pile playerKey={seat.key} label={seat.key + ' pile'}
+          <GameCardStack.Pile playerKey={seat.key} label={seat.isMe ? 'Own pile' : 'Rival pile'}
             cards={plays.filter((entry) => entry.playerKey === seat.key)} />
         </GameTable.Play>
       ))}
     </GameTable>
+    </div>
+    </>
   );
 }` },
-    usage: `### Setup
+    usage: `## Setup
 - Import from \`@jfrader/ui/card-flights\`. Card flights are an opt-in subpath and are not re-exported by the package root.
 
-### Card records
+## Card records
 - Pass the same labeled records to GameHand and useBoardFlights: each has an id, label and value. Optional front, back and backPattern customize flight artwork.
 - Give each accepted play a unique id in your app. Pass that record to both GameCardStack.Pile and useBoardFlights. Set cardId to its source hand id when the play id differs, playerKey to its seat, and isOwn for local plays.
 - GameHand, GameHand.Hidden and GameCardStack.Pile register their card nodes inside CardFlightsProvider. GameTable registers the seat order and surface; hidden hands supply their rendered count. No DOM lookup or separate player list is needed. data-* markers remain available for inspection and tests.
 
 
-### Match state
+## Match state
 - Wrap one board in CardFlightsProvider and call flight hooks in a child of the provider. It renders the scope div; ref points to that div.
 - Use component or slots.root to replace the root, and slotProps.root, className or sx to customize it. To use an existing wrapper instead, pass its scopeRef; no root div is rendered in that mode.
 - Change handKey when the next hand is ready, with plays empty. Initial and resync snapshots appear in place. Change resyncKey when applying a server snapshot; bursts larger than the seat count also appear in place.
@@ -93,11 +117,11 @@ function Match() {
 - landing contains destinations still in flight. Disable play while necessary for your rules. reset() cancels flights and forgets origins and snapshot baselines; remount for a new match.
 - Destinations stay hidden until the tracks finish. Replacements cancel old tracks. A waiting portal completes at the duration deadline. Reduced motion completes without a flight, including preference changes during animation.
 
-### Low-level escape hatches
+## Low-level escape hatches
 - useDealFlights and usePlayedCardFlights remain available for custom compositions using the exported CARD_FLIGHT_ATTRIBUTES markers. They accept explicit players and playerCount instead of the internal registry.
 - useCardFlights exposes launch for measured endpoints and rememberPlayOrigin(card.id, elementOrBox) for a dragged origin. Captures expire after 4000ms. Use one deal/play hook pair per board, not both levels together.
 
-### Accessibility and artwork
+## Accessibility and artwork
 - Flights are decorative and aria-hidden. Name final cards and controls. GameHand uses native selection buttons and an explicit play button; selecting a card does not play it.
 - Portals inherit ThemeRoot tokens, appearance and portalContainer. Custom front/back content must fit the measured frame. Down flights never mount front content; reveal flights do, so do not pass secret values.`,
   } },
@@ -146,7 +170,61 @@ export const DealAndPlay: Story = {
     await expect(canvas.getByRole('button', { name: 'Ace of spades' })).toBeEnabled();
   },
 };
-export const Light: Story = { render: () => <CardFlightsFixture theme="light" /> };
+export const Light: Story = {
+  render: () => <CardFlightsFixture theme="light" />,
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { CardFlightsProvider, useBoardFlights, type PlayedFlightCard } from '@jfrader/ui/card-flights';
+import { GameHand, type GameHandCard } from '@jfrader/ui/game-hand';
+import { GameCardStack } from '@jfrader/ui/game-card-stack';
+import { GameTable } from '@jfrader/ui/game-table';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { Button } from '@jfrader/ui/button';
+import { vars } from '@jfrader/tokens/vars';
+
+const hands = {
+  own: [
+    { id: 'own-ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+    { id: 'own-two', label: 'Two of spades', value: { deck: 'french', suit: 'spades', rank: 2 } },
+    { id: 'own-three', label: 'Three of spades', value: { deck: 'french', suit: 'spades', rank: 3 } },
+  ],
+  rival: [
+    { id: 'rival-four', label: 'Four of hearts', value: { deck: 'french', suit: 'hearts', rank: 4 } },
+    { id: 'rival-five', label: 'Five of hearts', value: { deck: 'french', suit: 'hearts', rank: 5 } },
+    { id: 'rival-six', label: 'Six of hearts', value: { deck: 'french', suit: 'hearts', rank: 6 } },
+  ],
+} satisfies Record<string, GameHandCard[]>;
+const seats = [{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }];
+
+export function LightMatch() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return <div ref={setHost}><ThemeRoot theme="light" portalContainer={host}><CardFlightsProvider><Match /></CardFlightsProvider></ThemeRoot></div>;
+}
+function Match() {
+  const [handKey, setHandKey] = useState(1);
+  const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
+  const remaining = (player: keyof typeof hands) => hands[player].filter((card) => !plays.some((play) => play.cardId === card.id));
+  const hand = remaining('own');
+  const rivalCards = remaining('rival');
+  const { landing } = useBoardFlights({ hand, handKey, plays });
+  const play = (card: GameHandCard) => {
+    const own: PlayedFlightCard = { ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true };
+    const rival = rivalCards[0];
+    setPlays((current) => [...current, own, ...(rival ? [{ ...rival, cardId: rival.id, id: crypto.randomUUID(), playerKey: 'rival', isOwn: false }] : [])]);
+  };
+  return <>
+    <div style={{ display: 'flex', gap: vars.space[2], padding: vars.space[3] }}>
+      <Button disabled={landing.size > 0} onClick={() => { setPlays([]); setHandKey((key) => key + 1); }}>Deal hand</Button>
+    </div>
+    <div style={{ blockSize: '600px', maxInlineSize: '850px' }}><GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}>
+      <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rivalCards.length} label="Rival hand" /></GameTable.Seat>
+      <GameTable.Dock><GameHand cards={hand} playLabel="Play selected" onPlayIntent={play} disabled={landing.size > 0} /></GameTable.Dock>
+      {seats.map((seat) => <GameTable.Play key={seat.key} slotKey={seat.key}>
+        <GameCardStack.Pile playerKey={seat.key} label={seat.isMe ? 'Own pile' : 'Rival pile'} cards={plays.filter((entry) => entry.playerKey === seat.key)} />
+      </GameTable.Play>)}
+    </GameTable></div>
+  </>;
+}` } } },
+};
 
 export const StrictRegistryCleanup: Story = {
   ...DealAndPlay,
