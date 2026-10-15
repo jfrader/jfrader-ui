@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useState, type ComponentPropsWithRef, type CSSProperties, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -289,11 +289,15 @@ export const EasyControlled: StoryObj<HoverCardEasyProps> = {
   },
 };
 
+function SlotContent(props: ComponentPropsWithRef<typeof HoverCard.Content>) {
+  return <HoverCard.Content {...props} data-slot="hover-card-content" />;
+}
 export const CustomSlots: StoryObj<HoverCardEasyProps> = {
   ...Default,
   name: 'Easy mode custom slotProps',
   args: {
     ...Default.args,
+    slots: { content: SlotContent },
     slotProps: {
       trigger: { className: 'custom-trigger' },
       content: { className: 'custom-content' },
@@ -307,6 +311,11 @@ export const CustomSlots: StoryObj<HoverCardEasyProps> = {
     await userEvent.hover(trigger);
     const card = await expectOpenWithin(canvasElement, OPEN_DELAY + TIMER_MARGIN);
     await expect(card).toHaveClass('custom-content');
+    await expect(card).toHaveAttribute('data-slot', 'hover-card-content');
+    await expect(card).toHaveAttribute('data-ui', 'hover-card');
+    await expect(trigger).toHaveAttribute('aria-describedby', card.id);
+    await expect(getComputedStyle(card).overflowWrap).toBe('anywhere');
+    await expect(card.ownerDocument.querySelector('[data-ui="hover-card"]:not([data-slot])')).toBeNull();
 
     const profile = card.querySelector('[data-ui="hover-card-profile"]');
     await expect(profile).toHaveClass('custom-profile');

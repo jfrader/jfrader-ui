@@ -1,3 +1,4 @@
+import type { ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn } from 'storybook/test';
 import { AttachmentList, type Attachment } from './index';
@@ -114,6 +115,22 @@ export const CancelExpansion: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Show 1 more attachment' }));
     await expect(canvas.getAllByRole('listitem')).toHaveLength(1);
     await expect(args.slotProps?.expandButton?.onClick).toHaveBeenCalledTimes(1);
+  },
+};
+
+function SlotLink(props: ComponentPropsWithRef<'a'>) {
+  return <a {...props} data-slot="attachment-link" />;
+}
+
+export const LinkReplacement: Story = {
+  render: (args) => <AttachmentList {...args} slots={{ link: SlotLink }} />,
+  play: async ({ canvas, canvasElement }) => {
+    const [link] = canvas.getAllByRole('link');
+    await expect(link).toHaveAttribute('data-slot', 'attachment-link');
+    await expect(link).toHaveAttribute('data-ui', 'attachment-list-link');
+    await expect(link).toHaveAttribute('href', '/brief.pdf');
+    await expect(link).toHaveTextContent('Project brief.pdf');
+    await expect(canvasElement.querySelector('[data-ui="attachment-list-link"]:not([data-slot])')).toBeNull();
   },
 };
 

@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
@@ -8,11 +8,26 @@ import { Checkbox, type CheckboxProps, type CheckboxSize } from './index';
 
 const SIZES = ['sm', 'md'] as const satisfies readonly CheckboxSize[];
 const BOX_SIZES = { sm: 16, md: 20 } as const;
+function SlotControl(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="checkbox-control" />;
+}
 
 const stackStyle = {
   display: 'grid',
   gap: vars.space[3],
 } satisfies CSSProperties;
+
+export const SlotReplacement: Story = {
+  args: { slots: { control: SlotControl } },
+  play: async ({ canvasElement }) => {
+    const replacement = canvasElement.querySelector('[data-slot="checkbox-control"]')!;
+    await expect(replacement).toBeInTheDocument();
+    await expect(replacement).toHaveAttribute('aria-hidden', 'true');
+    await expect(getComputedStyle(replacement).justifyContent).toBe('center');
+    await expect(replacement.previousElementSibling).toBe(within(canvasElement).getByRole('checkbox'));
+    await expect(canvasElement.querySelector('input + span:not([data-slot])')).toBeNull();
+  },
+};
 
 const meta = {
   title: 'Inputs/Checkbox',

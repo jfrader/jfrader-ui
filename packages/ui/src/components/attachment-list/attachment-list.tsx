@@ -143,10 +143,11 @@ export function AttachmentListView({
                 </>
               );
               return (
-                <Item key={attachment.id} className={slotProps?.item?.className} css={[fileStyle, slotProps?.item?.css]}>
+                <Item key={attachment.id} data-ui="attachment-list-item" className={slotProps?.item?.className} css={[fileStyle, slotProps?.item?.css]}>
                   {url ? (
                     <Link href={url} download={attachment.download === false ? undefined : attachment.download ?? attachment.name}
                       target={attachment.target} rel={attachment.target === '_blank' ? 'noopener noreferrer' : undefined}
+                      data-ui="attachment-list-link"
                       className={slotProps?.link?.className} css={[linkStyle, slotProps?.link?.css]}>{content}</Link>
                   ) : content}
                 </Item>
@@ -156,7 +157,7 @@ export function AttachmentListView({
         )}
       </WithSx>
       {!expanded && attachments.length > limit ? (
-        <ExpandButton size="sm" variant="outline" {...slotProps?.expandButton} onClick={(event) => {
+        <ExpandButton size="sm" variant="outline" data-ui="attachment-list-expand" {...slotProps?.expandButton} onClick={(event) => {
           slotProps?.expandButton?.onClick?.(event);
           if (!event.defaultPrevented) setExpanded(true);
         }}>{labels.showAttachments(attachments.length - limit)}</ExpandButton>

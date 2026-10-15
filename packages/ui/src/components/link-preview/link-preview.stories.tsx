@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -203,13 +203,23 @@ export const Keyboard: Story = {
 };
 
 /** Apply root and part styles and take a ref to the root div. */
+function ReplacementTitle(props: ComponentPropsWithRef<'a'>) {
+  return <a {...props} data-slot="link-preview-title" />;
+}
+
 export const Customization: Story = {
+  render: (args) => <LinkPreview {...args} slots={{ title: ReplacementTitle }} />,
   args: { ref: fn(), sx: { borderStyle: 'dashed' }, slotProps: { title: { css: { textDecoration: 'underline' }, target: '_blank', rel: 'noreferrer' }, body: { css: { padding: vars.space[4] } }, image: { onLoad: fn() } } },
   play: async ({ canvas, canvasElement, args }) => {
     const root = canvasElement.querySelector('[data-ui="link-preview"]')!;
     await expect(args.ref).toHaveBeenCalledWith(root);
     await expect(getComputedStyle(root).borderTopStyle).toBe('dashed');
     const title = canvas.getByRole('link');
+    await expect(title).toHaveAttribute('data-slot', 'link-preview-title');
+    await expect(title).toHaveAttribute('data-ui', 'link-preview-title');
+    await expect(title).toHaveAttribute('href', URL);
+    await expect(getComputedStyle(title).overflowWrap).toBe('anywhere');
+    await expect(canvasElement.querySelector('[data-ui="link-preview-title"]:not([data-slot])')).toBeNull();
     await expect(getComputedStyle(title).textDecorationLine).toBe('underline');
     await expect(title).toHaveAttribute('target', '_blank');
     await expect(getComputedStyle(canvasElement.querySelector('[data-ui="link-preview-card"]')!).paddingTop).toBe('16px');

@@ -1,4 +1,4 @@
-import { StrictMode, useState, type CSSProperties } from 'react';
+import { StrictMode, useState, type ComponentPropsWithRef, type CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -366,8 +366,15 @@ export const ForcedColors: Story = {
     await expect(getComputedStyle(pressed).color).toBe(systemColor(canvasElement, 'HighlightText'));
   },
 };
+function SlotKey(props: ComponentPropsWithRef<'kbd'>) {
+  return <kbd {...props} data-slot="keycap-keyboard-key" />;
+}
+function SlotLegend(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="keycap-keyboard-legend" />;
+}
 export const StylingAndRef: Story = {
   args: {
+    slots: { key: SlotKey, legend: SlotLegend },
     ref: fn(), 'aria-label': 'Consumer label', 'aria-labelledby': 'external-label missing-label', 'aria-describedby': 'external-description',
     sx: { padding: vars.space[4] },
     slotProps: { row: { css: { rowGap: vars.space[3] } }, key: { css: { borderRadius: 0 } }, legend: { css: { fontWeight: vars.fontWeight.semibold } } },
@@ -376,6 +383,16 @@ export const StylingAndRef: Story = {
   play: async ({ canvasElement, args }) => {
     const root = board(canvasElement);
     await expect(args.ref).toHaveBeenCalledWith(root);
+    const replacement = root.querySelector('[data-slot="keycap-keyboard-key"][data-code="KeyA"]')!;
+    await expect(replacement).toBeInTheDocument();
+    await expect(replacement).toHaveAttribute('data-state', 'idle');
+    await expect(getComputedStyle(replacement).justifyContent).toBe('center');
+    await expect(root.querySelector('kbd:not([data-slot])')).toBeNull();
+    const legend = replacement.querySelector('[data-slot="keycap-keyboard-legend"]')!;
+    await expect(legend).toBeInTheDocument();
+    await expect(legend).toHaveAttribute('data-ui', 'keycap-keyboard-legend');
+    await expect(getComputedStyle(legend).overflowWrap).toBe('anywhere');
+    await expect(root.querySelector('[data-ui="keycap-keyboard-legend"]:not([data-slot])')).toBeNull();
     await expect(root).toHaveAttribute('aria-label', 'Consumer label');
     await expect(root).toHaveAttribute('aria-labelledby', 'external-label missing-label');
     await expect(root).toHaveAttribute('aria-describedby', 'external-description');

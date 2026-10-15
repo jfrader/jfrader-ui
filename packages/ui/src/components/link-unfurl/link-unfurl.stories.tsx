@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -758,7 +758,12 @@ export const UniqueIds: Story = {
   },
 };
 
+function ReplacementField(props: ComponentPropsWithRef<'textarea'>) {
+  return <textarea {...props} data-slot="link-unfurl-field" />;
+}
+
 export const SlotStyling: Story = {
+  render: (args) => <Demo {...args} slots={{ field: ReplacementField }} />,
   args: {
     sx: { rowGap: vars.space[8] },
     slotProps: {
@@ -768,6 +773,13 @@ export const SlotStyling: Story = {
   },
   play: async ({ canvasElement, canvas, userEvent }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="link-unfurl"]')!;
+    const replacement = field(canvasElement);
+    await expect(replacement).toHaveAttribute('data-slot', 'link-unfurl-field');
+    await expect(replacement).toHaveAttribute('data-ui', 'link-unfurl-field');
+    await expect(replacement).toHaveAttribute('rows', '3');
+    await expect(root.querySelector('label')).toHaveAttribute('for', replacement.id);
+    await expect(getComputedStyle(replacement).resize).toBe('vertical');
+    await expect(root.querySelector('[data-ui="link-unfurl-field"]:not([data-slot])')).toBeNull();
     await expect(getComputedStyle(root).rowGap).toBe('32px');
     await pasteInto(field(canvasElement), GUIDE, userEvent);
     await expect(getComputedStyle(items(canvasElement)[0]!).borderTopStyle).toBe('dashed');

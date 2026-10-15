@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -1118,8 +1118,12 @@ export const TimeZone: Story = {
   },
 };
 
+function SlotList(props: ComponentPropsWithRef<'ul'>) {
+  return <ul {...props} data-slot="comment-thread-list" />;
+}
 export const SlotStyling: Story = {
   args: {
+    slots: { list: SlotList },
     slotProps: {
       body: { css: slotBodyStyle },
       header: { css: slotHeaderStyle },
@@ -1135,6 +1139,12 @@ export const SlotStyling: Story = {
   ),
   play: async ({ canvas }) => {
     const styled = canvas.getByRole('region', { name: 'Review' });
+    const replacement = styled.querySelector('[data-slot="comment-thread-list"]')!;
+    await expect(replacement).toBeInTheDocument();
+    await expect(replacement).toHaveAttribute('data-ui', 'comment-thread-list');
+    await expect(replacement).toHaveAttribute('role', 'list');
+    await expect(getComputedStyle(replacement).display).toBe('grid');
+    await expect(styled.querySelector('[data-ui="comment-thread-list"]:not([data-slot])')).toBeNull();
     const plain = canvas.getByRole('region', { name: 'Plain' });
     const header = (root: HTMLElement) => getComputedStyle(root.querySelector('[data-ui="card-header"]')!);
     const title = (root: HTMLElement) => getComputedStyle(within(root).getByRole('heading'));

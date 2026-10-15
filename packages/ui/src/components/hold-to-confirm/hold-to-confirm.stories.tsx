@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -569,8 +569,12 @@ export const PreventedStart: Story = {
 };
 const faceOverride = css({ columnGap: vars.space[5] });
 const labelOverride = css({ fontWeight: vars.fontWeight.semibold });
+function SlotStatus(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="hold-to-confirm-status" />;
+}
 export const SlotStyles: Story = {
   args: {
+    slots: { status: SlotStatus },
     icon: '×',
     slotProps: { face: { css: faceOverride }, label: { css: labelOverride } },
     sx: { borderRadius: vars.radius.sm },
@@ -584,6 +588,12 @@ export const SlotStyles: Story = {
     ).toBe('20px');
     await expect(view.getComputedStyle(button.firstElementChild!.lastElementChild!).fontWeight).toBe('600');
     await expect(view.getComputedStyle(button).borderRadius).toBe('8px');
+    const replacement = canvas.getByRole('status');
+    await expect(replacement).toHaveAttribute('data-slot', 'hold-to-confirm-status');
+    await expect(replacement).toHaveAttribute('aria-live', 'polite');
+    await expect(replacement).toHaveAttribute('aria-atomic', 'true');
+    await expect(view.getComputedStyle(replacement).position).toBe('absolute');
+    await expect(canvas.getAllByRole('status')).toHaveLength(1);
   },
 };
 export const LongLabel: Story = {

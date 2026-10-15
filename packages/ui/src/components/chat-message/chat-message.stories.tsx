@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -10,6 +10,23 @@ import { ChatThread } from '../chat-thread';
 const NOW = Date.parse('2026-10-12T12:00:00Z');
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
+
+function ReplacementTime(props: ComponentPropsWithRef<'time'>) {
+  return <time {...props} data-slot="chat-message-time" />;
+}
+
+export const TimeReplacement: Story = {
+  render: (args) => <ChatMessage {...args} slots={{ time: ReplacementTime }} />,
+  play: async ({ canvasElement }) => {
+    const time = canvasElement.querySelector('[data-slot="chat-message-time"]');
+    await expect(time).toBeInTheDocument();
+    await expect(time).toHaveAttribute('data-ui', 'chat-message-time');
+    await expect(time).toHaveAttribute('datetime', new Date(NOW).toISOString());
+    await expect(time).toHaveAttribute('id');
+    await expect(getComputedStyle(time!).whiteSpace).toBe('nowrap');
+    await expect(canvasElement.querySelector('[data-ui="chat-message-time"]:not([data-slot])')).toBeNull();
+  },
+};
 const LOCALE = 'en-US';
 
 const stackStyle = css({

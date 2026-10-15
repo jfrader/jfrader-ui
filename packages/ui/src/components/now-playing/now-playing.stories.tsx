@@ -1,4 +1,4 @@
-import { StrictMode, useLayoutEffect, useRef, useState } from 'react';
+import { StrictMode, useLayoutEffect, useRef, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, fireEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -653,7 +653,16 @@ export const WaveformBounds: Story = {
     await expect(args.onPositionChange).not.toHaveBeenCalled();
   },
 };
+function ReplacementWaveform(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="now-playing-waveform" />;
+}
+
+function ReplacementArtwork(props: ComponentPropsWithRef<'img'>) {
+  return <img {...props} data-slot="now-playing-artwork" />;
+}
+
 export const NativeCustomization: Story = {
+  render: (args) => <NowPlaying {...args} slots={{ waveform: ReplacementWaveform, artwork: ReplacementArtwork }} />,
   args: {
     defaultOpen: true,
     ref: fn(),
@@ -661,6 +670,18 @@ export const NativeCustomization: Story = {
     slotProps: { seek: { ref: fn() }, title: { css: { fontWeight: vars.fontWeight.semibold } } },
   },
   play: async ({ canvasElement, args, canvas }) => {
+    const waveform = canvasElement.querySelector('[data-slot="now-playing-waveform"]');
+    await expect(waveform).toBeInTheDocument();
+    await expect(waveform).toHaveAttribute('data-ui', 'now-playing-waveform');
+    await expect(waveform).toHaveAttribute('aria-hidden', 'true');
+    await expect(getComputedStyle(waveform!).display).toBe('flex');
+    await expect(canvasElement.querySelector('[data-ui="now-playing-waveform"]:not([data-slot])')).toBeNull();
+    const artwork = canvasElement.querySelector('[data-slot="now-playing-artwork"]');
+    await expect(artwork).toBeInTheDocument();
+    await expect(artwork).toHaveAttribute('alt', '');
+    await expect(artwork).toHaveAttribute('src', cover);
+    await expect(getComputedStyle(artwork!).objectFit).toBe('cover');
+    await expect(canvasElement.querySelector('[data-ui="now-playing-artwork"] img:not([data-slot])')).toBeNull();
     const root = canvasElement.querySelector('[data-ui="now-playing"]')!;
     const seekRoot = canvasElement.querySelector('[data-ui="slider"]')!;
     await expect(args.ref).toHaveBeenCalledWith(root);

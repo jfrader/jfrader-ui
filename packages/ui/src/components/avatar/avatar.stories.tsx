@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -134,6 +134,22 @@ export const Status: Story = {
       await expect(getComputedStyle(dot, '::after').animationName).toBe('none');
     }
     await expect(canvas.getByRole('img', { name: `${NAME}, en línea` })).toBeInTheDocument();
+  },
+};
+
+function SlotFallback(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="avatar-fallback" />;
+}
+
+export const FallbackReplacement: Story = {
+  render: (args) => <Avatar {...args} src={undefined} slots={{ fallback: SlotFallback }} />,
+  play: async ({ canvasElement }) => {
+    const fallback = canvasElement.querySelector('[data-slot="avatar-fallback"]');
+    await expect(fallback).toBeInTheDocument();
+    await expect(fallback).toHaveAttribute('data-ui', 'avatar-fallback');
+    await expect(fallback).toHaveAttribute('aria-hidden', 'true');
+    await expect(fallback).toHaveTextContent('AL');
+    await expect(canvasElement.querySelector('[data-ui="avatar-fallback"]:not([data-slot])')).toBeNull();
   },
 };
 

@@ -198,17 +198,19 @@ export function Avatar({
               src={src}
               alt=""
               onError={() => setFailedSrc(src)}
+              data-ui="avatar-image"
               className={slotProps?.image?.className}
               css={[imageStyle, slotProps?.image?.css]}
             />
           ) : (
-            <Fallback aria-hidden="true" className={slotProps?.fallback?.className} css={slotProps?.fallback?.css}>
+            <Fallback aria-hidden="true" data-ui="avatar-fallback" className={slotProps?.fallback?.className} css={slotProps?.fallback?.css}>
               {getInitials(name, MAX_INITIALS)}
             </Fallback>
           )}
           {status !== undefined && (
             <Status
               aria-hidden="true"
+              data-ui="avatar-status"
               data-status={status}
               data-pulse={pulse && status === 'online' ? '' : undefined}
               className={slotProps?.status?.className}

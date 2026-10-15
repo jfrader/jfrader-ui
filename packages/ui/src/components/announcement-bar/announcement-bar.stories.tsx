@@ -1,4 +1,4 @@
-import { act, useRef, useState } from 'react';
+import { act, useRef, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -16,6 +16,12 @@ const messages = [
   { id: 'export', message: 'Export your projects in one click.' },
 ];
 const NOW = Date.parse('2026-12-01T12:00:00Z');
+function SlotNext(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-slot="announcement-bar-next" />;
+}
+function SlotPrevious(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-slot="announcement-bar-previous" />;
+}
 const clock = () => NOW;
 const part = (root: HTMLElement, name: string) =>
   root.querySelector<HTMLElement>(`[data-ui="announcement-bar-${name}"]`);
@@ -458,6 +464,7 @@ export const TargetReplacement: Story = {
 };
 export const Slots: Story = {
   args: {
+    slots: { next: SlotNext, previous: SlotPrevious },
     slotProps: {
       root: { css: { paddingInline: vars.space[2] } },
       message: { css: { fontWeight: vars.fontWeight.semibold } },
@@ -466,6 +473,14 @@ export const Slots: Story = {
     sx: { paddingInline: vars.space[4] },
   },
   play: async ({ canvasElement }) => {
+    for (const name of ['next', 'previous']) {
+      const replacement = canvasElement.querySelector(`[data-slot="announcement-bar-${name}"]`)!;
+      await expect(replacement).toBeInTheDocument();
+      await expect(replacement).toHaveAttribute('data-ui', `announcement-bar-${name}`);
+      await expect(replacement).toHaveAttribute('aria-controls', part(canvasElement, 'content')!.id);
+      await expect(getComputedStyle(replacement).whiteSpace).toBe('normal');
+      await expect(canvasElement.querySelector(`[data-ui="announcement-bar-${name}"]:not([data-slot])`)).toBeNull();
+    }
     await expect(getComputedStyle(part(canvasElement, 'message')!).fontWeight).toBe('600');
     await expect(
       getComputedStyle(
