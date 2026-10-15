@@ -16,6 +16,7 @@
     "test": "pnpm generate && pnpm --filter @jfrader/storybook test",
     "typecheck": "pnpm generate && pnpm -r typecheck",
     "verify:exports": "node scripts/verify-exports.mjs",
+    "verify:slots": "node --test scripts/verify-slot-wiring.test.mjs && node scripts/verify-slot-wiring.mjs",
     "verify:docs": "pnpm --filter @jfrader/storybook verify:docs",
     "docs:build": "node scripts/build-docs.mjs"
   },
