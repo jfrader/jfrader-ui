@@ -4,6 +4,8 @@ import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { Badge, type BadgeTone } from './index';
 
 const TONES = ['accent', 'danger', 'neutral'] as const satisfies readonly BadgeTone[];
@@ -27,7 +29,7 @@ const MARKER = '[data-ui="badge-marker"]';
 const DOT_PX = 8;
 const POSITION_TOLERANCE_PX = 1;
 
-const rowStyle = css({
+const Row = styled.div({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
@@ -35,7 +37,7 @@ const rowStyle = css({
   padding: vars.space[3],
 });
 
-const squareStyle = {
+const SquareFrame = styled.span({
   display: 'block',
   inlineSize: vars.space[6],
   blockSize: vars.space[6],
@@ -43,17 +45,19 @@ const squareStyle = {
   backgroundColor: vars.color.surfaceHover,
   border: `1px solid ${vars.color.borderStrong}`,
   boxSizing: 'border-box',
-} satisfies CSSProperties;
+});
 
-const circleStyle = { borderRadius: vars.radius.full } satisfies CSSProperties;
-
-const slotRootStyle = css({ marginInlineStart: vars.space[4] });
-const slotBadgeStyle = css({ fontWeight: vars.fontWeight.semibold });
+const SquareFrameRound = styled(SquareFrame)({ borderRadius: vars.radius.full });
 
 function Square({ round = false }: { round?: boolean }) {
-  return <span style={{ ...squareStyle, ...(round ? circleStyle : {}) }} />;
+  const Frame = round ? SquareFrameRound : SquareFrame;
+  return <Frame />;
 }
 Square.displayName = 'Square';
+
+// The slot API takes `css` values, so this story keeps the documented spelling.
+const slotRootStyle = css({ marginInlineStart: vars.space[4] });
+const slotBadgeStyle = css({ fontWeight: vars.fontWeight.semibold });
 
 function getRoots(canvasElement: HTMLElement) {
   return Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="badge"]'));
@@ -92,9 +96,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={rowStyle}>
+      <Row>
         <Story />
-      </div>
+      </Row>
     ),
   ],
 } satisfies Meta<typeof Badge>;
