@@ -10,6 +10,7 @@ import { css, type Interpolation, type SerializedStyles, type Theme } from '../.
 import type { SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useDeck, type Deck } from '../deck';
+import { useDeckArt } from '../deck/art-context';
 import { cardArtId, resolveCardArt, resolveDeckBack } from '../deck/deck';
 import { cardPartIdentity } from './card-parts';
 import { Pattern, type PatternTone, type PatternVariant } from '../pattern';
@@ -176,8 +177,8 @@ export function ResolvedGameCard({
   label,
   value,
   face,
-  artSet,
-  cardArtSets,
+  artSet: explicitArtSet,
+  cardArtSets: explicitCardArtSets,
   slots,
   backPattern,
   size = 'md',
@@ -189,14 +190,15 @@ export function ResolvedGameCard({
   sx,
   ...rest
 }: GameCardProps & { deck: Deck }) {
+  const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
+  // Asking for `print` is a request for the printed face, so art stands aside for that card.
+  const requestedPrint = face === 'print' || face === 'emoji';
   const resolvedFace: 'print' | 'back' =
     face === 'back'
       ? 'back'
-      : face === 'print' || face === 'emoji'
+      : requestedPrint || value !== undefined
         ? 'print'
-        : value === undefined
-          ? 'back'
-          : 'print';
+        : 'back';
   const hidden = resolvedFace === 'back' || value === undefined;
   const artProps = hidden ? slotProps?.back : slotProps?.face;
   const Art = hidden ? slots?.back ?? 'span' : slots?.face ?? 'span';
@@ -228,7 +230,7 @@ export function ResolvedGameCard({
       ) : hidden ? (
         <CardBack deck={deck} backPattern={backPattern} artSet={selectedSet} slots={slots} slotProps={slotProps} />
       ) : (
-        <CardFront deck={deck} value={value!} rankLabel={rankLabel} artSet={selectedSet} slots={slots} slotProps={slotProps} />
+        <CardFront deck={deck} value={value!} rankLabel={rankLabel} artSet={selectedSet} printed={requestedPrint} slots={slots} slotProps={slotProps} />
       )}
     </CardRoot>
   );
@@ -313,12 +315,14 @@ interface CardFrontProps {
   slots?: GameCardSlots;
   value: GameCardValue;
   rankLabel?: string;
+  /** The consumer asked for the printed face, so deck art stands aside. */
+  printed?: boolean;
   slotProps?: GameCardProps['slotProps'];
 }
 
-function CardFront({ deck, value, rankLabel, artSet, slots, slotProps }: CardFrontProps) {
+function CardFront({ deck, value, rankLabel, artSet, printed = false, slots, slotProps }: CardFrontProps) {
   const Face = slots?.face ?? 'span';
-  const customFace = resolveCardArt(deck, { suit: value.suit, rank: String(value.rank), artSet });
+  const customFace = resolveCardArt(deck, { suit: value.suit, rank: String(value.rank), artSet, mode: printed ? 'print' : 'art' });
 
   if (isRenderable(customFace)) {
     return (

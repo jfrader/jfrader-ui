@@ -9,7 +9,7 @@ import { isRenderable } from '../../utils/renderable';
 import { CardRoot, type GameCardRootProps, type GameCardRootCustomization, type GameCardRootSlotProps } from '../game-card/game-card-root';
 import { GameHand } from '../game-hand';
 import { useOptionalGameTableSeat } from '../game-table/game-table';
-import { GameTableArtProvider, type GameTableArtOptions } from '../game-table/art-context';
+import { DeckArtProvider, type DeckArtOptions } from '../deck/art-context';
 
 export type GameSeatTurnMilestone = 'half' | 'quarter' | 'extended' | 'ending';
 export interface GameSeatTurn {
@@ -50,7 +50,7 @@ export interface GameSeatSlots {
   timer?: ComponentType<NonNullable<GameSeatSlotProps['timer']>>;
   chat?: ComponentType<GameSeatPartProps>;
 }
-export interface GameSeatProps extends Omit<GameCardRootProps, 'children'>, Omit<GameCardRootCustomization, 'slots'>, GameTableArtOptions, SxProps {
+export interface GameSeatProps extends Omit<GameCardRootProps, 'children'>, Omit<GameCardRootCustomization, 'slots'>, DeckArtOptions, SxProps {
   /** Player name, used to name this seat. */
   name: string;
   avatar?: ReactNode;
@@ -168,7 +168,7 @@ export function GameSeat({ name, avatar, badges, points, hand, handCount, chat, 
     ? <GameHand.Hidden playerKey={seat?.player?.key} count={handCount} label="" aria-hidden="true" artSet={artSet} cardArtSets={cardArtSets} /> : undefined;
   const Name = slots?.name ?? 'span';
   const nameIdentity = [...new Set(['game-seat-name', slotProps?.name?.['data-ui']].flatMap((value) => value?.split(/\s+/).filter(Boolean) ?? []))].join(' ');
-  return <GameTableArtProvider artSet={artSet} cardArtSets={cardArtSets}><CardRoot {...props} slots={slots} marker="game-seat" structure={rootStyle} rootSlot={slotProps?.root}
+  return <DeckArtProvider artSet={artSet} cardArtSets={cardArtSets}><CardRoot {...props} slots={slots} marker="game-seat" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' '),
       'data-turned': String(turned), 'data-offline': String(offline), 'data-dimmed': String(dimmed) }}>
     {(isRenderable(avatar) || turn) && <SeatPart {...slotProps?.avatar} component={slots?.avatar} marker="avatar" styles={avatarStyle} data-timer-only={!isRenderable(avatar) && turn ? 'true' : undefined}>
@@ -182,6 +182,6 @@ export function GameSeat({ name, avatar, badges, points, hand, handCount, chat, 
     {isRenderable(points) && <SeatPart {...slotProps?.points} component={slots?.points} marker="points">{points}</SeatPart>}
     {isRenderable(handContent) && <SeatPart {...slotProps?.hand} component={slots?.hand} marker="hand">{handContent}</SeatPart>}
     {isRenderable(chat) && <SeatPart {...slotProps?.chat} component={slots?.chat} marker="chat">{chat}</SeatPart>}
-  </CardRoot></GameTableArtProvider>;
+  </CardRoot></DeckArtProvider>;
 }
 GameSeat.displayName = 'GameSeat';

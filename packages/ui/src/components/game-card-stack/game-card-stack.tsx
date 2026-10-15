@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type ComponentPropsWithRef, type ComponentType, type CSSProperties, type KeyboardEvent } from 'react';
 import { MotionConfig, useReducedMotion } from 'motion/react';
+import { useDeckArt } from '../deck/art-context';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -125,8 +126,9 @@ function cardLimit(maxCards: number) {
 export function GameCardStack({
   ref, piles, placement = 'grid', value, defaultValue = null, onValueChange,
   layout, cardWidth = `var(--game-card-width, ${vars.size.gameCardMd})`, maxCards = PLAYED_PILE.maxCards,
-  backPattern, artSet, cardArtSets, slots, className, sx, style, onKeyDown, slotProps, ...rest
+  backPattern, artSet: explicitArtSet, cardArtSets: explicitCardArtSets, slots, className, sx, style, onKeyDown, slotProps, ...rest
 }: GameCardStackProps) {
+  const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
   const [inspected, inspect] = useControlledState(value, defaultValue, onValueChange);
   const returnFocus = useRef<HTMLButtonElement | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -202,7 +204,8 @@ GameCardStack.displayName = 'GameCardStack';
 
 function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, defaultValue = null,
   onValueChange, revealed = false, maxCards = PLAYED_PILE.maxCards, cardWidth, layout, backPattern,
-  className, sx, style, onKeyDown, slotProps, slots, artSet, cardArtSets, ...rest }: GameCardStackPileProps) {
+  className, sx, style, onKeyDown, slotProps, slots, artSet: explicitArtSet, cardArtSets: explicitCardArtSets, ...rest }: GameCardStackPileProps) {
+  const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
   const Pile = slots?.pile ?? 'div';
   const Trigger = slots?.trigger ?? 'button';
   const Card = slots?.card ?? 'div';

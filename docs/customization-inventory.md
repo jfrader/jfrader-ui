@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **126**; public callable parts: **156**.
-- Families exposing `slots.root`: **66**; remaining without a family-level root slot: **60** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **93**; remaining without family-level interior slots: **33** (includes components without generated anatomy).
+- Public callable families: **127**; public callable parts: **156**.
+- Families exposing `slots.root`: **66**; remaining without a family-level root slot: **61** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **93**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **5**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -105,6 +105,7 @@ may exist and is listed on the corresponding public part).
 | [DateRangePicker](../packages/ui/src/components/date-range-picker/date-range-picker.tsx) | — | `content`, `trigger` | `content`, `trigger` | — | — | `Content`, `Trigger` |
 | [DateRangePicker.Content](../packages/ui/src/components/date-range-picker/date-range-picker.tsx) | — | `actions`, `calendars`, `presets`, `summary` | `actions`, `calendars`, `presets`, `summary` | — | — | — |
 | [DateRangePicker.Trigger](../packages/ui/src/components/date-range-picker/date-range-picker.tsx) | — | — | — | — | — | — |
+| [DeckArtProvider](../packages/ui/src/components/deck/art-context.tsx) | — | — | — | — | — | — |
 | [DeckProvider](../packages/ui/src/components/deck/deck-context.tsx) | — | — | — | — | — | — |
 | [Dialog](../packages/ui/src/components/dialog/dialog.tsx) | yes | `close`, `content`, `description`, `header`, `panel`, `root`, `title`, `trigger` | `close`, `content`, `description`, `header`, `panel`, `root`, `title`, `trigger` | — | — | `Close`, `Content`, `Description`, `Panel`, `Title`, `Trigger` |
 | [Dialog.Close](../packages/ui/src/components/dialog/dialog.tsx) | — | — | — | — | — | — |

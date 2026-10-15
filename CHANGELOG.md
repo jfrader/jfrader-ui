@@ -49,6 +49,7 @@
 
 ### Changed
 
+- `Deck` addresses card art by id, with named art sets, per-card set overrides and set-specific backs. Missing art falls back to the printed face; `cardId` supports custom card keys.
 - Button's first example says Save changes, and its code matches that button. Card's slot example shows `slotProps`.
 - ActivityRings aligns the goal summary with the legend's shared row inset, including narrow and RTL layouts.
 

@@ -7,6 +7,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
+import { useDeckArt } from '../deck/art-context';
 import { GameCard, type GameCardPartProps, type GameCardSize, type GameCardValue } from '../game-card';
 import { gameCardSizeStyles } from '../game-card/game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
@@ -112,12 +113,13 @@ export function GameHand({
   disabled = false,
   slotProps,
   slots,
-  artSet,
-  cardArtSets,
+  artSet: explicitArtSet,
+  cardArtSets: explicitCardArtSets,
   className,
   sx,
   ...rest
 }: GameHandProps) {
+  const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
   const registrationRef = useCardRegistrationRefs('hand', cards.map((card) => card.id));
   const Fan = slots?.fan ?? 'div';
   const Card = slots?.card ?? 'button';
@@ -199,8 +201,9 @@ const STANDALONE_POLAR: HandPolarVector = { cos: 0, sin: -1, sideStrength: 0 };
 
 function GameHandHidden({
   ref, count, label, playerKey, size = 'md', polar, scale = 1, rules = DEFAULT_HIDDEN_HAND_RULES,
-  className, sx, style, slotProps, slots, artSet, cardArtSets, ...rest
+  className, sx, style, slotProps, slots, artSet: explicitArtSet, cardArtSets: explicitCardArtSets, ...rest
 }: GameHandHiddenProps) {
+  const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
   const layout = buildOpponentHiddenHandLayout({
     geometry: polar ?? STANDALONE_POLAR,
     profileRules: rules,

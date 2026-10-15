@@ -9,6 +9,7 @@ import type { SxProps } from '../../styling/sx';
 import type { GameCardPartProps, GameCardSize, GameCardValue } from '../game-card';
 import { useDeck } from '../deck';
 import { useDeckBackLabel } from '../deck/deck-context';
+import { DeckArtProvider, useDeckArt } from '../deck/art-context';
 import type { PatternVariant } from '../pattern';
 import { CardRoot, type GameCardRootCustomization, type GameCardRootProps, type GameCardRootSlotProps } from '../game-card/game-card-root';
 import { CARD_FRAME, CARD_PERSPECTIVE } from '../game-card/card-frame';
@@ -78,7 +79,8 @@ export class MissingBackLabelError extends Error {
 }
 
 export function FlipGameCard(props: FlipGameCardProps) {
-  return props.value !== undefined ? <ShorthandCard {...props} /> : <FlipCardContent {...props} />;
+  const art = useDeckArt(props);
+  return <DeckArtProvider {...art}>{props.value !== undefined ? <ShorthandCard {...props} {...art} /> : <FlipCardContent {...props} {...art} />}</DeckArtProvider>;
 }
 
 function ShorthandCard({ value, label, backLabel, rankLabel, dimmed, backPattern, artSet, cardArtSets, size = 'md', ...props }:

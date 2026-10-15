@@ -15,7 +15,7 @@ import {
 import type { BoardSeatGeometry, BoardSurface } from './types';
 import { resolveSeatCount } from './viewport';
 import { TableRoot, type GameTableRootProps, type GameTableRootCustomization } from './table-root';
-import { GameTableArtProvider, type GameTableArtOptions } from './art-context';
+import { DeckArtProvider, type DeckArtOptions } from '../deck/art-context';
 
 export type GameTablePartProps = GameTableRootProps & GameTableRootCustomization & SxProps;
 
@@ -32,7 +32,7 @@ type SeatInput<T extends SeatLike> =
   };
 
 export type GameTableProps<T extends SeatLike = SeatLike> =
-  GameTablePartProps & SeatInput<T> & GameTableArtOptions & {
+  GameTablePartProps & SeatInput<T> & DeckArtOptions & {
     /** Integer number of places >= 2, including empty seats. */
     players: number;
     /** Number of round-robin teams for `seats`. Defaults to 2; use 1 for free-for-all. Prebuilt `seatSlots` keep their teams. */
@@ -314,7 +314,7 @@ export function GameTable<T extends SeatLike>({
     '--game-table-center-block': `${measurement?.height ? measurement.centerY / measurement.height * 100 : 50}%`,
   };
   return (
-    <GameTableArtProvider artSet={artSet} cardArtSets={cardArtSets}><TableRoot {...rest} marker="game-table" structure={rootStyle} style={style} attributes={{ style: variables,
+    <DeckArtProvider artSet={artSet} cardArtSets={cardArtSets}><TableRoot {...rest} marker="game-table" structure={rootStyle} style={style} attributes={{ style: variables,
       'data-profile': layout.profile, 'data-surface': surface, 'data-seat-placement': seatPlacement, 'data-layout-fit': layout.fit,
       'data-clearance': measurement?.clearance && (measurement.clearance.start < measurement.clearance.requestedStart || measurement.clearance.end < measurement.clearance.requestedEnd) ? 'reduced' : 'requested',
       'data-clearance-start': measurement?.clearance?.start, 'data-clearance-end': measurement?.clearance?.end,
@@ -372,7 +372,7 @@ export function GameTable<T extends SeatLike>({
       {one(GameTableFooter)}
       {one(GameTableDock)}
       {one(GameTableFloating)}
-    </TableRoot></GameTableArtProvider>
+    </TableRoot></DeckArtProvider>
   );
 }
 GameTable.displayName = 'GameTable';

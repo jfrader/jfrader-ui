@@ -13,9 +13,9 @@ export interface DeckRank {
 }
 
 /**
- * A client-side deck definition containing suits, ranks, optional per-card face art, and back configuration.
+ * A client-side deck definition containing suits, ranks, card art sets, and backs.
  *
- * `Deck` may carry non-serializable `ReactNode` artwork (in `faces` or `back`). Because card props
+ * `Deck` may carry non-serializable `ReactNode` artwork. Because card props
  * stay serializable across server/client boundaries, `<GameCard>` takes only a string deck id
  * (`value.deck`), which resolves against `<DeckProvider>` or the built-in decks (`spanish`, `french`).
  */
@@ -23,10 +23,55 @@ export interface Deck {
   id: string;
   suits: Readonly<Record<string, DeckSuit>>;
   ranks: Readonly<Record<string, DeckRank>>;
-  /** Per-card artwork, partial, nested suit -> rank -> ReactNode. */
-  faces?: Readonly<Record<string, Readonly<Record<string, ReactNode>>>>;
-  /** The deck's back: a Pattern with a tone, or consumer artwork. */
-  back?: { pattern: PatternVariant; tone?: PatternTone } | ReactNode;
+  /** The art key for a card. Defaults to `${suit}-${rank}`. */
+  cardId?: (suit: string, rank: string) => string;
+  /** Art for every card, before any named set. */
+  art?: DeckArtSet;
+  /** Named sets of card art. A set may cover only some cards. */
+  artSets?: Readonly<Record<string, DeckArtSet>>;
+  /** The set used when the consumer names none. */
+  defaultArtSet?: string;
+  /** The deck's back: a pattern with a tone, or consumer artwork. */
+  back?: DeckBack;
+  /** Backs by named set. A matching entry wins over `back`. */
+  backs?: Readonly<Record<string, DeckBack>>;
+}
+
+export type DeckArt = ReactNode;
+export type DeckArtSet = Readonly<Record<string, DeckArt>>;
+export type DeckBack = ReactNode | { pattern: PatternVariant; tone?: PatternTone };
+
+export interface CardArtRequest {
+  suit: string;
+  rank: string;
+  /** The set the consumer asked this card to use. */
+  artSet?: string;
+  /** This one card's set, which wins over `artSet`. */
+  cardArtSet?: string;
+  /** Use `print` for the printed face instead of art. */
+  mode?: 'art' | 'print';
+}
+
+/** The art key of a card, honouring the deck's `cardId`. */
+export function cardArtId(deck: Deck, suit: string, rank: string): string {
+  return deck.cardId?.(suit, rank) ?? `${suit}-${rank}`;
+}
+
+/** The art for a card, or undefined when it should render its printed face. */
+export function resolveCardArt(deck: Deck, request: CardArtRequest): DeckArt | undefined {
+  if (request.mode === 'print') return undefined;
+
+  const id = cardArtId(deck, request.suit, request.rank);
+  const set = request.cardArtSet ?? request.artSet ?? deck.defaultArtSet;
+  const setArt = set === undefined ? undefined : deck.artSets?.[set]?.[id];
+  return setArt === undefined ? deck.art?.[id] : setArt;
+}
+
+/** The back for a set, or the deck's default back. */
+export function resolveDeckBack(deck: Deck, artSet?: string): DeckBack | undefined {
+  const set = artSet ?? deck.defaultArtSet;
+  const setBack = set === undefined ? undefined : deck.backs?.[set];
+  return setBack === undefined ? deck.back : setBack;
 }
 
 /**
