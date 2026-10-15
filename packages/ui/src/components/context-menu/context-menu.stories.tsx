@@ -790,13 +790,12 @@ export const Danger: Story = {
 };
 
 function EasyExample({
-  onCopy: _onCopy,
   onRename: _onRename,
   onDelete: _onDelete,
   onOpenChild: _onOpenChild,
   targetProps: _targetProps,
   ...args
-}: ContextMenuEasyProps & Partial<Pick<StoryArgs, 'onCopy' | 'onRename' | 'onDelete' | 'onOpenChild' | 'targetProps'>>) {
+}: Omit<ContextMenuEasyProps, 'onRename' | 'onDelete' | 'onOpenChild' | 'targetProps'> & Partial<Pick<StoryArgs, 'onRename' | 'onDelete' | 'onOpenChild' | 'targetProps'>>) {
   return (
     <Row>
       <ContextMenu {...args} />
