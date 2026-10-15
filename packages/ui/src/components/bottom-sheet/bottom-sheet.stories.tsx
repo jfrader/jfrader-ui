@@ -41,6 +41,8 @@ export const ShellAndPanelReplacements: StoryObj<typeof BottomSheet> = {
     await expect(panel.getAttribute('data-ui')?.split(' ')).toContain('bottom-sheet-panel');
     await expect(panel.className).not.toBe('');
     await expect(within(panel).getByRole('heading', { name: TITLE })).toBeInTheDocument();
+    // The body scrolls; a scrollable region must be keyboard-reachable (axe: scrollable-region-focusable).
+    await expect(panel.querySelector('[data-ui="bottom-sheet-body"]')).toHaveAttribute('tabindex', '0');
   },
 };
 const TRIGGER = 'Open trip';
