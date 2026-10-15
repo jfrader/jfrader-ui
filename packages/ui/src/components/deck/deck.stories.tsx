@@ -137,30 +137,28 @@ export const CustomDeck: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { DeckProvider, defineDeck, resolveCardArt } from '@jfrader/ui/deck';
+        code: `import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
 
 const deck = defineDeck({
-  id: 'stars',
-  suits: { stars: { label: 'stars', glyph: '★' } },
-  ranks: { I: { label: 'one', mark: 'I' }, II: { label: 'two', mark: 'II' } },
+  id: 'celestial',
+  suits: { stars: { label: 'stars', glyph: '⭐', ink: 'red' } },
+  ranks: { I: { label: 'I', mark: 'I' }, II: { label: 'II', mark: 'II' }, III: { label: 'III', mark: 'III' } },
+  art: { 'stars-II': <span>BASE II</span> },
   artSets: {
-    'release-2/spooky': { 'stars-I': <span>Spooky star</span> },
-    rare: { 'stars-I': <span>Rare star</span> },
+    'release-2/spooky': { 'stars-I': <span>SPOOKY I</span> },
+    rare: { 'stars-I': <span>RARE I</span> },
   },
   defaultArtSet: 'release-2/spooky',
 });
 
-export function Stars() {
-  return <DeckProvider decks={[deck]} default="stars">
-    <GameCard label="Rare star" value={{ suit: 'stars', rank: 'I' }}>
-      {resolveCardArt(deck, { suit: 'stars', rank: 'I', artSet: 'release-2/spooky', cardArtSet: 'rare' })}
-    </GameCard>
-    <GameCard label="Two of stars" value={{ suit: 'stars', rank: 'II' }}>
-      {resolveCardArt(deck, { suit: 'stars', rank: 'II' })}
-    </GameCard>
-  </DeckProvider>;
-}`,
+<DeckProvider decks={[deck]} default="celestial">
+  <GameCard label="Spooky star" value={{ suit: 'stars', rank: 'I' }} artSet="release-2/spooky" />
+  <GameCard label="Rare star" value={{ suit: 'stars', rank: 'I' }} artSet="release-2/spooky" cardArtSets={{ 'stars-I': 'rare' }} />
+  <GameCard label="Base star" value={{ suit: 'stars', rank: 'II' }} />
+  <GameCard label="Three of stars" value={{ suit: 'stars', rank: 'III' }} />
+  <GameCard label="Printed star" value={{ suit: 'stars', rank: 'I' }} artSet="release-2/spooky" face="print" />
+</DeckProvider>`,
       },
     },
   },
@@ -225,15 +223,13 @@ import { GameCard } from '@jfrader/ui/game-card';
 
 /** Override one built-in card while keeping the other printed faces. */
 export const FactoryDeckOverride: Story = {
-  parameters: { docs: { source: { code: `import { DeckProvider, defineDeck, frenchDeck, resolveCardArt } from '@jfrader/ui/deck';
+  parameters: { docs: { source: { code: `import { DeckProvider, defineDeck, frenchDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
 
 const deck = defineDeck({ ...frenchDeck, id: 'crowned-french', art: { 'hearts-Q': <span>CROWNED Q</span> } });
 
 <DeckProvider decks={[deck]} default="crowned-french">
-  <GameCard label="Crowned queen" value={{ suit: 'hearts', rank: 'Q' }}>
-    {resolveCardArt(deck, { suit: 'hearts', rank: 'Q' })}
-  </GameCard>
+  <GameCard label="Crowned queen" value={{ suit: 'hearts', rank: 'Q' }} />
   <GameCard label="King of hearts" value={{ suit: 'hearts', rank: 'K' }} />
 </DeckProvider>` } } },
   render: () => (
@@ -243,8 +239,8 @@ const deck = defineDeck({ ...frenchDeck, id: 'crowned-french', art: { 'hearts-Q'
       art: { 'hearts-Q': <FaceArt text="CROWNED Q" /> },
     })]}>
       <Row>
-        <GameCard label="Crowned queen" value={{ suit: 'hearts', rank: 'Q' }} artSet="crowns" />
-        <GameCard label="King of hearts" value={{ suit: 'hearts', rank: 'K' }} artSet="crowns" />
+        <GameCard label="Crowned queen" value={{ suit: 'hearts', rank: 'Q' }} />
+        <GameCard label="King of hearts" value={{ suit: 'hearts', rank: 'K' }} />
       </Row>
     </DeckProvider>
   ),
