@@ -14,6 +14,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
@@ -95,6 +96,24 @@ export interface ImageCompareProps
   disabled?: boolean;
   showReset?: boolean;
   resetLabel?: string;
+  slots?: {
+    /** Replaces the image frame. */
+    frame?: ComponentType<PartSlot & ComponentPropsWithRef<'div'>>;
+    /** Replaces the before image layer. */
+    before?: ComponentType<PartSlot & ComponentPropsWithRef<'div'>>;
+    /** Replaces the after image layer. */
+    after?: ComponentType<PartSlot & ComponentPropsWithRef<'div'>>;
+    /** Replaces the before caption. */
+    beforeLabel?: ComponentType<CaptionSlot & ComponentPropsWithRef<'span'>>;
+    /** Replaces the after caption. */
+    afterLabel?: ComponentType<CaptionSlot & ComponentPropsWithRef<'span'>>;
+    /** Replaces the divider line. */
+    divider?: ComponentType<Omit<PartSlot, 'aria-hidden'> & ComponentPropsWithRef<'div'>>;
+    /** Replaces the slider handle. */
+    handle?: ComponentType<HandleSlot & ComponentPropsWithRef<'div'>>;
+    /** Replaces the reset button. */
+    resetButton?: ComponentType<ButtonSlot & ButtonProps>;
+  };
   slotProps?: ImageCompareSlotProps;
 }
 
@@ -358,6 +377,7 @@ export function ImageCompare({
   disabled = false,
   showReset = true,
   resetLabel = DEFAULT_RESET_LABEL,
+  slots,
   slotProps,
   className,
   sx,
@@ -694,6 +714,14 @@ export function ImageCompare({
   const beforeCaptionId = captions[0] !== '' ? `${id}-before` : undefined;
   const afterCaptionId = captions[1] !== '' ? `${id}-after` : undefined;
   const frameSlot = slotProps?.frame;
+  const Frame = slots?.frame ?? 'div';
+  const Before = slots?.before ?? 'div';
+  const After = slots?.after ?? 'div';
+  const BeforeLabel = slots?.beforeLabel ?? 'span';
+  const AfterLabel = slots?.afterLabel ?? 'span';
+  const Divider = slots?.divider ?? 'div';
+  const Handle = slots?.handle ?? 'div';
+  const ResetButton = slots?.resetButton ?? Button;
   const handleSlot = slotProps?.handle;
   const resetSlot = slotProps?.resetButton;
   const frameStyleVars = {
@@ -719,7 +747,7 @@ export function ImageCompare({
               if (event.target === handleRef.current) handleKey(event);
             }}
           >
-            <div
+            <Frame
               {...frameSlot}
               ref={mergedFrameRef}
               data-ui="image-compare-frame"
@@ -751,11 +779,11 @@ export function ImageCompare({
                 event.preventDefault();
               }}
             >
-              <div {...slotProps?.after} data-ui="image-compare-after" css={[layerStyle, slotProps?.after?.css]}>
+              <After {...slotProps?.after} data-ui="image-compare-after" css={[layerStyle, slotProps?.after?.css]}>
                 {after}
-              </div>
+              </After>
               {afterCaptionId && (
-                <span
+                <AfterLabel
                   {...slotProps?.afterLabel}
                   id={afterCaptionId}
                   aria-hidden="true"
@@ -763,17 +791,17 @@ export function ImageCompare({
                   css={[captionStyle, afterCaptionStyles[orientation], slotProps?.afterLabel?.css]}
                 >
                   {captions[1]}
-                </span>
+                </AfterLabel>
               )}
-              <div
+              <Before
                 {...slotProps?.before}
                 data-ui="image-compare-before"
                 css={[layerStyle, beforeOrientationStyles[orientation], slotProps?.before?.css]}
               >
                 {before}
-              </div>
+              </Before>
               {beforeCaptionId && (
-                <span
+                <BeforeLabel
                   {...slotProps?.beforeLabel}
                   id={beforeCaptionId}
                   aria-hidden="true"
@@ -781,15 +809,15 @@ export function ImageCompare({
                   css={[captionStyle, beforeCaptionStyle, slotProps?.beforeLabel?.css]}
                 >
                   {captions[0]}
-                </span>
+                </BeforeLabel>
               )}
-              <div
+              <Divider
                 {...slotProps?.divider}
                 aria-hidden="true"
                 data-ui="image-compare-divider"
                 css={[dividerStyle, dividerOrientationStyles[orientation], slotProps?.divider?.css]}
               />
-              <div
+              <Handle
                 {...handleSlot}
                 ref={mergedHandleRef}
                 role="slider"
@@ -822,10 +850,10 @@ export function ImageCompare({
                 >
                   <path d="M9 6l-6 6 6 6M15 6l6 6-6 6" />
                 </svg>
-              </div>
-            </div>
+              </Handle>
+            </Frame>
             {showReset && (
-              <Button
+              <ResetButton
                 size="sm"
                 variant="outline"
                 {...resetSlot}
@@ -838,7 +866,7 @@ export function ImageCompare({
                 }}
               >
                 {resetLabel}
-              </Button>
+              </ResetButton>
             )}
           </div>
         )}

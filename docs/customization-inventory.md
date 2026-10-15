@@ -10,8 +10,8 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 - Public callable families: **126**; public callable parts: **156**.
 - Families exposing `slots.root`: **58**; remaining without a family-level root slot: **68** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **48**; remaining without family-level interior slots: **78** (includes components without generated anatomy).
-- Rows with styling-only `slotProps` keys: **70**.
+- Families exposing any non-root replacement slot: **60**; remaining without family-level interior slots: **66** (includes components without generated anatomy).
+- Rows with styling-only `slotProps` keys: **59**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
 behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, TrickStacks and CardFlights are owner-held;
@@ -29,7 +29,7 @@ may exist and is listed on the corresponding public part).
 | [Accordion.Item](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
 | [Accordion.Panel](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
 | [Accordion.Trigger](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
-| [ActivityRings](../packages/ui/src/components/activity-rings/activity-rings.tsx) | — | — | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | — | — |
+| [ActivityRings](../packages/ui/src/components/activity-rings/activity-rings.tsx) | — | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | — | — | — |
 | [Alert](../packages/ui/src/components/alert/alert.tsx) | — | `body`, `dismiss`, `root`, `title` | `body`, `dismiss`, `root`, `title` | — | — | — |
 | [AnnouncementBar](../packages/ui/src/components/announcement-bar/announcement-bar.tsx) | — | — | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | — | — |
 | [AttachmentList](../packages/ui/src/components/attachment-list/attachment-list.tsx) | — | `expandButton`, `item`, `link` | `expandButton`, `item`, `link` | — | — | — |
@@ -69,11 +69,11 @@ may exist and is listed on the corresponding public part).
 | [Card.Title](../packages/ui/src/components/card/card.tsx) | — | — | — | — | — | — |
 | [CardFlightsProvider](../packages/ui/src/components/card-flights/card-flights.tsx) | yes | `root` | `root` | — | — | — |
 | [Carousel](../packages/ui/src/components/carousel/carousel.tsx) | — | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | — | — | — |
-| [ChatMessage](../packages/ui/src/components/chat-message/chat-message.tsx) | — | — | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | — | — |
+| [ChatMessage](../packages/ui/src/components/chat-message/chat-message.tsx) | — | `article`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | `attachments` | — | — |
 | [ChatThread](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | — | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `scroller`, `time`, `viewport` | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `scroller`, `time`, `viewport` | `composerProps` | `Composer` |
 | [ChatThread.Composer](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | — | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | — | — |
 | [Checkbox](../packages/ui/src/components/checkbox/checkbox.tsx) | — | — | `control`, `description`, `label`, `root` | `control`, `description`, `label`, `root` | — | — |
-| [ChipGroup](../packages/ui/src/components/chip-group/chip-group.tsx) | — | — | `check`, `chip`, `frame`, `label`, `overflow`, `row` | `check`, `chip`, `frame`, `label`, `overflow`, `row` | — | — |
+| [ChipGroup](../packages/ui/src/components/chip-group/chip-group.tsx) | — | `check`, `chip`, `frame`, `label`, `overflow`, `row` | `check`, `chip`, `frame`, `label`, `overflow`, `row` | — | — | — |
 | [CodeBlock](../packages/ui/src/components/code-block/code-block.tsx) | — | — | `code`, `gutter`, `header`, `label`, `language`, `pre`, `sourceFrame`, `toggle` | `code`, `gutter`, `header`, `label`, `language`, `pre`, `sourceFrame`, `toggle` | `copyButtonProps` | — |
 | [Combobox](../packages/ui/src/components/combobox/combobox.tsx) | yes | `empty`, `input`, `item`, `list`, `root` | `description`, `empty`, `error`, `input`, `item`, `label`, `list`, `root` | `description`, `error`, `label` | — | `Empty`, `Input`, `Item`, `List` |
 | [Combobox.Empty](../packages/ui/src/components/combobox/combobox.tsx) | — | — | — | — | — | — |
@@ -98,7 +98,7 @@ may exist and is listed on the corresponding public part).
 | [ContextMenu.Target](../packages/ui/src/components/context-menu/context-menu.tsx) | — | — | — | — | — | — |
 | [ContextMenu.Trigger](../packages/ui/src/components/context-menu/context-menu.tsx) | — | — | — | — | — | — |
 | [CopyButton](../packages/ui/src/components/copy-button/copy-button.tsx) | — | — | `icon`, `label`, `status` | `icon`, `label`, `status` | — | — |
-| [Countdown](../packages/ui/src/components/countdown/countdown.tsx) | — | — | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | — | — |
+| [Countdown](../packages/ui/src/components/countdown/countdown.tsx) | — | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | — | — | — |
 | [DatePicker](../packages/ui/src/components/date-picker/date-picker.tsx) | — | `input`, `popup` | `input`, `popup` | — | — | `Input`, `Popup` |
 | [DatePicker.Input](../packages/ui/src/components/date-picker/date-picker.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |
 | [DatePicker.Popup](../packages/ui/src/components/date-picker/date-picker.tsx) | — | — | — | — | — | — |
@@ -136,9 +136,9 @@ may exist and is listed on the corresponding public part).
 | [EditableDetails.Item](../packages/ui/src/components/editable-details/editable-details.tsx) | — | — | `description`, `edit`, `editor`, `label`, `summary` | `description`, `edit`, `editor`, `label`, `summary` | — | — |
 | [EditableDetails.List](../packages/ui/src/components/editable-details/editable-details.tsx) | — | — | — | — | — | — |
 | [EditableDetails.Section](../packages/ui/src/components/editable-details/editable-details.tsx) | — | — | `heading`, `panel`, `trigger` | `heading`, `panel`, `trigger` | — | — |
-| [Emblem](../packages/ui/src/components/emblem/emblem.tsx) | — | — | `image`, `monogram` | `image`, `monogram` | — | — |
+| [Emblem](../packages/ui/src/components/emblem/emblem.tsx) | — | `image`, `monogram` | `image`, `monogram` | — | — | — |
 | [EmotionRegistry](../packages/ui/src/components/next/emotion-registry.tsx) | — | — | — | — | — | — |
-| [EmptyState](../packages/ui/src/components/empty-state/empty-state.tsx) | — | — | `action`, `content`, `description`, `icon`, `title` | `action`, `content`, `description`, `icon`, `title` | — | — |
+| [EmptyState](../packages/ui/src/components/empty-state/empty-state.tsx) | — | `action`, `content`, `description`, `icon`, `title` | `action`, `content`, `description`, `icon`, `title` | — | — | — |
 | [ExpandableCard](../packages/ui/src/components/expandable-card/expandable-card.tsx) | yes | `content`, `description`, `root`, `title`, `trigger` | `content`, `description`, `root`, `title`, `trigger` | — | — | `Content`, `Description`, `Title`, `Trigger` |
 | [ExpandableCard.Content](../packages/ui/src/components/expandable-card/expandable-card.tsx) | — | — | — | — | — | — |
 | [ExpandableCard.Description](../packages/ui/src/components/expandable-card/expandable-card.tsx) | — | — | — | — | — | — |
@@ -186,15 +186,15 @@ may exist and is listed on the corresponding public part).
 | [HoverCard.Group](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |
 | [HoverCard.Profile](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | `avatar`, `bio`, `identity`, `meta`, `stats` | `avatar`, `bio`, `identity`, `meta`, `stats` | — | — |
 | [HoverCard.Trigger](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |
-| [ImageCompare](../packages/ui/src/components/image-compare/image-compare.tsx) | — | — | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | — | — |
+| [ImageCompare](../packages/ui/src/components/image-compare/image-compare.tsx) | — | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | — | — | — |
 | [InlineEdit](../packages/ui/src/components/inline-edit/inline-edit.tsx) | yes | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | — | `controlProps` | — |
-| [JsonViewer](../packages/ui/src/components/json-viewer/json-viewer.tsx) | — | — | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | — | — |
+| [JsonViewer](../packages/ui/src/components/json-viewer/json-viewer.tsx) | — | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | — | — | — |
 | [Kbd](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | `Group` |
 | [Kbd.Group](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | — |
 | [KeycapKeyboard](../packages/ui/src/components/keycap-keyboard/keycap-keyboard.tsx) | — | — | `key`, `legend`, `row` | `key`, `legend`, `row` | — | — |
 | [LightboxGallery](../packages/ui/src/components/lightbox-gallery/lightbox-gallery.tsx) | — | — | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | — | — |
-| [LinkPreview](../packages/ui/src/components/link-preview/link-preview.tsx) | — | — | `body`, `image`, `title` | `body`, `image`, `title` | — | — |
-| [LinkUnfurl](../packages/ui/src/components/link-unfurl/link-unfurl.tsx) | — | — | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | — | — |
+| [LinkPreview](../packages/ui/src/components/link-preview/link-preview.tsx) | — | `body`, `image`, `title` | `body`, `image`, `title` | — | — | — |
+| [LinkUnfurl](../packages/ui/src/components/link-unfurl/link-unfurl.tsx) | — | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | — | — | — |
 | [LocaleSwitcher](../packages/ui/src/components/locale-switcher/locale-switcher.tsx) | — | — | `content`, `option`, `trigger` | `content`, `option`, `trigger` | — | — |
 | [MentionInput](../packages/ui/src/components/mention-input/mention-input.tsx) | yes | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | — | — | — |
 | [Menu](../packages/ui/src/components/menu/menu.tsx) | yes | `content`, `item`, `root`, `separator`, `trigger` | `content`, `item`, `root`, `separator`, `trigger` | — | — | `Content`, `Item`, `Separator`, `Trigger` |
@@ -202,7 +202,7 @@ may exist and is listed on the corresponding public part).
 | [Menu.Item](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
 | [Menu.Separator](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
 | [Menu.Trigger](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
-| [MetricCard](../packages/ui/src/components/metric-card/metric-card.tsx) | — | — | `delta`, `description`, `header`, `label`, `surface`, `value` | `delta`, `description`, `header`, `label`, `surface`, `value` | — | — |
+| [MetricCard](../packages/ui/src/components/metric-card/metric-card.tsx) | — | `delta`, `description`, `header`, `label`, `surface`, `value` | `delta`, `description`, `header`, `label`, `surface`, `value` | — | — | — |
 | [MultiSelect](../packages/ui/src/components/multi-select/multi-select.tsx) | yes | `clear`, `content`, `description`, `empty`, `error`, `item`, `label`, `root`, `trigger`, `value` | `clear`, `content`, `description`, `empty`, `error`, `item`, `label`, `root`, `trigger`, `value` | — | — | `Clear`, `Content`, `Description`, `Empty`, `Error`, `Item`, `Label`, `Trigger`, `Value` |
 | [MultiSelect.Clear](../packages/ui/src/components/multi-select/multi-select.tsx) | — | — | — | — | — | — |
 | [MultiSelect.Content](../packages/ui/src/components/multi-select/multi-select.tsx) | — | — | — | — | — | — |
@@ -216,7 +216,7 @@ may exist and is listed on the corresponding public part).
 | [Navigation](../packages/ui/src/components/navigation/navigation.tsx) | yes | `group`, `item`, `root` | `group`, `item`, `root` | — | — | `Group`, `Item` |
 | [Navigation.Group](../packages/ui/src/components/navigation/navigation.tsx) | — | — | — | — | — | — |
 | [Navigation.Item](../packages/ui/src/components/navigation/navigation.tsx) | — | — | — | — | — | — |
-| [NowPlaying](../packages/ui/src/components/now-playing/now-playing.tsx) | — | — | `artist`, `artwork`, `collapse`, `controls`, `error`, `expand`, `full`, `mini`, `seek`, `status`, `title`, `waveform` | `artist`, `artwork`, `collapse`, `controls`, `error`, `expand`, `full`, `mini`, `seek`, `status`, `title`, `waveform` | — | `Levels` |
+| [NowPlaying](../packages/ui/src/components/now-playing/now-playing.tsx) | — | `artist`, `artwork`, `collapse`, `controls`, `error`, `expand`, `full`, `mini`, `seek`, `status`, `title`, `waveform` | `artist`, `artwork`, `collapse`, `controls`, `error`, `expand`, `full`, `mini`, `seek`, `status`, `title`, `waveform` | — | — | `Levels` |
 | [NowPlaying.Levels](../packages/ui/src/components/now-playing/now-playing.tsx) | — | — | — | — | — | — |
 | [NowPlayingLevels](../packages/ui/src/components/now-playing/now-playing.tsx) | — | — | — | — | — | — |
 | [Pagination](../packages/ui/src/components/pagination/pagination.tsx) | — | — | — | — | — | — |

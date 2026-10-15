@@ -30,6 +30,7 @@ import {
   type ClipboardEvent,
   type ComponentPropsWithoutRef,
   type ComponentPropsWithRef,
+  type ComponentType,
   type FocusEvent,
   type KeyboardEvent,
   type PointerEvent,
@@ -130,6 +131,29 @@ export interface LinkUnfurlSlotProps {
   error?: Omit<PartProps<'p'>, 'role'>;
 }
 
+export interface LinkUnfurlSlots {
+  /** Replaces the message field. */
+  field?: ComponentType<NonNullable<LinkUnfurlSlotProps['field']> & ComponentPropsWithRef<'textarea'>>;
+  /** Replaces the preview lane. */
+  lane?: ComponentType<NonNullable<LinkUnfurlSlotProps['lane']> & ComponentPropsWithRef<'div'>>;
+  /** Replaces each preview item container. */
+  chip?: ComponentType<NonNullable<LinkUnfurlSlotProps['chip']> & ComponentPropsWithRef<typeof motion.div>>;
+  /** Replaces each preview card body. */
+  card?: ComponentType<NonNullable<LinkUnfurlSlotProps['card']> & ComponentPropsWithRef<'div'>>;
+  /** Replaces each preview title link. */
+  title?: ComponentType<NonNullable<LinkUnfurlSlotProps['title']> & ComponentPropsWithRef<'a'>>;
+  /** Replaces each preview image. */
+  image?: ComponentType<NonNullable<LinkUnfurlSlotProps['image']> & ComponentPropsWithRef<'img'>>;
+  /** Replaces each preview action container. */
+  controls?: ComponentType<NonNullable<LinkUnfurlSlotProps['controls']> & ComponentPropsWithRef<'div'>>;
+  /** Replaces the send button. */
+  send?: ComponentType<NonNullable<LinkUnfurlSlotProps['send']> & ComponentPropsWithRef<typeof Button>>;
+  /** Replaces the status region. */
+  status?: ComponentType<NonNullable<LinkUnfurlSlotProps['status']> & ComponentPropsWithRef<'div'>>;
+  /** Replaces the error paragraph. */
+  error?: ComponentType<NonNullable<LinkUnfurlSlotProps['error']> & ComponentPropsWithRef<'p'>>;
+}
+
 export interface LinkUnfurlProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>, SxProps {
   /** Labels the message field. */
@@ -160,6 +184,7 @@ export interface LinkUnfurlProps
   locale?: Intl.LocalesArgument;
   /** Sets animation behavior. Defaults to `'auto'`, respecting reduced motion. `'none'` disables animation. */
   motion?: 'auto' | 'none';
+  slots?: LinkUnfurlSlots;
   slotProps?: LinkUnfurlSlotProps;
 }
 
@@ -377,6 +402,7 @@ interface PreviewItemProps {
   /** A pending send locks the draft, so Remove stays focusable but inactive. */
   locked: boolean;
   labels: LinkUnfurlLabels;
+  slots: LinkUnfurlSlots | undefined;
   slotProps: LinkUnfurlSlotProps | undefined;
   onToggle: () => void;
   onRetry: () => void;
@@ -391,6 +417,7 @@ function PreviewItem({
   animate,
   locked,
   labels,
+  slots,
   slotProps,
   onToggle,
   onRetry,
@@ -410,6 +437,9 @@ function PreviewItem({
     favicon: record?.favicon === undefined ? undefined : toHttpHref(record.favicon),
   };
   const previewSlots = { title: slotProps?.title, image: slotProps?.image, body: slotProps?.card };
+  const previewComponents = { title: slots?.title, image: slots?.image, body: slots?.card };
+  const Chip = slots?.chip ?? motion.div;
+  const Controls = slots?.controls ?? 'div';
   const chip = splitPart(slotProps?.chip);
   const controls = splitPart(slotProps?.controls);
 
@@ -442,7 +472,7 @@ function PreviewItem({
   };
 
   return (
-    <motion.div
+    <Chip
       {...chip.attributes}
       layout={animate}
       transition={LAYOUT_SPRING}
@@ -469,9 +499,10 @@ function PreviewItem({
           titleId={titleId}
           titleText={link.url}
           ui="link-unfurl"
+          slots={previewComponents}
           slotProps={previewSlots}
         />
-        <div
+        <Controls
           {...controls.attributes}
           data-ui="link-unfurl-controls"
           className={controls.className}
@@ -507,7 +538,7 @@ function PreviewItem({
           >
             {labels.remove}
           </Button>
-        </div>
+        </Controls>
       </motion.div>
       {ready ? (
         <PreviewBody
@@ -517,11 +548,12 @@ function PreviewItem({
           ui="link-unfurl"
           hidden={!open}
           inert={!open}
+          slots={previewComponents}
           slotProps={previewSlots}
           baseStyle={bodyStyle}
         />
       ) : null}
-    </motion.div>
+    </Chip>
   );
 }
 
@@ -544,6 +576,7 @@ export function LinkUnfurl({
   labels: labelsProp,
   locale,
   motion: motionMode = 'auto',
+  slots,
   slotProps,
   className,
   sx,
@@ -799,6 +832,11 @@ export function LinkUnfurl({
   const sendPart = splitPart(slotProps?.send);
   const statusPart = splitPart(slotProps?.status);
   const errorPart = splitPart(slotProps?.error);
+  const Field = slots?.field ?? 'textarea';
+  const Lane = slots?.lane ?? 'div';
+  const Send = slots?.send ?? Button;
+  const Status = slots?.status ?? 'div';
+  const Error = slots?.error ?? 'p';
 
   return (
     <MotionConfig reducedMotion={motionMode === 'none' ? 'always' : 'user'}>
@@ -808,7 +846,7 @@ export function LinkUnfurl({
             <label id={labelId} htmlFor={fieldId} css={labelStyle}>
               {label}
             </label>
-            <textarea
+            <Field
               rows={3}
               {...fieldAttributes}
               ref={mergedFieldRef}
@@ -835,7 +873,7 @@ export function LinkUnfurl({
               {labels.hint}
             </p>
             {hasLinks ? (
-              <div
+              <Lane
                 {...lane.attributes}
                 ref={laneRef}
                 data-ui="link-unfurl-lane"
@@ -855,6 +893,7 @@ export function LinkUnfurl({
                       animate={animate}
                       locked={sending}
                       labels={labels}
+                      slots={slots}
                       slotProps={slotProps}
                       onToggle={() => toggle(link)}
                       onRetry={() => retry(link)}
@@ -862,7 +901,7 @@ export function LinkUnfurl({
                     />
                   );
                 })}
-              </div>
+              </Lane>
             ) : null}
             {suggestions.length > 0 ? (
               <div data-ui="link-unfurl-suggestions" css={suggestionsStyle}>
@@ -882,7 +921,7 @@ export function LinkUnfurl({
             ) : null}
             <div css={footerStyle}>
               {sendFailed ? (
-                <p
+                <Error
                   {...errorPart.attributes}
                   id={errorId}
                   role="alert"
@@ -891,9 +930,9 @@ export function LinkUnfurl({
                   css={[sendErrorStyle, errorPart.partCss]}
                 >
                   {labels.error}
-                </p>
+                </Error>
               ) : null}
-              <Button
+              <Send
                 {...sendPart.attributes}
                 tone="accent"
                 loading={sending}
@@ -906,9 +945,9 @@ export function LinkUnfurl({
                 }}
               >
                 {labels.send}
-              </Button>
+              </Send>
             </div>
-            <div
+            <Status
               {...statusPart.attributes}
               role="status"
               aria-live="polite"
@@ -918,7 +957,7 @@ export function LinkUnfurl({
               css={[visuallyHiddenStyle, statusPart.partCss]}
             >
               {announcement}
-            </div>
+            </Status>
           </div>
         )}
       </WithSx>

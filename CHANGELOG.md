@@ -4,6 +4,7 @@
 
 ### Added
 
+- Alert, Avatar, AvatarGroup, Badge, AttachmentList and Carousel accept a replacement slot for every part they already styled through `slotProps`, so a consumer can pass props or swap the element.
 - Card accepts `slots.header`, `slots.title`, `slots.description`, `slots.content` and `slots.footer` replacements while preserving each part's styles.
 - Component docs list each slot and link it when the slot type is another public component. Components that render another public component link to it.
 - Dialog, Drawer, BottomSheet, ContextMenu and UserMenu easy compositions accept interior replacement slots. Drawer and BottomSheet add footer content; DialogStack adds header/body slots. Overlay easy roots accept `component` as `slots.root` sugar, and UserMenu.Content adds replacements for its list, handle and close button.

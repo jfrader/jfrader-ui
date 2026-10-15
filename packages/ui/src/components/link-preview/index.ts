@@ -4,5 +4,6 @@ export type {
   LinkPreviewLabels,
   LinkPreviewProps,
   LinkPreviewSlotProps,
+  LinkPreviewSlots,
   LinkPreviewStatus,
 } from './link-preview';

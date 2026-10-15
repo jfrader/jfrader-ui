@@ -1,6 +1,6 @@
 'use client';
 
-import { type ComponentPropsWithRef, type ComponentPropsWithoutRef, type ReactNode } from 'react';
+import { type ComponentPropsWithRef, type ComponentPropsWithoutRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -49,6 +49,15 @@ export interface LinkPreviewSlotProps {
   body?: Omit<PartProps<'div'>, 'hidden' | 'inert'>;
 }
 
+export interface LinkPreviewSlots {
+  /** Replaces the page title link. */
+  title?: ComponentType<NonNullable<LinkPreviewSlotProps['title']> & ComponentPropsWithRef<'a'>>;
+  /** Replaces the preview image. */
+  image?: ComponentType<NonNullable<LinkPreviewSlotProps['image']> & ComponentPropsWithRef<'img'>>;
+  /** Replaces the description and publisher container. */
+  body?: ComponentType<NonNullable<LinkPreviewSlotProps['body']> & ComponentPropsWithRef<'div'>>;
+}
+
 export interface LinkPreviewProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   /** Supplies the address and metadata. No request ids or editor context are needed. */
   data: LinkPreviewData;
@@ -58,6 +67,8 @@ export interface LinkPreviewProps extends Omit<ComponentPropsWithRef<'div'>, 'ch
   labels?: Partial<LinkPreviewLabels>;
   /** Disables decorative transitions and the loading sweep. Defaults to `'auto'`. */
   motion?: 'auto' | 'none';
+  /** Replaces the title link, image and body. */
+  slots?: LinkPreviewSlots;
   /** Passes attributes and styles to the title link, image and body. */
   slotProps?: LinkPreviewSlotProps;
 }
@@ -204,6 +215,7 @@ interface PreviewHeadingProps {
   titleText?: string;
   ui?: string;
   truncate?: boolean;
+  slots?: LinkPreviewSlots;
   slotProps?: LinkPreviewSlotProps;
 }
 
@@ -215,12 +227,14 @@ export function PreviewHeading({
   titleText,
   ui = 'link-preview',
   truncate,
+  slots,
   slotProps,
 }: PreviewHeadingProps) {
   const ready = status === 'ready';
   const title = (ready && data.title) || titleText || data.url;
   const site = (ready && data.site) || hostOf(data.url);
   const titlePart = splitPart(slotProps?.title);
+  const Title = slots?.title ?? 'a';
   const statusText: Partial<Record<PreviewHeadingProps['status'], ReactNode>> = {
     pending: <span data-ui={`${ui}-pending`} css={pendingStyle}>{labels.pending}</span>,
     none: <span css={metaStyle}>{labels.unavailable}</span>,
@@ -230,7 +244,7 @@ export function PreviewHeading({
     <>
       {ready && data.favicon ? <img src={data.favicon} alt="" css={faviconStyle} /> : null}
       <span css={headingStyle}>
-        <a
+        <Title
           {...titlePart.attributes}
           id={titleId}
           href={data.url}
@@ -243,7 +257,7 @@ export function PreviewHeading({
           css={[titleStyle, truncate && titleClampStyle, titlePart.partCss]}
         >
           <bdi>{title}</bdi>
-        </a>
+        </Title>
         <span css={metaStyle}><bdi dir="ltr">{site}</bdi></span>
         {statusText[status]}
       </span>
@@ -256,6 +270,7 @@ interface PreviewBodyProps extends Omit<ComponentPropsWithRef<'div'>, 'children'
   ui?: string;
   truncate?: boolean;
   baseStyle?: Interpolation<Theme>;
+  slots?: LinkPreviewSlots;
   slotProps?: LinkPreviewSlotProps;
 }
 
@@ -264,6 +279,7 @@ export function PreviewBody({
   ui = 'link-preview',
   truncate,
   baseStyle,
+  slots,
   slotProps,
   ...rest
 }: PreviewBodyProps) {
@@ -272,8 +288,10 @@ export function PreviewBody({
   const showImage = image !== undefined && image.src !== '' && imageStatus.status !== 'error';
   const body = splitPart(slotProps?.body);
   const imagePart = splitPart(slotProps?.image);
+  const Body = slots?.body ?? 'div';
+  const Image = slots?.image ?? 'img';
   return (
-    <div
+    <Body
       {...body.attributes}
       {...rest}
       data-ui={`${ui}-card`}
@@ -283,7 +301,7 @@ export function PreviewBody({
       {image !== undefined ? (
         <div data-ui={`${ui}-image-frame`} css={imageFrameStyle}>
           {showImage ? (
-            <img
+            <Image
               {...imagePart.attributes}
               src={image.src}
               alt={image.alt}
@@ -306,7 +324,7 @@ export function PreviewBody({
       {isRenderable(data.description) && data.description !== '' ? (
         <p css={[descriptionStyle, truncate && descriptionClampStyle]}>{data.description}</p>
       ) : null}
-    </div>
+    </Body>
   );
 }
 
@@ -316,6 +334,7 @@ export function LinkPreview({
   status = 'ready',
   labels,
   motion = 'auto',
+  slots,
   slotProps,
   className,
   sx,
@@ -337,11 +356,12 @@ export function LinkPreview({
               data={data}
               status={status}
               labels={{ ...DEFAULT_LABELS, ...labels }}
+              slots={slots}
               slotProps={slotProps}
               truncate
             />
           </div>
-          {status === 'ready' ? <PreviewBody data={data} slotProps={slotProps} truncate /> : null}
+          {status === 'ready' ? <PreviewBody data={data} slots={slots} slotProps={slotProps} truncate /> : null}
         </div>
       )}
     </WithSx>

@@ -5,7 +5,7 @@
 // aria-labelledby); a supplied aria-labelledby is joined with the title id. It is never a live
 // region and never moves focus — the surrounding view owns result announcements and focus handoff.
 // Content changes (empty → success) replace text in place, so there is no motion to reduce.
-import { useId, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useId, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -42,6 +42,18 @@ export interface EmptyStateProps extends Omit<ComponentPropsWithRef<'section'>, 
   action?: ReactNode;
   headingLevel?: CardHeadingLevel;
   variant?: EmptyStateVariant;
+  slots?: {
+    /** Container wrapping the decorative icon. */
+    icon?: ComponentType<ComponentPropsWithRef<'div'>>;
+    /** Container wrapping the title and description text. */
+    content?: ComponentType<ComponentPropsWithRef<'div'>>;
+    /** Heading element displaying the title. */
+    title?: ComponentType<ComponentPropsWithRef<'h3'>>;
+    /** Paragraph displaying the explanatory description. */
+    description?: ComponentType<ComponentPropsWithRef<'p'>>;
+    /** Container wrapping action buttons or links. */
+    action?: ComponentType<ComponentPropsWithRef<'div'>>;
+  };
   slotProps?: EmptyStateSlotProps;
 }
 
@@ -150,6 +162,7 @@ export function EmptyState({
   action,
   headingLevel = 3,
   variant = 'centered',
+  slots,
   slotProps,
   className,
   sx,
@@ -162,7 +175,11 @@ export function EmptyState({
   const descriptionId = `${id}-description`;
   const hasTitle = isRenderable(title);
   const hasDescription = isRenderable(description);
-  const Heading = `h${headingLevel}` as const;
+  const Icon = slots?.icon ?? 'div';
+  const Content = slots?.content ?? 'div';
+  const Heading = slots?.title ?? (`h${headingLevel}` as const);
+  const Description = slots?.description ?? 'p';
+  const Action = slots?.action ?? 'div';
 
   return (
     <WithSx className={className} styles={[rootStyle, variantStyles[variant]]} sx={sx}>
@@ -177,16 +194,16 @@ export function EmptyState({
           className={className}
         >
           {isRenderable(icon) && (
-            <div
+            <Icon
               data-ui="empty-state-icon"
               aria-hidden="true"
               className={slotProps?.icon?.className}
               css={[iconStyle, slotProps?.icon?.css]}
             >
               {icon}
-            </div>
+            </Icon>
           )}
-          <div
+          <Content
             data-ui="empty-state-content"
             className={slotProps?.content?.className}
             css={[contentStyle, contentVariantStyles[variant], slotProps?.content?.css]}
@@ -201,23 +218,23 @@ export function EmptyState({
               </Heading>
             )}
             {hasDescription && (
-              <p
+              <Description
                 id={descriptionId}
                 className={slotProps?.description?.className}
                 css={[descriptionStyle, slotProps?.description?.css]}
               >
                 {description}
-              </p>
+              </Description>
             )}
-          </div>
+          </Content>
           {isRenderable(action) && (
-            <div
+            <Action
               data-ui="empty-state-action"
               className={slotProps?.action?.className}
               css={[actionStyle, actionVariantStyles[variant], slotProps?.action?.css]}
             >
               {action}
-            </div>
+            </Action>
           )}
         </section>
       )}

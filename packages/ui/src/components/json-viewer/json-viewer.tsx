@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
@@ -95,6 +96,26 @@ export interface JsonViewerProps
   labels?: Partial<JsonViewerLabels>;
   onCopy?: (detail: { kind: 'value' | 'path'; path: string; text: string }) => void;
   onCopyError?: (detail: { kind: 'value' | 'path'; path: string; error: unknown }) => void;
+  slots?: {
+    /** Replaces the toolbar container. */
+    toolbar?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+    /** Replaces the search field. */
+    search?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<typeof TextField>>;
+    /** Replaces the tree container. */
+    tree?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+    /** Replaces each node row. */
+    row?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+    /** Replaces each child group. */
+    group?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+    /** Replaces each node value. */
+    value?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'span'>>;
+    /** Replaces the selected path container. */
+    pathBar?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+    /** Replaces the status region. */
+    status?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+    /** Replaces each toolbar action button. */
+    action?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<typeof Button>>;
+  };
   slotProps?: JsonViewerSlotProps;
 }
 
@@ -484,6 +505,7 @@ export function JsonViewer({
   labels: labelProps,
   onCopy,
   onCopyError,
+  slots,
   slotProps,
   ref,
   className,
@@ -861,6 +883,15 @@ export function JsonViewer({
       </>
     );
   };
+  const Toolbar = slots?.toolbar ?? 'div';
+  const Search = slots?.search ?? TextField;
+  const Tree = slots?.tree ?? 'div';
+  const Row = slots?.row ?? 'div';
+  const Group = slots?.group ?? 'div';
+  const Value = slots?.value ?? 'span';
+  const PathBar = slots?.pathBar ?? 'div';
+  const Status = slots?.status ?? 'div';
+  const Action = slots?.action ?? Button;
   const rendered = new Map<string, ReactNode>();
   for (const [index, row] of visible.toReversed().entries()) {
     const node = nodes?.get(row.path);
@@ -899,7 +930,7 @@ export function JsonViewer({
           }
         }}
       >
-        <div
+        <Row
           data-ui="json-viewer-row"
           className={slotProps?.row?.className}
           css={[rowStyle, slotProps?.row?.css]}
@@ -921,15 +952,15 @@ export function JsonViewer({
                 </span>
                 <span css={punctuationStyle}>:</span>{' '}
                 {node!.type === 'object' || node!.type === 'array' ? (
-                  <span
+                  <Value
                     data-ui="json-viewer-type"
                     className={slotProps?.value?.className}
                     css={[chipStyle, slotProps?.value?.css]}
                   >
                     {labels.count(node!.children.length, node!.type)}
-                  </span>
+                  </Value>
                 ) : (
-                  <span
+                  <Value
                     data-ui="json-viewer-value"
                     data-type={node!.type}
                     className={slotProps?.value?.className}
@@ -938,15 +969,15 @@ export function JsonViewer({
                     {node!.type === 'string'
                       ? highlight(String(node!.value), true)
                       : highlight(JSON.stringify(node!.value))}
-                  </span>
+                  </Value>
                 )}
               </>
             )}
           </span>
-        </div>
+        </Row>
         </div>
         {children && (
-          <div
+          <Group
             id={groupId}
             role="group"
             data-ui="json-viewer-group"
@@ -955,13 +986,13 @@ export function JsonViewer({
             style={{ '--json-depth': row.level - 1 } as CSSProperties}
           >
             {children.map((child) => rendered.get(child.path))}
-          </div>
+          </Group>
         )}
       </div>,
     );
   }
   const action = (label: string, icon: ReactNode, run: () => void, disabled = false) => (
-    <Button
+    <Action
       data-ui="json-viewer-action"
       size="sm"
       variant="ghost"
@@ -974,7 +1005,7 @@ export function JsonViewer({
       render={(props) => <button {...props} type="button" disabled={disabled} />}
     >
       {icon}
-    </Button>
+    </Action>
   );
   const separator = <span aria-hidden="true" css={separatorStyle} />;
   return (
@@ -1018,7 +1049,7 @@ export function JsonViewer({
             </div>
           ) : (
             <>
-              <div
+              <Toolbar
                 data-ui="json-viewer-toolbar"
                 className={slotProps?.toolbar?.className}
                 css={[toolbarStyle, slotProps?.toolbar?.css]}
@@ -1028,7 +1059,7 @@ export function JsonViewer({
                     <span css={searchIconStyle} aria-hidden="true">
                       {searchIcon}
                     </span>
-                    <TextField
+                    <Search
                       data-ui="json-viewer-search"
                       ref={searchRef}
                       aria-label={labels.search}
@@ -1085,8 +1116,8 @@ export function JsonViewer({
                     </>
                   )}
                 </span>
-              </div>
-              <div
+              </Toolbar>
+              <Tree
                 ref={treeRef}
                 role="tree"
                 data-ui="json-viewer-tree"
@@ -1097,9 +1128,9 @@ export function JsonViewer({
                 css={[treeStyle, slotProps?.tree?.css]}
               >
                 {rendered.get(rootName)}
-              </div>
+              </Tree>
               {showPath && current && (
-                <div
+                <PathBar
                   data-ui="json-viewer-path-bar"
                   className={slotProps?.pathBar?.className}
                   css={[pathStyle, slotProps?.pathBar?.css]}
@@ -1115,11 +1146,11 @@ export function JsonViewer({
                   <pre data-ui="json-viewer-details" dir="ltr" tabIndex={0} css={detailsStyle}>
                     {serializeDetails(current.value)}
                   </pre>
-                </div>
+                </PathBar>
               )}
             </>
           )}
-          <div
+          <Status
             role="status"
             aria-live="polite"
             aria-atomic="true"
@@ -1128,7 +1159,7 @@ export function JsonViewer({
             css={[statusStyle, slotProps?.status?.css]}
           >
             {status}
-          </div>
+          </Status>
         </div>
       )}
     </WithSx>

@@ -7,5 +7,6 @@ export type {
   LinkUnfurlPreviewStatus,
   LinkUnfurlProps,
   LinkUnfurlSlotProps,
+  LinkUnfurlSlots,
   LinkUnfurlSuggestion,
 } from './link-unfurl';
