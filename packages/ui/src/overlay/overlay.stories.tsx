@@ -48,7 +48,9 @@ export const FallbackAcceptedClose: Story = {
       await userEvent.click(body.getByRole('button', { name: 'Close fallback' }));
       await expect(closeRequest).toHaveBeenCalledTimes(1);
       await expect(closeRequest).toHaveBeenCalledWith(false);
-      await expect(dialog).not.toHaveAttribute('open');
+      // The native close waits for the exit transition to settle; wait for it instead of
+      // racing the animation promise.
+      await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
     } finally {
       Reflect.deleteProperty(dialog, 'requestClose');
     }
