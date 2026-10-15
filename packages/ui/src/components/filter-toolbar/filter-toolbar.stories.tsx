@@ -19,6 +19,10 @@ import {
   type FilterToolbarSlotProps,
   type FilterValue,
 } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const NarrowFrame = styled.div({ inlineSize: 280, maxInlineSize: '100%' });
 
 const OPEN: FilterValue = { id: 'status', label: 'Status', value: 'open', valueLabel: 'Open' };
 const CLOSED: FilterValue = { ...OPEN, value: 'closed', valueLabel: 'Closed' };
@@ -311,6 +315,7 @@ function CustomRoot({ children, ...props }: ComponentPropsWithRef<'div'>) {
   );
 }
 
+// This story tests native inline style merging through the slot API.
 export const EasySlotPropsOverride: Story = {
   render: () => (
     <FilterToolbar
@@ -960,7 +965,7 @@ export const LongChips: Story = {
     ],
   },
   render: (args) => (
-    <div style={{ inlineSize: 280, maxInlineSize: '100%' }}>
+    <NarrowFrame>
       <FilterToolbar {...args}>
         <FilterToolbar.ActiveFilters />
         <FilterToolbar.Clear>Clear all collection filters</FilterToolbar.Clear>
@@ -970,7 +975,7 @@ export const LongChips: Story = {
           formatCount={(_count, formatted) => `${formatted} matching collection entries`}
         />
       </FilterToolbar>
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvas }) => {
     const root = canvas.getByRole('group');
@@ -993,6 +998,7 @@ export const LongChips: Story = {
   },
 };
 
+// This story tests documented css/sx precedence and the slot styling API.
 export const ConsumerStylePrecedence: Story = {
   render: (args) => (
     <FilterToolbar

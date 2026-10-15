@@ -1,4 +1,4 @@
-import { StrictMode, useState, type ComponentPropsWithRef, type CSSProperties } from 'react';
+import { StrictMode, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -8,13 +8,17 @@ import { Kbd } from '../kbd';
 import { TextField } from '../text-field';
 import { Textarea } from '../textarea';
 import { KeycapKeyboard, type KeycapKeyboardProps, type KeycapSpec } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
-const stackStyle = { display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '48rem' } satisfies CSSProperties;
+const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '48rem' });
 const snippet = `const [input, setInput] = useState<HTMLInputElement | null>(null);
 return <>
   <TextField label="Try the keyboard" ref={setInput} />
   <KeycapKeyboard eventTarget={input} />
 </>;`;
+
+const NarrowStack = styled(Stack)({ maxInlineSize: '320px' });
 const meta = {
   title: 'Data display/KeycapKeyboard',
   component: KeycapKeyboard,
@@ -32,11 +36,11 @@ type Story = StoryObj<typeof meta>;
 
 function TypingExample(args: KeycapKeyboardProps) {
   const [input, setInput] = useState<HTMLInputElement | null>(null);
-  return <div style={stackStyle}>
+  return <Stack>
     <TextField label="Try the keyboard" ref={setInput} />
     <KeycapKeyboard {...args} eventTarget={input} />
     <Button>Continue</Button>
-  </div>;
+  </Stack>;
 }
 
 function board(container: HTMLElement) {
@@ -127,7 +131,7 @@ export const Letters: Story = {
 };
 function LettersExample(args: KeycapKeyboardProps) {
   const [input, setInput] = useState<HTMLTextAreaElement | null>(null);
-  return <div style={stackStyle}><Textarea label="Write a note" ref={setInput} /><KeycapKeyboard {...args} eventTarget={input} /></div>;
+  return <Stack><Textarea label="Write a note" ref={setInput} /><KeycapKeyboard {...args} eventTarget={input} /></Stack>;
 }
 
 const macroRows: readonly (readonly KeycapSpec[])[] = [[
@@ -136,12 +140,12 @@ const macroRows: readonly (readonly KeycapSpec[])[] = [[
 ]];
 export const CustomMacro: Story = {
   args: { rows: macroRows, value: ['ControlLeft', 'ShiftLeft', 'KeyK'] },
-  render: (args) => <div style={stackStyle}><p>Search: <Kbd.Group><Kbd>Ctrl</Kbd><Kbd>Shift</Kbd><Kbd>K</Kbd></Kbd.Group></p><KeycapKeyboard {...args} /></div>,
+  render: (args) => <Stack><p>Search: <Kbd.Group><Kbd>Ctrl</Kbd><Kbd>Shift</Kbd><Kbd>K</Kbd></Kbd.Group></p><KeycapKeyboard {...args} /></Stack>,
   parameters: { docs: { source: { code: '<KeycapKeyboard rows={macroRows} value={["ControlLeft", "ShiftLeft", "KeyK"]} />' } } },
 };
 export const MacShortcut: Story = {
   args: { rows: [[{ code: 'MetaLeft', legend: '⌘', units: 1.5 }, { code: 'KeyK', legend: 'K' }]], value: ['MetaLeft', 'KeyK'] },
-  render: (args) => <div style={stackStyle}><p>Search: <Kbd.Group><Kbd>Command</Kbd><Kbd>K</Kbd></Kbd.Group></p><KeycapKeyboard {...args} /></div>,
+  render: (args) => <Stack><p>Search: <Kbd.Group><Kbd>Command</Kbd><Kbd>K</Kbd></Kbd.Group></p><KeycapKeyboard {...args} /></Stack>,
   parameters: { docs: { source: { code: '<KeycapKeyboard rows={[[{ code: "MetaLeft", legend: "⌘", units: 1.5 }, { code: "KeyK", legend: "K" }]]} value={["MetaLeft", "KeyK"]} />' } } },
 };
 
@@ -196,8 +200,8 @@ export const ControlledAccepted: Story = {
 };
 function AcceptedExample(args: KeycapKeyboardProps) {
   const [value, setValue] = useState<readonly string[]>([]);
-  return <div style={stackStyle}><TypingExample {...args} value={value} onValueChange={(codes) => { args.onValueChange?.(codes); setValue(codes); }} />
-    <Button onClick={() => setValue(['KeyK', 'ControlLeft', 'KeyK'])}>Show chord</Button></div>;
+  return <Stack><TypingExample {...args} value={value} onValueChange={(codes) => { args.onValueChange?.(codes); setValue(codes); }} />
+    <Button onClick={() => setValue(['KeyK', 'ControlLeft', 'KeyK'])}>Show chord</Button></Stack>;
 }
 
 export const BlurClears: Story = {
@@ -247,11 +251,11 @@ export const PasswordIgnored: Story = {
 };
 function PasswordExample(args: KeycapKeyboardProps) {
   const [input, setInput] = useState<HTMLInputElement | null>(null);
-  return <div style={stackStyle}><TextField label="Password" type="password" ref={setInput} /><KeycapKeyboard {...args} eventTarget={input} /></div>;
+  return <Stack><TextField label="Password" type="password" ref={setInput} /><KeycapKeyboard {...args} eventTarget={input} /></Stack>;
 }
 
 export const IndependentTargets: Story = {
-  render: (args) => <div style={stackStyle}><TypingExample {...args} /><TypingExample {...args} /></div>,
+  render: (args) => <Stack><TypingExample {...args} /><TypingExample {...args} /></Stack>,
   play: async ({ canvas, canvasElement, userEvent }) => {
     const inputs = canvas.getAllByRole('textbox');
     const boards = canvasElement.querySelectorAll<HTMLElement>('[data-ui="keycap-keyboard"]');
@@ -284,15 +288,15 @@ export const TargetUnmount: Story = {
 function UnmountExample(args: KeycapKeyboardProps) {
   const [input, setInput] = useState<HTMLInputElement | null>(null);
   const [visible, setVisible] = useState(true);
-  return <div style={stackStyle}>{visible && <TextField label="Try the keyboard" ref={setInput} />}
-    <KeycapKeyboard {...args} eventTarget={input} /><Button onClick={() => setVisible(false)}>Remove input</Button></div>;
+  return <Stack>{visible && <TextField label="Try the keyboard" ref={setInput} />}
+    <KeycapKeyboard {...args} eventTarget={input} /><Button onClick={() => setVisible(false)}>Remove input</Button></Stack>;
 }
 
 export const FalsyAndLongLegends: Story = {
   args: { rows: [[{ code: 'Digit0', legend: 0, units: 0 }, { code: 'KeyA', legend: false, units: NaN },
     { code: 'KeyB', legend: null, units: -1 }, { code: 'KeyC', legend: '', units: Infinity },
     { code: 'KeyD', legend: 'A very long custom legend', units: 3 }]] },
-  render: (args) => <div style={{ ...stackStyle, maxInlineSize: '320px' }}><KeycapKeyboard {...args} /></div>,
+  render: (args) => <NarrowStack><KeycapKeyboard {...args} /></NarrowStack>,
   play: async ({ canvasElement }) => {
     await expect(cap(canvasElement, 'Digit0')).toHaveTextContent('0');
     for (const code of ['KeyA', 'KeyB', 'KeyC']) await expect(cap(canvasElement, code).children).toHaveLength(0);
@@ -303,7 +307,7 @@ export const FalsyAndLongLegends: Story = {
   },
 };
 export const NarrowContainer: Story = {
-  render: (args) => <div style={{ ...stackStyle, maxInlineSize: '320px' }}><TypingExample {...args} /></div>,
+  render: (args) => <NarrowStack><TypingExample {...args} /></NarrowStack>,
   play: async ({ canvasElement }) => {
     const root = board(canvasElement);
     await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
@@ -372,6 +376,7 @@ function SlotKey(props: ComponentPropsWithRef<'kbd'>) {
 function SlotLegend(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-slot="keycap-keyboard-legend" />;
 }
+// This story tests styles and refs forwarded through the slot API.
 export const StylingAndRef: Story = {
   args: {
     slots: { key: SlotKey, legend: SlotLegend },
@@ -379,7 +384,7 @@ export const StylingAndRef: Story = {
     sx: { padding: vars.space[4] },
     slotProps: { row: { css: { rowGap: vars.space[3] } }, key: { css: { borderRadius: 0 } }, legend: { css: { fontWeight: vars.fontWeight.semibold } } },
   },
-  render: (args) => <div style={stackStyle}><p id="external-label">Keyboard illustration</p><p id="external-description">Physical keys</p><KeycapKeyboard {...args} /></div>,
+  render: (args) => <Stack><p id="external-label">Keyboard illustration</p><p id="external-description">Physical keys</p><KeycapKeyboard {...args} /></Stack>,
   play: async ({ canvasElement, args }) => {
     const root = board(canvasElement);
     await expect(args.ref).toHaveBeenCalledWith(root);
@@ -433,12 +438,12 @@ function ScopeExample(args: KeycapKeyboardProps) {
   const [second, setSecond] = useState<HTMLInputElement | null>(null);
   const [observeSecond, setObserveSecond] = useState(false);
   const [paused, setPaused] = useState(false);
-  return <div style={stackStyle}>
+  return <Stack>
     <TextField label="First input" ref={setFirst} /><TextField label="Second input" ref={setSecond} />
     <KeycapKeyboard {...args} eventTarget={observeSecond ? second : first} paused={paused} />
     <Button onMouseDown={(event) => event.preventDefault()} onClick={() => setObserveSecond(true)}>Observe second</Button>
     <Button onMouseDown={(event) => event.preventDefault()} onClick={() => setPaused(true)}>Pause</Button>
-  </div>;
+  </Stack>;
 }
 
 export const ControlledBlurOnce: Story = {
@@ -496,7 +501,7 @@ export const RefCleanup: Story = {
 };
 function RefExample(args: KeycapKeyboardProps) {
   const [visible, setVisible] = useState(true);
-  return <div style={stackStyle}>{visible && <KeycapKeyboard {...args} />}<Button onClick={() => setVisible(false)}>Remove board</Button></div>;
+  return <Stack>{visible && <KeycapKeyboard {...args} />}<Button onClick={() => setVisible(false)}>Remove board</Button></Stack>;
 }
 
 function KeyboardRow(props: ComponentPropsWithRef<'div'>) {

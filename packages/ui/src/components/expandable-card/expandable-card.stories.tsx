@@ -2,21 +2,22 @@ import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Popover } from '../popover';
 import { ExpandableCard, type ExpandableCardCompoundProps as ExpandableCardProps, type ExpandableCardEasyProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: 'min(100%, 640px)',
   maxInlineSize: `calc(100vw - ${vars.space[8]})`,
   minInlineSize: 0,
 });
 // Definite parent widths: the centered story frame is otherwise shrink-to-fit around the card.
-const morphParentStyle = css({ inlineSize: '640px', maxInlineSize: '100%' });
-const narrowParentStyle = css({ inlineSize: '200px' });
+const MorphParent = styled.div({ inlineSize: '640px', maxInlineSize: '100%' });
+const NarrowParentFrame = styled.div({ inlineSize: '200px' });
 const GEOMETRY_TOLERANCE = 1.5;
-const fixtureStyle = css({
+const Fixture = styled.input({
   minBlockSize: vars.space[8],
   padding: vars.space[2],
   color: vars.color.text,
@@ -25,6 +26,7 @@ const fixtureStyle = css({
   borderRadius: vars.radius.sm,
   font: 'inherit',
 });
+const FixtureButton = Fixture.withComponent('button');
 const usage = `<ExpandableCard collapsedInlineSize={400} expandedInlineSize={600}>
   <ExpandableCard.Trigger>
     <ExpandableCard.Title>Studio plan</ExpandableCard.Title>
@@ -42,7 +44,7 @@ function Example({ children, ...args }: ExpandableCardProps) {
       <ExpandableCard.Content>
         {children ?? (
           <label>
-            Team name <input aria-label="Team name" defaultValue="Studio" css={fixtureStyle} />
+            Team name <Fixture aria-label="Team name" defaultValue="Studio" />
           </label>
         )}
       </ExpandableCard.Content>
@@ -56,9 +58,9 @@ const meta = {
   args: { onOpenChange: fn() },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   render: (args) => <Example {...args} />,
@@ -132,6 +134,7 @@ export const Default: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
   },
 };
 
+// This story tests native style and sx forwarding through the slot API.
 export const GeneratedPartProps: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
   args: { title: 'Studio plan', content: 'Plan details', defaultOpen: true, slotProps: { title: { style: { fontStyle: 'italic' } }, content: { sx: { color: vars.color.accentText } } } },
   render: (args) => <ExpandableCard {...args} />,
@@ -224,9 +227,9 @@ export const WidthMorph: Story = {
   args: { collapsedInlineSize: 320, expandedInlineSize: 600 },
   decorators: [
     (Story) => (
-      <div css={morphParentStyle}>
+      <MorphParent>
         <Story />
-      </div>
+      </MorphParent>
     ),
   ],
   play: async ({ canvas, userEvent }) => {
@@ -243,9 +246,9 @@ export const WidthMorph: Story = {
 export const NarrowParent: Story = {
   decorators: [
     (Story) => (
-      <div css={narrowParentStyle}>
+      <NarrowParentFrame>
         <Story />
-      </div>
+      </NarrowParentFrame>
     ),
   ],
   play: async ({ canvas, userEvent }) => {
@@ -334,9 +337,9 @@ function ControlledExample(args: ExpandableCardProps) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button css={fixtureStyle} onClick={() => setOpen(!open)}>
+      <FixtureButton onClick={() => setOpen(!open)}>
         External toggle
-      </button>
+      </FixtureButton>
       <Example
         {...args}
         open={open}
@@ -396,9 +399,9 @@ function DynamicExample(args: ExpandableCardProps) {
   const [more, setMore] = useState(false);
   return (
     <Example {...args} defaultOpen>
-      <button css={fixtureStyle} onClick={() => setMore(!more)}>
+      <FixtureButton onClick={() => setMore(!more)}>
         Toggle details
-      </button>
+      </FixtureButton>
       {more && (
         <p>
           Storage, collaboration, support and billing details for each member.
@@ -431,7 +434,7 @@ export const NestedOverlay: Story = {
       <Popover>
         <Popover.Trigger>More actions</Popover.Trigger>
         <Popover.Content aria-label="Plan actions">
-          <button css={fixtureStyle}>Archive plan</button>
+          <FixtureButton>Archive plan</FixtureButton>
         </Popover.Content>
       </Popover>
     </Example>
@@ -605,7 +608,7 @@ export const PreventedInteractions: Story = {
         <ExpandableCard.Title>Plan</ExpandableCard.Title>
       </ExpandableCard.Trigger>
       <ExpandableCard.Content>
-        <button css={fixtureStyle}>Edit details</button>
+        <FixtureButton>Edit details</FixtureButton>
       </ExpandableCard.Content>
     </ExpandableCard>
   ),
@@ -623,13 +626,13 @@ function ExternalFocusExample(args: ExpandableCardProps) {
   const [open, setOpen] = useState(true);
   return (
     <>
-      <button css={fixtureStyle} onClick={() => setOpen((value) => !value)}>
+      <FixtureButton onClick={() => setOpen((value) => !value)}>
         Toggle externally
-      </button>
+      </FixtureButton>
       <Example {...args} open={open}>
-        <button css={fixtureStyle} onClick={() => setOpen(false)}>
+        <FixtureButton onClick={() => setOpen(false)}>
           Apply and close
-        </button>
+        </FixtureButton>
       </Example>
     </>
   );

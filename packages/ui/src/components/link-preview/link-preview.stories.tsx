@@ -2,11 +2,12 @@ import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { LinkPreview, type LinkPreviewData } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 const URL = 'https://example.com/guide';
 const svg = (markup: string) => `data:image/svg+xml,${encodeURIComponent(markup)}`;
@@ -20,14 +21,14 @@ const DATA: LinkPreviewData = {
   image: { src: COVER, alt: 'Cover with a large dot' },
   favicon: FAVICON,
 };
-const frameStyle = css({ inlineSize: 'min(100%, 27.5rem)', minInlineSize: 0 });
-const stackStyle = css({ display: 'grid', gap: vars.space[3] });
+const Frame = styled.div({ inlineSize: 'min(100%, 27.5rem)', minInlineSize: 0 });
+const Stack = styled.div({ display: 'grid', gap: vars.space[3] });
 const meta = {
   title: 'Data display/LinkPreview',
   component: LinkPreview,
   tags: ['autodocs'],
   args: { data: DATA },
-  decorators: [(Story) => <div css={frameStyle}><Story /></div>],
+  decorators: [(Story) => <Frame><Story /></Frame>],
   parameters: {
     docs: {
       description: { component: 'Show a link with its title, site, description and image.' },
@@ -207,6 +208,7 @@ function ReplacementTitle(props: ComponentPropsWithRef<'a'>) {
 }
 
 /** Apply root and part styles and take a ref to the root div. */
+// This story tests sx and the documented slot css API.
 export const Customization: Story = {
   render: (args) => <LinkPreview {...args} slots={{ title: ReplacementTitle }} />,
   args: { ref: fn(), sx: { borderStyle: 'dashed' }, slotProps: { title: { css: { textDecoration: 'underline' }, target: '_blank', rel: 'noreferrer' }, body: { css: { padding: vars.space[4] } }, image: { onLoad: fn() } } },
@@ -230,10 +232,10 @@ export const Customization: Story = {
 function UpdateDemo() {
   const [data, setData] = useState<LinkPreviewData>({ url: URL });
   const [status, setStatus] = useState<'pending' | 'ready'>('pending');
-  return <div css={stackStyle}>
+  return <Stack>
     <LinkPreview data={data} status={status} />
     <Button onClick={() => { setData(DATA); setStatus('ready'); }}>Show metadata</Button>
-  </div>;
+  </Stack>;
 }
 
 /** Update the supplied metadata when your app receives it. */
@@ -251,11 +253,11 @@ export const DataUpdates: Story = {
 
 /** Render numeric zero descriptions and omit empty descriptions. */
 export const FalsyDescription: Story = {
-  render: () => <div css={stackStyle}>
+  render: () => <Stack>
     <LinkPreview data={{ url: URL, title: 'Zero', description: 0 }} />
     <LinkPreview data={{ url: URL, title: 'Empty', description: '' }} />
     <LinkPreview data={{ url: URL, title: 'Hidden', description: false }} />
-  </div>,
+  </Stack>,
   parameters: { docs: { source: { code: '<LinkPreview data={{ url: "https://example.com/guide", description: 0 }} />' } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByText('0')).toBeVisible();

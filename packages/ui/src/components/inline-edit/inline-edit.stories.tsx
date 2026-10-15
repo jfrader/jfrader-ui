@@ -10,18 +10,31 @@ import { createPortal } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { base } from '@jfrader/tokens';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { InlineEdit, type InlineEditProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 // Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
-const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
+const FixtureButton = styled.button({ minBlockSize: vars.space[6], minInlineSize: vars.space[6], paddingBlock: vars.space[1], paddingInline: `calc(${vars.space[5]} / 2)`, boxSizing: 'border-box' });
+
+// The iframe sizing probe has neither the parent stylesheet nor its custom properties.
+function sizeFrameTarget(button: HTMLButtonElement | null) {
+  if (!button) return;
+  button.style.minBlockSize = base.space[6];
+  button.style.minInlineSize = base.space[6];
+  button.style.paddingBlock = base.space[1];
+  button.style.paddingInline = `calc(${base.space[5]} / 2)`;
+  button.style.boxSizing = 'border-box';
+}
 
 const sizes = ['sm', 'md', 'lg'] as const;
 const minHeights = { sm: 32, md: 40, lg: 48 };
 const actionSizes = { sm: 24, md: 32, lg: 40 };
-const frameStyle = css({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 420px)' });
-const narrowStyle = css({ inlineSize: '220px' });
+const Frame = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 420px)' });
+const Narrow = styled.div({ inlineSize: '220px' });
 
 const usage = `<InlineEdit
   label="Project name"
@@ -30,6 +43,8 @@ const usage = `<InlineEdit
   validate={(next) => (next.trim() ? null : 'Enter a name')}
   onSave={renameProject}
 />`;
+
+const ProjectHeading = styled.h2({ margin: 0, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 const meta = {
   title: 'Inputs/InlineEdit',
@@ -40,7 +55,7 @@ const meta = {
     variant: { control: 'radio', options: ['title', 'body'] },
     size: { control: 'radio', options: sizes },
   },
-  decorators: [(Story) => <div css={frameStyle}><Story /></div>],
+  decorators: [(Story) => <Frame><Story /></Frame>],
   parameters: {
     docs: {
       description: {
@@ -137,9 +152,9 @@ function ExternalValueField(props: InlineEditProps) {
           setValue(next);
         }}
       />
-      <button style={FIXTURE_BUTTON} type="button" onMouseDown={keepFocus} onClick={() => setValue('Hermes')}>
+      <FixtureButton type="button" onMouseDown={keepFocus} onClick={() => setValue('Hermes')}>
         Rename to Hermes
-      </button>
+      </FixtureButton>
     </>
   );
 }
@@ -161,12 +176,12 @@ function ParentControls(props: InlineEditProps) {
           }}
         />
       )}
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => setOpen(false)}>
+      <FixtureButton type="button" onClick={() => setOpen(false)}>
         Close editor
-      </button>
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => setMounted(false)}>
+      </FixtureButton>
+      <FixtureButton type="button" onClick={() => setMounted(false)}>
         Remove widget
-      </button>
+      </FixtureButton>
     </>
   );
 }
@@ -186,8 +201,7 @@ function DeferredOpenField(props: InlineEditProps) {
           setPending(next);
         }}
       />
-      <button
-        style={FIXTURE_BUTTON}
+      <FixtureButton
         type="button"
         onMouseDown={keepFocus}
         onClick={() => {
@@ -196,10 +210,10 @@ function DeferredOpenField(props: InlineEditProps) {
         }}
       >
         Apply request
-      </button>
-      <button style={FIXTURE_BUTTON} type="button">
+      </FixtureButton>
+      <FixtureButton type="button">
         Elsewhere
-      </button>
+      </FixtureButton>
       <p>Release notes</p>
     </>
   );
@@ -243,15 +257,15 @@ function RetryPolicyField(props: InlineEditProps) {
         error={conflict ? 'That name is taken.' : undefined}
         validate={requireName ? (next) => (next.trim() ? null : 'Enter a name') : undefined}
       />
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => setOpen(false)}>
+      <FixtureButton type="button" onClick={() => setOpen(false)}>
         Close editor
-      </button>
-      <button style={FIXTURE_BUTTON} type="button" aria-pressed={conflict} onClick={() => setConflict(!conflict)}>
+      </FixtureButton>
+      <FixtureButton type="button" aria-pressed={conflict} onClick={() => setConflict(!conflict)}>
         Report conflict
-      </button>
-      <button style={FIXTURE_BUTTON} type="button" aria-pressed={requireName} onClick={() => setRequireName(true)}>
+      </FixtureButton>
+      <FixtureButton type="button" aria-pressed={requireName} onClick={() => setRequireName(true)}>
         Require a name
-      </button>
+      </FixtureButton>
     </>
   );
 }
@@ -267,7 +281,7 @@ function FrameField(props: InlineEditProps) {
         createPortal(
           <>
             <InlineEdit {...props} />
-            <button style={FIXTURE_BUTTON} type="button">
+            <button type="button" ref={sizeFrameTarget}>
               After
             </button>
           </>,
@@ -422,9 +436,9 @@ export const LeaveSaves: Story = {
   args: { onValueChange: fn() },
   render: (args) => (
     <>
-      <button style={FIXTURE_BUTTON} type="button">Before</button>
+      <FixtureButton type="button">Before</FixtureButton>
       <InlineEdit {...args} />
-      <button style={FIXTURE_BUTTON} type="button">After</button>
+      <FixtureButton type="button">After</FixtureButton>
     </>
   ),
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -510,7 +524,7 @@ export const NoBlurSave: Story = {
   render: (args) => (
     <>
       <InlineEdit {...args} />
-      <button style={FIXTURE_BUTTON} type="button">After</button>
+      <FixtureButton type="button">After</FixtureButton>
     </>
   ),
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -1250,10 +1264,10 @@ const LONG_VALUE =
 export const LongText: Story = {
   args: { defaultValue: LONG_VALUE },
   render: (args) => (
-    <div css={narrowStyle}>
+    <Narrow>
       <InlineEdit {...args} />
       <InlineEdit {...args} label="Open name" defaultOpen />
-    </div>
+    </Narrow>
   ),
   play: async ({ canvas, canvasElement }) => {
     const [resting, open] = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="inline-edit"]'));
@@ -1273,9 +1287,9 @@ export const LongText: Story = {
 export const HeadingContext: Story = {
   render: (args) => (
     <section aria-labelledby="project-heading">
-      <h2 id="project-heading" style={{ margin: 0, fontSize: vars.textSize.sm, color: vars.color.textMuted }}>
+      <ProjectHeading id="project-heading">
         Project
-      </h2>
+      </ProjectHeading>
       <InlineEdit {...args} />
     </section>
   ),
@@ -1370,6 +1384,7 @@ export const FalsyNodes: Story = {
   },
 };
 
+// These css values test documented css/sx precedence and slot styling.
 const triggerSlotStyle = css({ color: vars.color.accentText });
 const rootCssStyle = css({ paddingInline: vars.space[2] });
 const rootSxStyle = css({ paddingInline: vars.space[6] });
@@ -1415,7 +1430,7 @@ export const FormReset: Story = {
   render: (args) => (
     <form onSubmit={(event) => event.preventDefault()} data-testid="form">
       <InlineEdit {...args} />
-      <button style={FIXTURE_BUTTON} type="reset">Reset form</button>
+      <FixtureButton type="reset">Reset form</FixtureButton>
     </form>
   ),
   play: async ({ canvas, userEvent, args }) => {
@@ -1497,6 +1512,7 @@ export const ReducedMotion: Story = {
 };
 
 /** Replace the wrapper and generated label; pass native props through slotProps. */
+// This story tests native style merging and css/sx precedence through the slot API.
 export const SlotCustomization: Story = {
   args: {
     defaultOpen: true,

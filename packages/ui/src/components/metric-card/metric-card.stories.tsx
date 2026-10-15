@@ -6,8 +6,13 @@ import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { MetricCard, type MetricCardProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
-const frameStyle = css({ display: 'grid', gap: vars.space[4], maxInlineSize: '28rem', minInlineSize: 0 });
+const NarrowFrame = styled.div({ maxInlineSize: '16rem' });
+
+const Frame = styled.div({ display: 'grid', gap: vars.space[4], maxInlineSize: '28rem', minInlineSize: 0 });
+// These css values test documented css/sx precedence and slot styling.
 const consumerStyle = css({ fontStyle: 'italic' });
 const finalStyle = css({ fontStyle: 'normal' });
 const slotStyle = css({ textTransform: 'uppercase' });
@@ -35,9 +40,9 @@ const meta = {
   args: { label: 'Revenue', value: 42000, locale: 'en-GB', description: 'Last 30 days' },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -220,9 +225,9 @@ export const LongCopy: Story = {
     deltaFormatOptions: { notation: 'compact' },
   },
   render: (args) => (
-    <div style={{ maxInlineSize: '16rem' }}>
+    <NarrowFrame>
       <MetricCard {...args} />
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvasElement }) => {
     await expectFits(roots(canvasElement)[0]!);

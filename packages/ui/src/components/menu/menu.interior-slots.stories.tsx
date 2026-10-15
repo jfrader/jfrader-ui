@@ -15,6 +15,10 @@ import {
   type MenuEasyProps,
   type MenuItemProps,
 } from './menu';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const Frame = styled.div({ padding: vars.space[4] });
 
 // @ts-expect-error Unknown slot key is rejected on MenuEasyProps['slots']
 type UnknownMenuSlot = NonNullable<MenuEasyProps['slots']>['unknownKey'];
@@ -40,12 +44,13 @@ const MENU_ITEMS = [
   { type: 'item' as const, label: 'Delete', onSelect: () => {} },
 ];
 
+// This fixture tests native inline style merging through the slot API.
 function MenuCustomizationFixture() {
   const [mounted, setMounted] = useState(true);
   const [count, setCount] = useState(0);
 
   return (
-    <div style={{ padding: vars.space[4] }}>
+    <Frame>
       <Button onClick={() => setCount((c) => c + 1)}>Rerender ({count})</Button>
       <Button onClick={() => setMounted((m) => !m)}>Toggle mount</Button>
       {mounted && (
@@ -70,7 +75,7 @@ function MenuCustomizationFixture() {
           }}
         />
       )}
-    </div>
+    </Frame>
   );
 }
 

@@ -12,6 +12,8 @@ import { Button } from '../button';
 import { sceneSource } from '../scene';
 import { generateSceneSvg } from '../scene/scene-generator';
 import { LightboxGallery, type LightboxGalleryImage } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 const images: LightboxGalleryImage[] = [
   {
@@ -88,13 +90,13 @@ const images: LightboxGalleryImage[] = [
   },
 ];
 const lastImage = images[images.length - 1]!;
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: '48rem',
   maxInlineSize: '100%',
   boxSizing: 'border-box',
   padding: vars.space[4],
 });
-const narrowStyle = css({ inlineSize: '8rem', maxInlineSize: '100%' });
+const Narrow = styled.div({ inlineSize: '8rem', maxInlineSize: '100%' });
 const meta = {
   title: 'Media/LightboxGallery',
   component: LightboxGallery,
@@ -102,9 +104,9 @@ const meta = {
   args: { images, label: 'Trip photos', locale: 'en-GB', onValueChange: fn(), onOpenChange: fn() },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -390,9 +392,9 @@ export const SlowImage: Story = {
 };
 export const NarrowTwoColumns: Story = {
   render: (args) => (
-    <div css={narrowStyle}>
+    <Narrow>
       <LightboxGallery {...args} />
-    </div>
+    </Narrow>
   ),
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(canvas.getByRole('region')).toHaveAttribute('data-columns', '2');
@@ -850,6 +852,7 @@ export const UnmountReturn: Story = {
     await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument();
   },
 };
+// The slot API takes css values, so this story keeps the documented spelling.
 export const SlotStyles: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
