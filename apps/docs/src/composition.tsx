@@ -147,13 +147,18 @@ function SlotLink({ component }: { component: CatalogRef }) {
   return <Link href={`#/components/${component.slug}`}>{component.name}</Link>;
 }
 
-/** Says how many parts there are and how they can be customized, without an empty "the rest". */
+/** A part can be swapped for your component (`slots`) or receive props (`slotProps`). */
+function capability(slot: SlotRow): string {
+  return slot.replaced ? 'replaceable' : 'props only';
+}
+
+/** Says how many parts there are and which of them accept a replacement, without an empty "the rest". */
 function summarize(slots: SlotRow[]): string {
   const total = `${slots.length} ${slots.length === 1 ? 'part' : 'parts'}`;
   const replaceable = slots.filter((slot) => slot.replaced).length;
-  if (replaceable === 0) return `${total}, styles only.`;
-  if (replaceable === slots.length) return `${total}, all replaceable.`;
-  return `${total}, ${replaceable} replaceable; the rest take styles only.`;
+  if (replaceable === 0) return `${total}; every one takes props.`;
+  if (replaceable === slots.length) return `${total}; every one can be replaced.`;
+  return `${total}; ${replaceable} can be replaced, the rest take props.`;
 }
 
 function SlotDefault({ slot }: { slot: SlotRow }) {
@@ -198,7 +203,7 @@ export default function Composition({ entry, components, uses }: CompositionProp
                 <Slot key={slot.name}>
                   <Head>
                     <Name>{slot.name}</Name>
-                    <Pill tone={slot.replaced ? 'accent' : 'neutral'}>{slot.replaced ? 'replaceable' : 'styles only'}</Pill>
+                    <Pill tone={slot.replaced ? 'accent' : 'neutral'}>{capability(slot)}</Pill>
                     <Note><SlotDefault slot={slot} /></Note>
                   </Head>
                   {slot.description ? <Note>{slot.description}</Note> : <Missing>No description.</Missing>}
