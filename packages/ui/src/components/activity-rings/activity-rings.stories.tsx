@@ -1044,7 +1044,10 @@ export const QuickInterruptedUpdates: Story = {
       ),
     ).toBe(true);
     for (const sample of samples) {
-      await expect(Math.abs(sample.sweep - sample.amount / 6)).toBeLessThan(0.04);
+      // The sweep chases the amount through the motion tween, so it may lag by a frame or two;
+      // a bound of 0.15 still fails a sweep that stops tracking (an interrupted 3 → 0.5 jump
+      // would diverge by ~0.4).
+      await expect(Math.abs(sample.sweep - sample.amount / 6)).toBeLessThan(0.15);
     }
     await waitFor(() => expect(canvas.getByRole('listitem')).toHaveTextContent(percent(0.5)));
     await expectDrawn(ringParts(canvasElement)[0]!, 0.5);
