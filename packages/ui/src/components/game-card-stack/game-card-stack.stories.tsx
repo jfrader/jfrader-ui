@@ -16,7 +16,8 @@ import { GameCardStack, getPlayedCardKey, getPileOffset, getStableJitter, getSta
 
 const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', blockSize: 432 });
 const CenteredStackFrame = styled(StackFrame)({ marginInline: 'auto' });
-const LightScope = styled(ThemeRoot)({ blockSize: '100%', backgroundColor: vars.color.bg });
+// ThemeRoot takes the styling itself: `styled(ThemeRoot)` collides with Emotion's own theme prop.
+const lightScopeStyle = { blockSize: '100%', backgroundColor: vars.color.bg } as const;
 const PileFrame = styled.div({ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` });
 
 const names = ['North', 'East', 'South', 'West', 'Avery', 'Robin'];
@@ -180,7 +181,7 @@ const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'a
 export const Open: Story = { tags: ['!autodocs'], args: { defaultValue: 'North' }, play: async ({ canvasElement }) => noOverlap(canvasElement) };
 export const LightTheme: Story = {
   globals: { theme: 'light' },
-  decorators: [(Story) => <LightScope theme="light"><Story /></LightScope>],
+  decorators: [(Story) => <ThemeRoot theme="light" sx={lightScopeStyle}><Story /></ThemeRoot>],
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 
@@ -200,7 +201,7 @@ const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'a
 };
 export const OpenLightTheme: Story = {
   ...Open, tags: ['autodocs'], globals: { theme: 'light' },
-  decorators: [(Story) => <LightScope theme="light"><Story /></LightScope>],
+  decorators: [(Story) => <ThemeRoot theme="light" sx={lightScopeStyle}><Story /></ThemeRoot>],
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 
