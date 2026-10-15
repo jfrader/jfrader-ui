@@ -1,19 +1,26 @@
-import { StrictMode } from 'react';
+import { StrictMode, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { Avatar } from '../avatar';
 import { Badge } from '../badge';
+import { Button } from '../button';
 import { GameHand } from '../game-hand';
-import { GameSeat } from './index';
+import { GameSeat, type GameSeatTurnMilestone } from './index';
 import type { GameCardRootProps } from '../game-card/game-card-root';
 import type { GameSeatPartProps, GameSeatSlotProps } from './game-seat';
 
 const NOW = Date.parse('2026-10-14T12:00:00Z');
 const DURATION = 60000;
 const turn = { deadline: NOW + DURATION, durationMs: DURATION, now: NOW + DURATION / 4 };
+const ClockRow = styled.div({ display: 'flex', gap: vars.space[8] });
+const TurnExample = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
+const TURN_MESSAGES = { ready: 'Ready', started: 'Your turn', half: 'Half time', quarter: 'Final quarter', ending: 'Turn ended', extended: 'Turn extended' };
+
 const meta = {
   title: 'Games/GameSeat', component: GameSeat, tags: ['autodocs'],
   args: {
@@ -38,10 +45,18 @@ The seat is a named group, not an APG widget. It adds no keyboard bindings or fo
 
 ## Customization
 slotProps accepts native props and css for root, avatar, name, badges, points, hand, timer and chat. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div and are declared outside render. Root slot props win conflicts; className and style merge. Consumer css and sx apply after slot styles.`,
-    source: { language: 'tsx', code: `<GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
-  handCount={3} badges={<Badge>Host</Badge>}
-  turn={{ deadline, durationMs: 60000, now }}
-  chat={<span aria-live="polite">{remainingTimeLabel}</span>} />` },
+    source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
+import { GameSeat } from '@jfrader/ui/game-seat';
+
+const durationMs = 60000;
+
+const start = Date.parse('2026-10-14T12:00:00Z');
+
+const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
+
+<GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
+  handCount={3} badges={<Badge>Host</Badge>} points={0} turn={turn}
+  chat={<span aria-live="polite">Your turn · 45 seconds</span>} />` },
   } },
 } satisfies Meta<typeof GameSeat>;
 export default meta;
@@ -55,11 +70,44 @@ export const Default: Story = {
     await expect(seat.querySelector('[data-ui="game-seat-timer"]')).toHaveAttribute('aria-hidden', 'true');
   },
 };
-export const Light: Story = { globals: { theme: 'light' } };
-export const Offline: Story = { args: { turn: undefined, offline: true, dimmed: true, badges: <Badge>Disconnected</Badge>, chat: undefined } };
+export const Light: Story = {
+  globals: { theme: 'light' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge, ThemeRoot } from '@jfrader/ui';
+import { GameSeat } from '@jfrader/ui/game-seat';
+
+const durationMs = 60000;
+const start = Date.parse('2026-10-14T12:00:00Z');
+const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
+
+<ThemeRoot theme="light">
+  <GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
+    handCount={3} badges={<Badge>Host</Badge>} points={0} turn={turn}
+    chat={<span aria-live="polite">Your turn · 45 seconds</span>} />
+</ThemeRoot>` } } },
+};
+export const Offline: Story = {
+  args: { turn: undefined, offline: true, dimmed: true, badges: <Badge>Disconnected</Badge>, chat: undefined },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
+import { GameSeat } from '@jfrader/ui/game-seat';
+
+<GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
+  handCount={3} badges={<Badge>Disconnected</Badge>} points={0} offline dimmed />` } } },
+};
 
 export const TimerOnly: Story = {
   args: { avatar: undefined },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Badge } from '@jfrader/ui';
+import { GameSeat } from '@jfrader/ui/game-seat';
+
+const durationMs = 60000;
+
+const start = Date.parse('2026-10-14T12:00:00Z');
+
+const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
+
+<GameSeat name="Alex"
+  handCount={3} badges={<Badge>Host</Badge>} points={0} turn={turn}
+  chat={<span aria-live="polite">Your turn · 45 seconds</span>} />` } } },
   play: async ({ canvasElement }) => {
     const anchor = canvasElement.querySelector<HTMLElement>('[data-ui~="game-seat-avatar"]')!;
     const probe = anchor.ownerDocument.createElement('div');
@@ -81,6 +129,27 @@ function ReplacementName(props: NonNullable<GameSeatSlotProps['name']>) { return
 function ReplacementTimer(props: NonNullable<GameSeatSlotProps['timer']>) { return <svg {...props} data-replacement="true" />; }
 
 export const InteriorReplacements: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
+import { GameSeat } from '@jfrader/ui/game-seat';
+
+const durationMs = 60000;
+
+const start = Date.parse('2026-10-14T12:00:00Z');
+
+const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
+import type { ComponentPropsWithRef } from 'react';
+
+function ReplacementDiv(props: ComponentPropsWithRef<'div'>) { return <div {...props} data-replacement="true" />; }
+
+function ReplacementName(props: ComponentPropsWithRef<'span'>) { return <span {...props} data-replacement="true" />; }
+
+function ReplacementTimer(props: ComponentPropsWithRef<'svg'>) { return <svg {...props} data-replacement="true" />; }
+
+<GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
+  handCount={3} badges={<Badge>Host</Badge>} points={0} turn={turn}
+  chat={<span aria-live="polite">Your turn · 45 seconds</span>} slots={{ avatar: ReplacementDiv, name: ReplacementName, badges: ReplacementDiv,
+    points: ReplacementDiv, hand: ReplacementDiv, timer: ReplacementTimer, chat: ReplacementDiv }}
+  slotProps={{ avatar: { 'data-ui': 'consumer consumer game-seat-avatar' }, name: { 'data-ui': 'consumer consumer' } }}/>` } } },
   args: {
     slots: { avatar: ReplacementDiv, name: ReplacementName, badges: ReplacementDiv, points: ReplacementDiv,
       hand: ReplacementDiv, timer: ReplacementTimer, chat: ReplacementDiv },
@@ -100,16 +169,33 @@ export const InteriorReplacements: Story = {
 
 /** Two seats show different remaining portions of the same turn. */
 export const InjectedClock: Story = {
-  render: (args) => <div style={{ display: 'flex', gap: vars.space[8] }}>
+  render: (args) => <ClockRow>
     <GameSeat {...args} name="Earlier" turn={turn} />
     <GameSeat {...args} name="Later" turn={{ ...turn, now: NOW + DURATION * 3 / 4 }} />
-  </div>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameSeat } from '@jfrader/ui/game-seat';
+  </ClockRow>,
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
+import { GameSeat } from '@jfrader/ui/game-seat';
 
-<>
-  <GameSeat name="Earlier" avatar={avatar} turn={{ deadline, durationMs, now: earlier }} />
-  <GameSeat name="Later" avatar={avatar} turn={{ deadline, durationMs, now: later }} />
-</>` } } },
+const durationMs = 60000;
+
+const start = Date.parse('2026-10-14T12:00:00Z');
+
+const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ClockRow = styled.div({ display: 'flex', gap: vars.space[8] });
+
+const common = {
+  avatar: <Avatar name="Alex" size="lg" aria-hidden="true" />,
+  badges: <Badge>Host</Badge>, points: 0, handCount: 3,
+  chat: <span aria-live="polite">Your turn · 45 seconds</span>,
+};
+
+<ClockRow>
+  <GameSeat {...common} name="Earlier" turn={turn} />
+  <GameSeat {...common} name="Later" turn={{ ...turn, now: start + durationMs * 3 / 4 }} />
+</ClockRow>` } } },
   play: async ({ canvasElement }) => {
     const circles = canvasElement.querySelectorAll('circle');
     await expect(circles[0]).toHaveAttribute('stroke-dashoffset', '25');
@@ -141,6 +227,19 @@ export const InjectedClock: Story = {
 /** The hand slot replaces the decorative hand count, including in RTL. */
 export const RtlAndReducedMotion: Story = {
   args: { dir: 'rtl', hand: <GameHand.Hidden count={2} size="sm" label="Two hidden cards" playerKey="alex" /> },
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+import { Avatar, Badge } from '@jfrader/ui';
+import { GameSeat } from '@jfrader/ui/game-seat';
+
+const durationMs = 60000;
+
+const start = Date.parse('2026-10-14T12:00:00Z');
+
+const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
+
+<GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
+  handCount={3} badges={<Badge>Host</Badge>} points={0} turn={turn}
+  chat={<span aria-live="polite">Your turn · 45 seconds</span>} dir="rtl" hand={<GameHand.Hidden count={2} size="sm" label="Two hidden cards" playerKey="alex" />}/>` } } },
   play: async ({ canvasElement, args }) => {
     const seat = within(canvasElement).getByRole('group', { name: 'Alex' });
     await expect(getComputedStyle(seat).direction).toBe('rtl');
@@ -166,6 +265,7 @@ export const RtlAndReducedMotion: Story = {
 };
 
 export const Milestones: Story = {
+  tags: ['!autodocs'],
   args: { onTurnMilestone: fn() },
   play: async ({ canvasElement }) => {
     const callback = fn();
@@ -192,6 +292,49 @@ export const Milestones: Story = {
   },
 };
 
+function TurnNotifications() {
+  const [startedAt, setStartedAt] = useState<number>();
+  const [milestone, setMilestone] = useState<GameSeatTurnMilestone | 'ready' | 'started'>('ready');
+  return <TurnExample>
+    <Button onClick={() => { setStartedAt(Date.now()); setMilestone('started'); }}>Start turn</Button>
+    <GameSeat name="Alex" handCount={3}
+      turn={startedAt === undefined ? undefined : { deadline: startedAt + DURATION, durationMs: DURATION, now: startedAt }}
+      onTurnMilestone={setMilestone} chat={<span aria-live="polite">{TURN_MESSAGES[milestone]}</span>} />
+  </TurnExample>;
+}
+
+/** Start a one-minute turn. Chat updates at half time, a quarter remaining and the end. */
+export const TurnMilestoneNotifications: Story = {
+  render: () => <TurnNotifications />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const seat = canvas.getByRole('group', { name: 'Alex' });
+    await expect(within(seat).getByText('Ready')).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: 'Start turn' }));
+    await expect(seat).toHaveAttribute('data-turned', 'true');
+    await expect(within(seat).getByText('Your turn')).toBeVisible();
+  },
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { GameSeat, type GameSeatTurnMilestone } from '@jfrader/ui/game-seat';
+
+const DURATION = 60000;
+const TurnExample = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
+const TURN_MESSAGES = { ready: 'Ready', started: 'Your turn', half: 'Half time', quarter: 'Final quarter', ending: 'Turn ended', extended: 'Turn extended' };
+
+export default function TurnNotifications() {
+  const [startedAt, setStartedAt] = useState<number>();
+  const [milestone, setMilestone] = useState<GameSeatTurnMilestone | 'ready' | 'started'>('ready');
+  return <TurnExample>
+    <Button onClick={() => { setStartedAt(Date.now()); setMilestone('started'); }}>Start turn</Button>
+    <GameSeat name="Alex" handCount={3}
+      turn={startedAt === undefined ? undefined : { deadline: startedAt + DURATION, durationMs: DURATION, now: startedAt }}
+      onTurnMilestone={setMilestone} chat={<span aria-live="polite">{TURN_MESSAGES[milestone]}</span>} />
+  </TurnExample>;
+}` } } },
+};
+
 function Replacement(props: GameCardRootProps) {
   return <div {...props} data-replacement="slot" />;
 }
@@ -201,6 +344,30 @@ function UnusedReplacement(props: GameCardRootProps) {
 
 /** Replace the root and pass native props to each generated part. */
 export const Slots: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+import { GameSeat } from '@jfrader/ui/game-seat';
+
+const durationMs = 60000;
+
+const start = Date.parse('2026-10-14T12:00:00Z');
+
+const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
+import type { ComponentPropsWithRef } from 'react';
+
+function Replacement(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="slot" />;
+}
+
+function UnusedReplacement(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="component" />;
+}
+
+<GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
+  handCount={3} turn={turn} hand={null} badges={0} points={0} chat={0}
+  component={UnusedReplacement} slots={{ root: Replacement }}
+  className="host-class" style={{ fontWeight: 400 }} title="Host title"
+  slotProps={{ root: { className: 'slot-class', style: { fontWeight: 700 }, title: 'Slot title' },
+    name: { id: 'consumer-seat-name', title: 'Player' }, chat: { 'aria-live': 'polite' } }} />` } } },
   args: {
     component: UnusedReplacement, slots: { root: Replacement }, hand: null, badges: 0, points: 0, chat: 0,
     className: 'host-class', style: { fontWeight: 400 }, title: 'Host title',
