@@ -38,7 +38,14 @@ export interface GameHandProps extends Omit<ComponentPropsWithRef<'div'>, 'child
   /** Text for the explicit confirmation action, in your page's language. */
   playLabel: string;
   disabled?: boolean;
-  slotProps?: { fan?: GameCardPartProps; card?: GameCardPartProps; confirm?: GameCardPartProps };
+  slotProps?: {
+    /** Fan container holding the interactive hand cards. */
+    fan?: GameCardPartProps;
+    /** Interactive card button element inside the fan. */
+    card?: GameCardPartProps;
+    /** Confirmation button triggering play intent for the selected card. */
+    confirm?: GameCardPartProps;
+  };
 }
 
 const rootStyle = css({
@@ -145,7 +152,10 @@ export interface GameHandHiddenProps extends Omit<ComponentPropsWithRef<'div'>, 
   scale?: number;
   rules?: HiddenHandRules;
   /** Styles each hidden-card wrapper. */
-  slotProps?: { card?: GameCardPartProps };
+  slotProps?: {
+    /** Position wrapper element for an individual hidden card. */
+    card?: GameCardPartProps;
+  };
 }
 
 const hiddenStyle = css({

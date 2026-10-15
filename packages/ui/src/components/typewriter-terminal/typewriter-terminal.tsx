@@ -70,15 +70,25 @@ type Slot<E extends keyof JSX.IntrinsicElements> = ComponentPropsWithoutRef<E> &
   css?: Interpolation<Theme>;
 };
 export interface TypewriterTerminalSlotProps {
+  /** Header bar element displaying the terminal title and actions. */
   header?: Slot<'header'>;
+  /** Screen viewport container element displaying the terminal lines. */
   screen?: Slot<'div'>;
+  /** Ordered list element (`ol`) containing the executed terminal steps. */
   transcript?: Slot<'ol'>;
+  /** Toolbar container element holding playback and scrubber controls. */
   controls?: Slot<'div'>;
+  /** Slider range input element seeking across animation steps. */
   scrubber?: Slot<'input'>;
+  /** Button element toggling playback between pause and play. */
   playButton?: Slot<'button'>;
+  /** Button element restarting the terminal animation. */
   replayButton?: Slot<'button'>;
+  /** Button element copying the terminal session transcript. */
   copyButton?: Slot<'button'>;
+  /** Figcaption element describing the terminal figure. */
   caption?: Slot<'figcaption'>;
+  /** Live region element announcing terminal playback updates. */
   status?: Slot<'div'>;
 }
 export interface TypewriterTerminalProps

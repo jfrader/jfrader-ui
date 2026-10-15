@@ -30,13 +30,21 @@ type Slot<Tag extends 'div' | 'span' | 'label' | 'button'> = Omit<ComponentProps
   css?: Interpolation<Theme>;
 };
 export interface TimePickerSlotProps {
+  /** Field container wrapping the label, control and messages. */
   root?: Slot<'div'>;
+  /** Text naming the field. */
   label?: Slot<'label'>;
+  /** Button showing the current time and opening the list. */
   control?: Slot<'button'>;
+  /** Floating list holding the selectable times. */
   content?: Slot<'div'>;
+  /** One selectable time in the list. */
   option?: Slot<'div'>;
+  /** Helper text displayed below the control. */
   description?: Slot<'span'>;
+  /** Validation error message displayed when invalid. */
   error?: Slot<'span'>;
+  /** Clock glyph shown inside the control. */
   icon?: Slot<'span'>;
 }
 export interface TimePickerProps

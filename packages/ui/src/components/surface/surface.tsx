@@ -26,9 +26,15 @@ export interface SurfaceRootCustomization {
   /** Replace the root. Exactly sugar for `slots.root`; declare the component outside render. */
   component?: ComponentType<SurfacePartProps>;
   /** Replace adopted parts. Only `root` is supported. */
-  slots?: { root?: ComponentType<SurfacePartProps> };
+  slots?: {
+    /** Replaces the outer panel element; renders a `div` by default. */
+    root?: ComponentType<SurfacePartProps>;
+  };
   /** Root props override matching component props; className and style merge. */
-  slotProps?: { root?: SurfaceRootSlotProps };
+  slotProps?: {
+    /** Outer panel element rendering the surface material. */
+    root?: SurfaceRootSlotProps;
+  };
 }
 
 export interface SurfaceProps extends SurfacePartProps, SxProps, SurfaceRootCustomization {

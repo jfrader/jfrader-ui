@@ -31,8 +31,11 @@ export interface KeycapKeyboardProps extends Omit<ComponentPropsWithRef<'div'>,
   tone?: 'neutral' | 'accent';
   paused?: boolean;
   slotProps?: {
+    /** Horizontal row container grouping keycaps. */
     row?: KeycapKeyboardSlotProps;
+    /** Keycap element representing an individual key. Default: `Kbd`. */
     key?: KeycapKeyboardSlotProps;
+    /** Text or symbol element displaying the key legend. */
     legend?: KeycapKeyboardSlotProps;
   };
 }

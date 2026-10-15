@@ -82,15 +82,25 @@ export interface UsageMeterProps
   announceChanges?: boolean;
   statusIcon?: (state: UsageMeterState) => ReactNode;
   slotProps?: {
+    /** Outer container element holding the usage meter and legend. */
     root?: UsageMeterPartProps<'div'>;
+    /** Header title element naming the resource being tracked. */
     title?: UsageMeterPartProps;
+    /** Status badge element indicating current usage threshold state. */
     status?: UsageMeterPartProps;
+    /** Paragraph element displaying the total usage amount. */
     total?: UsageMeterPartProps<'p'>;
+    /** Progress track container element holding meter segments. */
     track?: UsageMeterPartProps<'div'>;
+    /** Meter bar segment representing usage by a specific category. */
     segment?: UsageMeterPartProps;
+    /** Bar segment element indicating usage exceeding the limit. */
     overage?: UsageMeterPartProps;
+    /** Vertical marker line indicating the usage limit threshold. */
     limit?: UsageMeterPartProps;
+    /** List element (`ul`) holding category legend items. */
     legend?: UsageMeterPartProps<'ul'>;
+    /** Interactive button or row element in the category legend. */
     item?: UsageMeterPartProps<'button'>;
   };
 }

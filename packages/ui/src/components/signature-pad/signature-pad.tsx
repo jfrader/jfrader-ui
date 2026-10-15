@@ -73,7 +73,24 @@ export interface SignaturePadPartProps {
 }
 export type SignaturePadSlotProps = Partial<
   Record<
-    'root' | 'label' | 'canvas' | 'guide' | 'toolbar' | 'action' | 'description' | 'error' | 'status',
+    | /** Outer container element wrapping the signature pad and toolbar. */
+      'root'
+    | /** Label element naming the signature pad. */
+      'label'
+    | /** Interactive canvas element capturing user signature strokes. */
+      'canvas'
+    | /** Baseline guideline indicator rendered behind the canvas. */
+      'guide'
+    | /** Toolbar container holding signature actions and tools. */
+      'toolbar'
+    | /** Action button inside the toolbar. */
+      'action'
+    | /** Helper text element displayed below the canvas. */
+      'description'
+    | /** Validation error message displayed when invalid. */
+      'error'
+    | /** Screen-reader live region announcing stroke and action updates. */
+      'status',
     SignaturePadPartProps
   >
 >;

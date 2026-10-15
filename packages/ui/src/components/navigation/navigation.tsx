@@ -72,18 +72,24 @@ export type NavigationGroupRecord = Readonly<{
 }>;
 
 export interface NavigationSlots {
+  /** Replaces the root landmark container; renders a `nav` by default. */
   root?: ComponentType<ComponentPropsWithRef<'nav'>>;
+  /** Replaces the section container grouping navigation items. */
   group?: ComponentType<NavigationGroupProps>;
+  /** Replaces an individual navigation link or item. */
   item?: ComponentType<NavigationItemProps>;
 }
 
 export interface NavigationSlotProps {
+  /** Root landmark `<nav>` container element. */
   root?: Omit<ComponentPropsWithRef<'nav'>, 'children'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
+  /** Section container element grouping navigation items. */
   group?: Partial<Omit<NavigationGroupProps, 'children' | 'label' | 'collapsible' | 'defaultOpen'>> & { css?: Interpolation<Theme> };
+  /** Link or item element inside a navigation group. */
   item?: Partial<Omit<NavigationItemProps, 'children' | 'href' | 'active' | 'disabled' | 'icon'>> & { css?: Interpolation<Theme> };
 }
 

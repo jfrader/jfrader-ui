@@ -65,14 +65,18 @@ export interface ToggleGroupOption {
   id?: string;
 }
 export interface ToggleGroupSlots {
+  /** Container wrapping the group and its items. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Button toggling one option. */
   item?: ComponentType<ToggleGroupItemProps>;
 }
 export interface ToggleGroupSlotProps {
+  /** Container wrapping the group and its items. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
     css?: Interpolation<Theme>;
     [attribute: `data-${string}`]: unknown;
   };
+  /** Button toggling one option. */
   item?: Omit<ToggleGroupItemProps, 'value' | 'children' | 'disabled' | 'id'>;
 }
 type ToggleGroupComposition =

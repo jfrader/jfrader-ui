@@ -47,7 +47,12 @@ export interface SegmentedControlCompoundProps
   variant?: SegmentedControlVariant;
   label?: string;
   onOptionIntent?: (value: string) => void;
-  slotProps?: { track?: SlotProps<'div'>; selection?: SlotProps<'span'> };
+  slotProps?: {
+    /** Inner track container wrapping segment items and indicator. */
+    track?: SlotProps<'div'>;
+    /** Sliding background indicator highlighting the selected segment. */
+    selection?: SlotProps<'span'>;
+  };
   options?: never;
   slots?: never;
   component?: never;
@@ -60,14 +65,18 @@ export interface SegmentedControlOption {
   accessory?: ReactNode;
 }
 export interface SegmentedControlSlots {
+  /** Outer container wrapping the segmented control. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Button representing an individual segment option. Default: `SegmentedControl.Item`. */
   item?: ComponentType<SegmentedControlItemProps>;
 }
 export interface SegmentedControlSlotProps extends NonNullable<SegmentedControlCompoundProps['slotProps']> {
+  /** Outer container wrapping the segmented control. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
     css?: Interpolation<Theme>;
     [attribute: `data-${string}`]: unknown;
   };
+  /** Button representing an individual segment option. Default: `SegmentedControl.Item`. */
   item?: Omit<SegmentedControlItemProps, 'value' | 'children' | 'disabled' | 'id' | 'accessory'>;
 }
 export interface SegmentedControlEasyProps extends Omit<SegmentedControlCompoundProps, 'children' | 'options' | 'slots' | 'slotProps' | 'component'> {

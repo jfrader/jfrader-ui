@@ -79,18 +79,31 @@ export interface MentionInputMessages {
   invalidValue: string;
 }
 type MentionInputAnatomy = {
+  /** Outer container wrapping the mention input and suggestions popup. */
   root: 'div';
+  /** Label element associated with the input. */
   label: 'label';
+  /** Container enclosing the textarea and backdrop highlight mirror. */
   control: 'div';
+  /** Textarea control receiving user typing. */
   input: 'textarea';
+  /** Backdrop container rendering highlighted mention tokens behind text. */
   mirror: 'div';
+  /** Highlighted token span styling an inserted mention. */
   token: 'span';
+  /** Floating popup panel holding the mention suggestions list. */
   panel: 'div';
+  /** Listbox container rendering mention suggestion options. */
   list: 'div';
+  /** Suggestion item representing a selectable person or channel. */
   option: 'div';
+  /** Container displayed when no matching mention suggestions are found. */
   empty: 'div';
+  /** Helper text element displayed below the input. */
   description: 'span';
+  /** Validation error message displayed when invalid. */
   error: 'span';
+  /** Screen-reader live region announcing mention results. */
   status: 'span';
 };
 export type MentionInputSlots = FieldSlots<MentionInputAnatomy>;

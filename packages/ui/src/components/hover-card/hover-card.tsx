@@ -90,8 +90,11 @@ export interface HoverCardCompoundProps extends HoverCardBaseProps {
 }
 
 export interface HoverCardSlotProps {
+  /** Button that opens the hover card on pointer enter or focus. */
   trigger?: Omit<HoverCardTriggerProps, 'children'>;
+  /** Floating overlay panel holding the hover card content. */
   content?: Omit<HoverCardContentProps, 'children'>;
+  /** Built-in profile card rendered inside the overlay. */
   profile?: Partial<HoverCardProfileProps>;
 }
 
@@ -169,11 +172,15 @@ export interface HoverCardProfileProps extends Omit<ComponentPropsWithRef<'div'>
   /** Locale for numeric stats; defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
   slotProps?: {
-    /** The avatar stays decorative: `aria-hidden` is not configurable. */
+    /** Decorative avatar element; `aria-hidden` is not configurable. */
     avatar?: Omit<HoverCardProfilePartProps<'span'>, 'aria-hidden'>;
+    /** Container element holding the user name and subtitle. */
     identity?: HoverCardProfilePartProps;
+    /** Biography text container element. */
     bio?: HoverCardProfilePartProps;
+    /** Definition list element (`dl`) rendering user stats. */
     stats?: HoverCardProfilePartProps<'dl'>;
+    /** Footer metadata element displaying additional details. */
     meta?: HoverCardProfilePartProps;
   };
 }

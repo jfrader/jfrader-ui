@@ -44,16 +44,22 @@ export type RadioGroupOption = Pick<
   'value' | 'description' | 'disabled' | 'id'
 > & { label: ReactNode };
 export interface RadioGroupSlots {
+  /** Container element wrapping the radio group. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Header label naming the radio group. */
   label?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Radio button option within the group. Default: `RadioGroup.Radio`. */
   radio?: ComponentType<RadioGroupRadioProps>;
 }
 export interface RadioGroupSlotProps {
+  /** Container element wrapping the radio group. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
     css?: Interpolation<Theme>;
     [attribute: `data-${string}`]: unknown;
   };
+  /** Header label naming the radio group. */
   label?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { css?: Interpolation<Theme> };
+  /** Radio button option within the group. Default: `RadioGroup.Radio`. */
   radio?: Omit<RadioGroupRadioProps, 'value' | 'label' | 'description' | 'disabled' | 'id' | 'children'>;
 }
 export interface RadioGroupEasyProps extends Omit<RadioGroupCompoundProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
@@ -78,9 +84,13 @@ export interface RadioGroupRadioProps
   label?: ReactNode;
   description?: ReactNode;
   slotProps?: {
+    /** Outer label wrapping the radio control and text. */
     root?: RadioGroupRadioPartProps;
+    /** Text label displayed alongside the radio button. */
     label?: RadioGroupRadioPartProps;
+    /** Visual circular indicator displaying the radio dot. */
     control?: RadioGroupRadioPartProps;
+    /** Helper text displayed below the radio label. */
     description?: RadioGroupRadioPartProps;
   };
 }

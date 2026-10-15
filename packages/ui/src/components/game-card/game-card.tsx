@@ -59,8 +59,11 @@ export interface GameCardProps
   /** Your own art — an image, an SVG, anything. Replaces the emoji print or back pattern. */
   children?: ReactNode;
   slotProps?: {
+    /** Outer card container wrapping the card face or back. */
     root?: GameCardRootSlotProps;
+    /** Face layer displaying the card rank and suit print. */
     face?: GameCardPartProps;
+    /** Back layer displaying the deck pattern. */
     back?: GameCardPartProps;
   };
 }

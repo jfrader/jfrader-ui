@@ -73,16 +73,24 @@ export interface TabsEasyProps extends TabsStateProps {
 }
 
 export interface TabsSlots {
+  /** Replaces the outer tabs container; renders a `div` by default. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the tablist container element. */
   list?: ComponentType<TabsListProps>;
+  /** Replaces an individual tab button. */
   tab?: ComponentType<TabsTabProps>;
+  /** Replaces the tabpanel container displaying the active tab content. */
   panel?: ComponentType<TabsPanelProps>;
 }
 
 export interface TabsSlotProps {
+  /** Outer tabs container element wrapping the tab list and panels. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { css?: Interpolation<Theme>; 'data-ui'?: string };
+  /** Tab list container element holding tab buttons. */
   list?: Omit<TabsListProps, 'children' | 'aria-label'> & { css?: Interpolation<Theme> };
+  /** Tab button element selecting a panel. */
   tab?: Omit<TabsTabProps, 'children' | 'value' | 'disabled'> & { css?: Interpolation<Theme> };
+  /** Tab panel container element displaying the tab content. */
   panel?: Omit<TabsPanelProps, 'children' | 'value'> & { css?: Interpolation<Theme> };
 }
 

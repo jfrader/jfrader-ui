@@ -42,12 +42,19 @@ export interface PasswordFieldPartProps extends FieldPartProps {}
 export type PasswordFieldSlotProps = FieldParts<PasswordFieldAnatomy>;
 
 type PasswordFieldAnatomy = {
+  /** Outer container wrapping the password field. */
   root: 'div';
+  /** Label element associated with the password input. */
   label: 'label';
+  /** Native input control receiving password entry. */
   control: 'input';
+  /** Helper text element displayed below the input. */
   description: 'span';
+  /** Validation error message displayed when invalid. */
   error: 'span';
+  /** Border and background frame enclosing the input and reveal button. */
   shell: 'div';
+  /** Button toggling password visibility between masked and plain text. */
   reveal: 'button';
 };
 export type PasswordFieldSlots = FieldSlots<PasswordFieldAnatomy>;

@@ -75,20 +75,26 @@ export interface ResizablePanelsPanelItem {
 }
 
 export interface ResizablePanelsSlots {
+  /** Replaces the root group container; renders a `div` by default. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces an individual resizable panel container. */
   panel?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the interactive resize separator handle. */
   separator?: ComponentType<ResizablePanelsSeparatorProps>;
 }
 
 export interface ResizablePanelsSlotProps {
+  /** Root group container element wrapping the resizable panels. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
+  /** Container element representing an individual panel. */
   panel?: Partial<Omit<ResizablePanelsPanelProps, 'value' | 'id' | 'children' | 'minSize' | 'maxSize' | 'collapsible'>> & {
     [attribute: `data-${string}`]: unknown;
   };
+  /** Interactive separator handle element between panels. */
   separator?: ResizablePanelsSeparatorProps;
 }
 

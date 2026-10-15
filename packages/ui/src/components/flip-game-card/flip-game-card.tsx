@@ -20,9 +20,13 @@ interface FlipGameCardBaseProps extends Omit<GameCardRootProps, 'children'>, SxP
   /** Card width, using the GameCard scale. Defaults to `md`. */
   size?: GameCardSize;
   slotProps?: {
+    /** Outer card shell container wrapping the card rotator and faces. */
     root?: GameCardRootSlotProps;
+    /** Animated 3D rotator element holding the front and back card faces. */
     rotator?: GameCardPartProps;
+    /** Container element displaying the face-up card content. */
     front?: GameCardPartProps;
+    /** Container element displaying the face-down card back. */
     back?: GameCardPartProps;
   };
 }

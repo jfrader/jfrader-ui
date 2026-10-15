@@ -38,7 +38,14 @@ interface InspectionProps {
   /** Preferred card width; defaults to the inherited width or the medium card token. */
   cardWidth?: string;
   backPattern?: GameCardProps['backPattern'];
-  slotProps?: { pile?: GameCardPartProps; trigger?: GameCardPartProps; card?: GameCardPartProps };
+  slotProps?: {
+    /** Stack pile container holding cards played by a player. */
+    pile?: GameCardPartProps;
+    /** Transparent button overlay triggering pile inspection. */
+    trigger?: GameCardPartProps;
+    /** Card position wrapper applying jitter, offset, and rotation. */
+    card?: GameCardPartProps;
+  };
 }
 
 export interface GameCardStackProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps, InspectionProps {

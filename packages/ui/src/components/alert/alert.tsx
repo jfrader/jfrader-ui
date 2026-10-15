@@ -31,9 +31,13 @@ export interface AlertProps extends Omit<ComponentPropsWithRef<'div'>, 'title' |
   onDismiss?: () => void;
   dismissLabel?: string;
   slotProps?: {
+    /** Outer container element holding the alert message and dismiss button. */
     root?: AlertPartProps;
+    /** Title heading element rendered above the alert body. */
     title?: AlertPartProps;
+    /** Body container holding the alert message content. */
     body?: AlertPartProps;
+    /** Button element that dismisses the alert. */
     dismiss?: AlertPartProps;
   };
 }

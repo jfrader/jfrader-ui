@@ -57,15 +57,25 @@ type Slot<Tag extends keyof React.JSX.IntrinsicElements> = Omit<ComponentPropsWi
 };
 
 export interface LightboxGallerySlotProps {
+  /** Grid list container element (`ul`) holding thumbnail tiles. */
   grid?: Slot<'ul'>;
+  /** Thumbnail button element opening the lightbox viewer. */
   tile?: Omit<Slot<'button'>, 'type'>;
+  /** Image element displaying the thumbnail or zoomed photo. */
   image?: Omit<Slot<'img'>, 'src' | 'srcSet' | 'sizes' | 'alt' | 'width' | 'height'>;
+  /** Native `<dialog>` element hosting the fullscreen lightbox viewer. */
   viewer?: Omit<Slot<'dialog'>, 'open'> & { withDescription?: boolean };
+  /** Viewport stage container element panning and zooming the active image. */
   stage?: Slot<'div'>;
+  /** Heading element (`h2`) naming the currently active image. */
   title?: Slot<'h2'>;
+  /** Caption paragraph element (`p`) describing the active image. */
   caption?: Slot<'p'>;
+  /** Thumbnail strip container element at the bottom of the viewer. */
   thumbnails?: Slot<'div'>;
+  /** Toolbar container element holding zoom and dismiss action buttons. */
   controls?: Slot<'div'>;
+  /** Live region container element announcing active image position and zoom. */
   status?: Slot<'div'>;
 }
 

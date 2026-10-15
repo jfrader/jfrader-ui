@@ -71,13 +71,19 @@ export interface PopoverEasyProps extends Omit<PopoverBaseProps, 'children'>, Om
   children?: never;
   /** Replace native roots with components that forward all supplied props and ref. */
   slots?: {
+    /** Replaces the outer wrapper element; renders a `div` by default. */
     root?: ComponentType<ComponentPropsWithRef<'div'>>;
+    /** Replaces the button that opens the popover. */
     trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
+    /** Replaces the floating popover overlay panel. */
     content?: ComponentType<ComponentPropsWithRef<'div'>>;
   };
   slotProps?: {
+    /** Outer wrapper element around the trigger and content. */
     root?: GeneratedRootSlotProps;
+    /** Button element that opens the popover. */
     trigger?: PopoverGeneratedPartProps<PopoverTriggerProps>;
+    /** Floating popover overlay panel element. */
     content?: PopoverGeneratedPartProps<PopoverContentProps>;
   };
   component?: NonNullable<PopoverEasyProps['slots']>['root'];

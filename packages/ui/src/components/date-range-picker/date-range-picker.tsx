@@ -208,11 +208,15 @@ export interface DateRangePickerEasyProps extends Omit<DateRangePickerBaseProps,
   children?: never;
   /** Replace native roots with components that forward all supplied props and ref. */
   slots?: {
+    /** Button trigger opening the date range dialog. */
     trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
+    /** Dialog popup containing calendar grids and actions. */
     content?: ComponentType<ComponentPropsWithRef<'div'>>;
   };
   slotProps?: {
+    /** Button trigger opening the date range dialog. */
     trigger?: DateRangePickerTriggerProps & DateRangePickerSlotProps;
+    /** Dialog popup containing calendar grids and actions. */
     content?: DateRangePickerContentProps & DateRangePickerSlotProps;
   };
 }
@@ -236,9 +240,13 @@ export interface DateRangePickerSlotProps {
 
 export interface DateRangePickerContentProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   slotProps?: {
+    /** List of quick-selection date range presets. */
     presets?: DateRangePickerSlotProps;
+    /** Container holding one or two month calendar grids. */
     calendars?: DateRangePickerSlotProps;
+    /** Live region describing the currently drafted range. */
     summary?: DateRangePickerSlotProps;
+    /** Footer container holding the Cancel and Apply buttons. */
     actions?: DateRangePickerSlotProps;
   };
 }

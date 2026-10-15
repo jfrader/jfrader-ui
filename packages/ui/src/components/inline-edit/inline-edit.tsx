@@ -75,6 +75,7 @@ export interface InlineEditPartProps {
 }
 
 export type InlineEditSlotProps = Omit<FieldParts<InlineEditAnatomy>, 'control'> & {
+  /** Input or textarea control receiving draft edits. */
   control?: FieldElementProps<'input'> | FieldElementProps<'textarea'>;
 };
 
@@ -85,21 +86,35 @@ export interface InlineEditControlProps extends Omit<
 > {}
 
 type InlineEditAnatomy = {
+  /** Outer container wrapping the inline edit field. */
   root: 'div';
+  /** Label element associated with the editor. */
   label: 'label';
+  /** Screen-reader instruction text describing keyboard interaction. */
   instructions: 'span';
+  /** Editor container holding the active control and action buttons. */
   editor: 'div';
+  /** Read-only button trigger activating edit mode on click. */
   trigger: 'button';
+  /** Input or textarea control receiving draft edits. */
   control: 'input';
+  /** Action button container holding save and cancel buttons. */
   actions: 'div';
+  /** Confirmation button saving the edited value. */
   save: 'button';
+  /** Cancellation button discarding draft changes. */
   cancel: 'button';
+  /** Retry button re-attempting a failed save request. */
   retry: 'button';
+  /** Helper text element displayed below the field. */
   description: 'span';
+  /** Validation error message displayed when invalid. */
   error: 'span';
+  /** Screen-reader live region announcing save status. */
   status: 'span';
 };
 export type InlineEditSlots = Omit<FieldSlots<InlineEditAnatomy>, 'control'> & {
+  /** Input or textarea control receiving draft edits. */
   control?: ComponentType<ComponentPropsWithRef<'input'> | ComponentPropsWithRef<'textarea'>>;
 };
 

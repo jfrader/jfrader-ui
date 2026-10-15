@@ -21,13 +21,21 @@ export interface GameSeatTurn {
 }
 export type GameSeatPartProps = ComponentPropsWithRef<'div'> & { css?: Interpolation<Theme> };
 export interface GameSeatSlotProps {
+  /** Outer card container wrapping the player seat elements. */
   root?: GameCardRootSlotProps;
+  /** Avatar container holding the player picture and turn timer ring. */
   avatar?: GameSeatPartProps;
+  /** Text element displaying the player name. */
   name?: ComponentPropsWithRef<'span'> & { css?: Interpolation<Theme> };
+  /** Container element holding player badges. */
   badges?: GameSeatPartProps;
+  /** Container element displaying player points or score. */
   points?: GameSeatPartProps;
+  /** Container element holding player cards or hidden hand indicator. */
   hand?: GameSeatPartProps;
+  /** SVG element displaying the animated countdown turn timer ring. */
   timer?: ComponentPropsWithRef<'svg'> & { css?: Interpolation<Theme> };
+  /** Container element holding speech bubbles or chat messages. */
   chat?: GameSeatPartProps;
 }
 export interface GameSeatProps extends Omit<GameCardRootProps, 'children'>, GameCardRootCustomization, SxProps {

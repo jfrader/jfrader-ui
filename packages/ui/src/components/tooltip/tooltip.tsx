@@ -67,11 +67,15 @@ export interface TooltipEasyProps extends Omit<TooltipBaseProps, 'children'> {
   children?: never;
   /** Replace native roots with components that forward all supplied props and ref. */
   slots?: {
+    /** Replaces the button that opens the tooltip. */
     trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
+    /** Replaces the floating tooltip overlay container. */
     content?: ComponentType<ComponentPropsWithRef<'div'>>;
   };
   slotProps?: {
+    /** Button element that triggers the tooltip on hover or focus. */
     trigger?: TooltipGeneratedPartProps<TooltipTriggerProps>;
+    /** Floating tooltip overlay container displaying the help content. */
     content?: TooltipGeneratedPartProps<TooltipContentProps>;
   };
 }

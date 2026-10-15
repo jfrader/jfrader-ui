@@ -122,11 +122,15 @@ export interface DatePickerEasyProps extends Omit<DatePickerBaseProps, 'children
   children?: never;
   /** Replace the field presentation or popup div; forward all supplied props and ref. */
   slots?: {
+    /** Text field trigger displaying the selected date. Default: `TextField`. */
     input?: ComponentType<TextFieldProps>;
+    /** Dialog popup container enclosing the calendar. */
     popup?: ComponentType<ComponentPropsWithRef<'div'>>;
   };
   slotProps?: {
+    /** Text field trigger displaying the selected date. Default: `TextField`. */
     input?: DatePickerGeneratedPartProps<DatePickerInputProps>;
+    /** Dialog popup container enclosing the calendar. */
     popup?: DatePickerGeneratedPartProps<DatePickerPopupProps>;
   };
 }

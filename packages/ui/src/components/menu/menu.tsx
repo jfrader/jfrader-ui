@@ -113,18 +113,28 @@ export interface MenuEasyProps extends MenuStateProps, Omit<GeneratedRootProps, 
 }
 
 export interface MenuSlots {
+  /** Replaces the outer wrapper element; renders a `div` by default. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the button that opens the menu. */
   trigger?: ComponentType<MenuTriggerProps>;
+  /** Replaces the popup menu overlay container. */
   content?: ComponentType<MenuContentProps>;
+  /** Replaces an action item button inside the menu. */
   item?: ComponentType<MenuItemProps>;
+  /** Replaces the separator element dividing menu items. */
   separator?: ComponentType<MenuSeparatorProps>;
 }
 
 export interface MenuSlotProps {
+  /** Outer wrapper element around the trigger and content. */
   root?: GeneratedRootSlotProps;
+  /** Button element that opens the menu. */
   trigger?: Omit<MenuTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  /** Popup menu overlay container element holding menu items. */
   content?: Omit<MenuContentProps, 'children'> & { css?: Interpolation<Theme> };
+  /** Action item button element inside the menu. */
   item?: Omit<MenuItemProps, 'children' | 'onSelect' | 'disabled'> & { css?: Interpolation<Theme> };
+  /** Separator element dividing menu items. */
   separator?: MenuSeparatorProps & { css?: Interpolation<Theme> };
 }
 

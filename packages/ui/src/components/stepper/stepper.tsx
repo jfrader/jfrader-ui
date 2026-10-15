@@ -81,14 +81,23 @@ export type StepperHeadSlotProps = Omit<
   StepperPartProps;
 
 export interface StepperSlotProps {
+  /** Nav landmark wrapping the stepper workflow. */
   root?: StepperPartProps;
+  /** Ordered list container holding the step items. */
   list?: StepperPartProps;
+  /** List item representing an individual step. */
   item?: StepperPartProps;
+  /** Interactive button or header container for a step. */
   head?: StepperHeadSlotProps;
+  /** Circle badge displaying step index, checkmark, or error icon. */
   marker?: StepperPartProps;
+  /** Heading element displaying the step title. */
   label?: StepperPartProps;
+  /** Helper text element describing the step status or detail. */
   description?: StepperPartProps;
+  /** Line connecting consecutive steps in the sequence. */
   connector?: StepperPartProps;
+  /** Screen-reader status label describing step state. */
   caption?: StepperPartProps;
 }
 
