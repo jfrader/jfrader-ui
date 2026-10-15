@@ -1,6 +1,6 @@
 import { Component, useState, type ComponentPropsWithRef, type MouseEvent, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor, within, type Mock } from 'storybook/test';
+import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -205,8 +205,27 @@ function CustomAction(props: SplitButtonActionProps) {
 
 type Story = StoryObj<Omit<StoryArgs, 'component'>>;
 
+function EasyExample({
+  onAction: _onAction,
+  onCsv: _onCsv,
+  onJson: _onJson,
+  onDelete: _onDelete,
+  ...args
+}: SplitButtonEasyProps & Partial<Pick<StoryArgs, 'onAction' | 'onCsv' | 'onJson' | 'onDelete'>>) {
+  return (
+    <Row>
+      <SplitButton {...args} />
+      <Button>After</Button>
+    </Row>
+  );
+}
+
 export const Default: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
   name: 'Easy mode',
+  beforeEach: () => {
+    const error = spyOn(console, 'error');
+    return () => error.mockRestore();
+  },
   args: {
     label: ACTION,
     onClick: fn(),
@@ -243,14 +262,10 @@ export const Default: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
       },
     },
   },
-  render: (args) => (
-    <Row>
-      <SplitButton {...args} />
-      <Button>After</Button>
-    </Row>
-  ),
+  render: (args) => <EasyExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const group = within(canvasElement).getByRole('group', { name: GROUP });
+    await expect(console.error).not.toHaveBeenCalled();
     const action = getAction(canvasElement);
     const trigger = getTrigger(canvasElement);
     await expect(group).toHaveAttribute('data-ui', 'split-button');

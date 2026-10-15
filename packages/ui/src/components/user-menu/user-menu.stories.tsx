@@ -67,6 +67,22 @@ interface StoryArgs extends UserMenuBaseProps {
   onSignOutError: (error: unknown) => void;
 }
 
+function EasyExample({
+  onProfile: _onProfile,
+  onSettings: _onSettings,
+  onThemeChange: _onThemeChange,
+  onStatusChange: _onStatusChange,
+  showName: _showName,
+  ...args
+}: UserMenuEasyProps & Partial<Pick<StoryArgs, 'onProfile' | 'onSettings' | 'onThemeChange' | 'onStatusChange' | 'showName'>>) {
+  return (
+    <Row>
+      <UserMenu {...args} />
+      <Button>After</Button>
+    </Row>
+  );
+}
+
 function ProfileIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -272,6 +288,10 @@ function easyModeTypeContracts() {
 void easyModeTypeContracts;
 
 export const Default: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
+  beforeEach: () => {
+    const error = spyOn(console, 'error');
+    return () => error.mockRestore();
+  },
   name: 'Easy mode',
   args: {
     user: USER,
@@ -318,13 +338,9 @@ export const Default: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
       },
     },
   },
-  render: (args) => (
-    <Row>
-      <UserMenu {...args} />
-      <Button>After</Button>
-    </Row>
-  ),
+  render: (args) => <EasyExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
+    await expect(console.error).not.toHaveBeenCalled();
     const trigger = getTrigger(canvasElement);
     await expect(trigger).toHaveAttribute('data-ui', 'user-menu-trigger');
     await expect(trigger).toHaveAttribute('type', 'button');

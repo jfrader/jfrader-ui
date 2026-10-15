@@ -3,7 +3,7 @@ import { styled } from '../../index';
 import { Component, useCallback, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fireEvent, fn, waitFor, within, type Mock } from 'storybook/test';
+import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -271,6 +271,10 @@ function easyModeTypeContracts() {
 void easyModeTypeContracts;
 
 export const Default: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
+  beforeEach: () => {
+    const error = spyOn(console, 'error');
+    return () => error.mockRestore();
+  },
   name: 'Easy mode',
   args: {
     targetLabel: TARGET,
@@ -314,13 +318,9 @@ export const Default: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
       },
     },
   },
-  render: (args) => (
-    <Row>
-      <ContextMenu {...args} />
-      <Button>After</Button>
-    </Row>
-  ),
+  render: (args) => <EasyExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
+    await expect(console.error).not.toHaveBeenCalled();
     const target = getTarget(canvasElement);
     await expect(target).toHaveAttribute('data-ui', 'context-menu-target');
     await expect(target).toHaveAttribute('tabindex', '0');
@@ -789,9 +789,29 @@ export const Danger: Story = {
   },
 };
 
+function EasyExample({
+  onRename: _onRename,
+  onDelete: _onDelete,
+  onOpenChild: _onOpenChild,
+  targetProps: _targetProps,
+  ...args
+}: Omit<ContextMenuEasyProps, 'onRename' | 'onDelete' | 'onOpenChild' | 'targetProps'> & Partial<Pick<StoryArgs, 'onRename' | 'onDelete' | 'onOpenChild' | 'targetProps'>>) {
+  return (
+    <Row>
+      <ContextMenu {...args} />
+      <Button>After</Button>
+    </Row>
+  );
+}
+
 function ViewOptions({
   value,
   onValueChange,
+  onCopy,
+  onRename,
+  onDelete,
+  onOpenChild: _onOpenChild,
+  targetProps: _targetProps,
   ...args
 }: StoryArgs & { value?: boolean; onValueChange?: (checked: boolean) => void }) {
   return (
@@ -800,10 +820,10 @@ function ViewOptions({
         <strong>Sprint board</strong>
       </TargetBox>
       <ContextMenu.Content>
-        <ContextMenu.CheckboxItem defaultValue onValueChange={args.onCopy}>
+        <ContextMenu.CheckboxItem defaultValue onValueChange={onCopy}>
           Show avatars
         </ContextMenu.CheckboxItem>
-        <ContextMenu.CheckboxItem onValueChange={args.onRename} icon={<LinkIcon />}>
+        <ContextMenu.CheckboxItem onValueChange={onRename} icon={<LinkIcon />}>
           Show links
         </ContextMenu.CheckboxItem>
         <ContextMenu.CheckboxItem value={value} onValueChange={onValueChange}>
@@ -811,7 +831,7 @@ function ViewOptions({
         </ContextMenu.CheckboxItem>
         <ContextMenu.CheckboxItem disabled>Show archived</ContextMenu.CheckboxItem>
         <ContextMenu.Separator />
-        <ContextMenu.CheckboxItem closeOnSelect onValueChange={args.onDelete}>
+        <ContextMenu.CheckboxItem closeOnSelect onValueChange={onDelete}>
           Pin board
         </ContextMenu.CheckboxItem>
       </ContextMenu.Content>
@@ -823,8 +843,13 @@ ViewOptions.displayName = 'ViewOptions';
 const compactChange = fn();
 
 export const CheckboxItems: Story = {
+  beforeEach: () => {
+    const error = spyOn(console, 'error');
+    return () => error.mockRestore();
+  },
   render: (args) => <ViewOptions {...args} value={false} onValueChange={compactChange} />,
   play: async ({ args, canvasElement, userEvent }) => {
+    await expect(console.error).not.toHaveBeenCalled();
     compactChange.mockClear();
     const target = getTarget(canvasElement, 'Board view options');
     await userEvent.tab();

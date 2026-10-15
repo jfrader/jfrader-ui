@@ -830,7 +830,7 @@ export function Timeline({
                       className={slotProps?.list?.className}
                       css={[listStyle, slotProps?.list?.css]}
                     >
-                      {group.rows.map(({ event, epoch }) => {
+                      {group.rows.map(({ event, epoch, order }) => {
                         const expandable = hasContent(event.detail);
                         const expanded = expandable && openIds.has(event.id);
                         const detailId = partId(baseId, 'detail', event.id);
@@ -860,7 +860,7 @@ export function Timeline({
                         return (
                           <Item
                             {...slotProps?.item}
-                            key={event.id}
+                            key={JSON.stringify([event.id, duplicateIds.includes(event.id) ? order : null])}
                             data-ui="timeline-item"
                             data-event-id={event.id}
                             data-tone={event.tone ?? 'neutral'}

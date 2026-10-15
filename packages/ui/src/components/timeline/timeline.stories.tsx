@@ -598,6 +598,7 @@ export const InvalidInputs: Story = {
     await expect(message).toContain('timeZone "Mars/Olympus_Mons"');
     await expect(message).toContain('now NaN');
     await expect(message).toContain('duplicate event ids ["deploy"]');
+    await expect(message).not.toContain('Encountered two children with the same key');
     // Without a usable clock every heading and row is absolute.
     await expect(dayLabels(canvasElement)[0]).toBe(fullDay(NOW));
     const time = part(item(canvasElement, 'build'), 'time');

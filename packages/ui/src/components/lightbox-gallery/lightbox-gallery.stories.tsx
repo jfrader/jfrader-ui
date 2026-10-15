@@ -1182,10 +1182,10 @@ function HydrationFixture({
     };
     if (afterImagesLoad)
       void Promise.all(tileImages.map((image) => image.decode().catch(() => undefined))).then(hydrate);
-    else hydrate();
+    else queueMicrotask(hydrate);
     return () => {
       active = false;
-      root?.unmount();
+      queueMicrotask(() => root?.unmount());
     };
   }, [items, label, identifierPrefix, afterImagesLoad]);
   return <div ref={ref} data-hydration-fixture dangerouslySetInnerHTML={{ __html: markup }} />;
@@ -1220,6 +1220,29 @@ export const SSRImagesLoadedBeforeHydration: Story = {
       await expect(image).toHaveAttribute('data-image-state', 'loaded');
       await expect(getComputedStyle(image).opacity).toBe('1');
     }
+  },
+};
+
+export const HydrationLifecycle: Story = {
+  tags: ['!autodocs'],
+  beforeEach: () => {
+    const error = spyOn(console, 'error');
+    return () => error.mockRestore();
+  },
+  render: (args) => {
+    const [mounted, setMounted] = useState(true);
+    return (
+      <StrictMode>
+        <Button onClick={() => setMounted(false)}>Remove gallery</Button>
+        {mounted && <HydrationFixture images={args.images} label={args.label} identifierPrefix="gallery-lifecycle-" />}
+      </StrictMode>
+    );
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await waitFor(() => expect(canvasElement.querySelector('[data-hydrated]')).not.toBeNull());
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove gallery' }));
+    await expect(canvasElement.querySelector('[data-hydration-fixture]')).toBeNull();
+    await expect(console.error).not.toHaveBeenCalled();
   },
 };
 
