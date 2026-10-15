@@ -1,10 +1,10 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
-import { WithSx } from '../../styling/sx';
 import { Button } from '../button';
 import {
   createRefCleanupTracker,
@@ -21,7 +21,7 @@ import {
 // @ts-expect-error Unknown slot key is rejected on DrawerEasyProps['slots']
 type UnknownDrawerSlot = NonNullable<DrawerEasyProps['slots']>['unknownKey'];
 
-const customDrawerMaterial = css({
+const CustomDrawerMaterial = styled.div({
   backgroundColor: vars.color.surfaceRaised,
   border: `2px dashed ${vars.color.borderControl}`,
   boxShadow: 'none',
@@ -29,9 +29,7 @@ const customDrawerMaterial = css({
 
 function CustomDrawerPanel({ className, ref, ...props }: ComponentPropsWithRef<'div'>) {
   return (
-    <WithSx styles={customDrawerMaterial} className={className}>
-      {(classes) => <div ref={ref} {...props} className={classes} data-slot="drawer-panel-winner" />}
-    </WithSx>
+    <CustomDrawerMaterial ref={ref} {...props} className={className} data-slot="drawer-panel-winner" />
   );
 }
 
@@ -46,6 +44,7 @@ function CustomDrawerHeader({ className, ref, ...props }: DrawerHeaderProps) {
 const rootRefTracker = createRefCleanupTracker<HTMLDivElement>();
 
 function DrawerCustomizationFixture() {
+  // Inline styles exercise the documented root/slot style-merging API.
   const [mounted, setMounted] = useState(true);
   const [count, setCount] = useState(0);
   const controls = <>
@@ -54,7 +53,7 @@ function DrawerCustomizationFixture() {
   </>;
 
   return (
-    <div style={{ padding: vars.space[4] }}>
+    <FixtureFrame>
       {mounted && (
         <Drawer
           defaultOpen
@@ -81,9 +80,11 @@ function DrawerCustomizationFixture() {
           }}
         />
       )}
-    </div>
+    </FixtureFrame>
   );
 }
+
+const FixtureFrame = styled.div({ padding: vars.space[4] });
 
 const meta = {
   title: 'Surfaces/Drawer',

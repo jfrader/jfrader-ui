@@ -290,6 +290,7 @@ function CustomRootBox({ children, ...props }: ComponentPropsWithRef<'div'>) {
 }
 
 export const EasyModeOverrides: EasyStory = {
+  // Inline styles exercise the documented root/slot style-merging API.
   name: 'Easy mode overrides',
   render: () => {
     return (

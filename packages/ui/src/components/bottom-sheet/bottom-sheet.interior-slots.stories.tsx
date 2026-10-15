@@ -1,10 +1,10 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
-import { WithSx } from '../../styling/sx';
 import { Button } from '../button';
 import {
   createRefCleanupTracker,
@@ -21,7 +21,7 @@ import {
 // @ts-expect-error Unknown slot key is rejected on BottomSheetEasyProps['slots']
 type UnknownBottomSheetSlot = NonNullable<BottomSheetEasyProps['slots']>['unknownKey'];
 
-const customSheetMaterial = css({
+const CustomSheetMaterial = styled.div({
   backgroundColor: vars.color.surfaceRaised,
   border: `2px dashed ${vars.color.borderControl}`,
   boxShadow: 'none',
@@ -29,9 +29,7 @@ const customSheetMaterial = css({
 
 function CustomSheetPanel({ className, ref, ...props }: ComponentPropsWithRef<'div'>) {
   return (
-    <WithSx styles={customSheetMaterial} className={className}>
-      {(classes) => <div ref={ref} {...props} className={classes} data-slot="sheet-panel-winner" />}
-    </WithSx>
+    <CustomSheetMaterial ref={ref} {...props} className={className} data-slot="sheet-panel-winner" />
   );
 }
 
@@ -46,6 +44,7 @@ function CustomSheetHeader({ className, ref, ...props }: BottomSheetHeaderProps)
 const rootRefTracker = createRefCleanupTracker<HTMLDivElement>();
 
 function BottomSheetCustomizationFixture() {
+  // Inline styles exercise the documented root/slot style-merging API.
   const [mounted, setMounted] = useState(true);
   const [count, setCount] = useState(0);
   const controls = <>
@@ -54,7 +53,7 @@ function BottomSheetCustomizationFixture() {
   </>;
 
   return (
-    <div style={{ padding: vars.space[4] }}>
+    <FixtureFrame>
       {mounted && (
         <BottomSheet
           defaultOpen
@@ -81,9 +80,11 @@ function BottomSheetCustomizationFixture() {
           }}
         />
       )}
-    </div>
+    </FixtureFrame>
   );
 }
+
+const FixtureFrame = styled.div({ padding: vars.space[4] });
 
 const meta = {
   title: 'Surfaces/BottomSheet',

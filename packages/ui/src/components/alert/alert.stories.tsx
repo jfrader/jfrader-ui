@@ -1,8 +1,9 @@
 import type { ComponentPropsWithRef } from 'react';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Alert, type AlertProps, type AlertTone } from './index';
 
@@ -34,7 +35,7 @@ const TONE_COPY: Record<AlertTone, { title: string; body: string }> = {
   danger: { title: 'Payment failed', body: 'Update your card to keep the Pro plan.' },
 };
 
-const stackStyle = css({
+const Stack = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '360px',
@@ -50,9 +51,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={stackStyle}>
+      <Stack>
         <Story />
-      </div>
+      </Stack>
     ),
   ],
 } satisfies Meta<typeof Alert>;

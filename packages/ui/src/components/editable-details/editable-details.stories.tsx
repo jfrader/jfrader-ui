@@ -1,3 +1,5 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { StrictMode, useRef, useState, type ComponentPropsWithRef } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
@@ -23,14 +25,18 @@ type StoryArgs = EditableDetailsCompoundProps & {
   onHydrationError: (error: unknown) => void;
 };
 
-const frame = css({ maxInlineSize: '36rem', inlineSize: '100%', marginInline: 'auto' });
-const editorStyle = css({ display: 'grid', gap: vars.space[3], minInlineSize: 0 });
+const Frame = styled.div({ maxInlineSize: '36rem', inlineSize: '100%', marginInline: 'auto' });
+
+const Editor = styled.div({ display: 'grid', gap: vars.space[3], minInlineSize: 0 });
+
+const NarrowFrame = styled.div({ inlineSize: '220px' });
+
 const meta = {
   title: 'Data display/EditableDetails',
   component: EditableDetails,
   tags: ['autodocs'],
   args: { onItemOpenChange: fn(), onSectionOpenChange: fn(), onRefCleanup: fn(), onHydrationError: fn() },
-  decorators: [(Story) => <div css={frame}><Story /></div>],
+  decorators: [(Story) => <Frame><Story /></Frame>],
   parameters: {
     layout: 'padded',
     docs: {
@@ -85,12 +91,12 @@ type EasyStory = StoryObj<Meta<EditableDetailsEasyProps>>;
 
 function DraftEditor({ initialFocusRef, cancel, complete, visible, onCapture }: EditableDetailsEditorProps & { onCapture?: (complete: () => void) => void }) {
   const [draft, setDraft] = useState('Apollo');
-  return <div css={editorStyle}>
+  return <Editor>
     <TextField label="Project name" ref={initialFocusRef} value={draft} onChange={(event) => setDraft(event.target.value)} />
     <span data-testid="visibility">{visible ? 'Visible' : 'Hidden'}</span>
     <Button onClick={complete}>Complete</Button><Button onClick={cancel}>Cancel</Button>
     {onCapture && <Button onClick={() => onCapture(complete)}>Capture completion</Button>}
-  </div>;
+  </Editor>;
 }
 
 const EASY_SECTIONS: readonly EditableDetailsSectionRecord[] = [
@@ -257,6 +263,7 @@ export const RootPropMerge: EasyStory = {
     id: 'host-id',
     'data-origin': 'host',
     className: 'host-class',
+    // Inline styles exercise the documented root/slot style-merging API.
     style: { paddingBlock: vars.space[4], fontWeight: 400 },
     onClick: fn(),
     ref: fn(),
@@ -343,7 +350,7 @@ export const Compound: Story = {
 };
 export const Light: Story = { render: () => <DetailsFixture />, decorators: [withLightTheme] };
 export const Rtl: Story = { render: () => <div dir="rtl"><DetailsFixture /></div> };
-export const Narrow: Story = { render: () => <div style={{ inlineSize: '220px' }}><DetailsFixture /></div> };
+export const Narrow: Story = { render: () => <NarrowFrame><DetailsFixture /></NarrowFrame> };
 
 export const SeparatorRhythm: Story = {
   render: () => <EditableDetails>
@@ -563,6 +570,7 @@ export const HydrationRelationships: Story = { render: () => <DetailsFixture />,
   } finally { root.unmount(); host.remove(); }
 } };
 
+// This story exercises the documented css and sx precedence APIs.
 const blueprints = { consumer: css({ paddingInline: vars.space[2] }), sx: css({ paddingInline: vars.space[3] }) };
 export const StylingPrecedence: Story = { render: () => <EditableDetails css={blueprints.consumer} sx={blueprints.sx}>
   <EditableDetails.Section title="Styled section" defaultOpen css={blueprints.consumer} sx={blueprints.sx}>
@@ -582,7 +590,7 @@ function DeepSection({ depth }: { depth: number }) {
     <EditableDetails.Item label="A very long label with many words describing a narrow configuration value">averylongunbrokenvaluethatmustwrapandnotoverflowitscontainer</EditableDetails.Item>
   </EditableDetails.List>}</EditableDetails.Section>;
 }
-export const DeepNarrow: Story = { render: () => <div style={{ inlineSize: '220px' }}><EditableDetails><DeepSection depth={8} /></EditableDetails></div>, play: async ({ canvasElement }) => {
+export const DeepNarrow: Story = { render: () => <NarrowFrame><EditableDetails><DeepSection depth={8} /></EditableDetails></NarrowFrame>, play: async ({ canvasElement }) => {
   const root = canvasElement.querySelector<HTMLElement>('[data-ui="editable-details"]')!;
   await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
 } };

@@ -1,9 +1,9 @@
-import type { CSSProperties } from 'react';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { LAYOUT_SPACES, LAYOUT_SPACE_TOKEN, type LayoutSpace } from '../../styling/layout-style';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
@@ -16,21 +16,13 @@ const SIZES = Object.keys(CONTAINER_MAX_INLINE_SIZE) as ContainerSize[];
 
 const spacePx = (space: LayoutSpace) => (space === 'none' ? '0px' : base.space[LAYOUT_SPACE_TOKEN[space]]);
 
-const frameStyle = css({
+const Frame = styled.div({
   display: 'grid',
   gap: vars.space[4],
   paddingBlock: vars.space[6],
 });
 
-const centeringFrameStyle = { inlineSize: '900px' } satisfies CSSProperties;
-
-const pageStyle = {
-  minBlockSize: '100vh',
-  paddingBlock: vars.space[10],
-  backgroundColor: vars.color.bg,
-} satisfies CSSProperties;
-
-const boxStyle = {
+const Box = styled.div({
   boxSizing: 'border-box',
   paddingBlock: vars.space[2],
   paddingInline: vars.space[3],
@@ -40,24 +32,32 @@ const boxStyle = {
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-} satisfies CSSProperties;
+});
 
-const headingStyle = {
+const CenteringFrame = styled.div({ inlineSize: '900px' });
+
+const PageFrame = styled.div({
+  minBlockSize: '100vh',
+  paddingBlock: vars.space[10],
+  backgroundColor: vars.color.bg,
+});
+
+const Heading = styled.h2({
   margin: 0,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize['2xl'],
   fontWeight: vars.fontWeight.semibold,
   lineHeight: vars.lineHeight.tight,
   color: vars.color.text,
-} satisfies CSSProperties;
+});
 
-const proseStyle = {
+const Prose = styled.p({
   margin: 0,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.md,
   lineHeight: vars.lineHeight.base,
   color: vars.color.textMuted,
-} satisfies CSSProperties;
+});
 
 const meta = {
   title: 'Layout/Container',
@@ -72,9 +72,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
 } satisfies Meta<typeof Container>;
@@ -98,7 +98,7 @@ export const Sizes: Story = {
     <>
       {SIZES.map((size) => (
         <Container {...args} key={size} size={size}>
-          <div style={boxStyle}>Container {size}</div>
+          <Box>Container {size}</Box>
         </Container>
       ))}
     </>
@@ -123,11 +123,11 @@ export const Sizes: Story = {
 
 export const Centering: Story = {
   render: (args) => (
-    <div style={centeringFrameStyle}>
+    <CenteringFrame>
       <Container {...args} size="sm">
-        <div style={boxStyle}>Centered container</div>
+        <Box>Centered container</Box>
       </Container>
-    </div>
+    </CenteringFrame>
   ),
   play: async ({ canvasElement }) => {
     const [container] = getContainers(canvasElement);
@@ -143,11 +143,11 @@ export const Padding: Story = {
   render: (args) => (
     <>
       <Container {...args} data-padding="default">
-        <div style={boxStyle}>Default padding</div>
+        <Box>Default padding</Box>
       </Container>
       {LAYOUT_SPACES.map((space) => (
         <Container {...args} key={space} paddingInline={space} data-padding={space}>
-          <div style={boxStyle}>Padding {space}</div>
+          <Box>Padding {space}</Box>
         </Container>
       ))}
     </>
@@ -167,18 +167,18 @@ export const Padding: Story = {
 
 function Page() {
   return (
-    <div style={pageStyle}>
+    <PageFrame>
       <Container size="sm">
         <Stack gap="lg">
-          <h2 style={headingStyle}>Workspace settings</h2>
-          <p style={proseStyle}>Rename the workspace or move it to another team.</p>
+          <Heading>Workspace settings</Heading>
+          <Prose>Rename the workspace or move it to another team.</Prose>
           <Flex gap="sm" justify="end">
             <Button variant="outline">Cancel</Button>
             <Button tone="accent">Save</Button>
           </Flex>
         </Stack>
       </Container>
-    </div>
+    </PageFrame>
   );
 }
 Page.displayName = 'Page';
@@ -223,12 +223,12 @@ export const RTL: Story = {
     <div dir="rtl">
       <Container {...args} dir="rtl" size="sm" paddingInline="lg">
         <Flex gap="md">
-          <div style={boxStyle} data-box>
+          <Box data-box>
             Item 1
-          </div>
-          <div style={boxStyle} data-box>
+          </Box>
+          <Box data-box>
             Item 2
-          </div>
+          </Box>
         </Flex>
       </Container>
     </div>

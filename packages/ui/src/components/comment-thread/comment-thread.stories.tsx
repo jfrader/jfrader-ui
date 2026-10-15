@@ -1,3 +1,5 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
@@ -82,21 +84,7 @@ const COMMENTS: readonly ThreadComment[] = Object.freeze([
   },
 ] satisfies ThreadComment[]);
 
-const frameStyle = css({ inlineSize: '36rem', maxInlineSize: '100%' });
-const narrowStyle = css({ inlineSize: '20rem' });
-const stackStyle = css({ display: 'grid', gap: vars.space[6] });
-const toolbarStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], marginBlockEnd: vars.space[4] });
-const fixtureStyle = css({
-  boxSizing: 'border-box',
-  minBlockSize: vars.space[8],
-  minInlineSize: vars.space[8],
-  paddingInline: vars.space[3],
-  color: vars.color.text,
-  backgroundColor: vars.color.surface,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.sm,
-  font: 'inherit',
-});
+// Slot and styling-precedence stories exercise the documented css and sx APIs.
 const slotBodyStyle = css({ textDecorationLine: 'underline' });
 // Each overrides a declaration the thread itself sets on that part.
 const slotHeaderStyle = css({ justifyContent: 'flex-start' });
@@ -182,11 +170,11 @@ function Deferred(args: CommentThreadProps) {
   const [proposal, setProposal] = useState<ThreadComment[] | null>(null);
   return (
     <>
-      <div css={toolbarStyle}>
-        <button type="button" css={fixtureStyle} onClick={() => proposal && setValue(proposal)}>
+      <Toolbar>
+        <FixtureButton type="button" onClick={() => proposal && setValue(proposal)}>
           Accept last change
-        </button>
-      </div>
+        </FixtureButton>
+      </Toolbar>
       <CommentThread
         {...args}
         value={value}
@@ -222,21 +210,41 @@ function LiveFeed(args: CommentThreadProps) {
     );
   return (
     <>
-      <div css={toolbarStyle}>
-        <button type="button" css={fixtureStyle} onClick={add}>
+      <Toolbar>
+        <FixtureButton type="button" onClick={add}>
           Add comment
-        </button>
-        <button type="button" css={fixtureStyle} onClick={() => setNow((current) => current + MINUTE)}>
+        </FixtureButton>
+        <FixtureButton type="button" onClick={() => setNow((current) => current + MINUTE)}>
           Tick clock
-        </button>
-        <button type="button" css={fixtureStyle} onClick={removeLeaf}>
+        </FixtureButton>
+        <FixtureButton type="button" onClick={removeLeaf}>
           Remove reply
-        </button>
-      </div>
+        </FixtureButton>
+      </Toolbar>
       <CommentThread {...args} value={value} now={now} />
     </>
   );
 }
+
+const Toolbar = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], marginBlockEnd: vars.space[4] });
+
+const FixtureButton = styled.button({
+  boxSizing: 'border-box',
+  minBlockSize: vars.space[8],
+  minInlineSize: vars.space[8],
+  paddingInline: vars.space[3],
+  color: vars.color.text,
+  backgroundColor: vars.color.surface,
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.sm,
+  font: 'inherit',
+});
+
+const Frame = styled.div({ inlineSize: '36rem', maxInlineSize: '100%' });
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[6] });
+
+const NarrowFrame = styled.div({ inlineSize: '20rem' });
 
 const meta = {
   title: 'Data display/CommentThread',
@@ -255,9 +263,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -334,10 +342,10 @@ export const Default: Story = {
 
 export const Sizes: Story = {
   render: (args) => (
-    <div css={stackStyle}>
+    <Stack>
       <CommentThread {...args} size="sm" title="Compact" />
       <CommentThread {...args} size="md" title="Regular" />
-    </div>
+    </Stack>
   ),
   play: async ({ canvas }) => {
     const compact = canvas.getByRole('region', { name: 'Compact' });
@@ -951,9 +959,9 @@ export const LongText: Story = {
   },
   decorators: [
     (Story) => (
-      <div css={narrowStyle}>
+      <NarrowFrame>
         <Story />
-      </div>
+      </NarrowFrame>
     ),
   ],
   play: async ({ canvas, canvasElement }) => {
@@ -1006,7 +1014,7 @@ export const AriaMerge: Story = {
 
 export const FalsyContent: Story = {
   render: (args) => (
-    <div css={stackStyle}>
+    <Stack>
       <CommentThread
         {...args}
         title={0}
@@ -1015,7 +1023,7 @@ export const FalsyContent: Story = {
       <CommentThread {...args} title={false} labels={{ thread: 'False title' }} />
       <CommentThread {...args} title={null} labels={{ thread: 'Null title' }} />
       <CommentThread {...args} title="" labels={{ thread: 'Empty title' }} />
-    </div>
+    </Stack>
   ),
   play: async ({ canvas, canvasElement }) => {
     const regions = canvas.getAllByRole('region');
@@ -1034,10 +1042,10 @@ export const FalsyContent: Story = {
 
 export const TwoThreads: Story = {
   render: (args) => (
-    <div css={stackStyle}>
+    <Stack>
       <CommentThread {...args} title="First" />
       <CommentThread {...args} title="Second" />
-    </div>
+    </Stack>
   ),
   play: async ({ canvas, canvasElement, userEvent }) => {
     const ids = Array.from(canvasElement.querySelectorAll('[id]'), (element) => element.id);
@@ -1088,11 +1096,11 @@ export const CollapseRestoresFocus: Story = {
     const [expanded, setExpanded] = useState(args.expandedValue!);
     return (
       <>
-        <div css={toolbarStyle}>
-          <button type="button" css={fixtureStyle} onClick={() => setExpanded([])}>
+        <Toolbar>
+          <FixtureButton type="button" onClick={() => setExpanded([])}>
             Collapse all
-          </button>
-        </div>
+          </FixtureButton>
+        </Toolbar>
         <CommentThread {...args} expandedValue={expanded} />
       </>
     );
@@ -1158,10 +1166,10 @@ export const SlotStyling: Story = {
     },
   },
   render: (args) => (
-    <div css={stackStyle}>
+    <Stack>
       <CommentThread {...args} css={consumerCss} sx={consumerSx} />
       <CommentThread {...args} title="Plain" slotProps={undefined} />
-    </div>
+    </Stack>
   ),
   play: async ({ canvas }) => {
     const styled = canvas.getByRole('region', { name: 'Review' });

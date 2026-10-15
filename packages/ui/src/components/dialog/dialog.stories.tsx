@@ -1,3 +1,5 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import type { ComponentPropsWithRef, CSSProperties, ReactNode, SyntheticEvent } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
@@ -13,7 +15,6 @@ import { ThemeRoot } from '../theme-root';
 import { Surface, type SurfacePartProps } from '../surface';
 import { Card } from '../card';
 import { css } from '../../styling/css';
-import { WithSx } from '../../styling/sx';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-dialog';
 import { Dialog, type DialogPanelProps, type DialogCompoundProps, type DialogEasyProps } from './index';
@@ -56,16 +57,16 @@ export const ClosingParentCancellation: Story = {
   },
 };
 
-const bodyStyle = {
+const Body = styled.p({
   margin: 0,
   fontSize: vars.textSize.sm,
-} satisfies CSSProperties;
+});
 
-const footerStyle = {
+const Footer = styled.div({
   display: 'flex',
   justifyContent: 'flex-end',
   marginBlockStart: vars.space[5],
-} satisfies CSSProperties;
+});
 
 const meta = {
   title: 'Surfaces/Dialog',
@@ -308,11 +309,12 @@ function easyModeTypeContracts() {
 }
 void easyModeTypeContracts;
 
-const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
+const AdapterMaterial = styled.div({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
+// Shell and panel override stories exercise the documented slot css and sx APIs.
 const shellStyleOverride = css({ outlineOffset: vars.space[3] });
 const panelSizeOverride = css({ inlineSize: '240px' });
 function DialogPaper({ className, ...props }: SurfacePartProps) {
-  return <WithSx styles={adapterMaterial} className={className}>{(classes) => <div {...props} className={classes} />}</WithSx>;
+  return <AdapterMaterial {...props} className={className} />;
 }
 
 function rootAdapterStory(component: DialogPanelProps['component']): Story {
@@ -429,10 +431,10 @@ function DialogExample(props: DialogCompoundProps) {
       <Dialog.Content>
         <Dialog.Title>{TITLE}</Dialog.Title>
         <Dialog.Description>{DESCRIPTION}</Dialog.Description>
-        <p style={bodyStyle}>Your display name appears on comments and mentions.</p>
-        <div style={footerStyle}>
+        <Body>Your display name appears on comments and mentions.</Body>
+        <Footer>
           <Dialog.Close>Close</Dialog.Close>
-        </div>
+        </Footer>
       </Dialog.Content>
     </Dialog>
   );
@@ -469,7 +471,7 @@ function ComposedDialog(props: DialogCompoundProps) {
       <Dialog.Content>
         <Dialog.Title>{DELETE_LABEL}</Dialog.Title>
         <Dialog.Description>Your profile and saved drafts are removed.</Dialog.Description>
-        <div style={footerStyle}>
+        <Footer>
           <Dialog.Close
             render={(closeProps) => (
               <Button {...closeProps} variant="outline" render={(buttonProps) => <button {...buttonProps} />}>
@@ -477,7 +479,7 @@ function ComposedDialog(props: DialogCompoundProps) {
               </Button>
             )}
           />
-        </div>
+        </Footer>
       </Dialog.Content>
     </Dialog>
   );

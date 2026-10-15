@@ -1,3 +1,5 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { StrictMode, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
@@ -12,8 +14,6 @@ import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
 import { Surface, type SurfacePartProps } from '../surface';
 import { Card } from '../card';
-import { css } from '../../styling/css';
-import { WithSx } from '../../styling/sx';
 import {
   DialogStack,
   useDialogStack,
@@ -23,20 +23,12 @@ import {
   type DialogStackPageRecord,
 } from './index';
 
-const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const SHEET_PEEK = Number.parseFloat(base.size.dialogStackSheetPeek);
 const DIALOG_PEEK = Number.parseFloat(base.size.dialogStackDialogPeek);
 const BREAKPOINT = Number.parseFloat(base.size.dialogStackBreakpoint);
 
-const headerStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: vars.space[2],
-} satisfies CSSProperties;
-
-const containerStyle = {
+const Container = styled.div({
   position: 'relative',
   inlineSize: '480px',
   blockSize: '440px',
@@ -45,7 +37,27 @@ const containerStyle = {
   borderRadius: vars.radius.lg,
   padding: vars.space[4],
   boxSizing: 'border-box',
-} satisfies CSSProperties;
+});
+
+const Header = styled.div({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
+
+const ResizableFrame = styled(Container)({ maxInlineSize: 'none' });
+const CompactContainer = styled(Container)({ blockSize: '160px', inlineSize: '200px' });
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[3] });
+
+const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
+
+const Prose = styled.p({ margin: 0 });
+
+const WrappingRow = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
+
+const Row = styled.div({ display: 'flex', gap: vars.space[2] });
 
 const meta = {
   title: 'Surfaces/DialogStack',
@@ -128,7 +140,7 @@ type Story = Omit<StoryObj<DialogStackCompoundProps>, 'render' | 'play'> & {
 };
 
 function DeclarationScopeFixture({ contained = false, ...props }: DialogStackCompoundProps) {
-  return <div style={containerStyle}>
+  return <Container>
     <DialogStack {...props} contained={contained} defaultValue={['scope']} variant="dialog">
       <ThemeRoot theme="light" tokens={{ radius: { lg: '3rem' } }}>
         <DialogStack.Content value="scope" data-testid="declaration-panel">
@@ -137,7 +149,7 @@ function DeclarationScopeFixture({ contained = false, ...props }: DialogStackCom
         </DialogStack.Content>
       </ThemeRoot>
     </DialogStack>
-  </div>;
+  </Container>;
 }
 
 export const StackDeclarationScopePortal: Story = {
@@ -157,12 +169,13 @@ export const StackDeclarationScopeContained: Story = {
   args: { contained: true, children: null },
 };
 
-const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
+const AdapterMaterial = styled.div({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
 function StackPaper({ className, ...props }: SurfacePartProps) {
-  return <WithSx styles={adapterMaterial} className={className}>{(classes) => <div {...props} className={classes} />}</WithSx>;
+  return <AdapterMaterial {...props} className={className} />;
 }
 
 function rootAdapterStory(component: DialogStackContentProps['component']): Story {
+  // The slot style deliberately challenges the host-owned depth custom property API.
   const customization: Partial<DialogStackContentProps> = {
     component,
     slotProps: { root: {
@@ -214,20 +227,20 @@ function Levels({ contentProps = {}, body, footer = false, ...props }: LevelsPro
     <DialogStack {...props}>
       <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
       <DialogStack.Content value="settings" {...contentProps.settings}>
-        <div style={headerStyle}>
+        <Header>
           <DialogStack.Title>Settings</DialogStack.Title>
           <DialogStack.Close label="Close all" />
-        </div>
+        </Header>
         <DialogStack.Description>Manage your workspace preferences.</DialogStack.Description>
         <TextField label="Workspace name" />
         <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
         {body}
       </DialogStack.Content>
       <DialogStack.Content value="account" {...contentProps.account}>
-        <div style={headerStyle}>
+        <Header>
           <DialogStack.Back label="Back to Settings" />
           <DialogStack.Close label="Close all" />
-        </div>
+        </Header>
         <DialogStack.Title>Account</DialogStack.Title>
         <DialogStack.Description>Sign-in details for this workspace.</DialogStack.Description>
         <DialogStack.Trigger value="password">Change password</DialogStack.Trigger>
@@ -238,10 +251,10 @@ function Levels({ contentProps = {}, body, footer = false, ...props }: LevelsPro
         )}
       </DialogStack.Content>
       <DialogStack.Content value="password" {...contentProps.password}>
-        <div style={headerStyle}>
+        <Header>
           <DialogStack.Back label="Back to Account" />
           <DialogStack.Close label="Close all" />
-        </div>
+        </Header>
         <DialogStack.Title>Change password</DialogStack.Title>
         <TextField label="New password" type="password" />
       </DialogStack.Content>
@@ -343,10 +356,10 @@ const EASY_PAGES: readonly DialogStackPageRecord[] = [
     description: 'Manage your workspace preferences.',
     close: 'Close settings',
     content: (
-      <div style={{ display: 'grid', gap: vars.space[3] }}>
+      <Stack>
         <TextField label="Workspace name" defaultValue="Apollo" />
         <DialogStack.Trigger value="account">Account settings</DialogStack.Trigger>
-      </div>
+      </Stack>
     ),
   },
   {
@@ -654,7 +667,7 @@ export const DialogLayout: Story = {
 
 function ResizableContainer({ children }: { children: (setWidth: (width: number) => void) => ReactNode }) {
   const [width, setWidth] = useState(400);
-  return <div style={{ ...containerStyle, inlineSize: `${width}px`, maxInlineSize: 'none' }}>{children(setWidth)}</div>;
+  return <ResizableFrame style={{ inlineSize: `${width}px` }}>{children(setWidth)}</ResizableFrame>;
 }
 ResizableContainer.displayName = 'ResizableContainer';
 
@@ -663,16 +676,16 @@ export const AutoResize: Story = {
     <ResizableContainer>
       {(setWidth) => (
         <>
-          <button type="button" style={FIXTURE_BUTTON} onClick={() => setWidth(400)}>
+          <FixtureButton type="button" onClick={() => setWidth(400)}>
             Narrow
-          </button>
+          </FixtureButton>
           <Levels
             {...args}
             contained
             body={
-              <button type="button" style={FIXTURE_BUTTON} onClick={() => setWidth(BREAKPOINT + 80)}>
+              <FixtureButton type="button" onClick={() => setWidth(BREAKPOINT + 80)}>
                 Widen
-              </button>
+              </FixtureButton>
             }
           />
         </>
@@ -696,14 +709,14 @@ export const AutoResize: Story = {
 
 function ContainedFixture(args: LevelsProps) {
   return (
-    <div style={{ display: 'grid', gap: vars.space[3] }}>
-      <button type="button" style={FIXTURE_BUTTON}>
+    <Stack>
+      <FixtureButton type="button" >
         Page action
-      </button>
-      <div style={containerStyle}>
+      </FixtureButton>
+      <Container>
         <Levels {...args} contained />
-      </div>
-    </div>
+      </Container>
+    </Stack>
   );
 }
 ContainedFixture.displayName = 'ContainedFixture';
@@ -784,9 +797,9 @@ function LongCopy() {
   return (
     <>
       {Array.from({ length: 80 }, (_, index) => (
-        <p key={index} style={{ margin: 0 }}>
+        <Prose key={index} >
           Notification rule {index + 1}: mentions and assigned issues.
-        </p>
+        </Prose>
       ))}
     </>
   );
@@ -948,9 +961,9 @@ export const NativeFormClose: Story = {
       {...args}
       body={
         <form method="dialog">
-          <button type="submit" style={FIXTURE_BUTTON}>
+          <FixtureButton type="submit" >
             Apply
-          </button>
+          </FixtureButton>
         </form>
       }
     />
@@ -1086,13 +1099,13 @@ export const FalsyContent: Story = {
     <>
       {FALSY_CONTENT.map((value) => (
         <DialogStack key={String(value)} {...args} contained defaultValue={['sheet']}>
-          <div style={{ ...containerStyle, blockSize: '160px', inlineSize: '200px' }} data-value={JSON.stringify(value)}>
+          <CompactContainer data-value={JSON.stringify(value)}>
             <DialogStack.Content value="sheet" aria-label={`Sheet ${JSON.stringify(value)}`}>
               <DialogStack.Title>{value}</DialogStack.Title>
               <DialogStack.Description>{value}</DialogStack.Description>
               <DialogStack.Footer>{value}</DialogStack.Footer>
             </DialogStack.Content>
-          </div>
+          </CompactContainer>
         </DialogStack>
       ))}
     </>
@@ -1127,33 +1140,33 @@ export const FalsyContent: Story = {
 function HookControls() {
   const { value, push, pop, popTo, close } = useDialogStack();
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] }}>
+    <WrappingRow>
       <output>{value.join(' > ')}</output>
-      <button type="button" style={FIXTURE_BUTTON} onClick={() => push('account')}>
+      <FixtureButton type="button" onClick={() => push('account')}>
         push account
-      </button>
-      <button type="button" style={FIXTURE_BUTTON} onClick={() => push('password')}>
+      </FixtureButton>
+      <FixtureButton type="button" onClick={() => push('password')}>
         push password
-      </button>
-      <button type="button" style={FIXTURE_BUTTON} onClick={() => push('missing')}>
+      </FixtureButton>
+      <FixtureButton type="button" onClick={() => push('missing')}>
         push missing
-      </button>
-      <button type="button" style={FIXTURE_BUTTON} onClick={() => push('settings')}>
+      </FixtureButton>
+      <FixtureButton type="button" onClick={() => push('settings')}>
         push settings
-      </button>
-      <button type="button" style={FIXTURE_BUTTON} onClick={() => popTo('account')}>
+      </FixtureButton>
+      <FixtureButton type="button" onClick={() => popTo('account')}>
         popTo account
-      </button>
-      <button type="button" style={FIXTURE_BUTTON} onClick={() => popTo('missing')}>
+      </FixtureButton>
+      <FixtureButton type="button" onClick={() => popTo('missing')}>
         popTo missing
-      </button>
-      <button type="button" style={FIXTURE_BUTTON} onClick={pop}>
+      </FixtureButton>
+      <FixtureButton type="button" onClick={pop}>
         pop
-      </button>
-      <button type="button" style={FIXTURE_BUTTON} onClick={close}>
+      </FixtureButton>
+      <FixtureButton type="button" onClick={close}>
         close
-      </button>
-    </div>
+      </FixtureButton>
+    </WrappingRow>
   );
 }
 HookControls.displayName = 'HookControls';
@@ -1176,14 +1189,14 @@ HookFixture.displayName = 'HookFixture';
 function HookOutside() {
   const { pop, push } = useDialogStack();
   return (
-    <div style={{ display: 'flex', gap: vars.space[2] }}>
-      <button type="button" style={FIXTURE_BUTTON} onClick={() => push('settings')}>
+    <Row>
+      <FixtureButton type="button" onClick={() => push('settings')}>
         Open settings
-      </button>
-      <button type="button" style={FIXTURE_BUTTON} onClick={pop}>
+      </FixtureButton>
+      <FixtureButton type="button" onClick={pop}>
         Pop empty
-      </button>
-    </div>
+      </FixtureButton>
+    </Row>
   );
 }
 HookOutside.displayName = 'HookOutside';
@@ -1266,9 +1279,9 @@ function RemovableFixture(props: Omit<DialogStackCompoundProps, 'children'>) {
       {mounted && (
         <DialogStack.Content value="account">
           <DialogStack.Title>Account</DialogStack.Title>
-          <button type="button" style={FIXTURE_BUTTON} onClick={() => setMounted(false)}>
+          <FixtureButton type="button" onClick={() => setMounted(false)}>
             Remove sheet
-          </button>
+          </FixtureButton>
         </DialogStack.Content>
       )}
     </DialogStack>
@@ -1302,9 +1315,9 @@ export const RemovedActiveSheet: Story = {
 export const KeyboardNavigation: Story = {
   render: (args) => (
     <>
-      <button type="button" style={FIXTURE_BUTTON}>
+      <FixtureButton type="button" >
         Before
-      </button>
+      </FixtureButton>
       <Levels {...args} />
     </>
   ),
@@ -1512,9 +1525,9 @@ function NestedPopoverBody() {
       <Popover>
         <Popover.Trigger>Member options</Popover.Trigger>
         <Popover.Content aria-label="Member options">
-          <button type="button" style={FIXTURE_BUTTON}>
+          <FixtureButton type="button" >
             Make admin
-          </button>
+          </FixtureButton>
         </Popover.Content>
       </Popover>
       <div ref={setHost} />
@@ -1677,17 +1690,17 @@ function UnmountFixture(props: Omit<DialogStackCompoundProps, 'children'>) {
   const [mounted, setMounted] = useState(true);
   return (
     <>
-      <button type="button" style={FIXTURE_BUTTON} onClick={() => setMounted(true)}>
+      <FixtureButton type="button" onClick={() => setMounted(true)}>
         Mount
-      </button>
+      </FixtureButton>
       {mounted && (
         <DialogStack {...props}>
           <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
           <DialogStack.Content value="settings">
             <DialogStack.Title>Settings</DialogStack.Title>
-            <button type="button" style={FIXTURE_BUTTON} onClick={() => setMounted(false)}>
+            <FixtureButton type="button" onClick={() => setMounted(false)}>
               Remove stack
-            </button>
+            </FixtureButton>
           </DialogStack.Content>
         </DialogStack>
       )}
@@ -1821,9 +1834,9 @@ function DisconnectedInvokerFixture(props: Omit<DialogStackCompoundProps, 'child
       <DialogStack.Content value="account">
         <DialogStack.Back label="Back to Settings" />
         <DialogStack.Title>Account</DialogStack.Title>
-        <button type="button" style={FIXTURE_BUTTON} onClick={() => setLinked(false)}>
+        <FixtureButton type="button" onClick={() => setLinked(false)}>
           Unlink account
-        </button>
+        </FixtureButton>
       </DialogStack.Content>
     </DialogStack>
   );

@@ -106,6 +106,11 @@ const USAGE = `const rangeMessages = {
 
 <DateRangePicker label="Report period" placeholder="Choose dates" locale="en-GB" messages={rangeMessages} />`;
 
+function LightThemeRoot(props: Omit<ComponentPropsWithRef<typeof ThemeRoot>, 'theme'>) {
+  return <ThemeRoot {...props} theme="light" />;
+}
+const LightScope = styled(LightThemeRoot)({ padding: vars.space[4], backgroundColor: vars.color.bg });
+
 const meta: Meta<DateRangePickerProps> = {
   title: 'Pickers/DateRangePicker',
   component: DateRangePicker,
@@ -1609,10 +1614,10 @@ export const MotionLight: Story = {
 function ScopedHost({ children }: { children: ReactNode }) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
-    <ThemeRoot theme="light" portalContainer={host} style={{ padding: vars.space[4], backgroundColor: vars.color.bg }}>
+    <LightScope portalContainer={host}>
       {children}
       <div ref={setHost} data-overlay-host="" />
-    </ThemeRoot>
+    </LightScope>
   );
 }
 ScopedHost.displayName = 'ScopedHost';
@@ -1764,6 +1769,7 @@ function CustomRangeSummary(props: ComponentPropsWithRef<'span'>) {
 }
 
 export const RefsAndStyling: Story = {
+  // This story exercises the documented css, sx and slot precedence APIs.
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => (
     <DateRangePicker {...args}>
