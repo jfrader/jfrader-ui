@@ -103,10 +103,22 @@ export interface FilterToolbarActiveFiltersSlotProps {
   remove?: StyleSlot;
 }
 
+export interface FilterToolbarActiveFiltersSlots {
+  /** Groups the active filter chips. */
+  list?: ComponentType<StyleSlot>;
+  /** Displays an active filter chip. */
+  chip?: ComponentType<StyleSlot>;
+  /** Displays the filter label and value. */
+  label?: ComponentType<StyleSlot>;
+  /** Removes an active filter. */
+  remove?: ComponentType<StyleSlot>;
+}
+
 export interface FilterToolbarActiveFiltersProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   empty?: ReactNode;
   slotProps?: FilterToolbarActiveFiltersSlotProps;
+  slots?: FilterToolbarActiveFiltersSlots;
 }
 
 export interface FilterToolbarClearProps extends Omit<ButtonProps, 'children' | 'onClick' | 'render'> {
@@ -682,25 +694,31 @@ function Controls({ children, className, sx, ...rest }: FilterToolbarControlsPro
 
 Controls.displayName = 'FilterToolbar.Controls';
 
-function ActiveFilters({ empty, slotProps, className, sx, ...rest }: FilterToolbarActiveFiltersProps) {
+function ActiveFilters({ empty, slotProps, slots, className, sx, ...rest }: FilterToolbarActiveFiltersProps) {
+  const List = slots?.list ?? 'ul';
+  const Chip = slots?.chip ?? 'li';
+  const Label = slots?.label ?? 'span';
+  const Remove = slots?.remove ?? 'button';
   const { value, disabled, messages, remove } = useToolbar('ActiveFilters');
   return (
     <WithSx className={className} styles={rowStyle} sx={sx}>
       {(className) => (
         <div {...rest} data-ui="filter-toolbar-active-filters" className={className}>
           {value.length > 0 ? (
-            <ul className={slotProps?.list?.className} css={[rowStyle, listStyle, slotProps?.list?.css]}>
+            <List {...slotProps?.list} className={slotProps?.list?.className} css={[rowStyle, listStyle, slotProps?.list?.css]}>
               {value.map((filter) => (
-                <li
+                <Chip
+                  {...slotProps?.chip}
                   key={filter.id}
                   className={slotProps?.chip?.className}
                   css={[chipStyle, slotProps?.chip?.css]}
                 >
-                  <span className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.css]}>
+                  <Label {...slotProps?.label} className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.css]}>
                     <span css={fieldStyle}>{filter.label}: </span>
                     <span css={valueStyle}>{filter.valueLabel ?? filter.value}</span>
-                  </span>
+                  </Label>
                   <Button
+                    {...slotProps?.remove}
                     variant="ghost"
                     size="sm"
                     disabled={disabled}
@@ -711,14 +729,14 @@ function ActiveFilters({ empty, slotProps, className, sx, ...rest }: FilterToolb
                     css={[removeStyle, slotProps?.remove?.css]}
                     onClick={(event) => remove(filter, event.currentTarget)}
                     render={(props) => (
-                      <button {...props} type="button" disabled={disabled}>
+                      <Remove {...props} type="button" disabled={disabled}>
                         <span aria-hidden="true">×</span>
-                      </button>
+                      </Remove>
                     )}
                   />
-                </li>
+                </Chip>
               ))}
-            </ul>
+            </List>
           ) : isRenderable(empty) ? (
             empty
           ) : null}

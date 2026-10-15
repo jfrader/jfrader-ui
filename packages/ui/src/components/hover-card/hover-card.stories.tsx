@@ -292,6 +292,12 @@ export const EasyControlled: StoryObj<HoverCardEasyProps> = {
 function SlotContent(props: ComponentPropsWithRef<typeof HoverCard.Content>) {
   return <HoverCard.Content {...props} data-slot="hover-card-content" />;
 }
+function ProfileAvatar(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="profile-avatar" />;
+}
+function ProfileIdentity(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="profile-identity" />;
+}
 export const CustomSlots: StoryObj<HoverCardEasyProps> = {
   ...Default,
   name: 'Easy mode custom slotProps',
@@ -301,7 +307,7 @@ export const CustomSlots: StoryObj<HoverCardEasyProps> = {
     slotProps: {
       trigger: { className: 'custom-trigger' },
       content: { className: 'custom-content' },
-      profile: { className: 'custom-profile' },
+      profile: { className: 'custom-profile', slots: { avatar: ProfileAvatar, identity: ProfileIdentity } },
     },
   },
   play: async ({ canvasElement, userEvent }) => {
@@ -319,6 +325,9 @@ export const CustomSlots: StoryObj<HoverCardEasyProps> = {
 
     const profile = card.querySelector('[data-ui="hover-card-profile"]');
     await expect(profile).toHaveClass('custom-profile');
+    await settled(card);
+    await expect(profile!.querySelector('[data-slot="profile-avatar"]')).toHaveAttribute('aria-hidden', 'true');
+    await expect(profile!.querySelector('[data-slot="profile-identity"]')).toBeVisible();
 
     await userEvent.unhover(trigger);
     await sleep(CLOSE_DELAY + TIMER_MARGIN);

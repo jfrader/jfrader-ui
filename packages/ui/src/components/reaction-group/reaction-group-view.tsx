@@ -35,7 +35,7 @@ export interface ReactionGroupViewProps extends Omit<ComponentPropsWithRef<'div'
   pickerId: string;
   partProps?: { className?: string; css?: Interpolation<Theme> };
   overlay?: boolean;
-  rootComponent?: ComponentType<ComponentPropsWithRef<'div'>>;
+  component?: ComponentType<ComponentPropsWithRef<'div'>>;
 }
 
 const PICKER_GAP = 4;
@@ -75,9 +75,9 @@ const closeGlyph = (
 
 export function ReactionGroupView({
   ui: owner, counts, offered, number, labels, readOnly, disabled, pickerOpen, onPickerOpenChange,
-  onToggle, onSelect = onToggle, pickerId, partProps, overlay = false, rootComponent, className, sx, ...rootProps
+  onToggle, onSelect = onToggle, pickerId, partProps, overlay = false, component, className, sx, ...rootProps
 }: ReactionGroupViewProps) {
-  const Root = rootComponent ?? 'div';
+  const Root = component ?? 'div';
   const rootUi = owner ? `${owner}-reactions` : 'reaction-group';
   const pickerUi = owner ? `${owner}-picker` : 'reaction-group-picker';
   const addRef = useRef<HTMLButtonElement>(null);

@@ -153,7 +153,14 @@ export interface ChatThreadComposerProps extends Omit<ComponentPropsWithRef<'div
   size?: ChatThreadSize;
   labels?: Partial<ChatThreadLabels>;
   slotProps?: ChatThreadComposerSlotProps;
-  slots?: {
+  slots?: ChatThreadComposerSlots;
+}
+
+export interface ChatThreadComposerSlots {
+    /** Displays the message field. */
+    textarea?: ComponentType<ThreadTextareaProps>;
+    /** Sends the message. */
+    sendButton?: ComponentType<ThreadButtonProps>;
     /** Lists staged attachments. */
     tray?: ComponentType<ThreadPartProps>;
     /** Displays a staged attachment. */
@@ -168,7 +175,6 @@ export interface ChatThreadComposerProps extends Omit<ComponentPropsWithRef<'div
     fileInput?: ComponentType<NonNullable<ChatThreadComposerSlotProps['fileInput']>>;
     /** Removes a staged attachment. */
     removeButton?: ComponentType<ThreadButtonProps>;
-  };
 }
 export interface ChatThreadProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   participants: readonly ChatParticipant[];
@@ -193,7 +199,14 @@ export interface ChatThreadProps extends Omit<ComponentPropsWithRef<'div'>, 'def
   size?: ChatThreadSize;
   labels?: Partial<ChatThreadLabels>;
   slotProps?: ChatThreadSlotProps;
-  slots?: {
+  slots?: ChatThreadSlots;
+}
+
+export interface ChatThreadSlots {
+    /** Holds the scrollable viewport. */
+    viewport?: ComponentType<ThreadPartProps>;
+    /** Lists the message attachments. */
+    attachments?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'ul'>>;
     /** Holds the scrollable transcript. */
     scroller?: ComponentType<ThreadPartProps>;
     /** Announces arriving messages. */
@@ -212,7 +225,6 @@ export interface ChatThreadProps extends Omit<ComponentPropsWithRef<'div'>, 'def
     reaction?: ComponentType<ThreadPartProps>;
     /** Scrolls to the latest message. */
     jumpButton?: ComponentType<ThreadButtonProps>;
-  };
 }
 
 const UI = 'chat-thread';
@@ -459,6 +471,7 @@ function ChatComposer({
             pending={pending || awaiting !== null}
             size={size}
             submitProps={slotProps?.sendButton}
+            slots={{ submit: slots?.sendButton, textarea: slots?.textarea }}
             textareaProps={{
               ...textarea,
               'aria-describedby': [textarea?.['aria-describedby'], error ? errorId : undefined].filter(Boolean).join(' ') || undefined,
@@ -767,6 +780,7 @@ function ChatThreadRoot({
   const typingNames = uniqueBy(typing, (id) => id).filter((id) => id !== currentUserId && people.has(id)).map((id) => people.get(id)!.name);
   const typingText = typingNames.length ? labels.typing(formatters.people.format(typingNames)) : '';
   const acceptedDraft = ack && messages.some((message) => message.id === ack.id) ? ack.draft : null;
+  const Viewport = slots?.viewport ?? 'div';
   const Scroller = slots?.scroller ?? 'div';
   const Log = slots?.log ?? 'div';
   const List = slots?.list ?? 'ol';
@@ -774,7 +788,7 @@ function ChatThreadRoot({
   const JumpButton = slots?.jumpButton ?? Button;
   return <WithSx className={className} styles={[rootStyle, threadSizeStyles[size]]} sx={sx}>
     {(rootClass) => <div {...rest} ref={rootRefs} className={rootClass} data-ui={UI} data-size={size}>
-      <div data-ui={`${UI}-viewport`} className={slotProps?.viewport?.className} css={[viewportStyle, slotProps?.viewport?.css]}>
+      <Viewport {...slotProps?.viewport} data-ui={`${UI}-viewport`} className={slotProps?.viewport?.className} css={[viewportStyle, slotProps?.viewport?.css]}>
         <Scroller {...slotProps?.scroller} ref={scrollerRef} tabIndex={0} role="group" aria-label={labels.transcript} data-ui={`${UI}-scroller`} className={slotProps?.scroller?.className} css={[scrollerStyle, slotProps?.scroller?.css]} onScroll={(event) => {
           const el = event.currentTarget;
           const nearBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= PIN_THRESHOLD;
@@ -831,7 +845,7 @@ function ChatThreadRoot({
                     onRetry={onRetry ? () => retry(message.id) : undefined}
                     retryLoading={retrying === message.id}
                     labels={labels}
-                    slots={{ bubble: slots?.bubble, time: slots?.time, receipt: slots?.receipt, reactions: slots?.reaction }}
+                    slots={{ bubble: slots?.bubble, time: slots?.time, receipt: slots?.receipt, reactions: slots?.reaction, attachments: slots?.attachments }}
                     slotProps={{
                       bubble: slotProps?.bubble,
                       time: slotProps?.time,
@@ -846,7 +860,7 @@ function ChatThreadRoot({
           </Log>
         </Scroller>
         {away ? <JumpButton variant="outline" size="sm" {...slotProps?.jumpButton} css={jumpStyle} onClick={(event) => { slotProps?.jumpButton?.onClick?.(event); if (!event.defaultPrevented) jump(); }}>{unread ? labels.newMessages(unread) : labels.jumpToLatest}</JumpButton> : null}
-      </div>
+      </Viewport>
       <div aria-hidden="true" css={typingStyle}>{typingText}</div>
       <div role="status" aria-atomic="true" css={visuallyHiddenStyle}>{typingText}</div>
       {composer ? <ChatComposer locale={locale} size={size} labels={labels} {...composerProps} disabled={disabled || composerProps?.disabled} onSend={send} acknowledged={acceptedDraft} onDraftInteraction={abandonProposal} /> : null}

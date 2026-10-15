@@ -96,7 +96,13 @@ export interface CodeBlockProps extends Omit<ComponentPropsWithRef<'section'>, '
   /** Syntax highlighting loader, read when `code` or `language` changes. */
   highlight?: CodeHighlightLoader;
   slotProps?: CodeBlockSlotProps;
-  slots?: {
+  slots?: CodeBlockSlots;
+  css?: Interpolation<Theme>;
+}
+
+export interface CodeBlockSlots {
+    /** Holds the gutter and source text. */
+    sourceFrame?: ComponentType<CodeBlockSlotPartProps>;
     /** Holds the label, language and copy action. */
     header?: ComponentType<CodeBlockSlotPartProps>;
     /** Displays the filename or caption. */
@@ -111,8 +117,6 @@ export interface CodeBlockProps extends Omit<ComponentPropsWithRef<'section'>, '
     code?: ComponentType<CodeBlockSlotPartProps>;
     /** Expands or collapses the source. */
     toggle?: ComponentType<CodeBlockSlotPartProps>;
-  };
-  css?: Interpolation<Theme>;
 }
 
 // Inner corners stay concentric with the outer surface.
@@ -291,6 +295,7 @@ export function CodeBlock({
   'aria-labelledby': labelledBy,
   ...rest
 }: CodeBlockProps) {
+  const SourceFrame = slots?.sourceFrame ?? 'div';
   const Header = slots?.header ?? 'header';
   const Label = slots?.label ?? 'span';
   const Language = slots?.language ?? 'span';
@@ -408,7 +413,8 @@ export function CodeBlock({
               />
             )}
           </Header>
-          <div
+          <SourceFrame
+            {...slotProps?.sourceFrame}
             data-ui="code-block-source-frame"
             data-state={collapsible ? (effectiveOpen ? 'expanded' : 'collapsed') : undefined}
             className={slotProps?.sourceFrame?.className}
@@ -452,7 +458,7 @@ export function CodeBlock({
                     : visibleLines.join('')}
               </Code>
             </Pre>
-          </div>
+          </SourceFrame>
           {collapsible && (
             <Toggle
               {...slotProps?.toggle}

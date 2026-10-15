@@ -1,4 +1,4 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -6,6 +6,60 @@ import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { PhotoGrid, type PhotoGridPhoto } from './index';
 import { sceneSource } from '../scene';
+import { ChromeAction, type ChromeActionProps } from '../viewer-chrome/viewer-chrome';
+
+function ReplacementPhotoContainer(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replaced="container" />;
+}
+function ReplacementPhotoHeader(props: ComponentPropsWithRef<'header'>) {
+  return <header {...props} data-replaced="header" />;
+}
+function ReplacementPhotoTitle(props: ComponentPropsWithRef<'h2'>) {
+  return <h2 {...props} data-replaced="title" />;
+}
+function ReplacementPhotoList(props: ComponentPropsWithRef<'ul'>) {
+  return <ul {...props} data-replaced="list" />;
+}
+function ReplacementPhotoItem(props: ComponentPropsWithRef<'li'>) {
+  return <li {...props} data-replaced="item" />;
+}
+function ReplacementPhotoButton(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-replaced="button" />;
+}
+function ReplacementPhotoViewer(props: ComponentPropsWithRef<'dialog'>) {
+  return <dialog {...props} data-replaced="viewer" />;
+}
+function ReplacementViewerFavorite(props: Partial<ChromeActionProps>) {
+  return <ChromeAction {...props} label={props.label ?? ''} icon={props.icon} data-replaced="viewer-favorite" />;
+}
+
+export const ReplacePhotoParts: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true, defaultValue: 'p1',
+    slots: {
+      header: ReplacementPhotoHeader, title: ReplacementPhotoTitle, density: ReplacementPhotoContainer,
+      list: ReplacementPhotoList, item: ReplacementPhotoItem, photo: ReplacementPhotoButton,
+      favorite: ReplacementPhotoButton, viewer: ReplacementPhotoViewer, stage: ReplacementPhotoContainer,
+      filmstrip: ReplacementPhotoContainer, controls: ReplacementPhotoContainer, status: ReplacementPhotoContainer,
+      viewerFavorite: ReplacementViewerFavorite,
+    },
+    slotProps: { favorite: { title: 'Tile favorite' }, viewerFavorite: { title: 'Viewer favorite' } },
+  },
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    const viewer = canvasElement.querySelector<HTMLElement>('[data-ui="photo-grid-viewer"]');
+    await expect(viewer).toHaveAttribute('data-replaced', 'viewer');
+    await expect(viewer).toHaveAttribute('open');
+    await expect(canvasElement.querySelectorAll('[data-ui="photo-grid-favorite"][title="Tile favorite"]')).toHaveLength(photos.length);
+    const favorite = canvasElement.querySelector<HTMLElement>('[data-replaced="viewer-favorite"]');
+    await expect(favorite).toHaveAttribute('title', 'Viewer favorite');
+    await expect(favorite).toHaveAttribute('aria-pressed', 'false');
+    for (const part of canvasElement.querySelectorAll<HTMLElement>('[data-replaced]')) {
+      await expect(part.className).not.toBe('');
+    }
+    await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
+  },
+};
 
 const photos: PhotoGridPhoto[] = [
   // landscape (wide)
@@ -864,7 +918,7 @@ export const InvokerRemoval: Story = {
     await expect(canvas.getByRole('dialog')).toHaveAccessibleName('Photo unavailable');
     await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
     await expect(tiles(canvasElement)[0]).toHaveAccessibleName('Valley Floor');
-    await expect(canvasElement.ownerDocument.activeElement).toBe(tiles(canvasElement)[0]);
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(tiles(canvasElement)[0]));
     await new Promise((resolve) => setTimeout(resolve, 500));
   },
 };

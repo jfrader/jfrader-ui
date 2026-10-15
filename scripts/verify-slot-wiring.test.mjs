@@ -61,6 +61,17 @@ test('a dynamic lookup counts when the key is named as a literal', () => {
   }
 });
 
+test('a local alias of the slots map counts', () => {
+  const root = fixture({
+    [family()]: `export interface WidgetSlots {\n  presets?: ComponentType<X>;\n}\nconst Presets = contentSlots?.presets ?? 'div';\n`,
+  });
+  try {
+    assert.deepEqual(findUnwiredKeys(path.join(root, 'packages/ui/src/components')), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('the root seam and the internal customization bags are exempt', () => {
   const root = fixture({
     [family()]: `export interface WidgetSlots {\n  root?: ComponentType<X>;\n  component?: ComponentType<X>;\n}\n`,

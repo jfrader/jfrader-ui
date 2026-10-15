@@ -7,6 +7,29 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
 import { RadioCards, type RadioCardsCompoundProps as RadioCardsProps, type RadioCardsEasyProps } from './index';
 
+function ReplacementCardPart(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replaced="true" />;
+}
+
+export const ReplaceItemParts: Story = {
+  render: () => (
+    <RadioCards defaultValue="standard" aria-label="Delivery">
+      <RadioCards.Item value="standard" label="Standard" description="Four days" icon="S" meta="Free"
+        slots={{ control: ReplacementCardPart, indicator: ReplacementCardPart, icon: ReplacementCardPart, label: ReplacementCardPart, description: ReplacementCardPart, meta: ReplacementCardPart }}
+        slotProps={{ control: { title: 'Delivery option' } }} />
+    </RadioCards>
+  ),
+  play: async ({ canvasElement }) => {
+    const parts = canvasElement.querySelectorAll<HTMLElement>('[data-replaced]');
+    await expect(parts).toHaveLength(6);
+    for (const part of parts) {
+      await expect(part.className).not.toBe('');
+      await expect(part).toHaveAttribute('data-ui');
+    }
+    await expect(canvasElement.querySelector('[data-ui="radio-cards-control"]')).toHaveAttribute('title', 'Delivery option');
+  },
+};
+
 const usage = `<RadioCards name="shipping" defaultValue="standard" layout="list" required>
   <RadioCards.Label>Shipping speed</RadioCards.Label>
   <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />

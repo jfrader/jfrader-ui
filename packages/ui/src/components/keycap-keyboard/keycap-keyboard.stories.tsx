@@ -498,3 +498,21 @@ function RefExample(args: KeycapKeyboardProps) {
   const [visible, setVisible] = useState(true);
   return <div style={stackStyle}>{visible && <KeycapKeyboard {...args} />}<Button onClick={() => setVisible(false)}>Remove board</Button></div>;
 }
+
+function KeyboardRow(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="keyboard-row" />;
+}
+
+export const RowSlot: Story = {
+  args: { slots: { row: KeyboardRow }, slotProps: { row: { className: 'custom-row' } } },
+  play: async ({ canvasElement }) => {
+    const rows = board(canvasElement).querySelectorAll<HTMLElement>('[data-ui="keycap-keyboard-row"]');
+    await expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      await expect(row).toHaveAttribute('data-slot', 'keyboard-row');
+      await expect(row).toHaveClass('custom-row');
+      await expect(getComputedStyle(row).display).toBe('grid');
+      await expect(row.style.gridTemplateColumns).not.toBe('');
+    }
+  },
+};

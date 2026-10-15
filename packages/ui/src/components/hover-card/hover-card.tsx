@@ -181,14 +181,7 @@ export interface HoverCardProfileProps extends Omit<ComponentPropsWithRef<'div'>
   meta?: ReactNode;
   /** Locale for numeric stats; defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
-  slots?: {
-    /** Displays the biography. */
-    bio?: ComponentType<HoverCardProfilePartProps>;
-    /** Displays the profile statistics. */
-    stats?: ComponentType<HoverCardProfilePartProps<'dl'>>;
-    /** Displays profile metadata. */
-    meta?: ComponentType<HoverCardProfilePartProps>;
-  };
+  slots?: HoverCardProfileSlots;
   slotProps?: {
     /** Decorative avatar element; `aria-hidden` is not configurable. */
     avatar?: Omit<HoverCardProfilePartProps<'span'>, 'aria-hidden'>;
@@ -201,6 +194,19 @@ export interface HoverCardProfileProps extends Omit<ComponentPropsWithRef<'div'>
     /** Footer metadata element displaying additional details. */
     meta?: HoverCardProfilePartProps;
   };
+}
+
+export interface HoverCardProfileSlots {
+  /** Displays the decorative avatar. */
+  avatar?: ComponentType<Omit<HoverCardProfilePartProps<'span'>, 'aria-hidden'>>;
+  /** Groups the name and subtitle. */
+  identity?: ComponentType<HoverCardProfilePartProps>;
+  /** Displays the biography. */
+  bio?: ComponentType<HoverCardProfilePartProps>;
+  /** Displays the profile statistics. */
+  stats?: ComponentType<HoverCardProfilePartProps<'dl'>>;
+  /** Displays profile metadata. */
+  meta?: ComponentType<HoverCardProfilePartProps>;
 }
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
@@ -669,6 +675,8 @@ function HoverCardProfile({
   ...rest
 }: HoverCardProfileProps) {
   const Bio = slots?.bio ?? 'div';
+  const AvatarPart = slots?.avatar ?? 'span';
+  const Identity = slots?.identity ?? 'div';
   const Stats = slots?.stats ?? 'dl';
   const Meta = slots?.meta ?? 'div';
   const numberFormat = stats.some((stat) => typeof stat.value === 'number')
@@ -681,13 +689,13 @@ function HoverCardProfile({
         <div {...rest} ref={ref} data-ui="hover-card-profile" className={className}>
           <div css={headerStyle}>
             {/* Decorative: the visible name beside it is the one identity announcement. */}
-            <span {...slotProps?.avatar} aria-hidden="true" css={[avatarStyle, slotProps?.avatar?.css]}>
+            <AvatarPart {...slotProps?.avatar} aria-hidden="true" css={[avatarStyle, slotProps?.avatar?.css]}>
               {isRenderable(avatar) ? avatar : <Avatar name={name} src={src} size="lg" />}
-            </span>
-            <div {...slotProps?.identity} css={[identityStyle, slotProps?.identity?.css]}>
+            </AvatarPart>
+            <Identity {...slotProps?.identity} css={[identityStyle, slotProps?.identity?.css]}>
               <div css={nameStyle}>{name}</div>
               {isRenderable(subtitle) && <div css={mutedStyle}>{subtitle}</div>}
-            </div>
+            </Identity>
           </div>
           {isRenderable(bio) && (
             <Bio {...slotProps?.bio} css={[mutedStyle, slotProps?.bio?.css]}>

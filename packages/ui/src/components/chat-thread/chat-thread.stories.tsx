@@ -5,6 +5,32 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ChatThread, type ChatMessage, type ChatThreadProps } from './index';
+import { Button, type ButtonProps } from '../button';
+import { Textarea, type TextareaProps } from '../textarea';
+
+function ReplacementViewport(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="custom-viewport" />;
+}
+
+function ReplacementTextarea(props: TextareaProps) {
+  return <Textarea {...props} data-testid="custom-textarea" />;
+}
+
+function ReplacementSend(props: ButtonProps) {
+  return <Button {...props} data-testid="custom-send" />;
+}
+
+export const InteriorReplacements: StoryObj<typeof ChatThread> = {
+  render: (args) => <ChatThread {...args} slots={{ viewport: ReplacementViewport }} composerProps={{ slots: { textarea: ReplacementTextarea, sendButton: ReplacementSend } }} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const viewport = canvas.getByTestId('custom-viewport');
+    await expect(viewport).toHaveAttribute('data-ui', 'chat-thread-viewport');
+    await expect(viewport.className).not.toBe('');
+    await expect(canvas.getByTestId('custom-textarea')).toHaveAttribute('aria-label', 'Message');
+    await expect(canvas.getByTestId('custom-send')).toHaveAttribute('data-action', 'submit');
+  },
+};
 
 const NOW = Date.parse('2026-10-12T12:00:00Z');
 const MINUTE = 60_000;

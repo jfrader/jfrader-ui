@@ -462,9 +462,17 @@ export const TargetReplacement: Story = {
     });
   },
 };
+function SlotRoot(props: ComponentPropsWithRef<'section'>) {
+  return <section {...props} data-slot="announcement-bar-root" />;
+}
+
+function SlotContent(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="announcement-bar-content" />;
+}
+
 export const Slots: Story = {
   args: {
-    slots: { next: SlotNext, previous: SlotPrevious },
+    slots: { root: SlotRoot, content: SlotContent, next: SlotNext, previous: SlotPrevious },
     slotProps: {
       root: { css: { paddingInline: vars.space[2] } },
       message: { css: { fontWeight: vars.fontWeight.semibold } },
@@ -473,6 +481,12 @@ export const Slots: Story = {
     sx: { paddingInline: vars.space[4] },
   },
   play: async ({ canvasElement }) => {
+    for (const name of ['root', 'content']) {
+      const replacement = canvasElement.querySelector(`[data-slot="announcement-bar-${name}"]`)!;
+      await expect(replacement).toBeInTheDocument();
+      await expect(replacement.className).not.toBe('');
+      await expect(replacement).toHaveAttribute('data-ui', name === 'root' ? 'announcement-bar' : 'announcement-bar-content');
+    }
     for (const name of ['next', 'previous']) {
       const replacement = canvasElement.querySelector(`[data-slot="announcement-bar-${name}"]`)!;
       await expect(replacement).toBeInTheDocument();

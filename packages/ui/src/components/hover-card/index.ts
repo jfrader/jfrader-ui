@@ -7,6 +7,7 @@ export type {
   HoverCardGroupProps,
   HoverCardProfilePartProps,
   HoverCardProfileProps,
+  HoverCardProfileSlots,
   HoverCardProps,
   HoverCardSlotProps,
   HoverCardStat,

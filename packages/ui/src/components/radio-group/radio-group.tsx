@@ -72,9 +72,19 @@ export interface RadioGroupEasyProps extends Omit<RadioGroupCompoundProps, 'chil
 }
 export type RadioGroupProps = RadioGroupCompoundProps | RadioGroupEasyProps;
 
-export interface RadioGroupRadioPartProps {
+export interface RadioGroupRadioPartProps extends ComponentPropsWithRef<'span'> {
   className?: string;
   css?: Interpolation<Theme>;
+}
+export interface RadioGroupRadioSlots {
+  /** Outer label wrapping the radio and text. */
+  root?: ComponentType<ComponentPropsWithRef<'label'> & { css?: Interpolation<Theme> }>;
+  /** Text naming the radio option. */
+  label?: ComponentType<RadioGroupRadioPartProps>;
+  /** Circle displaying the selection state. */
+  control?: ComponentType<RadioGroupRadioPartProps>;
+  /** Supporting text below the option. */
+  description?: ComponentType<RadioGroupRadioPartProps>;
 }
 
 export interface RadioGroupRadioProps
@@ -83,9 +93,10 @@ export interface RadioGroupRadioProps
   value: string;
   label?: ReactNode;
   description?: ReactNode;
+  slots?: RadioGroupRadioSlots;
   slotProps?: {
     /** Outer label wrapping the radio control and text. */
-    root?: RadioGroupRadioPartProps;
+    root?: ComponentPropsWithRef<'label'> & { css?: Interpolation<Theme> };
     /** Text label displayed alongside the radio button. */
     label?: RadioGroupRadioPartProps;
     /** Visual circular indicator displaying the radio dot. */
@@ -231,6 +242,7 @@ function RadioGroupRadio({
   disabled: disabledProp,
   onChange,
   slotProps,
+  slots,
   className,
   sx,
   dir,
@@ -238,6 +250,10 @@ function RadioGroupRadio({
   'aria-describedby': ariaDescribedByProp,
   ...rest
 }: RadioGroupRadioProps) {
+  const Root = slots?.root ?? 'label';
+  const Label = slots?.label ?? 'span';
+  const Control = slots?.control ?? 'span';
+  const Description = slots?.description ?? 'span';
   const { value: selectedValue, setValue, name, disabled: groupDisabled } = useRadioGroupContext('Radio');
   const disabled = groupDisabled || disabledProp;
 
@@ -264,7 +280,7 @@ function RadioGroupRadio({
       sx={sx}
     >
       {(className) => (
-        <label data-ui="radio-group-radio" dir={dir} className={className}>
+        <Root {...slotProps?.root} css={undefined} data-ui="radio-group-radio" dir={dir} className={className}>
           <span css={[choiceRowStyle, rowFloorStyle]}>
             <input
               {...rest}
@@ -280,27 +296,29 @@ function RadioGroupRadio({
               onChange={handleChange}
               css={choiceInputStyle}
             />
-            <span
+            <Control
+              {...slotProps?.control}
               aria-hidden="true"
               className={slotProps?.control?.className}
               css={[circleStyle, slotProps?.control?.css]}
             />
             {hasLabel && (
-              <span id={labelId} className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.css]}>
+              <Label {...slotProps?.label} id={labelId} className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.css]}>
                 {label}
-              </span>
+              </Label>
             )}
           </span>
           {hasDescription && (
-            <span
+            <Description
+              {...slotProps?.description}
               id={descriptionId}
               className={slotProps?.description?.className}
               css={[descriptionStyle, slotProps?.description?.css]}
             >
               {description}
-            </span>
+            </Description>
           )}
-        </label>
+        </Root>
       )}
     </WithSx>
   );

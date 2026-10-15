@@ -285,16 +285,33 @@ function CustomComboboxRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-testid="custom-root" />;
 }
 
+function CustomComboboxLabel(props: ComponentPropsWithRef<'label'>) {
+  return <label {...props} data-testid="custom-label" />;
+}
+
+function CustomComboboxDescription(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-testid="custom-description" />;
+}
+
+function CustomComboboxError(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-testid="custom-error" />;
+}
+
 export const CustomSlots: EasyStory = {
   render: () => (
     <Combobox
       label="Fruit"
+      description="Pick a fruit"
+      error="Required"
       options={FRUITS}
       defaultValue="apple"
       slots={{
         root: CustomComboboxRoot,
         input: CustomComboboxInput,
         list: CustomComboboxList,
+        label: CustomComboboxLabel,
+        description: CustomComboboxDescription,
+        error: CustomComboboxError,
       }}
       slotProps={{
         root: { 'data-testid': 'custom-root' },
@@ -307,6 +324,11 @@ export const CustomSlots: EasyStory = {
     await expect(root).toBeInTheDocument();
     await expect(root).toHaveAttribute('data-ui', 'combobox');
     await expect(canvas.getByTestId('custom-input')).toBeInTheDocument();
+    for (const name of ['label', 'description', 'error']) {
+      const element = canvas.getByTestId(`custom-${name}`);
+      await expect(element.className).not.toBe('');
+      await expect(element.tagName).toBe(name === 'label' ? 'LABEL' : 'SPAN');
+    }
   },
 };
 

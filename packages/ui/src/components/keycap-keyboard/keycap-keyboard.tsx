@@ -20,6 +20,15 @@ export interface KeycapKeyboardSlotProps {
   css?: Interpolation<Theme>;
 }
 
+export interface KeycapKeyboardSlots {
+  /** Groups a horizontal row of keycaps. */
+  row?: ComponentType<KeycapKeyboardSlotProps>;
+  /** Displays a keyboard key. */
+  key?: ComponentType<KeycapKeyboardSlotProps>;
+  /** Displays the key legend. */
+  legend?: ComponentType<KeycapKeyboardSlotProps>;
+}
+
 export interface KeycapKeyboardProps extends Omit<ComponentPropsWithRef<'div'>,
   'children' | 'defaultValue' | 'onChange' | 'tabIndex' | 'role' | 'onKeyDown' | 'onKeyUp'>, SxProps {
   layout?: 'compact' | 'letters';
@@ -30,12 +39,7 @@ export interface KeycapKeyboardProps extends Omit<ComponentPropsWithRef<'div'>,
   eventTarget?: HTMLInputElement | HTMLTextAreaElement | null;
   tone?: 'neutral' | 'accent';
   paused?: boolean;
-  slots?: {
-    /** Displays a keyboard key. */
-    key?: ComponentType<KeycapKeyboardSlotProps>;
-    /** Displays the key legend. */
-    legend?: ComponentType<KeycapKeyboardSlotProps>;
-  };
+  slots?: KeycapKeyboardSlots;
   slotProps?: {
     /** Horizontal row container grouping keycaps. */
     row?: KeycapKeyboardSlotProps;
@@ -201,6 +205,7 @@ export function KeycapKeyboard({
 
   const rowUnits = rows.map((row) => row.reduce((sum, key) => sum + unitsOf(key), 0));
   const Key = slots?.key ?? Kbd;
+  const Row = slots?.row ?? 'div';
   const Legend = slots?.legend ?? 'span';
   const widest = Math.max(DEFAULT_UNITS, ...rowUnits);
   const maxGaps = Math.max(0, ...rows.map((row) => row.length - 1));
@@ -209,7 +214,7 @@ export function KeycapKeyboard({
       {(rootClass) => (
         <div {...rest} ref={ref} aria-hidden="true" data-ui="keycap-keyboard" data-tone={tone} className={rootClass} style={style}>
           {rows.map((row, rowIndex) => (
-            <div key={rowIndex} data-ui="keycap-keyboard-row" className={slotProps?.row?.className}
+            <Row {...slotProps?.row} key={rowIndex} data-ui="keycap-keyboard-row" className={slotProps?.row?.className}
               css={[rowStyle, slotProps?.row?.css]} style={{
                 gridTemplateColumns: row.map((key) => `minmax(0, ${unitsOf(key)}fr)`).join(' '),
                 inlineSize: `calc((100% - ${maxGaps} * ${vars.space[1]}) * ${(rowUnits[rowIndex] ?? 0) / widest} + ${Math.max(0, row.length - 1)} * ${vars.space[1]})`,
@@ -221,7 +226,7 @@ export function KeycapKeyboard({
                     css={[legendStyle, slotProps?.legend?.css]}>{key.legend}</Legend>}
                 </Key>
               ))}
-            </div>
+            </Row>
           ))}
         </div>
       )}

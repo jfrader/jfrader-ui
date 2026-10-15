@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
@@ -29,6 +30,7 @@ import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import {
   ChromeAction,
+  type ChromeActionProps,
   chromeIcons,
   filmstripStyle,
   Glyph,
@@ -48,10 +50,10 @@ export interface PhotoGridPhoto {
   detail?: ReactNode;
 }
 
-type Slot<Tag extends keyof React.JSX.IntrinsicElements> = Omit<ComponentPropsWithRef<Tag>, 'children'> & {
+type Slot<Tag extends keyof React.JSX.IntrinsicElements> = ComponentPropsWithRef<Tag> & {
   css?: Interpolation<Theme>;
 };
-type ActionSlot = Omit<Slot<'button'>, 'type' | 'disabled' | 'aria-pressed'>;
+type ActionSlot = Slot<'button'>;
 
 export interface PhotoGridSlotProps {
   /** Header bar holding the title and density controls. */
@@ -68,6 +70,8 @@ export interface PhotoGridSlotProps {
   photo?: ActionSlot;
   /** Button element toggling the photo favorite state. */
   favorite?: ActionSlot;
+  /** Favorite action in the full photo viewer. */
+  viewerFavorite?: Partial<ChromeActionProps> & { css?: Interpolation<Theme> };
   /** Dialog element for the full photo viewer modal. */
   viewer?: Omit<Slot<'dialog'>, 'open'>;
   /** Container element displaying the active photo in the viewer. */
@@ -78,6 +82,35 @@ export interface PhotoGridSlotProps {
   controls?: Slot<'div'>;
   /** Status element displaying the photo index and total count. */
   status?: Slot<'div'>;
+}
+
+export interface PhotoGridSlots {
+  /** Header holding the title and density controls. */
+  header?: ComponentType<Slot<'header'>>;
+  /** Heading displaying the grid title. */
+  title?: ComponentType<Slot<'h2'>>;
+  /** Container holding density controls. */
+  density?: ComponentType<Slot<'div'>>;
+  /** List of photo tiles. */
+  list?: ComponentType<Slot<'ul'>>;
+  /** List item surrounding a photo. */
+  item?: ComponentType<Slot<'li'>>;
+  /** Button opening the photo viewer. */
+  photo?: ComponentType<ActionSlot>;
+  /** Button toggling a tile favorite. */
+  favorite?: ComponentType<ActionSlot>;
+  /** Favorite action in the full photo viewer. */
+  viewerFavorite?: ComponentType<NonNullable<PhotoGridSlotProps['viewerFavorite']>>;
+  /** Dialog displaying the full photo viewer. */
+  viewer?: ComponentType<Omit<Slot<'dialog'>, 'open'>>;
+  /** Container displaying the active photo. */
+  stage?: ComponentType<Slot<'div'>>;
+  /** Thumbnail strip for browsing photos. */
+  filmstrip?: ComponentType<Slot<'div'>>;
+  /** Container holding viewer navigation controls. */
+  controls?: ComponentType<Slot<'div'>>;
+  /** Live region announcing grid updates. */
+  status?: ComponentType<Slot<'div'>>;
 }
 
 export interface PhotoGridLabels {
@@ -131,6 +164,7 @@ export interface PhotoGridProps
   labels?: Partial<PhotoGridLabels>;
   locale?: Intl.LocalesArgument;
   slotProps?: PhotoGridSlotProps;
+  slots?: PhotoGridSlots;
 }
 
 declare const process: { env: { NODE_ENV?: string } };
@@ -504,12 +538,13 @@ function PhotoImage({
 }
 
 function PhotoButton({
+  component: Component = 'button',
   ref,
   register,
   ...props
-}: ComponentPropsWithRef<'button'> & { register: (node: HTMLButtonElement | null) => (() => void) | void }) {
+}: ComponentPropsWithRef<'button'> & { component?: 'button' | PhotoGridSlots['photo']; register: (node: HTMLButtonElement | null) => (() => void) | void }) {
   const mergedRef = useMergeRefs([ref, register]);
-  return <button {...props} ref={mergedRef} />;
+  return <Component {...props} ref={mergedRef} />;
 }
 
 interface ViewerProps {
@@ -523,6 +558,7 @@ interface ViewerProps {
   labels: PhotoGridLabels;
   format: Intl.NumberFormat;
   slots?: PhotoGridSlotProps;
+  components?: PhotoGridSlots;
   restore: () => void;
 }
 
@@ -537,8 +573,14 @@ function PhotoViewer({
   labels,
   format,
   slots,
+  components,
   restore,
 }: ViewerProps) {
+  const Viewer = components?.viewer ?? 'dialog';
+  const Stage = components?.stage ?? 'div';
+  const Controls = components?.controls ?? 'div';
+  const Filmstrip = components?.filmstrip ?? 'div';
+  const ViewerFavorite = components?.viewerFavorite ?? ChromeAction;
   const id = useId();
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -546,7 +588,7 @@ function PhotoViewer({
   const mergedStageRef = useMergeRefs([stageRef, slots?.stage?.ref]);
   const lifecycle = controller;
   const viewerSlot = omitNativeOpen(slots?.viewer ?? {});
-  const { 'aria-label': favoriteLabel, css: favoriteCss, ...favoriteSlot } = slots?.favorite ?? {};
+  const { label: favoriteLabel, css: favoriteCss, ...favoriteSlot } = slots?.viewerFavorite ?? {};
   const native = useNativeDialog(
     { ...lifecycle, open: open && photos.length > 0 },
     {
@@ -676,7 +718,7 @@ function PhotoViewer({
   };
 
   return (
-    <dialog
+    <Viewer
       {...viewerSlot}
       ref={native.ref}
       data-ui="photo-grid-viewer"
@@ -709,7 +751,7 @@ function PhotoViewer({
             onClick={lifecycle.requestClose}
           />
         </header>
-        <div
+        <Stage
           {...slots?.stage}
           ref={mergedStageRef}
           data-ui="photo-grid-stage"
@@ -823,7 +865,7 @@ function PhotoViewer({
           ) : (
             <span css={fallbackStyle}>{labels.unavailable}</span>
           )}
-        </div>
+        </Stage>
         <div css={[barStyle, bottomBarStyle]}>
           {hasDetail && (
             <p key={photo.id} id={`${id}-detail`} css={[detailStyle, viewerDetailStyle]}>
@@ -834,7 +876,7 @@ function PhotoViewer({
             <div role="status" aria-live="polite" aria-atomic="true" css={counterStyle}>
               {position}
             </div>
-            <div {...slots?.controls} css={[controlsStyle, slots?.controls?.css]}>
+            <Controls {...slots?.controls} css={[controlsStyle, slots?.controls?.css]}>
               <ChromeAction
                 label={labels.previous}
                 icon={chromeIcons.previous}
@@ -877,9 +919,9 @@ function PhotoViewer({
                   <ChromeAction label={labels.panDown} icon={chromeIcons.panDown} onClick={() => pan(0, -PAN_STEP)} />
                 </>
               )}
-            </div>
+            </Controls>
             {photo && (
-              <ChromeAction
+              <ViewerFavorite
                 {...favoriteSlot}
                 label={favoriteLabel ?? labels.favorite(photo.title, favorite)}
                 icon={<StarGlyph filled={favorite} />}
@@ -893,7 +935,7 @@ function PhotoViewer({
             )}
           </div>
           {photos.length > 1 && (
-            <div
+            <Filmstrip
               {...slots?.filmstrip}
               data-ui="photo-grid-filmstrip"
               role="group"
@@ -920,11 +962,11 @@ function PhotoViewer({
                   />
                 </button>
               ))}
-            </div>
+            </Filmstrip>
           )}
         </div>
       </div>
-    </dialog>
+    </Viewer>
   );
 }
 
@@ -949,11 +991,19 @@ export function PhotoGrid({
   labels: labelOverrides,
   locale,
   slotProps,
+  slots,
   className,
   sx,
   onKeyDown,
   ...rest
 }: PhotoGridProps) {
+  const Header = slots?.header ?? 'header';
+  const Title = slots?.title ?? 'h2';
+  const Density = slots?.density ?? 'div';
+  const List = slots?.list ?? 'ul';
+  const Item = slots?.item ?? 'li';
+  const Favorite = slots?.favorite ?? 'button';
+  const Status = slots?.status ?? 'div';
   const id = useId();
   const steps = normalizeSteps(densitySteps);
   const [densitySeed] = useState(() => nearestDensity(defaultDensity, steps));
@@ -1218,25 +1268,25 @@ export function PhotoGrid({
               data-columns={columns}
               onKeyDown={onKeyDown}
             >
-              <header
+              <Header
                 {...slotProps?.header}
                 role={slotProps?.header?.role ?? 'presentation'}
                 css={[headerStyle, slotProps?.header?.css]}
               >
                 <div css={headingStyle}>
-                  <h2
+                  <Title
                     {...slotProps?.title}
                     id={slotProps?.title?.id ?? `${id}-title`}
                     css={[titleStyle, slotProps?.title?.css]}
                   >
                     {title}
-                  </h2>
+                  </Title>
                   <p css={summaryStyle}>
                     <span>{labels.photoCount(format.format(photos.length), photos.length)}</span>
                     <span>{labels.columns(format.format(density), density)}</span>
                   </p>
                 </div>
-                <div
+                <Density
                   {...slotProps?.density}
                   role="group"
                   aria-label={slotProps?.density?.['aria-label'] ?? labels.density}
@@ -1255,11 +1305,11 @@ export function PhotoGrid({
                       onClick={() => setDensity(step, { focus: false })}
                     />
                   ))}
-                </div>
-              </header>
+                </Density>
+              </Header>
               {photos.length ? (
                 <motion.div style={{ scale: preview, transformOrigin: previewOrigin }}>
-                  <ul
+                  <List
                     {...slotProps?.list}
                     ref={listMergedRef}
                     css={[listStyle, slotProps?.list?.css]}
@@ -1328,7 +1378,7 @@ export function PhotoGrid({
                     }}
                   >
                     {photos.map((photo, index) => (
-                      <li
+                      <Item
                         {...slotProps?.item}
                         key={photo.id}
                         data-photo-id={photo.id}
@@ -1347,6 +1397,7 @@ export function PhotoGrid({
                           css={itemStyle}
                         >
                           <PhotoButton
+                            component={slots?.photo}
                             {...slotProps?.photo}
                             ref={slotProps?.photo?.ref}
                             register={(node) => {
@@ -1391,7 +1442,7 @@ export function PhotoGrid({
                               />
                             </motion.div>
                           </PhotoButton>
-                          <button
+                          <Favorite
                             {...slotProps?.favorite}
                             type="button"
                             data-ui="photo-grid-favorite"
@@ -1411,16 +1462,16 @@ export function PhotoGrid({
                             }}
                           >
                             <StarGlyph filled={favorites.has(photo.id)} />
-                          </button>
+                          </Favorite>
                         </motion.div>
-                      </li>
+                      </Item>
                     ))}
-                  </ul>
+                  </List>
                 </motion.div>
               ) : (
                 <p css={detailStyle}>{labels.empty}</p>
               )}
-              <div
+              <Status
                 {...slotProps?.status}
                 role="status"
                 aria-live="polite"
@@ -1428,7 +1479,7 @@ export function PhotoGrid({
                 css={[statusStyle, slotProps?.status?.css]}
               >
                 {status}
-              </div>
+              </Status>
               <PhotoViewer
                 photos={photos}
                 selected={selected}
@@ -1440,6 +1491,7 @@ export function PhotoGrid({
                 labels={labels}
                 format={format}
                 slots={slotProps}
+                components={slots}
                 restore={restore}
               />
             </div>

@@ -1,4 +1,4 @@
-import { act, createRef, useState } from 'react';
+import { act, createRef, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, within, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -17,6 +17,40 @@ import {
   type SignaturePadHandle,
 } from './index';
 
+function ReplacementSignatureContainer(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replaced="container" />;
+}
+function ReplacementSignatureLabel(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replaced="label" />;
+}
+function ReplacementSignatureCanvas(props: ComponentPropsWithRef<'canvas'>) {
+  return <canvas {...props} data-replaced="canvas" />;
+}
+function ReplacementSignatureAction(props: ComponentPropsWithRef<typeof Button>) {
+  return <Button {...props} data-replaced="action" />;
+}
+
+export const ReplaceSignatureParts: Story = {
+  args: {
+    label: 'Sign here', hint: 'Draw your signature', description: 'Document signature', error: 'Signature required',
+    slots: {
+      root: ReplacementSignatureContainer, label: ReplacementSignatureLabel, canvas: ReplacementSignatureCanvas,
+      guide: ReplacementSignatureContainer, toolbar: ReplacementSignatureContainer, action: ReplacementSignatureAction,
+      description: ReplacementSignatureContainer, error: ReplacementSignatureContainer, status: ReplacementSignatureContainer,
+    },
+    slotProps: { canvas: { title: 'Signature canvas' } },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvasElement.querySelectorAll('[data-replaced="container"]')).toHaveLength(6);
+    const drawing = canvas.getByRole('img', { name: /Sign here/ });
+    await expect(drawing).toHaveAttribute('data-replaced', 'canvas');
+    await expect(drawing).toHaveAttribute('title', 'Signature canvas');
+    await expect(drawing).toHaveAttribute('aria-invalid', 'true');
+    await expect(drawing.className).not.toBe('');
+    await expect(canvas.getByRole('button', { name: 'Undo' })).toHaveAttribute('data-replaced', 'action');
+  },
+};
 const messages: SignaturePadMessages = {
   ink: 'Ink color',
   nib: 'Pen width',

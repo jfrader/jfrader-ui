@@ -572,16 +572,28 @@ const labelOverride = css({ fontWeight: vars.fontWeight.semibold });
 function SlotStatus(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-slot="hold-to-confirm-status" />;
 }
+function SlotFace(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="hold-to-confirm-face" />;
+}
+function SlotFill(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="hold-to-confirm-fill" />;
+}
+function SlotFillLabel(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="hold-to-confirm-fill-label" />;
+}
 export const SlotStyles: Story = {
   args: {
-    slots: { status: SlotStatus },
+    slots: { status: SlotStatus, face: SlotFace, fill: SlotFill, fillLabel: SlotFillLabel },
     icon: '×',
-    slotProps: { face: { css: faceOverride }, label: { css: labelOverride } },
+    slotProps: { face: { css: faceOverride }, fill: { css: faceOverride }, label: { css: labelOverride }, fillLabel: { css: labelOverride } },
     sx: { borderRadius: vars.radius.sm },
   },
   play: async ({ canvas }) => {
     const button = canvas.getByRole('button');
     const view = button.ownerDocument.defaultView!;
+    await expect(button.querySelectorAll('[data-slot="hold-to-confirm-face"]')).toHaveLength(1);
+    await expect(button.querySelectorAll('[data-slot="hold-to-confirm-fill-label"]')).toHaveLength(1);
+    await expect(button.querySelector('[data-slot="hold-to-confirm-fill"]')).toHaveAttribute('aria-hidden', 'true');
     await expect(view.getComputedStyle(button.firstElementChild!).columnGap).toBe('20px');
     await expect(
       view.getComputedStyle(button.querySelector('[data-ui="hold-to-confirm-fill"]')!).columnGap,

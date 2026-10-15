@@ -1,4 +1,4 @@
-import { StrictMode, useRef, useState } from 'react';
+import { StrictMode, useRef, useState, type ComponentPropsWithRef } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
@@ -747,5 +747,60 @@ export const RevokedRequestDropsFocusIntent: Story = {
     await expect(canvas.getByRole('textbox')).not.toHaveFocus();
     await expect(canvas.getByRole('group')).not.toHaveFocus();
     await expect(args.onItemOpenChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+function DetailHeading(props: ComponentPropsWithRef<'h3'>) {
+  return <h3 {...props} data-slot="detail-heading" />;
+}
+function DetailTrigger(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-slot="detail-trigger" />;
+}
+function DetailPanel(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="detail-panel" />;
+}
+function DetailLabel(props: ComponentPropsWithRef<'dt'>) {
+  return <dt {...props} data-slot="detail-label" />;
+}
+function DetailDescription(props: ComponentPropsWithRef<'dd'>) {
+  return <dd {...props} data-slot="detail-description" />;
+}
+function DetailSummary(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="detail-summary" />;
+}
+function DetailEdit(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-slot="detail-edit" />;
+}
+function DetailEditor(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="detail-editor" />;
+}
+
+export const InteriorSlots: Story = {
+  render: () => (
+    <EditableDetails>
+      <EditableDetails.Section title="Project" slots={{ heading: DetailHeading, trigger: DetailTrigger, panel: DetailPanel }}>
+        <EditableDetails.List>
+          <EditableDetails.Item label="Name" slots={{ label: DetailLabel, description: DetailDescription, summary: DetailSummary, edit: DetailEdit, editor: DetailEditor }} renderEditor={(props) => <DraftEditor {...props} />}>
+            Apollo
+          </EditableDetails.Item>
+        </EditableDetails.List>
+      </EditableDetails.Section>
+    </EditableDetails>
+  ),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'Project' });
+    await expect(trigger).toHaveAttribute('data-slot', 'detail-trigger');
+    const panel = canvasElement.querySelector('[data-slot="detail-panel"]');
+    await expect(panel).toHaveAttribute('hidden');
+    await expect(trigger).toHaveAttribute('aria-controls', panel!.id);
+    await userEvent.click(trigger);
+    for (const part of ['heading', 'label', 'description', 'summary', 'edit']) {
+      await expect(canvasElement.querySelector(`[data-slot="detail-${part}"]`)).toBeVisible();
+    }
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Name' }));
+    const editor = canvas.getByRole('group');
+    await expect(editor).toHaveAttribute('data-slot', 'detail-editor');
+    await expect(editor).toHaveAttribute('aria-labelledby', canvasElement.querySelector('[data-slot="detail-label"]')!.id);
+    await expect(canvas.getByRole('textbox')).toHaveFocus();
   },
 };

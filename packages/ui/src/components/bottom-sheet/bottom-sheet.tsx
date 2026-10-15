@@ -114,6 +114,10 @@ export interface BottomSheetSlotProps {
 }
 
 export interface BottomSheetSlots {
+  /** Replaces the native dialog shell. */
+  content?: ComponentType<BottomSheetContentProps>;
+  /** Replaces the sheet panel. */
+  panel?: ComponentType<BottomSheetPanelProps>;
   /** Replaces the panel's adopted div; renders a `div` by default. */
   root?: NonNullable<BottomSheetPanelProps['slots']>['root'];
   /** Replaces the button that opens the bottom sheet. */
@@ -377,6 +381,8 @@ function validateDetents(detents: readonly number[]) {
   }
 }
 function SheetRoot(props: BottomSheetProps & { nodeId?: string }) {
+  const Content = props.slots?.content ?? BottomSheetContent;
+  const Panel = props.slots?.panel ?? BottomSheetPanel;
   const Trigger = props.slots?.trigger ?? BottomSheetTrigger;
   const Header = props.slots?.header ?? BottomSheetHeader;
   const Handle = props.slots?.handle ?? BottomSheetHandle;
@@ -498,8 +504,8 @@ function SheetRoot(props: BottomSheetProps & { nodeId?: string }) {
       {'content' in props ? (
         <>
           <Trigger {...props.slotProps?.trigger}>{props.triggerLabel}</Trigger>
-          <BottomSheetContent {...props.slotProps?.content}>
-            <BottomSheetPanel {...rootProps} {...props.slotProps?.panel}
+          <Content {...props.slotProps?.content}>
+            <Panel {...rootProps} {...props.slotProps?.panel}
               component={props.component ?? props.slotProps?.panel?.component}
               slots={{ ...props.slotProps?.panel?.slots, root: props.slots?.root ?? props.slotProps?.panel?.slots?.root }}
               slotProps={{ root: props.slotProps?.root ?? props.slotProps?.panel?.slotProps?.root }}>
@@ -518,8 +524,8 @@ function SheetRoot(props: BottomSheetProps & { nodeId?: string }) {
               </Header>
               <Body {...props.slotProps?.body}>{props.content}</Body>
               {isRenderable(props.footer) && <Footer {...props.slotProps?.footer}>{props.footer}</Footer>}
-            </BottomSheetPanel>
-          </BottomSheetContent>
+            </Panel>
+          </Content>
         </>
       ) : (
         props.children

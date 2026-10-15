@@ -22,6 +22,27 @@ import {
 } from './index';
 
 const TITLE = 'Trip details';
+function ReplacementSheetContent(props: BottomSheetContentProps) {
+  return <BottomSheet.Content {...props} data-testid="custom-sheet-content" />;
+}
+
+function ReplacementSheetPanel(props: BottomSheetPanelProps) {
+  return <BottomSheet.Panel {...props} data-testid="custom-sheet-panel" />;
+}
+
+export const ShellAndPanelReplacements: StoryObj<typeof BottomSheet> = {
+  render: () => <BottomSheet triggerLabel="Open trip" title={TITLE} content="Trip itinerary" closeLabel="Close" defaultOpen slots={{ content: ReplacementSheetContent, panel: ReplacementSheetPanel }} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const shell = canvas.getByTestId('custom-sheet-content');
+    const panel = canvas.getByTestId('custom-sheet-panel');
+    await expect(shell.tagName).toBe('DIALOG');
+    await expect(shell).toHaveAttribute('open');
+    await expect(panel.getAttribute('data-ui')?.split(' ')).toContain('bottom-sheet-panel');
+    await expect(panel.className).not.toBe('');
+    await expect(within(panel).getByRole('heading', { name: TITLE })).toBeInTheDocument();
+  },
+};
 const TRIGGER = 'Open trip';
 const FIXTURE_BUTTON = {
   minHeight: '24px',

@@ -10,3 +10,4 @@ export type {
   RadioGroupRadioPartProps,
   RadioGroupRadioProps,
 } from './radio-group';
+export type { RadioGroupRadioSlots } from './radio-group';

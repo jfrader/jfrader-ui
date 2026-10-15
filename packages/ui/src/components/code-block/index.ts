@@ -2,6 +2,7 @@ export {
   CodeBlock,
   type CodeBlockProps,
   type CodeBlockSlotProps,
+  type CodeBlockSlots,
   type CodeBlockSlotPartProps,
   type CodeHighlightLines,
   type CodeHighlightLoader,

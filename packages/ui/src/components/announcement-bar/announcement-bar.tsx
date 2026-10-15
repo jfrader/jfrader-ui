@@ -76,22 +76,7 @@ export interface AnnouncementBarProps
   onAction?: (announcement: Announcement) => void;
   onCountdownEnd?: (announcement: Announcement) => void;
   dismissFocusRef?: RefObject<HTMLElement | null>;
-  slots?: {
-    /** Displays the announcement text. */
-    message?: ComponentType<NonNullable<NonNullable<AnnouncementBarProps['slotProps']>['message']>>;
-    /** Opens or performs the announcement action. */
-    action?: ComponentType<NonNullable<NonNullable<AnnouncementBarProps['slotProps']>['action']>>;
-    /** Shows the previous announcement. */
-    previous?: ComponentType<Slot<'button'>>;
-    /** Shows the next announcement. */
-    next?: ComponentType<Slot<'button'>>;
-    /** Pauses or resumes rotation. */
-    rotation?: ComponentType<Slot<'button'>>;
-    /** Dismisses the announcement. */
-    dismiss?: ComponentType<Slot<'button'>>;
-    /** Displays the remaining time. */
-    countdown?: ComponentType<Omit<Slot<'div'>, 'onClick'>>;
-  };
+  slots?: AnnouncementBarSlots;
   slotProps?: {
     /** Outer section element wrapping the announcement bar. */
     root?: Slot<'section'>;
@@ -114,6 +99,27 @@ export interface AnnouncementBarProps
     /** Compact timer indicating remaining announcement duration. Default: `Countdown`. */
     countdown?: Omit<Slot<'div'>, 'onClick'>;
   };
+}
+
+export interface AnnouncementBarSlots {
+    /** Holds the announcement bar. */
+    root?: ComponentType<Slot<'section'>>;
+    /** Holds the message, countdown and action. */
+    content?: ComponentType<Slot<'div'>>;
+    /** Displays the announcement text. */
+    message?: ComponentType<NonNullable<NonNullable<AnnouncementBarProps['slotProps']>['message']>>;
+    /** Opens or performs the announcement action. */
+    action?: ComponentType<NonNullable<NonNullable<AnnouncementBarProps['slotProps']>['action']>>;
+    /** Shows the previous announcement. */
+    previous?: ComponentType<Slot<'button'>>;
+    /** Shows the next announcement. */
+    next?: ComponentType<Slot<'button'>>;
+    /** Pauses or resumes rotation. */
+    rotation?: ComponentType<Slot<'button'>>;
+    /** Dismisses the announcement. */
+    dismiss?: ComponentType<Slot<'button'>>;
+    /** Displays the remaining time. */
+    countdown?: ComponentType<Omit<Slot<'div'>, 'onClick'>>;
 }
 
 const DEFAULT_INTERVAL = 6000;
@@ -302,6 +308,8 @@ export function AnnouncementBar({
   sx,
   ...rest
 }: AnnouncementBarProps) {
+  const Root = slots?.root ?? 'section';
+  const Content = slots?.content ?? 'div';
   const Message = slots?.message ?? 'span';
   const Timer = slots?.countdown ?? Countdown;
   const ActionLink = slots?.action ?? 'a';
@@ -459,7 +467,7 @@ export function AnnouncementBar({
       sx={sx}
     >
       {(rootClass) => (
-        <section
+        <Root
           {...rootProps}
           {...rest}
           ref={mergedRef}
@@ -549,7 +557,7 @@ export function AnnouncementBar({
                     },
                   )}
               </div>
-              <div
+              <Content
                 {...slotProps?.content}
                 id={contentId}
                 data-ui="announcement-bar-content"
@@ -617,7 +625,7 @@ export function AnnouncementBar({
                       </Button>
                     ))}
                 </div>
-              </div>
+              </Content>
               <div css={controlsStyle}>
                 {multiple && (controls || autoPlay) && (
                   <>
@@ -648,7 +656,7 @@ export function AnnouncementBar({
               </div>
             </div>
           </div>
-        </section>
+        </Root>
       )}
     </WithSx>
   );

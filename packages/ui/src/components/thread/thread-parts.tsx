@@ -86,7 +86,7 @@ export interface ThreadTimeProps {
   /** Id of the hidden full date, for the message's `aria-describedby`. */
   fullId: string;
   ui: string;
-  part?: ThreadPartProps;
+  part?: ThreadPartProps & ComponentPropsWithRef<'time'>;
   component?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'time'>>;
 }
 
@@ -99,11 +99,10 @@ const timeStyle = css({
 
 export function ThreadTime({ epoch, now, formatters, invalidLabel, id, fullId, ui: owner, part, component }: ThreadTimeProps) {
   const Time = component ?? 'time';
-  // The invalid-date branch renders a span, never the consumer's time replacement.
-  const InvalidTime = 'span';
+  const InvalidTime = component ?? 'span';
   if (epoch === null) {
     return (
-      <InvalidTime id={id} data-ui={ui(owner, 'time')} className={part?.className} css={[timeStyle, part?.css]}>
+      <InvalidTime {...part} id={id} data-ui={ui(owner, 'time')} className={part?.className} css={[timeStyle, part?.css]}>
         {invalidLabel}
       </InvalidTime>
     );
@@ -111,6 +110,7 @@ export function ThreadTime({ epoch, now, formatters, invalidLabel, id, fullId, u
   return (
     <>
       <Time
+        {...part}
         id={id}
         dateTime={new Date(epoch).toISOString()}
         data-ui={ui(owner, 'time')}
@@ -153,8 +153,8 @@ export interface ThreadMessageViewProps {
   };
   slots?: {
     article?: ThreadPartProps;
-    time?: ThreadPartProps;
-    avatar?: ThreadPartProps;
+    time?: ThreadPartProps & ComponentPropsWithRef<'time'>;
+    avatar?: ThreadPartProps & ComponentPropsWithRef<'span'>;
   };
   components?: {
     article?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'article'>>;
@@ -254,7 +254,7 @@ export function ThreadMessageView({
         >
           {/* The author's name is the adjacent text; the portrait only decorates it. */}
           {avatar !== null ? (
-            <AvatarColumn aria-hidden="true" className={slots?.avatar?.className} css={[avatarColumnStyle, slots?.avatar?.css]}>
+            <AvatarColumn {...slots?.avatar} aria-hidden="true" className={slots?.avatar?.className} css={[avatarColumnStyle, slots?.avatar?.css]}>
               {avatar !== undefined ? avatar : <Avatar name={author.name} src={author.avatar} size={avatarSizes[size]} />}
             </AvatarColumn>
           ) : null}
@@ -354,7 +354,7 @@ export function ThreadReactions({
       pickerId={pickerId}
       overlay={overlay}
       partProps={part}
-      rootComponent={component}
+      component={component}
       number={formatters.number}
     />
   );
@@ -392,7 +392,12 @@ export interface ThreadComposerProps {
   author?: ThreadAuthor;
   textareaProps?: ThreadTextareaProps;
   submitProps?: ThreadButtonProps;
-  part?: ThreadPartProps;
+  part?: ThreadPartProps & ComponentPropsWithRef<'div'>;
+  component?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'div'>>;
+  slots?: {
+    textarea?: ComponentType<ThreadTextareaProps>;
+    submit?: ComponentType<ThreadButtonProps>;
+  };
   /** Distinguishes composers inside one thread (`data-composer`). */
   kind: string;
   submitOnEnter?: boolean;
@@ -497,13 +502,19 @@ export function ThreadComposer({
   textareaProps,
   submitProps,
   part,
+  component,
+  slots,
   kind,
   submitOnEnter = false,
   allowEmpty = false,
   lockWhilePending = false,
 }: ThreadComposerProps) {
+  const Root = component ?? 'div';
+  const Field = slots?.textarea ?? Textarea;
+  const Submit = slots?.submit ?? Button;
   const baseId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
+  const containerRefs = useMergeRefs([containerRef, part?.ref]);
   const fieldRef = useRef<HTMLTextAreaElement>(null);
   const pendingCaret = useRef<number | null>(null);
   const [caret, setCaret] = useState<number | null>(null);
@@ -606,8 +617,9 @@ export function ThreadComposer({
   const showAvatar = author !== undefined;
 
   return (
-    <div
-      ref={containerRef}
+    <Root
+      {...part}
+      ref={containerRefs}
       data-ui={ui(owner, 'composer')}
       data-composer={kind}
       data-avatar={showAvatar}
@@ -620,7 +632,7 @@ export function ThreadComposer({
         </span>
       ) : null}
       <div css={composerFieldStyle}>
-        <Textarea
+        <Field
           aria-label={label}
           placeholder={placeholder}
           size={textareaSizes[size]}
@@ -651,7 +663,7 @@ export function ThreadComposer({
               {cancelLabel}
             </Button>
           ) : null}
-          <Button
+          <Submit
             variant="solid"
             tone="accent"
             size="sm"
@@ -666,7 +678,7 @@ export function ThreadComposer({
             }}
           >
             {submitLabel}
-          </Button>
+          </Submit>
         </div>
       </div>
       {open ? (
@@ -702,6 +714,6 @@ export function ThreadComposer({
           </div>
         </OverlayPortal>
       ) : null}
-    </div>
+    </Root>
   );
 }

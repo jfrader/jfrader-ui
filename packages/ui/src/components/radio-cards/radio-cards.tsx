@@ -12,7 +12,6 @@ import {
   useState,
   type ComponentPropsWithRef,
   type ComponentType,
-  type ComponentPropsWithoutRef,
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
@@ -83,7 +82,21 @@ export interface RadioCardsEasyProps extends Omit<RadioCardsCompoundProps, 'chil
   slotProps?: RadioCardsSlotProps;
 }
 export type RadioCardsProps = RadioCardsCompoundProps | RadioCardsEasyProps;
-export type RadioCardsPartProps = ComponentPropsWithoutRef<'span'> & { css?: Interpolation<Theme> };
+export type RadioCardsPartProps = ComponentPropsWithRef<'span'> & { css?: Interpolation<Theme> };
+export interface RadioCardsItemSlots {
+  /** Container surrounding the option content. */
+  control?: ComponentType<RadioCardsPartProps>;
+  /** Ring indicating the selected option. */
+  indicator?: ComponentType<RadioCardsPartProps>;
+  /** Icon beside the option label. */
+  icon?: ComponentType<RadioCardsPartProps>;
+  /** Text naming the option. */
+  label?: ComponentType<RadioCardsPartProps>;
+  /** Supporting text under the label. */
+  description?: ComponentType<RadioCardsPartProps>;
+  /** Short value at the end of the option. */
+  meta?: ComponentType<RadioCardsPartProps>;
+}
 export interface RadioCardsItemProps
   extends
     Omit<
@@ -97,9 +110,10 @@ export interface RadioCardsItemProps
   meta?: ReactNode;
   icon?: ReactNode;
   disabledReason?: ReactNode;
+  slots?: RadioCardsItemSlots;
   slotProps?: Partial<
     Record<
-      | /** Hidden input holding the card's selection state. */
+      | /** Container surrounding the option content. */
         'control'
       | /** Ring drawn on the selected card. */
         'indicator'
@@ -507,6 +521,7 @@ function RadioCardsItem({
   required: requiredProp,
   onChange,
   slotProps,
+  slots,
   className,
   sx,
   'aria-label': ariaLabel,
@@ -515,6 +530,12 @@ function RadioCardsItem({
   'aria-invalid': ariaInvalid,
   ...rest
 }: RadioCardsItemProps) {
+  const Control = slots?.control ?? 'span';
+  const Indicator = slots?.indicator ?? 'span';
+  const Icon = slots?.icon ?? 'span';
+  const Label = slots?.label ?? 'span';
+  const Description = slots?.description ?? 'span';
+  const Meta = slots?.meta ?? 'span';
   const context = useCardsContext('Item');
   const id = useId();
   const disabled = context.disabled || disabledProp;
@@ -550,57 +571,57 @@ function RadioCardsItem({
             }}
             css={[choiceInputStyle, inputStyle]}
           />
-          <span
+          <Control
             {...slotProps?.control}
             data-ui="radio-cards-control"
             css={[controlStyle, sizeStyles[context.size], slotProps?.control?.css]}
           >
-            <span
+            <Indicator
               {...slotProps?.indicator}
               aria-hidden="true"
               data-ui="radio-cards-indicator"
               css={[indicatorStyle, slotProps?.indicator?.css]}
             />
             {isRenderable(icon) && (
-              <span
+              <Icon
                 {...slotProps?.icon}
                 aria-hidden="true"
                 data-ui="radio-cards-icon"
                 css={[iconStyle, slotProps?.icon?.css]}
               >
                 {icon}
-              </span>
+              </Icon>
             )}
             {(hasLabel || hasDetail) && (
               <span css={contentStyle}>
                 {hasLabel && (
-                  <span
+                  <Label
                     {...slotProps?.label}
                     id={`${id}-label`}
                     data-ui="radio-cards-item-label"
                     css={[labelStyle, slotProps?.label?.css]}
                   >
                     {label}
-                  </span>
+                  </Label>
                 )}
                 {hasDetail && (
-                  <span
+                  <Description
                     {...slotProps?.description}
                     id={`${id}-description`}
                     data-ui="radio-cards-item-description"
                     css={[descriptionStyle, slotProps?.description?.css]}
                   >
                     {detail}
-                  </span>
+                  </Description>
                 )}
               </span>
             )}
             {isRenderable(meta) && (
-              <span {...slotProps?.meta} data-ui="radio-cards-meta" css={[metaStyle, slotProps?.meta?.css]}>
+              <Meta {...slotProps?.meta} data-ui="radio-cards-meta" css={[metaStyle, slotProps?.meta?.css]}>
                 {meta}
-              </span>
+              </Meta>
             )}
-          </span>
+          </Control>
         </label>
       )}
     </WithSx>

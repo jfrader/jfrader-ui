@@ -9,6 +9,20 @@ import { CodeBlock, type CodeBlockProps, type CodeHighlightLines, type CodeHighl
 import { loadShikiHighlight } from './shiki';
 
 const SOURCE = 'export const answer = 42;\nconsole.log(answer);\n';
+function CustomSourceFrame(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="custom-source-frame" />;
+}
+
+export const SourceFrameReplacement: StoryObj<typeof CodeBlock> = {
+  args: { code: SOURCE, slots: { sourceFrame: CustomSourceFrame }, slotProps: { sourceFrame: { className: 'source-frame-slot' } } },
+  play: async ({ canvasElement }) => {
+    const frame = within(canvasElement).getByTestId('custom-source-frame');
+    await expect(frame).toHaveAttribute('data-ui', 'code-block-source-frame');
+    await expect(frame).toHaveClass('source-frame-slot');
+    await expect(getComputedStyle(frame).display).toBe('flex');
+    await expect(frame.querySelector('pre')).not.toBeNull();
+  },
+};
 const LONG_SOURCE = `${SOURCE}\nexport function double(value: number) {\n\treturn value * 2;\n}\n`;
 const MIXED_SOURCE = '\tconst title = "café ✓ 𝔘 שלום";\r\n  console.log(title);\r\n';
 const SAMPLES = {

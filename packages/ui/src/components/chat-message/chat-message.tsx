@@ -102,6 +102,8 @@ export type ChatMessageSlotProps = Partial<Record<ChatMessagePart, ThreadPartPro
 };
 
 export interface ChatMessageSlots {
+  /** Replaces the attachment list. */
+  attachments?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'ul'>>;
   /** Replaces the message article. */
   article?: ComponentType<NonNullable<ChatMessageSlotProps['article']>>;
   /** Replaces the message bubble. */
@@ -459,13 +461,14 @@ export function ChatMessageView({
       components={{ article: slots?.article, time: slots?.time, avatar: slots?.avatar }}
     >
       <Bubble
+        {...slotProps?.bubble}
         data-part={`${owner}-bubble`}
         className={slotProps?.bubble?.className}
         css={[bubbleStyle, isOwn && ownBubbleStyle, slotProps?.bubble?.css]}
       >
         {bodyContent}
         {effectiveAttachments?.length ? (
-          <AttachmentListView attachments={effectiveAttachments} labels={labels} locale={locale} owner={owner} partProps={slotProps?.attachments} />
+          <AttachmentListView attachments={effectiveAttachments} labels={labels} locale={locale} owner={owner} partProps={slotProps?.attachments} component={slots?.attachments} />
         ) : null}
       </Bubble>
       <ThreadReactions

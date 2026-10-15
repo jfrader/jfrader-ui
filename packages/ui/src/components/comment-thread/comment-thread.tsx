@@ -210,7 +210,16 @@ export interface CommentThreadProps
   size?: CommentThreadSize;
   labels?: Partial<CommentThreadLabels>;
   slotProps?: CommentThreadSlotProps;
-  slots?: {
+  slots?: CommentThreadSlots;
+}
+
+export interface CommentThreadSlots {
+    /** Holds the comment composer. */
+    composer?: ComponentType<CommentThreadPartProps & ComponentPropsWithRef<'div'>>;
+    /** Displays the comment field. */
+    textarea?: ComponentType<ThreadTextareaProps>;
+    /** Submits the comment. */
+    send?: ComponentType<ThreadButtonProps>;
     /** Holds the thread heading and actions. */
     header?: ComponentType<CommentThreadPartProps>;
     /** Displays the thread title. */
@@ -235,7 +244,6 @@ export interface CommentThreadProps
     resolved?: ComponentType<CommentThreadPartProps>;
     /** Announces arriving comments. */
     status?: ComponentType<CommentThreadPartProps>;
-  };
 }
 
 type Pending = { kind: 'add'; id: string } | { kind: 'edit'; id: string; body: string };
@@ -860,6 +868,8 @@ export function CommentThread({
     size,
     textareaProps: slotProps?.textarea,
     submitProps: slotProps?.send,
+    component: slots?.composer,
+    slots: { textarea: slots?.textarea, submit: slots?.send },
   };
   const Header = slots?.header ?? Card.Header;
   const Title = slots?.title ?? Card.Title;

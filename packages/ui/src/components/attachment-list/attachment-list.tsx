@@ -69,7 +69,8 @@ export interface AttachmentListProps extends Omit<ComponentPropsWithRef<'ul'>, '
 
 interface AttachmentListViewProps extends AttachmentListProps {
   owner?: string;
-  partProps?: PartProps;
+  partProps?: PartProps & ComponentPropsWithRef<'ul'>;
+  component?: ComponentType<ComponentPropsWithRef<'ul'> & PartProps>;
 }
 
 export const DEFAULT_PREVIEW_COUNT = 4;
@@ -102,8 +103,10 @@ const imageGlyph = (
 
 export function AttachmentListView({
   attachments, locale, labels: labelProps, previewCount = DEFAULT_PREVIEW_COUNT,
-  owner, partProps, slots, slotProps, className, sx, ...rootProps
+  owner, partProps, component, slots, slotProps, className, sx, ...rootProps
 }: AttachmentListViewProps) {
+  const Root = component ?? 'ul';
+  const { css: _partCss, ...partRootProps } = partProps ?? {};
   const Item = slots?.item ?? 'li';
   const Link = slots?.link ?? 'a';
   const ExpandButton = slots?.expandButton ?? Button;
@@ -125,7 +128,7 @@ export function AttachmentListView({
       <WithSx className={[className, partProps?.className].filter(Boolean).join(' ') || undefined}
         styles={[attachmentsStyle, !owner && typographyStyle, partProps?.css]} sx={sx}>
         {(rootClass) => (
-          <ul role="list" aria-label={labels.attachments} {...rootProps}
+          <Root {...partRootProps} role="list" aria-label={labels.attachments} {...rootProps}
             data-ui={owner ? `${owner}-attachments` : 'attachment-list'} className={rootClass}>
             {shown.map((attachment) => {
               const url = safeUrl(attachment.url);
@@ -153,7 +156,7 @@ export function AttachmentListView({
                 </Item>
               );
             })}
-          </ul>
+          </Root>
         )}
       </WithSx>
       {!expanded && attachments.length > limit ? (

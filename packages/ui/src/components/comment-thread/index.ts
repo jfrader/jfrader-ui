@@ -9,5 +9,6 @@ export {
   type CommentThreadProps,
   type CommentThreadSize,
   type CommentThreadSlotProps,
+  type CommentThreadSlots,
   type ThreadComment,
 } from './comment-thread';

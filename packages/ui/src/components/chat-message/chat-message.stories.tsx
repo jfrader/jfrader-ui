@@ -15,6 +15,26 @@ function ReplacementTime(props: ComponentPropsWithRef<'time'>) {
   return <time {...props} data-slot="chat-message-time" />;
 }
 
+function ReplacementAttachments(props: ComponentPropsWithRef<'ul'>) {
+  return <ul {...props} data-testid="custom-attachments" />;
+}
+
+export const AttachmentsReplacement: StoryObj<typeof ChatMessage> = {
+  args: {
+    author: 'Ada',
+    createdAt: NOW,
+    attachments: [{ id: 'attachment', name: 'Notes', kind: 'file', url: 'https://example.com/notes' }],
+    slots: { attachments: ReplacementAttachments },
+    slotProps: { attachments: { className: 'attachment-slot' } },
+  },
+  play: async ({ canvasElement }) => {
+    const list = within(canvasElement).getByTestId('custom-attachments');
+    await expect(list).toHaveAttribute('data-ui', 'chat-message-attachments');
+    await expect(list).toHaveClass('attachment-slot');
+    await expect(within(list).getByRole('link', { name: /Notes/ })).toBeInTheDocument();
+  },
+};
+
 export const TimeReplacement: Story = {
   render: (args) => <ChatMessage {...args} slots={{ time: ReplacementTime }} />,
   play: async ({ canvasElement }) => {

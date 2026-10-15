@@ -41,8 +41,10 @@ export function findUnwiredKeys(componentsRoot = root) {
     const declared = new Set(blocks.flatMap((block) => [...block.matchAll(/^\s{2,}(\w+)\?: ComponentType</gm)].map((match) => match[1])));
     if (declared.size === 0) continue;
 
-    const rendered = new Set([...text.matchAll(/slots\?\.(\w+)/g)].map((match) => match[1]));
-    if (text.includes('slots?.[')) {
+    // A part may be resolved through a local alias of the map (`contentSlots?.presets`), so any
+    // identifier that ends in `slot`/`slots` counts, not just `slots?.`.
+    const rendered = new Set([...text.matchAll(/[A-Za-z_$]*[Ss]lots?\?\.(\w+)/g)].map((match) => match[1]));
+    if (/[Ss]lots?\?\.\[/.test(text)) {
       for (const key of declared) {
         if (text.includes(`'${key}'`) || text.includes(`"${key}"`) || text.includes(`.${key}`)) rendered.add(key);
       }

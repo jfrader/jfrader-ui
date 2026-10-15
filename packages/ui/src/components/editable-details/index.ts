@@ -7,6 +7,8 @@ export type {
   EditableDetailsSectionRecord,
   EditableDetailsItemRecord,
   EditableDetailsSlots,
+  EditableDetailsSectionSlots,
+  EditableDetailsItemSlots,
   EditableDetailsSlotProps,
   EditableDetailsMessages,
   EditableDetailsPartProps,

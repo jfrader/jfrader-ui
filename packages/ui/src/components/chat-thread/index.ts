@@ -8,9 +8,11 @@ export type {
   ChatReaction,
   ChatThreadComposerProps,
   ChatThreadComposerSlotProps,
+  ChatThreadComposerSlots,
   ChatThreadEvent,
   ChatThreadLabels,
   ChatThreadProps,
   ChatThreadSize,
   ChatThreadSlotProps,
+  ChatThreadSlots,
 } from './chat-thread';

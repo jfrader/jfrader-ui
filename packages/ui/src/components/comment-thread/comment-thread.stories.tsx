@@ -4,6 +4,8 @@ import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storyb
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { Button, type ButtonProps } from '../button';
+import { Textarea, type TextareaProps } from '../textarea';
 import {
   CommentThread,
   type CommentAuthor,
@@ -11,6 +13,30 @@ import {
   type CommentThreadProps,
   type ThreadComment,
 } from './index';
+
+function ReplacementComposer(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="custom-composer" />;
+}
+
+function ReplacementCommentTextarea(props: TextareaProps) {
+  return <Textarea {...props} data-testid="custom-comment-textarea" />;
+}
+
+function ReplacementCommentSend(props: ButtonProps) {
+  return <Button {...props} data-testid="custom-comment-send" />;
+}
+
+export const ComposerReplacements: StoryObj<typeof CommentThread> = {
+  render: (args) => <CommentThread {...args} slots={{ composer: ReplacementComposer, textarea: ReplacementCommentTextarea, send: ReplacementCommentSend }} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const composer = canvas.getByTestId('custom-composer');
+    await expect(composer).toHaveAttribute('data-ui', 'comment-thread-composer');
+    await expect(composer.className).not.toBe('');
+    await expect(canvas.getByTestId('custom-comment-textarea')).toBeInTheDocument();
+    await expect(canvas.getByTestId('custom-comment-send')).toHaveAttribute('data-action', 'submit');
+  },
+};
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;

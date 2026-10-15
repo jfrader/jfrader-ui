@@ -1145,3 +1145,31 @@ export const ReducedMotion: Story = {
     },
   },
 };
+
+function ActiveList(props: ComponentPropsWithRef<'ul'>) {
+  return <ul {...props} data-slot="active-list" />;
+}
+function ActiveChip(props: ComponentPropsWithRef<'li'>) {
+  return <li {...props} data-slot="active-chip" />;
+}
+function ActiveLabel(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="active-label" />;
+}
+function ActiveRemove(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-slot="active-remove" />;
+}
+
+export const ActiveFilterSlots: Story = {
+  args: { defaultValue: [OPEN] },
+  render: (args) => <FilterToolbar {...args}><FilterToolbar.ActiveFilters slots={{ list: ActiveList, chip: ActiveChip, label: ActiveLabel, remove: ActiveRemove }} /></FilterToolbar>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    for (const part of ['list', 'chip', 'label', 'remove']) {
+      await expect(canvasElement.querySelector(`[data-slot="active-${part}"]`)).toBeVisible();
+    }
+    const remove = canvas.getByRole('button');
+    await expect(remove).toHaveAttribute('data-ui', expect.stringContaining('filter-toolbar-remove'));
+    await expect(remove).toHaveAttribute('data-filter-id', OPEN.id);
+    await userEvent.click(remove);
+    await expect(canvas.queryByRole('list')).not.toBeInTheDocument();
+  },
+};
