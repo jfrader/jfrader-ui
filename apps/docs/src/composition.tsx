@@ -1,4 +1,4 @@
-import { Divider, Pill, Surface, styled } from '@jfrader/ui';
+import { Divider, Surface, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
 interface CatalogRef {
@@ -30,7 +30,6 @@ export interface CompositionProps {
 interface SlotRow {
   name: string;
   description: string;
-  replaced: boolean;
   component?: CatalogRef;
   part?: string;
   props: PropMember[];
@@ -126,13 +125,11 @@ function collectSlots(components: ComponentDoc[]): SlotRow[] {
     component.props.find((candidate) => candidate.name === prop)?.members ?? [];
   const rows = new Map<string, SlotRow>();
   for (const component of components) {
-    const replaceable = new Set(membersOf(component, 'slots').map((member) => member.name));
     for (const member of [...membersOf(component, 'slotProps'), ...membersOf(component, 'slots')]) {
       const previous = rows.get(member.name);
       rows.set(member.name, {
         name: member.name,
         description: member.description || previous?.description || '',
-        replaced: replaceable.has(member.name),
         component: member.component ?? previous?.component,
         part: member.part ?? previous?.part,
         // A part's own contract is nested one level deeper; that is the list worth showing.
@@ -147,18 +144,9 @@ function SlotLink({ component }: { component: CatalogRef }) {
   return <Link href={`#/components/${component.slug}`}>{component.name}</Link>;
 }
 
-/** A part can be swapped for your component (`slots`) or receive props (`slotProps`). */
-function capability(slot: SlotRow): string {
-  return slot.replaced ? 'replaceable' : 'props only';
-}
-
-/** Says how many parts there are and which of them accept a replacement, without an empty "the rest". */
+/** Every part in the map can be replaced, so the count is the only thing worth saying. */
 function summarize(slots: SlotRow[]): string {
-  const total = `${slots.length} ${slots.length === 1 ? 'part' : 'parts'}`;
-  const replaceable = slots.filter((slot) => slot.replaced).length;
-  if (replaceable === 0) return `${total}; every one takes props.`;
-  if (replaceable === slots.length) return `${total}; every one can be replaced.`;
-  return `${total}; ${replaceable} can be replaced, the rest take props.`;
+  return `${slots.length} ${slots.length === 1 ? 'part' : 'parts'}`;
 }
 
 function SlotDefault({ slot }: { slot: SlotRow }) {
@@ -203,7 +191,6 @@ export default function Composition({ entry, components, uses }: CompositionProp
                 <Slot key={slot.name}>
                   <Head>
                     <Name>{slot.name}</Name>
-                    <Pill tone={slot.replaced ? 'accent' : 'neutral'}>{capability(slot)}</Pill>
                     <Note><SlotDefault slot={slot} /></Note>
                   </Head>
                   {slot.description ? <Note>{slot.description}</Note> : <Missing>No description.</Missing>}
