@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useState, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -8,7 +8,7 @@ import { WithSx } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { Switch, type SwitchPartProps, type SwitchProps } from '../switch';
+import { Switch, type SwitchPartProps, type SwitchProps, type SwitchSlots } from '../switch';
 
 export type ThemeSwitchValue = 'light' | 'dark';
 export type ThemeSwitchTransition = 'reveal' | 'eclipse' | 'split' | 'rise';
@@ -17,10 +17,16 @@ export interface ThemeSwitchChangeDetails {
   trigger: HTMLInputElement;
   reducedMotion: boolean;
 }
+export interface ThemeSwitchSlots extends SwitchSlots {
+  iconFrame?: ComponentType<ComponentPropsWithRef<'label'>>;
+  lightIcon?: ComponentType<SwitchPartProps>;
+  darkIcon?: ComponentType<SwitchPartProps>;
+}
 export interface ThemeSwitchProps extends Omit<
   SwitchProps,
-  'value' | 'defaultValue' | 'checked' | 'defaultChecked' | 'onCheckedChange' | 'children' | 'slotProps'
+  'value' | 'defaultValue' | 'checked' | 'defaultChecked' | 'onCheckedChange' | 'children' | 'slotProps' | 'slots'
 > {
+  slots?: ThemeSwitchSlots;
   value?: ThemeSwitchValue;
   defaultValue?: ThemeSwitchValue;
   onValueChange?: (next: ThemeSwitchValue, details: ThemeSwitchChangeDetails) => void;
@@ -32,7 +38,7 @@ export interface ThemeSwitchProps extends Omit<
   loading?: boolean;
   slotProps?: SwitchProps['slotProps'] & {
     /** Circle holding the visible theme icon. */
-    iconFrame?: SwitchPartProps;
+    iconFrame?: Omit<ComponentPropsWithRef<'label'>, 'css'> & { css?: SwitchPartProps['css'] };
     /** Sun icon drawn in the light theme. */
     lightIcon?: SwitchPartProps;
     /** Moon icon drawn in the dark theme. */
@@ -121,12 +127,17 @@ export function ThemeSwitch({
   className,
   sx,
   slotProps,
+  slots,
   onChange,
   onClick,
   dir,
   id: idProp,
   ...rest
 }: ThemeSwitchProps) {
+  const IconFrame = slots?.iconFrame ?? 'label';
+  const LightIcon = slots?.lightIcon ?? 'span';
+  const DarkIcon = slots?.darkIcon ?? 'span';
+  const { iconFrame: _iconFrame, lightIcon: _lightIcon, darkIcon: _darkIcon, ...switchSlots } = slots ?? {};
   const generatedId = useId();
   const inputId = idProp ?? generatedId;
   const { iconFrame: iconFrameSlot, lightIcon: lightIconSlot, darkIcon: darkIconSlot, ...switchSlotProps } =
@@ -148,7 +159,8 @@ export function ThemeSwitch({
           className={className}
         >
           {(hasLight || hasDark) && (
-            <label
+            <IconFrame
+              {...iconFrameSlot}
               htmlFor={inputId}
               aria-hidden="true"
               data-ui="theme-switch-icon-frame"
@@ -158,7 +170,8 @@ export function ThemeSwitch({
               css={[frameStyle, cueStyles[transition], iconFrameSlot?.css]}
             >
               {hasLight && (
-                <span
+                <LightIcon
+                  {...lightIconSlot}
                   data-ui="theme-switch-light-icon"
                   data-active={value === 'light'}
                   data-animated={animated}
@@ -166,10 +179,11 @@ export function ThemeSwitch({
                   css={[iconStyle, lightIconSlot?.css]}
                 >
                   {lightIcon}
-                </span>
+                </LightIcon>
               )}
               {hasDark && (
-                <span
+                <DarkIcon
+                  {...darkIconSlot}
                   data-ui="theme-switch-dark-icon"
                   data-active={value === 'dark'}
                   data-animated={animated}
@@ -177,12 +191,13 @@ export function ThemeSwitch({
                   css={[iconStyle, darkIconSlot?.css]}
                 >
                   {darkIcon}
-                </span>
+                </DarkIcon>
               )}
-            </label>
+            </IconFrame>
           )}
           <Switch
             {...rest}
+            slots={switchSlots}
             id={inputId}
             dir={dir}
             checked={value === 'dark'}

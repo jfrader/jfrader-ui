@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentPropsWithRef } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
@@ -31,6 +31,59 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 300));
 const stack = { display: 'grid', gap: vars.space[4] };
 const iconFrameOf = (input: HTMLElement) =>
   input.closest('[data-ui="theme-switch"]')!.querySelector<HTMLElement>('[data-ui="theme-switch-icon-frame"]')!;
+
+function ReplacementIconFrame(props: ComponentPropsWithRef<'label'>) {
+  return <label {...props} data-testid="replacement-icon-frame" />;
+}
+function ReplacementLightIcon(props: ComponentPropsWithRef<'span'>) {
+  return <i {...props} data-testid="replacement-light-icon" />;
+}
+function ReplacementDarkIcon(props: ComponentPropsWithRef<'span'>) {
+  return <i {...props} data-testid="replacement-dark-icon" />;
+}
+
+export const IconSlots: Story = {
+  args: {
+    slots: { iconFrame: ReplacementIconFrame, lightIcon: ReplacementLightIcon, darkIcon: ReplacementDarkIcon },
+    slotProps: {
+      iconFrame: { className: 'custom-icon-frame', title: 'Theme icon', ref: fn() },
+      lightIcon: { className: 'custom-light-icon', title: 'Light icon', ref: fn() },
+      darkIcon: { className: 'custom-dark-icon', title: 'Dark icon', ref: fn() },
+    },
+  },
+  play: async ({ canvas, canvasElement, args, userEvent }) => {
+    const input = canvas.getByRole('switch');
+    const frame = canvas.getByTestId('replacement-icon-frame');
+    const light = canvas.getByTestId('replacement-light-icon');
+    const dark = canvas.getByTestId('replacement-dark-icon');
+    for (const [key, element, marker, title] of [
+      ['iconFrame', frame, 'icon-frame', 'Theme icon'],
+      ['lightIcon', light, 'light-icon', 'Light icon'],
+      ['darkIcon', dark, 'dark-icon', 'Dark icon'],
+    ] as const) {
+      await expect(element).toHaveAttribute('data-ui', `theme-switch-${marker}`);
+      await expect(element).toHaveClass(`custom-${marker}`);
+      await expect(element.className).toMatch(/css-/);
+      await expect(element).toHaveAttribute('title', title);
+      await expect(element).toHaveAttribute('data-animated', 'false');
+      await expect(args.slotProps?.[key]?.ref).toHaveBeenCalledWith(element);
+      await expect(canvasElement.querySelectorAll(`[data-ui="theme-switch-${marker}"]`)).toHaveLength(1);
+    }
+    await expect(frame).toHaveAttribute('for', input.id);
+    await expect(frame).toHaveAttribute('aria-hidden', 'true');
+    await expect(frame).toHaveAttribute('data-value', 'light');
+    await expect(light.tagName).toBe('I');
+    await expect(dark.tagName).toBe('I');
+    await expect(frame.querySelectorAll('span')).toHaveLength(0);
+    await expect(light).toHaveAttribute('data-active', 'true');
+    await expect(dark).toHaveAttribute('data-active', 'false');
+    await userEvent.click(frame);
+    await expect(input).toBeChecked();
+    await expect(frame).toHaveAttribute('data-value', 'dark');
+    await expect(light).toHaveAttribute('data-active', 'false');
+    await expect(dark).toHaveAttribute('data-active', 'true');
+  },
+};
 
 function ControlledExample(args: ThemeSwitchProps) {
   const [value, setValue] = useState<ThemeSwitchValue>('light');
