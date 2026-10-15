@@ -1081,6 +1081,9 @@ function BottomSheetBody({
           ref={merged}
           data-ui="bottom-sheet-body"
           className={className}
+          // The body scrolls (`overflow: auto`); it is a keyboard-reachable scroll target, like the
+          // ScrollArea viewport, and the PageDown / Space shortcuts below need it to be focusable.
+          tabIndex={props.tabIndex ?? 0}
           onKeyDown={(event) => {
             onKeyDown?.(event);
             if (
