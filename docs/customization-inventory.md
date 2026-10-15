@@ -10,8 +10,8 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 - Public callable families: **126**; public callable parts: **156**.
 - Families exposing `slots.root`: **66**; remaining without a family-level root slot: **60** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **88**; remaining without family-level interior slots: **38** (includes components without generated anatomy).
-- Rows with styling-only `slotProps` keys: **12**.
+- Families exposing any non-root replacement slot: **93**; remaining without family-level interior slots: **33** (includes components without generated anatomy).
+- Rows with styling-only `slotProps` keys: **5**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
 behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, TrickStacks and CardFlights are owner-held;
@@ -152,17 +152,17 @@ may exist and is listed on the corresponding public part).
 | [FilterToolbar.Controls](../packages/ui/src/components/filter-toolbar/filter-toolbar.tsx) | — | — | — | — | — | — |
 | [FilterToolbar.ResultCount](../packages/ui/src/components/filter-toolbar/filter-toolbar.tsx) | — | — | — | — | — | — |
 | [Flex](../packages/ui/src/components/flex/flex.tsx) | — | — | — | — | — | — |
-| [FlipGameCard](../packages/ui/src/components/flip-game-card/flip-game-card.tsx) | yes | `root` | `back`, `front`, `root`, `rotator` | `back`, `front`, `rotator` | — | — |
-| [GameCard](../packages/ui/src/components/game-card/game-card.tsx) | yes | `root` | `back`, `face`, `root` | `back`, `face` | — | — |
-| [GameCardStack](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | — | — | `card`, `pile`, `trigger` | `card`, `pile`, `trigger` | — | `Pile` |
-| [GameCardStack.Pile](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | — | — | `card`, `pile`, `trigger` | `card`, `pile`, `trigger` | — | — |
-| [GameHand](../packages/ui/src/components/game-hand/game-hand.tsx) | — | — | `card`, `confirm`, `fan` | `card`, `confirm`, `fan` | — | `Hidden` |
-| [GameHand.Hidden](../packages/ui/src/components/game-hand/game-hand.tsx) | — | — | `card` | `card` | — | — |
+| [FlipGameCard](../packages/ui/src/components/flip-game-card/flip-game-card.tsx) | yes | `back`, `front`, `root`, `rotator` | `back`, `front`, `root`, `rotator` | — | — | — |
+| [GameCard](../packages/ui/src/components/game-card/game-card.tsx) | yes | `back`, `face`, `root` | `back`, `face`, `root` | — | — | — |
+| [GameCardStack](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | — | `card`, `pile`, `trigger` | `card`, `pile`, `trigger` | — | — | `Pile` |
+| [GameCardStack.Pile](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | — | `card`, `pile`, `trigger` | `card`, `pile`, `trigger` | — | — | — |
+| [GameHand](../packages/ui/src/components/game-hand/game-hand.tsx) | — | `card`, `confirm`, `fan` | `card`, `confirm`, `fan` | — | — | `Hidden` |
+| [GameHand.Hidden](../packages/ui/src/components/game-hand/game-hand.tsx) | — | `card` | `card` | — | — | — |
 | [GameMarks](../packages/ui/src/components/game-marks/game-marks.tsx) | yes | `root` | `count`, `label`, `mark`, `marks`, `root` | `count`, `label`, `mark`, `marks` | — | — |
 | [GameResult](../packages/ui/src/components/game-result/game-result.tsx) | — | — | `actions`, `celebration`, `eyebrow`, `reward`, `summary`, `title` | `actions`, `celebration`, `eyebrow`, `reward`, `summary`, `title` | — | — |
 | [GameRounds](../packages/ui/src/components/game-rounds/game-rounds.tsx) | yes | `root` | `label`, `list`, `outcome`, `root`, `round` | `label`, `list`, `outcome`, `round` | — | — |
 | [GameScore](../packages/ui/src/components/game-score/game-score.tsx) | yes | `root` | `label`, `list`, `name`, `root`, `row`, `stage`, `value` | `label`, `list`, `name`, `row`, `stage`, `value` | — | — |
-| [GameSeat](../packages/ui/src/components/game-seat/game-seat.tsx) | yes | `root` | `avatar`, `badges`, `chat`, `hand`, `name`, `points`, `root`, `timer` | `avatar`, `badges`, `chat`, `hand`, `name`, `points`, `timer` | — | — |
+| [GameSeat](../packages/ui/src/components/game-seat/game-seat.tsx) | yes | `avatar`, `badges`, `chat`, `hand`, `name`, `points`, `root`, `timer` | `avatar`, `badges`, `chat`, `hand`, `name`, `points`, `root`, `timer` | — | — | — |
 | [GameTable](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | `Center`, `Dock`, `Floating`, `Footer`, `Header`, `Play`, `Seat`, `SeatChrome` |
 | [GameTable.Center](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |
 | [GameTable.Dock](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |
