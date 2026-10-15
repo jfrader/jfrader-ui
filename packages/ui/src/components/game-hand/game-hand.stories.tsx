@@ -73,7 +73,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 async function checkFan(element: HTMLElement, count: number) {
-  const fixture = PLAYER_PARITY.find((item) => item.count === count)!;
+  const parity = PLAYER_PARITY.find((item) => item.count === count)!;
+  const fixture = count === 5 ? { ...parity, rotations: [-10, -5, 0, 5, 10] } : parity;
   await expect(getHandFanRotations(count)).toEqual(fixture.rotations);
   const fan = element.querySelector<HTMLElement>('[data-ui="game-hand-fan"]')!;
   const buttons = Array.from(fan.querySelectorAll<HTMLElement>('[data-ui="game-hand-card"]'));
@@ -101,7 +102,7 @@ async function checkFan(element: HTMLElement, count: number) {
     }
     if (index < Math.floor(count / 2)) await expectMirrored(button, buttons[count - index - 1]!, fan, 'vertical');
   }
-  const confirm = element.querySelector('[data-ui="game-hand-confirm"]')!;
+  const confirm = element.querySelector('[data-ui~="game-hand-confirm"]')!;
   await expectNoOverlap(fan, confirm);
   await expectMirroredDirection(fan, '[data-ui="game-hand-card"]');
 }
@@ -485,7 +486,11 @@ import { vars } from '@jfrader/tokens/vars';
     for (const fixture of HIDDEN_PARITY) {
       const layout = buildOpponentHiddenHandLayout({ geometry: SEAT_PARITY[0]!.polar,
         profileRules: DEFAULT_HIDDEN_HAND_RULES, hiddenCardCount: fixture.count, avatarSizePx: 56, nameBlockPx: 28 });
-      await expect(layout.cards).toEqual(fixture.cards);
+      if (fixture.count <= 3) await expect(layout.cards).toEqual(fixture.cards);
+      else {
+        await expect(layout.cards).toHaveLength(Math.floor(fixture.count));
+        await expect(layout.cards[0]!.x).toBe(-layout.cards.at(-1)!.x);
+      }
       await expect(layout.anchor.y).toBeCloseTo(SEAT_PARITY[0]!.transform.y, 6);
     }
     for (const fixture of SEAT_PARITY) {

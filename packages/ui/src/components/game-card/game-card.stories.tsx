@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { DeckProvider, UnknownDeckError, defineDeck, frenchDeck, useDeck } from '../deck';
@@ -9,6 +9,10 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { CARD_BACK_PATTERNS, GameCard, type GameCardRootProps, type GameCardSize, type GameCardSuit, type GameCardValue } from './index';
 import { css } from '../../styling/css';
 import { WithSx } from '../../styling/sx';
+import { GameHand } from '../game-hand';
+import { GameCardStack } from '../game-card-stack';
+import { FlipGameCard } from '../flip-game-card';
+import { createFlightRegistry, FlightRegistryContext } from '../card-flights/flight-registry';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly GameCardSize[];
 const SIZE_PX = { sm: 32, md: 72, lg: 112 } as const;
@@ -158,6 +162,62 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+function ReplacementSpan(props: ComponentPropsWithRef<'span'>) { return <span {...props} data-replacement="span" />; }
+function ReplacementDiv(props: ComponentPropsWithRef<'div'>) { return <div {...props} data-replacement="div" />; }
+function ReplacementButton(props: ComponentPropsWithRef<'button'>) { return <button {...props} data-replacement="button" />; }
+
+export const ArtSetsAndRegistrations: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvasElement }) => {
+    const host = canvasElement.ownerDocument.createElement('div');
+    canvasElement.append(host);
+    const root = createRoot(host);
+    const registry = createFlightRegistry();
+    const deck = defineDeck({ ...frenchDeck, id: 'art-test', cardId: (suit, rank) => `${rank}:${suit}`,
+      art: { 'Q:hearts': 'Base art' }, artSets: { special: { 'Q:hearts': 'Special art' } },
+      backs: { special: 'Special back' } });
+    const value: GameCardValue = { deck: deck.id, suit: 'hearts', rank: 'Q' };
+    const cards = [{ id: 'queen', value, label: 'Queen' }];
+    const overrides = { 'Q:hearts': 'special' };
+    const render = () => <DeckProvider decks={[deck]} backLabel="Back">
+      <FlightRegistryContext value={registry}>
+        <GameCard value={value} label="Art" cardArtSets={overrides} slots={{ face: ReplacementSpan }} />
+        <GameCard value={value} label="Consumer" cardArtSets={overrides}>Consumer art</GameCard>
+        <GameHand cards={cards} playLabel="Play" cardArtSets={overrides} slots={{ fan: ReplacementDiv, card: ReplacementButton, confirm: ReplacementButton }} slotProps={{ confirm: { 'data-ui': 'custom custom' } }} />
+        <GameHand.Hidden count={5} playerKey="opponent" label="Five cards" artSet="special" slots={{ card: ReplacementDiv }} />
+        <GameCardStack.Pile playerKey="player" cards={cards} label="Pile" cardArtSets={overrides} slots={{ pile: ReplacementDiv, trigger: ReplacementButton, card: ReplacementDiv }} />
+        <FlipGameCard value={value} label="Flip" cardArtSets={overrides} slots={{ rotator: ReplacementDiv, front: ReplacementDiv, back: ReplacementDiv }} />
+        <GameCard label="Replacement back" slots={{ back: ReplacementSpan }} />
+      </FlightRegistryContext>
+    </DeckProvider>;
+    try {
+      flushSync(() => root.render(render()));
+      await expect(host.querySelectorAll('[data-ui~="game-card-art"]')).toHaveLength(5);
+      await expect(host.querySelector('[aria-label="Consumer"]')).toHaveTextContent('Consumer art');
+      await expect(host.querySelectorAll('[data-ui~="game-hand-hidden-card"]')).toHaveLength(5);
+      await expect(host.querySelector('[data-ui~="game-hand-confirm"]')).toHaveAttribute('data-ui', 'game-hand-confirm custom button');
+      await expect(host.querySelector('[data-ui~="flip-game-card-back"]')).toHaveTextContent('Special back');
+      await expect(host.querySelectorAll('[data-replacement]')).toHaveLength(16);
+      const measurements = fn(() => new DOMRect());
+      const hand = registry.hand.get('queen')!.node;
+      const played = registry.played.get('queen')!.node;
+      hand.getBoundingClientRect = measurements;
+      played.getBoundingClientRect = measurements;
+      for (const entry of registry.hidden.get('opponent')!.values()) entry.node.getBoundingClientRect = measurements;
+      flushSync(() => root.render(render()));
+      await expect(measurements).not.toHaveBeenCalled();
+      flushSync(() => root.render(null));
+      await expect(measurements).toHaveBeenCalledTimes(7);
+      await expect(registry.hand.size).toBe(0);
+      await expect(registry.played.size).toBe(0);
+      await expect(registry.hidden.size).toBe(0);
+    } finally {
+      flushSync(() => root.unmount());
+      host.remove();
+    }
+  },
+};
 
 async function expectDeckGrid(cards: NodeListOf<Element>) {
   const firstCard = cards[0];

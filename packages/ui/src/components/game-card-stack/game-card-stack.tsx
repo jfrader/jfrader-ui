@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type ComponentPropsWithRef, type CSSProperties } from 'react';
+import { useEffect, useId, useRef, useState, type ComponentPropsWithRef, type ComponentType, type CSSProperties, type KeyboardEvent } from 'react';
 import { MotionConfig, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
@@ -13,7 +13,13 @@ import { CARD_FRAME } from '../game-card/card-frame';
 import { DEFAULT_PILE_LAYOUT, PLAYED_PILE, getPilePosition, getPileOffset, getStableJitter,
   getStableRotation, type PlayedCard, type PileLayout, type SeatVector } from './pile-layout';
 import { getAutoLayout } from './auto-layout';
-import { registerFlightNode, useFlightRegistry } from '../card-flights/flight-registry';
+import { cardPartIdentity, useCardRegistrationRefs } from '../game-card/card-parts';
+
+export interface GameCardStackSlots {
+  pile?: ComponentType<ComponentPropsWithRef<'div'> & GameCardPartProps>;
+  trigger?: ComponentType<ComponentPropsWithRef<'button'> & GameCardPartProps>;
+  card?: ComponentType<ComponentPropsWithRef<'div'> & GameCardPartProps>;
+}
 
 export interface GameCardStackPile {
   playerKey: string;
@@ -25,6 +31,9 @@ export interface GameCardStackPile {
 }
 
 interface InspectionProps {
+  artSet?: string;
+  cardArtSets?: Readonly<Record<string, string>>;
+  slots?: GameCardStackSlots;
   'data-ui'?: string;
   /** Inspected player key; `null` closes inspection. */
   value?: string | null;
@@ -116,7 +125,7 @@ function cardLimit(maxCards: number) {
 export function GameCardStack({
   ref, piles, placement = 'grid', value, defaultValue = null, onValueChange,
   layout, cardWidth = `var(--game-card-width, ${vars.size.gameCardMd})`, maxCards = PLAYED_PILE.maxCards,
-  backPattern, className, sx, style, onKeyDown, slotProps, ...rest
+  backPattern, artSet, cardArtSets, slots, className, sx, style, onKeyDown, slotProps, ...rest
 }: GameCardStackProps) {
   const [inspected, inspect] = useControlledState(value, defaultValue, onValueChange);
   const returnFocus = useRef<HTMLButtonElement | null>(null);
@@ -158,7 +167,7 @@ export function GameCardStack({
   return <WithSx className={className} styles={rootStyle} sx={sx}>{(rootClass) => (
     <div {...rest} ref={ref} className={rootClass} data-ui={[...new Set(`game-card-stack ${rest['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ')} data-placement={placement}
       style={{ '--pile-preferred-width': cardWidth, ...style } as CSSProperties}
-      onKeyDown={(event) => {
+      onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
         onKeyDown?.(event);
         if (event.defaultPrevented || event.key !== 'Escape' || inspected === null) return;
         event.preventDefault();
@@ -181,7 +190,7 @@ export function GameCardStack({
               '--game-card-width': position ? cardWidth : undefined } as CSSProperties}>
             <GameCardStack.Pile playerKey={pile.playerKey} cards={pile.cards} label={pile.label}
               value={inspected} onValueChange={inspect} revealed={pile.revealed}
-              layout={layout} maxCards={limit} backPattern={backPattern} slotProps={slotProps}
+              layout={layout} maxCards={limit} backPattern={backPattern} artSet={artSet} cardArtSets={cardArtSets} slots={slots} slotProps={slotProps}
               style={{ '--pile-base-rotation': config.facePlayerRotation && pile.geometry ? `${(pile.geometry.angleDeg ?? 90) - 90}deg` : undefined } as CSSProperties} />
           </div>;
         })}
@@ -193,8 +202,10 @@ GameCardStack.displayName = 'GameCardStack';
 
 function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, defaultValue = null,
   onValueChange, revealed = false, maxCards = PLAYED_PILE.maxCards, cardWidth, layout, backPattern,
-  className, sx, style, onKeyDown, slotProps, ...rest }: GameCardStackPileProps) {
-  const registry = useFlightRegistry();
+  className, sx, style, onKeyDown, slotProps, slots, artSet, cardArtSets, ...rest }: GameCardStackPileProps) {
+  const Pile = slots?.pile ?? 'div';
+  const Trigger = slots?.trigger ?? 'button';
+  const Card = slots?.card ?? 'div';
   const [inspected, inspect] = useControlledState(value, defaultValue, onValueChange);
   const inspecting = inspected === playerKey;
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -209,15 +220,18 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
   }, [inspecting]);
   const config = { ...DEFAULT_PILE_LAYOUT, ...layout };
   const cards = allCards.slice(0, cardLimit(maxCards));
+  const registrationRef = useCardRegistrationRefs('played', cards.map((card) => card.id));
   const spread = inspecting || revealed;
-  return <MotionConfig reducedMotion="user"><WithSx className={[slotProps?.pile?.className, className].filter(Boolean).join(' ')}
-    styles={[pileStyle, slotProps?.pile?.css]} sx={sx}>{(rootClass) => (
-    <div {...rest} ref={ref} data-ui={[...new Set(`game-card-stack-pile ${rest['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ')} data-player-key={playerKey}
+  const { css: pileCss, className: pileClassName, style: pileInlineStyle, ...pileProps } = slotProps?.pile ?? {};
+  return <MotionConfig reducedMotion="user"><WithSx className={[pileClassName, className].filter(Boolean).join(' ')}
+    styles={[pileStyle, pileCss]} sx={sx}>{(rootClass) => (
+    <Pile {...rest} {...pileProps} ref={ref} data-ui={cardPartIdentity('game-card-stack-pile', `${rest['data-ui'] ?? ''} ${pileProps['data-ui'] ?? ''}`)} data-player-key={playerKey}
       data-spread={spread} data-state={inspecting ? 'open' : 'closed'} data-revealed={revealed || undefined}
       className={rootClass}
-      style={{ '--pile-width': cardWidth ?? `var(--game-card-width, ${vars.size.gameCardMd})`, '--pile-card-scale': inspecting ? PLAYED_PILE.openScale : 1, ...style } as CSSProperties}
-      onKeyDown={(event) => {
+      style={{ '--pile-width': cardWidth ?? `var(--game-card-width, ${vars.size.gameCardMd})`, '--pile-card-scale': inspecting ? PLAYED_PILE.openScale : 1, ...style, ...pileInlineStyle } as CSSProperties}
+      onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
         onKeyDown?.(event);
+        slotProps?.pile?.onKeyDown?.(event);
         if (event.defaultPrevented || event.key !== 'Escape' || !inspecting) return;
         // Root composition lets its own Escape handler retain native cancellation and focus ownership.
         if (event.currentTarget.closest('[data-ui~="game-card-stack"]')) return;
@@ -226,8 +240,8 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
         inspect(null);
       }}>
       {cards.length > 0 && <>
-        <button type="button" className={slotProps?.trigger?.className} css={[triggerStyle, slotProps?.trigger?.css]}
-          ref={triggerRef} onClick={() => inspect(inspecting ? null : playerKey)} aria-label={label}
+        <Trigger {...slotProps?.trigger} type="button" data-ui={cardPartIdentity('game-card-stack-trigger', slotProps?.trigger?.['data-ui'])} className={slotProps?.trigger?.className} css={[triggerStyle, slotProps?.trigger?.css]}
+          ref={triggerRef} onClick={(event) => { slotProps?.trigger?.onClick?.(event); if (!event.defaultPrevented) inspect(inspecting ? null : playerKey); }} aria-label={label}
           aria-expanded={inspecting} aria-controls={cardsId} />
         <div id={cardsId} css={cardsStyle}>
           {cards.map((card, index) => {
@@ -235,21 +249,22 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
             const jitter = getStableJitter({ seed: key, spread: config.maxJitterPx });
             const offset = getPileOffset({ index, total: cards.length, open: spread, openSpreadRatio: PLAYED_PILE.openSpreadRatio });
             const rotation = getStableRotation({ seed: inspecting ? `${key}:inspected` : key, maxRotationOffsetDeg: config.maxRotationOffsetDeg });
-            return <div key={key} data-ui="game-card-stack-card" data-played-key={key}
-              ref={(node) => registerFlightNode(registry?.played, key, node)}
+            return <Card {...slotProps?.card} key={key} data-ui={cardPartIdentity('game-card-stack-card', slotProps?.card?.['data-ui'])} data-played-key={key}
+              ref={registrationRef(key)}
               data-reduced-motion={mounted && !!reducedMotion || undefined} className={slotProps?.card?.className}
               css={[cardStyle, slotProps?.card?.css]} style={{
                 '--card-x': `calc(${jitter.x}px + ${spread ? `${visibleCardWidth} * ${offset.xCardWidths}` : `${offset.xPx}px`})`,
                 '--card-y': `${jitter.y + offset.y}px`, '--card-rotation': `calc(${rotation}deg + var(--pile-base-rotation, 0deg))`,
                 '--card-shadow': spread ? vars.shadow.floating : index === cards.length - 1 ? vars.shadow.raised : 'none',
                 zIndex: spread ? PLAYED_PILE.zIndex.openCard + index : PLAYED_PILE.zIndex.card + (card.order ?? index),
+                ...slotProps?.card?.style,
               } as CSSProperties}>
-              <GameCard label={card.label} value={card.value} backPattern={backPattern} sx={faceStyle} />
-            </div>;
+              <GameCard label={card.label} value={card.value} backPattern={backPattern} artSet={artSet} cardArtSets={cardArtSets} sx={faceStyle} />
+            </Card>;
           })}
         </div>
       </>}
-    </div>
+    </Pile>
   )}</WithSx></MotionConfig>;
 }
 GameCardStackPilePart.displayName = 'GameCardStack.Pile';

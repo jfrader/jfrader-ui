@@ -7,8 +7,9 @@ export const HAND_FAN_DROP_PX = 2;
 // 10.56px overlap without reducing its selectable width below that policy.
 export const HAND_SELECTION_TARGET_PX = 32;
 export const OPPONENT_SEAT_METRICS = { avatarSizePx: 56, nameBlockPx: 28 } as const;
+export const HAND_FAN_MAX_ROTATION_DEG = 10;
 export const getHandFanRotations = (count: number) =>
-  count === 3 ? [-10, 0, 10] : count === 2 ? [-7, 7] : [0];
+  Array.from({ length: count }, (_, index) => count <= 1 ? 0 : (index / (count - 1) * 2 - 1) * (count === 2 ? 7 : HAND_FAN_MAX_ROTATION_DEG));
 
 export interface HandPolarVector {
   cos: number;
@@ -50,7 +51,7 @@ export function buildOpponentHiddenHandLayout({
   nameBlockPx: number;
   scale?: number;
 }) {
-  const count = Number.isFinite(hiddenCardCount) ? Math.max(0, Math.min(3, Math.floor(hiddenCardCount))) : 0;
+  const count = Number.isFinite(hiddenCardCount) ? Math.max(0, Math.floor(hiddenCardCount)) : 0;
   const inward = { x: -geometry.cos, y: -geometry.sin };
   const ruleScale = scale * profileRules.distanceScale;
   const axialInsetPx = profileRules.axialInsetReductionPx * (1 - geometry.sideStrength);
@@ -63,8 +64,8 @@ export function buildOpponentHiddenHandLayout({
     rotateDeg: Math.atan2(inward.y, inward.x) * 180 / Math.PI + 90,
     origin: profileRules.handOrigin,
   };
-  const slots = count <= 1 ? [0] : count === 2 ? [-0.5, 0.5] : [-1, 0, 1];
-  const outerSlot = Math.max(...slots.map(Math.abs));
+  const slots = Array.from({ length: count }, (_, index) => index - (count - 1) / 2);
+  const outerSlot = Math.max(0, (count - 1) / 2);
   const cards = count ? slots.map((slot, index) => ({
     x: slot * profileRules.fanSpacingPx * scale,
     y: (Math.abs(slot) - outerSlot) * profileRules.fanArcDepthPx * scale,
@@ -78,7 +79,7 @@ export function getOpponentSeatHandTransform({
   polar, hiddenHandScale = 1, hiddenHandRules = DEFAULT_HIDDEN_HAND_RULES,
 }: { polar: HandPolarVector; hiddenHandScale?: number; hiddenHandRules?: HiddenHandRules }) {
   const { anchor } = buildOpponentHiddenHandLayout({
-    geometry: polar, profileRules: hiddenHandRules, hiddenCardCount: 3,
+    geometry: polar, profileRules: hiddenHandRules, hiddenCardCount: 0,
     ...OPPONENT_SEAT_METRICS, scale: hiddenHandScale,
   });
   return { x: anchor.x, y: anchor.y, rotate: anchor.rotateDeg, origin: anchor.origin };
