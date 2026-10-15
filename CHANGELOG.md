@@ -4,6 +4,7 @@
 
 ### Added
 
+- Component docs list each slot and link it when the slot type is another public component. Components that render another public component link to it.
 - Dialog, Drawer, BottomSheet, ContextMenu and UserMenu easy compositions accept interior replacement slots. Drawer and BottomSheet add footer content; DialogStack adds header/body slots. Overlay easy roots accept `component` as `slots.root` sugar, and UserMenu.Content adds replacements for its list, handle and close button.
 - TextField, Textarea, PasswordField, SearchField, MentionInput, TagInput, InlineEdit, FileDropzone and ExpandingSearch accept typed `component`, `slots` and native `slotProps` for wrapper and generated-part customization. Existing control refs and leaf renderers remain available.
 - Easy-mode part props accept `css` overrides across MultiSelect, Select, Combobox, Menu, Tabs and Dialog, with `component` as `slots.root` sugar. Combobox adds direct label, description and error slots; Menu and Tabs add generated-part replacement and root props; Dialog adds panel/header props and its existing panel-root replacement seam. Each component has a slot-props example.
@@ -45,6 +46,7 @@
 
 ### Changed
 
+- Button's first example says Save changes, and its code matches that button. Card's slot example shows `slotProps`.
 - ActivityRings aligns the goal summary with the legend's shared row inset, including narrow and RTL layouts.
 
 - ActivityRings examples use accent, success and info tones, with a Neutral example alongside them. Completed goals retain their metric colour; unknown and unavailable values use neutral swatches. The neutral palette's third tone now meets 3:1 contrast against the tick track in both themes.

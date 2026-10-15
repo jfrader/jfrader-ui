@@ -162,7 +162,7 @@ export const Basic: Story = {
   parameters: { docs: { source: { code: `<Card>
   <Card.Header>
     <Card.Title>Pro plan</Card.Title>
-    <Card.Description>Billed monthly.</Card.Description>
+    <Card.Description>Billed monthly, renews on 1 November.</Card.Description>
   </Card.Header>
   <Card.Content>Unlimited projects</Card.Content>
   <Card.Footer><Button>Upgrade</Button></Card.Footer>
@@ -304,6 +304,17 @@ export const WithForm: Story = {
 const slotTitleStyle = css({ fontSize: vars.textSize.lg });
 
 export const SlotProps: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `import { Card } from '@jfrader/ui';
+
+<Card slotProps={{ title: { className: 'plan-title' } }}>
+  <Card.Title>Pro plan</Card.Title>
+</Card>`,
+      },
+    },
+  },
   render: (args) => (
     <>
       <PlanCard {...args} />

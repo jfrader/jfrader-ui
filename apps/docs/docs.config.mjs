@@ -68,4 +68,7 @@ export default {
   code: {
     module: './src/code.tsx',
   },
+  composition: {
+    module: './src/composition.tsx',
+  },
 };
