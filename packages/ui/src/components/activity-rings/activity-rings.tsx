@@ -101,18 +101,6 @@ interface ActivityRingsSlotProps {
   /** Paragraph displaying the active day or completion summary. */
   summary?: ActivityRingsPartProps<'p'>;
 }
-interface ActivityRingsSlots {
-  /** SVG element rendering ring tracks and progress strokes. */
-  rings?: ComponentType<ComponentPropsWithoutRef<'svg'>>;
-  /** List element presenting the metric items and swatches. */
-  legend?: ComponentType<ComponentPropsWithoutRef<'ul'>>;
-  /** Fieldset grouping the daily history radio options. */
-  dayPicker?: ComponentType<ComponentPropsWithoutRef<'fieldset'>>;
-  /** Label wrapping each daily history radio option. */
-  dayLabel?: ComponentType<ComponentPropsWithoutRef<'label'>>;
-  /** Paragraph displaying the active day or completion summary. */
-  summary?: ComponentType<ComponentPropsWithoutRef<'p'>>;
-}
 /** Metric slot props shared by the toggle-button and plain-row legend elements. */
 export type ActivityRingsMetricProps = Pick<
   ActivityRingsPartProps<'button'> & ActivityRingsPartProps<'div'>,
@@ -157,6 +145,21 @@ type LegendMode =
         metric?: ActivityRingsMetricProps;
       };
     };
+export interface ActivityRingsSlots {
+  /** SVG element rendering ring tracks and progress strokes. */
+  rings?: ComponentType<ComponentPropsWithoutRef<'svg'>>;
+  /** List element presenting the metric items and swatches. */
+  legend?: ComponentType<ComponentPropsWithoutRef<'ul'>>;
+  /** Fieldset grouping the daily history radio options. */
+  dayPicker?: ComponentType<ComponentPropsWithoutRef<'fieldset'>>;
+  /** Label wrapping each daily history radio option. */
+  dayLabel?: ComponentType<ComponentPropsWithoutRef<'label'>>;
+  /** Paragraph displaying the active day or completion summary. */
+  summary?: ComponentType<ComponentPropsWithoutRef<'p'>>;
+  /** Legend row or toggle button presenting an individual metric. */
+  metric?: ComponentType<ComponentPropsWithoutRef<'button'>> | ComponentType<ComponentPropsWithoutRef<'div'>>;
+}
+
 export type ActivityRingsProps = Omit<
   ComponentPropsWithRef<'section'>,
   'children' | 'defaultValue' | 'onChange'

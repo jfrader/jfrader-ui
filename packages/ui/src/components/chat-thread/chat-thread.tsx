@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ComponentPropsWithRef } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ComponentPropsWithRef, type ComponentType } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
@@ -153,6 +153,22 @@ export interface ChatThreadComposerProps extends Omit<ComponentPropsWithRef<'div
   size?: ChatThreadSize;
   labels?: Partial<ChatThreadLabels>;
   slotProps?: ChatThreadComposerSlotProps;
+  slots?: {
+    /** Lists staged attachments. */
+    tray?: ComponentType<ThreadPartProps>;
+    /** Displays a staged attachment. */
+    file?: ComponentType<ThreadPartProps>;
+    /** Displays an attachment error. */
+    error?: ComponentType<ThreadPartProps>;
+    /** Holds the message fields and actions. */
+    form?: ComponentType<NonNullable<ChatThreadComposerSlotProps['form']>>;
+    /** Opens the attachment picker. */
+    attachButton?: ComponentType<ThreadButtonProps>;
+    /** Selects attachment files. */
+    fileInput?: ComponentType<NonNullable<ChatThreadComposerSlotProps['fileInput']>>;
+    /** Removes a staged attachment. */
+    removeButton?: ComponentType<ThreadButtonProps>;
+  };
 }
 export interface ChatThreadProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   participants: readonly ChatParticipant[];
@@ -177,6 +193,26 @@ export interface ChatThreadProps extends Omit<ComponentPropsWithRef<'div'>, 'def
   size?: ChatThreadSize;
   labels?: Partial<ChatThreadLabels>;
   slotProps?: ChatThreadSlotProps;
+  slots?: {
+    /** Holds the scrollable transcript. */
+    scroller?: ComponentType<ThreadPartProps>;
+    /** Announces arriving messages. */
+    log?: ComponentType<ThreadPartProps>;
+    /** Lists the conversation messages. */
+    list?: ComponentType<ThreadPartProps>;
+    /** Holds a message and its day heading. */
+    message?: ComponentType<ThreadPartProps>;
+    /** Holds the message body. */
+    bubble?: ComponentType<ThreadPartProps>;
+    /** Displays the message timestamp. */
+    time?: ComponentType<ThreadPartProps>;
+    /** Displays the delivery receipt. */
+    receipt?: ComponentType<ThreadPartProps>;
+    /** Holds the message reactions. */
+    reaction?: ComponentType<ThreadPartProps>;
+    /** Scrolls to the latest message. */
+    jumpButton?: ComponentType<ThreadButtonProps>;
+  };
 }
 
 const UI = 'chat-thread';
@@ -296,6 +332,7 @@ function ChatComposer({
   size = 'md',
   labels: labelProps,
   slotProps,
+  slots,
   className,
   sx,
   ...rest
@@ -362,19 +399,26 @@ function ChatComposer({
     queueMicrotask(() => { if (focused && !focused.isConnected) (root?.querySelector<HTMLElement>('[data-action="remove-file"]') ?? root?.querySelector('textarea'))?.focus(); });
   };
   const textarea = slotProps?.textarea;
+  const Tray = slots?.tray ?? 'ul';
+  const File = slots?.file ?? 'li';
+  const Error = slots?.error ?? 'p';
+  const Form = slots?.form ?? 'form';
+  const AttachButton = slots?.attachButton ?? Button;
+  const FileInput = slots?.fileInput ?? 'input';
+  const RemoveButton = slots?.removeButton ?? Button;
   const fileInput = slotProps?.fileInput;
   const form = slotProps?.form;
   return (
     <WithSx className={className} styles={[composerRootStyle, threadSizeStyles[size]]} sx={sx}>
       {(rootClass) => <div {...rest} ref={mergedRef} className={rootClass} data-ui={`${UI}-composer`}>
-        {draft.files.length > 0 ? <ul role="list" aria-label={labels.attachments} data-ui={`${UI}-tray`} className={slotProps?.tray?.className} css={[trayStyle, fadeStyle, slotProps?.tray?.css]}>
-          {draft.files.map((file, index) => <li key={index} className={slotProps?.file?.className} css={[fileStyle, slotProps?.file?.css]}>
+        {draft.files.length > 0 ? <Tray {...slotProps?.tray} role="list" aria-label={labels.attachments} data-ui={`${UI}-tray`} className={slotProps?.tray?.className} css={[trayStyle, fadeStyle, slotProps?.tray?.css]}>
+          {draft.files.map((file, index) => <File {...slotProps?.file} key={index} className={slotProps?.file?.className} css={[fileStyle, slotProps?.file?.css]}>
             {preview.get(file) ? <img src={preview.get(file)} alt="" css={previewStyle} /> : null}
             <span>{file.name} · {fileSize(file.size, locale)}</span>
-            <Button size="sm" variant="ghost" {...slotProps?.removeButton} aria-label={labels.removeFile(file.name)} disabled={disabled || pending || slotProps?.removeButton?.disabled} data-action="remove-file" onClick={(event) => { slotProps?.removeButton?.onClick?.(event); if (!event.defaultPrevented) remove(index); }}>×</Button>
-          </li>)}
-        </ul> : null}
-        <form
+            <RemoveButton size="sm" variant="ghost" {...slotProps?.removeButton} aria-label={labels.removeFile(file.name)} disabled={disabled || pending || slotProps?.removeButton?.disabled} data-action="remove-file" onClick={(event) => { slotProps?.removeButton?.onClick?.(event); if (!event.defaultPrevented) remove(index); }}>×</RemoveButton>
+          </File>)}
+        </Tray> : null}
+        <Form
           {...form}
           data-ui={`${UI}-form`}
           onSubmit={(event) => {
@@ -429,7 +473,7 @@ function ChatComposer({
             }}
           />
           {allowAttachments ? <div css={rowStyle}>
-            <input
+            <FileInput
               {...fileInput}
               ref={inputRefs}
               id={fileInput?.id ?? inputId}
@@ -445,7 +489,7 @@ function ChatComposer({
                 event.currentTarget.value = '';
               }}
             />
-            <Button
+            <AttachButton
               variant="outline"
               size="sm"
               {...slotProps?.attachButton}
@@ -457,10 +501,10 @@ function ChatComposer({
               }}
             >
               {labels.attach}
-            </Button>
+            </AttachButton>
           </div> : null}
-        </form>
-        <p id={errorId} role="status" aria-atomic="true" data-ui={`${UI}-error`} className={slotProps?.error?.className} css={[errorStyle, slotProps?.error?.css]}>{error}</p>
+        </Form>
+        <Error {...slotProps?.error} id={errorId} role="status" aria-atomic="true" data-ui={`${UI}-error`} className={slotProps?.error?.className} css={[errorStyle, slotProps?.error?.css]}>{error}</Error>
       </div>}
     </WithSx>
   );
@@ -492,6 +536,7 @@ function ChatThreadRoot({
   size = 'md',
   labels: labelProps,
   slotProps,
+  slots,
   className,
   sx,
   ...rest
@@ -722,10 +767,15 @@ function ChatThreadRoot({
   const typingNames = uniqueBy(typing, (id) => id).filter((id) => id !== currentUserId && people.has(id)).map((id) => people.get(id)!.name);
   const typingText = typingNames.length ? labels.typing(formatters.people.format(typingNames)) : '';
   const acceptedDraft = ack && messages.some((message) => message.id === ack.id) ? ack.draft : null;
+  const Scroller = slots?.scroller ?? 'div';
+  const Log = slots?.log ?? 'div';
+  const List = slots?.list ?? 'ol';
+  const Message = slots?.message ?? 'li';
+  const JumpButton = slots?.jumpButton ?? Button;
   return <WithSx className={className} styles={[rootStyle, threadSizeStyles[size]]} sx={sx}>
     {(rootClass) => <div {...rest} ref={rootRefs} className={rootClass} data-ui={UI} data-size={size}>
       <div data-ui={`${UI}-viewport`} className={slotProps?.viewport?.className} css={[viewportStyle, slotProps?.viewport?.css]}>
-        <div ref={scrollerRef} tabIndex={0} role="group" aria-label={labels.transcript} data-ui={`${UI}-scroller`} className={slotProps?.scroller?.className} css={[scrollerStyle, slotProps?.scroller?.css]} onScroll={(event) => {
+        <Scroller {...slotProps?.scroller} ref={scrollerRef} tabIndex={0} role="group" aria-label={labels.transcript} data-ui={`${UI}-scroller`} className={slotProps?.scroller?.className} css={[scrollerStyle, slotProps?.scroller?.css]} onScroll={(event) => {
           const el = event.currentTarget;
           const nearBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= PIN_THRESHOLD;
           if (nearBottom) jumping.current = false;
@@ -735,7 +785,8 @@ function ChatThreadRoot({
           setAway(!pinned.current);
           if (pinned.current) setUnread(0);
         }} onWheel={() => { jumping.current = false; }}>
-          <div
+          <Log
+            {...slotProps?.log}
             role="log"
             aria-label={labels.conversation}
             aria-live={live && !prepending ? 'polite' : 'off'}
@@ -746,7 +797,7 @@ function ChatThreadRoot({
             css={slotProps?.log?.css}
           >
             {rendered.length === 0 ? <p>{labels.empty}</p> : null}
-            <ol ref={listRef} role="list" data-ui={`${UI}-list`} className={slotProps?.list?.className} css={[listStyle, size === 'sm' && compactListStyle, slotProps?.list?.css]}>
+            <List {...slotProps?.list} ref={listRef} role="list" data-ui={`${UI}-list`} className={slotProps?.list?.className} css={[listStyle, size === 'sm' && compactListStyle, slotProps?.list?.css]}>
               {rendered.map((message, index) => {
                 const epoch = toEpoch(message.createdAt);
                 const previous = rendered[index - 1];
@@ -756,7 +807,7 @@ function ChatThreadRoot({
                 const own = message.authorId === currentUserId;
                 const author = people.get(message.authorId) ?? { id: message.authorId, name: labels.unknownAuthor };
                 const readers = Object.entries(readBy ?? {}).filter(([id, last]) => id !== currentUserId && people.has(id) && last === message.id).map(([id]) => people.get(id)!.name);
-                return <li key={message.id} data-ui={`${UI}-message`} data-message-id={message.id} data-own={own} data-grouped={grouped} className={slotProps?.message?.className} css={[messageStyle, entering.has(message.id) && message.status !== 'failed' && fadeStyle, slotProps?.message?.css]}>
+                return <Message {...slotProps?.message} key={message.id} data-ui={`${UI}-message`} data-message-id={message.id} data-own={own} data-grouped={grouped} className={slotProps?.message?.className} css={[messageStyle, entering.has(message.id) && message.status !== 'failed' && fadeStyle, slotProps?.message?.css]}>
                   {!sameDay ? <h3 data-ui={`${UI}-day`} css={dateStyle}>{epoch === null ? labels.invalidTime : dateFormat.format(epoch)}</h3> : null}
                   <ChatMessageView
                     _ui={UI}
@@ -780,6 +831,7 @@ function ChatThreadRoot({
                     onRetry={onRetry ? () => retry(message.id) : undefined}
                     retryLoading={retrying === message.id}
                     labels={labels}
+                    slots={{ bubble: slots?.bubble, time: slots?.time, receipt: slots?.receipt, reactions: slots?.reaction }}
                     slotProps={{
                       bubble: slotProps?.bubble,
                       time: slotProps?.time,
@@ -788,12 +840,12 @@ function ChatThreadRoot({
                       receipt: slotProps?.receipt,
                     }}
                   />
-                </li>;
+                </Message>;
               })}
-            </ol>
-          </div>
-        </div>
-        {away ? <Button variant="outline" size="sm" {...slotProps?.jumpButton} css={jumpStyle} onClick={(event) => { slotProps?.jumpButton?.onClick?.(event); if (!event.defaultPrevented) jump(); }}>{unread ? labels.newMessages(unread) : labels.jumpToLatest}</Button> : null}
+            </List>
+          </Log>
+        </Scroller>
+        {away ? <JumpButton variant="outline" size="sm" {...slotProps?.jumpButton} css={jumpStyle} onClick={(event) => { slotProps?.jumpButton?.onClick?.(event); if (!event.defaultPrevented) jump(); }}>{unread ? labels.newMessages(unread) : labels.jumpToLatest}</JumpButton> : null}
       </div>
       <div aria-hidden="true" css={typingStyle}>{typingText}</div>
       <div role="status" aria-atomic="true" css={visuallyHiddenStyle}>{typingText}</div>

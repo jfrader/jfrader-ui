@@ -10,8 +10,8 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 - Public callable families: **126**; public callable parts: **156**.
 - Families exposing `slots.root`: **58**; remaining without a family-level root slot: **68** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **60**; remaining without family-level interior slots: **66** (includes components without generated anatomy).
-- Rows with styling-only `slotProps` keys: **59**.
+- Families exposing any non-root replacement slot: **70**; remaining without family-level interior slots: **56** (includes components without generated anatomy).
+- Rows with styling-only `slotProps` keys: **56**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
 behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, TrickStacks and CardFlights are owner-held;
@@ -31,7 +31,7 @@ may exist and is listed on the corresponding public part).
 | [Accordion.Trigger](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
 | [ActivityRings](../packages/ui/src/components/activity-rings/activity-rings.tsx) | — | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | — | — | — |
 | [Alert](../packages/ui/src/components/alert/alert.tsx) | — | `body`, `dismiss`, `root`, `title` | `body`, `dismiss`, `root`, `title` | — | — | — |
-| [AnnouncementBar](../packages/ui/src/components/announcement-bar/announcement-bar.tsx) | — | — | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | — | — |
+| [AnnouncementBar](../packages/ui/src/components/announcement-bar/announcement-bar.tsx) | — | `action`, `countdown`, `dismiss`, `message`, `next`, `previous`, `rotation` | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | `content`, `root` | — | — |
 | [AttachmentList](../packages/ui/src/components/attachment-list/attachment-list.tsx) | — | `expandButton`, `item`, `link` | `expandButton`, `item`, `link` | — | — | — |
 | [Avatar](../packages/ui/src/components/avatar/avatar.tsx) | — | `fallback`, `image`, `status` | `fallback`, `image`, `status` | — | — | — |
 | [AvatarGroup](../packages/ui/src/components/avatar-group/avatar-group.tsx) | — | `member`, `overflow`, `summary` | `member`, `overflow`, `summary` | — | `avatarProps` | — |
@@ -70,11 +70,11 @@ may exist and is listed on the corresponding public part).
 | [CardFlightsProvider](../packages/ui/src/components/card-flights/card-flights.tsx) | yes | `root` | `root` | — | — | — |
 | [Carousel](../packages/ui/src/components/carousel/carousel.tsx) | — | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | — | — | — |
 | [ChatMessage](../packages/ui/src/components/chat-message/chat-message.tsx) | — | `article`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | `attachments` | — | — |
-| [ChatThread](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | — | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `scroller`, `time`, `viewport` | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `scroller`, `time`, `viewport` | `composerProps` | `Composer` |
-| [ChatThread.Composer](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | — | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | — | — |
-| [Checkbox](../packages/ui/src/components/checkbox/checkbox.tsx) | — | — | `control`, `description`, `label`, `root` | `control`, `description`, `label`, `root` | — | — |
+| [ChatThread](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `scroller`, `time` | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `scroller`, `time`, `viewport` | `attachments`, `viewport` | `composerProps` | `Composer` |
+| [ChatThread.Composer](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `tray` | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | `sendButton`, `textarea` | — | — |
+| [Checkbox](../packages/ui/src/components/checkbox/checkbox.tsx) | — | `control`, `description`, `label` | `control`, `description`, `label`, `root` | `root` | — | — |
 | [ChipGroup](../packages/ui/src/components/chip-group/chip-group.tsx) | — | `check`, `chip`, `frame`, `label`, `overflow`, `row` | `check`, `chip`, `frame`, `label`, `overflow`, `row` | — | — | — |
-| [CodeBlock](../packages/ui/src/components/code-block/code-block.tsx) | — | — | `code`, `gutter`, `header`, `label`, `language`, `pre`, `sourceFrame`, `toggle` | `code`, `gutter`, `header`, `label`, `language`, `pre`, `sourceFrame`, `toggle` | `copyButtonProps` | — |
+| [CodeBlock](../packages/ui/src/components/code-block/code-block.tsx) | — | `code`, `gutter`, `header`, `label`, `language`, `pre`, `toggle` | `code`, `gutter`, `header`, `label`, `language`, `pre`, `sourceFrame`, `toggle` | `sourceFrame` | `copyButtonProps` | — |
 | [Combobox](../packages/ui/src/components/combobox/combobox.tsx) | yes | `empty`, `input`, `item`, `list`, `root` | `description`, `empty`, `error`, `input`, `item`, `label`, `list`, `root` | `description`, `error`, `label` | — | `Empty`, `Input`, `Item`, `List` |
 | [Combobox.Empty](../packages/ui/src/components/combobox/combobox.tsx) | — | — | — | — | — | — |
 | [Combobox.Input](../packages/ui/src/components/combobox/combobox.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |
@@ -88,7 +88,7 @@ may exist and is listed on the corresponding public part).
 | [CommandPalette.Item](../packages/ui/src/components/command-palette/command-palette.tsx) | — | — | — | — | — | — |
 | [CommandPalette.List](../packages/ui/src/components/command-palette/command-palette.tsx) | — | — | — | — | — | — |
 | [CommandPalette.Trigger](../packages/ui/src/components/command-palette/command-palette.tsx) | — | — | — | — | — | — |
-| [CommentThread](../packages/ui/src/components/comment-thread/comment-thread.tsx) | — | — | `actions`, `article`, `body`, `composer`, `header`, `item`, `list`, `reaction`, `replies`, `resolved`, `send`, `status`, `textarea`, `time`, `title` | `actions`, `article`, `body`, `composer`, `header`, `item`, `list`, `reaction`, `replies`, `resolved`, `send`, `status`, `textarea`, `time`, `title` | — | — |
+| [CommentThread](../packages/ui/src/components/comment-thread/comment-thread.tsx) | — | `actions`, `article`, `body`, `header`, `item`, `list`, `reaction`, `replies`, `resolved`, `status`, `time`, `title` | `actions`, `article`, `body`, `composer`, `header`, `item`, `list`, `reaction`, `replies`, `resolved`, `send`, `status`, `textarea`, `time`, `title` | `composer`, `send`, `textarea` | — | — |
 | [Container](../packages/ui/src/components/container/container.tsx) | — | — | — | — | — | — |
 | [ContextMenu](../packages/ui/src/components/context-menu/context-menu.tsx) | yes | `content`, `item`, `root`, `separator`, `target` | `content`, `item`, `root`, `separator`, `target` | — | — | `CheckboxItem`, `Content`, `Item`, `Separator`, `Target`, `Trigger` |
 | [ContextMenu.CheckboxItem](../packages/ui/src/components/context-menu/context-menu.tsx) | — | — | — | — | — | — |
@@ -97,7 +97,7 @@ may exist and is listed on the corresponding public part).
 | [ContextMenu.Separator](../packages/ui/src/components/context-menu/context-menu.tsx) | — | — | — | — | — | — |
 | [ContextMenu.Target](../packages/ui/src/components/context-menu/context-menu.tsx) | — | — | — | — | — | — |
 | [ContextMenu.Trigger](../packages/ui/src/components/context-menu/context-menu.tsx) | — | — | — | — | — | — |
-| [CopyButton](../packages/ui/src/components/copy-button/copy-button.tsx) | — | — | `icon`, `label`, `status` | `icon`, `label`, `status` | — | — |
+| [CopyButton](../packages/ui/src/components/copy-button/copy-button.tsx) | — | `icon`, `label`, `status` | `icon`, `label`, `status` | — | — | — |
 | [Countdown](../packages/ui/src/components/countdown/countdown.tsx) | — | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | — | — | — |
 | [DatePicker](../packages/ui/src/components/date-picker/date-picker.tsx) | — | `input`, `popup` | `input`, `popup` | — | — | `Input`, `Popup` |
 | [DatePicker.Input](../packages/ui/src/components/date-picker/date-picker.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |
@@ -180,19 +180,19 @@ may exist and is listed on the corresponding public part).
 | [GameTablePlay](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |
 | [GameTableSeat](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |
 | [GameTableSeatChrome](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |
-| [HoldToConfirm](../packages/ui/src/components/hold-to-confirm/hold-to-confirm.tsx) | — | — | `face`, `fill`, `hint`, `icon`, `label`, `status` | `face`, `fill`, `hint`, `icon`, `label`, `status` | — | — |
-| [HoverCard](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | `content`, `profile`, `trigger` | `content`, `profile`, `trigger` | — | `Content`, `Group`, `Profile`, `Trigger` |
+| [HoldToConfirm](../packages/ui/src/components/hold-to-confirm/hold-to-confirm.tsx) | — | `hint`, `icon`, `label`, `status` | `face`, `fill`, `hint`, `icon`, `label`, `status` | `face`, `fill` | — | — |
+| [HoverCard](../packages/ui/src/components/hover-card/hover-card.tsx) | — | `content`, `profile`, `trigger` | `content`, `profile`, `trigger` | — | — | `Content`, `Group`, `Profile`, `Trigger` |
 | [HoverCard.Content](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |
 | [HoverCard.Group](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |
-| [HoverCard.Profile](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | `avatar`, `bio`, `identity`, `meta`, `stats` | `avatar`, `bio`, `identity`, `meta`, `stats` | — | — |
+| [HoverCard.Profile](../packages/ui/src/components/hover-card/hover-card.tsx) | — | `bio`, `meta`, `stats` | `avatar`, `bio`, `identity`, `meta`, `stats` | `avatar`, `identity` | — | — |
 | [HoverCard.Trigger](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |
 | [ImageCompare](../packages/ui/src/components/image-compare/image-compare.tsx) | — | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | — | — | — |
 | [InlineEdit](../packages/ui/src/components/inline-edit/inline-edit.tsx) | yes | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | — | `controlProps` | — |
 | [JsonViewer](../packages/ui/src/components/json-viewer/json-viewer.tsx) | — | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | — | — | — |
 | [Kbd](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | `Group` |
 | [Kbd.Group](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | — |
-| [KeycapKeyboard](../packages/ui/src/components/keycap-keyboard/keycap-keyboard.tsx) | — | — | `key`, `legend`, `row` | `key`, `legend`, `row` | — | — |
-| [LightboxGallery](../packages/ui/src/components/lightbox-gallery/lightbox-gallery.tsx) | — | — | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | — | — |
+| [KeycapKeyboard](../packages/ui/src/components/keycap-keyboard/keycap-keyboard.tsx) | — | `key`, `legend` | `key`, `legend`, `row` | `row` | — | — |
+| [LightboxGallery](../packages/ui/src/components/lightbox-gallery/lightbox-gallery.tsx) | — | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | — | — | — |
 | [LinkPreview](../packages/ui/src/components/link-preview/link-preview.tsx) | — | `body`, `image`, `title` | `body`, `image`, `title` | — | — | — |
 | [LinkUnfurl](../packages/ui/src/components/link-unfurl/link-unfurl.tsx) | — | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | — | — | — |
 | [LocaleSwitcher](../packages/ui/src/components/locale-switcher/locale-switcher.tsx) | — | — | `content`, `option`, `trigger` | `content`, `option`, `trigger` | — | — |

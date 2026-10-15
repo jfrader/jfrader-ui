@@ -24,6 +24,23 @@ export interface CountdownPartProps {
   className?: string;
   css?: Interpolation<Theme>;
 }
+export interface CountdownSlots {
+  /** Replaces the header label. */
+  label?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
+  /** Replaces the time unit container. */
+  content?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces each time unit cell. */
+  unit?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'bdi'>>;
+  /** Replaces each numeric value. */
+  number?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
+  /** Replaces the completion text container. */
+  complete?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
+  /** Replaces the completion icon container. */
+  icon?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
+  /** Replaces the target description. */
+  description?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
+}
+
 export interface CountdownProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   /** Exact instant: epoch milliseconds, Date, or an ISO date-time with Z or an explicit offset. */
   target: Date | number | string;
@@ -45,22 +62,7 @@ export interface CountdownProps extends Omit<ComponentPropsWithRef<'div'>, 'chil
   onComplete?: (targetEpochMs: number) => void;
   announceCompletion?: boolean;
   completionIcon?: ReactNode;
-  slots?: {
-    /** Replaces the header label. */
-    label?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
-    /** Replaces the time unit container. */
-    content?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'div'>>;
-    /** Replaces each time unit cell. */
-    unit?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'bdi'>>;
-    /** Replaces each numeric value. */
-    number?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
-    /** Replaces the completion text container. */
-    complete?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
-    /** Replaces the completion icon container. */
-    icon?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
-    /** Replaces the target description. */
-    description?: ComponentType<CountdownPartProps & ComponentPropsWithRef<'span'>>;
-  };
+  slots?: CountdownSlots;
   slotProps?: Partial<
     Record<
       | /** Header label displayed above the countdown. */

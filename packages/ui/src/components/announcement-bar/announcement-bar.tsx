@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type MouseEvent,
   type ReactNode,
@@ -75,6 +76,22 @@ export interface AnnouncementBarProps
   onAction?: (announcement: Announcement) => void;
   onCountdownEnd?: (announcement: Announcement) => void;
   dismissFocusRef?: RefObject<HTMLElement | null>;
+  slots?: {
+    /** Displays the announcement text. */
+    message?: ComponentType<NonNullable<NonNullable<AnnouncementBarProps['slotProps']>['message']>>;
+    /** Opens or performs the announcement action. */
+    action?: ComponentType<NonNullable<NonNullable<AnnouncementBarProps['slotProps']>['action']>>;
+    /** Shows the previous announcement. */
+    previous?: ComponentType<Slot<'button'>>;
+    /** Shows the next announcement. */
+    next?: ComponentType<Slot<'button'>>;
+    /** Pauses or resumes rotation. */
+    rotation?: ComponentType<Slot<'button'>>;
+    /** Dismisses the announcement. */
+    dismiss?: ComponentType<Slot<'button'>>;
+    /** Displays the remaining time. */
+    countdown?: ComponentType<Omit<Slot<'div'>, 'onClick'>>;
+  };
   slotProps?: {
     /** Outer section element wrapping the announcement bar. */
     root?: Slot<'section'>;
@@ -280,10 +297,15 @@ export function AnnouncementBar({
   onCountdownEnd,
   dismissFocusRef,
   slotProps,
+  slots,
   className,
   sx,
   ...rest
 }: AnnouncementBarProps) {
+  const Message = slots?.message ?? 'span';
+  const Timer = slots?.countdown ?? Countdown;
+  const ActionLink = slots?.action ?? 'a';
+  const ActionButton = slots?.action ?? 'button';
   const [open, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
   const [current, requestValue] = useControlledState(
     value === undefined ? undefined : normalize(value, messages.length),
@@ -405,11 +427,12 @@ export function AnnouncementBar({
     handler: () => void,
   ) => {
     const props = slotProps?.[part];
+    const Control = slots?.[part] ?? 'button';
     return (
       <Button
         {...props}
         type="button"
-        render={(buttonProps) => <button {...buttonProps} data-ui={`announcement-bar-${part}`} />}
+        render={(buttonProps) => <Control {...buttonProps} data-ui={`announcement-bar-${part}`} />}
         size="sm"
         css={[controlStyle, props?.css]}
         aria-label={props?.['aria-label'] ?? name}
@@ -541,7 +564,7 @@ export function AnnouncementBar({
                   css={slideStyle}
                 >
                   {hasContent(announcement.message) && (
-                    <span
+                    <Message
                       {...slotProps?.message}
                       data-ui="announcement-bar-message"
                       css={[messageStyle, slotProps?.message?.css]}
@@ -549,10 +572,10 @@ export function AnnouncementBar({
                       aria-atomic="true"
                     >
                       {announcement.message}
-                    </span>
+                    </Message>
                   )}
                   {open && announcement.countdown && (
-                    <Countdown
+                    <Timer
                       {...slotProps?.countdown}
                       css={slotProps?.countdown?.css}
                       {...announcement.countdown}
@@ -571,7 +594,7 @@ export function AnnouncementBar({
                   {announcement.action &&
                     hasContent(announcement.action.label) &&
                     (announcement.action.href !== undefined ? (
-                      <a
+                      <ActionLink
                         {...slotProps?.action}
                         href={announcement.action.href}
                         data-ui="announcement-bar-action"
@@ -579,13 +602,13 @@ export function AnnouncementBar({
                         onClick={clickAction}
                       >
                         {announcement.action.label}
-                      </a>
+                      </ActionLink>
                     ) : (
                       <Button
                         {...slotProps?.action}
                         type="button"
                         render={(buttonProps) => (
-                          <button {...buttonProps} data-ui="announcement-bar-action" />
+                          <ActionButton {...buttonProps} data-ui="announcement-bar-action" />
                         )}
                         css={[controlStyle, slotProps?.action?.css]}
                         onClick={clickAction}

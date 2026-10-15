@@ -71,6 +71,25 @@ export interface ImageCompareSlotProps {
   resetButton?: ButtonSlot;
 }
 
+export interface ImageCompareSlots {
+  /** Replaces the image frame. */
+  frame?: ComponentType<PartSlot & ComponentPropsWithRef<'div'>>;
+  /** Replaces the before image layer. */
+  before?: ComponentType<PartSlot & ComponentPropsWithRef<'div'>>;
+  /** Replaces the after image layer. */
+  after?: ComponentType<PartSlot & ComponentPropsWithRef<'div'>>;
+  /** Replaces the before caption. */
+  beforeLabel?: ComponentType<CaptionSlot & ComponentPropsWithRef<'span'>>;
+  /** Replaces the after caption. */
+  afterLabel?: ComponentType<CaptionSlot & ComponentPropsWithRef<'span'>>;
+  /** Replaces the divider line. */
+  divider?: ComponentType<Omit<PartSlot, 'aria-hidden'> & ComponentPropsWithRef<'div'>>;
+  /** Replaces the slider handle. */
+  handle?: ComponentType<HandleSlot & ComponentPropsWithRef<'div'>>;
+  /** Replaces the reset button. */
+  resetButton?: ComponentType<ButtonSlot & ButtonProps>;
+}
+
 export interface ImageCompareProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   /** Image shown at inline-start (horizontal) or top (vertical). Give it meaningful alt text. */
@@ -96,24 +115,7 @@ export interface ImageCompareProps
   disabled?: boolean;
   showReset?: boolean;
   resetLabel?: string;
-  slots?: {
-    /** Replaces the image frame. */
-    frame?: ComponentType<PartSlot & ComponentPropsWithRef<'div'>>;
-    /** Replaces the before image layer. */
-    before?: ComponentType<PartSlot & ComponentPropsWithRef<'div'>>;
-    /** Replaces the after image layer. */
-    after?: ComponentType<PartSlot & ComponentPropsWithRef<'div'>>;
-    /** Replaces the before caption. */
-    beforeLabel?: ComponentType<CaptionSlot & ComponentPropsWithRef<'span'>>;
-    /** Replaces the after caption. */
-    afterLabel?: ComponentType<CaptionSlot & ComponentPropsWithRef<'span'>>;
-    /** Replaces the divider line. */
-    divider?: ComponentType<Omit<PartSlot, 'aria-hidden'> & ComponentPropsWithRef<'div'>>;
-    /** Replaces the slider handle. */
-    handle?: ComponentType<HandleSlot & ComponentPropsWithRef<'div'>>;
-    /** Replaces the reset button. */
-    resetButton?: ComponentType<ButtonSlot & ButtonProps>;
-  };
+  slots?: ImageCompareSlots;
   slotProps?: ImageCompareSlotProps;
 }
 

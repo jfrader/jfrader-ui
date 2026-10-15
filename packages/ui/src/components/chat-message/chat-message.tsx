@@ -101,6 +101,23 @@ export type ChatMessageSlotProps = Partial<Record<ChatMessagePart, ThreadPartPro
   retryButton?: ThreadButtonProps;
 };
 
+export interface ChatMessageSlots {
+  /** Replaces the message article. */
+  article?: ComponentType<NonNullable<ChatMessageSlotProps['article']>>;
+  /** Replaces the message bubble. */
+  bubble?: ComponentType<ThreadPartProps & ComponentPropsWithRef<typeof Card>>;
+  /** Replaces the message timestamp. */
+  time?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'time'>>;
+  /** Replaces the delivery receipt container. */
+  receipt?: ComponentType<NonNullable<ChatMessageSlotProps['receipt']>>;
+  /** Replaces the reactions container. */
+  reactions?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces the author avatar container. */
+  avatar?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'span'>>;
+  /** Replaces the retry button. */
+  retryButton?: ComponentType<ThreadButtonProps & ComponentPropsWithRef<typeof Button>>;
+}
+
 export interface ChatMessageProps extends Omit<ComponentPropsWithRef<'article'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   /** Optional message data record to seed defaults. */
   message?: ChatMessage;
@@ -158,22 +175,7 @@ export interface ChatMessageProps extends Omit<ComponentPropsWithRef<'article'>,
   readOnly?: boolean;
   /** Localized string overrides. */
   labels?: Partial<ChatMessageLabels>;
-  slots?: {
-    /** Replaces the message article. */
-    article?: ComponentType<NonNullable<ChatMessageSlotProps['article']>>;
-    /** Replaces the message bubble. */
-    bubble?: ComponentType<ThreadPartProps & ComponentPropsWithRef<typeof Card>>;
-    /** Replaces the message timestamp. */
-    time?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'time'>>;
-    /** Replaces the delivery receipt container. */
-    receipt?: ComponentType<NonNullable<ChatMessageSlotProps['receipt']>>;
-    /** Replaces the reactions container. */
-    reactions?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'div'>>;
-    /** Replaces the author avatar container. */
-    avatar?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'span'>>;
-    /** Replaces the retry button. */
-    retryButton?: ComponentType<ThreadButtonProps & ComponentPropsWithRef<typeof Button>>;
-  };
+  slots?: ChatMessageSlots;
   /** Props forwarded to internal parts. */
   slotProps?: ChatMessageSlotProps;
   /** Text after the time, e.g. "(edited)". */

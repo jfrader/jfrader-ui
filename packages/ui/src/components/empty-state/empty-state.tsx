@@ -32,6 +32,19 @@ export interface EmptyStateSlotProps {
   action?: EmptyStatePartProps;
 }
 
+export interface EmptyStateSlots {
+  /** Container wrapping the decorative icon. */
+  icon?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Container wrapping the title and description text. */
+  content?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Heading element displaying the title. */
+  title?: ComponentType<ComponentPropsWithRef<'h3'>>;
+  /** Paragraph displaying the explanatory description. */
+  description?: ComponentType<ComponentPropsWithRef<'p'>>;
+  /** Container wrapping action buttons or links. */
+  action?: ComponentType<ComponentPropsWithRef<'div'>>;
+}
+
 export interface EmptyStateProps extends Omit<ComponentPropsWithRef<'section'>, 'title' | 'children'>, SxProps {
   /** Visible heading. */
   title: ReactNode;
@@ -42,18 +55,7 @@ export interface EmptyStateProps extends Omit<ComponentPropsWithRef<'section'>, 
   action?: ReactNode;
   headingLevel?: CardHeadingLevel;
   variant?: EmptyStateVariant;
-  slots?: {
-    /** Container wrapping the decorative icon. */
-    icon?: ComponentType<ComponentPropsWithRef<'div'>>;
-    /** Container wrapping the title and description text. */
-    content?: ComponentType<ComponentPropsWithRef<'div'>>;
-    /** Heading element displaying the title. */
-    title?: ComponentType<ComponentPropsWithRef<'h3'>>;
-    /** Paragraph displaying the explanatory description. */
-    description?: ComponentType<ComponentPropsWithRef<'p'>>;
-    /** Container wrapping action buttons or links. */
-    action?: ComponentType<ComponentPropsWithRef<'div'>>;
-  };
+  slots?: EmptyStateSlots;
   slotProps?: EmptyStateSlotProps;
 }
 

@@ -212,10 +212,13 @@ CardHeader.displayName = 'Card.Header';
 function CardTitle({ ref, level = 3, className, sx, ...rest }: CardTitleProps) {
   const { slots, slotProps } = useContext(CardSlotContext);
   const slot = slotProps?.title;
+  // The native element carries the level in its own name; a replacement is told the level
+  // instead, so `<Card.Title level={2}>` keeps its heading level after the swap.
   const Heading = slots?.title ?? (`h${level}` as const);
+  const props = slots?.title ? { ...rest, level } : rest;
   return (
     <WithSx className={joinClassNames(slot?.className, className)} styles={[titleStyle, slot?.css]} sx={sx}>
-      {(className) => <Heading {...rest} ref={ref} data-ui="card-title" className={className} />}
+      {(className) => <Heading {...props} ref={ref} data-ui="card-title" className={className} />}
     </WithSx>
   );
 }

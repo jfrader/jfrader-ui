@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ComponentPropsWithRef, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, type ComponentPropsWithRef, type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -30,6 +30,12 @@ export interface KeycapKeyboardProps extends Omit<ComponentPropsWithRef<'div'>,
   eventTarget?: HTMLInputElement | HTMLTextAreaElement | null;
   tone?: 'neutral' | 'accent';
   paused?: boolean;
+  slots?: {
+    /** Displays a keyboard key. */
+    key?: ComponentType<KeycapKeyboardSlotProps>;
+    /** Displays the key legend. */
+    legend?: ComponentType<KeycapKeyboardSlotProps>;
+  };
   slotProps?: {
     /** Horizontal row container grouping keycaps. */
     row?: KeycapKeyboardSlotProps;
@@ -123,7 +129,7 @@ function unitsOf(key: KeycapSpec) {
 /** Show a keyboard illustration. Supply text input, focus and shortcut descriptions separately. */
 export function KeycapKeyboard({
   ref, layout = 'compact', rows = layouts[layout], value, defaultValue = EMPTY_CODES,
-  onValueChange, eventTarget = null, tone = 'accent', paused = false, slotProps, className, sx, style, ...rest
+  onValueChange, eventTarget = null, tone = 'accent', paused = false, slotProps, slots, className, sx, style, ...rest
 }: KeycapKeyboardProps) {
   const silent = useRef(false);
   const [active = EMPTY_CODES, requestChange] = useControlledState(value, normalize(defaultValue), (codes) => {
@@ -194,6 +200,8 @@ export function KeycapKeyboard({
   }, [eventTarget, paused, requestChange, value === undefined]);
 
   const rowUnits = rows.map((row) => row.reduce((sum, key) => sum + unitsOf(key), 0));
+  const Key = slots?.key ?? Kbd;
+  const Legend = slots?.legend ?? 'span';
   const widest = Math.max(DEFAULT_UNITS, ...rowUnits);
   const maxGaps = Math.max(0, ...rows.map((row) => row.length - 1));
   return (
@@ -207,11 +215,11 @@ export function KeycapKeyboard({
                 inlineSize: `calc((100% - ${maxGaps} * ${vars.space[1]}) * ${(rowUnits[rowIndex] ?? 0) / widest} + ${Math.max(0, row.length - 1)} * ${vars.space[1]})`,
               } satisfies CSSProperties}>
               {row.map((key, keyIndex) => (
-                <Kbd key={`${key.code}-${keyIndex}`} data-code={key.code} data-state={active.includes(key.code) ? 'pressed' : 'idle'}
+                <Key {...slotProps?.key} key={`${key.code}-${keyIndex}`} data-code={key.code} data-state={active.includes(key.code) ? 'pressed' : 'idle'}
                   className={slotProps?.key?.className} css={[keyStyle, slotProps?.key?.css]}>
-                  {isRenderable(key.legend) && key.legend !== '' && <span data-ui="keycap-keyboard-legend" className={slotProps?.legend?.className}
-                    css={[legendStyle, slotProps?.legend?.css]}>{key.legend}</span>}
-                </Kbd>
+                  {isRenderable(key.legend) && key.legend !== '' && <Legend {...slotProps?.legend} data-ui="keycap-keyboard-legend" className={slotProps?.legend?.className}
+                    css={[legendStyle, slotProps?.legend?.css]}>{key.legend}</Legend>}
+                </Key>
               ))}
             </div>
           ))}

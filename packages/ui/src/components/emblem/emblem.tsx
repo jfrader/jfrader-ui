@@ -41,6 +41,13 @@ export interface EmblemRenderProps extends Omit<HTMLAttributes<HTMLElement>, 'co
   children: ReactNode;
 }
 
+export interface EmblemSlots {
+  /** Image element displaying the crest artwork. */
+  image?: ComponentType<ComponentPropsWithRef<'img'>>;
+  /** Span element displaying initials when no crest image is provided. */
+  monogram?: ComponentType<ComponentPropsWithRef<'span'>>;
+}
+
 export interface EmblemProps
   extends Omit<ComponentPropsWithRef<'span'>, 'children' | 'role' | 'aria-label' | 'color'>,
     SxProps {
@@ -65,12 +72,7 @@ export interface EmblemProps
   size?: EmblemSize;
   /** Pattern over the fill. `none` leaves the plain gradient. */
   pattern?: EmblemPattern;
-  slots?: {
-    /** Image element displaying the crest artwork. */
-    image?: ComponentType<ComponentPropsWithRef<'img'>>;
-    /** Span element displaying initials when no crest image is provided. */
-    monogram?: ComponentType<ComponentPropsWithRef<'span'>>;
-  };
+  slots?: EmblemSlots;
   slotProps?: {
     /** Image element displaying the crest artwork. */
     image?: EmblemPartProps;

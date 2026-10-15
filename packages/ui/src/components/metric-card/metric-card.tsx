@@ -23,6 +23,21 @@ export interface MetricCardSlotProps {
   description?: CardPartProps;
 }
 
+export interface MetricCardSlots {
+  /** Replaces the card surface. */
+  surface?: ComponentType<CardPartProps & ComponentPropsWithRef<typeof Card>>;
+  /** Replaces the header container. */
+  header?: ComponentType<CardPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces the metric heading. */
+  label?: ComponentType<CardPartProps & ComponentPropsWithRef<'h3'>>;
+  /** Replaces the metric value container. */
+  value?: ComponentType<CardPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces the change pill. */
+  delta?: ComponentType<CardPartProps & ComponentPropsWithRef<typeof Pill>>;
+  /** Replaces the description paragraph. */
+  description?: ComponentType<CardPartProps & ComponentPropsWithRef<'p'>>;
+}
+
 export interface MetricCardProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   label: ReactNode;
   value: number | null;
@@ -41,20 +56,7 @@ export interface MetricCardProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
   deltaDescription?: string;
   loading?: boolean;
   missingValueLabel?: string;
-  slots?: {
-    /** Replaces the card surface. */
-    surface?: ComponentType<CardPartProps & ComponentPropsWithRef<typeof Card>>;
-    /** Replaces the header container. */
-    header?: ComponentType<CardPartProps & ComponentPropsWithRef<'div'>>;
-    /** Replaces the metric heading. */
-    label?: ComponentType<CardPartProps & ComponentPropsWithRef<'h3'>>;
-    /** Replaces the metric value container. */
-    value?: ComponentType<CardPartProps & ComponentPropsWithRef<'div'>>;
-    /** Replaces the change pill. */
-    delta?: ComponentType<CardPartProps & ComponentPropsWithRef<typeof Pill>>;
-    /** Replaces the description paragraph. */
-    description?: ComponentType<CardPartProps & ComponentPropsWithRef<'p'>>;
-  };
+  slots?: MetricCardSlots;
   slotProps?: MetricCardSlotProps;
 }
 

@@ -6,4 +6,5 @@ export type {
   EmblemRenderProps,
   EmblemShape,
   EmblemSize,
+  EmblemSlots,
 } from './emblem';

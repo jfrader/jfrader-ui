@@ -70,6 +70,27 @@ export type JsonViewerSlotProps = Partial<
     JsonViewerPartProps
   >
 >;
+export interface JsonViewerSlots {
+  /** Replaces the toolbar container. */
+  toolbar?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces the search field. */
+  search?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<typeof TextField>>;
+  /** Replaces the tree container. */
+  tree?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces each node row. */
+  row?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces each child group. */
+  group?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces each node value. */
+  value?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'span'>>;
+  /** Replaces the selected path container. */
+  pathBar?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces the status region. */
+  status?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
+  /** Replaces each toolbar action button. */
+  action?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<typeof Button>>;
+}
+
 export interface JsonViewerProps
   extends Omit<ComponentPropsWithRef<'div'>, 'onSelect' | 'onCopy' | 'defaultValue' | 'children'>, SxProps {
   data: JsonValue;
@@ -96,26 +117,7 @@ export interface JsonViewerProps
   labels?: Partial<JsonViewerLabels>;
   onCopy?: (detail: { kind: 'value' | 'path'; path: string; text: string }) => void;
   onCopyError?: (detail: { kind: 'value' | 'path'; path: string; error: unknown }) => void;
-  slots?: {
-    /** Replaces the toolbar container. */
-    toolbar?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
-    /** Replaces the search field. */
-    search?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<typeof TextField>>;
-    /** Replaces the tree container. */
-    tree?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
-    /** Replaces each node row. */
-    row?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
-    /** Replaces each child group. */
-    group?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
-    /** Replaces each node value. */
-    value?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'span'>>;
-    /** Replaces the selected path container. */
-    pathBar?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
-    /** Replaces the status region. */
-    status?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
-    /** Replaces each toolbar action button. */
-    action?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<typeof Button>>;
-  };
+  slots?: JsonViewerSlots;
   slotProps?: JsonViewerSlotProps;
 }
 

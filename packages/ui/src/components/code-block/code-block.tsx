@@ -15,6 +15,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type Ref,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
@@ -95,6 +96,22 @@ export interface CodeBlockProps extends Omit<ComponentPropsWithRef<'section'>, '
   /** Syntax highlighting loader, read when `code` or `language` changes. */
   highlight?: CodeHighlightLoader;
   slotProps?: CodeBlockSlotProps;
+  slots?: {
+    /** Holds the label, language and copy action. */
+    header?: ComponentType<CodeBlockSlotPartProps>;
+    /** Displays the filename or caption. */
+    label?: ComponentType<CodeBlockSlotPartProps>;
+    /** Displays the language name. */
+    language?: ComponentType<CodeBlockSlotPartProps>;
+    /** Displays line numbers. */
+    gutter?: ComponentType<CodeBlockSlotPartProps>;
+    /** Holds the preformatted source. */
+    pre?: ComponentType<CodeBlockSlotPartProps>;
+    /** Displays source tokens or text. */
+    code?: ComponentType<CodeBlockSlotPartProps>;
+    /** Expands or collapses the source. */
+    toggle?: ComponentType<CodeBlockSlotPartProps>;
+  };
   css?: Interpolation<Theme>;
 }
 
@@ -267,12 +284,20 @@ export function CodeBlock({
   preRef,
   highlight,
   slotProps,
+  slots,
   className,
   sx,
   'aria-label': ariaLabel,
   'aria-labelledby': labelledBy,
   ...rest
 }: CodeBlockProps) {
+  const Header = slots?.header ?? 'header';
+  const Label = slots?.label ?? 'span';
+  const Language = slots?.language ?? 'span';
+  const Gutter = slots?.gutter ?? 'div';
+  const Pre = slots?.pre ?? 'pre';
+  const Code = slots?.code ?? 'code';
+  const Toggle = slots?.toggle ?? Button;
   const id = useId();
   const labelId = `${id}-label`;
   const sourceId = `${id}-source`;
@@ -344,27 +369,30 @@ export function CodeBlock({
           aria-labelledby={labelledBy ? `${labelledBy} ${labelId}` : ariaLabel !== undefined ? undefined : labelId}
           data-highlighted={highlightedLines ? '' : undefined}
         >
-          <header
+          <Header
+            {...slotProps?.header}
             data-ui="code-block-header"
             className={slotProps?.header?.className}
             css={[headerStyle, slotProps?.header?.css]}
           >
-            <span
+            <Label
+              {...slotProps?.label}
               id={labelId}
               data-ui="code-block-label"
               className={slotProps?.label?.className}
               css={[labelStyle, slotProps?.label?.css]}
             >
               {filename || label}
-            </span>
+            </Label>
             {language !== undefined && language !== '' && (
-              <span
+              <Language
+                {...slotProps?.language}
                 data-ui="code-block-language"
                 className={slotProps?.language?.className}
                 css={[languageStyle, slotProps?.language?.css]}
               >
                 {language}
-              </span>
+              </Language>
             )}
             {copyable && (
               <CopyButton
@@ -379,7 +407,7 @@ export function CodeBlock({
                 text={code}
               />
             )}
-          </header>
+          </Header>
           <div
             data-ui="code-block-source-frame"
             data-state={collapsible ? (effectiveOpen ? 'expanded' : 'collapsed') : undefined}
@@ -387,16 +415,18 @@ export function CodeBlock({
             css={[frameStyle, slotProps?.sourceFrame?.css]}
           >
             {lineNumbers && visibleLines.length > 0 && (
-              <div
+              <Gutter
+                {...slotProps?.gutter}
                 aria-hidden="true"
                 data-ui="code-block-gutter"
                 className={slotProps?.gutter?.className}
                 css={[sourceTypography, gutterStyle, slotProps?.gutter?.css]}
               >
                 {visibleLines.map((_, index) => formatter.format(index + 1)).join('\n')}
-              </div>
+              </Gutter>
             )}
-            <pre
+            <Pre
+              {...slotProps?.pre}
               id={sourceId}
               ref={preRef}
               role="group"
@@ -407,7 +437,8 @@ export function CodeBlock({
               className={slotProps?.pre?.className}
               css={[sourceTypography, preStyle, slotProps?.pre?.css]}
             >
-              <code
+              <Code
+                {...slotProps?.code}
                 data-ui="code-block-code"
                 className={slotProps?.code?.className}
                 css={[codeStyle, slotProps?.code?.css]}
@@ -419,11 +450,12 @@ export function CodeBlock({
                   : effectiveOpen
                     ? code
                     : visibleLines.join('')}
-              </code>
-            </pre>
+              </Code>
+            </Pre>
           </div>
           {collapsible && (
-            <Button
+            <Toggle
+              {...slotProps?.toggle}
               ref={toggleRef}
               variant="ghost"
               tone="neutral"
@@ -438,7 +470,7 @@ export function CodeBlock({
               onClick={() => requestOpen(!expanded)}
             >
               {expanded ? collapseLabel : getExpandLabel(lines.length, formatter.format(lines.length))}
-            </Button>
+            </Toggle>
           )}
         </section>
       )}

@@ -50,6 +50,21 @@ export interface ChipGroupSlotProps {
   overflow?: StyledSlot<'button'>;
 }
 
+export interface ChipGroupSlots {
+  /** Container frame clipping expanding chip rows. */
+  frame?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Container holding the chip buttons and overflow toggle. */
+  row?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Toggle button representing an individual chip option. */
+  chip?: ComponentType<ComponentPropsWithRef<'button'>>;
+  /** Text label displayed inside a chip. */
+  label?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Checkmark glyph displayed when a chip is selected. */
+  check?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Button that expands or collapses hidden overflow chips. */
+  overflow?: ComponentType<ComponentPropsWithRef<'button'>>;
+}
+
 interface ChipGroupBaseProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   options: readonly ChipGroupOption[];
@@ -64,20 +79,7 @@ interface ChipGroupBaseProps
   locale?: Intl.LocalesArgument;
   moreLabel?: (formattedCount: string, count: number) => string;
   lessLabel?: string;
-  slots?: {
-    /** Container frame clipping expanding chip rows. */
-    frame?: ComponentType<ComponentPropsWithRef<'div'>>;
-    /** Container holding the chip buttons and overflow toggle. */
-    row?: ComponentType<ComponentPropsWithRef<'div'>>;
-    /** Toggle button representing an individual chip option. */
-    chip?: ComponentType<ComponentPropsWithRef<'button'>>;
-    /** Text label displayed inside a chip. */
-    label?: ComponentType<ComponentPropsWithRef<'span'>>;
-    /** Checkmark glyph displayed when a chip is selected. */
-    check?: ComponentType<ComponentPropsWithRef<'span'>>;
-    /** Button that expands or collapses hidden overflow chips. */
-    overflow?: ComponentType<ComponentPropsWithRef<'button'>>;
-  };
+  slots?: ChipGroupSlots;
   slotProps?: ChipGroupSlotProps;
 }
 

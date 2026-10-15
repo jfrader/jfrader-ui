@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
@@ -37,6 +37,16 @@ export interface HoldToConfirmProps
   size?: HoldToConfirmSize;
   icon?: ReactNode;
   confirmedIcon?: ReactNode;
+  slots?: {
+    /** Displays the idle or confirmed glyph. */
+    icon?: ComponentType<HoldToConfirmPartProps>;
+    /** Displays the button state label. */
+    label?: ComponentType<HoldToConfirmPartProps>;
+    /** Describes the hold duration. */
+    hint?: ComponentType<HoldToConfirmPartProps>;
+    /** Announces completion. */
+    status?: ComponentType<HoldToConfirmPartProps>;
+  };
   slotProps?: Partial<
     Record<
       | /** Face layer displaying the button icon and label. */
@@ -187,6 +197,7 @@ export function HoldToConfirm({
   confirmedIcon = '✓',
   disabled = false,
   slotProps,
+  slots,
   className,
   sx,
   onPointerDown,
@@ -339,27 +350,33 @@ export function HoldToConfirm({
     if (origin && 'pointerId' in origin && origin.pointerId === pointerId) finish();
   };
   const visibleLabel = confirmed ? confirmedLabel : label;
+  const Icon = slots?.icon ?? 'span';
+  const Label = slots?.label ?? 'span';
+  const Hint = slots?.hint ?? 'span';
+  const Status = slots?.status ?? 'span';
   const visibleIcon = confirmed ? confirmedIcon : icon;
   const face = (
     <>
       {isRenderable(visibleIcon) && (
-        <span
+        <Icon
+          {...slotProps?.icon}
           key={`icon-${confirmed}`}
           aria-hidden="true"
           className={slotProps?.icon?.className}
           css={[iconWrapperStyle, swapStyle, slotProps?.icon?.css]}
         >
           {visibleIcon}
-        </span>
+        </Icon>
       )}
       {isRenderable(visibleLabel) && (
-        <span
+        <Label
+          {...slotProps?.label}
           key={`label-${confirmed}`}
           className={slotProps?.label?.className}
           css={[swapStyle, slotProps?.label?.css]}
         >
           {visibleLabel}
-        </span>
+        </Label>
       )}
     </>
   );
@@ -469,15 +486,17 @@ export function HoldToConfirm({
           </button>
         )}
       </WithSx>
-      <span
+      <Hint
+        {...slotProps?.hint}
         id={hintId}
         data-holding={holding || undefined}
         className={slotProps?.hint?.className}
         css={[hintStyle, slotProps?.hint?.css]}
       >
         {getHoldDescription(formatted)}
-      </span>
-      <span
+      </Hint>
+      <Status
+        {...slotProps?.status}
         role="status"
         aria-live="polite"
         aria-atomic="true"
@@ -485,7 +504,7 @@ export function HoldToConfirm({
         css={[visuallyHiddenStyle, slotProps?.status?.css]}
       >
         {announcement}
-      </span>
+      </Status>
     </>
   );
 }

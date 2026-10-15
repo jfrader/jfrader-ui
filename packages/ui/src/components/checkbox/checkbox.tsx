@@ -9,6 +9,7 @@ import {
   useRef,
   type ChangeEvent,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
@@ -31,6 +32,14 @@ export interface CheckboxProps extends Omit<ComponentPropsWithRef<'input'>, 'siz
   indeterminate?: boolean;
   size?: CheckboxSize;
   onCheckedChange?: (checked: boolean) => void;
+  slots?: {
+    /** Displays the checkbox state glyph. */
+    control?: ComponentType<CheckboxPartProps>;
+    /** Displays the checkbox label. */
+    label?: ComponentType<CheckboxPartProps>;
+    /** Displays the checkbox description. */
+    description?: ComponentType<CheckboxPartProps>;
+  };
   slotProps?: {
     /** Outer label wrapping the checkbox control, label, and description. */
     root?: CheckboxPartProps;
@@ -111,6 +120,7 @@ export function Checkbox({
   onChange,
   onCheckedChange,
   slotProps,
+  slots,
   className,
   sx,
   dir,
@@ -118,6 +128,9 @@ export function Checkbox({
   'aria-describedby': ariaDescribedByProp,
   ...rest
 }: CheckboxProps) {
+  const Control = slots?.control ?? 'span';
+  const Label = slots?.label ?? 'span';
+  const Description = slots?.description ?? 'span';
   const inputRef = useRef<HTMLInputElement>(null);
   useImperativeHandle(ref, () => inputRef.current as HTMLInputElement, []);
 
@@ -161,31 +174,34 @@ export function Checkbox({
               onChange={handleChange}
               css={choiceInputStyle}
             />
-            <span
+            <Control
+              {...slotProps?.control}
               aria-hidden="true"
               className={slotProps?.control?.className}
               css={[boxStyle, boxSizeStyles[size], slotProps?.control?.css]}
             >
               <CheckGlyph indeterminate={indeterminate} />
-            </span>
+            </Control>
             {hasLabel && (
-              <span
+              <Label
+                {...slotProps?.label}
                 id={labelId}
                 className={slotProps?.label?.className}
                 css={[labelSizeStyles[size], slotProps?.label?.css]}
               >
                 {label}
-              </span>
+              </Label>
             )}
           </span>
           {hasDescription && (
-            <span
+            <Description
+              {...slotProps?.description}
               id={descriptionId}
               className={slotProps?.description?.className}
               css={[descriptionStyle, descriptionSizeStyles[size], slotProps?.description?.css]}
             >
               {description}
-            </span>
+            </Description>
           )}
         </label>
       )}

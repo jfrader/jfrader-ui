@@ -6,4 +6,5 @@ export type {
   JsonViewerPartProps,
   JsonViewerProps,
   JsonViewerSlotProps,
+  JsonViewerSlots,
 } from './json-viewer';

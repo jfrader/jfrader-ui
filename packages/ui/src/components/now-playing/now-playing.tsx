@@ -96,6 +96,33 @@ export interface NowPlayingLabels {
   paused: string;
   position: (elapsed: string, duration: string) => string;
 }
+export interface NowPlayingSlots {
+  /** Replaces the mini-player container. */
+  mini?: ComponentType<Part<'div'>>;
+  /** Replaces the full-player container. */
+  full?: ComponentType<Part<'div'>>;
+  /** Replaces the artwork image. */
+  artwork?: ComponentType<Part<'img'>>;
+  /** Replaces the track title. */
+  title?: ComponentType<Part<'span'>>;
+  /** Replaces the artist name. */
+  artist?: ComponentType<Part<'span'>>;
+  /** Replaces the expand button. */
+  expand?: ComponentType<NonNullable<NowPlayingSlotProps['expand']>>;
+  /** Replaces the collapse button. */
+  collapse?: ComponentType<NonNullable<NowPlayingSlotProps['collapse']>>;
+  /** Replaces the timeline slider. */
+  seek?: ComponentType<NonNullable<NowPlayingSlotProps['seek']> & Extract<SliderProps, { type?: 'single' }>>;
+  /** Replaces the waveform container. */
+  waveform?: ComponentType<Part<'div'>>;
+  /** Replaces the playback controls container. */
+  controls?: ComponentType<Part<'div'>>;
+  /** Replaces the playback status. */
+  status?: ComponentType<Part<'span'>>;
+  /** Replaces the error container. */
+  error?: ComponentType<Part<'div'>>;
+}
+
 export interface NowPlayingProps
   extends
     Omit<ComponentPropsWithRef<'section'>, 'defaultValue' | 'children' | 'onChange'>,
@@ -126,32 +153,7 @@ export interface NowPlayingProps
    */
   seekStep?: number;
   seekLargeStep?: number;
-  slots?: {
-    /** Replaces the mini-player container. */
-    mini?: ComponentType<Part<'div'>>;
-    /** Replaces the full-player container. */
-    full?: ComponentType<Part<'div'>>;
-    /** Replaces the artwork image. */
-    artwork?: ComponentType<Part<'img'>>;
-    /** Replaces the track title. */
-    title?: ComponentType<Part<'span'>>;
-    /** Replaces the artist name. */
-    artist?: ComponentType<Part<'span'>>;
-    /** Replaces the expand button. */
-    expand?: ComponentType<NonNullable<NowPlayingSlotProps['expand']>>;
-    /** Replaces the collapse button. */
-    collapse?: ComponentType<NonNullable<NowPlayingSlotProps['collapse']>>;
-    /** Replaces the timeline slider. */
-    seek?: ComponentType<NonNullable<NowPlayingSlotProps['seek']> & Extract<SliderProps, { type?: 'single' }>>;
-    /** Replaces the waveform container. */
-    waveform?: ComponentType<Part<'div'>>;
-    /** Replaces the playback controls container. */
-    controls?: ComponentType<Part<'div'>>;
-    /** Replaces the playback status. */
-    status?: ComponentType<Part<'span'>>;
-    /** Replaces the error container. */
-    error?: ComponentType<Part<'div'>>;
-  };
+  slots?: NowPlayingSlots;
   slotProps?: NowPlayingSlotProps;
 }
 export interface NowPlayingLevelsProps extends ComponentPropsWithRef<'span'>, SxProps {

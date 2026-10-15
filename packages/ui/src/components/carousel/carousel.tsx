@@ -382,6 +382,7 @@ export function Carousel({
   locale,
   labels: labelProps,
   disabled = false,
+  slots,
   slotProps,
   className,
   sx,
@@ -394,6 +395,17 @@ export function Carousel({
   onPointerLeave,
   ...rest
 }: CarouselProps) {
+  const RotationButton = slots?.rotationButton ?? Button;
+  const Viewport = slots?.viewport ?? 'div';
+  const Track = slots?.track ?? 'div';
+  const Slide = slots?.slide ?? 'div';
+  const Controls = slots?.controls ?? 'div';
+  const TabList = slots?.tabList ?? 'div';
+  const Indicator = slots?.indicator ?? 'button';
+  const PreviousButton = slots?.previousButton ?? Button;
+  const NextButton = slots?.nextButton ?? Button;
+  const Status = slots?.status ?? 'div';
+  const Empty = slots?.empty ?? 'div';
   const baseId = useId();
   const numberFormat = useMemo(() => numberFormatter(locale), [locale]);
   const labels: CarouselLabels = {
@@ -771,7 +783,7 @@ export function Carousel({
           onPointerLeave={chain(onPointerLeave, () => setHovered(false))}
         >
           {hasRotation && (
-            <Button
+            <RotationButton
               size="sm"
               variant="outline"
               {...rotationSlot}
@@ -784,15 +796,15 @@ export function Carousel({
               onClick={chain(rotationSlot?.onClick, handleRotationClick)}
             >
               {rotationOn ? labels.stopRotation : labels.startRotation}
-            </Button>
+            </RotationButton>
           )}
 
           {count === 0 ? (
-            <div {...emptySlot} data-ui="carousel-empty" css={[emptyStyle, emptySlot?.css]}>
+            <Empty {...emptySlot} data-ui="carousel-empty" css={[emptyStyle, emptySlot?.css]}>
               {labels.empty}
-            </div>
+            </Empty>
           ) : (
-            <div
+            <Viewport
               {...viewportSlot}
               ref={viewportRefs}
               role="group"
@@ -811,11 +823,11 @@ export function Carousel({
               onScroll={chain(viewportSlot?.onScroll, supportsScrollEnd ? noop : scrollFallback)}
               onScrollEnd={chain(viewportSlot?.onScrollEnd, settle)}
             >
-              <div {...trackSlot} ref={trackRef} data-ui="carousel-track" css={[trackStyle, trackSlot?.css]}>
+              <Track {...trackSlot} ref={trackRef} data-ui="carousel-track" css={[trackStyle, trackSlot?.css]}>
                 {slides.map((slide, index) => {
                   const isActive = index === active;
                   return (
-                    <div
+                    <Slide
                       {...slideSlot}
                       key={slideKey(slide, index)}
                       role={tabbed ? 'tabpanel' : undefined}
@@ -828,16 +840,16 @@ export function Carousel({
                       css={[slideStyle, slideSlot?.css]}
                     >
                       {slide}
-                    </div>
+                    </Slide>
                   );
                 })}
-              </div>
-            </div>
+              </Track>
+            </Viewport>
           )}
 
           {tabbed && (
-            <div {...controlsSlot} data-ui="carousel-controls" css={[controlsStyle, controlsSlot?.css]}>
-              <div
+            <Controls {...controlsSlot} data-ui="carousel-controls" css={[controlsStyle, controlsSlot?.css]}>
+              <TabList
                 {...tabListSlot}
                 ref={tabListRefs}
                 role="tablist"
@@ -850,7 +862,7 @@ export function Carousel({
                 onKeyDown={chain(tabListSlot?.onKeyDown, handleTabListKeyDown)}
               >
                 {slides.map((slide, index) => (
-                  <button
+                  <Indicator
                     {...indicatorSlot}
                     key={slideKey(slide, index)}
                     type="button"
@@ -870,10 +882,10 @@ export function Carousel({
                     onClick={chain(indicatorSlot?.onClick, () => handleIndicatorClick(index))}
                   >
                     <span css={pillStyle} />
-                  </button>
+                  </Indicator>
                 ))}
-              </div>
-              <Button
+              </TabList>
+              <PreviousButton
                 size="sm"
                 variant="outline"
                 {...previousSlot}
@@ -884,8 +896,8 @@ export function Carousel({
                 onClick={chain(previousSlot?.onClick, () => requestIndex(active - 1))}
               >
                 <Chevron direction="previous" />
-              </Button>
-              <Button
+              </PreviousButton>
+              <NextButton
                 size="sm"
                 variant="outline"
                 {...nextSlot}
@@ -896,12 +908,12 @@ export function Carousel({
                 onClick={chain(nextSlot?.onClick, () => requestIndex(active + 1))}
               >
                 <Chevron direction="next" />
-              </Button>
-            </div>
+              </NextButton>
+            </Controls>
           )}
 
           {tabbed && (
-            <div
+            <Status
               {...statusSlot}
               role="status"
               aria-live={rotating ? 'off' : 'polite'}
@@ -910,7 +922,7 @@ export function Carousel({
               css={[statusStyle, statusSlot?.css]}
             >
               {getSlideLabel(active, count)}
-            </div>
+            </Status>
           )}
         </section>
       )}

@@ -4,4 +4,5 @@ export {
   type CountdownUnit,
   type CountdownVariant,
   type CountdownPartProps,
+  type CountdownSlots,
 } from './countdown';

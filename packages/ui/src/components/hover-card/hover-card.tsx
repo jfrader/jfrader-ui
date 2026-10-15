@@ -27,6 +27,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type MouseEvent,
   type PointerEvent,
@@ -87,6 +88,7 @@ export interface HoverCardCompoundProps extends HoverCardBaseProps {
   triggerLabel?: never;
   profile?: never;
   slotProps?: never;
+  slots?: never;
 }
 
 export interface HoverCardSlotProps {
@@ -105,6 +107,14 @@ export interface HoverCardEasyProps extends HoverCardBaseProps {
   profile: HoverCardProfileProps;
   children?: never;
   slotProps?: HoverCardSlotProps;
+  slots?: {
+    /** Opens the hover card. */
+    trigger?: ComponentType<NonNullable<HoverCardSlotProps['trigger']>>;
+    /** Holds the hover card content. */
+    content?: ComponentType<NonNullable<HoverCardSlotProps['content']>>;
+    /** Displays the profile. */
+    profile?: ComponentType<NonNullable<HoverCardSlotProps['profile']>>;
+  };
 }
 
 export type HoverCardProps = HoverCardCompoundProps | HoverCardEasyProps;
@@ -171,6 +181,14 @@ export interface HoverCardProfileProps extends Omit<ComponentPropsWithRef<'div'>
   meta?: ReactNode;
   /** Locale for numeric stats; defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  slots?: {
+    /** Displays the biography. */
+    bio?: ComponentType<HoverCardProfilePartProps>;
+    /** Displays the profile statistics. */
+    stats?: ComponentType<HoverCardProfilePartProps<'dl'>>;
+    /** Displays profile metadata. */
+    meta?: ComponentType<HoverCardProfilePartProps>;
+  };
   slotProps?: {
     /** Decorative avatar element; `aria-hidden` is not configurable. */
     avatar?: Omit<HoverCardProfilePartProps<'span'>, 'aria-hidden'>;
@@ -450,6 +468,9 @@ function HoverCardLayer({
 function HoverCardRoot(props: HoverCardProps) {
   const { open, defaultOpen, onOpenChange, value, placement, openDelay, closeDelay } = props;
   const easyProps = props.profile !== undefined ? props : undefined;
+  const Trigger = easyProps?.slots?.trigger ?? HoverCardTrigger;
+  const Content = easyProps?.slots?.content ?? HoverCardContent;
+  const Profile = easyProps?.slots?.profile ?? HoverCardProfile;
 
   return (
     <OverlayLayer>
@@ -466,9 +487,9 @@ function HoverCardRoot(props: HoverCardProps) {
         >
           {easyProps ? (
             <>
-              <HoverCardTrigger {...easyProps.slotProps?.trigger}>{easyProps.triggerLabel}</HoverCardTrigger>
-              <HoverCardContent {...easyProps.slotProps?.content}>
-                <HoverCardProfile
+              <Trigger {...easyProps.slotProps?.trigger}>{easyProps.triggerLabel}</Trigger>
+              <Content {...easyProps.slotProps?.content}>
+                <Profile
                   {...easyProps.profile}
                   {...easyProps.slotProps?.profile}
                   slotProps={{
@@ -476,7 +497,7 @@ function HoverCardRoot(props: HoverCardProps) {
                     ...easyProps.slotProps?.profile?.slotProps,
                   }}
                 />
-              </HoverCardContent>
+              </Content>
             </>
           ) : (
             props.children
@@ -642,10 +663,14 @@ function HoverCardProfile({
   meta,
   locale,
   slotProps,
+  slots,
   className,
   sx,
   ...rest
 }: HoverCardProfileProps) {
+  const Bio = slots?.bio ?? 'div';
+  const Stats = slots?.stats ?? 'dl';
+  const Meta = slots?.meta ?? 'div';
   const numberFormat = stats.some((stat) => typeof stat.value === 'number')
     ? numberFormatter(locale)
     : undefined;
@@ -665,12 +690,12 @@ function HoverCardProfile({
             </div>
           </div>
           {isRenderable(bio) && (
-            <div {...slotProps?.bio} css={[mutedStyle, slotProps?.bio?.css]}>
+            <Bio {...slotProps?.bio} css={[mutedStyle, slotProps?.bio?.css]}>
               {bio}
-            </div>
+            </Bio>
           )}
           {stats.length > 0 && (
-            <dl {...slotProps?.stats} css={[statsStyle, slotProps?.stats?.css]}>
+            <Stats {...slotProps?.stats} css={[statsStyle, slotProps?.stats?.css]}>
               {stats.map((stat) => (
                 <div key={stat.id} css={statStyle}>
                   <dt css={statLabelStyle}>{stat.label}</dt>
@@ -679,12 +704,12 @@ function HoverCardProfile({
                   </dd>
                 </div>
               ))}
-            </dl>
+            </Stats>
           )}
           {isRenderable(meta) && (
-            <div {...slotProps?.meta} css={[metaStyle, slotProps?.meta?.css]}>
+            <Meta {...slotProps?.meta} css={[metaStyle, slotProps?.meta?.css]}>
               {meta}
-            </div>
+            </Meta>
           )}
         </div>
       )}
