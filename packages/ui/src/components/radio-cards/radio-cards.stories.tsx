@@ -3,6 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
 import { RadioCards, type RadioCardsCompoundProps as RadioCardsProps, type RadioCardsEasyProps } from './index';
@@ -35,12 +37,15 @@ const usage = `<RadioCards name="shipping" defaultValue="standard" layout="list"
   <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
   <RadioCards.Item value="express" label="Express" />
 </RadioCards>`;
-const fixtureStyle = css({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '44rem' });
-const buttonStyle = css({
+const Fixture = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '44rem' });
+const FixtureForm = Fixture.withComponent('form');
+const NarrowFixture = styled(Fixture)({ maxWidth: '18rem' });
+const FixtureButton = styled.button({
   minBlockSize: vars.space[8],
   minInlineSize: vars.space[8],
   padding: vars.space[2],
 });
+// These overrides exercise the documented slot `css` API.
 const overrides = {
   control: { css: css({ borderRadius: vars.radius.sm }) },
   indicator: { css: css({ inlineSize: vars.space[6], blockSize: vars.space[6] }) },
@@ -293,10 +298,10 @@ export const DefaultGrid: Story = {
 export const List: Story = { args: { layout: 'list' } };
 export const Sizes: Story = {
   render: (args) => (
-    <div css={fixtureStyle}>
+    <Fixture>
       <Example {...args} size="sm" />
       <Example {...args} size="md" />
-    </div>
+    </Fixture>
   ),
   play: async ({ canvas }) => {
     for (const radio of canvas.getAllByRole('radio'))
@@ -382,11 +387,11 @@ export const AllDisabled: Story = {
 export const NoSelection: Story = {
   args: { defaultValue: undefined },
   render: (args) => (
-    <div css={fixtureStyle}>
-      <button css={buttonStyle}>Before</button>
+    <Fixture>
+      <FixtureButton>Before</FixtureButton>
       <Example {...args} />
-      <button css={buttonStyle}>After</button>
-    </div>
+      <FixtureButton>After</FixtureButton>
+    </Fixture>
   ),
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -405,10 +410,10 @@ export const NoSelection: Story = {
 };
 export const Keyboard: Story = {
   render: (args) => (
-    <div css={fixtureStyle}>
+    <Fixture>
       <Example {...args} disabledOption />
-      <button css={buttonStyle}>After</button>
-    </div>
+      <FixtureButton>After</FixtureButton>
+    </Fixture>
   ),
   play: async ({ canvas, userEvent, args }) => {
     const first = canvas.getByRole('radio', { name: 'Standard' });
@@ -442,15 +447,15 @@ export const Keyboard: Story = {
 function RejectedExample(args: RadioCardsProps) {
   const [value, setValue] = useState('standard');
   return (
-    <form css={fixtureStyle}>
+    <FixtureForm>
       <Example {...args} name="shipping" value={value} />
-      <button type="button" css={buttonStyle} onClick={() => setValue('pickup')}>
+      <FixtureButton type="button" onClick={() => setValue('pickup')}>
         Update value
-      </button>
-      <button type="reset" css={buttonStyle}>
+      </FixtureButton>
+      <FixtureButton type="reset">
         Reset
-      </button>
-    </form>
+      </FixtureButton>
+    </FixtureForm>
   );
 }
 export const ControlledRejects: Story = {
@@ -486,16 +491,16 @@ export const ControlledRejects: Story = {
 export const NativeForm: Story = {
   args: { defaultValue: undefined, required: true },
   render: (args) => (
-    <form css={fixtureStyle}>
+    <FixtureForm>
       <RadioCards {...args} name="shipping" aria-label="Shipping speed">
         <RadioCards.Item value="" label="Pickup" />
         <RadioCards.Item value="express" label="Express" />
         <RadioCards.Item value="disabled" label="Unavailable" disabled />
       </RadioCards>
-      <button type="reset" css={buttonStyle}>
+      <FixtureButton type="reset">
         Reset
-      </button>
-    </form>
+      </FixtureButton>
+    </FixtureForm>
   ),
   play: async ({ canvas, userEvent, args }) => {
     const pickup = canvas.getByRole('radio', { name: 'Pickup' }) as HTMLInputElement;
@@ -519,12 +524,12 @@ export const NativeForm: Story = {
 };
 export const ResetToDefault: Story = {
   render: (args) => (
-    <form css={fixtureStyle}>
+    <FixtureForm>
       <Example {...args} name="shipping" />
-      <button type="reset" css={buttonStyle}>
+      <FixtureButton type="reset">
         Reset
-      </button>
-    </form>
+      </FixtureButton>
+    </FixtureForm>
   ),
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('radio', { name: 'Pickup' }));
@@ -537,7 +542,7 @@ export const ResetToDefault: Story = {
 function AriaExample(args: RadioCardsProps) {
   const id = useId();
   return (
-    <div css={fixtureStyle}>
+    <Fixture>
       <span id={`${id}-name`}>Delivery</span>
       <span id={`${id}-detail`}>External detail</span>
       <RadioCards
@@ -565,7 +570,7 @@ function AriaExample(args: RadioCardsProps) {
           aria-labelledby={`${id}-missing`}
         />
       </RadioCards>
-    </div>
+    </Fixture>
   );
 }
 export const ExternalAria: Story = {
@@ -587,7 +592,7 @@ export const ExternalAria: Story = {
 const falsy: ReactNode[] = [false, null, 0, ''];
 export const FalsyContent: Story = {
   render: (args) => (
-    <div css={fixtureStyle}>
+    <Fixture>
       {falsy.map((content, index) => (
         <RadioCards {...args} key={index} aria-label={`Content ${index}`} error={content}>
           <RadioCards.Label>{content}</RadioCards.Label>
@@ -610,7 +615,7 @@ export const FalsyContent: Story = {
           />
         </RadioCards>
       ))}
-    </div>
+    </Fixture>
   ),
   play: async ({ canvas }) => {
     for (const [index, group] of canvas.getAllByRole('radiogroup').entries()) {
@@ -634,7 +639,7 @@ export const FalsyContent: Story = {
 };
 export const LongContent: Story = {
   render: (args) => (
-    <div css={fixtureStyle} style={{ maxWidth: '18rem' }}>
+    <NarrowFixture>
       <RadioCards {...args} layout="list" aria-label="Shipping speed">
         <RadioCards.Item
           value="standard"
@@ -643,7 +648,7 @@ export const LongContent: Story = {
           meta={new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(1234567890.12)}
         />
       </RadioCards>
-    </div>
+    </NarrowFixture>
   ),
   play: async ({ canvas }) => {
     const card = canvas.getByRole('radio').nextElementSibling as HTMLElement;
@@ -659,7 +664,7 @@ export const LongContent: Story = {
 function ResizeExample(args: RadioCardsProps) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div css={fixtureStyle}>
+    <Fixture>
       <RadioCards {...args} aria-label="Shipping speed" layout="list">
         <RadioCards.Item
           value="standard"
@@ -672,10 +677,10 @@ function ResizeExample(args: RadioCardsProps) {
         />
         <RadioCards.Item value="express" label="Express" />
       </RadioCards>
-      <button css={buttonStyle} onClick={() => setExpanded((current) => !current)}>
+      <FixtureButton onClick={() => setExpanded((current) => !current)}>
         Change content
-      </button>
-    </div>
+      </FixtureButton>
+    </Fixture>
   );
 }
 export const ResizeSelectedCard: Story = {
@@ -692,10 +697,10 @@ export const ResizeSelectedCard: Story = {
 };
 export const MultipleInstances: Story = {
   render: (args) => (
-    <div css={fixtureStyle}>
+    <Fixture>
       <Example {...args} />
       <Example {...args} />
-    </div>
+    </Fixture>
   ),
   play: async ({ canvas, userEvent }) => {
     const radios = canvas.getAllByRole('radio') as HTMLInputElement[];
@@ -846,8 +851,7 @@ const nativeSubmit = fn();
 export const NativeEvents: Story = {
   args: { defaultValue: undefined },
   render: (args) => (
-    <form
-      css={fixtureStyle}
+    <FixtureForm
       onSubmit={(event) => {
         event.preventDefault();
         nativeSubmit();
@@ -857,7 +861,7 @@ export const NativeEvents: Story = {
         <RadioCards.Item value="standard" label="Standard" onChange={nativeChange} onKeyDown={nativeKey} />
         <RadioCards.Item value="express" label="Express" onKeyDown={(event) => event.preventDefault()} />
       </RadioCards>
-    </form>
+    </FixtureForm>
   ),
   play: async ({ canvas, userEvent, args }) => {
     const first = canvas.getByRole('radio', { name: 'Standard' });
@@ -907,13 +911,13 @@ export const Controlled: Story = {
 function RemovedExample(args: RadioCardsProps) {
   const [state, setState] = useState<'enabled' | 'disabled' | 'removed'>('enabled');
   return (
-    <div css={fixtureStyle}>
-      <button css={buttonStyle} onClick={() => setState('disabled')}>
+    <Fixture>
+      <FixtureButton onClick={() => setState('disabled')}>
         Disable selected
-      </button>
-      <button css={buttonStyle} onClick={() => setState('removed')}>
+      </FixtureButton>
+      <FixtureButton onClick={() => setState('removed')}>
         Remove selected
-      </button>
+      </FixtureButton>
       <RadioCards {...args} aria-label="Shipping">
         {state !== 'removed' && (
           <RadioCards.Item value="standard" label="Standard" disabled={state === 'disabled'} />
@@ -921,8 +925,8 @@ function RemovedExample(args: RadioCardsProps) {
         <RadioCards.Item value="express" label="Express" />
         <RadioCards.Item value="pickup" label="Pickup" />
       </RadioCards>
-      <button css={buttonStyle}>After</button>
-    </div>
+      <FixtureButton>After</FixtureButton>
+    </Fixture>
   );
 }
 export const RemovedSelection: Story = {

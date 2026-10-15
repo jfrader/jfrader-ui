@@ -1,7 +1,9 @@
-import { useId, useState, type ComponentPropsWithRef, type CSSProperties, type ReactNode } from 'react';
+import { useId, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -86,11 +88,11 @@ const FALSY_NODES = [0, '', false, null] as const;
 const triggerRef = fn();
 const contentRef = fn();
 
-const stackStyle = {
+const Stack = styled.div({
   display: 'grid',
   justifyItems: 'start',
   gap: vars.space[4],
-} satisfies CSSProperties;
+});
 
 const USAGE = `const rangeMessages = {
   apply: 'Apply',
@@ -103,6 +105,11 @@ const USAGE = `const rangeMessages = {
 };
 
 <DateRangePicker label="Report period" placeholder="Choose dates" locale="en-GB" messages={rangeMessages} />`;
+
+function LightThemeRoot(props: Omit<ComponentPropsWithRef<typeof ThemeRoot>, 'theme'>) {
+  return <ThemeRoot {...props} theme="light" />;
+}
+const LightScope = styled(LightThemeRoot)({ padding: vars.space[4], backgroundColor: vars.color.bg });
 
 const meta: Meta<DateRangePickerProps> = {
   title: 'Pickers/DateRangePicker',
@@ -175,13 +182,13 @@ type ExampleProps = DateRangePickerProps & {
 
 function RangeExample({ trigger, content, ...props }: ExampleProps) {
   return (
-    <div style={stackStyle}>
+    <Stack>
       <DateRangePicker {...props}>
         <DateRangePicker.Trigger aria-label={LABEL} placeholder={PLACEHOLDER} {...trigger} />
         <DateRangePicker.Content {...content} />
       </DateRangePicker>
       <Button>{OUTSIDE}</Button>
-    </div>
+    </Stack>
   );
 }
 RangeExample.displayName = 'RangeExample';
@@ -584,7 +591,7 @@ function ControlledExample({ onValueChange, onOpenChange, ...props }: ExamplePro
   const [value, setValue] = useState<DateRangeValue | null>(WEEK);
   const [open, setOpen] = useState(false);
   return (
-    <div style={stackStyle}>
+    <Stack>
       <RangeExample
         {...props}
         value={value}
@@ -599,7 +606,7 @@ function ControlledExample({ onValueChange, onOpenChange, ...props }: ExamplePro
         }}
       />
       <Button onClick={() => setValue({ start: '2026-11-02', end: '2026-11-06' })}>Next month week</Button>
-    </div>
+    </Stack>
   );
 }
 ControlledExample.displayName = 'ControlledExample';
@@ -633,10 +640,10 @@ export const Controlled: Story = {
 function RebaseExample(props: ExampleProps) {
   const [value, setValue] = useState<DateRangeValue | null>(WEEK);
   return (
-    <div style={stackStyle}>
+    <Stack>
       <RangeExample {...props} value={value} />
       <Button onClick={() => setValue({ start: '2026-10-19', end: '2026-10-23' })}>Next week</Button>
-    </div>
+    </Stack>
   );
 }
 RebaseExample.displayName = 'RebaseExample';
@@ -882,10 +889,10 @@ export const ReversedBounds: Story = {
 function DynamicBoundsExample(props: ExampleProps) {
   const [min, setMin] = useState<string | undefined>(undefined);
   return (
-    <div style={stackStyle}>
+    <Stack>
       <RangeExample {...props} min={min} />
       <Button onClick={() => setMin('2026-10-08')}>Restrict start</Button>
-    </div>
+    </Stack>
   );
 }
 DynamicBoundsExample.displayName = 'DynamicBoundsExample';
@@ -1057,21 +1064,18 @@ export const MonthsTwo: Story = {
   },
 };
 
-const boundaryStyle = (inlineSize: string, blockSize = 'auto') =>
-  ({
-    inlineSize,
-    blockSize,
-    overflow: 'hidden',
-    padding: vars.space[2],
-    border: `1px dashed ${vars.color.borderControl}`,
-  }) satisfies CSSProperties;
+const BoundaryBox = styled.div({
+  overflow: 'hidden',
+  padding: vars.space[2],
+  border: `1px dashed ${vars.color.borderControl}`,
+});
 
-function BoundaryExample({ inlineSize, blockSize, ...props }: ExampleProps & { inlineSize: string; blockSize?: string }) {
+function BoundaryExample({ inlineSize, blockSize = 'auto', ...props }: ExampleProps & { inlineSize: string; blockSize?: string }) {
   const [boundary, setBoundary] = useState<HTMLDivElement | null>(null);
   return (
-    <div ref={setBoundary} data-boundary="" style={boundaryStyle(inlineSize, blockSize)}>
+    <BoundaryBox ref={setBoundary} data-boundary="" style={{ inlineSize, blockSize }}>
       {boundary && <RangeExample {...props} boundary={boundary} />}
-    </div>
+    </BoundaryBox>
   );
 }
 BoundaryExample.displayName = 'BoundaryExample';
@@ -1138,14 +1142,14 @@ export const ShortViewport: Story = {
 export const Sizes: Story = {
   args: { defaultValue: WEEK },
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       {(['sm', 'md', 'lg'] as const).map((size) => (
         <DateRangePicker key={size} {...args}>
           <DateRangePicker.Trigger aria-label={`${LABEL} ${size}`} size={size} />
           <DateRangePicker.Content />
         </DateRangePicker>
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const minimums = { sm: 32, md: 40, lg: 48 };
@@ -1251,7 +1255,7 @@ const popoverOpenChange = fn<(open: boolean) => void>();
 export const NestedInPopover: Story = {
   args: { defaultValue: WEEK, months: 1, onOpenChange: fn() },
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       <Popover onOpenChange={popoverOpenChange}>
         <Popover.Trigger>Filters</Popover.Trigger>
         <Popover.Content aria-label="Filters">
@@ -1262,7 +1266,7 @@ export const NestedInPopover: Story = {
         </Popover.Content>
       </Popover>
       <Button>{OUTSIDE}</Button>
-    </div>
+    </Stack>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
     popoverOpenChange.mockClear();
@@ -1357,12 +1361,12 @@ export const FormFields: Story = {
 function ExternalFormExample(props: ExampleProps) {
   const formId = useId();
   return (
-    <div style={stackStyle}>
+    <Stack>
       <form id={formId} aria-label="Report" onSubmit={(event) => event.preventDefault()}>
         <Button type="reset">Reset</Button>
       </form>
       <RangeExample {...props} trigger={{ form: formId }} />
-    </div>
+    </Stack>
   );
 }
 ExternalFormExample.displayName = 'ExternalFormExample';
@@ -1610,10 +1614,10 @@ export const MotionLight: Story = {
 function ScopedHost({ children }: { children: ReactNode }) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
-    <ThemeRoot theme="light" portalContainer={host} style={{ padding: vars.space[4], backgroundColor: vars.color.bg }}>
+    <LightScope portalContainer={host}>
       {children}
       <div ref={setHost} data-overlay-host="" />
-    </ThemeRoot>
+    </LightScope>
   );
 }
 ScopedHost.displayName = 'ScopedHost';
@@ -1636,7 +1640,7 @@ export const ThemeRootPortal: Story = {
 export const AriaMerge: Story = {
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       <span id="period-label">Billing period</span>
       <span id="period-help">Invoices use UTC dates</span>
       <DateRangePicker {...args}>
@@ -1647,7 +1651,7 @@ export const AriaMerge: Story = {
         />
         <DateRangePicker.Content aria-describedby="period-help" />
       </DateRangePicker>
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const trigger = within(canvasElement).getByRole('button', { name: /^Billing period/ });
@@ -1683,7 +1687,7 @@ export const ContentLabel: Story = {
 export const FalsyContent: Story = {
   args: { messages: { ...rangeMessages, error: 0, required: '' }, required: true },
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       {FALSY_NODES.map((node, index) => (
         <DateRangePicker key={`placeholder-${index}`} {...args}>
           <DateRangePicker.Trigger aria-label={`Placeholder ${index}`} placeholder={node} />
@@ -1700,7 +1704,7 @@ export const FalsyContent: Story = {
         <DateRangePicker.Trigger aria-label="No error" aria-invalid />
         <DateRangePicker.Content />
       </DateRangePicker>
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const triggers = (prefix: string) =>
@@ -1735,7 +1739,7 @@ export const FalsyContent: Story = {
 export const UniqueIds: Story = {
   args: { defaultValue: WEEK, months: 1 },
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       <DateRangePicker {...args}>
         <DateRangePicker.Trigger aria-label="First period" />
         <DateRangePicker.Content />
@@ -1744,7 +1748,7 @@ export const UniqueIds: Story = {
         <DateRangePicker.Trigger aria-label="Second period" />
         <DateRangePicker.Content />
       </DateRangePicker>
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const first = getTrigger(canvasElement, /^First period/);
@@ -1765,6 +1769,7 @@ function CustomRangeSummary(props: ComponentPropsWithRef<'span'>) {
 }
 
 export const RefsAndStyling: Story = {
+  // This story exercises the documented css, sx and slot precedence APIs.
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => (
     <DateRangePicker {...args}>

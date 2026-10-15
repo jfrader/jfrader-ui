@@ -1,3 +1,5 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
@@ -41,17 +43,18 @@ const CONTEXT_ITEMS = [
 ];
 
 function ContextMenuCustomizationFixture() {
+  // Inline styles exercise the documented root/slot style-merging API.
   const [mounted, setMounted] = useState(true);
   const [count, setCount] = useState(0);
 
   return (
-    <div style={{ padding: vars.space[4] }}>
+    <FixtureFrame>
       <Button onClick={() => setCount((c) => c + 1)}>Rerender ({count})</Button>
       <Button onClick={() => setMounted((m) => !m)}>Toggle mount</Button>
       {mounted && (
         <ContextMenu
           targetLabel="Workspace area"
-          content={<div style={{ padding: vars.space[4], border: `1px solid ${vars.color.border}` }}>Right click or tap here</div>}
+          content={<TargetContent>Right click or tap here</TargetContent>}
           items={CONTEXT_ITEMS}
           openOnClick
           component={UnusedContextMenuRoot}
@@ -72,9 +75,13 @@ function ContextMenuCustomizationFixture() {
           }}
         />
       )}
-    </div>
+    </FixtureFrame>
   );
 }
+
+const FixtureFrame = styled.div({ padding: vars.space[4] });
+
+const TargetContent = styled.div({ padding: vars.space[4], border: `1px solid ${vars.color.border}` });
 
 const meta = {
   title: 'Navigation/ContextMenu',

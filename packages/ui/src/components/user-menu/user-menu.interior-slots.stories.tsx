@@ -21,6 +21,7 @@ function AccountList(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-slot="account-list" />;
 }
 const rootRefTracker = createRefCleanupTracker<HTMLDivElement>();
+// This fixture tests native style merging and the documented css/sx slot precedence.
 const rootSlotStyle = css({ paddingInline: '7px' });
 const rootConsumerStyle = css({ paddingInline: '9px' });
 

@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef, CSSProperties, ReactNode } from 'react';
+import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, mocked, userEvent, waitFor, within } from 'storybook/test';
@@ -17,6 +17,10 @@ import {
   type SelectTriggerProps,
 } from './index';
 
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const NarrowFrame = styled.div({ inlineSize: 240 });
 const LABEL = 'Fruit';
 const PLACEHOLDER = 'Pick a fruit';
 const TYPEAHEAD_PAUSE_MS = 550;
@@ -37,11 +41,11 @@ const snippet = `<Select
   defaultValue="apple"
 />`;
 
-const rowStyle = {
+const Row = styled.div({
   display: 'flex',
   alignItems: 'center',
   gap: vars.space[3],
-} satisfies CSSProperties;
+});
 
 const meta: Meta<SelectCompoundProps> = {
   title: 'Inputs/Select',
@@ -111,7 +115,7 @@ export type SelectTypeRegression = {
 function SelectExample(props: SelectCompoundProps) {
   const labelId = useId();
   return (
-    <div style={rowStyle}>
+    <Row>
       <span id={labelId}>{LABEL}</span>
       <Select {...props}>
         <Select.Trigger aria-labelledby={labelId}>
@@ -127,7 +131,7 @@ function SelectExample(props: SelectCompoundProps) {
         </Select.Content>
       </Select>
       <Button>After</Button>
-    </div>
+    </Row>
   );
 }
 SelectExample.displayName = 'SelectExample';
@@ -176,10 +180,10 @@ export const Default: EasyStory = {
     onValueChange: fn(),
   },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <Select {...args} />
       <Button>After</Button>
-    </div>
+    </Row>
   ),
   parameters: {
     docs: {
@@ -268,7 +272,7 @@ export const CustomSlots: EasyStory = {
         trigger: CustomSelectTrigger,
       }}
       slotProps={{
-        root: { sx: { border: '1px solid red' } },
+        root: { sx: { border: `1px solid ${vars.color.danger}` } },
       }}
     />
   ),
@@ -554,7 +558,7 @@ export const Placeholder: Story = {
 export const ScrollableRtl: Story = {
   args: { defaultOpen: true, defaultValue: 'project-0' },
   render: (args) => (
-    <div style={{ inlineSize: 240 }}>
+    <NarrowFrame>
       <Select {...args}>
         <Select.Trigger dir="rtl" aria-label={LABEL}>
           <Select.Value placeholder={PLACEHOLDER} />
@@ -567,7 +571,7 @@ export const ScrollableRtl: Story = {
           ))}
         </Select.Content>
       </Select>
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);

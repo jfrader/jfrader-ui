@@ -2,7 +2,6 @@ import { useRef, useState, type ComponentPropsWithRef, type ReactNode } from 're
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import {
@@ -12,6 +11,8 @@ import {
   type LinkUnfurlPreviewStatus,
   type LinkUnfurlProps,
 } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 const GUIDE = 'https://example.com/guide';
 const CHANGELOG = 'https://example.org/changelog';
@@ -27,10 +28,10 @@ const METADATA: Partial<LinkUnfurlPreview> = {
 const SETTLE_MS = 240;
 const settle = () => new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
 
-const frameStyle = css({ inlineSize: 'min(100vw - 32px, 36rem)', minInlineSize: 0 });
-const narrowStyle = css({ inlineSize: '20rem' });
-const stackStyle = css({ display: 'grid', gap: vars.space[4] });
-const fixtureStyle = css({
+const Frame = styled.div({ inlineSize: `min(100vw - ${vars.space[8]}, 36rem)`, minInlineSize: 0 });
+const NarrowFrame = styled.div({ inlineSize: '20rem' });
+const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
+const Fixture = styled.button({
   minBlockSize: vars.space[8],
   minInlineSize: vars.space[8],
   paddingInline: vars.space[2],
@@ -73,7 +74,7 @@ function Demo({ outcome = 'ready', autoExpand = false, metadataFor = () => METAD
     if (request) setPreviews((current) => [...current, answer(request, status, METADATA)]);
   };
   return (
-    <div css={stackStyle}>
+    <Stack>
       <LinkUnfurl
         {...props}
         previews={previews}
@@ -93,33 +94,33 @@ function Demo({ outcome = 'ready', autoExpand = false, metadataFor = () => METAD
       />
       {outcome === 'manual' ? (
         <div>
-          <button css={fixtureStyle} onClick={() => settleRequest(requests.current.at(-1), 'pending')}>
+          <Fixture onClick={() => settleRequest(requests.current.at(-1), 'pending')}>
             Mark latest pending
-          </button>
-          <button css={fixtureStyle} onClick={() => settleRequest(requests.current[0], 'ready')}>
+          </Fixture>
+          <Fixture onClick={() => settleRequest(requests.current[0], 'ready')}>
             Resolve first request
-          </button>
-          <button css={fixtureStyle} onClick={() => settleRequest(requests.current.at(-1), 'ready')}>
+          </Fixture>
+          <Fixture onClick={() => settleRequest(requests.current.at(-1), 'ready')}>
             Resolve latest request
-          </button>
-          <button css={fixtureStyle} onClick={() => settleRequest(requests.current.at(-1), 'error')}>
+          </Fixture>
+          <Fixture onClick={() => settleRequest(requests.current.at(-1), 'error')}>
             Fail latest request
-          </button>
+          </Fixture>
         </div>
       ) : null}
-    </div>
+    </Stack>
   );
 }
 
 function Unmountable({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(true);
   return (
-    <div css={stackStyle}>
+    <Stack>
       {mounted ? children : null}
-      <button css={fixtureStyle} onClick={() => setMounted(false)}>
+      <Fixture onClick={() => setMounted(false)}>
         Unmount composer
-      </button>
-    </div>
+      </Fixture>
+    </Stack>
   );
 }
 
@@ -146,9 +147,9 @@ const meta = {
   render: (args) => <Demo {...args} />,
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -501,9 +502,9 @@ export const Narrow: Story = {
   render: (args) => <Demo {...args} autoExpand />,
   decorators: [
     (Story) => (
-      <div css={narrowStyle}>
+      <NarrowFrame>
         <Story />
-      </div>
+      </NarrowFrame>
     ),
   ],
   play: async ({ canvasElement, canvas, userEvent }) => {
@@ -664,7 +665,7 @@ export const KeyboardPlay: Story = {
   args: { onSend: fn() },
   render: (args) => (
     <>
-      <button css={fixtureStyle}>Before</button>
+      <Fixture>Before</Fixture>
       <Demo {...args} />
     </>
   ),
@@ -762,6 +763,7 @@ function ReplacementField(props: ComponentPropsWithRef<'textarea'>) {
   return <textarea {...props} data-slot="link-unfurl-field" />;
 }
 
+// This story tests the documented slot css API.
 export const SlotStyling: Story = {
   render: (args) => <Demo {...args} slots={{ field: ReplacementField }} />,
   args: {

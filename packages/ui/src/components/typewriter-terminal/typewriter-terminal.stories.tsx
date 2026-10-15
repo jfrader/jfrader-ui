@@ -10,6 +10,10 @@ import {
   type TerminalStep,
   type TerminalTone,
 } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const NarrowFrame = styled.div({ inlineSize: '18em', maxInlineSize: '100%' });
 
 const SCRIPT: readonly TerminalStep[] = [
   {
@@ -621,9 +625,9 @@ export const NarrowContainer: Story = {
     rows: 4,
   },
   render: (args) => (
-    <div style={{ inlineSize: '18em', maxInlineSize: '100%' }}>
+    <NarrowFrame>
       <TypewriterTerminal {...args} />
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvas }) => {
     const root = canvas.getByRole('figure');
@@ -633,6 +637,7 @@ export const NarrowContainer: Story = {
       );
   },
 };
+// This story tests the documented css/slot API and native style merging.
 export const SlotStyles: Story = {
   args: {
     defaultPaused: true,

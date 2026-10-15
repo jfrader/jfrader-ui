@@ -1,4 +1,4 @@
-import { Component, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -7,6 +7,12 @@ import { Button } from '../button';
 import { ThemeRoot } from '../theme-root';
 import { Toast, useToast, type ToastOptions } from '../toast';
 import { ToastStack, type ToastStackProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const ActionRow = styled.div({ display: 'flex', gap: vars.space[2], flexWrap: 'wrap' });
+
+const FixtureInput = styled.input({ minBlockSize: vars.space[8] });
 
 const messages: ToastOptions[] = [
   { title: 'Profile saved', description: 'Your changes are published.', duration: null },
@@ -71,7 +77,7 @@ function Controls({ initial, mode }: { initial: ToastOptions[]; mode?: 'update' 
     });
   }, [api, initial, mode]);
   return (
-    <div style={{ display: 'flex', gap: vars.space[2], flexWrap: 'wrap' }}>
+    <ActionRow>
       <Button onClick={() => ids.current.push(api.toast({ title: 'New notification', duration: null }))}>
         Notify
       </Button>
@@ -97,22 +103,22 @@ function Controls({ initial, mode }: { initial: ToastOptions[]; mode?: 'update' 
         Unknown id
       </Button>
       <Button>Outside</Button>
-    </div>
+    </ActionRow>
   );
 }
 // Every example renders the stack inside its own surface, so a stack lands in that surface's
 // corner. Without one, each example pins its toasts to the corner of the page and the whole docs
 // page piles them on top of each other. `ViewportAnchored` keeps the page-level behavior.
-const surfaceStyle = {
+const SurfaceFrame = styled.div({
   boxSizing: 'border-box',
   position: 'relative',
   inlineSize: '100%',
   border: `1px solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.md,
-} satisfies CSSProperties;
+});
 
 function Surface({ blockSize = '20rem', children }: { blockSize?: string; children: ReactNode }) {
-  return <div style={{ ...surfaceStyle, blockSize }}>{children}</div>;
+  return <SurfaceFrame style={{ blockSize }}>{children}</SurfaceFrame>;
 }
 
 function Harness({
@@ -192,6 +198,7 @@ export const Default: Story = {
 
 export const Compound: Story = { render: (args) => <Harness {...args} /> };
 
+// This story tests the documented css/slot API and native style merging.
 export const GeneratedPartCustomization: Story = {
   args: { slotProps: { root: { onKeyDown: fn() } } },
   render: (args) => <Surface><Toast viewport="stack" viewportProps={{
@@ -230,13 +237,13 @@ const viewportTriggers: { label: string; options: ToastOptions }[] = [
 function ViewportTriggers() {
   const api = useToast();
   return (
-    <div style={{ display: 'flex', gap: vars.space[2], flexWrap: 'wrap' }}>
+    <ActionRow>
       {viewportTriggers.map(({ label, options }) => (
         <Button key={label} onClick={() => api.toast(options)}>
           {label}
         </Button>
       ))}
-    </div>
+    </ActionRow>
   );
 }
 /** Click a button: the stack pins to the corner of the page, over the documentation. */
@@ -662,6 +669,7 @@ export const QueuedLifetime: Story = {
   },
 };
 
+// This story tests the documented css/slot API and native style merging.
 export const StylingAndRef: Story = {
   args: {
     variant: 'list',
@@ -707,7 +715,7 @@ export const EditableHotkey: Story = {
     <>
       <label>
         Draft
-        <input style={{ minBlockSize: vars.space[8] }} />
+        <FixtureInput />
       </label>
       <Harness {...args} />
     </>
@@ -728,13 +736,13 @@ function LifetimeControls() {
   const api = useToast();
   const id = useRef('');
   return (
-    <div style={{ display: 'flex', gap: vars.space[2], flexWrap: 'wrap' }}>
+    <ActionRow>
       <Button onClick={() => (id.current = api.toast({ title: 'Syncing files', duration: LIFETIME_MS }))}>
         Notify timed
       </Button>
       <Button onClick={() => api.update(id.current, { title: 'Syncing 3 files' })}>Rename</Button>
       <Button onClick={() => api.update(id.current, { duration: LIFETIME_MS * 2 })}>Extend</Button>
-    </div>
+    </ActionRow>
   );
 }
 export const UpdateLifetime: Story = {

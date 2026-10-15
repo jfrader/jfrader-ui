@@ -3,10 +3,11 @@ import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { dateTimeFormatter, numberFormatter, relativeTime, relativeTimeFormatter, resolveTimeOptions, toEpoch, validEpoch } from '../../utils/intl';
 import { Timeline, type TimelineEvent, type TimelineProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -20,11 +21,11 @@ const relative = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
 const fullDay = (at: number | string, timeZone = 'UTC', locale = LOCALE) =>
   new Intl.DateTimeFormat(locale, { timeZone, dateStyle: 'full' }).format(new Date(at));
 
-const frameStyle = css({ inlineSize: '34rem', maxInlineSize: '100%' });
-const narrowStyle = css({ inlineSize: '16rem' });
-const stackStyle = css({ display: 'grid', gap: vars.space[6] });
-const toolbarStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], marginBlockEnd: vars.space[4] });
-const fixtureStyle = css({
+const Frame = styled.div({ inlineSize: '34rem', maxInlineSize: '100%' });
+const Narrow = styled.div({ inlineSize: '16rem' });
+const StackFrame = styled.div({ display: 'grid', gap: vars.space[6] });
+const Toolbar = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], marginBlockEnd: vars.space[4] });
+const FixtureInput = styled.input({
   boxSizing: 'border-box',
   minBlockSize: vars.space[8],
   minInlineSize: vars.space[8],
@@ -35,7 +36,8 @@ const fixtureStyle = css({
   borderRadius: vars.radius.sm,
   font: 'inherit',
 });
-const fieldStyle = css({ display: 'grid', gap: vars.space[1] });
+const FixtureButton = FixtureInput.withComponent('button');
+const Field = styled.label({ display: 'grid', gap: vars.space[1] });
 
 const checkIcon = (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -53,10 +55,10 @@ const PORTRAIT_SRC = `data:image/svg+xml,${encodeURIComponent(
 )}`;
 
 const reasonField = (
-  <label css={fieldStyle}>
+  <Field>
     Rotation reason
-    <input css={fixtureStyle} defaultValue="Quarterly" />
-  </label>
+    <FixtureInput defaultValue="Quarterly" />
+  </Field>
 );
 
 /** Deliberately unsorted; `keys` and `review` share an instant to pin tie order. */
@@ -147,28 +149,28 @@ function LiveFeed(args: TimelineProps) {
   };
   return (
     <>
-      <div css={toolbarStyle}>
-        <button type="button" css={fixtureStyle} onClick={add}>
+      <Toolbar>
+        <FixtureButton type="button" onClick={add}>
           Add event
-        </button>
-        <button type="button" css={fixtureStyle} onClick={() => setNow((current) => current + MINUTE)}>
+        </FixtureButton>
+        <FixtureButton type="button" onClick={() => setNow((current) => current + MINUTE)}>
           Tick clock
-        </button>
-        <button
+        </FixtureButton>
+        <FixtureButton
           type="button"
-          css={fixtureStyle}
+
           onClick={() => setEvents((current) => current.filter((event) => event.id !== 'build'))}
         >
           Remove build
-        </button>
-        <button
+        </FixtureButton>
+        <FixtureButton
           type="button"
-          css={fixtureStyle}
+
           onClick={() => setEvents((current) => current.filter((event) => event.id !== 'deploy'))}
         >
           Remove deploy
-        </button>
-      </div>
+        </FixtureButton>
+      </Toolbar>
       <Timeline {...args} events={events} now={now} />
     </>
   );
@@ -188,9 +190,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -259,10 +261,10 @@ export const Default: Story = {
 
 export const Sizes: Story = {
   render: (args) => (
-    <div css={stackStyle}>
+    <StackFrame>
       <Timeline {...args} size="sm" aria-label="Compact history" headingLevel={4} />
       <Timeline {...args} size="md" aria-label="Regular history" headingLevel={4} />
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvas }) => {
     const [compact, regular] = [
@@ -404,11 +406,11 @@ function ControlledExample(args: TimelineProps) {
   const [open, setOpen] = useState<readonly string[]>(['deploy']);
   return (
     <>
-      <div css={toolbarStyle}>
-        <button type="button" css={fixtureStyle} onClick={() => setOpen([])}>
+      <Toolbar>
+        <FixtureButton type="button" onClick={() => setOpen([])}>
           Collapse all
-        </button>
-      </div>
+        </FixtureButton>
+      </Toolbar>
       <Timeline
         {...args}
         value={open}
@@ -468,10 +470,10 @@ export const RejectedControlled: Story = {
 function DoubleActivation(args: TimelineProps) {
   return (
     <>
-      <div css={toolbarStyle}>
-        <button
+      <Toolbar>
+        <FixtureButton
           type="button"
-          css={fixtureStyle}
+
           onClick={(event) => {
             const timeline = event.currentTarget.parentElement!.nextElementSibling!;
             const deploy = triggerOf(timeline, 'deploy');
@@ -480,8 +482,8 @@ function DoubleActivation(args: TimelineProps) {
           }}
         >
           Open deploy twice
-        </button>
-      </div>
+        </FixtureButton>
+      </Toolbar>
       <Timeline {...args} />
     </>
   );
@@ -524,12 +526,12 @@ export const Empty: Story = {
 export const AriaMerge: Story = {
   args: { 'aria-label': undefined, 'aria-labelledby': 'history-heading', 'aria-describedby': 'history-hint' },
   render: (args) => (
-    <div css={stackStyle}>
+    <StackFrame>
       <h2 id="history-heading">Recent changes</h2>
       <p id="history-hint">Times are UTC</p>
       <Timeline {...args} maxHeight="10rem" />
       <Timeline {...args} maxHeight="10rem" aria-label="Fallback history" aria-labelledby="missing-reference" />
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvasElement }) => {
     const [labelled, fallback] = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="timeline"]')) as [
@@ -637,7 +639,7 @@ const MIDNIGHT_EVENT: TimelineEvent = { id: 'late', at: '2026-10-11T23:30:00Z', 
 export const DSTBoundary: Story = {
   args: { timeZone: 'Europe/Madrid' },
   render: (args) => (
-    <div css={stackStyle}>
+    <StackFrame>
       <Timeline
         {...args}
         aria-label="Autumn change"
@@ -654,7 +656,7 @@ export const DSTBoundary: Story = {
       />
       <Timeline {...args} aria-label="Madrid midnight" now={NOW} events={[MIDNIGHT_EVENT]} />
       <Timeline {...args} aria-label="UTC midnight" timeZone="UTC" now={NOW} events={[MIDNIGHT_EVENT]} />
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvas }) => {
     const root = (name: string) => canvas.getByRole('region', { name });
@@ -686,9 +688,9 @@ export const LongContent: Story = {
   args: { events: LONG_EVENTS, locale: 'de-DE' },
   decorators: [
     (Story) => (
-      <div css={narrowStyle}>
+      <Narrow>
         <Story />
-      </div>
+      </Narrow>
     ),
   ],
   play: async ({ canvasElement }) => {
@@ -908,6 +910,7 @@ function ReplacementTimelineTime(props: import('react').ComponentPropsWithRef<'t
 function ReplacementTimelineDetail(props: import('react').ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="detail" />;
 }
+// This story tests the documented css/slot API and native style merging.
 export const SlotStyling: Story = {
   args: {
     slots: { marker: ReplacementTimelineMarker, time: ReplacementTimelineTime, detail: ReplacementTimelineDetail },

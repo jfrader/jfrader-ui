@@ -11,7 +11,7 @@ import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
-import { ThemeRoot } from '../theme-root';
+import { ThemeRoot, type ThemeRootProps } from '../theme-root';
 import {
   MentionInput,
   mentionText,
@@ -20,6 +20,8 @@ import {
   type MentionInputProps,
   type MentionValue,
 } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 const people = [
   { id: 'ada', name: 'Ada', role: 'Engineer' },
@@ -37,9 +39,9 @@ const TOKEN_VALUE: MentionValue = {
     { kind: 'channel', id: 'general', label: 'general', start: 5, end: 13 },
   ],
 };
-const frameStyle = css({ inlineSize: 'min(100%, 360px)', minInlineSize: 0 });
-const stackStyle = css({ display: 'grid', gap: vars.space[4] });
-const fixtureStyle = css({
+const Frame = styled.div({ inlineSize: 'min(100%, 360px)', minInlineSize: 0 });
+const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
+const Fixture = styled.button({
   minBlockSize: vars.space[8],
   padding: vars.space[2],
   color: vars.color.text,
@@ -50,6 +52,13 @@ const fixtureStyle = css({
 const source = `<MentionInput label="Comment" people={people} channels={channels}
   value={draft} onValueChange={setDraft} submitOnEnter
   onSubmit={(next) => postComment(serializeMentions(next))} />`;
+
+const ScrollFrame = styled.div({ paddingBlockStart: '65vh' });
+function LightThemeScope(props: Omit<ThemeRootProps, 'theme'>) {
+  return <ThemeRoot {...props} theme="light" />;
+}
+const LightThemeRoot = styled(LightThemeScope)({ background: vars.color.bg, padding: vars.space[4] });
+const NarrowFrame = styled.div({ inlineSize: '160px', maxInlineSize: '100%' });
 const meta = {
   title: 'Inputs/MentionInput',
   component: MentionInput,
@@ -66,9 +75,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -124,10 +133,9 @@ function ActionField(props: MentionInputProps) {
   const actions = useRef<MentionInputActions | null>(null);
   const textarea = useRef<HTMLTextAreaElement | null>(null);
   return (
-    <div css={stackStyle}>
+    <Stack>
       <MentionInput {...props} ref={textarea} actionsRef={actions} />
-      <button
-        css={fixtureStyle}
+      <Fixture
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => {
           textarea.current?.focus();
@@ -135,24 +143,22 @@ function ActionField(props: MentionInputProps) {
         }}
       >
         Insert text
-      </button>
-      <button
-        css={fixtureStyle}
+      </Fixture>
+      <Fixture
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => actions.current?.clear()}
       >
         Clear
-      </button>
-      <button
-        css={fixtureStyle}
+      </Fixture>
+      <Fixture
         onClick={() => {
           textarea.current?.focus();
           actions.current?.openSuggestions('person');
         }}
       >
         People
-      </button>
-    </div>
+      </Fixture>
+    </Stack>
   );
 }
 function RefFixture(props: MentionInputProps) {
@@ -160,9 +166,9 @@ function RefFixture(props: MentionInputProps) {
   return (
     <>
       {mounted && <MentionInput {...props} />}
-      <button css={fixtureStyle} onClick={() => setMounted(false)}>
+      <Fixture onClick={() => setMounted(false)}>
         Unmount field
-      </button>
+      </Fixture>
     </>
   );
 }
@@ -249,11 +255,11 @@ export const Controlled: Story = {
 };
 export const Sizes: Story = {
   render: (args) => (
-    <div css={stackStyle}>
+    <Stack>
       {(['sm', 'md', 'lg'] as const).map((size) => (
         <MentionInput {...args} key={size} label={size} size={size} />
       ))}
-    </div>
+    </Stack>
   ),
 };
 export const MinMaxRows: Story = {
@@ -313,9 +319,9 @@ export const BottomViewportAutoFlip: Story = {
   args: { defaultValue: { text: '@', mentions: [] }, defaultOpen: true },
   decorators: [
     (Story) => (
-      <div style={{ paddingBlockStart: '65vh' }}>
+      <ScrollFrame>
         <Story />
-      </div>
+      </ScrollFrame>
     ),
   ],
   play: openPlay,
@@ -379,7 +385,7 @@ export const ExternalAria: Story = {
 };
 export const BooleanAndZeroNodes: Story = {
   render: (args) => (
-    <div css={stackStyle}>
+    <Stack>
       {([false, null, 0, ''] as const).map((node, index) => (
         <MentionInput
           {...args}
@@ -390,7 +396,7 @@ export const BooleanAndZeroNodes: Story = {
           aria-label={`Comment ${index}`}
         />
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvas }) => {
     const inputs = canvas.getAllByRole('textbox');
@@ -405,9 +411,9 @@ export const Keyboard: Story = {
   args: { submitOnEnter: true },
   render: (args) => (
     <>
-      <button css={fixtureStyle}>Before</button>
+      <Fixture>Before</Fixture>
       <MentionInput {...args} />
-      <button css={fixtureStyle}>After</button>
+      <Fixture>After</Fixture>
     </>
   ),
   play: async ({ canvas, userEvent, args }) => {
@@ -577,9 +583,9 @@ export const FormReset: Story = {
   render: (args) => (
     <form aria-label="Comment form">
       <MentionInput {...args} />
-      <button css={fixtureStyle} type="reset">
+      <Fixture type="reset">
         Reset
-      </button>
+      </Fixture>
     </form>
   ),
   play: async ({ canvas, userEvent, args }) => {
@@ -660,9 +666,9 @@ export const LightTheme: Story = {
 export const ScopedThemePortal: Story = {
   args: { defaultValue: { text: '@', mentions: [] }, open: true },
   render: (args) => (
-    <ThemeRoot theme="light" style={{ background: vars.color.bg, padding: vars.space[4] }}>
+    <LightThemeRoot>
       <MentionInput {...args} />
-    </ThemeRoot>
+    </LightThemeRoot>
   ),
   play: async (context) => {
     await openPlay(context);
@@ -714,9 +720,9 @@ export const NarrowPanel: Story = {
   args: { defaultValue: { text: '@', mentions: [] }, open: true },
   decorators: [
     (Story) => (
-      <div style={{ width: '160px', maxWidth: '100%' }}>
+      <NarrowFrame>
         <Story />
-      </div>
+      </NarrowFrame>
     ),
   ],
   play: async (context) => {
@@ -838,6 +844,7 @@ export const NativeRef: Story = {
     await expect(canvas.queryByRole('textbox')).toBeNull();
   },
 };
+// This story tests sx and the documented slot css API.
 export const SlotStyles: Story = {
   args: {
     defaultValue: { text: '@', mentions: [] },
@@ -867,9 +874,9 @@ export const ControlledFormReset: Story = {
   render: (args) => (
     <form aria-label="Accepted comment">
       <MentionInput {...args} />
-      <button css={fixtureStyle} type="reset">
+      <Fixture type="reset">
         Reset
-      </button>
+      </Fixture>
     </form>
   ),
   play: async ({ canvas, userEvent, args }) => {
@@ -920,9 +927,9 @@ export const CanceledFormReset: Story = {
   render: (args) => (
     <form onReset={(event) => event.preventDefault()}>
       <MentionInput {...args} />
-      <button css={fixtureStyle} type="reset">
+      <Fixture type="reset">
         Reset
-      </button>
+      </Fixture>
     </form>
   ),
   play: async ({ canvas, userEvent, args }) => {
@@ -941,9 +948,9 @@ export const ExternalFormReset: Story = {
     <>
       <MentionInput {...args} />
       <form id="external-comment-form" aria-label="External comment form">
-        <button css={fixtureStyle} type="reset">
+        <Fixture type="reset">
           Reset
-        </button>
+        </Fixture>
       </form>
     </>
   ),
@@ -964,6 +971,7 @@ export const ExternalFormReset: Story = {
 };
 
 /** Replace the wrapper and generated label; pass native props through slotProps. */
+// This story tests native style merging and css/sx precedence through the slot API.
 export const SlotCustomization: Story = {
   args: {
     ref: fn(),

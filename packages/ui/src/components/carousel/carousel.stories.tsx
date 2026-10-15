@@ -5,6 +5,8 @@ import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { Carousel, type CarouselProps } from './index';
 
 const SUITES = [
@@ -25,14 +27,14 @@ const DRAG_PX = 240;
 
 // The inset keeps the test runner's parked pointer (page origin) off the carousel, so hover
 // pause only engages when a story hovers on purpose.
-const frameStyle = css({
+const Frame = styled.div({
   boxSizing: 'border-box',
   inlineSize: '32rem',
   maxInlineSize: 'calc(100vw - 2rem)',
   padding: vars.space[4],
 });
-const narrowFrameStyle = css({ inlineSize: '18rem' });
-const cardStyle = css({
+const NarrowFrame = styled.div({ inlineSize: '18rem' });
+const CardRoot = styled.div({
   display: 'grid',
   alignContent: 'end',
   gap: vars.space[1],
@@ -45,17 +47,18 @@ const cardStyle = css({
   color: vars.color.text,
   fontSize: vars.textSize.sm,
 });
-const cardTitleStyle = css({ margin: 0, fontWeight: vars.fontWeight.semibold, fontSize: vars.textSize.md });
-const cardTextStyle = css({ margin: 0, color: vars.color.textMuted });
-const fixtureButtonStyle = css({ minBlockSize: vars.space[8], justifySelf: 'start' });
+const CardTitle = styled.p({ margin: 0, fontWeight: vars.fontWeight.semibold, fontSize: vars.textSize.md });
+const CardText = styled.p({ margin: 0, color: vars.color.textMuted });
+const FixtureButton = styled.button({ minBlockSize: vars.space[8], justifySelf: 'start' });
+const FixtureInput = styled.input({ minBlockSize: vars.space[8], justifySelf: 'start' });
 
 function SuiteCard({ name, detail, children }: { name: string; detail: string; children?: ReactNode }) {
   return (
-    <div css={cardStyle}>
-      <p css={cardTitleStyle}>{name}</p>
-      <p css={cardTextStyle}>{detail}</p>
+    <CardRoot>
+      <CardTitle>{name}</CardTitle>
+      <CardText>{detail}</CardText>
       {children}
-    </div>
+    </CardRoot>
   );
 }
 SuiteCard.displayName = 'SuiteCard';
@@ -74,9 +77,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -330,10 +333,10 @@ export const InteractiveSlides: Story = {
     onValueChange: fn(),
     children: SUITES.map((suite) => (
       <SuiteCard key={suite.key} name={suite.name} detail={suite.detail}>
-        <input aria-label={`${suite.name} guests`} defaultValue="2" css={fixtureButtonStyle} />
-        <button type="button" css={fixtureButtonStyle} onClick={() => bookSpy(suite.key)}>
+        <FixtureInput aria-label={`${suite.name} guests`} defaultValue="2" />
+        <FixtureButton type="button" onClick={() => bookSpy(suite.key)}>
           Book {suite.name}
-        </button>
+        </FixtureButton>
       </SuiteCard>
     )),
   },
@@ -794,13 +797,13 @@ export const RotationSafety: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
   },
 };
-const offscreenSpacerStyle = css({ blockSize: '300vh' });
+const OffscreenSpacer = styled.div({ blockSize: '300vh' });
 export const BackgroundPause: Story = {
   args: { interval: ROTATION_MS, defaultPlayingValue: true, onValueChange: fn() },
   decorators: [
     (Story) => (
       <>
-        <div data-testid="spacer" css={offscreenSpacerStyle} />
+        <OffscreenSpacer data-testid="spacer" />
         <Story />
       </>
     ),
@@ -829,9 +832,9 @@ function Unmountable(props: CarouselProps) {
   return (
     <>
       {mounted && <Carousel {...props} />}
-      <button type="button" css={fixtureButtonStyle} onClick={() => setMounted(false)}>
+      <FixtureButton type="button" onClick={() => setMounted(false)}>
         Unmount
-      </button>
+      </FixtureButton>
     </>
   );
 }
@@ -905,9 +908,9 @@ function RemovableSlides(props: Omit<CarouselProps, 'children'>) {
       {SUITES.slice(0, count).map((suite, index) => (
         <SuiteCard key={suite.key} name={suite.name} detail={suite.detail}>
           {index === count - 1 && (
-            <button type="button" css={fixtureButtonStyle} onClick={() => setCount((value) => value - 1)}>
+            <FixtureButton type="button" onClick={() => setCount((value) => value - 1)}>
               Remove {suite.name}
-            </button>
+            </FixtureButton>
           )}
         </SuiteCard>
       ))}
@@ -958,9 +961,9 @@ export const KeyReorder: Story = {
           <Carousel {...args} defaultValue={1}>
             {reversed ? [...slides].reverse() : slides}
           </Carousel>
-          <button type="button" css={fixtureButtonStyle} onClick={() => setReversed(true)}>
+          <FixtureButton type="button" onClick={() => setReversed(true)}>
             Reverse
-          </button>
+          </FixtureButton>
         </>
       );
     }
@@ -992,16 +995,15 @@ function ChangingSlides(props: Omit<CarouselProps, 'children'>) {
     <Carousel {...props}>
       {suites.map((suite) => (
         <SuiteCard key={suite.key} name={suite.name} detail={suite.detail}>
-          <button
+          <FixtureButton
             type="button"
-            css={fixtureButtonStyle}
             onClick={() => setSuites((list) => list.map((item) => (item.key === suite.key ? renovated(item) : item)))}
           >
             Replace {suite.name}
-          </button>
-          <button type="button" css={fixtureButtonStyle} onClick={() => setSuites((list) => [...list].reverse())}>
+          </FixtureButton>
+          <FixtureButton type="button" onClick={() => setSuites((list) => [...list].reverse())}>
             Reverse from {suite.name}
-          </button>
+          </FixtureButton>
         </SuiteCard>
       ))}
     </Carousel>
@@ -1055,9 +1057,9 @@ export const Disabled: Story = {
     onValueChange: fn(),
     children: SUITES.map((suite) => (
       <SuiteCard key={suite.key} name={suite.name} detail={suite.detail}>
-        <button type="button" css={fixtureButtonStyle} onClick={() => disabledBook(suite.key)}>
+        <FixtureButton type="button" onClick={() => disabledBook(suite.key)}>
           Book {suite.name}
-        </button>
+        </FixtureButton>
       </SuiteCard>
     )),
   },
@@ -1093,9 +1095,9 @@ export const Narrow: Story = {
   },
   decorators: [
     (Story) => (
-      <div css={narrowFrameStyle}>
+      <NarrowFrame>
         <Story />
-      </div>
+      </NarrowFrame>
     ),
   ],
   play: async ({ canvasElement, userEvent }) => {
@@ -1255,6 +1257,10 @@ export const ForcedColors: Story = {
   },
 };
 
+// The slot API takes `css` values, so this story keeps the documented spelling.
+const slotStatusStyle = css({ letterSpacing: '3px' });
+const slotIndicatorStyle = css({ minInlineSize: '40px' });
+
 const rootRef = fn();
 export const AriaAndStyling: Story = {
   args: {
@@ -1269,8 +1275,8 @@ export const AriaAndStyling: Story = {
       tabList: { 'aria-labelledby': 'carousel-heading' },
       viewport: { 'aria-label': 'Suite photos' },
       slide: { 'aria-describedby': 'carousel-hint', 'aria-labelledby': 'missing-id' },
-      status: { css: { letterSpacing: '3px' } },
-      indicator: { css: { minInlineSize: '40px' } },
+      status: { css: slotStatusStyle },
+      indicator: { css: slotIndicatorStyle },
     },
   },
   render: (args) => (

@@ -2,11 +2,12 @@ import { Profiler, useState, type ComponentPropsWithRef, type ReactNode } from '
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ImageCompare } from './index';
 import { sceneSource } from '../scene';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 const RAW_SRC = sceneSource('image-compare-alpine', { variant: 'landscape' });
 const GRADED_SRC = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
@@ -27,15 +28,15 @@ const PX_TOLERANCE = 0.5;
 const expectPx = (value: string, px: number) =>
   expect(Math.abs(Number.parseFloat(value) - px)).toBeLessThan(PX_TOLERANCE);
 
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: '36rem',
   maxInlineSize: '100%',
   display: 'grid',
   gap: vars.space[6],
   padding: vars.space[4],
 });
-const narrowStyle = css({ inlineSize: '14rem', maxInlineSize: '100%' });
-const statusStyle = css({
+const NarrowFrame = styled.div({ inlineSize: '14rem', maxInlineSize: '100%' });
+const Status = styled.div({
   display: 'grid',
   placeItems: 'center',
   blockSize: '100%',
@@ -45,7 +46,7 @@ const statusStyle = css({
   background: vars.color.surface,
   fontSize: vars.textSize.sm,
 });
-const fixtureButtonStyle = css({
+const FixtureButton = styled.button({
   minBlockSize: vars.space[8],
   minInlineSize: vars.space[8],
   paddingInline: vars.space[3],
@@ -74,9 +75,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -771,9 +772,9 @@ export const ResizeDuringDrag: Story = {
     const [wide, setWide] = useState(true);
     return (
       <>
-        <button type="button" css={fixtureButtonStyle} onClick={() => setWide(false)}>
+        <FixtureButton type="button" onClick={() => setWide(false)}>
           Shrink
-        </button>
+        </FixtureButton>
         <div style={{ inlineSize: wide ? '32rem' : '16rem' }}>
           <ImageCompare {...args} />
         </div>
@@ -854,11 +855,11 @@ export const DisableDuringDrag: Story = {
 export const InteractiveDescendantIgnored: Story = {
   args: {
     after: (
-      <div css={statusStyle}>
-        <button type="button" css={fixtureButtonStyle}>
+      <Status>
+        <FixtureButton type="button">
           Retry
-        </button>
-      </div>
+        </FixtureButton>
+      </Status>
     ),
   },
   play: async ({ canvas, canvasElement, args }) => {
@@ -878,9 +879,9 @@ export const InteractiveDescendantIgnored: Story = {
 export const ImageLoading: Story = {
   args: {
     after: (
-      <div role="status" css={statusStyle}>
+      <Status role="status">
         Loading graded landscape…
-      </div>
+      </Status>
     ),
   },
   play: async ({ canvas, userEvent }) => {
@@ -894,9 +895,9 @@ export const ImageLoading: Story = {
 function BrokenAfter() {
   const [failed, setFailed] = useState(false);
   return failed ? (
-    <div role="alert" css={statusStyle}>
+    <Status role="alert">
       Graded landscape failed to load
-    </div>
+    </Status>
   ) : (
     <img src={BROKEN_SRC} alt="Mountain landscape with a warm grade" onError={() => setFailed(true)} />
   );
@@ -917,9 +918,9 @@ export const Narrow: Story = {
     resetLabel: 'Center the comparison divider between both images',
   },
   render: (args) => (
-    <div css={narrowStyle}>
+    <NarrowFrame>
       <ImageCompare {...args} />
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvas, canvasElement }) => {
     const root = part(canvasElement, 'image-compare');
@@ -1126,6 +1127,7 @@ function ReplacementHandle(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-slot="image-compare-handle" />;
 }
 
+// This story tests styles and refs forwarded through the slot API.
 export const SlotStylingAndRefs: Story = {
   render: (args) => <ImageCompare {...args} slots={{ handle: ReplacementHandle }} />,
   args: {

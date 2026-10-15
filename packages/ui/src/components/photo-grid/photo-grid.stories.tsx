@@ -2,7 +2,8 @@ import { StrictMode, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { PhotoGrid, type PhotoGridPhoto } from './index';
 import { sceneSource } from '../scene';
@@ -78,14 +79,15 @@ const photos: PhotoGridPhoto[] = [
   { id: 'p11', src: sceneSource('cove-swell-11', { variant: 'tide' }), alt: 'Cove Swell', width: 1000, height: 1000, title: 'Cove Swell', detail: 'Square crop, incoming tide' },
   { id: 'p12', src: sceneSource('hills-night-12', { variant: 'dusk' }), alt: 'Night over the Hills', width: 800, height: 1200, title: 'Night over the Hills', detail: 'Portrait: first stars' },
 ];
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: '48rem',
   maxInlineSize: '100%',
   padding: vars.space[4],
   boxSizing: 'border-box',
 });
-const narrowStyle = css({ inlineSize: '14rem', maxInlineSize: '100%' });
-const fixtureStyle = css({
+const NarrowFrame = styled.div({ inlineSize: '14rem', maxInlineSize: '100%' });
+const DensityStack = styled.div({ display: 'grid', gap: vars.space[8] });
+const FixtureButton = styled.button({
   minBlockSize: vars.space[8],
   minInlineSize: vars.space[8],
   padding: vars.space[2],
@@ -109,9 +111,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -182,11 +184,11 @@ export const Default: Story = {
 };
 export const EachDensity: Story = {
   render: (args) => (
-    <div css={css({ display: 'grid', gap: vars.space[8] })}>
+    <DensityStack>
       {[5, 3, 2].map((density) => (
         <PhotoGrid {...args} key={density} title={`${density} columns`} density={density} />
       ))}
-    </div>
+    </DensityStack>
   ),
 };
 export const ViewerVisibility: Story = {
@@ -314,9 +316,9 @@ export const PaginatedSet: Story = {
     const [page, setPage] = useState(0);
     return (
       <>
-        <button css={fixtureStyle} onClick={() => setPage(1 - page)}>
+        <FixtureButton onClick={() => setPage(1 - page)}>
           Change page
-        </button>
+        </FixtureButton>
         <PhotoGrid
           {...args}
           photos={args.photos.slice(page * 4, page * 4 + 4)}
@@ -335,9 +337,9 @@ export const PaginatedSet: Story = {
 export const Light: Story = { decorators: [withLightTheme], globals: { theme: 'light' } };
 export const Narrow: Story = {
   render: (args) => (
-    <div css={narrowStyle}>
+    <NarrowFrame>
       <PhotoGrid {...args} density={5} />
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('region')).toHaveAttribute('data-density', '5');
@@ -807,9 +809,9 @@ export const RootRefCleanup: Story = {
     const [mounted, setMounted] = useState(true);
     return (
       <StrictMode>
-        <button css={fixtureStyle} onClick={() => setMounted(!mounted)}>
+        <FixtureButton onClick={() => setMounted(!mounted)}>
           Toggle collection
-        </button>
+        </FixtureButton>
         {mounted && <PhotoGrid {...args} />}
       </StrictMode>
     );
@@ -824,6 +826,7 @@ export const RootRefCleanup: Story = {
   },
 };
 
+// These `css`, `sx` and inline values exercise the documented slot styling API.
 export const SlotStyling: Story = {
   args: {
     slotProps: {

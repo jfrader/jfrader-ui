@@ -458,6 +458,7 @@ export const FalsyEmpty: Story = {
     await expect(canvasElement).toHaveTextContent('0');
   },
 };
+// This story tests the documented css/slot API and native style merging.
 export const ConsumerStylePrecedence: Story = {
   args: {
     sx: { padding: '16px' },

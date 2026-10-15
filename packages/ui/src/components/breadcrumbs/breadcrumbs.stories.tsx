@@ -1,4 +1,6 @@
-import type { CSSProperties, ComponentPropsWithRef } from 'react';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+import type { ComponentPropsWithRef } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
@@ -13,11 +15,13 @@ const LEVELS = [
   { label: 'jfrader-ui', href: '/projects/jfrader-ui' },
 ] as const;
 
-const stackStyle = {
+const Stack = styled.div({
   display: 'grid',
   justifyItems: 'start',
   gap: vars.space[4],
-} satisfies CSSProperties;
+});
+
+const NarrowFrame = styled.div({ inlineSize: '180px' });
 
 const meta = {
   title: 'Navigation/Breadcrumbs',
@@ -62,6 +66,7 @@ export const Default: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = {
 };
 
 export const GeneratedPartProps: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = {
+  // Inline slot styles exercise the documented generated-part props API.
   args: { items: [ { key: 'home', label: 'Home', href: '/' }, { key: 'current', label: 'Project' } ], slotProps: { separator: { style: { fontWeight: 700 } }, item: { style: { fontStyle: 'italic' } } } },
   render: (args) => <Breadcrumbs {...args} />,
   parameters: { docs: { source: { code: `<Breadcrumbs items={path} slotProps={{ item: { sx: { fontStyle: 'italic' } } }} />` } } },
@@ -190,7 +195,7 @@ export const ExplicitCurrent: Story = {
 function GrowingTrail() {
   const [depth, setDepth] = useState(2);
   return (
-    <div style={stackStyle}>
+    <Stack>
       <Breadcrumbs>
         {LEVELS.slice(0, depth).map((level) => (
           <Breadcrumbs.Item key={level.href} href={level.href}>
@@ -201,7 +206,7 @@ function GrowingTrail() {
       <Button size="sm" onClick={() => setDepth((value) => (value === LEVELS.length ? 2 : value + 1))}>
         Toggle level
       </Button>
-    </div>
+    </Stack>
   );
 }
 GrowingTrail.displayName = 'GrowingTrail';
@@ -236,7 +241,7 @@ function ReorderingTrail() {
   const [swapped, setSwapped] = useState(false);
   const levels = swapped ? [LEVELS[2], LEVELS[1]] : [LEVELS[1], LEVELS[2]];
   return (
-    <div style={stackStyle}>
+    <Stack>
       <Breadcrumbs>
         <Breadcrumbs.Item href={LEVELS[0].href}>{LEVELS[0].label}</Breadcrumbs.Item>
         {levels.map((level) => (
@@ -248,7 +253,7 @@ function ReorderingTrail() {
       <Button size="sm" onClick={() => setSwapped((value) => !value)}>
         Swap levels
       </Button>
-    </div>
+    </Stack>
   );
 }
 ReorderingTrail.displayName = 'ReorderingTrail';
@@ -306,13 +311,13 @@ export const LightTheme: Story = {
 export const NarrowTrail: Story = {
   args: { dir: 'rtl', 'aria-label': 'Location' },
   render: (args) => (
-    <div style={{ inlineSize: '180px' }}>
+    <NarrowFrame>
       <Breadcrumbs {...args}>
         <Breadcrumbs.Item href="/">Home</Breadcrumbs.Item>
         <Breadcrumbs.Item href="/projects">AnUnbrokenProjectLabelThatMustFitTheAvailableWidth</Breadcrumbs.Item>
         <Breadcrumbs.Item>Current page</Breadcrumbs.Item>
       </Breadcrumbs>
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvasElement, userEvent }) => {
     const nav = within(canvasElement).getByRole('navigation', { name: 'Location' });

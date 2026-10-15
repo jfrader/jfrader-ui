@@ -1,4 +1,4 @@
-import { useState, type ComponentPropsWithRef, type CSSProperties, type ReactNode } from 'react';
+import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -7,7 +7,7 @@ import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Dialog } from '../dialog';
 import { Popover } from '../popover';
-import { ThemeRoot } from '../theme-root';
+import { ThemeRoot, type ThemeRootProps } from '../theme-root';
 import {
   HoverCard,
   type HoverCardEasyProps,
@@ -16,6 +16,8 @@ import {
   type HoverCardCompoundProps,
   type HoverCardStat,
 } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 // The documented defaults, in ms: hover open/close, group warm period and warm intent.
 const OPEN_DELAY = 500;
@@ -27,7 +29,7 @@ const TIMER_MARGIN = 120;
 const IMMEDIATE = 100;
 
 // Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
-const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
+const FixtureButton = styled.button({ minBlockSize: vars.space[6], minInlineSize: vars.space[6], paddingBlock: vars.space[1], paddingInline: `calc(${vars.space[5]} / 2)`, boxSizing: 'border-box' });
 // WCAG 2.5.8 minimum target size, in CSS px.
 const TARGET_MIN = 24;
 // Layout boxes land on fractional pixels (zoom, fractional devicePixelRatio, font metrics);
@@ -50,21 +52,21 @@ const PROFILE = {
   meta: `Joined ${JOINED}`,
 } satisfies HoverCardProfileProps;
 
-const rowStyle = {
+const Row = styled.div({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
   gap: vars.space[3],
-} satisfies CSSProperties;
+});
 
-const placementGridStyle = {
+const PlacementGrid = styled.div({
   display: 'grid',
   gridTemplateColumns: 'repeat(2, max-content)',
   justifyContent: 'center',
-  columnGap: '22rem',
-  rowGap: '16rem',
-  paddingBlock: '14rem',
-} satisfies CSSProperties;
+  columnGap: `calc(${vars.space[4]} * 22)`,
+  rowGap: `calc(${vars.space[4]} * 16)`,
+  paddingBlock: `calc(${vars.space[4]} * 14)`,
+});
 
 const triggerRef = fn<(element: HTMLButtonElement | null) => void>();
 const contentRef = fn<(element: HTMLDivElement | null) => void>();
@@ -80,6 +82,15 @@ const usage = `<HoverCard>
     />
   </HoverCard.Content>
 </HoverCard>`;
+
+const ProfileStack = styled.div({ display: 'grid', gap: vars.space[3] });
+const SpacedRow = styled(Row)({ columnGap: `calc(${vars.space[4]} * 22)` });
+const Stack = styled.div({ display: 'grid', gap: vars.space[6] });
+function LightThemeScope(props: Omit<ThemeRootProps, 'theme'>) {
+  return <ThemeRoot {...props} theme="light" />;
+}
+const LightThemeRoot = styled(LightThemeScope)({ padding: vars.space[4], backgroundColor: vars.color.bg });
+const RtlFrame = styled.div({ paddingInline: vars.space[10] });
 
 const meta = {
   title: 'Surfaces/HoverCard',
@@ -105,7 +116,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function ProfileExample({ before = true, ...props }: HoverCardCompoundProps & { before?: boolean }) {
   return (
-    <div style={rowStyle}>
+    <Row>
       {before && <Button>Before</Button>}
       <HoverCard {...props}>
         <HoverCard.Trigger ref={triggerRef}>{TRIGGER}</HoverCard.Trigger>
@@ -114,7 +125,7 @@ function ProfileExample({ before = true, ...props }: HoverCardCompoundProps & { 
         </HoverCard.Content>
       </HoverCard>
       <Button>Next</Button>
-    </div>
+    </Row>
   );
 }
 ProfileExample.displayName = 'ProfileExample';
@@ -218,11 +229,11 @@ export const Default: StoryObj<HoverCardEasyProps> = {
     },
   },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <Button>Before</Button>
       <HoverCard {...args} />
       <Button>Next</Button>
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
@@ -431,9 +442,10 @@ export const CustomDelays: Story = {
   },
 };
 
+// This story tests documented css/sx precedence and the profile slot API.
 export const Profile: Story = {
   render: () => (
-    <div style={{ display: 'grid', gap: vars.space[3] }}>
+    <ProfileStack>
       <HoverCard.Profile
         {...PROFILE}
         className="probe-profile"
@@ -448,7 +460,7 @@ export const Profile: Story = {
         }}
       />
       <span id="profile-note">From the review thread</span>
-    </div>
+    </ProfileStack>
   ),
   play: async ({ canvasElement }) => {
     const profile = canvasElement.querySelector<HTMLElement>('[data-ui="hover-card-profile"]')!;
@@ -503,7 +515,7 @@ const PLACEMENTS = ['top-start', 'right', 'bottom-end', 'left'] as const;
 
 export const AllPlacements: Story = {
   render: (args) => (
-    <div style={placementGridStyle}>
+    <PlacementGrid>
       {PLACEMENTS.map((placement) => (
         <HoverCard key={placement} {...args} placement={placement}>
           <HoverCard.Trigger>{placement}</HoverCard.Trigger>
@@ -512,7 +524,7 @@ export const AllPlacements: Story = {
           </HoverCard.Content>
         </HoverCard>
       ))}
-    </div>
+    </PlacementGrid>
   ),
   play: async ({ canvasElement, userEvent }) => {
     for (const placement of PLACEMENTS) {
@@ -546,7 +558,7 @@ const MEMBERS = [
 function GroupExample({ members = MEMBERS, ...props }: HoverCardGroupProps & { members?: typeof MEMBERS }) {
   return (
     <HoverCard.Group {...props}>
-      <div style={rowStyle}>
+      <Row>
         {members.map((member) => (
           <HoverCard key={member.value} value={member.value}>
             <HoverCard.Trigger>{`@${member.value}`}</HoverCard.Trigger>
@@ -555,7 +567,7 @@ function GroupExample({ members = MEMBERS, ...props }: HoverCardGroupProps & { m
             </HoverCard.Content>
           </HoverCard>
         ))}
-      </div>
+      </Row>
     </HoverCard.Group>
   );
 }
@@ -653,10 +665,10 @@ const ISOLATED_MEMBERS = [
 
 export const GroupIsolation: GroupStory = {
   render: () => (
-    <div style={{ ...rowStyle, columnGap: '22rem' }}>
+    <SpacedRow>
       <GroupExample members={ISOLATED_MEMBERS} defaultValue="" />
       <GroupExample members={MEMBERS.slice(2) as unknown as typeof MEMBERS} defaultValue="ana" />
-    </div>
+    </SpacedRow>
   ),
   play: async ({ canvasElement }) => {
     // Each provider owns its own member: an empty-string id is a real member, and two groups
@@ -673,13 +685,12 @@ function UnmountGroupExample(props: HoverCardGroupProps) {
   return (
     <>
       <GroupExample {...props} members={members} />
-      <button
+      <FixtureButton
         type="button"
-        style={FIXTURE_BUTTON}
         onClick={() => setMembers(MEMBERS.slice(1) as unknown as typeof MEMBERS)}
       >
         Remove Maya
-      </button>
+      </FixtureButton>
     </>
   );
 }
@@ -702,7 +713,7 @@ export const GroupMemberUnmount: GroupStory = {
 function UnmountExample(props: HoverCardCompoundProps) {
   const [mounted, setMounted] = useState(true);
   return (
-    <div style={rowStyle}>
+    <Row>
       {mounted && (
         <HoverCard {...props}>
           <HoverCard.Trigger>{TRIGGER}</HoverCard.Trigger>
@@ -711,10 +722,10 @@ function UnmountExample(props: HoverCardCompoundProps) {
           </HoverCard.Content>
         </HoverCard>
       )}
-      <button type="button" style={FIXTURE_BUTTON} onClick={() => setMounted(false)}>
+      <FixtureButton type="button" onClick={() => setMounted(false)}>
         Remove
-      </button>
-    </div>
+      </FixtureButton>
+    </Row>
   );
 }
 UnmountExample.displayName = 'UnmountExample';
@@ -913,11 +924,11 @@ const popoverOpenChange = fn<(open: boolean) => void>();
 
 function PopoverHost(props: HoverCardCompoundProps) {
   return (
-    <div style={rowStyle}>
+    <Row>
       <Popover defaultOpen onOpenChange={popoverOpenChange}>
         <Popover.Trigger>Review</Popover.Trigger>
         <Popover.Content aria-label="Review">
-          <div style={rowStyle}>
+          <Row>
             <span>Requested by</span>
             <HoverCard {...props}>
               <HoverCard.Trigger>{TRIGGER}</HoverCard.Trigger>
@@ -926,11 +937,11 @@ function PopoverHost(props: HoverCardCompoundProps) {
               </HoverCard.Content>
             </HoverCard>
             <Button>Approve</Button>
-          </div>
+          </Row>
         </Popover.Content>
       </Popover>
       <Button>Outside</Button>
-    </div>
+    </Row>
   );
 }
 PopoverHost.displayName = 'PopoverHost';
@@ -1000,7 +1011,7 @@ export const InsidePopoverOutsidePress: Story = {
 function ControlledRejectExample(props: HoverCardCompoundProps) {
   const [open, setOpen] = useState(true);
   return (
-    <div style={rowStyle}>
+    <Row>
       <HoverCard {...props} open={open}>
         <HoverCard.Trigger aria-describedby="maya-note">{TRIGGER}</HoverCard.Trigger>
         <HoverCard.Content>
@@ -1009,7 +1020,7 @@ function ControlledRejectExample(props: HoverCardCompoundProps) {
       </HoverCard>
       <span id="maya-note">Mentioned in review</span>
       <Button onClick={() => setOpen(false)}>Hide preview</Button>
-    </div>
+    </Row>
   );
 }
 ControlledRejectExample.displayName = 'ControlledRejectExample';
@@ -1051,7 +1062,7 @@ export const ControlledReject: Story = {
 
 export const ExternalARIA: Story = {
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <span id="maya-label">Maya Chen profile</span>
       <HoverCard {...args}>
         <HoverCard.Trigger aria-labelledby="maya-label" aria-describedby="maya-note missing-note">
@@ -1062,7 +1073,7 @@ export const ExternalARIA: Story = {
         </HoverCard.Content>
       </HoverCard>
       <span id="maya-note">Mentioned in review</span>
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement, userEvent }) => {
     const trigger = within(canvasElement).getByRole('button', { name: 'Maya Chen profile' });
@@ -1086,7 +1097,7 @@ const FALSY_NODES = [false, null, 0, ''] as const;
 
 export const FalsyMeta: Story = {
   render: () => (
-    <div style={{ display: 'grid', gap: vars.space[6] }}>
+    <Stack>
       {FALSY_NODES.map((value) => (
         <HoverCard.Profile
           key={String(value)}
@@ -1105,7 +1116,7 @@ export const FalsyMeta: Story = {
           }}
         />
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const profile = (value: string) => canvasElement.querySelector<HTMLElement>(`[data-falsy="${value}"]`)!;
@@ -1190,11 +1201,11 @@ const LOCALIZED_STATS: HoverCardStat[] = [
 
 export const LocalizedStats: Story = {
   render: () => (
-    <div style={{ display: 'grid', gap: vars.space[6] }}>
+    <Stack>
       {LOCALES.map((locale) => (
         <HoverCard.Profile key={locale} name="Maya Chen" locale={locale} stats={LOCALIZED_STATS} data-locale={locale} />
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     for (const locale of LOCALES) {
@@ -1256,10 +1267,10 @@ export const LightTheme: Story = {
 function ScopedHost({ children }: { children: ReactNode }) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
-    <ThemeRoot theme="light" portalContainer={host} style={{ padding: vars.space[4], backgroundColor: vars.color.bg }}>
+    <LightThemeRoot portalContainer={host}>
       {children}
       <div ref={setHost} data-overlay-host="" />
-    </ThemeRoot>
+    </LightThemeRoot>
   );
 }
 ScopedHost.displayName = 'ScopedHost';
@@ -1286,7 +1297,7 @@ function DialogHost(props: HoverCardCompoundProps) {
       <Dialog.Content>
         <Dialog.Title>Review</Dialog.Title>
         <ThemeRoot portalContainer={host}>
-          <div style={rowStyle}>
+          <Row>
             <span>Requested by</span>
             <HoverCard {...props}>
               <HoverCard.Trigger>{TRIGGER}</HoverCard.Trigger>
@@ -1294,7 +1305,7 @@ function DialogHost(props: HoverCardCompoundProps) {
                 <HoverCard.Profile {...PROFILE} />
               </HoverCard.Content>
             </HoverCard>
-          </div>
+          </Row>
           <div ref={setHost} data-overlay-host="" />
         </ThemeRoot>
         <Dialog.Close>Close</Dialog.Close>
@@ -1333,9 +1344,9 @@ export const InsideNativeDialog: Story = {
 export const RTL: Story = {
   args: { defaultOpen: true },
   render: (args) => (
-    <div dir="rtl" style={{ paddingInline: vars.space[10] }}>
+    <RtlFrame dir="rtl">
       <ProfileExample {...args} before={false} />
-    </div>
+    </RtlFrame>
   ),
   play: async ({ canvasElement }) => {
     const card = await settled(await findCard(canvasElement));

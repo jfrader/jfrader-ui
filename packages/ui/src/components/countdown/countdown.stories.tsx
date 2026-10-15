@@ -3,9 +3,35 @@ import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { Button } from '../button';
 import { Countdown, type CountdownProps, type CountdownUnit } from './index';
+
+const Stack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+  maxInlineSize: '100%',
+});
+
+const ActionsRow = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: vars.space[2],
+});
+
+const NarrowFrame = styled.div({
+  inlineSize: '320px',
+  maxInlineSize: '100%',
+});
+
+// The slot API takes `css` values, so this story keeps the documented spelling.
+const slotLabelStyle = css({ fontSize: vars.textSize['2xl'] });
+const slotNumberStyle = css({ fontSize: vars.textSize.md });
+const slotContentStyle = css({ gap: vars.space[3] });
+const slotUnitStyle = css({ fontSize: vars.textSize.sm });
 
 const NOW = Date.parse('2026-12-01T12:00:00Z');
 const SECOND = 1000;
@@ -49,9 +75,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div style={{ display: 'grid', gap: vars.space[4], maxInlineSize: '100%' }}>
+      <Stack>
         <Story />
-      </div>
+      </Stack>
     ),
   ],
 } satisfies Meta<typeof Countdown>;
@@ -279,7 +305,7 @@ function ClockFixture(args: CountdownProps) {
           announceCompletion
         />
       )}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] }}>
+      <ActionsRow>
         <Button onClick={() => wake(NOW + 502)}>Advance clock</Button>
         <Button onClick={() => wake(NOW + 1501)}>Reach deadline</Button>
         <Button onClick={() => setTarget(new Date(NOW + 1501))}>Same instant</Button>
@@ -289,7 +315,7 @@ function ClockFixture(args: CountdownProps) {
           Change callback
         </Button>
         <Button onClick={() => setMounted(false)}>Unmount</Button>
-      </div>
+      </ActionsRow>
     </>
   );
 }
@@ -496,9 +522,9 @@ export const Narrow320: Story = {
     variant: 'compact',
   },
   render: (args) => (
-    <div style={{ inlineSize: '320px', maxInlineSize: '100%' }}>
+    <NarrowFrame>
       <Countdown {...args} />
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvasElement }) => {
     const timer = within(canvasElement).getByRole('timer');
@@ -574,10 +600,10 @@ export const SlotStyling: Story = {
   args: {
     sx: { paddingInline: vars.space[4] },
     slotProps: {
-      label: { css: { fontSize: vars.textSize['2xl'] } },
-      number: { css: { fontSize: vars.textSize.md } },
-      content: { css: { gap: vars.space[3] } },
-      unit: { css: { fontSize: vars.textSize.sm } },
+      label: { css: slotLabelStyle },
+      number: { css: slotNumberStyle },
+      content: { css: slotContentStyle },
+      unit: { css: slotUnitStyle },
     },
   },
   play: async ({ canvasElement }) => {

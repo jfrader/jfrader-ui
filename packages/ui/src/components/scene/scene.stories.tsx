@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -6,6 +5,42 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Avatar } from '../avatar';
 import { Scene, sceneSource, type SceneGrade, type SceneSize, type SceneVariant } from './index';
 import { generateSceneSvg, SCENE_PARAMETERS } from './scene-generator';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const WidePreview = styled.div({ maxInlineSize: '640px', borderRadius: vars.radius.md, overflow: 'hidden' });
+
+const MutedLabel = styled.span({ fontSize: vars.textSize.sm, color: vars.color.textMuted });
+
+const ScenePreview = styled.div({ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' });
+
+const SceneColumn = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[3] });
+
+const SceneGrid = styled.div({ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: vars.space[3] });
+
+const LandscapePreview = styled.div({ blockSize: '160px', borderRadius: vars.radius.md, overflow: 'hidden' });
+
+const NarrowLandscapePreview = styled(LandscapePreview)({ maxInlineSize: '300px' });
+
+const SeedLabel = styled.span({ fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.medium });
+
+const CropColumn = styled.div({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: vars.space[1] });
+
+const CropCaption = styled.span({ fontSize: vars.textSize.xs, color: vars.color.textMuted });
+
+const AvatarRow = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+
+const SizeColumn = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[4] });
+
+const SizeRow = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+
+const SizeLabel = styled.span({ inlineSize: '40px', fontSize: vars.textSize.xs, color: vars.color.textMuted });
+
+const ClippedScene = styled.div({ borderRadius: vars.radius.sm, overflow: 'hidden' });
+
+const ComparisonRow = styled.div({ display: 'flex', gap: vars.space[4] });
+
+const ComparisonPreview = styled.div({ inlineSize: '240px', borderRadius: vars.radius.sm, overflow: 'hidden' });
 
 const VARIANTS = ['landscape', 'dunes', 'dusk', 'tide'] as const satisfies readonly SceneVariant[];
 const GRADES = ['raw', 'warm'] as const satisfies readonly SceneGrade[];
@@ -16,13 +51,13 @@ const idsOf = (markup: string) => new Set(Array.from(markup.matchAll(/ id="([^"]
 /** Markup with its generated colours removed; mask colours (`#fff`, `#000`) stay. */
 const geometryOf = (markup: string) => markup.replace(/#[0-9a-f]{6}/g, '');
 
-const railStyle: CSSProperties = {
+const Rail = styled.div({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
   gap: vars.space[4],
-};
+});
 
-const cardStyle: CSSProperties = {
+const Card = styled.div({
   display: 'flex',
   flexDirection: 'column',
   gap: vars.space[2],
@@ -30,38 +65,38 @@ const cardStyle: CSSProperties = {
   borderRadius: vars.radius.md,
   border: `1px solid ${vars.color.border}`,
   backgroundColor: vars.color.surface,
-};
+});
 
-const cropRowStyle: CSSProperties = {
+const CropRow = styled.div({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
   gap: vars.space[4],
-};
+});
 
-const circleCropStyle: CSSProperties = {
+const CircleCrop = styled.div({
   inlineSize: '80px',
   blockSize: '80px',
   borderRadius: vars.radius.full,
   overflow: 'hidden',
   flexShrink: 0,
-};
+});
 
-const wideCropStyle: CSSProperties = {
+const WideCrop = styled.div({
   inlineSize: '320px',
   blockSize: '120px',
   borderRadius: vars.radius.md,
   overflow: 'hidden',
   flexShrink: 0,
-};
+});
 
-const squareCropStyle: CSSProperties = {
+const SquareCrop = styled.div({
   inlineSize: '120px',
   blockSize: '120px',
   borderRadius: vars.radius.md,
   overflow: 'hidden',
   flexShrink: 0,
-};
+});
 
 const meta = {
   title: 'Media/Scene',
@@ -116,9 +151,9 @@ type Story = StoryObj<typeof meta>;
 /** Default scene rendered inline at full container width. */
 export const Default: Story = {
   render: (args) => (
-    <div style={{ maxInlineSize: '640px', borderRadius: vars.radius.md, overflow: 'hidden' }}>
+    <WidePreview>
       <Scene {...args} />
-    </div>
+    </WidePreview>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -134,63 +169,63 @@ export const Default: Story = {
 /** Rail of distinct seeds across different variants. */
 export const SeedsRail: Story = {
   render: () => (
-    <div style={railStyle}>
-      <div style={cardStyle}>
-        <span style={{ fontSize: vars.textSize.sm, color: vars.color.textMuted }}>landscape — alpine-ridge</span>
-        <div style={{ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+    <Rail>
+      <Card>
+        <MutedLabel>landscape — alpine-ridge</MutedLabel>
+        <ScenePreview>
           <Scene seed="alpine-ridge" variant="landscape" />
-        </div>
-      </div>
-      <div style={cardStyle}>
-        <span style={{ fontSize: vars.textSize.sm, color: vars.color.textMuted }}>dunes — north-dunes</span>
-        <div style={{ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+        </ScenePreview>
+      </Card>
+      <Card>
+        <MutedLabel>dunes — north-dunes</MutedLabel>
+        <ScenePreview>
           <Scene seed="north-dunes" variant="dunes" />
-        </div>
-      </div>
-      <div style={cardStyle}>
-        <span style={{ fontSize: vars.textSize.sm, color: vars.color.textMuted }}>dusk — twilight-fjord</span>
-        <div style={{ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+        </ScenePreview>
+      </Card>
+      <Card>
+        <MutedLabel>dusk — twilight-fjord</MutedLabel>
+        <ScenePreview>
           <Scene seed="twilight-fjord" variant="dusk" />
-        </div>
-      </div>
-      <div style={cardStyle}>
-        <span style={{ fontSize: vars.textSize.sm, color: vars.color.textMuted }}>tide — coastal-swell</span>
-        <div style={{ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+        </ScenePreview>
+      </Card>
+      <Card>
+        <MutedLabel>tide — coastal-swell</MutedLabel>
+        <ScenePreview>
           <Scene seed="coastal-swell" variant="tide" />
-        </div>
-      </div>
-      <div style={cardStyle}>
-        <span style={{ fontSize: vars.textSize.sm, color: vars.color.textMuted }}>landscape — emerald-summit</span>
-        <div style={{ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+        </ScenePreview>
+      </Card>
+      <Card>
+        <MutedLabel>landscape — emerald-summit</MutedLabel>
+        <ScenePreview>
           <Scene seed="emerald-summit" variant="landscape" />
-        </div>
-      </div>
-      <div style={cardStyle}>
-        <span style={{ fontSize: vars.textSize.sm, color: vars.color.textMuted }}>dunes — sahara-wind</span>
-        <div style={{ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+        </ScenePreview>
+      </Card>
+      <Card>
+        <MutedLabel>dunes — sahara-wind</MutedLabel>
+        <ScenePreview>
           <Scene seed="sahara-wind" variant="dunes" />
-        </div>
-      </div>
-    </div>
+        </ScenePreview>
+      </Card>
+    </Rail>
   ),
 };
 
 /** Determinism check verifying identical output for identical seeds. */
 export const Determinism: Story = {
   render: () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: vars.space[3] }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: vars.space[3] }}>
-        <div style={{ blockSize: '160px', borderRadius: vars.radius.md, overflow: 'hidden' }}>
+    <SceneColumn>
+      <SceneGrid>
+        <LandscapePreview>
           <Scene seed="same-seed-target" variant="landscape" alt="Target A" />
-        </div>
-        <div style={{ blockSize: '160px', borderRadius: vars.radius.md, overflow: 'hidden' }}>
+        </LandscapePreview>
+        <LandscapePreview>
           <Scene seed="same-seed-target" variant="landscape" alt="Target B" />
-        </div>
-      </div>
-      <div style={{ blockSize: '160px', borderRadius: vars.radius.md, overflow: 'hidden', maxInlineSize: '300px' }}>
+        </LandscapePreview>
+      </SceneGrid>
+      <NarrowLandscapePreview>
         <Scene seed="different-seed-sample" variant="landscape" alt="Different" />
-      </div>
-    </div>
+      </NarrowLandscapePreview>
+    </SceneColumn>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -230,16 +265,16 @@ export const Determinism: Story = {
 /** One seed in its raw colours and with the warm grade. */
 export const Grades: Story = {
   render: () => (
-    <div style={railStyle}>
+    <Rail>
       {GRADES.map((grade) => (
-        <div key={grade} style={cardStyle}>
-          <span style={{ fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.medium }}>{grade}</span>
-          <div style={{ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+        <Card key={grade}>
+          <SeedLabel>{grade}</SeedLabel>
+          <ScenePreview>
             <Scene seed="grade-check" grade={grade} alt={`${grade} grade`} />
-          </div>
-        </div>
+          </ScenePreview>
+        </Card>
       ))}
-    </div>
+    </Rail>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -271,16 +306,16 @@ export const Grades: Story = {
 /** One seed in every variant: clouds over landscape, dunes and tide, stars over dusk, water and shore on tide. */
 export const ArtworkLayers: Story = {
   render: () => (
-    <div style={railStyle}>
+    <Rail>
       {VARIANTS.map((variant) => (
-        <div key={variant} style={cardStyle}>
-          <span style={{ fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.medium }}>{variant}</span>
-          <div style={{ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+        <Card key={variant}>
+          <SeedLabel>{variant}</SeedLabel>
+          <ScenePreview>
             <Scene seed="layer-check" variant={variant} alt={`${variant} layers`} />
-          </div>
-        </div>
+          </ScenePreview>
+        </Card>
       ))}
-    </div>
+    </Rail>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -318,33 +353,33 @@ export const ArtworkLayers: Story = {
 /** Central safe-zone framing across circular avatar, wide banner, and square tile crops. */
 export const AspectCrops: Story = {
   render: (args) => (
-    <div style={cropRowStyle}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: vars.space[1] }}>
-        <div style={circleCropStyle}>
+    <CropRow>
+      <CropColumn>
+        <CircleCrop>
           <Scene {...args} />
-        </div>
-        <span style={{ fontSize: vars.textSize.xs, color: vars.color.textMuted }}>Circle (1:1)</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: vars.space[1] }}>
-        <div style={squareCropStyle}>
+        </CircleCrop>
+        <CropCaption>Circle (1:1)</CropCaption>
+      </CropColumn>
+      <CropColumn>
+        <SquareCrop>
           <Scene {...args} />
-        </div>
-        <span style={{ fontSize: vars.textSize.xs, color: vars.color.textMuted }}>Square (1:1)</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: vars.space[1] }}>
-        <div style={wideCropStyle}>
+        </SquareCrop>
+        <CropCaption>Square (1:1)</CropCaption>
+      </CropColumn>
+      <CropColumn>
+        <WideCrop>
           <Scene {...args} />
-        </div>
-        <span style={{ fontSize: vars.textSize.xs, color: vars.color.textMuted }}>Wide banner (8:3)</span>
-      </div>
-    </div>
+        </WideCrop>
+        <CropCaption>Wide banner (8:3)</CropCaption>
+      </CropColumn>
+    </CropRow>
   ),
 };
 
 /** Using `sceneSource` data URLs inside Avatar image slots. */
 export const AvatarContent: Story = {
   render: () => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: vars.space[4] }}>
+    <AvatarRow>
       <Avatar
         name="Dune Explorer"
         src={sceneSource('north-dunes', { variant: 'dunes' })}
@@ -365,7 +400,7 @@ export const AvatarContent: Story = {
         src={sceneSource('coastal-swell', { variant: 'tide' })}
         size="lg"
       />
-    </div>
+    </AvatarRow>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -382,46 +417,46 @@ export const AvatarContent: Story = {
 /** Four procedural variants: landscape, dunes, dusk, tide. */
 export const Variants: Story = {
   render: () => (
-    <div style={railStyle}>
+    <Rail>
       {VARIANTS.map((variant) => (
-        <div key={variant} style={cardStyle}>
-          <span style={{ fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.medium }}>{variant}</span>
-          <div style={{ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+        <Card key={variant}>
+          <SeedLabel>{variant}</SeedLabel>
+          <ScenePreview>
             <Scene seed={`preview-${variant}`} variant={variant} />
-          </div>
-        </div>
+          </ScenePreview>
+        </Card>
       ))}
-    </div>
+    </Rail>
   ),
 };
 
 /** Sizing presets from sm (120px) to full (100%). */
 export const Sizes: Story = {
   render: (args) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: vars.space[4] }}>
+    <SizeColumn>
       {SIZES.map((size) => (
-        <div key={size} style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
-          <span style={{ inlineSize: '40px', fontSize: vars.textSize.xs, color: vars.color.textMuted }}>{size}</span>
-          <div style={{ borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+        <SizeRow key={size}>
+          <SizeLabel>{size}</SizeLabel>
+          <ClippedScene>
             <Scene {...args} size={size} />
-          </div>
-        </div>
+          </ClippedScene>
+        </SizeRow>
       ))}
-    </div>
+    </SizeColumn>
   ),
 };
 
 /** Decorative scene marked with aria-hidden and empty alt text. */
 export const Decorative: Story = {
   render: () => (
-    <div style={{ display: 'flex', gap: vars.space[4] }}>
-      <div style={{ inlineSize: '240px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+    <ComparisonRow>
+      <ComparisonPreview>
         <Scene seed="decorative-sample" aria-hidden="true" />
-      </div>
-      <div style={{ inlineSize: '240px', borderRadius: vars.radius.sm, overflow: 'hidden' }}>
+      </ComparisonPreview>
+      <ComparisonPreview>
         <Scene seed="decorative-sample-2" alt="" />
-      </div>
-    </div>
+      </ComparisonPreview>
+    </ComparisonRow>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -435,17 +470,17 @@ export const LightTheme: Story = {
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   render: (args) => (
-    <div style={{ maxInlineSize: '640px', borderRadius: vars.radius.md, overflow: 'hidden' }}>
+    <WidePreview>
       <Scene {...args} />
-    </div>
+    </WidePreview>
   ),
 };
 
 /** Visual check under dark (default) theme. Colors are seed-derived, identical across themes. */
 export const DarkTheme: Story = {
   render: (args) => (
-    <div style={{ maxInlineSize: '640px', borderRadius: vars.radius.md, overflow: 'hidden' }}>
+    <WidePreview>
       <Scene {...args} />
-    </div>
+    </WidePreview>
   ),
 };

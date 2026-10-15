@@ -9,23 +9,24 @@ import { useRef, useState, type FormEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { SearchField, type SearchFieldProps } from './index';
 
 // Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
-const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
+const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], paddingBlock: vars.space[1], paddingInline: `calc(${vars.space[5]} / 2)`, boxSizing: 'border-box' });
 
 
 const sizes = ['sm', 'md', 'lg'] as const;
 const heights = { sm: 32, md: 40, lg: 48 };
-const stackStyle = css({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 320px)' });
+const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 320px)' });
 const usage = '<SearchField label="Search members" value={query} onValueChange={setQuery} placeholder="Name or email" />';
 const meta = {
   title: 'Inputs/SearchField', component: SearchField, tags: ['autodocs'],
   args: { label: 'Search members', placeholder: 'Name or email' },
   argTypes: { size: { control: 'radio', options: sizes } },
-  decorators: [(Story) => <div css={stackStyle}><Story /></div>],
+  decorators: [(Story) => <Stack><Story /></Stack>],
   parameters: { docs: {
     description: { component: 'Enter a search query and clear it with a button or Escape.' },
     usage: `- The input is a native searchbox. The caller handles filtering, fetching and debounce.
@@ -47,19 +48,19 @@ ControlledField.displayName = 'ControlledSearchField';
 
 function ExternalUpdateField(props: SearchFieldProps) {
   const [value, setValue] = useState('first');
-  return <><SearchField {...props} value={value} /><button style={FIXTURE_BUTTON} type="button" onClick={() => setValue('second')}>Update query</button></>;
+  return <><SearchField {...props} value={value} /><FixtureButton type="button" onClick={() => setValue('second')}>Update query</FixtureButton></>;
 }
 ExternalUpdateField.displayName = 'ExternalUpdateSearchField';
 
 function DefaultUpdateField(props: SearchFieldProps) {
   const [seed, setSeed] = useState('first');
-  return <><SearchField {...props} defaultValue={seed} /><button style={FIXTURE_BUTTON} type="button" onClick={() => setSeed('second')}>Update default</button></>;
+  return <><SearchField {...props} defaultValue={seed} /><FixtureButton type="button" onClick={() => setSeed('second')}>Update default</FixtureButton></>;
 }
 DefaultUpdateField.displayName = 'DefaultUpdateSearchField';
 
 function RefField(props: SearchFieldProps) {
   const ref = useRef<HTMLInputElement>(null);
-  return <><SearchField {...props} ref={ref} /><button style={FIXTURE_BUTTON} type="button" onClick={() => ref.current?.focus()}>Focus query</button></>;
+  return <><SearchField {...props} ref={ref} /><FixtureButton type="button" onClick={() => ref.current?.focus()}>Focus query</FixtureButton></>;
 }
 RefField.displayName = 'RefSearchField';
 
@@ -227,7 +228,7 @@ export const DefaultDoesNotReseed: Story = {
 };
 export const Keyboard: Story = {
   args: { defaultValue: 'Ada', onValueChange: fn(), onChange: fn() },
-  render: (args) => <><button style={FIXTURE_BUTTON} type="button">Before</button><SearchField {...args} /><button style={FIXTURE_BUTTON} type="button">After</button></>,
+  render: (args) => <><FixtureButton type="button">Before</FixtureButton><SearchField {...args} /><FixtureButton type="button">After</FixtureButton></>,
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
     await userEvent.tab();
@@ -314,7 +315,7 @@ export const FalsyNodes: Story = {
 };
 export const FormReset: Story = {
   args: { defaultValue: 'Ada', name: 'query', onValueChange: fn(), onChange: fn() },
-  render: (args) => <form onSubmit={(event) => event.preventDefault()}><SearchField {...args} /><button style={FIXTURE_BUTTON} type="reset">Reset query</button></form>,
+  render: (args) => <form onSubmit={(event) => event.preventDefault()}><SearchField {...args} /><FixtureButton type="reset">Reset query</FixtureButton></form>,
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox') as HTMLInputElement;
     await expect(new FormData(input.form!).getAll('query')).toEqual(['Ada']);
@@ -336,7 +337,7 @@ export const ControlledReset: Story = {
 };
 export const FormSubmission: Story = {
   args: { defaultValue: 'Ada', onValueChange: fn(), onFormSubmit: fn() },
-  render: ({ onFormSubmit, ...args }) => <form onSubmit={(event) => { event.preventDefault(); onFormSubmit?.(event); }}><SearchField {...args} /><button style={FIXTURE_BUTTON} type="submit">Search</button></form>,
+  render: ({ onFormSubmit, ...args }) => <form onSubmit={(event) => { event.preventDefault(); onFormSubmit?.(event); }}><SearchField {...args} /><FixtureButton type="submit">Search</FixtureButton></form>,
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
     await userEvent.click(input);
@@ -355,7 +356,7 @@ export const FormSubmission: Story = {
 };
 export const CancelledReset: Story = {
   args: { defaultValue: 'Ada', onValueChange: fn() },
-  render: (args) => <form onReset={(event) => event.preventDefault()}><SearchField {...args} /><button style={FIXTURE_BUTTON} type="reset">Reset query</button></form>,
+  render: (args) => <form onReset={(event) => event.preventDefault()}><SearchField {...args} /><FixtureButton type="reset">Reset query</FixtureButton></form>,
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
     await userEvent.type(input, 'x');
@@ -391,6 +392,7 @@ export const CustomIcons: Story = {
 };
 
 /** Replace the wrapper and generated label; pass native props through slotProps. */
+// The consumer/slot `css`, `sx` and inline styles are precedence-test sentinels.
 export const SlotCustomization: Story = {
   args: {
     ref: fn(),

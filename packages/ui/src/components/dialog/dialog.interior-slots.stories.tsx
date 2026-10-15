@@ -1,10 +1,10 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
-import { WithSx } from '../../styling/sx';
 import { Button } from '../button';
 import {
   createRefCleanupTracker,
@@ -17,7 +17,7 @@ import { Dialog, type DialogEasyProps } from './dialog';
 // @ts-expect-error Unknown slot key is rejected on DialogEasyProps['slots']
 type UnknownDialogSlot = NonNullable<DialogEasyProps['slots']>['unknownKey'];
 
-const customPanelMaterial = css({
+const CustomPanelMaterial = styled.div({
   backgroundColor: vars.color.surfaceRaised,
   border: `2px dashed ${vars.color.borderControl}`,
   boxShadow: 'none',
@@ -25,9 +25,7 @@ const customPanelMaterial = css({
 
 function CustomDialogPanel({ className, ref, ...props }: ComponentPropsWithRef<'div'>) {
   return (
-    <WithSx styles={customPanelMaterial} className={className}>
-      {(classes) => <div ref={ref} {...props} className={classes} data-slot="dialog-panel-winner" />}
-    </WithSx>
+    <CustomPanelMaterial ref={ref} {...props} className={className} data-slot="dialog-panel-winner" />
   );
 }
 
@@ -42,6 +40,7 @@ function CustomDialogHeader({ className, ref, ...props }: ComponentPropsWithRef<
 const rootRefTracker = createRefCleanupTracker<HTMLDivElement>();
 
 function DialogCustomizationFixture() {
+  // Inline styles exercise the documented root/slot style-merging API.
   const [mounted, setMounted] = useState(true);
   const [count, setCount] = useState(0);
   const controls = <>
@@ -50,7 +49,7 @@ function DialogCustomizationFixture() {
   </>;
 
   return (
-    <div style={{ padding: vars.space[4] }}>
+    <FixtureFrame>
       {mounted && (
         <Dialog
           defaultOpen
@@ -77,9 +76,11 @@ function DialogCustomizationFixture() {
           }}
         />
       )}
-    </div>
+    </FixtureFrame>
   );
 }
+
+const FixtureFrame = styled.div({ padding: vars.space[4] });
 
 const meta = {
   title: 'Surfaces/Dialog',

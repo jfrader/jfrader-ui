@@ -1,8 +1,9 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Accordion, type AccordionCompoundProps as AccordionProps, type AccordionEasyProps } from './index';
 
@@ -16,7 +17,7 @@ type ItemLabel = (typeof ITEMS)[number]['label'];
 
 const REJECTED_VALUE = 'three';
 
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: '360px',
   maxInlineSize: `calc(100vw - ${vars.space[8]})`,
   fontSize: vars.textSize.sm,
@@ -35,9 +36,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
 } satisfies Meta<AccordionProps>;
@@ -241,6 +242,7 @@ export const ReplacedParts: StoryObj<EasySingleProps> = {
       },
     },
   },
+  // This story exercises the documented css, sx and root-slot precedence APIs.
   render: (args) => <Accordion {...args} component={AccordionHost} css={{ fontWeight: vars.fontWeight.regular }} />,
   parameters: { docs: { source: { code: `<Accordion items={sections} component={AccordionHost} slots={{ trigger: SectionTrigger }} slotProps={{ root: { 'aria-label': 'Sections' } }} />` } } },
   play: async ({ canvas, userEvent, args }) => {

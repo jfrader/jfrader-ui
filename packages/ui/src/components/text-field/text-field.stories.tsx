@@ -9,15 +9,16 @@ import { StrictMode, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { TextField, type TextFieldProps, type TextFieldSize } from './index';
 import { Button } from '../button';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly TextFieldSize[];
 const HEIGHTS = { sm: 32, md: 40, lg: 48 } as const;
 
-const stackStyle = css({
+const StackFrame = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '320px',
@@ -39,9 +40,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={stackStyle}>
+      <StackFrame>
         <Story />
-      </div>
+      </StackFrame>
     ),
   ],
 } satisfies Meta<typeof TextField>;
@@ -216,6 +217,7 @@ export const Rtl: Story = {
 };
 
 /** Replace the wrapper and generated label; pass native props through slotProps. */
+// This story tests the documented css/slot API and native style merging.
 export const SlotCustomization: Story = {
   args: {
     ref: fn(),

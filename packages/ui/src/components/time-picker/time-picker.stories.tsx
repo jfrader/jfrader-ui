@@ -8,6 +8,12 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { ThemeRoot } from '../theme-root';
 import { TimePicker, type TimePickerProps, type TimePickerMinuteStep } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const LightThemeFrame = styled.div({ backgroundColor: vars.color.bg, padding: vars.space[4] });
+
+const ExampleGrid = styled.div({ display: 'grid', gap: vars.space[4] });
 
 export const LocaleHydration: Story = {
   tags: ['!autodocs'],
@@ -173,7 +179,7 @@ export const Controlled: Story = {
 const steps: TimePickerMinuteStep[] = [1, 5, 10, 15, 30];
 export const EveryStep: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: vars.space[4] }}>
+    <ExampleGrid>
       {steps.map((minuteStep) => (
         <TimePicker
           {...args}
@@ -182,7 +188,7 @@ export const EveryStep: Story = {
           label={`Every ${minuteStep} minutes`}
         />
       ))}
-    </div>
+    </ExampleGrid>
   ),
   play: async ({ canvas, userEvent, canvasElement }) => {
     for (const [index, trigger] of canvas.getAllByRole('combobox').entries()) {
@@ -228,11 +234,11 @@ export const LocaleDefault: Story = {
 };
 export const Sizes: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: vars.space[4] }}>
+    <ExampleGrid>
       {(['sm', 'md', 'lg'] as const).map((size) => (
         <TimePicker {...args} key={size} size={size} label={`Start time ${size}`} />
       ))}
-    </div>
+    </ExampleGrid>
   ),
   play: async ({ canvas }) => {
     for (const [index, trigger] of canvas.getAllByRole('combobox').entries())
@@ -267,11 +273,11 @@ export const OffStepTypeahead: Story = {
 };
 export const InvalidValue: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: vars.space[4] }}>
+    <ExampleGrid>
       {['24:00', '09:60', '9:00', 'invalid'].map((value) => (
         <TimePicker {...args} key={value} value={value} label={`Time ${value}`} placeholder="Choose a time" />
       ))}
-    </div>
+    </ExampleGrid>
   ),
   play: async ({ canvas, args }) => {
     for (const trigger of canvas.getAllByRole('combobox')) {
@@ -347,7 +353,7 @@ export const Error: Story = {
 };
 export const FalsyLabel: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: vars.space[4] }}>
+    <ExampleGrid>
       {[false, null, 0, ''].map((node, index) => (
         <TimePicker
           {...args}
@@ -361,7 +367,7 @@ export const FalsyLabel: Story = {
           aria-label={`Time ${index}`}
         />
       ))}
-    </div>
+    </ExampleGrid>
   ),
   play: async ({ canvas }) => {
     for (const [index, trigger] of canvas.getAllByRole('combobox').entries()) {
@@ -407,9 +413,9 @@ export const OpenError: Story = {
 };
 export const ThemeRootPortal: Story = {
   render: (args) => (
-    <ThemeRoot theme="light" sx={{ backgroundColor: vars.color.bg, padding: vars.space[4] }}>
+    <ThemeRoot theme="light"><LightThemeFrame>
       <TimePicker {...args} open />
-    </ThemeRoot>
+    </LightThemeFrame></ThemeRoot>
   ),
   play: async ({ canvasElement }) => {
     const popup = await body(canvasElement).findByRole('listbox');
@@ -568,6 +574,7 @@ export const FormReset: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
+// This story tests the documented css/slot API and native style merging.
 export const RefAndSlots: Story = {
   args: {
     ref: fn(),

@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef, CSSProperties, ReactNode } from 'react';
+import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within, type Mock } from 'storybook/test';
@@ -8,16 +8,18 @@ import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
 import { Menu, type MenuCompoundProps, type MenuEasyProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 const TRIGGER = 'Options';
 
 const onEdit = fn();
 const onDelete = fn();
 
-const rowStyle = {
+const Row = styled.div({
   display: 'flex',
   gap: vars.space[3],
-} satisfies CSSProperties;
+});
 
 const meta = {
   title: 'Navigation/Menu',
@@ -127,6 +129,7 @@ export const ReplacementSlots: EasyStory = {
 };
 
 /** Restyle the generated trigger and every action with slotProps. */
+// This story tests native props and css forwarded through the slot API.
 export const SlotProps: EasyStory = {
   args: {
     triggerLabel: 'Actions',
@@ -169,7 +172,7 @@ export const Default: EasyStory = {
 ] satisfies MenuAction[];
 
 <Menu triggerLabel="Actions" items={actions} />` } } },
-  render: (args) => <div style={rowStyle}><Menu {...args} /><Button>After</Button></div>,
+  render: (args) => <Row><Menu {...args} /><Button>After</Button></Row>,
   play: async ({ canvasElement, args, userEvent }) => {
     onEdit.mockClear();
     onDelete.mockClear();
@@ -241,7 +244,7 @@ void easyModeTypeContracts;
 
 function MenuExample(props: MenuCompoundProps) {
   return (
-    <div style={rowStyle}>
+    <Row>
       <Menu {...props}>
         <Menu.Trigger>{TRIGGER}</Menu.Trigger>
         <Menu.Content>
@@ -252,7 +255,7 @@ function MenuExample(props: MenuCompoundProps) {
         </Menu.Content>
       </Menu>
       <Button>After</Button>
-    </div>
+    </Row>
   );
 }
 MenuExample.displayName = 'MenuExample';
@@ -626,7 +629,7 @@ export const SelectPreventDefault: Story = {
 function RenameExample(props: MenuCompoundProps) {
   const input = useRef<HTMLInputElement>(null);
   return (
-    <div style={rowStyle}>
+    <Row>
       <Menu {...props}>
         <Menu.Trigger>{TRIGGER}</Menu.Trigger>
         <Menu.Content>
@@ -641,7 +644,7 @@ function RenameExample(props: MenuCompoundProps) {
         </Menu.Content>
       </Menu>
       <input ref={input} aria-label="Name" />
-    </div>
+    </Row>
   );
 }
 
@@ -703,7 +706,7 @@ const popoverOpenChange = fn<(open: boolean) => void>();
 
 function PopoverHost(props: MenuCompoundProps) {
   return (
-    <div style={rowStyle}>
+    <Row>
       <Popover defaultOpen onOpenChange={popoverOpenChange}>
         <Popover.Trigger>Project</Popover.Trigger>
         <Popover.Content aria-label="Project">
@@ -711,7 +714,7 @@ function PopoverHost(props: MenuCompoundProps) {
         </Popover.Content>
       </Popover>
       <Button>Outside</Button>
-    </div>
+    </Row>
   );
 }
 PopoverHost.displayName = 'PopoverHost';

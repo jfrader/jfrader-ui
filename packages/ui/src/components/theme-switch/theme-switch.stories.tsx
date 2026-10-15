@@ -7,6 +7,12 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
 import { ThemeSwitch, type ThemeSwitchProps, type ThemeSwitchValue } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const ThemeFrame = styled.div({ backgroundColor: vars.color.bg, padding: vars.space[4] });
+
+const FixtureButton = styled.button({ minHeight: vars.space[8] });
 
 const meta = {
   title: 'Inputs/ThemeSwitch',
@@ -28,7 +34,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 const settle = () => new Promise((resolve) => setTimeout(resolve, 300));
-const stack = { display: 'grid', gap: vars.space[4] };
+const StackFrame = styled.div({ display: 'grid', gap: vars.space[4] });
 const iconFrameOf = (input: HTMLElement) =>
   input.closest('[data-ui="theme-switch"]')!.querySelector<HTMLElement>('[data-ui="theme-switch-icon-frame"]')!;
 
@@ -101,12 +107,12 @@ function ControlledExample(args: ThemeSwitchProps) {
 function ExternalExample(args: ThemeSwitchProps) {
   const [value, setValue] = useState<ThemeSwitchValue>('light');
   return (
-    <div style={stack}>
-      <button type="button" style={{ minHeight: vars.space[8] }} onClick={() => setValue('dark')}>
+    <StackFrame>
+      <FixtureButton type="button" onClick={() => setValue('dark')}>
         Apply dark preference
-      </button>
+      </FixtureButton>
       <ThemeSwitch {...args} value={value} />
-    </div>
+    </StackFrame>
   );
 }
 /** Server and first client render agree on light; a stored dark preference is applied after mount. */
@@ -118,9 +124,9 @@ function HydrationExample(args: ThemeSwitchProps) {
 function ScopedExample(args: ThemeSwitchProps) {
   const [value, setValue] = useState<ThemeSwitchValue>('light');
   return (
-    <ThemeRoot theme={value} sx={{ backgroundColor: vars.color.bg, padding: vars.space[4] }}>
+    <ThemeRoot theme={value}><ThemeFrame>
       <ThemeSwitch {...args} value={value} onValueChange={setValue} />
-    </ThemeRoot>
+    </ThemeFrame></ThemeRoot>
   );
 }
 export const DefaultReveal: Story = {};
@@ -129,11 +135,11 @@ export const Split: Story = { args: { transition: 'split' } };
 export const Rise: Story = { args: { transition: 'rise' } };
 export const TransitionCues: Story = {
   render: (args) => (
-    <div style={stack}>
+    <StackFrame>
       {(['reveal', 'eclipse', 'split', 'rise'] as const).map((transition) => (
         <ThemeSwitch {...args} key={transition} transition={transition} />
       ))}
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvas, userEvent }) => {
     const inputs = canvas.getAllByRole('switch');
@@ -182,11 +188,11 @@ export const DarkValue: Story = { args: { value: 'dark' } };
 export const IconOnly: Story = {
   args: { iconOnly: true },
   render: (args) => (
-    <div style={stack}>
+    <StackFrame>
       {(['reveal', 'eclipse', 'split', 'rise'] as const).map((transition) => (
         <ThemeSwitch {...args} key={transition} transition={transition} />
       ))}
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvas }) => {
     for (const input of canvas.getAllByRole('switch'))
@@ -195,11 +201,11 @@ export const IconOnly: Story = {
 };
 export const AllSizes: Story = {
   render: (args) => (
-    <div style={stack}>
+    <StackFrame>
       {(['sm', 'md'] as const).map((size) => (
         <ThemeSwitch {...args} key={size} size={size} />
       ))}
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvas }) => {
     for (const input of canvas.getAllByRole('switch')) {
@@ -409,7 +415,7 @@ export const ExternalAria: Story = {
 };
 export const FalsySlots: Story = {
   render: (args) => (
-    <div style={stack}>
+    <StackFrame>
       {[false, null, 0, ''].map((node, index) => (
         <ThemeSwitch
           {...args}
@@ -421,7 +427,7 @@ export const FalsySlots: Story = {
           aria-label="Appearance"
         />
       ))}
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvas }) => {
     for (const [index, input] of canvas.getAllByRole('switch').entries()) {
@@ -437,6 +443,7 @@ export const FalsySlots: Story = {
     }
   },
 };
+// This story tests the documented css/slot API and native style merging.
 export const SlotStyling: Story = {
   args: {
     sx: { paddingInline: vars.space[4] },

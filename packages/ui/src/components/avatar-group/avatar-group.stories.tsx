@@ -1,3 +1,5 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { useId, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
@@ -92,6 +94,12 @@ const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
   { id: 'hedy', name: 'Hedy Lamarr', status: 'away' },
 ];
 
+const Stack = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[4] });
+
+const CompactStack = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[3] });
+
+const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+
 const meta = {
   title: 'Data display/AvatarGroup',
   component: AvatarGroup,
@@ -143,7 +151,7 @@ export const Default: Story = {
 
 export const Sizes: Story = {
   render: (args) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: vars.space[4] }}>
+    <Stack>
       {SIZES.map((size) => (
         <AvatarGroup
           {...args}
@@ -157,7 +165,7 @@ export const Sizes: Story = {
           ]}
         />
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -299,13 +307,13 @@ export const DuplicateNamesWithUniqueIds: Story = {
 
 export const InvalidMax: Story = {
   render: (args) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: vars.space[4] }}>
+    <Stack>
       <AvatarGroup {...args} max={-2} label="Negative Max" members={SAMPLE_MEMBERS} />
       <AvatarGroup {...args} max={2.8} label="Fractional Max" members={SAMPLE_MEMBERS} />
       <AvatarGroup {...args} max={Number.NaN} label="NaN Max" members={SAMPLE_MEMBERS} />
       <AvatarGroup {...args} max={Number.POSITIVE_INFINITY} label="Infinite Max" members={SAMPLE_MEMBERS} />
       <AvatarGroup {...args} max={Number.MAX_SAFE_INTEGER} label="Huge Max" members={SAMPLE_MEMBERS} />
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -344,7 +352,7 @@ const MAX_BOUNDARIES = [
 
 export const MaxBoundaries: Story = {
   render: (args) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: vars.space[4] }}>
+    <Stack>
       {MAX_BOUNDARIES.map(({ offset }) => (
         <AvatarGroup
           {...args}
@@ -354,7 +362,7 @@ export const MaxBoundaries: Story = {
           members={SAMPLE_MEMBERS}
         />
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -376,11 +384,11 @@ export const MaxBoundaries: Story = {
 export const LongOverflow: Story = {
   args: { locale: 'en-US', max: HUGE_VISIBLE },
   render: (args) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: vars.space[4] }}>
+    <Stack>
       {SIZES.map((size) => (
         <AvatarGroup {...args} key={size} size={size} members={HUGE_MEMBERS} label={`Long overflow ${size}`} />
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -403,7 +411,7 @@ function MemberUpdatesHarness() {
   ]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: vars.space[3] }}>
+    <CompactStack>
       <Button
         onClick={() => {
           setMembers((prev) => [prev[1]!, prev[0]!, prev[2]!]);
@@ -412,7 +420,7 @@ function MemberUpdatesHarness() {
         Reorder members
       </Button>
       <AvatarGroup members={members} max={3} />
-    </div>
+    </CompactStack>
   );
 }
 
@@ -443,7 +451,7 @@ function ExternalAriaHarness() {
   const titleId = useId();
   const crewTitleId = useId();
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: vars.space[3] }}>
+    <CompactStack>
       <h3 id={titleId}>Design Leads</h3>
       <AvatarGroup
         aria-labelledby={titleId}
@@ -473,7 +481,7 @@ function ExternalAriaHarness() {
         aria-describedby="external-hint"
         members={[{ id: '3', name: 'Margaret Hamilton' }]}
       />
-    </div>
+    </CompactStack>
   );
 }
 
@@ -523,7 +531,7 @@ export const LocaleFormatting: Story = {
     members: SAMPLE_MEMBERS,
   },
   render: (args) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: vars.space[4] }}>
+    <Stack>
       <AvatarGroup {...args} />
       {SIZES.map((size) => (
         <AvatarGroup
@@ -535,7 +543,7 @@ export const LocaleFormatting: Story = {
           label={`Long count ${size}`}
         />
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -680,11 +688,11 @@ export const StaticMotion: Story = {
 
 export const KeyboardSkipsGroup: Story = {
   render: (args) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
+    <Row>
       <Button>Before</Button>
       <AvatarGroup {...args} />
       <Button>After</Button>
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -718,6 +726,7 @@ const OVERRIDE = {
   avatarBorderWidth: '3px',
 } as const;
 
+// The styling-precedence story exercises css, sx and slot overrides.
 const consumerGroupStyle = css({ opacity: OVERRIDE.groupCssOpacity });
 const sxGroupStyle = css({ opacity: OVERRIDE.groupSxOpacity });
 const slotMemberStyle = css({ '&:not(:first-of-type)': { marginInlineStart: OVERRIDE.memberMargin } });

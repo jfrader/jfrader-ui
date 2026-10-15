@@ -1,4 +1,6 @@
-import type { CSSProperties, MouseEvent } from 'react';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+import type { MouseEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -11,18 +13,6 @@ const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly ButtonSize[];
 const GRID_VARIANTS = ['solid', 'soft', 'outline'] as const satisfies readonly ButtonVariant[];
 const linkRef = fn<(element: HTMLButtonElement | null) => void>();
 const disabledLinkClick = fn();
-
-const gridStyle = {
-  display: 'grid',
-  gridTemplateColumns: `repeat(${GRID_VARIANTS.length}, auto)`,
-  gap: vars.space[3],
-} satisfies CSSProperties;
-
-const rowStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space[3],
-} satisfies CSSProperties;
 
 function PlusIcon() {
   return (
@@ -41,6 +31,20 @@ function ArrowIcon() {
   );
 }
 ArrowIcon.displayName = 'ArrowIcon';
+
+const Grid = styled.div({
+  display: 'grid',
+  gridTemplateColumns: `repeat(${GRID_VARIANTS.length}, auto)`,
+  gap: vars.space[3],
+});
+
+const Row = styled.div({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+const Marker = styled.span({ color: vars.color.borderControl });
 
 const meta = {
   title: 'Inputs/Button',
@@ -86,7 +90,7 @@ export const Variants: Story = {
     },
   },
   render: (args) => (
-    <div style={gridStyle}>
+    <Grid>
       {TONES.map((tone) =>
         GRID_VARIANTS.map((variant) => (
           <Button {...args} key={`${tone}-${variant}`} tone={tone} variant={variant}>
@@ -94,7 +98,7 @@ export const Variants: Story = {
           </Button>
         )),
       )}
-    </div>
+    </Grid>
   ),
 };
 
@@ -113,25 +117,25 @@ export const Sizes: Story = {
     },
   },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       {SIZES.map((size) => (
         <Button {...args} key={size} size={size}>
           {size}
         </Button>
       ))}
-    </div>
+    </Row>
   ),
 };
 
 export const ControlBoundaries: Story = {
   render: (args) => (
-    <div style={rowStyle}>
-      <span aria-hidden="true" data-testid="boundary-color" style={{ color: vars.color.borderControl }} />
+    <Row>
+      <Marker aria-hidden="true" data-testid="boundary-color"  />
       <Button {...args} tone="neutral" variant="solid">solid neutral</Button>
       {TONES.map((tone) => (
         <Button {...args} key={tone} tone={tone} variant="outline">outline {tone}</Button>
       ))}
-    </div>
+    </Row>
   ),
   play: async ({ canvas }) => {
     const expected = getComputedStyle(canvas.getByTestId('boundary-color')).color;
@@ -201,7 +205,7 @@ export const RenderAsLink: Story = {
     onClick: fn((event: MouseEvent<HTMLElement>) => event.preventDefault()),
   },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <Button {...args} ref={linkRef} render={(props) => <a {...props} href="#docs" />} />
       <Button
         {...args}
@@ -211,7 +215,7 @@ export const RenderAsLink: Story = {
       >
         Disabled docs
       </Button>
-    </div>
+    </Row>
   ),
   play: async ({ args, canvasElement }) => {
     const link = within(canvasElement).getByRole('link', { name: 'Read the docs' });

@@ -1,10 +1,10 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
-import { WithSx } from '../../styling/sx';
 import { Button } from '../button';
 import {
   createRefCleanupTracker,
@@ -21,7 +21,7 @@ import {
 // @ts-expect-error Unknown slot key is rejected on DialogStackEasyProps['slots']
 type UnknownDialogStackSlot = NonNullable<DialogStackEasyProps['slots']>['unknownKey'];
 
-const customContentMaterial = css({
+const CustomContentMaterial = styled.div({
   backgroundColor: vars.color.surfaceRaised,
   border: `2px dashed ${vars.color.borderControl}`,
   boxShadow: 'none',
@@ -29,9 +29,7 @@ const customContentMaterial = css({
 
 function CustomStackContent({ className, ref, ...props }: ComponentPropsWithRef<'div'>) {
   return (
-    <WithSx styles={customContentMaterial} className={className}>
-      {(classes) => <div ref={ref} {...props} className={classes} data-slot="stack-content-winner" />}
-    </WithSx>
+    <CustomContentMaterial ref={ref} {...props} className={className} data-slot="stack-content-winner" />
   );
 }
 
@@ -56,6 +54,7 @@ const STACK_PAGES: readonly DialogStackPageRecord[] = [
 ];
 
 function DialogStackCustomizationFixture() {
+  // Inline styles exercise the documented root/slot style-merging API.
   const [mounted, setMounted] = useState(true);
   const [count, setCount] = useState(0);
   const controls = <>
@@ -64,7 +63,7 @@ function DialogStackCustomizationFixture() {
   </>;
 
   return (
-    <div style={{ padding: vars.space[4] }}>
+    <FixtureFrame>
       {mounted && (
         <DialogStack
           defaultValue={['settings']}
@@ -90,9 +89,11 @@ function DialogStackCustomizationFixture() {
           }}
         />
       )}
-    </div>
+    </FixtureFrame>
   );
 }
+
+const FixtureFrame = styled.div({ padding: vars.space[4] });
 
 const meta = {
   title: 'Surfaces/DialogStack',

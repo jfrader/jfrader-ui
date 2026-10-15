@@ -1,12 +1,12 @@
-import type { CSSProperties } from 'react';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Divider } from './index';
 
-const stackStyle = css({
+const Stack = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '360px',
@@ -14,15 +14,15 @@ const stackStyle = css({
   color: vars.color.text,
 });
 
-const rowStyle = {
+const Prose = styled.p({ margin: 0 });
+
+const Row = styled.div({
   display: 'flex',
   alignItems: 'center',
   gap: vars.space[3],
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-} satisfies CSSProperties;
-
-const proseStyle = { margin: 0 } satisfies CSSProperties;
+});
 
 const meta = {
   title: 'Data display/Divider',
@@ -30,9 +30,9 @@ const meta = {
   parameters: { docs: { description: { component: 'Separate sections with a line or a label.' } } },
   decorators: [
     (Story) => (
-      <div css={stackStyle}>
+      <Stack>
         <Story />
-      </div>
+      </Stack>
     ),
   ],
 } satisfies Meta<typeof Divider>;
@@ -44,9 +44,9 @@ type Story = StoryObj<typeof Divider>;
 function Sections() {
   return (
     <>
-      <p style={proseStyle}>Signed in as ana@example.com</p>
+      <Prose>Signed in as ana@example.com</Prose>
       <Divider />
-      <p style={proseStyle}>3 active sessions</p>
+      <Prose>3 active sessions</Prose>
     </>
   );
 }
@@ -55,9 +55,9 @@ Sections.displayName = 'Sections';
 function SignInOptions() {
   return (
     <>
-      <p style={proseStyle}>Continue with GitHub</p>
+      <Prose>Continue with GitHub</Prose>
       <Divider label="or" />
-      <p style={proseStyle}>Continue with email</p>
+      <Prose>Continue with email</Prose>
     </>
   );
 }
@@ -65,12 +65,12 @@ SignInOptions.displayName = 'SignInOptions';
 
 function Toolbar() {
   return (
-    <div style={rowStyle}>
+    <Row>
       <span>Bold</span>
       <span>Italic</span>
       <Divider orientation="vertical" />
       <span>Link</span>
-    </div>
+    </Row>
   );
 }
 Toolbar.displayName = 'Toolbar';
@@ -243,12 +243,14 @@ export const Vertical: Story = {
   parameters: {
     docs: {
       source: {
-        code: `<div style={{ display: 'flex', alignItems: 'center', gap: vars.space[3] }}>
+        code: `const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+
+<Row>
   <span>Bold</span>
   <span>Italic</span>
   <Divider orientation="vertical" />
   <span>Link</span>
-</div>`,
+</Row>`,
       },
     },
   },
@@ -270,10 +272,12 @@ export const LightTheme: Story = {
   parameters: {
     docs: {
       source: {
-        code: `<ThemeRoot theme="light">
+        code: `const Row = styled.div({ display: 'flex' });
+
+<ThemeRoot theme="light">
   <Divider />
   <Divider label="or" />
-  <div style={{ display: 'flex' }}><span>Bold</span><Divider orientation="vertical" /><span>Link</span></div>
+  <Row><span>Bold</span><Divider orientation="vertical" /><span>Link</span></Row>
 </ThemeRoot>`,
       },
     },

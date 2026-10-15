@@ -4,16 +4,30 @@ import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { ThemeRoot } from '../theme-root';
 import { ButtonGroup, type ButtonGroupCompoundProps, type ButtonGroupEasyProps, type ButtonGroupItemProps, type ButtonGroupItemRecord, type ButtonGroupCompoundProps as ButtonGroupProps } from './index';
 
-const fixtureStyle = { minWidth: 24, minHeight: 24 };
-const stackStyle = {
+const FixtureButton = styled.button({
+  minInlineSize: vars.space[6],
+  minBlockSize: vars.space[6],
+});
+const Stack = styled.div({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'flex-start',
   gap: vars.space[4],
-} as const;
+});
+const NarrowContainer = styled.div({
+  width: 320,
+});
+const ScaledContainer = styled.div({
+  transform: 'scale(1.25)',
+  transformOrigin: 'top left',
+  width: 320,
+});
+// SxPrecedence tests css vs sx precedence, so itemCss keeps the css() spelling.
 const itemCss = css({ paddingInline: '29px' });
 function Icon() {
   return (
@@ -209,6 +223,7 @@ export const NativeFormActions: StoryObj<Omit<ButtonGroupEasyProps, 'component'>
   },
 };
 
+// The slot API takes `css` values, so this story keeps the documented spelling.
 export const GeneratedPartProps: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = {
   name: 'Generated part props',
   args: {
@@ -295,7 +310,7 @@ void easyModeTypeContracts;
 
 export const Variants: Story = {
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       {(['outline', 'solid', 'soft', 'ghost'] as const).map((variant) => (
         <ButtonGroup {...args} key={variant} variant={variant} aria-label={`${variant} actions`}>
           <ButtonGroup.Item>Share</ButtonGroup.Item>
@@ -303,7 +318,7 @@ export const Variants: Story = {
           <ButtonGroup.Item>Archive</ButtonGroup.Item>
         </ButtonGroup>
       ))}
-    </div>
+    </Stack>
   ),
 };
 export const Tones: Story = {
@@ -319,14 +334,14 @@ export const Tones: Story = {
 };
 export const Sizes: Story = {
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       {(['sm', 'md', 'lg'] as const).map((size) => (
         <ButtonGroup {...args} size={size} key={size} aria-label={`${size} actions`}>
           <ButtonGroup.Item>Share</ButtonGroup.Item>
           <ButtonGroup.Item>Duplicate</ButtonGroup.Item>
         </ButtonGroup>
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvas }) => {
     for (const [index, group] of canvas.getAllByRole('group').entries()) {
@@ -387,7 +402,7 @@ export const KeyboardActivation: Story = {
         <ButtonGroup.Label>0</ButtonGroup.Label>
         <ButtonGroup.Item onClick={onClick}>Archive</ButtonGroup.Item>
       </ButtonGroup>
-      <button style={fixtureStyle}>After</button>
+      <FixtureButton>After</FixtureButton>
     </>
   ),
   play: async ({ args, canvas, canvasElement, userEvent }) => {
@@ -535,7 +550,7 @@ const MenuExample = (args: ButtonGroupProps) => (
         <ButtonGroup.MenuItem tone="danger">Delete</ButtonGroup.MenuItem>
       </ButtonGroup.Content>
     </ButtonGroup>
-    <button style={fixtureStyle}>After</button>
+    <FixtureButton>After</FixtureButton>
   </>
 );
 MenuExample.displayName = 'MenuExample';
@@ -662,7 +677,7 @@ export const AriaMerge: Story = {
 };
 export const FalsyContent: Story = {
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       {([false, null, 0, ''] as const).map((value, index) => (
         <ButtonGroup {...args} key={index} aria-label={`Content ${index}`}>
           <ButtonGroup.Item aria-label={value === 0 ? undefined : 'Add'} startIcon={value} endIcon={value}>
@@ -671,7 +686,7 @@ export const FalsyContent: Story = {
           <ButtonGroup.Label data-testid={`value-${index}`}>{value}</ButtonGroup.Label>
         </ButtonGroup>
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvas }) => {
     await expect(canvas.getByTestId('value-2')).toHaveTextContent('0');
@@ -748,9 +763,9 @@ function CompactExample({ args }: { args: Parameters<NonNullable<Story['render']
           <ButtonGroup.Item>Archive</ButtonGroup.Item>
         </ButtonGroup>
       </div>
-      <button style={fixtureStyle} onClick={() => setWide(!wide)}>
+      <FixtureButton onClick={() => setWide(!wide)}>
         Resize
-      </button>
+      </FixtureButton>
     </div>
   );
 }
@@ -782,12 +797,12 @@ export const PersistentCompact: Story = {
 export const LongLocalizedLabels: Story = {
   args: { collapseLabels: false, orientation: 'vertical' },
   render: (args) => (
-    <div style={{ width: 320 }}>
+    <NarrowContainer>
       <ButtonGroup {...args}>
         <ButtonGroup.Item>Alle ausgewählten Dokumente gemeinsam veröffentlichen</ButtonGroup.Item>{' '}
         <ButtonGroup.Item>Ausgewählte Dokumente archivieren</ButtonGroup.Item>
       </ButtonGroup>
-    </div>
+    </NarrowContainer>
   ),
   play: async ({ canvas }) => {
     const group = canvas.getByRole('group'),
@@ -945,7 +960,7 @@ export const DisabledMenuTrigger: Story = {
 
 export const HighlightGeometry: Story = {
   render: (args) => (
-    <div style={{ transform: 'scale(1.25)', transformOrigin: 'top left', width: 320 }}>
+    <ScaledContainer>
       <ButtonGroup
         {...args}
         collapseLabels={false}
@@ -955,7 +970,7 @@ export const HighlightGeometry: Story = {
         <ButtonGroup.Item>Duplicate document</ButtonGroup.Item>
         <ButtonGroup.Item>Archive</ButtonGroup.Item>
       </ButtonGroup>
-    </div>
+    </ScaledContainer>
   ),
   play: async ({ canvas, userEvent }) => {
     const group = canvas.getByRole('group'),

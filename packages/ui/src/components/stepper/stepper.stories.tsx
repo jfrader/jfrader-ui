@@ -2,14 +2,18 @@ import { useState, type ReactNode } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Stepper, type StepperProps, type StepperStep } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const NarrowFrame = styled.div({ inlineSize: '20rem' });
+
+const CompactFrame = styled.div({ inlineSize: '320px' });
 
 // Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
-const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
-
+const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
 
 const STEPS: readonly StepperStep[] = [
   { id: 'account', label: 'Account', description: 'Email and password' },
@@ -22,7 +26,7 @@ const USAGE = `<Stepper steps={steps} interactive value={currentStep}
   onValueChange={setCurrentStep} label="Checkout" />
 // Render and validate current-step content in the app, not inside Stepper.`;
 
-const frameStyle = css({
+const Frame = styled.div({
   display: 'flex',
   flexDirection: 'column',
   gap: vars.space[4],
@@ -46,9 +50,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
 } satisfies Meta<typeof Stepper>;
@@ -247,9 +251,9 @@ export const Static: Story = {
   args: { value: 2 },
   render: (args) => (
     <>
-      <button style={FIXTURE_BUTTON} type="button">Before</button>
+      <FixtureButton type="button">Before</FixtureButton>
       <Stepper {...args} />
-      <button style={FIXTURE_BUTTON} type="button">After</button>
+      <FixtureButton type="button">After</FixtureButton>
     </>
   ),
   parameters: { docs: { source: { code: '<Stepper steps={steps} value={2} />' } } },
@@ -373,11 +377,11 @@ export const CompactStatic: Story = {
 export const ResponsiveNarrow: Story = {
   args: { value: 1 },
   render: (args) => (
-    <div style={{ inlineSize: '20rem' }}>
+    <NarrowFrame>
       <Stepper {...args} />
       <Stepper {...args} responsive={false} label="Fixed" />
       <Stepper {...args} orientation="vertical" label="Vertical" />
-    </div>
+    </NarrowFrame>
   ),
   parameters: { docs: { source: { code: '<Stepper steps={steps} value={1} />' } } },
   play: async ({ canvasElement }) => {
@@ -538,10 +542,10 @@ export const LongLabels: Story = {
     ],
   },
   render: (args) => (
-    <div style={{ inlineSize: '320px' }}>
+    <CompactFrame>
       <Stepper {...args} responsive={false} />
       <Stepper {...args} orientation="vertical" label="Vertical" />
-    </div>
+    </CompactFrame>
   ),
   play: async ({ canvasElement }) => {
     for (const root of getRoots(canvasElement)) {
@@ -638,9 +642,9 @@ export const Keyboard: Story = {
   args: { interactive: true, defaultValue: 2, onValueChange: fn() },
   render: (args) => (
     <>
-      <button style={FIXTURE_BUTTON} type="button">Before</button>
+      <FixtureButton type="button">Before</FixtureButton>
       <Stepper {...args} />
-      <button style={FIXTURE_BUTTON} type="button">After</button>
+      <FixtureButton type="button">After</FixtureButton>
     </>
   ),
   parameters: { docs: { source: { code: USAGE } } },
@@ -864,6 +868,7 @@ const CSS_PADDING = 1;
 const SX_PADDING = 6;
 const px = (value: number) => `${value}px`;
 
+// This story tests the documented css/slot API and native style merging.
 export const SlotStyling: Story = {
   args: {
     value: 4,
@@ -923,9 +928,9 @@ function AnnouncedStepper(props: StepperProps) {
   const [value, setValue] = useState(0);
   return (
     <>
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => setValue((current) => current + 1)}>
+      <FixtureButton type="button" onClick={() => setValue((current) => current + 1)}>
         Next
-      </button>
+      </FixtureButton>
       <Stepper
         {...props}
         value={value}
@@ -976,15 +981,15 @@ function RemovableStepper({ keepFocus = false, ...props }: StepperProps & { keep
   return (
     <>
       <Stepper {...props} steps={steps} value={steps.findIndex((step) => step.id === 'review')} />
-      <button
-        style={FIXTURE_BUTTON}
+      <FixtureButton
+
         type="button"
         // Prevents the click from taking focus, so the update lands while a step is focused.
         onMouseDown={keepFocus ? (event) => event.preventDefault() : undefined}
         onClick={() => setSteps((current) => current.filter((step) => step.id !== 'profile'))}
       >
         Remove profile
-      </button>
+      </FixtureButton>
     </>
   );
 }

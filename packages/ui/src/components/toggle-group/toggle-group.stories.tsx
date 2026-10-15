@@ -2,9 +2,10 @@ import { useState, type ReactNode, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ToggleGroup, type ToggleGroupCompoundProps as ToggleGroupProps, type ToggleGroupProps as PublicToggleGroupProps, type ToggleGroupSingleProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 interface Option {
   value: string;
@@ -29,7 +30,7 @@ const ARRAY_OPTIONS: readonly Option[] = [
   { value: 'b', label: 'B' },
 ];
 
-const frameStyle = css({
+const Frame = styled.div({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'flex-start',
@@ -58,9 +59,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
 } satisfies Meta<ToggleGroupProps>;

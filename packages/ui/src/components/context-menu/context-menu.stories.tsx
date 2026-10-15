@@ -1,4 +1,6 @@
-import { Component, useCallback, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+import { Component, useCallback, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within, type Mock } from 'storybook/test';
@@ -31,45 +33,7 @@ const TYPEAHEAD_RESET_WAIT_MS = 600;
 // A viewport smaller than the menu's preferred size in both axes, in px.
 const TINY_VIEWPORT = { width: 200, height: 180 };
 
-const rowStyle = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'flex-start',
-  gap: vars.space[3],
-} satisfies CSSProperties;
-
-// Room around the Target, so menus anchored to it are not shifted by the viewport padding.
-const frameStyle = {
-  padding: vars.space[6],
-} satisfies CSSProperties;
-
-const targetBoxStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'flex-start',
-  gap: vars.space[2],
-  inlineSize: '16rem',
-  minBlockSize: '6rem',
-  padding: vars.space[4],
-  border: `1px dashed ${vars.color.borderControl}`,
-  borderRadius: vars.radius.md,
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
-  fontSize: vars.textSize.sm,
-} satisfies CSSProperties;
-
-const smallTargetStyle = {
-  ...targetBoxStyle,
-  inlineSize: '8rem',
-  minBlockSize: '3rem',
-} satisfies CSSProperties;
-
-const frameBoxStyle = {
-  inlineSize: '20rem',
-  blockSize: '12rem',
-  border: `1px solid ${vars.color.border}`,
-} satisfies CSSProperties;
-
+// The styling-precedence story exercises the documented css and sx APIs.
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ marginInlineStart: vars.space[2] });
 
@@ -93,13 +57,13 @@ LinkIcon.displayName = 'LinkIcon';
 function FileMenu({ onCopy, onRename, onDelete, onOpenChild, targetProps, children, ...props }: StoryArgs) {
   return (
     <ContextMenu {...props}>
-      <ContextMenu.Target aria-label={TARGET} style={targetBoxStyle} {...targetProps}>
+      <TargetBox aria-label={TARGET} {...targetProps}>
         <strong>report.pdf</strong>
         <Button size="sm" variant="outline" onClick={onOpenChild}>
           Open
         </Button>
         {children}
-      </ContextMenu.Target>
+      </TargetBox>
       <ContextMenu.Content>
         <ContextMenu.Item icon={<LinkIcon />} onSelect={onCopy}>
           Copy link
@@ -118,10 +82,10 @@ FileMenu.displayName = 'FileMenu';
 
 function FileRow(args: StoryArgs) {
   return (
-    <div style={rowStyle}>
+    <Row>
       <FileMenu {...args} />
       <Button>After</Button>
-    </div>
+    </Row>
   );
 }
 FileRow.displayName = 'FileRow';
@@ -208,6 +172,48 @@ function mediaRuleSets(element: Element, query: string, property: string, expect
   );
 }
 
+// Generated-part stories exercise slotProps.target.style with these shared declarations.
+const targetBoxStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: `1px dashed ${vars.color.borderControl}`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+} as const;
+
+const TargetBox = styled(ContextMenu.Target)(targetBoxStyle);
+
+const SmallTargetBox = styled(TargetBox)({ inlineSize: '8rem', minBlockSize: '3rem' });
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const Frame = styled.div({
+  padding: vars.space[6],
+});
+
+const EmbeddedFrame = styled.iframe({
+  inlineSize: '20rem',
+  blockSize: '12rem',
+  border: `1px solid ${vars.color.border}`,
+});
+
+function LightThemeRoot(props: Omit<ComponentPropsWithRef<typeof ThemeRoot>, 'theme'>) {
+  return <ThemeRoot {...props} theme="light" />;
+}
+const LightScope = styled(LightThemeRoot)({ padding: vars.space[4], backgroundColor: vars.color.bg });
+
 const meta = {
   title: 'Navigation/ContextMenu',
   component: ContextMenu,
@@ -238,9 +244,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div style={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   render: (args) => <FileRow {...args} />,
@@ -309,10 +315,10 @@ export const Default: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
     },
   },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <ContextMenu {...args} />
       <Button>After</Button>
-    </div>
+    </Row>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
@@ -677,12 +683,12 @@ export const OutsidePress: Story = {
 
 export const VisibleTrigger: Story = {
   render: ({ onCopy, onRename, onDelete, onOpenChild: _onOpenChild, ...args }) => (
-    <div style={rowStyle}>
+    <Row>
       <ContextMenu {...args}>
-        <ContextMenu.Target aria-label={TARGET} style={targetBoxStyle}>
+        <TargetBox aria-label={TARGET} >
           <strong>report.pdf</strong>
           <ContextMenu.Trigger>More actions</ContextMenu.Trigger>
-        </ContextMenu.Target>
+        </TargetBox>
         <ContextMenu.Content>
           <ContextMenu.Item onSelect={onCopy}>Copy link</ContextMenu.Item>
           <ContextMenu.Item onSelect={onRename}>Rename</ContextMenu.Item>
@@ -693,7 +699,7 @@ export const VisibleTrigger: Story = {
         </ContextMenu.Content>
       </ContextMenu>
       <Button>After</Button>
-    </div>
+    </Row>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
@@ -790,9 +796,9 @@ function ViewOptions({
 }: StoryArgs & { value?: boolean; onValueChange?: (checked: boolean) => void }) {
   return (
     <ContextMenu {...args}>
-      <ContextMenu.Target aria-label="Board view options" style={targetBoxStyle}>
+      <TargetBox aria-label="Board view options" >
         <strong>Sprint board</strong>
-      </ContextMenu.Target>
+      </TargetBox>
       <ContextMenu.Content>
         <ContextMenu.CheckboxItem defaultValue onValueChange={args.onCopy}>
           Show avatars
@@ -893,9 +899,9 @@ export const CheckboxSelected: Story = {
 export const PreventDefaultSelection: Story = {
   render: ({ onCopy, onOpenChild: _onOpenChild, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
-      <ContextMenu.Target aria-label={TARGET} style={targetBoxStyle}>
+      <TargetBox aria-label={TARGET} >
         report.pdf
-      </ContextMenu.Target>
+      </TargetBox>
       <ContextMenu.Content>
         <ContextMenu.Item onSelect={onCopy} onClick={(event) => event.preventDefault()}>
           Copy link
@@ -942,9 +948,9 @@ export const NativeEventVeto: Story = {
 export const EmptyMenu: Story = {
   render: ({ onOpenChild: _onOpenChild, onCopy: _onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
-      <ContextMenu.Target aria-label={TARGET} style={targetBoxStyle}>
+      <TargetBox aria-label={TARGET} >
         report.pdf
-      </ContextMenu.Target>
+      </TargetBox>
       <ContextMenu.Content />
     </ContextMenu>
   ),
@@ -970,9 +976,9 @@ export const EmptyMenu: Story = {
 export const AllDisabled: Story = {
   render: ({ onOpenChild: _onOpenChild, onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
-      <ContextMenu.Target aria-label={TARGET} style={targetBoxStyle}>
+      <TargetBox aria-label={TARGET} >
         report.pdf
-      </ContextMenu.Target>
+      </TargetBox>
       <ContextMenu.Content>
         <ContextMenu.Item disabled onSelect={onCopy}>
           Copy link
@@ -1025,9 +1031,9 @@ export const LongLabels: Story = {
   args: { defaultOpen: true },
   render: ({ onCopy, onOpenChild: _onOpenChild, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
-      <ContextMenu.Target aria-label={TARGET} style={targetBoxStyle}>
+      <TargetBox aria-label={TARGET} >
         report.pdf
-      </ContextMenu.Target>
+      </TargetBox>
       <ContextMenu.Content>
         <ContextMenu.Item onSelect={onCopy}>
           Copiar el enlace público de este informe trimestral al portapapeles
@@ -1055,9 +1061,9 @@ export const LongLabels: Story = {
 export const ManyItems: Story = {
   render: ({ onOpenChild: _onOpenChild, onCopy: _onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
-      <ContextMenu.Target aria-label={TARGET} style={targetBoxStyle}>
+      <TargetBox aria-label={TARGET} >
         report.pdf
-      </ContextMenu.Target>
+      </TargetBox>
       <ContextMenu.Content>
         {Array.from({ length: 20 }, (_, index) => (
           <ContextMenu.Item key={index}>{`Move to folder ${index + 1}`}</ContextMenu.Item>
@@ -1153,7 +1159,7 @@ function FrameHost({ children }: { children: ReactNode }) {
   const attach = useCallback((frame: HTMLIFrameElement | null) => setBody(frame?.contentDocument?.body ?? null), []);
   return (
     <>
-      <iframe ref={attach} title="Embedded file view" style={frameBoxStyle} />
+      <EmbeddedFrame ref={attach} title="Embedded file view"  />
       {body && createPortal(<ScopedHost>{children}</ScopedHost>, body)}
     </>
   );
@@ -1337,7 +1343,7 @@ function ExternallyControlled(args: StoryArgs) {
   const [open, setOpen] = useState(false);
   const [compact, setCompact] = useState(false);
   return (
-    <div style={rowStyle}>
+    <Row>
       <ViewOptions
         {...args}
         open={open}
@@ -1353,7 +1359,7 @@ function ExternallyControlled(args: StoryArgs) {
       />
       <Button onClick={() => setOpen((current) => !current)}>Toggle menu</Button>
       <Button onClick={() => setCompact((current) => !current)}>Toggle compact</Button>
-    </div>
+    </Row>
   );
 }
 ExternallyControlled.displayName = 'ExternallyControlled';
@@ -1422,17 +1428,17 @@ export const ControlledExternalUpdates: Story = {
 
 export const FocusReturnPerInstance: Story = {
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <FileMenu {...args} />
       <ContextMenu>
-        <ContextMenu.Target aria-label="notes.txt actions" style={targetBoxStyle}>
+        <TargetBox aria-label="notes.txt actions" >
           notes.txt
-        </ContextMenu.Target>
+        </TargetBox>
         <ContextMenu.Content>
           <ContextMenu.Item>Copy link</ContextMenu.Item>
         </ContextMenu.Content>
       </ContextMenu>
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement, userEvent }) => {
     const first = getTarget(canvasElement);
@@ -1481,10 +1487,10 @@ export const LightTheme: Story = {
 function ScopedHost({ children }: { children: ReactNode }) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
-    <ThemeRoot theme="light" portalContainer={host} style={{ padding: vars.space[4], backgroundColor: vars.color.bg }}>
+    <LightScope portalContainer={host}>
       {children}
       <div ref={setHost} data-overlay-host="" />
-    </ThemeRoot>
+    </LightScope>
   );
 }
 ScopedHost.displayName = 'ScopedHost';
@@ -1508,9 +1514,9 @@ export const RTL: Story = {
   render: ({ onCopy, onRename, onOpenChild: _onOpenChild, onDelete: _onDelete, ...args }) => (
     <div dir="rtl" lang="he">
       <ContextMenu {...args}>
-        <ContextMenu.Target aria-label="פעולות קובץ" style={targetBoxStyle}>
+        <TargetBox aria-label="פעולות קובץ" >
           report.pdf
-        </ContextMenu.Target>
+        </TargetBox>
         <ContextMenu.Content>
           <ContextMenu.Item onSelect={onCopy}>העתקת קישור</ContextMenu.Item>
           <ContextMenu.Item onSelect={onRename}>שינוי שם</ContextMenu.Item>
@@ -1541,7 +1547,7 @@ const popoverOpenChange = fn();
 
 export const InsidePopover: Story = {
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <Popover defaultOpen onOpenChange={popoverOpenChange}>
         <Popover.Trigger>Project</Popover.Trigger>
         <Popover.Content aria-label="Project">
@@ -1549,7 +1555,7 @@ export const InsidePopover: Story = {
         </Popover.Content>
       </Popover>
       <Button>Outside</Button>
-    </div>
+    </Row>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
     popoverOpenChange.mockClear();
@@ -1608,27 +1614,27 @@ export const InsidePopover: Story = {
 export const AriaMerge: Story = {
   args: { defaultOpen: true },
   render: ({ onCopy, onOpenChild: _onOpenChild, onRename: _onRename, onDelete: _onDelete, ...args }) => (
-    <div style={rowStyle}>
+    <Row>
       <span id="file-label">Quarterly report</span>
       <span id="file-help">Shared with finance</span>
       <span id="menu-label">Actions</span>
       <ContextMenu {...args}>
-        <ContextMenu.Target aria-labelledby="file-label" aria-describedby="file-help missing-id" style={targetBoxStyle}>
+        <TargetBox aria-labelledby="file-label" aria-describedby="file-help missing-id" >
           report.pdf
-        </ContextMenu.Target>
+        </TargetBox>
         <ContextMenu.Content aria-labelledby="menu-label missing-id" aria-describedby="file-help">
           <ContextMenu.Item onSelect={onCopy}>Copy link</ContextMenu.Item>
         </ContextMenu.Content>
       </ContextMenu>
       <ContextMenu defaultOpen>
-        <ContextMenu.Target aria-label="notes.txt actions" style={targetBoxStyle}>
+        <TargetBox aria-label="notes.txt actions" >
           notes.txt
-        </ContextMenu.Target>
+        </TargetBox>
         <ContextMenu.Content aria-label="Note actions">
           <ContextMenu.Item>Copy link</ContextMenu.Item>
         </ContextMenu.Content>
       </ContextMenu>
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     // Consumer naming and description ids survive on the Target, an unresolved one included.
@@ -1657,9 +1663,9 @@ export const FalsyNodes: Story = {
   args: { defaultOpen: true },
   render: ({ onOpenChild: _onOpenChild, onCopy: _onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
-      <ContextMenu.Target aria-label={TARGET} style={targetBoxStyle}>
+      <TargetBox aria-label={TARGET} >
         report.pdf
-      </ContextMenu.Target>
+      </TargetBox>
       <ContextMenu.Content>
         <ContextMenu.Item icon={false}>No icon false</ContextMenu.Item>
         <ContextMenu.Item icon={null}>No icon null</ContextMenu.Item>
@@ -1703,10 +1709,10 @@ export const RefTargets: Story = {
   args: { defaultOpen: true },
   render: ({ onOpenChild: _onOpenChild, onCopy: _onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
-      <ContextMenu.Target ref={targetRef} aria-label={TARGET} style={targetBoxStyle}>
+      <TargetBox ref={targetRef} aria-label={TARGET} >
         report.pdf
         <ContextMenu.Trigger ref={triggerRef}>More actions</ContextMenu.Trigger>
-      </ContextMenu.Target>
+      </TargetBox>
       <ContextMenu.Content ref={contentRef}>
         <ContextMenu.Item ref={itemRef}>Copy link</ContextMenu.Item>
         <ContextMenu.Separator ref={separatorRef} />
@@ -1811,7 +1817,7 @@ class UsageErrorBoundary extends Component<{ children: ReactNode }, { message: s
 
 export const UsageErrors: Story = {
   render: () => (
-    <div style={rowStyle}>
+    <Row>
       <UsageErrorBoundary>
         <ContextMenu.Target aria-label={TARGET}>report.pdf</ContextMenu.Target>
       </UsageErrorBoundary>
@@ -1825,7 +1831,7 @@ export const UsageErrors: Story = {
           <ContextMenu.CheckboxItem>Pinned</ContextMenu.CheckboxItem>
         </ContextMenu>
       </UsageErrorBoundary>
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     const messages = Array.from(canvasElement.querySelectorAll('[data-usage-error]'), (node) => node.textContent);
@@ -1905,9 +1911,9 @@ export const TinyViewport: Story = {
   globals: { viewport: { value: 'tiny', isRotated: false } },
   render: ({ onOpenChild: _onOpenChild, onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
-      <ContextMenu.Target aria-label={TARGET} style={smallTargetStyle}>
+      <SmallTargetBox aria-label={TARGET}>
         report.pdf
-      </ContextMenu.Target>
+      </SmallTargetBox>
       <ContextMenu.Content>
         <ContextMenu.Item onSelect={onCopy}>
           Copiar el enlace público de este informe trimestral al portapapeles

@@ -5,12 +5,16 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { HoldToConfirm, type HoldToConfirmProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const NarrowFrame = styled.div({ maxInlineSize: '18rem' });
 
 const TEST_DURATION = 240;
 const settle = (ms = TEST_DURATION + 80) => new Promise((resolve) => setTimeout(resolve, ms));
 const describeHold = (duration: string) => `Hold Space, Enter, or the primary pointer for ${duration}.`;
-const fixtureStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[4], alignItems: 'center' });
-const fixtureButton = css({ minBlockSize: vars.space[8], paddingInline: vars.space[3] });
+const Fixture = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[4], alignItems: 'center' });
+const FixtureButton = styled.button({ minBlockSize: vars.space[8], paddingInline: vars.space[3] });
 const usage = `<HoldToConfirm label="Hold to revoke" confirmedLabel="Revoked"
   confirmationAnnouncement="Key revoked" getHoldDescription={describeHold}
   tone="danger" onConfirm={revokeKey} />`;
@@ -130,7 +134,7 @@ export const CancelEarly: Story = {
 function ControlledFixture(args: HoldToConfirmProps) {
   const [value, setValue] = useState(false);
   return (
-    <div css={fixtureStyle}>
+    <Fixture>
       <HoldToConfirm
         {...args}
         value={value}
@@ -139,10 +143,10 @@ function ControlledFixture(args: HoldToConfirmProps) {
           setValue(next);
         }}
       />
-      <button type="button" css={fixtureButton} onClick={() => setValue(false)}>
+      <FixtureButton type="button" onClick={() => setValue(false)}>
         Reset
-      </button>
-    </div>
+      </FixtureButton>
+    </Fixture>
   );
 }
 export const ControlledAccept: Story = {
@@ -200,12 +204,12 @@ export const ControlledReject: Story = {
 export const Keyboard: Story = {
   args: { value: false, duration: TEST_DURATION, ref: fn() },
   render: (args) => (
-    <div css={fixtureStyle}>
+    <Fixture>
       <HoldToConfirm {...args} />
-      <button css={fixtureButton} type="button">
+      <FixtureButton type="button">
         Next
-      </button>
-    </div>
+      </FixtureButton>
+    </Fixture>
   ),
   play: async ({ canvas, userEvent, args }) => {
     const button = canvas.getByRole('button', { name: 'Hold to revoke' });
@@ -279,7 +283,7 @@ function ChangeFixture(args: HoldToConfirmProps) {
   const [duration, setDuration] = useState(TEST_DURATION);
   const [disabled, setDisabled] = useState(false);
   return (
-    <div css={fixtureStyle}>
+    <Fixture>
       <HoldToConfirm
         {...args}
         duration={duration}
@@ -290,7 +294,7 @@ function ChangeFixture(args: HoldToConfirmProps) {
             setTimeout(() => (args.disabled ? setDisabled(true) : setDuration(TEST_DURATION * 2)), 30);
         }}
       />
-    </div>
+    </Fixture>
   );
 }
 export const DurationChange: Story = {
@@ -325,7 +329,7 @@ export const SubmillisecondDuration: Story = {
 };
 export const FalsyLabels: Story = {
   render: (args) => (
-    <div css={fixtureStyle}>
+    <Fixture>
       {[false, null, 0, ''].map((node, index) => (
         <HoldToConfirm
           {...args}
@@ -337,7 +341,7 @@ export const FalsyLabels: Story = {
           aria-label={node === 0 ? undefined : `Action ${index}`}
         />
       ))}
-    </div>
+    </Fixture>
   ),
   play: async ({ canvas }) => {
     const buttons = canvas.getAllByRole('button');
@@ -375,11 +379,11 @@ export const LightTheme: Story = {
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   render: (args) => (
-    <div css={fixtureStyle}>
+    <Fixture>
       {(['accent', 'danger', 'neutral'] as const).map((tone) => (
         <HoldToConfirm {...args} key={tone} tone={tone} />
       ))}
-    </div>
+    </Fixture>
   ),
 };
 export const RTL: Story = {
@@ -496,7 +500,7 @@ export const HiddenDocument: Story = {
 function UnmountFixture(args: HoldToConfirmProps) {
   const [mounted, setMounted] = useState(true);
   return (
-    <div css={fixtureStyle}>
+    <Fixture>
       {mounted && (
         <HoldToConfirm
           {...args}
@@ -506,10 +510,10 @@ function UnmountFixture(args: HoldToConfirmProps) {
           }}
         />
       )}
-      <button type="button" css={fixtureButton}>
+      <FixtureButton type="button">
         Next
-      </button>
-    </div>
+      </FixtureButton>
+    </Fixture>
   );
 }
 export const UnmountDuringHold: Story = {
@@ -567,6 +571,7 @@ export const PreventedStart: Story = {
     await expect(args.onHoldChange).not.toHaveBeenCalled();
   },
 };
+// The slot API takes css values, so this story keeps the documented spelling.
 const faceOverride = css({ columnGap: vars.space[5] });
 const labelOverride = css({ fontWeight: vars.fontWeight.semibold });
 function SlotStatus(props: ComponentPropsWithRef<'span'>) {
@@ -615,9 +620,9 @@ export const LongLabel: Story = {
     size: 'sm',
   },
   render: (args) => (
-    <div style={{ maxInlineSize: '18rem' }}>
+    <NarrowFrame>
       <HoldToConfirm {...args} />
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvas }) => {
     const button = canvas.getByRole('button');

@@ -2,23 +2,26 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { UsageMeter, type UsageMeterProps, type UsageMeterSelection } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const NarrowFrame = styled.div({ inlineSize: 320, maxInlineSize: '100%' });
 
 const usage = [
   { id: 'files', label: 'Files', value: 24 },
   { id: 'photos', label: 'Photos', value: 16 },
   { id: 'backups', label: 'Backups', value: 8 },
 ];
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: `min(24rem, calc(100vw - ${vars.space[8]}))`,
   maxInlineSize: '100%',
   display: 'grid',
   gap: vars.space[4],
 });
-const fixtureStyle = css({
+const FixtureButton = styled.button({
   minBlockSize: vars.space[8],
   padding: vars.space[2],
   color: vars.color.text,
@@ -38,9 +41,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -252,9 +255,9 @@ function AnnouncementFixture(args: UsageMeterProps) {
         'Regrow overage': 90,
         'Reset usage': 48,
       }).map(([label, value]) => (
-        <button key={label} css={fixtureStyle} onClick={() => setTotal(value)}>
+        <FixtureButton key={label} onClick={() => setTotal(value)}>
           {label}
-        </button>
+        </FixtureButton>
       ))}
       <UsageMeter {...args} segments={[{ id: 'files', label: 'Files', value: total }]} />
     </>
@@ -283,7 +286,7 @@ export const Preview: Story = {
   render: (args) => (
     <>
       <UsageMeter {...args} />
-      <button css={fixtureStyle}>Outside</button>
+      <FixtureButton>Outside</FixtureButton>
     </>
   ),
   play: async ({ canvasElement, userEvent, args }) => {
@@ -321,9 +324,9 @@ function SeedFixture(args: UsageMeterProps) {
   const [seed, setSeed] = useState(args.defaultValue);
   return (
     <>
-      <button css={fixtureStyle} onClick={() => setSeed({ kind: 'segment', id: 'photos' })}>
+      <FixtureButton onClick={() => setSeed({ kind: 'segment', id: 'photos' })}>
         Change default
-      </button>
+      </FixtureButton>
       <UsageMeter {...args} defaultValue={seed} />
     </>
   );
@@ -341,9 +344,9 @@ export const Sizes: Story = {
 export const Keyboard: Story = {
   render: (args) => (
     <>
-      <button css={fixtureStyle}>Before</button>
+      <FixtureButton>Before</FixtureButton>
       <UsageMeter {...args} />
-      <button css={fixtureStyle}>After</button>
+      <FixtureButton>After</FixtureButton>
     </>
   ),
   play: async ({ canvasElement, userEvent, args }) => {
@@ -459,9 +462,9 @@ function QuotaFixture(args: UsageMeterProps) {
   const [total, setTotal] = useState(48);
   return (
     <>
-      <button css={fixtureStyle} onClick={() => setTotal(total + 42)}>
+      <FixtureButton onClick={() => setTotal(total + 42)}>
         Use more
-      </button>
+      </FixtureButton>
       <UsageMeter {...args} segments={[{ id: 'free', label: 'Files', value: total }]} />
     </>
   );
@@ -605,9 +608,9 @@ export const Narrow320: Story = {
   ...LongLabels,
   decorators: [
     (Story) => (
-      <div style={{ inlineSize: 320, maxInlineSize: '100%' }}>
+      <NarrowFrame>
         <Story />
-      </div>
+      </NarrowFrame>
     ),
   ],
 };
@@ -686,6 +689,7 @@ export const FalsyLabel: Story = {
 function ReplacementMeterSpan(props: import('react').ComponentPropsWithRef<'span'>) {
   return <span {...props} data-replacement="meter-span" />;
 }
+// This story tests the documented css/slot API and native style merging.
 export const SlotStyles: Story = {
   args: {
     slots: { segment: ReplacementMeterSpan, status: ReplacementMeterSpan },

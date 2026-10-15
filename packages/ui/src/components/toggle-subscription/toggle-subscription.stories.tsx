@@ -5,6 +5,16 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
 import { ToggleSubscription, type ToggleSubscriptionCompoundProps as ToggleSubscriptionProps, type ToggleSubscriptionEasyProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const LightThemeFrame = styled.div({ backgroundColor: vars.color.bg, padding: vars.space[4] });
+
+const ExampleGrid = styled.div({ display: 'grid', gap: vars.space[4] });
+
+const NarrowFrame = styled.div({ width: 180 });
+
+const FixedSubscription = styled(ToggleSubscription)({ width: 280 });
 
 const saving = `Save ${new Intl.NumberFormat('en', { style: 'percent' }).format(0.2)}`;
 const usage = `<ToggleSubscription value={period} onValueChange={setPeriod} locale="en-US">
@@ -15,7 +25,7 @@ const usage = `<ToggleSubscription value={period} onValueChange={setPeriod} loca
   </ToggleSubscription.List>
   <ToggleSubscription.Price amount={price.amount} currency="USD" period={price.periodText} />
 </ToggleSubscription>`;
-const fixtureButton = { minHeight: 32, minWidth: 32 };
+const FixtureButton = styled.button({ minHeight: vars.space[8], minWidth: vars.space[8] });
 function Example({
   third = false,
   badge = saving,
@@ -183,6 +193,7 @@ export const EasyRTL: EasyStory = {
 function EasyRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="toggle-subscription" />;
 }
+// This story tests the documented css/slot API and native style merging.
 export const EasyCustomization: EasyStory = {
   ...Easy,
   parameters: { docs: { source: { code: `<ToggleSubscription label="Billing period" options={periods} prices={prices} defaultValue="monthly" locale="en-US"
@@ -273,18 +284,18 @@ export const Dark: Story = {};
 export const LightTheme: Story = { decorators: [withLightTheme] };
 export const ScopedTheme: Story = {
   render: (args) => (
-    <ThemeRoot theme="light" style={{ backgroundColor: vars.color.bg, padding: vars.space[4] }}>
+    <ThemeRoot theme="light"><LightThemeFrame>
       <Example {...args} />
-    </ThemeRoot>
+    </LightThemeFrame></ThemeRoot>
   ),
 };
 export const Sizes: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <ExampleGrid>
       {(['md', 'lg'] as const).map((size) => (
         <Example key={size} {...args} size={size} />
       ))}
-    </div>
+    </ExampleGrid>
   ),
   play: async ({ canvas }) => {
     for (const [index, group] of canvas.getAllByRole('radiogroup').entries())
@@ -295,11 +306,11 @@ export const Sizes: Story = {
 };
 export const Tones: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <ExampleGrid>
       {(['neutral', 'accent', 'success'] as const).map((tone) => (
         <Example key={tone} {...args} tone={tone} />
       ))}
-    </div>
+    </ExampleGrid>
   ),
   play: async ({ canvas }) => {
     for (const group of canvas.getAllByRole('radiogroup')) {
@@ -344,7 +355,7 @@ export const BadgeActiveSwap: Story = {
 export const Keyboard: Story = {
   render: (args) => (
     <>
-      <button style={fixtureButton}>Before</button>
+      <FixtureButton>Before</FixtureButton>
       <ToggleSubscription {...args}>
         <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
         <ToggleSubscription.List>
@@ -357,7 +368,7 @@ export const Keyboard: Story = {
         </ToggleSubscription.List>
         <ToggleSubscription.Price amount={0} currency="USD" />
       </ToggleSubscription>
-      <button style={fixtureButton}>After</button>
+      <FixtureButton>After</FixtureButton>
     </>
   ),
   play: async ({ canvas, userEvent, args }) => {
@@ -453,9 +464,9 @@ function PricesExample({ reject = false, ...args }: ToggleSubscriptionProps & { 
           period={annual ? '/ year' : '/ month'}
         />
       </ToggleSubscription>
-      <button style={fixtureButton} onClick={() => setPeriod('annual')}>
+      <FixtureButton onClick={() => setPeriod('annual')}>
         Set annual externally
-      </button>
+      </FixtureButton>
     </>
   );
 }
@@ -608,7 +619,7 @@ export const IntlCurrencies: Story = {
 };
 export const NarrowPrices: Story = {
   render: (args) => (
-    <div style={{ width: 180 }}>
+    <NarrowFrame>
       <ToggleSubscription {...args}>
         <ToggleSubscription.Price
           amount={123456789.12}
@@ -617,7 +628,7 @@ export const NarrowPrices: Story = {
           period="por cada período de facturación anual"
         />
       </ToggleSubscription>
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvasElement }) => {
     const price = canvasElement.querySelector<HTMLElement>('[data-ui="toggle-subscription-price"]')!;
@@ -627,7 +638,7 @@ export const NarrowPrices: Story = {
 };
 export const LongTranslatedLabels: Story = {
   render: (args) => (
-    <ToggleSubscription {...args} style={{ width: 280 }}>
+    <FixedSubscription {...args}>
       <ToggleSubscription.Label>Período de facturación</ToggleSubscription.Label>
       <ToggleSubscription.List>
         <ToggleSubscription.Item value="monthly">Facturación mensual flexible</ToggleSubscription.Item>
@@ -635,7 +646,7 @@ export const LongTranslatedLabels: Story = {
           Facturación anual anticipada
         </ToggleSubscription.Item>
       </ToggleSubscription.List>
-    </ToggleSubscription>
+    </FixedSubscription>
   ),
   play: async ({ canvas, userEvent }) => {
     await userEvent.tab();
@@ -780,6 +791,7 @@ export const ConsumerVeto: Story = {
     await expect(canvas.getByRole('radio', { name: 'Annual' })).toHaveAttribute('type', 'button');
   },
 };
+// This story tests the documented css/slot API and native style merging.
 export const SlotsAndStyling: Story = {
   render: (args) => (
     <ToggleSubscription {...args} sx={{ gap: vars.space[4] }}>

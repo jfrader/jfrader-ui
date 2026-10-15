@@ -1,4 +1,4 @@
-import { Component, useState, type CSSProperties, type ComponentPropsWithRef, type MouseEvent, type ReactNode } from 'react';
+import { Component, useState, type ComponentPropsWithRef, type MouseEvent, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -14,6 +14,12 @@ import {
   type SplitButtonEasyProps,
   type SplitButtonItemRecord,
 } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const NarrowFrame = styled.div({ inlineSize: '14rem' });
+
+const LightThemeFrame = styled.div({ padding: vars.space[4], backgroundColor: vars.color.bg });
 
 const GROUP = 'Export options';
 const ACTION = 'Export PDF';
@@ -29,20 +35,21 @@ const SETTLE_MS = 240;
 // Longer than the menu's 500ms typeahead buffer.
 const TYPEAHEAD_RESET_WAIT_MS = 600;
 
-const rowStyle = {
+const Row = styled.div({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
   gap: vars.space[3],
-} satisfies CSSProperties;
+});
 
-const stackStyle = {
+const StackFrame = styled.div({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'flex-start',
   gap: vars.space[3],
-} satisfies CSSProperties;
+});
 
+// These values exercise the documented css/sx and slot styling APIs.
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ marginInlineStart: vars.space[2] });
 
@@ -84,10 +91,10 @@ ExportSplitButton.displayName = 'ExportSplitButton';
 
 function ExportRow(args: StoryArgs) {
   return (
-    <div style={rowStyle}>
+    <Row>
       <ExportSplitButton {...args} />
       <Button>After</Button>
-    </div>
+    </Row>
   );
 }
 ExportRow.displayName = 'ExportRow';
@@ -237,10 +244,10 @@ export const Default: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
     },
   },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <SplitButton {...args} />
       <Button>After</Button>
-    </div>
+    </Row>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
     const group = within(canvasElement).getByRole('group', { name: GROUP });
@@ -390,6 +397,7 @@ export const GeneratedPartProps: StoryObj<Omit<SplitButtonEasyProps, 'component'
   },
 };
 
+// This story tests the documented css/slot API and native style merging.
 export const ReplacedParts: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
   name: 'Replaced parts',
   args: {
@@ -469,20 +477,19 @@ function easyModeTypeContracts() {
 }
 void easyModeTypeContracts;
 
-
 // Room beside the Trigger and off the viewport edge, so the end-aligned menu is neither flipped nor shifted.
-const roomyStyle = {
+const Roomy = styled.div({
   display: 'flex',
   justifyContent: 'flex-end',
   inlineSize: '24rem',
   paddingInline: vars.space[4],
-} satisfies CSSProperties;
+});
 
 export const Placement: Story = {
   render: (args) => (
-    <div style={roomyStyle}>
+    <Roomy>
       <ExportSplitButton {...args} />
-    </div>
+    </Roomy>
   ),
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
@@ -501,11 +508,11 @@ export const Placement: Story = {
 
 export const Variants: Story = {
   render: (args) => (
-    <div style={stackStyle}>
+    <StackFrame>
       {VARIANTS.map((variant) => (
         <ExportSplitButton key={variant} {...args} aria-label={`${GROUP} ${variant}`} variant={variant} />
       ))}
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvasElement }) => {
     for (const variant of VARIANTS) {
@@ -525,11 +532,11 @@ export const Variants: Story = {
 
 export const Tones: Story = {
   render: (args) => (
-    <div style={stackStyle}>
+    <StackFrame>
       {TONES.map((tone) => (
         <ExportSplitButton key={tone} {...args} aria-label={`${GROUP} ${tone}`} tone={tone} />
       ))}
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvasElement }) => {
     const backgrounds = TONES.map((tone) => {
@@ -542,11 +549,11 @@ export const Tones: Story = {
 
 export const Sizes: Story = {
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       {SIZES.map((size) => (
         <ExportSplitButton key={size} {...args} aria-label={`${GROUP} ${size}`} size={size} />
       ))}
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     for (const size of SIZES) {
@@ -848,7 +855,7 @@ export const Disabled: Story = {
 
 export const DisabledParts: Story = {
   render: ({ onAction, onCsv, onJson: _onJson, onDelete: _onDelete, ...args }) => (
-    <div style={stackStyle}>
+    <StackFrame>
       <SplitButton {...args} aria-label="Action disabled">
         <SplitButton.Action disabled onClick={onAction}>
           {ACTION}
@@ -865,7 +872,7 @@ export const DisabledParts: Story = {
           <SplitButton.Item onSelect={onCsv}>CSV</SplitButton.Item>
         </SplitButton.Content>
       </SplitButton>
-    </div>
+    </StackFrame>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
     const first = within(within(canvasElement).getByRole('group', { name: 'Action disabled' }));
@@ -905,7 +912,7 @@ export const DisabledItems: Story = {
 function DisableWhileOpenHarness({ controlled, ...args }: StoryArgs & { controlled: boolean }) {
   const [disabled, setDisabled] = useState(false);
   return (
-    <div style={rowStyle}>
+    <Row>
       <ExportSplitButton
         {...args}
         aria-label={controlled ? 'Controlled' : 'Uncontrolled'}
@@ -915,7 +922,7 @@ function DisableWhileOpenHarness({ controlled, ...args }: StoryArgs & { controll
       <Button data-toggle-disabled="" onClick={() => setDisabled((value) => !value)}>
         {controlled ? 'Toggle controlled' : 'Toggle uncontrolled'}
       </Button>
-    </div>
+    </Row>
   );
 }
 DisableWhileOpenHarness.displayName = 'DisableWhileOpenHarness';
@@ -986,7 +993,7 @@ export const EmptyMenu: Story = {
 
 export const LongLabels: Story = {
   render: ({ onAction, onCsv, onJson: _onJson, onDelete: _onDelete, ...args }) => (
-    <div style={{ inlineSize: '14rem' }} data-testid="narrow">
+    <NarrowFrame data-testid="narrow">
       <SplitButton {...args}>
         <SplitButton.Action onClick={onAction}>Export the quarterly revenue report as PDF</SplitButton.Action>
         <SplitButton.Trigger aria-label={TRIGGER} />
@@ -994,7 +1001,7 @@ export const LongLabels: Story = {
           <SplitButton.Item onSelect={onCsv}>Export the quarterly revenue report as CSV</SplitButton.Item>
         </SplitButton.Content>
       </SplitButton>
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvasElement }) => {
     const narrow = within(canvasElement).getByTestId('narrow').getBoundingClientRect();
@@ -1012,7 +1019,7 @@ export const LongLabels: Story = {
 export const RTL: Story = {
   args: { 'aria-label': 'אפשרויות ייצוא' },
   render: ({ onAction, onCsv, onJson, onDelete: _onDelete, ...args }) => (
-    <div dir="rtl" lang="he" style={roomyStyle}>
+    <Roomy dir="rtl" lang="he">
       <SplitButton {...args}>
         <SplitButton.Action onClick={onAction}>ייצוא PDF</SplitButton.Action>
         <SplitButton.Trigger aria-label="פורמטים נוספים" />
@@ -1021,7 +1028,7 @@ export const RTL: Story = {
           <SplitButton.Item onSelect={onJson}>JSON</SplitButton.Item>
         </SplitButton.Content>
       </SplitButton>
-    </div>
+    </Roomy>
   ),
   play: async ({ canvasElement, userEvent }) => {
     const action = getAction(canvasElement, 'ייצוא PDF');
@@ -1054,10 +1061,10 @@ export const RTL: Story = {
 function ScopedHost({ children }: { children: ReactNode }) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
-    <ThemeRoot theme="light" portalContainer={host} style={{ padding: vars.space[4], backgroundColor: vars.color.bg }}>
+    <ThemeRoot theme="light" portalContainer={host}><LightThemeFrame>
       {children}
       <div ref={setHost} data-overlay-host="" />
-    </ThemeRoot>
+    </LightThemeFrame></ThemeRoot>
   );
 }
 ScopedHost.displayName = 'ScopedHost';
@@ -1080,7 +1087,7 @@ export const ThemeRootPortal: Story = {
 export const AriaMerge: Story = {
   args: { 'aria-label': undefined, defaultOpen: true },
   render: ({ onAction, onCsv, onJson: _onJson, onDelete: _onDelete, ...args }) => (
-    <div style={stackStyle}>
+    <StackFrame>
       <span id="export-label">Export</span>
       <span id="export-help">Formats follow workspace settings</span>
       <span id="formats-label">More formats</span>
@@ -1100,7 +1107,7 @@ export const AriaMerge: Story = {
           <SplitButton.Item>Email</SplitButton.Item>
         </SplitButton.Content>
       </SplitButton>
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -1322,7 +1329,7 @@ export const ReservedLabels: Story = {
 
 export const TriggerChildren: Story = {
   render: ({ onAction: _onAction, onCsv: _onCsv, onJson: _onJson, onDelete: _onDelete, ...args }) => (
-    <div style={stackStyle}>
+    <StackFrame>
       {(
         [
           ['default', undefined, 'Trigger default'],
@@ -1339,7 +1346,7 @@ export const TriggerChildren: Story = {
           <SplitButton.Content />
         </SplitButton>
       ))}
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvasElement }) => {
     const trigger = (name: string) => getTrigger(canvasElement, name === 'zero' ? '0 more formats' : `Trigger ${name}`);
@@ -1365,7 +1372,7 @@ class UsageErrorBoundary extends Component<{ children: ReactNode }, { message: s
 
 export const UsageErrors: Story = {
   render: () => (
-    <div style={stackStyle}>
+    <StackFrame>
       <UsageErrorBoundary>
         <SplitButton.Trigger aria-label={TRIGGER} />
       </UsageErrorBoundary>
@@ -1376,7 +1383,7 @@ export const UsageErrors: Story = {
           <SplitButton.Item>CSV</SplitButton.Item>
         </SplitButton>
       </UsageErrorBoundary>
-    </div>
+    </StackFrame>
   ),
   play: async ({ canvasElement }) => {
     const messages = Array.from(canvasElement.querySelectorAll('[data-usage-error]'), (node) => node.textContent);
@@ -1439,6 +1446,7 @@ export const ForcedColors: Story = {
   },
 };
 
+// This story tests the documented css/slot API and native style merging.
 export const SxPrecedence: Story = {
   args: { defaultOpen: true, sx: consumerSx, className: 'consumer-root' },
   render: ({ onAction, onCsv, onJson: _onJson, onDelete: _onDelete, ...args }) => (

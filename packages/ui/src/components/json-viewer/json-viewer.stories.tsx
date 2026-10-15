@@ -6,6 +6,10 @@ import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { JsonViewer, type JsonValue, type JsonViewerProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const NarrowFrame = styled.div({ maxInlineSize: '28rem' });
 
 const payload: JsonValue = {
   active: false,
@@ -315,9 +319,9 @@ export const LongKeys: Story = {
     defaultExpandDepth: 3,
   },
   render: (args) => (
-    <div style={{ maxInlineSize: '28rem' }}>
+    <NarrowFrame>
       <JsonViewer {...args} />
-    </div>
+    </NarrowFrame>
   ),
 };
 export const EmptyContainers: Story = { args: { data: { object: {}, array: [] } } };
@@ -673,6 +677,7 @@ export const InsideForm: Story = {
     await expect(submitSpy).not.toHaveBeenCalled();
   },
 };
+// These css values test documented css/sx precedence and slot styling.
 const slotRow = css({ minBlockSize: '48px' });
 const slotValue = css({ fontWeight: 600 });
 const consumer = css({ borderRadius: '20px' });

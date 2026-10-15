@@ -1,3 +1,5 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock, type MockInstance } from 'storybook/test';
@@ -42,12 +44,21 @@ const MESSAGES: readonly ChatMessage[] = [
   { id: 'second', authorId: 'grace', text: 'I included the mobile layout.', createdAt: NOW - DAY + MINUTE, reactions: [{ emoji: '👍', count: 2, mine: true }] },
   { id: 'own', authorId: 'me', text: 'Thanks! I’ll take a look.', createdAt: NOW - MINUTE, status: 'delivered' },
 ];
-const frameStyle = css({ inlineSize: `min(42rem, calc(100vw - 2 * ${vars.space[4]}))`, maxInlineSize: '100%', blockSize: '34rem' });
-const stackStyle = css({ display: 'grid', gap: vars.space[6] });
-const fixtureStyle = css({ minBlockSize: vars.space[8], minInlineSize: vars.space[8], padding: vars.space[2], backgroundColor: vars.color.surface, color: vars.color.text, border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.sm });
-const usage = `<div style={{ height: '34rem' }}>
+
+const usage = `const Frame = styled.div({ blockSize: '34rem' });
+
+<Frame>
   <ChatThread participants={people} currentUserId="me" defaultValue={messages} now={now} onSend={send} />
-</div>`;
+</Frame>`;
+
+const Frame = styled.div({ inlineSize: `min(42rem, calc(100vw - 2 * ${vars.space[4]}))`, maxInlineSize: '100%', blockSize: '34rem' });
+
+const FixtureButton = styled.button({ minBlockSize: vars.space[8], minInlineSize: vars.space[8], padding: vars.space[2], backgroundColor: vars.color.surface, color: vars.color.text, border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.sm });
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[6] });
+
+const NarrowFrame = styled.div({ inlineSize: '20rem', maxInlineSize: '100%', blockSize: '32rem' });
+
 const meta = {
   title: 'Data display/ChatThread',
   component: ChatThread,
@@ -64,7 +75,7 @@ const meta = {
     onValueChange: fn(),
     onReact: fn(),
   },
-  decorators: [(Story) => <div css={frameStyle}><Story /></div>],
+  decorators: [(Story) => <Frame><Story /></Frame>],
   parameters: {
     docs: {
       source: { code: usage },
@@ -106,7 +117,7 @@ function Deferred(args: ChatThreadProps) {
   const [value, setValue] = useState(args.value ?? MESSAGES);
   const [proposal, setProposal] = useState<ChatMessage[] | null>(null);
   return <>
-    <button css={fixtureStyle} onClick={() => proposal && setValue(proposal)}>Accept message</button>
+    <FixtureButton onClick={() => proposal && setValue(proposal)}>Accept message</FixtureButton>
     <ChatThread {...args} value={value} onValueChange={(next, event) => { args.onValueChange?.(next, event); setProposal(next); }} />
   </>;
 }
@@ -138,7 +149,7 @@ export const Default: Story = {
   },
 };
 export const Sizes: Story = {
-  render: (args) => <div css={stackStyle}>{(['sm', 'md'] as const).map((size) => <div css={frameStyle} key={size}><ChatThread {...args} size={size} labels={{ conversation: `${size} conversation` }} /></div>)}</div>,
+  render: (args) => <Stack>{(['sm', 'md'] as const).map((size) => <Frame key={size}><ChatThread {...args} size={size} labels={{ conversation: `${size} conversation` }} /></Frame>)}</Stack>,
 };
 export const GroupedMessages: Story = {
   play: async ({ canvasElement }) => {
@@ -438,7 +449,7 @@ export const InvalidDate: Story = {
 };
 export const LongContent: Story = {
   args: { defaultValue: [{ ...MESSAGES[0]!, text: 'LongUnbrokenWord'.repeat(30), reactions: [{ emoji: '👀', count: 12345 }] }] },
-  decorators: [(Story) => <div css={css({ inlineSize: '20rem', maxInlineSize: '100%', blockSize: '32rem' })}><Story /></div>],
+  decorators: [(Story) => <NarrowFrame><Story /></NarrowFrame>],
   play: async ({ canvasElement, canvas }) => {
     const scroller = part(canvasElement, 'scroller');
     await expect(scroller.scrollWidth).toBeLessThanOrEqual(scroller.clientWidth + 2);
@@ -486,7 +497,7 @@ export const UrlOwnership: Story = {
   render: function Render(args) {
     const [value, setValue] = useState<readonly ChatMessage[]>([{ ...MESSAGES[0]!, attachments: [{ id: 'caller', name: 'Caller', kind: 'file', url: 'blob:caller-owned' }] }]);
     const [shown, setShown] = useState(true);
-    return <><button css={fixtureStyle} onClick={() => setValue([])}>Remove messages</button><button css={fixtureStyle} onClick={() => setShown(false)}>Unmount</button>{shown ? <ChatThread {...args} value={value} onValueChange={(next, event) => { args.onValueChange?.(next, event); setValue(next); }} /> : null}</>;
+    return <><FixtureButton onClick={() => setValue([])}>Remove messages</FixtureButton><FixtureButton onClick={() => setShown(false)}>Unmount</FixtureButton>{shown ? <ChatThread {...args} value={value} onValueChange={(next, event) => { args.onValueChange?.(next, event); setValue(next); }} /> : null}</>;
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const image = new File(['image'], 'portrait.png', { type: 'image/png' });
@@ -532,7 +543,7 @@ const HISTORY: ChatMessage[] = Array.from({ length: 20 }, (_, index) => ({ id: `
 export const ScrollPinning: Story = {
   render: function Render(args) {
     const [value, setValue] = useState<readonly ChatMessage[]>(HISTORY);
-    return <><button css={fixtureStyle} onClick={() => setValue((current) => [...current, { id: `incoming-${current.length}`, authorId: 'grace', text: 'Incoming', createdAt: NOW }])}>Incoming</button><button css={fixtureStyle} onClick={() => setValue((current) => [{ id: 'older', authorId: 'alan', text: 'Older history', createdAt: NOW - DAY }, ...current])}>Prepend</button><ChatThread {...args} value={value} /></>;
+    return <><FixtureButton onClick={() => setValue((current) => [...current, { id: `incoming-${current.length}`, authorId: 'grace', text: 'Incoming', createdAt: NOW }])}>Incoming</FixtureButton><FixtureButton onClick={() => setValue((current) => [{ id: 'older', authorId: 'alan', text: 'Older history', createdAt: NOW - DAY }, ...current])}>Prepend</FixtureButton><ChatThread {...args} value={value} /></>;
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const scroller = part(canvasElement, 'scroller');
@@ -572,7 +583,7 @@ export const AriaMerge: Story = {
   },
 };
 export const FalsyContent: Story = {
-  render: (args) => <div css={stackStyle}>{[false, null, 0, ''].map((value, index) => <div css={frameStyle} key={index}><ChatThread {...args} labels={{ conversation: `Conversation ${index + 1}` }} defaultValue={[{ id: 'zero', authorId: 'me', text: '0', createdAt: NOW }]} composerProps={{ slotProps: { textarea: { description: value, error: value } } }} /></div>)}</div>,
+  render: (args) => <Stack>{[false, null, 0, ''].map((value, index) => <Frame key={index}><ChatThread {...args} labels={{ conversation: `Conversation ${index + 1}` }} defaultValue={[{ id: 'zero', authorId: 'me', text: '0', createdAt: NOW }]} composerProps={{ slotProps: { textarea: { description: value, error: value } } }} /></Frame>)}</Stack>,
   play: async ({ canvas }) => {
     const fields = canvas.getAllByRole('textbox');
     for (const index of [0, 1]) await expect(fields[index]).not.toHaveAttribute('aria-describedby');
@@ -590,6 +601,7 @@ function SlotList(props: ComponentPropsWithRef<'ol'>) {
 }
 export const RefAndStyling: Story = {
   args: { slots: { list: SlotList } },
+  // This story exercises the documented css, sx and slot APIs.
   render: (args) => <ChatThread {...args} ref={rootSpy} css={css({ outlineStyle: 'dotted' })} sx={{ outlineStyle: 'dashed' }} slotProps={{ list: { css: css({ gap: vars.space[8] }) }, bubble: { css: css({ textDecorationLine: 'underline' }) } }} composerProps={{ ref: composerSpy, sx: { outlineStyle: 'dashed' }, slotProps: { textarea: { ref: fieldSpy } } }} />,
   play: async ({ canvasElement, canvas }) => {
     const root = canvasElement.querySelector('[data-ui="chat-thread"]')!;

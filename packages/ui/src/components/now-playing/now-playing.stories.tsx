@@ -2,7 +2,8 @@ import { StrictMode, useLayoutEffect, useRef, useState, type ComponentPropsWithR
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, fireEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { NowPlaying, type NowPlayingProps, type NowPlayingTrack } from './index';
@@ -19,7 +20,7 @@ const tracks: readonly NowPlayingTrack[] = [
     artworkAlt: 'Concentric grooves on a record',
   },
 ];
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: '26rem',
   maxInlineSize: '100%',
   display: 'grid',
@@ -42,9 +43,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -456,13 +457,14 @@ export const Light: Story = {
   globals: { theme: 'light' },
   decorators: [withLightTheme],
 };
+const NarrowFrame = styled.div({ inlineSize: '15rem', maxInlineSize: '100%' });
 export const Narrow: Story = {
   args: { defaultOpen: true },
   decorators: [
     (Story) => (
-      <div style={{ inlineSize: '15rem', maxInlineSize: '100%' }}>
+      <NarrowFrame>
         <Story />
-      </div>
+      </NarrowFrame>
     ),
   ],
   play: async ({ canvas }) => {

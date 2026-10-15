@@ -15,6 +15,15 @@ import {
   type MultiSelectTriggerProps,
 } from './index';
 
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const ExampleFrame = styled.div({ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: vars.space[2], maxInlineSize: '100%' });
+const TriggerRow = styled.div({ display: 'flex', gap: vars.space[2], maxInlineSize: '100%' });
+const NarrowFrame = styled.div({ inlineSize: '220px' });
+// ThemeRoot takes the styling itself: `styled(ThemeRoot)` would collide with Emotion's own
+// `theme` prop on the wrapped component.
+const scopedThemeStyle = { backgroundColor: vars.color.bg, padding: vars.space[4] } as const;
 const LABEL = 'Labels';
 const OPTIONS: readonly MultiSelectOption[] = [
   { value: 'bug', label: 'Bug' },
@@ -70,23 +79,15 @@ type ExampleProps = Omit<
 };
 function Example({ empty, maxVisible, size, error, description, forced, children, ...props }: ExampleProps) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        gap: vars.space[2],
-        maxInlineSize: '100%',
-      }}
-    >
+    <ExampleFrame>
       <MultiSelect {...props}>
         <MultiSelect.Label>{LABEL}</MultiSelect.Label>
-        <div style={{ display: 'flex', gap: vars.space[2], maxInlineSize: '100%' }}>
+        <TriggerRow>
           <MultiSelect.Trigger size={size}>
             <MultiSelect.Value placeholder="Select labels" maxVisible={maxVisible} />
           </MultiSelect.Trigger>
           <MultiSelect.Clear />
-        </div>
+        </TriggerRow>
         <MultiSelect.Description>{description}</MultiSelect.Description>
         <MultiSelect.Error>{error}</MultiSelect.Error>
         <MultiSelect.Content>
@@ -107,7 +108,7 @@ function Example({ empty, maxVisible, size, error, description, forced, children
         </MultiSelect.Content>
       </MultiSelect>
       <Button>After</Button>
-    </div>
+    </ExampleFrame>
   );
 }
 const meta: Meta<MultiSelectCompoundProps> = {
@@ -180,18 +181,10 @@ export const Default: EasyStory = {
     defaultValue: ['bug'],
   },
   render: (args) => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        gap: vars.space[2],
-        maxInlineSize: '100%',
-      }}
-    >
+    <ExampleFrame>
       <MultiSelect {...args} />
       <Button>After</Button>
-    </div>
+    </ExampleFrame>
   ),
   parameters: {
     docs: {
@@ -475,13 +468,13 @@ export const UnknownValue: Story = {
 export const LongLabels: Story = {
   args: { defaultValue: ['long'], defaultOpen: true },
   render: (args) => (
-    <div style={{ inlineSize: '220px' }}>
+    <NarrowFrame>
       <Example {...args}>
         <MultiSelect.Item value="long">
           A lengthy label that should remain available in the spoken selection summary
         </MultiSelect.Item>
       </Example>
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvasElement }) => {
     await expect(triggerOf(canvasElement).getBoundingClientRect().width).toBeLessThanOrEqual(221);
@@ -818,7 +811,7 @@ export const LightTheme: Story = {
 export const ScopedThemePortal: Story = {
   ...PersistentOpenSelected,
   render: (args) => (
-    <ThemeRoot theme="light" style={{ backgroundColor: vars.color.bg, padding: vars.space[4] }}>
+    <ThemeRoot theme="light" sx={scopedThemeStyle}>
       <Example {...args} />
     </ThemeRoot>
   ),

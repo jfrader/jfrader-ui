@@ -1,8 +1,9 @@
-import type { CSSProperties, ComponentPropsWithRef } from 'react';
+import type { ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import {
   Navigation,
@@ -28,22 +29,22 @@ const ACTIVE_LABEL = 'Projects';
 const TRANSPARENT = 'rgba(0, 0, 0, 0)';
 const ITEM_MIN_BLOCK_SIZE_PX = 32;
 
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: '240px',
 });
 
-const surfaceStyle = {
+const Surface = styled.div({
   backgroundColor: vars.color.surface,
   padding: vars.space[4],
-} satisfies CSSProperties;
+});
 
 const disabledActivation = fn();
 
-const iconStyle = {
+const Icon = styled.svg({
   fill: 'none',
   stroke: 'currentColor',
   strokeWidth: 2,
-} satisfies CSSProperties;
+});
 
 const meta = {
   title: 'Navigation/Navigation',
@@ -60,9 +61,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
 } satisfies Meta<NavigationCompoundProps>;
@@ -102,9 +103,9 @@ SidebarExample.displayName = 'SidebarExample';
 
 function CircleIcon() {
   return (
-    <svg viewBox="0 0 16 16" style={iconStyle}>
+    <Icon viewBox="0 0 16 16">
       <circle cx="8" cy="8" r="6" />
-    </svg>
+    </Icon>
   );
 }
 CircleIcon.displayName = 'CircleIcon';
@@ -470,7 +471,7 @@ export const DisabledActivation: Story = {
 
 export const SurfaceBacked: Story = {
   render: (args) => (
-    <div style={surfaceStyle}>
+    <Surface>
       <Navigation {...args}>
         <Navigation.Group label="Workspace" collapsible defaultOpen>
           {WORKSPACE.map((item) => (
@@ -480,7 +481,7 @@ export const SurfaceBacked: Story = {
           ))}
         </Navigation.Group>
       </Navigation>
-    </div>
+    </Surface>
   ),
   play: async ({ canvasElement }) => {
     const nav = within(canvasElement).getByRole('navigation', { name: 'Main' });

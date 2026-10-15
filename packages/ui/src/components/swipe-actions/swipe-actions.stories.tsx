@@ -12,8 +12,21 @@ import {
   type SwipeActionsRecord,
   type SwipeActionsValue,
 } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const ListFrame = styled(SwipeActions)({ maxWidth: 480 });
+
+const ResponsiveList = styled(SwipeActions)({ width: 480, maxWidth: '100%' });
+
+const FixedList = styled(SwipeActions)({ width: 480 });
+
+const FixtureButton = styled.button({ minHeight: vars.space[8] });
+
+const CompactList = styled(SwipeActions)({ maxWidth: 320 });
 
 const select = fn();
+// These values exercise the documented css/sx and slot styling APIs.
 const easyRowStyle = css({ paddingBlock: vars.space[2] });
 const change = fn();
 const leading: readonly SwipeAction[] = [
@@ -83,7 +96,7 @@ const meta = {
     },
   },
   render: (args) => (
-    <SwipeActions {...args} style={{ maxWidth: 480 }}>
+    <ListFrame {...args}>
       <SwipeActions.Row
         id="invoice"
         label="Invoice"
@@ -93,7 +106,7 @@ const meta = {
       >
         Invoice from Morgan
       </SwipeActions.Row>
-    </SwipeActions>
+    </ListFrame>
   ),
 } satisfies Meta<SwipeActionsCompoundProps>;
 export default meta;
@@ -297,7 +310,7 @@ export const TwoActionsEachSide: Story = {
 export const AllTones: Story = {};
 export const SnapAndSingleOpen: Story = {
   render: (args) => (
-    <SwipeActions {...args} style={{ width: 480, maxWidth: '100%' }}>
+    <ResponsiveList {...args}>
       {['invoice', 'receipt'].map((id) => (
         <SwipeActions.Row
           key={id}
@@ -311,7 +324,7 @@ export const SnapAndSingleOpen: Story = {
           {id}
         </SwipeActions.Row>
       ))}
-    </SwipeActions>
+    </ResponsiveList>
   ),
   play: async ({ canvasElement, args, userEvent }) => {
     const rows = canvasElement.querySelectorAll<HTMLElement>('[data-ui="swipe-actions-row"]');
@@ -346,7 +359,7 @@ export const SnapAndSingleOpen: Story = {
 };
 export const FullSwipeOff: Story = {
   render: (args) => (
-    <SwipeActions {...args} style={{ width: 480 }}>
+    <FixedList {...args}>
       <SwipeActions.Row
         id="invoice"
         label="Invoice"
@@ -357,7 +370,7 @@ export const FullSwipeOff: Story = {
       >
         Invoice
       </SwipeActions.Row>
-    </SwipeActions>
+    </FixedList>
   ),
   play: async ({ canvasElement }) => {
     const row = rowOf(canvasElement);
@@ -623,9 +636,9 @@ export const Keyboard: Story = {
           Invoice
         </SwipeActions.Row>
       </SwipeActions>
-      <button style={{ minHeight: 32 }} type="button">
+      <FixtureButton type="button">
         After list
-      </button>
+      </FixtureButton>
     </>
   ),
   play: async ({ canvas, canvasElement, userEvent }) => {
@@ -725,9 +738,9 @@ export const Empty: Story = {
 };
 export const LongLabels: Story = {
   render: (args) => (
-    <SwipeActions
+    <CompactList
       {...args}
-      style={{ maxWidth: 320 }}
+
       defaultValue={{ id: 'invoice', side: 'leading' }}
     >
       <SwipeActions.Row
@@ -744,7 +757,7 @@ export const LongLabels: Story = {
       >
         A detailed invoice with a long localized subject
       </SwipeActions.Row>
-    </SwipeActions>
+    </CompactList>
   ),
   play: async ({ canvasElement }) => {
     const row = rowOf(canvasElement);
@@ -863,13 +876,13 @@ function RemovalExample(props: SwipeActionsCompoundProps) {
           </SwipeActions.Row>
         ))}
       </SwipeActions>
-      <button
+      <FixtureButton
         type="button"
-        style={{ minHeight: 32 }}
+
         onClick={() => setIds(['first', 'second', 'third'])}
       >
         Undo removal
-      </button>
+      </FixtureButton>
     </>
   );
 }
@@ -914,6 +927,7 @@ export const RemovalFallbacks: Story = {
     }
   },
 };
+// This story tests the documented css/slot API and native style merging.
 export const SlotStyles: Story = {
   render: (args) => (
     <SwipeActions {...args} sx={{ padding: vars.space[2] }}>
@@ -1011,23 +1025,23 @@ function ExternalStateExample(props: SwipeActionsCompoundProps) {
           Invoice
         </SwipeActions.Row>
       </SwipeActions>
-      <button type="button" style={{ minHeight: 32 }} onClick={() => setValue(null)}>
+      <FixtureButton type="button" onClick={() => setValue(null)}>
         Reset rail
-      </button>
-      <button
+      </FixtureButton>
+      <FixtureButton
         type="button"
-        style={{ minHeight: 32 }}
+
         onClick={() => setValue({ id: 'missing', side: 'leading' })}
       >
         Set missing row
-      </button>
-      <button
+      </FixtureButton>
+      <FixtureButton
         type="button"
-        style={{ minHeight: 32 }}
+
         onClick={() => setValue({ id: 'invoice', side: 'trailing' })}
       >
         Set trailing rail
-      </button>
+      </FixtureButton>
     </>
   );
 }

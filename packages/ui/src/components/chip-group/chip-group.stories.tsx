@@ -3,9 +3,29 @@ import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within, waitFor } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
+import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { ThemeRoot } from '../theme-root';
 import { ChipGroup, type ChipGroupProps, type ChipGroupMultipleProps } from './index';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
+const ConstrainedFrame = styled.div({ maxInlineSize: '22rem' });
+const FixtureButton = styled.button({
+  minBlockSize: vars.space[8],
+  minInlineSize: vars.space[8],
+});
+const ResizeContainer = styled.div({ inlineSize: '24rem' });
+
+// The slot API takes `css` values, so this story keeps the documented spelling.
+const slotChipGroupStyle = css({ paddingBlockStart: vars.space[1] });
+const slotFrameStyle = css({ paddingBlockEnd: vars.space[1] });
+const slotRowStyle = css({ gap: vars.space[3] });
+const slotChipStyle = css({ borderRadius: vars.radius.sm });
+const slotLabelStyle = css({ fontWeight: vars.fontWeight.semibold });
+const slotCheckStyle = css({ alignSelf: 'flex-start' });
+const slotOverflowStyle = css({ borderRadius: vars.radius.md });
 
 const OPTIONS = [
   { value: 'design', label: 'Design' },
@@ -107,10 +127,10 @@ export const Multiple: Story = {
 };
 export const Sizes: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: vars.space[4] }}>
+    <Stack>
       <ChipGroup {...args} size="sm" />
       <ChipGroup {...args} size="md" />
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const heights = [SIZE_PX.sm, SIZE_PX.md];
@@ -172,9 +192,9 @@ export const WrappedLongLabels: Story = {
     defaultValue: ['long'],
   },
   render: (args) => (
-    <div style={{ maxInlineSize: '22rem' }}>
+    <ConstrainedFrame>
       <ChipGroup {...args} />
-    </div>
+    </ConstrainedFrame>
   ),
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group');
@@ -328,10 +348,10 @@ function RefFixture(props: ChipGroupProps) {
   const [mounted, setMounted] = useState(true);
   return (
     <StrictMode>
-      {mounted && <ChipGroup {...props} css={{ paddingBlockStart: vars.space[1] }} />}
-      <button type="button" style={{ minHeight: 32, minWidth: 32 }} onClick={() => setMounted(!mounted)}>
+      {mounted && <ChipGroup {...props} css={slotChipGroupStyle} />}
+      <FixtureButton type="button" onClick={() => setMounted(!mounted)}>
         {mounted ? 'Hide filters' : 'Show filters'}
-      </button>
+      </FixtureButton>
     </StrictMode>
   );
 }
@@ -341,15 +361,15 @@ export const StylingAndRefs: Story = {
     ref: rootRefSpy,
     sx: { paddingBlockStart: vars.space[2] },
     slotProps: {
-      frame: { css: { paddingBlockEnd: vars.space[1] } },
-      row: { css: { gap: vars.space[3] } },
+      frame: { css: slotFrameStyle },
+      row: { css: slotRowStyle },
       chip: (option) => ({
         ref: option.value === 'design' ? chipRefSpy : undefined,
-        css: { borderRadius: vars.radius.sm },
+        css: slotChipStyle,
       }),
-      label: { css: { fontWeight: vars.fontWeight.semibold } },
-      check: { css: { alignSelf: 'flex-start' } },
-      overflow: { css: { borderRadius: vars.radius.md } },
+      label: { css: slotLabelStyle },
+      check: { css: slotCheckStyle },
+      overflow: { css: slotOverflowStyle },
     },
   },
   render: (args) => <RefFixture {...args} />,
@@ -387,9 +407,9 @@ function ExternalUpdatesFixture(props: ChipGroupMultipleProps) {
           if (event.key === 'Escape') setOptions(options.filter((option) => option.value !== 'code'));
         }}
       />
-      <button type="button" style={{ minHeight: 32, minWidth: 32 }} onClick={() => setValue(['delivery'])}>
+      <FixtureButton type="button" onClick={() => setValue(['delivery'])}>
         Set Delivery
-      </button>
+      </FixtureButton>
     </>
   );
 }
@@ -416,9 +436,9 @@ export const Keyboard: Story = {
   render: (args) => (
     <>
       <ChipGroup {...args} />
-      <button style={{ minHeight: 32, minWidth: 32 }} type="button">
+      <FixtureButton type="button">
         After
-      </button>
+      </FixtureButton>
     </>
   ),
   play: async ({ canvasElement, args, userEvent }) => {
@@ -549,9 +569,9 @@ async function expectFrameReleased(frame: HTMLElement, row: HTMLElement) {
 export const ResizeRelease: Story = {
   args: { ...OVERFLOW },
   render: (args) => (
-    <div style={{ inlineSize: '24rem' }}>
+    <ResizeContainer>
       <ChipGroup {...args} />
-    </div>
+    </ResizeContainer>
   ),
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);

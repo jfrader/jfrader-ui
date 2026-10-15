@@ -1,12 +1,13 @@
-import type { CSSProperties, ComponentPropsWithRef } from 'react';
+import type { ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Progress } from './index';
 
-const frameStyle = css({
+const Frame = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: `min(20rem, calc(100vw - ${vars.space[8]}))`,
@@ -27,13 +28,13 @@ export const ReplaceIndicator: Story = {
   },
 };
 
-const fieldStyle = {
+const Field = styled.div({
   display: 'grid',
   gap: vars.space[2],
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-} satisfies CSSProperties;
+});
 
 function indicatorOf(progressbar: HTMLElement) {
   return progressbar.querySelector<HTMLElement>('[data-ui="progress-indicator"]');
@@ -55,9 +56,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
 } satisfies Meta<typeof Progress>;
@@ -124,10 +125,10 @@ export const ValueText: Story = {
 export const VisibleLabel: Story = {
   args: { value: 70 },
   render: (args) => (
-    <div style={fieldStyle}>
+    <Field>
       <span id="storage-label">Storage used</span>
       <Progress {...args} aria-labelledby="storage-label" />
-    </div>
+    </Field>
   ),
   play: async ({ canvasElement }) => {
     const progressbar = within(canvasElement).getByRole('progressbar', { name: 'Storage used' });

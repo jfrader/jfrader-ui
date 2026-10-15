@@ -20,6 +20,10 @@ import {
   type FileDropzoneProps,
   type FileDropzoneUpload,
 } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const NarrowFrame = styled.div({ inlineSize: '18rem', maxInlineSize: '100%' });
 
 const messages: FileDropzoneMessages = {
   browse: 'Browse files',
@@ -44,11 +48,12 @@ const messages: FileDropzoneMessages = {
   count: count => `${new Intl.NumberFormat('en').format(count)} selected`,
   uploadError: 'Upload failed. Retry the file.',
 };
-const frame = css({
+const Frame = styled.div({
   inlineSize: 'min(100%, 36rem)',
   display: 'grid',
   gap: vars.space[4],
 });
+// The keyboard focus probe uses sx to disable transitions during measurement.
 const testMotion = css({ '&, & *': { transitionDuration: '0s' } });
 const meta = {
   title: 'Inputs/FileDropzone',
@@ -64,9 +69,9 @@ const meta = {
   },
   decorators: [
     Story => (
-      <div css={frame}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -418,9 +423,9 @@ export const Narrow: Story = {
   ...LongNames,
   decorators: [
     Story => (
-      <div style={{ inlineSize: '18rem', maxInlineSize: '100%' }}>
+      <NarrowFrame>
         <Story />
-      </div>
+      </NarrowFrame>
     ),
   ],
 };
@@ -1038,6 +1043,7 @@ export const FailureFallback: Story = {
     await expect(within(canvasElement).getByText(messages.uploadError)).toBeVisible();
   },
 };
+// This story tests refs and styles forwarded through the slot API.
 export const RefAndSlots: Story = {
   args: {
     ref: fn(),
@@ -1276,6 +1282,7 @@ export const ActionAriaPreserved: Story = {
 };
 
 /** Replace the wrapper and generated label; pass native props through slotProps. */
+// This story tests native style merging and css/sx precedence through the slot API.
 export const SlotCustomization: Story = {
   args: {
     ref: fn(),

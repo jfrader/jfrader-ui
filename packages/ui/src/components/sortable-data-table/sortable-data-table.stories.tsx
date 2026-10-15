@@ -5,6 +5,12 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { SortableDataTable, type DataColumn, type SortableDataTableProps, type SortState } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const SizeGrid = styled.div({ display: 'grid', gap: vars.space[4] });
+
+const NarrowFrame = styled.div({ inlineSize: 'min(100%, 280px)' });
 
 interface Project {
   id: string;
@@ -77,10 +83,10 @@ export const Ascending: Story = { args: { defaultValue: { columnId: 'name', dire
 export const Descending: Story = { args: { defaultValue: { columnId: 'name', direction: 'desc' } } };
 export const Sizes: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: vars.space[4] }}>
+    <SizeGrid>
       <Table {...args} size="sm" caption="Compact projects" messages={{ scrollLabel: 'Compact projects scroller' }} />
       <Table {...args} size="md" />
-    </div>
+    </SizeGrid>
   ),
   play: async ({ canvas }) => {
     for (const button of canvas.getAllByRole('button')) {
@@ -311,9 +317,9 @@ export const LongCells: Story = {
     columns: [{ ...columns[0]!, width: '65%' }, columns[1]!],
   },
   render: (args) => (
-    <div style={{ inlineSize: 'min(100%, 280px)' }}>
+    <NarrowFrame>
       <Table {...args} />
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvas, canvasElement }) => {
     const scroller = canvas.getByRole('region');
@@ -430,6 +436,7 @@ export const ZeroCells: Story = {
     await expect(canvas.getAllByRole('cell', { name: '0' })).toHaveLength(5);
   },
 };
+// This story tests the documented css/slot API and native style merging.
 export const ConsumerStylePrecedence: Story = {
   args: {
     slotProps: { cell: { css: { paddingInlineStart: vars.space[6] } }, sortButton: { css: { borderRadius: 0 } } },

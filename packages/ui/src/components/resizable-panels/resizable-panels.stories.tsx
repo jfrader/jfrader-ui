@@ -3,6 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, mocked, userEvent, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import {
   ResizablePanels,
@@ -12,20 +14,23 @@ import {
   type ResizablePanelsProps,
 } from './index';
 
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: '24rem',
   maxInlineSize: '100%',
   blockSize: '12rem',
 });
-const paneStyle = css({
+const PaneContent = styled.div({
   display: 'grid',
   alignContent: 'start',
   gap: vars.space[2],
   padding: vars.space[3],
 });
-const listStyle = css({ margin: 0, paddingInlineStart: vars.space[4] });
-const textStyle = css({ margin: 0 });
-const buttonStyle = css({
+const List = styled.ul({ margin: 0, paddingInlineStart: vars.space[4] });
+const Text = styled.p({ margin: 0 });
+const SmallFrame = styled.div({ inlineSize: '12rem' });
+const ControlStack = styled.div({ display: 'grid', gap: vars.space[2], blockSize: '100%' });
+const LabelledFrame = styled.div({ display: 'grid', gridTemplateRows: 'auto auto 1fr', blockSize: '100%' });
+const FixtureButton = styled.button({
   minBlockSize: vars.space[8],
   minInlineSize: vars.space[8],
   paddingInline: vars.space[2],
@@ -34,25 +39,25 @@ const buttonStyle = css({
 
 function Folders({ onHide }: { onHide?: () => void }) {
   return (
-    <div css={paneStyle}>
-      <ul css={listStyle}>
+    <PaneContent>
+      <List>
         <li>Inbox</li>
         <li>Archive</li>
-      </ul>
+      </List>
       {onHide && (
-        <button type="button" css={buttonStyle} onClick={onHide}>
+        <FixtureButton type="button" onClick={onHide}>
           Hide
-        </button>
+        </FixtureButton>
       )}
-    </div>
+    </PaneContent>
   );
 }
 
 function Messages() {
   return (
-    <div css={paneStyle}>
-      <p css={textStyle}>Select a conversation</p>
-    </div>
+    <PaneContent>
+      <Text>Select a conversation</Text>
+    </PaneContent>
   );
 }
 
@@ -83,9 +88,9 @@ const meta: Meta<ResizablePanelsCompoundProps> = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   render: (args) => (
@@ -145,9 +150,9 @@ export type ResizablePanelsTypeRegression = {
 
 function Pane({ children }: { children: ReactNode }) {
   return (
-    <div css={paneStyle}>
-      <p css={textStyle}>{children}</p>
-    </div>
+    <PaneContent>
+      <Text>{children}</Text>
+    </PaneContent>
   );
 }
 
@@ -313,6 +318,7 @@ function CustomPanelBox(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-custom-panel="true" />;
 }
 
+// Inline root/slot styles here exercise the documented style-merge contract.
 export const EasyModeOverrides: EasyStory = {
   name: 'Easy mode overrides',
   render: () => {
@@ -626,7 +632,7 @@ export const OnePanel: Story = {
 export const SmallContainer: Story = {
   args: { 'aria-label': 'Tools', defaultValue: [20, 60, 20] },
   render: (args) => (
-    <div style={{ inlineSize: '12rem' }}>
+    <SmallFrame>
       <ResizablePanels {...args}>
         {['A', 'B', 'C'].map((name) => (
           <ResizablePanels.Panel key={name} value={name} aria-label={`Tool ${name}`} minSize={120}>
@@ -634,7 +640,7 @@ export const SmallContainer: Story = {
           </ResizablePanels.Panel>
         ))}
       </ResizablePanels>
-    </div>
+    </SmallFrame>
   ),
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const root = rootOf(canvasElement);
@@ -678,10 +684,10 @@ export const Controlled: Story = {
   render: function Render(args) {
     const [value, setValue] = useState<number[]>([30, 70]);
     return (
-      <div style={{ display: 'grid', gap: vars.space[2], blockSize: '100%' }}>
-        <button type="button" css={buttonStyle} onClick={() => setValue([50, 50])}>
+      <ControlStack>
+        <FixtureButton type="button" onClick={() => setValue([50, 50])}>
           Split evenly
-        </button>
+        </FixtureButton>
         <ResizablePanels
           {...args}
           value={value}
@@ -697,7 +703,7 @@ export const Controlled: Story = {
             <Messages />
           </ResizablePanels.Panel>
         </ResizablePanels>
-      </div>
+      </ControlStack>
     );
   },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -955,26 +961,26 @@ export const ExternalARIA: Story = {
     },
   },
   render: (args) => (
-    <div style={{ display: 'grid', gridTemplateRows: 'auto auto 1fr', blockSize: '100%' }}>
-      <p id="mail-heading" css={textStyle}>
+    <LabelledFrame>
+      <Text id="mail-heading">
         Mailbox
-      </p>
-      <p id="resize-help" css={textStyle}>
+      </Text>
+      <Text id="resize-help">
         <span id="resize-label">Resize</span> with arrow keys
-      </p>
+      </Text>
       <ResizablePanels {...args}>
         <ResizablePanels.Panel value="folders" aria-labelledby="folders-title" minSize={96}>
-          <div css={paneStyle}>
-            <p id="folders-title" css={textStyle}>
+          <PaneContent>
+            <Text id="folders-title">
               Folders
-            </p>
-          </div>
+            </Text>
+          </PaneContent>
         </ResizablePanels.Panel>
         <ResizablePanels.Panel value="messages" aria-label="Messages">
           <Messages />
         </ResizablePanels.Panel>
       </ResizablePanels>
-    </div>
+    </LabelledFrame>
   ),
   play: async ({ canvas, canvasElement }) => {
     const root = rootOf(canvasElement);
@@ -1135,10 +1141,10 @@ export const GroupResize: Story = {
   render: function Render(args) {
     const [narrow, setNarrow] = useState(false);
     return (
-      <div style={{ display: 'grid', gap: vars.space[2], blockSize: '100%' }}>
-        <button type="button" css={buttonStyle} onClick={() => setNarrow((current) => !current)}>
+      <ControlStack>
+        <FixtureButton type="button" onClick={() => setNarrow((current) => !current)}>
           Toggle width
-        </button>
+        </FixtureButton>
         <div style={{ inlineSize: narrow ? '14rem' : '100%' }}>
           <ResizablePanels {...args}>
             <ResizablePanels.Panel value="folders" aria-label="Folders" minSize={96} collapsible>
@@ -1149,7 +1155,7 @@ export const GroupResize: Story = {
             </ResizablePanels.Panel>
           </ResizablePanels>
         </div>
-      </div>
+      </ControlStack>
     );
   },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -1175,6 +1181,7 @@ export const GroupResize: Story = {
 };
 
 const panelRef = fn();
+// This story exercises the documented separator slot `css` API.
 const separatorStyle = css({ inlineSize: vars.space[10] });
 export const SlotStylingAndRefs: Story = {
   args: {

@@ -14,10 +14,14 @@ import { Card } from '../card';
 import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
 import { Surface, type SurfacePartProps, type SurfaceProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 declare const process: { env: { NODE_ENV?: string } };
 
-const frame = css({ display: 'grid', gap: vars.space[4], inlineSize: '32rem', maxInlineSize: `calc(100vw - ${vars.space[4]} * 2)` });
+const Frame = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '32rem', maxInlineSize: `calc(100vw - ${vars.space[4]} * 2)` });
+const PaddedSurface = styled(Surface)({ padding: vars.space[4] });
+// These values exercise the documented css/sx and slot styling APIs.
 const padding = css({ padding: vars.space[4] });
 const independentMaterial = css({
   backgroundColor: vars.color.bg, color: vars.color.textMuted, fontFamily: vars.font.sans,
@@ -26,7 +30,7 @@ const independentMaterial = css({
 const slotStyle = css({ borderRadius: vars.radius.sm, fontStyle: 'italic' });
 const consumerStyle = css({ borderRadius: vars.radius.md, fontStyle: 'normal' });
 const finalStyle = css({ borderRadius: vars.radius.full, fontStyle: 'italic' });
-const mutedText = css({ color: vars.color.textMuted });
+const MutedText = styled.span({ color: vars.color.textMuted });
 
 function Paper({ className, ...props }: SurfacePartProps) {
   const id = useId();
@@ -49,7 +53,7 @@ const meta = {
     variant: { control: 'radio', options: ['flat', 'raised', 'floating'] },
     component: { control: false }, slots: { control: false }, slotProps: { control: false },
   },
-  decorators: [(Story) => <div css={frame}><Story /></div>],
+  decorators: [(Story) => <Frame><Story /></Frame>],
   parameters: {
     docs: {
       description: { component: 'Give a panel a background, border, rounded corners, and optional shadow.' },
@@ -108,7 +112,7 @@ export const Default: Story = {
 
 export const Variants: Story = {
   render: (args) => <>{(['flat', 'raised', 'floating'] as const).map((variant) =>
-    <Surface {...args} key={variant} variant={variant} sx={padding}>{variant}</Surface>)}</>,
+    <PaddedSurface {...args} key={variant} variant={variant}>{variant}</PaddedSurface>)}</>,
   play: async ({ canvasElement }) => {
     const roots = canvasElement.querySelectorAll('[data-ui="surface"]');
     await expect(roots).toHaveLength(3);
@@ -133,9 +137,9 @@ export const Contrast: Story = {
 };
 
 export const DefaultInsideContrast: Story = {
-  render: (args) => <ThemeRoot theme="light"><Surface appearance="contrast" sx={padding}>
+  render: (args) => <ThemeRoot theme="light"><PaddedSurface appearance="contrast">
     <Surface {...args} appearance="default"><ScopeProbe id="inherited" />Inherited appearance</Surface>
-  </Surface></ThemeRoot>,
+  </PaddedSurface></ThemeRoot>,
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByTestId('inherited')).toHaveAttribute('data-scope-appearance', 'contrast');
     const roots = canvasElement.querySelectorAll('[data-ui="surface"]');
@@ -188,6 +192,7 @@ export const ScopedTokens: Story = {
   },
 };
 
+// This story tests the documented css/slot API and native style merging.
 export const StylingPrecedence: Story = {
   parameters: { docs: { source: { code: '<Surface slotProps={{ root: { css: slotStyle } }} css={consumerStyle} sx={finalStyle}>Panel contents</Surface>' } } },
   render: (args) => <>{[undefined, Paper, Card].map((component, index) => <div key={index}>
@@ -209,6 +214,7 @@ export const StylingPrecedence: Story = {
   },
 };
 
+// This story tests the documented css/slot API and native style merging.
 export const RegisteredClassPrecedence: Story = {
   render: (args) => <ClassNames>{({ css: register }) => <>{[undefined, Paper].map((component, index) => <div key={index}>
     <Surface {...args} component={component} data-testid={`class-slot-${index}`}
@@ -227,6 +233,7 @@ export const RegisteredClassPrecedence: Story = {
   },
 };
 
+// This story tests the documented css/slot API and native style merging.
 export const RootPropMerge: Story = {
   args: { onClick: fn(), ref: fn(), slotProps: { root: { onClick: fn(), ref: fn() } } },
   render: (args) => <>{[undefined, Paper].map((component, index) =>
@@ -260,8 +267,8 @@ export const RootPropMerge: Story = {
 export const ComponentSlotsEquivalence: Story = {
   args: { onClick: fn(), ref: fn() },
   render: (args) => <>
-    <Surface {...args} component={Paper} data-testid="component" appearance="contrast" sx={padding}><Button>Action</Button></Surface>
-    <Surface {...args} slots={{ root: Paper }} data-testid="slots" appearance="contrast" sx={padding}><Button>Action</Button></Surface>
+    <PaddedSurface {...args} component={Paper} data-testid="component" appearance="contrast"><Button>Action</Button></PaddedSurface>
+    <PaddedSurface {...args} slots={{ root: Paper }} data-testid="slots" appearance="contrast"><Button>Action</Button></PaddedSurface>
   </>,
   play: async ({ canvas, args, userEvent }) => {
     const a = canvas.getByTestId('component');
@@ -342,7 +349,7 @@ export const StrictModeRefs: Story = {
 
 export const IndependentMaterialAdapter: Story = {
   args: { component: Paper, variant: 'floating', appearance: 'contrast' },
-  render: (args) => <Surface {...args}><span css={mutedText}>Panel contents</span></Surface>,
+  render: (args) => <Surface {...args}><MutedText>Panel contents</MutedText></Surface>,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui~="surface"]')!;
     await expect(root).toHaveAttribute('data-adapter-id');

@@ -1,3 +1,5 @@
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { useRef, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
@@ -7,8 +9,6 @@ import { expectContrastSurface } from '../../testing/theme-assertions';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { Surface, type SurfacePartProps } from '../surface';
 import { Card } from '../card';
-import { css } from '../../styling/css';
-import { WithSx } from '../../styling/sx';
 import { ThemeRoot } from '../theme-root';
 import { Popover } from '../popover';
 import {
@@ -44,11 +44,7 @@ export const ShellAndPanelReplacements: StoryObj<typeof BottomSheet> = {
   },
 };
 const TRIGGER = 'Open trip';
-const FIXTURE_BUTTON = {
-  minHeight: '24px',
-  minWidth: '24px',
-  padding: '4px 10px',
-} as const;
+
 const USAGE = `<BottomSheet
   triggerLabel="Open trip"
   title="Trip details"
@@ -56,6 +52,13 @@ const USAGE = `<BottomSheet
   content={<TripDetails />}
   closeLabel="Close"
 />`;
+
+const FixtureButton = styled.button({
+  minHeight: vars.space[6],
+  minWidth: vars.space[6],
+  padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`,
+});
+
 const meta = {
   title: 'Surfaces/BottomSheet',
   component: BottomSheet,
@@ -93,12 +96,13 @@ Root slot props win ordinary conflicts; className combines and style shallow-mer
 export default meta;
 type Story = StoryObj<(props: BottomSheetCompoundProps) => ReactNode>;
 
-const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, borderRadius: vars.radius.full, boxShadow: 'none' });
+const AdapterMaterial = styled.div({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, borderRadius: vars.radius.full, boxShadow: 'none' });
 function SheetPaper({ className, ...props }: SurfacePartProps) {
-  return <WithSx styles={adapterMaterial} className={className}>{(classes) => <div {...props} className={classes} />}</WithSx>;
+  return <AdapterMaterial {...props} className={className} />;
 }
 
 function rootAdapterStory(component: BottomSheetPanelProps['component']): Story {
+  // The slot style deliberately challenges the host-owned transform API.
   return {
     tags: ['!autodocs'],
     render: (args) => <BottomSheet {...args} defaultOpen><Parts panelProps={{
@@ -204,7 +208,7 @@ function Parts({
                   Array.from({ length: 24 }, (_, i) => (
                     <p key={i}>Stop {i + 1} · Check the platform before boarding.</p>
                   ))}
-                <button style={FIXTURE_BUTTON}>Save trip</button>
+                <FixtureButton>Save trip</FixtureButton>
               </>
             )}
           </BottomSheet.Body>
@@ -298,7 +302,7 @@ export const Default: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
     content: (
       <>
         <p>Train 42 · Platform 3</p>
-        <button style={FIXTURE_BUTTON}>Save trip</button>
+        <FixtureButton>Save trip</FixtureButton>
       </>
     ),
     closeLabel: 'Close',
@@ -376,7 +380,7 @@ export const EasyModeKeyboard: StoryObj<(props: BottomSheetEasyProps) => ReactNo
     content: (
       <>
         <p>Train 42 · Platform 3</p>
-        <button style={FIXTURE_BUTTON}>Save trip</button>
+        <FixtureButton>Save trip</FixtureButton>
       </>
     ),
     closeLabel: 'Close',
@@ -434,7 +438,7 @@ export const EasyModeControlled: StoryObj<(props: BottomSheetEasyProps) => React
     content: (
       <>
         <p>Train 42 · Platform 3</p>
-        <button style={FIXTURE_BUTTON}>Save trip</button>
+        <FixtureButton>Save trip</FixtureButton>
       </>
     ),
     closeLabel: 'Close',
@@ -468,7 +472,7 @@ export const EasyModeDisabled: StoryObj<(props: BottomSheetEasyProps) => ReactNo
     content: (
       <>
         <p>Train 42 · Platform 3</p>
-        <button style={FIXTURE_BUTTON}>Save trip</button>
+        <FixtureButton>Save trip</FixtureButton>
       </>
     ),
     closeLabel: 'Close',
@@ -498,7 +502,7 @@ export const EasyModeCustomizationSlotProps: StoryObj<(props: BottomSheetEasyPro
     content: (
       <>
         <p>Train 42 · Platform 3</p>
-        <button style={FIXTURE_BUTTON}>Save trip</button>
+        <FixtureButton>Save trip</FixtureButton>
       </>
     ),
     closeLabel: 'Close',
@@ -753,7 +757,7 @@ export const LightTheme: Story = {
   decorators: [withLightTheme],
   globals: { theme: 'light' },
 };
-export const PersistentPeek: Story = { 
+export const PersistentPeek: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
 args: { defaultOpen: true }, render };
@@ -1068,13 +1072,13 @@ function NativeCloseExample({ mode, ...args }: BottomSheetCompoundProps & { mode
     <BottomSheet {...args}>
       <Parts contentProps={{ ref }}>
         <form method="dialog">
-          <button
-            style={FIXTURE_BUTTON}
+          <FixtureButton
+
             type={mode === 'form' ? 'submit' : 'button'}
             onClick={mode === 'ref' ? () => ref.current?.close() : undefined}
           >
             Complete
-          </button>
+          </FixtureButton>
         </form>
       </Parts>
     </BottomSheet>
@@ -1140,9 +1144,9 @@ function UnmountExample(args: BottomSheetCompoundProps) {
               <BottomSheet.Close>Close</BottomSheet.Close>
             </BottomSheet.Header>
             <BottomSheet.Body>
-              <button style={FIXTURE_BUTTON} onClick={() => setMounted(false)}>
+              <FixtureButton onClick={() => setMounted(false)}>
                 Remove sheet
-              </button>
+              </FixtureButton>
             </BottomSheet.Body>
           </BottomSheet.Panel>
         </BottomSheet.Content>
@@ -1214,9 +1218,9 @@ function FalsyExample(args: BottomSheetCompoundProps) {
           </BottomSheet.Body>
           <BottomSheet.Footer>
             {[false, null, 0, ''].map((value, index) => (
-              <button key={index} style={FIXTURE_BUTTON} onClick={() => setContent(value)}>
+              <FixtureButton key={index} onClick={() => setContent(value)}>
                 State {index}
-              </button>
+              </FixtureButton>
             ))}
           </BottomSheet.Footer>
         </BottomSheet.Panel>
@@ -1268,7 +1272,7 @@ function NestedExample(args: BottomSheetCompoundProps) {
               <Popover>
                 <Popover.Trigger>Connection</Popover.Trigger>
                 <Popover.Content aria-label="Connection">
-                  <button style={FIXTURE_BUTTON}>Details</button>
+                  <FixtureButton>Details</FixtureButton>
                 </Popover.Content>
               </Popover>
             </BottomSheet.Body>
@@ -1394,9 +1398,9 @@ function ExternalValueExample(args: BottomSheetCompoundProps) {
             <p>Train 42</p>
           </BottomSheet.Body>
           <BottomSheet.Footer>
-            <button style={FIXTURE_BUTTON} onClick={() => setValue(1)}>
+            <FixtureButton onClick={() => setValue(1)}>
               Set expanded
-            </button>
+            </FixtureButton>
           </BottomSheet.Footer>
         </BottomSheet.Panel>
       </BottomSheet.Content>

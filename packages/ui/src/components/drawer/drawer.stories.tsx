@@ -1,4 +1,6 @@
-import { useId, useState, type CSSProperties, type ReactNode } from 'react';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+import { useId, useState, type ReactNode } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
@@ -13,8 +15,6 @@ import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
 import { Surface, type SurfacePartProps } from '../surface';
 import { Card } from '../card';
-import { css } from '../../styling/css';
-import { WithSx } from '../../styling/sx';
 import {
   Drawer,
   type DrawerCompoundProps,
@@ -35,19 +35,14 @@ const INLINE_CAP_REM: Record<DrawerSize, number> = { sm: 22, md: 30, lg: 38 };
 const COMPACT_QUERY = '(max-width: 40rem)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const GUTTER_PX = Number.parseFloat(base.space[3]);
-const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
 
-const fieldStackStyle = {
-  display: 'grid',
-  gap: vars.space[4],
-} satisfies CSSProperties;
-
-const adapterMaterial = css({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, borderRadius: vars.radius.full, boxShadow: 'none' });
+const AdapterMaterial = styled.div({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, borderRadius: vars.radius.full, boxShadow: 'none' });
 function DrawerPaper({ className, ...props }: SurfacePartProps) {
-  return <WithSx styles={adapterMaterial} className={className}>{(classes) => <div {...props} className={classes} />}</WithSx>;
+  return <AdapterMaterial {...props} className={className} />;
 }
 
 function rootAdapterStory(component: DrawerPanelProps['component']): Story {
+  // Inline styles exercise the documented root/slot style-merging API.
   return {
     tags: ['!autodocs'],
     render: (args) => <DrawerExample {...args} panelProps={{
@@ -94,10 +89,19 @@ export const CardAdapter = rootAdapterStory(Card);
 export const IndependentMaterialAdapter = rootAdapterStory(DrawerPaper);
 export const SurfaceAdapterLight: Story = { ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
 
-const fieldLabelStyle = {
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
+
+const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
+
+const FieldLabel = styled.p({
   margin: 0,
   fontSize: vars.textSize.sm,
-} satisfies CSSProperties;
+});
+
+const FixtureSelectTrigger = styled(Select.Trigger)({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
 
 const meta = {
   title: 'Surfaces/Drawer',
@@ -153,12 +157,12 @@ interface ExampleProps extends DrawerCompoundProps {
 
 function FilterFields() {
   return (
-    <div style={fieldStackStyle}>
+    <FieldStack>
       <TextField label="Owner" />
       {STATUSES.map((status) => (
         <Checkbox key={status} label={status} />
       ))}
-    </div>
+    </FieldStack>
   );
 }
 FilterFields.displayName = 'FilterFields';
@@ -833,11 +837,11 @@ export const DraggableBottom: Story = {
 
 function LongFormBody() {
   return (
-    <div style={fieldStackStyle}>
+    <FieldStack>
       {Array.from({ length: 14 }, (_, index) => (
         <TextField key={index} label={`Field ${index + 1}`} />
       ))}
-    </div>
+    </FieldStack>
   );
 }
 LongFormBody.displayName = 'LongFormBody';
@@ -1049,9 +1053,9 @@ export const NativeFormClose: Story = {
       {...args}
       body={
         <form method="dialog">
-          <button type="submit" style={FIXTURE_BUTTON}>
+          <FixtureButton type="submit" >
             Apply
-          </button>
+          </FixtureButton>
         </form>
       }
     />
@@ -1105,9 +1109,9 @@ function UnmountFixture({ removeTrigger = false, ...props }: DrawerCompoundProps
               <Drawer.Title>{TITLE}</Drawer.Title>
             </Drawer.Header>
             <Drawer.Body>
-              <button type="button" style={FIXTURE_BUTTON} onClick={() => setMounted(false)}>
+              <FixtureButton type="button" onClick={() => setMounted(false)}>
                 Remove panel
-              </button>
+              </FixtureButton>
             </Drawer.Body>
           </Drawer.Panel>
         </Drawer.Content>
@@ -1168,9 +1172,9 @@ export const FailedShowModal: Story = {
 export const KeyboardNavigation: Story = {
   render: (args) => (
     <>
-      <button type="button" style={FIXTURE_BUTTON}>
+      <FixtureButton type="button" >
         Before
-      </button>
+      </FixtureButton>
       <DrawerExample {...args} />
     </>
   ),
@@ -1323,9 +1327,9 @@ function NestedPopoverBody() {
       <Popover>
         <Popover.Trigger>Owner options</Popover.Trigger>
         <Popover.Content aria-label="Owner options">
-          <button type="button" style={FIXTURE_BUTTON}>
+          <FixtureButton type="button" >
             Assign to me
-          </button>
+          </FixtureButton>
         </Popover.Content>
       </Popover>
       <div ref={setHost} />
@@ -1367,10 +1371,10 @@ export const ContrastScopedPopover: Story = {
     <DrawerExample
       {...args}
       body={
-        <div style={fieldStackStyle}>
+        <FieldStack>
           <TextField label="Owner" />
           <NestedPopoverBody />
-        </div>
+        </FieldStack>
       }
     />
   ),
@@ -1407,16 +1411,16 @@ function NestedSelectBody() {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const labelId = useId();
   return (
-    <div style={fieldStackStyle}>
+    <FieldStack>
       <TextField label="Owner" />
       <ThemeRoot portalContainer={host}>
-        <p id={labelId} style={fieldLabelStyle}>
+        <FieldLabel id={labelId} >
           Status
-        </p>
+        </FieldLabel>
         <Select>
-          <Select.Trigger aria-labelledby={labelId} style={FIXTURE_BUTTON}>
+          <FixtureSelectTrigger aria-labelledby={labelId} >
             <Select.Value placeholder="Choose a status" />
-          </Select.Trigger>
+          </FixtureSelectTrigger>
           <Select.Content>
             {STATUSES.map((status) => (
               <Select.Item key={status} value={status}>
@@ -1427,7 +1431,7 @@ function NestedSelectBody() {
         </Select>
         <div ref={setHost} />
       </ThemeRoot>
-    </div>
+    </FieldStack>
   );
 }
 NestedSelectBody.displayName = 'NestedSelectBody';
