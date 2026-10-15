@@ -7,10 +7,11 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
-  type ComponentPropsWithoutRef,
+  type ComponentType,
   type CSSProperties,
   type ReactNode,
 } from 'react';
+import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { AnimatePresence, MotionConfig, motion, useInView, useReducedMotion } from 'motion/react';
 import { css, type Interpolation, type Theme } from '../../styling/css';
@@ -54,12 +55,31 @@ export interface UsageMeterLabels {
   used?: string;
   of?: string;
 }
-export type UsageMeterPartProps<T extends 'div' | 'span' | 'p' | 'ul' | 'button' = 'span'> = Omit<
-  ComponentPropsWithoutRef<T>,
-  'children'
-> & {
+export type UsageMeterPartProps<T extends 'div' | 'span' | 'p' | 'ul' | 'button' = 'span'> = ComponentPropsWithRef<T> & {
   css?: Interpolation<Theme>;
 };
+export interface UsageMeterSlots {
+  /** Container holding the meter and legend. */
+  root?: ComponentType<UsageMeterPartProps<'div'>>;
+  /** Title naming the tracked resource. */
+  title?: ComponentType<UsageMeterPartProps>;
+  /** Badge showing the usage threshold state. */
+  status?: ComponentType<UsageMeterPartProps>;
+  /** Text displaying total usage. */
+  total?: ComponentType<UsageMeterPartProps<'p'>>;
+  /** Track containing the usage segments. */
+  track?: ComponentType<UsageMeterPartProps<'div'>>;
+  /** Bar representing one usage category. */
+  segment?: ComponentType<UsageMeterPartProps>;
+  /** Bar representing usage above the limit. */
+  overage?: ComponentType<UsageMeterPartProps>;
+  /** Marker showing the usage limit. */
+  limit?: ComponentType<UsageMeterPartProps>;
+  /** List containing category legend entries. */
+  legend?: ComponentType<UsageMeterPartProps<'ul'>>;
+  /** Button or static label naming a category. */
+  item?: ComponentType<UsageMeterPartProps<'button'>>;
+}
 export interface UsageMeterProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
   label: ReactNode;
@@ -81,6 +101,7 @@ export interface UsageMeterProps
   /** Announce status transitions and growing overage, coalescing rapid updates. Defaults to true. */
   announceChanges?: boolean;
   statusIcon?: (state: UsageMeterState) => ReactNode;
+  slots?: UsageMeterSlots;
   slotProps?: {
     /** Outer container element holding the usage meter and legend. */
     root?: UsageMeterPartProps<'div'>;
@@ -332,13 +353,16 @@ const digitVariants = {
 
 function MeterSpan({
   nativeProps,
+  component: Component = 'span',
   ...props
-}: ComponentPropsWithRef<'span'> & { nativeProps?: UsageMeterPartProps }) {
+}: ComponentPropsWithRef<'span'> & { nativeProps?: UsageMeterPartProps; component?: UsageMeterSlots['segment'] | 'span' }) {
   const { css: _css, className, style, ...native } = nativeProps ?? {};
+  const ref = useMergeRefs([native.ref, props.ref]);
   return (
-    <span
+    <Component
       {...native}
       {...props}
+      ref={ref}
       className={[className, props.className].filter(Boolean).join(' ') || undefined}
       style={{ ...style, ...props.style }}
     />
@@ -448,6 +472,7 @@ export function UsageMeter({
   announceChanges = true,
   statusIcon,
   slotProps,
+  slots,
   className,
   sx,
   'aria-labelledby': labelledBy,
@@ -587,9 +612,21 @@ export function UsageMeter({
     getValueLabel?.(summary) ??
     `${formatAmount(total)} ${labels.of} ${formatAmount(limit)} ${labels.used}, ${summary.formattedPercent}. ${statusText}`;
   const icon = statusIcon?.(state);
+  const Root = slots?.root ?? 'div';
+  const Title = slots?.title ?? 'span';
+  const Status = slots?.status ?? 'span';
+  const Total = slots?.total ?? 'p';
+  const Track = slots?.track ?? 'div';
+  const Segment = slots?.segment ?? 'span';
+  const Overage = slots?.overage ?? 'span';
+  const Limit = slots?.limit ?? 'span';
+  const Legend = slots?.legend ?? 'ul';
+  const Item = slots?.item ?? (interactive ? 'button' : 'span');
   const root = slotProps?.root;
   const { css: rootCss, className: rootClassName, ...rootNative } = root ?? {};
   const track = slotProps?.track;
+  const mergedRootRef = useMergeRefs([ref, root?.ref]);
+  const mergedTrackRef = useMergeRefs([viewRef, track?.ref]);
   return (
     <MotionConfig reducedMotion="user">
       <WithSx
@@ -598,10 +635,10 @@ export function UsageMeter({
         sx={sx}
       >
         {(resolvedClassName) => (
-          <div
+          <Root
             {...rootNative}
             {...rest}
-            ref={ref}
+            ref={mergedRootRef}
             role="group"
             data-ui="usage-meter"
             data-state={state}
@@ -613,16 +650,17 @@ export function UsageMeter({
           >
             <div css={headerStyle}>
               {hasLabel && (
-                <span
+                <Title
                   {...slotProps?.title}
                   id={titleId}
                   data-ui="usage-meter-title"
                   css={[titleStyle, slotProps?.title?.css]}
                 >
                   {label}
-                </span>
+                </Title>
               )}
               <AnimatedSpan
+                component={Status}
                 nativeProps={slotProps?.status}
                 id={statusId}
                 data-ui="usage-meter-status"
@@ -635,7 +673,7 @@ export function UsageMeter({
                 <span>{statusText}</span>
               </AnimatedSpan>
             </div>
-            <p {...slotProps?.total} data-ui="usage-meter-total" css={[totalStyle, slotProps?.total?.css]}>
+            <Total {...slotProps?.total} data-ui="usage-meter-total" css={[totalStyle, slotProps?.total?.css]}>
               {valid ? (
                 <RollingTotal
                   text={summary.formattedTotal}
@@ -661,10 +699,10 @@ export function UsageMeter({
                   <span css={percentageStyle}> · {summary.formattedPercent}</span>
                 </span>
               )}
-            </p>
-            <div
+            </Total>
+            <Track
               {...track}
-              ref={viewRef}
+              ref={mergedTrackRef}
               data-ui="usage-meter-track"
               data-state={state}
               role={valid ? 'meter' : undefined}
@@ -690,6 +728,7 @@ export function UsageMeter({
                   start += segment.value / span;
                   return (
                     <AnimatedSpan
+                      component={Segment}
                       nativeProps={slotProps?.segment}
                       key={segment.id}
                       aria-hidden="true"
@@ -777,6 +816,7 @@ export function UsageMeter({
               {valid && summary.over > 0 && (
                 <>
                   <AnimatedSpan
+                    component={Overage}
                     nativeProps={slotProps?.overage}
                     aria-hidden="true"
                     data-ui="usage-meter-overage"
@@ -809,6 +849,7 @@ export function UsageMeter({
                     css={[geometryStyle, overageStyle, slotProps?.overage?.css]}
                   />
                   <AnimatedSpan
+                    component={Limit}
                     nativeProps={slotProps?.limit}
                     aria-hidden="true"
                     data-ui="usage-meter-limit"
@@ -826,8 +867,8 @@ export function UsageMeter({
                   />
                 </>
               )}
-            </div>
-            <ul
+            </Track>
+            <Legend
               {...slotProps?.legend}
               data-ui="usage-meter-legend"
               aria-label={slotProps?.legend?.['aria-label'] ?? labels.legend}
@@ -865,7 +906,7 @@ export function UsageMeter({
                 return (
                   <li key={key}>
                     {interactive ? (
-                      <button
+                      <Item
                         {...slotProps?.item}
                         type="button"
                         data-ui="usage-meter-item"
@@ -947,20 +988,20 @@ export function UsageMeter({
                         }}
                       >
                         {contents}
-                      </button>
+                      </Item>
                     ) : (
-                      <span
+                      <Item
                         data-ui="usage-meter-item"
                         css={[itemStyle, slotProps?.item?.css]}
                         className={slotProps?.item?.className}
                       >
                         {contents}
-                      </span>
+                      </Item>
                     )}
                   </li>
                 );
               })}
-            </ul>
+            </Legend>
             {announceChanges && (
               <span
                 data-ui="usage-meter-announcement"
@@ -971,7 +1012,7 @@ export function UsageMeter({
                 {announcement}
               </span>
             )}
-          </div>
+          </Root>
         )}
       </WithSx>
     </MotionConfig>

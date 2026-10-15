@@ -4,7 +4,7 @@
 // Home/End. Horizontal arrows mirror in RTL; Up/PageUp always increase.
 // Commit reports the completed request, not controlled-parent acceptance.
 // Hidden inputs support submission, not native required/range validation.
-import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useState, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
@@ -37,6 +37,32 @@ import {
 
 export type { SliderMark, SliderValue } from './use-slider-interaction';
 export type SliderSize = 'sm' | 'md';
+export interface SliderSlots {
+  /** Text naming the slider. */
+  label?: ComponentType<Part<'span'>>;
+  /** Current formatted value. */
+  readout?: ComponentType<Part<'span'>>;
+  /** Helper text below the control. */
+  description?: ComponentType<Part<'div'>>;
+  /** Validation message below the control. */
+  error?: ComponentType<Part<'div'>>;
+  /** Interactive area holding the track and thumbs. */
+  control?: ComponentType<Part<'div'>>;
+  /** Background track bar. */
+  track?: ComponentType<Part<'div'>>;
+  /** Selected range bar. */
+  fill?: ComponentType<Part<'div'>>;
+  /** Draggable value handle. */
+  thumb?: ComponentType<Part<'div'>>;
+  /** Value displayed above a thumb. */
+  bubble?: ComponentType<Part<'span'>>;
+  /** Button selecting a discrete value. */
+  mark?: ComponentType<Part<'button'>>;
+  /** Content before the control. */
+  start?: ComponentType<Part<'div'>>;
+  /** Content after the control. */
+  end?: ComponentType<Part<'div'>>;
+}
 export interface SliderSlotProps {
   /** Text label naming the slider. */
   label?: Part<'span'>;
@@ -83,6 +109,7 @@ interface SliderCommonProps
   end?: ReactNode;
   size?: SliderSize;
   slotProps?: SliderSlotProps;
+  slots?: SliderSlots;
 }
 export type SliderProps = SliderCommonProps &
   (
@@ -223,6 +250,7 @@ export function Slider(props: SliderProps) {
     name,
     size = 'md',
     slotProps,
+    slots,
     onValueChange,
     onValueCommit,
     className,
@@ -234,6 +262,18 @@ export function Slider(props: SliderProps) {
     'aria-invalid': ariaInvalidProp,
     ...rest
   } = props;
+  const Label = slots?.label ?? 'span';
+  const Readout = slots?.readout ?? 'span';
+  const Description = slots?.description ?? 'div';
+  const Error = slots?.error ?? 'div';
+  const Control = slots?.control ?? 'div';
+  const Track = slots?.track ?? 'div';
+  const Fill = slots?.fill ?? 'div';
+  const Thumb = slots?.thumb ?? 'div';
+  const Bubble = slots?.bubble ?? 'span';
+  const Mark = slots?.mark ?? 'button';
+  const Start = slots?.start ?? 'div';
+  const End = slots?.end ?? 'div';
   const range = type === 'range';
   const reduced = useReducedMotion();
   const [strain, setStrain] = useState(0);
@@ -300,60 +340,60 @@ export function Slider(props: SliderProps) {
             {(hasLabel || showValue) && (
               <div css={sliderHeaderStyle}>
                 {hasLabel && (
-                  <span
+                  <Label
                     {...slotProps?.label}
                     id={`${id}-label`}
                     css={[sliderLabelStyle, slotProps?.label?.css]}
                   >
                     {label}
-                  </span>
+                  </Label>
                 )}
                 {showValue && (
-                  <span
+                  <Readout
                     {...slotProps?.readout}
                     aria-hidden="true"
                     css={[sliderReadoutStyle, slotProps?.readout?.css]}
                   >
                     {readout}
-                  </span>
+                  </Readout>
                 )}
               </div>
             )}
             {hasDescription && (
-              <div
+              <Description
                 {...slotProps?.description}
                 id={`${id}-description`}
                 css={[sliderDescriptionStyle, slotProps?.description?.css]}
               >
                 {description}
-              </div>
+              </Description>
             )}
             {hasError && (
-              <div
+              <Error
                 {...slotProps?.error}
                 id={`${id}-error`}
                 role="alert"
                 css={[sliderErrorStyle, slotProps?.error?.css]}
               >
                 {error}
-              </div>
+              </Error>
             )}
             <div css={sliderRowStyle}>
-              {hasContent(start) && <div {...slotProps?.start}>{start}</div>}
-              <div
+              {hasContent(start) && <Start {...slotProps?.start}>{start}</Start>}
+              <Control
                 {...slotProps?.control}
                 {...slider.controlHandlers(slotProps?.control)}
                 css={[sliderControlStyle, sliderSizeStyles[size], slotProps?.control?.css]}
                 data-ui="slider-control"
                 data-disabled={disabled || undefined}
               >
-                <div
+                <Track
                   {...slotProps?.track}
                   data-ui="slider-track"
                   aria-hidden="true"
                   css={[trackStyle, slotProps?.track?.css]}
                 >
-                  <div
+                  <Fill
                     {...slotProps?.fill}
                     data-ui="slider-fill"
                     css={[fillStyle, slotProps?.fill?.css]}
@@ -363,7 +403,7 @@ export function Slider(props: SliderProps) {
                       inlineSize: `${endPercent - startPercent}%`,
                     }}
                   />
-                </div>
+                </Track>
                 {normalizedMarks.map((mark, index) => (
                   <span
                     key={index}
@@ -376,7 +416,7 @@ export function Slider(props: SliderProps) {
                   const part = indexedPart(slotProps?.thumb, index);
                   const [low, high] = bounds(index);
                   return (
-                    <div
+                    <Thumb
                       {...part}
                       key={index}
                       id={`${id}-thumb-${index}`}
@@ -427,7 +467,7 @@ export function Slider(props: SliderProps) {
                           {thumbLabels?.[index]}
                         </span>
                       )}
-                      <span
+                      <Bubble
                         {...slotProps?.bubble}
                         data-ui="slider-bubble"
                         aria-hidden="true"
@@ -438,12 +478,12 @@ export function Slider(props: SliderProps) {
                         }}
                       >
                         {format(n)}
-                      </span>
-                    </div>
+                      </Bubble>
+                    </Thumb>
                   );
                 })}
-              </div>
-              {hasContent(end) && <div {...slotProps?.end}>{end}</div>}
+              </Control>
+              {hasContent(end) && <End {...slotProps?.end}>{end}</End>}
             </div>
             {normalizedMarks.some((mark) => hasContent(mark.label)) && (
               <div css={sliderMarksStyle}>
@@ -451,7 +491,7 @@ export function Slider(props: SliderProps) {
                   if (!hasContent(mark.label)) return null;
                   const part = indexedPart(slotProps?.mark, index);
                   return (
-                    <button
+                    <Mark
                       {...part}
                       key={index}
                       type="button"
@@ -463,7 +503,7 @@ export function Slider(props: SliderProps) {
                       }}
                     >
                       {mark.label}
-                    </button>
+                    </Mark>
                   );
                 })}
               </div>

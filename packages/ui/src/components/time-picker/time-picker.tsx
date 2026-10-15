@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
@@ -21,12 +22,12 @@ import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useFieldAnatomy } from '../field/field-anatomy';
-import { Select } from '../select';
+import { Select, type SelectTriggerProps, type SelectContentProps, type SelectItemProps } from '../select';
 
 export type TimePickerSize = 'sm' | 'md' | 'lg';
 export type TimePickerMinuteStep = 1 | 5 | 10 | 15 | 30;
 export type TimePickerHourCycle = 'h12' | 'h23';
-type Slot<Tag extends 'div' | 'span' | 'label' | 'button'> = Omit<ComponentPropsWithRef<Tag>, 'children'> & {
+type Slot<Tag extends 'div' | 'span' | 'label' | 'button'> = ComponentPropsWithRef<Tag> & {
   css?: Interpolation<Theme>;
 };
 export interface TimePickerSlotProps {
@@ -46,6 +47,24 @@ export interface TimePickerSlotProps {
   error?: Slot<'span'>;
   /** Clock glyph shown inside the control. */
   icon?: Slot<'span'>;
+}
+export interface TimePickerSlots {
+  /** Container wrapping the field. */
+  root?: ComponentType<Slot<'div'>>;
+  /** Label naming the field. */
+  label?: ComponentType<Slot<'label'>>;
+  /** Select trigger showing the current time. */
+  control?: ComponentType<SelectTriggerProps>;
+  /** Select popup containing the times. */
+  content?: ComponentType<SelectContentProps>;
+  /** Select item representing a time. */
+  option?: ComponentType<SelectItemProps>;
+  /** Helper text below the control. */
+  description?: ComponentType<Slot<'span'>>;
+  /** Validation message below the control. */
+  error?: ComponentType<Slot<'span'>>;
+  /** Clock glyph beside the value. */
+  icon?: ComponentType<Slot<'span'>>;
 }
 export interface TimePickerProps
   extends
@@ -73,6 +92,7 @@ export interface TimePickerProps
   required?: boolean;
   icon?: ReactNode;
   slotProps?: TimePickerSlotProps;
+  slots?: TimePickerSlots;
 }
 
 const MINUTES_PER_HOUR = 60;
@@ -195,6 +215,7 @@ export function TimePicker({
   name,
   icon,
   slotProps,
+  slots,
   className,
   sx,
   dir,
@@ -210,6 +231,14 @@ export function TimePicker({
   const effectiveDisabled = disabled || slotProps?.control?.disabled === true;
   const locked = effectiveDisabled || readOnly;
   const open = requestedOpen && !locked;
+  const Root = slots?.root ?? 'div';
+  const Label = slots?.label ?? 'label';
+  const Control = slots?.control ?? Select.Trigger;
+  const Content = slots?.content ?? Select.Content;
+  const Option = slots?.option ?? Select.Item;
+  const Description = slots?.description ?? 'span';
+  const Error = slots?.error ?? 'span';
+  const Icon = slots?.icon ?? 'span';
   const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [popupNode, setPopupNode] = useState<HTMLDivElement | null>(null);
@@ -348,7 +377,7 @@ export function TimePicker({
       sx={sx}
     >
       {(rootClassName) => (
-        <div
+        <Root
           {...slotProps?.root}
           css={undefined}
           className={rootClassName}
@@ -356,7 +385,7 @@ export function TimePicker({
           data-ui="time-picker"
         >
           {isRenderable(label) && (
-            <label
+            <Label
               {...slotProps?.label}
               id={labelId}
               htmlFor={field.id}
@@ -369,7 +398,7 @@ export function TimePicker({
                   *
                 </span>
               )}
-            </label>
+            </Label>
           )}
           <Select
             value={value}
@@ -380,7 +409,7 @@ export function TimePicker({
             }}
             disabled={effectiveDisabled}
           >
-            <Select.Trigger
+            <Control
               {...control}
               {...rest}
               ref={mergedRef}
@@ -427,23 +456,23 @@ export function TimePicker({
               }}
             >
               {isRenderable(icon) && (
-                <span {...slotProps?.icon} aria-hidden css={[iconWrapperStyle, slotProps?.icon?.css]}>
+                <Icon {...slotProps?.icon} aria-hidden css={[iconWrapperStyle, slotProps?.icon?.css]}>
                   {icon}
-                </span>
+                </Icon>
               )}
               <span css={valueStyle} data-placeholder={selectedMinutes === undefined || undefined}>
                 {display}
               </span>
               <span aria-hidden>▾</span>
-            </Select.Trigger>
-            <Select.Content
+            </Control>
+            <Content
               {...slotProps?.content}
               ref={mergedContentRef}
               dir={dir}
               css={[contentStyle, slotProps?.content?.css]}
             >
               {times.map((time) => (
-                <Select.Item
+                <Option
                   {...slotProps?.option}
                   key={time.value}
                   value={time.value}
@@ -470,9 +499,9 @@ export function TimePicker({
                   }}
                 >
                   {time.label}
-                </Select.Item>
+                </Option>
               ))}
-            </Select.Content>
+            </Content>
           </Select>
           {name !== undefined && (
             <input
@@ -484,25 +513,25 @@ export function TimePicker({
             />
           )}
           {isRenderable(description) && (
-            <span
+            <Description
               {...slotProps?.description}
               id={field.descriptionId}
               css={[descriptionStyle, slotProps?.description?.css]}
             >
               {description}
-            </span>
+            </Description>
           )}
           {isRenderable(error) && (
-            <span
+            <Error
               {...slotProps?.error}
               id={field.errorId}
               role="alert"
               css={[errorStyle, slotProps?.error?.css]}
             >
               {error}
-            </span>
+            </Error>
           )}
-        </div>
+        </Root>
       )}
     </WithSx>
   );

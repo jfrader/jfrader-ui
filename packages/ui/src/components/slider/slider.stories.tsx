@@ -628,8 +628,16 @@ export const ExternalUpdateWhileDragging: Story = {
   },
 };
 
+function ReplacementSliderThumb(props: import('react').ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="thumb" />;
+}
+function ReplacementSliderTrack(props: import('react').ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="track" />;
+}
+
 export const SlotStylingAndRefs: Story = {
   args: {
+    slots: { thumb: ReplacementSliderThumb, track: ReplacementSliderTrack },
     ref: fn(),
     slotProps: {
       thumb: { ref: fn(), css: css({ borderRadius: vars.radius.md }) },
@@ -640,12 +648,14 @@ export const SlotStylingAndRefs: Story = {
   play: async ({ canvas, canvasElement, args }) => {
     const root = canvasElement.querySelector('[data-ui="slider"]');
     const thumb = canvas.getByRole('slider');
+    await expect(thumb).toHaveAttribute('data-replacement', 'thumb');
     await expect(args.ref).toHaveBeenCalledWith(root);
     const part =
       typeof args.slotProps?.thumb === 'function' ? args.slotProps.thumb(0) : args.slotProps?.thumb;
     await expect(part?.ref).toHaveBeenCalledWith(thumb);
     await expect(Math.abs(parseFloat(getComputedStyle(thumb).borderRadius) - 12)).toBeLessThan(1.1);
     const track = canvasElement.querySelector<HTMLElement>('[data-ui="slider-track"]')!;
+    await expect(track).toHaveAttribute('data-replacement', 'track');
     await expect(Math.abs(track.getBoundingClientRect().height - 8)).toBeLessThan(1.1);
     const label = canvasElement.querySelector<HTMLElement>('[id$="-label"]')!;
     await expect(getComputedStyle(label).fontWeight).toBe('600');

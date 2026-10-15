@@ -28,7 +28,7 @@ import { SegmentedControl, type SegmentedControlItemProps } from '../segmented-c
 
 export type ToggleSubscriptionSize = 'md' | 'lg';
 export type ToggleSubscriptionTone = 'neutral' | 'accent' | 'success';
-type SlotProps<Element extends 'span' | 'del'> = ComponentPropsWithoutRef<Element> & {
+type SlotProps<Element extends 'span' | 'del'> = ComponentPropsWithRef<Element> & {
   css?: Interpolation<Theme>;
 };
 
@@ -100,7 +100,24 @@ export type ToggleSubscriptionProps = ToggleSubscriptionCompoundProps | ToggleSu
 export interface ToggleSubscriptionListProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {}
 export interface ToggleSubscriptionLabelProps extends ComponentPropsWithRef<'span'>, SxProps {}
-export interface ToggleSubscriptionItemProps extends Omit<SegmentedControlItemProps, 'accessory'> {
+export interface ToggleSubscriptionItemSlots {
+  /** Text naming a billing period. */
+  label?: ComponentType<SlotProps<'span'>>;
+  /** Badge beside the billing period. */
+  badge?: ComponentType<SlotProps<'span'>>;
+  /** Selection indicator for the active period. */
+  selection?: ComponentType<SlotProps<'span'>>;
+}
+export interface ToggleSubscriptionPriceSlots {
+  /** Formatted current price. */
+  amount?: ComponentType<SlotProps<'span'>>;
+  /** Struck-through previous price. */
+  previous?: ComponentType<SlotProps<'del'>>;
+  /** Billing period after the price. */
+  period?: ComponentType<SlotProps<'span'>>;
+}
+export interface ToggleSubscriptionItemProps extends Omit<SegmentedControlItemProps, 'accessory' | 'slots'> {
+  slots?: ToggleSubscriptionItemSlots;
   badge?: ReactNode;
   activeBadge?: ReactNode;
   slotProps?: {
@@ -121,6 +138,7 @@ export interface ToggleSubscriptionPriceProps
   was?: number;
   period?: ReactNode;
   previousLabel?: string;
+  slots?: ToggleSubscriptionPriceSlots;
   slotProps?: {
     /** Formatted price for the current period. */
     amount?: SlotProps<'span'>;
@@ -131,6 +149,10 @@ export interface ToggleSubscriptionPriceProps
   };
 }
 
+interface SelectionPart {
+  props?: SlotProps<'span'>;
+  component?: ToggleSubscriptionItemSlots['selection'];
+}
 interface ToggleSubscriptionContext {
   value: string | undefined;
   emptyValue: string;
@@ -141,8 +163,8 @@ interface ToggleSubscriptionContext {
   locale: Intl.LocalesArgument | undefined;
   labels: string[];
   setLabels: Dispatch<SetStateAction<string[]>>;
-  selections: ReadonlyMap<string, SlotProps<'span'>>;
-  setSelections: Dispatch<SetStateAction<ReadonlyMap<string, SlotProps<'span'>>>>;
+  selections: ReadonlyMap<string, SelectionPart>;
+  setSelections: Dispatch<SetStateAction<ReadonlyMap<string, SelectionPart>>>;
 }
 const Context = createContext<ToggleSubscriptionContext | null>(null);
 function useToggleSubscription() {
@@ -251,7 +273,7 @@ function ToggleSubscriptionRoot({
 }: ToggleSubscriptionCompoundProps & { rootElement?: 'div' | ToggleSubscriptionSlots['root']; rootCss?: Interpolation<Theme> }) {
   const [value, requestChange] = useControlledState(valueProp, defaultValue, onValueChange);
   const [labels, setLabels] = useState<string[]>([]);
-  const [selections, setSelections] = useState<ReadonlyMap<string, SlotProps<'span'>>>(new Map());
+  const [selections, setSelections] = useState<ReadonlyMap<string, SelectionPart>>(new Map());
   const emptyValue = useId();
   const context = useMemo(
     () => ({
@@ -317,7 +339,8 @@ ToggleSubscriptionLabel.displayName = 'ToggleSubscription.Label';
 
 function ToggleSubscriptionList({ ref, className, sx, children, ...rest }: ToggleSubscriptionListProps) {
   const context = useToggleSubscription();
-  const selection = context.value === undefined ? undefined : context.selections.get(context.value);
+  const selectionPart = context.value === undefined ? undefined : context.selections.get(context.value);
+  const selection = selectionPart?.props;
   return (
     <div data-ui="toggle-subscription-list" css={listStyle}>
       <WithSx className={className} styles={listStyle} sx={sx}>
@@ -331,6 +354,7 @@ function ToggleSubscriptionList({ ref, className, sx, children, ...rest }: Toggl
             disabled={context.disabled}
             size={context.size}
             variant="soft"
+            slots={{ selection: selectionPart?.component }}
             slotProps={{
               selection: {
                 ...selection,
@@ -354,25 +378,29 @@ function ToggleSubscriptionItem({
   badge,
   activeBadge,
   slotProps,
+  slots,
   children,
   className,
   sx,
   ...rest
 }: ToggleSubscriptionItemProps) {
+  const Badge = slots?.badge ?? 'span';
+  const Label = slots?.label ?? 'span';
   const context = useToggleSubscription();
   const { setSelections } = context;
   const selection = slotProps?.selection;
+  const selectionComponent = slots?.selection;
   const value = rest.value;
   useLayoutEffect(() => {
-    if (!selection) return;
-    setSelections((current) => new Map(current).set(value, selection));
+    if (!selection && !selectionComponent) return;
+    setSelections((current) => new Map(current).set(value, { props: selection, component: selectionComponent }));
     return () =>
       setSelections((current) => {
         const next = new Map(current);
         next.delete(value);
         return next;
       });
-  }, [selection, value, setSelections]);
+  }, [selection, selectionComponent, value, setSelections]);
   const currentBadge =
     context.value === rest.value && activeBadge !== undefined ? activeBadge : badge;
   const hasBadge = isRenderable(currentBadge) && currentBadge !== '';
@@ -385,7 +413,7 @@ function ToggleSubscriptionItem({
             className={className}
             accessory={
               hasBadge ? (
-                <span
+                <Badge
                   {...slotProps?.badge}
                   data-ui="toggle-subscription-badge"
                   css={[badgeStyle, toneStyles[context.tone], slotProps?.badge?.css]}
@@ -401,18 +429,18 @@ function ToggleSubscriptionItem({
                     </span>
                   )}
                   <span css={badgeCellStyle}>{currentBadge}</span>
-                </span>
+                </Badge>
               ) : undefined
             }
           >
             {isRenderable(children) && children !== '' && (
-              <span
+              <Label
                 {...slotProps?.label}
                 data-ui="toggle-subscription-item-label"
                 css={slotProps?.label?.css}
               >
                 {children}
-              </span>
+              </Label>
             )}
           </SegmentedControl.Item>
         )}
@@ -432,10 +460,14 @@ function ToggleSubscriptionPrice({
   period,
   previousLabel,
   slotProps,
+  slots,
   className,
   sx,
   ...rest
 }: ToggleSubscriptionPriceProps) {
+  const Amount = slots?.amount ?? 'span';
+  const Previous = slots?.previous ?? 'del';
+  const Period = slots?.period ?? 'span';
   // Validate before any hooks: keeps hook order stable even if the guard ever changes.
   if (!Number.isFinite(amount)) throw new RangeError('ToggleSubscription.Price amount must be finite.');
   const { locale } = useToggleSubscription();
@@ -469,7 +501,7 @@ function ToggleSubscriptionPrice({
           layout={!reducedMotion}
           transition={PRICE_SPRING}
         >
-          <span
+          <Amount
             {...slotProps?.amount}
             data-ui="toggle-subscription-amount"
             css={[amountStyle, slotProps?.amount?.css]}
@@ -489,25 +521,25 @@ function ToggleSubscriptionPrice({
                 </motion.span>
               </AnimatePresence>
             </motion.span>
-          </span>
+          </Amount>
           {hasPrevious && (
-            <del
+            <Previous
               {...slotProps?.previous}
               data-ui="toggle-subscription-previous"
               css={[previousStyle, slotProps?.previous?.css]}
             >
               <span css={visuallyHiddenStyle}>{previousLabel}</span>
               {formatter.format(was)}
-            </del>
+            </Previous>
           )}
           {isRenderable(period) && period !== '' && (
-            <span
+            <Period
               {...slotProps?.period}
               data-ui="toggle-subscription-period"
               css={[periodStyle, slotProps?.period?.css]}
             >
               {period}
-            </span>
+            </Period>
           )}
         </MotionPriceSurface>
       )}

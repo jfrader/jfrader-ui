@@ -174,10 +174,14 @@ export const Compound: Story = {
 function NotificationViewport(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-custom-viewport="true" />;
 }
+function NotificationItem(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-custom-notification="true" />;
+}
 
 export const GeneratedPartCustomization: Story = {
   render: () => <Toast viewport="default" viewportProps={{
     component: NotificationViewport,
+    slots: { item: NotificationItem },
     className: 'consumer-viewport',
     title: 'Consumer title',
     style: { paddingInlineEnd: '8px' },
@@ -199,6 +203,7 @@ export const GeneratedPartCustomization: Story = {
     if (!viewport) throw new Error('Missing customized viewport.');
     await expect(getComputedStyle(viewport).marginBlockEnd).toBe('16px');
     await expect(toast).toHaveClass('custom-notification');
+    await expect(toast).toHaveAttribute('data-custom-notification', 'true');
     const dismiss = within(toast).getByRole('button', { name: 'Dismiss' });
     dismiss.focus();
     await userEvent.keyboard('{Enter}');

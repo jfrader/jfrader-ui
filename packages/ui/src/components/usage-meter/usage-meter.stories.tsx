@@ -683,8 +683,12 @@ export const FalsyLabel: Story = {
     }
   },
 };
+function ReplacementMeterSpan(props: import('react').ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replacement="meter-span" />;
+}
 export const SlotStyles: Story = {
   args: {
+    slots: { segment: ReplacementMeterSpan, status: ReplacementMeterSpan },
     sx: { padding: vars.space[4] },
     slotProps: {
       root: { css: { padding: vars.space[1] } },
@@ -697,6 +701,11 @@ export const SlotStyles: Story = {
     const root = within(canvasElement).getByRole('group');
     const meter = within(canvasElement).getByRole('meter');
     const view = canvasElement.ownerDocument.defaultView!;
+    const segment = canvasElement.querySelector<HTMLElement>('[data-ui="usage-meter-segment"]')!;
+    const status = canvasElement.querySelector<HTMLElement>('[data-ui="usage-meter-status"]')!;
+    await expect(segment).toHaveAttribute('data-replacement', 'meter-span');
+    await expect(status).toHaveAttribute('data-replacement', 'meter-span');
+    await expect(segment.className).not.toBe('');
     await expect(args.ref).toHaveBeenCalledWith(root);
     await expect(Math.abs(parseFloat(view.getComputedStyle(root).paddingTop) - 16)).toBeLessThan(1.1);
     await expect(parseFloat(view.getComputedStyle(meter).height)).toBeGreaterThanOrEqual(23);

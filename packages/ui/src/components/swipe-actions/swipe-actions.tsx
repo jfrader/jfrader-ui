@@ -11,6 +11,8 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
+  type ComponentProps,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -32,7 +34,7 @@ import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { Menu } from '../menu';
+import { Menu, type MenuTriggerProps, type MenuContentProps, type MenuItemProps } from '../menu';
 
 export type SwipeActionsSide = 'leading' | 'trailing';
 export type SwipeActionsValue = { id: string; side: SwipeActionsSide } | null;
@@ -61,12 +63,38 @@ export interface SwipeActionsCompoundProps extends SwipeActionsBaseProps {
   children?: ReactNode;
   rows?: never;
   slotProps?: never;
+  slots?: never;
 }
 export interface SwipeActionsEasyProps extends SwipeActionsBaseProps {
   /** Render rows in order using their stable ids. */
   rows: readonly SwipeActionsRecord[];
   children?: never;
   slotProps?: SwipeActionsSlotProps;
+  slots?: SwipeActionsSlots;
+}
+export interface SwipeActionsSlots {
+  /** List containing the swipeable rows. */
+  root?: ComponentType<ComponentPropsWithRef<'ul'>>;
+  /** Generated swipeable row. */
+  row?: ComponentType<SwipeActionsRowProps>;
+}
+export interface SwipeActionsRowSlots {
+  /** Sliding container holding the row body and menu. */
+  content?: ComponentType<ComponentPropsWithRef<'div'> & Slot>;
+  /** Container holding row content. */
+  body?: ComponentType<ComponentPropsWithRef<'div'> & Slot>;
+  /** Button revealed by swiping. */
+  action?: ComponentType<ComponentPropsWithRef<'button'> & Slot>;
+  /** Icon beside a swipe action label. */
+  actionIcon?: ComponentType<ComponentPropsWithRef<'span'> & Slot>;
+  /** Text naming a swipe action. */
+  actionLabel?: ComponentType<ComponentPropsWithRef<'span'> & Slot>;
+  /** Trigger opening the overflow menu. */
+  trigger?: ComponentType<MenuTriggerProps & Slot>;
+  /** Overflow menu containing row actions. */
+  menu?: ComponentType<MenuContentProps & Slot>;
+  /** Overflow menu action. */
+  menuItem?: ComponentType<MenuItemProps & Slot>;
 }
 export interface SwipeActionsSlotProps {
   /** Outer list container element (`ul`) holding swipeable rows. */
@@ -80,6 +108,7 @@ export interface SwipeActionsSlotProps {
 }
 export type SwipeActionsProps = SwipeActionsCompoundProps | SwipeActionsEasyProps;
 export interface SwipeActionsRowProps extends ComponentPropsWithRef<'li'>, SxProps {
+  slots?: SwipeActionsRowSlots;
   id: string;
   label: string;
   actionsLabel: string;
@@ -87,27 +116,9 @@ export interface SwipeActionsRowProps extends ComponentPropsWithRef<'li'>, SxPro
   trailing?: readonly SwipeAction[];
   fullSwipe?: boolean;
   disabled?: boolean;
-  slotProps?: Partial<
-    Record<
-      | /** Sliding container element holding the row body and actions menu. */
-        'content'
-      | /** Row body container element wrapping the row content. */
-        'body'
-      | /** Action button element revealed in the swipe rail. */
-        'action'
-      | /** Icon element displayed inside a swipe action button. */
-        'actionIcon'
-      | /** Text label element displayed inside a swipe action button. */
-        'actionLabel'
-      | /** Overflow menu trigger button opening the actions menu. */
-        'trigger'
-      | /** Overflow actions menu container listing swipe actions. */
-        'menu'
-      | /** Menu item button inside the overflow actions menu. */
-        'menuItem',
-      Slot
-    >
-  >;
+  slotProps?: {
+    [Part in keyof SwipeActionsRowSlots]?: ComponentProps<NonNullable<SwipeActionsRowSlots[Part]>>;
+  };
 }
 
 const SLOP = 8;
@@ -221,6 +232,12 @@ function RowElement({
   return <li {...nativeProps} {...props} style={{ ...nativeProps.style, ...props.style }} />;
 }
 const MotionRow = motion.create(RowElement);
+function ContentElement({ component: Component = 'div', nativeProps, ...props }: ComponentPropsWithRef<'div'> & { component?: SwipeActionsRowSlots['content'] | 'div'; nativeProps?: ComponentPropsWithRef<'div'> & Slot }) {
+  const { css: _css, ...native } = nativeProps ?? {};
+  const ref = useMergeRefs([native.ref, props.ref]);
+  return <Component {...native} {...props} ref={ref} style={{ ...native.style, ...props.style }} />;
+}
+const MotionContent = motion.create(ContentElement);
 
 type RegisteredRow = {
   element: HTMLLIElement;
@@ -236,10 +253,13 @@ type Context = {
 };
 const SwipeContext = createContext<Context | null>(null);
 
-function SwipeActionsRoot({ rows: records, slotProps, children, ...props }: SwipeActionsProps) {
+function SwipeActionsRoot({ rows: records, slotProps, slots, children, ...props }: SwipeActionsProps) {
+  const Root = slots?.root ?? 'ul';
+  const Row = slots?.row ?? SwipeActionsRow;
   const { css: slotCss, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
   return (
     <SwipeActionsList
+      rootElement={Root}
       {...props}
       {...rootProps}
       slotCss={[slotCss, slotSx]}
@@ -249,7 +269,7 @@ function SwipeActionsRoot({ rows: records, slotProps, children, ...props }: Swip
     >
       {records !== undefined
         ? records.map(({ content, ...row }) => (
-          <SwipeActionsRow {...slotProps?.row} {...row} key={row.id}>{content}</SwipeActionsRow>
+          <Row {...slotProps?.row} {...row} key={row.id}>{content}</Row>
         ))
         : children}
     </SwipeActionsList>
@@ -266,8 +286,9 @@ function SwipeActionsList({
   children,
   onKeyDown,
   slotCss,
+  rootElement: Root = 'ul',
   ...props
-}: SwipeActionsBaseProps & { children?: ReactNode; slotCss?: Interpolation<Theme> }) {
+}: SwipeActionsBaseProps & { children?: ReactNode; slotCss?: Interpolation<Theme>; rootElement?: SwipeActionsSlots['root'] | 'ul' }) {
   const [value = null, change] = useControlledState(valueProp, defaultValue, onValueChange);
   const list = useRef<HTMLUListElement>(null);
   const rows = useRef(new Map<string, RegisteredRow>()).current;
@@ -326,7 +347,7 @@ function SwipeActionsList({
       <SwipeContext.Provider value={context}>
         <WithSx className={className} styles={[listStyle, slotCss]} sx={sx}>
           {(className) => (
-            <ul
+            <Root
               {...props}
               ref={mergedRef}
               className={className}
@@ -349,7 +370,7 @@ function SwipeActionsList({
               }}
             >
               <AnimatePresence initial={false}>{children}</AnimatePresence>
-            </ul>
+            </Root>
           )}
         </WithSx>
       </SwipeContext.Provider>
@@ -388,6 +409,7 @@ function SwipeActionsRow({
   sx,
   children,
   slotProps,
+  slots,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -396,6 +418,14 @@ function SwipeActionsRow({
   onClickCapture,
   ...props
 }: SwipeActionsRowProps) {
+  const Content = slots?.content ?? 'div';
+  const Body = slots?.body ?? 'div';
+  const Action = slots?.action ?? 'button';
+  const ActionIcon = slots?.actionIcon ?? 'span';
+  const ActionLabel = slots?.actionLabel ?? 'span';
+  const Trigger = slots?.trigger ?? Menu.Trigger;
+  const MenuContent = slots?.menu ?? Menu.Content;
+  const MenuItem = slots?.menuItem ?? Menu.Item;
   const context = useContext(SwipeContext);
   if (!context) throw new Error('SwipeActions.Row must be rendered inside SwipeActions.');
   const { value, request, rows, list } = context;
@@ -557,22 +587,24 @@ function SwipeActionsRow({
   const renderLabel = (action: SwipeAction) => (
     <>
       {isRenderable(action.icon) && action.icon !== '' && (
-        <span
+        <ActionIcon
+          {...slotProps?.actionIcon}
           aria-hidden
           data-ui="swipe-actions-action-icon"
           className={slotProps?.actionIcon?.className}
           css={[iconStyle, slotProps?.actionIcon?.css]}
         >
           {action.icon}
-        </span>
+        </ActionIcon>
       )}
-      <span
+      <ActionLabel
+        {...slotProps?.actionLabel}
         data-ui="swipe-actions-action-label"
         className={slotProps?.actionLabel?.className}
         css={slotProps?.actionLabel?.css}
       >
         {action.label}
-      </span>
+      </ActionLabel>
     </>
   );
   return (
@@ -701,7 +733,8 @@ function SwipeActionsRow({
                   aria-hidden
                 >
                   {actions[side].map((action) => (
-                    <button
+                    <Action
+                      {...slotProps?.action}
                       key={action.id}
                       type="button"
                       tabIndex={-1}
@@ -713,24 +746,27 @@ function SwipeActionsRow({
                       onClick={() => dispatch(action)}
                     >
                       {renderLabel(action)}
-                    </button>
+                    </Action>
                   ))}
                 </div>
               ),
           )}
-          <motion.div
+          <MotionContent
+            component={Content}
+            nativeProps={slotProps?.content}
             data-ui="swipe-actions-content"
             className={slotProps?.content?.className}
             css={[contentStyle, slotProps?.content?.css]}
             style={{ x }}
           >
-            <div
+            <Body
+              {...slotProps?.body}
               data-ui="swipe-actions-body"
               className={slotProps?.body?.className}
               css={[bodyStyle, slotProps?.body?.css]}
             >
               {children}
-            </div>
+            </Body>
             <Menu
               open={menuOpen && present}
               onOpenChange={(open) => {
@@ -738,7 +774,8 @@ function SwipeActionsRow({
                 setMenuOpen(open);
               }}
             >
-              <Menu.Trigger
+              <Trigger
+                {...slotProps?.trigger}
                 ref={trigger}
                 disabled={disabled || (!leading.length && !trailing.length)}
                 aria-label={actionsLabel}
@@ -747,8 +784,9 @@ function SwipeActionsRow({
                 css={[triggerStyle, slotProps?.trigger?.css]}
               >
                 ⋯
-              </Menu.Trigger>
-              <Menu.Content
+              </Trigger>
+              <MenuContent
+                {...slotProps?.menu}
                 ref={(node) => {
                   menu.current = node;
                   const row = rows.get(id);
@@ -758,7 +796,8 @@ function SwipeActionsRow({
                 css={slotProps?.menu?.css}
               >
                 {[...leading, ...trailing].map((action) => (
-                  <Menu.Item
+                  <MenuItem
+                    {...slotProps?.menuItem}
                     key={action.id}
                     disabled={disabled || action.disabled}
                     className={slotProps?.menuItem?.className}
@@ -766,11 +805,11 @@ function SwipeActionsRow({
                     onSelect={() => dispatch(action)}
                   >
                     {renderLabel(action)}
-                  </Menu.Item>
+                  </MenuItem>
                 ))}
-              </Menu.Content>
+              </MenuContent>
             </Menu>
-          </motion.div>
+          </MotionContent>
         </MotionRow>
       )}
     </WithSx>

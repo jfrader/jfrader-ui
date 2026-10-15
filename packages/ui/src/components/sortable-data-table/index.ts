@@ -1,6 +1,7 @@
 export {
   SortableDataTable,
   type SortableDataTableProps,
+  type SortableDataTableSlots,
   type DataColumn,
   type DataTableMessages,
   type DataTablePartProps,

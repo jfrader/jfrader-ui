@@ -2,7 +2,7 @@
 // the label is part of the click target, and state is exposed through the native
 // checked property. The thumb position and track color change together, so state is
 // never conveyed by color alone.
-import { useId, type ChangeEvent, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useId, type ChangeEvent, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
@@ -12,9 +12,20 @@ import { isRenderable } from '../../utils/renderable';
 
 export type SwitchSize = 'sm' | 'md';
 
-export interface SwitchPartProps {
+export interface SwitchPartProps extends ComponentPropsWithRef<'span'> {
   className?: string;
   css?: Interpolation<Theme>;
+}
+
+export interface SwitchSlots {
+  /** Label wrapping the switch and its text. */
+  root?: ComponentType<SwitchPartProps & ComponentPropsWithRef<'label'>>;
+  /** Text naming the switch. */
+  label?: ComponentType<SwitchPartProps>;
+  /** Track displaying the switch state. */
+  control?: ComponentType<SwitchPartProps>;
+  /** Helper text below the switch. */
+  description?: ComponentType<SwitchPartProps>;
 }
 
 export interface SwitchProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type'>, SxProps {
@@ -22,9 +33,10 @@ export interface SwitchProps extends Omit<ComponentPropsWithRef<'input'>, 'size'
   description?: ReactNode;
   size?: SwitchSize;
   onCheckedChange?: (checked: boolean) => void;
+  slots?: SwitchSlots;
   slotProps?: {
     /** Outer label wrapping the switch track, label, and description. */
-    root?: SwitchPartProps;
+    root?: SwitchPartProps & ComponentPropsWithRef<'label'>;
     /** Text label displayed alongside the switch control. */
     label?: SwitchPartProps;
     /** Visual track and sliding thumb representing the toggle switch. */
@@ -127,6 +139,7 @@ export function Switch({
   onChange,
   onCheckedChange,
   slotProps,
+  slots,
   className,
   sx,
   dir,
@@ -134,6 +147,10 @@ export function Switch({
   'aria-describedby': ariaDescribedByProp,
   ...rest
 }: SwitchProps) {
+  const Root = slots?.root ?? 'label';
+  const Label = slots?.label ?? 'span';
+  const Control = slots?.control ?? 'span';
+  const Description = slots?.description ?? 'span';
   const id = useId();
   const labelId = `${id}-label`;
   const descriptionId = `${id}-description`;
@@ -155,7 +172,7 @@ export function Switch({
       sx={sx}
     >
       {(className) => (
-        <label data-ui="switch" dir={dir} className={className}>
+        <Root {...slotProps?.root} css={undefined} data-ui="switch" dir={dir ?? slotProps?.root?.dir} className={className}>
           <span css={choiceRowStyle}>
             <input
               {...rest}
@@ -167,31 +184,34 @@ export function Switch({
               onChange={handleChange}
               css={choiceInputStyle}
             />
-            <span
+            <Control
+              {...slotProps?.control}
               aria-hidden="true"
               className={slotProps?.control?.className}
               css={[trackStyle, trackSizeStyles[size], slotProps?.control?.css]}
             />
             {hasLabel && (
-              <span
+              <Label
+                {...slotProps?.label}
                 id={labelId}
                 className={slotProps?.label?.className}
                 css={[labelSizeStyles[size], slotProps?.label?.css]}
               >
                 {label}
-              </span>
+              </Label>
             )}
           </span>
           {hasDescription && (
-            <span
+            <Description
+              {...slotProps?.description}
               id={descriptionId}
               className={slotProps?.description?.className}
               css={[descriptionStyle, descriptionSizeStyles[size], slotProps?.description?.css]}
             >
               {description}
-            </span>
+            </Description>
           )}
-        </label>
+        </Root>
       )}
     </WithSx>
   );

@@ -9,6 +9,7 @@ export type {
   StepperProps,
   StepperSize,
   StepperSlotProps,
+  StepperSlots,
   StepperStaticProps,
   StepperStatus,
   StepperStep,

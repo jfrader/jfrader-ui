@@ -9,10 +9,13 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
+  type ComponentProps,
   type CSSProperties,
   type ReactNode,
   type Ref,
 } from 'react';
+import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
@@ -60,29 +63,29 @@ export interface DataTablePartProps {
   className?: string;
   css?: Interpolation<Theme>;
 }
-export type DataTableSlotProps = Partial<
-  Record<
-    | /** Scrollable container wrapping the table. */
-      'scroller'
-    | /** Table element rendering the tabular dataset. */
-      'table'
-    | /** Caption element describing the table. */
-      'caption'
-    | /** Header cell element in the table head row. */
-      'headerCell'
-    | /** Button element inside a header cell triggering column sort. */
-      'sortButton'
-    | /** Table row element representing an individual data record. */
-      'row'
-    | /** Table body data cell element. */
-      'cell'
-    | /** Table footer container element. */
-      'footer'
-    | /** Status element announcing sorting and selection updates. */
-      'status',
-    DataTablePartProps
-  >
->;
+export interface SortableDataTableSlots {
+  /** Scrollable container wrapping the table. */
+  scroller?: ComponentType<ComponentPropsWithRef<'div'> & DataTablePartProps>;
+  /** Table displaying the records. */
+  table?: ComponentType<ComponentPropsWithRef<'table'> & DataTablePartProps>;
+  /** Caption naming the table. */
+  caption?: ComponentType<ComponentPropsWithRef<'caption'> & DataTablePartProps>;
+  /** Column heading cell. */
+  headerCell?: ComponentType<ComponentPropsWithRef<'th'> & DataTablePartProps>;
+  /** Button changing the sort order. */
+  sortButton?: ComponentType<ComponentPropsWithRef<'button'> & DataTablePartProps>;
+  /** Row displaying one record. */
+  row?: ComponentType<ComponentPropsWithRef<'tr'> & DataTablePartProps>;
+  /** Cell displaying a value or the empty state. */
+  cell?: ComponentType<ComponentPropsWithRef<'td'> & DataTablePartProps>;
+  /** Footer containing selection controls. */
+  footer?: ComponentType<ComponentPropsWithRef<'div'> & DataTablePartProps>;
+  /** Live region announcing table updates. */
+  status?: ComponentType<ComponentPropsWithRef<'p'> & DataTablePartProps>;
+}
+export type DataTableSlotProps = {
+  [Part in keyof SortableDataTableSlots]?: ComponentProps<NonNullable<SortableDataTableSlots[Part]>>;
+};
 export type SortableDataTableProps<T> = Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> &
   SxProps & {
     rows: readonly T[];
@@ -104,6 +107,7 @@ export type SortableDataTableProps<T> = Omit<ComponentPropsWithRef<'div'>, 'chil
     size?: 'sm' | 'md';
     tableRef?: Ref<HTMLTableElement>;
     slotProps?: DataTableSlotProps;
+    slots?: SortableDataTableSlots;
   } & ({ sortMode: 'manual'; value: SortState | null } | { sortMode?: 'client'; value?: SortState | null }) &
   ({ selectable: true; getRowLabel: (row: T) => string } | { selectable?: false; getRowLabel?: (row: T) => string });
 
@@ -245,10 +249,20 @@ export function SortableDataTable<T>({
   size = 'md',
   tableRef,
   slotProps,
+  slots,
   className,
   sx,
   ...rest
 }: SortableDataTableProps<T>) {
+  const Scroller = slots?.scroller ?? 'div';
+  const Table = slots?.table ?? 'table';
+  const Caption = slots?.caption ?? 'caption';
+  const HeaderCell = slots?.headerCell ?? 'th';
+  const SortButton = slots?.sortButton ?? 'button';
+  const Row = slots?.row ?? 'tr';
+  const Cell = slots?.cell ?? 'td';
+  const Footer = slots?.footer ?? 'div';
+  const Status = slots?.status ?? 'p';
   const messages = { ...defaultMessages, ...messageOverrides };
   const captionId = useId();
   const [rawSort, requestSort] = useControlledState(value, defaultValue, onValueChange);
@@ -293,6 +307,8 @@ export function SortableDataTable<T>({
   const focusedRow = useRef<{ key: string; index: number; control: number } | null>(null);
   const bodyRef = useRef<HTMLTableSectionElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const mergedScrollerRef = useMergeRefs([scrollerRef, slotProps?.scroller?.ref]);
+  const mergedTableRef = useMergeRefs([tableRef, slotProps?.table?.ref]);
   const sortSignature = sort ? `${sort.columnId}:${sort.direction}` : '';
   const selectionSignature = JSON.stringify([...keys].sort());
   const previous = useRef({ sort: sortSignature, selection: selectionSignature });
@@ -366,8 +382,9 @@ export function SortableDataTable<T>({
     <WithSx className={className} styles={[rootStyle]} sx={sx}>
       {(rootClass) => (
         <div {...rest} ref={ref} className={rootClass} data-ui="sortable-data-table">
-          <div
-            ref={scrollerRef}
+          <Scroller
+            {...slotProps?.scroller}
+            ref={mergedScrollerRef}
             role="region"
             aria-label={messages.scrollLabel}
             aria-describedby={rest['aria-describedby']}
@@ -376,20 +393,22 @@ export function SortableDataTable<T>({
             className={slotProps?.scroller?.className}
             css={[scrollerStyle, slotProps?.scroller?.css]}
           >
-            <table
-              ref={tableRef}
+            <Table
+              {...slotProps?.table}
+              ref={mergedTableRef}
               aria-busy={loading || undefined}
               className={slotProps?.table?.className}
               css={[tableStyle, slotProps?.table?.css]}
             >
               {isRenderable(caption) && (
-                <caption
+              <Caption
+                {...slotProps?.caption}
                   id={captionId}
                   className={slotProps?.caption?.className}
                   css={[captionStyle, captionHidden && visuallyHiddenStyle, slotProps?.caption?.css]}
                 >
                   {caption}
-                </caption>
+              </Caption>
               )}
               <colgroup>
                 {selectable && <col />}
@@ -416,7 +435,8 @@ export function SortableDataTable<T>({
                     </th>
                   )}
                   {columns.map((column) => (
-                    <th
+                    <HeaderCell
+                      {...slotProps?.headerCell}
                       key={column.id}
                       scope="col"
                       data-numeric={column.numeric || undefined}
@@ -431,7 +451,8 @@ export function SortableDataTable<T>({
                       css={[cellStyle, densityStyles[size], headerStyle, slotProps?.headerCell?.css]}
                     >
                       {sortable(column) ? (
-                        <button
+                        <SortButton
+                          {...slotProps?.sortButton}
                           type="button"
                           aria-label={messages.sortButton(
                             columnLabel(column),
@@ -451,11 +472,11 @@ export function SortableDataTable<T>({
                           <span aria-hidden="true">
                             {sort?.columnId === column.id ? (sort.direction === 'asc' ? '▲' : '▼') : '♢'}
                           </span>
-                        </button>
+                        </SortButton>
                       ) : (
                         isRenderable(column.header) && column.header
                       )}
-                    </th>
+                    </HeaderCell>
                   ))}
                 </tr>
               </thead>
@@ -464,8 +485,9 @@ export function SortableDataTable<T>({
                   displayed.map((row, index) => {
                     const key = getRowId(row);
                     return (
-                      <tr
-                        key={key}
+                    <Row
+                      {...slotProps?.row}
+                      key={key}
                         data-selected={(selectable && keySet.has(key)) || undefined}
                         className={slotProps?.row?.className}
                         css={[rowStyle, slotProps?.row?.css]}
@@ -484,34 +506,36 @@ export function SortableDataTable<T>({
                       >
                         {selectable && <td css={[cellStyle, densityStyles[size]]}>{selectionCheckbox(row, key)}</td>}
                         {columns.map((column) => (
-                          <td
-                            key={column.id}
+                        <Cell
+                          {...slotProps?.cell}
+                          key={column.id}
                             data-numeric={column.numeric || undefined}
                             className={slotProps?.cell?.className}
                             css={[cellStyle, densityStyles[size], slotProps?.cell?.css]}
                           >
                             {formatCell(column, row)}
-                          </td>
+                        </Cell>
                         ))}
-                      </tr>
+                    </Row>
                     );
                   })
                 ) : (
                   <tr>
-                    <td
-                      colSpan={columns.length + Number(selectable)}
+                  <Cell
+                    {...slotProps?.cell}
+                    colSpan={columns.length + Number(selectable)}
                       className={slotProps?.cell?.className}
                       css={[cellStyle, densityStyles[size], slotProps?.cell?.css]}
                     >
                       {empty === undefined ? messages.empty : isRenderable(empty) && empty}
-                    </td>
+                  </Cell>
                   </tr>
                 )}
               </tbody>
-            </table>
-          </div>
+            </Table>
+          </Scroller>
           {selectable && (
-            <div className={slotProps?.footer?.className} css={[footerStyle, slotProps?.footer?.css]}>
+            <Footer {...slotProps?.footer} className={slotProps?.footer?.className} css={[footerStyle, slotProps?.footer?.css]}>
               <span>{summary}</span>
               {keys.length > 0 && (
                 <Button
@@ -530,9 +554,10 @@ export function SortableDataTable<T>({
                   {messages.clear}
                 </Button>
               )}
-            </div>
+            </Footer>
           )}
-          <p
+          <Status
+            {...slotProps?.status}
             role="status"
             aria-live="polite"
             aria-atomic="true"
@@ -540,7 +565,7 @@ export function SortableDataTable<T>({
             css={[visuallyHiddenStyle, slotProps?.status?.css]}
           >
             {status}
-          </p>
+          </Status>
         </div>
       )}
     </WithSx>

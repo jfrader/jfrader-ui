@@ -899,8 +899,18 @@ export const Localized: Story = {
   },
 };
 
+function ReplacementTimelineMarker(props: import('react').ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replacement="marker" />;
+}
+function ReplacementTimelineTime(props: import('react').ComponentPropsWithRef<'time'>) {
+  return <time {...props} data-replacement="time" />;
+}
+function ReplacementTimelineDetail(props: import('react').ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="detail" />;
+}
 export const SlotStyling: Story = {
   args: {
+    slots: { marker: ReplacementTimelineMarker, time: ReplacementTimelineTime, detail: ReplacementTimelineDetail },
     sx: { paddingInline: vars.space[5] },
     slotProps: {
       heading: { className: 'custom-heading', css: { paddingInlineStart: vars.space[3] } },
@@ -913,6 +923,9 @@ export const SlotStyling: Story = {
   render: (args) => <Timeline {...args} css={{ paddingInline: vars.space[2] }} />,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="timeline"]')!;
+    await expect(part(root, 'marker')).toHaveAttribute('data-replacement', 'marker');
+    await expect(part(root, 'time')).toHaveAttribute('data-replacement', 'time');
+    await expect(part(root, 'detail')).toHaveAttribute('data-replacement', 'detail');
     const expectPx = (value: string, px: number) =>
       expect(Math.abs(Number.parseFloat(value) - px)).toBeLessThan(GEOMETRY_TOLERANCE);
     await expectPx(getComputedStyle(root).paddingInlineStart, 20);

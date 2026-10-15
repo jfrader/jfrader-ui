@@ -8,11 +8,13 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
   type Ref,
 } from 'react';
+import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
@@ -39,25 +41,38 @@ export interface TreeViewPartProps {
   className?: string;
   css?: Interpolation<Theme>;
 }
-export type TreeViewSlotProps = Partial<
-  Record<
-    | /** Root tree list container element (`ul`) with role `tree`. */
-      'tree'
-    | /** Tree item element (`li`) representing an individual node. */
-      'row'
-    | /** Text container element displaying the node's label. */
-      'label'
-    | /** Icon element displayed beside the node label. */
-      'icon'
-    | /** Interactive toggle button or chevron expanding child nodes. */
-      'disclosure'
-    | /** Nested list container element (`ul`) holding child tree items. */
-      'group'
-    | /** Live region element announcing tree selection and load state. */
-      'status',
-    TreeViewPartProps
-  >
->;
+export interface TreeViewSlotProps {
+  /** Root list containing the tree nodes. */
+  tree?: ComponentPropsWithRef<'ul'> & TreeViewPartProps;
+  /** Row containing one node's disclosure, icon and label. */
+  row?: ComponentPropsWithRef<'div'> & TreeViewPartProps;
+  /** Text naming a tree node. */
+  label?: ComponentPropsWithRef<'span'> & TreeViewPartProps;
+  /** Icon beside a node label. */
+  icon?: ComponentPropsWithRef<'span'> & TreeViewPartProps;
+  /** Decorative branch disclosure. */
+  disclosure?: ComponentPropsWithRef<'span'> & TreeViewPartProps;
+  /** Nested list containing child nodes. */
+  group?: ComponentPropsWithRef<'ul'> & TreeViewPartProps;
+  /** Live region announcing tree updates. */
+  status?: ComponentPropsWithRef<'div'> & TreeViewPartProps;
+}
+export interface TreeViewSlots {
+  /** Root list containing the tree nodes. */
+  tree?: ComponentType<NonNullable<TreeViewSlotProps['tree']>>;
+  /** Row containing one node's disclosure, icon and label. */
+  row?: ComponentType<NonNullable<TreeViewSlotProps['row']>>;
+  /** Text naming a tree node. */
+  label?: ComponentType<NonNullable<TreeViewSlotProps['label']>>;
+  /** Icon beside a node label. */
+  icon?: ComponentType<NonNullable<TreeViewSlotProps['icon']>>;
+  /** Decorative branch disclosure. */
+  disclosure?: ComponentType<NonNullable<TreeViewSlotProps['disclosure']>>;
+  /** Nested list containing child nodes. */
+  group?: ComponentType<NonNullable<TreeViewSlotProps['group']>>;
+  /** Live region announcing tree updates. */
+  status?: ComponentType<NonNullable<TreeViewSlotProps['status']>>;
+}
 export interface TreeViewProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>, SxProps {
   nodes: readonly TreeNode[];
@@ -75,6 +90,7 @@ export interface TreeViewProps
   treeRef?: Ref<HTMLUListElement>;
   locale?: Intl.LocalesArgument;
   slotProps?: TreeViewSlotProps;
+  slots?: TreeViewSlots;
 }
 interface Entry {
   node: TreeNode;
@@ -216,6 +232,7 @@ export function TreeView({
   treeRef,
   locale,
   slotProps,
+  slots,
   ref,
   className,
   sx,
@@ -227,8 +244,16 @@ export function TreeView({
   'aria-describedby': describedBy,
   ...rest
 }: TreeViewProps) {
+  const Tree = slots?.tree ?? 'ul';
+  const Row = slots?.row ?? 'div';
+  const Label = slots?.label ?? 'span';
+  const Icon = slots?.icon ?? 'span';
+  const Disclosure = slots?.disclosure ?? 'span';
+  const Group = slots?.group ?? 'ul';
+  const Status = slots?.status ?? 'div';
   const baseId = useId();
   const treeElement = useRef<HTMLUListElement | null>(null);
+  const mergedTreeRef = useMergeRefs([treeElement, treeRef, slotProps?.tree?.ref]);
   const elements = useRef(new Map<string, HTMLDivElement>());
   const lastFocus = useRef<HTMLDivElement | null>(null);
   const previousEntries = useRef(new Map<string, Entry>());
@@ -457,13 +482,15 @@ export function TreeView({
       const opened = entry.branch && openSet.has(node.id);
       return (
         <li key={node.id} role="none">
-          <div
+          <Row
+            {...slotProps?.row}
             data-ui="tree-view-row"
             className={slotProps?.row?.className}
             css={[rowStyle, slotProps?.row?.css]}
-            style={{ '--tree-level': entry.level - 1 } as CSSProperties}
+            style={{ ...slotProps?.row?.style, '--tree-level': entry.level - 1 } as CSSProperties}
           >
-            <span
+            <Disclosure
+              {...slotProps?.disclosure}
               data-ui="tree-view-disclosure"
               aria-hidden="true"
               data-branch={entry.branch}
@@ -472,14 +499,15 @@ export function TreeView({
               css={[disclosureStyle, slotProps?.disclosure?.css]}
             />
             {isRenderable(node.icon) && (
-              <span
+              <Icon
+                {...slotProps?.icon}
                 data-ui="tree-view-icon"
                 aria-hidden="true"
                 className={slotProps?.icon?.className}
                 css={[iconStyle, slotProps?.icon?.css]}
               >
                 {node.icon}
-              </span>
+              </Icon>
             )}
             <div
               ref={(element) => {
@@ -510,27 +538,29 @@ export function TreeView({
                 }
               }}
             >
-              <span
+              <Label
+                {...slotProps?.label}
                 id={labelId}
                 data-ui="tree-view-label"
                 className={slotProps?.label?.className}
                 css={[labelStyle, slotProps?.label?.css]}
               >
                 {node.label}
-              </span>
+              </Label>
             </div>
-          </div>
+          </Row>
           {opened && entry.children && entry.children.length > 0 && (
-            <ul
+            <Group
+              {...slotProps?.group}
               id={`${nodeId(node.id)}-group`}
               role="group"
               data-ui="tree-view-group"
               className={slotProps?.group?.className}
               css={[groupStyle, slotProps?.group?.css]}
-              style={{ '--tree-level': entry.level } as CSSProperties}
+              style={{ ...slotProps?.group?.style, '--tree-level': entry.level } as CSSProperties}
             >
               {renderNodes(entry.children)}
-            </ul>
+            </Group>
           )}
         </li>
       );
@@ -570,14 +600,11 @@ export function TreeView({
             if (!event.currentTarget.contains(event.relatedTarget)) setFocused(nearest(selected));
           }}
         >
-          <ul
+          <Tree
+            {...slotProps?.tree}
             role="tree"
             data-ui="tree-view-tree"
-            ref={(element) => {
-              treeElement.current = element;
-              if (typeof treeRef === 'function') return treeRef(element);
-              if (treeRef) treeRef.current = element;
-            }}
+            ref={mergedTreeRef}
             className={slotProps?.tree?.className}
             css={[treeStyle, slotProps?.tree?.css]}
             tabIndex={enabled.length ? undefined : 0}
@@ -590,13 +617,14 @@ export function TreeView({
             }
           >
             {renderNodes(nodes)}
-          </ul>
+          </Tree>
           {!enabled.length && (
             <p id={`${baseId}-empty`} css={statusStyle}>
               {nodes.length ? messages.empty : isRenderable(emptyContent) ? emptyContent : null}
             </p>
           )}
-          <div
+          <Status
+            {...slotProps?.status}
             role="status"
             aria-live="polite"
             aria-atomic="true"
@@ -615,7 +643,7 @@ export function TreeView({
                   </p>
                 ) : null,
               )}
-          </div>
+          </Status>
         </div>
       )}
     </WithSx>

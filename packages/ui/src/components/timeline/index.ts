@@ -7,5 +7,6 @@ export type {
   TimelineProps,
   TimelineSize,
   TimelineSlotProps,
+  TimelineSlots,
   TimelineTone,
 } from './timeline';

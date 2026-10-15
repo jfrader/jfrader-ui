@@ -1,6 +1,7 @@
 export { UsageMeter } from './usage-meter';
 export type {
   UsageMeterProps,
+  UsageMeterSlots,
   UsageMeterSegment,
   UsageMeterSelection,
   UsageMeterState,
