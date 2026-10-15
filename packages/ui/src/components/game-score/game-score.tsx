@@ -21,12 +21,19 @@ export interface GameScoreProps extends Omit<GameCardRootProps, 'children'>, Gam
   /** Number locale; defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
   slotProps?: {
+    /** Group wrapping the label and the score rows. */
     root?: GameCardRootSlotProps;
+    /** Text naming the score list. */
     label?: PartProps<'span'>;
+    /** Definition list holding every row. */
     list?: PartProps<'dl'>;
+    /** One player's row. */
     row?: PartProps<'div'>;
+    /** Term holding the player or side name. */
     name?: PartProps<'dt'>;
+    /** Description holding the formatted score. */
     value?: PartProps<'dd'>;
+    /** Stage or period shown after the score. */
     stage?: PartProps<'span'>;
   };
 }

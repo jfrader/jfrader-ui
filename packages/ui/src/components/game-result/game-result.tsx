@@ -21,11 +21,17 @@ export interface GameResultPartProps {
 }
 
 export interface GameResultSlotProps {
+  /** Small label above the title, such as the match stage. */
   eyebrow?: GameResultPartProps;
+  /** Headline naming the outcome. */
   title?: GameResultPartProps;
+  /** Supporting line below the title. */
   summary?: GameResultPartProps;
+  /** Panel holding the reward summary. */
   reward?: GameResultPartProps;
+  /** Row holding the buttons that continue or replay. */
   actions?: GameResultPartProps;
+  /** Panel holding the celebration artwork. */
   celebration?: GameResultPartProps;
 }
 

@@ -19,7 +19,18 @@ export interface GameMarksProps extends Omit<GameCardRootProps, 'children'>, Gam
   /** Rows keep marks separate; pile overlaps adjacent marks. Defaults to rows. */
   layout?: 'rows' | 'pile';
   locale?: Intl.LocalesArgument;
-  slotProps?: { root?: GameCardRootSlotProps; label?: PartProps; count?: PartProps; marks?: PartProps; mark?: PartProps };
+  slotProps?: {
+    /** Group wrapping the label, the count and the marks. */
+    root?: GameCardRootSlotProps;
+    /** Text naming what the marks count. */
+    label?: PartProps;
+    /** Formatted number of marks. */
+    count?: PartProps;
+    /** Row or pile holding the individual marks. */
+    marks?: PartProps;
+    /** One mark in the row. */
+    mark?: PartProps;
+  };
 }
 const DEFAULT_MAX_PER_ROW = 5;
 const rootStyle = css({ label: 'game-marks', display: 'grid', justifyItems: 'start', gap: vars.space[2], color: vars.color.text, fontFamily: vars.font.sans,
