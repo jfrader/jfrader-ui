@@ -22,6 +22,7 @@ import {
   useId,
   type ComponentPropsWithoutRef,
   type ComponentPropsWithRef,
+  type ComponentType,
   type HTMLAttributes,
   type ReactNode,
   type RefCallback,
@@ -37,7 +38,7 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
-import { MenuContentPart, MenuController, MenuItemPart, MenuTriggerPart, joinIds, menuItemStyles } from '../menu/menu';
+import { MenuContentPart, MenuController, MenuItemPart, MenuTriggerPart, joinIds, menuItemStyles, type MenuSlots } from '../menu/menu';
 
 // Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
 declare const process: { env: { NODE_ENV?: string } };
@@ -79,6 +80,14 @@ export interface LocaleSwitcherSlotProps {
   option?: SlotStyle;
 }
 
+export interface LocaleSwitcherSlots extends Pick<MenuSlots, 'trigger' | 'content'> {
+  option?: ComponentType<HTMLAttributes<HTMLElement> & {
+    ref?: RefCallback<HTMLElement> | null;
+    href?: string;
+    hrefLang?: string;
+  }>;
+}
+
 export interface LocaleSwitcherProps extends Omit<ComponentPropsWithRef<'nav'>, 'children'>, SxProps {
   options: readonly LocaleSwitcherOption[];
   /** Identifies the current language option. */
@@ -101,6 +110,7 @@ export interface LocaleSwitcherProps extends Omit<ComponentPropsWithRef<'nav'>, 
   onOpenChange?: (open: boolean) => void;
   placement?: Placement;
   slotProps?: LocaleSwitcherSlotProps;
+  slots?: LocaleSwitcherSlots;
 }
 
 const rootStyle = css({
@@ -272,6 +282,7 @@ const chevron = (
 );
 
 interface OptionElementProps extends HTMLAttributes<HTMLElement> {
+  slots?: Pick<LocaleSwitcherSlots, 'option'>;
   ref?: RefCallback<HTMLElement> | null;
   'data-ui': string;
   option: LocaleSwitcherOption;
@@ -283,7 +294,8 @@ interface OptionElementProps extends HTMLAttributes<HTMLElement> {
 }
 
 /** The single rendering path of an option: lang, hreflang, dir and aria-current live here. */
-function OptionElement({ option, current, link, adornment, ...props }: OptionElementProps) {
+function OptionElement({ option, current, link, adornment, slots, ...props }: OptionElementProps) {
+  const Option = slots?.option ?? (link ? 'a' : 'span');
   // A short visible label (`ES`) keeps the full native name in the accessible name: the name is
   // appended after the code ("ES Español"), because a name that omits the visible text fails
   // label-in-name and `aria-label` is ignored on a plain span.
@@ -308,9 +320,9 @@ function OptionElement({ option, current, link, adornment, ...props }: OptionEle
     'aria-current': current ? ('true' as const) : undefined,
     children,
   };
-  if (!link) return <span {...shared} />;
-  const linkProps: LocaleSwitcherLinkProps = { ...shared, href: option.href, hrefLang: option.lang };
-  return option.render ? option.render(linkProps) : <a {...linkProps} />;
+  if (!link) return <Option {...shared} />;
+  const linkProps = { ...shared, href: option.href, hrefLang: option.lang };
+  return option.render ? option.render(linkProps) : <Option {...linkProps} />;
 }
 
 interface StyledOptionProps extends Omit<OptionElementProps, 'data-ui' | 'className' | 'slot'> {
@@ -329,7 +341,7 @@ function StyledOption({ styles, slot, ...props }: StyledOptionProps) {
 interface VariantProps
   extends Pick<
     LocaleSwitcherProps,
-    'options' | 'value' | 'triggerLabel' | 'icon' | 'open' | 'defaultOpen' | 'onOpenChange' | 'placement' | 'slotProps'
+    'options' | 'value' | 'triggerLabel' | 'icon' | 'open' | 'defaultOpen' | 'onOpenChange' | 'placement' | 'slotProps' | 'slots'
   > {
   size: LocaleSwitcherSize;
   current: LocaleSwitcherOption | undefined;
@@ -347,6 +359,7 @@ function MenuVariant({
   onOpenChange,
   placement,
   slotProps,
+  slots,
 }: VariantProps) {
   const id = useId();
   const actionId = `${id}-action`;
@@ -358,6 +371,7 @@ function MenuVariant({
   return (
     <MenuController open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} placement={placement}>
       <MenuTriggerPart
+        slots={slots}
         {...triggerAttributes}
         aria-labelledby={joinIds(triggerLabel ? actionId : undefined, current ? currentId : undefined)}
         family={FAMILY}
@@ -391,6 +405,7 @@ function MenuVariant({
         </span>
       </MenuTriggerPart>
       <MenuContentPart
+        slots={slots}
         {...contentAttributes}
         family={FAMILY}
         marker="locale-switcher-menu"
@@ -410,6 +425,7 @@ function MenuVariant({
               render={(itemProps) => (
                 <OptionElement
                   {...itemProps}
+                  slots={slots}
                   option={option}
                   current={isCurrent}
                   link
@@ -430,20 +446,20 @@ function MenuVariant({
   );
 }
 
-function SwapVariant({ options, value, slotProps }: VariantProps) {
+function SwapVariant({ options, value, slotProps, slots }: VariantProps) {
   const target = options.find((option) => option.value !== value);
   if (!target) return null;
-  return <StyledOption option={target} current={false} link styles={linkStyle} slot={slotProps?.option} />;
+  return <StyledOption option={target} current={false} link styles={linkStyle} slot={slotProps?.option} slots={slots} />;
 }
 
-interface OptionListProps extends Pick<VariantProps, 'options' | 'value' | 'slotProps'> {
+interface OptionListProps extends Pick<VariantProps, 'options' | 'value' | 'slotProps' | 'slots'> {
   listStyles: Interpolation<Theme>;
   linkStyles: Interpolation<Theme>;
   currentStyles: Interpolation<Theme>;
 }
 
 /** Every option in a list; the current one is plain text, the others are links. */
-function OptionList({ options, value, slotProps, listStyles, linkStyles, currentStyles }: OptionListProps) {
+function OptionList({ options, value, slotProps, slots, listStyles, linkStyles, currentStyles }: OptionListProps) {
   return (
     <ul css={listStyles}>
       {options.map((option) => {
@@ -451,6 +467,7 @@ function OptionList({ options, value, slotProps, listStyles, linkStyles, current
         return (
           <li key={option.value}>
             <StyledOption
+              slots={slots}
               option={option}
               current={isCurrent}
               link={!isCurrent}
@@ -506,6 +523,7 @@ export function LocaleSwitcher({
   onOpenChange,
   placement,
   slotProps,
+  slots,
   className,
   sx,
   ...rest
@@ -555,6 +573,7 @@ export function LocaleSwitcher({
             onOpenChange={onOpenChange}
             placement={placement}
             slotProps={slotProps}
+            slots={slots}
           />
         </Root>
       )}

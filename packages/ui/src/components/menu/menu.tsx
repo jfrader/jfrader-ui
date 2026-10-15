@@ -427,22 +427,41 @@ export function MenuController(props: MenuControllerProps) {
 }
 
 function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, open, defaultOpen, onOpenChange, placement, ...rootProps }: MenuProps) {
-  const TriggerPart = slots?.trigger ?? MenuTrigger;
-  const ContentPart = slots?.content ?? MenuContent;
-  const ItemPart = slots?.item ?? MenuItem;
-  const SeparatorPart = slots?.separator ?? MenuSeparator;
   const generated = items !== undefined ? (
     <>
-      <TriggerPart {...slotProps?.trigger}>{triggerLabel}</TriggerPart>
-      <ContentPart {...slotProps?.content}>
+      <MenuTriggerPart {...slotProps?.trigger} slots={slots} family="Menu" marker="menu-trigger" styles={triggerStyle}>
+        {triggerLabel}
+      </MenuTriggerPart>
+      <MenuContentPart
+        {...slotProps?.content}
+        slots={slots}
+        family="Menu"
+        marker="menu"
+        styles={[listboxSurfaceStyle, listboxScrollStyle]}
+      >
         {items.map((item, index) => item.type === 'separator' ? (
-          <SeparatorPart {...slotProps?.separator} key={item.key ?? index} />
+          <MenuSeparatorPart
+            {...slotProps?.separator}
+            slots={slots}
+            marker="menu-separator"
+            styles={separatorStyle}
+            key={item.key ?? index}
+          />
         ) : (
-          <ItemPart {...slotProps?.item} key={item.key ?? index} onSelect={item.onSelect} disabled={item.disabled}>
+          <MenuItemPart
+            {...slotProps?.item}
+            slots={slots}
+            family="Menu"
+            marker="menu-item"
+            styles={menuItemStyles}
+            key={item.key ?? index}
+            onSelect={item.onSelect}
+            disabled={item.disabled}
+          >
             {item.label}
-          </ItemPart>
+          </MenuItemPart>
         ))}
-      </ContentPart>
+      </MenuContentPart>
     </>
   ) : children;
   return (
@@ -459,6 +478,7 @@ function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, 
 MenuRoot.displayName = 'Menu';
 
 export function MenuTriggerPart({
+  slots,
   family,
   marker,
   styles,
@@ -466,14 +486,15 @@ export function MenuTriggerPart({
   className,
   sx,
   ...props
-}: MenuTriggerProps & MenuPartIdentity) {
+}: MenuTriggerProps & MenuPartIdentity & { slots?: Pick<MenuSlots, 'trigger'> }) {
+  const Trigger = slots?.trigger ?? 'button';
   const { refs, getReferenceProps } = useMenuContext(family, 'Trigger');
   const mergedRef = useMergeRefs([refs.setReference, ref]);
 
   return (
     <WithSx className={className} styles={styles} sx={sx}>
       {(className) => (
-        <button
+        <Trigger
           type="button"
           {...consumerHandlersFirst(props, getReferenceProps)}
           ref={mergedRef}
@@ -492,6 +513,7 @@ function MenuTrigger(props: MenuTriggerProps) {
 MenuTrigger.displayName = 'Menu.Trigger';
 
 export function MenuContentPart({
+  slots,
   family,
   marker,
   styles,
@@ -504,7 +526,8 @@ export function MenuContentPart({
   'aria-labelledby': ariaLabelledBy,
   defaultLabelledBy,
   ...rest
-}: MenuContentProps & MenuPartIdentity & { defaultLabelledBy?: string }) {
+}: MenuContentProps & MenuPartIdentity & { defaultLabelledBy?: string; slots?: Pick<MenuSlots, 'content'> }) {
+  const Content = slots?.content ?? 'div';
   const { open, refs, floatingContext, floatingStyles, getFloatingProps } = useMenuContext(family, 'Content');
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
 
@@ -531,7 +554,7 @@ export function MenuContentPart({
       >
         <WithSx className={className} styles={styles} sx={sx}>
           {(className) => (
-            <div
+            <Content
               {...floatingProps}
               aria-label={ariaLabel}
               aria-labelledby={labelledBy}
@@ -541,7 +564,7 @@ export function MenuContentPart({
               className={className}
             >
               <MenuCollection family={family}>{children}</MenuCollection>
-            </div>
+            </Content>
           )}
         </WithSx>
       </FloatingFocusManager>
@@ -572,6 +595,7 @@ function MenuContent(props: MenuContentProps) {
 MenuContent.displayName = 'Menu.Content';
 
 export function MenuItemPart({
+  slots,
   family,
   marker,
   styles,
@@ -588,7 +612,8 @@ export function MenuItemPart({
   className,
   sx,
   ...rest
-}: MenuItemProps & MenuPartIdentity & MenuItemPartBehavior) {
+}: MenuItemProps & MenuPartIdentity & MenuItemPartBehavior & { slots?: Pick<MenuSlots, 'item'> }) {
+  const Item = slots?.item ?? 'button';
   const { activeIndex, requestClose, disabledIndices, getItemProps } = useMenuItemContext(family, part);
   // A null label removes disabled items from typeahead; undefined falls back to textContent.
   const { ref: listItemRef, index } = useCollectionListItem({ label: disabled ? null : undefined });
@@ -633,7 +658,7 @@ export function MenuItemPart({
           'data-ui': marker,
           className,
         };
-        return render ? render(itemProps as MenuItemRenderProps) : <button type="button" {...itemProps} />;
+        return render ? render(itemProps as MenuItemRenderProps) : <Item type="button" {...itemProps} />;
       }}
     </WithSx>
   );
@@ -646,16 +671,18 @@ function MenuItem(props: MenuItemProps) {
 MenuItem.displayName = 'Menu.Item';
 
 export function MenuSeparatorPart({
+  slots,
   marker,
   styles,
   ref,
   className,
   sx,
   ...props
-}: MenuSeparatorProps & Omit<MenuPartIdentity, 'family'>) {
+}: MenuSeparatorProps & Omit<MenuPartIdentity, 'family'> & { slots?: Pick<MenuSlots, 'separator'> }) {
+  const Separator = slots?.separator ?? 'div';
   return (
     <WithSx className={className} styles={styles} sx={sx}>
-      {(className) => <div {...props} ref={ref} role="separator" data-ui={marker} className={className} />}
+      {(className) => <Separator {...props} ref={ref} role="separator" data-ui={marker} className={className} />}
     </WithSx>
   );
 }

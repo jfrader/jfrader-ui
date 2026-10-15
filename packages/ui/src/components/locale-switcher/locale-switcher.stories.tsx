@@ -1,10 +1,10 @@
-import type { CSSProperties, MouseEvent } from 'react';
+import type { ComponentPropsWithRef, CSSProperties, MouseEvent } from 'react';
 import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, userEvent, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Popover } from '../popover';
-import { LocaleSwitcher, type LocaleSwitcherLinkProps, type LocaleSwitcherOption } from './index';
+import { LocaleSwitcher, type LocaleSwitcherLinkProps, type LocaleSwitcherOption, type LocaleSwitcherSlots } from './index';
 
 const OPTIONS = [
   { value: 'en', label: 'English', lang: 'en', href: '/en/pricing' },
@@ -21,6 +21,62 @@ const SHORT_PAIR = [
 const TRIGGER_LABEL = 'Change language';
 const TRIGGER_NAME = `${TRIGGER_LABEL} English`;
 const NAV_LABEL = 'Language';
+
+function ReplacementTrigger(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-testid="replacement-trigger" />;
+}
+function ReplacementContent(props: ComponentPropsWithRef<'div'>) {
+  return <section {...props} data-testid="replacement-content" />;
+}
+const ReplacementOption: NonNullable<LocaleSwitcherSlots['option']> = (props) => {
+  return <a {...props} data-testid="replacement-option" />;
+};
+
+export const ReplacementSlots: StoryObj<typeof LocaleSwitcher> = {
+  args: {
+    slots: { trigger: ReplacementTrigger, content: ReplacementContent, option: ReplacementOption },
+    slotProps: {
+      trigger: { className: 'replacement-trigger', onClick: fn() },
+      content: { className: 'replacement-content' },
+      option: { className: 'replacement-option' },
+    },
+  },
+  play: async ({ canvasElement, args, userEvent }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+    const trigger = canvas.getByTestId('replacement-trigger');
+    await expect(trigger).toHaveAttribute('data-ui', 'locale-switcher-trigger');
+    await expect(trigger).toHaveClass('replacement-trigger');
+    await expect(trigger.className).toMatch(/css-/);
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    await userEvent.click(trigger);
+    await expect(args.slotProps?.trigger?.onClick).toHaveBeenCalled();
+    const content = await body.findByTestId('replacement-content');
+    await expect(content).toHaveAttribute('data-ui', 'locale-switcher-menu');
+    await expect(content).toHaveClass('replacement-content');
+    await expect(content.className).toMatch(/css-/);
+    await expect(content).toHaveAttribute('role', 'menu');
+    await expect(trigger).toHaveAttribute('aria-controls', content.id);
+    const options = within(content).getAllByTestId('replacement-option');
+    for (const option of options) {
+      await expect(option).toHaveAttribute('data-ui', 'locale-switcher-option');
+      await expect(option).toHaveClass('replacement-option');
+      await expect(option.className).toMatch(/css-/);
+      await expect(option).toHaveAttribute('role', 'menuitem');
+      await expect(option).toHaveAttribute('href');
+    }
+    await expect(options[0]).toHaveAttribute('aria-current', 'true');
+    await expect(canvasElement.querySelector('[data-ui="locale-switcher-trigger"]:not([data-testid="replacement-trigger"])')).toBeNull();
+    await expect(canvasElement.ownerDocument.querySelector('div[data-ui="locale-switcher-menu"]')).toBeNull();
+    await expect(content.querySelector('[data-ui="locale-switcher-option"]:not([data-testid="replacement-option"])')).toBeNull();
+    await expect(options[0]).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(options[1]).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(content).not.toBeInTheDocument());
+    await expect(trigger).toHaveFocus();
+  },
+};
 // Landmark names must differ when a story renders more than one navigation.
 const SECOND_NAV_LABEL = 'Site language';
 // Regional indicator symbols: the code points flag emoji are made of.

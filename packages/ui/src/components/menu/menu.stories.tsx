@@ -61,6 +61,71 @@ function MenuRootAdapter(props: ComponentPropsWithRef<'div'>) {
 }
 function UnusedMenuRoot() { return null; }
 
+function ReplacementTrigger(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-testid="replacement-trigger" />;
+}
+function ReplacementContent(props: ComponentPropsWithRef<'div'>) {
+  return <section {...props} data-testid="replacement-content" />;
+}
+function ReplacementItem(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-testid="replacement-item" />;
+}
+function ReplacementSeparator(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="replacement-separator" />;
+}
+
+export const ReplacementSlots: EasyStory = {
+  args: {
+    triggerLabel: 'Replacement actions',
+    items: [{ type: 'item', label: 'Edit' }, { type: 'separator' }],
+    slots: { trigger: ReplacementTrigger, content: ReplacementContent, item: ReplacementItem, separator: ReplacementSeparator },
+    slotProps: {
+      trigger: { className: 'replacement-trigger', onClick: fn(), ref: fn() },
+      content: { className: 'replacement-content', ref: fn() },
+      item: { className: 'replacement-item' },
+      separator: { className: 'replacement-separator' },
+    },
+  },
+  render: (args) => <Menu {...args} />,
+  play: async ({ canvasElement, args, userEvent }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+    const trigger = canvas.getByTestId('replacement-trigger');
+    await expect(trigger).toHaveAttribute('data-ui', 'menu-trigger');
+    await expect(trigger).toHaveClass('replacement-trigger');
+    await expect(trigger.className).toMatch(/css-/);
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    await userEvent.click(trigger);
+    await expect(args.slotProps?.trigger?.onClick).toHaveBeenCalled();
+    await expect(args.slotProps?.trigger?.ref).toHaveBeenCalledWith(trigger);
+    const content = await body.findByTestId('replacement-content');
+    await expect(content).toHaveAttribute('data-ui', 'menu');
+    await expect(content).toHaveClass('replacement-content');
+    await expect(content.className).toMatch(/css-/);
+    await expect(content).toHaveAttribute('role', 'menu');
+    await expect(trigger).toHaveAttribute('aria-controls', content.id);
+    await expect(args.slotProps?.content?.ref).toHaveBeenCalledWith(content);
+    const item = body.getByTestId('replacement-item');
+    await expect(item).toHaveAttribute('data-ui', 'menu-item');
+    await expect(item).toHaveClass('replacement-item');
+    await expect(item).toHaveAttribute('role', 'menuitem');
+    const separator = body.getByTestId('replacement-separator');
+    await expect(separator).toHaveAttribute('data-ui', 'menu-separator');
+    await expect(separator).toHaveClass('replacement-separator');
+    await expect(separator).toHaveAttribute('role', 'separator');
+    await expect(canvasElement.querySelector('[data-ui="menu-trigger"]:not([data-testid="replacement-trigger"])')).toBeNull();
+    await expect(canvasElement.ownerDocument.querySelector('div[role="menu"]')).toBeNull();
+    await expect(item).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(content).not.toBeInTheDocument());
+    await expect(trigger).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    await userEvent.click(await body.findByTestId('replacement-item'));
+    await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'false'));
+    await expect(trigger).toHaveFocus();
+  },
+};
+
 /** Restyle the generated trigger and every action with slotProps. */
 export const SlotProps: EasyStory = {
   args: {

@@ -10,8 +10,8 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 - Public callable families: **126**; public callable parts: **156**.
 - Families exposing `slots.root`: **66**; remaining without a family-level root slot: **60** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **87**; remaining without family-level interior slots: **39** (includes components without generated anatomy).
-- Rows with styling-only `slotProps` keys: **15**.
+- Families exposing any non-root replacement slot: **88**; remaining without family-level interior slots: **38** (includes components without generated anatomy).
+- Rows with styling-only `slotProps` keys: **12**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
 behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, TrickStacks and CardFlights are owner-held;
@@ -106,7 +106,7 @@ may exist and is listed on the corresponding public part).
 | [DateRangePicker.Content](../packages/ui/src/components/date-range-picker/date-range-picker.tsx) | — | `actions`, `calendars`, `presets`, `summary` | `actions`, `calendars`, `presets`, `summary` | — | — | — |
 | [DateRangePicker.Trigger](../packages/ui/src/components/date-range-picker/date-range-picker.tsx) | — | — | — | — | — | — |
 | [DeckProvider](../packages/ui/src/components/deck/deck-context.tsx) | — | — | — | — | — | — |
-| [Dialog](../packages/ui/src/components/dialog/dialog.tsx) | yes | `close`, `description`, `header`, `root`, `title`, `trigger` | `close`, `content`, `description`, `header`, `panel`, `root`, `title`, `trigger` | `content`, `panel` | — | `Close`, `Content`, `Description`, `Panel`, `Title`, `Trigger` |
+| [Dialog](../packages/ui/src/components/dialog/dialog.tsx) | yes | `close`, `content`, `description`, `header`, `panel`, `root`, `title`, `trigger` | `close`, `content`, `description`, `header`, `panel`, `root`, `title`, `trigger` | — | — | `Close`, `Content`, `Description`, `Panel`, `Title`, `Trigger` |
 | [Dialog.Close](../packages/ui/src/components/dialog/dialog.tsx) | — | — | — | — | — | — |
 | [Dialog.Content](../packages/ui/src/components/dialog/dialog.tsx) | — | — | — | — | — | — |
 | [Dialog.Description](../packages/ui/src/components/dialog/dialog.tsx) | — | — | — | — | — | — |
@@ -195,7 +195,7 @@ may exist and is listed on the corresponding public part).
 | [LightboxGallery](../packages/ui/src/components/lightbox-gallery/lightbox-gallery.tsx) | — | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | — | — | — |
 | [LinkPreview](../packages/ui/src/components/link-preview/link-preview.tsx) | — | `body`, `image`, `title` | `body`, `image`, `title` | — | — | — |
 | [LinkUnfurl](../packages/ui/src/components/link-unfurl/link-unfurl.tsx) | — | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | — | — | — |
-| [LocaleSwitcher](../packages/ui/src/components/locale-switcher/locale-switcher.tsx) | — | — | `content`, `option`, `trigger` | `content`, `option`, `trigger` | — | — |
+| [LocaleSwitcher](../packages/ui/src/components/locale-switcher/locale-switcher.tsx) | — | `content`, `option`, `trigger` | `content`, `option`, `trigger` | — | — | — |
 | [MentionInput](../packages/ui/src/components/mention-input/mention-input.tsx) | yes | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | — | — | — |
 | [Menu](../packages/ui/src/components/menu/menu.tsx) | yes | `content`, `item`, `root`, `separator`, `trigger` | `content`, `item`, `root`, `separator`, `trigger` | — | — | `Content`, `Item`, `Separator`, `Trigger` |
 | [Menu.Content](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
@@ -278,7 +278,7 @@ may exist and is listed on the corresponding public part).
 | [TextField](../packages/ui/src/components/text-field/text-field.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |
 | [ThemeProvider](../packages/ui/src/components/theme-provider/theme-provider.tsx) | — | — | — | — | — | — |
 | [ThemeRoot](../packages/ui/src/components/theme-root/theme-root.tsx) | — | — | — | — | — | — |
-| [ThemeSwitch](../packages/ui/src/components/theme-switch/theme-switch.tsx) | — | `control`, `description`, `label`, `root` | `control`, `darkIcon`, `description`, `iconFrame`, `label`, `lightIcon`, `root` | `darkIcon`, `iconFrame`, `lightIcon` | — | — |
+| [ThemeSwitch](../packages/ui/src/components/theme-switch/theme-switch.tsx) | — | `control`, `darkIcon`, `description`, `iconFrame`, `label`, `lightIcon`, `root` | `control`, `darkIcon`, `description`, `iconFrame`, `label`, `lightIcon`, `root` | — | — | — |
 | [Timeline](../packages/ui/src/components/timeline/timeline.tsx) | — | `detail`, `group`, `heading`, `item`, `list`, `marker`, `scroller`, `status`, `time`, `trigger` | `detail`, `group`, `heading`, `item`, `list`, `marker`, `scroller`, `status`, `time`, `trigger` | — | — | — |
 | [TimePicker](../packages/ui/src/components/time-picker/time-picker.tsx) | — | `content`, `control`, `description`, `error`, `icon`, `label`, `option`, `root` | `content`, `control`, `description`, `error`, `icon`, `label`, `option`, `root` | — | — | — |
 | [Toast](../packages/ui/src/components/toast/toast.tsx) | — | `viewport` | `viewport` | — | `viewportProps` | `Provider`, `Viewport` |
