@@ -2,12 +2,19 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { GameHand, type GameHandCard, type GameHandProps } from './game-hand';
 import { Button } from '../button';
 import { ThemeRoot } from '../theme-root';
 import { expectInside, expectMirrored, expectMirroredDirection, expectNoOverlap } from '../../testing/geometry-assertions';
 import { buildOpponentHiddenHandLayout, DEFAULT_HIDDEN_HAND_RULES, getHandFanRotations, getOpponentSeatHandTransform } from './hand-layout';
 import { HIDDEN_PARITY, PLAYER_PARITY, SEAT_PARITY } from './parity-fixtures';
+
+const Controls = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
+const Row = styled.div({ display: 'flex', gap: vars.space[8] });
+const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.space[8] });
+const SpaciousHands = styled(Hands)({ padding: vars.space[12] });
 
 const CARDS: GameHandCard[] = [
   { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
@@ -334,17 +341,20 @@ export const RejectedSelection: Story = {
 
 function MutableHand(args: GameHandProps) {
   const [cards, setCards] = useState(args.cards);
-  return <div style={{ display: 'grid', justifyItems: 'start', gap: vars.space[4] }}>
+  return <Controls>
     <Button onClick={() => setCards(cards.slice(1))}>Remove first card</Button>
     <Button onClick={() => setCards([...cards].reverse())}>Reverse cards</Button>
     <GameHand {...args} cards={cards} />
-  </div>;
+  </Controls>;
 }
 export const StableIdentity: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
 import { GameHand } from '@jfrader/ui/game-hand';
 import { Button } from '@jfrader/ui/button';
 import { vars } from '@jfrader/tokens/vars';
+import { styled } from '@jfrader/ui';
+
+const Controls = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
 
 const initialCards = [
   { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
@@ -353,11 +363,11 @@ const initialCards = [
 ];
 export function MutableHand() {
   const [cards, setCards] = useState(initialCards);
-  return <div style={{ display: 'grid', justifyItems: 'start', gap: vars.space[4] }}>
+  return <Controls>
     <Button onClick={() => setCards(cards.slice(1))}>Remove first card</Button>
     <Button onClick={() => setCards([...cards].reverse())}>Reverse cards</Button>
     <GameHand cards={cards} playLabel="Play card" onPlayIntent={console.log} />
-  </div>;
+  </Controls>;
 }` } } },
   name: 'Remove and reorder cards',
   render: (args) => <MutableHand {...args} />,
@@ -436,13 +446,16 @@ const cards = [
   { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
 ];
 
-<div style={{ display: 'flex', gap: vars.space[8] }}>
+import { styled } from '@jfrader/ui';
+const Row = styled.div({ display: 'flex', gap: vars.space[8] });
+
+<Row>
   {(['sm', 'md', 'lg'] as const).map((size) =>
     <GameHand key={size} size={size} cards={cards} playLabel="Play card" onPlayIntent={console.log} />)}
-</div>` } } },
-  render: (args) => <div style={{ display: 'flex', gap: vars.space[8] }}>
+</Row>` } } },
+  render: (args) => <Row>
   {(['sm', 'md', 'lg'] as const).map((size) => <GameHand {...args} key={size} size={size} />)}
-</div>, play: async ({ canvasElement }) => {
+</Row>, play: async ({ canvasElement }) => {
   const hands = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand"]'));
   for (const [index, hand] of hands.entries()) {
     const fan = hand.querySelector('[data-ui="game-hand-fan"]')!;
@@ -454,15 +467,18 @@ const cards = [
 } };
 
 export const HiddenHands: Story = {
-  render: () => <div style={{ display: 'flex', gap: vars.space[12], padding: vars.space[8] }}>
+  render: () => <Hands>
     {[1, 2, 3].map((count) => <GameHand.Hidden key={count} count={count} label="Opponent hand" />)}
-  </div>,
+  </Hands>,
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { vars } from '@jfrader/tokens/vars';
 
-<div style={{ display: 'flex', gap: vars.space[12], padding: vars.space[8] }}>
+import { styled } from '@jfrader/ui';
+const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.space[8] });
+
+<Hands>
   {[1, 2, 3].map((count) => <GameHand.Hidden key={count} count={count} label="Opponent hand" />)}
-</div>` } } },
+</Hands>` } } },
   play: async ({ canvasElement, canvas }) => {
     await expect(canvas.getAllByRole('img', { name: 'Opponent hand' })).toHaveLength(3);
     const hands = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand-hidden"]'));
@@ -503,6 +519,7 @@ import { vars } from '@jfrader/tokens/vars';
   },
 };
 export const HiddenHandsLightTheme: Story = { ...HiddenHands, decorators: LightTheme.decorators };
+// This story demonstrates the slot styling API.
 export const HiddenCardSlots: Story = {
   render: () => <GameHand.Hidden count={3} label="Opponent hand"
     slotProps={{ card: { className: 'custom-hidden-card', css: { borderRadius: vars.radius.lg } } }} />,
@@ -525,13 +542,16 @@ export const HiddenHandsRTL: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { vars } from '@jfrader/tokens/vars';
 
-<div dir="rtl"><div style={{ display: 'flex', gap: vars.space[12], padding: vars.space[8] }}>
+import { styled } from '@jfrader/ui';
+const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.space[8] });
+
+<div dir="rtl"><Hands>
   {[1, 2, 3].map((count) => <GameHand.Hidden key={count} count={count} label="Opponent hand" />)}
-</div></div>` } } },
+</Hands></div>` } } },
 };
 export const RadialHiddenHands: Story = {
   tags: ['!autodocs'],
-  render: () => <div style={{ display: 'flex', gap: vars.space[12], padding: vars.space[12] }}>
+  render: () => <SpaciousHands>
     {SEAT_PARITY.map((seat, index) => <GameHand.Hidden key={index} count={3} label="Opponent hand" polar={seat.polar} />)}
-  </div>,
+  </SpaciousHands>,
 };

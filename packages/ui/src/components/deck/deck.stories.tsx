@@ -2,7 +2,8 @@ import type { ComponentProps } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { styled } from '../../styling/styled';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { GameCard } from '../game-card';
 import { GameTable } from '../game-table';
@@ -20,14 +21,16 @@ const Row = styled('div')({
   gap: vars.space[4],
 });
 
+const ArtLabel = styled.text({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold });
+
 function FaceArt({ text }: { text: string }) {
   return (
     <svg viewBox="0 0 72 106" width="100%" height="100%" aria-hidden="true">
       <rect width="100%" height="100%" fill={vars.color.surfaceInset} />
       <circle cx="36" cy="53" r="22" fill={vars.color.cardRed} />
-      <text x="36" y="58" textAnchor="middle" fill={vars.color.cardFace} fontSize="11" fontWeight="bold">
+      <ArtLabel x="36" y="58" textAnchor="middle" fill={vars.color.cardFace}>
         {text}
-      </text>
+      </ArtLabel>
     </svg>
   );
 }

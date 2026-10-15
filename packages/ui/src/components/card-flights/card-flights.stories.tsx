@@ -5,7 +5,8 @@ import fixtureSource from './card-flights-fixture.tsx?raw';
 import { FLIGHT_GEOMETRY, dealSequence } from './geometry';
 import { StrictMode, useRef, useState, type ComponentPropsWithRef } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { Button } from '../button';
 import { GameCard } from '../game-card';
@@ -36,6 +37,10 @@ import { GameTable } from '@jfrader/ui/game-table';
 import { Button } from '@jfrader/ui/button';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 import { vars } from '@jfrader/tokens/vars';
+
+import { styled } from '@jfrader/ui';
+const Controls = styled.div({ display: 'flex', gap: vars.space[2], padding: vars.space[3] });
+const Board = styled.div({ blockSize: '600px', maxInlineSize: '850px' });
 
 function App() {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
@@ -76,10 +81,10 @@ function Match() {
 
   return (
     <>
-    <div style={{ display: 'flex', gap: vars.space[2], padding: vars.space[3] }}>
+    <Controls>
       <Button disabled={landing.size > 0} onClick={() => { setPlays([]); setHandKey((key) => key + 1); }}>Deal hand</Button>
-    </div>
-    <div style={{ blockSize: '600px', maxInlineSize: '850px' }}>
+    </Controls>
+    <Board>
     <GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}>
       <GameTable.Seat slotKey="rival">
         <GameHand.Hidden playerKey="rival" count={rivalCards.length} label="Rival hand" />
@@ -95,7 +100,7 @@ function Match() {
         </GameTable.Play>
       ))}
     </GameTable>
-    </div>
+    </Board>
     </>
   );
 }` },
@@ -181,6 +186,10 @@ import { ThemeRoot } from '@jfrader/ui/theme-root';
 import { Button } from '@jfrader/ui/button';
 import { vars } from '@jfrader/tokens/vars';
 
+import { styled } from '@jfrader/ui';
+const Controls = styled.div({ display: 'flex', gap: vars.space[2], padding: vars.space[3] });
+const Board = styled.div({ blockSize: '600px', maxInlineSize: '850px' });
+
 const hands = {
   own: [
     { id: 'own-ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
@@ -212,16 +221,16 @@ function Match() {
     setPlays((current) => [...current, own, ...(rival ? [{ ...rival, cardId: rival.id, id: crypto.randomUUID(), playerKey: 'rival', isOwn: false }] : [])]);
   };
   return <>
-    <div style={{ display: 'flex', gap: vars.space[2], padding: vars.space[3] }}>
+    <Controls>
       <Button disabled={landing.size > 0} onClick={() => { setPlays([]); setHandKey((key) => key + 1); }}>Deal hand</Button>
-    </div>
-    <div style={{ blockSize: '600px', maxInlineSize: '850px' }}><GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}>
+    </Controls>
+    <Board><GameTable players={2} seats={seats} viewport={{ width: 1000, height: 800 }}>
       <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rivalCards.length} label="Rival hand" /></GameTable.Seat>
       <GameTable.Dock><GameHand cards={hand} playLabel="Play selected" onPlayIntent={play} disabled={landing.size > 0} /></GameTable.Dock>
       {seats.map((seat) => <GameTable.Play key={seat.key} slotKey={seat.key}>
         <GameCardStack.Pile playerKey={seat.key} label={seat.isMe ? 'Own pile' : 'Rival pile'} cards={plays.filter((entry) => entry.playerKey === seat.key)} />
       </GameTable.Play>)}
-    </GameTable></div>
+    </GameTable></Board>
   </>;
 }` } } },
 };
@@ -263,11 +272,11 @@ function LowLevelBoard() {
   usePlayedCardFlights({ plays, playerCount: 1 });
   return <>
     <Button onClick={() => { setPlays([]); setHandIndex((key) => key + 1); }}>Deal custom board</Button>
-    <div data-game-surface="true" css={boardStyle}>
+    <Board data-game-surface="true">
       <GameHand cards={hand} disabled={landingTargets.size > 0} playLabel="Play custom card"
         onPlayIntent={(card) => setPlays([{ ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true }])} />
       <GameCardStack.Pile playerKey="own" label="Custom pile" cards={plays} />
-    </div>
+    </Board>
   </>;
 }
 
@@ -301,8 +310,8 @@ function mockPreference(reduced = false) {
 }
 
 
-const controlsStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: vars.space[3] });
-const boardStyle = css({ blockSize: '600px', maxInlineSize: '850px' });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: vars.space[3] });
+const Board = styled.div({ blockSize: '600px', maxInlineSize: '850px' });
 const ownHand = (['A', 2, 3] as const).map((rank, index) => ({
   id: `own:${index}`, label: `${rank} of spades`, value: { deck: 'french' as const, rank, suit: 'spades' as const },
 }));
@@ -331,7 +340,7 @@ function FlightIdentityProbe() {
   const [spec, setSpec] = useState<CardFlightSpec | null>(null);
   return <div data-identity-probe>
     <div ref={destinationRef}><GameCard label="Probe card" /></div>
-    <div css={controlsStyle}>
+    <Controls>
       <Button onClick={() => {
         const destination = destinationRef.current;
         if (!destination) return;
@@ -342,7 +351,7 @@ function FlightIdentityProbe() {
       }}>Start identity probe</Button>
       <Button onClick={() => setSpec((current) => current && ({ ...current, from: { ...current.from }, to: { ...current.to } }))}>Rerender identity probe</Button>
       <Button onClick={() => setSpec(null)}>Stop identity probe</Button>
-    </div>
+    </Controls>
     {spec && <CardFlight flightId={1} spec={spec} onFinish={() => undefined} />}
   </div>;
 }
@@ -389,7 +398,7 @@ function FlightBoard({ initialDealt, initialPlayed, seatShorthand, largeHand, le
       from: measureCardBox(surface), to: measureCardBox(destination), face: 'reveal', durationMs: motionDurationMs.cardPlay }]);
   };
   return <>
-    <div css={controlsStyle}>
+    <Controls>
       <Button onClick={deal}>Deal hand</Button>
       <Button onClick={() => rerender((value) => value + 1)}>Rerender board</Button>
       <Button disabled={!handIndex || ownPlayed || landingTargets.size > 0} onClick={() => play(OWN_PLAY)}>Play own</Button>
@@ -403,8 +412,8 @@ function FlightBoard({ initialDealt, initialPlayed, seatShorthand, largeHand, le
       }}>Capture moved origin</Button>
       <Button disabled={!handIndex || ownPlayed || landingTargets.size > 0} onClick={() => play(OWN_PLAY)}>Play without capture</Button>
       <output aria-label="Flights in air" data-reset-epoch={resetEpoch}>{landingTargets.size}</output>
-    </div>
-    <div css={boardStyle}>
+    </Controls>
+    <Board>
       <GameTable players={2} viewport={{ width: 1000, height: 800 }}
         seats={[{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }]}
       >
@@ -417,7 +426,7 @@ function FlightBoard({ initialDealt, initialPlayed, seatShorthand, largeHand, le
             cards={plays.filter((entry) => entry.playerKey === player.key)} />
         </GameTable.Play>)}
       </GameTable>
-    </div>
+    </Board>
   </>;
 }
 
@@ -877,6 +886,7 @@ function ScopeReplacement(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-scope-replacement />;
 }
 
+// This fixture exercises root and slot style merging.
 function ScopeCustomization() {
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   return <CardFlightsProvider component={ScopeReplacement} ref={setRoot} title="Host title"

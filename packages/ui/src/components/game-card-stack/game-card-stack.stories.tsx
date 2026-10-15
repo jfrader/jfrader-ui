@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { expectInside, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
 import { settleMotion } from '../../testing/motion-assertions';
 import { ThemeRoot } from '../theme-root';
@@ -11,6 +13,11 @@ import { GameTable } from '../game-table';
 import { Button } from '../button';
 import { GameCardStack, getPlayedCardKey, getPileOffset, getStableJitter, getStableRotation,
   type GameCardStackPile, type GameCardStackProps } from './index';
+
+const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', blockSize: 432 });
+const CenteredStackFrame = styled(StackFrame)({ marginInline: 'auto' });
+const LightScope = styled(ThemeRoot)({ blockSize: '100%', backgroundColor: vars.color.bg });
+const PileFrame = styled.div({ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` });
 
 const names = ['North', 'East', 'South', 'West', 'Avery', 'Robin'];
 const suits = ['spades', 'hearts', 'clubs'] as const;
@@ -31,7 +38,7 @@ function counts(count: number, cards: number) {
 const meta = {
   title: 'Games/GameCardStack', component: GameCardStack, tags: ['autodocs'],
   args: { ...counts(2, 3), onValueChange: fn() },
-  decorators: [(Story) => <div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}><Story /></div>],
+  decorators: [(Story) => <CenteredStackFrame><Story /></CenteredStackFrame>],
   parameters: { layout: 'fullscreen', a11y: { test: 'error' }, docs: {
     description: { component: 'Keep played cards grouped by player. Open a pile to read its cards.' },
     source: {
@@ -99,10 +106,13 @@ const piles: GameCardStackPile[] = ['North', 'East'].map((playerKey, index) => (
   })),
 }));
 
+import { styled } from '@jfrader/ui';
+const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', blockSize: 432 });
+
 export function PlayedPilesExample() {
-  return <div style={{ inlineSize: 'min(900px, 100%)', blockSize: 432 }}>
+  return <StackFrame>
     <GameCardStack piles={piles} onValueChange={(key) => console.log('Inspecting:', key)} />
-  </div>;
+  </StackFrame>;
 }`,
       },
     },
@@ -142,9 +152,12 @@ const piles = ['North', 'East', 'South', 'West'].map((playerKey, index) => ({
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}>
+import { styled } from '@jfrader/ui';
+const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 });
+
+<StackFrame>
   <GameCardStack piles={piles} />
-</div>` } } },
+</StackFrame>` } } },
 };
 export const ThreeVersusThree: Story = {
   args: counts(6, 3), play: async ({ canvasElement }) => noOverlap(canvasElement),
@@ -157,14 +170,17 @@ const piles = ['North', 'East', 'South', 'West', 'Avery', 'Robin'].map((playerKe
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}>
+import { styled } from '@jfrader/ui';
+const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 });
+
+<StackFrame>
   <GameCardStack piles={piles} />
-</div>` } } },
+</StackFrame>` } } },
 };
 export const Open: Story = { tags: ['!autodocs'], args: { defaultValue: 'North' }, play: async ({ canvasElement }) => noOverlap(canvasElement) };
 export const LightTheme: Story = {
   globals: { theme: 'light' },
-  decorators: [(Story) => <ThemeRoot theme="light" sx={{ blockSize: '100%', backgroundColor: vars.color.bg }}><Story /></ThemeRoot>],
+  decorators: [(Story) => <LightScope theme="light"><Story /></LightScope>],
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 
@@ -175,13 +191,16 @@ const piles = ['North', 'East'].map((playerKey, index) => ({
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<ThemeRoot theme="light"><div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}>
+import { styled } from '@jfrader/ui';
+const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 });
+
+<ThemeRoot theme="light"><StackFrame>
   <GameCardStack piles={piles} />
-</div></ThemeRoot>` } } },
+</StackFrame></ThemeRoot>` } } },
 };
 export const OpenLightTheme: Story = {
   ...Open, tags: ['autodocs'], globals: { theme: 'light' },
-  decorators: [(Story) => <ThemeRoot theme="light" sx={{ blockSize: '100%', backgroundColor: vars.color.bg }}><Story /></ThemeRoot>],
+  decorators: [(Story) => <LightScope theme="light"><Story /></LightScope>],
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 
@@ -192,9 +211,12 @@ const piles = ['North', 'East'].map((playerKey, index) => ({
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<ThemeRoot theme="light"><div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}>
+import { styled } from '@jfrader/ui';
+const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 });
+
+<ThemeRoot theme="light"><StackFrame>
   <GameCardStack piles={piles} defaultValue="North" />
-</div></ThemeRoot>` } } },
+</StackFrame></ThemeRoot>` } } },
 };
 export const RTL: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
@@ -206,9 +228,12 @@ const piles = ['North', 'East', 'South', 'West', 'Avery', 'Robin'].map((playerKe
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<div style={{ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 }}>
+import { styled } from '@jfrader/ui';
+const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'auto', blockSize: 432 });
+
+<StackFrame>
   <GameCardStack dir="rtl" piles={piles} defaultValue="East" />
-</div>` } } },
+</StackFrame>` } } },
   args: { ...counts(6, 3), dir: 'rtl', defaultValue: 'East' },
   play: async ({ canvasElement }) => {
     await noOverlap(canvasElement);
@@ -232,8 +257,11 @@ const piles: GameCardStackPile[] = ['North', 'East', 'South', 'West', 'Avery', '
   })),
 }));
 
+import { styled } from '@jfrader/ui';
+const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', blockSize: 432 });
+
 export function RevealedPilesExample() {
-  return <div style={{ inlineSize: 'min(900px, 100%)', blockSize: 432 }}><GameCardStack piles={piles} /></div>;
+  return <StackFrame><GameCardStack piles={piles} /></StackFrame>;
 }`,
       },
     },
@@ -269,14 +297,17 @@ const piles: GameCardStackPile[] = ['North', 'East'].map((playerKey, index) => (
   })),
 }));
 
+import { styled } from '@jfrader/ui';
+const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', blockSize: 432 });
+
 export function ControlledStack() {
   const [inspectedKey, setInspectedKey] = useState<string | null>(null);
   return (
-    <div style={{ inlineSize: 'min(900px, 100%)', blockSize: 432 }}><GameCardStack
+    <StackFrame><GameCardStack
       piles={piles}
       value={inspectedKey}
       onValueChange={setInspectedKey}
-    /></div>
+    /></StackFrame>
   );
 }`,
       },
@@ -372,6 +403,7 @@ export const MaximumOne: Story = {
     await expect(canvas.getAllByRole('img')).toHaveLength(2);
   },
 };
+// Grid dimensions are scenario data supplied by the geometry matrix.
 function grid(count: number, width: number, height: number): Story {
   return {
     args: { ...counts(count, 3), style: { inlineSize: width, blockSize: height } },
@@ -398,7 +430,10 @@ const piles = ['North', 'East', 'South', 'West', 'Avery', 'Robin'].map((playerKe
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<GameCardStack piles={piles} style={{ inlineSize: 320, blockSize: 280 }} />` } } },
+import { styled } from '@jfrader/ui';
+const SizedStack = styled(GameCardStack)({ inlineSize: 320, blockSize: 280 });
+
+<SizedStack piles={piles} />` } } },
 };
 export const GridSixMedium: Story = {
   ...grid(6, 640, 360),
@@ -411,7 +446,10 @@ const piles = ['North', 'East', 'South', 'West', 'Avery', 'Robin'].map((playerKe
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<GameCardStack piles={piles} style={{ inlineSize: 640, blockSize: 360 }} />` } } },
+import { styled } from '@jfrader/ui';
+const SizedStack = styled(GameCardStack)({ inlineSize: 640, blockSize: 360 });
+
+<SizedStack piles={piles} />` } } },
 };
 export const GridSixLarge: Story = {
   ...grid(6, 900, 432),
@@ -424,7 +462,10 @@ const piles = ['North', 'East', 'South', 'West', 'Avery', 'Robin'].map((playerKe
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<GameCardStack piles={piles} style={{ inlineSize: 900, blockSize: 432 }} />` } } },
+import { styled } from '@jfrader/ui';
+const SizedStack = styled(GameCardStack)({ inlineSize: 900, blockSize: 432 });
+
+<SizedStack piles={piles} />` } } },
 };
 export const GridFourCompact: Story = {
   ...grid(4, 320, 280),
@@ -437,7 +478,10 @@ const piles = ['North', 'East', 'South', 'West'].map((playerKey, index) => ({
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<GameCardStack piles={piles} style={{ inlineSize: 320, blockSize: 280 }} />` } } },
+import { styled } from '@jfrader/ui';
+const SizedStack = styled(GameCardStack)({ inlineSize: 320, blockSize: 280 });
+
+<SizedStack piles={piles} />` } } },
 };
 export const GridFourMedium: Story = {
   ...grid(4, 640, 360),
@@ -450,7 +494,10 @@ const piles = ['North', 'East', 'South', 'West'].map((playerKey, index) => ({
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<GameCardStack piles={piles} style={{ inlineSize: 640, blockSize: 360 }} />` } } },
+import { styled } from '@jfrader/ui';
+const SizedStack = styled(GameCardStack)({ inlineSize: 640, blockSize: 360 });
+
+<SizedStack piles={piles} />` } } },
 };
 export const GridFourLarge: Story = {
   ...grid(4, 900, 432),
@@ -463,7 +510,10 @@ const piles = ['North', 'East', 'South', 'West'].map((playerKey, index) => ({
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<GameCardStack piles={piles} style={{ inlineSize: 900, blockSize: 432 }} />` } } },
+import { styled } from '@jfrader/ui';
+const SizedStack = styled(GameCardStack)({ inlineSize: 900, blockSize: 432 });
+
+<SizedStack piles={piles} />` } } },
 };
 export const GridTwoCompact: Story = {
   ...grid(2, 320, 280),
@@ -476,7 +526,10 @@ const piles = ['North', 'East'].map((playerKey, index) => ({
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<GameCardStack piles={piles} style={{ inlineSize: 320, blockSize: 280 }} />` } } },
+import { styled } from '@jfrader/ui';
+const SizedStack = styled(GameCardStack)({ inlineSize: 320, blockSize: 280 });
+
+<SizedStack piles={piles} />` } } },
 };
 export const GridTwoMedium: Story = {
   ...grid(2, 640, 360),
@@ -489,7 +542,10 @@ const piles = ['North', 'East'].map((playerKey, index) => ({
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<GameCardStack piles={piles} style={{ inlineSize: 640, blockSize: 360 }} />` } } },
+import { styled } from '@jfrader/ui';
+const SizedStack = styled(GameCardStack)({ inlineSize: 640, blockSize: 360 });
+
+<SizedStack piles={piles} />` } } },
 };
 export const GridTwoLarge: Story = {
   ...grid(2, 900, 432),
@@ -502,7 +558,10 @@ const piles = ['North', 'East'].map((playerKey, index) => ({
     label: face.rank + ' of ' + face.suit, value: { deck: 'french', ...face } })),
 }));
 
-<GameCardStack piles={piles} style={{ inlineSize: 900, blockSize: 432 }} />` } } },
+import { styled } from '@jfrader/ui';
+const SizedStack = styled(GameCardStack)({ inlineSize: 900, blockSize: 432 });
+
+<SizedStack piles={piles} />` } } },
 };
 export const FreePlacement: Story = {
   args: {
@@ -528,8 +587,11 @@ const piles: GameCardStackPile[] = ['North', 'East'].map((playerKey, index) => (
   })),
 }));
 
+import { styled } from '@jfrader/ui';
+const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', blockSize: 432 });
+
 export function FreePlacementStack() {
-  return <div style={{ inlineSize: 'min(900px, 100%)', blockSize: 432 }}><GameCardStack placement="free" piles={piles} /></div>;
+  return <StackFrame><GameCardStack placement="free" piles={piles} /></StackFrame>;
 }`,
       },
     },
@@ -560,18 +622,22 @@ const pile: GameCardStackPile = {
   ],
 };
 
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+const PileFrame = styled.div({ inlineSize: vars.size.gameCardMd, aspectRatio: '72 / 106' });
+
 export function StandalonePileExample() {
-  return <div style={{ inlineSize: 'var(--ui-size-gameCardMd)', aspectRatio: '72 / 106' }}>
+  return <PileFrame>
     <GameCardStack.Pile {...pile} onValueChange={(key) => console.log('Inspecting:', key)} />
-  </div>;
+  </PileFrame>;
 }`,
       },
     },
   },
   render: (args) => (
-    <div style={{ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` }}>
+    <PileFrame>
       <GameCardStack.Pile {...args.piles[0]!} onValueChange={args.onValueChange} />
-    </div>
+    </PileFrame>
   ),
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: "North's played cards" });
@@ -588,10 +654,10 @@ export function StandalonePileExample() {
 };
 export const StandaloneControlled: Story = {
   tags: ['!autodocs'],
-  render: (args) => <div style={{ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` }}>
+  render: (args) => <PileFrame>
     <GameCardStack.Pile {...args.piles[0]!}
       value="North" onValueChange={args.onValueChange} />
-  </div>,
+  </PileFrame>,
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: "North's played cards" });
     const cards = trigger.ownerDocument.getElementById(trigger.getAttribute('aria-controls')!)!;

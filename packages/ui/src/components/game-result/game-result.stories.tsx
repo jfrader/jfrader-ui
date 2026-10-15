@@ -1,14 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { GameResult, type GameResultOutcome } from './index';
 
 const OUTCOMES = ['won', 'lost', 'draw'] as const satisfies readonly GameResultOutcome[];
 
-const rowStyle = css({
+const Row = styled.div({
   display: 'flex',
   flexWrap: 'wrap',
   gap: vars.space[6],
@@ -49,9 +50,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={rowStyle}>
+      <Row>
         <Story />
-      </div>
+      </Row>
     ),
   ],
 } satisfies Meta<typeof GameResult>;
