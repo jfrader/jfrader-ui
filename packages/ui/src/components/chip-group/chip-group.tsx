@@ -35,11 +35,17 @@ type StyledSlot<T extends 'div' | 'span' | 'button'> = Omit<
 };
 
 export interface ChipGroupSlotProps {
+  /** Animated container frame clipping expanding chip rows. */
   frame?: StyledSlot<'div'>;
+  /** Flex container holding the chip buttons and overflow toggle. */
   row?: StyledSlot<'div'>;
+  /** Toggle button representing an individual chip option. */
   chip?: StyledSlot<'button'> | ((option: ChipGroupOption) => StyledSlot<'button'>);
+  /** Text label displayed inside a chip. */
   label?: StyledSlot<'span'>;
+  /** Checkmark glyph displayed when a chip is selected. */
   check?: StyledSlot<'span'>;
+  /** Button that expands or collapses hidden overflow chips. */
   overflow?: StyledSlot<'button'>;
 }
 

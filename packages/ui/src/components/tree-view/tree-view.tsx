@@ -40,7 +40,23 @@ export interface TreeViewPartProps {
   css?: Interpolation<Theme>;
 }
 export type TreeViewSlotProps = Partial<
-  Record<'tree' | 'row' | 'label' | 'icon' | 'disclosure' | 'group' | 'status', TreeViewPartProps>
+  Record<
+    | /** Root tree list container element (`ul`) with role `tree`. */
+      'tree'
+    | /** Tree item element (`li`) representing an individual node. */
+      'row'
+    | /** Text container element displaying the node's label. */
+      'label'
+    | /** Icon element displayed beside the node label. */
+      'icon'
+    | /** Interactive toggle button or chevron expanding child nodes. */
+      'disclosure'
+    | /** Nested list container element (`ul`) holding child tree items. */
+      'group'
+    | /** Live region element announcing tree selection and load state. */
+      'status',
+    TreeViewPartProps
+  >
 >;
 export interface TreeViewProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>, SxProps {

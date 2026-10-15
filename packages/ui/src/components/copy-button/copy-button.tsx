@@ -42,8 +42,11 @@ export interface CopyButtonSlotPartProps extends ComponentPropsWithoutRef<'span'
 }
 
 export interface CopyButtonSlotProps {
+  /** Icon container displaying the copy state glyph. */
   icon?: CopyButtonSlotPartProps;
+  /** Text label displayed inside the copy button. */
   label?: CopyButtonSlotPartProps;
+  /** Screen-reader live region announcing copy feedback. */
   status?: CopyButtonSlotPartProps;
 }
 

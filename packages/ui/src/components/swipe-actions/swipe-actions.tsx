@@ -69,11 +69,13 @@ export interface SwipeActionsEasyProps extends SwipeActionsBaseProps {
   slotProps?: SwipeActionsSlotProps;
 }
 export interface SwipeActionsSlotProps {
+  /** Outer list container element (`ul`) holding swipeable rows. */
   root?: Omit<ComponentPropsWithRef<'ul'>, 'children' | 'value' | 'defaultValue'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
+  /** Swipeable row item element (`li`) inside the list. */
   row?: Omit<SwipeActionsRowProps, 'id' | 'label' | 'actionsLabel' | 'leading' | 'trailing' | 'children' | 'content'>;
 }
 export type SwipeActionsProps = SwipeActionsCompoundProps | SwipeActionsEasyProps;
@@ -87,14 +89,22 @@ export interface SwipeActionsRowProps extends ComponentPropsWithRef<'li'>, SxPro
   disabled?: boolean;
   slotProps?: Partial<
     Record<
-      | 'content'
-      | 'body'
-      | 'action'
-      | 'actionIcon'
-      | 'actionLabel'
-      | 'trigger'
-      | 'menu'
-      | 'menuItem',
+      | /** Sliding container element holding the row body and actions menu. */
+        'content'
+      | /** Row body container element wrapping the row content. */
+        'body'
+      | /** Action button element revealed in the swipe rail. */
+        'action'
+      | /** Icon element displayed inside a swipe action button. */
+        'actionIcon'
+      | /** Text label element displayed inside a swipe action button. */
+        'actionLabel'
+      | /** Overflow menu trigger button opening the actions menu. */
+        'trigger'
+      | /** Overflow actions menu container listing swipe actions. */
+        'menu'
+      | /** Menu item button inside the overflow actions menu. */
+        'menuItem',
       Slot
     >
   >;

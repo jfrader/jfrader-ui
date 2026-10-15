@@ -25,8 +25,11 @@ export interface ScrollAreaEdges {
 }
 type Slot = ComponentPropsWithRef<'div'> & { css?: Interpolation<Theme> };
 export interface ScrollAreaSlotProps {
+  /** Scrollable viewport container holding the scrollable content. */
   viewport?: Slot;
+  /** Scrollbar track element along which the thumb moves. */
   track?: Slot;
+  /** Scrollbar thumb element indicating scroll position. */
   thumb?: Slot;
 }
 export interface ScrollAreaProps extends Omit<ComponentPropsWithRef<'div'>, 'onScroll'>, SxProps {

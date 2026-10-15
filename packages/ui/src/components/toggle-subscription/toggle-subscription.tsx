@@ -61,20 +61,30 @@ export type ToggleSubscriptionPriceDefinition = Pick<
   'amount' | 'currency' | 'formatOptions' | 'was' | 'period' | 'previousLabel'
 >;
 export interface ToggleSubscriptionSlots {
+  /** Container wrapping the label and the period list. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Text naming the switch. */
   label?: ComponentType<ToggleSubscriptionLabelProps>;
+  /** List holding one item per billing period. */
   list?: ComponentType<ToggleSubscriptionListProps>;
+  /** One selectable billing period. */
   item?: ComponentType<ToggleSubscriptionItemProps>;
+  /** Price text displayed inside an item. */
   price?: ComponentType<ToggleSubscriptionPriceProps>;
 }
 export interface ToggleSubscriptionSlotProps {
+  /** Container wrapping the label and the period list. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
     css?: Interpolation<Theme>;
     [attribute: `data-${string}`]: unknown;
   };
+  /** Text naming the switch. */
   label?: Omit<ToggleSubscriptionLabelProps, 'children'>;
+  /** List holding one item per billing period. */
   list?: Omit<ToggleSubscriptionListProps, 'children'>;
+  /** One selectable billing period. */
   item?: Omit<ToggleSubscriptionItemProps, keyof ToggleSubscriptionOption | 'children'>;
+  /** Price text displayed inside an item. */
   price?: Omit<ToggleSubscriptionPriceProps, keyof ToggleSubscriptionPriceDefinition>;
 }
 export interface ToggleSubscriptionEasyProps extends Omit<ToggleSubscriptionCompoundProps, 'children' | 'options' | 'prices' | 'label' | 'slots' | 'slotProps' | 'component'> {
@@ -94,8 +104,11 @@ export interface ToggleSubscriptionItemProps extends Omit<SegmentedControlItemPr
   badge?: ReactNode;
   activeBadge?: ReactNode;
   slotProps?: {
+    /** Text naming the billing period. */
     label?: SlotProps<'span'>;
+    /** Badge shown beside the label, such as a discount. */
     badge?: SlotProps<'span'>;
+    /** Check glyph marking the selected period. */
     selection?: SlotProps<'span'>;
   };
 }
@@ -109,8 +122,11 @@ export interface ToggleSubscriptionPriceProps
   period?: ReactNode;
   previousLabel?: string;
   slotProps?: {
+    /** Formatted price for the current period. */
     amount?: SlotProps<'span'>;
+    /** Struck-through former price. */
     previous?: SlotProps<'del'>;
+    /** Billing period shown after the price. */
     period?: SlotProps<'span'>;
   };
 }

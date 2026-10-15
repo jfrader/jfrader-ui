@@ -37,7 +37,23 @@ export interface HoldToConfirmProps
   size?: HoldToConfirmSize;
   icon?: ReactNode;
   confirmedIcon?: ReactNode;
-  slotProps?: Partial<Record<'face' | 'icon' | 'label' | 'fill' | 'hint' | 'status', HoldToConfirmPartProps>>;
+  slotProps?: Partial<
+    Record<
+      | /** Face layer displaying the button icon and label. */
+        'face'
+      | /** Icon element displaying the idle or confirmed glyph. */
+        'icon'
+      | /** Text label displaying the button state. */
+        'label'
+      | /** Progress fill layer clipping over the button face. */
+        'fill'
+      | /** Screen-reader hint describing the required hold duration. */
+        'hint'
+      | /** Screen-reader live region announcing completion status. */
+        'status',
+      HoldToConfirmPartProps
+    >
+  >;
 }
 
 const DEFAULT_DURATION = 1200;

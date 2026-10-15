@@ -15,7 +15,18 @@ export interface GameRoundsProps extends Omit<GameCardRootProps, 'children'>, Ga
   rounds: readonly GameRound[];
   /** Visible result names in your game's language. */
   outcomeLabels: Record<GameRoundOutcome, string>;
-  slotProps?: { root?: GameCardRootSlotProps; label?: PartProps<'span'>; list?: PartProps<'ol'>; round?: PartProps<'li'>; outcome?: PartProps<'span'> };
+  slotProps?: {
+    /** Group wrapping the label and the round list. */
+    root?: GameCardRootSlotProps;
+    /** Text naming the round list. */
+    label?: PartProps<'span'>;
+    /** Ordered list holding one entry per round. */
+    list?: PartProps<'ol'>;
+    /** One round, carrying its own outcome state. */
+    round?: PartProps<'li'>;
+    /** Result text shown beside the round label. */
+    outcome?: PartProps<'span'>;
+  };
 }
 const rootStyle = css({ label: 'game-rounds', display: 'grid', gap: vars.space[2], color: vars.color.text, fontFamily: vars.font.sans,
   [FORCED_COLORS]: { color: 'CanvasText' },

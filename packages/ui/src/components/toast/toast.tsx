@@ -89,14 +89,26 @@ export type ToastProviderProps = ToastProviderBaseProps &
     | {
         viewport: 'default';
         viewportProps?: ToastViewportProps;
-        slots?: { viewport?: ComponentType<ToastViewportProps> };
-        slotProps?: { viewport?: ToastViewportProps };
+        slots?: {
+          /** Replaces the viewport container rendering active toasts. */
+          viewport?: ComponentType<ToastViewportProps>;
+        };
+        slotProps?: {
+          /** Viewport container element rendering active toasts. */
+          viewport?: ToastViewportProps;
+        };
       }
     | {
         viewport: 'stack';
         viewportProps?: ToastStackProps;
-        slots?: { viewport?: ComponentType<ToastStackProps> };
-        slotProps?: { viewport?: ToastStackProps };
+        slots?: {
+          /** Replaces the stacked viewport container rendering active toasts. */
+          viewport?: ComponentType<ToastStackProps>;
+        };
+        slotProps?: {
+          /** Stacked viewport container element rendering active toasts. */
+          viewport?: ToastStackProps;
+        };
       }
   );
 
@@ -107,9 +119,14 @@ export interface ToastPartProps {
 }
 export interface ToastViewportProps extends ComponentPropsWithRef<'div'>, ToastPartProps, SxProps {
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
-  slots?: { root?: ComponentType<ComponentPropsWithRef<'div'>> };
+  slots?: {
+    /** Replaces the outer viewport element; renders a `div` by default. */
+    root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  };
   slotProps?: {
+    /** Outer viewport container element holding toasts. */
     root?: ComponentPropsWithRef<'div'> & ToastPartProps & SxProps;
+    /** Container element wrapping an individual toast notification. */
     item?: ToastPartProps;
   };
 }

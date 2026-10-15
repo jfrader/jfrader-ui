@@ -62,7 +62,24 @@ export interface DataTablePartProps {
 }
 export type DataTableSlotProps = Partial<
   Record<
-    'scroller' | 'table' | 'caption' | 'headerCell' | 'sortButton' | 'row' | 'cell' | 'footer' | 'status',
+    | /** Scrollable container wrapping the table. */
+      'scroller'
+    | /** Table element rendering the tabular dataset. */
+      'table'
+    | /** Caption element describing the table. */
+      'caption'
+    | /** Header cell element in the table head row. */
+      'headerCell'
+    | /** Button element inside a header cell triggering column sort. */
+      'sortButton'
+    | /** Table row element representing an individual data record. */
+      'row'
+    | /** Table body data cell element. */
+      'cell'
+    | /** Table footer container element. */
+      'footer'
+    | /** Status element announcing sorting and selection updates. */
+      'status',
     DataTablePartProps
   >
 >;

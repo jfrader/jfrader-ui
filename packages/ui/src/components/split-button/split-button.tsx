@@ -85,27 +85,39 @@ type SplitButtonTriggerBaseProps = Omit<
 >;
 
 export interface SplitButtonSlots {
+  /** Container element wrapping the primary action and menu trigger. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Primary action button on the split button. Default: `SplitButton.Action`. */
   action?: ComponentType<SplitButtonActionProps>;
+  /** Menu disclosure button opening the dropdown menu. Default: `SplitButton.Trigger`. */
   trigger?: ComponentType<SplitButtonTriggerProps>;
+  /** Floating dropdown menu panel holding menu items. Default: `SplitButton.Content`. */
   content?: ComponentType<SplitButtonContentProps>;
+  /** Selectable menu item within the dropdown menu. Default: `SplitButton.Item`. */
   item?: ComponentType<SplitButtonItemProps>;
+  /** Decorative divider line between menu items. Default: `SplitButton.Separator`. */
   separator?: ComponentType<SplitButtonSeparatorProps>;
 }
 
 export interface SplitButtonSlotProps {
+  /** Container element wrapping the primary action and menu trigger. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
+  /** Primary action button on the split button. Default: `SplitButton.Action`. */
   action?: Partial<Omit<SplitButtonActionProps, 'children' | 'onClick' | 'disabled'>>;
+  /** Menu disclosure button opening the dropdown menu. Default: `SplitButton.Trigger`. */
   trigger?: Partial<Omit<SplitButtonTriggerBaseProps, 'children' | 'disabled'>> & {
     'aria-label'?: string;
     'aria-labelledby'?: string;
   };
+  /** Floating dropdown menu panel holding menu items. Default: `SplitButton.Content`. */
   content?: Partial<Omit<SplitButtonContentProps, 'children'>>;
+  /** Selectable menu item within the dropdown menu. Default: `SplitButton.Item`. */
   item?: Partial<Omit<SplitButtonItemProps, 'children' | 'onSelect' | 'disabled'>>;
+  /** Decorative divider line between menu items. Default: `SplitButton.Separator`. */
   separator?: Partial<SplitButtonSeparatorProps>;
 }
 

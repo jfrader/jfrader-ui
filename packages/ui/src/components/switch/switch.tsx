@@ -23,9 +23,13 @@ export interface SwitchProps extends Omit<ComponentPropsWithRef<'input'>, 'size'
   size?: SwitchSize;
   onCheckedChange?: (checked: boolean) => void;
   slotProps?: {
+    /** Outer label wrapping the switch track, label, and description. */
     root?: SwitchPartProps;
+    /** Text label displayed alongside the switch control. */
     label?: SwitchPartProps;
+    /** Visual track and sliding thumb representing the toggle switch. */
     control?: SwitchPartProps;
+    /** Helper description text displayed below the switch row. */
     description?: SwitchPartProps;
   };
 }

@@ -31,8 +31,11 @@ export interface ThemeSwitchProps extends Omit<
   transition?: ThemeSwitchTransition;
   loading?: boolean;
   slotProps?: SwitchProps['slotProps'] & {
+    /** Circle holding the visible theme icon. */
     iconFrame?: SwitchPartProps;
+    /** Sun icon drawn in the light theme. */
     lightIcon?: SwitchPartProps;
+    /** Moon icon drawn in the dark theme. */
     darkIcon?: SwitchPartProps;
   };
 }

@@ -32,7 +32,9 @@ export interface BadgeProps extends ComponentPropsWithRef<'span'>, SxProps {
   anchor?: BadgeAnchor;
   overlap?: BadgeOverlap;
   slotProps?: {
+    /** Root container element wrapping the anchored child content. */
     root?: BadgePartProps;
+    /** Badge marker element positioned over the anchored child. */
     badge?: BadgePartProps;
   };
 }

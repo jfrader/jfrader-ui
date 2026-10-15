@@ -65,7 +65,9 @@ export interface EmblemProps
   /** Pattern over the fill. `none` leaves the plain gradient. */
   pattern?: EmblemPattern;
   slotProps?: {
+    /** Image element displaying the crest artwork. */
     image?: EmblemPartProps;
+    /** Span element displaying initials when no crest image is provided. */
     monogram?: EmblemPartProps;
   };
   /**

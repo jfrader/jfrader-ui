@@ -76,16 +76,25 @@ export interface AnnouncementBarProps
   onCountdownEnd?: (announcement: Announcement) => void;
   dismissFocusRef?: RefObject<HTMLElement | null>;
   slotProps?: {
+    /** Outer section element wrapping the announcement bar. */
     root?: Slot<'section'>;
+    /** Inner container holding the message, countdown timer, and action. */
     content?: Slot<'div'>;
+    /** Text element displaying the active announcement body. */
     message?: Slot<'span'>;
+    /** Action button or link accompanying the announcement. Default: `Button`. */
     action?: Omit<Slot<'a'> & Slot<'button'>, 'onClick'> & {
       onClick?: (event: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
     };
+    /** Button navigating to the previous announcement. */
     previous?: Slot<'button'>;
+    /** Button navigating to the next announcement. */
     next?: Slot<'button'>;
+    /** Button toggling automatic announcement rotation. */
     rotation?: Slot<'button'>;
+    /** Button dismissing the active announcement. */
     dismiss?: Slot<'button'>;
+    /** Compact timer indicating remaining announcement duration. Default: `Countdown`. */
     countdown?: Omit<Slot<'div'>, 'onClick'>;
   };
 }

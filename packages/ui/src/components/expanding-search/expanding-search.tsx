@@ -30,22 +30,33 @@ import {
 } from '../search-field';
 
 type ExpandingSearchAnatomy = {
+  /** Outer container wrapping the trigger and expanded search field. */
   root: 'div';
+  /** Positioning container coordinating the expand animation. */
   container: 'div';
+  /** Hidden element measuring the expanded search field width. */
   measure: 'span';
+  /** Positioning wrapper for the collapsed trigger button. */
   triggerWrapper: 'div';
+  /** Icon container inside the collapsed trigger button. */
   triggerIcon: 'span';
+  /** Expandable region enclosing the active search field. */
   region: 'div';
 };
 export type ExpandingSearchSlots = FieldSlots<ExpandingSearchAnatomy> &
   Omit<SearchFieldSlots, 'root'> & {
+    /** Search field displayed when expanded. Default: `SearchField`. */
     field?: ComponentType<SearchFieldProps>;
+    /** Root container of the expanded search field. */
     fieldRoot?: SearchFieldSlots['root'];
+    /** Collapsed button that triggers expansion. Default: `Button`. */
     trigger?: ComponentType<ButtonProps>;
   };
 export type ExpandingSearchSlotProps = FieldParts<ExpandingSearchAnatomy> &
   SearchFieldSlotProps & {
+    /** Search field displayed when expanded. Default: `SearchField`. */
     field?: Omit<SearchFieldProps, 'ref' | 'value' | 'defaultValue' | 'onValueChange'>;
+    /** Collapsed button that triggers expansion. Default: `Button`. */
     trigger?: ButtonProps;
   };
 

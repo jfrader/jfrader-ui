@@ -54,18 +54,29 @@ type Slot<Tag extends keyof React.JSX.IntrinsicElements> = Omit<ComponentPropsWi
 type ActionSlot = Omit<Slot<'button'>, 'type' | 'disabled' | 'aria-pressed'>;
 
 export interface PhotoGridSlotProps {
+  /** Header bar holding the title and density controls. */
   header?: Slot<'header'>;
+  /** Heading element displaying the grid title. */
   title?: Slot<'h2'>;
+  /** Container element wrapping column density controls. */
   density?: Slot<'div'>;
+  /** Unordered list element rendering photo grid items. */
   list?: Slot<'ul'>;
+  /** List item element wrapping an individual photo. */
   item?: Slot<'li'>;
+  /** Button element opening the full photo viewer. */
   photo?: ActionSlot;
+  /** Button element toggling the photo favorite state. */
   favorite?: ActionSlot;
+  /** Dialog element for the full photo viewer modal. */
   viewer?: Omit<Slot<'dialog'>, 'open'>;
+  /** Container element displaying the active photo in the viewer. */
   stage?: Slot<'div'>;
-  /** The viewer's thumbnail strip. */
+  /** Thumbnail strip container for browsing photos in the viewer. */
   filmstrip?: Slot<'div'>;
+  /** Action container holding viewer close and navigation buttons. */
   controls?: Slot<'div'>;
+  /** Status element displaying the photo index and total count. */
   status?: Slot<'div'>;
 }
 

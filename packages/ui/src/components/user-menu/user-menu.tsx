@@ -154,26 +154,44 @@ export interface UserMenuMessages {
 }
 
 export interface UserMenuSlotProps {
+  /** Outer wrapper element around the trigger and content. */
   root?: GeneratedRootSlotProps;
+  /** Button element that opens the user menu. */
   trigger?: Omit<UserMenuTriggerProps, 'aria-label'>;
+  /** Popup menu or bottom sheet overlay panel. */
   content?: Omit<UserMenuContentProps, 'children' | 'closeLabel'>;
+  /** Header element displaying the user avatar, name, and email. */
   identity?: UserMenuIdentityProps;
+  /** Action item button inside the menu. */
   item?: Omit<UserMenuItemProps, 'children' | 'onSelect' | 'disabled'>;
+  /** Separator element dividing menu sections. */
   separator?: UserMenuSeparatorProps;
+  /** Choice group element for selecting the theme. */
   themeGroup?: Partial<UserMenuThemeGroupProps>;
+  /** Choice group element for selecting the user status. */
   statusGroup?: Partial<UserMenuStatusGroupProps>;
+  /** Action item button triggering sign out. */
   signOut?: Omit<UserMenuSignOutProps, 'onSignOut' | 'pendingLabel' | 'errorMessage' | 'children'>;
 }
 
 export interface UserMenuSlots {
+  /** Replaces the outer wrapper element; renders a `div` by default. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the button that opens the user menu. */
   trigger?: ComponentType<UserMenuTriggerProps>;
+  /** Replaces the popup menu or bottom sheet overlay panel. */
   content?: ComponentType<UserMenuContentProps>;
+  /** Replaces the header element displaying user identity. */
   identity?: ComponentType<UserMenuIdentityProps>;
+  /** Replaces an action item button inside the menu. */
   item?: ComponentType<UserMenuItemProps>;
+  /** Replaces the separator element dividing menu sections. */
   separator?: ComponentType<UserMenuSeparatorProps>;
+  /** Replaces the choice group element for selecting the theme. */
   themeGroup?: ComponentType<UserMenuThemeGroupProps>;
+  /** Replaces the choice group element for selecting the user status. */
   statusGroup?: ComponentType<UserMenuStatusGroupProps>;
+  /** Replaces the action item button triggering sign out. */
   signOut?: ComponentType<UserMenuSignOutProps>;
 }
 
@@ -240,13 +258,19 @@ export interface UserMenuTriggerProps extends Omit<ComponentPropsWithRef<'button
 
 interface UserMenuContentBaseProps extends ComponentPropsWithRef<'div'>, SxProps {
   slots?: {
+    /** Replaces the menu content panel container. */
     menu?: ComponentType<ComponentPropsWithRef<'div'>>;
+    /** Replaces the sheet drag handle element. */
     handle?: ComponentType<ComponentPropsWithRef<'div'>>;
+    /** Replaces the sheet close button element. */
     close?: ComponentType<ComponentPropsWithRef<'button'>>;
   };
   slotProps?: {
+    /** Menu content panel container element. */
     menu?: UserMenuPartProps;
+    /** Sheet drag handle element. */
     handle?: UserMenuPartProps;
+    /** Sheet close button element. */
     close?: UserMenuPartProps;
   };
 }
@@ -275,7 +299,9 @@ export interface UserMenuItemProps extends Omit<ComponentPropsWithRef<'button'>,
 }
 
 export interface UserMenuGroupSlotProps {
+  /** Label element displaying the choice group heading. */
   label?: UserMenuPartProps;
+  /** Radio option button element within the choice group. */
   option?: UserMenuPartProps;
 }
 

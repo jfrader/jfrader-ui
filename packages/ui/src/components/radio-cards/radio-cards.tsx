@@ -52,18 +52,26 @@ export type RadioCardsOption = Pick<
   'value' | 'label' | 'description' | 'meta' | 'icon' | 'disabled' | 'disabledReason' | 'id'
 >;
 export interface RadioCardsSlots {
+  /** Container element wrapping the radio card group. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Header label naming the radio card group. Default: `RadioCards.Label`. */
   label?: ComponentType<RadioCardsLabelProps>;
+  /** Selectable card representing an individual radio option. Default: `RadioCards.Item`. */
   item?: ComponentType<RadioCardsItemProps>;
+  /** Validation error message displayed when invalid. */
   error?: ComponentType<ComponentPropsWithRef<'span'>>;
 }
 export interface RadioCardsSlotProps {
+  /** Container element wrapping the radio card group. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
     css?: Interpolation<Theme>;
     [attribute: `data-${string}`]: unknown;
   };
+  /** Header label naming the radio card group. Default: `RadioCards.Label`. */
   label?: Omit<RadioCardsLabelProps, 'children'>;
+  /** Selectable card representing an individual radio option. Default: `RadioCards.Item`. */
   item?: Omit<RadioCardsItemProps, keyof RadioCardsOption>;
+  /** Validation error message displayed when invalid. */
   error?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { css?: Interpolation<Theme> };
 }
 export interface RadioCardsEasyProps extends Omit<RadioCardsCompoundProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
@@ -90,7 +98,21 @@ export interface RadioCardsItemProps
   icon?: ReactNode;
   disabledReason?: ReactNode;
   slotProps?: Partial<
-    Record<'control' | 'indicator' | 'icon' | 'label' | 'description' | 'meta', RadioCardsPartProps>
+    Record<
+      | /** Hidden input holding the card's selection state. */
+        'control'
+      | /** Ring drawn on the selected card. */
+        'indicator'
+      | /** Icon slot shown beside the card label. */
+        'icon'
+      | /** Text naming the option. */
+        'label'
+      | /** Supporting text under the option label. */
+        'description'
+      | /** Short value shown at the end of the card. */
+        'meta',
+      RadioCardsPartProps
+    >
   >;
 }
 export type RadioCardsLabelProps = ComponentPropsWithRef<'span'> & SxProps;

@@ -30,8 +30,11 @@ export interface AvatarProps
   /** Spoken status word; defaults to the `status` value. Pass a translated word for other locales. */
   statusLabel?: string;
   slotProps?: {
+    /** Image element displaying the avatar photo. */
     image?: AvatarPartProps;
+    /** Span element displaying initials when no image loads. */
     fallback?: AvatarPartProps;
+    /** Presence indicator dot reflecting online or busy status. */
     status?: AvatarPartProps;
   };
 }

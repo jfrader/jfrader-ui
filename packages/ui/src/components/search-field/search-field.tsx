@@ -16,14 +16,23 @@ export interface SearchFieldMessages {
 }
 export type SearchFieldSlotProps = FieldParts<SearchFieldAnatomy>;
 type SearchFieldAnatomy = {
+  /** Outer container wrapping the search field and helper text. */
   root: 'div';
+  /** Label element associated with the search input. */
   label: 'label';
+  /** Native input control receiving search queries. */
   control: 'input';
+  /** Helper text displayed below the search input. */
   description: 'span';
+  /** Validation error message displayed when invalid. */
   error: 'span';
+  /** Border and background shell wrapping the search input and icons. */
   shell: 'div';
+  /** Search icon displayed at the start of the input. */
   icon: 'span';
+  /** Container positioning the clear button at the end of the input. */
   clearSlot: 'span';
+  /** Button that clears the search input value. */
   clear: 'button';
 };
 export type SearchFieldSlots = FieldSlots<SearchFieldAnatomy>;

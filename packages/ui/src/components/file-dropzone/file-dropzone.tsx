@@ -56,27 +56,45 @@ export interface FileDropzoneMessages {
   uploadError: string;
 }
 export type FileDropzoneSlotProps = FieldParts<FileDropzoneAnatomy> & {
+  /** Action button for retrying or removing a file item. Default: `Button`. */
   action?: ButtonProps;
+  /** Progress bar indicating upload completion. Default: `Progress`. */
   progress?: Omit<ProgressProps, 'value' | 'max'>;
 };
 type FileDropzoneAnatomy = {
+  /** Outer container wrapping the drop target and file list. */
   root: 'div';
+  /** Hidden native file input element. */
   input: 'input';
+  /** Interactive drop zone receiving drag and drop events. */
   target: 'div';
+  /** Label element prompting file selection. */
   label: 'label';
+  /** Interactive text trigger opening the native file dialog. */
   browse: 'span';
+  /** Helper text describing accepted file types or size limits. */
   description: 'div';
+  /** Supplementary note text displayed within the drop zone. */
   note: 'div';
+  /** Unordered list containing uploaded file items. */
   list: 'ul';
+  /** List item displaying an uploaded file and its details. */
   item: 'li';
+  /** Thumbnail preview image for uploaded media files. */
   preview: 'img';
+  /** Progress bar indicating upload completion. Default: `Progress`. */
   progress: 'div';
+  /** Action button for retrying or removing a file item. Default: `Button`. */
   action: 'button';
+  /** Error message banner displayed on validation or upload failure. */
   error: 'div';
+  /** Screen-reader live region announcing upload and validation status. */
   status: 'div';
 };
 export type FileDropzoneSlots = Omit<FieldSlots<FileDropzoneAnatomy>, 'action' | 'progress'> & {
+  /** Action button for retrying or removing a file item. Default: `Button`. */
   action?: ComponentType<ButtonProps>;
+  /** Progress bar indicating upload completion. Default: `Progress`. */
   progress?: ComponentType<ProgressProps>;
 };
 

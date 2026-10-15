@@ -66,15 +66,25 @@ export interface TagInputPartProps extends FieldPartProps {}
 export type TagInputSlotProps = FieldParts<TagInputAnatomy>;
 
 type TagInputAnatomy = {
+  /** Outer container wrapping the tag input field. */
   root: 'div';
+  /** Label element associated with the tag input. */
   label: 'label';
+  /** Container enclosing the token list and text input. */
   control: 'div';
+  /** Native text input receiving new tag values. */
   input: 'input';
+  /** Unordered list containing committed tag tokens. */
   list: 'ul';
+  /** List item representing an individual committed tag. */
   token: 'li';
+  /** Button that removes an individual tag token. */
   remove: 'button';
+  /** Helper text element displayed below the tag input. */
   description: 'span';
+  /** Validation error message displayed when invalid. */
   error: 'span';
+  /** Screen-reader live region announcing token additions and removals. */
   status: 'span';
 };
 export type TagInputSlots = FieldSlots<TagInputAnatomy>;

@@ -151,13 +151,19 @@ export interface CalendarEasyProps extends CalendarBaseProps {
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Replace native roots; the grid replacement renders a table. Forward props and ref. */
   slots?: {
+    /** Outer container element wrapping the calendar. */
     root?: ComponentType<ComponentPropsWithRef<'div'>>;
+    /** Header container holding the month title and navigation buttons. */
     header?: ComponentType<ComponentPropsWithRef<'div'>>;
+    /** Table element rendering the day grid and weekday headers. */
     grid?: ComponentType<ComponentPropsWithRef<'table'>>;
   };
   slotProps?: {
+    /** Outer container element wrapping the calendar. */
     root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps & { css?: Interpolation<Theme>; [attribute: `data-${string}`]: unknown };
+    /** Header container holding the month title and navigation buttons. */
     header?: CalendarHeaderProps & { css?: Interpolation<Theme> };
+    /** Table element rendering the day grid and weekday headers. */
     grid?: Omit<CalendarGridProps, 'children'> & { css?: Interpolation<Theme> };
   };
 }

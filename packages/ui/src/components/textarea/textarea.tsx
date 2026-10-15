@@ -24,10 +24,15 @@ export type TextareaResize = 'none' | 'vertical';
 export interface TextareaPartProps extends FieldPartProps {}
 
 type TextareaAnatomy = {
+  /** Outer container wrapping the textarea and its parts. */
   root: 'div';
+  /** Label element associated with the textarea. */
   label: 'label';
+  /** Native textarea receiving multi-line entry. */
   control: 'textarea';
+  /** Helper text element displayed below the textarea. */
   description: 'span';
+  /** Validation error message displayed when invalid. */
   error: 'span';
 };
 export type TextareaSlots = FieldSlots<TextareaAnatomy>;

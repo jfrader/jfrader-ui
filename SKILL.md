@@ -101,6 +101,11 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - **The styling seam**: import `css`/`keyframes`/types only from `src/styling/css.ts`. Never from
   `@emotion/react` directly, never `styled()` inside the library. `styled`, `ThemeProvider`,
   `useTheme`, `theme` and `createTheme` are the app-facing styling API; library internals stay on `css()` constants.
+- **Examples, guides and app chrome use `styled`**, built at module scope from library components
+  (`styled(Surface)({ … })`) or plain tags, with token values for every colour, space, radius and
+  font. Never a `css` prop, an inline `style` object, a Tailwind-style class or a literal value in
+  example or app code: a reader copies what we show, so the sample has to be the pattern we want
+  them to keep.
 - **State through attributes**: `:hover`, `[aria-disabled="true"]`, `[aria-invalid="true"]`,
   `[data-state]`, `:checked`, `:focus-visible` — not class soup.
 - **Transitions list properties explicitly** (`background-color, border-color`), never `transition: all`.
@@ -499,6 +504,8 @@ MentionInput's introduction: “Write a message and mention people with @ or cha
   “you” when needed. Avoid semicolon chains, sales copy, reassurance, and design justification.
 - Keep each fact in one home. Link to setup or QA instructions instead of copying them into
   every description. Code examples should show usage, not test fixtures.
+- Style example and guide code with `styled` components over tokens, not with `css` props or inline
+  style objects. A snippet is a pattern a reader copies.
 - Keep foundation-guide content in Markdown and render it through `apps/storybook/home/Guide.tsx`.
   Use the library's `CodeBlock` with syntax highlighting for source examples and
   `TypewriterTerminal` for shell commands. Commands start fully visible; playback is opt-in.

@@ -20,10 +20,15 @@ export interface EmptyStatePartProps {
 }
 
 export interface EmptyStateSlotProps {
+  /** Container wrapping the decorative icon. */
   icon?: EmptyStatePartProps;
+  /** Container wrapping the title and description text. */
   content?: EmptyStatePartProps;
+  /** Heading element displaying the title. */
   title?: EmptyStatePartProps;
+  /** Paragraph displaying the explanatory description. */
   description?: EmptyStatePartProps;
+  /** Container wrapping action buttons or links. */
   action?: EmptyStatePartProps;
 }
 

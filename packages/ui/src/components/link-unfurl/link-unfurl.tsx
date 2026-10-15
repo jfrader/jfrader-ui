@@ -104,20 +104,29 @@ type PartProps<E extends 'div' | 'a' | 'img' | 'p' | 'button'> = Omit<
   SlotStyle;
 
 export interface LinkUnfurlSlotProps {
+  /** Multiline textarea input for entering message text. */
   field?: Omit<
     ComponentPropsWithRef<'textarea'>,
     'children' | 'id' | 'value' | 'defaultValue' | 'readOnly' | 'className' | 'dangerouslySetInnerHTML'
   > &
     SlotStyle;
+  /** List container element holding preview chips and cards. */
   lane?: PartProps<'div'>;
-  /** Styles the preview item. Animation and drag handlers are reserved for its layout animation. */
+  /** Preview item container element holding the card and controls. */
   chip?: Omit<PartProps<'div'>, 'onAnimationStart' | 'onDrag' | 'onDragStart' | 'onDragEnd'>;
+  /** Expanded preview card container element; renders `PreviewBody`. */
   card?: Omit<PartProps<'div'>, 'hidden' | 'inert'>;
+  /** Anchor element displaying the unfurled link title. */
   title?: Omit<PartProps<'a'>, 'href'>;
+  /** Image element displaying the unfurled link thumbnail. */
   image?: Omit<PartProps<'img'>, 'src' | 'alt'>;
+  /** Action container holding expand, retry, and remove buttons. */
   controls?: PartProps<'div'>;
+  /** Button element submitting the message; renders `Button`. */
   send?: Omit<PartProps<'button'>, 'type' | 'disabled'>;
+  /** Live region container announcing preview and delivery status. */
   status?: Omit<PartProps<'div'>, 'role' | 'aria-live' | 'aria-atomic'>;
+  /** Paragraph element displaying error or failure messages. */
   error?: Omit<PartProps<'p'>, 'role'>;
 }
 

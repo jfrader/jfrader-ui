@@ -45,8 +45,11 @@ export interface AttachmentListProps extends Omit<ComponentPropsWithRef<'ul'>, '
   previewCount?: number;
   /** Style items and links, or pass props to the expand button. */
   slotProps?: {
+    /** List item wrapping an individual attachment. */
     item?: PartProps;
+    /** Anchor element wrapping a downloadable attachment link. */
     link?: PartProps;
+    /** Button revealing remaining hidden attachments; renders `Button`. */
     expandButton?: Omit<ButtonProps, 'children' | 'type' | 'render'>;
   };
 }

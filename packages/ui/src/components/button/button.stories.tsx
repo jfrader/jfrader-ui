@@ -62,11 +62,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Button } from '@jfrader/ui';
-
-<Button variant="solid" tone="accent" type="submit">
-  Save changes
-</Button>` } } },
+  args: { children: 'Save changes', tone: 'accent', type: 'submit' },
   render: (args) => <Button {...args} data-ui="custom" />,
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('button')).toHaveAttribute('data-ui', 'button');
@@ -74,6 +70,21 @@ export const Default: Story = {
 };
 
 export const Variants: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `import { Button } from '@jfrader/ui';
+
+{['neutral', 'accent', 'danger'].map((tone) =>
+  ['solid', 'soft', 'outline'].map((variant) => (
+    <Button key={\`\${tone}-\${variant}\`} tone={tone} variant={variant}>
+      {\`\${variant} \${tone}\`}
+    </Button>
+  )),
+)}`,
+      },
+    },
+  },
   render: (args) => (
     <div style={gridStyle}>
       {TONES.map((tone) =>
@@ -88,6 +99,19 @@ export const Variants: Story = {
 };
 
 export const Sizes: Story = {
+  parameters: {
+    docs: {
+      source: {
+        code: `import { Button } from '@jfrader/ui';
+
+{['sm', 'md', 'lg'].map((size) => (
+  <Button key={size} size={size}>
+    {size}
+  </Button>
+))}`,
+      },
+    },
+  },
   render: (args) => (
     <div style={rowStyle}>
       {SIZES.map((size) => (

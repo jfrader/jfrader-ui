@@ -32,11 +32,18 @@ export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
   expandLabel?: string;
   collapseLabel?: string;
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
-  slots?: { root?: ComponentType<ComponentPropsWithRef<'div'>> };
+  slots?: {
+    /** Replaces the outer toast stack container; renders a `div` by default. */
+    root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  };
   slotProps?: {
+    /** Outer toast stack container element. */
     root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & ToastPartProps & SxProps;
+    /** Container element holding the list of stacked toast items. */
     list?: ToastPartProps;
+    /** Button element expanding or collapsing the stacked toasts. */
     toggle?: ToastPartProps;
+    /** Container element wrapping an individual toast notification. */
     item?: ToastPartProps;
   };
 }

@@ -38,17 +38,29 @@ import {
 export type { SliderMark, SliderValue } from './use-slider-interaction';
 export type SliderSize = 'sm' | 'md';
 export interface SliderSlotProps {
+  /** Text label naming the slider. */
   label?: Part<'span'>;
+  /** Text element displaying the current numeric value. */
   readout?: Part<'span'>;
+  /** Helper text container displayed below the control. */
   description?: Part<'div'>;
+  /** Validation error message container displayed when invalid. */
   error?: Part<'div'>;
+  /** Interactive area enclosing track, fill, and thumbs. */
   control?: Part<'div'>;
+  /** Background track bar element. */
   track?: Part<'div'>;
+  /** Highlighted range bar showing selected value extent. */
   fill?: Part<'div'>;
+  /** Draggable handle used to adjust the value. */
   thumb?: Part<'div'> | ((index: number) => Part<'div'>);
+  /** Value tooltip bubble floating above the thumb. */
   bubble?: Part<'span'>;
+  /** Discrete tick button along the track. */
   mark?: Part<'button'> | ((index: number) => Part<'button'>);
+  /** Container holding prefix content before the slider. */
   start?: Part<'div'>;
+  /** Container holding suffix content after the slider. */
   end?: Part<'div'>;
 }
 interface SliderCommonProps

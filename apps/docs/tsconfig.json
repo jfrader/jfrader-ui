@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
+    "jsxImportSource": "@emotion/react",
     "types": ["vite/client"]
   },
   "include": ["src", "docs.config.mjs", "vite.config.ts"]

@@ -34,15 +34,25 @@ type Slot<E extends 'div' | 'header' | 'h2' | 'ul' | 'li'> = Omit<
   'children'
 > & { css?: Interpolation<Theme> };
 export interface StretchRefreshSlotProps<T> {
+  /** Header container element holding the title and refresh button. */
   header?: Slot<'header'>;
+  /** Heading element displaying the feed title. */
   title?: Slot<'h2'>;
+  /** Subtitle element displaying feed metadata or update time. */
   subtitle?: Slot<'div'>;
+  /** Scrollable feed container element. */
   feed?: Slot<'div'>;
+  /** Unordered list element rendering feed items. */
   list?: Slot<'ul'>;
+  /** List item element wrapping an individual feed item. */
   item?: Slot<'li'> | ((item: T, index: number) => Slot<'li'>);
+  /** Visual pull indicator displaying stretch progress and spinner. */
   indicator?: Omit<Slot<'div'>, 'aria-hidden'>;
+  /** Manual refresh trigger button; renders `Button`. */
   refreshButton?: Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'loading' | 'render' | 'sx'>;
+  /** Status element announcing pull and refresh state. */
   status?: Omit<Slot<'div'>, 'role' | 'aria-atomic'>;
+  /** Empty state container element shown when no items exist. */
   empty?: Slot<'div'>;
 }
 export interface StretchRefreshLabels {

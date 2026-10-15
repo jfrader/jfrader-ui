@@ -48,7 +48,24 @@ export interface JsonViewerPartProps {
 }
 export type JsonViewerSlotProps = Partial<
   Record<
-    'toolbar' | 'search' | 'tree' | 'row' | 'group' | 'value' | 'pathBar' | 'status' | 'action',
+    | /** Toolbar container holding the search field and actions. */
+      'toolbar'
+    | /** Search input field filtering tree nodes. */
+      'search'
+    | /** Root tree list container element. */
+      'tree'
+    | /** Row element representing an individual node in the tree. */
+      'row'
+    | /** Group list container holding nested child nodes. */
+      'group'
+    | /** Value element formatting the node's JSON primitive value. */
+      'value'
+    | /** Breadcrumb bar showing the path to the selected node. */
+      'pathBar'
+    | /** Status container announcing search and node selection counts. */
+      'status'
+    | /** Action button inside the toolbar. */
+      'action',
     JsonViewerPartProps
   >
 >;

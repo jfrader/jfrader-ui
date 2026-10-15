@@ -96,21 +96,34 @@ export interface DialogEasyProps extends DialogStateProps, Omit<DialogPanelProps
 export interface DialogSlotProps {
   /** Customize the panel's adopted div, not the native dialog shell. */
   root?: NonNullable<DialogPanelProps['slotProps']>['root'];
+  /** Button that opens the dialog. */
   trigger?: Omit<DialogTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  /** Native `<dialog>` shell that manages backdrop and focus trapping. */
   content?: Omit<DialogContentProps, 'children'> & { css?: Interpolation<Theme> };
+  /** Adopted panel container that renders the dialog surface material. */
   panel?: Omit<DialogPanelProps, 'children'>;
+  /** Container grouping the title, description, and close button. */
   header?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { css?: Interpolation<Theme> };
+  /** Accessible heading element naming the dialog. */
   title?: Omit<DialogTitleProps, 'children'> & { css?: Interpolation<Theme> };
+  /** Accessible text element describing the dialog purpose. */
   description?: Omit<DialogDescriptionProps, 'children'> & { css?: Interpolation<Theme> };
+  /** Button that dismisses the dialog. */
   close?: Omit<DialogCloseProps, 'children'> & { css?: Interpolation<Theme> };
 }
 
 export interface DialogSlots {
+  /** Replaces the panel's adopted div; renders a `div` by default. */
   root?: NonNullable<DialogPanelProps['slots']>['root'];
+  /** Replaces the header container for title, description, and close button. */
   header?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the accessible heading element naming the dialog. */
   title?: ComponentType<DialogTitleProps>;
+  /** Replaces the accessible text element describing the dialog purpose. */
   description?: ComponentType<DialogDescriptionProps>;
+  /** Replaces the button that opens the dialog. */
   trigger?: ComponentType<DialogTriggerProps>;
+  /** Replaces the button that dismisses the dialog. */
   close?: ComponentType<DialogCloseProps>;
 }
 

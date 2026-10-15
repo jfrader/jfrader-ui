@@ -64,31 +64,51 @@ export interface MultiSelectOption {
   id?: string;
 }
 export interface MultiSelectSlots {
+  /** Outer container element wrapping the multi-select field. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Label element associated with the select. Default: `MultiSelect.Label`. */
   label?: ComponentType<MultiSelectLabelProps>;
+  /** Helper text element displayed below or above the trigger. Default: `MultiSelect.Description`. */
   description?: ComponentType<MultiSelectDescriptionProps>;
+  /** Validation error message element displayed when invalid. Default: `MultiSelect.Error`. */
   error?: ComponentType<MultiSelectErrorProps>;
+  /** Combobox button trigger that opens the options popup. Default: `MultiSelect.Trigger`. */
   trigger?: ComponentType<MultiSelectTriggerProps>;
+  /** Display area rendering selected value tags or placeholder. Default: `MultiSelect.Value`. */
   value?: ComponentType<MultiSelectValueProps>;
+  /** Button that clears all selected values. Default: `MultiSelect.Clear`. */
   clear?: ComponentType<MultiSelectClearProps>;
+  /** Floating popup panel holding the options list. Default: `MultiSelect.Content`. */
   content?: ComponentType<MultiSelectContentProps>;
+  /** Selectable option item within the list. Default: `MultiSelect.Item`. */
   item?: ComponentType<MultiSelectItemProps>;
+  /** Message container displayed when no options match. Default: `MultiSelect.Empty`. */
   empty?: ComponentType<MultiSelectEmptyProps>;
 }
 export interface MultiSelectSlotProps {
+  /** Outer container element wrapping the multi-select field. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
+  /** Label element associated with the select. Default: `MultiSelect.Label`. */
   label?: Partial<MultiSelectLabelProps> & { css?: Interpolation<Theme> };
+  /** Helper text element displayed below or above the trigger. Default: `MultiSelect.Description`. */
   description?: Partial<MultiSelectDescriptionProps> & { css?: Interpolation<Theme> };
+  /** Validation error message element displayed when invalid. Default: `MultiSelect.Error`. */
   error?: Partial<MultiSelectErrorProps> & { css?: Interpolation<Theme> };
+  /** Combobox button trigger that opens the options popup. Default: `MultiSelect.Trigger`. */
   trigger?: Partial<MultiSelectTriggerProps> & { css?: Interpolation<Theme> };
+  /** Display area rendering selected value tags or placeholder. Default: `MultiSelect.Value`. */
   value?: Partial<MultiSelectValueProps> & { css?: Interpolation<Theme> };
+  /** Button that clears all selected values. Default: `MultiSelect.Clear`. */
   clear?: Partial<MultiSelectClearProps> & { css?: Interpolation<Theme> };
+  /** Floating popup panel holding the options list. Default: `MultiSelect.Content`. */
   content?: Partial<MultiSelectContentProps> & { css?: Interpolation<Theme> };
+  /** Selectable option item within the list. Default: `MultiSelect.Item`. */
   item?: Partial<Omit<MultiSelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>> & { css?: Interpolation<Theme> };
+  /** Message container displayed when no options match. Default: `MultiSelect.Empty`. */
   empty?: Partial<MultiSelectEmptyProps> & { css?: Interpolation<Theme> };
 }
 export interface MultiSelectBaseProps {

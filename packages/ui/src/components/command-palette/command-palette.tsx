@@ -98,30 +98,46 @@ export interface CommandPaletteItemRecord {
 }
 
 export interface CommandPaletteSlots {
+  /** Replaces the root wrapper element; renders a `div` by default. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the button that opens the command palette. */
   trigger?: ComponentType<CommandPaletteTriggerProps>;
+  /** Replaces the dialog surface that contains the input and list. */
   content?: ComponentType<CommandPaletteContentProps>;
+  /** Replaces the search text input element. */
   input?: ComponentType<CommandPaletteInputProps>;
+  /** Replaces the listbox container for search result items. */
   list?: ComponentType<CommandPaletteListProps>;
+  /** Replaces the group container for categorized items. */
   group?: ComponentType<CommandPaletteGroupProps>;
+  /** Replaces each selectable command option in the list. */
   item?: ComponentType<CommandPaletteItemProps>;
+  /** Replaces the message container shown when no items match. */
   empty?: ComponentType<CommandPaletteEmptyProps>;
 }
 
 type GeneratedPartProps<Props> = Partial<Props> & { [attribute: `data-${string}`]: unknown };
 
 export interface CommandPaletteSlotProps {
+  /** Root wrapper element around the trigger and dialog. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
+  /** Button that opens the command palette. */
   trigger?: GeneratedPartProps<CommandPaletteTriggerProps>;
+  /** Dialog surface that contains the input and list. */
   content?: GeneratedPartProps<CommandPaletteContentProps>;
+  /** Search text input element. */
   input?: GeneratedPartProps<CommandPaletteInputProps>;
+  /** Listbox container for search result items. */
   list?: GeneratedPartProps<CommandPaletteListProps>;
+  /** Group container for categorized items. */
   group?: GeneratedPartProps<Omit<CommandPaletteGroupProps, 'label' | 'children'>>;
+  /** Each selectable command option in the list. */
   item?: GeneratedPartProps<Omit<CommandPaletteItemProps, 'value' | 'id' | 'children' | 'keywords' | 'disabled' | 'onSelect'>>;
+  /** Message container shown when no items match. */
   empty?: GeneratedPartProps<CommandPaletteEmptyProps>;
 }
 

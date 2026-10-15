@@ -41,8 +41,11 @@ export interface LinkPreviewLabels {
 }
 
 export interface LinkPreviewSlotProps {
+  /** Anchor element displaying the page title link. */
   title?: Omit<PartProps<'a'>, 'href'>;
+  /** Image element displaying the preview thumbnail. */
   image?: Omit<PartProps<'img'>, 'src' | 'alt'>;
+  /** Container element holding preview description and publisher details. */
   body?: Omit<PartProps<'div'>, 'hidden' | 'inert'>;
 }
 

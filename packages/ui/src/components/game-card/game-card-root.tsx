@@ -15,7 +15,10 @@ export interface GameCardRootCustomization {
   /** Replace the root. Exactly sugar for `slots.root`; declare replacements outside render. */
   component?: ComponentType<GameCardRootProps>;
   /** Replace the root structure; `front` and `back` remain content. */
-  slots?: { root?: ComponentType<GameCardRootProps> };
+  slots?: {
+    /** Replaces the outer card container; renders a `div` by default. */
+    root?: ComponentType<GameCardRootProps>;
+  };
 }
 
 interface CardRootProps extends GameCardRootProps, GameCardRootCustomization, SxProps {

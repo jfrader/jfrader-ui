@@ -107,30 +107,48 @@ export interface SelectErrorProps extends ComponentPropsWithRef<'span'>, SxProps
 export interface SelectEmptyProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
 export interface SelectSlots {
+  /** Container element wrapping the select field. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Label element associated with the select. Default: `Select.Label`. */
   label?: ComponentType<SelectLabelProps>;
+  /** Helper text element displayed below or above the trigger. Default: `Select.Description`. */
   description?: ComponentType<SelectDescriptionProps>;
+  /** Validation error message element displayed when invalid. Default: `Select.Error`. */
   error?: ComponentType<SelectErrorProps>;
+  /** Button trigger that opens the select dropdown. Default: `Select.Trigger`. */
   trigger?: ComponentType<SelectTriggerProps>;
+  /** Text container displaying the selected option label. Default: `Select.Value`. */
   value?: ComponentType<SelectValueProps>;
+  /** Floating popup panel holding the options list. Default: `Select.Content`. */
   content?: ComponentType<SelectContentProps>;
+  /** Selectable option item within the list. Default: `Select.Item`. */
   item?: ComponentType<SelectItemProps>;
+  /** Message container displayed when no options are available. Default: `Select.Empty`. */
   empty?: ComponentType<SelectEmptyProps>;
 }
 
 export interface SelectSlotProps {
+  /** Container element wrapping the select field. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
       css?: Interpolation<Theme>;
       [attribute: `data-${string}`]: unknown;
     };
+  /** Label element associated with the select. Default: `Select.Label`. */
   label?: Partial<SelectLabelProps> & { css?: Interpolation<Theme> };
+  /** Helper text element displayed below or above the trigger. Default: `Select.Description`. */
   description?: Partial<SelectDescriptionProps> & { css?: Interpolation<Theme> };
+  /** Validation error message element displayed when invalid. Default: `Select.Error`. */
   error?: Partial<SelectErrorProps> & { css?: Interpolation<Theme> };
+  /** Button trigger that opens the select dropdown. Default: `Select.Trigger`. */
   trigger?: Partial<SelectTriggerProps> & { css?: Interpolation<Theme> };
+  /** Text container displaying the selected option label. Default: `Select.Value`. */
   value?: Partial<SelectValueProps> & { css?: Interpolation<Theme> };
+  /** Floating popup panel holding the options list. Default: `Select.Content`. */
   content?: Partial<SelectContentProps> & { css?: Interpolation<Theme> };
+  /** Selectable option item within the list. Default: `Select.Item`. */
   item?: Partial<Omit<SelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>> & { css?: Interpolation<Theme> };
+  /** Message container displayed when no options are available. Default: `Select.Empty`. */
   empty?: Partial<SelectEmptyProps> & { css?: Interpolation<Theme> };
 }
 

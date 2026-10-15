@@ -60,6 +60,7 @@ export default {
 
 /** Replace the account list while keeping its keyboard navigation. */
 export const InteriorSlots: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
+  tags: ['!autodocs'],
   render: () => <AccountFixture />,
   parameters: { docs: {
     description: { story: 'Replace the account list while keeping its keyboard navigation.' },

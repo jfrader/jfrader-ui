@@ -21,10 +21,15 @@ export type TextFieldSize = 'sm' | 'md' | 'lg';
 export interface TextFieldPartProps extends FieldPartProps {}
 
 type TextFieldAnatomy = {
+  /** Outer container wrapping the text field. */
   root: 'div';
+  /** Label element associated with the input control. */
   label: 'label';
+  /** Native text input receiving user entry. */
   control: 'input';
+  /** Helper text element displayed below the input. */
   description: 'span';
+  /** Validation error message displayed when invalid. */
   error: 'span';
 };
 export type TextFieldSlots = FieldSlots<TextFieldAnatomy>;

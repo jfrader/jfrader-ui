@@ -89,28 +89,48 @@ export interface BottomSheetCloseProps extends ComponentPropsWithRef<'button'>, 
 type GeneratedPartProps<Props> = Omit<Props, 'children'> & Pick<DrawerPanelProps, `data-${string}`>;
 
 export interface BottomSheetSlotProps {
+  /** Customize the panel's adopted div, not the native dialog shell. */
   root?: NonNullable<BottomSheetPanelProps['slotProps']>['root'];
+  /** Button that opens the bottom sheet. */
   trigger?: GeneratedPartProps<BottomSheetTriggerProps>;
+  /** Native `<dialog>` shell that manages positioning, backdrop, and modality. */
   content?: GeneratedPartProps<BottomSheetContentProps>;
+  /** Animated sheet container that slides between detents. */
   panel?: GeneratedPartProps<BottomSheetPanelProps>;
+  /** Top bar that contains the handle, title, description, and close button. */
   header?: GeneratedPartProps<BottomSheetHeaderProps>;
+  /** Interactive drag handle that resizes the sheet between detents. */
   handle?: GeneratedPartProps<BottomSheetHandleProps>;
+  /** Heading element that names the bottom sheet. */
   title?: GeneratedPartProps<BottomSheetTitleProps>;
+  /** Subheading text that describes the bottom sheet. */
   description?: GeneratedPartProps<BottomSheetDescriptionProps>;
+  /** Button that dismisses the bottom sheet. */
   close?: GeneratedPartProps<BottomSheetCloseProps>;
+  /** Scrollable main container that holds the sheet content. */
   body?: GeneratedPartProps<BottomSheetBodyProps>;
+  /** Bottom bar that holds action buttons below the sheet body. */
   footer?: GeneratedPartProps<BottomSheetFooterProps>;
 }
 
 export interface BottomSheetSlots {
+  /** Replaces the panel's adopted div; renders a `div` by default. */
   root?: NonNullable<BottomSheetPanelProps['slots']>['root'];
+  /** Replaces the button that opens the bottom sheet. */
   trigger?: ComponentType<BottomSheetTriggerProps>;
+  /** Replaces the header bar containing the handle, title, and close button. */
   header?: ComponentType<BottomSheetHeaderProps>;
+  /** Replaces the drag handle that resizes the sheet between detents. */
   handle?: ComponentType<BottomSheetHandleProps>;
+  /** Replaces the heading element that names the bottom sheet. */
   title?: ComponentType<BottomSheetTitleProps>;
+  /** Replaces the subheading text that describes the bottom sheet. */
   description?: ComponentType<BottomSheetDescriptionProps>;
+  /** Replaces the button that dismisses the bottom sheet. */
   close?: ComponentType<BottomSheetCloseProps>;
+  /** Replaces the scrollable main container for sheet content. */
   body?: ComponentType<BottomSheetBodyProps>;
+  /** Replaces the bottom bar containing action buttons. */
   footer?: ComponentType<BottomSheetFooterProps>;
 }
 

@@ -41,20 +41,30 @@ export interface ExpandableCardBaseProps
   headingLevel?: 2 | 3 | 4;
 }
 export interface ExpandableCardSlots {
+  /** Replaces the root card container; renders an `article` by default. */
   root?: ComponentType<ComponentPropsWithRef<'article'>>;
+  /** Replaces the interactive header button that toggles expansion. */
   trigger?: ComponentType<ComponentPropsWithRef<'button'>>;
+  /** Replaces the card heading title element. */
   title?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Replaces the card subheading description element. */
   description?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Replaces the expandable body panel containing card details. */
   content?: ComponentType<ComponentPropsWithRef<'div'>>;
 }
 export interface ExpandableCardSlotProps {
+  /** Root card container element. */
   root?: Omit<ComponentPropsWithRef<'article'>, 'children'> & SxProps & {
     css?: Interpolation<Theme>;
     [attribute: `data-${string}`]: unknown;
   };
+  /** Interactive header button that toggles expansion. */
   trigger?: Omit<ExpandableCardTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  /** Card heading title element. */
   title?: Omit<ExpandableCardTitleProps, 'children'> & { css?: Interpolation<Theme> };
+  /** Card subheading description element. */
   description?: Omit<ExpandableCardDescriptionProps, 'children'> & { css?: Interpolation<Theme> };
+  /** Expandable body panel containing card details. */
   content?: Omit<ExpandableCardContentProps, 'children'> & { css?: Interpolation<Theme> };
 }
 export interface ExpandableCardCompoundProps extends ExpandableCardBaseProps {

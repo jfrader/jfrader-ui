@@ -38,13 +38,21 @@ type Part<T extends 'div' | 'span' | 'img'> = ComponentPropsWithRef<T> & {
   css?: Interpolation<Theme>;
 };
 export interface NowPlayingSlotProps {
+  /** Collapsed mini-player container element. */
   mini?: Part<'div'>;
+  /** Expanded full-player container element. */
   full?: Part<'div'>;
+  /** Image element displaying track album artwork. */
   artwork?: Part<'img'>;
+  /** Text element displaying the active track title. */
   title?: Part<'span'>;
+  /** Text element displaying the active track artist. */
   artist?: Part<'span'>;
+  /** Button element expanding the player to full view; renders `Button`. */
   expand?: Omit<ButtonProps, 'sx' | 'render'>;
+  /** Button element collapsing the player to mini view; renders `Button`. */
   collapse?: Omit<ButtonProps, 'sx' | 'render'>;
+  /** Timeline scrubber slider element; renders `Slider`. */
   seek?: Omit<
     Extract<SliderProps, { type?: 'single' }>,
     | 'sx'
@@ -63,9 +71,13 @@ export interface NowPlayingSlotProps {
     | 'formatOptions'
     | 'showValue'
   >;
+  /** Container holding the animated audio level bars. */
   waveform?: Part<'div'>;
+  /** Container element wrapping playback control buttons. */
   controls?: Part<'div'>;
+  /** Text element displaying playback status or duration. */
   status?: Part<'span'>;
+  /** Container element displaying playback error messages. */
   error?: Part<'div'>;
 }
 export interface NowPlayingLabels {

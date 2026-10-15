@@ -80,26 +80,44 @@ export interface DrawerBaseProps {
 type GeneratedPartProps<Props> = Omit<Props, 'children'> & Pick<DrawerPanelProps, `data-${string}`>;
 
 export interface DrawerSlotProps {
+  /** Customize the panel's adopted div, not the native dialog shell. */
   root?: NonNullable<DrawerPanelProps['slotProps']>['root'];
+  /** Button that opens the drawer. */
   trigger?: GeneratedPartProps<DrawerTriggerProps>;
+  /** Native `<dialog>` shell that manages backdrop and modality. */
   content?: GeneratedPartProps<DrawerContentProps>;
+  /** Sliding drawer panel that renders the surface material. */
   panel?: GeneratedPartProps<DrawerPanelProps>;
+  /** Top bar that contains the title, description, and close button. */
   header?: GeneratedPartProps<DrawerHeaderProps>;
+  /** Heading element that names the drawer. */
   title?: GeneratedPartProps<DrawerTitleProps>;
+  /** Subheading text that describes the drawer. */
   description?: GeneratedPartProps<DrawerDescriptionProps>;
+  /** Button that dismisses the drawer. */
   close?: GeneratedPartProps<DrawerCloseProps>;
+  /** Scrollable main container that holds the drawer content. */
   body?: GeneratedPartProps<DrawerBodyProps>;
+  /** Bottom bar that holds action buttons below the drawer body. */
   footer?: GeneratedPartProps<DrawerFooterProps>;
 }
 
 export interface DrawerSlots {
+  /** Replaces the panel's adopted div; renders a `div` by default. */
   root?: NonNullable<DrawerPanelProps['slots']>['root'];
+  /** Replaces the button that opens the drawer. */
   trigger?: ComponentType<DrawerTriggerProps>;
+  /** Replaces the top bar containing title, description, and close button. */
   header?: ComponentType<DrawerHeaderProps>;
+  /** Replaces the heading element that names the drawer. */
   title?: ComponentType<DrawerTitleProps>;
+  /** Replaces the subheading text that describes the drawer. */
   description?: ComponentType<DrawerDescriptionProps>;
+  /** Replaces the button that dismisses the drawer. */
   close?: ComponentType<DrawerCloseProps>;
+  /** Replaces the scrollable main container for drawer content. */
   body?: ComponentType<DrawerBodyProps>;
+  /** Replaces the bottom bar containing action buttons. */
   footer?: ComponentType<DrawerFooterProps>;
 }
 

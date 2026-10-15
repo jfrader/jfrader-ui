@@ -32,9 +32,13 @@ export interface CheckboxProps extends Omit<ComponentPropsWithRef<'input'>, 'siz
   size?: CheckboxSize;
   onCheckedChange?: (checked: boolean) => void;
   slotProps?: {
+    /** Outer label wrapping the checkbox control, label, and description. */
     root?: CheckboxPartProps;
+    /** Text label displayed alongside the checkbox. */
     label?: CheckboxPartProps;
+    /** Visual box displaying the check or indeterminate glyph. */
     control?: CheckboxPartProps;
+    /** Helper description text displayed below the checkbox row. */
     description?: CheckboxPartProps;
   };
 }

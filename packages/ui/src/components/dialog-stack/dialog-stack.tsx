@@ -106,28 +106,48 @@ export interface DialogStackPageRecord {
 }
 
 export interface DialogStackSlots {
+  /** Replaces the content panel's adopted div; renders a `div` by default. */
   root?: NonNullable<DialogStackContentProps['slots']>['root'];
+  /** Replaces the generated header wrapper around title and description. */
   header?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the generated body wrapper around the page content. */
   body?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the button that opens a dialog panel. */
   trigger?: ComponentType<DialogStackTriggerProps>;
+  /** Replaces the stacked page panel container. */
   content?: ComponentType<DialogStackContentProps>;
+  /** Replaces the heading element that names the page. */
   title?: ComponentType<DialogStackTitleProps>;
+  /** Replaces the text element that describes the page. */
   description?: ComponentType<DialogStackDescriptionProps>;
+  /** Replaces the bottom container for action buttons. */
   footer?: ComponentType<DialogStackFooterProps>;
+  /** Replaces the button that navigates back to the parent panel. */
   back?: ComponentType<DialogStackBackProps>;
+  /** Replaces the button that dismisses the entire dialog stack. */
   close?: ComponentType<DialogStackCloseProps>;
 }
 
 export interface DialogStackSlotProps {
+  /** Customize the panel's adopted div, not the native dialog shell. */
   root?: NonNullable<DialogStackContentProps['slotProps']>['root'];
+  /** Generated header wrapper around title and description. */
   header?: GeneratedRootSlotProps;
+  /** Generated body wrapper around the page content. */
   body?: GeneratedRootSlotProps;
+  /** Button that opens a dialog panel. */
   trigger?: Partial<Omit<DialogStackTriggerProps, 'value' | 'children'>>;
+  /** Stacked page panel container. */
   content?: Partial<Omit<DialogStackContentProps, 'value' | 'children'>>;
+  /** Heading element that names the page. */
   title?: Partial<DialogStackTitleProps>;
+  /** Text element that describes the page. */
   description?: Partial<DialogStackDescriptionProps>;
+  /** Bottom container for action buttons. */
   footer?: Partial<DialogStackFooterProps>;
+  /** Button that navigates back to the parent panel. */
   back?: Partial<DialogStackBackProps>;
+  /** Button that dismisses the entire dialog stack. */
   close?: Partial<DialogStackCloseProps>;
 }
 

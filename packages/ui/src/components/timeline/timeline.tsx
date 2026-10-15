@@ -94,7 +94,26 @@ export interface TimelinePartProps {
 
 export type TimelineSlotProps = Partial<
   Record<
-    'scroller' | 'group' | 'heading' | 'list' | 'item' | 'marker' | 'trigger' | 'time' | 'detail' | 'status',
+    | /** Scrollable container managing the timeline events scroll position. */
+      'scroller'
+    | /** Section container element grouping events by day. */
+      'group'
+    | /** Heading element displaying the day group label. */
+      'heading'
+    | /** Ordered list element (`ol`) containing day event items. */
+      'list'
+    | /** List item element (`li`) representing an individual timeline event. */
+      'item'
+    | /** Bullet dot or icon indicator on the timeline axis. */
+      'marker'
+    | /** Interactive button element expanding or collapsing event details. */
+      'trigger'
+    | /** Timestamp element displaying the event time. */
+      'time'
+    | /** Collapsible container holding expanded event details. */
+      'detail'
+    | /** Live region element announcing timeline updates and empty state. */
+      'status',
     TimelinePartProps
   >
 >;
