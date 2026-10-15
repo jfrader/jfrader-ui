@@ -25,7 +25,7 @@ export interface AlertPartProps {
 export interface AlertSlots {
   /** Outer container element holding the alert message and dismiss button. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
-  /** Title heading element rendered above the alert body. */
+  /** Line naming the alert, rendered above the body. */
   title?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Body container holding the alert message content. */
   body?: ComponentType<ComponentPropsWithRef<'div'>>;
