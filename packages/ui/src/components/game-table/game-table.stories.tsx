@@ -249,15 +249,15 @@ const meta = {
     layout: 'fullscreen',
     docs: {
       description: { component: 'Arrange players around a game surface. Add cards, controls and floating content to named regions.' },
-      usage: `### Setup
+      usage: `## Setup
 - Import from \`@jfrader/ui/game-table\`. GameTable is an opt-in subpath and is not re-exported by the package root.
 
-### Regions
+## Regions
 Compose direct \`GameTable.Seat\`, \`GameTable.Play\`, \`GameTable.Center\`, \`GameTable.Header\`, \`GameTable.Dock\`, \`GameTable.Footer\` and \`GameTable.Floating\` children in any order (fragments are accepted). Seat and Play repeat at every place unless you pass \`slotKey\`. Their children read \`{ player, slot, index, geometry }\` with \`useGameTableSeat<Player>()\`. Empty play content reserves nothing. Center holds shared cards, the pot or deck and is measured independently. Keep measured footprints in normal flow; absolute artwork must reserve its footprint in its parent. The node-region props and seat/play callbacks have been replaced by these parts.
 
 Each public part accepts native div props, ref and sx. \`component\` is sugar for \`slots.root\`; \`slotProps.root\` passes root props, with slot conflicts winning except merged className/style. Geometry variables and measurement markers remain table-owned. Use \`seatSlots\` for prebuilt player order; \`slots\` now replaces structure.
 
-### Geometry
+## Geometry
 Give the parent a block size and pass current viewport dimensions in CSS pixels. Update \`viewport\` on resize; it selects the surface frame. ResizeObserver measures the actual root, shell, surface and intrinsic regions, including when the parent is smaller than the viewport. Regions remain hidden until measurement; the server does not guess their dimensions.
 \`seatPlacement\` defaults to \`edge\`: the content centre sits on the felt boundary. \`inside\` keeps content contained with its outer edge inset by the gap; \`outside\` moves the inner edge to the boundary, using the directional box support as an outward offset. This deliberately replaces the previous containment-only default. The felt keeps its profile frame's size and aspect; edge/outside placement follows its measured ellipse. The shell reserves the outboard footprint at each region's minimum scale. If the root cannot hold a placement at its floor, the table declares insufficient space rather than calling an inward fallback fitted.
 The play anchor shares its seat's physical polar direction on an inward ring. Its distance leaves the measured seat/play boxes separated by the content gap on at least one axis, moving farther inward when the surface border requires it. Plays must stay inside the surface, clear of other regions and the measured centre; no invisible centre-size percentage is reserved.
@@ -267,26 +267,26 @@ The curve uses θᵢ = π/2 + 2πi/N and Pᵢ = C + (Rx cosθᵢ, Ry sinθᵢ). 
 \`clearance\` requests additional block-axis space. Header, dock and footer remain unscaled, outside the surface. The request is a preference: if the content floors cannot fit, both clearance edges yield to \`GAME_TABLE_LIMITS.minimumClearancePx\` (0). The table retries the requested CSS padding on content/size changes, so the request is restored when space returns. This is a two-step policy (requested, then minimum), not a search for the largest feasible clearance.
 Coordinates are measured from inline-start and mirror with \`dir="rtl"\`. \`data-game-surface="true"\` marks the surface for measuring future card flights.
 
-### Content size
+## Content size
 \`GAME_TABLE_LIMITS.minimumCardWidthPx\` is 32px, matching GameCard sm. Each seat, play and centre has its own minimum scale: max(32 / intrinsic card width), combined with its control-size floor. Chrome is excluded. Regions without cards or controls retain intrinsic size. Custom artwork without GameCard markers is not covered by the card floor.
 The solver chooses the largest shared preferred scale t in [0,1]; each region uses max(t, its minimum scale). It pushes the seat ring outward within placement and measured shell constraints, separates neighbours and plays, and keeps the inward play ring clear of the measured centre. The space-2 gap stays unscaled. Content is never substituted or truncated.
 Precedence: preserve card/control floors → try requested clearance → retry at clearance zero → declare insufficient space if floors still cannot fit. \`data-clearance="requested" | "reduced"\` and numeric \`data-clearance-start/end\` report effective local CSS pixels. \`data-layout-fit="measuring" | "fitted" | "insufficient-space"\` reports geometry. Insufficient space means the composition cannot satisfy all clearances at its floors, including the play-to-centre band; overflow or collisions may remain. Give the parent more space or reduce the composition.
 
-### Seat chrome
+## Seat chrome
 Put names, avatars and non-layout adornments inside \`<GameTable.SeatChrome>…</GameTable.SeatChrome>\` within Seat. The part is absolutely positioned: it reserves no space and its descendants do not constrain card scale. It floats on the outward side; when a side label does not fit horizontally inside the root, only the chrome moves above/below the cards. No card-anchor compensation is applied. Removing the part from the DOM does not move the card block. Unmarked in-flow content still counts as content; the table does not guess which arbitrary text is a player name. Avoid wrappers that reserve padding/gaps for the chrome.
 Chrome is independent of card fit: \`fitted\` does not guarantee arbitrary oversized labels or controls fit. Keep chrome concise and respect control/card minimum sizes within your custom content. The table does not rotate names, avatars, or faces; user-supplied transforms are the consumer's responsibility.
 \`--game-table-content-scale\` on each seat and \`--game-table-center-scale\` on the root expose actual region scales; the root content-scale value is only the preferred t. \`--game-table-radius-x/y\` and \`--game-table-content-gap\` expose local geometry. Each play publishes \`--game-table-play-inline/block\` (logical percentages), \`--game-table-play-scale\`, \`--game-table-play-angle\` (outward physical degrees) and \`--game-table-play-cos/sin\`. \`geometry.scale\` and \`geometry.playScale\` are informational: never multiply child sizes by them again. Floors are local CSS-pixel sizes before external ancestor transforms; a consumer scaling the entire table must account for its own scale.
 Native seat/play/center controls preserve at least 24px on both axes and 32px on their main axis, unless already smaller intrinsically. Regions without GameCards or controls retain their intrinsic size rather than disappearing at a zero floor. \`fitted\` covers normal-flow border boxes, not overflowing artwork, shadows or floating overlays. Keep absolute artwork's full footprint reserved in normal flow.
 
-### Rival-card flight markers
+## Rival-card flight markers
 After commit, GameTable marks each actual \`GameCard\` back in an occupied non-own seat with \`data-seat-hidden-card={player.key}\` and \`data-seat-hidden-card-index={index}\`. Index is current zero-based DOM order within that seat, not seat index. Markers update on card/face/player changes and are removed when a card is revealed or a seat becomes empty/own. No opponent value is exposed. Own-hand markers remain the hand's responsibility; custom card renderers must provide their own markers. The flight consumer example is \`packages/ui/src/components/card-flights/card-flights-fixture.tsx\`.
 
-### Flights
+## Flights
 \`CardFlightsProvider\` measures the destinations the library renders: \`GameHand\`, \`GameHand.Hidden\` and \`GameCardStack.Pile\` register their card nodes, and \`GameTable\` registers its seats and surface. A board composition calls \`useBoardFlights\` with the records it already renders and needs no measurements of its own.
 
 For a composition the library does not describe — a shared board dealt from a deck, for example — \`useCardFlights\` exposes \`launch\` for measured endpoints, and \`CARD_FLIGHT_ATTRIBUTES\` names the markers the built-in pieces emit. Measure the endpoints you own through refs, from the board root rather than the document, and measure them again after viewport, resize, scroll, zoom or ancestor transform changes: they are snapshots, not a cache.
 
-### Keyboard
+## Keyboard
 The table is a passive layout, not an APG grid or application. It adds no roles, landmarks, focus movement, state or animation; supplied controls keep their own semantics and native tab order. Floating content is table-local, not a dialog or portal.`,
       source: { language: 'tsx', code: `import { Button } from '@jfrader/ui';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -339,6 +339,7 @@ export const Default: Story = {
 
 /** Native region props, replacement roots and seat context. */
 export const CompoundParts: Story = {
+  tags: ['!autodocs'],
   render: () => <CompoundPartsFixture />,
   beforeEach: () => { partEvents.root.mockClear(); partEvents.slot.mockClear(); partEvents.attaches = 0; partEvents.cleanups = 0; },
   play: async ({ canvasElement, userEvent }) => {

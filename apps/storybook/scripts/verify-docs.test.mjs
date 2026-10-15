@@ -3,7 +3,64 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { checkComponentDocs, checkIntroduction, checkSnippets } from './verify-docs.mjs';
+import { checkComponentDocs, checkIntroduction, checkSnippets, checkGameStories } from './verify-docs.mjs';
+
+const gameStory = (meta = '', story = '') => `
+  export default { title: 'Games/GameCard', tags: ['autodocs'], ${meta} };
+  export const Default = { ${story} };
+`;
+const sourceCode = (code) => `parameters: { docs: { source: { code: ${JSON.stringify(code)} } } }`;
+const checkGames = (source, component = 'game-card') => checkGameStories(source, 'game.stories.tsx', component);
+
+test('requires authored snippets for every published Games entry, inherited or overridden', () => {
+  assert.match(checkGames(gameStory())[0], /require authored/);
+  assert.deepEqual(checkGames(gameStory(sourceCode('<GameCard label="Card" />'))), []);
+  assert.deepEqual(checkGames(gameStory('', sourceCode('<GameCard label="Card" />'))), []);
+  assert.deepEqual(checkGames(gameStory('', "tags: ['!autodocs']")), []);
+  assert.match(checkGames(gameStory(sourceCode('<GameCard />'), sourceCode('')))[0], /require authored/);
+  assert.match(checkGames(gameStory(), 'card-flights')[0], /require authored/);
+});
+
+test('rejects Games barrel imports including aliases, types and namespaces, not other UI symbols', () => {
+  for (const code of [
+    "import { GameCard } from '@jfrader/ui';",
+    "import { GameCard as Card } from '@jfrader/ui';",
+    "import type { Deck } from '@jfrader/ui';",
+    "import * as UI from '@jfrader/ui';",
+    "import { useBoardFlights } from '@jfrader/ui';",
+  ]) assert.match(checkGames(gameStory(sourceCode(code))).join('\n'), /not the barrel/);
+  assert.deepEqual(checkGames(gameStory(sourceCode("import { Button } from '@jfrader/ui'; import { GameCard } from '@jfrader/ui/game-card';"))), []);
+});
+
+test('rejects non-browser setup on published stories, including meta inheritance and spreads', () => {
+  for (const setup of ['beforeEach: () => {}', 'loaders: [async () => ({})]', 'parameters: { viewport: { defaultViewport: "mobile" } }']) {
+    const errors = checkGames(gameStory(setup, sourceCode('<GameCard />')));
+    assert.match(errors.join('\n'), /published docs cannot declare/);
+    assert.match(checkGames(gameStory(sourceCode('<GameCard />'), setup)).join('\n'), /published docs cannot declare/);
+    assert.deepEqual(checkGames(gameStory(setup, "tags: ['!autodocs']")), []);
+    assert.match(checkGames(`const setup = { ${setup} }; ${gameStory(sourceCode('<GameCard />'), '...setup')}`).join('\n'), /published docs cannot declare/);
+  }
+});
+
+test('resolves story reuse and factory metadata without executing setup', () => {
+  assert.deepEqual(checkGames(`
+    export default { tags: ['autodocs'] };
+    const base = { tags: ['!autodocs'], beforeEach: () => { throw Error('must not execute'); } };
+    function fixture() { return { ...base }; }
+    export const Hidden = fixture();
+    export const AlsoHidden = { ...base };
+  `), []);
+  assert.match(checkGames(`
+    export default { tags: ['autodocs'], ${sourceCode('<GameCard />')} };
+    const base = { beforeEach: () => {} };
+    export const Visible = { ...base };
+  `).join('\n'), /cannot declare beforeEach/);
+});
+
+test('does not trust opaque spreads that can replace source or setup metadata', () => {
+  assert.notDeepEqual(checkGames(gameStory(sourceCode('<GameCard />'), '...externalStory')), []);
+  assert.match(checkGames(gameStory(sourceCode('<GameCard />'), 'parameters: { ...externalParameters }')).join('\n'), /require authored/);
+});
 
 test('parses every authored TSX snippet, including story overrides', () => {
   const source = (first, second) => `
