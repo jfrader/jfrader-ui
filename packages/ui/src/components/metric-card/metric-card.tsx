@@ -28,8 +28,8 @@ export interface MetricCardSlots {
   surface?: ComponentType<CardPartProps & ComponentPropsWithRef<typeof Card>>;
   /** Replaces the header container. */
   header?: ComponentType<CardPartProps & ComponentPropsWithRef<'div'>>;
-  /** Replaces the metric heading. */
-  label?: ComponentType<CardPartProps & ComponentPropsWithRef<'h3'>>;
+  /** Replaces the metric heading. Receives `headingLevel`. */
+  label?: ComponentType<CardPartProps & ComponentPropsWithRef<'h3'> & { headingLevel?: CardHeadingLevel }>;
   /** Replaces the metric value container. */
   value?: ComponentType<CardPartProps & ComponentPropsWithRef<'div'>>;
   /** Replaces the change pill. */
@@ -147,6 +147,7 @@ export function MetricCard({
         : 'down';
   const Surface = slots?.surface ?? Card;
   const Header = slots?.header ?? 'div';
+  // The native heading carries the level in its own name; a replacement is told the level instead.
   const Heading = slots?.label ?? (`h${headingLevel}` as const);
   const Value = slots?.value ?? 'div';
   const Delta = slots?.delta ?? Pill;
@@ -194,6 +195,7 @@ export function MetricCard({
                 <Heading
                   id={labelId}
                   data-ui="metric-card-label"
+                  {...(slots?.label ? { headingLevel } : {})}
                   className={slotProps?.label?.className}
                   css={[labelStyle, slotProps?.label?.css]}
                 >

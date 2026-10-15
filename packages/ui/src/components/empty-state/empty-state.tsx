@@ -37,8 +37,8 @@ export interface EmptyStateSlots {
   icon?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Container wrapping the title and description text. */
   content?: ComponentType<ComponentPropsWithRef<'div'>>;
-  /** Heading element displaying the title. */
-  title?: ComponentType<ComponentPropsWithRef<'h3'>>;
+  /** Heading element displaying the title. Receives `headingLevel`. */
+  title?: ComponentType<ComponentPropsWithRef<'h3'> & { headingLevel?: CardHeadingLevel }>;
   /** Paragraph displaying the explanatory description. */
   description?: ComponentType<ComponentPropsWithRef<'p'>>;
   /** Container wrapping action buttons or links. */
@@ -179,6 +179,7 @@ export function EmptyState({
   const hasDescription = isRenderable(description);
   const Icon = slots?.icon ?? 'div';
   const Content = slots?.content ?? 'div';
+  // The native heading carries the level in its own name; a replacement is told the level instead.
   const Heading = slots?.title ?? (`h${headingLevel}` as const);
   const Description = slots?.description ?? 'p';
   const Action = slots?.action ?? 'div';
@@ -213,6 +214,7 @@ export function EmptyState({
             {hasTitle && (
               <Heading
                 id={titleId}
+                {...(slots?.title ? { headingLevel } : {})}
                 className={slotProps?.title?.className}
                 css={[titleStyle, slotProps?.title?.css]}
               >

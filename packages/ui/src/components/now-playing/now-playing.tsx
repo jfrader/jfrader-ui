@@ -311,7 +311,9 @@ function joinIds(...ids: (string | false | undefined)[]) {
 function Artwork({ track, slot, component }: { track: NowPlayingTrack; slot?: Part<'img'>; component?: NonNullable<NowPlayingProps['slots']>['artwork'] }) {
   const [failed, setFailed] = useState(false);
   const Image = component ?? 'img';
-  const Placeholder = component ?? 'span';
+  // The no-artwork and failed-load branch is never the consumer's replacement: an img-shaped
+  // component there would render an empty image.
+  const Placeholder = 'span';
   return failed || !track.artwork ? (
     <Placeholder
       className={slot?.className}

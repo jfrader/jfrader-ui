@@ -99,7 +99,8 @@ const timeStyle = css({
 
 export function ThreadTime({ epoch, now, formatters, invalidLabel, id, fullId, ui: owner, part, component }: ThreadTimeProps) {
   const Time = component ?? 'time';
-  const InvalidTime = component ?? 'span';
+  // The invalid-date branch renders a span, never the consumer's time replacement.
+  const InvalidTime = 'span';
   if (epoch === null) {
     return (
       <InvalidTime id={id} data-ui={ui(owner, 'time')} className={part?.className} css={[timeStyle, part?.css]}>
