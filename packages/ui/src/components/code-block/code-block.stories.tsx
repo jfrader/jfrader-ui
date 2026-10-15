@@ -4,9 +4,14 @@ import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { Button } from '../button';
 import { CodeBlock, type CodeBlockProps, type CodeHighlightLines, type CodeHighlightLoader } from './index';
 import { loadShikiHighlight } from './shiki';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
+const ConstrainedFrame = styled.div({ maxInlineSize: '20rem' });
 
 const SOURCE = 'export const answer = 42;\nconsole.log(answer);\n';
 function CustomSourceFrame(props: ComponentPropsWithRef<'div'>) {
@@ -248,9 +253,9 @@ export const LineNumbers: Story = {
 export const LongLines: Story = {
   args: { code: `const long = '${'source '.repeat(100)}';`, lineNumbers: true },
   render: (args) => (
-    <div style={{ maxInlineSize: '20rem' }}>
+    <ConstrainedFrame>
       <CodeBlock {...args} />
-    </div>
+    </ConstrainedFrame>
   ),
   play: async ({ canvasElement }) => {
     const pre = source(canvasElement);
@@ -447,6 +452,7 @@ export const ExternalAria: Story = {
     await expect(canvasElement.querySelectorAll('pre')[1]?.id).not.toBe(source(canvasElement).id);
   },
 };
+// The slot API takes `css` values, so this story keeps the documented spelling.
 const consumerCss = css({ paddingInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ paddingInlineStart: vars.space[2] });
 const slotStyle = css({ fontWeight: vars.fontWeight.semibold });
@@ -665,7 +671,7 @@ export const HighlightedTsxLight: Story = {
 export const HighlightedLanguages: Story = {
   args: { highlight: loadShikiHighlight, lineNumbers: true },
   render: (args) => (
-    <div style={{ display: 'grid', gap: vars.space[4] }}>
+    <Stack>
       {(Object.keys(SAMPLES) as (keyof typeof SAMPLES)[]).map((language) => (
         <CodeBlock
           {...args}
@@ -675,7 +681,7 @@ export const HighlightedLanguages: Story = {
           filename={SAMPLE_FILENAMES[language]}
         />
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const blocks = Array.from(canvasElement.querySelectorAll('section'));

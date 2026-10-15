@@ -4,6 +4,8 @@ import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { Button } from '../button';
 import { EmptyState, type EmptyStateProps, type EmptyStateVariant } from './index';
 
@@ -25,14 +27,14 @@ export const IconReplacement: Story = {
   },
 };
 
-const frameStyle = css({
+const Frame = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '360px',
 });
 
-const wideStyle = css({ inlineSize: '560px' });
-const narrowStyle = css({ inlineSize: '240px' });
+const WideFrame = styled.div({ inlineSize: '560px' });
+const NarrowFrame = styled.div({ inlineSize: '240px' });
 
 function FolderIcon() {
   return (
@@ -83,9 +85,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
 } satisfies Meta<typeof EmptyState>;
@@ -212,12 +214,12 @@ export const Inline: Story = {
   },
   render: (args) => (
     <>
-      <div css={wideStyle}>
+      <WideFrame>
         <EmptyState {...args} />
-      </div>
-      <div css={narrowStyle}>
+      </WideFrame>
+      <NarrowFrame>
         <EmptyState {...args} />
-      </div>
+      </NarrowFrame>
     </>
   ),
   play: async ({ canvasElement }) => {
@@ -378,9 +380,9 @@ export const LongCopy: Story = {
     action: <Button variant="outline">Change period</Button>,
   },
   render: (args) => (
-    <div css={narrowStyle}>
+    <NarrowFrame>
       <EmptyState {...args} />
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvasElement }) => {
     const root = getRoot(canvasElement);
@@ -524,6 +526,7 @@ export const NamedRegion: Story = {
   },
 };
 
+// This story tests the documented css/sx and slot styling precedence.
 const consumerRootStyle = css({ paddingBlock: vars.space[2] });
 const sxRootStyle = css({ paddingBlock: vars.space[3] });
 const slotTitleStyle = css({ textTransform: 'uppercase' });
@@ -610,9 +613,9 @@ export const RTL: Story = {
     ),
   },
   render: (args) => (
-    <div css={wideStyle}>
+    <WideFrame>
       <EmptyState {...args} />
-    </div>
+    </WideFrame>
   ),
   play: async ({ canvasElement }) => {
     const root = getRoot(canvasElement);

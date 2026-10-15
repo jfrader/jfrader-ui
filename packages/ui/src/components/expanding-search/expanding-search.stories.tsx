@@ -10,13 +10,18 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { ExpandingSearch, type ExpandingSearchProps } from './index';
 
-const fixtureButton = { minWidth: 24, minHeight: 24 } as const;
+const FixtureButton = styled.button({ minInlineSize: vars.space[6], minBlockSize: vars.space[6] });
+const Frame = styled.div({ inlineSize: 420, maxInlineSize: '100%' });
+const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
+const NarrowLaneFrame = styled.div({ inlineSize: 180 });
 const meta = {
   title: 'Inputs/ExpandingSearch', component: ExpandingSearch, tags: ['autodocs'],
   args: { triggerLabel: 'Search members', inputProps: { placeholder: 'Name or email' } },
-  decorators: [(Story) => <div style={{ inlineSize: 420, maxInlineSize: '100%' }}><Story /></div>],
+  decorators: [(Story) => <Frame><Story /></Frame>],
   parameters: { docs: {
     source: { code: '<ExpandingSearch triggerLabel="Search members" value={query} onValueChange={setQuery} />' },
     description: { component: 'Open a search field from a button without moving nearby toolbar items.' },
@@ -93,7 +98,7 @@ export const PersistentOpen: Story = { args: { defaultOpen: true, defaultValue: 
 export const Description: Story = { args: { defaultOpen: true, label: 'Search members', description: 'Search by name or email.' } };
 export const Error: Story = { args: { defaultOpen: true, error: 'Enter at least four characters.', defaultValue: 'Ada', inputProps: { required: true } } };
 export const Sizes: Story = {
-  render: (args) => <div style={{ display: 'grid', gap: vars.space[4] }}>{(['sm', 'md', 'lg'] as const).map((size) => <ExpandingSearch {...args} key={size} size={size} triggerLabel={`Search ${size}`} />)}</div>,
+  render: (args) => <Stack>{(['sm', 'md', 'lg'] as const).map((size) => <ExpandingSearch {...args} key={size} size={size} triggerLabel={`Search ${size}`} />)}</Stack>,
   play: async ({ canvas }) => {
     for (const [index, size] of [32, 40, 48].entries()) {
       const rect = canvas.getAllByRole('button')[index]!.getBoundingClientRect();
@@ -104,7 +109,7 @@ export const Sizes: Story = {
   },
 };
 export const Anchors: Story = {
-  render: (args) => <div style={{ display: 'grid', gap: vars.space[4] }}><ExpandingSearch {...args} anchor="start" triggerLabel="Search from start" /><ExpandingSearch {...args} anchor="end" triggerLabel="Search from end" /></div>,
+  render: (args) => <Stack><ExpandingSearch {...args} anchor="start" triggerLabel="Search from start" /><ExpandingSearch {...args} anchor="end" triggerLabel="Search from end" /></Stack>,
 };
 export const Uncontrolled: Story = {
   args: { defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn() },
@@ -164,7 +169,7 @@ export const RejectedQuery: Story = {
 };
 export const Keyboard: Story = {
   args: { onOpenChange: fn(), onValueChange: fn() },
-  render: (args) => <><button style={fixtureButton}>Before</button><ExpandingSearch {...args} /><button style={fixtureButton}>After</button></>,
+  render: (args) => <><FixtureButton>Before</FixtureButton><ExpandingSearch {...args} /><FixtureButton>After</FixtureButton></>,
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.tab();
@@ -225,7 +230,7 @@ export const ExternalAria: Story = {
   },
 };
 export const FalsyNodes: Story = {
-  render: (args) => <div style={{ display: 'grid', gap: vars.space[4] }}>{([false, null, 0, ''] as const).map((node, index) => <ExpandingSearch {...args} key={index} defaultOpen triggerLabel={`Search ${index}`} label={node} description={node} error={node} searchIcon={node} clearIcon={node} messages={{ clear: node === 0 ? 'Clear search 0' : 'Clear search' }} inputProps={{ 'aria-label': `Search ${index}` }} defaultValue="x" />)}</div>,
+  render: (args) => <Stack>{([false, null, 0, ''] as const).map((node, index) => <ExpandingSearch {...args} key={index} defaultOpen triggerLabel={`Search ${index}`} label={node} description={node} error={node} searchIcon={node} clearIcon={node} messages={{ clear: node === 0 ? 'Clear search 0' : 'Clear search' }} inputProps={{ 'aria-label': `Search ${index}` }} defaultValue="x" />)}</Stack>,
   play: async ({ canvas }) => {
     const inputs = canvas.getAllByRole('searchbox');
     await expect(inputs).toHaveLength(4);
@@ -262,7 +267,7 @@ export const ClearThenCollapse: Story = {
 };
 export const FormReset: Story = {
   args: { defaultValue: 'Ada', inputProps: { name: 'query' }, onValueChange: fn() },
-  render: (args) => <form><ExpandingSearch {...args} /><button style={fixtureButton} type="reset">Reset query</button></form>,
+  render: (args) => <form><ExpandingSearch {...args} /><FixtureButton type="reset">Reset query</FixtureButton></form>,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Search members' }));
     await userEvent.keyboard('x{Escape}');
@@ -282,7 +287,7 @@ export const RTL: Story = {
   play: async ({ canvas }) => { await expect(getComputedStyle(canvas.getByRole('searchbox')).direction).toBe('rtl'); },
 };
 export const NarrowLane: Story = {
-  render: (args) => <div style={{ inlineSize: 180 }}><ExpandingSearch {...args} /><button style={fixtureButton}>Neighbor</button></div>,
+  render: (args) => <NarrowLaneFrame><ExpandingSearch {...args} /><FixtureButton>Neighbor</FixtureButton></NarrowLaneFrame>,
   play: async ({ canvas, userEvent, canvasElement }) => {
     const neighbor = canvas.getByRole('button', { name: 'Neighbor' });
     const before = neighbor.getBoundingClientRect();
@@ -293,6 +298,7 @@ export const NarrowLane: Story = {
     await expect(near(neighbor.getBoundingClientRect().left, before.left)).toBe(true);
   },
 };
+// This story tests native inline styles and the documented sx/slot css API.
 export const RefAndStyles: Story = {
   args: {
     defaultOpen: true, ref: fn(), inputRef: fn(), id: 'member-search', title: 'Member search', style: { letterSpacing: '0.1em' },
@@ -370,6 +376,7 @@ export const ReducedMotion: Story = {
 };
 
 /** Replace the wrapper and generated control; pass native props through slotProps. */
+// This story tests native style merging and css/sx precedence through the slot API.
 export const SlotCustomization: Story = {
   args: {
     defaultOpen: true,

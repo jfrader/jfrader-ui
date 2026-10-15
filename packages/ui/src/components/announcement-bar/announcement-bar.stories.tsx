@@ -3,8 +3,25 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { Button } from '../button';
 import { AnnouncementBar, type AnnouncementBarProps, type AnnouncementBarTone } from './index';
+
+const Stack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
+
+const NarrowFrame = styled.div({
+  inlineSize: '320px',
+  maxInlineSize: '100%',
+});
+
+const Centered = styled.div({
+  display: 'flex',
+  justifyContent: 'center',
+});
 
 const messages = [
   {
@@ -75,11 +92,11 @@ export const Default: Story = {
 export const Inverted: Story = { args: { variant: 'inverted' } };
 export const AllTones: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: vars.space[4] }}>
+    <Stack>
       {(['neutral', 'info', 'warning', 'danger'] as const).map((tone: AnnouncementBarTone) => (
         <AnnouncementBar {...args} key={tone} tone={tone} label={`${tone} announcements`} />
       ))}
-    </div>
+    </Stack>
   ),
 };
 export const Single: Story = {
@@ -219,9 +236,9 @@ export const NarrowLongContent: Story = {
     ],
   },
   render: (args) => (
-    <div style={{ inlineSize: '320px', maxInlineSize: '100%' }}>
+    <NarrowFrame>
       <AnnouncementBar {...args} />
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvasElement }) => {
     const root = within(canvasElement).getByRole('region');
@@ -232,9 +249,9 @@ export const NarrowLongContent: Story = {
 };
 export const CenteredFlexParent: Story = {
   render: (args) => (
-    <div style={{ display: 'flex', justifyContent: 'center' }}>
+    <Centered>
       <AnnouncementBar {...args} />
-    </div>
+    </Centered>
   ),
   play: async ({ canvasElement }) => {
     const { width, height } = within(canvasElement).getByRole('region').getBoundingClientRect();
@@ -373,7 +390,7 @@ export const ExternalAria: Story = {
 };
 export const FalsyMessage: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gap: vars.space[4] }}>
+    <Stack>
       {[false, null, 0, ''].map((node, index) => (
         <AnnouncementBar
           {...args}
@@ -382,7 +399,7 @@ export const FalsyMessage: Story = {
           messages={[{ id: String(index), message: node, action: { label: node } }]}
         />
       ))}
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const roots = within(canvasElement).getAllByRole('region');
@@ -470,6 +487,7 @@ function SlotContent(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-slot="announcement-bar-content" />;
 }
 
+// The slot API takes `css` values, so this story keeps the documented spelling.
 export const Slots: Story = {
   args: {
     slots: { root: SlotRoot, content: SlotContent, next: SlotNext, previous: SlotPrevious },

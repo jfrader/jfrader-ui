@@ -2,9 +2,10 @@ import { StrictMode, useState, type ComponentPropsWithRef, type ComponentType, t
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import {
   ActivityRings,
   type ActivityDay,
@@ -79,13 +80,13 @@ const amount = (value: number, unit: string, locale = 'en-GB') =>
     }).format(value),
   );
 
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: `min(24rem, calc(100vw - ${vars.space[8]}))`,
   maxInlineSize: '100%',
   display: 'grid',
   gap: vars.space[4],
 });
-const fixtureStyle = css({
+const FixtureButton = styled.button({
   minBlockSize: vars.space[8],
   paddingInline: vars.space[3],
   color: vars.color.text,
@@ -93,7 +94,10 @@ const fixtureStyle = css({
   border: `1px solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.sm,
 });
-const fixtureRowStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
+const FixtureRow = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
+const NarrowFrame = styled.div({ inlineSize: 320, maxInlineSize: '100%' });
+const WideFrame = styled.div({ inlineSize: '40rem', maxInlineSize: `calc(100vw - ${vars.space[8]})` });
+const Centered = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' });
 
 const ringParts = (root: Element, part = 'fill') => [
   ...root.querySelectorAll(`[data-ui="activity-rings-${part}"]`),
@@ -164,9 +168,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -489,13 +493,13 @@ function SurplusStatesFixture(args: RingsArgs) {
   const [ratio, setRatio] = useState(0);
   return (
     <>
-      <div css={fixtureRowStyle}>
+      <FixtureRow>
         {surplusRatios.map((next) => (
-          <button key={next} css={fixtureStyle} onClick={() => setRatio(next)}>
+          <FixtureButton key={next} onClick={() => setRatio(next)}>
             {new Intl.NumberFormat(args.locale, { style: 'percent', maximumFractionDigits: 1 }).format(next)}
-          </button>
+          </FixtureButton>
         ))}
-      </div>
+      </FixtureRow>
       <Rings
         {...args}
         metrics={[{ ...goals[1]!, formatValue: preciseMinutes }]}
@@ -680,9 +684,9 @@ export const KeyboardWeek: Story = {
   args: { values: undefined, days: week, interactiveLegend: true },
   render: (args) => (
     <>
-      <button css={fixtureStyle}>Before</button>
+      <FixtureButton>Before</FixtureButton>
       <Rings {...args} />
-      <button css={fixtureStyle}>After</button>
+      <FixtureButton>After</FixtureButton>
     </>
   ),
   play: async ({ canvasElement, userEvent, args }) => {
@@ -772,17 +776,17 @@ function ControlledFixture(args: RingsArgs) {
   const [focused, setFocused] = useState<string | null>(null);
   return (
     <>
-      <div css={fixtureRowStyle}>
-        <button css={fixtureStyle} onClick={() => setDayId(lastDay)}>
+      <FixtureRow>
+        <FixtureButton onClick={() => setDayId(lastDay)}>
           Show last day
-        </button>
-        <button css={fixtureStyle} onClick={() => setFocused('exercise')}>
+        </FixtureButton>
+        <FixtureButton onClick={() => setFocused('exercise')}>
           Isolate exercise
-        </button>
-        <button css={fixtureStyle} onClick={() => setFocused('')}>
+        </FixtureButton>
+        <FixtureButton onClick={() => setFocused('')}>
           Isolate empty id
-        </button>
-      </div>
+        </FixtureButton>
+      </FixtureRow>
       <Rings
         {...args}
         values={undefined}
@@ -832,9 +836,9 @@ function SeedFixture(args: RingsArgs) {
   const [days, setDays] = useState<readonly ActivityDay[]>(week.slice(0, 3));
   return (
     <>
-      <button css={fixtureStyle} onClick={() => setDays(week)}>
+      <FixtureButton onClick={() => setDays(week)}>
         Load full week
-      </button>
+      </FixtureButton>
       <Rings {...args} values={undefined} days={days} />
     </>
   );
@@ -856,13 +860,13 @@ function CrossingFixture(args: RingsArgs) {
   const [distance, setDistance] = useState<number | null>(5.94);
   return (
     <>
-      <div css={fixtureRowStyle}>
+      <FixtureRow>
         {([5.94, 6, 6.12, null] as const).map((next) => (
-          <button key={String(next)} css={fixtureStyle} onClick={() => setDistance(next)}>
+          <FixtureButton key={String(next)} onClick={() => setDistance(next)}>
             {`Set ${next ?? 'unknown'}`}
-          </button>
+          </FixtureButton>
         ))}
-      </div>
+      </FixtureRow>
       <Rings {...args} values={{ ...today, distance }} />
     </>
   );
@@ -902,17 +906,17 @@ function GoalValidityFixture(args: RingsArgs) {
   const [state, setState] = useState({ goal: 6, distance: 0 });
   return (
     <>
-      <div css={fixtureRowStyle}>
-        <button css={fixtureStyle} onClick={() => setState({ goal: 0, distance: 0 })}>
+      <FixtureRow>
+        <FixtureButton onClick={() => setState({ goal: 0, distance: 0 })}>
           Remove goal
-        </button>
-        <button css={fixtureStyle} onClick={() => setState({ goal: 6, distance: 6 })}>
+        </FixtureButton>
+        <FixtureButton onClick={() => setState({ goal: 6, distance: 6 })}>
           Restore completed goal
-        </button>
-        <button css={fixtureStyle} onClick={() => setState({ goal: 6, distance: 3 })}>
+        </FixtureButton>
+        <FixtureButton onClick={() => setState({ goal: 6, distance: 3 })}>
           Walk 3 km
-        </button>
-      </div>
+        </FixtureButton>
+      </FixtureRow>
       <Rings {...args} metrics={[{ ...goals[0]!, goal: state.goal }]} values={{ distance: state.distance }} />
     </>
   );
@@ -938,9 +942,9 @@ function DayCrossingFixture(args: RingsArgs) {
   const [mounted, setMounted] = useState(true);
   return (
     <>
-      <button css={fixtureStyle} onClick={() => setMounted(!mounted)}>
+      <FixtureButton onClick={() => setMounted(!mounted)}>
         Remount
-      </button>
+      </FixtureButton>
       {mounted && <Rings {...args} values={undefined} days={week} defaultValue={week[1]!.id} />}
     </>
   );
@@ -962,12 +966,12 @@ function UnavailableBaselineFixture(args: RingsArgs) {
   const [state, setState] = useState({ goal: 10, distance: 0 });
   return (
     <>
-      <button css={fixtureStyle} onClick={() => setState({ goal: 0, distance: 0 })}>
+      <FixtureButton onClick={() => setState({ goal: 0, distance: 0 })}>
         Unavailable goal
-      </button>
-      <button css={fixtureStyle} onClick={() => setState({ goal: 10, distance: 10 })}>
+      </FixtureButton>
+      <FixtureButton onClick={() => setState({ goal: 10, distance: 10 })}>
         Restore completed goal
-      </button>
+      </FixtureButton>
       <Rings {...args} metrics={[{ ...goals[0]!, goal: state.goal }]} values={{ distance: state.distance }} />
     </>
   );
@@ -990,15 +994,14 @@ function QuickUpdatesFixture(args: RingsArgs) {
   const [distance, setDistance] = useState(0);
   return (
     <>
-      <button
-        css={fixtureStyle}
+      <FixtureButton
         onClick={() => {
           setDistance(5);
           setTimeout(() => setDistance(3), MID_SWEEP_MS);
         }}
       >
         Interrupt
-      </button>
+      </FixtureButton>
       <Rings {...args} metrics={goals.slice(0, 1)} values={{ distance }} />
     </>
   );
@@ -1054,12 +1057,12 @@ function ReturnBelowGoalFixture(args: RingsArgs) {
   const [distance, setDistance] = useState(9);
   return (
     <>
-      <button css={fixtureStyle} onClick={() => setDistance(3)}>
+      <FixtureButton onClick={() => setDistance(3)}>
         Walk 3 km
-      </button>
-      <button css={fixtureStyle} onClick={() => setDistance(9)}>
+      </FixtureButton>
+      <FixtureButton onClick={() => setDistance(9)}>
         Walk 9 km
-      </button>
+      </FixtureButton>
       <Rings {...args} metrics={goals.slice(0, 1)} values={{ distance }} />
     </>
   );
@@ -1175,9 +1178,9 @@ export const NarrowLongUnits: Story = {
   args: { ...LongIntlUnits.args, interactiveLegend: true },
   decorators: [
     (Story) => (
-      <div style={{ inlineSize: 320, maxInlineSize: '100%' }}>
+      <NarrowFrame>
         <Story />
-      </div>
+      </NarrowFrame>
     ),
   ],
   play: async (context) => {
@@ -1194,9 +1197,9 @@ export const Narrow: Story = {
   args: { days: week, values: undefined, interactiveLegend: true },
   decorators: [
     (Story) => (
-      <div style={{ inlineSize: 320, maxInlineSize: '100%' }}>
+      <NarrowFrame>
         <Story />
-      </div>
+      </NarrowFrame>
     ),
   ],
   play: async ({ canvasElement }) => {
@@ -1210,9 +1213,9 @@ export const Narrow: Story = {
 export const Wide: Story = {
   decorators: [
     (Story) => (
-      <div style={{ inlineSize: '40rem', maxInlineSize: 'calc(100vw - 2rem)' }}>
+      <WideFrame>
         <Story />
-      </div>
+      </WideFrame>
     ),
   ],
   play: async ({ canvasElement }) => {
@@ -1285,9 +1288,9 @@ function RefFixture(args: RingsArgs) {
   const [mounted, setMounted] = useState(true);
   return (
     <>
-      <button css={fixtureStyle} onClick={() => setMounted(false)}>
+      <FixtureButton onClick={() => setMounted(false)}>
         Unmount
-      </button>
+      </FixtureButton>
       {mounted && (
         <StrictMode>
           <Rings {...args} />
@@ -1337,6 +1340,7 @@ export const UnsanctionedUnit: Story = {
   },
 };
 
+// The slot API takes `css` values, so this story keeps the documented spelling.
 export const SlotStyles: Story = {
   args: {
     interactiveLegend: true,
@@ -1461,9 +1465,9 @@ export const ForcedColors: Story = {
 };
 /** Shrink-to-fit parent: the rings keep their content width instead of collapsing. */
 const centered = (Story: ComponentType) => (
-  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+  <Centered>
     <Story />
-  </div>
+  </Centered>
 );
 export const CenteredFlexParent: Story = {
   decorators: [centered],

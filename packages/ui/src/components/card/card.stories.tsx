@@ -1,9 +1,11 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useId } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { WithSx } from '../../styling/sx';
 import { useThemeScope } from '../../styling/theme-scope';
 import { OverlayPortal } from '../../overlay/overlay-portal';
@@ -17,30 +19,31 @@ import { Surface, type SurfacePartProps } from '../surface';
 import { Card, type CardCompoundProps, type CardEasyProps, type CardTitleProps, type CardVariant } from './index';
 
 const VARIANTS = ['flat', 'raised'] as const satisfies readonly CardVariant[];
+// The slot API takes `css` values, so this story keeps the documented spelling.
 const easyTitleStyle = css({ fontSize: vars.textSize.lg });
 
-const frameStyle = css({
+const Frame = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '360px',
 });
 
-const listStyle = {
+const PlanList = styled.ul({
   margin: 0,
   paddingInlineStart: vars.space[5],
-} satisfies CSSProperties;
+});
 
-const formStyle = {
+const InviteForm = styled.form({
   display: 'grid',
   gap: vars.space[3],
-} satisfies CSSProperties;
+});
 
-const fixtureButtonStyle = {
-  minHeight: '24px',
-  minWidth: '24px',
-  padding: '4px 10px',
+const FixtureButton = styled.button({
+  minHeight: vars.space[6],
+  minWidth: vars.space[6],
+  padding: `${vars.space[1]} 10px`,
   boxSizing: 'border-box',
-} satisfies CSSProperties;
+});
 
 const meta = {
   title: 'Data display/Card',
@@ -69,9 +72,9 @@ Omitted appearance and default inherit the enclosing appearance, including contr
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
 } satisfies Meta<CardCompoundProps>;
@@ -134,11 +137,11 @@ function PlanCard(props: CardCompoundProps) {
         <Card.Description>Billed monthly, renews on 1 November.</Card.Description>
       </Card.Header>
       <Card.Content>
-        <ul style={listStyle}>
+        <PlanList>
           <li>Unlimited projects</li>
           <li>10 GB storage</li>
           <li>Priority support</li>
-        </ul>
+        </PlanList>
       </Card.Content>
       <Card.Footer>
         <Button variant="outline">Cancel plan</Button>
@@ -272,9 +275,9 @@ function InviteCard(props: CardCompoundProps) {
         <Card.Description>They get editor access to this workspace.</Card.Description>
       </Card.Header>
       <Card.Content>
-        <form id={formId} style={formStyle} onSubmit={(event) => event.preventDefault()}>
+        <InviteForm id={formId} onSubmit={(event) => event.preventDefault()}>
           <TextField label="Email" type="email" name="email" placeholder="ana@example.com" />
-        </form>
+        </InviteForm>
       </Card.Content>
       <Card.Footer>
         <Button variant="outline" type="reset" form={formId}>
@@ -301,6 +304,7 @@ export const WithForm: Story = {
   },
 };
 
+// The slot API takes `css` values, so this story keeps the documented spelling.
 const slotTitleStyle = css({ fontSize: vars.textSize.lg });
 
 function SlotCardTitle({ level = 3, ...props }: CardTitleProps) {
@@ -339,6 +343,7 @@ export const SlotProps: Story = {
   },
 };
 
+// The slot and consumer override APIs take `css` values, so this story keeps the documented spelling.
 const slotRootOverrideStyle = css({ fontStyle: 'italic' });
 const consumerRootOverrideStyle = css({ fontStyle: 'normal' });
 const slotTitleOverrideStyle = css({ textTransform: 'uppercase' });
@@ -451,9 +456,9 @@ export const ContrastNestedSurfaces: Story = {
             <Popover>
               <Popover.Trigger>Inner options</Popover.Trigger>
               <Popover.Content aria-label="Inner options">
-                <button type="button" style={fixtureButtonStyle}>
+                <FixtureButton type="button">
                   Assign to me
-                </button>
+                </FixtureButton>
               </Popover.Content>
             </Popover>
           </Card.Content>
@@ -467,9 +472,9 @@ export const ContrastNestedSurfaces: Story = {
               <Popover>
                 <Popover.Trigger>Theme options</Popover.Trigger>
                 <Popover.Content aria-label="Theme options">
-                  <button type="button" style={fixtureButtonStyle}>
+                  <FixtureButton type="button">
                     Assign to me
-                  </button>
+                  </FixtureButton>
                 </Popover.Content>
               </Popover>
             </Card.Content>

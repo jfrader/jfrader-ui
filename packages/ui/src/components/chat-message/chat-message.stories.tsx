@@ -4,6 +4,8 @@ import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 import { ChatMessage, type ChatMessageProps } from './index';
 import { ChatThread } from '../chat-thread';
 
@@ -49,14 +51,18 @@ export const TimeReplacement: Story = {
 };
 const LOCALE = 'en-US';
 
-const stackStyle = css({
+const Stack = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: `min(42rem, 100%)`,
 });
-const wideStyle = css({ display: 'grid', gap: vars.space[4], inlineSize: '100%' });
-const narrowStyle = css({ inlineSize: '20rem', maxInlineSize: '100%' });
-const avatarStyle = css({ fontSize: vars.textSize.xl, lineHeight: vars.lineHeight.tight });
+const WideStack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%' });
+const NarrowFrame = styled.div({ inlineSize: '20rem', maxInlineSize: '100%' });
+const CustomAvatar = styled.span({ fontSize: vars.textSize.xl, lineHeight: vars.lineHeight.tight });
+
+// The slot API takes `css` values, so this story keeps the documented spelling.
+const slotArticleStyle = css({ outlineStyle: 'solid' });
+const slotBubbleStyle = css({ textDecorationLine: 'underline' });
 
 const usage = `<ChatMessage
   author={{ id: 'ada', name: 'Ada Lovelace' }}
@@ -81,7 +87,7 @@ const meta = {
     onRetry: fn(),
     onReactionsChange: fn(),
   },
-  decorators: [(Story) => <div css={stackStyle}><Story /></div>],
+  decorators: [(Story) => <Stack><Story /></Stack>],
   parameters: {
     docs: {
       source: { code: usage },
@@ -147,11 +153,11 @@ export const Plain: Story = {
 
 export const AvatarSlot: Story = {
   render: () => (
-    <div css={stackStyle}>
+    <Stack>
       <ChatMessage
         author={{ id: 'bot', name: 'Release Bot' }}
         createdAt={NOW}
-        avatar={<span data-testid="custom-avatar" css={avatarStyle}>🤖</span>}
+        avatar={<CustomAvatar data-testid="custom-avatar">🤖</CustomAvatar>}
       >
         The release is ready.
       </ChatMessage>
@@ -162,7 +168,7 @@ export const AvatarSlot: Story = {
       >
         Maintenance starts at midnight.
       </ChatMessage>
-    </div>
+    </Stack>
   ),
   play: async ({ canvas }) => {
     await expect(canvas.getByTestId('custom-avatar')).toBeInTheDocument();
@@ -177,7 +183,7 @@ export const AvatarSlot: Story = {
 
 export const OwnAlignment: Story = {
   render: () => (
-    <div css={wideStyle}>
+    <WideStack>
       <ChatMessage
         author={{ id: 'grace', name: 'Grace Hopper' }}
         createdAt={NOW - 10 * MINUTE}
@@ -194,7 +200,7 @@ export const OwnAlignment: Story = {
       >
         Checking them now!
       </ChatMessage>
-    </div>
+    </WideStack>
   ),
   play: async ({ canvas }) => {
     const articles = canvas.getAllByRole('article');
@@ -210,7 +216,7 @@ export const SendingAndFailed: Story = {
   render: function Render(args) {
     const [retrying, setRetrying] = useState(false);
     return (
-      <div css={stackStyle}>
+      <Stack>
         <ChatMessage
           author={{ id: 'me', name: 'Ada Lovelace' }}
           createdAt={NOW}
@@ -238,7 +244,7 @@ export const SendingAndFailed: Story = {
         >
           Could not connect to the server.
         </ChatMessage>
-      </div>
+      </Stack>
     );
   },
   play: async ({ canvas, args, userEvent }) => {
@@ -262,9 +268,9 @@ export const LongText: Story = {
   },
   decorators: [
     (Story) => (
-      <div css={narrowStyle}>
+      <NarrowFrame>
         <Story />
-      </div>
+      </NarrowFrame>
     ),
   ],
   play: async ({ canvas }) => {
@@ -320,7 +326,7 @@ export const ReactionsRTL: Story = {
     dir: 'rtl',
   },
   render: (args) => (
-    <div dir="rtl" css={wideStyle}>
+    <WideStack dir="rtl">
       <ChatMessage
         {...args}
         author={{ id: 'grace', name: 'Grace Hopper' }}
@@ -339,7 +345,7 @@ export const ReactionsRTL: Story = {
       >
         رد من اليمين
       </ChatMessage>
-    </div>
+    </WideStack>
   ),
   play: async ({ canvas, canvasElement, userEvent }) => {
     const articles = canvas.getAllByRole('article');
@@ -437,7 +443,17 @@ export const Disabled: Story = {
 /** Render numeric body content and apply your styling after the message defaults. */
 export const StylingAndZeroContent: Story = {
   args: { children: 0, offeredReactions: [], avatar: null },
-  render: (args) => <ChatMessage {...args} css={{ outlineStyle: 'dotted' }} sx={{ outlineStyle: 'dashed' }} slotProps={{ article: { css: css({ outlineStyle: 'solid' }), className: 'custom-message', style: { opacity: 1 } }, bubble: { css: css({ textDecorationLine: 'underline' }) } }} />,
+  render: (args) => (
+    <ChatMessage
+      {...args}
+      css={{ outlineStyle: 'dotted' }}
+      sx={{ outlineStyle: 'dashed' }}
+      slotProps={{
+        article: { css: slotArticleStyle, className: 'custom-message', style: { opacity: 1 } },
+        bubble: { css: slotBubbleStyle },
+      }}
+    />
+  ),
   play: async ({ canvas }) => {
     const article = canvas.getByRole('article');
     await expect(canvas.getByText('0')).toBeVisible();
@@ -449,7 +465,18 @@ export const StylingAndZeroContent: Story = {
 
 /** Show the same message in separate feeds without sharing accessible ids. */
 export const RepeatedMessage: Story = {
-  render: (args) => <div css={stackStyle}>{[0, 1].map((key) => <ChatMessage {...args} key={key} message={{ id: 'same-message', authorId: 'ada', createdAt: NOW, text: 'The build is ready.' }} offeredReactions={[]} />)}</div>,
+  render: (args) => (
+    <Stack>
+      {[0, 1].map((key) => (
+        <ChatMessage
+          {...args}
+          key={key}
+          message={{ id: 'same-message', authorId: 'ada', createdAt: NOW, text: 'The build is ready.' }}
+          offeredReactions={[]}
+        />
+      ))}
+    </Stack>
+  ),
   play: async ({ canvas, canvasElement }) => {
     const articles = canvas.getAllByRole('article');
     await expect(articles).toHaveLength(2);
