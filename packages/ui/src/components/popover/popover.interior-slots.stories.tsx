@@ -86,6 +86,7 @@ type Story = StoryObj<(props: PopoverEasyProps) => ReactNode>;
 
 /** Customize the popover root wrapper and content container using slots. */
 export const Customization: Story = {
+  tags: ['!autodocs'],
   render: () => <PopoverCustomizationFixture />,
   parameters: {
     docs: {

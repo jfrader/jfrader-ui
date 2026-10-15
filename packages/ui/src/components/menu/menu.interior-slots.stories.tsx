@@ -93,6 +93,7 @@ type Story = StoryObj<(props: MenuEasyProps) => ReactNode>;
 
 /** Customize the menu root wrapper and action items using slots. */
 export const Customization: Story = {
+  tags: ['!autodocs'],
   render: () => <MenuCustomizationFixture />,
   parameters: {
     docs: {

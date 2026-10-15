@@ -95,6 +95,7 @@ type Story = StoryObj<(props: ContextMenuEasyProps) => ReactNode>;
 
 /** Customize the context menu root wrapper and action items using slots. */
 export const Customization: Story = {
+  tags: ['!autodocs'],
   render: () => <ContextMenuCustomizationFixture />,
   parameters: {
     docs: {
