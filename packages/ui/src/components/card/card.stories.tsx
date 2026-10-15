@@ -14,7 +14,7 @@ import { Popover } from '../popover';
 import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
 import { Surface, type SurfacePartProps } from '../surface';
-import { Card, type CardCompoundProps, type CardEasyProps, type CardVariant } from './index';
+import { Card, type CardCompoundProps, type CardEasyProps, type CardTitleProps, type CardVariant } from './index';
 
 const VARIANTS = ['flat', 'raised'] as const satisfies readonly CardVariant[];
 const easyTitleStyle = css({ fontSize: vars.textSize.lg });
@@ -56,7 +56,7 @@ Use component or slots.root to replace the panel material while keeping Card spa
 | Part | Replacement | Props |
 | --- | --- | --- |
 | root | component or slots.root | slotProps.root: div props and css |
-| header, title, description, content, footer | Not replaceable | Existing styling-only slotProps |
+| header, title, description, content, footer | Matching slots key | slotProps: part props and css |
 
 Root slot props win ordinary conflicts, including children and callbacks. className combines, and style shallow-merges with slot values last. Style order: own → slot → consumer css → consumer sx. Select composed Card roots with [data-ui~="card"].
 
@@ -303,6 +303,11 @@ export const WithForm: Story = {
 
 const slotTitleStyle = css({ fontSize: vars.textSize.lg });
 
+function SlotCardTitle({ level = 3, ...props }: CardTitleProps) {
+  const Heading = `h${level}` as const;
+  return <Heading {...props} data-slot="card-title" />;
+}
+
 export const SlotProps: Story = {
   parameters: {
     docs: {
@@ -318,7 +323,7 @@ export const SlotProps: Story = {
   render: (args) => (
     <>
       <PlanCard {...args} />
-      <PlanCard {...args} slotProps={{ title: { css: slotTitleStyle, className: 'plan-title' } }} />
+      <PlanCard {...args} slots={{ title: SlotCardTitle }} slotProps={{ title: { css: slotTitleStyle, className: 'plan-title' } }} />
     </>
   ),
   play: async ({ canvasElement }) => {
@@ -326,6 +331,8 @@ export const SlotProps: Story = {
     if (!plain || !slotted) throw new Error('Expected plain and slotted headings');
     await expect(plain).not.toHaveClass('plan-title');
     await expect(slotted).toHaveClass('plan-title');
+    await expect(slotted).toHaveAttribute('data-slot', 'card-title');
+    await expect(slotted.closest('[data-ui="card"]')?.querySelector('[data-ui="card-title"]:not([data-slot])')).toBeNull();
     await expect(parseFloat(getComputedStyle(slotted).fontSize)).toBeGreaterThan(
       parseFloat(getComputedStyle(plain).fontSize),
     );

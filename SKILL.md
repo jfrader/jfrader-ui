@@ -231,8 +231,10 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
   default material from retained host structure, resolves inherited appearance once, carries
   same-theme tokens, merges root props and style lanes, composes refs with cleanup, and diagnoses
   missing/non-div refs, roots outside their owning shell/stage and changed replacement identity.
-  Each adopts only `slots.root`; Card's
-  header/title/description/content/footer remain styling-only `slotProps`. Replacements own
+  Each adopts `slots.root`; Card also exposes
+  header/title/description/content/footer replacement slots alongside its anatomy `slotProps`.
+  Card interior replacements forward all received props/ref and retain the supplied className.
+  Root replacements own
   material, forward all received props to one div, and apply their styles before the supplied
   className. Declare component types outside render; first-render inline functions cannot be
   reliably diagnosed. Scope/style updates must preserve the root and descendant identity.

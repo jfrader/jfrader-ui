@@ -10,8 +10,8 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 - Public callable families: **126**; public callable parts: **156**.
 - Families exposing `slots.root`: **56**; remaining without a family-level root slot: **70** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **41**; remaining without family-level interior slots: **85** (includes components without generated anatomy).
-- Rows with styling-only `slotProps` keys: **77**.
+- Families exposing any non-root replacement slot: **42**; remaining without family-level interior slots: **84** (includes components without generated anatomy).
+- Rows with styling-only `slotProps` keys: **76**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
 behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, TrickStacks and CardFlights are owner-held;
@@ -61,7 +61,7 @@ may exist and is listed on the corresponding public part).
 | [Calendar](../packages/ui/src/components/calendar/calendar.tsx) | yes | `grid`, `header`, `root` | `grid`, `header`, `root` | — | — | `Grid`, `Header` |
 | [Calendar.Grid](../packages/ui/src/components/calendar/calendar.tsx) | — | — | — | — | — | — |
 | [Calendar.Header](../packages/ui/src/components/calendar/calendar.tsx) | — | — | — | — | — | — |
-| [Card](../packages/ui/src/components/card/card.tsx) | yes | `root` | `content`, `description`, `footer`, `header`, `root`, `title` | `content`, `description`, `footer`, `header`, `title` | — | `Content`, `Description`, `Footer`, `Header`, `Title` |
+| [Card](../packages/ui/src/components/card/card.tsx) | yes | `content`, `description`, `footer`, `header`, `root`, `title` | `content`, `description`, `footer`, `header`, `root`, `title` | — | — | `Content`, `Description`, `Footer`, `Header`, `Title` |
 | [Card.Content](../packages/ui/src/components/card/card.tsx) | — | — | — | — | — | — |
 | [Card.Description](../packages/ui/src/components/card/card.tsx) | — | — | — | — | — | — |
 | [Card.Footer](../packages/ui/src/components/card/card.tsx) | — | — | — | — | — | — |
