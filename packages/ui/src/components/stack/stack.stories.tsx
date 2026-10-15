@@ -1,12 +1,12 @@
-import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { LAYOUT_SPACES, LAYOUT_SPACE_TOKEN, type LayoutSpace } from '../../styling/layout-style';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Stack, type StackAlign } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 const ALIGNS = {
   start: 'flex-start',
@@ -17,13 +17,13 @@ const ALIGNS = {
 
 const gapPx = (space: LayoutSpace) => (space === 'none' ? '0px' : base.space[LAYOUT_SPACE_TOKEN[space]]);
 
-const frameStyle = css({
+const Frame = styled.div({
   display: 'grid',
   gap: vars.space[6],
   inlineSize: '360px',
 });
 
-const boxStyle = {
+const Box = styled.div({
   boxSizing: 'border-box',
   paddingBlock: vars.space[2],
   paddingInline: vars.space[3],
@@ -33,7 +33,7 @@ const boxStyle = {
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-} satisfies CSSProperties;
+});
 
 const meta = {
   title: 'Layout/Stack',
@@ -49,9 +49,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
 } satisfies Meta<typeof Stack>;
@@ -64,9 +64,9 @@ function Boxes({ count = 3 }: { count?: number }) {
   return (
     <>
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} style={boxStyle} data-box>
+        <Box key={index} data-box>
           Item {index + 1}
-        </div>
+        </Box>
       ))}
     </>
   );

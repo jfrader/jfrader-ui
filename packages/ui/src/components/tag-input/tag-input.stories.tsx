@@ -9,16 +9,17 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { TagInput, type TagInputProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 // Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
-const FIXTURE_BUTTON = { minHeight: '24px', minWidth: '24px', padding: '4px 10px', boxSizing: 'border-box' } as const;
+const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
 
 const sizes = ['sm', 'md', 'lg'] as const;
 const heights = { sm: 32, md: 40, lg: 48 };
-const stackStyle = css({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 360px)' });
+const StackFrame = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 360px)' });
 const usage = `<TagInput
   label="Topics"
   defaultValue={['design', 'motion']}
@@ -32,7 +33,7 @@ const meta = {
   tags: ['autodocs'],
   args: { label: 'Topics', description: 'Press Enter or comma to add.', placeholder: 'Add a topic' },
   argTypes: { size: { control: 'radio', options: sizes } },
-  decorators: [(Story) => <div css={stackStyle}><Story /></div>],
+  decorators: [(Story) => <StackFrame><Story /></StackFrame>],
   parameters: {
     docs: {
       description: {
@@ -112,12 +113,12 @@ function ExternalUpdateField(props: TagInputProps) {
   return (
     <>
       <TagInput {...props} value={value} />
-      <button style={FIXTURE_BUTTON} type="button" onMouseDown={keepFocus} onClick={() => setValue(['motion', 'type'])}>
+      <FixtureButton type="button" onMouseDown={keepFocus} onClick={() => setValue(['motion', 'type'])}>
         Replace topics
-      </button>
-      <button style={FIXTURE_BUTTON} type="button" onMouseDown={keepFocus} onClick={() => setValue(['design', 'motion'])}>
+      </FixtureButton>
+      <FixtureButton type="button" onMouseDown={keepFocus} onClick={() => setValue(['design', 'motion'])}>
         Restore topics
-      </button>
+      </FixtureButton>
     </>
   );
 }
@@ -138,12 +139,12 @@ function DelayedField(props: TagInputProps) {
           setRequested(next);
         }}
       />
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => requested && setValue(requested)}>
+      <FixtureButton type="button" onClick={() => requested && setValue(requested)}>
         Accept
-      </button>
-      <button style={FIXTURE_BUTTON} type="button" onClick={() => setRequested(null)}>
+      </FixtureButton>
+      <FixtureButton type="button" onClick={() => setRequested(null)}>
         Reject
-      </button>
+      </FixtureButton>
     </>
   );
 }
@@ -587,7 +588,7 @@ export const Required: Story = {
 
 export const BlurCommitOff: Story = {
   args: { commitOnBlur: false, onValueChange: fn() },
-  render: (args) => <><TagInput {...args} /><button style={FIXTURE_BUTTON} type="button">After</button></>,
+  render: (args) => <><TagInput {...args} /><FixtureButton type="button">After</FixtureButton></>,
   play: async ({ canvas, userEvent, args }) => {
     const input = inputOf(canvas);
     await userEvent.type(input, 'design');
@@ -600,7 +601,7 @@ export const BlurCommitOff: Story = {
 
 export const BlurCommit: Story = {
   args: { onValueChange: fn() },
-  render: (args) => <><TagInput {...args} /><button style={FIXTURE_BUTTON} type="button">After</button></>,
+  render: (args) => <><TagInput {...args} /><FixtureButton type="button">After</FixtureButton></>,
   play: async ({ canvas, userEvent, args }) => {
     const input = inputOf(canvas);
     await userEvent.type(input, 'design');
@@ -615,7 +616,7 @@ export const BlurCommit: Story = {
 
 export const FocusWithinBlurRegression: Story = {
   args: { defaultValue: ['design', 'motion'], onValueChange: fn() },
-  render: (args) => <><TagInput {...args} /><button style={FIXTURE_BUTTON} type="button">After</button></>,
+  render: (args) => <><TagInput {...args} /><FixtureButton type="button">After</FixtureButton></>,
   play: async ({ canvas, userEvent, args }) => {
     const input = inputOf(canvas);
     await userEvent.type(input, 'type');
@@ -646,7 +647,7 @@ export const ShiftTabExit: Story = {
   args: { defaultValue: ['design'], onValueChange: fn() },
   render: (args) => (
     <>
-      <button style={FIXTURE_BUTTON} type="button">Before</button>
+      <FixtureButton type="button">Before</FixtureButton>
       <TagInput {...args} />
     </>
   ),
@@ -673,9 +674,9 @@ export const Keyboard: Story = {
   args: { defaultValue: ['design', 'motion'], onValueChange: fn(), onKeyDown: fn() },
   render: (args) => (
     <>
-      <button style={FIXTURE_BUTTON} type="button">Before</button>
+      <FixtureButton type="button">Before</FixtureButton>
       <TagInput {...args} />
-      <button style={FIXTURE_BUTTON} type="button">After</button>
+      <FixtureButton type="button">After</FixtureButton>
     </>
   ),
   play: async ({ canvas, userEvent, args }) => {
@@ -820,7 +821,7 @@ export const RepeatAndComposition: Story = {
 
 export const CompositionFieldExit: Story = {
   args: { onValueChange: fn(), onCompositionStart: fn(), onCompositionEnd: fn() },
-  render: (args) => <><TagInput {...args} /><button style={FIXTURE_BUTTON} type="button">After</button></>,
+  render: (args) => <><TagInput {...args} /><FixtureButton type="button">After</FixtureButton></>,
   play: async ({ canvas, userEvent, args }) => {
     const input = inputOf(canvas);
     const after = canvas.getByRole('button', { name: 'After' });
@@ -898,7 +899,7 @@ export const FormSubmission: Story = {
   render: (args) => (
     <form onSubmit={(event) => event.preventDefault()}>
       <TagInput {...args} />
-      <button style={FIXTURE_BUTTON} type="submit">Save</button>
+      <FixtureButton type="submit">Save</FixtureButton>
     </form>
   ),
   play: async ({ canvas, canvasElement, userEvent }) => {
@@ -942,7 +943,7 @@ export const FormReset: Story = {
   render: (args) => (
     <form onSubmit={(event) => event.preventDefault()}>
       <TagInput {...args} />
-      <button style={FIXTURE_BUTTON} type="reset">Reset topics</button>
+      <FixtureButton type="reset">Reset topics</FixtureButton>
     </form>
   ),
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -971,7 +972,7 @@ export const ControlledReset: Story = {
   render: (args) => (
     <form onSubmit={(event) => event.preventDefault()}>
       <ControlledField {...args} />
-      <button style={FIXTURE_BUTTON} type="reset">Reset topics</button>
+      <FixtureButton type="reset">Reset topics</FixtureButton>
     </form>
   ),
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -1069,6 +1070,7 @@ export const ExternalAria: Story = {
   },
 };
 
+// This story tests the documented css/slot API and native style merging.
 export const RefAndStyles: Story = {
   args: {
     defaultValue: ['design'],
@@ -1145,6 +1147,7 @@ export const ReducedMotion: Story = {
 };
 
 /** Replace the wrapper and generated label; pass native props through slotProps. */
+// This story tests the documented css/slot API and native style merging.
 export const SlotCustomization: Story = {
   args: {
     ref: fn(),

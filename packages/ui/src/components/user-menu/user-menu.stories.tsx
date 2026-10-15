@@ -1,4 +1,4 @@
-import { Component, useState, type CSSProperties, type ReactNode } from 'react';
+import { Component, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -16,6 +16,10 @@ import {
   type UserMenuUser,
   type UserMenuVariant,
 } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
+
+const LightThemeFrame = styled.div({ padding: vars.space[4], backgroundColor: vars.color.bg });
 
 const USER: UserMenuUser = { name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' };
 const TRIGGER_LABEL = 'Account menu, Ada Lovelace';
@@ -36,18 +40,19 @@ const DISMISS_DRAG_PX = 80;
 const NEVER_COMPACT = 1;
 const ALWAYS_COMPACT = 100_000;
 
-const rowStyle = {
+const Row = styled.div({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
   gap: vars.space[3],
-} satisfies CSSProperties;
+});
 
-const frameStyle = {
+const Frame = styled.div({
   padding: vars.space[6],
   minBlockSize: '32rem',
-} satisfies CSSProperties;
+});
 
+// These values exercise the documented css/sx and slot styling APIs.
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ marginInlineStart: vars.space[2] });
 
@@ -84,7 +89,7 @@ function AccountMenu({
   ...props
 }: StoryArgs) {
   return (
-    <div style={rowStyle}>
+    <Row>
       <UserMenu {...props}>
         <UserMenu.Trigger aria-label={TRIGGER_LABEL} showName={showName} />
         <UserMenu.Content variant={variant} closeLabel={CLOSE_LABEL}>
@@ -111,7 +116,7 @@ function AccountMenu({
         </UserMenu.Content>
       </UserMenu>
       <Button>After</Button>
-    </div>
+    </Row>
   );
 }
 AccountMenu.displayName = 'AccountMenu';
@@ -243,9 +248,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div style={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   render: (args) => <AccountMenu {...args} />,
@@ -314,10 +319,10 @@ export const Default: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
     },
   },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <UserMenu {...args} />
       <Button>After</Button>
-    </div>
+    </Row>
   ),
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
@@ -691,12 +696,12 @@ export const CompactHidesName: Story = {
 function PhotoMenu(args: StoryArgs) {
   const [src, setSrc] = useState('data:image/png;base64,broken');
   return (
-    <div style={rowStyle}>
+    <Row>
       <AccountMenu {...args} user={{ ...USER, avatarSrc: src }} />
       <Button onClick={() => setSrc('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E')}>
         New photo
       </Button>
-    </div>
+    </Row>
   );
 }
 PhotoMenu.displayName = 'PhotoMenu';
@@ -882,7 +887,7 @@ function RejectingMenu(args: StoryArgs) {
   const [theme, setTheme] = useState<UserMenuTheme>('light');
   const [status, setStatus] = useState<UserMenuStatus>('away');
   return (
-    <div style={rowStyle}>
+    <Row>
       <UserMenu user={args.user} open={open} onOpenChange={args.onOpenChange}>
         <UserMenu.Trigger aria-label={TRIGGER_LABEL} status="away" statusLabel="Away" />
         <UserMenu.Content variant="menu">
@@ -894,7 +899,7 @@ function RejectingMenu(args: StoryArgs) {
       <Button onClick={() => setOpen((current) => !current)}>Toggle menu</Button>
       <Button onClick={() => setTheme('dark')}>Use dark</Button>
       <Button onClick={() => setStatus('busy')}>Set busy</Button>
-    </div>
+    </Row>
   );
 }
 RejectingMenu.displayName = 'RejectingMenu';
@@ -1114,10 +1119,10 @@ export const SignOutPendingAcrossReopen: Story = {
 function RemovableMenu(args: StoryArgs) {
   const [mounted, setMounted] = useState(true);
   return (
-    <div style={rowStyle}>
+    <Row>
       {mounted && <AccountMenu {...args} />}
       <Button onClick={() => setMounted(false)}>Remove menu</Button>
-    </div>
+    </Row>
   );
 }
 RemovableMenu.displayName = 'RemovableMenu';
@@ -1391,12 +1396,12 @@ export const SheetHandle: Story = {
 function BreakpointMenu(args: StoryArgs) {
   const [breakpoint, setBreakpoint] = useState(NEVER_COMPACT);
   return (
-    <div style={rowStyle}>
+    <Row>
       <AccountMenu {...args} compactBreakpoint={breakpoint} />
       <Button onClick={() => setBreakpoint((current) => (current === NEVER_COMPACT ? ALWAYS_COMPACT : NEVER_COMPACT))}>
         Toggle compact
       </Button>
-    </div>
+    </Row>
   );
 }
 BreakpointMenu.displayName = 'BreakpointMenu';
@@ -1443,10 +1448,10 @@ export const CompactBreakpointChange: Story = {
 function ScopedHost({ children }: { children: ReactNode }) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
-    <ThemeRoot theme="light" portalContainer={host} style={{ padding: vars.space[4], backgroundColor: vars.color.bg }}>
+    <ThemeRoot theme="light" portalContainer={host}><LightThemeFrame>
       {children}
       <div ref={setHost} data-overlay-host="" />
-    </ThemeRoot>
+    </LightThemeFrame></ThemeRoot>
   );
 }
 ScopedHost.displayName = 'ScopedHost';
@@ -1490,7 +1495,7 @@ export const LightThemeSheet: Story = {
 export const ExternalAria: Story = {
   args: { defaultOpen: true },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <span id="account-label">Workspace account</span>
       <span id="account-help">Signed in on this device</span>
       <UserMenu user={args.user} defaultOpen={args.defaultOpen}>
@@ -1501,7 +1506,7 @@ export const ExternalAria: Story = {
           <UserMenu.StatusGroup labels={STATUS_LABELS} aria-label="Presence" />
         </UserMenu.Content>
       </UserMenu>
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     const trigger = getTrigger(canvasElement);
@@ -1531,7 +1536,7 @@ export const ExternalAriaSheet: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
-    <div style={rowStyle}>
+    <Row>
       <span id="sheet-label">Workspace account</span>
       <UserMenu user={args.user} defaultOpen={args.defaultOpen}>
         <UserMenu.Trigger aria-label={TRIGGER_LABEL} />
@@ -1546,7 +1551,7 @@ export const ExternalAriaSheet: Story = {
           <UserMenu.Item>Profile</UserMenu.Item>
         </UserMenu.Content>
       </UserMenu>
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement, userEvent }) => {
     // Consumer ids join the Identity name on the dialog; the menu inside keeps the Trigger's name.
@@ -1695,8 +1700,10 @@ export const RefTargets: Story = {
   },
 };
 
+// These values exercise the documented css/sx and slot styling APIs.
 const slotOverride = css({ outline: `3px dashed ${vars.color.accentText}` });
 
+// This story tests the documented css/slot API and native style merging.
 export const SxAndSlots: Story = {
   args: { defaultOpen: true },
   render: (args) => (
@@ -1775,7 +1782,7 @@ class UsageErrorBoundary extends Component<{ children: ReactNode }, { message: s
 
 export const UsageErrors: Story = {
   render: () => (
-    <div style={rowStyle}>
+    <Row>
       <UsageErrorBoundary>
         <UserMenu.Trigger aria-label={TRIGGER_LABEL} />
       </UsageErrorBoundary>
@@ -1789,7 +1796,7 @@ export const UsageErrors: Story = {
           <UserMenu.ThemeGroup labels={THEME_LABELS} />
         </UserMenu>
       </UsageErrorBoundary>
-    </div>
+    </Row>
   ),
   play: async ({ canvasElement }) => {
     const messages = Array.from(canvasElement.querySelectorAll('[data-usage-error]'), (node) => node.textContent);

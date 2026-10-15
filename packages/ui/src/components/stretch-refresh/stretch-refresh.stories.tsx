@@ -7,6 +7,8 @@ import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { StretchRefresh, type StretchRefreshProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 type Item = { id: string; title: string };
 const TARGET = Number.parseFloat(base.space[8]);
@@ -15,22 +17,25 @@ const ITEMS = [
   { id: 'draft', title: 'Owen saved a new draft' },
   { id: 'invite', title: 'A team invitation arrived' },
 ];
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: '28rem',
   maxInlineSize: '100%',
   blockSize: '24rem',
   display: 'flex',
   flexDirection: 'column',
 });
-const narrowStyle = css({ inlineSize: '14rem', maxInlineSize: '100%' });
+const Narrow = styled.div({ inlineSize: '14rem', maxInlineSize: '100%' });
+// These values exercise the documented css/sx and slot styling APIs.
 const overrideStyle = css({
   paddingInline: vars.space[8],
   background: vars.color.surfaceRaised,
 });
-const SOURCE = `<div style={{ height: '24rem', display: 'flex', flexDirection: 'column' }}>
+const SOURCE = `const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+
+<FeedFrame>
   <StretchRefresh title="Activity" items={items} getKey={item => item.id}
     renderItem={item => item.title} onRefresh={reloadItems} sx={{ flex: 1 }} />
-</div>`;
+</FeedFrame>`;
 const meta = {
   title: 'Data display/StretchRefresh',
   component: StretchRefresh<Item>,
@@ -46,9 +51,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -512,6 +517,7 @@ export const ScrollAndInteractive: Story = {
     await expect(args.onRefresh).not.toHaveBeenCalled();
   },
 };
+// This story tests the documented css/slot API and native style merging.
 export const AriaMerge: Story = {
   args: {
     subtitle: 'Latest updates',
@@ -633,9 +639,9 @@ export const RTL: Story = {
 export const NarrowContainer: Story = {
   decorators: [
     (Story) => (
-      <div css={narrowStyle}>
+      <Narrow>
         <Story />
-      </div>
+      </Narrow>
     ),
   ],
 };

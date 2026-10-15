@@ -2,9 +2,10 @@ import { Suspense, startTransition, useState, type ComponentPropsWithRef, type C
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Tabs, type TabsCompoundProps, type TabsEasyProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
 const ITEMS = [
   { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
@@ -12,7 +13,7 @@ const ITEMS = [
   { value: 'three', label: 'Billing', panel: 'Plan, invoices and payment method.' },
 ] as const;
 
-const frameStyle = css({
+const Frame = styled.div({
   inlineSize: '360px',
   minBlockSize: '120px',
   fontSize: vars.textSize.sm,
@@ -35,9 +36,9 @@ Arrow keys skip disabled tabs; Home and End reach the ends. With activation="man
   },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
 } satisfies Meta<typeof Tabs>;
@@ -60,6 +61,7 @@ function TabsTabAdapter(props: ComponentProps<typeof Tabs.Tab>) {
 function UnusedTabsRoot() { return null; }
 
 /** Restyle every generated tab and pass props to the root and panels. */
+// This story tests the documented css/slot API and native style merging.
 export const SlotProps: EasyStory = {
   args: {
     label: 'Settings', items: ITEMS, defaultValue: 'one',

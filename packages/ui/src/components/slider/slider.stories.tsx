@@ -6,8 +6,14 @@ import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
 import { Slider, type SliderProps } from './index';
+// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
+import { styled } from '../../index';
 
-const frameStyle = css({
+const LightThemeFrame = styled.div({ background: vars.color.bg, padding: vars.space[4] });
+
+const NarrowFrame = styled.div({ inlineSize: '12rem', maxInlineSize: '100%' });
+
+const Frame = styled.div({
   boxSizing: 'border-box',
   inlineSize: '30rem',
   maxInlineSize: '100%',
@@ -15,7 +21,7 @@ const frameStyle = css({
   gap: vars.space[8],
   padding: vars.space[4],
 });
-const buttonStyle = css({
+const Button = styled.button({
   minBlockSize: vars.space[8],
   minInlineSize: vars.space[8],
   padding: vars.space[2],
@@ -27,9 +33,9 @@ const meta = {
   args: { label: 'Volume', defaultValue: 40, locale: 'en-GB', onValueChange: fn(), onValueCommit: fn() },
   decorators: [
     (Story) => (
-      <div css={frameStyle}>
+      <Frame>
         <Story />
-      </div>
+      </Frame>
     ),
   ],
   parameters: {
@@ -267,14 +273,14 @@ export const HiddenReadout: Story = { args: { showValue: false } };
 export const Adornments: Story = {
   args: {
     start: (
-      <button type="button" css={buttonStyle} aria-label="Mute">
+      <Button type="button" aria-label="Mute">
         −
-      </button>
+      </Button>
     ),
     end: (
-      <button type="button" css={buttonStyle} aria-label="Maximum volume">
+      <Button type="button" aria-label="Maximum volume">
         +
-      </button>
+      </Button>
     ),
   },
   play: async ({ canvas, userEvent, args }) => {
@@ -362,9 +368,9 @@ export const FormNames: Story = {
         thumbLabels={['From', 'To']}
       />
       <Slider label="Excluded" name="disabled" disabled />
-      <button css={buttonStyle} type="reset">
+      <Button type="reset">
         Reset
-      </button>
+      </Button>
     </form>
   ),
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -422,9 +428,9 @@ export const NarrowMarks: Story = {
     ],
   },
   render: (args) => (
-    <div style={{ inlineSize: '12rem', maxInlineSize: '100%' }}>
+    <NarrowFrame>
       <Slider {...args} />
-    </div>
+    </NarrowFrame>
   ),
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="slider"]')!;
@@ -438,9 +444,9 @@ export const Dark: Story = {};
 export const LightTheme: Story = { decorators: [withLightTheme] };
 export const ScopedTheme: Story = {
   render: (args) => (
-    <ThemeRoot theme="light" sx={{ background: vars.color.bg, padding: vars.space[4] }}>
+    <ThemeRoot theme="light"><LightThemeFrame>
       <Slider {...args} />
-    </ThemeRoot>
+    </LightThemeFrame></ThemeRoot>
   ),
 };
 export const ReducedMotion: Story = {
@@ -609,9 +615,9 @@ export const ExternalUpdateWhileDragging: Story = {
             setValue(20);
           }}
         />
-        <button css={buttonStyle} onClick={() => setValue(80)}>
+        <Button onClick={() => setValue(80)}>
           Update
-        </button>
+        </Button>
       </>
     );
   },
@@ -635,6 +641,7 @@ function ReplacementSliderTrack(props: import('react').ComponentPropsWithRef<'di
   return <div {...props} data-replacement="track" />;
 }
 
+// This story tests the documented css/slot API and native style merging.
 export const SlotStylingAndRefs: Story = {
   args: {
     slots: { thumb: ReplacementSliderThumb, track: ReplacementSliderTrack },

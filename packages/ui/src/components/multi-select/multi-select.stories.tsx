@@ -21,7 +21,9 @@ import { styled } from '../../index';
 const ExampleFrame = styled.div({ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: vars.space[2], maxInlineSize: '100%' });
 const TriggerRow = styled.div({ display: 'flex', gap: vars.space[2], maxInlineSize: '100%' });
 const NarrowFrame = styled.div({ inlineSize: '220px' });
-const ScopedTheme = styled(ThemeRoot)({ backgroundColor: vars.color.bg, padding: vars.space[4] });
+// ThemeRoot takes the styling itself: `styled(ThemeRoot)` would collide with Emotion's own
+// `theme` prop on the wrapped component.
+const scopedThemeStyle = { backgroundColor: vars.color.bg, padding: vars.space[4] } as const;
 const LABEL = 'Labels';
 const OPTIONS: readonly MultiSelectOption[] = [
   { value: 'bug', label: 'Bug' },
@@ -809,9 +811,9 @@ export const LightTheme: Story = {
 export const ScopedThemePortal: Story = {
   ...PersistentOpenSelected,
   render: (args) => (
-    <ScopedTheme theme="light">
+    <ThemeRoot theme="light" sx={scopedThemeStyle}>
       <Example {...args} />
-    </ScopedTheme>
+    </ThemeRoot>
   ),
 };
 export const RTL: Story = {
