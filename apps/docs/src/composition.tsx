@@ -163,7 +163,7 @@ function summarize(slots: SlotRow[]): string {
 
 function SlotDefault({ slot }: { slot: SlotRow }) {
   if (slot.component) return <>Default: <SlotLink component={slot.component} /></>;
-  if (slot.part) return <>Default part: <Name>{`data-ui="${slot.part}"`}</Name></>;
+  if (slot.part) return <>Selector: <Name>{`[data-ui~="${slot.part}"]`}</Name></>;
   return null;
 }
 
