@@ -1356,12 +1356,12 @@ export const FormFields: Story = {
 function ExternalFormExample(props: ExampleProps) {
   const formId = useId();
   return (
-    <div style={stackStyle}>
+    <Stack>
       <form id={formId} aria-label="Report" onSubmit={(event) => event.preventDefault()}>
         <Button type="reset">Reset</Button>
       </form>
       <RangeExample {...props} trigger={{ form: formId }} />
-    </div>
+    </Stack>
   );
 }
 ExternalFormExample.displayName = 'ExternalFormExample';
@@ -1635,7 +1635,7 @@ export const ThemeRootPortal: Story = {
 export const AriaMerge: Story = {
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       <span id="period-label">Billing period</span>
       <span id="period-help">Invoices use UTC dates</span>
       <DateRangePicker {...args}>
@@ -1646,7 +1646,7 @@ export const AriaMerge: Story = {
         />
         <DateRangePicker.Content aria-describedby="period-help" />
       </DateRangePicker>
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const trigger = within(canvasElement).getByRole('button', { name: /^Billing period/ });
@@ -1682,7 +1682,7 @@ export const ContentLabel: Story = {
 export const FalsyContent: Story = {
   args: { messages: { ...rangeMessages, error: 0, required: '' }, required: true },
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       {FALSY_NODES.map((node, index) => (
         <DateRangePicker key={`placeholder-${index}`} {...args}>
           <DateRangePicker.Trigger aria-label={`Placeholder ${index}`} placeholder={node} />
@@ -1699,7 +1699,7 @@ export const FalsyContent: Story = {
         <DateRangePicker.Trigger aria-label="No error" aria-invalid />
         <DateRangePicker.Content />
       </DateRangePicker>
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const triggers = (prefix: string) =>
@@ -1734,7 +1734,7 @@ export const FalsyContent: Story = {
 export const UniqueIds: Story = {
   args: { defaultValue: WEEK, months: 1 },
   render: (args) => (
-    <div style={stackStyle}>
+    <Stack>
       <DateRangePicker {...args}>
         <DateRangePicker.Trigger aria-label="First period" />
         <DateRangePicker.Content />
@@ -1743,7 +1743,7 @@ export const UniqueIds: Story = {
         <DateRangePicker.Trigger aria-label="Second period" />
         <DateRangePicker.Content />
       </DateRangePicker>
-    </div>
+    </Stack>
   ),
   play: async ({ canvasElement }) => {
     const first = getTrigger(canvasElement, /^First period/);
