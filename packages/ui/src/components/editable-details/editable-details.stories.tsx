@@ -4,7 +4,7 @@ import { StrictMode, useRef, useState, type ComponentPropsWithRef } from 'react'
 import { hydrateRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, mocked, waitFor, within } from 'storybook/test';
+import { expect, fn, mocked, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -89,6 +89,16 @@ export default meta;
 type Story = StoryObj<Meta<StoryArgs>>;
 type EasyStory = StoryObj<Meta<EditableDetailsEasyProps>>;
 
+function EasyExample({
+  onItemOpenChange: _onItemOpenChange,
+  onSectionOpenChange: _onSectionOpenChange,
+  onRefCleanup: _onRefCleanup,
+  onHydrationError: _onHydrationError,
+  ...args
+}: EditableDetailsEasyProps & Partial<Pick<StoryArgs, 'onItemOpenChange' | 'onSectionOpenChange' | 'onRefCleanup' | 'onHydrationError'>>) {
+  return <EditableDetails {...args} />;
+}
+
 function DraftEditor({ initialFocusRef, cancel, complete, visible, onCapture }: EditableDetailsEditorProps & { onCapture?: (complete: () => void) => void }) {
   const [draft, setDraft] = useState('Apollo');
   return <Editor>
@@ -133,11 +143,16 @@ const EASY_SECTIONS: readonly EditableDetailsSectionRecord[] = [
 
 export const Default: EasyStory = {
   name: 'Easy mode',
+  beforeEach: () => {
+    const error = spyOn(console, 'error');
+    return () => error.mockRestore();
+  },
   args: {
     sections: EASY_SECTIONS,
   },
-  render: (args) => <EditableDetails {...args} />,
+  render: (args) => <EasyExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
+    await expect(console.error).not.toHaveBeenCalled();
     const canvas = within(canvasElement);
     const section = canvas.getByRole('button', { name: 'Settings' });
     await expect(section).toHaveAttribute('aria-expanded', 'true');
@@ -186,7 +201,7 @@ export const EasyFalsyContent: EasyStory = {
     { value: 'false', label: 'False', content: false },
     { value: 'empty', label: 'Empty', content: '' },
   ] }] },
-  render: (args) => <EditableDetails {...args} />,
+  render: (args) => <EasyExample {...args} />,
   play: async ({ canvas }) => {
     const values = canvas.getAllByRole('definition');
     await expect(values).toHaveLength(3);
@@ -243,7 +258,7 @@ export const EasyModeSlotPropsOverrides: EasyStory = {
       item: { className: 'custom-item-slot' },
     },
   },
-  render: (args) => <EditableDetails {...args} />,
+  render: (args) => <EasyExample {...args} />,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui~="editable-details"]');
     await expect(root).toHaveClass('custom-root-slot');
@@ -278,7 +293,7 @@ export const RootPropMerge: EasyStory = {
       },
     },
   },
-  render: (args) => <EditableDetails {...args} />,
+  render: (args) => <EasyExample {...args} />,
   play: async ({ canvasElement, args, userEvent }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui~="editable-details"]');
     if (!root) throw new Error('Missing EditableDetails root.');
