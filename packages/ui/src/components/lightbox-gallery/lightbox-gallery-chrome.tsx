@@ -84,8 +84,8 @@ export interface ViewerToolbarProps {
   position: string;
   zoomText: string;
   labels: LightboxGalleryLabels;
-  slots?: Pick<LightboxGallerySlotProps, 'controls' | 'status'>;
-  components?: Pick<LightboxGallerySlots, 'controls' | 'status'>;
+  slotProps?: Pick<LightboxGallerySlotProps, 'controls' | 'status'>;
+  slots?: Pick<LightboxGallerySlots, 'controls' | 'status'>;
   canPrevious: boolean;
   canNext: boolean;
   canZoomIn: boolean;
@@ -101,8 +101,8 @@ export function ViewerToolbar({
   position,
   zoomText,
   labels,
+  slotProps,
   slots,
-  components,
   canPrevious,
   canNext,
   canZoomIn,
@@ -113,14 +113,14 @@ export function ViewerToolbar({
   onZoomOut,
   onReset,
 }: ViewerToolbarProps) {
-  const Status = components?.status ?? 'div';
-  const Controls = components?.controls ?? 'div';
+  const Status = slots?.status ?? 'div';
+  const Controls = slots?.controls ?? 'div';
   return (
     <div css={toolbarStyle}>
-      <Status {...slots?.status} role="status" aria-live="polite" aria-atomic="true" css={[counterStyle, slots?.status?.css]}>
+      <Status {...slotProps?.status} role="status" aria-live="polite" aria-atomic="true" css={[counterStyle, slotProps?.status?.css]}>
         {position}
       </Status>
-      <Controls {...slots?.controls} css={[controlsStyle, slots?.controls?.css]}>
+      <Controls {...slotProps?.controls} css={[controlsStyle, slotProps?.controls?.css]}>
         <ChromeAction label={labels.previous} icon={icons.previous} disabled={!canPrevious} onClick={onPrevious} />
         <ChromeAction label={labels.next} icon={icons.next} disabled={!canNext} onClick={onNext} />
         <span aria-hidden="true" css={dividerStyle} />

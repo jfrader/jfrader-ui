@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useRef, useState, type ReactNode } from 'react';
+import { StrictMode, useEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { hydrateRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
@@ -168,6 +168,55 @@ const settled: Story['play'] = async ({ canvasElement }) => {
 function cancel(dialog: HTMLDialogElement) {
   fireEvent(dialog, new Event('cancel', { cancelable: true }));
 }
+
+function SlotControls(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="lightbox-controls" />;
+}
+SlotControls.displayName = 'LightboxGalleryStory.Controls';
+
+function SlotStatus(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="lightbox-status" />;
+}
+SlotStatus.displayName = 'LightboxGalleryStory.Status';
+
+export const ToolbarSlots: Story = {
+  args: {
+    defaultOpen: true,
+    slots: { controls: SlotControls, status: SlotStatus },
+    slotProps: {
+      controls: {
+        ...{ 'data-ui': 'lightbox-gallery-controls' },
+        id: 'lightbox-slot-controls',
+        className: 'custom-lightbox-controls',
+      },
+      status: {
+        ...{ 'data-ui': 'lightbox-gallery-status' },
+        id: 'lightbox-slot-status',
+        className: 'custom-lightbox-status',
+      },
+    },
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = viewer(canvasElement);
+    await settleMotion(dialog);
+    const controls = dialog.querySelector('[data-slot="lightbox-controls"]');
+    const status = dialog.querySelector('[data-slot="lightbox-status"]');
+    await expect(controls).toBeInTheDocument();
+    await expect(controls).toHaveAttribute('data-ui', 'lightbox-gallery-controls');
+    await expect(controls).toHaveAttribute('id', 'lightbox-slot-controls');
+    await expect(controls).toHaveClass('custom-lightbox-controls');
+    await expect(status).toBeInTheDocument();
+    await expect(status).toHaveAttribute('data-ui', 'lightbox-gallery-status');
+    await expect(status).toHaveAttribute('id', 'lightbox-slot-status');
+    await expect(status).toHaveClass('custom-lightbox-status');
+    await expect(status).toHaveAttribute('role', 'status');
+    await expect(status).toHaveAttribute('aria-live', 'polite');
+    await expect(status).toHaveAttribute('aria-atomic', 'true');
+    await expect(status).toHaveTextContent('1 / 8');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next image' }));
+    await expect(status).toHaveTextContent('2 / 8');
+  },
+};
 
 export const DefaultMixedRatios: Story = {
   play: async ({ canvas, canvasElement }) => {

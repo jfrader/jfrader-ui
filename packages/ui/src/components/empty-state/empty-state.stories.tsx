@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -8,6 +8,22 @@ import { Button } from '../button';
 import { EmptyState, type EmptyStateProps, type EmptyStateVariant } from './index';
 
 const VARIANTS = ['centered', 'inline'] as const satisfies readonly EmptyStateVariant[];
+
+function SlotIcon(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="empty-state-icon" />;
+}
+
+export const IconReplacement: Story = {
+  render: (args) => <EmptyState {...args} icon={<FolderIcon />} slots={{ icon: SlotIcon }} />,
+  play: async ({ canvasElement }) => {
+    const icon = canvasElement.querySelector('[data-slot="empty-state-icon"]');
+    await expect(icon).toBeInTheDocument();
+    await expect(icon).toHaveAttribute('data-ui', 'empty-state-icon');
+    await expect(getComputedStyle(icon!).display).toBe('grid');
+    await expect(icon).toHaveAttribute('aria-hidden', 'true');
+    await expect(canvasElement.querySelector('[data-ui="empty-state-icon"]:not([data-slot])')).toBeNull();
+  },
+};
 
 const frameStyle = css({
   display: 'grid',

@@ -419,8 +419,8 @@ interface ViewerProps {
   labels: LightboxGalleryLabels;
   locale?: Intl.LocalesArgument;
   maxZoom: number;
-  slots?: LightboxGallerySlotProps;
-  components?: LightboxGallerySlots;
+  slotProps?: LightboxGallerySlotProps;
+  slots?: LightboxGallerySlots;
   returnFlight: (flight: ReturnFlight) => void;
   reduced: boolean;
 }
@@ -437,14 +437,14 @@ function Viewer({
   labels,
   locale,
   maxZoom,
+  slotProps,
   slots,
-  components,
   returnFlight,
   reduced,
 }: ViewerProps) {
-  const ViewerDialog = components?.viewer ?? 'dialog';
-  const Stage = components?.stage ?? 'div';
-  const Caption = components?.caption ?? 'p';
+  const ViewerDialog = slots?.viewer ?? 'dialog';
+  const Stage = slots?.stage ?? 'div';
+  const Caption = slots?.caption ?? 'p';
   const id = useId();
   const format = useMemo(() => numberFormatter(locale), [locale]);
   const percentFormat = useMemo(
@@ -453,8 +453,8 @@ function Viewer({
   );
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
-  const stageMerged = useMergeRefs([stageRef, slots?.stage?.ref]);
-  const { withDescription = true, ...viewerSlot } = omitNativeOpen(slots?.viewer ?? {});
+  const stageMerged = useMergeRefs([stageRef, slotProps?.stage?.ref]);
+  const { withDescription = true, ...viewerSlot } = omitNativeOpen(slotProps?.viewer ?? {});
   const lastStageBox = useRef<DOMRect | null>(null);
   const completeClose = () => {
     const target = home();
@@ -521,8 +521,8 @@ function Viewer({
   const lastTap = useRef<{ x: number; y: number; time: number } | null>(null);
   const touchZoomTime = useRef(-Infinity);
   const suppressClick = useRef(false);
-  const titleId = slots?.title?.id ?? `${id}-title`;
-  const captionId = slots?.caption?.id ?? `${id}-caption`;
+  const titleId = slotProps?.title?.id ?? `${id}-title`;
+  const captionId = slotProps?.caption?.id ?? `${id}-caption`;
   const hasCaption = image && isRenderable(image.caption) && image.caption !== '';
   const position = image
     ? labels.position(format.format(index + 1), format.format(images.length))
@@ -869,41 +869,41 @@ function Viewer({
           title={image?.title ? `${label} — ${image.title}` : label}
           titleId={titleId}
           labels={labels}
-          slot={slots?.title}
-          component={components?.title}
+          slot={slotProps?.title}
+          component={slots?.title}
           onClose={controller.requestClose}
         />
         <Stage
-          {...slots?.stage}
+          {...slotProps?.stage}
           ref={stageMerged}
           role="group"
-          aria-label={slots?.stage?.['aria-label'] ?? image?.alt ?? labels.unavailable}
+          aria-label={slotProps?.stage?.['aria-label'] ?? image?.alt ?? labels.unavailable}
           tabIndex={0}
           data-ui="lightbox-gallery-stage"
           data-zoom={zoom}
           data-reduced-motion={reduced}
-          css={[stageStyle, slots?.stage?.css]}
+          css={[stageStyle, slotProps?.stage?.css]}
           onKeyDown={(event) => {
-            slots?.stage?.onKeyDown?.(event);
+            slotProps?.stage?.onKeyDown?.(event);
           }}
           onPointerDown={(event) => {
-            slots?.stage?.onPointerDown?.(event);
+            slotProps?.stage?.onPointerDown?.(event);
             pointerDown(event);
           }}
           onPointerMove={(event) => {
-            slots?.stage?.onPointerMove?.(event);
+            slotProps?.stage?.onPointerMove?.(event);
             pointerMove(event);
           }}
           onPointerUp={(event) => {
-            slots?.stage?.onPointerUp?.(event);
+            slotProps?.stage?.onPointerUp?.(event);
             pointerUp(event);
           }}
           onPointerCancel={(event) => {
-            slots?.stage?.onPointerCancel?.(event);
+            slotProps?.stage?.onPointerCancel?.(event);
             cancelGesture();
           }}
           onLostPointerCapture={(event) => {
-            slots?.stage?.onLostPointerCapture?.(event);
+            slotProps?.stage?.onLostPointerCapture?.(event);
             if (pointers.current.has(event.pointerId)) cancelGesture();
           }}
           onClick={(event) => {
@@ -911,10 +911,10 @@ function Viewer({
               event.preventDefault();
               event.stopPropagation();
               suppressClick.current = false;
-            } else slots?.stage?.onClick?.(event);
+            } else slotProps?.stage?.onClick?.(event);
           }}
           onDoubleClick={(event) => {
-            slots?.stage?.onDoubleClick?.(event);
+            slotProps?.stage?.onDoubleClick?.(event);
             if (
               !event.defaultPrevented &&
               !suppressClick.current &&
@@ -940,15 +940,15 @@ function Viewer({
                   key={`${image.id}\u0000${image.src}\u0000${image.srcSet ?? ''}`}
                   image={image}
                   labels={labels}
-                  slot={slots?.image}
-                  component={components?.image}
+                  slot={slotProps?.image}
+                  component={slots?.image}
                 />
               </motion.div>
             </motion.div>
           )}
         </Stage>
         {hasCaption && (
-          <Caption {...slots?.caption} id={captionId} css={[captionStyle, slots?.caption?.css]}>
+          <Caption {...slotProps?.caption} id={captionId} css={[captionStyle, slotProps?.caption?.css]}>
             {image.caption}
           </Caption>
         )}
@@ -956,8 +956,8 @@ function Viewer({
           position={position}
           zoomText={zoomText}
           labels={labels}
+          slotProps={slotProps}
           slots={slots}
-          components={components}
           canPrevious={index > 0}
           canNext={index < images.length - 1}
           canZoomIn={zoom < maxZoom}
@@ -973,8 +973,8 @@ function Viewer({
           selected={selected}
           labels={labels}
           format={format}
-          slot={slots?.thumbnails}
-          component={components?.thumbnails}
+          slot={slotProps?.thumbnails}
+          component={slots?.thumbnails}
           onSelect={select}
           thumbnail={(item) => (
             <GalleryImage key={`${item.id}\u0000${item.src}`} image={item} decorative labels={labels} />
@@ -1169,8 +1169,8 @@ export function LightboxGallery({
               labels={labels}
               locale={locale}
               maxZoom={zoomLimit}
-              slots={slotProps}
-              components={slots}
+              slotProps={slotProps}
+              slots={slots}
               returnFlight={setReturnFlight}
               reduced={reduced}
             />

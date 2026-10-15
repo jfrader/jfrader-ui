@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -20,6 +20,22 @@ const PATTERNS = ['none', 'stripes', 'hoops', 'sash'] as const satisfies readonl
 const SIZE_PX = { sm: 24, md: 32, lg: 40, xl: 56 } as const;
 const SHIELD_RATIO = 8 / 7;
 const NAME = 'Racing Club';
+
+function SlotMonogram(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="emblem-monogram" />;
+}
+
+export const MonogramReplacement: Story = {
+  render: (args) => <Emblem {...args} src={undefined} slots={{ monogram: SlotMonogram }} />,
+  play: async ({ canvasElement }) => {
+    const monogram = canvasElement.querySelector('[data-slot="emblem-monogram"]');
+    await expect(monogram).toBeInTheDocument();
+    await expect(monogram).toHaveAttribute('data-ui', 'emblem-ink');
+    await expect(getComputedStyle(monogram!).fontWeight).toBe('600');
+    await expect(monogram).toHaveAttribute('aria-hidden', 'true');
+    await expect(canvasElement.querySelector('[data-ui="emblem-ink"]:not([data-slot])')).toBeNull();
+  },
+};
 
 // A crest image is consumer content, so the fixture draws its own colors.
 const CREST_SRC = `data:image/svg+xml,${encodeURIComponent(

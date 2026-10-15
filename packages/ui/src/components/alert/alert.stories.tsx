@@ -1,3 +1,4 @@
+import type { ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -6,6 +7,25 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Alert, type AlertProps, type AlertTone } from './index';
 
 const TONES = ['info', 'success', 'warning', 'danger'] as const satisfies readonly AlertTone[];
+
+function SlotDismiss(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-slot="alert-dismiss" />;
+}
+
+export const DismissReplacement: Story = {
+  args: { onDismiss: fn() },
+  render: (args) => <Alert {...args} slots={{ dismiss: SlotDismiss }} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    const dismiss = canvasElement.querySelector('[data-slot="alert-dismiss"]');
+    await expect(dismiss).toBeInTheDocument();
+    await expect(dismiss).toHaveAttribute('data-ui', 'alert-dismiss');
+    await expect(getComputedStyle(dismiss!).alignItems).toBe('center');
+    await expect(dismiss).toHaveAttribute('aria-label', 'Dismiss');
+    await expect(canvasElement.querySelector('[data-ui="alert-dismiss"]:not([data-slot])')).toBeNull();
+    await userEvent.click(dismiss!);
+    await expect(args.onDismiss).toHaveBeenCalledTimes(1);
+  },
+};
 
 const TONE_COPY: Record<AlertTone, { title: string; body: string }> = {
   info: { title: 'Maintenance tonight', body: 'Sync pauses from 02:00 to 03:00 UTC.' },
