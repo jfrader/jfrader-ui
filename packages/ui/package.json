@@ -142,7 +142,8 @@
     "./tree-view": { "types": "./src/components/tree-view/index.ts", "import": "./src/components/tree-view/index.ts" },
     "./typewriter-terminal": { "types": "./src/components/typewriter-terminal/index.ts", "import": "./src/components/typewriter-terminal/index.ts" },
     "./usage-meter": { "types": "./src/components/usage-meter/index.ts", "import": "./src/components/usage-meter/index.ts" },
-    "./user-menu": { "types": "./src/components/user-menu/index.ts", "import": "./src/components/user-menu/index.ts" }
+    "./user-menu": { "types": "./src/components/user-menu/index.ts", "import": "./src/components/user-menu/index.ts" },
+    "./voice-orb": { "types": "./src/components/voice-orb/index.ts", "import": "./src/components/voice-orb/index.ts" }
   },
   "publishConfig": {
     "access": "public"
