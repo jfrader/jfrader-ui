@@ -20,7 +20,16 @@ const proseStyle = {
 const meta = {
   title: 'Data display/Kbd',
   component: Kbd,
-  parameters: { docs: { description: { component: 'Show a keyboard key or a combination of keys in text.' } } },
+  parameters: {
+    docs: {
+      description: { component: 'Show a keyboard key or a combination of keys in text.' },
+      usage: `### Combinations
+- Put one \`Kbd\` per key inside \`Kbd.Group\`. The group inserts a visible \`+\` between children and hides those separators from assistive technology.
+
+### Keyboard
+- Kbd labels input but does not register shortcuts or receive focus by default. Handle the shortcut in your application and supply the key names for the user's platform.`,
+    },
+  },
   args: { children: 'Esc' },
 } satisfies Meta<typeof Kbd>;
 
@@ -61,6 +70,7 @@ export const Combination: Story = {
   parameters: {
     docs: {
       source: {
+        language: 'tsx',
         code: `<Kbd.Group>
   <Kbd>Cmd</Kbd>
   <Kbd>K</Kbd>

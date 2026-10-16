@@ -74,6 +74,12 @@ const meta = {
       description: {
         component: 'Show a club, team or brand as a shaped mark built from its own colors and name.',
       },
+      usage: `### Mark
+- Supply \`name\` for the accessible name and initials. Without \`src\`, or after an image fails, the mark shows initials derived from up to three words. Use \`initials\` to replace them.
+- Defaults are \`shape="shield"\`, \`size="md"\` and \`pattern="none"\`. The shield is taller than its width. When you supply colors, check the ink against both the fill and pattern and set \`inkColor\` if needed.
+
+### Links
+- The default mark is an image, not a control. To link it, use \`render\` to return an anchor and forward every supplied prop and ref. If you replace its \`aria-label\`, keep the visible initials in the name.`,
     },
   },
 } satisfies Meta<typeof Emblem>;
@@ -200,6 +206,19 @@ export const BrokenImage: Story = {
 };
 
 export const Linked: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `<Emblem
+  name="Racing Club"
+  color="#12306b"
+  secondaryColor="#f0c33c"
+  render={(props) => <a href="#racing-club" {...props} />}
+/>`,
+      },
+    },
+  },
   args: {
     render: (props) => <a href="#racing-club" {...props} />,
   },

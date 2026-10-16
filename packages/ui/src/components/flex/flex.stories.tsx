@@ -57,7 +57,15 @@ const Prose = styled.div({
 const meta = {
   title: 'Layout/Flex',
   component: Flex,
-  parameters: { docs: { description: { component: 'Arrange items in a row or column and set their spacing and alignment.' } } },
+  parameters: {
+    docs: {
+      description: { component: 'Arrange items in a row or column and set their spacing and alignment.' },
+      usage: `### Layout
+- Defaults are \`direction="row"\`, \`align="stretch"\`, \`justify="start"\`, no wrapping and no gap. Set \`gap\` to \`none\`, \`xs\`, \`sm\`, \`md\`, \`lg\` or \`xl\` for space between children.
+- When a row runs out of room, it does not wrap unless you pass \`wrap\`. Use \`inline\` for a layout that sits within a line of text.
+- Props do not accept breakpoint maps. Apply responsive styles through \`sx\`; use \`dir="rtl"\` or inherited direction to mirror a row.`,
+    },
+  },
   args: { gap: 'sm' },
   argTypes: {
     direction: { control: 'radio', options: ['row', 'column'] },
@@ -100,6 +108,34 @@ function getBoxes(element: HTMLElement) {
 }
 
 export const Default: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { CSSProperties } from 'react';
+import { vars } from '@jfrader/tokens/vars';
+import { Flex } from '@jfrader/ui';
+
+const boxStyle = {
+  boxSizing: 'border-box',
+  paddingBlock: vars.space[2],
+  paddingInline: vars.space[3],
+  backgroundColor: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.text,
+} satisfies CSSProperties;
+
+<Flex>
+  <div style={boxStyle}>Item 1</div>
+  <div style={boxStyle}>Item 2</div>
+  <div style={boxStyle}>Item 3</div>
+</Flex>`,
+      },
+    },
+  },
   args: { gap: undefined },
   render: (args) => (
     <Flex {...args}>

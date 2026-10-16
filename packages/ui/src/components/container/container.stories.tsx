@@ -64,7 +64,15 @@ const meta = {
   component: Container,
   parameters: {
     layout: 'fullscreen',
-    docs: { description: { component: 'Center page content and limit its width. Set the space on either side.' } },
+    docs: {
+      description: { component: 'Center page content and limit its width. Set the space on either side.' },
+      usage: `### Width
+- The container fills its parent up to \`size\`: \`sm\` 640px, \`md\` 768px, \`lg\` 1024px, or \`xl\` 1280px. The default is \`lg\`. Choose a cap, not a viewport breakpoint.
+- \`paddingInline\` defaults to \`md\` (16px) and is included in the width cap. Use \`none\`, \`xs\`, \`sm\`, \`md\`, \`lg\` or \`xl\` to change the inset.
+
+### Layout
+- Container adds no vertical spacing or landmark role. Put a \`Stack\` inside for spacing and provide page semantics yourself.`,
+    },
   },
   argTypes: {
     size: { control: 'radio', options: SIZES },
@@ -94,6 +102,35 @@ async function expectCentred(element: HTMLElement) {
 }
 
 export const Sizes: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { CSSProperties } from 'react';
+import { vars } from '@jfrader/tokens/vars';
+import { Container } from '@jfrader/ui';
+
+const boxStyle = {
+  boxSizing: 'border-box',
+  paddingBlock: vars.space[2],
+  paddingInline: vars.space[3],
+  backgroundColor: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.text,
+} satisfies CSSProperties;
+
+<>
+  <Container size="sm"><div style={boxStyle}>Container sm</div></Container>
+  <Container size="md"><div style={boxStyle}>Container md</div></Container>
+  <Container size="lg"><div style={boxStyle}>Container lg</div></Container>
+  <Container size="xl"><div style={boxStyle}>Container xl</div></Container>
+</>`,
+      },
+    },
+  },
   render: (args) => (
     <>
       {SIZES.map((size) => (
@@ -187,6 +224,7 @@ export const CenteredPage: Story = {
   parameters: {
     docs: {
       source: {
+        language: 'tsx',
         code: `<Container size="sm">
   <Stack gap="lg">
     <h2>Workspace settings</h2>

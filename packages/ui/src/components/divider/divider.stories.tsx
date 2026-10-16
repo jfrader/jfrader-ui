@@ -27,7 +27,17 @@ const Row = styled.div({
 const meta = {
   title: 'Data display/Divider',
   component: Divider,
-  parameters: { docs: { description: { component: 'Separate sections with a line or a label.' } } },
+  parameters: {
+    docs: {
+      description: { component: 'Separate sections with a line or a label.' },
+      usage: `### Orientation
+- The default is \`horizontal\`. For \`orientation="vertical"\`, place the divider in a flex or grid row whose content or height gives it a block size. It has no height of its own.
+
+### Labels
+- \`label\` is available only on horizontal dividers and supplies the separator's accessible name. Use text, not a control, inside the label.
+- Divider adds no surrounding margin. Set the spacing on its parent.`,
+    },
+  },
   decorators: [
     (Story) => (
       <Stack>
@@ -79,6 +89,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       source: {
+        language: 'tsx',
         code: `<>
   <p>Signed in as ana@example.com</p>
   <Divider />

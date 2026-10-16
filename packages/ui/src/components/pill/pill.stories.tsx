@@ -27,6 +27,12 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show a status or category beside other content.' },
+      usage: `### Status
+- \`tone\` defaults to \`neutral\`; choose \`accent\`, \`success\`, \`warning\` or \`danger\` to change its colors. Write the status in \`children\` so color is not the only cue.
+- Text stays on one line without truncation. Keep the label short or give it room in your layout.
+
+### Actions
+- Pill renders a span with no interaction or live-region role. Use a button for an action and a status region when updates need to be announced.`,
     },
   },
   args: { children: 'Draft', tone: 'neutral' },
@@ -64,6 +70,7 @@ export const Tones: Story = {
   parameters: {
     docs: {
       source: {
+        language: 'tsx',
         code: `<>
   <Pill tone="neutral">neutral</Pill>
   <Pill tone="accent">accent</Pill>

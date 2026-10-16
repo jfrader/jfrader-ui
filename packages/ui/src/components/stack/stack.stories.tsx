@@ -41,6 +41,10 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Arrange items in a column and set the space between them.' },
+      usage: `### Layout
+- Stack is a block-level column with \`gap="md"\` (16px) and \`align="stretch"\` by default. Set \`align="start"\`, \`center\` or \`end\` when children should not fill its width.
+- \`gap\` accepts \`none\`, \`xs\`, \`sm\`, \`md\`, \`lg\` or \`xl\`. It spaces children, not the outside of the stack; add outer spacing through \`sx\`.
+- Stack has no \`direction\` or \`inline\` prop. Use \`Flex\` for a row or inline layout, and \`sx\` for breakpoint-specific styles.`,
     },
   },
   argTypes: {
@@ -82,6 +86,34 @@ function getBoxes(element: HTMLElement) {
 }
 
 export const Default: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { CSSProperties } from 'react';
+import { vars } from '@jfrader/tokens/vars';
+import { Stack } from '@jfrader/ui';
+
+const boxStyle = {
+  boxSizing: 'border-box',
+  paddingBlock: vars.space[2],
+  paddingInline: vars.space[3],
+  backgroundColor: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.text,
+} satisfies CSSProperties;
+
+<Stack>
+  <div style={boxStyle}>Item 1</div>
+  <div style={boxStyle}>Item 2</div>
+  <div style={boxStyle}>Item 3</div>
+</Stack>`,
+      },
+    },
+  },
   render: (args) => (
     <Stack {...args}>
       <Boxes />
