@@ -221,7 +221,7 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
   component-local.
 - `focus-ring` — `focusRingOutset` / `focusRingInset` declarations; the selector stays local.
 - `visually-hidden` — screen-reader-only text.
-- `disclosure-caret` — inline-end caret for an `&::after`; rotation and reduced motion stay local.
+- `disclosure-caret` — `disclosureCaret` (the triangle: border-drawn, currentColor, with its forced-colors override) and `disclosureCaretInlineSize` (the glyph's inline size). A component owns the pseudo-element it draws on, the rotation and the reduced-motion override.
 - `icon-wrapper` — sizes a decorative icon to the surrounding font size.
 - `loading-ring` — spinning ring and its reduced-motion pulse (Button, Spinner).
 - `surface` — `raisedSurface` panel, the surface appearance helpers and `modalShellReset` for native

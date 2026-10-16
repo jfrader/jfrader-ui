@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { useForm } from 'react-hook-form';
 import { vars } from '@jfrader/tokens/vars';
-import { Button, Card, Checkbox, EditableDetails, type EditableDetailsEditorProps, InlineEdit, TextField } from '@jfrader/ui';
+import { Button, Card, Checkbox, EditableDetails, type EditableDetailsEditorProps, InlineEdit, Pill, TextField } from '@jfrader/ui';
 import './showcase.css';
 
 interface DeploymentConfig { serviceName: string; region: string; replicas: number; autoScaling: boolean }
@@ -14,11 +14,22 @@ type EditorProps<T> = EditableDetailsEditorProps & { value: T; onSave: (value: T
 const INITIAL_DEPLOYMENT: DeploymentConfig = { serviceName: 'api-gateway', region: 'us-east-1', replicas: 3, autoScaling: true };
 const INITIAL_CONTACT: ContactData = { contactEmail: 'ops@example.com', maxConcurrency: 16 };
 const RETENTION_LIMIT = 365;
+const NOTICE_LIMIT = 180;
+const VALUE_LIMIT = 10_000_000;
+const CONTRACT_VALUE = 48000;
 const CONCURRENCY_LIMIT = 64;
+const TERMS_RULE = 'Use Net plus a whole number of days, for example Net 30.';
+const DELIVERY_RULE = 'Use Email, Post, or both.';
+/** Local persistence for these fixtures; the delay makes the field's saving phase observable. */
+const persistDelay = (ms: number) => new Promise<void>((resolve) => { setTimeout(resolve, ms); });
 const DEMO_LOCALE = 'en';
 const days = new Intl.NumberFormat(DEMO_LOCALE, { style: 'unit', unit: 'day', unitDisplay: 'long' });
 const numbers = new Intl.NumberFormat(DEMO_LOCALE);
+const euros = new Intl.NumberFormat(DEMO_LOCALE, { style: 'currency', currency: 'EUR' });
+const dates = new Intl.DateTimeFormat(DEMO_LOCALE, { dateStyle: 'medium', timeZone: 'UTC' });
+const percent = new Intl.NumberFormat(DEMO_LOCALE, { style: 'percent', minimumFractionDigits: 1 });
 const editorStyle = css({ display: 'grid', gap: vars.space[3], minInlineSize: 0 });
+const linesStyle = css({ display: 'grid', gap: vars.space[1] });
 const actionsStyle = css({ display: 'flex', flexWrap: 'wrap', justifyContent: 'end', gap: vars.space[2] });
 const responseStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], paddingBlock: vars.space[3] });
 const confirmationStyle = css({ display: 'grid', gap: vars.space[3], padding: vars.space[3], border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.sm });
@@ -38,22 +49,66 @@ function EditorActions({ cancel, submit, pending = false }: { cancel: () => void
   </div>;
 }
 
-function RetentionEditor({ initialFocusRef, complete, cancel, value, onSave }: EditorProps<number>) {
+interface NumberFieldEditorProps extends EditorProps<number> {
+  label: string;
+  min: number;
+  max: number;
+  submit: string;
+}
+function NumberFieldEditor({ initialFocusRef, complete, cancel, value, onSave, label, min, max, submit }: NumberFieldEditorProps) {
   const [draft, setDraft] = useState(String(value));
   const [error, setError] = useState<string>();
   return <form noValidate css={editorStyle} onSubmit={(event) => {
     event.preventDefault();
     const next = Number(draft);
-    if (!Number.isInteger(next) || next < 1 || next > RETENTION_LIMIT) {
-      setError(`Enter a whole number from 1 to ${RETENTION_LIMIT}.`);
+    if (!Number.isInteger(next) || next < min || next > max) {
+      setError(`Enter a whole number from ${numbers.format(min)} to ${numbers.format(max)}.`);
       return;
     }
     onSave(next);
     complete();
   }}>
-    <TextField ref={initialFocusRef} name="retentionDays" label="Retention period (days)" type="number" min={1} max={RETENTION_LIMIT} step={1}
+    <TextField ref={initialFocusRef} name="numberField" label={label} type="number" min={min} max={max} step={1}
       value={draft} error={error} onValueChange={(next) => { setDraft(next); setError(undefined); }} />
-    <EditorActions cancel={cancel} submit="Save retention" />
+    <EditorActions cancel={cancel} submit={submit} />
+  </form>;
+}
+
+interface TextFieldEditorProps extends EditorProps<string> {
+  label: string;
+  submit: string;
+  /** Application rule: returns a message to block the save. */
+  rule?: (value: string) => string | undefined;
+  /** Application persistence: the editor reports saving until it resolves. */
+  save?: (value: string) => Promise<void>;
+}
+function TextFieldEditor({ initialFocusRef, complete, cancel, value, onSave, label, submit, rule, save }: TextFieldEditorProps) {
+  const [draft, setDraft] = useState(value);
+  const [error, setError] = useState<string>();
+  const [pending, setPending] = useState(false);
+  return <form noValidate css={editorStyle} onSubmit={(event) => {
+    event.preventDefault();
+    if (pending) return;
+    const message = rule?.(draft);
+    if (message) {
+      setError(message);
+      return;
+    }
+    setError(undefined);
+    if (!save) {
+      onSave(draft);
+      complete();
+      return;
+    }
+    setPending(true);
+    void save(draft).then(() => { onSave(draft); complete(); }, (failure: unknown) => {
+      setError(failure instanceof Error ? failure.message : 'Could not save. Try again.');
+      setPending(false);
+    });
+  }}>
+    <TextField ref={initialFocusRef} name="textField" label={label} value={draft} error={error}
+      onValueChange={(next) => { setDraft(next); setError(undefined); }} />
+    <EditorActions cancel={cancel} submit={submit} pending={pending} />
   </form>;
 }
 
@@ -205,7 +260,7 @@ function ClusterEditor({ initialFocusRef, complete, cancel, value, onSave }: Edi
 
 function RetentionRow({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const [value, setValue] = useState(30);
-  return <EditableDetails.Item label="Retention period" defaultOpen={defaultOpen} renderEditor={(props) => <RetentionEditor {...props} value={value} onSave={setValue} />}>
+  return <EditableDetails.Item label="Retention period" defaultOpen={defaultOpen} renderEditor={(props) => <NumberFieldEditor {...props} label="Retention period (days)" min={1} max={RETENTION_LIMIT} submit="Save retention" value={value} onSave={setValue} />}>
     {days.format(value)}
   </EditableDetails.Item>;
 }
@@ -225,9 +280,128 @@ function ContactRow() {
     {value.contactEmail}
   </EditableDetails.Item>;
 }
-function InlineTitleRow() {
-  const [value, setValue] = useState('Northwind Core');
-  return <EditableDetails.Item label="Display title"><InlineEdit label="Display title" variant="body" size="sm" value={value} onValueChange={setValue} onSave={() => {}} /></EditableDetails.Item>;
+interface TextFieldRowProps {
+  label: string;
+  initial: string;
+  /** Application rule: returns a message to block the save. */
+  rule?: TextFieldEditorProps['rule'];
+  /** Application persistence for this value. */
+  save?: TextFieldEditorProps['save'];
+}
+function TextFieldRow({ label, initial, rule, save }: TextFieldRowProps) {
+  const [value, setValue] = useState(initial);
+  return <EditableDetails.Item label={label} renderEditor={(props) => <TextFieldEditor {...props} label={label} submit={`Save ${label.toLowerCase()}`} rule={rule} save={save} value={value} onSave={setValue} />}>
+    {value}
+  </EditableDetails.Item>;
+}
+/** The comparison story keeps `InlineEdit`: it contrasts the single-string field with the editor flow above. */
+function InlineEditRow({ label, initial }: { label: string; initial: string }) {
+  const [value, setValue] = useState(initial);
+  return <EditableDetails.Item label={label}><InlineEdit label={label} variant="body" size="sm" value={value} onValueChange={setValue} onSave={() => {}} /></EditableDetails.Item>;
+}
+function NoticePeriodRow() {
+  const [value, setValue] = useState(60);
+  return <EditableDetails.Item label="Notice period" renderEditor={(props) => <NumberFieldEditor {...props} label="Notice period (days)" min={1} max={NOTICE_LIMIT} submit="Save notice period" value={value} onSave={setValue} />}>
+    {days.format(value)}
+  </EditableDetails.Item>;
+}
+function AnnualValueRow() {
+  const [value, setValue] = useState(CONTRACT_VALUE);
+  return <EditableDetails.Item label="Annual value" renderEditor={(props) => <NumberFieldEditor {...props} label="Annual value (EUR)" min={1} max={VALUE_LIMIT} submit="Save annual value" value={value} onSave={setValue} />}>
+    {euros.format(value)}
+  </EditableDetails.Item>;
+}
+
+function AddressValue({ lines }: { lines: readonly string[] }) {
+  return <span css={linesStyle}>{lines.map((line) => <span key={line}>{line}</span>)}</span>;
+}
+
+function ContractScene() {
+  return <Scene title="Service agreement">
+    <EditableDetails.Section title="Service agreement" headingLevel={2} defaultOpen>
+      <EditableDetails.List>
+        <EditableDetails.Item label="Reference">CT-2026-0417</EditableDetails.Item>
+        <EditableDetails.Item label="Status"><Pill tone="success">Active</Pill></EditableDetails.Item>
+        <AnnualValueRow />
+        <EditableDetails.Item label="Renewal">Automatic, every 12 months</EditableDetails.Item>
+      </EditableDetails.List>
+      <EditableDetails.Section title="Parties" defaultOpen>
+        <EditableDetails.Section title="Provider" defaultOpen>
+          <EditableDetails.List>
+            <EditableDetails.Item label="Legal name">Halcyon Systems S.L.</EditableDetails.Item>
+            <EditableDetails.Item label="Tax ID">ES-B12345678</EditableDetails.Item>
+            <EditableDetails.Item label="Registered address">
+              <AddressValue lines={['Calle Mayor 14', '28013 Madrid, ES']} />
+            </EditableDetails.Item>
+            <EditableDetails.Item label="Support contact">support@halcyon.example</EditableDetails.Item>
+          </EditableDetails.List>
+        </EditableDetails.Section>
+        <EditableDetails.Section title="Client" defaultOpen>
+          <EditableDetails.List>
+            <EditableDetails.Item label="Legal name">Northwind Retail Group</EditableDetails.Item>
+            <EditableDetails.Item label="Tax ID">ES-B98765432</EditableDetails.Item>
+            <EditableDetails.Item label="Billing address">
+              <AddressValue lines={['45 Harbour Road', 'BS1 4DJ Bristol, GB']} />
+            </EditableDetails.Item>
+            <TextFieldRow label="Billing reference" initial="NW-PO-8841" />
+          </EditableDetails.List>
+          <EditableDetails.Section title="Notice contacts" defaultOpen>
+            <EditableDetails.List>
+              <EditableDetails.Item label="Primary notice contact">Elena Vidal, Facilities</EditableDetails.Item>
+              <TextFieldRow label="Delivery method" initial="Email and registered post"
+                rule={(next) => (/Email|Post/.test(next) ? undefined : DELIVERY_RULE)}
+                save={() => persistDelay(200)} />
+            </EditableDetails.List>
+          </EditableDetails.Section>
+        </EditableDetails.Section>
+      </EditableDetails.Section>
+      <EditableDetails.Section title="Commercial terms" defaultOpen>
+        <EditableDetails.List>
+          <NoticePeriodRow />
+          <TextFieldRow label="Payment terms" initial="Net 30"
+            rule={(next) => (/^Net \d+$/.test(next.trim()) ? undefined : TERMS_RULE)} />
+          <EditableDetails.Item label="Currency">EUR</EditableDetails.Item>
+        </EditableDetails.List>
+        <EditableDetails.Section title="Adjustments" defaultOpen>
+          <EditableDetails.List>
+            <EditableDetails.Item label="Annual uplift">{percent.format(0.025)}</EditableDetails.Item>
+            <TextFieldRow label="Uplift cap" initial="CPI + 1%" />
+            <EditableDetails.Item label="First review">{dates.format(Date.UTC(2026, 3, 17))}</EditableDetails.Item>
+          </EditableDetails.List>
+        </EditableDetails.Section>
+      </EditableDetails.Section>
+      <EditableDetails.Section title="Service levels" defaultOpen>
+        <EditableDetails.List>
+          <TextFieldRow label="Support window" initial="24×5, Monday to Friday" />
+          <EditableDetails.Item label="Response target">30 minutes for critical incidents</EditableDetails.Item>
+          <EditableDetails.Item label="Maintenance window">Sundays 02:00–04:00 UTC</EditableDetails.Item>
+        </EditableDetails.List>
+        <EditableDetails.Section title="Service tiers" defaultOpen>
+          <EditableDetails.List>
+            <EditableDetails.Item label="Availability target">{percent.format(0.999)} monthly</EditableDetails.Item>
+            <EditableDetails.Item label="Error budget">43 minutes per month</EditableDetails.Item>
+            <EditableDetails.Item label="Escalation">Duty engineer, then service manager</EditableDetails.Item>
+          </EditableDetails.List>
+        </EditableDetails.Section>
+      </EditableDetails.Section>
+      <EditableDetails.Section title="Documents" />
+      <EditableDetails.Section title="History" defaultOpen>
+        <EditableDetails.Section title="Versions" defaultOpen>
+          <EditableDetails.List>
+            <EditableDetails.Item label="v3">{dates.format(Date.UTC(2025, 3, 17))}</EditableDetails.Item>
+            <EditableDetails.Item label="v2">{dates.format(Date.UTC(2024, 3, 10))}</EditableDetails.Item>
+            <EditableDetails.Item label="v1">{dates.format(Date.UTC(2023, 3, 12))}</EditableDetails.Item>
+          </EditableDetails.List>
+        </EditableDetails.Section>
+        <EditableDetails.Section title="Superseded clauses">
+          <EditableDetails.List>
+            <EditableDetails.Item label="Clause 7.2">Replaced by Commercial terms → Adjustments</EditableDetails.Item>
+            <EditableDetails.Item label="Appendix B">Replaced by Service levels → Service tiers</EditableDetails.Item>
+          </EditableDetails.List>
+        </EditableDetails.Section>
+      </EditableDetails.Section>
+    </EditableDetails.Section>
+  </Scene>;
 }
 
 interface PendingResponse { resolve: () => void; reject: () => void }
@@ -285,8 +459,15 @@ function ProjectSettingsScene(props: ActionFixtureProps) {
         <EditableDetails.Item label="Active incidents">{0}</EditableDetails.Item>
         <EditableDetails.Item label="Maintenance mode">Off</EditableDetails.Item>
         <EditableDetails.Item label="Custom vanity domain">Not set</EditableDetails.Item>
-        <RetentionRow /><InlineTitleRow />
+        <RetentionRow /><TextFieldRow label="Display title" initial="Northwind Core" />
       </EditableDetails.List>
+      <EditableDetails.Section title="Notifications" defaultOpen>
+        <EditableDetails.List>
+          <EditableDetails.Item label="Email digest">Weekly, Monday</EditableDetails.Item>
+          <EditableDetails.Item label="Incident alerts">Critical and high</EditableDetails.Item>
+          <EditableDetails.Item label="Pager rotation">Platform on-call</EditableDetails.Item>
+        </EditableDetails.List>
+      </EditableDetails.Section>
     </EditableDetails.Section>
     <EditableDetails.Section title="Deployment" defaultOpen headingLevel={2}>
       <EditableDetails.List><DeploymentRow /><ContactRow /></EditableDetails.List>
@@ -303,7 +484,7 @@ function GroupedScene() {
 function RoutingScene() { return <Scene title="Routing settings"><RoutingDetails /></Scene>; }
 function ContactScene() { return <Scene title="Team contact"><EditableDetails.List><ContactRow /></EditableDetails.List></Scene>; }
 function ActionScene(props: ActionFixtureProps) { return <Scene title="Cluster settings"><ClusterDetails {...props} /></Scene>; }
-function ComparisonScene() { return <Scene title="Project title"><EditableDetails.List><InlineTitleRow /></EditableDetails.List></Scene>; }
+function ComparisonScene() { return <Scene title="Project title"><EditableDetails.List><InlineEditRow label="Display title" initial="Northwind Core" /></EditableDetails.List></Scene>; }
 
 const meta = {
   title: 'Showcase/EditableDetails',
@@ -522,6 +703,67 @@ export const PersistentOpenAndError: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Save retention' }));
     await expect(input).toHaveAttribute('aria-invalid', 'true');
     await expect(canvas.getByRole('alert')).toHaveTextContent(`Enter a whole number from 1 to ${RETENTION_LIMIT}.`);
+  },
+};
+export const NestedContract: Story = {
+  render: () => <ContractScene />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const levels = ['Service agreement', 'Parties', 'Provider', 'Notice contacts']
+      .map((name) => canvas.getByRole('button', { name }));
+    for (const level of levels) await expect(level).toHaveAttribute('aria-expanded', 'true');
+    for (const [index, level] of levels.entries()) {
+      const parent = levels[index - 1];
+      if (parent) await expect(level.getBoundingClientRect().left).toBeGreaterThan(parent.getBoundingClientRect().left);
+    }
+    const page = canvasElement.querySelector<HTMLElement>('main')!;
+    await expect(page.scrollWidth).toBeLessThanOrEqual(page.clientWidth);
+    await userEvent.click(canvas.getByRole('button', { name: 'Parties' }));
+    await expect(canvas.queryByRole('button', { name: 'Provider' })).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: 'Parties' }));
+
+    // A value at the top level edits through an app-owned form.
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Annual value' }));
+    const amount = canvas.getByRole('spinbutton', { name: 'Annual value (EUR)' });
+    await expect(amount).toHaveFocus();
+    await userEvent.clear(amount); await userEvent.type(amount, '0');
+    await userEvent.click(canvas.getByRole('button', { name: 'Save annual value' }));
+    await expect(canvas.getByText(`Enter a whole number from 1 to ${numbers.format(VALUE_LIMIT)}.`)).toBeVisible();
+    await userEvent.clear(amount); await userEvent.type(amount, '60000');
+    await userEvent.click(canvas.getByRole('button', { name: 'Save annual value' }));
+    await expect(canvas.getByText(euros.format(60000))).toBeVisible();
+
+    // A nested row edits through its own form editor.
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Notice period' }));
+    const notice = canvas.getByRole('spinbutton', { name: 'Notice period (days)' });
+    await expect(notice).toHaveFocus();
+    await userEvent.clear(notice); await userEvent.type(notice, '90');
+    await userEvent.click(canvas.getByRole('button', { name: 'Save notice period' }));
+    await expect(canvas.getByText('90 days')).toBeVisible();
+
+    // A nested value with an application rule: its message blocks the save.
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Payment terms' }));
+    const terms = canvas.getByRole('textbox', { name: 'Payment terms' });
+    await expect(terms).toHaveFocus();
+    await userEvent.clear(terms); await userEvent.type(terms, 'thirty days');
+    await userEvent.click(canvas.getByRole('button', { name: 'Save payment terms' }));
+    await expect(canvas.getByText(TERMS_RULE)).toBeVisible();
+    await userEvent.clear(terms); await userEvent.type(terms, 'Net 45');
+    await userEvent.click(canvas.getByRole('button', { name: 'Save payment terms' }));
+    await expect(canvas.getByText('Net 45')).toBeVisible();
+
+    // The deepest value saves through the application, which takes a moment.
+    await userEvent.click(canvas.getByRole('button', { name: 'Edit Delivery method' }));
+    const delivery = canvas.getByRole('textbox', { name: 'Delivery method' });
+    await userEvent.clear(delivery); await userEvent.type(delivery, 'Courier');
+    await userEvent.click(canvas.getByRole('button', { name: 'Save delivery method' }));
+    await expect(canvas.getByText(DELIVERY_RULE)).toBeVisible();
+    await userEvent.clear(delivery); await userEvent.type(delivery, 'Email and Post');
+    await userEvent.click(canvas.getByRole('button', { name: 'Save delivery method' }));
+    await waitFor(() => expect(canvas.queryByRole('textbox', { name: 'Delivery method' })).not.toBeInTheDocument());
+    await expect(canvas.getByText('Email and Post')).toBeVisible();
+
+    await expect(canvas.getByText('BS1 4DJ Bristol, GB')).toBeVisible();
   },
 };
 export const Light: Story = {

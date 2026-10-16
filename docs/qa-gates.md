@@ -43,7 +43,7 @@ Replace `pending` with `pass YYYY-MM-DD <browser/AT>` or `fail: GURI-N (<issue t
 | date-picker | pending; auto: Tab/Shift+Tab, arrows, PageDown, Shift+PageDown, Enter, Space, Escape | pending | pending | pending | |
 | dialog | pending; auto: focus moves in on open, returns to trigger (Escape simulated via `cancel` event) | pending | pending | pending | real Escape key; modal title and containment; reduced motion pending |
 | divider | pending; auto: not in Tab order | pending | pending | pending | forced-colors CSS present |
-| editable-details | pass 2026-10-12 Chromium, native Tab/Shift+Tab, disclosure, editor/overlay focus, real modal Escape; Firefox/Safari pending | pending | pass 2026-10-12 Chromium emulation | pass 2026-10-12 Chromium, mobile | reduced-motion emulation passed; 390px/1280px, light/dark; focused overlay recipe checks, not a complete visual/AT audit |
+| editable-details | pass 2026-10-16 Chromium, Tab/Shift+Tab, disclosure, editor/overlay focus, real modal Escape; Firefox/Safari pending | pending | pass 2026-10-16 Chromium emulation (guide rail and caret survive) | pass 2026-10-16 Chromium, mobile | reduced-motion emulation passed; the GURI-2439 nesting pass re-checked 390px/1440px, light/dark, forced colors and RTL on the redesigned presentation; focused overlay recipe checks, not a complete visual/AT audit |
 | field | pending | pending | pending | pending | internal anatomy; exercised through TextField/Textarea |
 | kbd | pending; auto: not in Tab order | pending | pending | pending | |
 | menu | pending; auto: Tab, Shift+Tab, Enter, Space, ArrowUp/Down, Escape, focus return | pending | pending | pending | reduced motion pending |
