@@ -9,11 +9,11 @@ import { isRenderable } from '../../utils/renderable';
 import { buildBoardLayoutModel } from './layout-model';
 import { useBoardMeasurements } from './use-board-measurements';
 import {
-  buildAlternatingSlots, resolveTableTurnDirection, validateSlots,
+  buildAlternatingSlots, resolveSeatCount, resolveTableTurnDirection, validateSlots,
   type GameTableSlot, type SeatLike, type TableTurnDirection,
 } from './table-slots';
 import type { BoardSeatGeometry, BoardSurface } from './types';
-import { resolveSeatCount } from './viewport';
+import { frameContainerStyle } from './layout-config';
 import { TableRoot, type GameTableRootProps, type GameTableRootCustomization } from './table-root';
 import { DeckArtProvider, type DeckArtOptions } from '../deck/art-context';
 
@@ -37,8 +37,6 @@ export type GameTableProps<T extends SeatLike = SeatLike> =
     players: number;
     /** Number of round-robin teams for `seats`. Defaults to 2; use 1 for free-for-all. Prebuilt `seatSlots` keep their teams. */
     teamCount?: number;
-    /** Viewport dimensions in CSS pixels; supplied by the consumer for SSR and resize updates. */
-    viewport: { width: number; height: number };
     /** Match geometry or waiting-room geometry. Defaults to `match`. */
     surface?: BoardSurface;
     /** Content inside the felt, centred on its edge (default), or outside it. */
@@ -94,8 +92,7 @@ const surfaceStyle = css({
   maxInlineSize: 'var(--game-table-max-width)',
   blockSize: 'var(--game-table-height)',
   maxBlockSize: 'min(var(--game-table-max-height), 100%)',
-  aspectRatio: 'var(--game-table-ratio)',
-  borderRadius: 'var(--game-table-radius)',
+  borderRadius: '50%',
   border: `var(--game-table-border) solid ${vars.color.border}`,
   outline: `var(--game-table-outline) solid ${vars.color.surfaceRaised}`,
   backgroundColor: vars.color.surfaceInset,
@@ -161,7 +158,7 @@ const stripStyle = css({ position: 'relative', flexShrink: 0, zIndex: 3, textAli
 const headerStyle = css({
   display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'center',
   gap: 'var(--game-table-top-gap)', marginBlockEnd: 'var(--game-table-top-margin)',
-  transform: 'translateY(var(--game-table-top-translate-y))',
+  '[data-surface="lobby"] &': { transform: 'translateY(calc(0px - var(--game-table-padding-top)))' },
 });
 const dockStyle = css({ marginBlockStart: 'var(--game-table-bottom-margin)', inlineSize: '100%', maxInlineSize: `calc(${vars.space[4]} * 58)`, marginInline: 'auto' });
 const footerStyle = css({ marginBlockStart: `calc(${vars.space[4]} * 0.8)`, inlineSize: '100%', maxInlineSize: `calc(${vars.space[4]} * 56)`, marginInline: 'auto' });
@@ -251,7 +248,7 @@ function collectRegions(children: ReactNode): ReactElement<GameTableSeatProps>[]
 }
 
 export function GameTable<T extends SeatLike>({
-  seats, seatSlots: suppliedSlots, players, teamCount = 2, viewport, surface = 'match', turnDirection, clearance = 0,
+  seats, seatSlots: suppliedSlots, players, teamCount = 2, surface = 'match', turnDirection, clearance = 0,
   children, seatPlacement = 'edge', style, artSet, cardArtSets, ...rest
 }: GameTableProps<T>) {
   const { surfaceRef, measurement } = useBoardMeasurements(rest.slots?.root ?? rest.component);
@@ -281,30 +278,9 @@ export function GameTable<T extends SeatLike>({
   }
   const layout = buildBoardLayoutModel({
     surface, totalSeats: players, measurement,
-    viewport: { ...viewport, aspectRatio: viewport.width / Math.max(viewport.height, 1) },
   });
-  const { frame } = layout;
-  const [paddingTop = '0px', paddingInline = paddingTop, paddingBottom = paddingTop] = frame.rootPadding.split(/\s+/);
   const variables: TableVariables = {
     '--game-table-seat-clearance': typeof clearance === 'number' ? `${clearance}px` : clearance,
-    '--game-table-padding-top': paddingTop,
-    '--game-table-padding-inline': paddingInline,
-    '--game-table-padding-bottom': paddingBottom,
-    '--game-table-shell-max-width': frame.shellMaxWidth,
-    '--game-table-top-gap': frame.topStripGap,
-    '--game-table-top-margin': frame.topStripMarginBottom,
-    '--game-table-bottom-margin': frame.bottomStripMarginTop,
-    '--game-table-top-translate-y': surface === 'lobby' ? `calc(0px - ${paddingTop})` : '0px',
-    '--game-table-width': frame.boardWidth,
-    '--game-table-max-width': frame.boardMaxWidth,
-    '--game-table-height': frame.boardWidth === 'auto' && frame.boardHeight === 'auto' ? '100%' : frame.boardHeight,
-    '--game-table-max-height': frame.boardMaxHeight,
-    '--game-table-ratio': frame.boardAspectRatio,
-    '--game-table-radius': frame.boardBorderRadius,
-    '--game-table-border': frame.boardBorderWidth,
-    '--game-table-outline': frame.boardOutlineWidth,
-    '--game-table-seat-width': frame.seatWidth,
-    '--game-table-seat-max-width': frame.seatMaxWidth,
     '--game-table-content-scale': String(layout.seatConfig.scale),
     '--game-table-center-scale': String(layout.seatConfig.centerScale),
     '--game-table-radius-x': `${layout.seatConfig.radiusX}px`,
@@ -314,8 +290,8 @@ export function GameTable<T extends SeatLike>({
     '--game-table-center-block': `${measurement?.height ? measurement.centerY / measurement.height * 100 : 50}%`,
   };
   return (
-    <DeckArtProvider artSet={artSet} cardArtSets={cardArtSets}><TableRoot {...rest} marker="game-table" structure={rootStyle} style={style} attributes={{ style: variables,
-      'data-profile': layout.profile, 'data-surface': surface, 'data-seat-placement': seatPlacement, 'data-layout-fit': layout.fit,
+    <DeckArtProvider artSet={artSet} cardArtSets={cardArtSets}><div css={frameContainerStyle}><TableRoot {...rest} marker="game-table" structure={rootStyle} style={style} attributes={{ style: variables,
+      'data-surface': surface, 'data-seat-placement': seatPlacement, 'data-layout-fit': layout.fit,
       'data-clearance': measurement?.clearance && (measurement.clearance.start < measurement.clearance.requestedStart || measurement.clearance.end < measurement.clearance.requestedEnd) ? 'reduced' : 'requested',
       'data-clearance-start': measurement?.clearance?.start, 'data-clearance-end': measurement?.clearance?.end,
     }}>
@@ -372,7 +348,7 @@ export function GameTable<T extends SeatLike>({
       {one(GameTableFooter)}
       {one(GameTableDock)}
       {one(GameTableFloating)}
-    </TableRoot></DeckArtProvider>
+    </TableRoot></div></DeckArtProvider>
   );
 }
 GameTable.displayName = 'GameTable';

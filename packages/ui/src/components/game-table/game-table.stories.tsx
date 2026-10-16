@@ -17,20 +17,21 @@ import { ThemeRoot } from '../theme-root';
 import {
   GameTable as Table, useGameTableSeat, buildAlternatingSlots, buildBoardLayoutModel, buildTableOrderSlots,
   getTablePointSeatIndexes, resolveTableTurnDirection,
-  type BoardPlayerCount, type BoardViewportProfile, type GameTableProps as TableProps, type BoardSeatGeometry, type SeatLike,
+  type BoardPlayerCount, type GameTableProps as TableProps, type BoardSeatGeometry, type SeatLike,
   type GameTableSlot, type GameTableRootProps,
-  resolveBoardViewportProfile,
 } from './index';
-import { BREAKPOINT_CASES, REFERENCE_SLOT_KEYS } from './reference-fixtures';
-import { fitBoardContent, GAME_TABLE_LIMITS } from './fit-layout';
+import { REFERENCE_SLOT_KEYS } from './reference-fixtures';
+import { fitBoardContent, GAME_TABLE_LIMITS, type BoardMeasurements } from './fit-layout';
 import { validateSlots } from './table-slots';
-import { FRAMES } from './layout-config';
 import { expectInside, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
 
-const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
+type CaseName = 'phoneCompact' | 'phoneTall' | 'phoneWide' | 'tablet' | 'tabletWide' | 'desktop';
+type ViewportSize = { width: number; height: number };
+
+const viewportSize = ({ viewport }: { viewport: ViewportSize }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 const ViewportFrame = styled.div(viewportSize);
 function ThemeViewport({ viewport, theme, children }: {
-  viewport: { width: number; height: number }; theme: 'dark' | 'light'; children: ReactNode;
+  viewport: ViewportSize; theme: 'dark' | 'light'; children: ReactNode;
 }) {
   return <ThemeRoot theme={theme}><ViewportFrame viewport={viewport}>{children}</ViewportFrame></ThemeRoot>;
 }
@@ -46,13 +47,13 @@ const MatrixGrid = styled(Matrix)({ display: 'grid', gap: vars.space[6] });
 const MatrixRow = styled(Matrix)({ display: 'flex' });
 const Row = styled.div({ display: 'flex' });
 const ProfileColumn = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[6] });
-const ParityGrid = styled.div({ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: vars.space[4] });
+const ParityGrid = styled.div({ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: vars.space[4], blockSize: 900, inlineSize: 2880 });
 const FullHeight = styled.div({ blockSize: '100%' });
 const PokerSeatContent = styled.div({ display: 'grid', justifyItems: 'center' });
 const ResizableFrame = styled.div<{ narrow: boolean; roomy: boolean }>(({ narrow, roomy }) => ({
   inlineSize: narrow ? 380 : 500, blockSize: roomy ? 800 : narrow ? 360 : 440,
 }));
-const TransformedFrame = styled.section<{ viewport: { width: number; height: number }; scaled: boolean }>(
+const TransformedFrame = styled.section<{ viewport: ViewportSize; scaled: boolean }>(
   viewportSize,
   ({ scaled }) => ({ transform: scaled ? 'scale(0.75)' : undefined, transformOrigin: 'top left' }),
 );
@@ -63,12 +64,13 @@ type GameTableProps<T extends SeatLike = SeatLike> = Omit<TableProps<T>, 'slots'
   renderSeat: RegionFixture<T>;
   renderPlay?: RegionFixture<T>;
   header?: ReactNode; center?: ReactNode; dock?: ReactNode; footer?: ReactNode; floating?: ReactNode;
+  viewport: ViewportSize;
 };
 function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixture<T> }) {
   const { slot, index, geometry } = useGameTableSeat<T>();
   return content?.(slot, index, geometry);
 }
-function tableRootProps<T extends SeatLike>({ seats, slots, renderSeat: _seat, renderPlay: _play, header: _header, center: _center, dock: _dock, footer: _footer, floating: _floating, ...props }: Omit<GameTableProps<T>, 'renderSeat'> & { renderSeat?: RegionFixture<T> }) {
+function tableRootProps<T extends SeatLike>({ seats, slots, viewport: _viewport, renderSeat: _seat, renderPlay: _play, header: _header, center: _center, dock: _dock, footer: _footer, floating: _floating, ...props }: Omit<GameTableProps<T>, 'renderSeat'> & { renderSeat?: RegionFixture<T> }) {
   return { ...props, ...(slots ? { seatSlots: slots } : { seats: seats ?? [] }) };
 }
 
@@ -94,7 +96,7 @@ function CompoundPartsFixture() {
     <Button onClick={() => setMounted(false)}>Unmount table</Button>
     <Button onClick={() => setAlternative(true)}>Replace root</Button>
     {mounted && <StrictMode><ReplacementFrame>
-      <Table players={2} seats={SEATS.slice(0, 2)} viewport={VIEWPORTS.desktop}
+      <Table players={2} seats={SEATS.slice(0, 2)}
         component={UnusedReplacementRoot} slots={{ root: alternative ? AlternativeReplacementRoot : ReplacementRoot }} data-ui="consumer game-table"
         title="host" slotProps={{ root: { title: 'slot', 'data-ui': 'consumer slot' } }}>
         <Table.Dock data-region="dock"><Button>Check</Button></Table.Dock>
@@ -131,14 +133,13 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 const COUNTS = [2, 4, 6] as const;
 const GEOMETRY_TOLERANCE_PX = 0.5;
-const PHONE_WIDE_FELT_ASPECT_RATIO = 2.15;
 const measurementFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 function required<T>(value: T | undefined): T {
   if (value === undefined) throw new Error('Missing fixture item');
   return value;
 }
 
-async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, profile: BoardViewportProfile, expectedFit = 'fitted', checkInsufficientGeometry = false) {
+async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, profile: string, expectedFit = 'fitted', checkInsufficientGeometry = false) {
   await table.ownerDocument.fonts.ready;
   await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', expectedFit));
   for (const card of table.querySelectorAll<HTMLElement>('[data-ui~="game-card"]')) {
@@ -153,9 +154,7 @@ async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, 
   }
   const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined);
   const frame = surface.getBoundingClientRect();
-  if (profile === 'phoneWide' && table.dataset.surface === 'match') {
-    await expect(frame.width / frame.height, 'landscape felt keeps its profile aspect').toBeCloseTo(PHONE_WIDE_FELT_ASPECT_RATIO, 2);
-  }
+  await expect(getComputedStyle(surface).borderRadius).toBe('50%');
   const style = getComputedStyle(table);
   const rx = Number.parseFloat(style.getPropertyValue('--game-table-radius-x'));
   const ry = Number.parseFloat(style.getPropertyValue('--game-table-radius-y'));
@@ -230,7 +229,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<CaseName, ViewportSize>;
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
@@ -275,14 +274,24 @@ const meta = {
       usage: `## Setup
 - Import from \`@jfrader/ui/game-table\`. GameTable is an opt-in subpath and is not re-exported by the package root.
 
+\`\`\`tsx
+<GameTable players={6} seats={players}>
+  <GameTable.Header>Poker · 10 / 20</GameTable.Header>
+  <GameTable.Seat><SeatContent /></GameTable.Seat>
+  <GameTable.Play />
+  <GameTable.Center>Pot: 240</GameTable.Center>
+  <GameTable.Dock><Button>Check</Button></GameTable.Dock>
+</GameTable>
+\`\`\`
+
 ## Regions
 Compose direct \`GameTable.Seat\`, \`GameTable.Play\`, \`GameTable.Center\`, \`GameTable.Header\`, \`GameTable.Dock\`, \`GameTable.Footer\` and \`GameTable.Floating\` children in any order (fragments are accepted). Seat and Play repeat at every place unless you pass \`slotKey\`. Their children read \`{ player, slot, index, geometry }\` with \`useGameTableSeat<Player>()\`. Empty play content reserves nothing. Center holds shared cards, the pot or deck and is measured independently. Keep measured footprints in normal flow; absolute artwork must reserve its footprint in its parent. The node-region props and seat/play callbacks have been replaced by these parts.
 
 Each public part accepts native div props, ref and sx. \`component\` is sugar for \`slots.root\`; \`slotProps.root\` passes root props, with slot conflicts winning except merged className/style. Geometry variables and measurement markers remain table-owned. Use \`seatSlots\` for prebuilt player order; \`slots\` now replaces structure.
 
 ## Geometry
-Give the parent a block size and pass current viewport dimensions in CSS pixels. Update \`viewport\` on resize; it selects the surface frame. ResizeObserver measures the actual root, shell, surface and intrinsic regions, including when the parent is smaller than the viewport. Regions remain hidden until measurement; the server does not guess their dimensions.
-\`seatPlacement\` defaults to \`edge\`: the content centre sits on the felt boundary. \`inside\` keeps content contained with its outer edge inset by the gap; \`outside\` moves the inner edge to the boundary, using the directional box support as an outward offset. This deliberately replaces the previous containment-only default. The felt keeps its profile frame's size and aspect; edge/outside placement follows its measured ellipse. The shell reserves the outboard footprint at each region's minimum scale. If the root cannot hold a placement at its floor, the table declares insufficient space rather than calling an inward fallback fitted.
+Give the parent an inline and block size. Container queries derive the CSS frame from that container, independently of the browser viewport. The server renders the CSS frame directly; regions remain hidden until measured. ResizeObserver measures the actual root, shell, surface and intrinsic regions.
+\`seatPlacement\` defaults to \`edge\`: the content centre sits on the felt boundary. \`inside\` keeps content contained with its outer edge inset by the gap; \`outside\` moves the inner edge to the boundary, using the directional box support as an outward offset. This deliberately replaces the previous containment-only default. The felt is a fluid ellipse with 50% border radius that follows container CSS; edge/outside placement follows its measured ellipse. The shell reserves the outboard footprint at each region's minimum scale. If the root cannot hold a placement at its floor, the table declares insufficient space rather than calling an inward fallback fitted.
 The play anchor shares its seat's physical polar direction on an inward ring. Its distance leaves the measured seat/play boxes separated by the content gap on at least one axis, moving farther inward when the surface border requires it. Plays must stay inside the surface, clear of other regions and the measured centre; no invisible centre-size percentage is reserved.
 \`players\` accepts any integer >= 2. \`seats\` fills empty places, distributes teams round-robin and puts your seat first. \`teamCount\` defaults to 2; use 1 for free-for-all with every seat's \`teamIdx: 0\`. \`seatSlots\` preserves a prebuilt visual order and any team numbers, and must contain exactly \`players\` places; order it with the exported builders when needed. Do not pass both.
 The curve uses θᵢ = π/2 + 2πi/N and Pᵢ = C + (Rx cosθᵢ, Ry sinθᵢ). C is the surface border-box center. In edge/outside modes Rx and Ry are the measured surface half-extents; the ring follows the felt's aspect, including landscape frames. Only inside mode bounds the available-area axis stretch: near-square areas (axis ratio ≤1.15) give a circle, growing continuously up to 1.5. On an ellipse the physical polar-angle gaps differ from the equal parametric gaps; no per-seat angular correction is applied. Content stays upright, with zero seat rotation; RTL mirrors placement only. No table-owned decoration requires rotation.
@@ -311,81 +320,49 @@ For a composition the library does not describe — a shared board dealt from a 
 
 ## Keyboard
 The table is a passive layout, not an APG grid or application. It adds no roles, landmarks, focus movement, state or animation; supplied controls keep their own semantics and native tab order. Floating content is table-local, not a dialog or portal.`,
-      source: { language: 'tsx', code: `import { type ReactNode } from 'react';
-import { Button, styled } from '@jfrader/ui';
+      source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
-const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
-
-const ViewportFrame = styled.div(viewportSize);
-
-const SeatCards = styled.div({ position: 'relative', display: 'flex', gap: vars.space[1] });
-
-const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
-
-const BoardCenter = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[2] });
-
-type RegionFixture<T extends SeatLike> = (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
-
-function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixture<T> }) {
-  const { slot, index, geometry } = useGameTableSeat<T>();
-  return content?.(slot, index, geometry);
-}
+const Frame = styled.div({ inlineSize: '100%', blockSize: 'calc(' + vars.space[4] + ' * 51)' });
 
 interface Player extends SeatLike { name: string }
 
-const SEATS: [Player, Player, Player, Player, Player, Player] = [
-  { key: 'alex', teamIdx: 0, name: 'Alex' },
-  { key: 'blair', teamIdx: 1, name: 'Blair' },
-  { key: 'you', teamIdx: 0, isMe: true, name: 'You' },
-  { key: 'drew', teamIdx: 1, name: 'Drew' },
-  { key: 'emery', teamIdx: 0, name: 'Emery' },
-  { key: 'frankie', teamIdx: 1, name: 'Frankie' },
+const players: Player[] = [
+  { key: 'alex', name: 'Alex', teamIdx: 0 },
+  { key: 'blair', name: 'Blair', teamIdx: 1 },
+  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
+  { key: 'drew', name: 'Drew', teamIdx: 1 },
+  { key: 'emery', name: 'Emery', teamIdx: 0 },
+  { key: 'frankie', name: 'Frankie', teamIdx: 1 },
 ];
 
-const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
-
-const seatChrome = (slot: GameTableSlot<Player>) => (
-  <SeatCards>
-    <Table.SeatChrome>
-      <span>{slot.player?.name ?? 'Open seat'}</span>
-    </Table.SeatChrome>
-    <GameCard size="sm" label={\`\${slot.player?.name ?? 'Open seat'}: first hidden card\`} />
-    <GameCard size="sm" label={\`\${slot.player?.name ?? 'Open seat'}: second hidden card\`} />
-  </SeatCards>
-);
-
-const center = (
-  <BoardCenter>
-    <span>Pot: 240</span>
-    <CardsRow>
-      <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
-      <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
-      <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
-    </CardsRow>
-  </BoardCenter>
-);
+function SeatContent() {
+  const { player } = useGameTableSeat<Player>();
+  return (
+    <>
+      <GameTable.SeatChrome>
+        <span>{player?.name ?? 'Open seat'}</span>
+      </GameTable.SeatChrome>
+      <GameCard size="sm" label="First hidden card" />
+      <GameCard size="sm" label="Second hidden card" />
+    </>
+  );
+}
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.phoneCompact}>
-<Table players={6} seats={SEATS} viewport={VIEWPORTS.phoneCompact} >
-    <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
-    <Table.Play></Table.Play>
-    <Table.Center>{center}</Table.Center>
-    <Table.Header>Poker · 10 / 20</Table.Header>
-    <Table.Dock><Button>Check</Button></Table.Dock>
-
-  </Table>
-</ViewportFrame>);
+  return (
+    <Frame><GameTable players={6} seats={players}>
+      <GameTable.Header>Poker · 10 / 20</GameTable.Header>
+      <GameTable.Seat><SeatContent /></GameTable.Seat>
+      <GameTable.Play />
+      <GameTable.Center>
+        <span>Pot: 240</span>
+      </GameTable.Center>
+      <GameTable.Dock><Button>Check</Button></GameTable.Dock>
+    </GameTable></Frame>
+  );
 }` },
     },
   },
@@ -404,11 +381,79 @@ export default function Example() {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const ASPECT_CONTAINERS = [
+  { width: 405, height: 900 },
+  { width: 675, height: 900 },
+  { width: 927, height: 900 },
+  { width: 945, height: 900 },
+  { width: 1161, height: 900 },
+  { width: 1179, height: 900 },
+  { width: 1440, height: 900 },
+  { width: 840, height: 360 },
+  { width: 864, height: 360 },
+] as const;
+const ASPECT_MODES = [
+  { surface: 'match', dir: 'ltr' },
+  { surface: 'match', dir: 'rtl' },
+  { surface: 'lobby', dir: 'ltr' },
+] as const;
+
+export const ContainerAspectBands: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { GameTable } from '@jfrader/ui/game-table';
+
+const Frame = styled.div({ inlineSize: '100%', blockSize: 'calc(' + vars.space[4] + ' * 51)' });
+
+export default function Example() {
+  return <Frame><GameTable players={6} seats={[]}>
+    <GameTable.Header>Poker</GameTable.Header>
+    <GameTable.Seat />
+    <GameTable.Center>Pot: 240</GameTable.Center>
+  </GameTable></Frame>;
+}` } } },
+  render: () => <Matrix>
+    {ASPECT_CONTAINERS.map((size) => COUNTS.map((players) => ASPECT_MODES.map(({ surface, dir }) => (
+      <ViewportFrame key={`${size.width}-${players}-${surface}-${dir}`} viewport={size}
+        data-aspect-width={size.width} data-aspect-height={size.height} data-aspect-players={players}>
+        <Table players={players} seats={seatsFor(players)} surface={surface} dir={dir}>
+          <Table.Header>Poker · 10 / 20</Table.Header>
+          <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
+          <Table.Center>{center}</Table.Center>
+          <Table.Dock><Button>Check</Button></Table.Dock>
+        </Table>
+      </ViewportFrame>
+    ))))}
+  </Matrix>,
+  play: async ({ canvasElement }) => {
+    const frames = canvasElement.querySelectorAll<HTMLElement>('[data-aspect-width]');
+    await expect(frames).toHaveLength(ASPECT_CONTAINERS.length * COUNTS.length * ASPECT_MODES.length);
+    for (const frame of frames) {
+      const table = required(frame.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+      const width = Number(frame.dataset.aspectWidth);
+      const height = Number(frame.dataset.aspectHeight);
+      const players = Number(frame.dataset.aspectPlayers);
+      const short = height === 360;
+      const expectedFit = short && (table.dataset.surface === 'match' || players === 6) ? 'insufficient-space' : 'fitted';
+      await expectSeatFraming(table, players, `${width}/${height}`, expectedFit);
+      await expect(getComputedStyle(required(table.parentElement ?? undefined)).containerType).toBe('size');
+      const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined);
+      await expect(getComputedStyle(surface).borderRadius).toBe('50%');
+      if (table.dataset.surface === 'lobby' && width / height >= 1.3) {
+        const box = surface.getBoundingClientRect();
+        await expect(box.width).toBeCloseTo(box.height, 1);
+      }
+      if (!short && table.dataset.surface === 'match') await expectMirroredDirection(table, '[data-ui="game-table-seat"]');
+    }
+  },
+};
+
 export const Default: Story = {
   play: async ({ canvasElement, args, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]');
     if (!table) throw new Error('Missing table');
-    await expect(table).toHaveAttribute('data-profile', 'phoneCompact');
+    await expect(table.parentElement?.getBoundingClientRect().width).toBe(VIEWPORTS.phoneCompact.width);
+    await expect(table.parentElement?.getBoundingClientRect().height).toBe(VIEWPORTS.phoneCompact.height);
     await expect(table.querySelector('[data-game-surface="true"]')).toHaveAttribute('data-ui', 'game-table-surface');
     await expect(table.querySelector('[role="grid"], [role="application"], [role="region"]')).toBeNull();
     const slots = buildAlternatingSlots(SEATS, 6, 'counterclockwise');
@@ -477,7 +522,7 @@ export const CompoundParts: Story = {
   },
 };
 
-const matrixStory = (profile: BoardViewportProfile, theme: 'dark' | 'light'): Story => ({
+const matrixStory = (profile: CaseName, theme: 'dark' | 'light'): Story => ({
   args: { viewport: VIEWPORTS[profile] },
 
   render: (args) => (
@@ -499,7 +544,8 @@ const matrixStory = (profile: BoardViewportProfile, theme: 'dark' | 'light'): St
     const tables = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]');
     await expect(tables).toHaveLength(3);
     for (const [index, table] of Array.from(tables).entries()) {
-      await expect(table).toHaveAttribute('data-profile', profile);
+      await expect(table.parentElement?.getBoundingClientRect().width).toBe(VIEWPORTS[profile].width);
+      await expect(table.parentElement?.getBoundingClientRect().height).toBe(VIEWPORTS[profile].height);
       await expect(table.querySelectorAll('[data-ui="game-table-seat"]')).toHaveLength(required(COUNTS[index]));
       const surface = table.querySelector<HTMLElement>('[data-game-surface]');
       if (!surface) throw new Error('Missing surface');
@@ -510,7 +556,7 @@ const matrixStory = (profile: BoardViewportProfile, theme: 'dark' | 'light'): St
       const dock = required(table.querySelector<HTMLElement>('[data-ui="game-table-dock"]') ?? undefined).getBoundingClientRect();
       const own = required(table.querySelector<HTMLElement>('[data-ui="game-table-seat"]') ?? undefined).getBoundingClientRect();
       await expect(own.bottom).toBeLessThanOrEqual(dock.top);
-      await expectSeatFraming(table, required(COUNTS[index]), profile, 'fitted');
+      await expectSeatFraming(table, required(COUNTS[index]), profile, profile === 'phoneWide' ? 'insufficient-space' : 'fitted');
     }
   },
 });
@@ -519,7 +565,7 @@ export const PhoneCompactDark = { ...matrixStory('phoneCompact', 'dark'), parame
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -567,7 +613,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -595,7 +641,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.phoneCompact}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.phoneCompact} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -610,7 +656,7 @@ export const PhoneCompactLight = { ...matrixStory('phoneCompact', 'light'), para
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -658,7 +704,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -686,7 +732,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.phoneCompact}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.phoneCompact} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -701,7 +747,7 @@ export const PhoneTallDark = { ...matrixStory('phoneTall', 'dark'), parameters: 
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -749,7 +795,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -777,7 +823,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.phoneTall}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.phoneTall} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -792,7 +838,7 @@ export const PhoneTallLight = { ...matrixStory('phoneTall', 'light'), parameters
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -840,7 +886,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -868,7 +914,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.phoneTall}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.phoneTall} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -883,7 +929,7 @@ export const PhoneWideDark = { ...matrixStory('phoneWide', 'dark'), parameters: 
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -931,7 +977,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -959,7 +1005,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.phoneWide}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.phoneWide} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -974,7 +1020,7 @@ export const PhoneWideLight = { ...matrixStory('phoneWide', 'light'), parameters
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -1022,7 +1068,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -1050,7 +1096,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.phoneWide}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.phoneWide} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1065,7 +1111,7 @@ export const TabletDark = { ...matrixStory('tablet', 'dark'), parameters: { docs
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -1113,7 +1159,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -1141,7 +1187,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.tablet}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.tablet} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1156,7 +1202,7 @@ export const TabletLight = { ...matrixStory('tablet', 'light'), parameters: { do
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -1204,7 +1250,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -1232,7 +1278,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.tablet}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.tablet} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1247,7 +1293,7 @@ export const TabletWideDark = { ...matrixStory('tabletWide', 'dark'), parameters
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -1295,7 +1341,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -1323,7 +1369,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.tabletWide}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.tabletWide} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1338,7 +1384,7 @@ export const TabletWideLight = { ...matrixStory('tabletWide', 'light'), paramete
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -1386,7 +1432,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -1414,7 +1460,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.tabletWide}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.tabletWide} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1429,7 +1475,7 @@ export const DesktopDark = { ...matrixStory('desktop', 'dark'), parameters: { do
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -1477,7 +1523,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -1505,7 +1551,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.desktop}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.desktop} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1520,7 +1566,7 @@ export const DesktopLight = { ...matrixStory('desktop', 'light'), parameters: { 
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -1568,7 +1614,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -1596,7 +1642,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.desktop}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.desktop} clearance={32}>
+    <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1618,17 +1664,14 @@ export const SlotOrderAndGeometry: Story = {
     await expect(partial.map((slot) => slot.player?.key ?? null)).toEqual(['you', 'blair', null, null, null, null]);
     await expect(getTablePointSeatIndexes(partial)).toEqual({ bottomLeaderSeatIndex: 0, frontLeaderSeatIndex: 1 });
     await expect(getTablePointSeatIndexes(buildAlternatingSlots([], 2, 'clockwise'))).toEqual({ bottomLeaderSeatIndex: -1, frontLeaderSeatIndex: -1 });
-    for (const [profile, viewport] of Object.entries(VIEWPORTS)) {
-      for (const players of COUNTS) {
-        const layout = buildBoardLayoutModel({ surface: 'match', totalSeats: players, viewport: { ...viewport, aspectRatio: viewport.width / viewport.height } });
-        await expect(layout.profile).toBe(profile);
-        await expect(layout.seatGeometries).toHaveLength(players);
-        await expect(layout.fit).toBe('measuring');
-        await expect(layout.seatConfig.radiusX).toBe(0);
-        for (const [index, seat] of layout.seatGeometries.entries()) {
-          await expect(seat.angleDeg).toBeCloseTo(90 + 360 * index / players, 8);
-          await expect(seat.groupShiftY).toBe(0);
-        }
+    for (const players of COUNTS) {
+      const layout = buildBoardLayoutModel({ surface: 'match', totalSeats: players });
+      await expect(layout.seatGeometries).toHaveLength(players);
+      await expect(layout.fit).toBe('measuring');
+      await expect(layout.seatConfig.radiusX).toBe(0);
+      for (const [index, seat] of layout.seatGeometries.entries()) {
+        await expect(seat.angleDeg).toBeCloseTo(90 + 360 * index / players, 8);
+        await expect(seat.groupShiftY).toBe(0);
       }
     }
   },
@@ -1639,7 +1682,7 @@ export const PrebuiltSlotsAndEmptyPlaces: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, buildAlternatingSlots, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, buildAlternatingSlots, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -1676,7 +1719,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
   <SeatCards>
@@ -1701,7 +1744,7 @@ const center = (
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.phoneCompact}>
-<Table players={6} viewport={VIEWPORTS.phoneCompact} seatSlots={buildAlternatingSlots([SEATS[2]], 6, 'clockwise')}>
+<Table players={6} seatSlots={buildAlternatingSlots([SEATS[2]], 6, 'clockwise')}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1725,7 +1768,7 @@ export const Lobby: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -1762,7 +1805,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -1789,7 +1832,7 @@ const center = (
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.phoneCompact}>
-<Table players={4} seats={seatsFor(4)} viewport={VIEWPORTS.phoneCompact} surface="lobby">
+<Table players={4} seats={seatsFor(4)} surface="lobby">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1806,7 +1849,7 @@ export const LobbyLandscape: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -1843,7 +1886,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
   <SeatCards>
@@ -1868,7 +1911,7 @@ const center = (
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.phoneWide}>
-<Table players={6} seats={SEATS} viewport={VIEWPORTS.phoneWide} surface="lobby">
+<Table players={6} seats={SEATS} surface="lobby">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1892,7 +1935,7 @@ export const ExplicitRegionsAndRtl: Story = {
 import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -1929,7 +1972,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
   <SeatCards>
@@ -1954,7 +1997,7 @@ const center = (
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.phoneCompact}>
-<Table players={6} seats={SEATS} viewport={VIEWPORTS.phoneCompact} dir="rtl">
+<Table players={6} seats={SEATS} dir="rtl">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1982,7 +2025,7 @@ export const MirroredSeats: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -2028,7 +2071,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const center = (
   <BoardCenter>
@@ -2057,7 +2100,7 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 export default function Example() {
   return (<MatrixRow>{(['ltr', 'rtl'] as const).map((dir) => (
   <ViewportFrame key={dir} viewport={VIEWPORTS.phoneCompact}>
-    <Table players={6} seats={SEATS} viewport={VIEWPORTS.phoneCompact} dir={dir}>
+    <Table players={6} seats={SEATS} dir={dir}>
     <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Truco</span></Table.Center>
@@ -2107,33 +2150,46 @@ export default function Example() {
 
 export const MeasuredModel: Story = {
   tags: ['!autodocs'],
-  play: async ({ canvasElement }) => {
-    const originalSpacing: Record<BoardViewportProfile, readonly [string, string, string, string, string, string]> = {
-      phoneTall: ['0.5rem 0.22rem 0.78rem', '0.78rem', '0.42rem', '0.42rem', '0.72rem', '0.22rem'],
-      phoneCompact: ['0.5rem 0.22rem 0.78rem', '0.66rem', '0.3rem', '0.42rem', '0.72rem', '0.22rem'],
-      phoneWide: ['0.55rem 0.25rem 0.95rem', '0.82rem', '0.52rem', '0.5rem', '0.72rem', '0.22rem'],
-      tablet: ['0.86rem 0.35rem 1.12rem', '0.92rem', '0.7rem', '0.82rem', '0.9rem', '0.24rem'],
-      tabletWide: ['1rem 0.45rem 1.2rem', '0.94rem', '0.72rem', '0.9rem', '0.86rem', '0.23rem'],
-      desktop: ['1rem 0.6rem 1.35rem', '1rem', '0.72rem', '0.92rem', '0.9rem', '0.24rem'],
-    };
-    const actual = canvasElement.ownerDocument.createElement('div');
-    const previous = actual.cloneNode() as HTMLDivElement;
-    canvasElement.append(actual, previous);
-    try {
-      for (const [profile, spacing] of Object.entries(originalSpacing)) {
-        const frame = FRAMES[profile as BoardViewportProfile];
-        for (const [element, values] of [[actual, [frame.rootPadding, frame.topStripGap, frame.topStripMarginBottom,
-          frame.bottomStripMarginTop, frame.boardBorderWidth, frame.boardOutlineWidth]], [previous, spacing]] as const) {
-          const [padding, gap, marginBottom, marginTop, borderWidth, outlineWidth] = values;
-          Object.assign(element.style, { padding, gap, marginBottom, marginTop, borderWidth, outlineWidth, borderStyle: 'solid', outlineStyle: 'solid' });
-        }
-        for (const property of ['padding', 'gap', 'marginBottom', 'marginTop', 'borderWidth', 'outlineWidth'] as const) {
-          await expect(getComputedStyle(actual)[property]).toBe(getComputedStyle(previous)[property]);
+  play: async () => {
+    for (const players of COUNTS) {
+      const layout = buildBoardLayoutModel({ surface: 'match', totalSeats: players });
+      await expect(layout.seatGeometries).toHaveLength(players);
+      await expect(layout.fit).toBe('measuring');
+      await expect(layout.seatConfig.radiusX).toBe(0);
+      for (const [index, seat] of layout.seatGeometries.entries()) {
+        await expect(seat.angleDeg).toBeCloseTo(90 + 360 * index / players, 8);
+        await expect(seat.groupShiftY).toBe(0);
+      }
+    }
+    const aspectSweep = [0.45, 0.75, 1.0, 1.33, 1.6, 2.0, 2.4] as const;
+    for (const aspect of aspectSweep) {
+      for (const players of COUNTS) {
+        for (const surface of ['match', 'lobby'] as const) {
+          for (const direction of ['ltr', 'rtl'] as const) {
+            const height = 600;
+            const width = Math.round(height * aspect);
+            const measurement: BoardMeasurements = {
+              width, height, centerX: width / 2, centerY: height / 2,
+              direction,
+              seatPlacement: 'edge',
+              surfaceBorderBox: { width, height },
+              available: { left: width / 2, right: width / 2, top: height / 2, bottom: height / 2 },
+              seats: Array.from({ length: players }, () => ({ width: 110, height: 90, minimumScale: 32 / 110 })),
+              center: { width: 120, height: 80, minimumScale: 1 },
+              gap: 8,
+              minimumScale: 0,
+            };
+            const layout = buildBoardLayoutModel({ surface, totalSeats: players, measurement });
+            await expect(layout.seatGeometries).toHaveLength(players);
+            await expect(layout.fit).not.toBe('measuring');
+            await expect(layout.seatConfig.radiusX).toBeGreaterThan(0);
+            await expect(layout.seatConfig.radiusY).toBeGreaterThan(0);
+            if (surface === 'lobby' && aspect === 1.0) {
+              await expect(layout.seatConfig.radiusX).toBeCloseTo(layout.seatConfig.radiusY, 1);
+            }
+          }
         }
       }
-    } finally { actual.remove(); previous.remove(); }
-    for (const [width, height, profile] of BREAKPOINT_CASES) {
-      await expect(resolveBoardViewportProfile({ width, height })).toBe(profile);
     }
     const measured = { width: 500, height: 500, centerX: 250, centerY: 250,
       seats: Array.from({ length: 6 }, () => ({ width: 110, height: 90 })),
@@ -2184,7 +2240,7 @@ function ChangingPlays() {
   return <>
     <Button onClick={() => setEmpty(true)}>Retirar jugadas</Button>
     <ViewportFrame viewport={VIEWPORTS.phoneCompact}>
-      <Table players={6} seats={SEATS} viewport={VIEWPORTS.phoneCompact}>
+      <Table players={6} seats={SEATS}>
         <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
         <Table.Play>{!empty && <GameCard size="lg" value={{ deck: 'spanish', suit: 'bastos', rank: 12 }} label="rey de bastos" />}</Table.Play>
         <Table.Center><span>Truco</span></Table.Center>
@@ -2201,7 +2257,7 @@ export const PlayRegionResizeAndFloors: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -2234,7 +2290,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const spanishSeat: RegionFixture<Player> = ((slot) => (
   <CardsRow>
@@ -2248,7 +2304,7 @@ function ChangingPlays() {
   return <>
     <Button onClick={() => setEmpty(true)}>Retirar jugadas</Button>
     <ViewportFrame viewport={VIEWPORTS.phoneCompact}>
-      <Table players={6} seats={SEATS} viewport={VIEWPORTS.phoneCompact}>
+      <Table players={6} seats={SEATS}>
         <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
         <Table.Play>{!empty && <GameCard size="lg" value={{ deck: 'spanish', suit: 'bastos', rank: 12 }} label="rey de bastos" />}</Table.Play>
         <Table.Center><span>Truco</span></Table.Center>
@@ -2313,7 +2369,7 @@ export const LobbyMatrix: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -2354,7 +2410,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -2382,7 +2438,7 @@ const center = (
 export default function Example() {
   return (<Matrix>{Object.entries(VIEWPORTS).map(([profile, viewport]) => COUNTS.map((players) => (
   <ViewportFrame key={\`\${profile}-\${players}\`} viewport={viewport}>
-    <Table players={players} seats={seatsFor(players)} viewport={viewport} surface="lobby">
+    <Table players={players} seats={seatsFor(players)} surface="lobby">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -2412,8 +2468,7 @@ export default function Example() {
     const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]'));
     await expect(tables).toHaveLength(18);
     let index = 0;
-    for (const viewport of Object.values(VIEWPORTS)) for (const players of COUNTS) {
-      const profile = resolveBoardViewportProfile(viewport);
+    for (const [profile] of Object.entries(VIEWPORTS) as [CaseName, ViewportSize][]) for (const players of COUNTS) {
       const expectedFit = profile === 'phoneWide' && players === 6 ? 'insufficient-space' : 'fitted';
       await expectSeatFraming(required(tables[index++]), players, profile, expectedFit);
     }
@@ -2425,7 +2480,7 @@ export const RtlMatrix: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -2466,7 +2521,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -2494,7 +2549,7 @@ const center = (
 export default function Example() {
   return (<Matrix>{Object.entries(VIEWPORTS).map(([profile, viewport]) => COUNTS.map((players) => (
   <ViewportFrame key={\`\${profile}-\${players}\`} viewport={viewport}>
-    <Table players={players} seats={seatsFor(players)} viewport={viewport} dir="rtl">
+    <Table players={players} seats={seatsFor(players)} dir="rtl">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -2524,9 +2579,8 @@ export default function Example() {
     const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]'));
     await expect(tables).toHaveLength(18);
     let index = 0;
-    for (const viewport of Object.values(VIEWPORTS)) for (const players of COUNTS) {
-      const profile = resolveBoardViewportProfile(viewport);
-      await expectSeatFraming(required(tables[index++]), players, profile, 'fitted');
+    for (const [profile] of Object.entries(VIEWPORTS) as [CaseName, ViewportSize][]) for (const players of COUNTS) {
+      await expectSeatFraming(required(tables[index++]), players, profile, profile === 'phoneWide' ? 'insufficient-space' : 'fitted');
     }
   },
 };
@@ -2537,7 +2591,7 @@ const cardComposition = (clearance: boolean): Story => ({
   render: (args) => (
     <Matrix>
       {(['sm', 'md', 'lg'] as const).map((size, index) => (
-        <ViewportFrame key={size} data-card-composition={size} viewport={VIEWPORTS.phoneWide}>
+        <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.phoneWide, height: 480 }}>
           <Table {...tableRootProps({ ...args, clearance: clearance ? [32,64,96][index] : 0 })}>
             <Table.Seat><FixtureContent<Player> content={(slot) => (
             <GameCard size={size} label={`${slot.player?.name}: hidden card`} />
@@ -2582,7 +2636,7 @@ export const LandscapeCardSizes = { ...cardComposition(false), parameters: { doc
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -2619,7 +2673,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const center = (
   <BoardCenter>
@@ -2634,8 +2688,8 @@ const center = (
 
 export default function Example() {
   return (<Matrix>{(['sm', 'md', 'lg'] as const).map((size, index) => (
-      <ViewportFrame key={size} data-card-composition={size} viewport={VIEWPORTS.phoneWide}>
-        <Table players={6} seats={SEATS} viewport={VIEWPORTS.phoneWide} clearance={0}>
+      <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.phoneWide, height: 480 }}>
+        <Table players={6} seats={SEATS} clearance={0}>
     <Table.Seat><FixtureContent<Player> content={(slot) => <GameCard size={size} label={\`\${slot.player?.name}: hidden card\`} />} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -2650,7 +2704,7 @@ export const LandscapeCardSizesWithClearance = { ...cardComposition(true), param
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -2687,7 +2741,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const center = (
   <BoardCenter>
@@ -2702,8 +2756,8 @@ const center = (
 
 export default function Example() {
   return (<Matrix>{(['sm', 'md', 'lg'] as const).map((size, index) => (
-      <ViewportFrame key={size} data-card-composition={size} viewport={VIEWPORTS.phoneWide}>
-        <Table players={6} seats={SEATS} viewport={VIEWPORTS.phoneWide} clearance={[32, 64, 96][index]}>
+      <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.phoneWide, height: 480 }}>
+        <Table players={6} seats={SEATS} clearance={[32, 64, 96][index]}>
     <Table.Seat><FixtureContent<Player> content={(slot) => <GameCard size={size} label={\`\${slot.player?.name}: hidden card\`} />} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -2733,7 +2787,7 @@ function ChangingContent() {
       <Button onClick={() => setClearance(96)}>Request clearance</Button>
       <Button onClick={() => setRoomy(true)}>Restore room</Button>
       <ResizableFrame narrow={narrow} roomy={roomy}>
-        <Table players={2} viewport={VIEWPORTS.desktop} clearance={clearance} seats={empty ? [SEATS[2]] : seatsFor(2)}>
+        <Table players={2} clearance={clearance} seats={empty ? [SEATS[2]] : seatsFor(2)}>
           <Table.Seat><FixtureContent<Player> content={(slot) => slot.player ? (
             <SpacedCards>
               {['first', 'second', 'third'].filter((key) => !removed || key !== 'second').map((key) => (
@@ -2758,7 +2812,7 @@ export const ContentResizeAndFlightMarkers: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
 
@@ -2795,7 +2849,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -2828,7 +2882,7 @@ function ChangingContent() {
       <Button onClick={() => setClearance(96)}>Request clearance</Button>
       <Button onClick={() => setRoomy(true)}>Restore room</Button>
       <ResizableFrame narrow={narrow} roomy={roomy}>
-        <Table players={2} viewport={VIEWPORTS.desktop} clearance={clearance} seats={empty ? [SEATS[2]] : seatsFor(2)}>
+        <Table players={2} clearance={clearance} seats={empty ? [SEATS[2]] : seatsFor(2)}>
           <Table.Seat><FixtureContent<Player> content={(slot) => slot.player ? (
             <SpacedCards>
               {['first', 'second', 'third'].filter((key) => !removed || key !== 'second').map((key) => (
@@ -2868,7 +2922,8 @@ export default function Example() {
     const grownScale = scale();
     await userEvent.click(canvas.getByRole('button', { name: 'Shrink container' }));
     await waitFor(() => expect(scale()).toBeLessThan(grownScale));
-    await expect(table).toHaveAttribute('data-profile', 'desktop');
+    await expect(table.parentElement?.getBoundingClientRect().width).toBe(380);
+    await expect(table.parentElement?.getBoundingClientRect().height).toBe(360);
     await expectSeatFraming(table, 2, 'desktop');
     await userEvent.click(canvas.getByRole('button', { name: 'Reveal first' }));
     await waitFor(() => expect(rival()).toHaveLength(2));
@@ -2908,7 +2963,7 @@ function ResizingTables() {
       {[first, second].map((ref, index) => (
         <TransformedFrame key={index} viewport={viewport} scaled={Boolean(index)}>
           <FullHeight>
-            <Table ref={ref} dir={index ? 'rtl' : 'ltr'} players={2} seatSlots={buildTableOrderSlots([SEATS[0],SEATS[2]], 'clockwise')} viewport={viewport}>
+            <Table ref={ref} dir={index ? 'rtl' : 'ltr'} players={2} seatSlots={buildTableOrderSlots([SEATS[0],SEATS[2]], 'clockwise')}>
               <Table.Seat><FixtureContent<Player> content={(slot) => <span>{slot.player?.name}</span>} /></Table.Seat>
               <Table.Play />
               <Table.Center />
@@ -2922,7 +2977,7 @@ function ResizingTables() {
 export const WrappedTablesAndViewportUpdate: Story = {
   parameters: { docs: { source: { language: "tsx", code: `import { useRef, useState, type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
-import { GameTable as Table, useGameTableSeat, buildTableOrderSlots, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, buildTableOrderSlots, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -2958,7 +3013,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const measurementFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 
@@ -2979,7 +3034,7 @@ function ResizingTables() {
       {[first, second].map((ref, index) => (
         <TransformedFrame key={index} viewport={viewport} scaled={Boolean(index)}>
           <FullHeight>
-            <Table ref={ref} dir={index ? 'rtl' : 'ltr'} players={2} seatSlots={buildTableOrderSlots([SEATS[0],SEATS[2]], 'clockwise')} viewport={viewport}>
+            <Table ref={ref} dir={index ? 'rtl' : 'ltr'} players={2} seatSlots={buildTableOrderSlots([SEATS[0],SEATS[2]], 'clockwise')}>
               <Table.Seat><FixtureContent<Player> content={(slot) => <span>{slot.player?.name}</span>} /></Table.Seat>
               <Table.Play />
               <Table.Center />
@@ -3019,7 +3074,9 @@ export default function Example() {
     const rtlFraction = (secondSeat.x + secondSeat.width / 2 - box.left) / box.width;
     await expect(ltrFraction + rtlFraction).toBeCloseTo(1, 4);
     await userEvent.click(canvas.getByRole('button', { name: 'Landscape viewport' }));
-    await expect(required(tables[0])).toHaveAttribute('data-profile', 'phoneWide');
+    const frame = required(tables[0]).closest('section');
+    await expect(frame?.getBoundingClientRect().width).toBe(VIEWPORTS.phoneWide.width);
+    await expect(frame?.getBoundingClientRect().height).toBe(VIEWPORTS.phoneWide.height);
     await userEvent.click(canvas.getByRole('button', { name: 'Measure tables' }));
     await expect(canvas.getByRole('status').textContent).not.toBe(before);
   },
@@ -3041,7 +3098,7 @@ export const WithAvatars: Story = {
 import { Avatar, Button, styled, type AvatarSize } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -3078,7 +3135,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const center = (
   <BoardCenter>
@@ -3104,7 +3161,7 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.desktop}>
-<Table players={6} seats={SEATS} viewport={VIEWPORTS.desktop} >
+<Table players={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -3137,7 +3194,7 @@ export const UprightProfilesWithAvatars: Story = {
 import { Avatar, Button, styled, type AvatarSize } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -3176,7 +3233,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const center = (
   <BoardCenter>
@@ -3202,8 +3259,8 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 
 export default function Example() {
   return (<ProfileColumn>{Object.entries(VIEWPORTS).map(([profile, viewport]) => (
-  <ViewportFrame key={profile} data-profile-target={profile} viewport={viewport}>
-    <Table players={6} seats={SEATS} viewport={viewport} >
+  <ViewportFrame key={profile} data-container-case={profile} viewport={viewport}>
+    <Table players={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -3217,8 +3274,8 @@ export default function Example() {
   render: () => (
     <ProfileColumn>
       {(['phoneCompact', 'phoneTall', 'phoneWide', 'tablet', 'tabletWide', 'desktop'] as const).map((profile) => (
-        <ViewportFrame key={profile} data-profile-target={profile} viewport={VIEWPORTS[profile]}>
-          <Table players={6} seats={SEATS} viewport={VIEWPORTS[profile]}>
+        <ViewportFrame key={profile} data-container-case={profile} viewport={VIEWPORTS[profile]}>
+          <Table players={6} seats={SEATS}>
             <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
             <Table.Play />
             <Table.Center>{center}</Table.Center>
@@ -3233,7 +3290,8 @@ export default function Example() {
     const tables = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]');
     await expect(tables).toHaveLength(6);
     for (const table of Array.from(tables)) {
-      await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', 'fitted'));
+      const short = table.closest<HTMLElement>('[data-container-case]')?.dataset.containerCase === 'phoneWide';
+      await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', short ? 'insufficient-space' : 'fitted'));
       for (const chrome of table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat-chrome"]')) {
         await waitFor(async () => { await expectInside(chrome, table, { tolerancePx: 0.5 }); });
       }
@@ -3253,7 +3311,7 @@ export const AvatarIndependence: Story = {
 import { Avatar, Button, styled, type AvatarSize } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -3290,7 +3348,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -3328,7 +3386,7 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.desktop}>
-<Table players={4} seats={seatsFor(4)} viewport={VIEWPORTS.desktop} >
+<Table players={4} seats={seatsFor(4)} >
     <Table.Seat><FixtureContent<Player> content={(slot, index) => {
       if (index === 0) return seatChrome(slot);
       if (index === 1) return <SeatCards><GameCard size="sm" label="First hidden card" /><GameCard size="sm" label="Second hidden card" /></SeatCards>;
@@ -3368,7 +3426,7 @@ export const ChromeRemovalParity: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const SeatCards = styled.div({ position: 'relative', display: 'flex', gap: vars.space[1] });
 
@@ -3403,7 +3461,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
   <SeatCards>
@@ -3435,7 +3493,7 @@ const center = (
 
 export default function Example() {
   return (<ParityGrid>
-  <div data-parity-group="with-chrome"><Table players={6} seats={SEATS} viewport={VIEWPORTS.desktop} >
+  <div data-parity-group="with-chrome"><Table players={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -3443,7 +3501,7 @@ export default function Example() {
     <Table.Dock><Button>Check</Button></Table.Dock>
 
   </Table></div>
-  <div data-parity-group="without-chrome"><Table players={6} seats={SEATS} viewport={VIEWPORTS.desktop} >
+  <div data-parity-group="without-chrome"><Table players={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={seatCardsOnly} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -3525,7 +3583,7 @@ export const OversizedInsufficientSpace: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -3562,7 +3620,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const center = (
   <BoardCenter>
@@ -3577,7 +3635,7 @@ const center = (
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.phoneCompact}>
-<Table players={6} seats={SEATS} viewport={VIEWPORTS.phoneCompact} >
+<Table players={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={(slot) => <SpacedCards>
       {[1, 2, 3, 4, 5, 6].map((index) => <GameCard key={index} size="lg" label={\`\${slot.player?.name}: card \${index}\`} />)}
     </SpacedCards>} /></Table.Seat>
@@ -3618,7 +3676,7 @@ export const StateStability: Story = {
 import { Avatar, Button, styled, type AvatarSize } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -3655,7 +3713,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const center = (
   <BoardCenter>
@@ -3681,7 +3739,7 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.phoneWide}>
-<Table players={6} seats={SEATS} viewport={VIEWPORTS.phoneWide} >
+<Table players={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -3697,13 +3755,13 @@ export default function Example() {
   },
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-    await expectSeatFraming(table, 6, 'phoneWide', 'fitted');
+    await expectSeatFraming(table, 6, 'phoneWide', 'insufficient-space');
     const states = new Set<string | null>();
     for (let frame = 0; frame < 12; frame++) {
       await new Promise(requestAnimationFrame);
       states.add(table.getAttribute('data-layout-fit'));
     }
-    await expect([...states]).toEqual(['fitted']);
+    await expect([...states]).toEqual(['insufficient-space']);
   },
 };
 
@@ -3736,7 +3794,7 @@ export const TrucoPlayerChrome: Story = {
   args: { viewport: VIEWPORTS.desktop, players: 4, seats: seatsFor(4) },
   render: (args) => <DeckProvider default="spanish">
     <ViewportFrame viewport={args.viewport}>
-      <Table players={args.players} seats={args.seats ?? []} viewport={args.viewport}>
+      <Table players={args.players} seats={args.seats ?? []}>
         <Table.Seat><TrucoPlayerSeat /></Table.Seat>
         <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
         <Table.Center>Truco</Table.Center>
@@ -3752,7 +3810,7 @@ import { GameCard } from '@jfrader/ui/game-card';
 import { GameHand } from '@jfrader/ui/game-hand';
 import { GameSeat } from '@jfrader/ui/game-seat';
 import { DeckProvider } from '@jfrader/ui/deck';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -3794,7 +3852,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -3830,7 +3888,7 @@ function TrucoPlayerSeat() {
 export default function Example() {
   return (<DeckProvider default="spanish">
   <ViewportFrame viewport={VIEWPORTS.desktop}>
-<Table players={4} seats={seatsFor(4)} viewport={VIEWPORTS.desktop} >
+<Table players={4} seats={seatsFor(4)} >
     <Table.Seat><TrucoPlayerSeat /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center>Truco</Table.Center>
@@ -3856,7 +3914,7 @@ export const TrucoPlayRing: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -3904,7 +3962,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -3936,7 +3994,7 @@ export default function Example() {
   return (<Matrix>{Object.entries(VIEWPORTS).map(([profile, viewport]) => COUNTS.map((players) => (
   <Row key={\`\${profile}-\${players}\`}>
     <ViewportFrame data-measurement="before" viewport={viewport}>
-      <Table players={players} seats={seatsFor(players)} viewport={viewport} seatPlacement="inside">
+      <Table players={players} seats={seatsFor(players)} seatPlacement="inside">
     <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center><span>Truco</span></Table.Center>
@@ -3946,7 +4004,7 @@ export default function Example() {
   </Table>
     </ViewportFrame>
     <ViewportFrame data-measurement="after" viewport={viewport}>
-      <Table players={players} seats={seatsFor(players)} viewport={viewport} seatPlacement="edge">
+      <Table players={players} seats={seatsFor(players)} seatPlacement="edge">
     <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Truco</span></Table.Center>
@@ -3992,7 +4050,8 @@ export default function Example() {
     for (const [profile, viewport] of Object.entries(VIEWPORTS)) for (const players of COUNTS) {
       const table = required(tables[index++]);
       const previous = required(previousTables[index - 1]);
-      await expectSeatFraming(previous, players, profile as BoardViewportProfile);
+      const expectedFit = profile === 'phoneWide' ? 'insufficient-space' : 'fitted';
+      await expectSeatFraming(previous, players, profile, expectedFit);
       await waitFor(() => expect(table.dataset.layoutFit).not.toBe('measuring'));
       const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
       const seats = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
@@ -4033,7 +4092,7 @@ export default function Example() {
         seatOutset: Number((own.bottom - surface.bottom).toFixed(2)),
         playRadius: Number(playRadius.toFixed(2)), freeInnerRadius: Number(innerRadius(plays, surface).toFixed(2)),
         seatInnerRadius: Number((seatRadius - own.height / 2).toFixed(2)), viewport });
-      await expectSeatFraming(table, players, profile as BoardViewportProfile);
+      await expectSeatFraming(table, players, profile, expectedFit);
       if (table.dataset.layoutFit === 'fitted') {
         await expect(own.bottom - surface.bottom, `${profile}/${players} crosses felt border`).toBeGreaterThan(0.5);
         await expect(playRadius).toBeGreaterThan(0);
@@ -4050,7 +4109,7 @@ export const SeatPlacementModes: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type BoardViewportProfile, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardPlayerCount, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -4098,7 +4157,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -4129,7 +4188,7 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 export default function Example() {
   return (<MatrixRow>{COUNTS.map((players) => (['inside', 'edge', 'outside'] as const).map((seatPlacement) => (
   <ViewportFrame key={\`\${players}-\${seatPlacement}\`} data-placement-count={players} viewport={VIEWPORTS.phoneCompact}>
-    <Table players={players} seats={seatsFor(players)} viewport={VIEWPORTS.phoneCompact} seatPlacement={seatPlacement}>
+    <Table players={players} seats={seatsFor(players)} seatPlacement={seatPlacement}>
     <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Truco</span></Table.Center>
@@ -4156,7 +4215,7 @@ export default function Example() {
   </MatrixRow>,
   play: async ({ canvasElement }) => {
     for (const table of canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]')) {
-      const players = Number(table.parentElement?.dataset.placementCount) as BoardPlayerCount;
+      const players = Number(table.closest<HTMLElement>('[data-placement-count]')?.dataset.placementCount);
       await expectSeatFraming(table, players, 'phoneCompact');
       const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
       const seat = required(table.querySelector<HTMLElement>('[data-ui="game-table-seat"]') ?? undefined).getBoundingClientRect();
@@ -4194,7 +4253,7 @@ export const RoundRobinTeams: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -4222,7 +4281,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
   <SeatCards>
@@ -4251,7 +4310,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.desktop}>
-<Table players={9} seats={generalSeats(9, 3)} viewport={VIEWPORTS.desktop} teamCount={3}>
+<Table players={9} seats={generalSeats(9, 3)} teamCount={3}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -4278,8 +4337,7 @@ export default function Example() {
           const capacity = Array.from({ length: count }, (_, index) => index).filter((index) => index % teamCount === team).length;
           await expect(slots.filter((slot) => slot.teamIdx === team)).toHaveLength(capacity);
         }
-        await expect(buildBoardLayoutModel({ surface: 'match', totalSeats: count,
-          viewport: { ...VIEWPORTS.desktop, aspectRatio: VIEWPORTS.desktop.width / VIEWPORTS.desktop.height } }).playerCount).toBe(count);
+        await expect(buildBoardLayoutModel({ surface: 'match', totalSeats: count }).playerCount).toBe(count);
       }
     }
     const teams = generalSeats(5, 3);
@@ -4295,8 +4353,7 @@ export default function Example() {
     }
     for (const count of [0, 1, -2, 2.5, NaN, Infinity]) {
       await expect(() => buildAlternatingSlots([], count, 'clockwise')).toThrow('integer seat count >= 2');
-      await expect(() => buildBoardLayoutModel({ surface: 'match', totalSeats: count,
-        viewport: { ...VIEWPORTS.desktop, aspectRatio: 1.6 } })).toThrow('integer seat count >= 2');
+      await expect(() => buildBoardLayoutModel({ surface: 'match', totalSeats: count })).toThrow('integer seat count >= 2');
     }
     const freeForAll = buildAlternatingSlots(generalSeats(5, 1), 5, 'clockwise', 1);
     await expect(getTablePointSeatIndexes(freeForAll, 1)).toEqual({ bottomLeaderSeatIndex: 0, frontLeaderSeatIndex: -1 });
@@ -4311,7 +4368,7 @@ export const ArbitraryPrebuiltTeams: Story = {
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -4339,7 +4396,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
   <SeatCards>
@@ -4364,7 +4421,7 @@ const center = (
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.phoneCompact}>
-<Table players={3} viewport={VIEWPORTS.phoneCompact} seatSlots={[
+<Table players={3} seatSlots={[
     { key: 'third', teamIdx: 42, player: { key: 'c', name: 'Casey', teamIdx: 42 } },
     { key: 'first', teamIdx: 7, player: { key: 'a', name: 'Alex', teamIdx: 7 } },
     { key: 'empty', teamIdx: 99, player: null },
@@ -4451,7 +4508,7 @@ export const GeneralSeatCounts = { ...generalCountMatrix('edge'), parameters: { 
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -4488,7 +4545,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
   <SeatCards>
@@ -4528,7 +4585,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 export default function Example() {
   return (<Matrix>{GENERAL_PROFILES.map((profile) => GENERAL_COUNTS.map((players) => (
   <ViewportFrame key={\`\${profile}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[profile]}>
-    <Table players={players} seats={generalSeats(players, 3)} viewport={VIEWPORTS[profile]} teamCount={3} seatPlacement="edge" dir="ltr">
+    <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="edge" dir="ltr">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Pot: 240</span></Table.Center>
@@ -4543,7 +4600,7 @@ export const GeneralSeatCountsInside = { ...generalCountMatrix('inside'), parame
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -4580,7 +4637,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
   <SeatCards>
@@ -4620,7 +4677,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 export default function Example() {
   return (<Matrix>{GENERAL_PROFILES.map((profile) => GENERAL_COUNTS.map((players) => (
   <ViewportFrame key={\`\${profile}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[profile]}>
-    <Table players={players} seats={generalSeats(players, 3)} viewport={VIEWPORTS[profile]} teamCount={3} seatPlacement="inside" dir="ltr">
+    <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="inside" dir="ltr">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Pot: 240</span></Table.Center>
@@ -4635,7 +4692,7 @@ export const GeneralSeatCountsOutside = { ...generalCountMatrix('outside'), para
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -4672,7 +4729,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
   <SeatCards>
@@ -4712,7 +4769,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 export default function Example() {
   return (<Matrix>{GENERAL_PROFILES.map((profile) => GENERAL_COUNTS.map((players) => (
   <ViewportFrame key={\`\${profile}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[profile]}>
-    <Table players={players} seats={generalSeats(players, 3)} viewport={VIEWPORTS[profile]} teamCount={3} seatPlacement="outside" dir="ltr">
+    <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="outside" dir="ltr">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Pot: 240</span></Table.Center>
@@ -4727,7 +4784,7 @@ export const GeneralSeatCountsRtl = { ...generalCountMatrix('edge', 'rtl'), para
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -4764,7 +4821,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
   <SeatCards>
@@ -4804,7 +4861,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 export default function Example() {
   return (<Matrix>{GENERAL_PROFILES.map((profile) => GENERAL_COUNTS.map((players) => (
   <ViewportFrame key={\`\${profile}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[profile]}>
-    <Table players={players} seats={generalSeats(players, 3)} viewport={VIEWPORTS[profile]} teamCount={3} seatPlacement="edge" dir="rtl">
+    <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="edge" dir="rtl">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Pot: 240</span></Table.Center>
@@ -4824,13 +4881,13 @@ const POKER_BOARD = [
   { id: 'ts', label: 'Ten of spades', value: { suit: 'spades', rank: 10 } },
 ] as const;
 
-function PokerTable({ viewport }: { viewport: GameTableProps['viewport'] }) {
+function PokerTable() {
   // Low-level escape hatch: the board is not a hand or a seat pile, so this story launches its own
   // flight. It measures the endpoints it owns through refs; a board composition uses useBoardFlights.
   const deckRef = useRef<HTMLDivElement>(null);
   const boardRefs = useRef(new Map<string, HTMLDivElement>());
   const { launch, landingTargets } = useCardFlights();
-  return <Table players={6} teamCount={1} seats={generalSeats(6, 1)} viewport={viewport}>
+  return <Table players={6} teamCount={1} seats={generalSeats(6, 1)}>
     <Table.Header>Texas Hold'em · 10 / 20</Table.Header>
     <Table.Seat><PokerSeat /></Table.Seat>
     <Table.Center><BoardCenter>
@@ -4861,15 +4918,16 @@ function PokerSeat() {
   return <PokerSeatContent data-poker-seat><span>{player?.name}</span><span>1,200 chips</span></PokerSeatContent>;
 }
 
-function PokerViewport({ viewport }: { viewport: GameTableProps['viewport'] }) {
-  return <FlightsViewport viewport={viewport}>
-    <PokerTable viewport={viewport} />
+function PokerViewport({ viewport, profile }: { viewport: ViewportSize; profile: CaseName }) {
+  return <FlightsViewport data-viewport-case={profile} viewport={viewport}>
+    <PokerTable />
   </FlightsViewport>;
 }
 
 function PokerFixture() {
   return <DeckProvider default="french"><Matrix>
-    {(['phoneCompact', 'phoneTall', 'phoneWide', 'desktop'] as const).map((profile) => <PokerViewport key={profile} viewport={VIEWPORTS[profile]} />)}
+    {(['phoneCompact', 'phoneTall', 'phoneWide', 'desktop'] as const).map((profile) => <PokerViewport key={profile} profile={profile}
+      viewport={profile === 'phoneWide' ? { ...VIEWPORTS.phoneWide, height: 480 } : VIEWPORTS[profile]} />)}
   </Matrix></DeckProvider>;
 }
 
@@ -4882,7 +4940,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
 import { DeckProvider } from '@jfrader/ui/deck';
 import { CardFlightsProvider, measureCardBox, useCardFlights } from '@jfrader/ui/card-flights';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type BoardViewportProfile, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
@@ -4916,7 +4974,7 @@ const VIEWPORTS = {
   tablet: { width: 834, height: 1112 },
   tabletWide: { width: 1000, height: 900 },
   desktop: { width: 1440, height: 900 },
-} satisfies Record<BoardViewportProfile, { width: number; height: number }>;
+} satisfies Record<string, { width: number; height: number }>;
 
 const center = (
   <BoardCenter>
@@ -4947,13 +5005,13 @@ const POKER_BOARD = [
   { id: 'ts', label: 'Ten of spades', value: { suit: 'spades', rank: 10 } },
 ] as const;
 
-function PokerTable({ viewport }: { viewport: GameTableProps['viewport'] }) {
+function PokerTable() {
   // Low-level escape hatch: the board is not a hand or a seat pile, so this story launches its own
   // flight. It measures the endpoints it owns through refs; a board composition uses useBoardFlights.
   const deckRef = useRef<HTMLDivElement>(null);
   const boardRefs = useRef(new Map<string, HTMLDivElement>());
   const { launch, landingTargets } = useCardFlights();
-  return <Table players={6} teamCount={1} seats={generalSeats(6, 1)} viewport={viewport}>
+  return <Table players={6} teamCount={1} seats={generalSeats(6, 1)}>
     <Table.Header>Texas Hold'em · 10 / 20</Table.Header>
     <Table.Seat><PokerSeat /></Table.Seat>
     <Table.Center><BoardCenter>
@@ -4984,15 +5042,16 @@ function PokerSeat() {
   return <PokerSeatContent data-poker-seat><span>{player?.name}</span><span>1,200 chips</span></PokerSeatContent>;
 }
 
-function PokerViewport({ viewport }: { viewport: GameTableProps['viewport'] }) {
+function PokerViewport({ viewport }: { viewport: ViewportSize }) {
   return <FlightsViewport viewport={viewport}>
-    <PokerTable viewport={viewport} />
+    <PokerTable />
   </FlightsViewport>;
 }
 
 function PokerFixture() {
   return <DeckProvider default="french"><Matrix>
-    {(['phoneCompact', 'phoneTall', 'phoneWide', 'desktop'] as const).map((profile) => <PokerViewport key={profile} viewport={VIEWPORTS[profile]} />)}
+    {(['phoneCompact', 'phoneTall', 'phoneWide', 'desktop'] as const).map((profile) => <PokerViewport key={profile}
+      viewport={profile === 'phoneWide' ? { ...VIEWPORTS.phoneWide, height: 480 } : VIEWPORTS[profile]} />)}
   </Matrix></DeckProvider>;
 }
 
@@ -5003,7 +5062,7 @@ export default function Example() {
     const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]'));
     await expect(tables).toHaveLength(4);
     for (const table of tables) {
-      const profile = table.dataset.profile as BoardViewportProfile;
+      const profile = (table.closest('[data-viewport-case]') as HTMLElement).dataset.viewportCase as CaseName;
       await expectSeatFraming(table, 6, profile);
       await expect(table.querySelectorAll('[data-ui="game-table-seat"] [data-ui~="game-card"]')).toHaveLength(0);
       await expect(table.querySelectorAll('[data-slot-team="0"]')).toHaveLength(6);

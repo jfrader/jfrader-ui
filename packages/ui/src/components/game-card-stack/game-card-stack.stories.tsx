@@ -677,7 +677,7 @@ const spanishPiles: readonly GameCardStackPile[] = [
 ];
 export const Default: Story = {
   name: 'Default',
-  render: () => <GameTable players={2} viewport={{ width: 1000, height: 800 }}
+  render: () => <GameTable players={2}
     seats={[{ key: 'Ana', teamIdx: 0, isMe: true }, { key: 'Luis', teamIdx: 1 }]}
   >
     {spanishPiles.map((pile) => <GameTable.Seat key={pile.playerKey} slotKey={pile.playerKey}>
@@ -706,7 +706,6 @@ export function TrucoTable() {
   return (
     <GameTable
       players={2}
-      viewport={{ width: 1000, height: 800 }}
       seats={[{ key: 'Ana', teamIdx: 0, isMe: true }, { key: 'Luis', teamIdx: 1 }]}
     >
       {spanishPiles.map((pile) => (

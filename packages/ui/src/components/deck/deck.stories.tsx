@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect } from 'storybook/test';
+import { expect, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -20,6 +20,8 @@ const Row = styled('div')({
   alignItems: 'center',
   gap: vars.space[4],
 });
+
+const BoardFrame = styled.div({ inlineSize: `calc(${vars.space[4]} * 75)`, blockSize: `calc(${vars.space[4]} * 50)` });
 
 const ArtLabel = styled.text({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold });
 
@@ -348,7 +350,7 @@ export const ResolverContract: Story = {
 export const BoardArtInheritance: Story = {
   render: () => (
     <DeckProvider decks={[celestialDeck]} default="celestial" backLabel="Card back">
-      <GameTable players={2} seats={[]} viewport={{ width: 1200, height: 800 }} artSet="rare"
+      <BoardFrame><GameTable players={2} seats={[]} artSet="rare"
         cardArtSets={{ 'moons-I': 'release-2/spooky' }}>
         <GameTable.Center>
           <Row>
@@ -361,10 +363,12 @@ export const BoardArtInheritance: Story = {
             <FlipGameCard label="Inherited flip art" value={{ suit: 'stars', rank: 'I' }} />
           </Row>
         </GameTable.Center>
-      </GameTable>
+      </GameTable></BoardFrame>
     </DeckProvider>
   ),
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
+    const table = canvasElement.querySelector('[data-ui="game-table"]');
+    await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', 'fitted'));
     await expect(canvas.getByRole('img', { name: 'Inherited board art' })).toHaveTextContent('RARE I');
     await expect(canvas.getByRole('img', { name: 'Card override' })).toHaveTextContent('SPOOKY I');
     await expect(canvas.getByRole('img', { name: 'Merged board entry' })).toHaveTextContent('SPOOKY MOON');
