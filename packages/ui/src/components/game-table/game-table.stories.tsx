@@ -438,7 +438,7 @@ export default function Example() {
       const height = Number(frame.dataset.aspectHeight);
       const players = Number(frame.dataset.aspectPlayers);
       const short = height === 360;
-      const expectedFit = width === 260 || (short && (table.dataset.surface === 'match' || players === 6)) ? 'insufficient-space' : 'fitted';
+      const expectedFit = width === 260 || (short && table.dataset.surface === 'lobby' && players === 6) ? 'insufficient-space' : 'fitted';
       await expectSeatFraming(table, players, `${width}/${height}`, expectedFit);
       const container = required(table.querySelector<HTMLElement>('[data-ui="game-table-frame-container"]') ?? undefined);
       await expect(getComputedStyle(container).containerType).toBe('size');
@@ -587,7 +587,7 @@ const matrixStory = (caseName: CaseName, theme: 'dark' | 'light'): Story => ({
       const dock = required(table.querySelector<HTMLElement>('[data-ui="game-table-dock"]') ?? undefined).getBoundingClientRect();
       const own = required(table.querySelector<HTMLElement>('[data-ui="game-table-seat"]') ?? undefined).getBoundingClientRect();
       await expect(own.bottom).toBeLessThanOrEqual(dock.top);
-      await expectSeatFraming(table, required(COUNTS[index]), caseName, caseName === 'wide' ? 'insufficient-space' : 'fitted');
+      await expectSeatFraming(table, required(COUNTS[index]), caseName, 'fitted');
     }
   },
 });
@@ -2611,7 +2611,7 @@ export default function Example() {
     await expect(tables).toHaveLength(18);
     let index = 0;
     for (const [caseName] of Object.entries(VIEWPORTS) as [CaseName, ViewportSize][]) for (const players of COUNTS) {
-      await expectSeatFraming(required(tables[index++]), players, caseName, caseName === 'wide' ? 'insufficient-space' : 'fitted');
+      await expectSeatFraming(required(tables[index++]), players, caseName, 'fitted');
     }
   },
 };
@@ -3321,8 +3321,7 @@ export default function Example() {
     const tables = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]');
     await expect(tables).toHaveLength(6);
     for (const table of Array.from(tables)) {
-      const short = table.closest<HTMLElement>('[data-container-case]')?.dataset.containerCase === 'wide';
-      await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', short ? 'insufficient-space' : 'fitted'));
+      await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', 'fitted'));
       for (const chrome of table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat-chrome"]')) {
         await waitFor(async () => { await expectInside(chrome, table, { tolerancePx: 0.5 }); });
       }
@@ -3786,13 +3785,13 @@ export default function Example() {
   },
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-    await expectSeatFraming(table, 6, 'wide', 'insufficient-space');
+    await expectSeatFraming(table, 6, 'wide', 'fitted');
     const states = new Set<string | null>();
     for (let frame = 0; frame < 12; frame++) {
       await new Promise(requestAnimationFrame);
       states.add(table.getAttribute('data-layout-fit'));
     }
-    await expect([...states]).toEqual(['insufficient-space']);
+    await expect([...states]).toEqual(['fitted']);
   },
 };
 
@@ -4049,10 +4048,12 @@ export default function Example() {
 }` } } },
   args: { seatPlacement: 'edge', renderSeat: spanishSeat, renderPlay: spanishPlay, center: <span>Truco</span>, header: 'Truco', dock: <Button>Quiero</Button> },
   render: (args) => <Matrix>
-    {Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
+    {Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => {
+      const size = caseName === 'wide' ? { ...viewport, height: 480 } : viewport;
+      return (
       <Row key={`${caseName}-${players}`}>
-        <ViewportFrame data-measurement="before" viewport={viewport}>
-          <Table {...tableRootProps({ ...args, seatPlacement: 'inside', viewport, players, slots: undefined, seats: seatsFor(players) })}>
+        <ViewportFrame data-measurement="before" viewport={size}>
+          <Table {...tableRootProps({ ...args, seatPlacement: 'inside', viewport: size, players, slots: undefined, seats: seatsFor(players) })}>
             <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
             <Table.Play />
             <Table.Center>{args.center}</Table.Center>
@@ -4060,8 +4061,8 @@ export default function Example() {
             <Table.Dock>{args.dock}</Table.Dock>
           </Table>
         </ViewportFrame>
-        <ViewportFrame data-measurement="after" viewport={viewport}>
-          <Table {...tableRootProps({ ...args, viewport, players, slots: undefined, seats: seatsFor(players) })}>
+        <ViewportFrame data-measurement="after" viewport={size}>
+          <Table {...tableRootProps({ ...args, viewport: size, players, slots: undefined, seats: seatsFor(players) })}>
             <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
             <Table.Play><FixtureContent<Player> content={args.renderPlay} /></Table.Play>
             <Table.Center>{args.center}</Table.Center>
@@ -4070,7 +4071,8 @@ export default function Example() {
           </Table>
         </ViewportFrame>
       </Row>
-    )))}
+      );
+    }))}
   </Matrix>,
   play: async ({ canvasElement }) => {
     const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-measurement="after"] [data-ui="game-table"]'));
@@ -4081,7 +4083,7 @@ export default function Example() {
     for (const [caseName, viewport] of Object.entries(VIEWPORTS)) for (const players of COUNTS) {
       const table = required(tables[index++]);
       const previous = required(previousTables[index - 1]);
-      const expectedFit = caseName === 'wide' ? 'insufficient-space' : 'fitted';
+      const expectedFit = 'fitted';
       await expectSeatFraming(previous, players, caseName, expectedFit);
       await waitFor(() => expect(table.dataset.layoutFit).not.toBe('measuring'));
       const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();

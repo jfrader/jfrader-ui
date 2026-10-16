@@ -406,7 +406,7 @@ It is a check: contract violations or measurement errors return a nonzero exit c
 Example from the GameTable alignment measurements, run from `apps/storybook`:
 
 ```sh
-node scripts/measure-geometry.mjs games-gametable--desktop-dark \
+node scripts/measure-geometry.mjs games-gametable--wide-large-dark \
   --surface '[data-ui="theme-root"]:nth-child(2) [data-game-surface]' \
   --items '[data-ui="theme-root"]:nth-child(2) [data-ui="game-table-seat"]' \
   --viewport 1440x900 --base-url http://localhost:6019
