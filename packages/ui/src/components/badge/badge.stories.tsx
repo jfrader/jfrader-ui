@@ -84,7 +84,7 @@ const meta = {
   component: Badge,
   parameters: {
     docs: {
-      description: { component: 'Add a count or dot to an icon or control.' },
+      description: { component: 'Show a notification count or dot on content. In this library, Badge names the notification indicator and Pill the tonal status label, rather than the common design-system use of Badge for a status label.' },
       usage: '- The count does not join the control’s accessible name. If the control has an `aria-label`, include the count, for example `Inbox, 3 unread`.\n- When the control is named by its text, the count is read after its name.',
     },
   },
