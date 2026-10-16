@@ -2632,7 +2632,7 @@ const cardComposition = (clearance: boolean): Story => ({
     }
   },
 });
-export const LandscapeCardSizes = { ...cardComposition(false), parameters: { docs: { description: { story: "Compare sm, md and lg cards at 840×360. Their intrinsic sizes stay unchanged; the table scales the composition to fit." }, source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const LandscapeCardSizes = { ...cardComposition(false), parameters: { docs: { description: { story: "Compare sm, md and lg cards at 840×480. Their intrinsic sizes stay unchanged; the table scales the composition to fit." }, source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
