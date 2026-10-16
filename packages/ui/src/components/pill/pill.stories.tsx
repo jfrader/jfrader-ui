@@ -26,7 +26,7 @@ const meta = {
   component: Pill,
   parameters: {
     docs: {
-      description: { component: 'Show a status or category beside other content.' },
+      description: { component: 'Show a status or category in a tonal label beside other content. This library calls it Pill rather than the common design-system name Badge; use Badge for a notification count or dot on content.' },
       usage: `### Status
 - \`tone\` defaults to \`neutral\`; choose \`accent\`, \`success\`, \`warning\` or \`danger\` to change its colors. Write the status in \`children\` so color is not the only cue.
 - Text stays on one line without truncation. Keep the label short or give it room in your layout.

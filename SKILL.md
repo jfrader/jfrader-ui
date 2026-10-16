@@ -197,6 +197,13 @@ Fill this in the spec/PR before coding (it prevents 80% of review findings):
 
 ## 4. File and naming conventions
 
+**Naming**
+
+- Use Function+Shape in 1–2 words: `SearchField`, `TimePicker`, `SplitButton`.
+- Materials and styles (`glass`, `holo`) are props or variants, never component names.
+- Flavor names must state a clear function.
+- Consolidate hold, stack and thread variants when their relevant spec ships.
+
 ```
 src/components/<kebab-case>/
   <kebab-case>.tsx          # implementation, module-level styles
