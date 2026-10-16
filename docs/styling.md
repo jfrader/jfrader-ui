@@ -10,7 +10,7 @@ Use a component's props for built-in variants. Use tokens for changes shared acr
 | Change colors, spacing or fonts across a section or app | [Theme tokens](./theming.md). |
 | Change one component instance or public part | [`sx`](#change-one-instance-with-sx). No special JSX setup. |
 | Reuse a styled component throughout your app | [`styled`](#reuse-styles-with-styled). No special JSX setup. |
-| Compose Emotion styles, including on native elements | The [`css` prop](#the-css-prop), with Emotion's JSX runtime configured. |
+| Compose Emotion styles for `styled` | The [`css()`](#compose-styles-with-css) function. |
 | Use an existing stylesheet | `className`, with normal CSS cascade rules. |
 
 ## Token references
@@ -151,56 +151,21 @@ export function ProjectName() {
 
 Slot names vary by component. Internal slots take `css`, not `sx`; this nested `css` value is consumed by the component and needs no app JSX configuration. For TextField, the top-level `sx` styles the input wrapper, not the label or input itself.
 
-## The css prop
+## Compose styles with `css()`
 
-Use `css` when you want Emotion's JSX styling on native elements too, or already use it in your app. Install `@emotion/react` as a direct app dependency:
-
-```sh
-pnpm add @emotion/react
-```
-
-In a Vite app, configure both the compiler and TypeScript. Merge these settings with your existing files:
-
-```ts filename="vite.config.ts"
-// vite.config.ts
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
-
-export default defineConfig({
-  plugins: [react({ jsxImportSource: '@emotion/react' })],
-});
-```
-
-```json filename="tsconfig.json"
-{
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "@emotion/react",
-    "module": "ESNext",
-    "moduleResolution": "bundler"
-  }
-}
-```
-
-Then put this in a component file:
+`css()` builds serialized Emotion styles — the same values `sx` accepts — for reuse with `styled`:
 
 ```tsx
 import { css } from '@emotion/react';
-import { Card, theme } from '@jfrader/ui';
+import { styled, Card, theme } from '@jfrader/ui';
 
 const highlighted = css({ borderColor: theme.color.accentBorder });
 const roomy = css({ paddingBlock: theme.space[6] });
 
-export function UsageCard() {
-  return (
-    <Card css={[highlighted, roomy]}>
-      <Card.Content>12 of 20 seats in use.</Card.Content>
-    </Card>
-  );
-}
+const RoomierCard = styled(Card)([highlighted, roomy]);
 ```
 
-`css()` returns serialized styles, not a class-name string. Pass them to `css` or `sx`, not `className`. Inside the library source, authors use the internal styling seam; consumer apps import `css` from Emotion as above. See [Emotion's TypeScript setup](https://emotion.sh/docs/typescript) for other compilers.
+`css()` returns serialized styles, not a class-name string. The Emotion `css` prop is internal to the library: style component instances with `sx` instead, which needs no JSX configuration in your app.
 
 ## Which style wins?
 
@@ -208,22 +173,18 @@ For the same part, the library composes styles in this order:
 
 1. Component defaults and visual props.
 2. That part's `slotProps` styles, when available.
-3. Consumer `css` / Emotion class styles.
-4. Consumer `sx`.
+3. Consumer `sx`.
 
 Later values win when CSS specificity and importance are equal. A rule on the root does not override a different property on a child. Normal CSS rules still apply to external stylesheets, `!important`, inline `style` and more-specific selectors.
 
 For example, with the JSX configuration above:
 
 ```tsx
-import { css } from '@emotion/react';
 import { Button, theme } from '@jfrader/ui';
-
-const smallCorners = css({ borderRadius: theme.radius.sm });
 
 export function RoundedButton() {
   return (
-    <Button css={smallCorners} sx={{ borderRadius: theme.radius.full }}>
+    <Button sx={{ borderRadius: theme.radius.full }}>
       Invite
     </Button>
   );
@@ -234,7 +195,7 @@ The button uses the full radius from `sx`.
 
 ## Next.js boundaries
 
-Use `styled`, `useTheme`, Emotion's `css` prop and theme callbacks in Client Components under `EmotionRegistry`. A Server Component can pass a serializable plain-object `sx`. See the complete layout in [Getting started](./consuming-jfrader-ui.md).
+Use `styled`, `useTheme`, `css()` and theme callbacks in Client Components under `EmotionRegistry`. A Server Component can pass a serializable plain-object `sx`. See the complete layout in [Getting started](./consuming-jfrader-ui.md).
 
 ## Troubleshooting
 
