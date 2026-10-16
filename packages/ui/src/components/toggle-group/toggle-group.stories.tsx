@@ -52,7 +52,10 @@ const meta = {
 
 <ToggleGroup label="View" options={views} defaultValue="list" />` },
       description: { component: 'Choose one or more options from a group of toggle buttons.' },
-      usage: `### Values
+      usage: `### Choosing a component
+- Use ToggleGroup for the APG toolbar pattern with single or multiple selection and horizontal or vertical orientation. Use SegmentedControl to pick one visual state on a track.
+
+### Values
 - \`type\` defaults to \`single\`, which takes a string. Activating the pressed item keeps it pressed unless you set \`allowEmpty\`; clearing then reports \`''\`. Give every item a nonempty value.
 - Set \`type="multiple"\` to toggle items independently. Use an array for \`value\` or \`defaultValue\`; \`onValueChange\` reports values in activation order.
 - If you pass \`value\`, update it from \`onValueChange\` to apply requests. Use \`defaultValue\` when the group should own its selection.

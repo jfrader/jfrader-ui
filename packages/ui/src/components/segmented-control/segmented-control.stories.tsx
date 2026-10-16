@@ -79,7 +79,8 @@ const meta = {
         component:
           'Choose one option from a row of buttons.',
       },
-      usage: `- Supply readonly options for the complete selector, or children for custom anatomy; do not mix them.
+      usage: `- Use SegmentedControl to pick one visual state on a track. Use ToggleGroup for the APG toolbar pattern with single or multiple selection and horizontal or vertical orientation.
+- Supply readonly options for the complete selector, or children for custom anatomy; do not mix them.
 - Use slotProps for the generated root, track, selection and items. slots replaces the root or items; component is shorthand for slots.root. Replacement roots forward props and ref to one div.
 - Selection changes on arrow movement and cannot be cleared. The group owns no panels; use Tabs for panels and RadioGroup for form values.
 - Tab enters the last focused enabled option, then exits.

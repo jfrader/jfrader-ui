@@ -814,6 +814,7 @@ export const MissingProvider: Story = {
 };
 
 export const SecondRendererWarning: Story = {
+  tags: ['!autodocs'],
   beforeEach: () => {
     const warn = spyOn(console, 'warn').mockImplementation(() => {});
     return () => warn.mockRestore();
