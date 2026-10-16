@@ -451,13 +451,13 @@ export const ZeroCells: Story = {
 const StyledTable = styled(Table)({ borderRadius: vars.radius.sm });
 export const ConsumerStylePrecedence: Story = {
   args: {
-    slotProps: { cell: { css: { paddingInlineStart: vars.space[6] } }, sortButton: { css: { borderRadius: 0 } } },
+    slotProps: { cell: { css: { paddingInlineStart: vars.space[6] } }, sortButton: { css: { borderRadius: vars.radius.sm } } },
     sx: { borderRadius: vars.radius.lg },
   },
   render: (args) => <StyledTable {...args} />,
   play: async ({ canvas, canvasElement }) => {
     await expect(parseFloat(getComputedStyle(canvas.getAllByRole('cell')[0]!).paddingInlineStart)).toBeCloseTo(24, 0);
-    await expect(getComputedStyle(canvas.getAllByRole('button')[0]!).borderRadius).toBe('0px');
+    await expect(getComputedStyle(canvas.getAllByRole('button')[0]!).borderRadius).toBe('8px');
     await expect(getComputedStyle(canvasElement.querySelector('[data-ui="sortable-data-table"]')!).borderRadius).toBe(
       '18px',
     );
