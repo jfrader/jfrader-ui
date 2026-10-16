@@ -31,6 +31,7 @@ function ReplacementSheetPanel(props: BottomSheetPanelProps) {
 }
 
 export const ShellAndPanelReplacements: StoryObj<typeof BottomSheet> = {
+  tags: ['!autodocs'],
   render: () => <BottomSheet triggerLabel="Open trip" title={TITLE} content="Trip itinerary" closeLabel="Close" defaultOpen slots={{ content: ReplacementSheetContent, panel: ReplacementSheetPanel }} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -143,7 +144,8 @@ function rootAdapterStory(component: BottomSheetPanelProps['component']): Story 
 export const SurfaceAdapter = rootAdapterStory(Surface);
 export const CardAdapter = rootAdapterStory(Card);
 export const IndependentMaterialAdapter = rootAdapterStory(SheetPaper);
-export const SurfaceAdapterLight: Story = { ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
+export const SurfaceAdapterLight: Story = {
+  tags: ['!autodocs'], ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
 
 function ContrastPortalFixture({ theme = 'light', ...props }: BottomSheetCompoundProps & { theme?: 'dark' | 'light' }) {
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
@@ -570,6 +572,7 @@ export const EasyModeCustomizationSlotProps: StoryObj<(props: BottomSheetEasyPro
 };
 
 export const EasyModeWithoutDescription: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
+  tags: ['!autodocs'],
   name: 'Easy mode without description',
   args: {
     triggerLabel: TRIGGER,

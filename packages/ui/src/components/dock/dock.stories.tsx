@@ -598,6 +598,7 @@ function RefExample(args: DockProps) {
     <Button onClick={() => setMounted(false)}>Unmount dock</Button></>;
 }
 export const StrictModeRefs: Story = {
+  tags: ['!autodocs'],
   args: { ref: fn((node: HTMLDivElement | null) => node ? fn() : undefined) },
   render: (args) => <RefExample {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {

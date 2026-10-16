@@ -363,6 +363,7 @@ export const IndependentMaterialAdapter = rootAdapterStory(DialogPaper);
 export const SurfaceAdapterLight: Story = { ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
 
 export const PanelComposition: Story = {
+  tags: ['!autodocs'],
   parameters: { docs: { source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
 
 <Dialog>
