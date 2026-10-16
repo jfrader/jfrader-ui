@@ -44,7 +44,7 @@
 - Foundation guides use highlighted, copyable code examples and terminal commands with optional replay.
 - `ToastStack` keeps a `contained` stack inside its host when consumer styles add padding to it.
 - `ToastStack` casts a single shadow for a collapsed pile, so the cards behind it stay white instead of turning grey on light surfaces.
-- `EditableDetails` uses aligned headings, quieter labels and separators only between rows. Nested sections no longer stack empty divider lines.
+- `EditableDetails`: a nested section indents its content by its title inset and draws a 1px guide rail, the disclosure caret renders at the row's start, and a section's rows line up under its own title. Panel padding is the trigger's inline-start padding plus the caret glyph plus the gap; section rows are 40px at the top level and 32px nested; a value renders at medium weight against a regular, muted label; the Edit control has no border or background until hover or focus; an open editor renders on the inset surface with a border and radius.
 - Storybook groups `EditableDetails` form and picker examples under one Showcase entry.
 - `PhotoGrid` opens photos in a full-screen viewer with icon controls, tooltips and a thumbnail strip. The header shows the photo count and current density, with one pressed toggle per density step. Ctrl+scroll and pinch resize thumbnails around the photo under the pointer. Upward drags no longer move the photo, and the chrome becomes opaque when reduced transparency is on.
 

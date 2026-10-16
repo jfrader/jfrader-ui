@@ -553,6 +553,7 @@ export const EasyModeCustomizationSlotProps: StoryObj<(props: DrawerEasyProps) =
 };
 
 export const EasyModeWithoutDescription: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
+  tags: ['!autodocs'],
   name: 'Easy mode without description',
   args: {
     triggerLabel: TRIGGER,

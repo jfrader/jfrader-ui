@@ -695,6 +695,7 @@ export const LightTheme: Story = {
 };
 
 export const TriggerRole: Story = {
+  tags: ['!autodocs'],
   render: (args) => <MenuExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);

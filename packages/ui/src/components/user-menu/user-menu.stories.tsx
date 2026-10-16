@@ -738,6 +738,7 @@ export const PhotoFallback: Story = {
 };
 
 export const GraphemeInitials: Story = {
+  tags: ['!autodocs'],
   args: { user: { name: '👩‍💻 Élodie', email: 'elodie@example.com' } },
   render: ({ user, open, defaultOpen, onOpenChange }) => (
     <UserMenu user={user} open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
