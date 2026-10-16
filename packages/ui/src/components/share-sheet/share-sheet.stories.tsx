@@ -547,7 +547,8 @@ export const ThemeScopedDialogNestedAccess: Story = {
     const list = await body(canvasElement).findByRole('listbox');
     await expect(list.closest('dialog')).not.toBeNull();
     await userEvent.keyboard('{Escape}');
-    await expect(access).toHaveAttribute('aria-expanded', 'false');
+    // The combobox closes through its own async path; wait for the state instead of racing it.
+    await waitFor(() => expect(access).toHaveAttribute('aria-expanded', 'false'));
     await expect(body(canvasElement).getByRole('dialog')).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     await waitFor(async () => {
