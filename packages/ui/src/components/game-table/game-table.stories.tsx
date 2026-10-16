@@ -2622,7 +2622,7 @@ const cardComposition = (clearance: boolean): Story => ({
   render: (args) => (
     <Matrix>
       {(['sm', 'md', 'lg'] as const).map((size, index) => (
-        <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.wide, height: 480 }}>
+        <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.wide, height: clearance ? 420 : 480 }}>
           <Table {...tableRootProps({ ...args, clearance: clearance ? [32,64,96][index] : 0 })}>
             <Table.Seat><FixtureContent<Player> content={(slot) => (
             <GameCard size={size} label={`${slot.player?.name}: hidden card`} />
