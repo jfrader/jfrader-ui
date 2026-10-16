@@ -57,19 +57,25 @@ const rootStyle = css({
   label: 'game-table',
   position: 'relative',
   isolation: 'isolate',
-  display: 'flex',
-  flexDirection: 'column',
   boxSizing: 'border-box',
   inlineSize: '100%',
   blockSize: '100%',
   maxBlockSize: '100%',
   overflow: 'hidden',
   minBlockSize: 0,
+  color: vars.color.text,
+  backgroundColor: vars.color.bg,
+});
+const frameStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  inlineSize: '100%',
+  blockSize: '100%',
+  boxSizing: 'border-box',
+  minBlockSize: 0,
   paddingBlockStart: 'var(--game-table-padding-top)',
   paddingBlockEnd: 'var(--game-table-padding-bottom)',
   paddingInline: 'var(--game-table-padding-inline)',
-  color: vars.color.text,
-  backgroundColor: vars.color.bg,
 });
 const shellStyle = css({
   display: 'flex',
@@ -158,7 +164,7 @@ const stripStyle = css({ position: 'relative', flexShrink: 0, zIndex: 3, textAli
 const headerStyle = css({
   display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'center',
   gap: 'var(--game-table-top-gap)', marginBlockEnd: 'var(--game-table-top-margin)',
-  '[data-surface="lobby"] &': { transform: 'translateY(calc(0px - var(--game-table-padding-top)))' },
+  '[data-surface="lobby"] > &': { transform: 'translateY(calc(0px - var(--game-table-padding-top)))' },
 });
 const dockStyle = css({ marginBlockStart: 'var(--game-table-bottom-margin)', inlineSize: '100%', maxInlineSize: `calc(${vars.space[4]} * 58)`, marginInline: 'auto' });
 const footerStyle = css({ marginBlockStart: `calc(${vars.space[4]} * 0.8)`, inlineSize: '100%', maxInlineSize: `calc(${vars.space[4]} * 56)`, marginInline: 'auto' });
@@ -290,11 +296,12 @@ export function GameTable<T extends SeatLike>({
     '--game-table-center-block': `${measurement?.height ? measurement.centerY / measurement.height * 100 : 50}%`,
   };
   return (
-    <DeckArtProvider artSet={artSet} cardArtSets={cardArtSets}><div css={frameContainerStyle}><TableRoot {...rest} marker="game-table" structure={rootStyle} style={style} attributes={{ style: variables,
+    <DeckArtProvider artSet={artSet} cardArtSets={cardArtSets}><TableRoot {...rest} marker="game-table" structure={rootStyle} style={style} attributes={{ style: variables,
       'data-surface': surface, 'data-seat-placement': seatPlacement, 'data-layout-fit': layout.fit,
       'data-clearance': measurement?.clearance && (measurement.clearance.start < measurement.clearance.requestedStart || measurement.clearance.end < measurement.clearance.requestedEnd) ? 'reduced' : 'requested',
       'data-clearance-start': measurement?.clearance?.start, 'data-clearance-end': measurement?.clearance?.end,
     }}>
+      <div data-ui="game-table-frame-container" css={frameContainerStyle}><div data-ui="game-table-frame" data-surface={surface} data-seat-placement={seatPlacement} css={frameStyle}>
       {one(GameTableHeader)}
       <div data-ui="game-table-shell" css={shellStyle}>
         {/* Stable measurement target for future card flights; owned by this library. */}
@@ -348,7 +355,8 @@ export function GameTable<T extends SeatLike>({
       {one(GameTableFooter)}
       {one(GameTableDock)}
       {one(GameTableFloating)}
-    </TableRoot></div></DeckArtProvider>
+      </div></div>
+    </TableRoot></DeckArtProvider>
   );
 }
 GameTable.displayName = 'GameTable';

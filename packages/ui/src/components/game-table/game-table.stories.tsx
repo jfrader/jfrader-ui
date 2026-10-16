@@ -25,7 +25,7 @@ import { fitBoardContent, GAME_TABLE_LIMITS, type BoardMeasurements } from './fi
 import { validateSlots } from './table-slots';
 import { expectInside, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
 
-type CaseName = 'phoneCompact' | 'phoneTall' | 'phoneWide' | 'tablet' | 'tabletWide' | 'desktop';
+type CaseName = 'portraitShort' | 'portrait' | 'wide' | 'square' | 'squareWide' | 'wideLarge';
 type ViewportSize = { width: number; height: number };
 
 const viewportSize = ({ viewport }: { viewport: ViewportSize }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
@@ -46,7 +46,7 @@ const Matrix = styled.div({ inlineSize: 'max-content' });
 const MatrixGrid = styled(Matrix)({ display: 'grid', gap: vars.space[6] });
 const MatrixRow = styled(Matrix)({ display: 'flex' });
 const Row = styled.div({ display: 'flex' });
-const ProfileColumn = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[6] });
+const CaseColumn = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[6] });
 const ParityGrid = styled.div({ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: vars.space[4], blockSize: 900, inlineSize: 2880 });
 const FullHeight = styled.div({ blockSize: '100%' });
 const PokerSeatContent = styled.div({ display: 'grid', justifyItems: 'center' });
@@ -139,7 +139,7 @@ function required<T>(value: T | undefined): T {
   return value;
 }
 
-async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, profile: string, expectedFit = 'fitted', checkInsufficientGeometry = false) {
+async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, caseName: string, expectedFit = 'fitted', checkInsufficientGeometry = false) {
   await table.ownerDocument.fonts.ready;
   await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', expectedFit));
   for (const card of table.querySelectorAll<HTMLElement>('[data-ui~="game-card"]')) {
@@ -180,7 +180,7 @@ async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, 
     const dx = box.x + box.width / 2 - frame.x - frame.width / 2;
     const dy = box.y + box.height / 2 - frame.y - frame.height / 2;
     const theta = Math.PI / 2 + 2 * Math.PI * index / players;
-    const label = `${profile}/${players} seat ${index}`;
+    const label = `${caseName}/${players} seat ${index}`;
     const length = Math.hypot(rx * Math.cos(theta), ry * Math.sin(theta));
     const ux = rx * Math.cos(theta) / length;
     const uy = ry * Math.sin(theta) / length;
@@ -223,12 +223,12 @@ async function expectSeatFraming(table: HTMLElement, players: BoardPlayerCount, 
   }
 }
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<CaseName, ViewportSize>;
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
 
@@ -264,7 +264,7 @@ const meta = {
   component: Table<Player>,
   tags: ['autodocs'],
   args: {
-    players: 6, seats: SEATS, viewport: VIEWPORTS.phoneCompact,
+    players: 6, seats: SEATS, viewport: VIEWPORTS.portraitShort,
     renderSeat, center, header: 'Poker · 10 / 20', dock: <Button>Check</Button>,
   },
   parameters: {
@@ -392,6 +392,10 @@ const ASPECT_CONTAINERS = [
   { width: 840, height: 360 },
   { width: 864, height: 360 },
 ] as const;
+const ASPECT_CASES = [
+  { viewport: { width: 260, height: 300 }, players: 6 },
+  ...ASPECT_CONTAINERS.flatMap((viewport) => COUNTS.map((players) => ({ viewport, players }))),
+];
 const ASPECT_MODES = [
   { surface: 'match', dir: 'ltr' },
   { surface: 'match', dir: 'rtl' },
@@ -413,7 +417,7 @@ export default function Example() {
   </GameTable></Frame>;
 }` } } },
   render: () => <Matrix>
-    {ASPECT_CONTAINERS.map((size) => COUNTS.map((players) => ASPECT_MODES.map(({ surface, dir }) => (
+    {ASPECT_CASES.map(({ viewport: size, players }) => ASPECT_MODES.map(({ surface, dir }) => (
       <ViewportFrame key={`${size.width}-${players}-${surface}-${dir}`} viewport={size}
         data-aspect-width={size.width} data-aspect-height={size.height} data-aspect-players={players}>
         <Table players={players} seats={seatsFor(players)} surface={surface} dir={dir}>
@@ -423,27 +427,28 @@ export default function Example() {
           <Table.Dock><Button>Check</Button></Table.Dock>
         </Table>
       </ViewportFrame>
-    ))))}
+    )))}
   </Matrix>,
   play: async ({ canvasElement }) => {
     const frames = canvasElement.querySelectorAll<HTMLElement>('[data-aspect-width]');
-    await expect(frames).toHaveLength(ASPECT_CONTAINERS.length * COUNTS.length * ASPECT_MODES.length);
+    await expect(frames).toHaveLength(ASPECT_CASES.length * ASPECT_MODES.length);
     for (const frame of frames) {
       const table = required(frame.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
       const width = Number(frame.dataset.aspectWidth);
       const height = Number(frame.dataset.aspectHeight);
       const players = Number(frame.dataset.aspectPlayers);
       const short = height === 360;
-      const expectedFit = short && (table.dataset.surface === 'match' || players === 6) ? 'insufficient-space' : 'fitted';
+      const expectedFit = width === 260 || (short && (table.dataset.surface === 'match' || players === 6)) ? 'insufficient-space' : 'fitted';
       await expectSeatFraming(table, players, `${width}/${height}`, expectedFit);
-      await expect(getComputedStyle(required(table.parentElement ?? undefined)).containerType).toBe('size');
+      const container = required(table.querySelector<HTMLElement>('[data-ui="game-table-frame-container"]') ?? undefined);
+      await expect(getComputedStyle(container).containerType).toBe('size');
       const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined);
       await expect(getComputedStyle(surface).borderRadius).toBe('50%');
       if (table.dataset.surface === 'lobby' && width / height >= 1.3) {
         const box = surface.getBoundingClientRect();
         await expect(box.width).toBeCloseTo(box.height, 1);
       }
-      if (!short && table.dataset.surface === 'match') await expectMirroredDirection(table, '[data-ui="game-table-seat"]');
+      if (!short && expectedFit === 'fitted' && table.dataset.surface === 'match') await expectMirroredDirection(table, '[data-ui="game-table-seat"]');
     }
   },
 };
@@ -452,8 +457,8 @@ export const Default: Story = {
   play: async ({ canvasElement, args, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]');
     if (!table) throw new Error('Missing table');
-    await expect(table.parentElement?.getBoundingClientRect().width).toBe(VIEWPORTS.phoneCompact.width);
-    await expect(table.parentElement?.getBoundingClientRect().height).toBe(VIEWPORTS.phoneCompact.height);
+    await expect(table.parentElement?.getBoundingClientRect().width).toBe(VIEWPORTS.portraitShort.width);
+    await expect(table.parentElement?.getBoundingClientRect().height).toBe(VIEWPORTS.portraitShort.height);
     await expect(table.querySelector('[data-game-surface="true"]')).toHaveAttribute('data-ui', 'game-table-surface');
     await expect(table.querySelector('[role="grid"], [role="application"], [role="region"]')).toBeNull();
     const slots = buildAlternatingSlots(SEATS, 6, 'counterclockwise');
@@ -468,11 +473,37 @@ export const Default: Story = {
     const surfaceBox = surface.getBoundingClientRect();
     const ownBox = required(seats[0]).getBoundingClientRect();
     await expect(ownBox.y + ownBox.height / 2).toBeGreaterThan(surfaceBox.y + surfaceBox.height / 2);
-    await expectSeatFraming(table, 6, 'phoneCompact');
+    await expectSeatFraming(table, 6, 'portraitShort');
     await userEvent.tab();
     const button = within(table).getByRole('button', { name: 'Check' });
     await expect(table.ownerDocument.activeElement).toBe(button);
     await expect(getComputedStyle(button).outlineStyle).not.toBe('none');
+  },
+};
+
+export const ReplacedRootKeepsFrame: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <ViewportFrame viewport={args.viewport}>
+    <Table {...tableRootProps(args)} slots={{ root: ReplacementRoot }}>
+      <Table.Header>{args.header}</Table.Header>
+      <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
+      <Table.Center>{args.center}</Table.Center>
+      <Table.Dock>{args.dock}</Table.Dock>
+    </Table>
+  </ViewportFrame>,
+  play: async ({ canvasElement, args }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui~="game-table"]') ?? undefined);
+    await expect(table).toHaveAttribute('data-replacement', 'slots');
+    await expectSeatFraming(table, 6, 'portraitShort');
+    const container = required(table.querySelector<HTMLElement>(':scope > [data-ui="game-table-frame-container"]') ?? undefined);
+    const frame = required(container.querySelector<HTMLElement>(':scope > [data-ui="game-table-frame"]') ?? undefined);
+    await expect(getComputedStyle(container).containerType).toBe('size');
+    await expect(frame).toHaveAttribute('data-surface', 'match');
+    const frameStyle = getComputedStyle(frame);
+    await expect(frameStyle.getPropertyValue('--game-table-max-width')).toContain('100cqi');
+    await expect(Number.parseFloat(frameStyle.paddingBlockStart)).toBeCloseTo(args.viewport.height * 0.01, 1);
+    await expect(frame.getBoundingClientRect().width).toBe(args.viewport.width);
+    await expect(frame.getBoundingClientRect().height).toBe(args.viewport.height);
   },
 };
 
@@ -522,8 +553,8 @@ export const CompoundParts: Story = {
   },
 };
 
-const matrixStory = (profile: CaseName, theme: 'dark' | 'light'): Story => ({
-  args: { viewport: VIEWPORTS[profile] },
+const matrixStory = (caseName: CaseName, theme: 'dark' | 'light'): Story => ({
+  args: { viewport: VIEWPORTS[caseName] },
 
   render: (args) => (
     <MatrixGrid>
@@ -544,8 +575,8 @@ const matrixStory = (profile: CaseName, theme: 'dark' | 'light'): Story => ({
     const tables = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]');
     await expect(tables).toHaveLength(3);
     for (const [index, table] of Array.from(tables).entries()) {
-      await expect(table.parentElement?.getBoundingClientRect().width).toBe(VIEWPORTS[profile].width);
-      await expect(table.parentElement?.getBoundingClientRect().height).toBe(VIEWPORTS[profile].height);
+      await expect(table.parentElement?.getBoundingClientRect().width).toBe(VIEWPORTS[caseName].width);
+      await expect(table.parentElement?.getBoundingClientRect().height).toBe(VIEWPORTS[caseName].height);
       await expect(table.querySelectorAll('[data-ui="game-table-seat"]')).toHaveLength(required(COUNTS[index]));
       const surface = table.querySelector<HTMLElement>('[data-game-surface]');
       if (!surface) throw new Error('Missing surface');
@@ -556,12 +587,12 @@ const matrixStory = (profile: CaseName, theme: 'dark' | 'light'): Story => ({
       const dock = required(table.querySelector<HTMLElement>('[data-ui="game-table-dock"]') ?? undefined).getBoundingClientRect();
       const own = required(table.querySelector<HTMLElement>('[data-ui="game-table-seat"]') ?? undefined).getBoundingClientRect();
       await expect(own.bottom).toBeLessThanOrEqual(dock.top);
-      await expectSeatFraming(table, required(COUNTS[index]), profile, profile === 'phoneWide' ? 'insufficient-space' : 'fitted');
+      await expectSeatFraming(table, required(COUNTS[index]), caseName, caseName === 'wide' ? 'insufficient-space' : 'fitted');
     }
   },
 });
 
-export const PhoneCompactDark = { ...matrixStory('phoneCompact', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const PortraitShortDark = { ...matrixStory('portraitShort', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -607,12 +638,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -640,7 +671,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.phoneCompact}>
+  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.portraitShort}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -652,7 +683,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const PhoneCompactLight = { ...matrixStory('phoneCompact', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const PortraitShortLight = { ...matrixStory('portraitShort', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -698,12 +729,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -731,7 +762,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.phoneCompact}>
+  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.portraitShort}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -743,7 +774,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const PhoneTallDark = { ...matrixStory('phoneTall', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const PortraitDark = { ...matrixStory('portrait', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -789,12 +820,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -822,7 +853,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.phoneTall}>
+  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.portrait}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -834,7 +865,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const PhoneTallLight = { ...matrixStory('phoneTall', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const PortraitLight = { ...matrixStory('portrait', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -880,12 +911,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -913,7 +944,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.phoneTall}>
+  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.portrait}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -925,7 +956,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const PhoneWideDark = { ...matrixStory('phoneWide', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const WideDark = { ...matrixStory('wide', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -971,12 +1002,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -1004,7 +1035,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.phoneWide}>
+  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.wide}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -1016,7 +1047,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const PhoneWideLight = { ...matrixStory('phoneWide', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const WideLight = { ...matrixStory('wide', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1062,12 +1093,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -1095,7 +1126,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.phoneWide}>
+  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.wide}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -1107,7 +1138,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const TabletDark = { ...matrixStory('tablet', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const SquareDark = { ...matrixStory('square', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1153,12 +1184,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -1186,7 +1217,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.tablet}>
+  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.square}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -1198,7 +1229,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const TabletLight = { ...matrixStory('tablet', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const SquareLight = { ...matrixStory('square', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1244,12 +1275,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -1277,7 +1308,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.tablet}>
+  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.square}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -1289,7 +1320,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const TabletWideDark = { ...matrixStory('tabletWide', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const SquareWideDark = { ...matrixStory('squareWide', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1335,12 +1366,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -1368,7 +1399,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.tabletWide}>
+  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.squareWide}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -1380,7 +1411,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const TabletWideLight = { ...matrixStory('tabletWide', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const SquareWideLight = { ...matrixStory('squareWide', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1426,12 +1457,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -1459,7 +1490,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.tabletWide}>
+  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.squareWide}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -1471,7 +1502,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const DesktopDark = { ...matrixStory('desktop', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const WideLargeDark = { ...matrixStory('wideLarge', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1517,12 +1548,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -1550,7 +1581,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.desktop}>
+  <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.wideLarge}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -1562,7 +1593,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const DesktopLight = { ...matrixStory('desktop', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const WideLargeLight = { ...matrixStory('wideLarge', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1608,12 +1639,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -1641,7 +1672,7 @@ const center = (
 
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
-  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.desktop}>
+  <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.wideLarge}>
     <Table players={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -1713,12 +1744,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
@@ -1743,7 +1774,7 @@ const center = (
 );
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.phoneCompact}>
+  return (<ViewportFrame viewport={VIEWPORTS.portraitShort}>
 <Table players={6} seatSlots={buildAlternatingSlots([SEATS[2]], 6, 'clockwise')}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -1799,12 +1830,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -1831,7 +1862,7 @@ const center = (
 );
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.phoneCompact}>
+  return (<ViewportFrame viewport={VIEWPORTS.portraitShort}>
 <Table players={4} seats={seatsFor(4)} surface="lobby">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -1880,12 +1911,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
@@ -1910,7 +1941,7 @@ const center = (
 );
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.phoneWide}>
+  return (<ViewportFrame viewport={VIEWPORTS.wide}>
 <Table players={6} seats={SEATS} surface="lobby">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -1921,7 +1952,7 @@ export default function Example() {
   </Table>
 </ViewportFrame>);
 }` } } },
-  args: { surface: 'lobby', viewport: VIEWPORTS.phoneWide },
+  args: { surface: 'lobby', viewport: VIEWPORTS.wide },
   play: async ({ canvasElement }) => {
     const surface = required(canvasElement.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
     await expect(surface.width).toBeGreaterThan(100);
@@ -1966,12 +1997,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
@@ -1996,7 +2027,7 @@ const center = (
 );
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.phoneCompact}>
+  return (<ViewportFrame viewport={VIEWPORTS.portraitShort}>
 <Table players={6} seats={SEATS} dir="rtl">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -2065,12 +2096,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const center = (
@@ -2099,7 +2130,7 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 
 export default function Example() {
   return (<MatrixRow>{(['ltr', 'rtl'] as const).map((dir) => (
-  <ViewportFrame key={dir} viewport={VIEWPORTS.phoneCompact}>
+  <ViewportFrame key={dir} viewport={VIEWPORTS.portraitShort}>
     <Table players={6} seats={SEATS} dir={dir}>
     <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
@@ -2131,8 +2162,8 @@ export default function Example() {
     const tables = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]');
     const ltr = required(tables[0]);
     const rtl = required(tables[1]);
-    await expectSeatFraming(ltr, 6, 'phoneCompact');
-    await expectSeatFraming(rtl, 6, 'phoneCompact');
+    await expectSeatFraming(ltr, 6, 'portraitShort');
+    await expectSeatFraming(rtl, 6, 'portraitShort');
     const ltrBox = required(ltr.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
     const rtlBox = required(rtl.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
     const ltrSeats = ltr.querySelectorAll('[data-ui="game-table-seat"], [data-ui="game-table-play"]');
@@ -2239,7 +2270,7 @@ function ChangingPlays() {
   const [empty, setEmpty] = useState(false);
   return <>
     <Button onClick={() => setEmpty(true)}>Retirar jugadas</Button>
-    <ViewportFrame viewport={VIEWPORTS.phoneCompact}>
+    <ViewportFrame viewport={VIEWPORTS.portraitShort}>
       <Table players={6} seats={SEATS}>
         <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
         <Table.Play>{!empty && <GameCard size="lg" value={{ deck: 'spanish', suit: 'bastos', rank: 12 }} label="rey de bastos" />}</Table.Play>
@@ -2284,12 +2315,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const spanishSeat: RegionFixture<Player> = ((slot) => (
@@ -2303,7 +2334,7 @@ function ChangingPlays() {
   const [empty, setEmpty] = useState(false);
   return <>
     <Button onClick={() => setEmpty(true)}>Retirar jugadas</Button>
-    <ViewportFrame viewport={VIEWPORTS.phoneCompact}>
+    <ViewportFrame viewport={VIEWPORTS.portraitShort}>
       <Table players={6} seats={SEATS}>
         <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
         <Table.Play>{!empty && <GameCard size="lg" value={{ deck: 'spanish', suit: 'bastos', rank: 12 }} label="rey de bastos" />}</Table.Play>
@@ -2321,14 +2352,14 @@ export default function Example() {
   render: () => <ChangingPlays />,
   play: async ({ canvasElement, userEvent }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-    await expectSeatFraming(table, 6, 'phoneCompact');
+    await expectSeatFraming(table, 6, 'portraitShort');
     const play = required(table.querySelector<HTMLElement>('[data-ui="game-table-play"]') ?? undefined);
     const scale = Number.parseFloat(play.style.getPropertyValue('--game-table-play-scale'));
     await expect(scale).toBeLessThan(1);
     await expect(scale * 112).toBeGreaterThanOrEqual(GAME_TABLE_LIMITS.minimumCardWidthPx - 0.01);
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Retirar jugadas' }));
     await waitFor(() => expect(table.querySelectorAll('[data-ui="game-table-play"] [data-ui~="game-card"]')).toHaveLength(0));
-    await expectSeatFraming(table, 6, 'phoneCompact');
+    await expectSeatFraming(table, 6, 'portraitShort');
     await expect(play.getBoundingClientRect().width).toBe(0);
     await expect(play.getBoundingClientRect().height).toBe(0);
     await expect(Number.parseFloat(getComputedStyle(table).getPropertyValue('--game-table-content-scale'))).toBe(1);
@@ -2404,12 +2435,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -2436,8 +2467,8 @@ const center = (
 );
 
 export default function Example() {
-  return (<Matrix>{Object.entries(VIEWPORTS).map(([profile, viewport]) => COUNTS.map((players) => (
-  <ViewportFrame key={\`\${profile}-\${players}\`} viewport={viewport}>
+  return (<Matrix>{Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
+  <ViewportFrame key={\`\${caseName}-\${players}\`} viewport={viewport}>
     <Table players={players} seats={seatsFor(players)} surface="lobby">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -2451,8 +2482,8 @@ export default function Example() {
 }` } } },
   render: (args) => (
     <Matrix>
-      {Object.entries(VIEWPORTS).map(([profile, viewport]) => COUNTS.map((players) => (
-        <ViewportFrame key={`${profile}-${players}`} viewport={viewport}>
+      {Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
+        <ViewportFrame key={`${caseName}-${players}`} viewport={viewport}>
           <Table {...tableRootProps({ ...args, viewport, players, slots: undefined, seats: seatsFor(players), surface: 'lobby' })}>
             <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
             <Table.Play><FixtureContent<Player> content={args.renderPlay} /></Table.Play>
@@ -2468,9 +2499,9 @@ export default function Example() {
     const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]'));
     await expect(tables).toHaveLength(18);
     let index = 0;
-    for (const [profile] of Object.entries(VIEWPORTS) as [CaseName, ViewportSize][]) for (const players of COUNTS) {
-      const expectedFit = profile === 'phoneWide' && players === 6 ? 'insufficient-space' : 'fitted';
-      await expectSeatFraming(required(tables[index++]), players, profile, expectedFit);
+    for (const [caseName] of Object.entries(VIEWPORTS) as [CaseName, ViewportSize][]) for (const players of COUNTS) {
+      const expectedFit = caseName === 'wide' && players === 6 ? 'insufficient-space' : 'fitted';
+      await expectSeatFraming(required(tables[index++]), players, caseName, expectedFit);
     }
   },
 };
@@ -2515,12 +2546,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -2547,8 +2578,8 @@ const center = (
 );
 
 export default function Example() {
-  return (<Matrix>{Object.entries(VIEWPORTS).map(([profile, viewport]) => COUNTS.map((players) => (
-  <ViewportFrame key={\`\${profile}-\${players}\`} viewport={viewport}>
+  return (<Matrix>{Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
+  <ViewportFrame key={\`\${caseName}-\${players}\`} viewport={viewport}>
     <Table players={players} seats={seatsFor(players)} dir="rtl">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -2562,8 +2593,8 @@ export default function Example() {
 }` } } },
   render: (args) => (
     <Matrix>
-      {Object.entries(VIEWPORTS).map(([profile, viewport]) => COUNTS.map((players) => (
-          <ViewportFrame key={`${profile}-${players}`} viewport={viewport}>
+      {Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
+          <ViewportFrame key={`${caseName}-${players}`} viewport={viewport}>
             <Table {...tableRootProps({ ...args, viewport, players, slots: undefined, seats: seatsFor(players), dir: 'rtl' })}>
               <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
               <Table.Play><FixtureContent<Player> content={args.renderPlay} /></Table.Play>
@@ -2579,19 +2610,19 @@ export default function Example() {
     const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]'));
     await expect(tables).toHaveLength(18);
     let index = 0;
-    for (const [profile] of Object.entries(VIEWPORTS) as [CaseName, ViewportSize][]) for (const players of COUNTS) {
-      await expectSeatFraming(required(tables[index++]), players, profile, profile === 'phoneWide' ? 'insufficient-space' : 'fitted');
+    for (const [caseName] of Object.entries(VIEWPORTS) as [CaseName, ViewportSize][]) for (const players of COUNTS) {
+      await expectSeatFraming(required(tables[index++]), players, caseName, caseName === 'wide' ? 'insufficient-space' : 'fitted');
     }
   },
 };
 
 const cardComposition = (clearance: boolean): Story => ({
-  args: { viewport: VIEWPORTS.phoneWide },
+  args: { viewport: VIEWPORTS.wide },
 
   render: (args) => (
     <Matrix>
       {(['sm', 'md', 'lg'] as const).map((size, index) => (
-        <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.phoneWide, height: 480 }}>
+        <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.wide, height: 480 }}>
           <Table {...tableRootProps({ ...args, clearance: clearance ? [32,64,96][index] : 0 })}>
             <Table.Seat><FixtureContent<Player> content={(slot) => (
             <GameCard size={size} label={`${slot.player?.name}: hidden card`} />
@@ -2608,7 +2639,7 @@ const cardComposition = (clearance: boolean): Story => ({
   play: async ({ canvasElement }) => {
     for (const wrapper of canvasElement.querySelectorAll('[data-card-composition]')) {
       const table = required(wrapper.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-      await expectSeatFraming(table, 6, 'phoneWide');
+      await expectSeatFraming(table, 6, 'wide');
       await expect(table).toHaveAttribute('data-layout-fit', 'fitted');
       if (clearance && wrapper.getAttribute('data-card-composition') === 'lg') {
         await expect(table).toHaveAttribute('data-clearance', 'reduced');
@@ -2667,12 +2698,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const center = (
@@ -2688,7 +2719,7 @@ const center = (
 
 export default function Example() {
   return (<Matrix>{(['sm', 'md', 'lg'] as const).map((size, index) => (
-      <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.phoneWide, height: 480 }}>
+      <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.wide, height: 480 }}>
         <Table players={6} seats={SEATS} clearance={0}>
     <Table.Seat><FixtureContent<Player> content={(slot) => <GameCard size={size} label={\`\${slot.player?.name}: hidden card\`} />} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -2735,12 +2766,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const center = (
@@ -2756,7 +2787,7 @@ const center = (
 
 export default function Example() {
   return (<Matrix>{(['sm', 'md', 'lg'] as const).map((size, index) => (
-      <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.phoneWide, height: 480 }}>
+      <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.wide, height: 480 }}>
         <Table players={6} seats={SEATS} clearance={[32, 64, 96][index]}>
     <Table.Seat><FixtureContent<Player> content={(slot) => <GameCard size={size} label={\`\${slot.player?.name}: hidden card\`} />} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -2843,12 +2874,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -2913,18 +2944,18 @@ export default function Example() {
     await expect(rival().map((card) => card.dataset.seatHiddenCardIndex)).toEqual(['0', '1', '2']);
     await expect(table.querySelectorAll('[data-seat-hidden-card="you"]')).toHaveLength(0);
     const third = required(rival()[2]);
-    await expectSeatFraming(table, 2, 'desktop');
+    await expectSeatFraming(table, 2, 'wideLarge');
     const scale = () => Number.parseFloat(getComputedStyle(table).getPropertyValue('--game-table-content-scale'));
     const initialScale = scale();
     await userEvent.click(canvas.getByRole('button', { name: 'Grow content' }));
     await waitFor(() => expect(scale()).toBeLessThan(initialScale));
-    await expectSeatFraming(table, 2, 'desktop');
+    await expectSeatFraming(table, 2, 'wideLarge');
     const grownScale = scale();
     await userEvent.click(canvas.getByRole('button', { name: 'Shrink container' }));
     await waitFor(() => expect(scale()).toBeLessThan(grownScale));
     await expect(table.parentElement?.getBoundingClientRect().width).toBe(380);
     await expect(table.parentElement?.getBoundingClientRect().height).toBe(360);
-    await expectSeatFraming(table, 2, 'desktop');
+    await expectSeatFraming(table, 2, 'wideLarge');
     await userEvent.click(canvas.getByRole('button', { name: 'Reveal first' }));
     await waitFor(() => expect(rival()).toHaveLength(2));
     await expect(rival().map((card) => card.dataset.seatHiddenCardIndex)).toEqual(['0', '1']);
@@ -2938,22 +2969,22 @@ export default function Example() {
     await expect(third).not.toHaveAttribute('data-seat-hidden-card');
     await userEvent.click(canvas.getByRole('button', { name: 'Request clearance' }));
     await waitFor(() => expect(table).toHaveAttribute('data-clearance', 'reduced'));
-    await expectSeatFraming(table, 2, 'desktop');
+    await expectSeatFraming(table, 2, 'wideLarge');
     await userEvent.click(canvas.getByRole('button', { name: 'Restore room' }));
     await waitFor(() => expect(table).toHaveAttribute('data-clearance', 'requested'));
     await expect(Number(table.dataset.clearanceStart)).toBeCloseTo(96, 2);
-    await expectSeatFraming(table, 2, 'desktop');
+    await expectSeatFraming(table, 2, 'wideLarge');
   },
 };
 
 function ResizingTables() {
-  const [viewport, setViewport] = useState(VIEWPORTS.phoneCompact);
+  const [viewport, setViewport] = useState(VIEWPORTS.portraitShort);
   const first = useRef<HTMLDivElement>(null);
   const second = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState('');
   return (
     <>
-      <Button onClick={() => setViewport(VIEWPORTS.phoneWide)}>Landscape viewport</Button>
+      <Button onClick={() => setViewport(VIEWPORTS.wide)}>Landscape viewport</Button>
       <Button onClick={() => {
         const a = first.current?.querySelector<HTMLElement>('[data-game-surface]');
         const b = second.current?.querySelector<HTMLElement>('[data-game-surface]');
@@ -3007,24 +3038,24 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const measurementFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 
 function ResizingTables() {
-  const [viewport, setViewport] = useState(VIEWPORTS.phoneCompact);
+  const [viewport, setViewport] = useState(VIEWPORTS.portraitShort);
   const first = useRef<HTMLDivElement>(null);
   const second = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState('');
   return (
     <>
-      <Button onClick={() => setViewport(VIEWPORTS.phoneWide)}>Landscape viewport</Button>
+      <Button onClick={() => setViewport(VIEWPORTS.wide)}>Landscape viewport</Button>
       <Button onClick={() => {
         const a = first.current?.querySelector<HTMLElement>('[data-game-surface]');
         const b = second.current?.querySelector<HTMLElement>('[data-game-surface]');
@@ -3075,8 +3106,8 @@ export default function Example() {
     await expect(ltrFraction + rtlFraction).toBeCloseTo(1, 4);
     await userEvent.click(canvas.getByRole('button', { name: 'Landscape viewport' }));
     const frame = required(tables[0]).closest('section');
-    await expect(frame?.getBoundingClientRect().width).toBe(VIEWPORTS.phoneWide.width);
-    await expect(frame?.getBoundingClientRect().height).toBe(VIEWPORTS.phoneWide.height);
+    await expect(frame?.getBoundingClientRect().width).toBe(VIEWPORTS.wide.width);
+    await expect(frame?.getBoundingClientRect().height).toBe(VIEWPORTS.wide.height);
     await userEvent.click(canvas.getByRole('button', { name: 'Measure tables' }));
     await expect(canvas.getByRole('status').textContent).not.toBe(before);
   },
@@ -3129,12 +3160,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const center = (
@@ -3160,7 +3191,7 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 );
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.desktop}>
+  return (<ViewportFrame viewport={VIEWPORTS.wideLarge}>
 <Table players={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -3172,13 +3203,13 @@ export default function Example() {
 </ViewportFrame>);
 }` } } },
   args: {
-    players: 6, seats: SEATS, viewport: VIEWPORTS.desktop,
+    players: 6, seats: SEATS, viewport: VIEWPORTS.wideLarge,
     renderSeat: fn((slot, _index, _geometry) => seatWithAvatar(slot, 'sm')),
     center, header: 'Poker · Avatars', dock: <Button>Check</Button>,
   },
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-    await expectSeatFraming(table, 6, 'desktop', 'fitted');
+    await expectSeatFraming(table, 6, 'wideLarge', 'fitted');
     const avatars = table.querySelectorAll('[data-ui="avatar"]');
     await expect(avatars).toHaveLength(6);
     for (const seat of table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]')) {
@@ -3189,7 +3220,7 @@ export default function Example() {
   },
 };
 
-export const UprightProfilesWithAvatars: Story = {
+export const UprightCasesWithAvatars: Story = {
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Avatar, Button, styled, type AvatarSize } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -3206,7 +3237,7 @@ const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
 
 const BoardCenter = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[2] });
 
-const ProfileColumn = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[6] });
+const CaseColumn = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[6] });
 
 type RegionFixture<T extends SeatLike> = (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
 
@@ -3227,12 +3258,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const center = (
@@ -3258,39 +3289,39 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 );
 
 export default function Example() {
-  return (<ProfileColumn>{Object.entries(VIEWPORTS).map(([profile, viewport]) => (
-  <ViewportFrame key={profile} data-container-case={profile} viewport={viewport}>
+  return (<CaseColumn>{Object.entries(VIEWPORTS).map(([caseName, viewport]) => (
+  <ViewportFrame key={caseName} data-container-case={caseName} viewport={viewport}>
     <Table players={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
-    <Table.Header>{\`Poker · \${profile} (6p)\`}</Table.Header>
+    <Table.Header>{\`Poker · \${caseName} (6p)\`}</Table.Header>
     <Table.Dock><Button>Check</Button></Table.Dock>
 
   </Table>
   </ViewportFrame>
-))}</ProfileColumn>);
+))}</CaseColumn>);
 }` } } },
   render: () => (
-    <ProfileColumn>
-      {(['phoneCompact', 'phoneTall', 'phoneWide', 'tablet', 'tabletWide', 'desktop'] as const).map((profile) => (
-        <ViewportFrame key={profile} data-container-case={profile} viewport={VIEWPORTS[profile]}>
+    <CaseColumn>
+      {(['portraitShort', 'portrait', 'wide', 'square', 'squareWide', 'wideLarge'] as const).map((caseName) => (
+        <ViewportFrame key={caseName} data-container-case={caseName} viewport={VIEWPORTS[caseName]}>
           <Table players={6} seats={SEATS}>
             <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
             <Table.Play />
             <Table.Center>{center}</Table.Center>
-            <Table.Header>{`Poker · ${profile} (6p)`}</Table.Header>
+            <Table.Header>{`Poker · ${caseName} (6p)`}</Table.Header>
             <Table.Dock><Button>Check</Button></Table.Dock>
           </Table>
         </ViewportFrame>
       ))}
-    </ProfileColumn>
+    </CaseColumn>
   ),
   play: async ({ canvasElement }) => {
     const tables = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]');
     await expect(tables).toHaveLength(6);
     for (const table of Array.from(tables)) {
-      const short = table.closest<HTMLElement>('[data-container-case]')?.dataset.containerCase === 'phoneWide';
+      const short = table.closest<HTMLElement>('[data-container-case]')?.dataset.containerCase === 'wide';
       await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', short ? 'insufficient-space' : 'fitted'));
       for (const chrome of table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat-chrome"]')) {
         await waitFor(async () => { await expectInside(chrome, table, { tolerancePx: 0.5 }); });
@@ -3342,12 +3373,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -3385,7 +3416,7 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 );
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.desktop}>
+  return (<ViewportFrame viewport={VIEWPORTS.wideLarge}>
 <Table players={4} seats={seatsFor(4)} >
     <Table.Seat><FixtureContent<Player> content={(slot, index) => {
       if (index === 0) return seatChrome(slot);
@@ -3401,7 +3432,7 @@ export default function Example() {
 </ViewportFrame>);
 }` } } },
   args: {
-    players: 4, seats: seatsFor(4), viewport: VIEWPORTS.desktop,
+    players: 4, seats: seatsFor(4), viewport: VIEWPORTS.wideLarge,
     renderSeat: fn((slot, index, _geometry) => {
       if (index === 0) return seatChrome(slot);
       if (index === 1) return (
@@ -3417,7 +3448,7 @@ export default function Example() {
   },
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-    await expectSeatFraming(table, 4, 'desktop', 'fitted');
+    await expectSeatFraming(table, 4, 'wideLarge', 'fitted');
   },
 };
 
@@ -3455,12 +3486,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
@@ -3512,7 +3543,7 @@ export default function Example() {
 </ParityGrid>);
 }` } } },
   args: {
-    players: 6, seats: SEATS, viewport: VIEWPORTS.desktop,
+    players: 6, seats: SEATS, viewport: VIEWPORTS.wideLarge,
     center, header: 'Poker · Chrome Removal Parity', dock: <Button>Check</Button>,
   },
   render: (args) => (
@@ -3540,8 +3571,8 @@ export default function Example() {
   play: async ({ canvasElement }) => {
     const withChromeTable = required(canvasElement.querySelector<HTMLElement>('[data-parity-group="with-chrome"] [data-ui="game-table"]') ?? undefined);
     const withoutChromeTable = required(canvasElement.querySelector<HTMLElement>('[data-parity-group="without-chrome"] [data-ui="game-table"]') ?? undefined);
-    await expectSeatFraming(withChromeTable, 6, 'desktop', 'fitted');
-    await expectSeatFraming(withoutChromeTable, 6, 'desktop', 'fitted');
+    await expectSeatFraming(withChromeTable, 6, 'wideLarge', 'fitted');
+    await expectSeatFraming(withoutChromeTable, 6, 'wideLarge', 'fitted');
 
     const seatsA = Array.from(withChromeTable.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
     const seatsB = Array.from(withoutChromeTable.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
@@ -3614,12 +3645,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const center = (
@@ -3634,7 +3665,7 @@ const center = (
 );
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.phoneCompact}>
+  return (<ViewportFrame viewport={VIEWPORTS.portraitShort}>
 <Table players={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={(slot) => <SpacedCards>
       {[1, 2, 3, 4, 5, 6].map((index) => <GameCard key={index} size="lg" label={\`\${slot.player?.name}: card \${index}\`} />)}
@@ -3648,7 +3679,7 @@ export default function Example() {
 </ViewportFrame>);
 }` } } },
   args: {
-    players: 6, seats: SEATS, viewport: VIEWPORTS.phoneCompact,
+    players: 6, seats: SEATS, viewport: VIEWPORTS.portraitShort,
     center, header: 'Poker · Insufficient Space', dock: <Button>Check</Button>,
     renderSeat: fn((slot, _index, _geometry) => (
       <SpacedCards>
@@ -3707,12 +3738,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const center = (
@@ -3738,7 +3769,7 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 );
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.phoneWide}>
+  return (<ViewportFrame viewport={VIEWPORTS.wide}>
 <Table players={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -3750,12 +3781,12 @@ export default function Example() {
 </ViewportFrame>);
 }` } } },
   args: {
-    players: 6, seats: SEATS, viewport: VIEWPORTS.phoneWide,
+    players: 6, seats: SEATS, viewport: VIEWPORTS.wide,
     renderSeat: fn((slot, _index, _geometry) => seatWithAvatar(slot, 'sm')), center, header: 'Poker · State Stability', dock: <Button>Check</Button>,
   },
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-    await expectSeatFraming(table, 6, 'phoneWide', 'insufficient-space');
+    await expectSeatFraming(table, 6, 'wide', 'insufficient-space');
     const states = new Set<string | null>();
     for (let frame = 0; frame < 12; frame++) {
       await new Promise(requestAnimationFrame);
@@ -3791,7 +3822,7 @@ function TrucoPlayerSeat() {
 
 /** Cada plaza muestra al jugador, sus insignias, la mano oculta y el turno. */
 export const TrucoPlayerChrome: Story = {
-  args: { viewport: VIEWPORTS.desktop, players: 4, seats: seatsFor(4) },
+  args: { viewport: VIEWPORTS.wideLarge, players: 4, seats: seatsFor(4) },
   render: (args) => <DeckProvider default="spanish">
     <ViewportFrame viewport={args.viewport}>
       <Table players={args.players} seats={args.seats ?? []}>
@@ -3846,12 +3877,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 ];
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -3887,7 +3918,7 @@ function TrucoPlayerSeat() {
 
 export default function Example() {
   return (<DeckProvider default="spanish">
-  <ViewportFrame viewport={VIEWPORTS.desktop}>
+  <ViewportFrame viewport={VIEWPORTS.wideLarge}>
 <Table players={4} seats={seatsFor(4)} >
     <Table.Seat><TrucoPlayerSeat /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
@@ -3901,7 +3932,7 @@ export default function Example() {
 }` } } },
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-    await expectSeatFraming(table, 4, 'desktop');
+    await expectSeatFraming(table, 4, 'wideLarge');
     await expect(table.querySelectorAll('[data-ui="game-seat"]')).toHaveLength(4);
     await expect(table.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(12);
     await expect(table.querySelectorAll('[data-ui="game-seat-timer"]')).toHaveLength(1);
@@ -3956,12 +3987,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -3991,8 +4022,8 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 );
 
 export default function Example() {
-  return (<Matrix>{Object.entries(VIEWPORTS).map(([profile, viewport]) => COUNTS.map((players) => (
-  <Row key={\`\${profile}-\${players}\`}>
+  return (<Matrix>{Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
+  <Row key={\`\${caseName}-\${players}\`}>
     <ViewportFrame data-measurement="before" viewport={viewport}>
       <Table players={players} seats={seatsFor(players)} seatPlacement="inside">
     <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
@@ -4018,8 +4049,8 @@ export default function Example() {
 }` } } },
   args: { seatPlacement: 'edge', renderSeat: spanishSeat, renderPlay: spanishPlay, center: <span>Truco</span>, header: 'Truco', dock: <Button>Quiero</Button> },
   render: (args) => <Matrix>
-    {Object.entries(VIEWPORTS).map(([profile, viewport]) => COUNTS.map((players) => (
-      <Row key={`${profile}-${players}`}>
+    {Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
+      <Row key={`${caseName}-${players}`}>
         <ViewportFrame data-measurement="before" viewport={viewport}>
           <Table {...tableRootProps({ ...args, seatPlacement: 'inside', viewport, players, slots: undefined, seats: seatsFor(players) })}>
             <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
@@ -4047,11 +4078,11 @@ export default function Example() {
     await expect(tables).toHaveLength(18);
     const measurements = [];
     let index = 0;
-    for (const [profile, viewport] of Object.entries(VIEWPORTS)) for (const players of COUNTS) {
+    for (const [caseName, viewport] of Object.entries(VIEWPORTS)) for (const players of COUNTS) {
       const table = required(tables[index++]);
       const previous = required(previousTables[index - 1]);
-      const expectedFit = profile === 'phoneWide' ? 'insufficient-space' : 'fitted';
-      await expectSeatFraming(previous, players, profile, expectedFit);
+      const expectedFit = caseName === 'wide' ? 'insufficient-space' : 'fitted';
+      await expectSeatFraming(previous, players, caseName, expectedFit);
       await waitFor(() => expect(table.dataset.layoutFit).not.toBe('measuring'));
       const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
       const seats = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]'));
@@ -4082,7 +4113,7 @@ export default function Example() {
         const edge = 1 / Math.hypot(ux / (surface.width / 2), uy / (surface.height / 2));
         return { radius: Number(radius.toFixed(2)), overhang: Number((radius + extent - edge).toFixed(2)) };
       });
-      measurements.push({ profile, players, fit: table.dataset.layoutFit,
+      measurements.push({ caseName, players, fit: table.dataset.layoutFit,
         beforeSurface: [Number(previousSurface.width.toFixed(2)), Number(previousSurface.height.toFixed(2))],
         afterSurface: [Number(surface.width.toFixed(2)), Number(surface.height.toFixed(2))],
         seatOverhangs: radialMetrics(seats).map((metric) => metric.overhang),
@@ -4092,9 +4123,9 @@ export default function Example() {
         seatOutset: Number((own.bottom - surface.bottom).toFixed(2)),
         playRadius: Number(playRadius.toFixed(2)), freeInnerRadius: Number(innerRadius(plays, surface).toFixed(2)),
         seatInnerRadius: Number((seatRadius - own.height / 2).toFixed(2)), viewport });
-      await expectSeatFraming(table, players, profile, expectedFit);
+      await expectSeatFraming(table, players, caseName, expectedFit);
       if (table.dataset.layoutFit === 'fitted') {
-        await expect(own.bottom - surface.bottom, `${profile}/${players} crosses felt border`).toBeGreaterThan(0.5);
+        await expect(own.bottom - surface.bottom, `${caseName}/${players} crosses felt border`).toBeGreaterThan(0.5);
         await expect(playRadius).toBeGreaterThan(0);
         await expect(playRadius).toBeLessThan(seatRadius);
       }
@@ -4151,12 +4182,12 @@ const SEATS: [Player, Player, Player, Player, Player, Player] = [
 const COUNTS = [2, 4, 6] as const;
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatsFor = (players: BoardPlayerCount) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
@@ -4187,7 +4218,7 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 
 export default function Example() {
   return (<MatrixRow>{COUNTS.map((players) => (['inside', 'edge', 'outside'] as const).map((seatPlacement) => (
-  <ViewportFrame key={\`\${players}-\${seatPlacement}\`} data-placement-count={players} viewport={VIEWPORTS.phoneCompact}>
+  <ViewportFrame key={\`\${players}-\${seatPlacement}\`} data-placement-count={players} viewport={VIEWPORTS.portraitShort}>
     <Table players={players} seats={seatsFor(players)} seatPlacement={seatPlacement}>
     <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
@@ -4216,7 +4247,7 @@ export default function Example() {
   play: async ({ canvasElement }) => {
     for (const table of canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]')) {
       const players = Number(table.closest<HTMLElement>('[data-placement-count]')?.dataset.placementCount);
-      await expectSeatFraming(table, players, 'phoneCompact');
+      await expectSeatFraming(table, players, 'portraitShort');
       const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
       const seat = required(table.querySelector<HTMLElement>('[data-ui="game-table-seat"]') ?? undefined).getBoundingClientRect();
       if (table.dataset.seatPlacement === 'inside') await expect(seat.bottom).toBeLessThan(surface.bottom - 1);
@@ -4243,7 +4274,7 @@ export default function Example() {
 };
 
 const GENERAL_COUNTS = [2, 3, 4, 5, 6, 7, 9] as const;
-const GENERAL_PROFILES = ['phoneCompact', 'desktop'] as const;
+const GENERAL_CASES = ['portraitShort', 'wideLarge'] as const;
 const generalSeats = (count: number, teamCount: number): Player[] => Array.from({ length: count }, (_, index) => ({
   key: `player-${index}`, name: `P${index + 1}`, teamIdx: index % teamCount, isMe: index === count - 1,
 }));
@@ -4275,12 +4306,12 @@ function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixtu
 interface Player extends SeatLike { name: string }
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
@@ -4309,7 +4340,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 }));
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.desktop}>
+  return (<ViewportFrame viewport={VIEWPORTS.wideLarge}>
 <Table players={9} seats={generalSeats(9, 3)} teamCount={3}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
@@ -4320,10 +4351,10 @@ export default function Example() {
   </Table>
 </ViewportFrame>);
 }` } } },
-  args: { players: 9, teamCount: 3, seats: generalSeats(9, 3), viewport: VIEWPORTS.desktop },
+  args: { players: 9, teamCount: 3, seats: generalSeats(9, 3), viewport: VIEWPORTS.wideLarge },
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-    await expectSeatFraming(table, 9, 'desktop');
+    await expectSeatFraming(table, 9, 'wideLarge');
     await expect(Array.from(table.querySelectorAll<HTMLElement>('[data-slot-team]'), (seat) => seat.dataset.slotTeam))
       .toEqual(['2', '1', '0', '2', '1', '0', '2', '1', '0']);
     for (const count of GENERAL_COUNTS) for (const teamCount of [1, 2, 3, 4, count + 1]) {
@@ -4390,12 +4421,12 @@ function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixtu
 interface Player extends SeatLike { name: string }
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
@@ -4420,7 +4451,7 @@ const center = (
 );
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.phoneCompact}>
+  return (<ViewportFrame viewport={VIEWPORTS.portraitShort}>
 <Table players={3} seatSlots={[
     { key: 'third', teamIdx: 42, player: { key: 'c', name: 'Casey', teamIdx: 42 } },
     { key: 'first', teamIdx: 7, player: { key: 'a', name: 'Alex', teamIdx: 7 } },
@@ -4442,7 +4473,7 @@ export default function Example() {
   ] },
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-    await expectSeatFraming(table, 3, 'phoneCompact');
+    await expectSeatFraming(table, 3, 'portraitShort');
     await expect(Array.from(table.querySelectorAll<HTMLElement>('[data-slot-team]'), (seat) => [seat.dataset.slotKey, seat.dataset.slotTeam]))
       .toEqual([['third', '42'], ['first', '7'], ['empty', '99']]);
   },
@@ -4452,9 +4483,9 @@ const generalCountMatrix = (seatPlacement: NonNullable<GameTableProps['seatPlace
 
   args: { seatPlacement, dir, center: <span>Pot: 240</span>, renderPlay: spanishPlay },
   render: (args) => <Matrix>
-    {GENERAL_PROFILES.map((profile) => GENERAL_COUNTS.map((players) => (
-      <ViewportFrame key={`${profile}-${players}`} data-general-count={players} viewport={VIEWPORTS[profile]}>
-        <Table {...tableRootProps({ ...args, viewport: VIEWPORTS[profile], players, teamCount: 3, slots: undefined, seats: generalSeats(players, 3) })}>
+    {GENERAL_CASES.map((caseName) => GENERAL_COUNTS.map((players) => (
+      <ViewportFrame key={`${caseName}-${players}`} data-general-count={players} viewport={VIEWPORTS[caseName]}>
+        <Table {...tableRootProps({ ...args, viewport: VIEWPORTS[caseName], players, teamCount: 3, slots: undefined, seats: generalSeats(players, 3) })}>
           <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
           <Table.Play><FixtureContent<Player> content={args.renderPlay} /></Table.Play>
           <Table.Center>{args.center}</Table.Center>
@@ -4466,13 +4497,13 @@ const generalCountMatrix = (seatPlacement: NonNullable<GameTableProps['seatPlace
   </Matrix>,
   play: async ({ canvasElement }) => {
     const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]'));
-    await expect(tables).toHaveLength(GENERAL_PROFILES.length * GENERAL_COUNTS.length);
+    await expect(tables).toHaveLength(GENERAL_CASES.length * GENERAL_COUNTS.length);
     const measurements = [];
     let index = 0;
-    for (const profile of GENERAL_PROFILES) for (const players of GENERAL_COUNTS) {
+    for (const caseName of GENERAL_CASES) for (const players of GENERAL_COUNTS) {
       const table = required(tables[index++]);
-      const expectedFit = seatPlacement === 'inside' && profile === 'phoneCompact' && players === 9 ? 'insufficient-space' : 'fitted';
-      await expectSeatFraming(table, players, profile, expectedFit, true);
+      const expectedFit = seatPlacement === 'inside' && caseName === 'portraitShort' && players === 9 ? 'insufficient-space' : 'fitted';
+      await expectSeatFraming(table, players, caseName, expectedFit, true);
       const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
       const plays = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-play"]'));
       await expect(plays).toHaveLength(players);
@@ -4484,7 +4515,7 @@ const generalCountMatrix = (seatPlacement: NonNullable<GameTableProps['seatPlace
         return radius - (Math.abs(dx / radius) * box.width + Math.abs(dy / radius) * box.height) / 2;
       });
       const freeInnerRadius = Math.min(...innerRadii);
-      await expect(freeInnerRadius, `${profile}/${players} free inner radius`).toBeGreaterThan(0);
+      await expect(freeInnerRadius, `${caseName}/${players} free inner radius`).toBeGreaterThan(0);
       const regions = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"], [data-ui="game-table-play"], [data-ui="game-table-center"]'));
       const separations = regions.flatMap((region, index) => regions.slice(index + 1).map((other) => {
         const a = region.getBoundingClientRect();
@@ -4495,7 +4526,7 @@ const generalCountMatrix = (seatPlacement: NonNullable<GameTableProps['seatPlace
       const gap = Number.parseFloat(getComputedStyle(table).getPropertyValue('--game-table-content-gap'));
       if (expectedFit === 'fitted') await expect(minimumSeparation).toBeGreaterThanOrEqual(gap - GEOMETRY_TOLERANCE_PX);
       else await expect(minimumSeparation, 'insufficient space has a measurable gap violation at the preserved floor').toBeLessThan(gap - GEOMETRY_TOLERANCE_PX);
-      measurements.push({ profile, players, seatPlacement, fit: table.dataset.layoutFit,
+      measurements.push({ caseName, players, seatPlacement, fit: table.dataset.layoutFit,
         surface: [surface.width, surface.height], freeInnerRadius, minimumSeparation,
         scale: Number.parseFloat(getComputedStyle(table).getPropertyValue('--game-table-content-scale')) });
     }
@@ -4539,12 +4570,12 @@ function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixtu
 interface Player extends SeatLike { name: string }
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
@@ -4576,15 +4607,15 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 
 const GENERAL_COUNTS = [2, 3, 4, 5, 6, 7, 9] as const;
 
-const GENERAL_PROFILES = ['phoneCompact', 'desktop'] as const;
+const GENERAL_CASES = ['portraitShort', 'wideLarge'] as const;
 
 const generalSeats = (count: number, teamCount: number): Player[] => Array.from({ length: count }, (_, index) => ({
   key: \`player-\${index}\`, name: \`P\${index + 1}\`, teamIdx: index % teamCount, isMe: index === count - 1,
 }));
 
 export default function Example() {
-  return (<Matrix>{GENERAL_PROFILES.map((profile) => GENERAL_COUNTS.map((players) => (
-  <ViewportFrame key={\`\${profile}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[profile]}>
+  return (<Matrix>{GENERAL_CASES.map((caseName) => GENERAL_COUNTS.map((players) => (
+  <ViewportFrame key={\`\${caseName}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[caseName]}>
     <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="edge" dir="ltr">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
@@ -4631,12 +4662,12 @@ function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixtu
 interface Player extends SeatLike { name: string }
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
@@ -4668,15 +4699,15 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 
 const GENERAL_COUNTS = [2, 3, 4, 5, 6, 7, 9] as const;
 
-const GENERAL_PROFILES = ['phoneCompact', 'desktop'] as const;
+const GENERAL_CASES = ['portraitShort', 'wideLarge'] as const;
 
 const generalSeats = (count: number, teamCount: number): Player[] => Array.from({ length: count }, (_, index) => ({
   key: \`player-\${index}\`, name: \`P\${index + 1}\`, teamIdx: index % teamCount, isMe: index === count - 1,
 }));
 
 export default function Example() {
-  return (<Matrix>{GENERAL_PROFILES.map((profile) => GENERAL_COUNTS.map((players) => (
-  <ViewportFrame key={\`\${profile}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[profile]}>
+  return (<Matrix>{GENERAL_CASES.map((caseName) => GENERAL_COUNTS.map((players) => (
+  <ViewportFrame key={\`\${caseName}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[caseName]}>
     <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="inside" dir="ltr">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
@@ -4723,12 +4754,12 @@ function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixtu
 interface Player extends SeatLike { name: string }
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
@@ -4760,15 +4791,15 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 
 const GENERAL_COUNTS = [2, 3, 4, 5, 6, 7, 9] as const;
 
-const GENERAL_PROFILES = ['phoneCompact', 'desktop'] as const;
+const GENERAL_CASES = ['portraitShort', 'wideLarge'] as const;
 
 const generalSeats = (count: number, teamCount: number): Player[] => Array.from({ length: count }, (_, index) => ({
   key: \`player-\${index}\`, name: \`P\${index + 1}\`, teamIdx: index % teamCount, isMe: index === count - 1,
 }));
 
 export default function Example() {
-  return (<Matrix>{GENERAL_PROFILES.map((profile) => GENERAL_COUNTS.map((players) => (
-  <ViewportFrame key={\`\${profile}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[profile]}>
+  return (<Matrix>{GENERAL_CASES.map((caseName) => GENERAL_COUNTS.map((players) => (
+  <ViewportFrame key={\`\${caseName}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[caseName]}>
     <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="outside" dir="ltr">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
@@ -4815,12 +4846,12 @@ function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixtu
 interface Player extends SeatLike { name: string }
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const seatChrome = (slot: GameTableSlot<Player>) => (
@@ -4852,15 +4883,15 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 
 const GENERAL_COUNTS = [2, 3, 4, 5, 6, 7, 9] as const;
 
-const GENERAL_PROFILES = ['phoneCompact', 'desktop'] as const;
+const GENERAL_CASES = ['portraitShort', 'wideLarge'] as const;
 
 const generalSeats = (count: number, teamCount: number): Player[] => Array.from({ length: count }, (_, index) => ({
   key: \`player-\${index}\`, name: \`P\${index + 1}\`, teamIdx: index % teamCount, isMe: index === count - 1,
 }));
 
 export default function Example() {
-  return (<Matrix>{GENERAL_PROFILES.map((profile) => GENERAL_COUNTS.map((players) => (
-  <ViewportFrame key={\`\${profile}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[profile]}>
+  return (<Matrix>{GENERAL_CASES.map((caseName) => GENERAL_COUNTS.map((players) => (
+  <ViewportFrame key={\`\${caseName}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[caseName]}>
     <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="edge" dir="rtl">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
@@ -4918,16 +4949,16 @@ function PokerSeat() {
   return <PokerSeatContent data-poker-seat><span>{player?.name}</span><span>1,200 chips</span></PokerSeatContent>;
 }
 
-function PokerViewport({ viewport, profile }: { viewport: ViewportSize; profile: CaseName }) {
-  return <FlightsViewport data-viewport-case={profile} viewport={viewport}>
+function PokerViewport({ viewport, caseName }: { viewport: ViewportSize; caseName: CaseName }) {
+  return <FlightsViewport data-viewport-case={caseName} viewport={viewport}>
     <PokerTable />
   </FlightsViewport>;
 }
 
 function PokerFixture() {
   return <DeckProvider default="french"><Matrix>
-    {(['phoneCompact', 'phoneTall', 'phoneWide', 'desktop'] as const).map((profile) => <PokerViewport key={profile} profile={profile}
-      viewport={profile === 'phoneWide' ? { ...VIEWPORTS.phoneWide, height: 480 } : VIEWPORTS[profile]} />)}
+    {(['portraitShort', 'portrait', 'wide', 'wideLarge'] as const).map((caseName) => <PokerViewport key={caseName} caseName={caseName}
+      viewport={caseName === 'wide' ? { ...VIEWPORTS.wide, height: 480 } : VIEWPORTS[caseName]} />)}
   </Matrix></DeckProvider>;
 }
 
@@ -4968,12 +4999,12 @@ type GameTableProps<T extends SeatLike = SeatLike> = Omit<TableProps<T>, 'slots'
 interface Player extends SeatLike { name: string }
 
 const VIEWPORTS = {
-  phoneCompact: { width: 412, height: 816 },
-  phoneTall: { width: 390, height: 844 },
-  phoneWide: { width: 840, height: 360 },
-  tablet: { width: 834, height: 1112 },
-  tabletWide: { width: 1000, height: 900 },
-  desktop: { width: 1440, height: 900 },
+  portraitShort: { width: 412, height: 816 },
+  portrait: { width: 390, height: 844 },
+  wide: { width: 840, height: 360 },
+  square: { width: 834, height: 1112 },
+  squareWide: { width: 1000, height: 900 },
+  wideLarge: { width: 1440, height: 900 },
 } satisfies Record<string, { width: number; height: number }>;
 
 const center = (
@@ -5050,8 +5081,8 @@ function PokerViewport({ viewport }: { viewport: ViewportSize }) {
 
 function PokerFixture() {
   return <DeckProvider default="french"><Matrix>
-    {(['phoneCompact', 'phoneTall', 'phoneWide', 'desktop'] as const).map((profile) => <PokerViewport key={profile}
-      viewport={profile === 'phoneWide' ? { ...VIEWPORTS.phoneWide, height: 480 } : VIEWPORTS[profile]} />)}
+    {(['portraitShort', 'portrait', 'wide', 'wideLarge'] as const).map((caseName) => <PokerViewport key={caseName}
+      viewport={caseName === 'wide' ? { ...VIEWPORTS.wide, height: 480 } : VIEWPORTS[caseName]} />)}
   </Matrix></DeckProvider>;
 }
 
@@ -5062,8 +5093,8 @@ export default function Example() {
     const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]'));
     await expect(tables).toHaveLength(4);
     for (const table of tables) {
-      const profile = (table.closest('[data-viewport-case]') as HTMLElement).dataset.viewportCase as CaseName;
-      await expectSeatFraming(table, 6, profile);
+      const caseName = (table.closest('[data-viewport-case]') as HTMLElement).dataset.viewportCase as CaseName;
+      await expectSeatFraming(table, 6, caseName);
       await expect(table.querySelectorAll('[data-ui="game-table-seat"] [data-ui~="game-card"]')).toHaveLength(0);
       await expect(table.querySelectorAll('[data-slot-team="0"]')).toHaveLength(6);
       const community = required(table.querySelector<HTMLElement>('[data-ui="game-table-center"]') ?? undefined);
