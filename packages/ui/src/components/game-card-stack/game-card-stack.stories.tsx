@@ -24,28 +24,30 @@ function ReplacedStackRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="stack-root" />;
 }
 
-const stackRootRef = fn();
-
 /** Replace the stack container while retaining pile inspection. */
 export const ReplacedRootKeepsInspection: Story = {
   tags: ['!autodocs'],
   args: {
     slots: { root: ReplacedStackRoot },
-    slotProps: { root: { ref: stackRootRef, className: 'custom-stack', title: 'Played cards' } },
+    slotProps: { root: { ref: fn(), onKeyDown: fn(), className: 'custom-stack', title: 'Played cards' } },
   },
-  play: async ({ canvasElement, canvas, userEvent }) => {
+  play: async ({ canvasElement, canvas, userEvent, args }) => {
     const root = canvasElement.querySelector('[data-replacement="stack-root"]')!;
     await expect(root).toHaveAttribute('data-ui', 'game-card-stack');
     await expect(root).toHaveClass('custom-stack');
     await expect(root).toHaveAttribute('title', 'Played cards');
-    await expect(stackRootRef).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
     await expect(getComputedStyle(root).position).toBe('relative');
     const trigger = canvas.getByRole('button', { name: "North's played cards" });
     await userEvent.click(trigger);
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await userEvent.keyboard('{Escape}');
+    await expect(args.slotProps?.root?.onKeyDown).toHaveBeenCalledTimes(1);
+    await expect(args.slotProps?.root?.onKeyDown).toHaveBeenCalledWith(expect.objectContaining({ key: 'Escape' }));
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await expect(trigger).toHaveFocus();
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(1, 'North');
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, null);
   },
 };
 

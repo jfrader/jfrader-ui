@@ -15,7 +15,6 @@ export type GameRoundsPartProps<T extends 'span' | 'ol' | 'li'> = ComponentProps
   css?: Interpolation<Theme>;
 };
 
-
 export interface GameRoundsSlotProps {
   /** Group wrapping the label and the round list. */
   root?: GameCardRootSlotProps;
@@ -33,13 +32,13 @@ export interface GameRoundsSlots {
   /** Group wrapping the label and the round list. */
   root?: ComponentType<GameCardRootProps>;
   /** Text naming the round list. */
-  label?: ComponentType<ComponentPropsWithRef<'span'> & GameRoundsPartProps<'span'>>;
+  label?: ComponentType<GameRoundsPartProps<'span'>>;
   /** Ordered list holding one entry per round. */
-  list?: ComponentType<ComponentPropsWithRef<'ol'> & GameRoundsPartProps<'ol'>>;
+  list?: ComponentType<GameRoundsPartProps<'ol'>>;
   /** One round, carrying its own outcome state. */
-  round?: ComponentType<ComponentPropsWithRef<'li'> & GameRoundsPartProps<'li'>>;
+  round?: ComponentType<GameRoundsPartProps<'li'>>;
   /** Result text shown beside the round label. */
-  outcome?: ComponentType<ComponentPropsWithRef<'span'> & GameRoundsPartProps<'span'>>;
+  outcome?: ComponentType<GameRoundsPartProps<'span'>>;
 }
 
 export interface GameRoundsProps extends Omit<GameCardRootProps, 'children'>, Omit<GameCardRootCustomization, 'slots'>, SxProps {

@@ -13,7 +13,6 @@ export type GameMarksPartProps = ComponentPropsWithRef<'span'> & {
   css?: Interpolation<Theme>;
 };
 
-
 export interface GameMarksSlotProps {
   /** Group wrapping the label, the count and the marks. */
   root?: GameCardRootSlotProps;
@@ -31,13 +30,13 @@ export interface GameMarksSlots {
   /** Outer card container wrapping the marks widget. */
   root?: ComponentType<GameCardRootProps>;
   /** Text naming what the marks count. */
-  label?: ComponentType<ComponentPropsWithRef<'span'> & GameMarksPartProps>;
+  label?: ComponentType<GameMarksPartProps>;
   /** Formatted number of marks. */
-  count?: ComponentType<ComponentPropsWithRef<'span'> & GameMarksPartProps>;
+  count?: ComponentType<GameMarksPartProps>;
   /** Row or pile holding the individual marks. */
-  marks?: ComponentType<ComponentPropsWithRef<'span'> & GameMarksPartProps>;
+  marks?: ComponentType<GameMarksPartProps>;
   /** One mark in the row. */
-  mark?: ComponentType<ComponentPropsWithRef<'span'> & GameMarksPartProps>;
+  mark?: ComponentType<GameMarksPartProps>;
 }
 
 export interface GameMarksProps extends Omit<GameCardRootProps, 'children'>, Omit<GameCardRootCustomization, 'slots'>, SxProps {

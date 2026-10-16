@@ -1,3 +1,5 @@
+const DEFAULT_TEAM_COUNT = 2;
+
 /** Validates a seat count and returns it. Any integer >= 2 is a valid table. */
 export const resolveSeatCount = (totalSeats: number): number => {
   if (!Number.isInteger(totalSeats) || totalSeats < 2) {
@@ -46,7 +48,7 @@ export const buildTableOrderSlots = <T extends SeatLike>(
   direction: TableTurnDirection,
 ): GameTableSlot<T>[] => {
   validateSeatKeys(players);
-  const slots = players.map((player, index) => ({ key: player.key, teamIdx: player.teamIdx ?? index % 2, player }));
+  const slots = players.map((player, index) => ({ key: player.key, teamIdx: player.teamIdx ?? index % DEFAULT_TEAM_COUNT, player }));
   const meIndex = slots.findIndex((slot) => slot.player.isMe);
   const rotatedSlots = meIndex > 0 ? [...slots.slice(meIndex), ...slots.slice(0, meIndex)] : slots;
   return applyTableTurnDirection(rotatedSlots, direction);
@@ -57,7 +59,7 @@ export const buildAlternatingSlots = <T extends SeatLike>(
   players: readonly T[],
   fill: number | undefined,
   direction: TableTurnDirection,
-  teamCount = 2,
+  teamCount = DEFAULT_TEAM_COUNT,
 ): GameTableSlot<T>[] => {
   validateSeatKeys(players);
   const length = resolveSeatCount(fill ?? Math.max(players.length, 2));
@@ -98,7 +100,7 @@ export const buildAlternatingSlots = <T extends SeatLike>(
  * With teamCount=1 there is no team leader opposite: frontLeaderSeatIndex is -1.
  * Equal-distance rivals use visual slot order, including on odd-sized tables.
  */
-export const getTablePointSeatIndexes = <T extends SeatLike>(slots: readonly GameTableSlot<T>[], teamCount = 2) => {
+export const getTablePointSeatIndexes = <T extends SeatLike>(slots: readonly GameTableSlot<T>[], teamCount = DEFAULT_TEAM_COUNT) => {
   const mySeatIndex = slots.findIndex((slot) => Boolean(slot.player?.isMe));
   const bottomLeaderSeatIndex = mySeatIndex >= 0 ? mySeatIndex : slots.findIndex((slot) => Boolean(slot.player));
   if (bottomLeaderSeatIndex < 0 || !slots.length) {

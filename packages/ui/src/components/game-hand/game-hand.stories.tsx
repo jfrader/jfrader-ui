@@ -28,29 +28,6 @@ const CARDS: GameHandCard[] = [
   { id: 'ten-spades', label: 'Ten of spades', value: { deck: 'french', suit: 'spades', rank: 10 } },
 ];
 
-const rootRef = fn();
-
-/** Replace the hand container while retaining selection and confirmation. */
-export const ReplacedRootKeepsSelection: Story = {
-  tags: ['!autodocs'],
-  args: {
-    component: ReplacedHandRoot,
-    slotProps: { root: { className: 'custom-hand', ref: rootRef, title: 'Your cards' } },
-  },
-  play: async ({ canvasElement, canvas, userEvent, args }) => {
-    const root = canvasElement.querySelector('[data-replacement="hand-root"]')!;
-    await expect(root).toHaveAttribute('data-ui', 'game-hand');
-    await expect(root).toHaveClass('custom-hand');
-    await expect(root).toHaveAttribute('title', 'Your cards');
-    await expect(rootRef).toHaveBeenCalledWith(root);
-    await expect(getComputedStyle(root).display).toBe('inline-flex');
-    await userEvent.click(canvas.getByRole('button', { name: 'Ace of spades' }));
-    await expect(canvas.getByRole('button', { name: 'Ace of spades' })).toHaveAttribute('aria-pressed', 'true');
-    await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));
-    await expect(args.onPlayIntent).toHaveBeenCalledWith(CARDS[0]);
-  },
-};
-
 const meta = {
   title: 'Games/GameHand', component: GameHand, tags: ['autodocs'],
   args: { cards: CARDS.slice(0, 3), playLabel: 'Play card', onValueChange: fn(), onPlayIntent: fn() },
@@ -105,6 +82,27 @@ const cards = [
 } satisfies Meta<typeof GameHand>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+/** Replace the hand container while retaining selection and confirmation. */
+export const ReplacedRootKeepsSelection: Story = {
+  tags: ['!autodocs'],
+  args: {
+    component: ReplacedHandRoot,
+    slotProps: { root: { className: 'custom-hand', ref: fn(), title: 'Your cards' } },
+  },
+  play: async ({ canvasElement, canvas, userEvent, args }) => {
+    const root = canvasElement.querySelector('[data-replacement="hand-root"]')!;
+    await expect(root).toHaveAttribute('data-ui', 'game-hand');
+    await expect(root).toHaveClass('custom-hand');
+    await expect(root).toHaveAttribute('title', 'Your cards');
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(getComputedStyle(root).display).toBe('inline-flex');
+    await userEvent.click(canvas.getByRole('button', { name: 'Ace of spades' }));
+    await expect(canvas.getByRole('button', { name: 'Ace of spades' })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));
+    await expect(args.onPlayIntent).toHaveBeenCalledWith(CARDS[0]);
+  },
+};
 
 async function checkFan(element: HTMLElement, count: number) {
   const parity = PLAYER_PARITY.find((item) => item.count === count)!;

@@ -136,28 +136,28 @@ export function GameHand({
   return (
     <CardRoot {...rest} ref={ref} marker="game-hand" component={component} slots={slots}
       rootSlot={slotProps?.root} className={className} structure={[rootStyle, gameCardSizeStyles[size]]} sx={sx}>
-          <Fan {...slotProps?.fan} data-ui={cardPartIdentity('game-hand-fan', slotProps?.fan?.['data-ui'])} className={slotProps?.fan?.className} css={[fanStyle, slotProps?.fan?.css]}>
-            {cards.map((card, index) => {
-              const angle = rotations[index] ?? 0;
-              return (
-                // CardFlights measures this wrapper using the shared card id.
-                 <Card {...slotProps?.card} key={card.id} type="button" data-ui={cardPartIdentity('game-hand-card', slotProps?.card?.['data-ui'])} data-hand-card={card.id}
-                   ref={registrationRef(card.id)}
-                   aria-pressed={selectedId === card.id} aria-disabled={disabled || undefined}
-                    onClick={(event) => { slotProps?.card?.onClick?.(event); if (!event.defaultPrevented && !disabled) select(selectedId === card.id ? null : card.id); }}
-                  className={slotProps?.card?.className} css={[cardStyle, slotProps?.card?.css]}
-                   style={{ '--hand-angle': `${angle}deg`, '--hand-drop': `${angle ? HAND_FAN_DROP_PX : 0}px`, ...slotProps?.card?.style } as CSSProperties}>
-                   <GameCard value={card.value} label={card.label} size={size} dimmed={disabled} artSet={artSet} cardArtSets={cardArtSets} />
-                 </Card>
-              );
-            })}
-          </Fan>
-           <Button {...slotProps?.confirm} type="button" data-ui={cardPartIdentity('game-hand-confirm', slotProps?.confirm?.['data-ui'])} aria-disabled={disabled || !selectedCard || !onPlayIntent}
-              render={(props) => <Confirm {...props} />}
-            className={slotProps?.confirm?.className} css={slotProps?.confirm?.css}
-             onClick={(event) => { slotProps?.confirm?.onClick?.(event); if (!event.defaultPrevented && !disabled && selectedCard) onPlayIntent?.(selectedCard); }}>
-            {playLabel}
-          </Button>
+      <Fan {...slotProps?.fan} data-ui={cardPartIdentity('game-hand-fan', slotProps?.fan?.['data-ui'])} className={slotProps?.fan?.className} css={[fanStyle, slotProps?.fan?.css]}>
+        {cards.map((card, index) => {
+          const angle = rotations[index] ?? 0;
+          return (
+            // CardFlights measures this wrapper using the shared card id.
+            <Card {...slotProps?.card} key={card.id} type="button" data-ui={cardPartIdentity('game-hand-card', slotProps?.card?.['data-ui'])} data-hand-card={card.id}
+              ref={registrationRef(card.id)}
+              aria-pressed={selectedId === card.id} aria-disabled={disabled || undefined}
+              onClick={(event) => { slotProps?.card?.onClick?.(event); if (!event.defaultPrevented && !disabled) select(selectedId === card.id ? null : card.id); }}
+              className={slotProps?.card?.className} css={[cardStyle, slotProps?.card?.css]}
+              style={{ '--hand-angle': `${angle}deg`, '--hand-drop': `${angle ? HAND_FAN_DROP_PX : 0}px`, ...slotProps?.card?.style } as CSSProperties}>
+              <GameCard value={card.value} label={card.label} size={size} dimmed={disabled} artSet={artSet} cardArtSets={cardArtSets} />
+            </Card>
+          );
+        })}
+      </Fan>
+      <Button {...slotProps?.confirm} type="button" data-ui={cardPartIdentity('game-hand-confirm', slotProps?.confirm?.['data-ui'])} aria-disabled={disabled || !selectedCard || !onPlayIntent}
+        render={(props) => <Confirm {...props} />}
+        className={slotProps?.confirm?.className} css={slotProps?.confirm?.css}
+        onClick={(event) => { slotProps?.confirm?.onClick?.(event); if (!event.defaultPrevented && !disabled && selectedCard) onPlayIntent?.(selectedCard); }}>
+        {playLabel}
+      </Button>
     </CardRoot>
   );
 }

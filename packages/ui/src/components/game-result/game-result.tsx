@@ -22,7 +22,6 @@ export interface GameResultPartProps extends ComponentPropsWithRef<'div'> {
   css?: Interpolation<Theme>;
 }
 
-
 export interface GameResultSlotProps {
   /** Outer card container wrapping the game result panel. */
   root?: GameCardRootSlotProps;
@@ -44,17 +43,17 @@ export interface GameResultSlots {
   /** Outer card container wrapping the game result panel. */
   root?: ComponentType<GameCardRootProps>;
   /** Small label above the title, such as the match stage. */
-  eyebrow?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+  eyebrow?: ComponentType<GameResultPartProps>;
   /** Headline naming the outcome. */
-  title?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+  title?: ComponentType<GameResultPartProps>;
   /** Supporting line below the title. */
-  summary?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+  summary?: ComponentType<GameResultPartProps>;
   /** Panel holding the reward summary. */
-  reward?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+  reward?: ComponentType<GameResultPartProps>;
   /** Row holding the buttons that continue or replay. */
-  actions?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+  actions?: ComponentType<GameResultPartProps>;
   /** Panel holding the celebration artwork. */
-  celebration?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+  celebration?: ComponentType<GameResultPartProps>;
 }
 
 export interface GameResultProps

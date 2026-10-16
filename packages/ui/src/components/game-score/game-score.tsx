@@ -20,7 +20,6 @@ export type GameScorePartProps<T extends 'div' | 'span' | 'dl' | 'dt' | 'dd'> = 
   css?: Interpolation<Theme>;
 };
 
-
 export interface GameScoreSlotProps {
   /** Group wrapping the label and the score rows. */
   root?: GameCardRootSlotProps;
@@ -42,17 +41,17 @@ export interface GameScoreSlots {
   /** Group wrapping the label and the score rows. */
   root?: ComponentType<GameCardRootProps>;
   /** Text naming the score list. */
-  label?: ComponentType<ComponentPropsWithRef<'span'> & GameScorePartProps<'span'>>;
+  label?: ComponentType<GameScorePartProps<'span'>>;
   /** Definition list holding every row. */
-  list?: ComponentType<ComponentPropsWithRef<'dl'> & GameScorePartProps<'dl'>>;
+  list?: ComponentType<GameScorePartProps<'dl'>>;
   /** One player's row. */
-  row?: ComponentType<ComponentPropsWithRef<'div'> & GameScorePartProps<'div'>>;
+  row?: ComponentType<GameScorePartProps<'div'>>;
   /** Term holding the player or side name. */
-  name?: ComponentType<ComponentPropsWithRef<'dt'> & GameScorePartProps<'dt'>>;
+  name?: ComponentType<GameScorePartProps<'dt'>>;
   /** Description holding the formatted score. */
-  value?: ComponentType<ComponentPropsWithRef<'dd'> & GameScorePartProps<'dd'>>;
+  value?: ComponentType<GameScorePartProps<'dd'>>;
   /** Stage or period shown after the score. */
-  stage?: ComponentType<ComponentPropsWithRef<'span'> & GameScorePartProps<'span'>>;
+  stage?: ComponentType<GameScorePartProps<'span'>>;
 }
 
 export interface GameScoreProps extends Omit<GameCardRootProps, 'children'>, Omit<GameCardRootCustomization, 'slots'>, SxProps {
