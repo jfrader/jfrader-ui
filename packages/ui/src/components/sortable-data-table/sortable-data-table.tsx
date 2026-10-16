@@ -166,27 +166,38 @@ const headerStyle = css({
 const sortStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
-  justifyContent: 'space-between',
+  justifyContent: 'flex-start',
   gap: vars.space[2],
   inlineSize: '100%',
   minBlockSize: vars.space[8],
   minInlineSize: vars.space[8],
-  paddingInline: vars.space[2],
+  paddingInline: 0,
   paddingBlock: vars.space[1],
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.sm,
+  border: 0,
+  borderRadius: 0,
   backgroundColor: 'transparent',
-  color: 'inherit',
+  color: vars.color.textMuted,
   font: 'inherit',
   textAlign: 'inherit',
   cursor: 'pointer',
   transitionProperty: 'background-color, color',
   transitionDuration: vars.motion.duration.fast,
   transitionTimingFunction: vars.motion.easeStandard,
-  '&:hover': { backgroundColor: vars.color.surfaceHover },
+  '&:hover': { backgroundColor: vars.color.surfaceHover, color: vars.color.text },
   '&:focus-visible': focusRingInset,
   [REDUCED_MOTION]: { transitionDuration: '0s' },
-  [FORCED_COLORS]: { borderColor: 'ButtonText', color: 'ButtonText' },
+  [FORCED_COLORS]: { color: 'ButtonText' },
+});
+const sortIndicatorStyle = css({
+  flexShrink: 0,
+  inlineSize: vars.space[3],
+  blockSize: vars.space[3],
+  color: vars.color.textMuted,
+  '&[data-direction]': { color: vars.color.accentText },
+  '&[data-direction="asc"] > [data-chevron="down"], &[data-direction="desc"] > [data-chevron="up"]': {
+    visibility: 'hidden',
+  },
+  [FORCED_COLORS]: { color: 'ButtonText', '&[data-direction]': { color: 'ButtonText' } },
 });
 const rowStyle = css({
   '&[data-selected]': { backgroundColor: vars.color.accentSoft },
@@ -469,9 +480,20 @@ export function SortableDataTable<T>({
                           }}
                         >
                           {isRenderable(column.header) && column.header}
-                          <span aria-hidden="true">
-                            {sort?.columnId === column.id ? (sort.direction === 'asc' ? '▲' : '▼') : '♢'}
-                          </span>
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 12 12"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            data-direction={sort?.columnId === column.id ? sort.direction : undefined}
+                            css={sortIndicatorStyle}
+                          >
+                            <path data-chevron="up" d="m3 4 3-3 3 3" />
+                            <path data-chevron="down" d="m3 8 3 3 3-3" />
+                          </svg>
                         </SortButton>
                       ) : (
                         isRenderable(column.header) && column.header
