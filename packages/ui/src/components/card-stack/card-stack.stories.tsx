@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Card } from '../card';
@@ -41,15 +42,15 @@ const cities: readonly City[] = [
     description: 'A compact old town and a ferry across the bay.',
   },
 ];
-const fixtureStyle = css({
+const Fixture = styled.div({
   padding: vars.space[4],
   inlineSize: '36rem',
   maxInlineSize: '100%',
   display: 'grid',
   gap: vars.space[4],
 });
-const narrowStyle = css({ inlineSize: '14rem', maxInlineSize: '100%' });
-const shrinkWrapStyle = css({ display: 'inline-flex', maxInlineSize: '100%' });
+const NarrowFixture = styled.div({ inlineSize: '14rem', maxInlineSize: '100%' });
+const ShrinkWrap = styled.div({ display: 'inline-flex', maxInlineSize: '100%' });
 const overrideStyle = css({
   paddingInline: vars.space[6],
   borderRadius: vars.radius.sm,
@@ -93,9 +94,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div css={fixtureStyle}>
+      <Fixture>
         <Story />
-      </div>
+      </Fixture>
     ),
   ],
   parameters: {
@@ -640,9 +641,9 @@ export const Narrow: Story = {
   },
   decorators: [
     (Story) => (
-      <div css={narrowStyle}>
+      <NarrowFixture>
         <Story />
-      </div>
+      </NarrowFixture>
     ),
   ],
   play: async ({ canvas, canvasElement }) => {
@@ -945,9 +946,9 @@ export const DragRenderBudget: Story = {
 };
 export const ShrinkToFit: Story = {
   render: (args) => (
-    <div css={shrinkWrapStyle}>
+    <ShrinkWrap>
       <CardStack {...args} />
-    </div>
+    </ShrinkWrap>
   ),
   play: async ({ canvasElement }) => {
     const stage = part(canvasElement, 'stage');

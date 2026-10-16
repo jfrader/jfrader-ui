@@ -436,13 +436,14 @@ export const ZeroCells: Story = {
     await expect(canvas.getAllByRole('cell', { name: '0' })).toHaveLength(5);
   },
 };
-// This story tests the documented css/slot API and native style merging.
+// Registered classes land before consumer sx; slot css still reaches interior parts.
+const StyledTable = styled(Table)({ borderRadius: vars.radius.sm });
 export const ConsumerStylePrecedence: Story = {
   args: {
     slotProps: { cell: { css: { paddingInlineStart: vars.space[6] } }, sortButton: { css: { borderRadius: 0 } } },
     sx: { borderRadius: vars.radius.lg },
   },
-  render: (args) => <Table {...args} css={{ borderRadius: vars.radius.sm }} />,
+  render: (args) => <StyledTable {...args} />,
   play: async ({ canvas, canvasElement }) => {
     await expect(parseFloat(getComputedStyle(canvas.getAllByRole('cell')[0]!).paddingInlineStart)).toBeCloseTo(24, 0);
     await expect(getComputedStyle(canvas.getAllByRole('button')[0]!).borderRadius).toBe('0px');

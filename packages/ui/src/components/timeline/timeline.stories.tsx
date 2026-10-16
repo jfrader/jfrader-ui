@@ -911,7 +911,8 @@ function ReplacementTimelineTime(props: import('react').ComponentPropsWithRef<'t
 function ReplacementTimelineDetail(props: import('react').ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="detail" />;
 }
-// This story tests the documented css/slot API and native style merging.
+// Registered classes land before consumer sx; slot css still reaches interior parts.
+const StyledTimeline = styled(Timeline)({ paddingInline: vars.space[2] });
 export const SlotStyling: Story = {
   args: {
     slots: { marker: ReplacementTimelineMarker, time: ReplacementTimelineTime, detail: ReplacementTimelineDetail },
@@ -923,8 +924,7 @@ export const SlotStyling: Story = {
       item: { css: { paddingBlockEnd: vars.space[10] } },
     },
   },
-  // Consumer css applies before sx, so sx wins the padding.
-  render: (args) => <Timeline {...args} css={{ paddingInline: vars.space[2] }} />,
+  render: (args) => <StyledTimeline {...args} />,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="timeline"]')!;
     await expect(part(root, 'marker')).toHaveAttribute('data-replacement', 'marker');

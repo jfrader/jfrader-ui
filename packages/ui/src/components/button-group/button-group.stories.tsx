@@ -2,7 +2,7 @@ import { useState, type ComponentPropsWithRef, type MouseEventHandler, type RefC
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -27,7 +27,6 @@ const ScaledContainer = styled.div({
   transformOrigin: 'top left',
   width: 320,
 });
-// SxPrecedence tests css vs sx precedence, so itemCss keeps the css() spelling.
 const itemCss = css({ paddingInline: '29px' });
 function Icon() {
   return (
@@ -229,18 +228,18 @@ export const GeneratedPartProps: StoryObj<Omit<ButtonGroupEasyProps, 'component'
   args: {
     label: 'Document actions',
     items: [
-      { label: 'Share', onClick: fn(), css: { fontStyle: 'normal' }, sx: { fontWeight: vars.fontWeight.semibold } },
+      { label: 'Share', onClick: fn(), sx: { fontStyle: 'normal', fontWeight: vars.fontWeight.semibold } },
       { label: 'Guide', href: '/guide', sx: { fontWeight: vars.fontWeight.semibold } },
     ],
     slotProps: {
       root: { 'data-testid': 'custom-root', className: 'custom-root-class' },
-      item: { className: 'custom-item-class', sx: { fontStyle: 'italic' } },
+      item: { className: 'custom-item-class', css: { fontStyle: 'italic' } },
       link: { className: 'custom-link-class', sx: { fontStyle: 'italic' } },
     },
   },
   render: (args) => <ButtonGroup {...args} />,
   parameters: { docs: { source: { code: `<ButtonGroup label="Document actions" items={actions}
-  slotProps={{ item: { sx: { fontStyle: 'italic' } }, link: { sx: { fontStyle: 'italic' } } }} />` } } },
+  slotProps={{ item: { css: { fontStyle: 'italic' } }, link: { sx: { fontStyle: 'italic' } } }} />` } } },
   play: async ({ canvas }) => {
     const root = canvas.getByTestId('custom-root');
     await expect(root).toHaveClass('custom-root-class');
@@ -856,17 +855,21 @@ export const PreventDefault: Story = {
 };
 export const SxPrecedence: Story = {
   render: (args) => (
-    <ButtonGroup {...args} css={{ columnGap: '5px' }} sx={{ columnGap: '7px' }}>
-      <ButtonGroup.Item css={itemCss} sx={{ paddingInline: '37px', borderRadius: '17px' }}>
-        Share
-      </ButtonGroup.Item>
-      <ButtonGroup.Label css={{ paddingInline: '29px' }} sx={{ paddingInline: '37px' }}>
-        100%
-      </ButtonGroup.Label>
-      <ButtonGroup.Link href="#docs" css={{ paddingInline: '29px' }}>
-        Docs
-      </ButtonGroup.Link>
-    </ButtonGroup>
+    <ClassNames>
+      {({ css: className }) => (
+        <ButtonGroup {...args} className={className({ columnGap: '5px' })} sx={{ columnGap: '7px' }}>
+          <ButtonGroup.Item className={className(itemCss)} sx={{ paddingInline: '37px', borderRadius: '17px' }}>
+            Share
+          </ButtonGroup.Item>
+          <ButtonGroup.Label className={className(itemCss)} sx={{ paddingInline: '37px' }}>
+            100%
+          </ButtonGroup.Label>
+          <ButtonGroup.Link href="#docs" sx={itemCss}>
+            Docs
+          </ButtonGroup.Link>
+        </ButtonGroup>
+      )}
+    </ClassNames>
   ),
   play: async ({ canvas }) => {
     await expect(parseFloat(getComputedStyle(canvas.getByText('100%')).paddingInlineStart)).toBeCloseTo(

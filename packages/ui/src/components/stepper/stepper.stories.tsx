@@ -894,18 +894,19 @@ export const FalsyDetails: Story = {
 
 // Lengths further apart than the DPR tolerance, so precedence stays observable.
 const SLOT_OVERRIDE = 3;
-const CSS_PADDING = 1;
+const CLASS_PADDING = 1;
 const SX_PADDING = 6;
 const px = (value: number) => `${value}px`;
+const StyledStepper = styled(Stepper)({ paddingBlock: px(CLASS_PADDING) });
 
-// This story tests the documented css/slot API and native style merging.
+// Slot css and registered classes land before consumer sx.
 export const SlotStyling: Story = {
   args: {
     value: 4,
     compact: true,
     sx: { paddingBlock: px(SX_PADDING) },
     slotProps: {
-      root: { css: { paddingInline: px(SLOT_OVERRIDE) } },
+      root: { css: { paddingInline: px(SLOT_OVERRIDE), paddingBlock: px(SLOT_OVERRIDE) } },
       list: { css: { paddingBlock: px(SLOT_OVERRIDE) } },
       item: { css: { paddingBlock: px(SLOT_OVERRIDE) } },
       head: { css: { borderRadius: px(SLOT_OVERRIDE) } },
@@ -916,11 +917,11 @@ export const SlotStyling: Story = {
       caption: { css: { letterSpacing: px(SLOT_OVERRIDE) } },
     },
   },
-  render: (args) => <Stepper {...args} css={{ paddingBlock: px(CSS_PADDING) }} />,
+  render: (args) => <StyledStepper {...args} />,
   play: async ({ canvasElement }) => {
     const root = getRoot(canvasElement);
     const style = (element: HTMLElement) => getComputedStyle(element);
-    // Own styles → slotProps.root → consumer css → sx.
+    // Own styles → slotProps.root css → consumer sx.
     await expectPx(style(root).paddingTop, SX_PADDING);
     await expectPx(style(root).paddingLeft, SLOT_OVERRIDE);
     await expectPx(style(parts(root, 'list')[0]!).paddingTop, SLOT_OVERRIDE);

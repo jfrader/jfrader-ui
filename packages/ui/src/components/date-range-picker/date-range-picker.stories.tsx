@@ -1795,16 +1795,16 @@ function CustomRangeSummary(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-replaced="range-summary" />;
 }
 
+const StyledRangeTrigger = styled(DateRangePicker.Trigger)({ textTransform: 'lowercase', letterSpacing: '1px' });
+
 export const RefsAndStyling: Story = {
   tags: ['!autodocs'],
-  // This story exercises the documented css, sx and slot precedence APIs.
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => (
     <DateRangePicker {...args}>
-      <DateRangePicker.Trigger
+      <StyledRangeTrigger
         aria-label={LABEL}
         ref={triggerRef}
-        css={{ textTransform: 'lowercase', letterSpacing: '1px' }}
         sx={{ textTransform: 'uppercase' }}
       />
       <DateRangePicker.Content
@@ -1823,7 +1823,6 @@ export const RefsAndStyling: Story = {
     await expect(DateRangePicker.Trigger.displayName).toBe('DateRangePicker.Trigger');
     await expect(DateRangePicker.Content.displayName).toBe('DateRangePicker.Content');
     await expect(DateRangePicker.displayName).toBe('DateRangePicker');
-    // Own styles → consumer css → sx.
     await expect(getComputedStyle(trigger).textTransform).toBe('uppercase');
     await expect(parseFloat(getComputedStyle(trigger).letterSpacing)).toBeCloseTo(1, 1);
     await expect(parseFloat(getComputedStyle(dialog).letterSpacing)).toBeCloseTo(1, 1);

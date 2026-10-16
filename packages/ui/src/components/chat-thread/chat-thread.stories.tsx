@@ -4,7 +4,7 @@ import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock, type MockInstance } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ChatThread, type ChatMessage, type ChatThreadProps } from './index';
 import { Button, type ButtonProps } from '../button';
@@ -601,8 +601,23 @@ function SlotList(props: ComponentPropsWithRef<'ol'>) {
 }
 export const RefAndStyling: Story = {
   args: { slots: { list: SlotList } },
-  // This story exercises the documented css, sx and slot APIs.
-  render: (args) => <ChatThread {...args} ref={rootSpy} css={css({ outlineStyle: 'dotted' })} sx={{ outlineStyle: 'dashed' }} slotProps={{ list: { css: css({ gap: vars.space[8] }) }, bubble: { css: css({ textDecorationLine: 'underline' }) } }} composerProps={{ ref: composerSpy, sx: { outlineStyle: 'dashed' }, slotProps: { textarea: { ref: fieldSpy } } }} />,
+  render: (args) => (
+    <ClassNames>
+      {({ css: className }) => (
+        <ChatThread
+          {...args}
+          ref={rootSpy}
+          className={className({ outlineStyle: 'dotted' })}
+          sx={{ outlineStyle: 'dashed' }}
+          slotProps={{
+            list: { css: css({ gap: vars.space[8] }) },
+            bubble: { css: css({ textDecorationLine: 'underline' }) },
+          }}
+          composerProps={{ ref: composerSpy, sx: { outlineStyle: 'dashed' }, slotProps: { textarea: { ref: fieldSpy } } }}
+        />
+      )}
+    </ClassNames>
+  ),
   play: async ({ canvasElement, canvas }) => {
     const root = canvasElement.querySelector('[data-ui="chat-thread"]')!;
     const replacement = root.querySelector('[data-slot="chat-thread-list"]')!;

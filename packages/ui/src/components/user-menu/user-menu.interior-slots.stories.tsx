@@ -2,7 +2,7 @@ import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { Button } from '../button';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { UserMenu, type UserMenuEasyProps } from './user-menu';
 import { createRefCleanupTracker, expectMergedClasses, expectRootPrecedence, expectSameDomIdentity } from '../../testing/interior-slot-assertions';
 
@@ -21,7 +21,7 @@ function AccountList(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-slot="account-list" />;
 }
 const rootRefTracker = createRefCleanupTracker<HTMLDivElement>();
-// This fixture tests native style merging and the documented css/sx slot precedence.
+// This fixture tests native styles, registered classes, slot css and sx precedence.
 const rootSlotStyle = css({ paddingInline: '7px' });
 const rootConsumerStyle = css({ paddingInline: '9px' });
 
@@ -31,7 +31,7 @@ function AccountFixture() {
   return <>
     <Button onClick={() => setRevision(revision + 1)}>Rerender</Button>
     <Button onClick={() => setMounted(false)}>Unmount</Button>
-    {mounted && <UserMenu
+    {mounted && <ClassNames>{({ css: register }) => <UserMenu
       user={{ name: 'Ada Lovelace', email: 'ada@example.com' }}
       messages={{ trigger: 'Account', close: 'Close', signOut: 'Sign out', pending: 'Signing out', error: 'Sign out failed' }}
       items={[{ label: 'Profile' }, { label: 'Settings' }]}
@@ -39,9 +39,8 @@ function AccountFixture() {
       variant="menu"
       component={UnusedAccountRoot}
       slots={{ root: AccountRoot }}
-      className="account-host"
+      className={`account-host ${register(rootConsumerStyle)}`}
       data-ui="account host"
-      css={rootConsumerStyle}
       sx={revision === 0 ? { paddingInline: '11px' } : undefined}
       title="Host"
       style={{ textTransform: 'none', letterSpacing: '1px' }}
@@ -49,7 +48,7 @@ function AccountFixture() {
         root: { ref: rootRefTracker.ref, css: rootSlotStyle, className: 'account-slot', title: 'Slot', style: { letterSpacing: '2px' }, 'data-ui': 'account slot' },
         content: { slots: { menu: AccountList }, title: String(revision) },
       }}
-    />}
+    />}</ClassNames>}
   </>;
 }
 

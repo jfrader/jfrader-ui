@@ -2,7 +2,7 @@ import { Component, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
@@ -52,7 +52,7 @@ const Frame = styled.div({
   minBlockSize: '32rem',
 });
 
-// These values exercise the documented css/sx and slot styling APIs.
+// These values exercise registered classes and sx precedence.
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ marginInlineStart: vars.space[2] });
 
@@ -1730,7 +1730,7 @@ export const RefTargets: Story = {
   },
 };
 
-// These values exercise the documented css/sx and slot styling APIs.
+// These values exercise the slot styling API.
 const slotOverride = css({ outline: `3px dashed ${vars.color.accentText}` });
 
 // This story tests the documented css/slot API and native style merging.
@@ -1738,30 +1738,27 @@ export const SxAndSlots: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
-    <UserMenu user={args.user} defaultOpen={args.defaultOpen}>
-      <UserMenu.Trigger className="consumer-trigger" css={consumerCss} sx={consumerSx} aria-label={TRIGGER_LABEL} />
+    <ClassNames>{({ css: register }) => <UserMenu user={args.user} defaultOpen={args.defaultOpen}>
+      <UserMenu.Trigger className={`consumer-trigger ${register(consumerCss)}`} sx={consumerSx} aria-label={TRIGGER_LABEL} />
       <UserMenu.Content
         variant="menu"
-        className="consumer-content"
-        css={consumerCss}
+        className={`consumer-content ${register(consumerCss)}`}
         sx={consumerSx}
         slotProps={{ menu: { className: 'consumer-menu', css: slotOverride } }}
       >
-        <UserMenu.Identity className="consumer-identity" css={consumerCss} sx={consumerSx} />
-        <UserMenu.Item className="consumer-item" css={consumerCss} sx={consumerSx}>
+        <UserMenu.Identity className={`consumer-identity ${register(consumerCss)}`} sx={consumerSx} />
+        <UserMenu.Item className={`consumer-item ${register(consumerCss)}`} sx={consumerSx}>
           Profile
         </UserMenu.Item>
-        <UserMenu.Separator className="consumer-separator" css={consumerCss} sx={consumerSx} />
+        <UserMenu.Separator className={`consumer-separator ${register(consumerCss)}`} sx={consumerSx} />
         <UserMenu.ThemeGroup
-          className="consumer-group"
-          css={consumerCss}
+          className={`consumer-group ${register(consumerCss)}`}
           sx={consumerSx}
           labels={THEME_LABELS}
           slotProps={{ option: { className: 'consumer-option', css: slotOverride } }}
         />
         <UserMenu.SignOut
-          className="consumer-sign-out"
-          css={consumerCss}
+          className={`consumer-sign-out ${register(consumerCss)}`}
           sx={consumerSx}
           onSignOut={() => {}}
           pendingLabel={PENDING_LABEL}
@@ -1770,7 +1767,7 @@ export const SxAndSlots: Story = {
           Sign out
         </UserMenu.SignOut>
       </UserMenu.Content>
-    </UserMenu>
+    </UserMenu>}</ClassNames>
   ),
   play: async ({ canvasElement }) => {
     const menu = await findMenu(canvasElement);
@@ -1786,7 +1783,7 @@ export const SxAndSlots: Story = {
     ];
     for (const [className, element] of parts) {
       await expect(element).toHaveClass(className);
-      // own → css → sx: sx wins the shared property, css keeps the rest.
+      // Registered classes (including stray Emotion css) land before sx.
       const margin = parseFloat(getComputedStyle(element).marginInlineStart);
       await expect(near(margin, resolvedPx(element, vars.space[2]))).toBe(true);
       await expect(getComputedStyle(element).letterSpacing).not.toBe('normal');

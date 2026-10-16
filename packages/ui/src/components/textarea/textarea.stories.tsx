@@ -275,6 +275,7 @@ export const Rtl: Story = {
 
 /** Replace the wrapper and generated label; pass native props through slotProps. */
 // This story tests the documented css/slot API and native style merging.
+const StyledTextarea = styled(Textarea)({ borderRadius: '9px' });
 export const SlotCustomization: Story = {
   args: {
     ref: fn(),
@@ -297,7 +298,7 @@ export const SlotCustomization: Story = {
       label: { ref: fn(), title: 'generated part' },
     },
   },
-  render: (args) => <Textarea {...args} css={{ borderRadius: '9px' }} />,
+  render: (args) => <StyledTextarea {...args} />,
   parameters: {
     docs: {
       source: {
