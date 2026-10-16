@@ -1,53 +1,71 @@
 import { vars } from '@jfrader/tokens/vars';
-import type { BoardSurfaceFrameConfig, BoardViewportProfile } from './types';
+import { css } from '../../styling/css';
 
-const space = (scale: number) => `calc(${vars.space[4]}*${scale})`;
-const availableWidth = (inset: number) => `calc(100% - ${space(inset)})`;
+const space = (scale: number) => `calc(${vars.space[4]} * ${scale})`;
 
-// Percentages and aspect ratios are geometry. Lengths scale with the spacing token.
-// Profiles choose the surface frame, never individual seat positions or content sizes.
-const PHONE_TALL_FRAME: BoardSurfaceFrameConfig = {
-  rootPadding: `${space(0.5)} ${space(0.22)} ${space(0.78)}`, shellMaxWidth: space(56), topStripGap: space(0.78),
-  topStripMarginBottom: space(0.42), bottomStripMarginTop: space(0.42),
-  boardWidth: `min(${availableWidth(0.45)}, ${space(56)})`, boardMaxWidth: availableWidth(0.45),
-  boardHeight: `min(88%, ${space(41)})`, boardMaxHeight: '54vh', boardAspectRatio: 'auto',
-  boardBorderRadius: '50% / 48%', boardInnerBorderRadius: '50% / 48%',
-  boardBorderWidth: space(0.72), boardOutlineWidth: space(0.22), centerSize: '53%',
-  seatWidth: '34%', seatMaxWidth: space(11.5),
-};
-
-export const FRAMES: Record<BoardViewportProfile, BoardSurfaceFrameConfig> = {
-  phoneTall: PHONE_TALL_FRAME,
-  phoneCompact: { ...PHONE_TALL_FRAME, boardHeight: 'auto', boardMaxHeight: '62vh', boardAspectRatio: '1 / 1.14', topStripGap: space(0.66), topStripMarginBottom: space(0.3) },
-  phoneWide: {
-    rootPadding: `${space(0.55)} ${space(0.25)} ${space(0.95)}`, shellMaxWidth: space(56), topStripGap: space(0.82),
-    topStripMarginBottom: space(0.52), bottomStripMarginTop: space(0.5),
-    boardWidth: 'auto', boardMaxWidth: availableWidth(1.5), boardHeight: `min(100%, ${space(18)})`,
-    boardMaxHeight: space(18), boardAspectRatio: '2.15 / 1', boardBorderRadius: '50% / 48%',
-    boardInnerBorderRadius: '50% / 48%', boardBorderWidth: space(0.72), boardOutlineWidth: space(0.22),
-    centerSize: '52%', seatWidth: '33%', seatMaxWidth: space(11.2),
+// Container-query frames: the wrapper is the size container; the frame div (its direct
+// child) receives the vars. Board shape and caps are one continuous formula for every
+// aspect ratio — no profile bands, no threshold jumps. Bands below only tune the shell
+// paddings, which are decorative; unset vars intentionally fall through to the wrapper
+// defaults.
+export const frameContainerStyle = css({
+  containerType: 'size',
+  inlineSize: '100%',
+  blockSize: '100%',
+  '--game-table-padding-top': space(0.5),
+  '--game-table-padding-inline': space(0.25),
+  '--game-table-padding-bottom': space(0.8),
+  '--game-table-shell-max-width': space(56),
+  '--game-table-top-gap': space(0.8),
+  '--game-table-top-margin': space(0.5),
+  '--game-table-bottom-margin': space(0.5),
+  '--game-table-width': '100%',
+  '--game-table-max-width': space(50),
+  '--game-table-height': '100%',
+  '--game-table-max-height': space(38),
+  '--game-table-border': space(0.72),
+  '--game-table-outline': space(0.22),
+  '& > [data-ui~="game-table-frame"]': {
+    // The surface fills the shell (border-radius 50% makes the ellipse follow the
+    // container). A constant inline inset keeps outside-placement seats clear of the
+    // shell edge on narrow containers (on wider ones the 50rem cap binds instead);
+    // the block cap lives on the surface below (it reads the shell's outside-placement
+    // reserve, which the frame cannot see). Every term is continuous in the container
+    // size: no band jumps.
+    '--game-table-width': `calc(100% - ${space(0.75)})`,
+    '--game-table-max-width': `min(${space(50)}, calc(100cqi - clamp(${space(0.9)}, 1.2cqi, ${space(2.2)})))`,
+    '--game-table-border': `clamp(${space(0.72)}, 1cqi, ${space(0.9)})`,
   },
-  tablet: {
-    rootPadding: `${space(0.86)} ${space(0.35)} ${space(1.12)}`, shellMaxWidth: space(56), topStripGap: space(0.92),
-    topStripMarginBottom: space(0.7), bottomStripMarginTop: space(0.82),
-    boardWidth: '108%', boardMaxWidth: space(46), boardHeight: 'auto', boardMaxHeight: space(34),
-    boardAspectRatio: '1 / 1', boardBorderRadius: '50%', boardInnerBorderRadius: '50%',
-    boardBorderWidth: space(0.9), boardOutlineWidth: space(0.24), centerSize: '55%', seatWidth: '35%', seatMaxWidth: space(11.8),
+  '& > [data-ui~="game-table-frame"] [data-ui~="game-table-surface"]': {
+    // Never above min(56cqb, 1.14 × felt width, 38rem-scale): the 1.14 factor keeps
+    // portrait boards from turning into towers and follows the felt's content width
+    // so outside-placement reserves shrink the felt proportionally; 56cqb keeps
+    // wide containers short.
+    '--game-table-max-height': `clamp(${space(8)}, min(56cqb, calc((100cqi - 2 * var(--game-table-reserve-inline, 0px) - 2 * var(--game-table-padding-inline)) * 1.14)), ${space(38)})`,
   },
-  tabletWide: {
-    rootPadding: `${space(1)} ${space(0.45)} ${space(1.2)}`, shellMaxWidth: space(56), topStripGap: space(0.94),
-    topStripMarginBottom: space(0.72), bottomStripMarginTop: space(0.9),
-    boardWidth: `min(${availableWidth(2.2)}, ${space(47)})`, boardMaxWidth: availableWidth(2.2),
-    boardHeight: `min(60vh, ${space(39.5)})`, boardMaxHeight: space(41), boardAspectRatio: '1.2 / 1',
-    boardBorderRadius: '50% / 48.6%', boardInnerBorderRadius: '50% / 48.6%',
-    boardBorderWidth: space(0.86), boardOutlineWidth: space(0.23), centerSize: '53%', seatWidth: '34%', seatMaxWidth: space(11.5),
+  '@container (max-aspect-ratio: 1.04)': {
+    '& > [data-ui~="game-table-frame"]': {
+      '--game-table-padding-top': `clamp(${space(0.5)}, 1cqb, ${space(0.86)})`,
+      '--game-table-padding-inline': `clamp(${space(0.22)}, 0.5cqi, ${space(0.35)})`,
+      '--game-table-padding-bottom': `clamp(${space(0.78)}, 1.5cqb, ${space(1.12)})`,
+    },
   },
-  desktop: {
-    rootPadding: `${space(1)} ${space(0.6)} ${space(1.35)}`, shellMaxWidth: space(56), topStripGap: space(1),
-    topStripMarginBottom: space(0.72), bottomStripMarginTop: space(0.92),
-    boardWidth: `min(${availableWidth(1.5)}, ${space(50)})`, boardMaxWidth: availableWidth(1.5),
-    boardHeight: `min(56vh, ${space(38)})`, boardMaxHeight: '56vh', boardAspectRatio: '1.38 / 1',
-    boardBorderRadius: '50% / 48.6%', boardInnerBorderRadius: '50% / 48.6%',
-    boardBorderWidth: space(0.9), boardOutlineWidth: space(0.24), centerSize: '54%', seatWidth: '33%', seatMaxWidth: space(11.8),
+  '@container (min-aspect-ratio: 1.04) and (max-aspect-ratio: 1.3)': {
+    '& > [data-ui~="game-table-frame"]': {
+      '--game-table-padding-top': `clamp(${space(0.55)}, 1cqb, ${space(1)})`,
+      '--game-table-padding-bottom': `clamp(${space(0.95)}, 1.5cqb, ${space(1.2)})`,
+    },
   },
-};
+  '@container (min-aspect-ratio: 1.3)': {
+    '& > [data-ui~="game-table-frame"]': {
+      '--game-table-padding-top': `clamp(${space(0.55)}, 1cqb, ${space(1)})`,
+      '--game-table-padding-inline': `clamp(${space(0.25)}, 0.5cqi, ${space(0.6)})`,
+      '--game-table-padding-bottom': `clamp(${space(0.95)}, 1.5cqb, ${space(1.35)})`,
+      '&[data-surface="lobby"] [data-ui~="game-table-surface"]': {
+        '--game-table-max-height': `clamp(${space(18)}, 56cqb, ${space(38)})`,
+        inlineSize: 'auto',
+        aspectRatio: '1',
+      },
+    },
+  },
+});

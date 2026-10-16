@@ -1,4 +1,10 @@
-import { resolveSeatCount } from './viewport';
+/** Validates a seat count and returns it. Any integer >= 2 is a valid table. */
+export const resolveSeatCount = (totalSeats: number): number => {
+  if (!Number.isInteger(totalSeats) || totalSeats < 2) {
+    throw new Error('GameTable requires an integer seat count >= 2.');
+  }
+  return totalSeats;
+};
 
 /** The seat after yours appears on the right or the left. */
 export type TableTurnDirection = 'clockwise' | 'counterclockwise';

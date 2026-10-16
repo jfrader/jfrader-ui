@@ -10,8 +10,7 @@ export type { GameTableSlot, SeatLike, TableTurnDirection } from './table-slots'
 export { buildBoardLayoutModel } from './layout-model';
 export type { BoardMeasurements, BoardContentSize } from './fit-layout';
 export { GAME_TABLE_LIMITS } from './fit-layout';
-export { resolveBoardViewportProfile } from './viewport';
 export type {
   BoardLayoutModel, BoardPlayerCount, BoardSeatGeometry, BoardSeatGeometryConfig,
-  BoardSurface, BoardSurfaceFrameConfig, BoardViewport, BoardViewportProfile,
+  BoardSurface,
 } from './types';

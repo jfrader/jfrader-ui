@@ -1,11 +1,9 @@
 export type BoardSurface = 'match' | 'lobby';
-export type BoardViewportProfile = 'phoneCompact' | 'phoneTall' | 'phoneWide' | 'tablet' | 'tabletWide' | 'desktop';
 /** @deprecated Use `number`; seat counts are any integer >= 2. Retained for compatibility. */
 export type BoardPlayerCount = number;
-export type BoardViewport = { width: number; height: number; aspectRatio: number };
 
 export interface BoardSeatGeometryConfig {
-  /** Derived from measured content and space; no per-profile position overrides. */
+  /** Derived from measured content and available space. */
   radiusX: number;
   radiusY: number;
   playRadiusX: number;
@@ -37,33 +35,10 @@ export interface BoardSeatGeometry {
   /** @deprecated Preset translations were removed. Always zero. */
   seatShiftY: number;
 }
-export interface BoardSurfaceFrameConfig {
-  rootPadding: string;
-  shellMaxWidth: string;
-  topStripGap: string;
-  topStripMarginBottom: string;
-  bottomStripMarginTop: string;
-  boardWidth: string;
-  boardMaxWidth: string;
-  boardHeight: string;
-  boardMaxHeight: string;
-  boardAspectRatio: string;
-  boardBorderRadius: string;
-  boardInnerBorderRadius: string;
-  boardBorderWidth: string;
-  boardOutlineWidth: string;
-  centerSize: string;
-  seatWidth: string;
-  seatMaxWidth: string;
-}
-/** Surface framing and seat coordinates only. Children own avatar, hand, point and card-pile presentation. */
+/** Measured seat coordinates. Children own avatar, hand, point and card-pile presentation. */
 export interface BoardLayoutModel {
   surface: BoardSurface;
-  profile: BoardViewportProfile;
   playerCount: number;
-  viewport: BoardViewport;
-  frame: BoardSurfaceFrameConfig;
-  boardTranslateY: string;
   seatConfig: BoardSeatGeometryConfig;
   fit: 'measuring' | 'fitted' | 'insufficient-space';
   seatGeometries: BoardSeatGeometry[];
