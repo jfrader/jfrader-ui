@@ -218,7 +218,7 @@ export function GameActions({
           {...rootSlotRest}
           ref={mergedRef}
           role="toolbar"
-          aria-label={accessibleName}
+          aria-label={ariaLabelledByProp ? undefined : accessibleName}
           aria-labelledby={ariaLabelledByProp}
           aria-orientation={orientation}
           aria-disabled={disabled ? true : undefined}
@@ -232,7 +232,12 @@ export function GameActions({
           {actions.map((action) => {
             const isActionDisabled = Boolean(disabled || action.disabled || action.pending);
             const isTabStop = action.key === effectiveFocusedKey;
-            const actionMarker = 'game-actions-action';
+            const actionMarker = [
+              ...new Set(
+                ['game-actions-action', actionSlotRest['data-ui']]
+                  .flatMap((value) => (typeof value === 'string' ? value.split(/\s+/).filter(Boolean) : [])),
+              ),
+            ].join(' ');
 
             const handleActionClick = (event: MouseEvent<HTMLButtonElement>) => {
               actionSlotOnClick?.(event);

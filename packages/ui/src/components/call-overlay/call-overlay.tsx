@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
+import { useEffect, useRef, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
+import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { motionDurationMs } from '../../styling/motion-timings';
@@ -59,7 +60,7 @@ const tones = {
 };
 
 export function CallOverlay({
-  children, label, open: openProp, defaultOpen = false, onOpenChange,
+  ref, children, label, open: openProp, defaultOpen = false, onOpenChange,
   tone = 'neutral', component, slots, slotProps, className, style, sx, ...rest
 }: CallOverlayProps) {
   const [open, setOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
@@ -70,13 +71,14 @@ export function CallOverlay({
   }, [open, setOpen]);
   const reduced = useReducedMotion();
   const Root = slots?.root ?? component ?? 'div';
-  const { css: slotCss, className: slotClassName, style: slotStyle, ...rootProps } = slotProps?.root ?? {};
+  const { css: slotCss, className: slotClassName, style: slotStyle, ref: slotRef, ...rootProps } = slotProps?.root ?? {};
+  const mergedRef = useMergeRefs([ref, slotRef]);
   const marker = [...new Set(['call-overlay', rest['data-ui'], rootProps['data-ui']]
     .flatMap((value) => value?.split(/\s+/).filter(Boolean) ?? []))].join(' ');
   return (
     <WithSx styles={[rootStyle, tones[tone], slotCss]} className={[className, slotClassName].filter(Boolean).join(' ')} sx={sx}>
       {(resolvedClassName) => (
-        <Root {...rest} {...rootProps} className={resolvedClassName} style={{ ...style, ...slotStyle }}
+        <Root {...rest} {...rootProps} ref={mergedRef} className={resolvedClassName} style={{ ...style, ...slotStyle }}
           data-ui={marker} data-state={open ? 'open' : 'closed'} data-tone={tone}
           data-reduced-motion={reduced ? 'true' : 'false'} role="status" aria-live="polite" aria-atomic="true">
           <MotionConfig reducedMotion="user">
