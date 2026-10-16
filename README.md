@@ -25,6 +25,7 @@ The public component inventory is in [`packages/ui/src/index.ts`](packages/ui/sr
 | `packages/ui` | `@jfrader/ui` | React components |
 | `apps/docs` | `@jfrader/docs` | Documentation front published at `ui.jfrader.com` |
 | `apps/storybook` | `@jfrader/storybook` | Storybook workbench and tests published at `/storybook/` |
+| `apps/pilot` | `@jfrader/pilot` | Reference Vite consumer app |
 
 ## Install
 
@@ -63,6 +64,7 @@ Run from the repo root.
 | `pnpm test` | Generate tokens and run Storybook tests in the browser |
 | `pnpm typecheck` | Generate tokens and typecheck every package |
 | `pnpm verify:docs` | Check component documentation coverage |
+| `pnpm verify:exports` | Validate UI source subpath exports and their target files |
 | `pnpm --filter @jfrader/docs dev` | Start docs front dev server on port 5173 |
 | `pnpm --filter @jfrader/docs build` | Sync README to guidance and build docs front |
 

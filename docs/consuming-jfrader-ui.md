@@ -66,6 +66,8 @@ Set the initial palette on the existing `<html>` in `index.html`:
 
 Use `dark` for the dark palette. Without an attribute, the token stylesheet defaults to dark. [Theming](./theming.md) explains switching at runtime, saved preferences and custom colors.
 
+The reference app in `apps/pilot` uses a fixed initial `data-theme="dark"` in `index.html` and switches the attribute without persisting it. It imports both CSS files in `src/main.tsx` and uses the [workspace JSX configuration](#workspace-apps). It does not need `ThemeProvider` because it uses app CSS rather than theme callbacks.
+
 ## Using components
 
 Start with the component's props before adding custom styles. For example, `Button` has `variant`, `tone` and `size`:
