@@ -24,8 +24,8 @@ importers:
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.3.0)(react@19.3.0)
       '@jfrader/storybook-docs':
-        specifier: ^0.12.2
-        version: 0.12.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+        specifier: ^0.13.0
+        version: 0.13.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
       '@jfrader/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -215,7 +215,7 @@ importers:
         version: 6.1.2(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
       next:
         specifier: ^16.4.0
-        version: 16.4.0(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 16.4.0(@babel/core@7.29.7)(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react:
         specifier: ^19.3.0
         version: 19.3.0
@@ -716,8 +716,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@jfrader/storybook-docs@0.12.2':
-    resolution: {integrity: sha512-IVc1lV3q2gEMNrZFk2290llEy5fyyrud1YeeXjbf2TEjv/rBe8kuE7BadM4p1DMDkOUxP9rfE+GVd0UWrF1sjw==}
+  '@jfrader/storybook-docs@0.13.0':
+    resolution: {integrity: sha512-qpI/lcWR+p+WxWj7L6wyLlN/mjiSe5WSuC2Tl4odFjX87IkPggYIWpc4K9dPqzORlFLLEtff72QXnVbExMxVyw==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       react: ^19.0.0
@@ -2967,7 +2967,7 @@ snapshots:
   '@img/sharp-win32-x64@0.35.5':
     optional: true
 
-  '@jfrader/storybook-docs@0.12.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))':
+  '@jfrader/storybook-docs@0.13.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))':
     dependencies:
       marked: 18.1.1
       react: 19.3.0
@@ -4054,7 +4054,7 @@ snapshots:
 
   nanoid@3.3.20: {}
 
-  next@16.4.0(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  next@16.4.0(@babel/core@7.29.7)(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@next/env': 16.4.0
       '@swc/helpers': 0.5.23
@@ -4063,7 +4063,7 @@ snapshots:
       postcss: 8.5.23
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
-      styled-jsx: 5.1.6(react@19.3.0)
+      styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.3.0)
     optionalDependencies:
       '@next/swc-darwin-arm64': 16.4.0
       '@next/swc-darwin-x64': 16.4.0
@@ -4402,10 +4402,12 @@ snapshots:
 
   strip-indent@4.1.1: {}
 
-  styled-jsx@5.1.6(react@19.3.0):
+  styled-jsx@5.1.6(@babel/core@7.29.7)(react@19.3.0):
     dependencies:
       client-only: 0.0.1
       react: 19.3.0
+    optionalDependencies:
+      '@babel/core': 7.29.7
 
   stylis@4.2.0: {}
 
