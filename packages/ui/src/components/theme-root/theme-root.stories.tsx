@@ -242,6 +242,7 @@ export const NestedOverlayKeyboard: Story = {
 };
 
 export const NestedThemeRoots: Story = {
+  tags: ['!autodocs'],
   args: { theme: 'dark' },
   render: (args) => (
     <PortalContainerExample {...args}>
@@ -266,6 +267,7 @@ export const NestedThemeRoots: Story = {
 };
 
 export const LiveThemeChange: Story = {
+  tags: ['!autodocs'],
   render: () => <LiveThemeExample />,
   parameters: {
     docs: {

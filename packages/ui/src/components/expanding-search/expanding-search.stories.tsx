@@ -94,9 +94,9 @@ export const Default: Story = {
     });
   },
 };
-export const PersistentOpen: Story = { args: { defaultOpen: true, defaultValue: 'Ada' } };
-export const Description: Story = { args: { defaultOpen: true, label: 'Search members', description: 'Search by name or email.' } };
-export const Error: Story = { args: { defaultOpen: true, error: 'Enter at least four characters.', defaultValue: 'Ada', inputProps: { required: true } } };
+export const PersistentOpen: Story = { tags: ['!autodocs'], args: { defaultOpen: true, defaultValue: 'Ada' } };
+export const Description: Story = { tags: ['!autodocs'], args: { defaultOpen: true, label: 'Search members', description: 'Search by name or email.' } };
+export const Error: Story = { tags: ['!autodocs'], args: { defaultOpen: true, error: 'Enter at least four characters.', defaultValue: 'Ada', inputProps: { required: true } } };
 export const Sizes: Story = {
   render: (args) => <Stack>{(['sm', 'md', 'lg'] as const).map((size) => <ExpandingSearch {...args} key={size} size={size} triggerLabel={`Search ${size}`} />)}</Stack>,
   play: async ({ canvas }) => {
@@ -146,6 +146,7 @@ export const RejectedOpen: Story = {
   },
 };
 export const RejectedClose: Story = {
+  tags: ['!autodocs'],
   args: { open: true, defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
@@ -159,6 +160,7 @@ export const RejectedClose: Story = {
   },
 };
 export const RejectedQuery: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, value: 'Ada', onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Clear search' }));
@@ -205,6 +207,7 @@ export const Keyboard: Story = {
   },
 };
 export const CompositionAndVeto: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn(), inputProps: { onKeyDown: (event) => { if (event.shiftKey) event.preventDefault(); } } },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
@@ -219,6 +222,7 @@ export const CompositionAndVeto: Story = {
   },
 };
 export const ExternalAria: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, inputProps: { 'aria-label': 'Fallback name', 'aria-labelledby': 'member-name missing-name', 'aria-describedby': 'member-help missing-help' }, description: 'Name or email.', error: 'No matches.' },
   render: (args) => <><span id="member-name">Find members</span><span id="member-help">Directory</span><ExpandingSearch {...args} /></>,
   play: async ({ canvas }) => {
@@ -230,6 +234,7 @@ export const ExternalAria: Story = {
   },
 };
 export const FalsyNodes: Story = {
+  tags: ['!autodocs'],
   render: (args) => <Stack>{([false, null, 0, ''] as const).map((node, index) => <ExpandingSearch {...args} key={index} defaultOpen triggerLabel={`Search ${index}`} label={node} description={node} error={node} searchIcon={node} clearIcon={node} messages={{ clear: node === 0 ? 'Clear search 0' : 'Clear search' }} inputProps={{ 'aria-label': `Search ${index}` }} defaultValue="x" />)}</Stack>,
   play: async ({ canvas }) => {
     const inputs = canvas.getAllByRole('searchbox');
@@ -250,9 +255,10 @@ export const Disabled: Story = {
     await expect(args.onOpenChange).toHaveBeenCalledTimes(0);
   },
 };
-export const DisabledOpen: Story = { args: { defaultOpen: true, disabled: true, defaultValue: 'Ada' } };
-export const ReadOnly: Story = { args: { defaultOpen: true, inputProps: { readOnly: true }, defaultValue: 'Ada' } };
+export const DisabledOpen: Story = { tags: ['!autodocs'], args: { defaultOpen: true, disabled: true, defaultValue: 'Ada' } };
+export const ReadOnly: Story = { tags: ['!autodocs'], args: { defaultOpen: true, inputProps: { readOnly: true }, defaultValue: 'Ada' } };
 export const ClearThenCollapse: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -281,8 +287,9 @@ export const FormReset: Story = {
     await settledOpen(canvasElement);
   },
 };
-export const LightTheme: Story = { ...PersistentOpen, decorators: [withLightTheme], globals: { theme: 'light' } };
+export const LightTheme: Story = { ...PersistentOpen, tags: ['!autodocs'], decorators: [withLightTheme], globals: { theme: 'light' } };
 export const RTL: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, dir: 'rtl', defaultValue: 'Ada' },
   play: async ({ canvas }) => { await expect(getComputedStyle(canvas.getByRole('searchbox')).direction).toBe('rtl'); },
 };
@@ -300,6 +307,7 @@ export const NarrowLane: Story = {
 };
 // This story tests native inline styles and the documented sx/slot css API.
 export const RefAndStyles: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true, ref: fn(), inputRef: fn(), id: 'member-search', title: 'Member search', style: { letterSpacing: '0.1em' },
     sx: { paddingBlock: vars.space[3] }, inputProps: { style: { wordSpacing: '0.2em' } },
@@ -321,6 +329,7 @@ export const RefAndStyles: Story = {
 };
 export const ForcedColors: Story = {
   ...PersistentOpen,
+  tags: ['!autodocs'],
   parameters: { docs: { description: { story: 'Checks CSS rules without emulating forced colors. Enable forced colors in the browser to check rendering.' } } },
   play: async ({ canvas }) => {
     const trigger = canvas.getByRole('button', { name: 'Search members', hidden: true });
@@ -378,6 +387,7 @@ export const ReducedMotion: Story = {
 /** Replace the wrapper and generated control; pass native props through slotProps. */
 // This story tests native style merging and css/sx precedence through the slot API.
 export const SlotCustomization: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     label: 'Search members',

@@ -404,6 +404,7 @@ export const CustomParts: StoryObj<DateRangePickerEasyProps> = {
 };
 
 export const EasyDisabled: StoryObj<DateRangePickerEasyProps> = {
+  tags: ['!autodocs'],
   args: { label: LABEL, placeholder: PLACEHOLDER, messages: rangeMessages, disabled: true, open: true },
   render: (args) => <DateRangePicker {...args} />,
   play: async ({ canvasElement, userEvent }) => {
@@ -650,6 +651,7 @@ RebaseExample.displayName = 'RebaseExample';
 
 /** A fixed `open` keeps the dialog while the parent replaces the value: the draft rebases silently. */
 export const ExternalRebase: Story = {
+  tags: ['!autodocs'],
   args: { open: true, months: 1, onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <RebaseExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -672,6 +674,7 @@ export const ExternalRebase: Story = {
 
 /** Fixed `value` and `open` reject Apply and every close: label, draft and focus stay. */
 export const ControlledRejects: Story = {
+  tags: ['!autodocs'],
   args: { value: WEEK, open: true, months: 1, onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <RangeExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -899,6 +902,7 @@ DynamicBoundsExample.displayName = 'DynamicBoundsExample';
 
 /** Bounds that change under an open draft make it unavailable: Apply cannot commit it. */
 export const DynamicBounds: Story = {
+  tags: ['!autodocs'],
   args: { open: true, months: 1, onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <DynamicBoundsExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -956,6 +960,7 @@ export const Invalid: Story = {
 
 export const OpenInvalid: Story = {
   ...Invalid,
+  tags: ['!autodocs'],
   args: { ...Invalid.args, defaultOpen: true, presets: PRESETS },
   play: async ({ canvasElement }) => {
     // Persistent open error state for the axe gate.
@@ -1029,6 +1034,7 @@ export const LeapDay: Story = {
 };
 
 export const TwoMonthsWithoutPresets: Story = {
+  tags: ['!autodocs'],
   args: { months: 2, defaultOpen: true },
   render: (args) => <RangeExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -1043,6 +1049,7 @@ export const TwoMonthsWithoutPresets: Story = {
 };
 
 export const MonthsOne: Story = {
+  tags: ['!autodocs'],
   args: { months: 1, presets: PRESETS, defaultValue: WEEK, defaultOpen: true },
   render: (args) => <RangeExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -1053,6 +1060,7 @@ export const MonthsOne: Story = {
 };
 
 export const MonthsTwo: Story = {
+  tags: ['!autodocs'],
   args: { months: 2, presets: PRESETS, defaultValue: WEEK, defaultOpen: true },
   render: (args) => <RangeExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -1085,6 +1093,7 @@ BoundaryExample.displayName = 'BoundaryExample';
  * the rule against the measured width; a wide viewport shows two months, a narrow one one.
  */
 export const MonthsAuto: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, presets: PRESETS, defaultOpen: true },
   render: (args) => <BoundaryExample {...args} inlineSize="min(900px, 100%)" />,
   play: async ({ canvasElement }) => {
@@ -1099,6 +1108,7 @@ export const MonthsAuto: Story = {
 };
 
 export const Narrow: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, presets: PRESETS, defaultOpen: true },
   render: (args) => <BoundaryExample {...args} inlineSize="360px" />,
   play: async ({ canvasElement }) => {
@@ -1112,6 +1122,7 @@ export const Narrow: Story = {
 
 /** Two forced months in a narrow boundary stack instead of shrinking the days. */
 export const NarrowForcedTwoMonths: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 2, defaultOpen: true },
   render: (args) => <BoundaryExample {...args} inlineSize="360px" />,
   play: async ({ canvasElement }) => {
@@ -1128,6 +1139,7 @@ export const NarrowForcedTwoMonths: Story = {
 
 /** A short boundary caps the dialog height; the dialog scrolls internally. */
 export const ShortViewport: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, presets: PRESETS, defaultOpen: true },
   render: (args) => <BoundaryExample {...args} inlineSize="420px" blockSize="320px" />,
   play: async ({ canvasElement }) => {
@@ -1179,6 +1191,7 @@ export const LongLocaleValue: Story = {
 };
 
 export const TargetSizes: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, presets: PRESETS, defaultOpen: true },
   render: (args) => <RangeExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -1236,6 +1249,7 @@ export const Disabled: Story = {
 };
 
 export const DisabledControlledOpen: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, disabled: true, open: true, onOpenChange: fn() },
   render: (args) => <RangeExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -1416,6 +1430,7 @@ async function expectRtlArrows(canvasElement: HTMLElement, userEvent: { keyboard
 
 /** Real RTL: the document direction reaches the trigger and the portaled dialog. */
 export const RTL: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, presets: PRESETS, defaultOpen: true },
   beforeEach: ({ canvasElement }) => {
     const { documentElement } = canvasElement.ownerDocument;
@@ -1460,6 +1475,7 @@ export const TriggerDirRTL: Story = {
 
 /** Initially open in an RTL subtree: the direction is read once the trigger is attached. */
 export const SubtreeRTLInitiallyOpen: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, presets: PRESETS, defaultOpen: true },
   render: (args) => (
     <div dir="rtl">
@@ -1475,6 +1491,7 @@ export const SubtreeRTLInitiallyOpen: Story = {
 
 /** Controlled open on mount with `dir` on the trigger alone. */
 export const TriggerDirRTLInitiallyOpen: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, presets: PRESETS, open: true, onOpenChange: fn() },
   render: (args) => <RangeExample {...args} trigger={{ dir: 'rtl' }} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -1486,6 +1503,7 @@ export const TriggerDirRTLInitiallyOpen: Story = {
 
 /** An explicit `dir` on Content wins over the trigger's direction. */
 export const ContentDirOverride: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => (
     <div dir="rtl">
@@ -1503,6 +1521,7 @@ export const ContentDirOverride: Story = {
 };
 
 export const LocaleWeekStart: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => <RangeExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -1514,6 +1533,7 @@ export const LocaleWeekStart: Story = {
 };
 
 export const SundayWeekStart: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, defaultOpen: true, locale: 'en-US' },
   render: (args) => <RangeExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
@@ -1527,6 +1547,7 @@ export const SundayWeekStart: Story = {
 };
 
 export const SaturdayWeekStart: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, defaultOpen: true, firstDayOfWeek: 6 },
   render: (args) => <RangeExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
@@ -1538,6 +1559,7 @@ export const SaturdayWeekStart: Story = {
 };
 
 export const DraftPreview: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => <RangeExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
@@ -1552,6 +1574,7 @@ export const DraftPreview: Story = {
 };
 
 export const PersistentOpen: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 2, presets: PRESETS, defaultOpen: true },
   render: (args) => <RangeExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -1565,6 +1588,7 @@ export const PersistentOpen: Story = {
 };
 
 export const LightTheme: Story = {
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   args: { defaultValue: WEEK, months: 1, presets: PRESETS, defaultOpen: true },
@@ -1623,6 +1647,7 @@ function ScopedHost({ children }: { children: ReactNode }) {
 ScopedHost.displayName = 'ScopedHost';
 
 export const ThemeRootPortal: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => (
     <ScopedHost>
@@ -1638,6 +1663,7 @@ export const ThemeRootPortal: Story = {
 };
 
 export const AriaMerge: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => (
     <Stack>
@@ -1671,6 +1697,7 @@ export const AriaMerge: Story = {
 };
 
 export const ContentLabel: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => (
     <DateRangePicker {...args}>
@@ -1769,6 +1796,7 @@ function CustomRangeSummary(props: ComponentPropsWithRef<'span'>) {
 }
 
 export const RefsAndStyling: Story = {
+  tags: ['!autodocs'],
   // This story exercises the documented css, sx and slot precedence APIs.
   args: { defaultValue: WEEK, months: 1, defaultOpen: true },
   render: (args) => (

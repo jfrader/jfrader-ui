@@ -656,11 +656,11 @@ export const ActionStateForm: Story = {
     const input = canvas.getByRole('textbox', { name: 'Cluster name' });
     await userEvent.clear(input);
     await userEvent.click(canvas.getByRole('button', { name: 'Save cluster' }));
-    await expect(canvas.getByText('Enter a cluster name.')).toBeVisible();
+    await waitFor(() => expect(canvas.getByText('Enter a cluster name.')).toBeVisible());
     await expect(input).toHaveValue('');
     await userEvent.type(input, 'reserved-cluster');
     await userEvent.click(canvas.getByRole('button', { name: 'Save cluster' }));
-    await expect(canvas.getByText('That cluster name is reserved.')).toBeVisible();
+    await waitFor(() => expect(canvas.getByText('That cluster name is reserved.')).toBeVisible());
     await expect(input).toHaveValue('reserved-cluster');
     await expect(actionRequests).toHaveBeenCalledTimes(1);
     for (const [index, next] of ['prod-cluster-beta', 'prod-cluster-gamma'].entries()) {

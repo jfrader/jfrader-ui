@@ -409,6 +409,7 @@ export const EasyDismissal: StoryObj<(props: UserMenuEasyProps) => ReactNode> = 
 
 export const EasyControlled: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   ...Default,
+  tags: ['!autodocs'],
   name: 'Easy mode controlled',
   args: {
     ...Default.args,
@@ -737,6 +738,7 @@ export const PhotoFallback: Story = {
 };
 
 export const GraphemeInitials: Story = {
+  tags: ['!autodocs'],
   args: { user: { name: '👩‍💻 Élodie', email: 'elodie@example.com' } },
   render: ({ user, open, defaultOpen, onOpenChange }) => (
     <UserMenu user={user} open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
@@ -753,6 +755,7 @@ export const GraphemeInitials: Story = {
 };
 
 export const PlanZeroAndLongIdentity: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     user: {
@@ -784,6 +787,7 @@ export const PlanZeroAndLongIdentity: Story = {
 };
 
 export const AccountCommands: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <UserMenu user={args.user} defaultOpen={args.defaultOpen} onOpenChange={args.onOpenChange}>
@@ -874,6 +878,7 @@ export const ThemeGroup: Story = {
 };
 
 export const StatusGroup: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ args, canvasElement, userEvent }) => {
     const menu = await findMenu(canvasElement);
@@ -921,6 +926,7 @@ function RejectingMenu(args: StoryArgs) {
 RejectingMenu.displayName = 'RejectingMenu';
 
 export const ControlledAxesReject: Story = {
+  tags: ['!autodocs'],
   render: (args) => <RejectingMenu {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     externalThemeChange.mockClear();
@@ -1172,6 +1178,7 @@ export const SignOutSettlesAfterUnmount: Story = {
 };
 
 export const SignOutPendingOpen: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ args, canvasElement, userEvent }) => {
     // Persistent busy state for the axe gate.
@@ -1187,6 +1194,7 @@ export const SignOutPendingOpen: Story = {
 };
 
 export const SignOutErrorOpen: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ args, canvasElement, userEvent }) => {
     // Persistent error state for the axe gate.
@@ -1221,6 +1229,7 @@ export const NoCommands: Story = {
 };
 
 export const OpenDesktop: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement }) => {
     // Persistent desktop state for the axe gate.
@@ -1473,6 +1482,7 @@ function ScopedHost({ children }: { children: ReactNode }) {
 ScopedHost.displayName = 'ScopedHost';
 
 export const ScopePortal: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <ScopedHost>
@@ -1489,6 +1499,7 @@ export const ScopePortal: Story = {
 };
 
 export const LightTheme: Story = {
+  tags: ['!autodocs'],
   globals: { theme: 'light' },
   args: { defaultOpen: true },
   play: async ({ canvasElement }) => {
@@ -1509,6 +1520,7 @@ export const LightThemeSheet: Story = {
 };
 
 export const ExternalAria: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <Row>
@@ -1589,6 +1601,7 @@ export const ExternalAriaSheet: Story = {
 };
 
 export const FalsyContent: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <UserMenu user={{ ...USER, plan: '' }} defaultOpen={args.defaultOpen}>
@@ -1661,6 +1674,7 @@ const signOutRef = fn();
 const separatorRef = fn();
 
 export const RefTargets: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <UserMenu user={args.user} defaultOpen={args.defaultOpen}>
@@ -1721,6 +1735,7 @@ const slotOverride = css({ outline: `3px dashed ${vars.color.accentText}` });
 
 // This story tests the documented css/slot API and native style merging.
 export const SxAndSlots: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <UserMenu user={args.user} defaultOpen={args.defaultOpen}>
@@ -1797,6 +1812,7 @@ class UsageErrorBoundary extends Component<{ children: ReactNode }, { message: s
 }
 
 export const UsageErrors: Story = {
+  tags: ['!autodocs'],
   render: () => (
     <Row>
       <UsageErrorBoundary>

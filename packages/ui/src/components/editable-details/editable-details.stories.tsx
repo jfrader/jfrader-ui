@@ -520,7 +520,8 @@ function ReorderFixture() {
     <Button onClick={() => { setReverse(!reverse); setLabel('Relabelled'); }}>Reorder and relabel</Button>
   </>;
 }
-export const IndependentKeyedSessions: Story = { render: () => <ReorderFixture />, play: async ({ canvasElement, userEvent }) => {
+export const IndependentKeyedSessions: Story = {
+  render: () => <ReorderFixture />, play: async ({ canvasElement, userEvent }) => {
   const canvas = within(canvasElement);
   const first = within(canvas.getByTestId('first'));
   const second = within(canvas.getByTestId('second'));
@@ -571,7 +572,8 @@ export const IndependentDisclosureAxis: Story = { render: (args) => <ControlledS
   await expect(trigger).toHaveFocus();
 } };
 
-export const KeyboardAndSurroundingForm: Story = { render: () => <form onSubmit={(event) => { event.preventDefault(); throw new Error('Disclosure/Edit must not submit'); }}><DetailsFixture /></form>, play: async ({ canvasElement, userEvent }) => {
+export const KeyboardAndSurroundingForm: Story = {
+  render: () => <form onSubmit={(event) => { event.preventDefault(); throw new Error('Disclosure/Edit must not submit'); }}><DetailsFixture /></form>, play: async ({ canvasElement, userEvent }) => {
   const canvas = within(canvasElement);
   const outer = canvas.getByRole('button', { name: 'Settings' });
   outer.focus();
@@ -630,7 +632,8 @@ export const HydrationRelationships: Story = { render: () => <DetailsFixture />,
 
 // This story exercises the documented css and sx precedence APIs.
 const blueprints = { consumer: css({ paddingInline: vars.space[2] }), sx: css({ paddingInline: vars.space[3] }) };
-export const StylingPrecedence: Story = { render: () => <EditableDetails css={blueprints.consumer} sx={blueprints.sx}>
+export const StylingPrecedence: Story = {
+  render: () => <EditableDetails css={blueprints.consumer} sx={blueprints.sx}>
   <EditableDetails.Section title="Styled section" defaultOpen css={blueprints.consumer} sx={blueprints.sx}>
     <EditableDetails.List css={blueprints.consumer} sx={blueprints.sx}>
       <EditableDetails.Item label="Styled item" css={blueprints.consumer} sx={blueprints.sx}>Value</EditableDetails.Item>

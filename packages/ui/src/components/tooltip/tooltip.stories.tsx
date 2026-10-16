@@ -224,6 +224,7 @@ export const EasyControlled: StoryObj<TooltipEasyProps> = {
 };
 
 export const Open: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <TooltipExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -234,6 +235,7 @@ export const Open: Story = {
 };
 
 export const RTL: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <div dir="rtl">
@@ -247,6 +249,7 @@ export const RTL: Story = {
 };
 
 export const LongContent: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <Tooltip {...args}>
@@ -326,6 +329,7 @@ export const Controlled: Story = {
 };
 
 export const LightThemeOpen: Story = {
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   args: { defaultOpen: true },
   render: (args) => <TooltipExample {...args} />,

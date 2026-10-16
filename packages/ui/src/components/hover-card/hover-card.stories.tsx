@@ -286,6 +286,7 @@ export const EasyDismissal: StoryObj<HoverCardEasyProps> = {
 
 export const EasyControlled: StoryObj<HoverCardEasyProps> = {
   ...Default,
+  tags: ['!autodocs'],
   name: 'Easy mode controlled',
   args: {
     ...Default.args,
@@ -491,6 +492,7 @@ export const Profile: Story = {
 };
 
 export const CustomPreview: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <HoverCard {...args}>
@@ -627,6 +629,7 @@ export const GroupWarmTraversal: GroupStory = {
 };
 
 export const GroupPersistentMember: GroupStory = {
+  tags: ['!autodocs'],
   args: { defaultValue: 'leo' },
   render: (args) => <GroupExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -639,6 +642,7 @@ export const GroupPersistentMember: GroupStory = {
 };
 
 export const GroupControlledReject: GroupStory = {
+  tags: ['!autodocs'],
   args: { value: 'maya', onValueChange: fn() },
   render: (args) => <GroupExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -664,6 +668,7 @@ const ISOLATED_MEMBERS = [
 ] as unknown as typeof MEMBERS;
 
 export const GroupIsolation: GroupStory = {
+  tags: ['!autodocs'],
   render: () => (
     <SpacedRow>
       <GroupExample members={ISOLATED_MEMBERS} defaultValue="" />
@@ -697,6 +702,7 @@ function UnmountGroupExample(props: HoverCardGroupProps) {
 UnmountGroupExample.displayName = 'UnmountGroupExample';
 
 export const GroupMemberUnmount: GroupStory = {
+  tags: ['!autodocs'],
   args: { defaultValue: 'maya', onValueChange: fn() },
   render: (args) => <UnmountGroupExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -907,6 +913,7 @@ export const EscapeWhileHovered: Story = {
 };
 
 export const OutsidePress: Story = {
+  tags: ['!autodocs'],
   render: (args) => <ProfileExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     await userEvent.tab();
@@ -959,6 +966,7 @@ async function openNestedLayers(canvasElement: HTMLElement) {
 }
 
 export const InsidePopoverEscape: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, onOpenChange: fn() },
   render: (args) => <PopoverHost {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -981,6 +989,7 @@ export const InsidePopoverEscape: Story = {
 };
 
 export const InsidePopoverOutsidePress: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, onOpenChange: fn() },
   render: (args) => <PopoverHost {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -1026,6 +1035,7 @@ function ControlledRejectExample(props: HoverCardCompoundProps) {
 ControlledRejectExample.displayName = 'ControlledRejectExample';
 
 export const ControlledReject: Story = {
+  tags: ['!autodocs'],
   args: { onOpenChange: fn() },
   render: (args) => <ControlledRejectExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -1161,6 +1171,7 @@ export const BrokenAvatar: Story = {
 const LONG_NAME = 'Maximiliana Alexandrina Montgomery-Featherstonehaugh de la Vega y Castellanos';
 
 export const LongIdentity: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <HoverCard {...args}>
@@ -1230,6 +1241,7 @@ export const LocalizedStats: Story = {
 };
 
 export const PersistentOpen: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <ProfileExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -1241,6 +1253,7 @@ export const PersistentOpen: Story = {
 };
 
 export const PersistentOpenLight: Story = {
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   args: { defaultOpen: true },
   render: (args) => <ProfileExample {...args} />,
@@ -1276,6 +1289,7 @@ function ScopedHost({ children }: { children: ReactNode }) {
 ScopedHost.displayName = 'ScopedHost';
 
 export const ScopedThemePortal: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <ScopedHost>
@@ -1342,6 +1356,7 @@ export const InsideNativeDialog: Story = {
 };
 
 export const RTL: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <RtlFrame dir="rtl">
@@ -1362,6 +1377,7 @@ export const RTL: Story = {
 };
 
 export const ReducedMotion: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   parameters: {
     docs: {
@@ -1381,6 +1397,7 @@ export const ReducedMotion: Story = {
 };
 
 export const ForcedColors: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   parameters: {
     docs: {

@@ -136,6 +136,7 @@ export const Default: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
 
 // This story tests native style and sx forwarding through the slot API.
 export const GeneratedPartProps: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+  tags: ['!autodocs'],
   args: { title: 'Studio plan', content: 'Plan details', defaultOpen: true, slotProps: { title: { style: { fontStyle: 'italic' } }, content: { sx: { color: vars.color.accentText } } } },
   render: (args) => <ExpandableCard {...args} />,
   parameters: { docs: { source: { code: `<ExpandableCard title="Studio plan" content={details} slotProps={{ title: { sx: { fontStyle: 'italic' } } }} />` } } },
@@ -187,6 +188,7 @@ export const EasyDisabled: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> 
   },
 };
 export const ReplacedParts: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+  tags: ['!autodocs'],
   args: { title: 'Studio plan', content: 0, slots: { root: ExpandableHost, content: DetailsPanel }, defaultOpen: true, slotProps: { root: { 'aria-label': 'Plan details' } } },
   render: (args) => <ExpandableCard {...args} />,
   parameters: { docs: { source: { code: `<ExpandableCard title="Studio plan" content={details} component={ExpandableHost} slotProps={{ root: { 'aria-label': 'Plan details' } }} />` } } },
@@ -203,17 +205,19 @@ export const ReplacedParts: StoryObj<Omit<ExpandableCardEasyProps, 'component'>>
 };
 export const Small: Story = { args: { size: 'sm' } };
 export const Medium: Story = { args: { size: 'md' } };
-export const PersistentOpen: Story = { args: { defaultOpen: true } };
+export const PersistentOpen: Story = { tags: ['!autodocs'], args: { defaultOpen: true } };
 export const LightTheme: Story = {
   decorators: [withLightTheme],
   globals: { theme: 'light' },
 };
 export const PersistentOpenLight: Story = {
   ...PersistentOpen,
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   globals: { theme: 'light' },
 };
 export const Disabled: Story = {
+  tags: ['!autodocs'],
   args: { disabled: true, defaultOpen: true },
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button');
@@ -301,6 +305,7 @@ export const LongSummary: Story = {
   },
 };
 export const EmptyDetails: Story = {
+  tags: ['!autodocs'],
   args: { children: '', defaultOpen: true },
 };
 export const KeyboardNavigation: Story = {
@@ -365,6 +370,7 @@ export const Controlled: Story = {
   },
 };
 export const ControlledReject: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('textbox');
@@ -412,6 +418,7 @@ function DynamicExample(args: ExpandableCardProps) {
   );
 }
 export const DynamicDetails: Story = {
+  tags: ['!autodocs'],
   render: (args) => <DynamicExample {...args} />,
   play: async ({ canvas, userEvent }) => {
     const panel = canvas.getByRole('region');
@@ -428,6 +435,7 @@ export const DynamicDetails: Story = {
   },
 };
 export const NestedOverlay: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <Example {...args}>
@@ -453,6 +461,7 @@ export const NestedOverlay: Story = {
   },
 };
 export const ExternalARIA: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <>
       <span id="external-title">Organization</span>
@@ -526,12 +535,14 @@ export const FalsyNodes: Story = {
   },
 };
 export const RTL: Story = {
+  tags: ['!autodocs'],
   args: { dir: 'rtl', defaultOpen: true },
   play: async ({ canvas }) => {
     await expect(getComputedStyle(canvas.getByRole('button')).direction).toBe('rtl');
   },
 };
 export const ForcedColors: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   parameters: {
     docs: {
@@ -574,6 +585,7 @@ const articleRefSpy = fn();
 const triggerRefSpy = fn();
 const panelRefSpy = fn();
 export const RefsAndStyling: Story = {
+  tags: ['!autodocs'],
   args: { ref: articleRefSpy, defaultOpen: true },
   render: (args) => (
     <ExpandableCard {...args} sx={{ borderRadius: vars.radius.sm }}>
@@ -602,6 +614,7 @@ export const RefsAndStyling: Story = {
   },
 };
 export const PreventedInteractions: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <ExpandableCard {...args} defaultOpen onKeyDown={(event) => event.preventDefault()}>
       <ExpandableCard.Trigger onClick={(event) => event.preventDefault()}>
@@ -638,6 +651,7 @@ function ExternalFocusExample(args: ExpandableCardProps) {
   );
 }
 export const ExternalFocusRepair: Story = {
+  tags: ['!autodocs'],
   render: (args) => <ExternalFocusExample {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     const action = canvas.getByRole('button', { name: 'Apply and close' });

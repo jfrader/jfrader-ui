@@ -500,6 +500,7 @@ MentionInput's introduction: “Write a message and mention people with @ or cha
   the page out of that page: render it inside its own demo surface (`contained` with a positioned
   host), or exclude the story with `tags: ['!autodocs']` when the overlay has no contained mode.
   `pnpm --filter @jfrader/storybook verify:docs:layout` checks the rendered pages.
+- A docs page renders every non-!autodocs story, so NO story may mount with an open overlay: every open-on-mount story (`defaultOpen`/`open: true`, or hardcoded in render) carries `tags: ['!autodocs']`. Readers open the frames' triggers themselves; overlays must never appear by themselves.
 - Prop JSDoc starts with what the prop changes. Add a default, unit, or exception when needed.
   Keep API names exact and use backticks around them.
 - Prefer “Press Escape to close” to “Escape dismissal is supported”. Address the reader as
