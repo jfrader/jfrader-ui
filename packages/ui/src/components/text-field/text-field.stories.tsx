@@ -30,6 +30,16 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Enter text in a field with a label, description and error message.' },
+      usage: `### Values
+- Use \`defaultValue\` for an uncontrolled initial value. If you pass \`value\`, update it from \`onValueChange\`; the callback receives the input's string value after \`onChange\`.
+
+### Forms
+- Pass \`name\` to include the input in form data. Set native props such as \`type\`, \`required\` and \`autoComplete\` on the field to configure the input.
+- Supplying \`error\` displays an alert and marks the input invalid. It does not validate the value for you; compute the error in your form.
+- If you omit \`label\`, supply \`aria-label\` or \`aria-labelledby\` to name the input.
+
+### Customization
+- \`ref\` targets the input, while \`component\` replaces the wrapper. Use \`slots\` to replace generated parts and forward their supplied props and refs so label and description relationships remain attached.`,
     },
   },
   args: { label: 'Email', placeholder: 'you@example.com', size: 'md' },

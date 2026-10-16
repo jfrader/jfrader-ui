@@ -43,14 +43,30 @@ const meta = {
   component: ToggleGroup,
   parameters: {
     docs: {
-      source: { code: `const views = [
+      source: { language: 'tsx', code: `const views = [
   { value: 'list', label: 'List' },
   { value: 'grid', label: 'Grid' },
+  { value: 'board', label: 'Board', disabled: true },
+  { value: 'table', label: 'Table' },
 ] as const;
 
 <ToggleGroup label="View" options={views} defaultValue="list" />` },
       description: { component: 'Choose one or more options from a group of toggle buttons.' },
-      usage: '- Supply readonly options for the complete group, or children for custom anatomy; do not mix them.\n- Use slotProps for the generated root and items. slots replaces those parts; component is shorthand for slots.root. Replacement roots forward props and ref to one div.\n- Single selection cannot be cleared unless allowEmpty is set. Multiple selection reports an array in activation order.\n- Arrows, Home and End move focus without selecting; horizontal arrows reverse in RTL. Space and Enter toggle the focused item.',
+      usage: `### Values
+- \`type\` defaults to \`single\`, which takes a string. Activating the pressed item keeps it pressed unless you set \`allowEmpty\`; clearing then reports \`''\`. Give every item a nonempty value.
+- Set \`type="multiple"\` to toggle items independently. Use an array for \`value\` or \`defaultValue\`; \`onValueChange\` reports values in activation order.
+- If you pass \`value\`, update it from \`onValueChange\` to apply requests. Use \`defaultValue\` when the group should own its selection.
+
+### Keyboard
+- Tab enters the group's single tab stop. Horizontal arrows move focus and reverse in RTL; set \`orientation="vertical"\` to use Up and Down instead. Navigation wraps and skips disabled items.
+- Press Home or End to focus an edge item. Focus does not select; press Space or Enter to toggle the focused item.
+
+### Forms
+- The items are buttons, not form inputs. If you need to submit the selection, control \`value\` and serialize it in your form.
+
+### Customization
+- Supply readonly \`options\` for the generated group, or children containing \`ToggleGroup.Item\` for custom anatomy. Do not mix them. Supply \`label\` or \`aria-labelledby\` to name the group.
+- In options mode, use \`slotProps\` for generated parts and \`slots\` to replace them. \`component\` is shorthand for \`slots.root\`; a replacement root must forward props and ref to one div.`,
     },
   },
   argTypes: {
@@ -263,7 +279,7 @@ function expectPressed(canvasElement: HTMLElement, pressed: readonly boolean[]) 
 }
 
 export const Single: Story = {
-  parameters: { docs: { source: { code: '<ToggleGroup label="View" defaultValue="list">\n  <ToggleGroup.Item value="list">List</ToggleGroup.Item>\n  <ToggleGroup.Item value="grid">Grid</ToggleGroup.Item>\n</ToggleGroup>' } } },
+  parameters: { docs: { source: { language: 'tsx', code: '<ToggleGroup label="View" defaultValue="list">\n  <ToggleGroup.Item value="list">List</ToggleGroup.Item>\n  <ToggleGroup.Item value="grid">Grid</ToggleGroup.Item>\n  <ToggleGroup.Item value="board">Board</ToggleGroup.Item>\n  <ToggleGroup.Item value="table">Table</ToggleGroup.Item>\n</ToggleGroup>' } } },
   args: { defaultValue: 'list', onValueChange: fn() },
   render: (args) => <ToggleGroupExample {...args} />,
   play: async ({ args, canvasElement }) => {

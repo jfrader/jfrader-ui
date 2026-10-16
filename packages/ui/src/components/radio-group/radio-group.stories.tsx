@@ -60,14 +60,28 @@ const meta = {
   component: RadioGroup,
   parameters: {
     docs: {
-      source: { code: `const plans = [
+      source: { language: 'tsx', code: `const plans = [
   { value: 'free', label: 'Free', description: 'Up to 3 projects.' },
   { value: 'pro', label: 'Pro', description: 'Unlimited projects.' },
+  { value: 'team', label: 'Team', description: 'Shared billing and roles.' },
 ] as const;
 
 <RadioGroup label="Plan" options={plans} name="plan" defaultValue="free" />` },
       description: { component: 'Choose one option from a group of radio buttons.' },
-      usage: '- Supply readonly `options` for the complete field. Use children instead for custom anatomy; the two modes cannot be mixed.\n- `slotProps` customizes the generated root, label and radios. `slots` replaces those parts; `component` is shorthand for `slots.root`. Replacement roots forward props and ref to one div.',
+      usage: `### Values
+- Use \`defaultValue\` for an initial selection. If you pass \`value\`, update it from \`onValueChange\`; selecting the already checked radio does not emit a change.
+
+### Forms
+- Set \`name\` to submit the selected radio's \`value\` under your field name. Without it, the group generates a shared input name.
+- In compound mode, supply \`aria-label\` or \`aria-labelledby\` on the group. In options mode, use \`label\` to generate the group label.
+
+### Keyboard
+- Tab enters on the checked radio. Press an arrow key to move focus and selection, wrapping past disabled radios. Press Space to check the focused radio.
+- \`orientation\` defaults to \`vertical\` and changes layout, not the native key map. Both arrow pairs work in either orientation.
+
+### Customization
+- Supply readonly \`options\` for the generated field, or children containing \`RadioGroup.Radio\` for custom anatomy. Do not mix the two modes.
+- In options mode, use \`slotProps\` for generated parts and \`slots\` to replace them. \`component\` is shorthand for \`slots.root\`; a replacement root must forward props and ref to one div.`,
     },
   },
   argTypes: {
@@ -229,7 +243,22 @@ const getGroup = (canvasElement: HTMLElement, name = 'Plan') =>
   within(within(canvasElement).getByRole('radiogroup', { name }));
 
 export const Default: Story = {
-  parameters: { docs: { source: { code: '<RadioGroup aria-label="Plan" defaultValue="free">\n  <RadioGroup.Radio value="free" label="Free" />\n  <RadioGroup.Radio value="pro" label="Pro" />\n</RadioGroup>' } } },
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { RadioGroup } from '@jfrader/ui';
+
+function PlanField() {
+  const labelId = useId();
+  return (
+    <div>
+      <span id={labelId}>Plan</span>
+      <RadioGroup aria-labelledby={labelId}>
+        <RadioGroup.Radio value="free" label="Free" description="Up to 3 projects." />
+        <RadioGroup.Radio value="pro" label="Pro" description="Unlimited projects." />
+        <RadioGroup.Radio value="team" label="Team" description="Shared billing and roles." />
+      </RadioGroup>
+    </div>
+  );
+}` } } },
   render: (args) => <RadioExample {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

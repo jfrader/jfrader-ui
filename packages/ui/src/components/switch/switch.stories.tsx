@@ -20,6 +20,15 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Turn a setting on or off.' },
+      usage: `### Values
+- Use \`defaultChecked\` for an uncontrolled initial state. If you pass \`checked\`, update it from \`onCheckedChange\`; the callback receives a boolean after \`onChange\`.
+
+### Forms
+- Pass \`name\` and \`value\` to submit the native checkbox input's value when on. An off or disabled switch contributes no value.
+- If you omit \`label\`, supply \`aria-label\` or \`aria-labelledby\` to name the setting.
+
+### Keyboard
+- Tab to the switch and press Space to toggle it. Set \`disabled\` to prevent changes and remove it from the tab order.`,
     },
   },
   args: { label: 'Airplane mode', size: 'md' },
@@ -95,6 +104,13 @@ export const BooleanNodes: Story = {
 };
 
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Switch } from '@jfrader/ui';
+
+function AirplaneMode() {
+  const [checked, setChecked] = useState(false);
+  return <Switch label="Airplane mode" checked={checked} onCheckedChange={setChecked} />;
+}` } } },
   args: { onCheckedChange: fn() },
   render: (args) => <ControlledSwitch {...args} />,
   play: async ({ args, canvasElement }) => {

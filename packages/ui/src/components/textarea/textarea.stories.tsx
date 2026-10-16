@@ -30,6 +30,19 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Write text across multiple lines in a field with a label and error message.' },
+      usage: `### Values
+- Use \`defaultValue\` for an uncontrolled initial value. If you pass \`value\`, update it from \`onValueChange\`; the callback receives a string after \`onChange\`.
+
+### Forms
+- Pass \`name\` to include the textarea in form data. Use \`required\` or \`maxLength\` for native constraints. Supplying \`error\` displays an alert and marks the field invalid, but does not validate its contents.
+- If you omit \`label\`, supply \`aria-label\` or \`aria-labelledby\` to name the textarea.
+
+### Limits
+- The field defaults to \`rows={3}\` and \`resize="vertical"\`. Set \`resize="none"\` to turn off manual resizing.
+- \`autoResize\` uses CSS \`field-sizing: content\`. Supporting browsers size to the text and ignore \`rows\`; other browsers keep the row-based height. Keep \`rows\` as a fallback when you enable it.
+
+### Customization
+- \`ref\` targets the textarea, while \`component\` replaces the wrapper. If you replace a part through \`slots\`, forward its supplied props and ref to preserve the field relationships.`,
     },
   },
   args: { label: 'Message', placeholder: 'Write a message', size: 'md' },
@@ -112,6 +125,15 @@ export const WithError: Story = {
 };
 
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Textarea } from '@jfrader/ui';
+
+function MessageField() {
+  const [value, setValue] = useState('');
+  return (
+    <Textarea label="Message" placeholder="Write a message" value={value} onValueChange={setValue} />
+  );
+}` } } },
   args: { onChange: fn(), onValueChange: fn() },
   render: (args) => <ControlledTextarea {...args} />,
   play: async ({ args, canvasElement }) => {

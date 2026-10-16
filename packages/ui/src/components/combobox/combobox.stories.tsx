@@ -36,7 +36,6 @@ const snippet = `<Combobox
     { value: 'banana', label: 'Banana', disabled: true },
     { value: 'cherry', label: 'Cherry' },
   ]}
-  defaultValue="apple"
 />`;
 
 const stackStyle = {
@@ -54,6 +53,22 @@ const meta: Meta<ComboboxCompoundProps> = {
         component:
           'Type to filter a list and choose an option using either a single element with options or compound parts for custom anatomy.',
       },
+      usage: `### Values
+- \`value\` is the selected option's string value, not the typed query. Use \`null\` for a controlled empty selection and update it from \`onValueChange\`. Use \`defaultValue\` for an uncontrolled initial selection.
+- Editing the text filters options without changing the selection. Clearing the text requests \`onValueChange(null)\`; choosing an option writes its label into the input.
+- If you control \`inputValue\`, update it from \`onInputChange\`. That callback reports typing and label writes on selection or Escape. Control \`open\` separately through \`onOpenChange\` when you need to own popup visibility.
+
+### Keyboard
+- Press Up or Down to open the list or move the highlight, wrapping past disabled options. While open, Home and End highlight the first and last enabled matches. Focus stays on the input.
+- Press Enter to select the highlighted option and close. Press Escape to close and restore the selected label. Tab or an outside press closes without selecting.
+
+### Forms
+- Set \`name\` on \`Combobox\` to submit the selected value through a hidden input, or \`''\` when empty. A name on \`Combobox.Input\` submits the text as an additional entry.
+- Selection is not checked by native \`required\` validation. Validate the selected value in your form rather than treating typed text as a committed option.
+
+### Customization
+- Supply \`options\` for the generated field, or compose \`Combobox.Input\` and \`Combobox.List\` with \`Combobox.Item\` and \`Combobox.Empty\` inside the list. Do not mix options and children.
+- Filtering defaults to a case-insensitive substring match. Set \`filter\` to change it, and supply \`textValue\` when an option's rendered content is not the text you want searched and committed to the input.`,
     },
   },
 };
@@ -186,7 +201,7 @@ export const Default: EasyStory = {
   ),
   parameters: {
     docs: {
-      source: { code: snippet },
+      source: { language: 'tsx', code: snippet },
     },
   },
   play: async ({ args, canvasElement }) => {
@@ -254,9 +269,10 @@ export const Compound: Story = {
   parameters: {
     docs: {
       source: {
+        language: 'tsx',
         code: `function FruitPicker() {
   return (
-    <Combobox defaultValue="apple">
+    <Combobox>
       <Combobox.Input label="Fruit" description="Type to search" />
       <Combobox.List>
         <Combobox.Item value="apple">Apple</Combobox.Item>

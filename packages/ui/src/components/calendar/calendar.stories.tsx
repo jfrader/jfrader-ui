@@ -16,7 +16,23 @@ const meta: Meta<CalendarProps> = {
   component: Calendar,
   parameters: { docs: {
     description: { component: 'Choose a date or show a range of dates. Move between months to find a day.' },
-    usage: '- Omit children for the default header and grid. Customize them through slots or slotProps.\n- Supply Calendar.Header and Calendar.Grid as children for a custom layout. Explicit null children render no calendar parts.',
+    usage: `### Values
+- Use date-only \`YYYY-MM-DD\` strings for \`value\`, \`min\` and \`max\`, and \`YYYY-MM\` for \`visibleMonth\`. Dates use the Gregorian calendar without storing a time or time zone.
+- Use \`defaultValue\` and \`defaultVisibleMonth\` for uncontrolled state. If you control \`value\` or \`visibleMonth\`, update them from their respective change callbacks. Changing selection does not control the displayed month for you.
+- Set \`selectionRange\`, including \`null\` for no range, to enter range mode. Handle \`onDayActivate\` and update the interval yourself; range activation does not call \`onValueChange\`. \`previewRange\` only decorates dates, without selecting them.
+
+### Keyboard
+- In the grid, press Left or Right to move a day (reversed in RTL), or Up or Down to move a week. Home and End move to the week's edges. Press Enter or Space to select.
+- Press Page Up or Page Down to move a month, or hold Shift to move a year. Moves clamp to \`min\` and \`max\` and to the destination month's last day.
+- If you pass \`tabStopDate\`, you own focus movement: handle \`onFocusedDateChange\`, reveal the destination month, update \`tabStopDate\` and focus the day. The calendar no longer changes the month or DOM focus on keyboard moves.
+
+### Limits
+- \`min\` and \`max\` are inclusive. Days outside them cannot be selected, but header buttons stay focusable at the boundary. Supply valid bounds in chronological order.
+- The locale defaults to \`navigator.language\`, and its week start is used when available, otherwise Sunday. Set \`locale\` and \`firstDayOfWeek\` when you need a specific display or week start.
+
+### Customization
+- Omit children for the generated header and grid, customized through \`slots\` or \`slotProps\`. A grid replacement must render a table and forward props and ref.
+- Supply \`Calendar.Header\` and \`Calendar.Grid\` as children for custom layout. Keep the header for month-change announcements; explicit \`null\` children render no calendar parts.`,
   } },
   args: { locale: LOCALE },
 };
@@ -151,7 +167,7 @@ async function expectSelected(canvasElement: HTMLElement, name: string) {
 export const Default: StoryObj<Meta<CalendarEasyProps>> = {
   args: { locale: LOCALE, defaultValue: '2026-10-14', today: '2026-10-14', onValueChange: fn() },
   render: (args) => <Calendar {...args} />,
-  parameters: { docs: { source: { code: '<Calendar locale="en-US" defaultValue="2026-10-14" />' } } },
+  parameters: { docs: { source: { language: 'tsx', code: '<Calendar locale="en-US" defaultValue="2026-10-14" today="2026-10-14" />' } } },
   play: async ({ args, canvasElement, userEvent }) => {
     await expectMonth(canvasElement, 'October 2026');
     await expectSelected(canvasElement, 'October 14, 2026');
@@ -172,6 +188,7 @@ export const Compound: Story = {
   parameters: {
     docs: {
       source: {
+        language: 'tsx',
         code: `<Calendar locale="en-US" defaultValue="2026-10-12">
   <Calendar.Header />
   <Calendar.Grid />
@@ -684,6 +701,17 @@ export const LightTheme: Story = {
 
 /** Range mode: multi-selection semantics, endpoint descriptions, preview without selection. */
 export const RangeSelection: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Calendar
+  locale="en-US"
+  visibleMonth="2026-10"
+  today="2026-10-11"
+  selectionRange={{ start: '2026-10-12', end: '2026-10-14' }}
+  previewRange={{ start: '2026-10-14', end: '2026-10-16' }}
+  rangeLabels={{ start: 'Start date', end: 'End date' }}
+>
+  <Calendar.Header />
+  <Calendar.Grid />
+</Calendar>` } } },
   args: {
     visibleMonth: '2026-10',
     today: '2026-10-11',
