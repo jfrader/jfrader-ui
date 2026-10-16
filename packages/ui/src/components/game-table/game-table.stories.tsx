@@ -1,4 +1,4 @@
-import { StrictMode, useRef, useState, type ReactNode } from 'react';
+import { StrictMode, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -35,7 +35,7 @@ function ThemeViewport({ viewport, theme, children }: {
 }) {
   return <ThemeRoot theme={theme}><ViewportFrame viewport={viewport}>{children}</ViewportFrame></ThemeRoot>;
 }
-const FlightsViewport = styled(CardFlightsProvider)(viewportSize);
+const FlightsViewport = styled(({ viewport: _viewport, ...props }: { viewport: ViewportSize } & ComponentProps<typeof CardFlightsProvider>) => <CardFlightsProvider {...props} />)(viewportSize);
 const ReplacementFrame = styled.div({ inlineSize: 1000, blockSize: 800 });
 const SeatCards = styled.div({ position: 'relative', display: 'flex', gap: vars.space[1] });
 const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
@@ -5023,7 +5023,7 @@ function PokerFixture() {
 /** Six free-for-all seats, five community cards and a pot. Press Deal board to replay the deal. */
 export const PokerCommunityBoard: Story = {
   render: () => <PokerFixture />,
-  parameters: { a11y: { test: 'error' }, ...{ docs: { source: { language: "tsx", code: `import { useRef, type ReactNode } from 'react';
+  parameters: { a11y: { test: 'error' }, ...{ docs: { source: { language: "tsx", code: `import { useRef, type ComponentProps, type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -5033,7 +5033,7 @@ import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeom
 
 const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 
-const FlightsViewport = styled(CardFlightsProvider)(viewportSize);
+const FlightsViewport = styled(({ viewport: _viewport, ...props }: { viewport: { width: number; height: number } } & ComponentProps<typeof CardFlightsProvider>) => <CardFlightsProvider {...props} />)(viewportSize);
 
 const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
 
