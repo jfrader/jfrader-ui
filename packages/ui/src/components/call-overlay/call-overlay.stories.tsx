@@ -9,7 +9,7 @@ import { GameActions } from '../game-actions';
 import { GameTable } from '../game-table';
 import { CallOverlay } from './index';
 
-const Frame = styled.div({ position: 'relative', inlineSize: '100%', blockSize: 420 });
+const Frame = styled.div({ position: 'relative', inlineSize: 840, maxInlineSize: '100%', blockSize: 420 });
 const Row = styled.div({ display: 'flex', gap: vars.space[4], padding: vars.space[6] });
 const preference: { matches: boolean; media?: MediaQueryList } = { matches: false };
 function mockPreference(reduced: boolean) {
