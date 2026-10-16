@@ -4,6 +4,7 @@
 
 ### Added
 
+- `ShareSheet`: share links, choose people and access, and send through app-owned callbacks in a desktop popover or phone sheet. Typed `slots` and `slotProps` customize each part; `dialog` targets the native phone shell and `content` the inner panel.
 - AnnouncementBar, ChatThread, Checkbox, CodeBlock, CommentThread, CopyButton, HoldToConfirm, HoverCard, KeycapKeyboard and LightboxGallery accept typed interior `slots` alongside `slotProps` for their text, controls, lists and panels. Layout-only `AnnouncementBar.content`, `ChatThread.viewport`, `CodeBlock.sourceFrame`, `HoldToConfirm.face`/`fill`, `HoverCard.Profile.avatar`/`identity` and `KeycapKeyboard.row` remain styling-only; existing root APIs are unchanged. Shared-helper targets `ChatThread.attachments`, composer `textarea`/`sendButton`, and `CommentThread.composer`/`textarea`/`send` retain their existing props API.
 - Alert, Avatar, AvatarGroup, Badge, AttachmentList and Carousel accept a replacement slot for every part they already styled through `slotProps`, so a consumer can pass props or swap the element.
 - Card accepts `slots.header`, `slots.title`, `slots.description`, `slots.content` and `slots.footer` replacements while preserving each part's styles.

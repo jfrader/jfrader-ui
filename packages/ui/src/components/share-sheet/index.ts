@@ -7,4 +7,5 @@ export type {
   ShareSheetSubmission,
   ShareSheetMessages,
   ShareSheetSlotProps,
+  ShareSheetSlots,
 } from './share-sheet';

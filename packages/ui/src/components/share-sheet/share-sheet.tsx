@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type ReactNode,
 } from 'react';
@@ -23,10 +24,11 @@ import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { raisedSurface, modalShellReset } from '../../styling/surface';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
-import { ThemeScopeContext, useThemeScope } from '../../styling/theme-scope';
+import { ThemeScopeContext, useThemeScope, type ThemeScope } from '../../styling/theme-scope';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
@@ -84,19 +86,60 @@ type Slot<E extends 'button' | 'div' | 'h2' | 'span'> = ComponentPropsWithRef<E>
   css?: Interpolation<Theme>;
 };
 export interface ShareSheetSlotProps {
+  /** Button that opens the sharing surface. */
   trigger?: Slot<'button'>;
-  content?: Omit<Slot<'div'>, 'onCancel' | 'onClose'> &
-    Pick<ComponentPropsWithRef<'dialog'>, 'onCancel' | 'onClose'>;
+  /** Native modal shell used for the phone sheet. */
+  dialog?: ComponentPropsWithRef<'dialog'> & { css?: Interpolation<Theme> };
+  /** Inner panel holding the active sharing face. */
+  content?: Slot<'div'>;
+  /** Heading naming the sharing surface. */
   title?: Slot<'h2'>;
+  /** Button that copies the shared link. */
   copyButton?: Slot<'button'>;
+  /** Select trigger for the access permission. */
   accessControl?: Slot<'button'>;
+  /** Container holding the channel actions. */
   channelList?: Slot<'div'>;
+  /** Container holding the selected people. */
   selectedList?: Slot<'div'>;
+  /** Container holding the recent people buttons. */
   peopleList?: Slot<'div'>;
+  /** Button that submits the selected people and access. */
   sendButton?: Slot<'button'>;
+  /** Button that dismisses the sent confirmation. */
   doneButton?: Slot<'button'>;
+  /** Polite live region announcing sharing updates. */
   status?: Slot<'div'>;
+  /** Decorative drag handle on the phone sheet. */
   grabber?: Slot<'div'>;
+}
+export interface ShareSheetSlots {
+  /** Replaces the opening button; forward props/ref to Button. */
+  trigger?: ComponentType<ComponentPropsWithRef<typeof Button>>;
+  /** Replaces the native modal shell; forward props/ref to a dialog. */
+  dialog?: ComponentType<ComponentPropsWithRef<'dialog'>>;
+  /** Replaces the inner panel; forward props/ref to a div. */
+  content?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the surface heading. */
+  title?: ComponentType<ComponentPropsWithRef<'h2'>>;
+  /** Replaces the copy action; forward props/ref to Button. */
+  copyButton?: ComponentType<ComponentPropsWithRef<typeof Button>>;
+  /** Replaces the access trigger; forward props/ref to Select.Trigger. */
+  accessControl?: ComponentType<ComponentPropsWithRef<typeof Select.Trigger>>;
+  /** Replaces the channel actions container. */
+  channelList?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the selected people container. */
+  selectedList?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the recent people container. */
+  peopleList?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the send action; forward props/ref to Button. */
+  sendButton?: ComponentType<ComponentPropsWithRef<typeof Button>>;
+  /** Replaces the confirmation action; forward props/ref to Button. */
+  doneButton?: ComponentType<ComponentPropsWithRef<typeof Button>>;
+  /** Replaces the polite announcement region. */
+  status?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the decorative drag handle. */
+  grabber?: ComponentType<ComponentPropsWithRef<'div'>>;
 }
 export interface ShareSheetProps
   extends Omit<ComponentPropsWithRef<'div'>, 'title' | 'defaultValue' | 'onCopy'>, SxProps {
@@ -122,6 +165,7 @@ export interface ShareSheetProps
   locale?: string;
   messages?: Partial<ShareSheetMessages>;
   slotProps?: ShareSheetSlotProps;
+  slots?: ShareSheetSlots;
 }
 const PHONE_QUERY = '(max-width: 520px)';
 const COPY_RESET_MS = 1800;
@@ -130,7 +174,7 @@ const DRAG_MIN_DISTANCE = 24;
 const DRAG_VELOCITY = 0.6;
 const SHAPE_SPRING = { type: 'spring', stiffness: 380, damping: 36 } as const;
 const FACE_FADE = {
-  duration: Number.parseFloat(base.motion.duration.fast) / 1000, // '120ms' -> 0.12s
+  duration: motionDurationMs.fast / 1000,
   // `motion` cannot consume the CSS cubic-bezier() string.
   ease: base.motion.easeStandard.match(/[\d.]+/g)!.map(Number) as [number, number, number, number],
 } as const;
@@ -400,6 +444,7 @@ function ShareSheetLayer({
   locale,
   messages,
   slotProps: slots = {},
+  slots: replacementSlots,
   ...props
 }: ShareSheetProps & { nodeId?: string }) {
   const text = { ...DEFAULT_MESSAGES, ...messages };
@@ -464,10 +509,10 @@ function ShareSheetLayer({
     },
   });
   const interactions = useInteractions(useLayerDismiss(floating.context, 'container'));
-  const { onCancel, onClose, ...contentSlot } = slots.content ?? {};
+  const contentSlot = slots.content ?? {};
   const nativeProps = useNativeDialog(
     { ...native, open: sheet && open },
-    { onCancel, onClose },
+    { onCancel: slots.dialog?.onCancel, onClose: slots.dialog?.onClose },
     undefined,
     dialogRef,
   );
@@ -475,6 +520,7 @@ function ShareSheetLayer({
     nativeProps.ref,
     sheet ? floating.refs.setFloating : null,
     setDialogHost,
+    slots.dialog?.ref,
   ]);
   const triggerMergedRef = useMergeRefs([
     triggerRef,
@@ -486,6 +532,19 @@ function ShareSheetLayer({
   const peopleMergedRef = useMergeRefs([peopleRef, slots.peopleList?.ref]);
   const doneMergedRef = useMergeRefs([doneRef, slots.doneButton?.ref]);
   const panelMergedRef = useMergeRefs([panelRef, contentSlot.ref]);
+  const Trigger = replacementSlots?.trigger ?? Button;
+  const Dialog = replacementSlots?.dialog ?? 'dialog';
+  const Content = replacementSlots?.content ?? 'div';
+  const Title = replacementSlots?.title ?? 'h2';
+  const CopyButton = replacementSlots?.copyButton ?? Button;
+  const AccessControl = replacementSlots?.accessControl ?? Select.Trigger;
+  const ChannelList = replacementSlots?.channelList ?? 'div';
+  const SelectedList = replacementSlots?.selectedList ?? 'div';
+  const PeopleList = replacementSlots?.peopleList ?? 'div';
+  const SendButton = replacementSlots?.sendButton ?? Button;
+  const DoneButton = replacementSlots?.doneButton ?? Button;
+  const Status = replacementSlots?.status ?? 'div';
+  const Grabber = replacementSlots?.grabber ?? 'div';
   // Last focused control of this open session; a shell migration refocuses its equivalent.
   const focusedControl = useRef<string | null>(null);
   const migrationTarget = useRef<string | null>(null);
@@ -715,7 +774,7 @@ function ShareSheetLayer({
   };
   const surface = (
     <ShareSheetShell origin={entranceOrigin}>
-      <div
+      <Content
         {...contentSlot}
         ref={panelMergedRef}
         dir={props.dir ?? direction}
@@ -742,7 +801,7 @@ function ShareSheetLayer({
         }}
       >
         {sheet && (
-          <div
+          <Grabber
             {...slots.grabber}
             data-ui="share-sheet-grabber"
             css={[grabberStyle, slots.grabber?.css]}
@@ -777,9 +836,9 @@ function ShareSheetLayer({
           />
         )}
         <div css={columnStyle}>
-          <h2 {...slots.title} id={titleId} css={[titleStyle, slots.title?.css]}>
+          <Title {...slots.title} id={titleId} css={[titleStyle, slots.title?.css]}>
             {text.heading(title)}
-          </h2>
+          </Title>
           <motion.div
             key={face}
             data-ui="share-sheet-face"
@@ -791,7 +850,7 @@ function ShareSheetLayer({
             {face === 'sent' ? (
               <>
                 <p>{text.sent(sentNames)}</p>
-                <Button
+                <DoneButton
                   {...slots.doneButton}
                   data-share-control="done"
                   ref={doneMergedRef}
@@ -801,12 +860,12 @@ function ShareSheetLayer({
                   }}
                 >
                   {text.done}
-                </Button>
+                </DoneButton>
               </>
             ) : (
               <>
                 <div css={rowStyle}>
-                  <Button
+                  <CopyButton
                     {...slots.copyButton}
                     data-share-control="copy"
                     ref={copyMergedRef}
@@ -825,7 +884,7 @@ function ShareSheetLayer({
                     }}
                   >
                     {text.copy}
-                  </Button>
+                  </CopyButton>
                   <span
                     data-ui="share-sheet-copied"
                     data-state={copyState === 'copied' ? 'visible' : 'hidden'}
@@ -848,7 +907,7 @@ function ShareSheetLayer({
                     onOpenChange={setAccessOpen}
                     disabled={!accessOptions.some((option) => !option.disabled)}
                   >
-                    <Select.Trigger
+                    <AccessControl
                       {...slots.accessControl}
                       data-share-control="access"
                       aria-label={slots.accessControl?.['aria-label'] ?? text.sendTo}
@@ -876,7 +935,7 @@ function ShareSheetLayer({
                       }}
                     >
                       <Select.Value placeholder={text.accessUnavailable} />
-                    </Select.Trigger>
+                    </AccessControl>
                     <Select.Content>
                       {accessOptions.map((option) => (
                         <Select.Item
@@ -906,7 +965,7 @@ function ShareSheetLayer({
                   </p>
                 )}
                 {channels.length > 0 && (
-                  <div {...slots.channelList} css={[rowStyle, slots.channelList?.css]}>
+                  <ChannelList {...slots.channelList} css={[rowStyle, slots.channelList?.css]}>
                     {channels.map((item) => (
                       <div key={item.id}>
                         <Button
@@ -940,10 +999,10 @@ function ShareSheetLayer({
                         )}
                       </div>
                     ))}
-                  </div>
+                  </ChannelList>
                 )}
                 {selectedPeople.length > 0 && (
-                  <div {...slots.selectedList} css={[rowStyle, slots.selectedList?.css]}>
+                  <SelectedList {...slots.selectedList} css={[rowStyle, slots.selectedList?.css]}>
                     {selectedPeople.map((person) => (
                       <Button
                         key={person.id}
@@ -956,11 +1015,11 @@ function ShareSheetLayer({
                         {person.name} <span aria-hidden="true">×</span>
                       </Button>
                     ))}
-                  </div>
+                  </SelectedList>
                 )}
                 <section aria-labelledby={`${id}-recent`}>
                   <h3 id={`${id}-recent`}>{text.recentPeople}</h3>
-                  <div
+                  <PeopleList
                     {...slots.peopleList}
                     ref={peopleMergedRef}
                     css={[peopleStyle, slots.peopleList?.css]}
@@ -981,7 +1040,7 @@ function ShareSheetLayer({
                         {selected.includes(person.id) && <span aria-hidden="true">✓</span>}
                       </Button>
                     ))}
-                  </div>
+                  </PeopleList>
                 </section>
                 {error && (
                   <p id={errorId} css={errorStyle}>
@@ -989,7 +1048,7 @@ function ShareSheetLayer({
                   </p>
                 )}
                 <div css={rowStyle}>
-                  <Button
+                  <SendButton
                     {...slots.sendButton}
                     data-share-control="send"
                     loading={pending}
@@ -1005,7 +1064,7 @@ function ShareSheetLayer({
                     }}
                   >
                     {pending ? text.sending : text.send(count, category)}
-                  </Button>
+                  </SendButton>
                   <Button variant="ghost" data-share-control="close" onClick={close}>
                     {text.close}
                   </Button>
@@ -1013,7 +1072,7 @@ function ShareSheetLayer({
               </>
             )}
           </motion.div>
-          <div
+          <Status
             {...slots.status}
             css={[visuallyHiddenStyle, slots.status?.css]}
             role="status"
@@ -1021,12 +1080,14 @@ function ShareSheetLayer({
             aria-atomic="true"
           >
             {status}
-          </div>
+          </Status>
         </div>
-      </div>
+      </Content>
     </ShareSheetShell>
   );
-  const dialogScope = {
+  const dialogScope: ThemeScope = {
+    appearance: scope?.appearance ?? 'default',
+    tokenStyle: scope?.tokenStyle,
     theme:
       scope?.theme ??
       ((rootRef.current?.closest('[data-theme]')?.getAttribute('data-theme') === 'light'
@@ -1038,7 +1099,7 @@ function ShareSheetLayer({
     <WithSx className={className} styles={rootStyle} sx={sx}>
       {(rootClass) => (
         <div {...props} ref={rootMergedRef} className={rootClass} data-ui="share-sheet">
-          <Button
+          <Trigger
             {...slots.trigger}
             ref={triggerMergedRef}
             aria-haspopup="dialog"
@@ -1054,24 +1115,26 @@ function ShareSheetLayer({
             }}
           >
             {text.trigger}
-          </Button>
-          <dialog
+          </Trigger>
+          <Dialog
             {...interactions.getFloatingProps({
+              ...slots.dialog,
               ...nativeProps,
-              onKeyDownCapture: (event) => {
-                if (event.key === 'Escape') event.preventDefault();
-              },
             })}
+            onKeyDownCapture={(event) => {
+              slots.dialog?.onKeyDownCapture?.(event);
+              if (event.key === 'Escape') event.preventDefault();
+            }}
             ref={dialogMergedRef}
             id={sheet ? contentId : undefined}
-            css={dialogStyle}
+            css={[dialogStyle, slots.dialog?.css]}
             aria-modal="true"
-            aria-label={slots.content?.['aria-label']}
-            aria-labelledby={[slots.content?.['aria-labelledby'], titleId]
+            aria-label={slots.dialog?.['aria-label']}
+            aria-labelledby={[slots.dialog?.['aria-labelledby'], titleId]
               .filter(Boolean)
               .join(' ')}
             aria-describedby={
-              [slots.content?.['aria-describedby'], error && errorId].filter(Boolean).join(' ') ||
+              [slots.dialog?.['aria-describedby'], error && errorId].filter(Boolean).join(' ') ||
               undefined
             }
           >
@@ -1082,7 +1145,7 @@ function ShareSheetLayer({
                 </ThemeScopeContext.Provider>
               </div>
             )}
-          </dialog>
+          </Dialog>
           {!sheet && open && (
             <OverlayPortal>
               <FloatingFocusManager

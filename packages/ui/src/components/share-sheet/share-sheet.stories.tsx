@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
 import { Button } from '../button';
+import { Select } from '../select';
 import { ShareSheet, type ShareSheetProps } from './index';
 
 const PEOPLE = [
@@ -50,6 +51,78 @@ const meta = {
 } satisfies Meta<typeof ShareSheet>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+function ReplacementDiv(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="div" />;
+}
+function ReplacementDialog(props: ComponentPropsWithRef<'dialog'>) {
+  return <dialog {...props} data-replacement="dialog" />;
+}
+function ReplacementTitle(props: ComponentPropsWithRef<'h2'>) {
+  return <h2 {...props} data-replacement="title" />;
+}
+function ReplacementButton(props: ComponentPropsWithRef<typeof Button>) {
+  return <Button {...props} data-replacement="button" />;
+}
+function ReplacementAccess(props: ComponentPropsWithRef<typeof Select.Trigger>) {
+  return <Select.Trigger {...props} data-replacement="access" />;
+}
+
+export const SlotReplacements: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    presentation: 'sheet',
+    defaultValue: ['ada'],
+    slotProps: {
+      dialog: { className: 'custom-dialog', 'aria-label': 'Share permissions' },
+      content: { className: 'custom-panel', 'aria-label': 'Share options' },
+    },
+    slots: {
+      trigger: ReplacementButton,
+      dialog: ReplacementDialog,
+      content: ReplacementDiv,
+      title: ReplacementTitle,
+      copyButton: ReplacementButton,
+      accessControl: ReplacementAccess,
+      channelList: ReplacementDiv,
+      selectedList: ReplacementDiv,
+      peopleList: ReplacementDiv,
+      sendButton: ReplacementButton,
+      doneButton: ReplacementButton,
+      status: ReplacementDiv,
+      grabber: ReplacementDiv,
+    },
+  },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const dialog = await body(canvasElement).findByRole('dialog');
+    await expect(dialog).toHaveAttribute('data-replacement', 'dialog');
+    await expect(dialog).toHaveClass('custom-dialog');
+    await expect(dialog).not.toHaveClass('custom-panel');
+    await expect(dialog).toHaveAttribute('aria-label', 'Share permissions');
+    const panel = dialog.querySelector('[data-ui="share-sheet-content"]');
+    await expect(panel).toHaveClass('custom-panel');
+    await expect(panel).not.toHaveClass('custom-dialog');
+    await expect(panel).toHaveAttribute('aria-label', 'Share options');
+    await expect(canvasElement.querySelectorAll('[data-replacement]')).toHaveLength(12);
+    const access = within(dialog).getByRole('combobox');
+    await expect(access).toHaveAttribute('data-replacement', 'access');
+    await userEvent.click(access);
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await expect(args.onAccessChange).toHaveBeenCalledWith('edit');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send to 1 person' }));
+    const done = await within(dialog).findByRole('button', { name: 'Done' });
+    await expect(done).toHaveAttribute('data-replacement', 'button');
+    await waitFor(async () => {
+      await expect(done.ownerDocument.activeElement).toBe(done);
+    });
+    await userEvent.click(done);
+    await expect(body(canvasElement).queryByRole('dialog')).not.toBeInTheDocument();
+    await expect(canvasElement.ownerDocument.activeElement).toBe(
+      within(canvasElement).getByRole('button', { name: 'Share' }),
+    );
+  },
+};
+
 function body(element: HTMLElement) {
   return within(element.ownerDocument.body);
 }
@@ -692,7 +765,7 @@ export const NativeCancelVeto: Story = {
   args: {
     defaultOpen: true,
     presentation: 'sheet',
-    slotProps: { content: { onCancel: (event) => event.preventDefault() } },
+    slotProps: { dialog: { onCancel: (event) => event.preventDefault() } },
   },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.click(await body(canvasElement).findByRole('button', { name: 'Close' }));
