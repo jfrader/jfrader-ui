@@ -28,7 +28,21 @@ const meta = {
   component: Accordion,
   parameters: { docs: {
     description: { component: 'Open and close sections of content.' },
-    usage: '- Pass `items` with `value`, `label`, `panel` and optional `disabled`, or compose the dotted parts with `children`.\n- Single mode uses a string value; `type="multiple"` uses an array.\n- Use `slotProps` to customize generated parts. `component` replaces the root, as does `slots.root`. Replacements receive the wired native element props; forward all props and ref to that element. Declare replacements outside render.',
+    usage: `### Values
+- Pass \`items\` with \`value\`, \`label\`, \`panel\` and optional \`disabled\`, or use \`children\` with \`Accordion.Item\`, \`Accordion.Trigger\` and \`Accordion.Panel\`. Do not combine the two modes.
+- Single mode is the default and uses a string. Use \`''\` to close every panel. With \`type="multiple"\`, pass an array and use \`[]\` to close every panel.
+- Use \`defaultValue\` to seed expansion, or pair \`value\` with \`onValueChange\`. When you control \`value\`, update it to accept a request.
+- \`collapsible\` defaults to \`true\`. Set it to \`false\` to prevent closing the last open panel. Seed an open value if you need a panel open initially.
+
+### Keyboard
+- Press Enter or Space to toggle a header. Use ArrowUp and ArrowDown to move between enabled headers with wrapping, or Home and End to reach the first and last. Moving focus does not open a panel.
+
+### Limits
+- Headers render as \`h3\` and panels as labelled regions. Place the accordion where level-three headings fit your page outline.
+- Closed panels stay mounted and hidden. Their child state persists when you reopen them.
+
+### Customization
+- In \`items\` mode, use \`slotProps\` for generated parts and \`component\` or \`slots.root\` to replace the root. Forward every received prop and ref to the matching native element, and declare replacements outside render.`,
   } },
   argTypes: {
     type: { control: 'radio', options: ['single', 'multiple'] },
@@ -160,7 +174,13 @@ async function expectExpanded(canvasElement: HTMLElement, openLabels: readonly I
 export const Default: StoryObj<EasySingleProps> = {
   args: { items: ITEMS, defaultValue: 'one', onValueChange: fn() },
   render: (args) => <Accordion {...args} />,
-  parameters: { docs: { source: { code: `<Accordion items={sections} defaultValue="one" />` } } },
+  parameters: { docs: { source: { language: 'tsx', code: `const sections = [
+  { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
+  { value: 'two', label: 'Security', panel: 'Password and two-factor sign-in.' },
+  { value: 'three', label: 'Billing', panel: 'Plan, invoices and payment method.' },
+];
+
+<Accordion items={sections} defaultValue="one" />` } } },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await expectExpanded(canvasElement, ['Account']);
     const account = canvas.getByRole('button', { name: 'Account' });
@@ -185,6 +205,16 @@ export const GeneratedPartProps: StoryObj<EasySingleProps> = {
 
 export const Compound: Story = {
   args: { defaultValue: 'one' },
+  parameters: { docs: { source: { language: 'tsx', code: `<Accordion defaultValue="one">
+  <Accordion.Item value="one">
+    <Accordion.Trigger>Account</Accordion.Trigger>
+    <Accordion.Panel>Name, email and avatar.</Accordion.Panel>
+  </Accordion.Item>
+  <Accordion.Item value="two">
+    <Accordion.Trigger>Security</Accordion.Trigger>
+    <Accordion.Panel>Password and two-factor sign-in.</Accordion.Panel>
+  </Accordion.Item>
+</Accordion>` } } },
   render: (args) => <AccordionExample {...args} count={2} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

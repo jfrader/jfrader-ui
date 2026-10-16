@@ -25,9 +25,19 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Switch between panels by choosing a tab.' },
-      usage: `Pass label and items to pair each tab with its panel. Each item has value, label, panel and optional disabled. Do not combine items with children. Use slotProps.root/list/tab/panel for part props and slots for replacement adapters. component aliases slots.root; slots.root wins. Use the compound parts for custom structure.
+      usage: `### Values
+- Pass \`label\` and \`items\` to pair tabs with panels. Each item needs a unique \`value\`, \`label\`, \`panel\` and optional \`disabled\`. For custom anatomy, use \`children\` with \`Tabs.List\`, \`Tabs.Tab\` and \`Tabs.Panel\` instead, matching tab and panel values and naming the list.
+- Use \`defaultValue\` to select a panel initially. Without a matching value, all panels start hidden. Pair \`value\` with \`onValueChange\` to control selection; update \`value\` to accept a request.
+- Hidden panels stay mounted, so their child state persists when you switch tabs.
 
-Arrow keys skip disabled tabs; Home and End reach the ends. With activation="manual", press Enter or Space to select. Panels stay mounted while hidden.`,
+### Keyboard
+- \`orientation\` defaults to \`horizontal\`. Use Left and Right horizontally, or Up and Down vertically, to move between enabled tabs with wrapping. Horizontal keys reverse in RTL. Home and End reach the ends.
+- \`activation\` defaults to \`auto\`, so focusing a tab requests selection. If your panel needs time to load, use \`activation="manual"\` and press Enter or Space to select the focused tab.
+- The focused tab is the list's Tab stop even when it is not selected. Press Tab to leave the list for the active panel; panels default to \`tabIndex={0}\`.
+
+### Customization
+- In \`items\` mode, use \`slotProps\` for root, list, tab and panel props. Use \`slots\` to replace generated parts; \`slots.root\` takes precedence over \`component\`.
+- Declare replacements outside render. Forward received props and ref to the root element, or to the corresponding \`Tabs\` part for list, tab and panel adapters, to keep keyboard handling and ARIA relationships.`,
     },
   },
   argTypes: {

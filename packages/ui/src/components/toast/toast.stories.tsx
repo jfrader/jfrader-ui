@@ -29,13 +29,27 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show messages when actions succeed, fail or need attention.' },
-      source: { code: '<Toast viewport="default" messages={{ dismiss: "Close notification" }}><App /></Toast>' },
-      usage: `- Set \`viewport="default"\` to mount the queue renderer, or \`viewport="stack"\` for ToastStack.
-- Call \`useToast()\` inside the provider to publish, update and dismiss messages.
-- Use \`slotProps.viewport\` for renderer props, and its \`slotProps.root\` / \`slotProps.item\` for generated roots and cards. \`viewportProps\` accepts the same renderer props.
-- The provider renders no DOM. Replace the renderer with \`slots.viewport\`, or its div with \`viewportProps.component\` / \`viewportProps.slots.root\`.
-- With automatic rendering, explicit Viewport/ToastStack descendants are suppressed. Without \`viewport\`, keep one explicit renderer.
-- Appearing messages never move focus. Tab reaches actions and dismiss buttons; Enter or Space activates them. Timed messages pause on hover and focus.`,
+      usage: `### Queue
+- Set \`viewport="default"\` to mount the queue renderer, or \`viewport="stack"\` for \`ToastStack\`. Without \`viewport\`, mount one explicit \`Toast.Viewport\` or \`ToastStack\` inside the provider. Automatic rendering suppresses explicit renderer descendants.
+- Call \`useToast()\` inside \`Toast\` or \`Toast.Provider\`. \`toast(options)\` returns an id; retain it to call \`update(id, patch)\` or \`dismiss(id)\`. Unknown or closing ids cannot be updated.
+- \`max\` defaults to \`4\`. Adding beyond the limit removes the oldest toast immediately. The limit is floored and clamped to at least \`1\`; non-finite limits fall back to \`4\`.
+
+### Timing
+- \`duration\` defaults to 5000 milliseconds. Set a toast's \`duration\` to \`null\` to keep it open until dismissal. Provider duration changes affect new toasts, not existing ones.
+- Timers pause while the toast is hovered, focused or the document is hidden, then resume with the remaining time. Keep timed information accessible elsewhere, or use \`duration: null\` when readers need to act on it.
+- A \`loading\` toast persists when you omit its duration. Updating \`loading\` without a duration sets persistence when \`true\` and the provider delay when \`false\`. A changed duration restarts the timer; a text-only update does not.
+
+### Actions and keyboard
+- Pass an \`action\` with \`label\` and \`onClick\` to add a button. Its handler runs before dismissal; call \`event.preventDefault()\` to keep the toast open.
+- Appearing toasts do not move focus. Press Tab to reach action and dismiss buttons, then Enter or Space to activate. Removing a toast with focus inside it moves focus to the first surviving open toast's dismiss button when one exists.
+
+### Announcements
+- \`tone\` defaults to \`neutral\`. Use \`danger\` for an assertive \`alert\`; other tones announce politely through \`status\`. Keep message content in \`title\` and \`description\`, with actions in \`action\` rather than inside the live-region text.
+- Translate the dismiss name with \`messages.dismiss\` or \`dismissLabel\`; \`messages.dismiss\` wins and the fallback is "Dismiss".
+
+### Customization
+- The provider renders no DOM. Use \`slotProps.viewport\` or \`viewportProps\` for renderer props, then the renderer's \`slotProps.root\` and \`slotProps.item\` for root and card styling.
+- Use \`slots.viewport\` to replace the renderer, forwarding received props to \`Toast.Viewport\` or \`ToastStack\`. For the default viewport's div, use \`component\` or \`slots.root\` on its props and forward received props and ref. Declare replacements outside render.`,
     },
   },
 } satisfies Meta<typeof Toast>;
@@ -147,6 +161,18 @@ async function expectRemoved(toast: HTMLElement) {
 
 export const Default: Story = {
   args: { viewport: 'default', messages: { dismiss: 'Close notification' } },
+  parameters: { docs: { source: { language: 'tsx', code: `function Notifications() {
+  const { toast } = useToast();
+  return <>
+    <Button onClick={() => toast({ title: 'Changes saved', description: 'Your profile is up to date.' })}>Show toast</Button>
+    <Button onClick={() => toast({ title: 'Upload failed', description: 'The file is larger than 10 MB.', tone: 'danger' })}>Show danger</Button>
+    <Button onClick={() => toast({ title: 'Sync paused', duration: null })}>Show persistent</Button>
+  </>;
+}
+
+<Toast viewport="default" messages={{ dismiss: 'Close notification' }}>
+  <Notifications />
+</Toast>` } } },
   render: (args) => <Toast {...args}><Triggers /></Toast>,
   play: async ({ canvasElement }) => {
     const toast = await showToast(canvasElement, 'Show toast', TITLE);

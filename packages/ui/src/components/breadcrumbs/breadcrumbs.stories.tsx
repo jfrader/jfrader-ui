@@ -28,7 +28,17 @@ const meta = {
   component: Breadcrumbs,
   parameters: { docs: {
     description: { component: 'Show where a page sits and link to the pages above it.' },
-    usage: '- Pass `items` with `label`, optional `href`, `current` and `key`, or compose `Breadcrumbs.Item` with `children`.\n- The last item becomes current unless an item explicitly sets `current`. A current item with `href` stays a link.\n- Use `slotProps` for the root, items and separators. `component` replaces the root, as does `slots.root`. Replacements receive native element props; forward all props and ref to that element. Declare replacements outside render.',
+    usage: `### Items
+- Pass \`items\` with \`label\` and optional \`href\`, \`current\` and \`key\`, or compose \`Breadcrumbs.Item\` with \`children\`. Do not combine the two modes.
+- If no item sets \`current={true}\`, the last item in DOM order is current unless it sets \`current={false}\`. Set \`current\` explicitly if you need \`aria-current\` in server-rendered markup.
+- An item with \`href\` renders a link, including the current item. Omit \`href\` to render text instead.
+
+### Keyboard
+- Press Tab to move through links in page order and Enter to follow one. Text items and separators are not tab stops.
+
+### Customization
+- \`label\` defaults to "Breadcrumb" and \`separator\` defaults to "/". Set \`label\` to name the navigation landmark and \`separator\` to change the mark between items; separators are hidden from assistive technology.
+- In \`items\` mode, use \`slotProps\` for the root, items and separators. Use \`component\` or \`slots.root\` to replace the root. Forward every received prop and ref to the matching native element, and declare replacements outside render.`,
   } },
 } satisfies Meta<BreadcrumbsCompoundProps>;
 
@@ -54,7 +64,11 @@ const getSeparators = (nav: HTMLElement) =>
 export const Default: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = {
   args: { items: [ { key: 'home', label: 'Home', href: '/' }, { key: 'projects', label: 'Projects', href: '/projects' }, { key: 'current', label: 'jfrader-ui' } ] },
   render: (args) => <Breadcrumbs {...args} />,
-  parameters: { docs: { source: { code: `<Breadcrumbs items={path} />` } } },
+  parameters: { docs: { source: { language: 'tsx', code: `<Breadcrumbs items={[
+  { key: 'home', label: 'Home', href: '/' },
+  { key: 'projects', label: 'Projects', href: '/projects' },
+  { key: 'current', label: 'jfrader-ui' },
+]} />` } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(canvas.getByText('jfrader-ui')).toHaveAttribute('aria-current', 'page');
     await expect(canvas.getAllByRole('link')).toHaveLength(2);
@@ -76,6 +90,11 @@ export const GeneratedPartProps: StoryObj<Omit<BreadcrumbsEasyProps, 'component'
 };
 
 export const Compound: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Breadcrumbs>
+  <Breadcrumbs.Item href="/">Home</Breadcrumbs.Item>
+  <Breadcrumbs.Item href="/projects">Projects</Breadcrumbs.Item>
+  <Breadcrumbs.Item>jfrader-ui</Breadcrumbs.Item>
+</Breadcrumbs>` } } },
   render: (args) => (
     <Breadcrumbs {...args}>
       <Breadcrumbs.Item href={LEVELS[0].href}>{LEVELS[0].label}</Breadcrumbs.Item>

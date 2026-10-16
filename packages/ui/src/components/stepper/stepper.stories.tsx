@@ -40,6 +40,25 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show progress through steps or return to a completed step.' },
+      usage: `### Values
+- Give each step a unique \`id\` and a \`label\`. \`value\` is a zero-based index; \`steps.length\` marks a nonempty flow complete. Values are floored and clamped to that range, and non-finite values become \`0\` without calling \`onValueChange\`.
+- The initial index defaults to \`0\`. Use \`defaultValue\` to seed it, or pair \`value\` with \`onValueChange\` and update \`value\` to accept a request.
+- With \`interactive\` omitted, the stepper is an indicator without controls. Set \`interactive\` to allow returning to enabled steps before the current index. Current and upcoming steps cannot be selected. Render step content and validate forward progress in your app.
+
+### Keyboard
+- In interactive mode, Tab enters at one step. Use Left and Right horizontally, or Up and Down vertically, to move through the current step and enabled completed steps. Horizontal keys reverse in RTL; movement stops at the ends.
+- Home and End reach the first and last reachable steps. Focus movement does not change \`value\`; press Enter or Space on a completed step to return to it.
+
+### Details
+- \`details\` defaults to \`all\`. Set it to \`current\` to show only the current description. A step's \`error\` replaces its description and always remains visible, including in compact mode; it does not prevent returning to that step unless you also set \`disabled\`.
+- \`orientation\` defaults to \`horizontal\`, and \`responsive\` defaults to \`true\`. At container widths of 30rem or less, horizontal steppers show markers and a current-step caption. Set \`responsive={false}\` to keep labels, or \`compact\` to use markers at any width.
+
+### Localization
+- Use \`locale\` for numerals, \`getStepLabel\` for step names and \`getChangeLabel\` for announcements. Translate \`label\` and \`completeLabel\`, which default to "Progress" and "All steps complete".
+- \`announceChanges\` defaults to \`false\`. Enable it to announce accepted index changes politely; initial rendering and focus moves are not announced.
+
+### Customization
+- Use \`sx\` for the root and \`slotProps\` to style the list, items, heads, markers, labels, descriptions, connectors and caption. A step's \`icon\` replaces its numeral or status glyph.`,
     },
   },
   args: { steps: STEPS },
@@ -147,6 +166,12 @@ function findConditionalRule(element: HTMLElement, condition: string, pseudo = '
 
 export const Default: Story = {
   args: { value: 1 },
+  parameters: { docs: { source: { language: 'tsx', code: `<Stepper value={1} steps={[
+  { id: 'account', label: 'Account', description: 'Email and password' },
+  { id: 'profile', label: 'Profile', description: 'Name and avatar' },
+  { id: 'security', label: 'Security', description: 'Two-factor setup' },
+  { id: 'review', label: 'Review', description: 'Confirm and submit' },
+]} />` } } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const root = canvas.getByRole('group', { name: 'Progress' });
@@ -275,7 +300,12 @@ export const Static: Story = {
 
 export const Interactive: Story = {
   args: { interactive: true, defaultValue: 2, onValueChange: fn() },
-  parameters: { docs: { source: { code: USAGE } } },
+  parameters: { docs: { source: { language: 'tsx', code: `<Stepper steps={[
+  { id: 'account', label: 'Account', description: 'Email and password' },
+  { id: 'profile', label: 'Profile', description: 'Name and avatar' },
+  { id: 'security', label: 'Security', description: 'Two-factor setup' },
+  { id: 'review', label: 'Review', description: 'Confirm and submit' },
+]} interactive defaultValue={2} />` } } },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const root = canvas.getByRole('navigation', { name: 'Progress' });

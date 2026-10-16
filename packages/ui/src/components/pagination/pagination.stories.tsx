@@ -18,6 +18,20 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Move between pages of results.' },
+      usage: `### Values
+- Pages are one-based. Pair \`page\` with \`onPageChange\` and update \`page\` to accept navigation. Activating the current page does not call the callback.
+- \`totalPages\` and \`page\` are floored, with negative or non-finite counts treated as zero. The displayed page is clamped to the available range. With zero pages, no page numbers render and both navigation buttons are disabled.
+
+### Windowing
+- \`siblingCount\` defaults to \`1\` neighbour on each side. It is floored and clamped to 0–50. Set it to change how many page numbers surround the current page.
+- The first and last pages remain visible. An ellipsis replaces at least two hidden pages and cannot be activated; choose a displayed page or use Previous and Next.
+
+### Keyboard
+- Press Tab to reach each enabled button, then Enter or Space to request a page. There is no arrow-key navigation between buttons.
+- Previous and Next are disabled at the boundaries. If an accepted request disables the focused navigation button, focus moves to the current page button.
+
+### Localization
+- Use \`locale\` to format page numbers and \`label\`, \`previousLabel\` and \`nextLabel\` to translate their names. The names default to "Pagination", "Previous page" and "Next page".`,
     },
   },
   args: { page: 5, totalPages: 20, locale: 'en-US' },
@@ -62,6 +76,10 @@ const currentPage = (nav: HTMLElement) =>
 
 export const Default: Story = {
   args: { onPageChange: fn() },
+  parameters: { docs: { source: { language: 'tsx', code: `function ResultsPages() {
+  const [page, setPage] = useState(5);
+  return <Pagination page={page} totalPages={20} locale="en-US" onPageChange={setPage} />;
+}` } } },
   render: (args) => <ControlledPagination {...args} />,
   play: async ({ canvasElement }) => {
     const nav = getNav(canvasElement);

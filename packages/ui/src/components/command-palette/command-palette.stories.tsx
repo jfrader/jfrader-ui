@@ -28,12 +28,12 @@ const COMMANDS: readonly CommandItem[] = [
 
 const snippet = `<CommandPalette
   triggerLabel="Open commands"
-  label="Commands"
+  label="Command palette"
   items={[
-    { value: 'open-file', label: 'Open file', group: 'Files' },
-    { value: 'save-file', label: 'Save file', keywords: 'write disk', group: 'Files' },
-    { value: 'toggle-theme', label: 'Toggle theme', keywords: 'dark light', group: 'View' },
-    { value: 'zoom-in', label: 'Zoom in', group: 'View' },
+    { value: 'open-file', label: 'Open file', group: 'Files', id: 'cmd-1' },
+    { value: 'save-file', label: 'Save file', keywords: 'write disk', group: 'Files', id: 'cmd-2' },
+    { value: 'toggle-theme', label: 'Toggle theme', keywords: 'dark light', group: 'View', id: 'cmd-3' },
+    { value: 'zoom-in', label: 'Zoom in', group: 'View', id: 'cmd-4' },
   ]}
   onSelect={(item) => runCommand(item)}
 />`;
@@ -47,17 +47,24 @@ const meta: Meta<CommandPaletteCompoundProps> = {
         component: 'Search for a command and run it from a modal dialog.',
       },
       usage: `### Composition
-Pass triggerLabel, label, items and onSelect for a single-element command palette. Each item record provides a unique value and display label, with optional keywords, group and disabled state. Do not combine items with children. Use slotProps to pass props to generated parts, or use the compound parts (Trigger, Content, Input, List, Group, Item, Empty) for custom anatomy.
+- Pass \`items\` with unique \`value\` strings and display \`label\` content, plus optional \`keywords\`, \`group\`, \`disabled\` and \`onSelect\`. For custom anatomy, use \`children\` with the compound parts instead; do not combine the two modes.
+- Pass \`triggerLabel\` to generate an opener. If you omit it, control \`open\` from your app and register any shortcut, such as Cmd+K, yourself. The palette starts closed; \`defaultOpen\` seeds its state and \`open\` / \`onOpenChange\` control it.
 
-### Activation and action ownership
-The app owns command execution: pass an onSelect callback on the root to handle selected item records, or provide onSelect on individual item records. Both are called upon activation, followed by dialog closure.
+### Actions
+- Run your command in \`onSelect\`. In \`items\` mode, the item's callback runs first, then the root callback receives the selected record, then the palette requests closure. It does not wait for asynchronous command work.
+- If you control \`open\`, update it to accept close requests. Selecting a disabled item does not run callbacks or close the palette.
 
-### Keyboard and filtering
-- Typing in the input filters commands by label and keywords.
-- ArrowDown and ArrowUp navigate and wrap among matches.
-- Home and End jump to the first and last match.
-- Enter selects the active command and closes the palette.
-- Escape closes the palette and returns focus to the trigger.`,
+### Filtering
+- Type to match rendered item text or \`keywords\` using a case-insensitive substring search. Pass \`filter\` to change matching. Nonmatches and groups without matches are hidden, not unmounted.
+- Each query change highlights the first enabled match. Disabled matches remain visible and count toward the result total, but keyboard navigation skips them. Reopening resets the query.
+- Use \`label\`, \`emptyMessage\` and \`formatResultCount\` to translate the dialog name, empty state and count announcement. Their defaults are "Command palette", "No results" and an English result count. In \`items\` mode, \`empty\` supplies empty-state content.
+
+### Keyboard
+- Opening focuses the input; DOM focus stays there while you navigate options. Use ArrowDown and ArrowUp to move with wrapping, or unmodified Home and End to reach the first and last enabled matches.
+- Press Enter to select the highlighted command. With no enabled match, Enter leaves the palette open. Press Escape to request closure; accepted closure returns focus to the invoker after the exit finishes.
+
+### Customization
+- In \`items\` mode, use \`slotProps\` for generated parts and \`slots\` for replacements. \`slots.root\` takes precedence over \`component\`. Declare adapters outside render and forward every received prop and ref to the corresponding compound part; root adapters forward to a div.`,
     },
   },
 };
@@ -168,7 +175,7 @@ export const Default: EasyStory = {
   },
   parameters: {
     docs: {
-      source: { code: snippet },
+      source: { language: 'tsx', code: snippet },
     },
   },
   render: (args) => <CommandPalette {...args} />,
@@ -415,6 +422,30 @@ export const EasyModeUncontrolledDismiss: EasyStory = {
 };
 
 export const Compound: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `function Commands() {
+  const [selections, setSelections] = useState<string[]>([]);
+  const select = (value: string) => () => setSelections((previous) => [...previous, value]);
+  return <>
+    <CommandPalette>
+      <CommandPalette.Trigger>Open commands</CommandPalette.Trigger>
+      <CommandPalette.Content>
+        <CommandPalette.Input placeholder="Type a command" />
+        <CommandPalette.List>
+          <CommandPalette.Group label="Files">
+            <CommandPalette.Item value="open-file" onSelect={select('open-file')}>Open file</CommandPalette.Item>
+            <CommandPalette.Item value="save-file" keywords="write disk" onSelect={select('save-file')}>Save file</CommandPalette.Item>
+          </CommandPalette.Group>
+          <CommandPalette.Group label="View">
+            <CommandPalette.Item value="toggle-theme" keywords="dark light" onSelect={select('toggle-theme')}>Toggle theme</CommandPalette.Item>
+            <CommandPalette.Item value="zoom-in" onSelect={select('zoom-in')}>Zoom in</CommandPalette.Item>
+          </CommandPalette.Group>
+        </CommandPalette.List>
+        <CommandPalette.Empty />
+      </CommandPalette.Content>
+    </CommandPalette>
+    <output aria-label="Selections">{selections.join(',')}</output>
+  </>;
+}` } } },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
     const { canvas, trigger, dialog, input } = await openPalette(canvasElement);
