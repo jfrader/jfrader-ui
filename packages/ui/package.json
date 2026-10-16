@@ -59,6 +59,7 @@
     "./dialog": { "types": "./src/components/dialog/index.ts", "import": "./src/components/dialog/index.ts" },
     "./dialog-stack": { "types": "./src/components/dialog-stack/index.ts", "import": "./src/components/dialog-stack/index.ts" },
     "./divider": { "types": "./src/components/divider/index.ts", "import": "./src/components/divider/index.ts" },
+    "./dock": { "types": "./src/components/dock/index.ts", "import": "./src/components/dock/index.ts" },
     "./drawer": { "types": "./src/components/drawer/index.ts", "import": "./src/components/drawer/index.ts" },
     "./editable-details": { "types": "./src/components/editable-details/index.ts", "import": "./src/components/editable-details/index.ts" },
     "./emblem": { "types": "./src/components/emblem/index.ts", "import": "./src/components/emblem/index.ts" },

@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **129**; public callable parts: **156**.
-- Families exposing `slots.root`: **66**; remaining without a family-level root slot: **63** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **95**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
+- Public callable families: **130**; public callable parts: **156**.
+- Families exposing `slots.root`: **66**; remaining without a family-level root slot: **64** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **96**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **5**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -124,6 +124,7 @@ may exist and is listed on the corresponding public part).
 | [DialogStack.Title](../packages/ui/src/components/dialog-stack/dialog-stack.tsx) | — | — | — | — | — | — |
 | [DialogStack.Trigger](../packages/ui/src/components/dialog-stack/dialog-stack.tsx) | — | — | — | — | — | — |
 | [Divider](../packages/ui/src/components/divider/divider.tsx) | — | — | — | — | — | — |
+| [Dock](../packages/ui/src/components/dock/dock.tsx) | — | `badge`, `floatingLabel`, `item`, `status`, `toolbar`, `tray`, `trayItem` | `badge`, `floatingLabel`, `item`, `status`, `toolbar`, `tray`, `trayItem` | — | — | — |
 | [Drawer](../packages/ui/src/components/drawer/drawer.tsx) | yes | `body`, `close`, `content`, `description`, `footer`, `header`, `panel`, `root`, `title`, `trigger` | `body`, `close`, `content`, `description`, `footer`, `header`, `panel`, `root`, `title`, `trigger` | — | — | `Body`, `Close`, `Content`, `Description`, `Footer`, `Header`, `Panel`, `Title`, `Trigger` |
 | [Drawer.Body](../packages/ui/src/components/drawer/drawer.tsx) | — | — | — | — | — | — |
 | [Drawer.Close](../packages/ui/src/components/drawer/drawer.tsx) | — | — | — | — | — | — |
