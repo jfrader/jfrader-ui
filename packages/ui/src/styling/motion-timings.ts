@@ -25,6 +25,10 @@ export function resolveMotionDurationMs(name: string, value: unknown): number {
 }
 
 export const motionDurationMs = {
+  callFade: resolveMotionDurationMs('duration.callFade', base.motion.duration.callFade),
+  callSlam: resolveMotionDurationMs('duration.callSlam', base.motion.duration.callSlam),
+  callShake: resolveMotionDurationMs('duration.callShake', base.motion.duration.callShake),
+  callShakeDelay: resolveMotionDurationMs('duration.callShakeDelay', base.motion.duration.callShakeDelay),
   fast: resolveMotionDurationMs('duration.fast', base.motion.duration.fast),
   base: resolveMotionDurationMs('duration.base', base.motion.duration.base),
   slow: resolveMotionDurationMs('duration.slow', base.motion.duration.slow),

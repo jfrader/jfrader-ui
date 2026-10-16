@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **131**; public callable parts: **160**.
-- Families exposing `slots.root`: **69**; remaining without a family-level root slot: **62** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **100**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
+- Public callable families: **133**; public callable parts: **160**.
+- Families exposing `slots.root`: **71**; remaining without a family-level root slot: **62** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **101**; remaining without family-level interior slots: **32** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -61,6 +61,7 @@ may exist and is listed on the corresponding public part).
 | [Calendar](../packages/ui/src/components/calendar/calendar.tsx) | yes | `grid`, `header`, `root` | `grid`, `header`, `root` | — | — | `Grid`, `Header` |
 | [Calendar.Grid](../packages/ui/src/components/calendar/calendar.tsx) | — | — | — | — | — | — |
 | [Calendar.Header](../packages/ui/src/components/calendar/calendar.tsx) | — | — | — | — | — | — |
+| [CallOverlay](../packages/ui/src/components/call-overlay/call-overlay.tsx) | yes | `root` | `root` | — | — | — |
 | [Card](../packages/ui/src/components/card/card.tsx) | yes | `content`, `description`, `footer`, `header`, `root`, `title` | `content`, `description`, `footer`, `header`, `root`, `title` | — | — | `Content`, `Description`, `Footer`, `Header`, `Title` |
 | [Card.Content](../packages/ui/src/components/card/card.tsx) | — | — | — | — | — | — |
 | [Card.Description](../packages/ui/src/components/card/card.tsx) | — | — | — | — | — | — |
@@ -156,6 +157,7 @@ may exist and is listed on the corresponding public part).
 | [FilterToolbar.ResultCount](../packages/ui/src/components/filter-toolbar/filter-toolbar.tsx) | — | — | — | — | — | — |
 | [Flex](../packages/ui/src/components/flex/flex.tsx) | — | — | — | — | — | — |
 | [FlipGameCard](../packages/ui/src/components/flip-game-card/flip-game-card.tsx) | yes | `back`, `front`, `root`, `rotator` | `back`, `front`, `root`, `rotator` | — | — | — |
+| [GameActions](../packages/ui/src/components/game-actions/game-actions.tsx) | yes | `action`, `root` | `action`, `root` | — | — | — |
 | [GameCard](../packages/ui/src/components/game-card/game-card.tsx) | yes | `back`, `face`, `root` | `back`, `face`, `root` | — | — | — |
 | [GameCardStack](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | yes | `card`, `pile`, `root`, `trigger` | `card`, `pile`, `root`, `trigger` | — | — | `Pile` |
 | [GameCardStack.Pile](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | — | `card`, `pile`, `trigger` | `card`, `pile`, `trigger` | — | — | — |

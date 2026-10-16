@@ -36,9 +36,11 @@ if (!manifest.peerDependencies?.shiki || manifest.peerDependenciesMeta?.shiki?.o
 // game/app pieces (GURI-2359) and the next adapter, whose optional peers must stay out of the
 // main graph. Every other public component must be re-exported from src/index.ts.
 const subpathOnlyComponents = new Set([
+  'call-overlay',
   'card-flights',
   'deck',
   'flip-game-card',
+  'game-actions',
   'game-card',
   'game-card-stack',
   'game-hand',

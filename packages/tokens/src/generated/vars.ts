@@ -114,7 +114,11 @@ export const vars = {
       "cardDealStagger": "var(--ui-motion-duration-card-deal-stagger)",
       "cardPlayOwn": "var(--ui-motion-duration-card-play-own)",
       "cardPlay": "var(--ui-motion-duration-card-play)",
-      "playedPile": "var(--ui-motion-duration-played-pile)"
+      "playedPile": "var(--ui-motion-duration-played-pile)",
+      "callFade": "var(--ui-motion-duration-call-fade)",
+      "callSlam": "var(--ui-motion-duration-call-slam)",
+      "callShake": "var(--ui-motion-duration-call-shake)",
+      "callShakeDelay": "var(--ui-motion-duration-call-shake-delay)"
     },
     "easeStandard": "var(--ui-motion-ease-standard)",
     "easePresence": "var(--ui-motion-ease-presence)",
