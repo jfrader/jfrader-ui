@@ -12,6 +12,7 @@ interface PropMember {
   required?: boolean;
   description?: string;
   component?: CatalogRef;
+  defaultElement?: string;
   part?: string;
   members?: PropMember[];
 }
