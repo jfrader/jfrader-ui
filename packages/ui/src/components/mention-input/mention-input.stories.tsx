@@ -215,6 +215,7 @@ export const People: Story = { args: { channels: undefined } };
 export const Channels: Story = { args: { people: undefined } };
 export const Both: Story = {};
 export const Metadata: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultValue: { text: '@', mentions: [] },
     defaultOpen: true,
@@ -294,10 +295,12 @@ export const SubmitOnEnter: Story = {
   },
 };
 export const PersistentOpen: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: { text: '@', mentions: [] }, open: true },
   play: openPlay,
 };
 export const EmptyResults: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: { text: '@zzz', mentions: [] }, open: true },
   play: async (context) => {
     await openPlay(context);
@@ -308,14 +311,17 @@ export const EmptyResults: Story = {
   },
 };
 export const TopPlacement: Story = {
+  tags: ['!autodocs'],
   args: { placement: 'top', defaultValue: { text: '#', mentions: [] }, defaultOpen: true },
   play: openPlay,
 };
 export const BottomPlacement: Story = {
+  tags: ['!autodocs'],
   args: { placement: 'bottom', defaultValue: { text: '@', mentions: [] }, defaultOpen: true },
   play: openPlay,
 };
 export const BottomViewportAutoFlip: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: { text: '@', mentions: [] }, defaultOpen: true },
   decorators: [
     (Story) => (
@@ -327,6 +333,7 @@ export const BottomViewportAutoFlip: Story = {
   play: openPlay,
 };
 export const Disabled: Story = {
+  tags: ['!autodocs'],
   args: { disabled: true, defaultValue: TOKEN_VALUE, open: true },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('textbox')).toBeDisabled();
@@ -350,6 +357,7 @@ export const Required: Story = {
   },
 };
 export const Error: Story = {
+  tags: ['!autodocs'],
   args: {
     error: 'Write a comment before posting.',
     description: 'Mention a teammate with @.',
@@ -553,6 +561,7 @@ export const UndoRedo: Story = {
   },
 };
 export const ControlledReject: Story = {
+  tags: ['!autodocs'],
   args: { value: { text: '@a', mentions: [] }, open: true },
   render: (args) => <ActionField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -569,6 +578,7 @@ export const ControlledReject: Story = {
   },
 };
 export const ControlledOpenReject: Story = {
+  tags: ['!autodocs'],
   args: { value: { text: '@', mentions: [] }, open: true },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('textbox'));
@@ -664,6 +674,7 @@ export const LightTheme: Story = {
   play: boundaryPlay,
 };
 export const ScopedThemePortal: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: { text: '@', mentions: [] }, open: true },
   render: (args) => (
     <LightThemeRoot>
@@ -705,6 +716,7 @@ export const ForcedColors: Story = {
   },
 };
 export const ReducedMotion: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: { text: '@', mentions: [] }, open: true },
   play: openPlay,
   parameters: {
@@ -717,6 +729,7 @@ export const ReducedMotion: Story = {
   },
 };
 export const NarrowPanel: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: { text: '@', mentions: [] }, open: true },
   decorators: [
     (Story) => (
@@ -800,6 +813,7 @@ export const PlainPaste: Story = {
   },
 };
 export const CallbackOrder: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: { text: '@', mentions: [] }, defaultOpen: true },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('textbox'));
@@ -846,6 +860,7 @@ export const NativeRef: Story = {
 };
 // This story tests sx and the documented slot css API.
 export const SlotStyles: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultValue: { text: '@', mentions: [] },
     open: true,
@@ -888,6 +903,7 @@ export const ControlledFormReset: Story = {
   },
 };
 export const NativeCaretKeys: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: { text: '@a', mentions: [] }, defaultOpen: true },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('textbox') as HTMLTextAreaElement;

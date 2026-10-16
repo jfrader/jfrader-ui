@@ -910,6 +910,7 @@ export const RejectedThenAcceptedSelection: Story = {
 const CUSTOM_LIST_ID = 'combobox-custom-listbox';
 
 export const CustomListId: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <ComboboxExample {...args} listId={CUSTOM_LIST_ID} />,
   play: async ({ canvasElement }) => {
@@ -934,6 +935,7 @@ export const DisabledFormValue: Story = {
 };
 
 export const Open: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <ComboboxExample {...args} inputProps={{ defaultInputValue: 'ap' }} />,
   play: async ({ canvasElement }) => {
@@ -946,6 +948,7 @@ export const Open: Story = {
 };
 
 export const LightTheme: Story = {
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   args: { defaultValue: 'apple', defaultOpen: true },
   render: (args) => (

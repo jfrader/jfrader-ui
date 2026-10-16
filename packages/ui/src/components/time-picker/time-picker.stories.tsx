@@ -205,6 +205,7 @@ export const EveryStep: Story = {
   },
 };
 export const Hour12: Story = {
+  tags: ['!autodocs'],
   args: { hourCycle: 'h12', defaultOpen: true },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('combobox')).toHaveTextContent(format('09:00', 'en-GB', 'h12'));
@@ -222,6 +223,7 @@ export const Hour24: Story = {
   },
 };
 export const LocaleDefault: Story = {
+  tags: ['!autodocs'],
   args: { locale: 'ar-EG', defaultOpen: true },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('combobox')).toHaveTextContent(format('09:00', 'ar-EG'));
@@ -318,6 +320,7 @@ export const EmptyBounds: Story = {
   },
 };
 export const Disabled: Story = {
+  tags: ['!autodocs'],
   args: { disabled: true, open: true },
   play: async ({ canvas, canvasElement, args }) => {
     await expect(canvas.getByRole('combobox')).toBeDisabled();
@@ -326,6 +329,7 @@ export const Disabled: Story = {
   },
 };
 export const ReadOnly: Story = {
+  tags: ['!autodocs'],
   args: { readOnly: true, open: true },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const trigger = canvas.getByRole('combobox');
@@ -402,16 +406,19 @@ export const RTL: Story = {
   },
 };
 export const Light: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   globals: { theme: 'light' },
   decorators: [withLightTheme],
 };
-export const PersistentOpen: Story = { args: { open: true } };
-export const OpenSelected: Story = { args: { open: true, value: '15:30' } };
+export const PersistentOpen: Story = { tags: ['!autodocs'], args: { open: true } };
+export const OpenSelected: Story = { tags: ['!autodocs'], args: { open: true, value: '15:30' } };
 export const OpenError: Story = {
+  tags: ['!autodocs'],
   args: { open: true, error: 'Choose an available time' },
 };
 export const ThemeRootPortal: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <ThemeRoot theme="light"><LightThemeFrame>
       <TimePicker {...args} open />
@@ -481,6 +488,7 @@ export const Keyboard: Story = {
   },
 };
 export const ControlledRejects: Story = {
+  tags: ['!autodocs'],
   args: { value: '09:00', open: true },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const trigger = canvas.getByRole('combobox');
@@ -576,6 +584,7 @@ export const FormReset: Story = {
 };
 // This story tests the documented css/slot API and native style merging.
 export const RefAndSlots: Story = {
+  tags: ['!autodocs'],
   args: {
     ref: fn(),
     defaultOpen: true,
@@ -657,6 +666,7 @@ export const RejectedValueAcceptedClose: Story = {
   },
 };
 export const AcceptedValueRejectedClose: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.click(await body(canvasElement).findByRole('option', { name: format('10:00') }));
@@ -689,6 +699,7 @@ export const NativeVeto: Story = {
   },
 };
 export const ControlledTabRejects: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   render: (args) => (
     <>
@@ -709,6 +720,7 @@ export const ControlledTabRejects: Story = {
   },
 };
 export const ForcedColors: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   parameters: {
     docs: {
@@ -720,6 +732,7 @@ export const ForcedColors: Story = {
   },
 };
 export const ReducedMotion: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   parameters: {
     docs: {

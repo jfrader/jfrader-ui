@@ -104,6 +104,7 @@ export const DefaultMiniPaused: Story = {
   },
 };
 export const Expanded: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultPosition: 45 },
   play: async ({ canvas }) => {
     const seek = canvas.getByRole('slider', { name: 'Seek' });
@@ -116,10 +117,11 @@ export const Expanded: Story = {
       await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
   },
 };
-export const PersistentExpanded: Story = { args: { open: true } };
-export const PersistentPlaying: Story = { args: { open: true, playing: true, position: 75 } };
-export const PersistentError: Story = { args: { open: true, error: 'Playback could not start.' } };
+export const PersistentExpanded: Story = { tags: ['!autodocs'], args: { open: true } };
+export const PersistentPlaying: Story = { tags: ['!autodocs'], args: { open: true, playing: true, position: 75 } };
+export const PersistentError: Story = { tags: ['!autodocs'], args: { open: true, error: 'Playback could not start.' } };
 export const PlayingControlled: Story = {
+  tags: ['!autodocs'],
   args: { open: true, playing: false, position: 20 },
   render: (args) => {
     const [playing, setPlaying] = useState(args.playing);
@@ -191,6 +193,7 @@ export const KeyboardPlay: Story = {
   },
 };
 export const SeekDrag: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const control = canvasElement.querySelector<HTMLElement>('[data-ui="slider-control"]')!;
@@ -212,6 +215,7 @@ export const SeekDrag: Story = {
   },
 };
 export const ArtworkDragCollapse: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const artwork = canvasElement.querySelector<HTMLElement>('[data-ui="now-playing-artwork"]')!;
@@ -260,6 +264,7 @@ export const ArtworkDragCollapse: Story = {
   },
 };
 export const ExternalFocusedClosure: Story = {
+  tags: ['!autodocs'],
   render: (args) => {
     const [open, setOpen] = useState(true);
     return (
@@ -325,6 +330,7 @@ export const HiddenPanelBlur: Story = {
   },
 };
 export const BoundedPosition: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, position: 900 },
   play: async ({ canvas, args }) => {
     await expect(canvas.getByRole('slider')).toHaveAttribute('aria-valuenow', '180');
@@ -332,6 +338,7 @@ export const BoundedPosition: Story = {
   },
 };
 export const InvalidDurations: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <>
       {[0, -1, NaN, Infinity].map((duration, index) => (
@@ -351,6 +358,7 @@ export const InvalidDurations: Story = {
   },
 };
 export const QueueWrap: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: 1, defaultPosition: 0 },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }));
@@ -363,6 +371,7 @@ export const QueueWrap: Story = {
   },
 };
 export const PreviousRestart: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultPosition: 10 },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Previous' }));
@@ -373,6 +382,7 @@ export const PreviousRestart: Story = {
   },
 };
 export const PreviousAtThreshold: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     defaultPosition: 3,
@@ -389,6 +399,7 @@ export const PreviousAtThreshold: Story = {
   },
 };
 export const SingleTrack: Story = {
+  tags: ['!autodocs'],
   args: { tracks: tracks.slice(0, 1), defaultOpen: true, defaultPosition: 10 },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }));
@@ -398,6 +409,7 @@ export const SingleTrack: Story = {
   },
 };
 export const Empty: Story = {
+  tags: ['!autodocs'],
   args: { tracks: [], defaultOpen: true },
   play: async ({ canvas, userEvent, args }) => {
     const play = canvas.getByRole('button', { name: 'Play' });
@@ -407,8 +419,9 @@ export const Empty: Story = {
     await expect(canvas.getByRole('slider')).toHaveAttribute('aria-disabled', 'true');
   },
 };
-export const InvalidSelection: Story = { args: { value: -1, defaultOpen: true } };
+export const InvalidSelection: Story = { tags: ['!autodocs'], args: { value: -1, defaultOpen: true } };
 export const UnknownDuration: Story = {
+  tags: ['!autodocs'],
   args: { tracks: [{ ...tracks[0]!, duration: null }], defaultOpen: true },
   play: async ({ canvas, userEvent, args }) => {
     await expect(canvas.getByRole('slider')).toHaveAttribute('aria-disabled', 'true');
@@ -422,6 +435,7 @@ export const UnknownDuration: Story = {
   },
 };
 export const Busy: Story = {
+  tags: ['!autodocs'],
   args: { busy: true, open: true },
   play: async ({ canvas, userEvent, args }) => {
     await expect(canvas.getByRole('progressbar', { name: 'Loading' })).toBeInTheDocument();
@@ -435,9 +449,11 @@ export const Busy: Story = {
   },
 };
 export const PlaybackError: Story = {
+  tags: ['!autodocs'],
   args: { error: 'Playback could not start.', defaultOpen: true },
 };
 export const FailedArtwork: Story = {
+  tags: ['!autodocs'],
   render: (args) => <NowPlaying {...args} slots={{ artwork: ReplacementArtwork }} />,
   args: {
     tracks: [{ ...tracks[0]!, artwork: 'data:image/png;base64,broken', artworkAlt: 'Album cover' }],
@@ -454,11 +470,13 @@ export const FailedArtwork: Story = {
 };
 export const Light: Story = {
   ...Expanded,
+  tags: ['!autodocs'],
   globals: { theme: 'light' },
   decorators: [withLightTheme],
 };
 const NarrowFrame = styled.div({ inlineSize: '15rem', maxInlineSize: '100%' });
 export const Narrow: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   decorators: [
     (Story) => (
@@ -477,6 +495,7 @@ export const Narrow: Story = {
   },
 };
 export const RTL: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, dir: 'rtl' },
   play: async ({ canvas, userEvent }) => {
     await expect(getComputedStyle(canvas.getByRole('region')).direction).toBe('rtl');
@@ -488,6 +507,7 @@ export const RTL: Story = {
   },
 };
 export const ReducedMotion: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, playing: true },
   parameters: {
     docs: {
@@ -499,6 +519,7 @@ export const ReducedMotion: Story = {
   },
 };
 export const ForcedColors: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, playing: true },
   parameters: {
     docs: {
@@ -510,6 +531,7 @@ export const ForcedColors: Story = {
   },
 };
 export const ControlledRejected: Story = {
+  tags: ['!autodocs'],
   args: { value: 0, position: 10, playing: false, open: true },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Play' }));
@@ -547,6 +569,7 @@ export const RejectedExpansion: Story = {
   },
 };
 export const ExternalAcceptedUpdates: Story = {
+  tags: ['!autodocs'],
   render: (args) => {
     const [state, setState] = useState({ value: 0, position: 10, open: true });
     return (
@@ -575,6 +598,7 @@ export const ExternalAcceptedUpdates: Story = {
   },
 };
 export const ExternalAria: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     'aria-label': 'Consumer label',
@@ -649,6 +673,7 @@ export const LevelsStandalone: Story = {
   },
 };
 export const WaveformBounds: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, waveform: [-1, 0, 0.5, 2, NaN, Infinity] },
   play: async ({ canvasElement, args }) => {
     const bars = canvasElement.querySelector('[data-ui="now-playing-waveform"]')!.children;
@@ -676,6 +701,7 @@ export const ArtworkPlaceholderReplacement: Story = {
 };
 
 export const NativeCustomization: Story = {
+  tags: ['!autodocs'],
   render: (args) => <NowPlaying {...args} slots={{ waveform: ReplacementWaveform, artwork: ReplacementArtwork }} />,
   args: {
     defaultOpen: true,
@@ -707,6 +733,7 @@ export const NativeCustomization: Story = {
   },
 };
 export const LongDuration: Story = {
+  tags: ['!autodocs'],
   args: { tracks: [{ ...tracks[0]!, duration: 360000 }], defaultOpen: true, locale: 'ar-EG' },
   play: async ({ canvas }) => {
     for (const output of canvas.getByRole('region').querySelectorAll('output'))
@@ -716,6 +743,7 @@ export const LongDuration: Story = {
   },
 };
 export const FractionalDuration: Story = {
+  tags: ['!autodocs'],
   args: {
     tracks: [{ ...tracks[0]!, duration: 180.5 }],
     seekStep: 0.5,
@@ -728,6 +756,7 @@ export const FractionalDuration: Story = {
   },
 };
 export const AutomaticFractionalStep: Story = {
+  tags: ['!autodocs'],
   args: { tracks: [{ ...tracks[0]!, duration: 180.5 }], seekStep: undefined, defaultOpen: true },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -738,6 +767,7 @@ export const AutomaticFractionalStep: Story = {
   },
 };
 export const MisalignedSeekStep: Story = {
+  tags: ['!autodocs'],
   args: { seekStep: 7, defaultOpen: true },
   play: async ({ canvas, userEvent, args }) => {
     const seek = canvas.getByRole('slider');
@@ -754,6 +784,7 @@ export const MisalignedSeekStep: Story = {
 const rootCleanup = fn();
 const seekCleanup = fn();
 export const RefCleanup: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     ref: fn(() => rootCleanup),
@@ -854,6 +885,7 @@ function MediaAdapter(args: NowPlayingProps) {
   );
 }
 export const RealMediaAdapterExample: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <MediaAdapter {...args} />,
   parameters: {

@@ -292,6 +292,7 @@ export const MenuKeyboard: Story = {
 };
 
 export const MenuOpen: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement }) => {
     // Persistent open state so the axe gate sees the portaled menu.
@@ -305,6 +306,7 @@ export const MenuLightTheme: Story = { ...MenuOpen, decorators: [withLightTheme]
 const popoverOpenChange = fn<(open: boolean) => void>();
 
 export const MenuInsidePopover: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <Popover defaultOpen onOpenChange={popoverOpenChange}>
       <Popover.Trigger>Settings</Popover.Trigger>

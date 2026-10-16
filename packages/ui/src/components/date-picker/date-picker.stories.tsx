@@ -270,6 +270,7 @@ export const CustomParts: StoryObj<DatePickerEasyProps> = {
 };
 
 export const EasyDisabled: StoryObj<DatePickerEasyProps> = {
+  tags: ['!autodocs'],
   args: { label: LABEL, locale: LOCALE, disabled: true, open: true },
   render: (args) => <DatePicker {...args} />,
   play: async ({ canvasElement, userEvent }) => {
@@ -310,6 +311,7 @@ export const EasyLocale: StoryObj<DatePickerEasyProps> = {
 };
 
 export const OpenControlled: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: '2026-10-12' },
   render: (args) => <DatePickerExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -469,6 +471,7 @@ export const RejectedControlled: Story = {
 
 /** A fixed `open` rejects the close: the value commits, the popup stays and focus stays inside. */
 export const RejectedControlledOpen: Story = {
+  tags: ['!autodocs'],
   args: { open: true, defaultValue: '2026-10-14', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <DatePickerExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -626,6 +629,7 @@ export const Disabled: Story = {
 };
 
 export const DisabledDefaultOpen: Story = {
+  tags: ['!autodocs'],
   args: {
     disabled: true,
     defaultOpen: true,
@@ -652,10 +656,12 @@ export const DisabledDefaultOpen: Story = {
 
 export const DisabledControlledOpen: Story = {
   ...DisabledDefaultOpen,
+  tags: ['!autodocs'],
   args: { ...DisabledDefaultOpen.args, defaultOpen: undefined, open: true },
 };
 
 export const LightTheme: Story = {
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   args: { defaultOpen: true, defaultValue: '2026-10-12' },
   render: (args) => <DatePickerExample {...args} />,

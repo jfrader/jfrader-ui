@@ -598,6 +598,7 @@ export const Composition: Story = {
 };
 
 export const Open: Story = {
+  tags: ['!autodocs'],
   parameters: {
     docs: {
       description: {
@@ -646,6 +647,7 @@ export const ValidationError: Story = {
 };
 
 export const ExternalError: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, error: 'That name is taken.', onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     const editor = canvas.getByRole('textbox');
@@ -850,6 +852,7 @@ export const RejectedOpen: Story = {
 };
 
 export const RejectedClose: Story = {
+  tags: ['!autodocs'],
   args: { open: true, value: 'Apollo', defaultValue: undefined, onValueChange: fn(), onOpenChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     const editor = canvas.getByRole('textbox');
@@ -1023,6 +1026,7 @@ export const DeferredClose: Story = {
 };
 
 export const EscapeInsideLayer: Story = {
+  tags: ['!autodocs'],
   // No leave saves, so moving between the two editors requests nothing.
   args: { defaultOpen: true, saveOnBlur: false, onOpenChange: fn() },
   render: (args) => <EscapeLayer {...args} />,
@@ -1221,6 +1225,7 @@ export const Body: Story = {
 };
 
 export const Sizes: Story = {
+  tags: ['!autodocs'],
   args: { variant: 'body' },
   render: (args) => (
     <>
@@ -1262,6 +1267,7 @@ export const Empty: Story = {
 const LONG_VALUE =
   'Quarterly infrastructure migration and observability overhaul for the payments platform, phase two';
 export const LongText: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: LONG_VALUE },
   render: (args) => (
     <Narrow>
@@ -1300,6 +1306,7 @@ export const HeadingContext: Story = {
 };
 
 export const ExternalAria: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, description: 'Shown in the sidebar.' },
   render: (args) => (
     <>
@@ -1344,6 +1351,7 @@ export const ExternalAria: Story = {
 };
 
 export const FalsyNodes: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <>
       <InlineEdit {...args} label="Zero" defaultValue="" placeholder={0} description={0} error={0} editIcon={0} />
@@ -1426,6 +1434,7 @@ export const RefAndStyles: Story = {
 };
 
 export const FormReset: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, saveOnBlur: false, onValueChange: fn(), controlProps: { name: 'project' } },
   render: (args) => (
     <form onSubmit={(event) => event.preventDefault()} data-testid="form">
@@ -1455,6 +1464,7 @@ export const FormReset: Story = {
 };
 
 export const LightTheme: Story = {
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   render: (args) => (
@@ -1484,6 +1494,7 @@ export const RTL: Story = {
 };
 
 export const ForcedColors: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <>
       <InlineEdit {...args} />
@@ -1514,6 +1525,7 @@ export const ReducedMotion: Story = {
 /** Replace the wrapper and generated label; pass native props through slotProps. */
 // This story tests native style merging and css/sx precedence through the slot API.
 export const SlotCustomization: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     ref: fn(),

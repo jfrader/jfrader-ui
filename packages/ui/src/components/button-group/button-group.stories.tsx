@@ -589,6 +589,7 @@ export const WithMenu: Story = {
   },
 };
 export const PersistentOpen: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   render: menuRender,
 };
@@ -604,6 +605,7 @@ export const ControlledReject: Story = {
   },
 };
 export const ControlledRejectClose: Story = {
+  tags: ['!autodocs'],
   args: { open: true, onOpenChange: fn() },
   render: menuRender,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -812,6 +814,7 @@ export const LongLocalizedLabels: Story = {
   },
 };
 export const ThemeRootPortal: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <ThemeRoot theme="light">
       <ButtonGroup {...args} open>
@@ -1019,6 +1022,7 @@ export const NestedGroups: Story = {
 };
 
 export const PartRefs: Story = {
+  tags: ['!autodocs'],
   args: { onPartRef: fn() },
   render: ({ onPartRef, ...args }) => (
     <ButtonGroup {...args} ref={onPartRef} open>
@@ -1057,7 +1061,8 @@ export const PartRefs: Story = {
   },
 };
 
-export const DefaultOpen: Story = { args: { defaultOpen: true }, render: menuRender };
+export const DefaultOpen: Story = {
+  tags: ['!autodocs'], args: { defaultOpen: true }, render: menuRender };
 
 function ControlledMenuExample({ args }: { args: Parameters<NonNullable<Story['render']>>[0] }) {
   const [open, setOpen] = useState(false);

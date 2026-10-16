@@ -386,6 +386,7 @@ export const EasyDismissal: StoryObj<(props: ContextMenuEasyProps) => ReactNode>
 };
 
 export const EasyControlled: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
+  tags: ['!autodocs'],
   ...Default,
   name: 'Easy mode controlled',
   args: {
@@ -778,6 +779,7 @@ export const OpenOnClickOptIn: Story = {
 };
 
 export const Danger: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement }) => {
     const menu = await findMenu(canvasElement);
@@ -908,6 +910,7 @@ export const CheckboxItems: Story = {
 };
 
 export const CheckboxSelected: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <ViewOptions {...args} value />,
   play: async ({ canvasElement }) => {
@@ -1053,6 +1056,7 @@ export const DisabledTarget: Story = {
 };
 
 export const LongLabels: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: ({ onCopy, onOpenChild: _onOpenChild, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
@@ -1142,6 +1146,7 @@ export const ViewportCorners: Story = {
 };
 
 export const ScrollAndResize: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   play: async ({ args, canvasElement }) => {
     const menu = await findMenu(canvasElement);
@@ -1342,6 +1347,7 @@ export const RejectedOpen: Story = {
 };
 
 export const RejectedClose: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
@@ -1482,6 +1488,7 @@ export const FocusReturnPerInstance: Story = {
 };
 
 export const PersistentOpen: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement }) => {
     // Persistent open state so the axe gate sees the portaled menu.
@@ -1501,6 +1508,7 @@ export const PersistentOpen: Story = {
 };
 
 export const LightTheme: Story = {
+  tags: ['!autodocs'],
   globals: { theme: 'light' },
   args: { defaultOpen: true },
   play: async ({ canvasElement }) => {
@@ -1521,6 +1529,7 @@ function ScopedHost({ children }: { children: ReactNode }) {
 ScopedHost.displayName = 'ScopedHost';
 
 export const ScopedPortal: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <ScopedHost>
@@ -1571,6 +1580,7 @@ export const RTL: Story = {
 const popoverOpenChange = fn();
 
 export const InsidePopover: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <Row>
       <Popover defaultOpen onOpenChange={popoverOpenChange}>
@@ -1637,6 +1647,7 @@ export const InsidePopover: Story = {
 };
 
 export const AriaMerge: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: ({ onCopy, onOpenChild: _onOpenChild, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <Row>
@@ -1685,6 +1696,7 @@ export const AriaMerge: Story = {
 };
 
 export const FalsyNodes: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: ({ onOpenChild: _onOpenChild, onCopy: _onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
@@ -1731,6 +1743,7 @@ const checkboxRef = fn();
 const separatorRef = fn();
 
 export const RefTargets: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: ({ onOpenChild: _onOpenChild, onCopy: _onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
@@ -1788,6 +1801,7 @@ export const RefTargets: Story = {
 };
 
 export const SxPrecedence: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: ({ onOpenChild: _onOpenChild, onCopy: _onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
@@ -1841,6 +1855,7 @@ class UsageErrorBoundary extends Component<{ children: ReactNode }, { message: s
 }
 
 export const UsageErrors: Story = {
+  tags: ['!autodocs'],
   render: () => (
     <Row>
       <UsageErrorBoundary>
@@ -1869,6 +1884,7 @@ export const UsageErrors: Story = {
 };
 
 export const ReducedMotion: Story = {
+  tags: ['!autodocs'],
   parameters: {
     docs: {
       description: {

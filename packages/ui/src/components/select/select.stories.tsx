@@ -556,6 +556,7 @@ export const Placeholder: Story = {
 };
 
 export const ScrollableRtl: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: 'project-0' },
   render: (args) => (
     <NarrowFrame>
@@ -589,6 +590,7 @@ export const ScrollableRtl: Story = {
 };
 
 export const Controlled: Story = {
+  tags: ['!autodocs'],
   args: { onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <ControlledSelect {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -886,6 +888,7 @@ export const RejectedControlledOpen: Story = {
 };
 
 export const Open: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: 'cherry' },
   render: (args) => (
     <SelectExample {...args}>
@@ -912,6 +915,7 @@ export const Open: Story = {
 };
 
 export const LightThemeOpen: Story = {
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   args: { defaultOpen: true, defaultValue: 'apple' },
   render: (args) => <SelectExample {...args} />,
