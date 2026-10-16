@@ -1,10 +1,10 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { motionValue } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { Button } from '../button';
+import { Button, type ButtonProps } from '../button';
 import { VoiceOrb, type VoiceOrbState } from './index';
 
 const STATES: Record<VoiceOrbState, string> = {
@@ -45,6 +45,49 @@ const meta = {
 } satisfies Meta<typeof VoiceOrb>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+function ReplacementCanvas(props: ComponentPropsWithRef<'canvas'>) {
+  return <canvas {...props} data-replacement="canvas" />;
+}
+function ReplacementControl(props: ButtonProps) {
+  return <Button {...props} data-replacement="control" />;
+}
+function ReplacementTimer(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replacement="timer" />;
+}
+export const ReplacementSlots: Story = {
+  render: (args) => (
+    <VoiceOrb {...args}>
+      <VoiceOrb.Visual slots={{ canvas: ReplacementCanvas }} />
+      <VoiceOrb.Controls
+        slots={{
+          start: ReplacementControl,
+          mute: ReplacementControl,
+          end: ReplacementControl,
+          timer: ReplacementTimer,
+        }}
+      />
+    </VoiceOrb>
+  ),
+  play: async ({ canvasElement, userEvent, args }) => {
+    const canvas = within(canvasElement);
+    await expect(canvasElement.querySelector('canvas')).toHaveAttribute('data-replacement', 'canvas');
+    const start = canvas.getByRole('button', { name: 'Start voice session' });
+    await expect(start).toHaveAttribute('data-replacement', 'control');
+    await userEvent.click(start);
+    await expect(args.onStart).toHaveBeenCalledTimes(1);
+    const mute = canvas.getByRole('button', { name: 'Mute microphone' });
+    await expect(mute).toHaveFocus();
+    await expect(mute).toHaveAttribute('data-replacement', 'control');
+    await userEvent.click(mute);
+    await expect(mute).toHaveAttribute('aria-pressed', 'true');
+    await expect(canvas.getByRole('timer')).toHaveAttribute('data-replacement', 'timer');
+    const end = canvas.getByRole('button', { name: 'End voice session' });
+    await expect(end).toHaveAttribute('data-replacement', 'control');
+    await userEvent.click(end);
+    await expect(args.onEnd).toHaveBeenCalledTimes(1);
+    await expect(canvas.getByRole('button', { name: 'Start voice session' })).toHaveFocus();
+  },
+};
 const statePlay: Story['play'] = async ({ canvasElement, args }) => {
   const canvas = within(canvasElement);
   const label =

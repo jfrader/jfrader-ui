@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **130**; public callable parts: **156**.
-- Families exposing `slots.root`: **66**; remaining without a family-level root slot: **64** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **96**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
+- Public callable families: **131**; public callable parts: **160**.
+- Families exposing `slots.root`: **66**; remaining without a family-level root slot: **65** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **96**; remaining without family-level interior slots: **35** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **5**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -311,3 +311,8 @@ may exist and is listed on the corresponding public part).
 | [UserMenu.StatusGroup](../packages/ui/src/components/user-menu/user-menu.tsx) | — | `label`, `option` | `label`, `option` | — | — | — |
 | [UserMenu.ThemeGroup](../packages/ui/src/components/user-menu/user-menu.tsx) | — | `label`, `option` | `label`, `option` | — | — | — |
 | [UserMenu.Trigger](../packages/ui/src/components/user-menu/user-menu.tsx) | — | — | — | — | — | — |
+| [VoiceOrb](../packages/ui/src/components/voice-orb/voice-orb.tsx) | — | — | — | — | — | `Controls`, `Status`, `Transcript`, `Visual` |
+| [VoiceOrb.Controls](../packages/ui/src/components/voice-orb/voice-orb.tsx) | — | `end`, `mute`, `start`, `timer` | `end`, `mute`, `start`, `timer` | — | — | — |
+| [VoiceOrb.Status](../packages/ui/src/components/voice-orb/voice-orb.tsx) | — | — | — | — | — | — |
+| [VoiceOrb.Transcript](../packages/ui/src/components/voice-orb/voice-orb.tsx) | — | — | — | — | — | — |
+| [VoiceOrb.Visual](../packages/ui/src/components/voice-orb/voice-orb.tsx) | — | `canvas` | `canvas` | — | — | — |

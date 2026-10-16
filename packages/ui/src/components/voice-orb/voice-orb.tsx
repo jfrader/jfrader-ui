@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type ReactNode,
 } from 'react';
@@ -59,6 +60,9 @@ type NativeSlot<T extends 'canvas' | 'span'> = ComponentPropsWithRef<T> & {
 export interface VoiceOrbVisualProps extends ComponentPropsWithRef<'div'>, SxProps {
   size?: VoiceOrbSize;
   label?: string;
+  slots?: {
+    canvas?: ComponentType<NativeSlot<'canvas'>>;
+  };
   slotProps?: { canvas?: NativeSlot<'canvas'> };
 }
 export interface VoiceOrbStatusProps extends ComponentPropsWithRef<'p'>, SxProps {}
@@ -71,6 +75,12 @@ export interface VoiceOrbTranscriptProps extends Omit<ComponentPropsWithRef<'div
 }
 export interface VoiceOrbControlsProps extends ComponentPropsWithRef<'div'>, SxProps {
   startLabel?: ReactNode;
+  slots?: {
+    start?: ComponentType<Omit<ButtonProps, 'sx'>>;
+    mute?: ComponentType<Omit<ButtonProps, 'sx'>>;
+    end?: ComponentType<Omit<ButtonProps, 'sx'>>;
+    timer?: ComponentType<NativeSlot<'span'>>;
+  };
   slotProps?: {
     start?: Omit<ButtonProps, 'sx'>;
     mute?: Omit<ButtonProps, 'sx'>;
@@ -382,6 +392,7 @@ VoiceOrbRoot.displayName = 'VoiceOrb';
 function VoiceOrbVisual({
   size = 'md',
   label,
+  slots,
   slotProps,
   ref,
   className,
@@ -389,6 +400,7 @@ function VoiceOrbVisual({
   style,
   ...rest
 }: VoiceOrbVisualProps) {
+  const Canvas = slots?.canvas ?? 'canvas';
   const context = useOrb();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mergedRef = useMergeRefs([canvasRef, slotProps?.canvas?.ref]);
@@ -544,7 +556,7 @@ function VoiceOrbVisual({
             } as CSSProperties
           }
         >
-          <canvas
+          <Canvas
             {...slotProps?.canvas}
             ref={mergedRef}
             aria-hidden="true"
@@ -624,6 +636,7 @@ function VoiceOrbTranscript({
 VoiceOrbTranscript.displayName = 'VoiceOrb.Transcript';
 function VoiceOrbControls({
   startLabel,
+  slots,
   slotProps,
   ref,
   className,
@@ -631,6 +644,10 @@ function VoiceOrbControls({
   children,
   ...rest
 }: VoiceOrbControlsProps) {
+  const Start = slots?.start ?? Button;
+  const Mute = slots?.mute ?? Button;
+  const End = slots?.end ?? Button;
+  const Timer = slots?.timer ?? 'span';
   const context = useOrb();
   const startRef = useRef<HTMLButtonElement>(null);
   const muteRef = useRef<HTMLButtonElement>(null);
@@ -676,7 +693,7 @@ function VoiceOrbControls({
           <motion.div layout transition={SPRING} css={layoutStyle}>
             {showLive ? (
               <>
-                <Button
+                <Mute
                   variant="outline"
                   {...slotProps?.mute}
                   ref={muteMerged}
@@ -690,8 +707,8 @@ function VoiceOrbControls({
                   }}
                 >
                   {context.labels.mute}
-                </Button>
-                <span
+                </Mute>
+                <Timer
                   {...slotProps?.timer}
                   role="timer"
                   aria-live="off"
@@ -699,8 +716,8 @@ function VoiceOrbControls({
                   css={[timerStyle, slotProps?.timer?.css]}
                 >
                   {formatters.digital(duration)}
-                </span>
-                <Button
+                </Timer>
+                <End
                   variant="outline"
                   {...slotProps?.end}
                   css={[controlStyle, slotProps?.end?.css]}
@@ -710,10 +727,10 @@ function VoiceOrbControls({
                   }}
                 >
                   {context.labels.end}
-                </Button>
+                </End>
               </>
             ) : (
-              <Button
+              <Start
                 variant="outline"
                 {...slotProps?.start}
                 ref={startMerged}
@@ -732,7 +749,7 @@ function VoiceOrbControls({
                   : isRenderable(startLabel)
                     ? startLabel
                     : null}
-              </Button>
+              </Start>
             )}
           </motion.div>
           {children}
