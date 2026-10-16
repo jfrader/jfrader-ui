@@ -12,6 +12,7 @@ interface PropMember {
   required?: boolean;
   description?: string;
   component?: CatalogRef;
+  defaultElement?: string;
   part?: string;
   members?: PropMember[];
 }
@@ -31,6 +32,8 @@ interface SlotRow {
   name: string;
   description: string;
   component?: CatalogRef;
+  /** The default renderer when it is an element or a non-catalog component (`div`, `SurfaceRoot`…). */
+  defaultElement?: string;
   part?: string;
   props: PropMember[];
 }
@@ -131,6 +134,7 @@ function collectSlots(components: ComponentDoc[]): SlotRow[] {
         name: member.name,
         description: member.description || previous?.description || '',
         component: member.component ?? previous?.component,
+        defaultElement: member.defaultElement ?? previous?.defaultElement,
         part: member.part ?? previous?.part,
         // A part's own contract is nested one level deeper; that is the list worth showing.
         props: member.members?.[0]?.members ?? member.members ?? previous?.props ?? [],
@@ -151,6 +155,7 @@ function summarize(slots: SlotRow[]): string {
 
 function SlotDefault({ slot }: { slot: SlotRow }) {
   if (slot.component) return <>Default: <SlotLink component={slot.component} /></>;
+  if (slot.defaultElement) return <>Default: <Name>{`\`${slot.defaultElement}\``}</Name></>;
   if (slot.part) return <>Selector: <Name>{`[data-ui~="${slot.part}"]`}</Name></>;
   return null;
 }
