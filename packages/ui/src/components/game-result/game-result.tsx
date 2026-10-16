@@ -6,21 +6,26 @@
 // named slots; celebration effect is consumer-owned (see documented recipe in usage notes).
 // Semantics: status region for the terminal state. No focus steal; consumer focuses if modal.
 // Reduced motion, forced-colors, RTL and attribute state per house rules.
-import type { ComponentPropsWithRef, ReactNode } from 'react';
+import type { ComponentPropsWithRef, ComponentType, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
+import { CardRoot, type GameCardRootProps, type GameCardRootCustomization, type GameCardRootSlotProps } from '../game-card/game-card-root';
+import { cardPartIdentity } from '../game-card/card-parts';
 
 export type GameResultOutcome = 'won' | 'lost' | 'draw';
 
-export interface GameResultPartProps {
-  className?: string;
+export interface GameResultPartProps extends ComponentPropsWithRef<'div'> {
+  'data-ui'?: string;
   css?: Interpolation<Theme>;
 }
 
+
 export interface GameResultSlotProps {
+  /** Outer card container wrapping the game result panel. */
+  root?: GameCardRootSlotProps;
   /** Small label above the title, such as the match stage. */
   eyebrow?: GameResultPartProps;
   /** Headline naming the outcome. */
@@ -35,8 +40,26 @@ export interface GameResultSlotProps {
   celebration?: GameResultPartProps;
 }
 
+export interface GameResultSlots {
+  /** Outer card container wrapping the game result panel. */
+  root?: ComponentType<GameCardRootProps>;
+  /** Small label above the title, such as the match stage. */
+  eyebrow?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+  /** Headline naming the outcome. */
+  title?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+  /** Supporting line below the title. */
+  summary?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+  /** Panel holding the reward summary. */
+  reward?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+  /** Row holding the buttons that continue or replay. */
+  actions?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+  /** Panel holding the celebration artwork. */
+  celebration?: ComponentType<ComponentPropsWithRef<'div'> & GameResultPartProps>;
+}
+
 export interface GameResultProps
-  extends Omit<ComponentPropsWithRef<'div'>, 'title' | 'children'>,
+  extends Omit<GameCardRootProps, 'title' | 'children'>,
+    Omit<GameCardRootCustomization, 'slots'>,
     SxProps {
   /** Drives data-outcome + derived tone. Consumer maps to their labels. */
   outcome: GameResultOutcome;
@@ -53,6 +76,7 @@ export interface GameResultProps
   /** Consumer celebration effect (e.g. deterministic particles). Positioned to overlay. */
   celebration?: ReactNode;
   slotProps?: GameResultSlotProps;
+  slots?: GameResultSlots;
 }
 
 const rootStyle = css({
@@ -156,7 +180,6 @@ function outcomeToTone(outcome: GameResultOutcome): 'success' | 'danger' | 'neut
 }
 
 export function GameResult({
-  ref,
   outcome,
   eyebrow,
   title,
@@ -165,9 +188,9 @@ export function GameResult({
   actions,
   celebration,
   slotProps,
-  className,
-  sx,
-  ...rest
+  slots,
+  component,
+  ...props
 }: GameResultProps) {
   const tone = outcomeToTone(outcome);
   const hasEyebrow = isRenderable(eyebrow);
@@ -177,81 +200,101 @@ export function GameResult({
   const hasActions = isRenderable(actions);
   const hasCelebration = isRenderable(celebration);
 
+  const Eyebrow = slots?.eyebrow ?? 'div';
+  const Title = slots?.title ?? 'div';
+  const Summary = slots?.summary ?? 'div';
+  const Reward = slots?.reward ?? 'div';
+  const Actions = slots?.actions ?? 'div';
+  const Celebration = slots?.celebration ?? 'div';
+
+  const eyebrowIdentity = cardPartIdentity('game-result-eyebrow', slotProps?.eyebrow?.['data-ui']);
+  const titleIdentity = cardPartIdentity('game-result-title', slotProps?.title?.['data-ui']);
+  const summaryIdentity = cardPartIdentity('game-result-summary', slotProps?.summary?.['data-ui']);
+  const rewardIdentity = cardPartIdentity('game-result-reward', slotProps?.reward?.['data-ui']);
+  const actionsIdentity = cardPartIdentity('game-result-actions', slotProps?.actions?.['data-ui']);
+  const celebrationIdentity = cardPartIdentity('game-result-celebration', slotProps?.celebration?.['data-ui']);
+
   return (
-    <WithSx className={className} styles={[rootStyle]} sx={sx}>
-      {(rootClassName) => (
-        <div
-          {...rest}
-          ref={ref}
-          data-ui="game-result"
-          data-outcome={outcome}
-          data-tone={tone}
-          role="status"
-          aria-atomic="true"
-          className={rootClassName}
+    <CardRoot
+      {...props}
+      component={component}
+      slots={slots}
+      marker="game-result"
+      structure={rootStyle}
+      rootSlot={slotProps?.root}
+      attributes={{
+        role: 'status',
+        'aria-atomic': 'true',
+        'data-outcome': outcome,
+        'data-tone': tone,
+      }}
+    >
+      <div
+        data-ui="game-result-accent"
+        aria-hidden="true"
+        css={[accentStyle, accentOutcomeStyles[outcome]]}
+      />
+      {hasEyebrow && (
+        <Eyebrow
+          {...slotProps?.eyebrow}
+          data-ui={eyebrowIdentity}
+          className={slotProps?.eyebrow?.className}
+          css={[eyebrowStyle, slotProps?.eyebrow?.css]}
         >
-          <div
-            data-ui="game-result-accent"
-            aria-hidden="true"
-            css={[accentStyle, accentOutcomeStyles[outcome]]}
-          />
-          {hasEyebrow && (
-            <div
-              data-ui="game-result-eyebrow"
-              className={slotProps?.eyebrow?.className}
-              css={[eyebrowStyle, slotProps?.eyebrow?.css]}
-            >
-              {eyebrow}
-            </div>
-          )}
-          {hasTitle && (
-            <div
-              data-ui="game-result-title"
-              className={slotProps?.title?.className}
-              css={[titleStyle, slotProps?.title?.css]}
-            >
-              {title}
-            </div>
-          )}
-          {hasSummary && (
-            <div
-              data-ui="game-result-summary"
-              className={slotProps?.summary?.className}
-              css={[summaryStyle, slotProps?.summary?.css]}
-            >
-              {summary}
-            </div>
-          )}
-          {hasReward && (
-            <div
-              data-ui="game-result-reward"
-              className={slotProps?.reward?.className}
-              css={[rewardStyle, slotProps?.reward?.css]}
-            >
-              {reward}
-            </div>
-          )}
-          {hasActions && (
-            <div
-              data-ui="game-result-actions"
-              className={slotProps?.actions?.className}
-              css={[actionsStyle, slotProps?.actions?.css]}
-            >
-              {actions}
-            </div>
-          )}
-          {hasCelebration && (
-            <div
-              data-ui="game-result-celebration"
-              className={slotProps?.celebration?.className}
-              css={[celebrationStyle, slotProps?.celebration?.css]}
-            >
-              {celebration}
-            </div>
-          )}
-        </div>
+          {eyebrow}
+        </Eyebrow>
       )}
-    </WithSx>
+      {hasTitle && (
+        <Title
+          {...slotProps?.title}
+          data-ui={titleIdentity}
+          className={slotProps?.title?.className}
+          css={[titleStyle, slotProps?.title?.css]}
+        >
+          {title}
+        </Title>
+      )}
+      {hasSummary && (
+        <Summary
+          {...slotProps?.summary}
+          data-ui={summaryIdentity}
+          className={slotProps?.summary?.className}
+          css={[summaryStyle, slotProps?.summary?.css]}
+        >
+          {summary}
+        </Summary>
+      )}
+      {hasReward && (
+        <Reward
+          {...slotProps?.reward}
+          data-ui={rewardIdentity}
+          className={slotProps?.reward?.className}
+          css={[rewardStyle, slotProps?.reward?.css]}
+        >
+          {reward}
+        </Reward>
+      )}
+      {hasActions && (
+        <Actions
+          {...slotProps?.actions}
+          data-ui={actionsIdentity}
+          className={slotProps?.actions?.className}
+          css={[actionsStyle, slotProps?.actions?.css]}
+        >
+          {actions}
+        </Actions>
+      )}
+      {hasCelebration && (
+        <Celebration
+          {...slotProps?.celebration}
+          data-ui={celebrationIdentity}
+          className={slotProps?.celebration?.className}
+          css={[celebrationStyle, slotProps?.celebration?.css]}
+        >
+          {celebration}
+        </Celebration>
+      )}
+    </CardRoot>
   );
 }
 

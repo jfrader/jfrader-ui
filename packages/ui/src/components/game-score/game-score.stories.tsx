@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useId, useRef, useState } from 'react';
-import { expect, within } from 'storybook/test';
+import { useId, useRef, useState, type ComponentPropsWithRef } from 'react';
+import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { GameScore } from './index';
+import { GameScore, type GameScorePartProps } from './index';
+
 import { GameMarks } from '../game-marks';
 import { GameRounds } from '../game-rounds';
 import { Button } from '../button';
@@ -183,5 +184,39 @@ export const Contract: Story = {
     await expect(marks.querySelectorAll('.award')).toHaveLength(2);
     await expect(roundsGroup.querySelector('.round')).toHaveAttribute('data-outcome', 'won');
     await expect(within(roundsGroup).getByText('Victory')).toBeVisible();
+  },
+};
+
+function ReplacementRow(props: ComponentPropsWithRef<'div'> & GameScorePartProps<'div'>) {
+  return <div {...props} data-replacement="custom-row" />;
+}
+
+/** Supply a custom score row for each player. */
+export const RowReplacement: Story = {
+  args: {
+    label: 'Score',
+    rows: [
+      { key: 'north', label: 'North', value: 1234.5, stage: 'Final' },
+      { key: 'south', label: 'South', value: 0, stage: 'Half' },
+    ],
+    slots: { row: ReplacementRow },
+    slotProps: {
+      row: {
+        ref: fn(),
+        'data-ui': 'custom-row-ui',
+      },
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const group = within(canvasElement).getByRole('group', { name: 'Score' });
+    const rowElements = group.querySelectorAll<HTMLElement>('[data-replacement="custom-row"]');
+    await expect(rowElements).toHaveLength(2);
+    const firstRow = rowElements[0]!;
+    await expect(firstRow).toHaveAttribute('data-replacement', 'custom-row');
+    await expect(firstRow.className).not.toBe('');
+    await expect(firstRow).toHaveAttribute('data-ui', 'game-score-row custom-row-ui');
+    await expect(args.slotProps?.row?.ref).toHaveBeenCalledWith(firstRow);
+    await expect(firstRow).toHaveAttribute('data-stage', 'Final');
+    await expect(rowElements[1]).toHaveAttribute('data-stage', 'Half');
   },
 };

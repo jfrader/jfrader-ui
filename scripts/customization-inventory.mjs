@@ -65,7 +65,7 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 - Rows with styling-only \`slotProps\` keys: **${sorted.filter((row) => stylingOnly(row).length).length}**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
-behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, TrickStacks and CardFlights are owner-held;
+behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, GameCardStack and CardFlights are owner-held;
 their existing APIs are inventoried but not changed. Leaf \`render*\` callbacks are not structural slots.
 Public parts are the PascalCase callable properties on the exported component. Separate named exports
 also get their own row. Anatomy-prop columns record additional \`*Props\` / \`*ClassName\` customization

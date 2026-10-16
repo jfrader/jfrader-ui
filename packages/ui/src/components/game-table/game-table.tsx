@@ -21,7 +21,7 @@ export type GameTablePartProps = GameTableRootProps & GameTableRootCustomization
 
 type SeatInput<T extends SeatLike> =
   | {
-    /** Round-robin teams: team j has the places whose index modulo teamCount is j. Player keys must be unique. */
+    /** Round-robin teams: omitted teamIdx defaults to index % teamCount. Player keys must be unique. */
     seats: readonly T[];
     seatSlots?: never;
   }

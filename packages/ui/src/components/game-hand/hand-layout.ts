@@ -42,10 +42,10 @@ export const DEFAULT_HIDDEN_HAND_RULES: HiddenHandRules = {
 };
 
 export function buildOpponentHiddenHandLayout({
-  geometry, profileRules, hiddenCardCount, avatarSizePx, nameBlockPx, scale = 1,
+  geometry, rules, hiddenCardCount, avatarSizePx, nameBlockPx, scale = 1,
 }: {
   geometry: HandPolarVector;
-  profileRules: HiddenHandRules;
+  rules: HiddenHandRules;
   hiddenCardCount: number;
   avatarSizePx: number;
   nameBlockPx: number;
@@ -53,23 +53,23 @@ export function buildOpponentHiddenHandLayout({
 }) {
   const count = Number.isFinite(hiddenCardCount) ? Math.max(0, Math.floor(hiddenCardCount)) : 0;
   const inward = { x: -geometry.cos, y: -geometry.sin };
-  const ruleScale = scale * profileRules.distanceScale;
-  const axialInsetPx = profileRules.axialInsetReductionPx * (1 - geometry.sideStrength);
-  const tableInsetPx = Math.max(0, profileRules.tableInsetPx - axialInsetPx) * ruleScale;
-  const clearancePx = avatarSizePx * 0.5 + nameBlockPx * 0.32 + profileRules.minClearancePx * ruleScale;
-  const anchorDistance = Math.max(tableInsetPx, clearancePx) + profileRules.verticalLiftPx * ruleScale;
+  const ruleScale = scale * rules.distanceScale;
+  const axialInsetPx = rules.axialInsetReductionPx * (1 - geometry.sideStrength);
+  const tableInsetPx = Math.max(0, rules.tableInsetPx - axialInsetPx) * ruleScale;
+  const clearancePx = avatarSizePx * 0.5 + nameBlockPx * 0.32 + rules.minClearancePx * ruleScale;
+  const anchorDistance = Math.max(tableInsetPx, clearancePx) + rules.verticalLiftPx * ruleScale;
   const anchor = {
     x: inward.x * anchorDistance,
     y: inward.y * anchorDistance,
     rotateDeg: Math.atan2(inward.y, inward.x) * 180 / Math.PI + 90,
-    origin: profileRules.handOrigin,
+    origin: rules.handOrigin,
   };
   const slots = Array.from({ length: count }, (_, index) => index - (count - 1) / 2);
   const outerSlot = Math.max(0, (count - 1) / 2);
   const cards = count ? slots.map((slot, index) => ({
-    x: slot * profileRules.fanSpacingPx * scale,
-    y: (Math.abs(slot) - outerSlot) * profileRules.fanArcDepthPx * scale,
-    rotateDeg: slot * profileRules.fanSpreadDeg,
+    x: slot * rules.fanSpacingPx * scale,
+    y: (Math.abs(slot) - outerSlot) * rules.fanArcDepthPx * scale,
+    rotateDeg: slot * rules.fanSpreadDeg,
     zIndex: 100 + index,
   })) : [];
   return { anchor, cards };
@@ -79,7 +79,7 @@ export function getOpponentSeatHandTransform({
   polar, hiddenHandScale = 1, hiddenHandRules = DEFAULT_HIDDEN_HAND_RULES,
 }: { polar: HandPolarVector; hiddenHandScale?: number; hiddenHandRules?: HiddenHandRules }) {
   const { anchor } = buildOpponentHiddenHandLayout({
-    geometry: polar, profileRules: hiddenHandRules, hiddenCardCount: 0,
+    geometry: polar, rules: hiddenHandRules, hiddenCardCount: 0,
     ...OPPONENT_SEAT_METRICS, scale: hiddenHandScale,
   });
   return { x: anchor.x, y: anchor.y, rotate: anchor.rotateDeg, origin: anchor.origin };

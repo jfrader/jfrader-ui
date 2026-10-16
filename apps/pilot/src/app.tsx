@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Inbox, Trash } from 'lucide-react';
+import { vars } from '@jfrader/tokens/vars';
 import {
   Badge,
   Button,
@@ -11,12 +12,66 @@ import {
   Stack,
   Switch,
   TextField,
+  styled,
   type ThemeName,
 } from '@jfrader/ui';
+import { GameCard } from '@jfrader/ui/game-card';
+import { GameTable, useGameTableSeat } from '@jfrader/ui/game-table';
 
 interface Profile {
   name: string;
   email: string;
+}
+
+interface TablePlayer {
+  key: string;
+  name: string;
+  isMe?: boolean;
+}
+
+const TABLE_SEATS: TablePlayer[] = [
+  { key: 'ada', name: 'Ada', isMe: true },
+  { key: 'charles', name: 'Charles' },
+  { key: 'grace', name: 'Grace' },
+  { key: 'alan', name: 'Alan' },
+];
+
+const TableContainer = styled.div({
+  position: 'relative',
+  inlineSize: '100%',
+  blockSize: 420,
+  borderRadius: vars.radius.md,
+  border: `1px solid ${vars.color.borderSubtle}`,
+  backgroundColor: vars.color.surfaceInset,
+  overflow: 'hidden',
+});
+
+const CommunityCards = styled.div({
+  display: 'flex',
+  gap: vars.space[2],
+});
+
+const SeatBox = styled.div({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: vars.space[1],
+});
+
+const SeatName = styled.span({
+  fontSize: vars.textSize.xs,
+  color: vars.color.textSubtle,
+  fontWeight: vars.fontWeight.medium,
+});
+
+function TableSeat() {
+  const { player } = useGameTableSeat<TablePlayer>();
+  return (
+    <SeatBox>
+      <GameCard size="sm" label={player ? `${player.name}'s card` : 'Open seat'} />
+      <SeatName>{player?.name ?? 'Open seat'}</SeatName>
+    </SeatBox>
+  );
 }
 
 const INITIAL_PROFILE: Profile = { name: 'Ada Lovelace', email: 'ada@example.com' };
@@ -127,6 +182,36 @@ export function App() {
             </Card.Header>
             <Card.Content>
               <Switch label="Light theme" checked={theme === 'light'} onCheckedChange={handleThemeChange} />
+            </Card.Content>
+          </Card>
+
+          <Card>
+            <Card.Header>
+              <Card.Title level={2}>Games</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              <TableContainer>
+                <GameTable players={4} seats={TABLE_SEATS}>
+                  <GameTable.Header>
+                    <Pill tone="neutral">Casual Table</Pill>
+                  </GameTable.Header>
+                  <GameTable.Center>
+                    <CommunityCards>
+                      <GameCard size="sm" value={{ suit: 'spades', rank: 'A' }} label="Ace of spades" />
+                      <GameCard size="sm" value={{ suit: 'hearts', rank: 'K' }} label="King of hearts" />
+                    </CommunityCards>
+                  </GameTable.Center>
+                  <GameTable.Seat>
+                    <TableSeat />
+                  </GameTable.Seat>
+                  <GameTable.Dock>
+                    <Flex justify="center" gap="sm">
+                      <Button size="sm" variant="outline">Fold</Button>
+                      <Button size="sm" tone="accent">Check</Button>
+                    </Flex>
+                  </GameTable.Dock>
+                </GameTable>
+              </TableContainer>
             </Card.Content>
           </Card>
 

@@ -11,6 +11,6 @@ export { buildBoardLayoutModel } from './layout-model';
 export type { BoardMeasurements, BoardContentSize } from './fit-layout';
 export { GAME_TABLE_LIMITS } from './fit-layout';
 export type {
-  BoardLayoutModel, BoardPlayerCount, BoardSeatGeometry, BoardSeatGeometryConfig,
+  BoardLayoutModel, BoardSeatGeometry, BoardSeatGeometryConfig,
   BoardSurface,
 } from './types';

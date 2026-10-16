@@ -1,6 +1,4 @@
 export type BoardSurface = 'match' | 'lobby';
-/** @deprecated Use `number`; seat counts are any integer >= 2. Retained for compatibility. */
-export type BoardPlayerCount = number;
 
 export interface BoardSeatGeometryConfig {
   /** Derived from measured content and available space. */

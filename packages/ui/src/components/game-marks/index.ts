@@ -1,1 +1,7 @@
-export { GameMarks, type GameMarksProps } from './game-marks';
+export {
+  GameMarks,
+  type GameMarksProps,
+  type GameMarksSlotProps,
+  type GameMarksSlots,
+  type GameMarksPartProps,
+} from './game-marks';

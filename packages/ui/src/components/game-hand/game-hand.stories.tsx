@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -16,6 +16,10 @@ const Row = styled.div({ display: 'flex', gap: vars.space[8] });
 const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.space[8] });
 const SpaciousHands = styled(Hands)({ padding: vars.space[12] });
 
+function ReplacedHandRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="hand-root" />;
+}
+
 const CARDS: GameHandCard[] = [
   { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
   { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
@@ -23,6 +27,29 @@ const CARDS: GameHandCard[] = [
   { id: 'jack-diamonds', label: 'Jack of diamonds', value: { deck: 'french', suit: 'diamonds', rank: 'J' } },
   { id: 'ten-spades', label: 'Ten of spades', value: { deck: 'french', suit: 'spades', rank: 10 } },
 ];
+
+const rootRef = fn();
+
+/** Replace the hand container while retaining selection and confirmation. */
+export const ReplacedRootKeepsSelection: Story = {
+  tags: ['!autodocs'],
+  args: {
+    component: ReplacedHandRoot,
+    slotProps: { root: { className: 'custom-hand', ref: rootRef, title: 'Your cards' } },
+  },
+  play: async ({ canvasElement, canvas, userEvent, args }) => {
+    const root = canvasElement.querySelector('[data-replacement="hand-root"]')!;
+    await expect(root).toHaveAttribute('data-ui', 'game-hand');
+    await expect(root).toHaveClass('custom-hand');
+    await expect(root).toHaveAttribute('title', 'Your cards');
+    await expect(rootRef).toHaveBeenCalledWith(root);
+    await expect(getComputedStyle(root).display).toBe('inline-flex');
+    await userEvent.click(canvas.getByRole('button', { name: 'Ace of spades' }));
+    await expect(canvas.getByRole('button', { name: 'Ace of spades' })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));
+    await expect(args.onPlayIntent).toHaveBeenCalledWith(CARDS[0]);
+  },
+};
 
 const meta = {
   title: 'Games/GameHand', component: GameHand, tags: ['autodocs'],
@@ -501,7 +528,7 @@ const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.s
     }
     for (const fixture of HIDDEN_PARITY) {
       const layout = buildOpponentHiddenHandLayout({ geometry: SEAT_PARITY[0]!.polar,
-        profileRules: DEFAULT_HIDDEN_HAND_RULES, hiddenCardCount: fixture.count, avatarSizePx: 56, nameBlockPx: 28 });
+        rules: DEFAULT_HIDDEN_HAND_RULES, hiddenCardCount: fixture.count, avatarSizePx: 56, nameBlockPx: 28 });
       if (fixture.count <= 3) await expect(layout.cards).toEqual(fixture.cards);
       else {
         await expect(layout.cards).toHaveLength(Math.floor(fixture.count));

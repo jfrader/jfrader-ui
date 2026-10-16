@@ -9,7 +9,7 @@ export const resolveSeatCount = (totalSeats: number): number => {
 /** The seat after yours appears on the right or the left. */
 export type TableTurnDirection = 'clockwise' | 'counterclockwise';
 
-export type SeatLike = { key: string; teamIdx: number; isMe?: boolean };
+export type SeatLike = { key: string; teamIdx?: number; isMe?: boolean };
 export type GameTableSlot<T extends SeatLike = SeatLike> = {
   key: string;
   teamIdx: number;
@@ -46,7 +46,7 @@ export const buildTableOrderSlots = <T extends SeatLike>(
   direction: TableTurnDirection,
 ): GameTableSlot<T>[] => {
   validateSeatKeys(players);
-  const slots = players.map((player) => ({ key: player.key, teamIdx: player.teamIdx, player }));
+  const slots = players.map((player, index) => ({ key: player.key, teamIdx: player.teamIdx ?? index % 2, player }));
   const meIndex = slots.findIndex((slot) => slot.player.isMe);
   const rotatedSlots = meIndex > 0 ? [...slots.slice(meIndex), ...slots.slice(0, meIndex)] : slots;
   return applyTableTurnDirection(rotatedSlots, direction);
@@ -63,13 +63,14 @@ export const buildAlternatingSlots = <T extends SeatLike>(
   const length = resolveSeatCount(fill ?? Math.max(players.length, 2));
   if (!Number.isInteger(teamCount) || teamCount < 1) throw new Error('GameTable requires an integer teamCount >= 1.');
   const teamPlayers = new Map<number, T[]>();
-  for (const player of players) {
-    if (!Number.isInteger(player.teamIdx) || player.teamIdx < 0 || player.teamIdx >= teamCount) {
-      throw new Error(`GameTable team ${player.teamIdx} is outside the round-robin range 0–${teamCount - 1}. Use slots for arbitrary teams.`);
+  for (const [index, player] of players.entries()) {
+    const teamIdx = player.teamIdx ?? index % teamCount;
+    if (!Number.isInteger(teamIdx) || teamIdx < 0 || teamIdx >= teamCount) {
+      throw new Error(`GameTable team ${teamIdx} is outside the round-robin range 0–${teamCount - 1}. Use slots for arbitrary teams.`);
     }
-    const team = teamPlayers.get(player.teamIdx) ?? [];
+    const team = teamPlayers.get(teamIdx) ?? [];
     team.push(player);
-    teamPlayers.set(player.teamIdx, team);
+    teamPlayers.set(teamIdx, team);
   }
   for (const [teamIdx, team] of teamPlayers) {
     const capacity = Math.max(0, Math.ceil((length - teamIdx) / teamCount));
