@@ -50,6 +50,7 @@
 
 ### Changed
 
+- **Breaking for `@jfrader/ui@0.8.x`:** `GameTable` no longer takes a `viewport` prop. The surface frame now comes from the table's own container: a `container-type: size` wrapper drives `@container` rules with continuous `clamp()`/`cqi`/`cqb` formulas, and the surface is a responsive circle (`border-radius: 50%`) that follows the container fluidly with no threshold jumps. `resolveBoardViewportProfile`, the `BoardViewport`/`BoardViewportProfile`/`BoardSurfaceFrameConfig` types, `FRAMES`, the `data-profile` attribute and the `BREAKPOINT_CASES` fixtures are gone; the story matrix sweeps aspect ratios 0.45–2.4 instead of six named profiles. Short-wide containers (840×360) now honestly fit the standard composition at card floors instead of declaring `insufficient-space`; that state remains for genuinely tight containers.
 - `Deck` addresses card art by id, with named art sets, per-card set overrides and set-specific backs. Missing art falls back to the printed face; `cardId` supports custom card keys.
 - Button's first example says Save changes, and its code matches that button. Card's slot example shows `slotProps`.
 - ActivityRings aligns the goal summary with the legend's shared row inset, including narrow and RTL layouts.
