@@ -65,9 +65,9 @@ export interface CardFlightsSlots {
   root?: ComponentType<ScopeRootProps>;
 }
 
-/** Root props win conflicts; className and style merge. */
+/** Root slot props win conflicts; className and style merge. */
 export interface CardFlightsSlotProps {
-  /** Root props win conflicts; className and style merge. */
+  /** Root slot props win conflicts; className and style merge. */
   root?: ScopeRootProps & { css?: Interpolation<Theme> };
 }
 
