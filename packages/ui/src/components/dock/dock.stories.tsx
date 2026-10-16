@@ -5,7 +5,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Dialog } from '../dialog';
 import { ThemeRoot } from '../theme-root';
-import { Dock, type DockItem, type DockProps } from './index';
+import { Dock, type DockItem, type DockProps, type DockSlots } from './index';
 
 const icon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
   <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
@@ -446,6 +446,58 @@ export const AriaAndSlots: Story = {
     await expect(select).toHaveAccessibleDescription('Current canvas');
     await expect(getComputedStyle(select).borderRadius).toBe('16px');
     await expect(getComputedStyle(toolbar).paddingTop).toBe('12px');
+  },
+};
+
+const replacementSlots: DockSlots = {
+  toolbar: (props) => <div {...props} data-testid="replacement-toolbar" />,
+  item: (props) => <Button {...props} data-testid="replacement-item" />,
+  tray: (props) => <div {...props} data-testid="replacement-tray" />,
+  trayItem: (props) => <Button {...props} data-testid="replacement-tray-item" />,
+  floatingLabel: (props) => <div {...props} data-testid="replacement-label" />,
+  badge: (props) => <span {...props} data-testid="replacement-badge" />,
+  status: (props) => <div {...props} data-testid="replacement-status" />,
+};
+
+export const ReplacementSlots: Story = {
+  args: {
+    items: [{ id: 'group', label: 'Group', items: [{ id: 'tool', label: 'Tool', icon, badge: 3 }] }],
+    defaultValue: null, defaultOpen: true, defaultTray: 'group', reorderable: true,
+    slots: replacementSlots,
+    slotProps: {
+      toolbar: { css: { padding: 12 } },
+      item: () => ({ css: { borderRadius: 16 } }),
+      tray: { css: { padding: 14 } },
+      trayItem: () => ({ css: { borderRadius: 18 } }),
+      floatingLabel: { css: { padding: 10 } },
+      badge: { css: { fontWeight: 700 } },
+      status: { title: 'Reorder announcements' },
+    },
+  },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await expect(canvas.getByTestId('replacement-toolbar')).toHaveAttribute('role', 'toolbar');
+    await expect(getComputedStyle(canvas.getByTestId('replacement-toolbar')).paddingTop).toBe('12px');
+    await expect(getComputedStyle(canvas.getByTestId('replacement-item')).borderRadius).toBe('16px');
+    await expect(getComputedStyle(canvas.getByTestId('replacement-tray')).paddingTop).toBe('14px');
+    const tool = canvas.getByTestId('replacement-tray-item');
+    await expect(getComputedStyle(tool).borderRadius).toBe('18px');
+    for (const badge of canvas.getAllByTestId('replacement-badge')) {
+      await expect(badge).toHaveTextContent('3');
+      await expect(getComputedStyle(badge).fontWeight).toBe('700');
+    }
+    await expect(canvas.getByTestId('replacement-status')).toHaveAttribute('aria-live', 'polite');
+    await expect(canvas.getByTestId('replacement-status')).toHaveAttribute('title', 'Reorder announcements');
+    await userEvent.tab();
+    await assertFocus(canvas.getByTestId('replacement-item'));
+    const label = await page(canvasElement).findByTestId('replacement-label');
+    await expect(label).toHaveTextContent('Group: Tool, 3 items');
+    await expect(getComputedStyle(label).paddingTop).toBe('10px');
+    await userEvent.keyboard('{ArrowUp}');
+    await assertFocus(tool);
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('tool');
+    await expect(canvas.getByTestId('replacement-tray')).not.toBeVisible();
+    await assertFocus(canvas.getByTestId('replacement-item'));
   },
 };
 export const FalsyIcons: Story = {

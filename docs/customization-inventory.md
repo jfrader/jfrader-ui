@@ -124,6 +124,7 @@ may exist and is listed on the corresponding public part).
 | [DialogStack.Title](../packages/ui/src/components/dialog-stack/dialog-stack.tsx) | — | — | — | — | — | — |
 | [DialogStack.Trigger](../packages/ui/src/components/dialog-stack/dialog-stack.tsx) | — | — | — | — | — | — |
 | [Divider](../packages/ui/src/components/divider/divider.tsx) | — | — | — | — | — | — |
+| [Dock](../packages/ui/src/components/dock/dock.tsx) | — | `badge`, `floatingLabel`, `item`, `status`, `toolbar`, `tray`, `trayItem` | `badge`, `floatingLabel`, `item`, `status`, `toolbar`, `tray`, `trayItem` | — | — | — |
 | [Drawer](../packages/ui/src/components/drawer/drawer.tsx) | yes | `body`, `close`, `content`, `description`, `footer`, `header`, `panel`, `root`, `title`, `trigger` | `body`, `close`, `content`, `description`, `footer`, `header`, `panel`, `root`, `title`, `trigger` | — | — | `Body`, `Close`, `Content`, `Description`, `Footer`, `Header`, `Panel`, `Title`, `Trigger` |
 | [Drawer.Body](../packages/ui/src/components/drawer/drawer.tsx) | — | — | — | — | — | — |
 | [Drawer.Close](../packages/ui/src/components/drawer/drawer.tsx) | — | — | — | — | — | — |
