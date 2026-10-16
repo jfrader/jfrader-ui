@@ -12,6 +12,7 @@ export * from './components/button';
 export * from './components/button-group';
 export * from './components/calendar';
 export * from './components/card';
+export * from './components/card-stack';
 export * from './components/carousel';
 export * from './components/chat-message';
 export * from './components/chat-thread';

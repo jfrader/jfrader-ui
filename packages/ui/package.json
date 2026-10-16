@@ -38,6 +38,7 @@
     "./calendar": { "types": "./src/components/calendar/index.ts", "import": "./src/components/calendar/index.ts" },
     "./card": { "types": "./src/components/card/index.ts", "import": "./src/components/card/index.ts" },
     "./card-flights": { "types": "./src/components/card-flights/index.ts", "import": "./src/components/card-flights/index.ts" },
+    "./card-stack": { "types": "./src/components/card-stack/index.ts", "import": "./src/components/card-stack/index.ts" },
     "./carousel": { "types": "./src/components/carousel/index.ts", "import": "./src/components/carousel/index.ts" },
     "./chat-message": { "types": "./src/components/chat-message/index.ts", "import": "./src/components/chat-message/index.ts" },
     "./chat-thread": { "types": "./src/components/chat-thread/index.ts", "import": "./src/components/chat-thread/index.ts" },

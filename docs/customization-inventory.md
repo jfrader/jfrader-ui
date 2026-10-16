@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **128**; public callable parts: **156**.
-- Families exposing `slots.root`: **66**; remaining without a family-level root slot: **62** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **94**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
+- Public callable families: **129**; public callable parts: **156**.
+- Families exposing `slots.root`: **66**; remaining without a family-level root slot: **63** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **95**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **5**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -68,6 +68,7 @@ may exist and is listed on the corresponding public part).
 | [Card.Header](../packages/ui/src/components/card/card.tsx) | — | — | — | — | — | — |
 | [Card.Title](../packages/ui/src/components/card/card.tsx) | — | — | — | — | — | — |
 | [CardFlightsProvider](../packages/ui/src/components/card-flights/card-flights.tsx) | yes | `root` | `root` | — | — | — |
+| [CardStack](../packages/ui/src/components/card-stack/card-stack.tsx) | — | `card`, `content`, `controls`, `empty`, `emptyResetButton`, `hint`, `leftButton`, `leftStamp`, `resetButton`, `rightButton`, `rightStamp`, `stage`, `status`, `undoButton` | `card`, `content`, `controls`, `empty`, `emptyResetButton`, `hint`, `leftButton`, `leftStamp`, `resetButton`, `rightButton`, `rightStamp`, `stage`, `status`, `undoButton` | — | — | — |
 | [Carousel](../packages/ui/src/components/carousel/carousel.tsx) | — | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | — | — | — |
 | [ChatMessage](../packages/ui/src/components/chat-message/chat-message.tsx) | — | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | — | — | — |
 | [ChatThread](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `scroller`, `time`, `viewport` | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `scroller`, `time`, `viewport` | — | `composerProps` | `Composer` |
