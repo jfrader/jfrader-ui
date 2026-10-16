@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type ReactNode,
   type KeyboardEvent,
   type PointerEvent,
@@ -72,19 +73,64 @@ type ButtonSlot = Omit<
   'children' | 'ref' | 'type' | 'disabled' | 'aria-disabled'
 > & { css?: Interpolation<Theme> };
 export interface CardStackSlotProps {
+  /** Focusable stage receiving keyboard and pointer gestures. */
   stage?: Slot & Pick<ComponentPropsWithRef<'div'>, 'ref'>;
+  /** Card surface within each animated layer. */
   card?: Slot;
+  /** Container for the rendered item content. */
   content?: Slot;
+  /** Decorative left-decision stamp. */
   leftStamp?: Slot;
+  /** Decorative right-decision stamp. */
   rightStamp?: Slot;
+  /** Container for the persistent action buttons. */
   controls?: Slot;
+  /** Left-decision action button. */
   leftButton?: ButtonSlot;
+  /** Undo action button. */
   undoButton?: ButtonSlot;
+  /** Right-decision action button. */
   rightButton?: ButtonSlot;
+  /** Persistent reset action button. */
   resetButton?: ButtonSlot;
+  /** Reset button within the completed empty state. */
+  emptyResetButton?: ButtonSlot;
+  /** Empty or completed state container. */
   empty?: Slot;
+  /** Visually hidden keyboard instructions. */
   hint?: Slot;
+  /** Live announcement region. */
   status?: Slot;
+}
+export interface CardStackSlots {
+  /** Replaces the focusable gesture stage; forwards its ref. */
+  stage?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces each card surface. */
+  card?: ComponentType<ComponentPropsWithRef<typeof Card>>;
+  /** Replaces each item content container. */
+  content?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the decorative left-decision stamp. */
+  leftStamp?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the decorative right-decision stamp. */
+  rightStamp?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the persistent action container. */
+  controls?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the left-decision button. */
+  leftButton?: ComponentType<ComponentPropsWithRef<typeof Button>>;
+  /** Replaces the undo button. */
+  undoButton?: ComponentType<ComponentPropsWithRef<typeof Button>>;
+  /** Replaces the right-decision button. */
+  rightButton?: ComponentType<ComponentPropsWithRef<typeof Button>>;
+  /** Replaces the persistent reset button. */
+  resetButton?: ComponentType<ComponentPropsWithRef<typeof Button>>;
+  /** Replaces the completed-state reset button. */
+  emptyResetButton?: ComponentType<ComponentPropsWithRef<typeof Button>>;
+  /** Replaces the empty-state container. */
+  empty?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the hidden keyboard instructions. */
+  hint?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the live announcement region. */
+  status?: ComponentType<ComponentPropsWithRef<'div'>>;
 }
 export interface CardStackProps<T>
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
@@ -114,6 +160,7 @@ export interface CardStackProps<T>
     reset?: ReactNode;
   };
   slotProps?: CardStackSlotProps;
+  slots?: CardStackSlots;
 }
 
 declare const process: { env: { NODE_ENV?: string } };
@@ -322,11 +369,13 @@ type Exit<T> = {
 
 function NativeDiv({
   nativeProps,
+  component: Component = 'div',
   ...props
 }: ComponentPropsWithRef<'div'> & {
   nativeProps: ComponentPropsWithRef<'div'>;
+  component?: ComponentType<ComponentPropsWithRef<'div'>> | 'div';
 }) {
-  return <div {...nativeProps} {...props} style={{ ...nativeProps.style, ...props.style }} />;
+  return <Component {...nativeProps} {...props} style={{ ...nativeProps.style, ...props.style }} />;
 }
 const MotionDiv = motion.create(NativeDiv);
 
@@ -343,6 +392,7 @@ function Layer<T>({
   label,
   renderCard,
   slots,
+  slotProps,
   labels,
   onComplete,
 }: {
@@ -357,7 +407,8 @@ function Layer<T>({
   size: 'sm' | 'md';
   label: string;
   renderCard: (item: T) => ReactNode;
-  slots: CardStackSlotProps;
+  slots: CardStackSlots;
+  slotProps: CardStackSlotProps;
   labels: CardStackLabels;
   onComplete: () => void;
 }) {
@@ -410,7 +461,9 @@ function Layer<T>({
     return () => control.stop();
   }, [outgoing, returning, returnVelocity, reduced]);
   const nameId = useId();
-  const slot = slots.card;
+  const slot = slotProps.card;
+  const CardSurface = slots.card ?? Card;
+  const Content = slots.content ?? 'div';
   return (
     <motion.div
       data-ui="card-stack-card"
@@ -426,7 +479,7 @@ function Layer<T>({
         zIndex: outgoing ? GEOMETRY.maxWindow + 1 : GEOMETRY.maxWindow - index,
       }}
     >
-      <Card
+      <CardSurface
         {...slot}
         css={[cardStyle, paddingStyles[size], slot?.css]}
         role={active ? 'group' : undefined}
@@ -436,32 +489,33 @@ function Layer<T>({
         <span id={nameId} css={hiddenStyle}>
           {label}
         </span>
-        <div
-          {...slots.content}
-          css={[contentStyle, slots.content?.css]}
+        <Content
+          {...slotProps.content}
+          css={[contentStyle, slotProps.content?.css]}
           data-ui="card-stack-content"
         >
           {renderCard(item)}
-        </div>
+        </Content>
         {(active || outgoing) &&
           (['left', 'right'] as const).map((side) => (
             <MotionDiv
               key={side}
-              nativeProps={side === 'left' ? (slots.leftStamp ?? {}) : (slots.rightStamp ?? {})}
+              component={side === 'left' ? slots.leftStamp : slots.rightStamp}
+              nativeProps={side === 'left' ? (slotProps.leftStamp ?? {}) : (slotProps.rightStamp ?? {})}
               aria-hidden
-              className={(side === 'left' ? slots.leftStamp : slots.rightStamp)?.className}
+              className={(side === 'left' ? slotProps.leftStamp : slotProps.rightStamp)?.className}
               data-ui={`card-stack-${side}-stamp`}
               css={[
                 stampStyle,
                 stampSides[side],
-                (side === 'left' ? slots.leftStamp : slots.rightStamp)?.css,
+                (side === 'left' ? slotProps.leftStamp : slotProps.rightStamp)?.css,
               ]}
               style={{ opacity: side === 'left' ? leftOpacity : rightOpacity }}
             >
               {labels[side]}
             </MotionDiv>
           ))}
-      </Card>
+      </CardSurface>
     </motion.div>
   );
 }
@@ -491,6 +545,7 @@ export function CardStack<T>({
   size = 'md',
   icons,
   slotProps = {},
+  slots = {},
   ...props
 }: CardStackProps<T>) {
   const [rawHistory, change] = useControlledState<readonly CardStackDecision[]>(
@@ -831,7 +886,17 @@ export function CardStack<T>({
     }
   };
   const action = (kind: 'left' | 'undo' | 'right' | 'reset', empty = false) => {
-    const slot = slotProps[`${kind}Button`];
+    const key = empty ? 'emptyResetButton' : (`${kind}Button` as const);
+    const slot = slotProps[key];
+    const Action =
+      (empty
+        ? slots.emptyResetButton
+        : {
+            left: slots.leftButton,
+            undo: slots.undoButton,
+            right: slots.rightButton,
+            reset: slots.resetButton,
+          }[kind]) ?? Button;
     const blocked =
       disabled || busy || (kind === 'left' || kind === 'right' ? !active : history.length === 0);
     const icon = icons?.[kind];
@@ -842,7 +907,7 @@ export function CardStack<T>({
       reset,
     }[kind];
     return (
-      <Button
+      <Action
         {...slot}
         key={kind}
         type="button"
@@ -860,10 +925,15 @@ export function CardStack<T>({
         }}
       >
         <span data-ui="card-stack-action-text">{labels[kind]}</span>
-      </Button>
+      </Action>
     );
   };
   const stageSlot = slotProps.stage;
+  const Stage = slots.stage ?? 'div';
+  const Empty = slots.empty ?? 'div';
+  const Controls = slots.controls ?? 'div';
+  const Hint = slots.hint ?? 'div';
+  const Status = slots.status ?? 'div';
   return (
     <MotionConfig reducedMotion="user">
       <WithSx className={className} styles={rootStyle} sx={sx}>
@@ -886,7 +956,7 @@ export function CardStack<T>({
                 focus.current = null;
             }}
           >
-            <div
+            <Stage
               {...stageSlot}
               ref={stageRef}
               css={[stageStyle, stageSlot?.css]}
@@ -945,7 +1015,8 @@ export function CardStack<T>({
                     unique.length,
                   )}`}
                   renderCard={renderCard}
-                  slots={slotProps}
+                  slots={slots}
+                  slotProps={slotProps}
                   labels={labels}
                   returning={returning?.key === entry.key ? returning.from : undefined}
                   returnVelocity={returning?.key === entry.key ? returning.velocity : undefined}
@@ -964,13 +1035,14 @@ export function CardStack<T>({
                   size={size}
                   label={getLabel(outgoing.item)}
                   renderCard={renderCard}
-                  slots={slotProps}
+                  slots={slots}
+                  slotProps={slotProps}
                   labels={labels}
                   onComplete={() => setOutgoing(undefined)}
                 />
               )}
               {!active && (
-                <div
+                <Empty
                   {...slotProps.empty}
                   css={[emptyStyle, slotProps.empty?.css]}
                   data-ui="card-stack-empty"
@@ -983,25 +1055,25 @@ export function CardStack<T>({
                       {completed && action('reset', true)}
                     </>
                   )}
-                </div>
+                </Empty>
               )}
-            </div>
-            <div
+            </Stage>
+            <Controls
               {...slotProps.controls}
               data-ui="card-stack-controls"
               css={[controlsStyle, slotProps.controls?.css]}
             >
               {(['left', 'undo', 'right', 'reset'] as const).map((kind) => action(kind))}
-            </div>
-            <div
+            </Controls>
+            <Hint
               {...slotProps.hint}
               id={`${id}-hint`}
               data-ui="card-stack-hint"
               css={[hiddenStyle, slotProps.hint?.css]}
             >
               {labels.hint(labels.left, labels.right)}
-            </div>
-            <div
+            </Hint>
+            <Status
               {...slotProps.status}
               role="status"
               aria-live="polite"
@@ -1010,7 +1082,7 @@ export function CardStack<T>({
               css={[hiddenStyle, slotProps.status?.css]}
             >
               {status}
-            </div>
+            </Status>
           </div>
         )}
       </WithSx>

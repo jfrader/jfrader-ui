@@ -1,10 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
+import { Card } from '../card';
 import { CardStack, type CardStackDecision, type CardStackProps } from './index';
 
 interface City {
@@ -101,19 +102,80 @@ const meta = {
     docs: {
       source: { code: SOURCE },
       description: {
-        component: [
-          'Review a queue using physical left/right decisions. This is a labelled group with native buttons, not an invented ARIA widget. The stage handles Left/Right, Backspace and Control/Command+Z; embedded controls keep native editing and undo. Held keys do not review multiple cards.',
-          'Accepted history is the only authority. `value` controls that history; `defaultValue` seeds it. The active card is the first item whose stable key is not recorded. Unknown history keys remain available for audit and undo. Notifications describe interaction requests, not successful persistence, and run once in order: onValueChange, then onDecide/onUndo/onReset. Rejected controlled requests return home silently.',
-          'The default display window is four cards (configurable from one to eight). Inactive and outgoing cards are inert. Buttons remain focusable at exhaustion; undo restores the final history entry and reset requests an empty history. Use Carousel for browsing rather than decisions.',
-          'Drag horizontally from noninteractive content. Default thresholds: 35% of stage width capped at 140px, or a 12px minimum flick at 500px/s. Vertical intent scrolls; cancellation and lost capture always revert. Motion v14 uses velocity-carrying springs. Reduced motion completes immediately without travel or tilt. RTL mirrors presentation, not physical left/right outcomes.',
-          'Names, action labels, past-tense outcomes and announcements are localizable. Number formatting uses Intl. The ReducedMotion and ForcedColors stories are structural fixtures; actual media emulation is a separate browser QA gate.',
-        ].join('\n\n'),
+        component: `Review a queue using physical left/right decisions. This is a labelled group with native buttons, not an invented ARIA widget. The stage handles Left/Right, Backspace and Control/Command+Z; embedded controls keep native editing and undo. Held keys do not review multiple cards.
+
+Accepted history is the only authority. \`value\` controls that history; \`defaultValue\` seeds it. The active card is the first item whose stable key is not recorded. Unknown history keys remain available for audit and undo. Notifications describe interaction requests, not successful persistence, and run once in order: onValueChange, then onDecide/onUndo/onReset. Rejected controlled requests return home silently.
+
+The default display window is four cards (configurable from one to eight). Inactive and outgoing cards are inert. Buttons remain focusable at exhaustion; undo restores the final history entry and reset requests an empty history. Use Carousel for browsing rather than decisions.
+
+Drag horizontally from noninteractive content. Default thresholds: 35% of stage width capped at 140px, or a 12px minimum flick at 500px/s. Vertical intent scrolls; cancellation and lost capture always revert. Motion v14 uses velocity-carrying springs. Reduced motion completes immediately without travel or tilt. RTL mirrors presentation, not physical left/right outcomes.
+
+Names, action labels, past-tense outcomes and announcements are localizable. Number formatting uses Intl. The ReducedMotion and ForcedColors stories are structural fixtures; actual media emulation is a separate browser QA gate.
+
+Use slots to replace internal elements and slotProps to customize their props. Each key targets one element per rendered item; emptyResetButton customizes the completed-state reset independently of resetButton in the persistent controls.`,
       },
     },
   },
 } satisfies Meta<typeof CardStack<City>>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+function ReplacementDiv(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="div" />;
+}
+function ReplacementCard(props: ComponentPropsWithRef<typeof Card>) {
+  return <Card {...props} data-replacement="card" />;
+}
+function ReplacementButton(props: ComponentPropsWithRef<typeof Button>) {
+  return <Button {...props} data-replacement="button" />;
+}
+
+export const SlotReplacements: Story = {
+  args: {
+    items: cities.slice(0, 1),
+    slots: {
+      stage: ReplacementDiv,
+      card: ReplacementCard,
+      content: ReplacementDiv,
+      leftStamp: ReplacementDiv,
+      rightStamp: ReplacementDiv,
+      controls: ReplacementDiv,
+      leftButton: ReplacementButton,
+      undoButton: ReplacementButton,
+      rightButton: ReplacementButton,
+      resetButton: ReplacementButton,
+      emptyResetButton: ReplacementButton,
+      empty: ReplacementDiv,
+      hint: ReplacementDiv,
+      status: ReplacementDiv,
+    },
+    slotProps: {
+      resetButton: { 'aria-label': 'Reset queue' },
+      emptyResetButton: { 'aria-label': 'Review again' },
+    },
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    for (const part of ['stage', 'content', 'left-stamp', 'right-stamp', 'controls', 'hint', 'status']) {
+      await expect(canvasElement.querySelector(`[data-ui="card-stack-${part}"]`)).toHaveAttribute('data-replacement', 'div');
+    }
+    await expect(canvasElement.querySelector('[data-replacement="card"]')).toBeInTheDocument();
+    for (const name of ['Pass', 'Keep', 'Undo', 'Reset queue']) {
+      await expect(canvas.getByRole('button', { name })).toHaveAttribute('data-replacement', 'button');
+    }
+    await userEvent.click(canvas.getByRole('button', { name: 'Keep' }));
+    await waitFor(async () => {
+      await expect(canvas.getByRole('button', { name: 'Review again' })).toHaveAttribute('data-replacement', 'button');
+      await expect(canvasElement.querySelector('[data-ui="card-stack-empty"]')).toHaveAttribute('data-replacement', 'div');
+    });
+    await waitFor(async () => {
+      await expect(canvas.getByRole('group', { name: /Cards/ })).toHaveAttribute('data-state', 'settled');
+    });
+    await userEvent.click(canvas.getByRole('button', { name: 'Review again' }));
+    await waitFor(async () => {
+      await expect(canvasElement.querySelector('[data-ui="card-stack-content"]')).toHaveTextContent('Oslo');
+    });
+  },
+};
 const part = (root: Element, name: string) =>
   root.querySelector<HTMLElement>(`[data-ui~="card-stack-${name}"]`)!;
 const top = (root: Element) =>

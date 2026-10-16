@@ -7,4 +7,5 @@ export type {
   CardStackLabels,
   CardStackProps,
   CardStackSlotProps,
+  CardStackSlots,
 } from './card-stack';
