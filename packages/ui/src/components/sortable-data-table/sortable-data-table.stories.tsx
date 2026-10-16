@@ -76,6 +76,17 @@ export const Default: Story = {
     await expect(sortedHeader(canvasElement)).toBeNull();
     await expect(names(canvasElement)).toEqual(['Cedar', 'Atlas', 'Birch', 'Delta']);
     await expect(canvas.getByRole('status')).toBeEmptyDOMElement();
+    for (const button of canvas.getAllByRole('button')) {
+      const style = getComputedStyle(button);
+      await expect(style.borderStyle).toBe('none');
+      await expect(style.borderRadius).toBe('0px');
+      await expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+      await expect(style.paddingInlineStart).toBe('0px');
+      const indicator = button.querySelector('svg')!;
+      await expect(indicator).toHaveAttribute('aria-hidden', 'true');
+      await expect(indicator).not.toHaveAttribute('data-direction');
+      for (const chevron of indicator.children) await expect(getComputedStyle(chevron).visibility).toBe('visible');
+    }
   },
 };
 export const Unsorted: Story = { args: { value: null } };
@@ -509,9 +520,16 @@ export const KeyboardSortingAndSelection: Story = {
     await userEvent.keyboard('{Enter}');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenNthCalledWith(1, { columnId: 'name', direction: 'asc' });
+    const indicator = sort.querySelector('svg')!;
+    await expect(indicator).toHaveAttribute('data-direction', 'asc');
+    await expect(getComputedStyle(indicator.querySelector('[data-chevron="up"]')!).visibility).toBe('visible');
+    await expect(getComputedStyle(indicator.querySelector('[data-chevron="down"]')!).visibility).toBe('hidden');
     await userEvent.keyboard(' ');
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
     await expect(args.onValueChange).toHaveBeenNthCalledWith(2, { columnId: 'name', direction: 'desc' });
+    await expect(indicator).toHaveAttribute('data-direction', 'desc');
+    await expect(getComputedStyle(indicator.querySelector('[data-chevron="up"]')!).visibility).toBe('hidden');
+    await expect(getComputedStyle(indicator.querySelector('[data-chevron="down"]')!).visibility).toBe('visible');
     await expect(sort.ownerDocument.activeElement).toBe(sort);
     await userEvent.tab({ shift: true });
     await expect(all.ownerDocument.activeElement).toBe(all);
