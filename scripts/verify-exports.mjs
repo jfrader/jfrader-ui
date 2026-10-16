@@ -39,6 +39,7 @@ const subpathOnlyComponents = new Set([
   'card-flights',
   'deck',
   'flip-game-card',
+  'game-actions',
   'game-card',
   'game-card-stack',
   'game-hand',

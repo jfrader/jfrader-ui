@@ -70,6 +70,7 @@
     "./filter-toolbar": { "types": "./src/components/filter-toolbar/index.ts", "import": "./src/components/filter-toolbar/index.ts" },
     "./flex": { "types": "./src/components/flex/index.ts", "import": "./src/components/flex/index.ts" },
     "./flip-game-card": { "types": "./src/components/flip-game-card/index.ts", "import": "./src/components/flip-game-card/index.ts" },
+    "./game-actions": { "types": "./src/components/game-actions/index.ts", "import": "./src/components/game-actions/index.ts" },
     "./game-card": { "types": "./src/components/game-card/index.ts", "import": "./src/components/game-card/index.ts" },
     "./game-card-stack": { "types": "./src/components/game-card-stack/index.ts", "import": "./src/components/game-card-stack/index.ts" },
     "./game-seat": { "types": "./src/components/game-seat/index.ts", "import": "./src/components/game-seat/index.ts" },
