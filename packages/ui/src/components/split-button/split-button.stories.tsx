@@ -620,6 +620,7 @@ export const WithIcon: Story = {
 };
 
 export const LightTheme: Story = {
+  tags: ['!autodocs'],
   globals: { theme: 'light' },
   args: { defaultOpen: true },
   play: async ({ canvasElement }) => {
@@ -629,6 +630,7 @@ export const LightTheme: Story = {
 };
 
 export const PersistentOpen: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement }) => {
     // Persistent open state so the axe gate sees the portaled menu.
@@ -827,6 +829,7 @@ export const RejectedOpen: Story = {
 };
 
 export const ControlledReject: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
@@ -911,6 +914,7 @@ export const DisabledParts: Story = {
 };
 
 export const DisabledItems: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ args, canvasElement, userEvent }) => {
     const menu = await bodyOf(canvasElement).findByRole('menu');
@@ -943,6 +947,7 @@ function DisableWhileOpenHarness({ controlled, ...args }: StoryArgs & { controll
 DisableWhileOpenHarness.displayName = 'DisableWhileOpenHarness';
 
 export const DisableWhileOpen: Story = {
+  tags: ['!autodocs'],
   render: (args) => <DisableWhileOpenHarness {...args} controlled />,
   play: async ({ args, canvasElement, userEvent }) => {
     const menu = await bodyOf(canvasElement).findByRole('menu');
@@ -971,6 +976,7 @@ export const DisableWhileOpen: Story = {
 };
 
 export const DisableWhileOpenUncontrolled: Story = {
+  tags: ['!autodocs'],
   render: (args) => <DisableWhileOpenHarness {...args} controlled={false} />,
   play: async ({ args, canvasElement }) => {
     await bodyOf(canvasElement).findByRole('menu');
@@ -1085,6 +1091,7 @@ function ScopedHost({ children }: { children: ReactNode }) {
 ScopedHost.displayName = 'ScopedHost';
 
 export const ThemeRootPortal: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <ScopedHost>
@@ -1100,6 +1107,7 @@ export const ThemeRootPortal: Story = {
 };
 
 export const AriaMerge: Story = {
+  tags: ['!autodocs'],
   args: { 'aria-label': undefined, defaultOpen: true },
   render: ({ onAction, onCsv, onJson: _onJson, onDelete: _onDelete, ...args }) => (
     <StackFrame>
@@ -1162,6 +1170,7 @@ const itemRef = fn();
 const separatorRef = fn();
 
 export const RefTargets: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, ref: fn() },
   render: ({ onAction, onCsv, onJson: _onJson, onDelete: _onDelete, ...args }) => (
     <SplitButton {...args}>
@@ -1386,6 +1395,7 @@ class UsageErrorBoundary extends Component<{ children: ReactNode }, { message: s
 }
 
 export const UsageErrors: Story = {
+  tags: ['!autodocs'],
   render: () => (
     <StackFrame>
       <UsageErrorBoundary>
@@ -1410,6 +1420,7 @@ export const UsageErrors: Story = {
 };
 
 export const ReducedMotion: Story = {
+  tags: ['!autodocs'],
   parameters: {
     docs: {
       description: {
@@ -1463,6 +1474,7 @@ export const ForcedColors: Story = {
 
 // This story tests the documented css/slot API and native style merging.
 export const SxPrecedence: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, sx: consumerSx, className: 'consumer-root' },
   render: ({ onAction, onCsv, onJson: _onJson, onDelete: _onDelete, ...args }) => (
     <SplitButton {...args} css={consumerCss}>

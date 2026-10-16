@@ -216,11 +216,12 @@ export const Default: EasyStory = {
   },
 };
 
-export const EasyModeOpen: EasyStory = { ...Default, name: 'Easy mode open', args: { ...Default.args, defaultOpen: true }, play: undefined };
-export const EasyModeLight: EasyStory = { ...EasyModeOpen, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
+export const EasyModeOpen: EasyStory = { ...Default, tags: ['!autodocs'], name: 'Easy mode open', args: { ...Default.args, defaultOpen: true }, play: undefined };
+export const EasyModeLight: EasyStory = { ...EasyModeOpen, tags: ['!autodocs'], name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
 
 export const EasyModeRejectedClose: EasyStory = {
   ...Default,
+  tags: ['!autodocs'],
   name: 'Easy mode rejected close',
   args: { ...Default.args, open: true },
   play: async ({ canvasElement, args, userEvent }) => {
@@ -357,6 +358,7 @@ export const Compound: Story = {
 };
 
 export const Open: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <MenuExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -367,6 +369,7 @@ export const Open: Story = {
 };
 
 export const ForcedColors: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <MenuExample {...args} />,
   parameters: {
@@ -388,6 +391,7 @@ export const ForcedColors: Story = {
 };
 
 export const ScrollableRtl: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <Menu {...args}>
@@ -665,6 +669,7 @@ export const SelectMovesFocus: Story = {
 };
 
 export const LightThemeOpen: Story = {
+  tags: ['!autodocs'],
   decorators: [withLightTheme],
   args: { defaultOpen: true },
   render: (args) => <MenuExample {...args} />,
@@ -732,6 +737,7 @@ async function expectHostedMenuClosed(canvasElement: HTMLElement, trigger: HTMLE
 }
 
 export const InsidePopover: Story = {
+  tags: ['!autodocs'],
   args: { onOpenChange: fn() },
   render: (args) => <PopoverHost {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {

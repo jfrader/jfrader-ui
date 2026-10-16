@@ -283,6 +283,7 @@ export const ControlledFavorites: Story = {
   },
 };
 export const Empty: Story = {
+  tags: ['!autodocs'],
   args: { photos: [], defaultOpen: true },
   play: async ({ canvas, canvasElement, args }) => {
     await expect(canvas.getByText('No photos')).toBeInTheDocument();

@@ -392,6 +392,7 @@ export const Controlled: Story = {
   },
 };
 export const ControlledOpen: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.click(triggerOf(canvasElement));
@@ -436,6 +437,7 @@ export const OverflowOnly: Story = {
   },
 };
 export const Disabled: Story = {
+  tags: ['!autodocs'],
   args: { disabled: true, defaultValue: ['bug'], open: true },
   play: async ({ canvasElement, userEvent, args }) => {
     await expect(triggerOf(canvasElement)).toBeDisabled();
@@ -447,7 +449,7 @@ export const Disabled: Story = {
     });
   },
 };
-export const DisabledItems: Story = { args: { defaultOpen: true } };
+export const DisabledItems: Story = { tags: ['!autodocs'], args: { defaultOpen: true } };
 export const DisabledSelectedClear: Story = {
   args: { defaultValue: ['locked', 'bug', 'unknown'] },
   play: async ({ canvasElement, canvas, userEvent, args }) => {
@@ -466,6 +468,7 @@ export const UnknownValue: Story = {
   },
 };
 export const LongLabels: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: ['long'], defaultOpen: true },
   render: (args) => (
     <NarrowFrame>
@@ -598,6 +601,7 @@ export const FormReset: Story = {
   },
 };
 export const ControlledReject: Story = {
+  tags: ['!autodocs'],
   args: { value: [], open: true },
   play: async ({ canvasElement, userEvent, args }) => {
     const trigger = triggerOf(canvasElement);
@@ -639,6 +643,7 @@ export const ControlledValueUncontrolledOpen: Story = {
   },
 };
 export const ControlledOpenUncontrolledValue: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   play: async ({ canvasElement, userEvent, args }) => {
     const trigger = triggerOf(canvasElement);
@@ -702,6 +707,7 @@ export const DuplicateValues: Story = {
   },
 };
 export const TwoInstances: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <>
@@ -727,13 +733,15 @@ export const TwoInstances: Story = {
     await expect(new Set(ids).size).toBe(ids.length);
   },
 };
-export const PersistentOpen: Story = { args: { open: true } };
+export const PersistentOpen: Story = { tags: ['!autodocs'], args: { open: true } };
 export const PersistentOpenSelected: Story = {
+  tags: ['!autodocs'],
   args: { open: true, defaultValue: ['bug', 'locked'] },
 };
 // Deliberately leaves an open listbox with zero options for the axe gate; the empty status is
 // announced outside the listbox, so the listbox holds no non-option semantics.
 export const PersistentOpenEmpty: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   render: (args) => <Example {...args} empty />,
   play: async ({ canvasElement }) => {
@@ -805,11 +813,13 @@ export const Typeahead: Story = {
 };
 export const LightTheme: Story = {
   ...PersistentOpenSelected,
+  tags: ['!autodocs'],
   globals: { theme: 'light' },
   decorators: [withLightTheme],
 };
 export const ScopedThemePortal: Story = {
   ...PersistentOpenSelected,
+  tags: ['!autodocs'],
   render: (args) => (
     <ThemeRoot theme="light" sx={scopedThemeStyle}>
       <Example {...args} />
@@ -818,6 +828,7 @@ export const ScopedThemePortal: Story = {
 };
 export const RTL: Story = {
   ...PersistentOpenSelected,
+  tags: ['!autodocs'],
   render: (args) => (
     <div dir="rtl">
       <Example {...args} />
@@ -826,6 +837,7 @@ export const RTL: Story = {
 };
 export const ReducedMotion: Story = {
   ...PersistentOpenSelected,
+  tags: ['!autodocs'],
   parameters: {
     docs: {
       description: {
@@ -836,6 +848,7 @@ export const ReducedMotion: Story = {
 };
 export const ForcedColors: Story = {
   ...PersistentOpenSelected,
+  tags: ['!autodocs'],
   parameters: {
     docs: {
       description: {
@@ -847,6 +860,7 @@ export const ForcedColors: Story = {
 };
 
 export const ClearKeyboard: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: ['bug'], defaultOpen: true },
   play: async ({ canvasElement, canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -862,6 +876,7 @@ export const ClearKeyboard: Story = {
   },
 };
 export const ClearRejected: Story = {
+  tags: ['!autodocs'],
   args: { value: ['bug'], open: true },
   play: async ({ canvasElement, canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Clear selection' }));
@@ -922,6 +937,7 @@ function DynamicItems(props: MultiSelectCompoundProps) {
   );
 }
 export const RefAndStyling: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => (
     <MultiSelect {...args}>
@@ -994,6 +1010,7 @@ export const ToggleTwiceAndRepeat: Story = {
 };
 
 export const ClearPointerOrder: Story = {
+  tags: ['!autodocs'],
   args: { defaultValue: ['bug'], defaultOpen: true },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Clear selection' }));

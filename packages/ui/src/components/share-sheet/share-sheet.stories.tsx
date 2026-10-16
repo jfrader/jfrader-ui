@@ -202,10 +202,11 @@ export const Default: Story = {
     await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
   },
 };
-export const AlignStart: Story = { args: { defaultOpen: true, align: 'start' } };
-export const AlignEnd: Story = { args: { defaultOpen: true, align: 'end' } };
-export const AlignCenter: Story = { args: { defaultOpen: true, align: 'center' } };
+export const AlignStart: Story = { tags: ['!autodocs'], args: { defaultOpen: true, align: 'start' } };
+export const AlignEnd: Story = { tags: ['!autodocs'], args: { defaultOpen: true, align: 'end' } };
+export const AlignCenter: Story = { tags: ['!autodocs'], args: { defaultOpen: true, align: 'center' } };
 export const ForcedPopover: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, presentation: 'popover' },
   play: async ({ canvasElement }) => {
     const dialog = await body(canvasElement).findByRole('dialog');
@@ -218,8 +219,9 @@ export const ForcedPopover: Story = {
     });
   },
 };
-export const ForcedSheet: Story = { args: { defaultOpen: true, presentation: 'sheet' } };
+export const ForcedSheet: Story = { tags: ['!autodocs'], args: { defaultOpen: true, presentation: 'sheet' } };
 export const PhoneResponsive: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, presentation: 'responsive' },
   parameters: {
     docs: {
@@ -230,8 +232,9 @@ export const PhoneResponsive: Story = {
     },
   },
 };
-export const Light: Story = { args: { defaultOpen: true }, decorators: [withLightTheme] };
+export const Light: Story = { tags: ['!autodocs'], args: { defaultOpen: true }, decorators: [withLightTheme] };
 export const LongNames: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     people: [{ id: 'long', name: 'Alexandria Catherine Montgomery-Wellington' }],
@@ -253,6 +256,7 @@ export const LongNames: Story = {
   },
 };
 export const EmptyPeople: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, people: [] },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.click(
@@ -265,6 +269,7 @@ export const EmptyPeople: Story = {
   },
 };
 export const NoAccessOptions: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, accessOptions: [] },
   play: async ({ canvasElement }) => {
     await expect(
@@ -279,12 +284,15 @@ export const NoAccessOptions: Story = {
 };
 export const MissingControlledAccess: Story = {
   ...NoAccessOptions,
+  tags: ['!autodocs'],
   args: { defaultOpen: true, access: 'missing' },
 };
 export const SelectedPeople: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: ['ada', 'grace', 'missing'] },
 };
 export const Sending: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: ['ada'], onSend: fn(() => new Promise(() => {})) },
   play: async ({ canvasElement, userEvent, args }) => {
     const send = await body(canvasElement).findByRole('button', { name: 'Send to 1 person' });
@@ -296,6 +304,7 @@ export const Sending: Story = {
   },
 };
 export const Sent: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: ['ada'] },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.click(
@@ -312,6 +321,7 @@ export const Sent: Story = {
   },
 };
 export const SendError: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     defaultValue: ['ada'],
@@ -334,6 +344,7 @@ export const SendError: Story = {
   },
 };
 export const ChannelPending: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, onChannel: fn(() => new Promise(() => {})) },
   play: async ({ canvasElement, userEvent, args }) => {
     const target = await body(canvasElement).findByRole('button', { name: 'Team channel' });
@@ -345,6 +356,7 @@ export const ChannelPending: Story = {
   },
 };
 export const ChannelSuccess: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.click(await body(canvasElement).findByRole('button', { name: 'Team channel' }));
@@ -356,6 +368,7 @@ export const ChannelSuccess: Story = {
   },
 };
 export const ChannelError: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     onChannel: fn(() => {
@@ -374,6 +387,7 @@ export const ChannelError: Story = {
   },
 };
 export const CopyFeedback: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement, userEvent, args }) => {
     const copy = await body(canvasElement).findByRole('button', { name: 'Copy link' });
@@ -422,6 +436,7 @@ export const CopyFeedback: Story = {
   },
 };
 export const CopyFailure: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement, userEvent, args }) => {
     await clipboard(
@@ -455,6 +470,7 @@ export const ControlledRejectsOpen: Story = {
   },
 };
 export const ControlledRejectsSelection: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, value: [] },
   play: async ({ canvasElement, userEvent, args }) => {
     const person = await body(canvasElement).findByRole('button', { name: 'Ada Lovelace' });
@@ -465,6 +481,7 @@ export const ControlledRejectsSelection: Story = {
   },
 };
 export const ControlledRejectsAccess: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, access: 'view' },
   play: async ({ canvasElement, userEvent, args }) => {
     const access = await body(canvasElement).findByRole('combobox', { name: 'Access' });
@@ -476,6 +493,7 @@ export const ControlledRejectsAccess: Story = {
   },
 };
 export const AccessKeyboard: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement, userEvent, args }) => {
     const access = await body(canvasElement).findByRole('combobox', { name: 'Access' });
@@ -494,6 +512,7 @@ export const AccessKeyboard: Story = {
   },
 };
 export const RTL: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, dir: 'rtl' },
   parameters: {
     docs: {
@@ -505,6 +524,7 @@ export const RTL: Story = {
   },
 };
 export const ForcedColors: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   parameters: {
     docs: {
@@ -516,6 +536,7 @@ export const ForcedColors: Story = {
   },
 };
 export const ReducedMotion: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   parameters: {
     docs: {
@@ -535,6 +556,7 @@ export const MultiInstance: Story = {
   ),
 };
 export const ThemeScopedDialogNestedAccess: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, presentation: 'sheet' },
   render: (args) => (
     <ThemeRoot theme="light">
@@ -573,6 +595,7 @@ export const OutsideFocus: Story = {
   },
 };
 export const FalsySlots: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     channels: [false, null, 0, ''].map((icon, index) => ({
@@ -640,6 +663,7 @@ export const Controlled: Story = {
   },
 };
 export const CopyUnavailable: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: async ({ canvasElement, userEvent, args }) => {
     await clipboard(canvasElement, undefined, async () => {
@@ -657,6 +681,7 @@ export const CopyUnavailable: Story = {
   },
 };
 export const MissingHandlers: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, onSend: undefined, onChannel: undefined },
   play: async ({ canvasElement }) => {
     await expect(
@@ -668,6 +693,7 @@ export const MissingHandlers: Story = {
   },
 };
 export const AllAccessDisabled: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     accessOptions: [{ value: 'view', label: 'Can view', disabled: true }],
@@ -680,6 +706,7 @@ export const AllAccessDisabled: Story = {
   },
 };
 export const SheetDrag: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, presentation: 'sheet' },
   play: async ({ canvasElement, args }) => {
     const dialog = await body(canvasElement).findByRole('dialog');
@@ -710,6 +737,7 @@ export const SheetDrag: Story = {
   },
 };
 export const ControlledRejectsDismissal: Story = {
+  tags: ['!autodocs'],
   args: { open: true },
   play: async ({ canvasElement, userEvent, args }) => {
     const copy = await body(canvasElement).findByRole('button', { name: 'Copy link' });
@@ -751,6 +779,7 @@ export const LateSendSettlement: Story = {
   },
 };
 export const NativeClose: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, presentation: 'sheet' },
   play: async ({ canvasElement, args }) => {
     await body(canvasElement).findByRole('dialog');
@@ -763,6 +792,7 @@ export const NativeClose: Story = {
   },
 };
 export const NativeCancelVeto: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     presentation: 'sheet',
@@ -775,6 +805,7 @@ export const NativeCancelVeto: Story = {
   },
 };
 export const AriaAndStyling: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     slotProps: {
@@ -813,6 +844,7 @@ export const AriaAndStyling: Story = {
   },
 };
 export const RefAndTargets: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, ref: fn() },
   play: async ({ canvasElement, args }) => {
     const root = canvasElement.querySelector('[data-ui="share-sheet"]');
@@ -837,6 +869,7 @@ function MigratingExample(args: ShareSheetProps) {
   );
 }
 export const ShellMigration: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, defaultValue: ['ada'] },
   render: (args) => <MigratingExample {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {

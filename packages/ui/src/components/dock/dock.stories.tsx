@@ -169,7 +169,7 @@ export const Keyboard: Story = {
     await userEvent.tab({ shift: true }); await expect(canvas.getByRole('button', { name: 'Before' })).toHaveFocus();
   },
 };
-export const PersistentTray: Story = { args: { items: grouped, defaultOpen: true, defaultTray: 'shapes', defaultValue: 'rectangle' } };
+export const PersistentTray: Story = { tags: ['!autodocs'], args: { items: grouped, defaultOpen: true, defaultTray: 'shapes', defaultValue: 'rectangle' } };
 export const TraySelection: Story = {
   args: { items: grouped, defaultValue: null },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -252,6 +252,7 @@ export const ControlledRejectValue: Story = {
   },
 };
 export const ControlledRejectOpen: Story = {
+  tags: ['!autodocs'],
   args: { items: grouped, open: true, tray: 'shapes', value: 'rectangle' },
   play: async ({ canvasElement, userEvent, args }) => {
     const body = page(canvasElement);
@@ -408,10 +409,12 @@ export const ReducedMotion: Story = {
 };
 export const ForcedColors: Story = {
   ...PersistentTray,
+  tags: ['!autodocs'],
   parameters: { docs: { description: { story: 'Enable forced colors in browser rendering settings to inspect Canvas/CanvasText boundaries and the Highlight selected marker. This story does not emulate that environment.' } } },
 };
 
 export const MultiInstance: Story = {
+  tags: ['!autodocs'],
   args: { items: grouped, defaultOpen: true, defaultTray: 'shapes' },
   render: (args) => <div style={{ display: 'grid', gap: 120 }}><Dock {...args} label="Drawing tools" /><Dock {...args} label="Review tools" /></div>,
   play: async ({ canvas, canvasElement }) => {
@@ -460,6 +463,7 @@ const replacementSlots: DockSlots = {
 };
 
 export const ReplacementSlots: Story = {
+  tags: ['!autodocs'],
   args: {
     items: [{ id: 'group', label: 'Group', items: [{ id: 'tool', label: 'Tool', icon, badge: 3 }] }],
     defaultValue: null, defaultOpen: true, defaultTray: 'group', reorderable: true,
@@ -537,6 +541,7 @@ export const Controlled: Story = {
   },
 };
 export const ControlledNullTray: Story = {
+  tags: ['!autodocs'],
   args: { items: grouped, tray: null, open: true },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.tab(); await userEvent.keyboard('{ArrowRight}{ArrowUp}');
@@ -548,6 +553,7 @@ export const ControlledNullTray: Story = {
   },
 };
 export const ControlledRejectTray: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true, tray: 'shapes', items: [...grouped,
     { id: 'brushes', label: 'Brushes', items: [{ id: 'pencil', label: 'Pencil', icon }] },
   ] },
@@ -612,6 +618,7 @@ function DialogExample(args: DockProps) {
   </Dialog></ThemeRoot>;
 }
 export const ThemeScopedInDialog: Story = {
+  tags: ['!autodocs'],
   args: { items: grouped, defaultOpen: true, defaultTray: 'shapes' },
   render: (args) => <DialogExample {...args} />,
   play: async ({ canvasElement }) => {

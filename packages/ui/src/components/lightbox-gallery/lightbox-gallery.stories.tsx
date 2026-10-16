@@ -182,6 +182,7 @@ function SlotStatus(props: ComponentPropsWithRef<'div'>) {
 SlotStatus.displayName = 'LightboxGalleryStory.Status';
 
 export const ToolbarSlots: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultOpen: true,
     slots: { controls: SlotControls, status: SlotStatus },
@@ -296,6 +297,7 @@ export const SingleImage: Story = {
   },
 };
 export const Empty: Story = {
+  tags: ['!autodocs'],
   args: { images: [], value: 'unseen', open: true },
   play: async ({ canvas, canvasElement, args }) => {
     await expect(canvas.getByText('No images')).toBeVisible();
@@ -641,6 +643,7 @@ export const RejectedNavigation: Story = {
   },
 };
 export const InvalidSelection: Story = {
+  tags: ['!autodocs'],
   args: { value: 'unseen', open: true },
   play: async ({ canvas, canvasElement, args }) => {
     await expect(canvas.getByRole('status')).toHaveTextContent('Image unavailable');
@@ -649,7 +652,8 @@ export const InvalidSelection: Story = {
     await expect(args.onOpenChange).not.toHaveBeenCalled();
   },
 };
-export const NullSelection: Story = { ...InvalidSelection, args: { value: null, open: true } };
+export const NullSelection: Story = {
+  tags: ['!autodocs'], ...InvalidSelection, args: { value: null, open: true } };
 export const ExternalAcceptedChanges: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],

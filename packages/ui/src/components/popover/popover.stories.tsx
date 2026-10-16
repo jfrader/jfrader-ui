@@ -273,6 +273,7 @@ export const EasyControlled: StoryObj<(props: PopoverEasyProps) => ReactNode> = 
 };
 
 export const Open: Story = {
+  tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: (args) => <PopoverExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -283,6 +284,7 @@ export const Open: Story = {
 };
 
 export const LongContent: Story = {
+  tags: ['!autodocs'],
   render: (args) => (
     <Popover {...args} defaultOpen>
       <Popover.Trigger>{TRIGGER}</Popover.Trigger>
@@ -335,6 +337,7 @@ export const EscapeReturnFocus: Story = {
 };
 
 export const RejectedControlled: Story = {
+  tags: ['!autodocs'],
   args: { onOpenChange: fn() },
   render: (args) => <PopoverExample {...args} open />,
   play: async ({ args, canvasElement }) => {
