@@ -148,6 +148,16 @@ function SlotLink({ component }: { component: CatalogRef }) {
   return <Link href={`#/components/${component.slug}`}>{component.name}</Link>;
 }
 
+const PartLinkButton = Link.withComponent('button');
+
+function PartLink({ name }: { name: string }) {
+  const jump = () => {
+    const target = [...document.querySelectorAll<HTMLElement>('.main h3')].find((heading) => heading.textContent?.trim() === name);
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  return <PartLinkButton type="button" onClick={jump}>{name}</PartLinkButton>;
+}
+
 /** Every part in the map can be replaced, so the count is the only thing worth saying. */
 function summarize(slots: SlotRow[]): string {
   return `${slots.length} ${slots.length === 1 ? 'part' : 'parts'}`;
@@ -155,7 +165,11 @@ function summarize(slots: SlotRow[]): string {
 
 function SlotDefault({ slot }: { slot: SlotRow }) {
   if (slot.component) return <>Default: <SlotLink component={slot.component} /></>;
-  if (slot.defaultElement) return <>Default: <Name>{`\`${slot.defaultElement}\``}</Name></>;
+  if (slot.defaultElement) {
+    // A capitalized default names a component part documented on this page under its own h3.
+    if (/^[A-Z]/.test(slot.defaultElement)) return <>Default: <PartLink name={slot.defaultElement} /></>;
+    return <>Default: <Name>{`\`${slot.defaultElement}\``}</Name></>;
+  }
   if (slot.part) return <>Selector: <Name>{`[data-ui~="${slot.part}"]`}</Name></>;
   return null;
 }
