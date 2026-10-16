@@ -13,7 +13,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { focusRingOutset } from '../../styling/focus-ring';
-import type { SxProps } from '../../styling/sx';
+import type { SlotCss, SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
@@ -57,9 +57,9 @@ export interface FileDropzoneMessages {
 }
 export type FileDropzoneSlotProps = FieldParts<FileDropzoneAnatomy> & {
   /** Action button for removing a file item. Default: `Button`. */
-  action?: ButtonProps;
+  action?: ButtonProps & SlotCss;
   /** Action button for retrying a failed upload. Default: `Button`. */
-  retry?: ButtonProps;
+  retry?: ButtonProps & SlotCss;
   /** Progress bar indicating upload completion. Default: `Progress`. */
   progress?: Omit<ProgressProps, 'value' | 'max'>;
 };

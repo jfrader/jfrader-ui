@@ -20,7 +20,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -82,11 +82,11 @@ export interface TypewriterTerminalSlotProps {
   /** Slider range input element seeking across animation steps. */
   scrubber?: Slot<'input'>;
   /** Button element toggling playback between pause and play. */
-  playButton?: ButtonProps;
+  playButton?: ButtonProps & SlotCss;
   /** Button element restarting the terminal animation. */
-  replayButton?: ButtonProps;
+  replayButton?: ButtonProps & SlotCss;
   /** Button element copying the terminal session transcript. */
-  copyButton?: ButtonProps;
+  copyButton?: ButtonProps & SlotCss;
   /** Figcaption element describing the terminal figure. */
   caption?: Slot<'figcaption'>;
   /** Live region element announcing terminal playback updates. */

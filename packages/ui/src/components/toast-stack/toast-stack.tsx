@@ -13,7 +13,7 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { css, type Interpolation, type Theme } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { Button, type ButtonProps } from '../button';
@@ -32,7 +32,7 @@ export interface ToastStackSlots {
   /** Container wrapping one notification. */
   item?: ComponentType<ToastPartProps>;
 }
-export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, ToastPartProps, SxProps {
+export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, Omit<ToastPartProps, 'css'>, SxProps {
   variant?: ToastStackVariant;
   position?: ToastStackPosition;
   contained?: boolean;
@@ -49,7 +49,7 @@ export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
     /** Container element holding the list of stacked toast items. */
     list?: ToastPartProps;
     /** Button element expanding or collapsing the stacked toasts. */
-    toggle?: ButtonProps;
+    toggle?: ButtonProps & { css?: Interpolation<Theme> };
     /** Container element wrapping an individual toast notification. */
     item?: ToastPartProps;
   };
@@ -126,7 +126,6 @@ function ToastStackContent({
   slotProps,
   component,
   slots,
-  css: consumerCss,
   onPointerEnter,
   onPointerLeave,
   onFocus,
@@ -250,7 +249,7 @@ function ToastStackContent({
     };
   }, [height, newestId, expanded, focused]);
   return (
-    <WithSx className={[rootClass, className].filter(Boolean).join(' ')} styles={[rootStyle, rootCss, rootSx, consumerCss]} sx={sx}>
+    <WithSx className={[rootClass, className].filter(Boolean).join(' ')} styles={[rootStyle, rootCss, rootSx]} sx={sx}>
       {(className) => (
         <Root
           {...props}

@@ -89,8 +89,6 @@ export interface CopyButtonProps
     /** Announces copy feedback. */
     status?: ComponentType<CopyButtonSlotPartProps>;
   };
-  /** Consumer style overrides, merged after the component's own styles. */
-  css?: Interpolation<Theme>;
 }
 
 const DEFAULT_RESET_AFTER_MS = 1900;
@@ -244,7 +242,6 @@ export function CopyButton({
   disabled,
   onClick,
   className,
-  css: cssProp,
   sx,
   ...rest
 }: CopyButtonProps) {
@@ -356,7 +353,7 @@ export function CopyButton({
         aria-disabled={isPending || isAriaTrue(rest['aria-disabled']) ? true : rest['aria-disabled']}
         onClick={handleClick}
         className={className}
-        css={[rootStyle, iconOnly ? iconOnlyStyles[size] : [wrappingStyle, minBlockStyles[size]], cssProp]}
+        css={[rootStyle, iconOnly ? iconOnlyStyles[size] : [wrappingStyle, minBlockStyles[size]]]}
         sx={sx}
         render={(buttonProps) => <button {...buttonProps} type="button" disabled={disabled} />}
       >

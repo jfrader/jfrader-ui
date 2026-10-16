@@ -86,7 +86,7 @@ type IndicatorSlot = Omit<
   | 'aria-label'
 > &
   StyleSlot;
-type ButtonSlot = Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'aria-disabled' | 'render' | 'sx'>;
+type ButtonSlot = Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'aria-disabled' | 'render' | 'sx'> & StyleSlot;
 
 export interface CarouselSlots {
   /** Replaces the button that toggles auto-rotation on and off; renders `Button` by default. */

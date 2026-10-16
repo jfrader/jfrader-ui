@@ -68,7 +68,6 @@ interface CardBaseProps
   appearance?: SurfaceAppearance;
   slots?: CardSlots;
   slotProps?: CardSlotProps;
-  css?: Interpolation<Theme>;
 }
 
 export interface CardCompoundProps extends CardBaseProps {

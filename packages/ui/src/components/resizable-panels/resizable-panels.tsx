@@ -55,7 +55,6 @@ import { useControlledState } from '../../utils/use-controlled-state';
 
 export type ResizablePanelsSeparatorProps = ComponentPropsWithRef<'div'> &
   SxProps & {
-    css?: Interpolation<Theme>;
     [attribute: `data-${string}`]: unknown;
   };
 
@@ -95,13 +94,12 @@ export interface ResizablePanelsSlotProps {
     [attribute: `data-${string}`]: unknown;
   };
   /** Interactive separator handle element between panels. */
-  separator?: ResizablePanelsSeparatorProps;
+  separator?: ResizablePanelsSeparatorProps & { css?: Interpolation<Theme> };
 }
 
 export interface ResizablePanelsBaseProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>,
     SxProps {
-  css?: Interpolation<Theme>;
   [attribute: `data-${string}`]: unknown;
   /** Controlled weights, one per panel in order. A zero collapses a collapsible panel. */
   value?: readonly number[];
@@ -535,7 +533,6 @@ function ResizablePanelsRoot(props: ResizablePanelsProps) {
     className,
     sx,
     component,
-    css: consumerCss,
     'data-ui': consumerDataUi,
     panels,
     label,
@@ -1003,7 +1000,7 @@ function ResizablePanelsRoot(props: ResizablePanelsProps) {
   return (
     <WithSx styles={[rootStyle, rootSlotCss, rootSlotSx]} className={rootSlotClassName}>
       {(slotClasses) => (
-        <WithSx styles={consumerCss} className={className} sx={sx}>
+        <WithSx styles={[]} className={className} sx={sx}>
           {(consumerClasses) => (
             <WithSx styles={[]} className={[slotClasses, consumerClasses].filter(Boolean).join(' ')}>
               {(rootClass) => (

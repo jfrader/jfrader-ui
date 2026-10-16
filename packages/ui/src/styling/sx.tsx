@@ -12,6 +12,10 @@ export interface SxProps {
   sx?: Interpolation<Theme>;
 }
 
+export interface SlotCss {
+  css?: Interpolation<Theme>;
+}
+
 interface ClassNameProps {
   className?: string;
   children: (className: string | undefined) => ReactNode;

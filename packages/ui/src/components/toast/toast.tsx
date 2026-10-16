@@ -38,7 +38,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
 import { ThemeBoundary, useThemeScope } from '../../styling/theme-scope';
 import { isRenderable } from '../../utils/renderable';
 import { Button } from '../button';
@@ -102,11 +102,11 @@ export type ToastProviderProps = ToastProviderBaseProps &
       }
     | {
         viewport: 'stack';
-        viewportProps?: ToastStackProps;
+        viewportProps?: ToastStackProps & SlotCss;
         slots?: ToastSlots<ToastStackProps>;
         slotProps?: {
           /** Stacked viewport container element rendering active toasts. */
-          viewport?: ToastStackProps;
+          viewport?: ToastStackProps & SlotCss;
         };
       }
   );

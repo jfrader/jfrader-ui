@@ -42,7 +42,6 @@ export interface SurfaceProps extends SurfacePartProps, SxProps, SurfaceRootCust
   appearance?: SurfaceAppearance;
   /** Shadow treatment. Defaults to `flat`; all variants keep a raised background and border. */
   variant?: SurfaceVariant;
-  css?: Interpolation<Theme>;
 }
 
 const variants = ['flat', 'raised', 'floating'] as const;

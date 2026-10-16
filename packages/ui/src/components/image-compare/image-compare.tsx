@@ -50,7 +50,7 @@ type HandleSlot = Omit<
   | 'aria-valuetext'
 > &
   StyleSlot;
-type ButtonSlot = Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'aria-disabled' | 'render' | 'sx'>;
+type ButtonSlot = Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'aria-disabled' | 'render' | 'sx'> & StyleSlot;
 
 export interface ImageCompareSlotProps {
   /** Outer frame element constraining the compared images and handle. */

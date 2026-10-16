@@ -71,7 +71,7 @@ export function useFieldAnatomy({
   return { id, descriptionId, errorId, describedBy, ariaInvalid };
 }
 
-interface FieldRootProps extends Omit<FieldElementProps<'div'>, 'part'>, SxProps {
+interface FieldRootProps extends Omit<FieldElementProps<'div'>, 'part' | 'css'>, SxProps {
   'data-ui': string;
   className?: string;
   dir?: string;
@@ -82,7 +82,7 @@ interface FieldRootProps extends Omit<FieldElementProps<'div'>, 'part'>, SxProps
 
 export function FieldRoot({ component, part, ...props }: FieldRootProps) {
   return (
-    <FieldSlot element="div" root component={component} slotProps={part} {...props} styles={[rootStyle, props.css]} />
+    <FieldSlot element="div" root component={component} slotProps={part} {...props} styles={rootStyle} />
   );
 }
 
