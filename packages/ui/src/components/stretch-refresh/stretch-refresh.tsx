@@ -69,7 +69,7 @@ export interface StretchRefreshSlotProps<T> {
   /** Visual pull indicator displaying stretch progress and spinner. */
   indicator?: Omit<Slot<'div'>, 'aria-hidden'>;
   /** Manual refresh trigger button; renders `Button`. */
-  refreshButton?: Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'loading' | 'render' | 'sx'>;
+  refreshButton?: Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'loading' | 'render' | 'sx'> & { css?: Interpolation<Theme> };
   /** Status element announcing pull and refresh state. */
   status?: Omit<Slot<'div'>, 'role' | 'aria-atomic'>;
   /** Empty state container element shown when no items exist. */

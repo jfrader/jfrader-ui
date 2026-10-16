@@ -4,7 +4,7 @@ import { expect, fn, spyOn, within } from 'storybook/test';
 import { renderToString } from 'react-dom/server';
 import { vars } from '@jfrader/tokens/vars';
 import { base } from '@jfrader/tokens';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { motionDurationMs } from '../../styling/motion-timings';
@@ -599,14 +599,16 @@ function ReplacementRoot(props: GameCardRootProps) {
   return <ReplacementMaterial {...props} data-replacement="true" />;
 }
 
-// This story exercises slot css, consumer css/style and sx precedence.
+const strayRootStyle = css({ opacity: 0.7 });
+// This story exercises slot css, registered classes, native styles and sx precedence.
 export const RootCustomization: Story = {
   tags: ['!autodocs'],
   args: { ref: fn(), component: ReplacementRoot, 'data-ui': 'consumer flip-game-card consumer',
     title: 'Host title', className: 'host-class', style: { marginInlineStart: 1, marginBlockStart: 2 },
     slotProps: { root: { 'data-ui': 'slot consumer', title: 'Slot title', className: 'slot-class',
       style: { marginInlineStart: 3 }, css: css({ opacity: 0.8 }) } },
-    css: css({ opacity: 0.7 }), sx: { opacity: 0.6 } },
+    sx: { opacity: 0.6 } },
+  render: (args) => <ClassNames>{({ css: register }) => <FlipGameCard {...args} className={`${args.className} ${register(strayRootStyle)}`} />}</ClassNames>,
   play: async ({ args, canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui~="flip-game-card"]');
     await expect(root).toHaveAttribute('data-ui', 'flip-game-card consumer slot');

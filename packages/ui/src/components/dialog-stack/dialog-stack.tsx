@@ -1159,7 +1159,7 @@ function useHandleDrag(enabled: boolean, panelRef: RefObject<HTMLDivElement | nu
 }
 
 function DialogStackContent({
-  ref, value, className, sx, component, slots, slotProps, css: consumerCss, appearance,
+  ref, value, className, sx, component, slots, slotProps, appearance,
   dismissible = true, onCancel, withDescription = true, ...props
 }: DialogStackContentProps) {
   const selected = { ...props, ...slotProps?.root };
@@ -1273,7 +1273,6 @@ function DialogStackContent({
           slots={slots}
           slotProps={slotProps}
           appearance={appearance}
-          css={consumerCss}
           owner="DialogStack.Content"
           marker="dialog-stack"
           variant="floating"

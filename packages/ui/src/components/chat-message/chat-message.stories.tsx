@@ -2,7 +2,7 @@ import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -444,15 +444,19 @@ export const Disabled: Story = {
 export const StylingAndZeroContent: Story = {
   args: { children: 0, offeredReactions: [], avatar: null },
   render: (args) => (
-    <ChatMessage
-      {...args}
-      css={{ outlineStyle: 'dotted' }}
-      sx={{ outlineStyle: 'dashed' }}
-      slotProps={{
-        article: { css: slotArticleStyle, className: 'custom-message', style: { opacity: 1 } },
-        bubble: { css: slotBubbleStyle },
-      }}
-    />
+    <ClassNames>
+      {({ css: className }) => (
+        <ChatMessage
+          {...args}
+          className={className({ outlineStyle: 'dotted' })}
+          sx={{ outlineStyle: 'dashed' }}
+          slotProps={{
+            article: { css: slotArticleStyle, className: 'custom-message', style: { opacity: 1 } },
+            bubble: { css: slotBubbleStyle },
+          }}
+        />
+      )}
+    </ClassNames>
   ),
   play: async ({ canvas }) => {
     const article = canvas.getByRole('article');

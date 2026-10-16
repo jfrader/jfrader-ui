@@ -1281,8 +1281,8 @@ export const ActionAriaPreserved: Story = {
   },
 };
 
+const StyledFileDropzone = styled(FileDropzone)({ borderRadius: '9px' });
 /** Replace the wrapper and generated label; pass native props through slotProps. */
-// This story tests native style merging and css/sx precedence through the slot API.
 export const SlotCustomization: Story = {
   args: {
     ref: fn(),
@@ -1305,11 +1305,11 @@ export const SlotCustomization: Story = {
       label: { ref: fn(), title: 'generated part' },
     },
   },
-  render: (args) => <FileDropzone {...args} css={{ borderRadius: '9px' }} />,
+  render: (args) => <StyledFileDropzone {...args} />,
   parameters: {
     docs: {
       source: {
-        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<FileDropzone label=\"Name\" messages={messages}\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { className: 'custom-field' }, label: { title: 'Name' } }}\n/>",
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<FileDropzone label=\"Name\" messages={messages}\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { css: { borderRadius: '8px' } }, label: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
       },
     },
   },

@@ -3,7 +3,7 @@ import { useId } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { WithSx } from '../../styling/sx';
@@ -61,7 +61,7 @@ Use component or slots.root to replace the panel material while keeping Card spa
 | root | component or slots.root | slotProps.root: div props and css |
 | header, title, description, content, footer | Matching slots key | slotProps: part props and css |
 
-Root slot props win ordinary conflicts, including children and callbacks. className combines, and style shallow-merges with slot values last. Style order: own → slot → consumer css → consumer sx. Select composed Card roots with [data-ui~="card"].
+Root slot props win ordinary conflicts, including children and callbacks. className combines, and style shallow-merges with slot values last. Style order: own → slotProps css → consumer sx. Select composed Card roots with [data-ui~="card"].
 
 ### Appearance
 Omitted appearance and default inherit the enclosing appearance, including contrast. Contrast uses fixed charcoal on either page theme. Use ThemeRoot to change the named theme.`,
@@ -343,7 +343,6 @@ export const SlotProps: Story = {
   },
 };
 
-// The slot and consumer override APIs take `css` values, so this story keeps the documented spelling.
 const slotRootOverrideStyle = css({ fontStyle: 'italic' });
 const consumerRootOverrideStyle = css({ fontStyle: 'normal' });
 const slotTitleOverrideStyle = css({ textTransform: 'uppercase' });
@@ -356,13 +355,13 @@ export const ConsumerStylePrecedence: Story = {
         code: `<Card
   variant="raised"
   className="consumer-card"
-  css={css({ fontStyle: 'normal' })}
+  sx={{ fontStyle: 'normal' }}
   slotProps={{
     root: { className: 'slot-card', css: css({ fontStyle: 'italic' }) },
     title: { className: 'slot-title', css: css({ textTransform: 'uppercase' }) },
   }}
 >
-  <Card.Title className="consumer-title" css={css({ textTransform: 'lowercase' })}>
+  <Card.Title className="consumer-title" sx={{ textTransform: 'lowercase' }}>
     Consumer styles
   </Card.Title>
 </Card>`,
@@ -370,19 +369,23 @@ export const ConsumerStylePrecedence: Story = {
     },
   },
   render: (args) => (
-    <Card
-      {...args}
-      className="consumer-card"
-      css={consumerRootOverrideStyle}
-      slotProps={{
-        root: { className: 'slot-card', css: slotRootOverrideStyle },
-        title: { className: 'slot-title', css: slotTitleOverrideStyle },
-      }}
-    >
-      <Card.Title className="consumer-title" css={consumerTitleOverrideStyle}>
-        Consumer styles
-      </Card.Title>
-    </Card>
+    <ClassNames>
+      {({ css: className }) => (
+        <Card
+          {...args}
+          className={`consumer-card ${className({ fontStyle: 'oblique', letterSpacing: '0.05em' })}`}
+          sx={consumerRootOverrideStyle}
+          slotProps={{
+            root: { className: 'slot-card', css: slotRootOverrideStyle },
+            title: { className: 'slot-title', css: slotTitleOverrideStyle },
+          }}
+        >
+          <Card.Title className="consumer-title" sx={consumerTitleOverrideStyle}>
+            Consumer styles
+          </Card.Title>
+        </Card>
+      )}
+    </ClassNames>
   ),
   play: async ({ canvasElement }) => {
     const card = getCards(canvasElement)[0]!;
@@ -390,6 +393,7 @@ export const ConsumerStylePrecedence: Story = {
     await expect(card).toHaveClass('slot-card', 'consumer-card');
     await expect(title).toHaveClass('slot-title', 'consumer-title');
     await expect(getComputedStyle(card).fontStyle).toBe('normal');
+    await expect(getComputedStyle(card).letterSpacing).not.toBe('normal');
     await expect(getComputedStyle(title).textTransform).toBe('lowercase');
   },
 };

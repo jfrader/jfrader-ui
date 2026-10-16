@@ -1148,6 +1148,7 @@ export const ReducedMotion: Story = {
 
 /** Replace the wrapper and generated label; pass native props through slotProps. */
 // This story tests the documented css/slot API and native style merging.
+const StyledTagInput = styled(TagInput)({ borderRadius: '9px' });
 export const SlotCustomization: Story = {
   args: {
     ref: fn(),
@@ -1170,7 +1171,7 @@ export const SlotCustomization: Story = {
       label: { ref: fn(), title: 'generated part' },
     },
   },
-  render: (args) => <TagInput {...args} css={{ borderRadius: '9px' }} />,
+  render: (args) => <StyledTagInput {...args} />,
   parameters: {
     docs: {
       source: {

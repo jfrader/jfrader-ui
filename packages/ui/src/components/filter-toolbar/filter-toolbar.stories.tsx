@@ -998,19 +998,21 @@ export const LongChips: Story = {
   },
 };
 
-// This story tests documented css/sx precedence and the slot styling API.
+const StyledFilterToolbar = styled(FilterToolbar)({ padding: vars.space[2] });
+const StyledFilterControls = styled(FilterToolbar.Controls)({ gap: vars.space[1] });
+const StyledActiveFilters = styled(FilterToolbar.ActiveFilters)({ padding: vars.space[1] });
+const StyledFilterClear = styled(FilterToolbar.Clear)({ paddingInline: vars.space[1] });
+const StyledResultCount = styled(FilterToolbar.ResultCount)({ margin: vars.space[1] });
 export const ConsumerStylePrecedence: Story = {
   render: (args) => (
-    <FilterToolbar
+    <StyledFilterToolbar
       {...args}
-      css={{ padding: vars.space[2] }}
       sx={{ padding: vars.space[6] }}
     >
-      <FilterToolbar.Controls css={{ gap: vars.space[1] }} sx={{ gap: vars.space[4] }}>
+      <StyledFilterControls sx={{ gap: vars.space[4] }}>
         <Button>Control</Button>
-      </FilterToolbar.Controls>
-      <FilterToolbar.ActiveFilters
-        css={{ padding: vars.space[1] }}
+      </StyledFilterControls>
+      <StyledActiveFilters
         sx={{ padding: vars.space[3] }}
         slotProps={{
           list: { css: { gap: vars.space[4] } },
@@ -1019,9 +1021,9 @@ export const ConsumerStylePrecedence: Story = {
           remove: { css: { minInlineSize: vars.space[10] } },
         }}
       />
-      <FilterToolbar.Clear css={{ paddingInline: vars.space[1] }} sx={{ paddingInline: vars.space[6] }} />
-      <FilterToolbar.ResultCount count={1} css={{ margin: vars.space[1] }} sx={{ margin: vars.space[3] }} />
-    </FilterToolbar>
+      <StyledFilterClear sx={{ paddingInline: vars.space[6] }} />
+      <StyledResultCount count={1} sx={{ margin: vars.space[3] }} />
+    </StyledFilterToolbar>
   ),
   play: async ({ canvas, canvasElement }) => {
     const root = canvas.getByRole('group');

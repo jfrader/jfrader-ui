@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
@@ -33,7 +33,6 @@ const TYPEAHEAD_RESET_WAIT_MS = 600;
 // A viewport smaller than the menu's preferred size in both axes, in px.
 const TINY_VIEWPORT = { width: 200, height: 180 };
 
-// The styling-precedence story exercises the documented css and sx APIs.
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ marginInlineStart: vars.space[2] });
 
@@ -1804,23 +1803,27 @@ export const SxPrecedence: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true },
   render: ({ onOpenChild: _onOpenChild, onCopy: _onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
-    <ContextMenu {...args}>
-      <ContextMenu.Target className="consumer-target" css={consumerCss} sx={consumerSx} aria-label={TARGET}>
-        report.pdf
-        <ContextMenu.Trigger className="consumer-trigger" css={consumerCss} sx={consumerSx}>
-          More actions
-        </ContextMenu.Trigger>
-      </ContextMenu.Target>
-      <ContextMenu.Content className="consumer-content" css={consumerCss} sx={consumerSx}>
-        <ContextMenu.Item className="consumer-item" css={consumerCss} sx={consumerSx}>
-          Copy link
-        </ContextMenu.Item>
-        <ContextMenu.CheckboxItem className="consumer-checkbox" css={consumerCss} sx={consumerSx}>
-          Pinned
-        </ContextMenu.CheckboxItem>
-        <ContextMenu.Separator className="consumer-separator" css={consumerCss} sx={consumerSx} />
-      </ContextMenu.Content>
-    </ContextMenu>
+    <ClassNames>
+      {({ css: className }) => (
+        <ContextMenu {...args}>
+          <ContextMenu.Target className={`consumer-target ${className(consumerCss)}`} sx={consumerSx} aria-label={TARGET}>
+            report.pdf
+            <ContextMenu.Trigger className={`consumer-trigger ${className(consumerCss)}`} sx={consumerSx}>
+              More actions
+            </ContextMenu.Trigger>
+          </ContextMenu.Target>
+          <ContextMenu.Content className={`consumer-content ${className(consumerCss)}`} sx={consumerSx}>
+            <ContextMenu.Item className={`consumer-item ${className(consumerCss)}`} sx={consumerSx}>
+              Copy link
+            </ContextMenu.Item>
+            <ContextMenu.CheckboxItem className={`consumer-checkbox ${className(consumerCss)}`} sx={consumerSx}>
+              Pinned
+            </ContextMenu.CheckboxItem>
+            <ContextMenu.Separator className={`consumer-separator ${className(consumerCss)}`} sx={consumerSx} />
+          </ContextMenu.Content>
+        </ContextMenu>
+      )}
+    </ClassNames>
   ),
   play: async ({ canvasElement }) => {
     const target = getTarget(canvasElement);
@@ -1835,7 +1838,7 @@ export const SxPrecedence: Story = {
     ];
     for (const [className, element] of parts) {
       await expect(element).toHaveClass(className);
-      // own → css → sx: sx wins the shared property, css keeps the rest.
+      // sx beats the incoming Emotion class without dropping its other declarations.
       const margin = parseFloat(getComputedStyle(element).marginInlineStart);
       await expect(near(margin, resolvedPx(element, vars.space[2]))).toBe(true);
       await expect(near(margin, resolvedPx(element, vars.space[1]))).toBe(false);

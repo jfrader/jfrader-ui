@@ -4,7 +4,7 @@ import { useId, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import type { AvatarSize, AvatarStatus } from '../avatar';
@@ -749,7 +749,6 @@ const OVERRIDE = {
   avatarBorderWidth: '3px',
 } as const;
 
-// The styling-precedence story exercises css, sx and slot overrides.
 const consumerGroupStyle = css({ opacity: OVERRIDE.groupCssOpacity });
 const sxGroupStyle = css({ opacity: OVERRIDE.groupSxOpacity });
 const slotMemberStyle = css({ '&:not(:first-of-type)': { marginInlineStart: OVERRIDE.memberMargin } });
@@ -759,32 +758,35 @@ const sxAvatarStyle = css({ borderWidth: OVERRIDE.avatarBorderWidth });
 
 export const ConsumerStylePrecedence: Story = {
   render: (args) => (
-    <AvatarGroup
-      {...args}
-      max={2}
-      className="consumer-group"
-      css={consumerGroupStyle}
-      sx={sxGroupStyle}
-      slotProps={{
-        member: { className: 'slot-member', css: slotMemberStyle },
-        overflow: { className: 'slot-overflow', css: slotOverflowStyle },
-        summary: { className: 'slot-summary', css: slotSummaryStyle },
-      }}
-      avatarProps={{
-        className: 'consumer-avatar',
-        sx: sxAvatarStyle,
-      }}
-      members={[
-        { id: '1', name: 'Member 1' },
-        { id: '2', name: 'Member 2' },
-        { id: '3', name: 'Member 3' },
-      ]}
-    />
+    <ClassNames>
+      {({ css: className }) => (
+        <AvatarGroup
+          {...args}
+          max={2}
+          className={`consumer-group ${className(consumerGroupStyle)}`}
+          sx={sxGroupStyle}
+          slotProps={{
+            member: { className: 'slot-member', css: slotMemberStyle },
+            overflow: { className: 'slot-overflow', css: slotOverflowStyle },
+            summary: { className: 'slot-summary', css: slotSummaryStyle },
+          }}
+          avatarProps={{
+            className: 'consumer-avatar',
+            sx: sxAvatarStyle,
+          }}
+          members={[
+            { id: '1', name: 'Member 1' },
+            { id: '2', name: 'Member 2' },
+            { id: '3', name: 'Member 3' },
+          ]}
+        />
+      )}
+    </ClassNames>
   ),
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Team members' });
     await expect(group).toHaveClass('consumer-group');
-    // sx wins over consumer css
+    // sx wins over an incoming Emotion class.
     await expect(getComputedStyle(group).opacity).toBe(OVERRIDE.groupSxOpacity);
 
     // Slot css wins over the built-in negative overlap

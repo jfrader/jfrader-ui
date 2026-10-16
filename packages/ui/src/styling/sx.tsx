@@ -8,8 +8,12 @@ import type { ReactNode } from 'react';
 import { ClassNames, type ClassNamesContent, type Interpolation, type Theme } from './css';
 
 export interface SxProps {
-  /** Style overrides. Accepts the same values as `css` and applies after it. */
+  /** The public style-override prop. Accepts the same values as `css()` and applies last. */
   sx?: Interpolation<Theme>;
+}
+
+export interface SlotCss {
+  css?: Interpolation<Theme>;
 }
 
 interface ClassNameProps {

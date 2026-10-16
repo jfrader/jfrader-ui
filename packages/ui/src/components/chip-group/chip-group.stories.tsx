@@ -3,7 +3,7 @@ import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within, waitFor } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -348,7 +348,11 @@ function RefFixture(props: ChipGroupProps) {
   const [mounted, setMounted] = useState(true);
   return (
     <StrictMode>
-      {mounted && <ChipGroup {...props} css={slotChipGroupStyle} />}
+      {mounted && (
+        <ClassNames>
+          {({ css: className }) => <ChipGroup {...props} className={className(slotChipGroupStyle)} />}
+        </ClassNames>
+      )}
       <FixtureButton type="button" onClick={() => setMounted(!mounted)}>
         {mounted ? 'Hide filters' : 'Show filters'}
       </FixtureButton>

@@ -443,14 +443,13 @@ export const CustomDelays: Story = {
   },
 };
 
-// This story tests documented css/sx precedence and the profile slot API.
+const StyledProfile = styled(HoverCard.Profile)({ rowGap: '10px' });
 export const Profile: Story = {
   render: () => (
     <ProfileStack>
-      <HoverCard.Profile
+      <StyledProfile
         {...PROFILE}
         className="probe-profile"
-        css={{ rowGap: '10px' }}
         sx={{ rowGap: '14px' }}
         slotProps={{
           avatar: { ...slotHooks('avatar'), className: 'probe-avatar', css: { paddingInlineEnd: '3px' } },
@@ -476,7 +475,6 @@ export const Profile: Story = {
     await expect(part('bio')).toHaveAccessibleDescription('From the review thread');
     await expect(part('stats').tagName).toBe('DL');
     await expect(profile).toHaveClass('probe-profile');
-    // Own styles → consumer css → sx.
     await expect(getComputedStyle(profile).rowGap).toBe('14px');
     await expect(getComputedStyle(part('avatar')).paddingInlineEnd).toBe('3px');
     await expect(getComputedStyle(part('identity')).letterSpacing).toBe('1px');

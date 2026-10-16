@@ -40,8 +40,6 @@ export interface ButtonProps extends Omit<ComponentPropsWithRef<'button'>, 'colo
   loading?: boolean;
   startIcon?: ReactNode;
   endIcon?: ReactNode;
-  /** Consumer style overrides, merged after the component's own styles. */
-  css?: Interpolation<Theme>;
   /**
    * Replaces the native button. Spread all supplied props onto the element and attach the supplied
    * ref. Both refs target that element, even when it is not a button. The public ref type remains
@@ -194,7 +192,6 @@ export function Button({
   children,
   onClick,
   className,
-  css: cssProp,
   sx,
   render,
   ...props
@@ -248,7 +245,7 @@ export function Button({
             'aria-busy': loading ? true : rest['aria-busy'],
             'aria-disabled': isInactive ? true : ariaDisabled,
             onClick: handleClick,
-            css: [baseStyle, renderedStyle, sizeStyles[size], variantStyles[variant][tone], cssProp],
+            css: [baseStyle, renderedStyle, sizeStyles[size], variantStyles[variant][tone]],
             children: content,
           })
         }
@@ -259,7 +256,7 @@ export function Button({
   return (
     <WithSx
       className={className}
-      styles={[baseStyle, sizeStyles[size], variantStyles[variant][tone], cssProp]}
+      styles={[baseStyle, sizeStyles[size], variantStyles[variant][tone]]}
       sx={sx}
     >
       {(className) => (

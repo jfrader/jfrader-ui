@@ -7,7 +7,7 @@ import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { CARD_BACK_PATTERNS, GameCard, type GameCardRootProps, type GameCardSize, type GameCardSuit, type GameCardValue } from './index';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { GameHand } from '../game-hand';
@@ -156,7 +156,7 @@ const meta = {
 - Use \`component\` or \`slots.root\` to replace the root. \`slots.root\` wins when both are supplied.
 - Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`.
 - \`slotProps.root\` overrides root props. ClassName and style merge.
-- Style order is material → slot → consumer css → consumer sx.`,
+- Style order is material → slot css → consumer sx.`,
     },
   },
 } satisfies Meta<typeof GameCard>;
@@ -344,14 +344,16 @@ function CardMaterial(props: GameCardRootProps) {
   return <CustomMaterial {...props} data-custom-material="true" />;
 }
 
-// This story exercises slot css, consumer css/style and sx precedence.
+const strayRootStyle = css({ opacity: 0.7 });
+// This story exercises slot css, registered classes, native styles and sx precedence.
 export const RootCustomization: Story = {
   tags: ['!autodocs'],
   args: { ref: fn(), component: CardMaterial, slots: { root: CardMaterial }, 'data-ui': 'consumer game-card consumer',
     title: 'Host title', className: 'host-class', style: { marginInlineStart: 1, marginBlockStart: 2 },
     slotProps: { root: { 'data-ui': 'slot consumer', title: 'Slot title', className: 'slot-class',
       style: { marginInlineStart: 3 }, css: css({ opacity: 0.8 }) } },
-    css: css({ opacity: 0.7 }), sx: { opacity: 0.6 } },
+    sx: { opacity: 0.6 } },
+  render: (args) => <ClassNames>{({ css: register }) => <GameCard {...args} className={`${args.className} ${register(strayRootStyle)}`} />}</ClassNames>,
   play: async ({ args, canvas }) => {
     const card = canvas.getByRole('img', { name: 'Q of hearts' });
     await expect(card).toHaveAttribute('data-ui', 'game-card consumer slot');

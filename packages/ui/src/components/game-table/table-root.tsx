@@ -5,10 +5,9 @@ import type { Interpolation, Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 
 export interface GameTableRootProps extends ComponentPropsWithRef<'div'> {
-  css?: Interpolation<Theme>;
   [attribute: `data-${string}`]: string | number | boolean | undefined;
 }
-export type GameTableRootSlotProps = Partial<GameTableRootProps>;
+export type GameTableRootSlotProps = Partial<GameTableRootProps> & { css?: Interpolation<Theme> };
 export interface GameTableSlots {
   root?: ComponentType<GameTableRootProps>;
 }
@@ -25,7 +24,7 @@ export interface GameTableRootCustomization {
 }
 
 export function TableRoot({ marker, structure, attributes, component, slots, slotProps,
-  css: consumerCss, sx, className, style, children, ...host
+  sx, className, style, children, ...host
 }: GameTableRootProps & GameTableRootCustomization & SxProps & {
   marker: string; structure: Interpolation<Theme>; attributes?: GameTableRootProps;
 }) {
@@ -34,7 +33,7 @@ export function TableRoot({ marker, structure, attributes, component, slots, slo
   const identity = [...new Set([marker, host['data-ui'], slotRest['data-ui']]
     .flatMap((value) => typeof value === 'string' ? value.split(/\s+/).filter(Boolean) : []))].join(' ');
   return <WithSx styles={[structure, slotCss]} className={slotClassName}>
-    {(slotClasses) => <WithSx styles={consumerCss} className={className} sx={sx}>
+    {(slotClasses) => <WithSx styles={[]} className={className} sx={sx}>
       {(consumerClasses) => <WithSx styles={[]} className={[slotClasses, consumerClasses].filter(Boolean).join(' ')}>
         {(classes) => <Root {...host} {...slotRest} {...attributes} data-ui={identity} className={classes}
           style={{ ...style, ...slotStyle, ...attributes?.style }}>{children}</Root>}

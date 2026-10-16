@@ -526,8 +526,8 @@ export const NamedRegion: Story = {
   },
 };
 
-// This story tests the documented css/sx and slot styling precedence.
 const consumerRootStyle = css({ paddingBlock: vars.space[2] });
+const StyledEmptyState = styled(EmptyState)(consumerRootStyle);
 const sxRootStyle = css({ paddingBlock: vars.space[3] });
 const slotTitleStyle = css({ textTransform: 'uppercase' });
 const slotDescriptionStyle = css({ fontStyle: 'italic' });
@@ -539,7 +539,6 @@ export const ConsumerStylePrecedence: Story = {
         code: `<EmptyState
   title="Consumer styles"
   className="consumer-empty"
-  css={css({ paddingBlock: vars.space[2] })}
   sx={css({ paddingBlock: vars.space[3] })}
   slotProps={{
     title: { className: 'slot-title', css: css({ textTransform: 'uppercase' }) },
@@ -556,13 +555,13 @@ export const ConsumerStylePrecedence: Story = {
         {...args}
         title="Consumer styles"
         className="consumer-empty"
-        css={consumerRootStyle}
+        sx={consumerRootStyle}
         slotProps={{
           title: { className: 'slot-title', css: slotTitleStyle },
           description: { className: 'slot-description', css: slotDescriptionStyle },
         }}
       />
-      <EmptyState {...args} title="Sx styles" css={consumerRootStyle} sx={sxRootStyle} />
+      <StyledEmptyState {...args} title="Sx styles" sx={sxRootStyle} />
     </>
   ),
   play: async ({ canvasElement }) => {

@@ -103,7 +103,6 @@ export interface EditableDetailsSlotProps {
 }
 
 export interface EditableDetailsBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
-  css?: Interpolation<Theme>;
   messages?: Partial<EditableDetailsMessages>;
   /** Replace the root. Exactly sugar for `slots.root`; declare the component outside render. */
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
@@ -337,7 +336,6 @@ function EditableDetailsRoot(props: EditableDetailsProps) {
     className,
     style,
     sx,
-    css: consumerCss,
     'data-ui': consumerDataUi,
     sections,
     children,
@@ -439,7 +437,7 @@ function EditableDetailsRoot(props: EditableDetailsProps) {
 
   return (
     <MessagesContext.Provider value={text}>
-      <WithSx className={mergedClassName} styles={[rootStyle, slotCss, slotSx, consumerCss]} sx={sx}>
+      <WithSx className={mergedClassName} styles={[rootStyle, slotCss, slotSx]} sx={sx}>
         {(classes) => (
           <RootPart
             {...merged}

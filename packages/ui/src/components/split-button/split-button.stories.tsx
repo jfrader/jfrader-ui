@@ -2,7 +2,7 @@ import { Component, useState, type ComponentPropsWithRef, type MouseEvent, type 
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button, type ButtonSize, type ButtonTone, type ButtonVariant } from '../button';
 import { ThemeRoot } from '../theme-root';
@@ -49,7 +49,7 @@ const StackFrame = styled.div({
   gap: vars.space[3],
 });
 
-// These values exercise the documented css/sx and slot styling APIs.
+// These values exercise registered classes and sx precedence.
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ marginInlineStart: vars.space[2] });
 
@@ -1477,18 +1477,18 @@ export const SxPrecedence: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true, sx: consumerSx, className: 'consumer-root' },
   render: ({ onAction, onCsv, onJson: _onJson, onDelete: _onDelete, ...args }) => (
-    <SplitButton {...args} css={consumerCss}>
-      <SplitButton.Action className="consumer-action" css={consumerCss} sx={consumerSx} onClick={onAction}>
+    <ClassNames>{({ css: register }) => <SplitButton {...args} className={`consumer-root ${register(consumerCss)}`}>
+      <SplitButton.Action className={`consumer-action ${register(consumerCss)}`} sx={consumerSx} onClick={onAction}>
         {ACTION}
       </SplitButton.Action>
-      <SplitButton.Trigger className="consumer-trigger" css={consumerCss} sx={consumerSx} aria-label={TRIGGER} />
-      <SplitButton.Content className="consumer-content" css={consumerCss} sx={consumerSx}>
-        <SplitButton.Item className="consumer-item" css={consumerCss} sx={consumerSx} onSelect={onCsv}>
+      <SplitButton.Trigger className={`consumer-trigger ${register(consumerCss)}`} sx={consumerSx} aria-label={TRIGGER} />
+      <SplitButton.Content className={`consumer-content ${register(consumerCss)}`} sx={consumerSx}>
+        <SplitButton.Item className={`consumer-item ${register(consumerCss)}`} sx={consumerSx} onSelect={onCsv}>
           CSV
         </SplitButton.Item>
-        <SplitButton.Separator className="consumer-separator" css={consumerCss} sx={consumerSx} />
+        <SplitButton.Separator className={`consumer-separator ${register(consumerCss)}`} sx={consumerSx} />
       </SplitButton.Content>
-    </SplitButton>
+    </SplitButton>}</ClassNames>
   ),
   play: async ({ canvasElement }) => {
     const menu = await bodyOf(canvasElement).findByRole('menu');
@@ -1502,7 +1502,7 @@ export const SxPrecedence: Story = {
     ];
     for (const [className, element] of parts) {
       await expect(element).toHaveClass(className);
-      // own → css → sx: sx wins the shared property, css keeps the rest.
+      // Registered classes (including stray Emotion css) land before sx.
       await expect(getComputedStyle(element).marginInlineStart).toBe('8px');
       await expect(getComputedStyle(element).letterSpacing).not.toBe('normal');
     }

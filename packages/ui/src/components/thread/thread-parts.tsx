@@ -30,7 +30,7 @@ import {
 import { autoUpdate, flip, offset, shift, useFloating, useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
 import {
   listboxItemStateStyle,
   listboxItemStyle,
@@ -54,10 +54,10 @@ export interface ThreadPartProps {
 }
 
 /** Textarea props a consumer may add; the thread owns value, change and mention wiring. */
-export type ThreadTextareaProps = Omit<TextareaProps, 'value' | 'defaultValue' | 'onValueChange' | 'label' | 'children'>;
+export type ThreadTextareaProps = Omit<TextareaProps, 'value' | 'defaultValue' | 'onValueChange' | 'label' | 'children'> & ThreadPartProps;
 
 /** Button props a consumer may add to a submit button; the thread owns its label and state. */
-export type ThreadButtonProps = Omit<ButtonProps, 'children' | 'loading' | 'type' | 'render'>;
+export type ThreadButtonProps = Omit<ButtonProps, 'children' | 'loading' | 'type' | 'render'> & ThreadPartProps;
 
 const MENTION_TRIGGER = '@';
 const MAX_SUGGESTIONS = 8;
@@ -146,7 +146,7 @@ export interface ThreadMessageViewProps {
   /** Body, editor and footer rows. */
   children: ReactNode;
   avatar?: ReactNode;
-  articleProps?: ComponentPropsWithRef<'article'> & ThreadPartProps & SxProps & {
+  articleProps?: ComponentPropsWithRef<'article'> & SlotCss & SxProps & {
     'data-ui'?: string;
     'data-own'?: boolean;
     'data-size'?: ThreadSize;
@@ -220,11 +220,11 @@ export function ThreadMessageView({
   const timeId = partId(baseId, 'time', messageId);
   const fullId = partId(baseId, 'when', messageId);
 
-  const mergedArticle = { ...articleProps, ...slots?.article };
+  const { css: articleSlotCss, ...articleSlotProps } = slots?.article ?? {};
+  const mergedArticle = { ...articleProps, ...articleSlotProps };
   const {
     ref: articleRef,
     className: articleClassName,
-    css: articleCss,
     sx,
     'aria-label': customAriaLabel,
     'aria-labelledby': customAriaLabelledby,
@@ -240,7 +240,7 @@ export function ThreadMessageView({
   const mergedDescribedBy = [customAriaDescribedby, defaultDescribedBy].filter(Boolean).join(' ') || undefined;
 
   return (
-    <WithSx className={articleClassName} styles={[articleStyle, articleCss]} sx={sx}>
+    <WithSx className={articleClassName} styles={[articleStyle, articleSlotCss]} sx={sx}>
       {(rootClass) => (
         <Article
           {...restArticleProps}

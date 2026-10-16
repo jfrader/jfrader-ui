@@ -22,7 +22,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
@@ -91,13 +91,12 @@ export interface CodeBlockProps extends Omit<ComponentPropsWithRef<'section'>, '
   getExpandLabel?: (count: number, formatted: string) => string;
   collapseLabel?: string;
   copyable?: boolean;
-  copyButtonProps?: Partial<Omit<CopyButtonProps, 'text' | 'ref'>>;
+  copyButtonProps?: Partial<Omit<CopyButtonProps, 'text' | 'ref'>> & SlotCss;
   preRef?: Ref<HTMLPreElement>;
   /** Syntax highlighting loader, read when `code` or `language` changes. */
   highlight?: CodeHighlightLoader;
   slotProps?: CodeBlockSlotProps;
   slots?: CodeBlockSlots;
-  css?: Interpolation<Theme>;
 }
 
 export interface CodeBlockSlots {

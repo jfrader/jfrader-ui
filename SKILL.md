@@ -91,13 +91,13 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - **Module-level `css()` constants.** Never build style objects per render. Compose a public part's
   root through `WithSx` (`src/styling/sx.tsx`):
   `<WithSx className={className} styles={[base, variants[variant], slotProps?.x?.css]} sx={sx}>` and
-  put the `className` it hands back on the element. Order: own styles → `slotProps` → consumer `css`
-  (Emotion passes it in as a `className` class) → consumer `sx`. Internal elements keep a plain
-  `css={...}`.
-- **`sx` on every public visual part root** (`SxProps`), threaded through `WithSx`. Context/provider
-  components render no DOM and take no `sx`. Never add `sx` to its `css` array: there it would lose
-  to the consumer's `css`. Parts styled only
-  through `slotProps` do not get `sx`.
+  put the `className` it hands back on the element. Order: own styles → `slotProps` css → consumer
+  `sx`. Internal elements keep a plain `css={...}`.
+- **`sx` is the only public styling prop** (`SxProps`), on every public visual part root, threaded
+  through `WithSx`. The Emotion `css` prop is internal-only: part props types never declare it and
+  components never destructure it; a stray consumer `css` folds into `className` and still loses to
+  `sx`. Context/provider components render no DOM and take no `sx`. Parts styled only through
+  `slotProps` do not get `sx`.
 - **The styling seam**: import `css`/`keyframes`/types only from `src/styling/css.ts`. Never from
   `@emotion/react` directly, never `styled()` inside the library. `styled`, `ThemeProvider`,
   `useTheme`, `theme` and `createTheme` are the app-facing styling API; library internals stay on `css()` constants.

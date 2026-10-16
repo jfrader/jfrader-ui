@@ -42,7 +42,7 @@ import {
 } from 'react';
 import { animate, type AnimationPlaybackControls } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { modalShellReset, type SurfaceAppearance } from '../../styling/surface';
@@ -170,7 +170,6 @@ export interface DrawerPanelProps extends SurfacePartProps, SxProps, SurfaceRoot
    * `default` inherits the enclosing appearance, including contrast.
    */
   appearance?: SurfaceAppearance;
-  css?: Interpolation<Theme>;
 }
 export interface DrawerHeaderProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface DrawerBodyProps extends ComponentPropsWithRef<'div'>, SxProps {}

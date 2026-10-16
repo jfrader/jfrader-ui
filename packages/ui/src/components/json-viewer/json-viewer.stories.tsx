@@ -677,10 +677,10 @@ export const InsideForm: Story = {
     await expect(submitSpy).not.toHaveBeenCalled();
   },
 };
-// These css values test documented css/sx precedence and slot styling.
 const slotRow = css({ minBlockSize: '48px' });
 const slotValue = css({ fontWeight: 600 });
 const consumer = css({ borderRadius: '20px' });
+const StyledJsonViewer = styled(JsonViewer)(consumer);
 const override = css({ borderRadius: '24px' });
 function ReplacementStatus(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-slot="json-viewer-status" />;
@@ -688,7 +688,7 @@ function ReplacementStatus(props: ComponentPropsWithRef<'div'>) {
 
 export const SlotStyles: Story = {
   args: { slotProps: { row: { css: slotRow }, value: { css: slotValue } }, sx: override },
-  render: (args) => <JsonViewer {...args} css={consumer} slots={{ status: ReplacementStatus }} />,
+  render: (args) => <StyledJsonViewer {...args} slots={{ status: ReplacementStatus }} />,
   play: async ({ canvasElement }) => {
     const status = canvasElement.querySelector('[data-slot="json-viewer-status"]');
     await expect(status).toBeInTheDocument();

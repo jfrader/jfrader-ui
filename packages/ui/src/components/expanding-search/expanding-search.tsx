@@ -16,7 +16,7 @@ import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
-import type { SxProps } from '../../styling/sx';
+import type { SlotCss, SxProps } from '../../styling/sx';
 import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -57,7 +57,7 @@ export type ExpandingSearchSlotProps = FieldParts<ExpandingSearchAnatomy> &
     /** Search field displayed when expanded. Default: `SearchField`. */
     field?: Omit<SearchFieldProps, 'ref' | 'value' | 'defaultValue' | 'onValueChange'>;
     /** Collapsed button that triggers expansion. Default: `Button`. */
-    trigger?: ButtonProps;
+    trigger?: ButtonProps & SlotCss;
   };
 
 export type ExpandingSearchInputProps = Omit<

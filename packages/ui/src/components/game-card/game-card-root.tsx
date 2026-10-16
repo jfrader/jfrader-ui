@@ -5,7 +5,6 @@ import type { Interpolation, Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 
 export interface GameCardRootProps extends ComponentPropsWithRef<'div'> {
-  css?: Interpolation<Theme>;
   [attribute: `data-${string}`]: string | number | boolean | undefined;
 }
 
@@ -27,12 +26,11 @@ interface CardRootProps extends GameCardRootProps, GameCardRootCustomization, Sx
   material?: Interpolation<Theme>;
   attributes?: GameCardRootProps;
   rootSlot?: GameCardRootSlotProps;
-  css?: Interpolation<Theme>;
 }
 
 export function CardRoot({
   marker, structure, material, attributes, component, slots, rootSlot,
-  css: consumerCss, sx, className, style, children, ...host
+  sx, className, style, children, ...host
 }: CardRootProps) {
   const Root = slots?.root ?? component ?? 'div';
   const { css: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = rootSlot ?? {};
@@ -42,7 +40,7 @@ export function CardRoot({
   return (
     <WithSx styles={[Root === 'div' && material, structure, slotCss]} className={slotClassName}>
       {(slotClasses) => (
-        <WithSx styles={consumerCss} className={className} sx={sx}>
+        <WithSx styles={[]} className={className} sx={sx}>
           {(consumerClasses) => (
             <WithSx styles={[]} className={[slotClasses, consumerClasses].filter(Boolean).join(' ')}>
               {(classes) => (
