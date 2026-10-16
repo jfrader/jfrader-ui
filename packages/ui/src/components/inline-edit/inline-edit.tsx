@@ -34,7 +34,7 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { inputControlStyle } from '../../styling/input-control';
@@ -71,7 +71,6 @@ export interface InlineEditMessages {
 
 export interface InlineEditPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
 }
 
 export type InlineEditSlotProps = Omit<FieldParts<InlineEditAnatomy>, 'control'> & {

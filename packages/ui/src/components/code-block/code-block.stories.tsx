@@ -2,7 +2,7 @@ import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -462,10 +462,10 @@ function SlotPre(props: ComponentPropsWithRef<'pre'>) {
 export const ConsumerStylePrecedence: Story = {
   args: {
     slots: { pre: SlotPre },
-    css: consumerCss,
     sx: consumerSx,
     slotProps: { label: { css: slotStyle, className: 'consumer-label' }, pre: { css: slotStyle } },
   },
+  render: (args) => <ClassNames>{({ css: register }) => <CodeBlock {...args} className={register(consumerCss)} />}</ClassNames>,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('section')!;
     // Layout lengths are not DPR-snapped: compare numerically, derived from the token scale (space[2] = 8).

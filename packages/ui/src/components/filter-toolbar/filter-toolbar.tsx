@@ -192,7 +192,6 @@ export interface FilterToolbarSlotProps {
 
 export interface FilterToolbarBaseProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
-  css?: Interpolation<Theme>;
   value?: readonly FilterValue[];
   defaultValue?: readonly FilterValue[];
   onValueChange?: (filters: readonly FilterValue[]) => void;
@@ -406,7 +405,6 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
     messages: messagesProp,
     className,
     style,
-    css: consumerCss,
     sx: consumerSx,
     component,
     'aria-label': ariaLabel,
@@ -653,7 +651,7 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
 
   return (
     <Context.Provider value={context}>
-      <WithSx className={tokens(slotClassName, className)} styles={[rootStyle, slotCss, slotSx, consumerCss]} sx={consumerSx}>
+      <WithSx className={tokens(slotClassName, className)} styles={[rootStyle, slotCss, slotSx]} sx={consumerSx}>
         {(className) => (
           <RootPart
             {...host}
@@ -748,7 +746,7 @@ function ActiveFilters({ empty, slotProps, slots, className, sx, ...rest }: Filt
 
 ActiveFilters.displayName = 'FilterToolbar.ActiveFilters';
 
-function Clear({ children, onClick, disabled: disabledProp = false, css: cssProp, ...rest }: FilterToolbarClearProps) {
+function Clear({ children, onClick, disabled: disabledProp = false, ...rest }: FilterToolbarClearProps) {
   const { value, disabled: rootDisabled, messages, clear } = useToolbar('Clear');
   if (!value.length) return null;
   const disabled = rootDisabled || disabledProp;
@@ -759,7 +757,7 @@ function Clear({ children, onClick, disabled: disabledProp = false, css: cssProp
       {...rest}
       disabled={disabled}
       data-ui="filter-toolbar-clear"
-      css={[clearStyle, cssProp]}
+      css={clearStyle}
       onClick={(event) => {
         onClick?.(event);
         if (!event.defaultPrevented) clear(event.currentTarget);

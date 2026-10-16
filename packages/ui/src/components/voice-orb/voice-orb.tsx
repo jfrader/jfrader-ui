@@ -18,7 +18,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { MotionConfig, motion, useReducedMotion, useSpring, type MotionValue } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -82,9 +82,9 @@ export interface VoiceOrbControlsProps extends ComponentPropsWithRef<'div'>, SxP
     timer?: ComponentType<NativeSlot<'span'>>;
   };
   slotProps?: {
-    start?: Omit<ButtonProps, 'sx'>;
-    mute?: Omit<ButtonProps, 'sx'>;
-    end?: Omit<ButtonProps, 'sx'>;
+    start?: Omit<ButtonProps, 'sx'> & SlotCss;
+    mute?: Omit<ButtonProps, 'sx'> & SlotCss;
+    end?: Omit<ButtonProps, 'sx'> & SlotCss;
     timer?: NativeSlot<'span'>;
   };
 }

@@ -19,7 +19,6 @@ const tileSides: Record<PatternSize, number> = {
   md: Number.parseFloat(base.space[4]),
   lg: Number.parseFloat(base.space[6]),
 };
-// The SSR probe retains `css` to leave its hydration play function unchanged.
 const sampleStyle = css({ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg });
 const Sample = styled(Pattern)({ inlineSize: vars.size.gameCardLg, blockSize: vars.size.gameCardLg });
 const SmallSample = styled(Sample)({ inlineSize: vars.size.gameCardSm, blockSize: vars.size.gameCardSm });
@@ -389,13 +388,13 @@ export const HydrationRoots: Story = {
     try {
       for (const identifierPrefix of ['pattern-first-', 'pattern-second-']) {
         const host = canvasElement.ownerDocument.createElement('div');
-        const element = <Pattern ref={fn()} css={sampleStyle} />;
+        const element = <Pattern ref={fn()} sx={sampleStyle} />;
         host.innerHTML = renderToString(element, { identifierPrefix });
         canvasElement.append(host);
         hosts.push(host);
         const before = host.querySelector('pattern')?.id;
         const attached = fn();
-        roots.push(hydrateRoot(host, <Pattern ref={attached} css={sampleStyle} />, { identifierPrefix, onRecoverableError: errors }));
+        roots.push(hydrateRoot(host, <Pattern ref={attached} sx={sampleStyle} />, { identifierPrefix, onRecoverableError: errors }));
         await waitFor(() => expect(attached).toHaveBeenCalled());
         await expect(host.querySelector('pattern')?.id).toBe(before);
       }

@@ -1,7 +1,7 @@
 import { StrictMode, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { TreeView, type TreeNode, type TreeViewProps } from './index';
@@ -458,7 +458,8 @@ export const FalsyEmpty: Story = {
     await expect(canvasElement).toHaveTextContent('0');
   },
 };
-// This story tests the documented css/slot API and native style merging.
+// Registered classes land before consumer sx; slot css still reaches interior parts.
+const strayRootStyle = css({ padding: '12px' });
 export const ConsumerStylePrecedence: Story = {
   args: {
     sx: { padding: '16px' },
@@ -467,7 +468,7 @@ export const ConsumerStylePrecedence: Story = {
       label: { css: css({ fontWeight: 700 }) },
     },
   },
-  render: (args) => <TreeView {...args} css={css({ padding: '12px' })} />,
+  render: (args) => <ClassNames>{({ css: register }) => <TreeView {...args} className={register(strayRootStyle)} />}</ClassNames>,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui="tree-view"]')!;
     await expect(Math.abs(parseFloat(getComputedStyle(root).paddingTop) - 16)).toBeLessThan(1.1);

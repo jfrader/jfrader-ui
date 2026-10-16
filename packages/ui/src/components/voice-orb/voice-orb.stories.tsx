@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { motionValue } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
+import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button, type ButtonProps } from '../button';
 import { VoiceOrb, type VoiceOrbState } from './index';
@@ -634,10 +635,11 @@ export const MediaOwnership: Story = {
     await expect(ownershipSpies.audio).toHaveBeenCalledTimes(0);
   },
 };
+const strayRootStyle = css({ opacity: 0.6 });
 export const RefAndStyling: Story = {
   args: { ref: fn() },
   render: (args) => (
-    <VoiceOrb {...args} css={{ opacity: 0.6 }} sx={{ opacity: 0.8 }}>
+    <ClassNames>{({ css: register }) => <VoiceOrb {...args} className={register(strayRootStyle)} sx={{ opacity: 0.8 }}>
       <VoiceOrb.Visual sx={{ opacity: 0.7 }} slotProps={{ canvas: { css: { opacity: 0.5 } } }} />
       <VoiceOrb.Status sx={{ fontWeight: vars.fontWeight.semibold }} />
       <VoiceOrb.Transcript text="Hello" sx={{ opacity: 0.9 }} />
@@ -645,7 +647,7 @@ export const RefAndStyling: Story = {
         sx={{ opacity: 0.75, gap: vars.space[6] }}
         slotProps={{ start: { css: { paddingInline: vars.space[8] } } }}
       />
-    </VoiceOrb>
+    </VoiceOrb>}</ClassNames>
   ),
   play: async ({ canvasElement, args }) => {
     const root = canvasElement.querySelector('[data-ui="voice-orb"]')!;

@@ -384,8 +384,8 @@ export const ReducedMotion: Story = {
   },
 };
 
+const StyledExpandingSearch = styled(ExpandingSearch)({ borderRadius: '9px' });
 /** Replace the wrapper and generated control; pass native props through slotProps. */
-// This story tests native style merging and css/sx precedence through the slot API.
 export const SlotCustomization: Story = {
   tags: ['!autodocs'],
   args: {
@@ -411,11 +411,11 @@ export const SlotCustomization: Story = {
       control: { ref: fn(), title: 'generated part' },
     },
   },
-  render: (args) => <ExpandingSearch {...args} css={{ borderRadius: '9px' }} />,
+  render: (args) => <StyledExpandingSearch {...args} />,
   parameters: {
     docs: {
       source: {
-        code: 'function MyRoot(props) { return <div {...props} />; }\nfunction MyInput(props) { return <input {...props} />; }\n\n<ExpandingSearch label="Name" triggerLabel="Search members" defaultOpen\n  component={MyRoot}\n  slots={{ control: MyInput }}\n  slotProps={{ root: { className: \'custom-field\' }, control: { title: \'Name\' } }}\n/>',
+        code: 'function MyRoot(props) { return <div {...props} />; }\nfunction MyInput(props) { return <input {...props} />; }\n\n<ExpandingSearch label="Name" triggerLabel="Search members" defaultOpen\n  component={MyRoot}\n  slots={{ control: MyInput }}\n  slotProps={{ root: { css: { borderRadius: \'8px\' } }, control: { title: \'Name\' } }}\n  sx={{ borderRadius: \'11px\' }}\n/>',
       },
     },
   },

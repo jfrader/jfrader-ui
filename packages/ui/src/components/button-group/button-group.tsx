@@ -75,9 +75,9 @@ export interface ButtonGroupSlotProps {
       [attribute: `data-${string}`]: unknown;
     };
   /** Action button inside the group. Default: `Button`. */
-  item?: Partial<Omit<ButtonGroupItemProps, 'children' | 'label' | 'onClick' | 'disabled'>>;
+  item?: Partial<Omit<ButtonGroupItemProps, 'children' | 'label' | 'onClick' | 'disabled'>> & { css?: Interpolation<Theme> };
   /** Navigation link button inside the group. */
-  link?: Partial<Omit<ButtonGroupLinkProps, 'children' | 'label' | 'href' | 'onClick' | 'disabled'>>;
+  link?: Partial<Omit<ButtonGroupLinkProps, 'children' | 'label' | 'href' | 'onClick' | 'disabled'>> & { css?: Interpolation<Theme> };
 }
 
 export interface ButtonGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'role' | 'children'>, SxProps {
@@ -121,7 +121,6 @@ export interface ButtonGroupItemProps extends Omit<ButtonProps, 'render'> {
 }
 export interface ButtonGroupLinkProps extends Omit<ComponentPropsWithRef<'a'>, 'color'>, SxProps {
   href: string;
-  css?: Interpolation<Theme>;
   disabled?: boolean;
   variant?: ButtonVariant;
   tone?: ButtonTone;
@@ -132,21 +131,14 @@ export interface ButtonGroupLinkProps extends Omit<ComponentPropsWithRef<'a'>, '
   reserveLabels?: readonly string[];
 }
 export interface ButtonGroupLabelProps
-  extends Omit<ComponentPropsWithRef<'span'>, 'role' | 'tabIndex'>, SxProps {
-  css?: Interpolation<Theme>;
-}
+  extends Omit<ComponentPropsWithRef<'span'>, 'role' | 'tabIndex'>, SxProps {}
 export type ButtonGroupTriggerProps = Omit<ButtonGroupItemProps, 'loading' | 'reserveLabels' | 'iconOnly'> &
   ({ 'aria-label': string } | { 'aria-labelledby': string });
-export interface ButtonGroupContentProps extends Omit<MenuContentProps, 'role'> {
-  css?: Interpolation<Theme>;
-}
+export interface ButtonGroupContentProps extends Omit<MenuContentProps, 'role'> {}
 export interface ButtonGroupMenuItemProps extends MenuItemProps {
   tone?: MenuItemTone;
-  css?: Interpolation<Theme>;
 }
-export interface ButtonGroupSeparatorProps extends MenuSeparatorProps {
-  css?: Interpolation<Theme>;
-}
+export interface ButtonGroupSeparatorProps extends MenuSeparatorProps {}
 
 interface GroupContext {
   variant: ButtonVariant;
@@ -581,7 +573,6 @@ function ButtonGroupRoot({
                         key: _k,
                         className: itemClassName,
                         style: itemStyleProp,
-                        css: itemCssProp,
                         sx: itemSxProp,
                         ...itemRest
                       } = item;
@@ -597,8 +588,8 @@ function ButtonGroupRoot({
                           label={typeof itemLabel === 'string' ? itemLabel : undefined}
                           className={mergedLinkClassName}
                           style={mergedLinkStyle}
-                           css={[linkSlotCss, linkSlotSx, itemCssProp]}
-                           sx={itemSxProp}
+                          css={[linkSlotCss, linkSlotSx]}
+                          sx={itemSxProp}
                         >
                           {itemLabel}
                         </Link>
@@ -617,7 +608,6 @@ function ButtonGroupRoot({
                       key: _k,
                       className: itemClassName,
                       style: itemStyleProp,
-                      css: itemCssProp,
                       sx: itemSxProp,
                       ...itemRest
                     } = item;
@@ -632,8 +622,8 @@ function ButtonGroupRoot({
                         label={typeof itemLabel === 'string' ? itemLabel : undefined}
                         className={mergedItemClassName}
                         style={mergedItemStyle}
-                         css={[itemSlotCss, itemSlotSx, itemCssProp]}
-                         sx={itemSxProp}
+                        css={[itemSlotCss, itemSlotSx]}
+                        sx={itemSxProp}
                       >
                         {itemLabel}
                       </Item>
@@ -736,7 +726,6 @@ function ButtonGroupItem({
   children,
   startIcon,
   endIcon,
-  css: cssProp,
   sx,
   ...rest
 }: ButtonGroupItemProps) {
@@ -769,7 +758,7 @@ function ButtonGroupItem({
               rest['aria-label'] ?? (collapsed && rest['aria-labelledby'] === undefined ? name : undefined)
             }
             data-ui="button-group-item"
-            css={[segmentStyle, sizeStyles[resolvedSize], iconOnly && iconOnlyStyle, cssProp]}
+            css={[segmentStyle, sizeStyles[resolvedSize], iconOnly && iconOnlyStyle]}
             sx={sx}
             render={(props) => (
               <TooltipButton
@@ -834,7 +823,6 @@ function ButtonGroupLink({
   reserveLabels,
   children,
   className,
-  css: cssProp,
   sx,
   onClick,
   onAuxClick,
@@ -861,7 +849,7 @@ function ButtonGroupLink({
             tone={tone ?? group.tone}
             size={resolvedSize}
             startIcon={isRenderable(startIcon) && startIcon !== '' ? startIcon : undefined}
-            css={[segmentStyle, sizeStyles[resolvedSize], iconOnly && iconOnlyStyle, cssProp]}
+            css={[segmentStyle, sizeStyles[resolvedSize], iconOnly && iconOnlyStyle]}
             className={className}
             sx={sx}
             data-ui="button-group-link"
@@ -954,7 +942,6 @@ function ButtonGroupTrigger({
   children = caret,
   startIcon,
   endIcon,
-  css: cssProp,
   sx,
   ...rest
 }: ButtonGroupTriggerProps) {
@@ -979,7 +966,7 @@ function ButtonGroupTrigger({
       startIcon={isRenderable(startIcon) && startIcon !== '' ? startIcon : undefined}
       endIcon={isRenderable(endIcon) && endIcon !== '' ? endIcon : undefined}
       data-ui="button-group-trigger"
-      css={[segmentStyle, sizeStyles[resolvedSize], cssProp]}
+      css={[segmentStyle, sizeStyles[resolvedSize]]}
       sx={sx}
       render={({ ref: renderRef, 'data-ui': marker, ...props }) => (
         <MenuTriggerPart

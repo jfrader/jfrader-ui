@@ -21,7 +21,7 @@ declare const process: { env: { NODE_ENV?: string } };
 
 const Frame = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '32rem', maxInlineSize: `calc(100vw - ${vars.space[4]} * 2)` });
 const PaddedSurface = styled(Surface)({ padding: vars.space[4] });
-// These values exercise the documented css/sx and slot styling APIs.
+// These values exercise sx, registered classes and slot styling.
 const padding = css({ padding: vars.space[4] });
 const independentMaterial = css({
   backgroundColor: vars.color.bg, color: vars.color.textMuted, fontFamily: vars.font.sans,
@@ -72,7 +72,7 @@ A replacement must render one div and forward ref, className, style, children, n
 | --- | --- | --- |
 | root | component or slots.root: ComponentType<SurfacePartProps> | slotProps.root: div props and css; no sx |
 
-Extra div props flow into root. slotProps.root wins collisions, including children and event handlers; displaced handlers are not also called. className combines and style shallow-merges, slot values last. Styling order is adapter material → host structure → slot css/classes → consumer css/classes → sx. Inline style retains normal CSS precedence.
+Extra div props flow into root. slotProps.root wins collisions, including children and event handlers; displaced handlers are not also called. className combines and style shallow-merges, slot values last. Styling order is adapter material → host structure → slot css/classes → consumer classes → sx. Inline style retains normal CSS precedence.
 
 Composed roots keep both data-ui tokens. Select them with [data-ui~="surface"], not an exact-value selector. Surface uses data-surface-variant and preserves a host's data-variant.`,
     },
@@ -194,22 +194,22 @@ export const ScopedTokens: Story = {
 
 // This story tests the documented css/slot API and native style merging.
 export const StylingPrecedence: Story = {
-  parameters: { docs: { source: { code: '<Surface slotProps={{ root: { css: slotStyle } }} css={consumerStyle} sx={finalStyle}>Panel contents</Surface>' } } },
+  parameters: { docs: { source: { code: '<Surface slotProps={{ root: { css: slotStyle } }} sx={finalStyle}>Panel contents</Surface>' } } },
   render: (args) => <>{[undefined, Paper, Card].map((component, index) => <div key={index}>
     <Surface {...args} component={component} data-testid={`slot-${index}`} slotProps={{ root: { css: slotStyle } }} />
-    <Surface {...args} component={component} data-testid={`css-${index}`} slotProps={{ root: { css: slotStyle } }} css={consumerStyle} />
-    {createElement(Surface, { ...args, component, 'data-testid': `explicit-${index}`, slotProps: { root: { css: slotStyle } }, css: consumerStyle })}
-    <Surface {...args} component={component} data-testid={`sx-${index}`} slotProps={{ root: { css: slotStyle } }} css={consumerStyle} sx={finalStyle} />
+    <Surface {...args} component={component} data-testid={`consumer-${index}`} slotProps={{ root: { css: slotStyle } }} sx={consumerStyle} />
+    {createElement(Surface, { ...args, component, 'data-testid': `explicit-${index}`, slotProps: { root: { css: slotStyle } }, sx: consumerStyle })}
+    <Surface {...args} component={component} data-testid={`sx-${index}`} slotProps={{ root: { css: slotStyle } }} sx={[consumerStyle, finalStyle]} />
   </div>)}</>,
   play: async ({ canvas }) => {
     for (const index of [0, 1, 2]) {
       await expect(getComputedStyle(canvas.getByTestId(`slot-${index}`)).fontStyle).toBe('italic');
-      await expect(getComputedStyle(canvas.getByTestId(`css-${index}`)).fontStyle).toBe('normal');
+      await expect(getComputedStyle(canvas.getByTestId(`consumer-${index}`)).fontStyle).toBe('normal');
       await expect(getComputedStyle(canvas.getByTestId(`explicit-${index}`)).fontStyle).toBe('normal');
       await expect(getComputedStyle(canvas.getByTestId(`sx-${index}`)).fontStyle).toBe('italic');
-      await expect(getComputedStyle(canvas.getByTestId(`explicit-${index}`)).borderRadius).toBe(getComputedStyle(canvas.getByTestId(`css-${index}`)).borderRadius);
-      await expect(getComputedStyle(canvas.getByTestId(`slot-${index}`)).borderRadius).not.toBe(getComputedStyle(canvas.getByTestId(`css-${index}`)).borderRadius);
-      await expect(getComputedStyle(canvas.getByTestId(`sx-${index}`)).borderRadius).not.toBe(getComputedStyle(canvas.getByTestId(`css-${index}`)).borderRadius);
+      await expect(getComputedStyle(canvas.getByTestId(`explicit-${index}`)).borderRadius).toBe(getComputedStyle(canvas.getByTestId(`consumer-${index}`)).borderRadius);
+      await expect(getComputedStyle(canvas.getByTestId(`slot-${index}`)).borderRadius).not.toBe(getComputedStyle(canvas.getByTestId(`consumer-${index}`)).borderRadius);
+      await expect(getComputedStyle(canvas.getByTestId(`sx-${index}`)).borderRadius).not.toBe(getComputedStyle(canvas.getByTestId(`consumer-${index}`)).borderRadius);
     }
   },
 };
@@ -220,7 +220,7 @@ export const RegisteredClassPrecedence: Story = {
     <Surface {...args} component={component} data-testid={`class-slot-${index}`}
       slotProps={{ root: { css: consumerStyle, className: register(slotStyle) } }} />
     {createElement(Surface, { ...args, component, 'data-testid': `class-consumer-${index}`,
-      slotProps: { root: { css: consumerStyle, className: register(slotStyle) } }, css: consumerStyle })}
+      slotProps: { root: { css: consumerStyle, className: register(slotStyle) } }, sx: consumerStyle })}
     <Surface {...args} component={component} data-testid={`class-sx-${index}`}
       slotProps={{ root: { className: register(slotStyle) } }} className={register(consumerStyle)} sx={finalStyle} />
   </div>)}</>}</ClassNames>,
@@ -291,8 +291,8 @@ export const ComponentSlotsEquivalence: Story = {
 function StableFixture(props: SurfaceProps) {
   const [changed, setChanged] = useState(false);
   return <ThemeRoot theme={changed ? 'light' : 'dark'}>
-    <Surface {...props} appearance={changed ? 'contrast' : 'default'} css={changed ? consumerStyle : undefined}
-      sx={changed ? padding : undefined} slotProps={changed ? { root: { css: slotStyle } } : undefined}>
+    <Surface {...props} appearance={changed ? 'contrast' : 'default'}
+      sx={changed ? [consumerStyle, padding] : undefined} slotProps={changed ? { root: { css: slotStyle } } : undefined}>
       <TextField label="Draft" defaultValue="Keep me" />
     </Surface>
     <Button onMouseDown={(event) => event.preventDefault()} onClick={() => setChanged(!changed)}>Update styles</Button>

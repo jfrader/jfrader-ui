@@ -391,8 +391,8 @@ export const CustomIcons: Story = {
   args: { defaultValue: 'Ada', searchIcon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>, clearIcon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 12h12" /></svg> },
 };
 
+const StyledSearchField = styled(SearchField)({ borderRadius: '9px' });
 /** Replace the wrapper and generated label; pass native props through slotProps. */
-// The consumer/slot `css`, `sx` and inline styles are precedence-test sentinels.
 export const SlotCustomization: Story = {
   args: {
     ref: fn(),
@@ -415,11 +415,11 @@ export const SlotCustomization: Story = {
       label: { ref: fn(), title: 'generated part' },
     },
   },
-  render: (args) => <SearchField {...args} css={{ borderRadius: '9px' }} />,
+  render: (args) => <StyledSearchField {...args} />,
   parameters: {
     docs: {
       source: {
-        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<SearchField label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { className: 'custom-field' }, label: { title: 'Name' } }}\n/>",
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<SearchField label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { css: { borderRadius: '8px' } }, label: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
       },
     },
   },

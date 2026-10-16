@@ -1392,19 +1392,18 @@ export const FalsyNodes: Story = {
   },
 };
 
-// These css values test documented css/sx precedence and slot styling.
 const triggerSlotStyle = css({ color: vars.color.accentText });
 const rootCssStyle = css({ paddingInline: vars.space[2] });
+const StyledInlineEdit = styled(InlineEdit)(rootCssStyle);
 const rootSxStyle = css({ paddingInline: vars.space[6] });
 export const RefAndStyles: Story = {
   args: { ref: fn(), controlRef: fn() },
   render: (args) => (
-    <InlineEdit
+    <StyledInlineEdit
       {...args}
-      css={rootCssStyle}
       sx={rootSxStyle}
       className="consumer-root"
-      slotProps={{ trigger: { css: triggerSlotStyle, className: 'consumer-trigger' } }}
+      slotProps={{ root: { css: rootCssStyle }, trigger: { css: triggerSlotStyle, className: 'consumer-trigger' } }}
     />
   ),
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -1418,7 +1417,6 @@ export const RefAndStyles: Story = {
     probe.style.color = vars.color.accentText;
     probe.style.paddingInlineStart = vars.space[6];
     root.append(probe);
-    // Own styles → slotProps → css → sx: sx wins over css.
     await expect(getComputedStyle(root).paddingInlineStart).toBe(getComputedStyle(probe).paddingInlineStart);
     await expect(getComputedStyle(trigger).color).toBe(getComputedStyle(probe).color);
     probe.remove();
@@ -1522,8 +1520,8 @@ export const ReducedMotion: Story = {
   },
 };
 
+const StyledSlotInlineEdit = styled(InlineEdit)({ borderRadius: '9px' });
 /** Replace the wrapper and generated label; pass native props through slotProps. */
-// This story tests native style merging and css/sx precedence through the slot API.
 export const SlotCustomization: Story = {
   tags: ['!autodocs'],
   args: {
@@ -1548,11 +1546,11 @@ export const SlotCustomization: Story = {
       label: { ref: fn(), title: 'generated part' },
     },
   },
-  render: (args) => <InlineEdit {...args} css={{ borderRadius: '9px' }} />,
+  render: (args) => <StyledSlotInlineEdit {...args} />,
   parameters: {
     docs: {
       source: {
-        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<InlineEdit label=\"Project name\" onSave={saveName} defaultOpen\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { className: 'custom-field' }, label: { title: 'Name' } }}\n/>",
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<InlineEdit label=\"Project name\" onSave={saveName} defaultOpen\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { css: { borderRadius: '8px' } }, label: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
       },
     },
   },

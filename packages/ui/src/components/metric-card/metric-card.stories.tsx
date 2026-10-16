@@ -12,8 +12,8 @@ import { styled } from '../../index';
 const NarrowFrame = styled.div({ maxInlineSize: '16rem' });
 
 const Frame = styled.div({ display: 'grid', gap: vars.space[4], maxInlineSize: '28rem', minInlineSize: 0 });
-// These css values test documented css/sx precedence and slot styling.
 const consumerStyle = css({ fontStyle: 'italic' });
+const StyledMetricCard = styled(MetricCard)(consumerStyle);
 const finalStyle = css({ fontStyle: 'normal' });
 const slotStyle = css({ textTransform: 'uppercase' });
 const slotValueStyle = css({ fontWeight: vars.fontWeight.medium });
@@ -334,10 +334,9 @@ export const RefTarget: Story = {
 };
 export const ConsumerStylePrecedence: Story = {
   render: (args) => (
-    <MetricCard
+    <StyledMetricCard
       {...args}
       delta={12}
-      css={consumerStyle}
       sx={finalStyle}
       slotProps={{
         surface: { css: consumerStyle },

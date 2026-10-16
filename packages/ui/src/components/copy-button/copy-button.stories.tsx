@@ -2,7 +2,7 @@ import { useState, type ComponentPropsWithRef, type CSSProperties, type MouseEve
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import type { ButtonSize, ButtonVariant } from '../button';
@@ -1000,17 +1000,17 @@ export const SxPrecedence: Story = {
   args: {
     slots: { status: SlotStatus },
     className: 'consumer-class',
-    css: consumerCss,
     sx: consumerSx,
     ref: fn(),
     slotProps: { label: { className: 'slot-label', css: slotLabelCss }, status: { id: 'copy-status' } },
   },
+  render: (args) => <ClassNames>{({ css: register }) => <CopyButton {...args} className={`${args.className} ${register(consumerCss)}`} />}</ClassNames>,
   play: async ({ args, canvasElement }) => {
     const button = getButton(canvasElement);
     await expect(args.ref).toHaveBeenLastCalledWith(button);
     await expect(button).toBeInstanceOf(canvasElement.ownerDocument.defaultView!.HTMLButtonElement);
     await expect(button).toHaveClass('consumer-class');
-    // own → css → sx: sx wins the shared property, css keeps the rest.
+    // Registered classes (including stray Emotion css) land before sx.
     await expect(getComputedStyle(button).marginInlineStart).toBe('8px');
     await expect(getComputedStyle(button).letterSpacing).not.toBe('normal');
     const label = button.querySelector('[data-ui="copy-button-label"]')!;

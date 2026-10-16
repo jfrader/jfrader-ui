@@ -154,10 +154,11 @@ export const EasyKeyboard: EasyStory = {
 function EasyRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="radio-group" />;
 }
-// This story exercises consumer/slot `css`, `sx` and inline-style precedence.
+const StyledRadioGroup = styled(RadioGroup)({ borderRadius: vars.radius.sm });
 export const EasyCustomization: EasyStory = {
   ...Easy,
   parameters: { docs: { source: { code: `<RadioGroup label="Plan" options={plans} defaultValue="free"
+  sx={{ borderRadius: 0 }}
   slotProps={{ label: { title: 'Plan label' }, radio: { slotProps: { control: { css: { borderRadius: theme.radius.sm } } } } }}
 />` } } },
   args: {
@@ -177,7 +178,7 @@ export const EasyCustomization: EasyStory = {
       radio: { slotProps: { control: { css: { borderRadius: vars.radius.sm } } } },
     },
   },
-  render: (args) => <RadioGroup {...args} css={{ borderRadius: vars.radius.sm }} data-custom-root="consumer-root" component={EasyRoot} />,
+  render: (args) => <StyledRadioGroup {...args} data-custom-root="consumer-root" component={EasyRoot} />,
   play: async (context) => {
     await Easy.play?.(context);
     const group = context.canvas.getByRole('radiogroup', { name: 'Plan' });

@@ -4,6 +4,7 @@ import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { ClassNames } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Accordion, type AccordionCompoundProps as AccordionProps, type AccordionEasyProps } from './index';
 
@@ -272,8 +273,14 @@ export const ReplacedParts: StoryObj<EasySingleProps> = {
       },
     },
   },
-  // This story exercises the documented css, sx and root-slot precedence APIs.
-  render: (args) => <Accordion {...args} component={AccordionHost} css={{ fontWeight: vars.fontWeight.regular }} />,
+  render: (args) => (
+    <ClassNames>
+      {({ css: className }) => (
+        <Accordion {...args} component={AccordionHost}
+          className={`${args.className} ${className({ fontWeight: vars.fontWeight.regular })}`} />
+      )}
+    </ClassNames>
+  ),
   parameters: { docs: { source: { code: `<Accordion items={sections} component={AccordionHost} slots={{ trigger: SectionTrigger }} slotProps={{ root: { 'aria-label': 'Sections' } }} />` } } },
   play: async ({ canvas, userEvent, args }) => {
     const host = canvas.getByTestId('accordion-host');

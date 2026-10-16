@@ -4,7 +4,7 @@ import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
+import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button, type ButtonProps } from '../button';
 import { Textarea, type TextareaProps } from '../textarea';
@@ -84,7 +84,6 @@ const COMMENTS: readonly ThreadComment[] = Object.freeze([
   },
 ] satisfies ThreadComment[]);
 
-// Slot and styling-precedence stories exercise the documented css and sx APIs.
 const slotBodyStyle = css({ textDecorationLine: 'underline' });
 // Each overrides a declaration the thread itself sets on that part.
 const slotHeaderStyle = css({ justifyContent: 'flex-start' });
@@ -1166,10 +1165,14 @@ export const SlotStyling: Story = {
     },
   },
   render: (args) => (
-    <Stack>
-      <CommentThread {...args} css={consumerCss} sx={consumerSx} />
-      <CommentThread {...args} title="Plain" slotProps={undefined} />
-    </Stack>
+    <ClassNames>
+      {({ css: className }) => (
+        <Stack>
+          <CommentThread {...args} className={className(consumerCss)} sx={consumerSx} />
+          <CommentThread {...args} title="Plain" slotProps={undefined} />
+        </Stack>
+      )}
+    </ClassNames>
   ),
   play: async ({ canvas }) => {
     const styled = canvas.getByRole('region', { name: 'Review' });
@@ -1196,7 +1199,7 @@ export const SlotStyling: Story = {
     await expect(title(styled).overflowWrap).toBe('normal');
     await expect(reactions(styled).flexWrap).toBe('nowrap');
     await expect(body(styled).textDecorationLine).toBe('underline');
-    // `sx` wins over `css`, which wins over the root's own styles.
+    // sx wins over the incoming Emotion class and root defaults.
     await expect(getComputedStyle(styled).outlineStyle).toBe('dashed');
     await expect(getComputedStyle(plain).outlineStyle).toBe('none');
   },

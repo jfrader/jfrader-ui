@@ -636,16 +636,26 @@ export const HydrationRelationships: Story = { render: () => <DetailsFixture />,
   } finally { root.unmount(); host.remove(); }
 } };
 
-// This story exercises the documented css and sx precedence APIs.
 const blueprints = { consumer: css({ paddingInline: vars.space[2] }), sx: css({ paddingInline: vars.space[3] }) };
+const StyledDetails = styled(EditableDetails)(blueprints.consumer);
+const StyledDetailsSection = styled(EditableDetails.Section)(blueprints.consumer);
+const StyledDetailsList = styled(EditableDetails.List)(blueprints.consumer);
+const StyledDetailsItem = styled(EditableDetails.Item)(blueprints.consumer);
 export const StylingPrecedence: Story = {
-  render: () => <EditableDetails css={blueprints.consumer} sx={blueprints.sx}>
-  <EditableDetails.Section title="Styled section" defaultOpen css={blueprints.consumer} sx={blueprints.sx}>
-    <EditableDetails.List css={blueprints.consumer} sx={blueprints.sx}>
-      <EditableDetails.Item label="Styled item" css={blueprints.consumer} sx={blueprints.sx}>Value</EditableDetails.Item>
+  parameters: { docs: { source: { language: 'tsx', code: `<EditableDetails sx={{ paddingInline: theme.space[3] }} slotProps={{ root: { css: { paddingInline: theme.space[2] } } }}>
+  <EditableDetails.Section title="Styled section" defaultOpen sx={{ paddingInline: theme.space[3] }}>
+    <EditableDetails.List sx={{ paddingInline: theme.space[3] }}>
+      <EditableDetails.Item label="Styled item" sx={{ paddingInline: theme.space[3] }}>Value</EditableDetails.Item>
     </EditableDetails.List>
   </EditableDetails.Section>
-</EditableDetails>, play: async ({ canvasElement }) => {
+</EditableDetails>` } } },
+  render: () => <StyledDetails sx={blueprints.sx} slotProps={{ root: { css: blueprints.consumer } }}>
+  <StyledDetailsSection title="Styled section" defaultOpen sx={blueprints.sx}>
+    <StyledDetailsList sx={blueprints.sx}>
+      <StyledDetailsItem label="Styled item" sx={blueprints.sx}>Value</StyledDetailsItem>
+    </StyledDetailsList>
+  </StyledDetailsSection>
+</StyledDetails>, play: async ({ canvasElement }) => {
   for (const name of ['editable-details', 'editable-details-section', 'editable-details-list', 'editable-details-item']) {
     const root = canvasElement.querySelector<HTMLElement>(`[data-ui="${name}"]`)!;
     await expect(getComputedStyle(root).paddingInlineStart).toBe('12px');

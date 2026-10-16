@@ -73,7 +73,6 @@ export function SurfaceRoot({
   component,
   slots,
   slotProps,
-  css: consumerCss,
   sx,
   className,
   style,
@@ -134,7 +133,7 @@ export function SurfaceRoot({
         className={slotClassName}
       >
         {(slotClasses) => (
-          <WithSx styles={consumerCss} className={className} sx={sx}>
+          <WithSx styles={[]} className={className} sx={sx}>
             {(consumerClasses) => (
               <WithSx styles={[]} className={[slotClasses, consumerClasses].filter(Boolean).join(' ')}>
                 {(classes) => (
