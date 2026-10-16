@@ -913,6 +913,7 @@ export const EscapeWhileHovered: Story = {
 };
 
 export const OutsidePress: Story = {
+  tags: ['!autodocs'],
   render: (args) => <ProfileExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     await userEvent.tab();

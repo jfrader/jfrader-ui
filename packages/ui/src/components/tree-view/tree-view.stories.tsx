@@ -513,7 +513,8 @@ export const ForcedColors: Story = {
     );
   },
 };
-export const ReducedMotion: Story = { args: { defaultOpen: ['app'] } };
+export const ReducedMotion: Story = {
+  args: { defaultOpen: ['app'] } };
 export const EmptyLoadedChildren: Story = {
   args: {
     nodes: lazyNode,
