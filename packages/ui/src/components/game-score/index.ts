@@ -1,1 +1,8 @@
-export { GameScore, type GameScoreProps, type GameScoreRow } from './game-score';
+export {
+  GameScore,
+  type GameScoreProps,
+  type GameScoreRow,
+  type GameScoreSlotProps,
+  type GameScoreSlots,
+  type GameScorePartProps,
+} from './game-score';

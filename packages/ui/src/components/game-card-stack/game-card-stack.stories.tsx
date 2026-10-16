@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -19,6 +19,37 @@ const CenteredStackFrame = styled(StackFrame)({ marginInline: 'auto' });
 // ThemeRoot takes the styling itself: `styled(ThemeRoot)` collides with Emotion's own theme prop.
 const lightScopeStyle = { blockSize: '100%', backgroundColor: vars.color.bg } as const;
 const PileFrame = styled.div({ inlineSize: vars.size.gameCardMd, blockSize: `calc(${vars.size.gameCardMd} * ${CARD_FRAME.ratio})` });
+
+function ReplacedStackRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="stack-root" />;
+}
+
+/** Replace the stack container while retaining pile inspection. */
+export const ReplacedRootKeepsInspection: Story = {
+  tags: ['!autodocs'],
+  args: {
+    slots: { root: ReplacedStackRoot },
+    slotProps: { root: { ref: fn(), onKeyDown: fn(), className: 'custom-stack', title: 'Played cards' } },
+  },
+  play: async ({ canvasElement, canvas, userEvent, args }) => {
+    const root = canvasElement.querySelector('[data-replacement="stack-root"]')!;
+    await expect(root).toHaveAttribute('data-ui', 'game-card-stack');
+    await expect(root).toHaveClass('custom-stack');
+    await expect(root).toHaveAttribute('title', 'Played cards');
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(getComputedStyle(root).position).toBe('relative');
+    const trigger = canvas.getByRole('button', { name: "North's played cards" });
+    await userEvent.click(trigger);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.keyboard('{Escape}');
+    await expect(args.slotProps?.root?.onKeyDown).toHaveBeenCalledTimes(1);
+    await expect(args.slotProps?.root?.onKeyDown).toHaveBeenCalledWith(expect.objectContaining({ key: 'Escape' }));
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).toHaveFocus();
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(1, 'North');
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, null);
+  },
+};
 
 const names = ['North', 'East', 'South', 'West', 'Avery', 'Robin'];
 const suits = ['spades', 'hearts', 'clubs'] as const;

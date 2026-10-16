@@ -1,6 +1,8 @@
+import type { ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, within } from 'storybook/test';
-import { GameRounds } from './index';
+import { expect, fn, within } from 'storybook/test';
+import { GameRounds, type GameRoundsPartProps } from './index';
+
 
 const rounds = [
   { key: 'first', label: 'Opening', outcome: 'won' },
@@ -62,5 +64,40 @@ export const Empty: Story = {
     const group = within(canvasElement).getByRole('group', { name: 'Rounds' });
     await expect(within(group).queryAllByRole('listitem')).toHaveLength(0);
     await expect(within(group).getByRole('list')).toBeVisible();
+  },
+};
+
+function ReplacementRound(props: ComponentPropsWithRef<'li'> & GameRoundsPartProps<'li'>) {
+  return <li {...props} data-replacement="custom-round" />;
+}
+
+/** Supply a custom round element for won and lost rounds. */
+export const RoundReplacement: Story = {
+  args: {
+    label: 'Rounds',
+    rounds: [
+      { key: 'first', label: 'Opening', outcome: 'won' },
+      { key: 'second', label: 'Middle', outcome: 'lost' },
+    ],
+    outcomeLabels: { won: 'Ganada', lost: 'Perdida', pending: 'Pendiente' },
+    slots: { round: ReplacementRound },
+    slotProps: {
+      round: {
+        ref: fn(),
+        'data-ui': 'custom-round-ui',
+      },
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const group = within(canvasElement).getByRole('group', { name: 'Rounds' });
+    const roundElements = group.querySelectorAll<HTMLElement>('[data-replacement="custom-round"]');
+    await expect(roundElements).toHaveLength(2);
+    const firstRound = roundElements[0]!;
+    await expect(firstRound).toHaveAttribute('data-replacement', 'custom-round');
+    await expect(firstRound.className).not.toBe('');
+    await expect(firstRound).toHaveAttribute('data-ui', 'game-rounds-round custom-round-ui');
+    await expect(args.slotProps?.round?.ref).toHaveBeenCalledWith(firstRound);
+    await expect(firstRound).toHaveAttribute('data-outcome', 'won');
+    await expect(roundElements[1]).toHaveAttribute('data-outcome', 'lost');
   },
 };

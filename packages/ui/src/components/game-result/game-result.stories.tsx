@@ -1,11 +1,13 @@
+import type { ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, within } from 'storybook/test';
+import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
-import { GameResult, type GameResultOutcome } from './index';
+import { GameResult, type GameResultOutcome, type GameResultPartProps } from './index';
+
 
 const OUTCOMES = ['won', 'lost', 'draw'] as const satisfies readonly GameResultOutcome[];
 
@@ -168,5 +170,38 @@ export const Light: Story = {
   play: async ({ canvasElement }) => {
     const root = within(canvasElement).getByRole('status');
     await expect(root).toHaveAttribute('data-outcome', 'won');
+  },
+};
+
+function ReplacementTitle(props: ComponentPropsWithRef<'div'> & GameResultPartProps) {
+  return <div {...props} data-replacement="custom-title" />;
+}
+
+/** Supply a custom title element through slots.title. */
+export const TitleReplacement: Story = {
+  args: {
+    outcome: 'won',
+    eyebrow: 'Partida finalizada',
+    title: 'Victoria',
+    summary: 'Ganaste 3–1.',
+    slots: { title: ReplacementTitle },
+    slotProps: {
+      title: {
+        ref: fn(),
+        'data-ui': 'custom-title-ui',
+      },
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByRole('status');
+    const titleElement = canvasElement.querySelector<HTMLElement>('[data-replacement="custom-title"]')!;
+    await expect(titleElement).toBeInTheDocument();
+    await expect(titleElement).toHaveAttribute('data-replacement', 'custom-title');
+    await expect(titleElement.className).not.toBe('');
+    await expect(titleElement).toHaveAttribute('data-ui', 'game-result-title custom-title-ui');
+    await expect(args.slotProps?.title?.ref).toHaveBeenCalledWith(titleElement);
+    await expect(root).toHaveAttribute('data-outcome', 'won');
+    await expect(root).toHaveAttribute('data-tone', 'success');
+    await expect(titleElement).toHaveTextContent('Victoria');
   },
 };

@@ -1,7 +1,9 @@
+import type { ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { renderToString } from 'react-dom/server';
-import { expect, within } from 'storybook/test';
-import { GameMarks } from './index';
+import { expect, fn, within } from 'storybook/test';
+import { GameMarks, type GameMarksPartProps } from './index';
+
 
 const meta = {
   title: 'Games/GameMarks', component: GameMarks, tags: ['autodocs'],
@@ -77,5 +79,39 @@ export const Limits: Story = {
     for (const maxPerRow of [0, -1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
       await expect(() => renderToString(<GameMarks label="Invalid" count={0} maxPerRow={maxPerRow} mark={null} />)).toThrow('GameMarks maxPerRow must be a positive safe integer');
     }
+  },
+};
+
+function ReplacementMark(props: ComponentPropsWithRef<'span'> & GameMarksPartProps) {
+  return <span {...props} data-replacement="custom-mark" />;
+}
+
+/** Use one custom mark element for every mark in the row. */
+export const MarkReplacement: Story = {
+  args: {
+    label: 'Awards',
+    count: 3,
+    maxPerRow: 5,
+    mark: <span>◆</span>,
+    layout: 'rows',
+    slots: { mark: ReplacementMark },
+    slotProps: {
+      mark: {
+        ref: fn(),
+        'data-ui': 'custom-mark-ui',
+      },
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const group = within(canvasElement).getByRole('group', { name: 'Awards' });
+    const markElements = group.querySelectorAll<HTMLElement>('[data-replacement="custom-mark"]');
+    await expect(markElements).toHaveLength(3);
+    const firstMark = markElements[0]!;
+    await expect(firstMark).toHaveAttribute('data-replacement', 'custom-mark');
+    await expect(firstMark.className).not.toBe('');
+    await expect(firstMark).toHaveAttribute('data-ui', 'game-marks-mark custom-mark-ui');
+    await expect(args.slotProps?.mark?.ref).toHaveBeenCalledWith(firstMark);
+    await expect(group).toHaveAttribute('data-layout', 'rows');
+    await expect(firstMark).toHaveTextContent('◆');
   },
 };
