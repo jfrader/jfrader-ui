@@ -1,0 +1,865 @@
+import { useState, type ComponentPropsWithRef } from 'react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
+import { withLightTheme } from '../../testing/story-decorators';
+import { ThemeRoot } from '../theme-root';
+import { Button } from '../button';
+import { Select } from '../select';
+import { ShareSheet, type ShareSheetProps } from './index';
+
+const PEOPLE = [
+  { id: 'ada', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'linus', name: 'Linus Torvalds' },
+];
+const ACCESS = [
+  { value: 'view', label: 'Can view' },
+  { value: 'blocked', label: 'Owner only', disabled: true },
+  { value: 'edit', label: 'Can edit' },
+];
+const CHANNELS = [{ id: 'team', label: 'Team channel', doneLabel: 'Shared with team' }];
+const meta = {
+  title: 'Surfaces/ShareSheet',
+  component: ShareSheet,
+  tags: ['autodocs'],
+  args: {
+    title: 'Roadmap',
+    link: 'https://example.com/roadmap',
+    people: PEOPLE,
+    accessOptions: ACCESS,
+    channels: CHANNELS,
+    presentation: 'popover',
+    onSend: fn(),
+    onChannel: fn(),
+    onCopy: fn(),
+    onOpenChange: fn(),
+    onValueChange: fn(),
+    onAccessChange: fn(),
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: '<ShareSheet title="Roadmap" link={url} people={people} accessOptions={access} onSend={sendShare} />',
+      },
+      description: {
+        component:
+          'A nonmodal desktop dialog and native modal phone sheet. Enter/Space opens on Copy; Escape dismisses the access list before the surface. Access uses virtual focus with all four arrows, Home/End and Enter/Space. People are pressed-state buttons; Send commits a persistent confirmation only after success. Close and Done return focus; an outside desktop press does not. Controlled open, people and access requests remain authoritative until accepted.',
+      },
+    },
+  },
+  render: (args) => <ShareSheet {...args} />,
+} satisfies Meta<typeof ShareSheet>;
+export default meta;
+type Story = StoryObj<typeof meta>;
+function ReplacementDiv(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="div" />;
+}
+function ReplacementDialog(props: ComponentPropsWithRef<'dialog'>) {
+  return <dialog {...props} data-replacement="dialog" />;
+}
+function ReplacementTitle(props: ComponentPropsWithRef<'h2'>) {
+  return <h2 {...props} data-replacement="title" />;
+}
+function ReplacementButton(props: ComponentPropsWithRef<typeof Button>) {
+  return <Button {...props} data-replacement="button" />;
+}
+function ReplacementAccess(props: ComponentPropsWithRef<typeof Select.Trigger>) {
+  return <Select.Trigger {...props} data-replacement="access" />;
+}
+
+export const SlotReplacements: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    presentation: 'sheet',
+    defaultValue: ['ada'],
+    slotProps: {
+      dialog: { className: 'custom-dialog', 'aria-label': 'Share permissions' },
+      content: { className: 'custom-panel', 'aria-label': 'Share options' },
+    },
+    slots: {
+      trigger: ReplacementButton,
+      dialog: ReplacementDialog,
+      content: ReplacementDiv,
+      title: ReplacementTitle,
+      copyButton: ReplacementButton,
+      accessControl: ReplacementAccess,
+      channelList: ReplacementDiv,
+      selectedList: ReplacementDiv,
+      peopleList: ReplacementDiv,
+      sendButton: ReplacementButton,
+      doneButton: ReplacementButton,
+      status: ReplacementDiv,
+      grabber: ReplacementDiv,
+    },
+  },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const dialog = await body(canvasElement).findByRole('dialog');
+    await expect(dialog).toHaveAttribute('data-replacement', 'dialog');
+    await expect(dialog).toHaveClass('custom-dialog');
+    await expect(dialog).not.toHaveClass('custom-panel');
+    await expect(dialog).toHaveAttribute('aria-label', 'Share permissions');
+    const panel = dialog.querySelector('[data-ui="share-sheet-content"]');
+    await expect(panel).toHaveClass('custom-panel');
+    await expect(panel).not.toHaveClass('custom-dialog');
+    await expect(panel).toHaveAttribute('aria-label', 'Share options');
+    await expect(canvasElement.querySelectorAll('[data-replacement]')).toHaveLength(12);
+    const access = within(dialog).getByRole('combobox');
+    await expect(access).toHaveAttribute('data-replacement', 'access');
+    await userEvent.click(access);
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await expect(args.onAccessChange).toHaveBeenCalledWith('edit');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send to 1 person' }));
+    const done = await within(dialog).findByRole('button', { name: 'Done' });
+    await expect(done).toHaveAttribute('data-replacement', 'button');
+    await waitFor(async () => {
+      await expect(done.ownerDocument.activeElement).toBe(done);
+    });
+    await userEvent.click(done);
+    await expect(body(canvasElement).queryByRole('dialog')).not.toBeInTheDocument();
+    await expect(canvasElement.ownerDocument.activeElement).toBe(
+      within(canvasElement).getByRole('button', { name: 'Share' }),
+    );
+  },
+};
+
+function body(element: HTMLElement) {
+  return within(element.ownerDocument.body);
+}
+async function settled(canvasElement: HTMLElement) {
+  const doc = canvasElement.ownerDocument;
+  const shell = doc.querySelector<HTMLElement>('[data-ui="share-sheet-shell"]')!;
+  const panel = doc.querySelector<HTMLElement>('[data-ui="share-sheet-content"]')!;
+  const face = doc.querySelector<HTMLElement>('[data-ui="share-sheet-face"]')!;
+  const win = doc.defaultView!;
+  await waitFor(
+    async () => {
+      const outer = shell.getBoundingClientRect();
+      const inner = panel.getBoundingClientRect();
+      await expect(Math.abs(outer.width - inner.width)).toBeLessThan(1.1);
+      await expect(Math.abs(outer.height - inner.height)).toBeLessThan(1.1);
+      await expect(
+        Math.abs(
+          parseFloat(win.getComputedStyle(shell).borderTopLeftRadius) -
+            parseFloat(win.getComputedStyle(panel).borderTopLeftRadius),
+        ),
+      ).toBeLessThan(1.1);
+      await expect(win.getComputedStyle(face).opacity).toBe('1');
+    },
+    { timeout: 3000 },
+  );
+}
+async function clipboard(
+  element: HTMLElement,
+  write: ((value: string) => Promise<void>) | undefined,
+  run: () => Promise<void>,
+) {
+  const navigator = element.ownerDocument.defaultView!.navigator;
+  const descriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: write ? { writeText: write } : undefined,
+  });
+  try {
+    await run();
+  } finally {
+    if (descriptor) Object.defineProperty(navigator, 'clipboard', descriptor);
+    else Reflect.deleteProperty(navigator, 'clipboard');
+  }
+}
+export const Default: Story = {
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: 'Share' });
+    await userEvent.tab();
+    await expect(trigger.ownerDocument.activeElement).toBe(trigger);
+    await expect(
+      trigger.ownerDocument.defaultView!.getComputedStyle(trigger).outlineStyle,
+    ).not.toBe('none');
+    await userEvent.keyboard('{Enter}');
+    const copy = await body(canvasElement).findByRole('button', { name: 'Copy link' });
+    await waitFor(async () => {
+      await expect(copy.ownerDocument.activeElement).toBe(copy);
+    });
+    await expect(copy.ownerDocument.defaultView!.getComputedStyle(copy).outlineStyle).not.toBe(
+      'none',
+    );
+    await settled(canvasElement);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenCalledWith(true);
+    const person = body(canvasElement).getByRole('button', { name: 'Ada Lovelace' });
+    await userEvent.click(person);
+    await expect(person).toHaveAttribute('aria-pressed', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(['ada']);
+    await userEvent.click(body(canvasElement).getByRole('button', { name: 'Remove Ada Lovelace' }));
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, []);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await userEvent.keyboard('{Escape}');
+    await waitFor(async () => {
+      await expect(trigger.ownerDocument.activeElement).toBe(trigger);
+    });
+    await expect(args.onOpenChange).toHaveBeenNthCalledWith(2, false);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+  },
+};
+export const AlignStart: Story = { args: { defaultOpen: true, align: 'start' } };
+export const AlignEnd: Story = { args: { defaultOpen: true, align: 'end' } };
+export const AlignCenter: Story = { args: { defaultOpen: true, align: 'center' } };
+export const ForcedPopover: Story = {
+  args: { defaultOpen: true, presentation: 'popover' },
+  play: async ({ canvasElement }) => {
+    const dialog = await body(canvasElement).findByRole('dialog');
+    await waitFor(async () => {
+      const bounds = dialog.getBoundingClientRect();
+      await expect(bounds.bottom).toBeLessThanOrEqual(
+        dialog.ownerDocument.defaultView!.innerHeight + 1.1,
+      );
+      await expect(bounds.top).toBeGreaterThanOrEqual(-1.1);
+    });
+  },
+};
+export const ForcedSheet: Story = { args: { defaultOpen: true, presentation: 'sheet' } };
+export const PhoneResponsive: Story = {
+  args: { defaultOpen: true, presentation: 'responsive' },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Resize the viewport below 520px to exercise the native sheet. The runner does not emulate a phone viewport.',
+      },
+    },
+  },
+};
+export const Light: Story = { args: { defaultOpen: true }, decorators: [withLightTheme] };
+export const LongNames: Story = {
+  args: {
+    defaultOpen: true,
+    people: [{ id: 'long', name: 'Alexandria Catherine Montgomery-Wellington' }],
+    defaultValue: ['long'],
+    messages: {
+      copy: 'Copy this document’s shareable link',
+      copied: 'The document link has been copied',
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = await body(canvasElement).findByRole('dialog');
+    const copy = within(dialog).getByRole('button', {
+      name: 'Copy this document’s shareable link',
+    });
+    await expect(copy).toHaveTextContent('Copy this document’s shareable link');
+    const copied = dialog.querySelector<HTMLElement>('[data-ui="share-sheet-copied"]')!;
+    await expect(copied.getBoundingClientRect().width).toBeLessThanOrEqual(dialog.clientWidth);
+    await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth + 1.1);
+  },
+};
+export const EmptyPeople: Story = {
+  args: { defaultOpen: true, people: [] },
+  play: async ({ canvasElement, userEvent, args }) => {
+    await userEvent.click(
+      await body(canvasElement).findByRole('button', { name: 'Send to 0 people' }),
+    );
+    await expect(args.onSend).not.toHaveBeenCalled();
+    await expect(body(canvasElement).getByRole('status')).toHaveTextContent(
+      'Choose at least one person.',
+    );
+  },
+};
+export const NoAccessOptions: Story = {
+  args: { defaultOpen: true, accessOptions: [] },
+  play: async ({ canvasElement }) => {
+    await expect(
+      await body(canvasElement).findByRole('button', { name: 'Copy link' }),
+    ).toBeDisabled();
+    await expect(
+      body(canvasElement).getByRole('button', { name: 'Send to 0 people' }),
+    ).toBeDisabled();
+    await expect(body(canvasElement).getAllByText('Access unavailable')).toHaveLength(1);
+    await expect(body(canvasElement).getByRole('combobox')).toHaveTextContent('Access unavailable');
+  },
+};
+export const MissingControlledAccess: Story = {
+  ...NoAccessOptions,
+  args: { defaultOpen: true, access: 'missing' },
+};
+export const SelectedPeople: Story = {
+  args: { defaultOpen: true, defaultValue: ['ada', 'grace', 'missing'] },
+};
+export const Sending: Story = {
+  args: { defaultOpen: true, defaultValue: ['ada'], onSend: fn(() => new Promise(() => {})) },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const send = await body(canvasElement).findByRole('button', { name: 'Send to 1 person' });
+    await userEvent.click(send);
+    await userEvent.click(send);
+    await expect(args.onSend).toHaveBeenCalledTimes(1);
+    await expect(args.onSend).toHaveBeenCalledWith({ people: [PEOPLE[0]], access: 'view' });
+    await expect(send).toHaveAttribute('aria-busy', 'true');
+  },
+};
+export const Sent: Story = {
+  args: { defaultOpen: true, defaultValue: ['ada'] },
+  play: async ({ canvasElement, userEvent, args }) => {
+    await userEvent.click(
+      await body(canvasElement).findByRole('button', { name: 'Send to 1 person' }),
+    );
+    const done = await body(canvasElement).findByRole('button', { name: 'Done' });
+    await waitFor(async () => {
+      await expect(done.ownerDocument.activeElement).toBe(done);
+    });
+    await expect(args.onSend).toHaveBeenCalledTimes(1);
+    await expect(args.onSend).toHaveBeenCalledWith({ people: [PEOPLE[0]], access: 'view' });
+    await expect(body(canvasElement).getByRole('status')).toHaveTextContent('Sent to Ada Lovelace');
+    await settled(canvasElement);
+  },
+};
+export const SendError: Story = {
+  args: {
+    defaultOpen: true,
+    defaultValue: ['ada'],
+    onSend: fn(() => Promise.reject(new Error('Offline'))),
+  },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const send = await body(canvasElement).findByRole('button', { name: 'Send to 1 person' });
+    await userEvent.click(send);
+    await waitFor(async () => {
+      await expect(send).toHaveAttribute('aria-describedby');
+    });
+    await expect(body(canvasElement).getByRole('button', { name: 'Ada Lovelace' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await userEvent.click(send);
+    await waitFor(async () => {
+      await expect(args.onSend).toHaveBeenCalledTimes(2);
+    });
+  },
+};
+export const ChannelPending: Story = {
+  args: { defaultOpen: true, onChannel: fn(() => new Promise(() => {})) },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const target = await body(canvasElement).findByRole('button', { name: 'Team channel' });
+    await userEvent.click(target);
+    await userEvent.click(target);
+    await expect(args.onChannel).toHaveBeenCalledTimes(1);
+    await expect(args.onChannel).toHaveBeenCalledWith('team');
+    await expect(target).toHaveAttribute('aria-busy', 'true');
+  },
+};
+export const ChannelSuccess: Story = {
+  args: { defaultOpen: true },
+  play: async ({ canvasElement, userEvent, args }) => {
+    await userEvent.click(await body(canvasElement).findByRole('button', { name: 'Team channel' }));
+    await expect(
+      await body(canvasElement).findByRole('button', { name: 'Shared with team' }),
+    ).toBeDisabled();
+    await expect(args.onChannel).toHaveBeenCalledTimes(1);
+    await expect(args.onChannel).toHaveBeenCalledWith('team');
+  },
+};
+export const ChannelError: Story = {
+  args: {
+    defaultOpen: true,
+    onChannel: fn(() => {
+      throw new Error('Offline');
+    }),
+  },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const target = await body(canvasElement).findByRole('button', { name: 'Team channel' });
+    await userEvent.click(target);
+    await userEvent.click(target);
+    await expect(args.onChannel).toHaveBeenCalledTimes(2);
+    await expect(body(canvasElement).getByRole('status')).toHaveTextContent(
+      'Could not share. Try again.',
+    );
+    await expect(target).toHaveAccessibleDescription('Could not share. Try again.');
+  },
+};
+export const CopyFeedback: Story = {
+  args: { defaultOpen: true },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const copy = await body(canvasElement).findByRole('button', { name: 'Copy link' });
+    await settled(canvasElement);
+    const access = body(canvasElement).getByRole('combobox', { name: 'Access' });
+    const copied = canvasElement.ownerDocument.querySelector<HTMLElement>(
+      '[data-ui="share-sheet-copied"]',
+    )!;
+    const win = copy.ownerDocument.defaultView!;
+    const geometry = () =>
+      [copy, copied, access].map((element) => {
+        const { left, top, width, height } = element.getBoundingClientRect();
+        return [left, top, width, height];
+      });
+    const before = geometry();
+    await expect(win.getComputedStyle(copied).visibility).toBe('hidden');
+    const write = fn(async (_value: string) => {});
+    await clipboard(canvasElement, write, async () => {
+      await userEvent.click(copy);
+      await waitFor(async () => {
+        await expect(body(canvasElement).getByRole('status').textContent).toBe('Copied');
+      });
+      await expect(win.getComputedStyle(copied).visibility).toBe('visible');
+      await expect(copied).toHaveTextContent('✓Copied');
+      await expect(copy).toHaveAccessibleName('Copy link');
+      await expect(copy).toHaveTextContent(/^Copy link$/);
+      await expect(copy).not.toContainElement(copied);
+      await expect(write).toHaveBeenCalledTimes(1);
+      await expect(write).toHaveBeenCalledWith(args.link);
+      await expect(args.onCopy).toHaveBeenCalledTimes(1);
+      await expect(args.onCopy).toHaveBeenCalledWith('view');
+      const after = geometry();
+      for (const [index, box] of before.entries()) {
+        for (const [axis, value] of box.entries()) {
+          await expect(Math.abs(after[index]![axis]! - value)).toBeLessThan(1.1);
+        }
+      }
+      await waitFor(
+        async () => {
+          await expect(win.getComputedStyle(copied).visibility).toBe('hidden');
+        },
+        { timeout: 3000 },
+      );
+      await expect(copy).toHaveAccessibleName('Copy link');
+    });
+  },
+};
+export const CopyFailure: Story = {
+  args: { defaultOpen: true },
+  play: async ({ canvasElement, userEvent, args }) => {
+    await clipboard(
+      canvasElement,
+      async () => {
+        throw new Error('Denied');
+      },
+      async () => {
+        await userEvent.click(
+          await body(canvasElement).findByRole('button', { name: 'Copy link' }),
+        );
+        await waitFor(async () => {
+          await expect(body(canvasElement).getByRole('status')).toHaveTextContent(
+            'Could not copy link. Try again.',
+          );
+        });
+        await expect(args.onCopy).not.toHaveBeenCalled();
+      },
+    );
+  },
+};
+export const ControlledRejectsOpen: Story = {
+  args: { open: false },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: 'Share' });
+    await userEvent.click(trigger);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenCalledWith(true);
+    await expect(body(canvasElement).queryByRole('dialog')).not.toBeInTheDocument();
+    await expect(trigger.ownerDocument.activeElement).toBe(trigger);
+  },
+};
+export const ControlledRejectsSelection: Story = {
+  args: { defaultOpen: true, value: [] },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const person = await body(canvasElement).findByRole('button', { name: 'Ada Lovelace' });
+    await userEvent.click(person);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(['ada']);
+    await expect(person).toHaveAttribute('aria-pressed', 'false');
+  },
+};
+export const ControlledRejectsAccess: Story = {
+  args: { defaultOpen: true, access: 'view' },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const access = await body(canvasElement).findByRole('combobox', { name: 'Access' });
+    await userEvent.click(access);
+    await userEvent.keyboard('{End}{Enter}');
+    await expect(args.onAccessChange).toHaveBeenCalledTimes(1);
+    await expect(args.onAccessChange).toHaveBeenCalledWith('edit');
+    await expect(access).toHaveTextContent('Can view');
+  },
+};
+export const AccessKeyboard: Story = {
+  args: { defaultOpen: true },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const access = await body(canvasElement).findByRole('combobox', { name: 'Access' });
+    await userEvent.tab();
+    await waitFor(async () => {
+      await expect(access.ownerDocument.activeElement).toBe(access);
+    });
+    await userEvent.keyboard(
+      '{ArrowDown}{ArrowDown}{ArrowUp}{ArrowLeft}{ArrowRight}{Home}{End}{Enter}',
+    );
+    await expect(args.onAccessChange).toHaveBeenCalledTimes(1);
+    await expect(args.onAccessChange).toHaveBeenCalledWith('edit');
+    await userEvent.keyboard(' {Escape}');
+    await expect(access).toHaveAttribute('aria-expanded', 'false');
+    await expect(body(canvasElement).getByRole('dialog')).toBeInTheDocument();
+  },
+};
+export const RTL: Story = {
+  args: { defaultOpen: true, dir: 'rtl' },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'RTL direction and logical alignment. Media preferences are not emulated by this story.',
+      },
+    },
+  },
+};
+export const ForcedColors: Story = {
+  args: { defaultOpen: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Persistent surface for manual forced-colors browser emulation; this story does not emulate the media preference.',
+      },
+    },
+  },
+};
+export const ReducedMotion: Story = {
+  args: { defaultOpen: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Persistent surface for manual reduced-motion browser emulation; this story does not emulate the media preference.',
+      },
+    },
+  },
+};
+export const MultiInstance: Story = {
+  render: (args) => (
+    <div style={{ display: 'flex', gap: 32 }}>
+      <ShareSheet {...args} />
+      <ShareSheet {...args} title="Notes" />
+    </div>
+  ),
+};
+export const ThemeScopedDialogNestedAccess: Story = {
+  args: { defaultOpen: true, presentation: 'sheet' },
+  render: (args) => (
+    <ThemeRoot theme="light">
+      <ShareSheet {...args} />
+    </ThemeRoot>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const access = await body(canvasElement).findByRole('combobox', { name: 'Access' });
+    await userEvent.click(access);
+    const list = await body(canvasElement).findByRole('listbox');
+    await expect(list.closest('dialog')).not.toBeNull();
+    await userEvent.keyboard('{Escape}');
+    await expect(access).toHaveAttribute('aria-expanded', 'false');
+    await expect(body(canvasElement).getByRole('dialog')).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(async () => {
+      await expect(body(canvasElement).queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  },
+};
+export const OutsideFocus: Story = {
+  render: (args) => (
+    <>
+      <ShareSheet {...args} />
+      <Button>Outside</Button>
+    </>
+  ),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Share' }));
+    await body(canvasElement).findByRole('dialog');
+    const outside = canvas.getByRole('button', { name: 'Outside' });
+    await userEvent.click(outside);
+    await expect(outside.ownerDocument.activeElement).toBe(outside);
+    await expect(body(canvasElement).queryByRole('dialog')).not.toBeInTheDocument();
+  },
+};
+export const FalsySlots: Story = {
+  args: {
+    defaultOpen: true,
+    channels: [false, null, 0, ''].map((icon, index) => ({
+      id: String(index),
+      label: `Channel ${index + 1}`,
+      icon,
+    })),
+    accessOptions: [false, null, 0, ''].map((description, index) => ({
+      value: String(index),
+      label: `Access ${index + 1}`,
+      description,
+      icon: description,
+    })),
+  },
+  play: async ({ canvasElement }) => {
+    await body(canvasElement).findByRole('dialog');
+    const icons = canvasElement.ownerDocument.querySelectorAll('[data-ui="share-sheet-icon"]');
+    const descriptions = canvasElement.ownerDocument.querySelectorAll(
+      '[data-ui="share-sheet-access-description"]',
+    );
+    await expect(icons).toHaveLength(2);
+    await expect(descriptions).toHaveLength(1);
+    for (const icon of icons) await expect(icon).toHaveTextContent('0');
+    await expect(descriptions[0]).toHaveTextContent('0');
+  },
+};
+function ControlledExample(args: ShareSheetProps) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState<string[]>([]);
+  const [access, setAccess] = useState('view');
+  return (
+    <ShareSheet
+      {...args}
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        args.onOpenChange?.(next);
+      }}
+      value={value}
+      onValueChange={(next) => {
+        setValue(next);
+        args.onValueChange?.(next);
+      }}
+      access={access}
+      onAccessChange={(next) => {
+        setAccess(next);
+        args.onAccessChange?.(next);
+      }}
+    />
+  );
+}
+export const Controlled: Story = {
+  render: (args) => <ControlledExample {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Share' }));
+    await userEvent.click(await body(canvasElement).findByRole('button', { name: 'Ada Lovelace' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(['ada']);
+    await expect(body(canvasElement).getByRole('status')).toHaveTextContent('Ada Lovelace');
+    await userEvent.click(body(canvasElement).getByRole('combobox'));
+    await userEvent.keyboard('{End}{Enter}');
+    await expect(args.onAccessChange).toHaveBeenCalledTimes(1);
+    await expect(args.onAccessChange).toHaveBeenCalledWith('edit');
+    await expect(body(canvasElement).getByRole('status')).toHaveTextContent('Can edit');
+  },
+};
+export const CopyUnavailable: Story = {
+  args: { defaultOpen: true },
+  play: async ({ canvasElement, userEvent, args }) => {
+    await clipboard(canvasElement, undefined, async () => {
+      await userEvent.click(await body(canvasElement).findByRole('button', { name: 'Copy link' }));
+      await waitFor(async () => {
+        await expect(body(canvasElement).getByRole('status')).toHaveTextContent(
+          'Could not copy link. Try again.',
+        );
+      });
+      await expect(args.onCopy).not.toHaveBeenCalled();
+      await expect(
+        body(canvasElement).getByRole('button', { name: 'Copy link' }),
+      ).toHaveAccessibleDescription('Could not copy link. Try again.');
+    });
+  },
+};
+export const MissingHandlers: Story = {
+  args: { defaultOpen: true, onSend: undefined, onChannel: undefined },
+  play: async ({ canvasElement }) => {
+    await expect(
+      await body(canvasElement).findByRole('button', { name: 'Team channel' }),
+    ).toBeDisabled();
+    await expect(
+      body(canvasElement).getByRole('button', { name: 'Send to 0 people' }),
+    ).toBeDisabled();
+  },
+};
+export const AllAccessDisabled: Story = {
+  args: {
+    defaultOpen: true,
+    accessOptions: [{ value: 'view', label: 'Can view', disabled: true }],
+  },
+  play: async ({ canvasElement }) => {
+    await expect(
+      await body(canvasElement).findByRole('button', { name: 'Copy link' }),
+    ).toBeDisabled();
+    await expect(body(canvasElement).getByRole('combobox')).toBeDisabled();
+  },
+};
+export const SheetDrag: Story = {
+  args: { defaultOpen: true, presentation: 'sheet' },
+  play: async ({ canvasElement, args }) => {
+    const dialog = await body(canvasElement).findByRole('dialog');
+    const target = dialog.querySelector('[data-ui="share-sheet-grabber"]')!;
+    const win = dialog.ownerDocument.defaultView!;
+    const pointer = (type: string, y: number) =>
+      fireEvent(
+        target,
+        new win.PointerEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          pointerId: 1,
+          isPrimary: true,
+          button: 0,
+          clientY: y,
+        }),
+      );
+    pointer('pointerdown', 0);
+    pointer('pointercancel', 90);
+    pointer('pointerup', 90);
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    pointer('pointerdown', 0);
+    pointer('pointerup', 90);
+    await waitFor(async () => {
+      await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    });
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false);
+  },
+};
+export const ControlledRejectsDismissal: Story = {
+  args: { open: true },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const copy = await body(canvasElement).findByRole('button', { name: 'Copy link' });
+    await waitFor(async () => {
+      await expect(copy.ownerDocument.activeElement).toBe(copy);
+    });
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false);
+    await expect(copy.ownerDocument.activeElement).toBe(copy);
+    await expect(body(canvasElement).getByRole('dialog')).toBeInTheDocument();
+  },
+};
+export const LateSendSettlement: Story = {
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    let settle: (() => void) | undefined;
+    args.onSend?.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          settle = resolve;
+        }),
+    );
+    await userEvent.click(canvas.getByRole('button', { name: 'Share' }));
+    await userEvent.click(await body(canvasElement).findByRole('button', { name: 'Ada Lovelace' }));
+    await userEvent.click(body(canvasElement).getByRole('button', { name: 'Send to 1 person' }));
+    await userEvent.click(body(canvasElement).getByRole('button', { name: 'Close' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Share' }));
+    settle?.();
+    await Promise.resolve();
+    await expect(
+      body(canvasElement).queryByRole('button', { name: 'Done' }),
+    ).not.toBeInTheDocument();
+    await expect(body(canvasElement).getByRole('button', { name: 'Ada Lovelace' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expect(body(canvasElement).getByRole('status')).toBeEmptyDOMElement();
+    await settled(canvasElement);
+  },
+};
+export const NativeClose: Story = {
+  args: { defaultOpen: true, presentation: 'sheet' },
+  play: async ({ canvasElement, args }) => {
+    await body(canvasElement).findByRole('dialog');
+    canvasElement.querySelector('dialog')!.close();
+    await waitFor(async () => {
+      await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    });
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false);
+    await expect(body(canvasElement).queryByRole('dialog')).not.toBeInTheDocument();
+  },
+};
+export const NativeCancelVeto: Story = {
+  args: {
+    defaultOpen: true,
+    presentation: 'sheet',
+    slotProps: { dialog: { onCancel: (event) => event.preventDefault() } },
+  },
+  play: async ({ canvasElement, userEvent, args }) => {
+    await userEvent.click(await body(canvasElement).findByRole('button', { name: 'Close' }));
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await expect(body(canvasElement).getByRole('dialog')).toBeInTheDocument();
+  },
+};
+export const AriaAndStyling: Story = {
+  args: {
+    defaultOpen: true,
+    slotProps: {
+      content: {
+        'aria-label': 'Sharing',
+        'aria-labelledby': 'external-name missing-name',
+        'aria-describedby': 'external-description missing-description',
+        css: { paddingInline: '32px' },
+      },
+      copyButton: { css: { borderWidth: '2px' } },
+    },
+  },
+  render: (args) => (
+    <>
+      <h2 id="external-name">Project</h2>
+      <p id="external-description">Share project access.</p>
+      <ShareSheet {...args} />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = await body(canvasElement).findByRole('dialog');
+    await expect(dialog).toHaveAttribute('aria-label', 'Sharing');
+    await expect(dialog.getAttribute('aria-labelledby')).toContain('external-name missing-name');
+    await expect(dialog.getAttribute('aria-describedby')).toContain(
+      'external-description missing-description',
+    );
+    await expect(
+      dialog.ownerDocument.defaultView!.getComputedStyle(dialog).paddingInlineStart,
+    ).toBe('32px');
+    const copy = body(canvasElement).getByRole('button', { name: 'Copy link' });
+    await expect(
+      Math.abs(
+        parseFloat(copy.ownerDocument.defaultView!.getComputedStyle(copy).borderTopWidth) - 2,
+      ),
+    ).toBeLessThan(1.1);
+  },
+};
+export const RefAndTargets: Story = {
+  args: { defaultOpen: true, ref: fn() },
+  play: async ({ canvasElement, args }) => {
+    const root = canvasElement.querySelector('[data-ui="share-sheet"]');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    const dialog = await body(canvasElement).findByRole('dialog');
+    for (const button of within(dialog).getAllByRole('button')) {
+      await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+  },
+};
+function MigratingExample(args: ShareSheetProps) {
+  const [presentation, setPresentation] = useState<ShareSheetProps['presentation']>('popover');
+  return (
+    <div
+      onKeyDown={(event) => {
+        if (event.key === 'm')
+          setPresentation((value) => (value === 'popover' ? 'sheet' : 'popover'));
+      }}
+    >
+      <ShareSheet {...args} presentation={presentation} />
+    </div>
+  );
+}
+export const ShellMigration: Story = {
+  args: { defaultOpen: true, defaultValue: ['ada'] },
+  render: (args) => <MigratingExample {...args} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    const send = await body(canvasElement).findByRole('button', { name: 'Send to 1 person' });
+    send.focus();
+    await userEvent.keyboard('m');
+    await waitFor(async () => {
+      await expect(canvasElement.querySelector('dialog')).toHaveAttribute('open');
+    });
+    const moved = body(canvasElement).getByRole('button', { name: 'Send to 1 person' });
+    await waitFor(async () => {
+      await expect(moved.ownerDocument.activeElement).toBe(moved);
+    });
+    await expect(moved).not.toBe(send);
+    await settled(canvasElement);
+    await userEvent.keyboard('m');
+    await waitFor(async () => {
+      await expect(canvasElement.querySelector('dialog')).not.toHaveAttribute('open');
+    });
+    await waitFor(async () => {
+      const back = body(canvasElement).getByRole('button', { name: 'Send to 1 person' });
+      await expect(back.ownerDocument.activeElement).toBe(back);
+    });
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await settled(canvasElement);
+  },
+};

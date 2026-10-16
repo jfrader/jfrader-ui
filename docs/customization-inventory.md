@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **127**; public callable parts: **156**.
-- Families exposing `slots.root`: **66**; remaining without a family-level root slot: **61** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **93**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
+- Public callable families: **128**; public callable parts: **156**.
+- Families exposing `slots.root`: **66**; remaining without a family-level root slot: **62** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **94**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **5**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -252,6 +252,7 @@ may exist and is listed on the corresponding public part).
 | [Select.Label](../packages/ui/src/components/select/select.tsx) | — | — | — | — | — | — |
 | [Select.Trigger](../packages/ui/src/components/select/select.tsx) | — | — | — | — | — | — |
 | [Select.Value](../packages/ui/src/components/select/select.tsx) | — | — | — | — | — | — |
+| [ShareSheet](../packages/ui/src/components/share-sheet/share-sheet.tsx) | — | `accessControl`, `channelList`, `content`, `copyButton`, `dialog`, `doneButton`, `grabber`, `peopleList`, `selectedList`, `sendButton`, `status`, `title`, `trigger` | `accessControl`, `channelList`, `content`, `copyButton`, `dialog`, `doneButton`, `grabber`, `peopleList`, `selectedList`, `sendButton`, `status`, `title`, `trigger` | — | — | — |
 | [SignaturePad](../packages/ui/src/components/signature-pad/signature-pad.tsx) | — | `action`, `canvas`, `description`, `error`, `guide`, `label`, `root`, `status`, `toolbar` | `action`, `canvas`, `description`, `error`, `guide`, `label`, `root`, `status`, `toolbar` | — | — | — |
 | [Skeleton](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
 | [Slider](../packages/ui/src/components/slider/slider.tsx) | — | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `start`, `thumb`, `track` | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `start`, `thumb`, `track` | — | — | — |
