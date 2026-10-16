@@ -48,6 +48,7 @@ Do not combine \`sections\` with \`children\`. Use \`slotProps.root\`, \`slotPro
 
 ### Structure and editing
 - Use Lists for labelled values and Sections for groups of lists or nested sections. Rows use native description-list semantics.
+- Nesting indents each level and draws a guide rail. A section's rows align under its title.
 - Section disclosure and Item editing are independent. Each supports \`open\`, \`defaultOpen\` and \`onOpenChange\`.
 - Supply an editor through \`renderEditor\`. Your editor owns its draft, validation, confirmation, saving and errors. \`complete\` and \`cancel\` only request closure.
 - Collapsing a section keeps mounted editors and drafts. Use \`visible\` to suppress portaled pickers or dialogs, and coordinate their focus before collapse.
@@ -367,6 +368,43 @@ export const Light: Story = { render: () => <DetailsFixture />, decorators: [wit
 export const Rtl: Story = { render: () => <div dir="rtl"><DetailsFixture /></div> };
 export const Narrow: Story = { render: () => <NarrowFrame><DetailsFixture /></NarrowFrame> };
 
+/** Nest sections to group project, delivery and notification details. */
+export const NestedDepth: Story = {
+  render: () => <EditableDetails>
+    <EditableDetails.Section title="Project" defaultOpen headingLevel={2}>
+      <EditableDetails.List>
+        <EditableDetails.Item label="Name">Apollo</EditableDetails.Item>
+        <EditableDetails.Item label="Owner">Flight operations</EditableDetails.Item>
+      </EditableDetails.List>
+      <EditableDetails.Section title="Delivery" defaultOpen>
+        <EditableDetails.List>
+          <EditableDetails.Item label="Region">Europe</EditableDetails.Item>
+          <EditableDetails.Item label="Schedule">Weekly</EditableDetails.Item>
+        </EditableDetails.List>
+        <EditableDetails.Section title="Notifications" defaultOpen headingLevel={4}>
+          <EditableDetails.List>
+            <EditableDetails.Item label="Email">Enabled</EditableDetails.Item>
+            <EditableDetails.Item label="Digest">Monday</EditableDetails.Item>
+          </EditableDetails.List>
+        </EditableDetails.Section>
+      </EditableDetails.Section>
+    </EditableDetails.Section>
+  </EditableDetails>,
+  play: async ({ canvas, canvasElement }) => {
+    const triggers = ['Project', 'Delivery', 'Notifications'].map((name) => canvas.getByRole('button', { name }));
+    for (const [depth, section] of canvasElement.querySelectorAll('section').entries()) {
+      await expect(section).toHaveAttribute('data-depth', String(depth));
+    }
+    for (const panel of canvasElement.querySelectorAll('[data-ui="editable-details-section-panel"]')) {
+      await expect(getComputedStyle(panel, '::before').borderInlineStartWidth).toBe('1px');
+    }
+    for (const [depth, trigger] of triggers.entries()) {
+      const parent = triggers[depth - 1];
+      if (parent) await expect(trigger.getBoundingClientRect().left).toBeGreaterThan(parent.getBoundingClientRect().left);
+    }
+  },
+};
+
 export const SeparatorRhythm: Story = {
   render: () => <EditableDetails>
     <EditableDetails.Section title="Identity" defaultOpen headingLevel={2}>
@@ -400,8 +438,13 @@ export const SeparatorRhythm: Story = {
     }
     const heading = canvas.getByRole('button', { name: 'Identity' });
     const label = canvas.getByText('Project');
-    await expect(getComputedStyle(heading).paddingInlineStart).toBe('0px');
-    await expect(heading.getBoundingClientRect().left).toBe(label.getBoundingClientRect().left);
+    const panel = canvasElement.querySelector('[data-ui="editable-details-section-panel"]')!;
+    const triggerStyle = getComputedStyle(heading);
+    const caretStyle = getComputedStyle(heading, '::before');
+    const titleInset = parseFloat(triggerStyle.paddingInlineStart) + parseFloat(caretStyle.borderInlineStartWidth) + parseFloat(triggerStyle.columnGap);
+    await expect(getComputedStyle(panel, '::before').borderInlineStartWidth).toBe('1px');
+    await expect(parseFloat(getComputedStyle(panel).paddingInlineStart)).toBe(titleInset);
+    await expect(label.getBoundingClientRect().left).toBe(heading.getBoundingClientRect().left + titleInset);
     await expect(Number(getComputedStyle(heading).fontWeight)).toBeGreaterThan(Number(getComputedStyle(label).fontWeight));
     await userEvent.click(canvas.getByRole('button', { name: 'Delivery' }));
     await expect(canvas.getByRole('button', { name: 'Delivery' })).toHaveAttribute('aria-expanded', 'false');

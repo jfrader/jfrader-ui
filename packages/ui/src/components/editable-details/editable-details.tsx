@@ -20,8 +20,8 @@ import {
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
-import { disclosureCaret } from '../../styling/disclosure-caret';
-import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
+import { disclosureCaret, disclosureCaretInlineSize } from '../../styling/disclosure-caret';
+import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -196,51 +196,84 @@ export interface EditableDetailsItemProps extends ComponentPropsWithRef<'div'>, 
 const DEFAULT_MESSAGES: EditableDetailsMessages = { edit: 'Edit' };
 const HEADINGS = { 1: 'h1', 2: 'h2', 3: 'h3', 4: 'h4', 5: 'h5', 6: 'h6' } as const;
 const MessagesContext = createContext(DEFAULT_MESSAGES);
+const SectionDepthContext = createContext(0);
 interface DisclosureScope {
   visible: boolean;
   triggers: readonly RefObject<HTMLButtonElement | null>[];
 }
 const DisclosureContext = createContext<DisclosureScope>({ visible: true, triggers: [] });
 
+// Row geometry, published on the section as custom properties. A section title starts after the
+// row inset and the caret glyph, and the panel pads its content by that same column, so the
+// section's rows line up under its own title. Both parts read the properties, so retuning the
+// geometry happens in one place instead of restyling the trigger and losing the alignment.
+const rowInset = vars.space[1];
+const rowGap = vars.space[2];
+const rowInsetVar = 'var(--editable-details-row-inset)';
+const rowGapVar = 'var(--editable-details-row-gap)';
+
 const rootStyle = css({
-  label: 'editable-details', display: 'grid', gap: vars.space[6], minInlineSize: 0,
+  label: 'editable-details', display: 'grid', gap: vars.space[8], minInlineSize: 0,
   maxInlineSize: '100%', fontFamily: vars.font.sans, color: vars.color.text,
+  fontSize: vars.textSize.sm,
   lineHeight: vars.lineHeight.base, textAlign: 'start', overflowWrap: 'anywhere',
 });
-const sectionStyle = css({ minInlineSize: 0 });
+const sectionStyle = css({
+  minInlineSize: 0,
+  '--editable-details-row-inset': rowInset,
+  '--editable-details-row-gap': rowGap,
+  '--editable-details-title-inset': `calc(${rowInsetVar} + ${disclosureCaretInlineSize} + ${rowGapVar})`,
+});
 const headingStyle = css({ margin: 0, font: 'inherit' });
 const triggerStyle = css({
-  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: vars.space[3],
-  inlineSize: '100%', minInlineSize: 0, minBlockSize: vars.space[10],
-  paddingBlock: vars.space[2], paddingInlineStart: 0, paddingInlineEnd: vars.space[2], border: 0,
-  background: 'transparent', color: 'inherit', font: 'inherit', fontWeight: vars.fontWeight.semibold,
-  textAlign: 'start', overflowWrap: 'anywhere', cursor: 'pointer',
-  '&::after': disclosureCaret,
-  '&[aria-expanded="true"]::after': { transform: 'rotate(90deg)' },
-  '&[aria-expanded="true"]:dir(rtl)::after': { transform: 'rotate(-90deg)' },
+  display: 'flex', alignItems: 'center', gap: rowGapVar,
+  inlineSize: '100%', minInlineSize: 0,
+  paddingBlock: vars.space[2], paddingInlineStart: rowInsetVar, paddingInlineEnd: vars.space[2], border: 0,
+  background: 'transparent', color: 'inherit', font: 'inherit', fontSize: vars.textSize.md, fontWeight: vars.fontWeight.semibold,
+  textAlign: 'start', overflowWrap: 'anywhere', cursor: 'pointer', borderRadius: vars.radius.sm,
+  '&::before': disclosureCaret,
+  '&[aria-expanded="true"]::before': { transform: 'rotate(90deg)' },
+  '&[aria-expanded="true"]:dir(rtl)::before': { transform: 'rotate(-90deg)' },
   '&:hover': { backgroundColor: vars.color.surfaceHover }, '&:focus-visible': focusRingInset,
-  [REDUCED_MOTION]: { '&::after': { transitionDuration: '0s' } },
-  [FORCED_COLORS]: { '&::after': { forcedColorAdjust: 'none', borderInlineStartColor: 'ButtonText' } },
+  [REDUCED_MOTION]: { '&::before': { transitionDuration: '0s' } },
+  [FORCED_COLORS]: { '&::before': { forcedColorAdjust: 'none', borderInlineStartColor: 'ButtonText' } },
 });
-const panelStyle = css({ display: 'grid', gap: vars.space[4], minInlineSize: 0, paddingBlockStart: vars.space[2], '&[hidden]': { display: 'none' } });
+const topLevelTriggerStyle = css({ minBlockSize: vars.space[10] });
+const nestedTriggerStyle = css({ minBlockSize: vars.space[8] });
+const panelStyle = css({
+  display: 'grid', gap: vars.space[4], minInlineSize: 0, paddingBlockStart: vars.space[2],
+  paddingInlineStart: 'var(--editable-details-title-inset)', position: 'relative',
+  '&::before': {
+    content: '""', position: 'absolute', insetBlock: 0, insetInlineStart: rowInsetVar,
+    borderInlineStart: `1px solid ${vars.color.border}`, pointerEvents: 'none',
+  },
+  '&[hidden]': { display: 'none' },
+  '&:empty': { paddingBlockStart: 0 },
+  [FORCED_COLORS]: { '&::before': { borderInlineStartColor: 'CanvasText' } },
+});
 const listStyle = css({ margin: 0, minInlineSize: 0 });
 const itemStyle = css({
   display: 'flex', flexWrap: 'wrap', gap: vars.space[2], minInlineSize: 0,
-  paddingBlock: vars.space[3],
+  paddingBlock: vars.space[2], minBlockSize: vars.space[8], alignItems: 'start',
   '&:where(:not(:last-child))': { borderBlockEnd: `1px solid ${vars.color.border}` },
 });
-const labelStyle = css({ flex: '1 1 10rem', minInlineSize: 0, color: vars.color.textMuted, fontWeight: vars.fontWeight.regular });
-const descriptionStyle = css({ flex: '2 1 16rem', minInlineSize: 0, margin: 0 });
+const labelStyle = css({ flex: '1 1 12rem', minInlineSize: 0, color: vars.color.textMuted, fontWeight: vars.fontWeight.regular });
+const descriptionStyle = css({ flex: '2 1 18rem', minInlineSize: 0, margin: 0 });
 const summaryStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'start', gap: vars.space[2], minInlineSize: 0 });
-const valueStyle = css({ flex: '1 1 8rem', minInlineSize: 0 });
+const valueStyle = css({ flex: '1 1 8rem', minInlineSize: 0, fontWeight: vars.fontWeight.medium, color: vars.color.text });
 const editStyle = css({
   minBlockSize: vars.space[8], paddingInline: vars.space[2], paddingBlock: vars.space[1],
-  border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.sm,
-  background: 'transparent', color: vars.color.text, font: 'inherit', cursor: 'pointer',
-  '&:hover': { backgroundColor: vars.color.surfaceHover }, '&:focus-visible': focusRingOutset,
+  border: '1px solid transparent', borderRadius: vars.radius.sm,
+  background: 'transparent', color: vars.color.textMuted, font: 'inherit', fontSize: vars.textSize.sm, cursor: 'pointer',
+  marginInlineStart: 'auto',
+  '&:hover': { backgroundColor: vars.color.surfaceHover, color: vars.color.text }, '&:focus-visible': focusRingInset,
   [FORCED_COLORS]: { borderColor: 'ButtonText', color: 'ButtonText' },
 });
-const editorStyle = css({ minInlineSize: 0, maxInlineSize: '100%', '&:focus': focusRingInset });
+const editorStyle = css({
+  minInlineSize: 0, maxInlineSize: '100%', padding: vars.space[3],
+  border: `1px solid ${vars.color.border}`, borderRadius: vars.radius.sm,
+  background: vars.color.surfaceInset, '&:focus': focusRingInset,
+});
 
 function isVisible(element: HTMLElement | null): element is HTMLElement {
   return element !== null && element.isConnected && element.getClientRects().length > 0 &&
@@ -430,6 +463,7 @@ function EditableDetailsSection({
 }: EditableDetailsSectionProps) {
   const [open, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
   const parent = useContext(DisclosureContext);
+  const depth = useContext(SectionDepthContext);
   const button = useRef<HTMLButtonElement>(null);
   const mergedTrigger = useMergeRefs([button, triggerRef]);
   const panel = useRef<HTMLDivElement>(null);
@@ -448,7 +482,7 @@ function EditableDetailsSection({
   return (
     <WithSx className={className} styles={sectionStyle} sx={sx}>
       {(className) => (
-        <section {...rest} ref={ref} className={className} data-ui="editable-details-section" data-state={open ? 'open' : 'closed'}>
+        <section {...rest} ref={ref} className={className} data-ui="editable-details-section" data-state={open ? 'open' : 'closed'} data-depth={depth}>
           <Heading {...slotProps?.heading} css={[headingStyle, slotProps?.heading?.css]} className={slotProps?.heading?.className}>
             <Trigger
               {...slotProps?.trigger}
@@ -458,7 +492,7 @@ function EditableDetailsSection({
               aria-expanded={!!open}
               aria-controls={`${id}-panel`}
               onClick={() => requestOpen(!open)}
-              css={[triggerStyle, slotProps?.trigger?.css]}
+              css={[triggerStyle, depth === 0 ? topLevelTriggerStyle : nestedTriggerStyle, slotProps?.trigger?.css]}
               className={slotProps?.trigger?.className}
               data-ui="editable-details-section-trigger"
             >
@@ -475,7 +509,7 @@ function EditableDetailsSection({
               className={slotProps?.panel?.className}
               data-ui="editable-details-section-panel"
             >
-              {children}
+              <SectionDepthContext.Provider value={depth + 1}>{children}</SectionDepthContext.Provider>
             </Panel>
           </DisclosureContext.Provider>
         </section>

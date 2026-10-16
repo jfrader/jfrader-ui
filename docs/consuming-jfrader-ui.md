@@ -309,6 +309,12 @@ values. Supply readable boolean labels and missing-value placeholders in the app
   intent, even if the open request was not accepted. Apps still own cancellation of network requests.
 - Stable React keys, not labels or list indexes, preserve row identity across reorder/translation.
   Keep Sections beside Lists; a List contains Items, whose native terms/descriptions name the rows.
+- Every nested Section indents its content and draws a guide rail beside it, and a Section's rows line
+  up under that Section's own title. Depth comes from nesting alone; no prop carries it. The column is
+  published on the Section as `--editable-details-row-inset`, `--editable-details-row-gap` and
+  `--editable-details-title-inset`, so retuning it is one declaration; a replacement `slots.trigger`
+  or `slots.panel` keeps the same inline-start padding, gap and panel padding, or sets the properties
+  itself.
 - Section headings use the caller's `headingLevel`. Panels are not region landmarks by default.
   Refs target the root `div`, Section `section`, List `dl`, and Item row `div` respectively.
 
@@ -351,7 +357,7 @@ Control the Section's `open` state and expose its `triggerRef` when coordinating
 4. Accept the Section close and gate the overlay with `visible` as a final safeguard.
 
 The library handles DOM-descendant focus, not arbitrary external portal ownership. The runnable
-`Showcase/EditableDetails overlays` recipes cover a portaled Popover picker, native modal dialog,
-retained drafts and focus that has already moved elsewhere.
+portaled and top-layer recipes in the `Showcase/EditableDetails` stories cover a portaled Popover
+picker, native modal dialog, retained drafts and focus that has already moved elsewhere.
 
 Next: [Theming](./theming.md) for light/dark and brand colors, or [Styling](./styling.md) for component overrides.

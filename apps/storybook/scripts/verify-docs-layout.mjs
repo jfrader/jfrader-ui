@@ -15,7 +15,7 @@ const editableDetails = {
   editors: [
     'default', 'native-scalar-form', 'grouped-fields', 'async-validation-and-confirmation',
     'react-hook-form', 'action-state-form', 'inline-edit-comparison', 'persistent-open-and-error',
-    'light', 'mobile', 'rtl',
+    'nested-contract', 'light', 'mobile', 'rtl',
   ],
   pickers: ['portaled-picker', 'picker-focus-moved-away', 'modal-picker', 'open-picker', 'open-modal'],
 };
