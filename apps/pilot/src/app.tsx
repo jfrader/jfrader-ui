@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Inbox, Trash } from 'lucide-react';
 import { vars } from '@jfrader/tokens/vars';
 import {
@@ -17,6 +17,8 @@ import {
 } from '@jfrader/ui';
 import { GameCard } from '@jfrader/ui/game-card';
 import { GameTable, useGameTableSeat } from '@jfrader/ui/game-table';
+import { GameActions } from '@jfrader/ui/game-actions';
+import { CallOverlay } from '@jfrader/ui/call-overlay';
 
 interface Profile {
   name: string;
@@ -76,6 +78,47 @@ function TableSeat() {
 
 const INITIAL_PROFILE: Profile = { name: 'Ada Lovelace', email: 'ada@example.com' };
 const INITIAL_UNREAD = 3;
+
+const GAME_COMMANDS = [
+  { key: 'envido', label: 'Envido' },
+  { key: 'truco', label: 'Truco' },
+  { key: 'quiero', label: 'Quiero' },
+  { key: 'mazo', label: 'Mazo' },
+] as const;
+const GAME_SHORTCUTS = new Map(GAME_COMMANDS.map((command, index) => [String(index + 1), command]));
+
+function GamesTable() {
+  const [announcement, setAnnouncement] = useState({ label: '', sequence: 0 });
+  const announce = (label: string) => setAnnouncement((previous) => ({ label, sequence: previous.sequence + 1 }));
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], dialog')) return;
+      const command = GAME_SHORTCUTS.get(event.key);
+      if (!command) return;
+      event.preventDefault();
+      announce(command.label);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+  return <TableContainer><GameTable players={4} seats={TABLE_SEATS}>
+    <GameTable.Header><Pill tone="neutral">Casual Table</Pill></GameTable.Header>
+    <GameTable.Center><CommunityCards>
+      <GameCard size="sm" value={{ suit: 'spades', rank: 'A' }} label="Ace of spades" />
+      <GameCard size="sm" value={{ suit: 'hearts', rank: 'K' }} label="King of hearts" />
+    </CommunityCards></GameTable.Center>
+    <GameTable.Seat><TableSeat /></GameTable.Seat>
+    <GameTable.Floating sx={{ display: 'grid', placeItems: 'center', '& > *': { pointerEvents: 'none' } }}>
+      <CallOverlay key={announcement.sequence} defaultOpen={announcement.sequence > 0} label={announcement.label} />
+    </GameTable.Floating>
+    <GameTable.Dock>
+      <GameActions label="Turn actions" size="sm" actions={GAME_COMMANDS.map((command, index) => ({
+        ...command, label: <>{command.label} <kbd>{index + 1}</kbd></>, onSelect: () => announce(command.label),
+      }))} />
+    </GameTable.Dock>
+  </GameTable></TableContainer>;
+}
 
 export function App() {
   const [saved, setSaved] = useState<Profile>(INITIAL_PROFILE);
@@ -190,28 +233,7 @@ export function App() {
               <Card.Title level={2}>Games</Card.Title>
             </Card.Header>
             <Card.Content>
-              <TableContainer>
-                <GameTable players={4} seats={TABLE_SEATS}>
-                  <GameTable.Header>
-                    <Pill tone="neutral">Casual Table</Pill>
-                  </GameTable.Header>
-                  <GameTable.Center>
-                    <CommunityCards>
-                      <GameCard size="sm" value={{ suit: 'spades', rank: 'A' }} label="Ace of spades" />
-                      <GameCard size="sm" value={{ suit: 'hearts', rank: 'K' }} label="King of hearts" />
-                    </CommunityCards>
-                  </GameTable.Center>
-                  <GameTable.Seat>
-                    <TableSeat />
-                  </GameTable.Seat>
-                  <GameTable.Dock>
-                    <Flex justify="center" gap="sm">
-                      <Button size="sm" variant="outline">Fold</Button>
-                      <Button size="sm" tone="accent">Check</Button>
-                    </Flex>
-                  </GameTable.Dock>
-                </GameTable>
-              </TableContainer>
+              <GamesTable />
             </Card.Content>
           </Card>
 
