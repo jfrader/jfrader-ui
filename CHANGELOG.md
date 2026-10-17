@@ -8,6 +8,7 @@
 
 ### Added
 
+- PhotoGrid adds `variant="product"` for product images, color/size choices and modal inspection, and `variant="cover-flow"` for a focused depth or flat rail with optional reflections. Both retain photo-ID selection, localized labels and bounded RTL keyboard navigation.
 - ButtonGroup accepts `presentation="floating"` for a pill tray and `presentation="expanding"` for icon actions with a revealed label. Both keep native group and button semantics; expanded labels support controlled state and reduced motion.
 - `TextMorph` animates short labels with matched glyphs, whole-label fades, rolling slots, or bounded sand particles. All variants preserve the current readable text and support reduced motion, typed replacement slots and opt-in announcements.
 - CardStack accepts `variant="wallet"` for compact translucent cards with stitched edges and decision stamps; review, undo and reset behavior is unchanged.
