@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **136**; public callable parts: **160**.
-- Families exposing `slots.root`: **74**; remaining without a family-level root slot: **62** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **104**; remaining without family-level interior slots: **32** (includes components without generated anatomy).
+- Public callable families: **141**; public callable parts: **160**.
+- Families exposing `slots.root`: **80**; remaining without a family-level root slot: **61** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **110**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -29,6 +29,8 @@ may exist and is listed on the corresponding public part).
 | [Accordion.Item](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
 | [Accordion.Panel](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
 | [Accordion.Trigger](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
+| [ActionButton](../packages/ui/src/components/action-button/action-button.tsx) | yes | `icon`, `label`, `root`, `status` | `icon`, `label`, `root`, `status` | — | — | — |
+| [ActionMorph](../packages/ui/src/components/action-morph/action-morph.tsx) | yes | `backButton`, `choices`, `error`, `field`, `form`, `item`, `menuList`, `root`, `status`, `submitButton`, `surface`, `title`, `trigger` | `backButton`, `choices`, `error`, `field`, `form`, `item`, `menuList`, `root`, `status`, `submitButton`, `surface`, `title`, `trigger` | — | — | — |
 | [ActivityRings](../packages/ui/src/components/activity-rings/activity-rings.tsx) | — | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | — | — | — |
 | [Alert](../packages/ui/src/components/alert/alert.tsx) | — | `body`, `dismiss`, `root`, `title` | `body`, `dismiss`, `root`, `title` | — | — | — |
 | [AnnouncementBar](../packages/ui/src/components/announcement-bar/announcement-bar.tsx) | — | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | — | — | — |
@@ -36,6 +38,7 @@ may exist and is listed on the corresponding public part).
 | [Avatar](../packages/ui/src/components/avatar/avatar.tsx) | — | `fallback`, `image`, `status` | `fallback`, `image`, `status` | — | — | — |
 | [AvatarGroup](../packages/ui/src/components/avatar-group/avatar-group.tsx) | — | `member`, `overflow`, `summary` | `member`, `overflow`, `summary` | — | `avatarProps` | — |
 | [Badge](../packages/ui/src/components/badge/badge.tsx) | — | `badge`, `root` | `badge`, `root` | — | — | — |
+| [BookingPill](../packages/ui/src/components/booking-pill/booking-pill.tsx) | yes | `back`, `confirm`, `content`, `description`, `error`, `next`, `root`, `status`, `title`, `trigger` | `back`, `confirm`, `content`, `description`, `error`, `next`, `root`, `status`, `title`, `trigger` | — | `calendarProps`, `timePickerProps` | — |
 | [BottomSheet](../packages/ui/src/components/bottom-sheet/bottom-sheet.tsx) | yes | `body`, `close`, `content`, `description`, `footer`, `handle`, `header`, `panel`, `root`, `title`, `trigger` | `body`, `close`, `content`, `description`, `footer`, `handle`, `header`, `panel`, `root`, `title`, `trigger` | — | — | `Body`, `Close`, `Content`, `Description`, `Footer`, `Handle`, `Header`, `Panel`, `Title`, `Trigger` |
 | [BottomSheet.Body](../packages/ui/src/components/bottom-sheet/bottom-sheet.tsx) | — | — | — | — | — | — |
 | [BottomSheet.Close](../packages/ui/src/components/bottom-sheet/bottom-sheet.tsx) | — | — | — | — | — | — |
@@ -208,6 +211,7 @@ may exist and is listed on the corresponding public part).
 | [Menu.Separator](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
 | [Menu.Trigger](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
 | [MetricCard](../packages/ui/src/components/metric-card/metric-card.tsx) | — | `delta`, `description`, `header`, `label`, `surface`, `value` | `delta`, `description`, `header`, `label`, `surface`, `value` | — | — | — |
+| [MultiRegionFailover](../packages/ui/src/components/multi-region-failover/multi-region-failover.tsx) | yes | `caption`, `controls`, `next`, `node`, `pause`, `previous`, `replay`, `root`, `scene`, `stageButton`, `summary` | `caption`, `controls`, `next`, `node`, `pause`, `previous`, `replay`, `root`, `scene`, `stageButton`, `summary` | — | — | — |
 | [MultiSelect](../packages/ui/src/components/multi-select/multi-select.tsx) | yes | `clear`, `content`, `description`, `empty`, `error`, `item`, `label`, `root`, `trigger`, `value` | `clear`, `content`, `description`, `empty`, `error`, `item`, `label`, `root`, `trigger`, `value` | — | — | `Clear`, `Content`, `Description`, `Empty`, `Error`, `Item`, `Label`, `Trigger`, `Value` |
 | [MultiSelect.Clear](../packages/ui/src/components/multi-select/multi-select.tsx) | — | — | — | — | — | — |
 | [MultiSelect.Content](../packages/ui/src/components/multi-select/multi-select.tsx) | — | — | — | — | — | — |
@@ -226,6 +230,7 @@ may exist and is listed on the corresponding public part).
 | [NowPlayingLevels](../packages/ui/src/components/now-playing/now-playing.tsx) | — | — | — | — | — | — |
 | [Pagination](../packages/ui/src/components/pagination/pagination.tsx) | — | — | — | — | — | — |
 | [PasswordField](../packages/ui/src/components/password-field/password-field.tsx) | yes | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | — | — | — |
+| [PasswordStrength](../packages/ui/src/components/password-strength/password-strength.tsx) | yes | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | — | `fieldSlotProps` | — |
 | [Pattern](../packages/ui/src/components/pattern/pattern.tsx) | — | — | — | — | — | — |
 | [PhotoGrid](../packages/ui/src/components/photo-grid/photo-grid.tsx) | — | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | — | — | — |
 | [Pill](../packages/ui/src/components/pill/pill.tsx) | — | — | — | — | — | — |
@@ -261,7 +266,7 @@ may exist and is listed on the corresponding public part).
 | [Skeleton](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
 | [Slider](../packages/ui/src/components/slider/slider.tsx) | — | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `start`, `thumb`, `track` | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `start`, `thumb`, `track` | — | — | — |
 | [SortableDataTable](../packages/ui/src/components/sortable-data-table/sortable-data-table.tsx) | — | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | — | — | — |
-| [Spinner](../packages/ui/src/components/spinner/spinner.tsx) | — | — | — | — | — | — |
+| [Spinner](../packages/ui/src/components/spinner/spinner.tsx) | yes | `indicator`, `root`, `status` | `indicator`, `root`, `status` | — | — | — |
 | [SplitButton](../packages/ui/src/components/split-button/split-button.tsx) | yes | `action`, `content`, `item`, `root`, `separator`, `trigger` | `action`, `content`, `item`, `root`, `separator`, `trigger` | — | — | `Action`, `Content`, `Item`, `Separator`, `Trigger` |
 | [SplitButton.Action](../packages/ui/src/components/split-button/split-button.tsx) | — | — | — | — | — | — |
 | [SplitButton.Content](../packages/ui/src/components/split-button/split-button.tsx) | — | — | — | — | — | — |
