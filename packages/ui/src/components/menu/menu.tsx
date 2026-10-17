@@ -60,7 +60,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { listboxItemStateStyle, listboxScrollStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION, REDUCED_TRANSPARENCY } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { LayerContent, MenuLayer, useLayerDismiss } from '../../overlay/overlay-layer';
@@ -78,6 +78,11 @@ interface MenuStateProps {
   placement?: Placement;
 }
 
+interface MenuAppearanceProps {
+  /** Set the popup material. Defaults to `default`. */
+  appearance?: 'default' | 'glass';
+}
+
 export type MenuAction = {
   type: 'item';
   key?: string;
@@ -92,7 +97,7 @@ export type MenuAction = {
   disabled?: never;
 };
 
-export interface MenuCompoundProps extends MenuStateProps {
+export interface MenuCompoundProps extends MenuStateProps, MenuAppearanceProps {
   children?: ReactNode;
   items?: never;
   triggerLabel?: never;
@@ -101,7 +106,7 @@ export interface MenuCompoundProps extends MenuStateProps {
   component?: never;
 }
 
-export interface MenuEasyProps extends MenuStateProps, Omit<GeneratedRootProps, 'children'> {
+export interface MenuEasyProps extends MenuStateProps, MenuAppearanceProps, Omit<GeneratedRootProps, 'children'> {
   /** Name the button that opens the menu. */
   triggerLabel: ReactNode;
   /** Render actions and separators in order. */
@@ -208,6 +213,7 @@ export interface MenuItemPartBehavior {
 }
 
 const MenuContext = createContext<MenuContextValue | null>(null);
+const MenuAppearanceContext = createContext<NonNullable<MenuAppearanceProps['appearance']>>('default');
 // Set by the content part: items may only render inside it (they register with its FloatingList).
 const MenuContentContext = createContext(false);
 
@@ -292,6 +298,33 @@ const separatorStyle = css({
     backgroundColor: 'CanvasText',
   },
 });
+
+const menuMaterialStyles = {
+  default: undefined,
+  glass: css({
+    backgroundColor: vars.color.surfaceGlass,
+    backgroundImage: `linear-gradient(135deg, ${vars.color.surfaceSheen}, transparent)`,
+    backdropFilter: `blur(${vars.cardMaterial.blur})`,
+    WebkitBackdropFilter: `blur(${vars.cardMaterial.blur})`,
+    borderColor: vars.color.borderStrong,
+    boxShadow: `inset 0 1px 0 ${vars.color.surfaceHighlight}, ${vars.shadow.overlay}`,
+    [REDUCED_TRANSPARENCY]: {
+      backgroundColor: vars.color.surfaceRaised,
+      backgroundImage: 'none',
+      backdropFilter: 'none',
+      WebkitBackdropFilter: 'none',
+    },
+    [FORCED_COLORS]: {
+      backgroundColor: 'Canvas',
+      color: 'CanvasText',
+      borderColor: 'CanvasText',
+      backgroundImage: 'none',
+      backdropFilter: 'none',
+      WebkitBackdropFilter: 'none',
+      boxShadow: 'none',
+    },
+  }),
+};
 
 /** Own styles of a menu item, for families that layer their own item styles on top. */
 export const menuItemStyles = [itemStyle, listboxItemStateStyle];
@@ -426,18 +459,15 @@ export function MenuController(props: MenuControllerProps) {
   return <MenuLayer>{(nodeId) => <MenuOverlay {...props} nodeId={nodeId} />}</MenuLayer>;
 }
 
-function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, open, defaultOpen, onOpenChange, placement, ...rootProps }: MenuProps) {
+function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, open, defaultOpen, onOpenChange, placement, appearance = 'default', ...rootProps }: MenuProps) {
   const generated = items !== undefined ? (
     <>
       <MenuTriggerPart {...slotProps?.trigger} slots={slots} family="Menu" marker="menu-trigger" styles={triggerStyle}>
         {triggerLabel}
       </MenuTriggerPart>
-      <MenuContentPart
+      <MenuMaterialContent
         {...slotProps?.content}
         slots={slots}
-        family="Menu"
-        marker="menu"
-        styles={[listboxSurfaceStyle, listboxScrollStyle]}
       >
         {items.map((item, index) => item.type === 'separator' ? (
           <MenuSeparatorPart
@@ -461,17 +491,19 @@ function MenuRoot({ items, triggerLabel, slotProps, slots, component, children, 
             {item.label}
           </MenuItemPart>
         ))}
-      </MenuContentPart>
+      </MenuMaterialContent>
     </>
   ) : children;
   return (
-    <MenuController open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} placement={placement}>
-      {items !== undefined ? (
-        <GeneratedRoot {...rootProps} component={slots?.root ?? component} rootSlot={slotProps?.root} marker="menu">
-          {generated}
-        </GeneratedRoot>
-      ) : generated}
-    </MenuController>
+    <MenuAppearanceContext.Provider value={appearance}>
+      <MenuController open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} placement={placement}>
+        {items !== undefined ? (
+          <GeneratedRoot {...rootProps} component={slots?.root ?? component} rootSlot={slotProps?.root} marker="menu">
+            {generated}
+          </GeneratedRoot>
+        ) : generated}
+      </MenuController>
+    </MenuAppearanceContext.Provider>
   );
 }
 
@@ -588,8 +620,13 @@ export function MenuCollection({ family, children }: { family: string; children?
   );
 }
 
+function MenuMaterialContent(props: MenuContentProps & { slots?: Pick<MenuSlots, 'content'> }) {
+  const appearance = useContext(MenuAppearanceContext);
+  return <MenuContentPart {...props} family="Menu" marker="menu" styles={[listboxSurfaceStyle, listboxScrollStyle, menuMaterialStyles[appearance]]} />;
+}
+
 function MenuContent(props: MenuContentProps) {
-  return <MenuContentPart {...props} family="Menu" marker="menu" styles={[listboxSurfaceStyle, listboxScrollStyle]} />;
+  return <MenuMaterialContent {...props} />;
 }
 
 MenuContent.displayName = 'Menu.Content';

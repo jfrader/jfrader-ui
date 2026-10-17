@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Menu accepts `appearance="glass"` for a translucent popup with an opaque reduced-transparency fallback.
+
 ### Added
 
 - Card supports `appearance="glass"` and `appearance="holo"` materials. Opt-in `holoTilt` follows mouse and pen movement, with no tilt under reduced motion.
