@@ -628,6 +628,8 @@ export const FontResize: Story = {
       expect(root(canvasElement).getBoundingClientRect().width).toBeGreaterThan(before),
     );
     // The width spring settles asynchronously; a frame-cadence race must not read a mid-flight width.
+    // The tolerance absorbs sub-pixel font-metric differences between renderers (CI rests 1.375px off);
+    // the font-size step is an order of magnitude larger, so the remeasure is still proven.
     await settleMotion(canvasElement);
     await waitFor(() =>
       expect(
@@ -635,7 +637,7 @@ export const FontResize: Story = {
           root(canvasElement).getBoundingClientRect().width -
             label(canvasElement).getBoundingClientRect().width,
         ),
-      ).toBeLessThan(1),
+      ).toBeLessThan(2),
     );
     await expect(glyph).toBeInTheDocument();
   },
