@@ -29,6 +29,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -150,7 +151,9 @@ export function useNativeDialog(
   // A rejected controlled dismissal can never leave the page stuck.
   useScrollLock(isNativeOpen, () => dialogRef.current?.ownerDocument);
 
-  useEffect(() => {
+  // Layout effect: showModal and the scroll lock must land in the same pre-paint commit, or the
+  // first painted frame shows an open dialog over a still-scrollable page.
+  useLayoutEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     const closeNative = () => {
