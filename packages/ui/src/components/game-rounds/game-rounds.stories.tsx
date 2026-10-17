@@ -36,7 +36,9 @@ Use slotProps for root, label, list, round and outcome. Repeated slots apply to 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** Display round history in play order with outcome tags. */
 export const Default: Story = {
+  name: 'Default',
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Rounds' });
     const items = within(group).getAllByRole('listitem');
@@ -46,9 +48,18 @@ export const Default: Story = {
     await expect(within(group).getByRole('list')).toBeVisible();
   },
 };
+
+/** Display round history in right-to-left reading order. */
 export const LightRtl: Story = {
+  name: 'Light and RTL',
   globals: { theme: 'light' }, args: { dir: 'rtl' },
-  parameters: { docs: { source: { language: 'tsx', code: source.replace('label="Rounds"', 'label="Rounds" dir="rtl"') } } },
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameRounds } from '@jfrader/ui/game-rounds';
+
+<GameRounds label="Rounds" dir="rtl" rounds={[
+  { key: 'first', label: 'Opening', outcome: 'won' },
+  { key: 'second', label: 'Middle', outcome: 'lost' },
+  { key: 'third', label: 'Final', outcome: 'pending' },
+]} outcomeLabels={{ won: 'Ganada', lost: 'Perdida', pending: 'Pendiente' }} />` } } },
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Rounds' });
     await expect(getComputedStyle(group).direction).toBe('rtl');
@@ -57,9 +68,14 @@ export const LightRtl: Story = {
     await expect(items.map((item) => item.getAttribute('data-outcome'))).toEqual(['won', 'lost', 'pending']);
   },
 };
+
+/** An empty round list without played rounds. */
 export const Empty: Story = {
+  name: 'No rounds',
   args: { rounds: [] },
-  parameters: { docs: { source: { language: 'tsx', code: '<GameRounds label="Rounds" rounds={[]} outcomeLabels={{ won: "Won", lost: "Lost", pending: "Pending" }} />' } } },
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameRounds } from '@jfrader/ui/game-rounds';
+
+<GameRounds label="Rounds" rounds={[]} outcomeLabels={{ won: 'Won', lost: 'Lost', pending: 'Pending' }} />` } } },
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Rounds' });
     await expect(within(group).queryAllByRole('listitem')).toHaveLength(0);
@@ -73,6 +89,28 @@ function ReplacementRound(props: ComponentPropsWithRef<'li'> & GameRoundsPartPro
 
 /** Supply a custom round element for won and lost rounds. */
 export const RoundReplacement: Story = {
+  name: 'Custom round',
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { GameRounds, type GameRoundsPartProps } from '@jfrader/ui/game-rounds';
+
+function ReplacementRound(props: ComponentPropsWithRef<'li'> & GameRoundsPartProps<'li'>) {
+  return <li {...props} data-replacement="custom-round" />;
+}
+
+<GameRounds
+  label="Rounds"
+  rounds={[
+    { key: 'first', label: 'Opening', outcome: 'won' },
+    { key: 'second', label: 'Middle', outcome: 'lost' },
+  ]}
+  outcomeLabels={{ won: 'Ganada', lost: 'Perdida', pending: 'Pendiente' }}
+  slots={{ round: ReplacementRound }}
+  slotProps={{
+    round: {
+      'data-ui': 'custom-round-ui',
+    },
+  }}
+/>` } } },
   args: {
     label: 'Rounds',
     rounds: [

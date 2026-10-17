@@ -267,6 +267,7 @@ may exist and is listed on the corresponding public part).
 | [Select.Label](../packages/ui/src/components/select/select.tsx) | — | — | — | — | — | — |
 | [Select.Trigger](../packages/ui/src/components/select/select.tsx) | — | — | — | — | — | — |
 | [Select.Value](../packages/ui/src/components/select/select.tsx) | — | — | — | — | — | — |
+| [ShareAccess](../packages/ui/src/components/share-access/share-access.tsx) | yes | `chipList`, `copyButton`, `dismissUndoButton`, `doneButton`, `heading`, `inviteButton`, `inviteField`, `inviteRole`, `linkRole`, `memberList`, `memberRole`, `removeButton`, `root`, `sheet`, `status`, `undoButton`, `undoList` | `chipList`, `copyButton`, `dismissUndoButton`, `doneButton`, `heading`, `inviteButton`, `inviteField`, `inviteRole`, `linkRole`, `memberList`, `memberRole`, `removeButton`, `root`, `sheet`, `status`, `undoButton`, `undoList` | — | — | — |
 | [ShareSheet](../packages/ui/src/components/share-sheet/share-sheet.tsx) | — | `accessControl`, `channelList`, `content`, `copyButton`, `dialog`, `doneButton`, `grabber`, `peopleList`, `selectedList`, `sendButton`, `status`, `title`, `trigger` | `accessControl`, `channelList`, `content`, `copyButton`, `dialog`, `doneButton`, `grabber`, `peopleList`, `selectedList`, `sendButton`, `status`, `title`, `trigger` | — | — | — |
 | [SignaturePad](../packages/ui/src/components/signature-pad/signature-pad.tsx) | — | `action`, `canvas`, `description`, `error`, `guide`, `label`, `root`, `status`, `toolbar` | `action`, `canvas`, `description`, `error`, `guide`, `label`, `root`, `status`, `toolbar` | — | — | — |
 | [Skeleton](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | `Block`, `Morph` |
@@ -334,3 +335,4 @@ may exist and is listed on the corresponding public part).
 | [VoiceOrb.Status](../packages/ui/src/components/voice-orb/voice-orb.tsx) | — | — | — | — | — | — |
 | [VoiceOrb.Transcript](../packages/ui/src/components/voice-orb/voice-orb.tsx) | — | — | — | — | — | — |
 | [VoiceOrb.Visual](../packages/ui/src/components/voice-orb/voice-orb.tsx) | — | `canvas` | `canvas` | — | — | — |
+| [VoiceRecorder](../packages/ui/src/components/voice-recorder/voice-recorder.tsx) | yes | `composer`, `discard`, `error`, `messageList`, `play`, `record`, `root`, `seek`, `send`, `status`, `stop`, `waveform` | `composer`, `discard`, `error`, `messageList`, `play`, `record`, `root`, `seek`, `send`, `status`, `stop`, `waveform` | — | — | — |

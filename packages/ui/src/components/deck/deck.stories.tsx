@@ -1,17 +1,17 @@
-import type { ComponentProps } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
-import { GameCard } from '../game-card';
+import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
 import { GameTable } from '../game-table';
 import { GameHand } from '../game-hand';
 import { FlipGameCard } from '../flip-game-card';
+import { Scene } from '../scene';
 import {
   cardArtId, defineDeck, DeckProvider, frenchDeck, resolveCardArt, resolveDeckBack,
-  spanishDeck, UnknownDeckError, useDeck, type CardArtRequest, type Deck,
+  spanishDeck, UnknownDeckError, useDeck, type Deck,
 } from './index';
 
 const Row = styled('div')({
@@ -78,32 +78,23 @@ import { GameCard } from '@jfrader/ui/game-card';
   <GameCard label="As de oros" value={{ suit: 'oros', rank: 1 }} />
 </DeckProvider>`,
       },
-      usage: `## Card art
-Declare a deck with \`defineDeck\`. It returns the same object without runtime validation.
-- \`suits\` provide labels, optional glyphs and optional \`red\` or \`ink\` ink.
-- \`ranks\` provide labels and optional printed marks.
-- \`art\` maps card ids to artwork. The default id is \`suit-rank\`; supply \`cardId(suit, rank)\` for another scheme.
-- \`artSets\` holds named, partial art maps, such as \`release-2/spooky\` or \`rare\`.
-- \`defaultArtSet\` selects a set when a request names none.
+      usage: `### Import
+Import decks and resolvers from \`@jfrader/ui/deck\`, not the package root.
 
+### Resolution
+\`defineDeck\` returns the same object without runtime validation.
+The default card id is \`suit-rank\`; supply \`cardId(suit, rank)\` for another scheme.
 Call \`resolveCardArt(deck, { suit, rank, artSet, cardArtSet, mode })\`.
 The selected set is \`cardArtSet ?? artSet ?? deck.defaultArtSet\`.
 A missing set or card falls back to \`art\`, then returns \`undefined\` for a printed face.
 \`mode: 'print'\` skips all artwork. Pass resolved artwork as \`GameCard\` children; omit children for the printed face.
-
-## Backs
-\`back\` accepts artwork or \`{ pattern, tone? }\`. \`backs\` maps set names to backs.
 \`resolveDeckBack(deck, artSet)\` uses the requested set (or \`defaultArtSet\`), then falls back to \`back\`.
 
-## Built-in decks and registration
-Spanish and French decks contain no art and print their faces. Spanish uses diagonal backs; French uses checks.
+### Registration
 Register custom definitions with \`DeckProvider decks={[deck]}\` and set \`default\` to their id.
 Explicit \`value.deck\` wins over the provider default, then the built-in French deck. Unknown ids throw \`UnknownDeckError\`.
 Keep artwork in client modules; card values reference decks by string id.
-Set \`backLabel\` on the provider to name hidden cards for \`FlipGameCard\` shorthand.
-
-## Import
-Import decks and resolvers from \`@jfrader/ui/deck\`. They are not re-exported from the package root.`,
+Set \`backLabel\` on the provider to name hidden cards for \`FlipGameCard\` shorthand.`,
     },
   },
 } satisfies Meta<typeof DeckProvider>;
@@ -113,11 +104,25 @@ type Story = StoryObj<typeof meta>;
 
 /** Built-in decks print their rank marks and suit glyphs without artwork. */
 export const Default: Story = {
+  name: 'Built-in decks',
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+
+<Row>
+  <GameCard label="As de oros" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} />
+  <GameCard label="Spanish back" backPattern={CARD_BACK_PATTERNS.spanish} />
+  <GameCard label="Queen of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
+  <GameCard label="French back" backPattern={CARD_BACK_PATTERNS.french} />
+</Row>` } } },
   render: () => (
     <Row>
       <GameCard label="As de oros" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} />
+      <GameCard label="Spanish back" backPattern={CARD_BACK_PATTERNS.spanish} />
       <GameCard label="Queen of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
-      <GameCard label="Card back" />
+      <GameCard label="French back" backPattern={CARD_BACK_PATTERNS.french} />
     </Row>
   ),
   play: async ({ canvas }) => {
@@ -125,45 +130,453 @@ export const Default: Story = {
     await expect(canvas.getByRole('img', { name: 'As de oros' })).toHaveTextContent('1');
     await expect(canvas.getByRole('img', { name: 'Queen of hearts' })).toHaveTextContent('Q');
     await expect(canvas.getByRole('img', { name: 'Queen of hearts' })).toHaveTextContent('♥');
-    await expect(canvas.getByRole('img', { name: 'Card back' }).querySelector('[data-ui="pattern"]'))
+    const spanishBack = canvas.getByRole('img', { name: 'Spanish back' });
+    await expect(spanishBack).toHaveAttribute('data-face', 'back');
+    await expect(spanishBack).not.toHaveAttribute('data-deck');
+    await expect(spanishBack.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', 'diagonal');
+    await expect(canvas.getByRole('img', { name: 'French back' }).querySelector('[data-ui="pattern"]'))
       .toHaveAttribute('data-variant', 'checks');
     await expect(resolveCardArt(spanishDeck, { suit: 'oros', rank: '1' })).toBeUndefined();
     await expect(resolveCardArt(frenchDeck, { suit: 'hearts', rank: 'Q' })).toBeUndefined();
   },
 };
 
-/** A named set, one rare card, base art, a printed fallback and an explicit printed face. */
-export const CustomDeck: Story = {
+/** Stars and moons print their own glyphs and rank marks. */
+export const SuitsAndRanks: Story = {
+  name: 'Suits and ranks',
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const deck = defineDeck({
+  id: 'printed-celestial',
+  suits: { stars: { label: 'stars', glyph: '⭐', ink: 'red' }, moons: { label: 'moons', glyph: '🌙', ink: 'ink' } },
+  ranks: { I: { label: 'one', mark: 'I' }, II: { label: 'two', mark: 'II' } },
+});
+
+<DeckProvider decks={[deck]} default="printed-celestial">
+  <Row>
+    <GameCard label="One of stars" value={{ suit: 'stars', rank: 'I' }} />
+    <GameCard label="Two of moons" value={{ suit: 'moons', rank: 'II' }} />
+  </Row>
+</DeckProvider>` } } },
+  render: () => (
+    <DeckProvider decks={[defineDeck({
+      id: 'printed-celestial',
+      suits: { stars: { label: 'stars', glyph: '⭐', ink: 'red' }, moons: { label: 'moons', glyph: '🌙', ink: 'ink' } },
+      ranks: { I: { label: 'one', mark: 'I' }, II: { label: 'two', mark: 'II' } },
+    })]} default="printed-celestial">
+      <Row>
+        <GameCard label="One of stars" value={{ suit: 'stars', rank: 'I' }} />
+        <GameCard label="Two of moons" value={{ suit: 'moons', rank: 'II' }} />
+      </Row>
+    </DeckProvider>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('img', { name: 'One of stars' })).toHaveTextContent('⭐');
+    await expect(canvas.getByRole('img', { name: 'One of stars' })).toHaveTextContent('I');
+    await expect(canvas.getByRole('img', { name: 'Two of moons' })).toHaveTextContent('🌙');
+    await expect(canvas.getByRole('img', { name: 'Two of moons' })).toHaveTextContent('II');
+  },
+};
+
+/** One star has card art; the other prints its glyph and mark. */
+export const CardArt: Story = {
+  name: 'Card art',
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const ArtLabel = styled.text({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold });
+function FaceArt({ text }: { text: string }) {
+  return <svg viewBox="0 0 72 106" width="100%" height="100%" aria-hidden="true">
+    <rect width="100%" height="100%" fill={vars.color.surfaceInset} />
+    <circle cx="36" cy="53" r="22" fill={vars.color.cardRed} />
+    <ArtLabel x="36" y="58" textAnchor="middle" fill={vars.color.cardFace}>{text}</ArtLabel>
+  </svg>;
+}
+const deck = defineDeck({ id: 'card-art',
+  suits: { stars: { label: 'stars', glyph: '⭐', ink: 'red' } },
+  ranks: { II: { label: 'II', mark: 'II' }, III: { label: 'III', mark: 'III' } },
+  art: { 'stars-II': <FaceArt text="BASE II" /> },
+});
+
+<DeckProvider decks={[deck]} default="card-art">
+  <Row>
+    <GameCard label="Base star" value={{ suit: 'stars', rank: 'II' }} />
+    <GameCard label="Three of stars" value={{ suit: 'stars', rank: 'III' }} />
+  </Row>
+</DeckProvider>` } } },
+  render: () => (
+    <DeckProvider decks={[defineDeck({ id: 'card-art',
+      suits: { stars: { label: 'stars', glyph: '⭐', ink: 'red' } },
+      ranks: { II: { label: 'II', mark: 'II' }, III: { label: 'III', mark: 'III' } },
+      art: { 'stars-II': <FaceArt text="BASE II" /> },
+    })]} default="card-art">
+      <Row>
+        <GameCard label="Base star" value={{ suit: 'stars', rank: 'II' }} />
+        <GameCard label="Three of stars" value={{ suit: 'stars', rank: 'III' }} />
+      </Row>
+    </DeckProvider>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('img', { name: 'Base star' })).toHaveTextContent('BASE II');
+    const missing = canvas.getByRole('img', { name: 'Three of stars' });
+    await expect(missing.querySelector('[data-ui="game-card-print"]')).not.toBeNull();
+    await expect(missing).toHaveTextContent('III');
+    await expect(missing).toHaveTextContent('⭐');
+  },
+};
+
+/** The default set supplies one face and leaves the other to base art. */
+export const NamedArtSets: Story = {
   name: 'Named art sets',
   parameters: {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+        code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
 
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const ArtLabel = styled.text({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold });
+function FaceArt({ text }: { text: string }) {
+  return <svg viewBox="0 0 72 106" width="100%" height="100%" aria-hidden="true">
+    <rect width="100%" height="100%" fill={vars.color.surfaceInset} />
+    <circle cx="36" cy="53" r="22" fill={vars.color.cardRed} />
+    <ArtLabel x="36" y="58" textAnchor="middle" fill={vars.color.cardFace}>{text}</ArtLabel>
+  </svg>;
+}
 const deck = defineDeck({
-  id: 'celestial',
+  id: 'named-art',
   suits: { stars: { label: 'stars', glyph: '⭐', ink: 'red' } },
-  ranks: { I: { label: 'I', mark: 'I' }, II: { label: 'II', mark: 'II' }, III: { label: 'III', mark: 'III' } },
-  art: { 'stars-II': <span>BASE II</span> },
-  artSets: {
-    'release-2/spooky': { 'stars-I': <span>SPOOKY I</span> },
-    rare: { 'stars-I': <span>RARE I</span> },
-  },
+  ranks: { I: { label: 'I', mark: 'I' }, II: { label: 'II', mark: 'II' } },
+  art: { 'stars-II': <FaceArt text="BASE II" /> },
+  artSets: { 'release-2/spooky': { 'stars-I': <FaceArt text="SPOOKY I" /> } },
   defaultArtSet: 'release-2/spooky',
 });
 
-<DeckProvider decks={[deck]} default="celestial">
-  <GameCard label="Spooky star" value={{ suit: 'stars', rank: 'I' }} artSet="release-2/spooky" />
-  <GameCard label="Rare star" value={{ suit: 'stars', rank: 'I' }} artSet="release-2/spooky" cardArtSets={{ 'stars-I': 'rare' }} />
-  <GameCard label="Base star" value={{ suit: 'stars', rank: 'II' }} />
-  <GameCard label="Three of stars" value={{ suit: 'stars', rank: 'III' }} />
-  <GameCard label="Printed star" value={{ suit: 'stars', rank: 'I' }} artSet="release-2/spooky" face="print" />
+<DeckProvider decks={[deck]} default="named-art">
+  <Row>
+    <GameCard label="Spooky star" value={{ suit: 'stars', rank: 'I' }} />
+    <GameCard label="Base star" value={{ suit: 'stars', rank: 'II' }} />
+  </Row>
 </DeckProvider>`,
       },
     },
   },
+  render: () => (
+    <DeckProvider decks={[defineDeck({
+      id: 'named-art',
+      suits: { stars: { label: 'stars', glyph: '⭐', ink: 'red' } },
+      ranks: { I: { label: 'I', mark: 'I' }, II: { label: 'II', mark: 'II' } },
+      art: { 'stars-II': <FaceArt text="BASE II" /> },
+      artSets: { 'release-2/spooky': { 'stars-I': <FaceArt text="SPOOKY I" /> } },
+      defaultArtSet: 'release-2/spooky',
+    })]} default="named-art">
+      <Row>
+        <GameCard label="Spooky star" value={{ suit: 'stars', rank: 'I' }} />
+        <GameCard label="Base star" value={{ suit: 'stars', rank: 'II' }} />
+      </Row>
+    </DeckProvider>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('img', { name: 'Spooky star' })).toHaveTextContent('SPOOKY I');
+    await expect(canvas.getByRole('img', { name: 'Base star' })).toHaveTextContent('BASE II');
+  },
+};
+
+/** The same star wears a different face from each named set. */
+export const CardArtSet: Story = {
+  name: 'Choosing a set for a card',
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const ArtLabel = styled.text({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold });
+function FaceArt({ text }: { text: string }) {
+  return <svg viewBox="0 0 72 106" width="100%" height="100%" aria-hidden="true">
+    <rect width="100%" height="100%" fill={vars.color.surfaceInset} />
+    <circle cx="36" cy="53" r="22" fill={vars.color.cardRed} />
+    <ArtLabel x="36" y="58" textAnchor="middle" fill={vars.color.cardFace}>{text}</ArtLabel>
+  </svg>;
+}
+const deck = defineDeck({ id: 'card-sets',
+  suits: { stars: { label: 'stars', glyph: '⭐', ink: 'red' } }, ranks: { I: { label: 'I', mark: 'I' } },
+  artSets: { 'release-2/spooky': { 'stars-I': <FaceArt text="SPOOKY I" /> }, rare: { 'stars-I': <FaceArt text="RARE I" /> } },
+});
+
+<DeckProvider decks={[deck]} default="card-sets">
+  <Row>
+    <GameCard label="Spooky star" value={{ suit: 'stars', rank: 'I' }} artSet="release-2/spooky" />
+    <GameCard label="Rare star" value={{ suit: 'stars', rank: 'I' }} artSet="rare" />
+  </Row>
+</DeckProvider>` } } },
+  render: () => (
+    <DeckProvider decks={[defineDeck({ id: 'card-sets',
+      suits: { stars: { label: 'stars', glyph: '⭐', ink: 'red' } }, ranks: { I: { label: 'I', mark: 'I' } },
+      artSets: { 'release-2/spooky': { 'stars-I': <FaceArt text="SPOOKY I" /> }, rare: { 'stars-I': <FaceArt text="RARE I" /> } },
+    })]} default="card-sets">
+      <Row>
+        <GameCard label="Spooky star" value={{ suit: 'stars', rank: 'I' }} artSet="release-2/spooky" />
+        <GameCard label="Rare star" value={{ suit: 'stars', rank: 'I' }} artSet="rare" />
+      </Row>
+    </DeckProvider>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('img', { name: 'Spooky star' })).toHaveTextContent('SPOOKY I');
+    const rare = canvas.getByRole('img', { name: 'Rare star' });
+    await expect(rare).toHaveTextContent('RARE I');
+    await expect(rare).not.toHaveTextContent('SPOOKY I');
+  },
+};
+
+/** A printed rune and a dotted back share one deck. */
+export const PatternBacks: Story = {
+  name: 'Pattern backs',
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const deck = defineDeck({ id: 'pattern-backs',
+  suits: { runes: { label: 'runes', glyph: 'ᚱ' } }, ranks: { '1': { label: 'one', mark: '1' } },
+  back: { pattern: 'dots', tone: 'accent' },
+});
+
+<DeckProvider decks={[deck]} default="pattern-backs">
+  <Row>
+    <GameCard label="One of runes" value={{ suit: 'runes', rank: '1' }} />
+    <GameCard label="Hidden rune" />
+  </Row>
+</DeckProvider>` } } },
+  render: () => (
+    <DeckProvider decks={[defineDeck({ id: 'pattern-backs',
+      suits: { runes: { label: 'runes', glyph: 'ᚱ' } }, ranks: { '1': { label: 'one', mark: '1' } },
+      back: { pattern: 'dots', tone: 'accent' },
+    })]} default="pattern-backs">
+      <Row>
+        <GameCard label="One of runes" value={{ suit: 'runes', rank: '1' }} />
+        <GameCard label="Hidden rune" />
+      </Row>
+    </DeckProvider>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('img', { name: 'One of runes' })).toHaveTextContent('ᚱ');
+    await expect(canvas.getByRole('img', { name: 'One of runes' })).toHaveTextContent('1');
+    await expect(canvas.getByRole('img', { name: 'Hidden rune' }).querySelector('[data-ui="pattern"]'))
+      .toHaveAttribute('data-variant', 'dots');
+  },
+};
+
+/** Rune artwork fills the hidden card's back. */
+export const ArtworkBacks: Story = {
+  name: 'Artwork backs',
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const ArtLabel = styled.text({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold });
+function FaceArt({ text }: { text: string }) {
+  return <svg viewBox="0 0 72 106" width="100%" height="100%" aria-hidden="true">
+    <rect width="100%" height="100%" fill={vars.color.surfaceInset} />
+    <circle cx="36" cy="53" r="22" fill={vars.color.cardRed} />
+    <ArtLabel x="36" y="58" textAnchor="middle" fill={vars.color.cardFace}>{text}</ArtLabel>
+  </svg>;
+}
+const deck = defineDeck({
+  id: 'fantasy',
+  suits: { runes: { label: 'runes', glyph: 'ᚱ' } },
+  ranks: { '1': { label: 'one', mark: '1' } },
+  back: <FaceArt text="RUNES" />,
+});
+
+<DeckProvider decks={[deck]} default="fantasy">
+  <Row>
+    <GameCard label="Hidden rune" />
+  </Row>
+</DeckProvider>` } } },
+  render: () => (
+    <DeckProvider default="fantasy" decks={[defineDeck({
+      id: 'fantasy',
+      suits: { runes: { label: 'runes', glyph: 'ᚱ' } },
+      ranks: { '1': { label: 'one', mark: '1' } },
+      back: <FaceArt text="RUNES" />,
+    })]}>
+      <Row>
+        <GameCard label="Hidden rune" />
+      </Row>
+    </DeckProvider>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('img', { name: 'Hidden rune' })).toHaveTextContent('RUNES');
+  },
+};
+
+/** The rare set replaces the deck's default back with its own artwork. */
+export const SetBacks: Story = {
+  name: 'Back per art set',
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const ArtLabel = styled.text({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold });
+function FaceArt({ text }: { text: string }) {
+  return <svg viewBox="0 0 72 106" width="100%" height="100%" aria-hidden="true">
+    <rect width="100%" height="100%" fill={vars.color.surfaceInset} />
+    <circle cx="36" cy="53" r="22" fill={vars.color.cardRed} />
+    <ArtLabel x="36" y="58" textAnchor="middle" fill={vars.color.cardFace}>{text}</ArtLabel>
+  </svg>;
+}
+const deck = defineDeck({ id: 'set-backs', suits: {}, ranks: {},
+  back: { pattern: 'dots', tone: 'accent' }, backs: { rare: <FaceArt text="RARE" /> },
+});
+
+<DeckProvider decks={[deck]} default="set-backs">
+  <Row>
+    <GameCard label="Default back" />
+    <GameCard label="Rare back" artSet="rare" />
+  </Row>
+</DeckProvider>` } } },
+  render: () => (
+    <DeckProvider decks={[defineDeck({ id: 'set-backs', suits: {}, ranks: {},
+      back: { pattern: 'dots', tone: 'accent' }, backs: { rare: <FaceArt text="RARE" /> },
+    })]} default="set-backs">
+      <Row>
+        <GameCard label="Default back" />
+        <GameCard label="Rare back" artSet="rare" />
+      </Row>
+    </DeckProvider>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('img', { name: 'Default back' }).querySelector('[data-ui="pattern"]'))
+      .toHaveAttribute('data-variant', 'dots');
+    await expect(canvas.getByRole('img', { name: 'Rare back' })).toHaveTextContent('RARE');
+    await expect(canvas.getByRole('img', { name: 'Rare back' }).querySelector('[data-ui="pattern"]')).toBeNull();
+  },
+};
+
+/** A warm dusk scene fills the back at three card sizes. */
+export const SceneBacks: Story = {
+  name: 'Scene backs',
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+import { Scene } from '@jfrader/ui/scene';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const deck = defineDeck({ id: 'scene-backs', suits: {}, ranks: {},
+  back: <Scene seed="northline" variant="dusk" grade="warm" alt="" />,
+});
+
+<DeckProvider decks={[deck]} default="scene-backs">
+  <Row>
+    <GameCard label="Small scene back" size="sm" />
+    <GameCard label="Medium scene back" size="md" />
+    <GameCard label="Large scene back" size="lg" />
+  </Row>
+</DeckProvider>` } } },
+  render: () => (
+    <DeckProvider decks={[defineDeck({ id: 'scene-backs', suits: {}, ranks: {},
+      back: <Scene seed="northline" variant="dusk" grade="warm" alt="" />,
+    })]} default="scene-backs">
+      <Row>
+        <GameCard label="Small scene back" size="sm" />
+        <GameCard label="Medium scene back" size="md" />
+        <GameCard label="Large scene back" size="lg" />
+      </Row>
+    </DeckProvider>
+  ),
+  play: async ({ canvas }) => {
+    for (const name of ['Small scene back', 'Medium scene back', 'Large scene back']) {
+      const card = canvas.getByRole('img', { name });
+      await expect(card).toHaveAttribute('data-face', 'back');
+      const scene = card.querySelector('[data-ui="scene"]');
+      await expect(scene).not.toBeNull();
+      if (!scene) throw new Error(`Missing scene in ${name}`);
+      const cardBox = card.getBoundingClientRect();
+      const sceneBox = scene.getBoundingClientRect();
+      await expect(Math.abs(Math.round(sceneBox.width) - Math.round(cardBox.width - 2))).toBeLessThanOrEqual(1);
+      await expect(Math.abs(Math.round(sceneBox.height) - Math.round(cardBox.height - 2))).toBeLessThanOrEqual(1);
+    }
+  },
+};
+
+/** Unlisted ranks and suits print their ids as text. */
+export const UnlistedRankAndSuit: Story = {
+  name: 'Unlisted rank and suit',
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCard } from '@jfrader/ui/game-card';
+
+<GameCard label="Unknown card" value={{ suit: 'comets', rank: '99' }} />` } } },
+  render: () => <GameCard label="Unknown card" value={{ suit: 'comets', rank: '99' }} />,
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('img', { name: 'Unknown card' })).toHaveTextContent('comets');
+    await expect(canvas.getByRole('img', { name: 'Unknown card' })).toHaveTextContent('99');
+  },
+};
+
+/** One queen uses custom artwork while the king keeps its printed face. */
+export const BuiltInOverride: Story = {
+  name: 'Override a built-in card',
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck, frenchDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const ArtLabel = styled.text({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold });
+function FaceArt({ text }: { text: string }) {
+  return <svg viewBox="0 0 72 106" width="100%" height="100%" aria-hidden="true">
+    <rect width="100%" height="100%" fill={vars.color.surfaceInset} />
+    <circle cx="36" cy="53" r="22" fill={vars.color.cardRed} />
+    <ArtLabel x="36" y="58" textAnchor="middle" fill={vars.color.cardFace}>{text}</ArtLabel>
+  </svg>;
+}
+const deck = defineDeck({ ...frenchDeck, id: 'crowned-french', art: { 'hearts-Q': <FaceArt text="CROWNED Q" /> } });
+
+<DeckProvider decks={[deck]} default="crowned-french">
+  <Row>
+    <GameCard label="Crowned queen" value={{ suit: 'hearts', rank: 'Q' }} />
+    <GameCard label="King of hearts" value={{ suit: 'hearts', rank: 'K' }} />
+  </Row>
+</DeckProvider>` } } },
+  render: () => (
+    <DeckProvider default="crowned-french" decks={[defineDeck({
+      ...frenchDeck,
+      id: 'crowned-french',
+      art: { 'hearts-Q': <FaceArt text="CROWNED Q" /> },
+    })]}>
+      <Row>
+        <GameCard label="Crowned queen" value={{ suit: 'hearts', rank: 'Q' }} />
+        <GameCard label="King of hearts" value={{ suit: 'hearts', rank: 'K' }} />
+      </Row>
+    </DeckProvider>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('img', { name: 'Crowned queen' })).toHaveTextContent('CROWNED Q');
+    const king = canvas.getByRole('img', { name: 'King of hearts' });
+    await expect(king.querySelector('[data-ui="game-card-print"]')).not.toBeNull();
+    await expect(king).toHaveTextContent('K');
+  },
+};
+
+export const ResolverContract: Story = {
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
   render: () => (
     <DeckProvider decks={[celestialDeck]} default="celestial">
       <Row>
@@ -188,125 +601,6 @@ const deck = defineDeck({
     const printed = canvas.getByRole('img', { name: 'Printed star' });
     await expect(printed).not.toHaveTextContent('SPOOKY');
     await expect(printed.querySelector('[data-ui="game-card-print"]')).not.toBeNull();
-  },
-};
-
-export const CustomDeckLightTheme: Story = {
-  ...CustomDeck,
-  name: 'Named art sets · light',
-  decorators: [withLightTheme],
-};
-
-/** Use the Spanish deck's diagonal back without declaring any artwork. */
-export const SpanishBackInheritance: Story = {
-  name: 'Spanish faces and backs',
-  parameters: { docs: { source: { code: `import { DeckProvider } from '@jfrader/ui/deck';
-import { GameCard } from '@jfrader/ui/game-card';
-
-<DeckProvider default="spanish">
-  <GameCard label="As de oros" value={{ suit: 'oros', rank: 1 }} />
-  <GameCard label="Carta boca abajo" />
-</DeckProvider>` } } },
-  render: () => (
-    <DeckProvider default="spanish">
-      <Row>
-        <GameCard label="As de oros" value={{ suit: 'oros', rank: 1 }} />
-        <GameCard label="Carta boca abajo" />
-      </Row>
-    </DeckProvider>
-  ),
-  play: async ({ canvas }) => {
-    const back = canvas.getByRole('img', { name: 'Carta boca abajo' });
-    await expect(back).toHaveAttribute('data-face', 'back');
-    await expect(back).not.toHaveAttribute('data-deck');
-    await expect(back.querySelector('[data-ui="pattern"]')).toHaveAttribute('data-variant', 'diagonal');
-  },
-};
-
-/** Override one built-in card while keeping the other printed faces. */
-export const FactoryDeckOverride: Story = {
-  parameters: { docs: { source: { code: `import { DeckProvider, defineDeck, frenchDeck } from '@jfrader/ui/deck';
-import { GameCard } from '@jfrader/ui/game-card';
-
-const deck = defineDeck({ ...frenchDeck, id: 'crowned-french', art: { 'hearts-Q': <span>CROWNED Q</span> } });
-
-<DeckProvider decks={[deck]} default="crowned-french">
-  <GameCard label="Crowned queen" value={{ suit: 'hearts', rank: 'Q' }} />
-  <GameCard label="King of hearts" value={{ suit: 'hearts', rank: 'K' }} />
-</DeckProvider>` } } },
-  render: () => (
-    <DeckProvider default="crowned-french" decks={[defineDeck({
-      ...frenchDeck,
-      id: 'crowned-french',
-      art: { 'hearts-Q': <FaceArt text="CROWNED Q" /> },
-    })]}>
-      <Row>
-        <GameCard label="Crowned queen" value={{ suit: 'hearts', rank: 'Q' }} />
-        <GameCard label="King of hearts" value={{ suit: 'hearts', rank: 'K' }} />
-      </Row>
-    </DeckProvider>
-  ),
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole('img', { name: 'Crowned queen' })).toHaveTextContent('CROWNED Q');
-    const king = canvas.getByRole('img', { name: 'King of hearts' });
-    await expect(king.querySelector('[data-ui="game-card-print"]')).not.toBeNull();
-    await expect(king).toHaveTextContent('K');
-  },
-};
-
-/** Supply artwork for a back without adding any card-face art. */
-export const CustomBackArtwork: Story = {
-  parameters: { docs: { source: { code: `import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
-import { GameCard } from '@jfrader/ui/game-card';
-
-const deck = defineDeck({
-  id: 'fantasy',
-  suits: { runes: { label: 'runes', glyph: 'ᚱ' } },
-  ranks: { '1': { label: 'one', mark: '1' } },
-  back: <span>RUNES</span>,
-});
-
-<DeckProvider decks={[deck]} default="fantasy">
-  <GameCard label="One of runes" value={{ suit: 'runes', rank: '1' }} />
-  <GameCard label="Hidden rune" />
-</DeckProvider>` } } },
-  render: () => (
-    <DeckProvider default="fantasy" decks={[defineDeck({
-      id: 'fantasy',
-      suits: { runes: { label: 'runes', glyph: 'ᚱ' } },
-      ranks: { '1': { label: 'one', mark: '1' } },
-      back: <FaceArt text="RUNES" />,
-    })]}>
-      <Row>
-        <GameCard label="One of runes" value={{ suit: 'runes', rank: '1' }} />
-        <GameCard label="Hidden rune" />
-      </Row>
-    </DeckProvider>
-  ),
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole('img', { name: 'One of runes' })).toHaveTextContent('ᚱ');
-    await expect(canvas.getByRole('img', { name: 'One of runes' })).toHaveTextContent('1');
-    await expect(canvas.getByRole('img', { name: 'Hidden rune' })).toHaveTextContent('RUNES');
-  },
-};
-
-/** Unlisted ranks and suits print their ids as text. */
-export const DegradationToRawText: Story = {
-  name: 'Unlisted rank and suit',
-  parameters: { docs: { source: { code: `import { GameCard } from '@jfrader/ui/game-card';
-
-<GameCard label="Unknown card" value={{ suit: 'comets', rank: '99' }} />` } } },
-  render: () => <GameCard label="Unknown card" value={{ suit: 'comets', rank: '99' }} />,
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole('img', { name: 'Unknown card' })).toHaveTextContent('comets');
-    await expect(canvas.getByRole('img', { name: 'Unknown card' })).toHaveTextContent('99');
-  },
-};
-
-export const ResolverContract: Story = {
-  tags: ['!autodocs'],
-  render: Default.render,
-  play: async () => {
     const request = { suit: 'stars', rank: 'I' };
     await expect(defineDeck(celestialDeck)).toBe(celestialDeck);
     await expect(cardArtId(celestialDeck, 'stars', 'I')).toBe('stars-I');
@@ -347,17 +641,53 @@ export const ResolverContract: Story = {
   },
 };
 
-export const BoardArtInheritance: Story = {
+/** Cards, a hand and a flip card inherit the board's art choices. */
+export const BoardInheritance: Story = {
+  name: 'Board art inheritance',
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+import { GameTable } from '@jfrader/ui/game-table';
+import { GameHand } from '@jfrader/ui/game-hand';
+import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const BoardFrame = styled.div({ inlineSize: \`calc(\${vars.space[4]} * 75)\`, blockSize: \`calc(\${vars.space[4]} * 50)\` });
+const ArtLabel = styled.text({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold });
+function FaceArt({ text }: { text: string }) {
+  return <svg viewBox="0 0 72 106" width="100%" height="100%" aria-hidden="true">
+    <rect width="100%" height="100%" fill={vars.color.surfaceInset} />
+    <circle cx="36" cy="53" r="22" fill={vars.color.cardRed} />
+    <ArtLabel x="36" y="58" textAnchor="middle" fill={vars.color.cardFace}>{text}</ArtLabel>
+  </svg>;
+}
+const deck = defineDeck({ id: 'celestial',
+  suits: { stars: { label: 'stars', glyph: '⭐', ink: 'red' }, moons: { label: 'moons', glyph: '🌙', ink: 'ink' } },
+  ranks: { I: { label: 'I', mark: 'I' }, II: { label: 'II', mark: 'II' }, III: { label: 'III', mark: 'III' } },
+  art: { 'stars-II': <FaceArt text="BASE II" /> },
+  artSets: { 'release-2/spooky': { 'stars-I': <FaceArt text="SPOOKY I" />, 'moons-I': <FaceArt text="SPOOKY MOON" /> }, rare: { 'stars-I': <FaceArt text="RARE I" /> } },
+  defaultArtSet: 'release-2/spooky', back: { pattern: 'dots', tone: 'accent' }, backs: { rare: { pattern: 'waves', tone: 'card' } },
+});
+
+<DeckProvider decks={[deck]} default="celestial" backLabel="Card back">
+  <BoardFrame><GameTable players={2} seats={[]} artSet="rare">
+    <GameTable.Center><Row>
+      <GameCard label="Inherited board art" value={{ suit: 'stars', rank: 'I' }} />
+      <GameCard label="Card override" value={{ suit: 'stars', rank: 'I' }} cardArtSets={{ 'stars-I': 'release-2/spooky' }} />
+      <GameCard label="Printed fallback" value={{ suit: 'moons', rank: 'III' }} />
+      <GameHand playLabel="Play" cards={[{ id: 'inherited', label: 'Inherited hand art', value: { suit: 'stars', rank: 'I' } }]} />
+      <FlipGameCard label="Inherited flip art" value={{ suit: 'stars', rank: 'I' }} />
+    </Row></GameTable.Center>
+  </GameTable></BoardFrame>
+</DeckProvider>` } } },
   render: () => (
     <DeckProvider decks={[celestialDeck]} default="celestial" backLabel="Card back">
-      <BoardFrame><GameTable players={2} seats={[]} artSet="rare"
-        cardArtSets={{ 'moons-I': 'release-2/spooky' }}>
+      <BoardFrame><GameTable players={2} seats={[]} artSet="rare">
         <GameTable.Center>
           <Row>
             <GameCard label="Inherited board art" value={{ suit: 'stars', rank: 'I' }} />
             <GameCard label="Card override" value={{ suit: 'stars', rank: 'I' }} cardArtSets={{ 'stars-I': 'release-2/spooky' }} />
-            <GameCard label="Merged board entry" value={{ suit: 'moons', rank: 'I' }} cardArtSets={{ 'stars-I': 'rare' }} />
-            <GameCard label="Explicit card set" value={{ suit: 'stars', rank: 'I' }} artSet="release-2/spooky" />
             <GameCard label="Printed fallback" value={{ suit: 'moons', rank: 'III' }} />
             <GameHand playLabel="Play" cards={[{ id: 'inherited', label: 'Inherited hand art', value: { suit: 'stars', rank: 'I' } }]} />
             <FlipGameCard label="Inherited flip art" value={{ suit: 'stars', rank: 'I' }} />
@@ -371,12 +701,31 @@ export const BoardArtInheritance: Story = {
     await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', 'fitted'));
     await expect(canvas.getByRole('img', { name: 'Inherited board art' })).toHaveTextContent('RARE I');
     await expect(canvas.getByRole('img', { name: 'Card override' })).toHaveTextContent('SPOOKY I');
-    await expect(canvas.getByRole('img', { name: 'Merged board entry' })).toHaveTextContent('SPOOKY MOON');
-    await expect(canvas.getByRole('img', { name: 'Explicit card set' })).toHaveTextContent('SPOOKY I');
     await expect(canvas.getByRole('img', { name: 'Printed fallback' })).toHaveTextContent('III');
     await expect(canvas.getByRole('img', { name: 'Inherited hand art' })).toHaveTextContent('RARE I');
     await expect(canvas.getByRole('img', { name: 'Inherited flip art' })).toHaveTextContent('RARE I');
   },
+};
+
+/** Spanish and French faces and backs sit on a light surface. */
+export const BuiltInDecksLight: Story = {
+  ...Default,
+  name: 'Built-in decks · light',
+  decorators: [withLightTheme],
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled, ThemeRoot } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+
+<ThemeRoot theme="light">
+  <Row>
+    <GameCard label="As de oros" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} />
+    <GameCard label="Spanish back" backPattern={CARD_BACK_PATTERNS.spanish} />
+    <GameCard label="Queen of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
+    <GameCard label="French back" backPattern={CARD_BACK_PATTERNS.french} />
+  </Row>
+</ThemeRoot>` } } },
 };
 
 /** An unregistered deck id throws an error naming the missing deck. */
