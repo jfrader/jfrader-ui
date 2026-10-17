@@ -8,6 +8,9 @@
 
 ### Added
 
+- CardStack accepts `variant="wallet"` for compact translucent cards with stitched edges and decision stamps; review, undo and reset behavior is unchanged.
+- `TextReveal` reveals short text with a finite word entrance, preserved whitespace and immediate reduced-motion rendering.
+- `TextShimmer` highlights active work labels with a finite animation budget, explicit pause control and offscreen/page-hidden pausing.
 - TimePicker accepts `presentation="dial"` for a draggable, step-snapped 24-hour face alongside its keyboard-operated time list. Values, bounds and form submission keep the existing HH:mm contract.
 - Select accepts `variant="morph"` for a pill trigger that expands into its floating option panel, with reduced-motion support and the existing selection and keyboard behavior.
 - Card supports `appearance="glass"` and `appearance="holo"` materials. Opt-in `holoTilt` follows mouse and pen movement, with no tilt under reduced motion.
