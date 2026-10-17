@@ -8,6 +8,8 @@
 
 ### Added
 
+- `PageCurl` presents cover/facing/back-cover spreads with native navigation, RTL keyboard turns, controlled selection and a bounded next-button paper preview. Physical SVG crease geometry, corner handles and teaser choreography are not included.
+- `DateReel` selects Gregorian civil dates/times with localized spinbutton reels, atomic month-end clamping, bounds, presets and asynchronous confirmation. Zoned scheduling and manual screen-reader/touch validation are not included.
 - `RadialMenu` shows object actions around a trigger with keyboard navigation, hold-drag targeting and a linear fallback. `LogoOrbit` arranges supplied marks in a pausable integration catalog with filters, details and consumer-owned connection actions. Both support reduced motion and replaceable parts.
   Scope excludes lens/pill/swirl/magnet choreography, tilted-ring parking, connector/detail spring, exhaustive announcements, focus-removal repair and the edge-case catalogue.
 - Tabs accepts `variant="glass"` and `variant="liquid"`, line/pill/lens indicators, icon labels, localized badges, compact bars and optional release-only drag selection. Existing tab and panel semantics remain unchanged.

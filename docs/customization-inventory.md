@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **143**; public callable parts: **162**.
-- Families exposing `slots.root`: **82**; remaining without a family-level root slot: **61** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **112**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
+- Public callable families: **145**; public callable parts: **162**.
+- Families exposing `slots.root`: **84**; remaining without a family-level root slot: **61** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **114**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -110,6 +110,7 @@ may exist and is listed on the corresponding public part).
 | [DateRangePicker](../packages/ui/src/components/date-range-picker/date-range-picker.tsx) | — | `content`, `trigger` | `content`, `trigger` | — | — | `Content`, `Trigger` |
 | [DateRangePicker.Content](../packages/ui/src/components/date-range-picker/date-range-picker.tsx) | — | `actions`, `calendars`, `presets`, `summary` | `actions`, `calendars`, `presets`, `summary` | — | — | — |
 | [DateRangePicker.Trigger](../packages/ui/src/components/date-range-picker/date-range-picker.tsx) | — | — | — | — | — | — |
+| [DateReel](../packages/ui/src/components/date-reel/date-reel.tsx) | yes | `confirm`, `error`, `lens`, `preset`, `presets`, `reel`, `reels`, `root`, `status`, `summary`, `title` | `confirm`, `error`, `lens`, `preset`, `presets`, `reel`, `reels`, `root`, `status`, `summary`, `title` | — | — | — |
 | [DeckArtProvider](../packages/ui/src/components/deck/art-context.tsx) | — | — | — | — | — | — |
 | [DeckProvider](../packages/ui/src/components/deck/deck-context.tsx) | — | — | — | — | — | — |
 | [Dialog](../packages/ui/src/components/dialog/dialog.tsx) | yes | `close`, `content`, `description`, `header`, `panel`, `root`, `title`, `trigger` | `close`, `content`, `description`, `header`, `panel`, `root`, `title`, `trigger` | — | — | `Close`, `Content`, `Description`, `Panel`, `Title`, `Trigger` |
@@ -229,6 +230,7 @@ may exist and is listed on the corresponding public part).
 | [NowPlaying](../packages/ui/src/components/now-playing/now-playing.tsx) | — | `artist`, `artwork`, `collapse`, `controls`, `error`, `expand`, `full`, `mini`, `seek`, `status`, `title`, `waveform` | `artist`, `artwork`, `collapse`, `controls`, `error`, `expand`, `full`, `mini`, `seek`, `status`, `title`, `waveform` | — | — | `Levels` |
 | [NowPlaying.Levels](../packages/ui/src/components/now-playing/now-playing.tsx) | — | — | — | — | — | — |
 | [NowPlayingLevels](../packages/ui/src/components/now-playing/now-playing.tsx) | — | — | — | — | — | — |
+| [PageCurl](../packages/ui/src/components/page-curl/page-curl.tsx) | yes | `book`, `controls`, `fold`, `hint`, `nextButton`, `page`, `previousButton`, `root`, `status` | `book`, `controls`, `fold`, `hint`, `nextButton`, `page`, `previousButton`, `root`, `status` | — | — | — |
 | [Pagination](../packages/ui/src/components/pagination/pagination.tsx) | — | — | — | — | — | — |
 | [PasswordField](../packages/ui/src/components/password-field/password-field.tsx) | yes | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | — | — | — |
 | [PasswordStrength](../packages/ui/src/components/password-strength/password-strength.tsx) | yes | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | — | `fieldSlotProps` | — |

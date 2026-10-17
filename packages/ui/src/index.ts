@@ -118,3 +118,5 @@ export * from './components/voice-orb';
 export { styled } from './styling/styled';
 export type { SxProps } from './styling/sx';
 export { theme, type JfraderTheme } from './styling/theme';
+export * from './components/page-curl';
+export * from './components/date-reel';
