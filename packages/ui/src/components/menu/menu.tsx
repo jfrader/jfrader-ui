@@ -238,9 +238,9 @@ const isHandlerKey = (key: string) => /^on[A-Z]/.test(key);
  * Runs each consumer handler before the matching interaction handler; a consumer
  * `preventDefault()` vetoes the internal request (open, toggle, navigation).
  */
-export function consumerHandlersFirst(
-  props: HTMLProps<Element>,
-  getProps: (userProps: HTMLProps<Element>) => Record<string, unknown>,
+export function consumerHandlersFirst<T extends Element>(
+  props: HTMLProps<T>,
+  getProps: (userProps: HTMLProps<T>) => Record<string, unknown>,
 ) {
   const consumer: Record<string, EventHandler> = {};
   const attributes: Record<string, unknown> = {};
@@ -248,7 +248,7 @@ export function consumerHandlersFirst(
     if (isHandlerKey(key) && typeof value === 'function') consumer[key] = value as EventHandler;
     else attributes[key] = value;
   }
-  const merged = getProps(attributes as HTMLProps<Element>);
+  const merged = getProps(attributes as HTMLProps<T>);
   for (const [key, handler] of Object.entries(consumer)) {
     const internal = merged[key] as EventHandler | undefined;
     merged[key] = (event: { defaultPrevented: boolean }) => {

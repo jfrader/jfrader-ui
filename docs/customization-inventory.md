@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **136**; public callable parts: **160**.
-- Families exposing `slots.root`: **74**; remaining without a family-level root slot: **62** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **104**; remaining without family-level interior slots: **32** (includes components without generated anatomy).
+- Public callable families: **138**; public callable parts: **160**.
+- Families exposing `slots.root`: **77**; remaining without a family-level root slot: **61** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **107**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -29,6 +29,8 @@ may exist and is listed on the corresponding public part).
 | [Accordion.Item](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
 | [Accordion.Panel](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
 | [Accordion.Trigger](../packages/ui/src/components/accordion/accordion.tsx) | — | — | — | — | — | — |
+| [ActionButton](../packages/ui/src/components/action-button/action-button.tsx) | yes | `icon`, `label`, `root`, `status` | `icon`, `label`, `root`, `status` | — | — | — |
+| [ActionMorph](../packages/ui/src/components/action-morph/action-morph.tsx) | yes | `backButton`, `choices`, `error`, `field`, `form`, `item`, `menuList`, `root`, `status`, `submitButton`, `surface`, `title`, `trigger` | `backButton`, `choices`, `error`, `field`, `form`, `item`, `menuList`, `root`, `status`, `submitButton`, `surface`, `title`, `trigger` | — | — | — |
 | [ActivityRings](../packages/ui/src/components/activity-rings/activity-rings.tsx) | — | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | — | — | — |
 | [Alert](../packages/ui/src/components/alert/alert.tsx) | — | `body`, `dismiss`, `root`, `title` | `body`, `dismiss`, `root`, `title` | — | — | — |
 | [AnnouncementBar](../packages/ui/src/components/announcement-bar/announcement-bar.tsx) | — | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | — | — | — |
@@ -261,7 +263,7 @@ may exist and is listed on the corresponding public part).
 | [Skeleton](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
 | [Slider](../packages/ui/src/components/slider/slider.tsx) | — | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `start`, `thumb`, `track` | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `start`, `thumb`, `track` | — | — | — |
 | [SortableDataTable](../packages/ui/src/components/sortable-data-table/sortable-data-table.tsx) | — | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | — | — | — |
-| [Spinner](../packages/ui/src/components/spinner/spinner.tsx) | — | — | — | — | — | — |
+| [Spinner](../packages/ui/src/components/spinner/spinner.tsx) | yes | `indicator`, `root`, `status` | `indicator`, `root`, `status` | — | — | — |
 | [SplitButton](../packages/ui/src/components/split-button/split-button.tsx) | yes | `action`, `content`, `item`, `root`, `separator`, `trigger` | `action`, `content`, `item`, `root`, `separator`, `trigger` | — | — | `Action`, `Content`, `Item`, `Separator`, `Trigger` |
 | [SplitButton.Action](../packages/ui/src/components/split-button/split-button.tsx) | — | — | — | — | — | — |
 | [SplitButton.Content](../packages/ui/src/components/split-button/split-button.tsx) | — | — | — | — | — | — |
