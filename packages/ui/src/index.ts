@@ -115,6 +115,8 @@ export * from './components/typewriter-terminal';
 export * from './components/usage-meter';
 export * from './components/user-menu';
 export * from './components/voice-orb';
+export * from './components/voice-recorder';
+export * from './components/share-access';
 export { styled } from './styling/styled';
 export type { SxProps } from './styling/sx';
 export { theme, type JfraderTheme } from './styling/theme';

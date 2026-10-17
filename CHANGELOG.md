@@ -8,6 +8,8 @@
 
 ### Added
 
+- `ShareAccess` composes ShareSheet's inline presentation with email invitations, member roles, persistent removal undo and link permissions. `VoiceRecorder` composes VoiceOrb with application-owned recording, review, seeking and sending; neither component performs permission or media capture work.
+
 - `RadialMenu` shows object actions around a trigger with keyboard navigation, hold-drag targeting and a linear fallback. `LogoOrbit` arranges supplied marks in a pausable integration catalog with filters, details and consumer-owned connection actions. Both support reduced motion and replaceable parts.
   Scope excludes lens/pill/swirl/magnet choreography, tilted-ring parking, connector/detail spring, exhaustive announcements, focus-removal repair and the edge-case catalogue.
 - Tabs accepts `variant="glass"` and `variant="liquid"`, line/pill/lens indicators, icon labels, localized badges, compact bars and optional release-only drag selection. Existing tab and panel semantics remain unchanged.

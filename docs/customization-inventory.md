@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **143**; public callable parts: **162**.
-- Families exposing `slots.root`: **82**; remaining without a family-level root slot: **61** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **112**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
+- Public callable families: **145**; public callable parts: **162**.
+- Families exposing `slots.root`: **84**; remaining without a family-level root slot: **61** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **114**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -263,6 +263,7 @@ may exist and is listed on the corresponding public part).
 | [Select.Label](../packages/ui/src/components/select/select.tsx) | — | — | — | — | — | — |
 | [Select.Trigger](../packages/ui/src/components/select/select.tsx) | — | — | — | — | — | — |
 | [Select.Value](../packages/ui/src/components/select/select.tsx) | — | — | — | — | — | — |
+| [ShareAccess](../packages/ui/src/components/share-access/share-access.tsx) | yes | `chipList`, `copyButton`, `dismissUndoButton`, `doneButton`, `heading`, `inviteButton`, `inviteField`, `inviteRole`, `linkRole`, `memberList`, `memberRole`, `removeButton`, `root`, `sheet`, `status`, `undoButton`, `undoList` | `chipList`, `copyButton`, `dismissUndoButton`, `doneButton`, `heading`, `inviteButton`, `inviteField`, `inviteRole`, `linkRole`, `memberList`, `memberRole`, `removeButton`, `root`, `sheet`, `status`, `undoButton`, `undoList` | — | — | — |
 | [ShareSheet](../packages/ui/src/components/share-sheet/share-sheet.tsx) | — | `accessControl`, `channelList`, `content`, `copyButton`, `dialog`, `doneButton`, `grabber`, `peopleList`, `selectedList`, `sendButton`, `status`, `title`, `trigger` | `accessControl`, `channelList`, `content`, `copyButton`, `dialog`, `doneButton`, `grabber`, `peopleList`, `selectedList`, `sendButton`, `status`, `title`, `trigger` | — | — | — |
 | [SignaturePad](../packages/ui/src/components/signature-pad/signature-pad.tsx) | — | `action`, `canvas`, `description`, `error`, `guide`, `label`, `root`, `status`, `toolbar` | `action`, `canvas`, `description`, `error`, `guide`, `label`, `root`, `status`, `toolbar` | — | — | — |
 | [Skeleton](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | `Block`, `Morph` |
@@ -330,3 +331,4 @@ may exist and is listed on the corresponding public part).
 | [VoiceOrb.Status](../packages/ui/src/components/voice-orb/voice-orb.tsx) | — | — | — | — | — | — |
 | [VoiceOrb.Transcript](../packages/ui/src/components/voice-orb/voice-orb.tsx) | — | — | — | — | — | — |
 | [VoiceOrb.Visual](../packages/ui/src/components/voice-orb/voice-orb.tsx) | — | `canvas` | `canvas` | — | — | — |
+| [VoiceRecorder](../packages/ui/src/components/voice-recorder/voice-recorder.tsx) | yes | `composer`, `discard`, `error`, `messageList`, `play`, `record`, `root`, `seek`, `send`, `status`, `stop`, `waveform` | `composer`, `discard`, `error`, `messageList`, `play`, `record`, `root`, `seek`, `send`, `status`, `stop`, `waveform` | — | — | — |

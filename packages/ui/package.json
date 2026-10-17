@@ -22,6 +22,8 @@
     "dist"
   ],
   "exports": {
+    "./share-access": { "types": "./src/components/share-access/index.ts", "import": "./src/components/share-access/index.ts" },
+    "./voice-recorder": { "types": "./src/components/voice-recorder/index.ts", "import": "./src/components/voice-recorder/index.ts" },
     "./booking-pill": { "types": "./src/components/booking-pill/index.ts", "import": "./src/components/booking-pill/index.ts" },
     "./multi-region-failover": { "types": "./src/components/multi-region-failover/index.ts", "import": "./src/components/multi-region-failover/index.ts" },
     "./password-strength": { "types": "./src/components/password-strength/index.ts", "import": "./src/components/password-strength/index.ts" },
