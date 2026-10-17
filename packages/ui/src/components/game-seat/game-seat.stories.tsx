@@ -62,7 +62,9 @@ const turn = { deadline: start + durationMs, durationMs, now: start + durationMs
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** Player seat displaying player identity, status badges, hand count, and turn timer ring. */
 export const Default: Story = {
+  name: 'Default',
   play: async ({ canvasElement }) => {
     const seat = within(canvasElement).getByRole('group', { name: 'Alex' });
     await expect(seat).toHaveAttribute('data-turned', 'true');
@@ -70,7 +72,10 @@ export const Default: Story = {
     await expect(seat.querySelector('[data-ui="game-seat-timer"]')).toHaveAttribute('aria-hidden', 'true');
   },
 };
+
+/** Display player seat in light theme with turn timer ring. */
 export const Light: Story = {
+  name: 'Light theme',
   globals: { theme: 'light' },
   parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge, ThemeRoot } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
@@ -85,7 +90,10 @@ const turn = { deadline: start + durationMs, durationMs, now: start + durationMs
     chat={<span aria-live="polite">Your turn · 45 seconds</span>} />
 </ThemeRoot>` } } },
 };
+
+/** Display disconnected player with dimmed avatar and badges. */
 export const Offline: Story = {
+  name: 'Offline player',
   args: { turn: undefined, offline: true, dimmed: true, badges: <Badge>Disconnected</Badge>, chat: undefined },
   parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
@@ -94,7 +102,9 @@ import { GameSeat } from '@jfrader/ui/game-seat';
   handCount={3} badges={<Badge>Disconnected</Badge>} points={0} offline dimmed />` } } },
 };
 
+/** Display active turn countdown ring when avatar is omitted. */
 export const TimerOnly: Story = {
+  name: 'Turn timer only',
   args: { avatar: undefined },
   parameters: { docs: { source: { language: 'tsx', code: `import { Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
@@ -128,21 +138,19 @@ function ReplacementDiv(props: GameSeatPartProps) { return <div {...props} data-
 function ReplacementName(props: NonNullable<GameSeatSlotProps['name']>) { return <span {...props} data-replacement="true" />; }
 function ReplacementTimer(props: NonNullable<GameSeatSlotProps['timer']>) { return <svg {...props} data-replacement="true" />; }
 
+/** Replace every interior anatomy part with custom elements. */
 export const InteriorReplacements: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
+  name: 'Replace the seat interior',
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Avatar, Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
 const durationMs = 60000;
-
 const start = Date.parse('2026-10-14T12:00:00Z');
-
 const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
-import type { ComponentPropsWithRef } from 'react';
 
 function ReplacementDiv(props: ComponentPropsWithRef<'div'>) { return <div {...props} data-replacement="true" />; }
-
 function ReplacementName(props: ComponentPropsWithRef<'span'>) { return <span {...props} data-replacement="true" />; }
-
 function ReplacementTimer(props: ComponentPropsWithRef<'svg'>) { return <svg {...props} data-replacement="true" />; }
 
 <GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
@@ -169,20 +177,18 @@ function ReplacementTimer(props: ComponentPropsWithRef<'svg'>) { return <svg {..
 
 /** Two seats show different remaining portions of the same turn. */
 export const InjectedClock: Story = {
+  name: 'Injected clock',
   render: (args) => <ClockRow>
     <GameSeat {...args} name="Earlier" turn={turn} />
     <GameSeat {...args} name="Later" turn={{ ...turn, now: NOW + DURATION * 3 / 4 }} />
   </ClockRow>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
 const durationMs = 60000;
-
 const start = Date.parse('2026-10-14T12:00:00Z');
-
 const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
-import { styled } from '@jfrader/ui';
-import { vars } from '@jfrader/tokens/vars';
 
 const ClockRow = styled.div({ display: 'flex', gap: vars.space[8] });
 
@@ -224,8 +230,9 @@ const common = {
   },
 };
 
-/** The hand slot replaces the decorative hand count, including in RTL. */
+/** Display right-to-left seat layout with custom hand cards. */
 export const RtlAndReducedMotion: Story = {
+  name: 'RTL and reduced motion',
   args: { dir: 'rtl', hand: <GameHand.Hidden count={2} size="sm" label="Two hidden cards" playerKey="alex" /> },
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { Avatar, Badge } from '@jfrader/ui';
@@ -303,8 +310,9 @@ function TurnNotifications() {
   </TurnExample>;
 }
 
-/** Start a one-minute turn. Chat updates at half time, a quarter remaining and the end. */
+/** Turn announcements update live chat at milestone intervals. */
 export const TurnMilestoneNotifications: Story = {
+  name: 'Turn announcements',
   render: () => <TurnNotifications />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -344,15 +352,14 @@ function UnusedReplacement(props: GameCardRootProps) {
 
 /** Replace the root and pass native props to each generated part. */
 export const Slots: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+  name: 'Replace every part',
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Avatar } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
 const durationMs = 60000;
-
 const start = Date.parse('2026-10-14T12:00:00Z');
-
 const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
-import type { ComponentPropsWithRef } from 'react';
 
 function Replacement(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="slot" />;

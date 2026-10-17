@@ -121,6 +121,7 @@ async function noOverlap(root: HTMLElement) {
     }
   }
 }
+/** Two played card piles with keyboard inspection to expand and examine cards. */
 export const PlayedPiles: Story = {
   name: 'Played piles',
   parameters: {
@@ -173,7 +174,10 @@ export function PlayedPilesExample() {
 };
 export const OneCard: Story = { tags: ['!autodocs'], args: counts(2, 1) };
 export const TwoCards: Story = { tags: ['!autodocs'], args: counts(2, 2) };
+
+/** Four player piles arranged in a two-versus-two team layout. */
 export const TwoVersusTwo: Story = {
+  name: 'Two teams of two',
   args: counts(4, 3), play: async ({ canvasElement }) => noOverlap(canvasElement),
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
@@ -191,7 +195,10 @@ const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'a
   <GameCardStack piles={piles} />
 </StackFrame>` } } },
 };
+
+/** Six player piles arranged in a three-versus-three team layout. */
 export const ThreeVersusThree: Story = {
+  name: 'Two teams of three',
   args: counts(6, 3), play: async ({ canvasElement }) => noOverlap(canvasElement),
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
@@ -210,7 +217,10 @@ const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'a
 </StackFrame>` } } },
 };
 export const Open: Story = { tags: ['!autodocs'], args: { defaultValue: 'North' }, play: async ({ canvasElement }) => noOverlap(canvasElement) };
+
+/** Played card piles rendered under the light theme palette. */
 export const LightTheme: Story = {
+  name: 'Light theme',
   globals: { theme: 'light' },
   decorators: [(Story) => <ThemeRoot theme="light" sx={lightScopeStyle}><Story /></ThemeRoot>],
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
@@ -230,8 +240,12 @@ const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'a
   <GameCardStack piles={piles} />
 </StackFrame></ThemeRoot>` } } },
 };
+
+/** An inspected pile open under the light theme palette. */
 export const OpenLightTheme: Story = {
-  ...Open, tags: ['autodocs'], globals: { theme: 'light' },
+  ...Open,
+  name: 'Open pile · light',
+  tags: ['autodocs'], globals: { theme: 'light' },
   decorators: [(Story) => <ThemeRoot theme="light" sx={lightScopeStyle}><Story /></ThemeRoot>],
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
@@ -250,7 +264,10 @@ const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'a
   <GameCardStack piles={piles} defaultValue="North" />
 </StackFrame></ThemeRoot>` } } },
 };
+
+/** Played card piles fanning cards in right-to-left direction. */
 export const RTL: Story = {
+  name: 'RTL',
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
 const faces = [{ rank: 'A', suit: 'spades' }, { rank: 'Q', suit: 'hearts' }, { rank: 'K', suit: 'clubs' }];
@@ -272,7 +289,10 @@ const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', marginInline: 'a
     await expectMirroredDirection(canvasElement.querySelector<HTMLElement>('[data-ui="game-card-stack"]')!, '[data-played-key]');
   },
 };
+
+/** Automatically revealed cards remaining spread after pile inspection closes. */
 export const RevealedHands: Story = {
+  name: 'Revealed hands',
   args: { piles: players(6, 3).map((pile) => ({ ...pile, revealed: true })) },
   parameters: {
     docs: {
@@ -311,7 +331,10 @@ function ControlledFixture(args: GameCardStackProps) {
   const [value, setValue] = useState<string | null>(null);
   return <GameCardStack {...args} value={value} onValueChange={(next) => { args.onValueChange?.(next); setValue(next); }} />;
 }
+
+/** Pile inspection state controlled by the parent component. */
 export const Controlled: Story = {
+  name: 'Controlled open',
   render: (args) => <ControlledFixture {...args} />,
   parameters: {
     docs: {
@@ -451,7 +474,9 @@ function grid(count: number, width: number, height: number): Story {
     },
   };
 }
+/** Piles fitted automatically within a constrained container grid. */
 export const Grid: Story = {
+  name: 'Grid placement',
   ...grid(6, 320, 280),
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
@@ -467,7 +492,10 @@ const SizedStack = styled(GameCardStack)({ inlineSize: 320, blockSize: 280 });
 
 <SizedStack piles={piles} />` } } },
 };
+
+/** Six player piles fitted within a medium grid container. */
 export const GridSixMedium: Story = {
+  name: 'Six cards · medium',
   ...grid(6, 640, 360),
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
@@ -483,7 +511,10 @@ const SizedStack = styled(GameCardStack)({ inlineSize: 640, blockSize: 360 });
 
 <SizedStack piles={piles} />` } } },
 };
+
+/** Six player piles fitted within a large grid container. */
 export const GridSixLarge: Story = {
+  name: 'Six cards · large',
   ...grid(6, 900, 432),
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
@@ -499,7 +530,10 @@ const SizedStack = styled(GameCardStack)({ inlineSize: 900, blockSize: 432 });
 
 <SizedStack piles={piles} />` } } },
 };
+
+/** Four player piles fitted within a compact grid container. */
 export const GridFourCompact: Story = {
+  name: 'Four cards · compact',
   ...grid(4, 320, 280),
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
@@ -515,7 +549,10 @@ const SizedStack = styled(GameCardStack)({ inlineSize: 320, blockSize: 280 });
 
 <SizedStack piles={piles} />` } } },
 };
+
+/** Four player piles fitted within a medium grid container. */
 export const GridFourMedium: Story = {
+  name: 'Four cards · medium',
   ...grid(4, 640, 360),
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
@@ -531,7 +568,10 @@ const SizedStack = styled(GameCardStack)({ inlineSize: 640, blockSize: 360 });
 
 <SizedStack piles={piles} />` } } },
 };
+
+/** Four player piles fitted within a large grid container. */
 export const GridFourLarge: Story = {
+  name: 'Four cards · large',
   ...grid(4, 900, 432),
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
@@ -547,7 +587,10 @@ const SizedStack = styled(GameCardStack)({ inlineSize: 900, blockSize: 432 });
 
 <SizedStack piles={piles} />` } } },
 };
+
+/** Two player piles fitted within a compact grid container. */
 export const GridTwoCompact: Story = {
+  name: 'Two cards · compact',
   ...grid(2, 320, 280),
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
@@ -563,7 +606,10 @@ const SizedStack = styled(GameCardStack)({ inlineSize: 320, blockSize: 280 });
 
 <SizedStack piles={piles} />` } } },
 };
+
+/** Two player piles fitted within a medium grid container. */
 export const GridTwoMedium: Story = {
+  name: 'Two cards · medium',
   ...grid(2, 640, 360),
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
@@ -579,7 +625,10 @@ const SizedStack = styled(GameCardStack)({ inlineSize: 640, blockSize: 360 });
 
 <SizedStack piles={piles} />` } } },
 };
+
+/** Two player piles fitted within a large grid container. */
 export const GridTwoLarge: Story = {
+  name: 'Two cards · large',
   ...grid(2, 900, 432),
   parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
@@ -595,7 +644,10 @@ const SizedStack = styled(GameCardStack)({ inlineSize: 900, blockSize: 432 });
 
 <SizedStack piles={piles} />` } } },
 };
+
+/** Piles positioned using caller-provided normalized coordinates. */
 export const FreePlacement: Story = {
+  name: 'Free placement',
   args: {
     placement: 'free',
     piles: players(2, 3).map((pile, index) => ({
@@ -637,7 +689,10 @@ export function FreePlacementStack() {
     }
   },
 };
+
+/** An individual played card pile rendered outside a stack container. */
 export const StandalonePile: Story = {
+  name: 'Standalone pile',
   parameters: {
     docs: {
       source: {
@@ -706,6 +761,8 @@ const spanishPiles: readonly GameCardStackPile[] = [
   { playerKey: 'Ana', label: 'Cartas jugadas de Ana', cards: [{ id: 'ana-play-1', label: 'as de oros', value: { deck: 'spanish', suit: 'oros', rank: 1 } }] },
   { playerKey: 'Luis', label: 'Cartas jugadas de Luis', cards: [{ id: 'luis-play-1', label: 'sota de copas', value: { deck: 'spanish', suit: 'copas', rank: 10 } }] },
 ];
+
+/** Two-player truco with Spanish-deck cards and a pile in front of each seat. */
 export const Default: Story = {
   name: 'Default',
   render: () => <GameTable players={2}
