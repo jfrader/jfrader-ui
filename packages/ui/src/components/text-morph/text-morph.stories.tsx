@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
+import { settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { TextMorph, type TextMorphProps, type TextMorphPartProps } from './index';
@@ -626,6 +627,8 @@ export const FontResize: Story = {
     await waitFor(() =>
       expect(root(canvasElement).getBoundingClientRect().width).toBeGreaterThan(before),
     );
+    // The width spring settles asynchronously; a frame-cadence race must not read a mid-flight width.
+    await settleMotion(canvasElement);
     await waitFor(() =>
       expect(
         Math.abs(
