@@ -121,9 +121,13 @@ const meta = {
     docs: {
       source: { code: SOURCE },
       description: {
-        component: 'Browse photos, change thumbnail size, mark favorites and open a photo to zoom or move through the collection.',
+        component: 'Browse photos in a grid, inspect product images or choose a cover from a depth rail. Open grid and product images to zoom and pan.',
       },
-      usage: `### Collection and density
+      usage: `### Presentations
+- Use the default grid for a photo collection, variant="product" for a main image with color/size choices, or variant="cover-flow" for a short collection with one focused cover.
+- All presentations select photos by stable string ID. Product and cover examples below include their selection and keyboard contracts.
+
+### Collection and density
 - Density, favorites, current photo and viewer visibility have independent controlled state. Requests take effect only when accepted.
 - The caller handles storage, pagination and formatted details. Use for moderate collections; thumbnails are square, with no virtualization or masonry layout.
 - Density sets the column count from the configured steps; the container width never overrides it. Narrow containers produce smaller cells, and cells narrower than 7rem show the favorite below the photo.
@@ -322,7 +326,7 @@ export const PaginatedSet: Story = {
         </FixtureButton>
         <PhotoGrid
           {...args}
-          photos={args.photos.slice(page * 4, page * 4 + 4)}
+          photos={args.photos?.slice(page * 4, page * 4 + 4)}
           defaultFavorites={['p1', 'saved-page']}
         />
       </>
@@ -912,7 +916,7 @@ export const InvokerRemoval: Story = {
         photos={collection}
         onOpenChange={(open) => {
           args.onOpenChange?.(open);
-          if (open) setCollection(args.photos.slice(1));
+          if (open) setCollection(args.photos?.slice(1));
         }}
       />
     );
