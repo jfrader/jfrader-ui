@@ -14,6 +14,8 @@ import {
   type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { animate, motion, MotionConfig, useMotionValue } from 'motion/react';
+import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -77,6 +79,8 @@ export interface TimePickerProps
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   minuteStep?: TimePickerMinuteStep;
+  /** Add a draggable 24-hour face above the time options. Default: `list`. */
+  presentation?: 'list' | 'dial';
   min?: string;
   max?: string;
   /** Supply a locale so server and client text match. */
@@ -99,6 +103,8 @@ const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR;
 const MILLISECONDS_PER_MINUTE = 60_000;
 const POPUP_BLOCK_LIMIT = '250px';
+const DIAL_POPUP_BLOCK_LIMIT = '480px';
+const DIAL_POPUP_INLINE_SIZE = '240px';
 const DEFAULT_VALUE = '09:00';
 const VIEWPORT_PADDING = 8;
 const ANCHOR_GAP = 8;
@@ -111,7 +117,8 @@ function canonical(time: number): string {
   return `${String(Math.floor(time / MINUTES_PER_HOUR)).padStart(2, '0')}:${String(time % MINUTES_PER_HOUR).padStart(2, '0')}`;
 }
 function keepOptionVisible(option: HTMLElement, popup: HTMLElement) {
-  if (option.offsetTop < popup.scrollTop) popup.scrollTop = option.offsetTop;
+  const inset = popup.querySelector<HTMLElement>('[data-time-dial-frame]')?.offsetHeight ?? 0;
+  if (option.offsetTop < popup.scrollTop + inset) popup.scrollTop = option.offsetTop - inset;
   else if (option.offsetTop + option.offsetHeight > popup.scrollTop + popup.clientHeight)
     popup.scrollTop = option.offsetTop + option.offsetHeight - popup.clientHeight;
 }
@@ -190,6 +197,163 @@ const optionStyle = css({
     '&[aria-selected="true"]': { border: '1px solid Highlight' },
   },
 });
+const dialContentStyle = css({
+  inlineSize: `max(${DIAL_POPUP_INLINE_SIZE}, var(--time-picker-inline-size))`,
+  maxBlockSize: `min(${DIAL_POPUP_BLOCK_LIMIT}, var(--time-picker-available-height, ${DIAL_POPUP_BLOCK_LIMIT}))`,
+});
+const dialFrameStyle = css({
+  position: 'sticky',
+  insetBlockStart: 0,
+  zIndex: 1,
+  background: vars.color.surfaceRaised,
+  paddingBlock: vars.space[3],
+});
+
+const DIAL_SIZE = 192;
+const DIAL_LABEL_RADIUS = 76;
+const DIAL_HAND_LENGTH = 60;
+const FULL_TURN = 360;
+const DIAL_SPRING = { type: 'spring', stiffness: 320, damping: 32 } as const;
+const dialStyle = css({
+  position: 'relative',
+  inlineSize: DIAL_SIZE,
+  blockSize: DIAL_SIZE,
+  marginInline: 'auto',
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.full,
+  background: vars.color.surfaceInset,
+  color: vars.color.text,
+  touchAction: 'none',
+  userSelect: 'none',
+  cursor: 'grab',
+  flexShrink: 0,
+});
+const dialLabelStyle = css({
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  fontSize: vars.textSize.xs,
+  pointerEvents: 'none',
+});
+const dialHandStyle = css({
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  inlineSize: 2,
+  blockSize: DIAL_HAND_LENGTH,
+  marginBlockStart: -DIAL_HAND_LENGTH,
+  background: vars.color.accentText,
+  transformOrigin: '50% 100%',
+  pointerEvents: 'none',
+});
+const dialReadoutStyle = css({
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  background: vars.color.surfaceInset,
+  paddingInline: vars.space[2],
+  paddingBlock: vars.space[1],
+  fontSize: vars.textSize.sm,
+  fontWeight: vars.fontWeight.medium,
+  whiteSpace: 'nowrap',
+  pointerEvents: 'none',
+});
+
+type TimeOption = { time: number; value: string; label: string };
+interface DialFaceProps {
+  times: readonly TimeOption[];
+  value: number | undefined;
+  formatter: Intl.DateTimeFormat;
+  onCommit: (value: string) => void;
+  open: boolean;
+}
+function DialFace({ times, value, formatter, onCommit, open }: DialFaceProps) {
+  const reduced = useReducedMotion();
+  const rotation = useMotionValue((value ?? 0) / MINUTES_PER_DAY * FULL_TURN);
+  const gesture = useRef<{ pointer: number; node: HTMLDivElement; destination?: string } | null>(null);
+  const animation = useRef<ReturnType<typeof animate> | null>(null);
+  const restore = () => {
+    animation.current?.stop();
+    const target = ((value ?? 0) / MINUTES_PER_DAY) * FULL_TURN;
+    const nearestTurn = target + Math.round((rotation.get() - target) / FULL_TURN) * FULL_TURN;
+    if (reduced) rotation.set(nearestTurn);
+    else animation.current = animate(rotation, nearestTurn, DIAL_SPRING);
+  };
+  useEffect(() => {
+    const active = gesture.current;
+    gesture.current = null;
+    if (active?.node.hasPointerCapture(active.pointer)) active.node.releasePointerCapture(active.pointer);
+    restore();
+    return () => {
+      animation.current?.stop();
+      const active = gesture.current;
+      gesture.current = null;
+      if (active?.node.hasPointerCapture(active.pointer)) active.node.releasePointerCapture(active.pointer);
+    };
+  }, [value, open, reduced]);
+  const sample = (node: HTMLDivElement, x: number, y: number) => {
+    const rect = node.getBoundingClientRect();
+    const radians = Math.atan2(x - rect.left - rect.width / 2, -(y - rect.top - rect.height / 2));
+    const angle = ((radians * 180) / Math.PI + FULL_TURN) % FULL_TURN;
+    const time = (angle / FULL_TURN) * MINUTES_PER_DAY;
+    const destination = times.reduce<TimeOption | undefined>(
+      (best, candidate) => !best || Math.abs(candidate.time - time) < Math.abs(best.time - time) ? candidate : best,
+      undefined,
+    );
+    rotation.set(angle + Math.round((rotation.get() - angle) / FULL_TURN) * FULL_TURN);
+    if (gesture.current) gesture.current.destination = destination?.value;
+  };
+  const cancel = () => {
+    gesture.current = null;
+    restore();
+  };
+  return (
+    <MotionConfig reducedMotion="user">
+      <div
+        aria-hidden="true"
+        data-ui="time-picker-dial"
+        css={dialStyle}
+        onPointerDown={(event) => {
+          if (event.button !== 0 || gesture.current || times.length === 0) return;
+          event.preventDefault();
+          animation.current?.stop();
+          gesture.current = { pointer: event.pointerId, node: event.currentTarget };
+          event.currentTarget.setPointerCapture(event.pointerId);
+          sample(event.currentTarget, event.clientX, event.clientY);
+        }}
+        onPointerMove={(event) => {
+          if (gesture.current?.pointer === event.pointerId) sample(event.currentTarget, event.clientX, event.clientY);
+        }}
+        onPointerUp={(event) => {
+          if (gesture.current?.pointer !== event.pointerId) return;
+          sample(event.currentTarget, event.clientX, event.clientY);
+          const destination = gesture.current.destination;
+          gesture.current = null;
+          event.currentTarget.releasePointerCapture(event.pointerId);
+          restore();
+          if (destination !== undefined) onCommit(destination);
+        }}
+        onPointerCancel={(event) => { if (gesture.current?.pointer === event.pointerId) cancel(); }}
+        onLostPointerCapture={(event) => { if (gesture.current?.pointer === event.pointerId) cancel(); }}
+      >
+        {[0, 6, 12, 18].map((hour) => {
+          const radians = hour / 24 * Math.PI * 2;
+          return (
+            <span key={hour} css={dialLabelStyle}
+              style={{ transform: `translate(-50%, -50%) translate(${Math.sin(radians) * DIAL_LABEL_RADIUS}px, ${-Math.cos(radians) * DIAL_LABEL_RADIUS}px)` }}>
+              {formatter.format(new Date(hour * MINUTES_PER_HOUR * MILLISECONDS_PER_MINUTE))}
+            </span>
+          );
+        })}
+        <motion.span css={dialHandStyle} style={{ rotate: rotation }} />
+        <span css={dialReadoutStyle}>
+          {value === undefined ? '' : formatter.format(new Date(value * MILLISECONDS_PER_MINUTE))}
+        </span>
+      </div>
+    </MotionConfig>
+  );
+}
 
 export function TimePicker({
   ref,
@@ -200,6 +364,7 @@ export function TimePicker({
   defaultOpen = false,
   onOpenChange,
   minuteStep = 15,
+  presentation = 'list',
   min,
   max,
   locale,
@@ -336,9 +501,10 @@ export function TimePicker({
     const scrollActive = () => {
       const active = popup.querySelector<HTMLElement>('[data-active]');
       if (!active) return;
+      const inset = popup.querySelector<HTMLElement>('[data-time-dial-frame]')?.offsetHeight ?? 0;
       const top = active.offsetTop;
       if (!centered) {
-        popup.scrollTop = top - (popup.clientHeight - active.offsetHeight) / 2;
+        popup.scrollTop = top - inset - (popup.clientHeight - inset - active.offsetHeight) / 2;
         centered = true;
       } else keepOptionVisible(active, popup);
     };
@@ -348,13 +514,13 @@ export function TimePicker({
       subtree: true,
       attributeFilter: ['data-active'],
     });
-    // Select's public option hover interaction seeds virtual focus for a valid non-option value.
+    // Select's public option hover interaction synchronizes the dial or seeds an off-grid value.
     // This does not commit or alter aria-selected; subsequent navigation belongs to Select.
     const frame = view.requestAnimationFrame(() => {
       if (
         !openedByTypeaheadRef.current &&
         selectedMinutes !== undefined &&
-        !times.some((time) => time.value === value)
+        (presentation === 'dial' || !times.some((time) => time.value === value))
       ) {
         const following = times.find((time) => time.time >= selectedMinutes) ?? times.at(-1);
         const option = following && popup.querySelector<HTMLElement>(`[data-time="${following.value}"]`);
@@ -368,7 +534,7 @@ export function TimePicker({
       view.removeEventListener('resize', measure);
       view.cancelAnimationFrame(frame);
     };
-  }, [open, popupNode, selectedMinutes, times, value, dir, control?.dir, slotProps?.root?.dir]);
+  }, [open, popupNode, selectedMinutes, times, value, presentation, dir, control?.dir, slotProps?.root?.dir]);
 
   return (
     <WithSx
@@ -469,8 +635,22 @@ export function TimePicker({
               {...slotProps?.content}
               ref={mergedContentRef}
               dir={dir}
-              css={[contentStyle, slotProps?.content?.css]}
+              css={[contentStyle, presentation === 'dial' && dialContentStyle, slotProps?.content?.css]}
             >
+              {presentation === 'dial' && (
+                <div data-time-dial-frame css={dialFrameStyle}>
+                  <DialFace
+                    times={times}
+                    value={selectedMinutes}
+                    formatter={formatter}
+                    open={open}
+                    onCommit={(next) => {
+                      requestValue(next);
+                      requestOpen(false);
+                    }}
+                  />
+                </div>
+              )}
               {times.map((time) => (
                 <Option
                   {...slotProps?.option}

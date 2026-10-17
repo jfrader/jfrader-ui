@@ -31,6 +31,95 @@ const FRUITS: readonly SelectOption[] = [
   { value: 'cherry', label: 'Cherry' },
 ];
 
+const morphSnippet = `<Select variant="morph" label="Fruit" defaultValue="apple"
+  options={[
+    { value: 'apple', label: 'Apple' },
+    { value: 'banana', label: 'Banana', disabled: true },
+    { value: 'cherry', label: 'Cherry' },
+  ]} />`;
+
+/** Open the pill to choose a fruit. */
+export const Morph: EasyStory = {
+  args: { variant: 'morph', label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <Select {...args} />,
+  parameters: { docs: { source: { code: morphSnippet } } },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('combobox');
+    await userEvent.tab();
+    await expect(trigger.ownerDocument.activeElement).toBe(trigger);
+    await expect(getComputedStyle(trigger).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{ArrowDown}');
+    const list = within(canvasElement.ownerDocument.body).getByRole('listbox');
+    await expect(list).toHaveAttribute('data-variant', 'morph');
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('cherry');
+    await expect(trigger).toHaveTextContent('Cherry');
+    await expect(trigger.ownerDocument.activeElement).toBe(trigger);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(within(canvasElement.ownerDocument.body).queryByRole('listbox')).toBeNull();
+    await waitFor(async () => { await expect(list).not.toBeVisible(); });
+    await userEvent.keyboard('{ArrowDown}{Home}{Escape}');
+    await expect(trigger).toHaveTextContent('Cherry');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+export const MorphLight: EasyStory = {
+  ...Morph,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+};
+/** Enable reduced motion to open and close without geometric animation. */
+export const MorphReducedMotion: EasyStory = {
+  ...Morph,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
+    const trigger = canvas.getByRole('combobox');
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowDown}');
+    const panel = within(canvasElement.ownerDocument.body).getByRole('listbox');
+    await expect(panel.style.transform).toBe('');
+    await userEvent.keyboard('{Escape}');
+    await expect(panel).not.toBeVisible();
+    await expect(trigger.ownerDocument.activeElement).toBe(trigger);
+  },
+};
+export const MorphRTL: EasyStory = {
+  ...Morph,
+  render: (args) => <div dir="rtl"><Select {...args} /></div>,
+};
+export const MorphOpen: EasyStory = {
+  args: { variant: 'morph', label: LABEL, options: FRUITS, defaultValue: 'apple', open: true },
+  render: (args) => <Select {...args} />,
+  tags: ['!autodocs'],
+  parameters: { docs: { source: { code: morphSnippet } } },
+};
+export const MorphOpenLight: EasyStory = {
+  ...MorphOpen,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+};
+export const MorphControlledRejects: EasyStory = {
+  args: { variant: 'morph', label: LABEL, options: FRUITS, value: 'apple', open: true,
+    name: 'fruit', onValueChange: fn(), onOpenChange: fn() },
+  render: (args) => <form><Select {...args} /></form>,
+  tags: ['!autodocs'],
+  parameters: { docs: { source: { code: '<Select variant="morph" label="Fruit" options={fruits}\n  value={fruit} onValueChange={setFruit} open={open} onOpenChange={setOpen} />' } } },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('combobox');
+    await userEvent.tab();
+    await userEvent.keyboard('{End}{Enter}');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('cherry');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+    await expect(trigger).toHaveTextContent('Apple');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(new FormData(canvasElement.querySelector('form')!).get('fruit')).toBe('apple');
+    await expect(within(canvasElement.ownerDocument.body).getByRole('listbox')).toBeVisible();
+  },
+};
+
 const snippet = `<Select
   label="Fruit"
   options={[
@@ -66,7 +155,12 @@ const meta: Meta<SelectCompoundProps> = {
 ### Values and forms
 - value and open support controlled state independently. Option values must be unique.
 - The list stays mounted and hidden when closed so labels remain available; positioning runs only when open.
-- name adds a hidden form input. Native required validation is not supported.`,
+- name adds a hidden form input. Native required validation is not supported.
+
+### Morph presentation
+- Set \`variant="morph"\` for a pill trigger and a measured trigger-to-panel spring. The same option collection, keyboard map and form value apply in easy and compound mode.
+- Reduced motion skips the spring. Closing removes the list from interaction immediately, before its visual collapse finishes.
+- Use item children for icons or trailing details. For typed search use Combobox; this variant does not add search, groups or a second selection model.`,
     },
   },
 };

@@ -8,6 +8,8 @@
 
 ### Added
 
+- TimePicker accepts `presentation="dial"` for a draggable, step-snapped 24-hour face alongside its keyboard-operated time list. Values, bounds and form submission keep the existing HH:mm contract.
+- Select accepts `variant="morph"` for a pill trigger that expands into its floating option panel, with reduced-motion support and the existing selection and keyboard behavior.
 - Card supports `appearance="glass"` and `appearance="holo"` materials. Opt-in `holoTilt` follows mouse and pen movement, with no tilt under reduced motion.
 
 ## 0.8.1

@@ -55,14 +55,20 @@ function guardEventWrapperReentrancy() {
 beforeAll(guardEventWrapperReentrancy);
 
 // Emulate the browser preference itself: mocking matchMedia does not activate CSS media rules.
+const storyMediaPreferences: Record<string, string> = {
+  'Reduced Transparency': 'prefers-reduced-transparency',
+  'Dial Reduced Motion': 'prefers-reduced-motion',
+  'Morph Reduced Motion': 'prefers-reduced-motion',
+};
 beforeEach(async ({ task }) => {
-  if (task.name !== 'Reduced Transparency') return;
+  const preference = storyMediaPreferences[task.name];
+  if (!preference) return;
   await cdp().send('Emulation.setEmulatedMedia', {
-    features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }],
+    features: [{ name: preference, value: 'reduce' }],
   });
 });
 
 afterEach(async ({ task }) => {
-  if (task.name !== 'Reduced Transparency') return;
+  if (!storyMediaPreferences[task.name]) return;
   await cdp().send('Emulation.setEmulatedMedia', { features: [] });
 });

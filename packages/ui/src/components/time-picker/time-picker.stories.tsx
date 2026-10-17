@@ -2,7 +2,7 @@ import { act, useState } from 'react';
 import { renderToString } from 'react-dom/server';
 import { hydrateRoot } from 'react-dom/client';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
+import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
@@ -64,6 +64,11 @@ const meta = {
 - Values between steps display without rounding. \`minuteStep=1\` mounts all 1,440 options; measure performance before using it across many fields.
 - \`required\` is announced to assistive technology. The hidden field does not enforce browser constraint validation.
 - Check screen readers, forced colors and reduced motion manually.
+
+### Dial presentation
+- Set \`presentation="dial"\` to drag a 24-hour face. Release to select the nearest available time and close; cancelling a gesture leaves the value unchanged.
+- The time list remains available for keyboard and screen-reader use. Its keys are unchanged, including in RTL; the clock runs clockwise.
+- Values remain civil HH:mm. Dates, time-zone comparisons, DST conversion and working-hour bands belong to the app.
 
 ### Keyboard
 - Focus stays on the Select trigger. Arrows wrap, Home and End jump, and typing searches.
@@ -741,5 +746,97 @@ export const ReducedMotion: Story = {
           'Enable reduced motion to check that transitions take 0s. This story checks structure only; selection and scrolling are always immediate.',
       },
     },
+  },
+};
+
+const dialSnippet = '<TimePicker label="Start time" presentation="dial" locale="en-GB"\n  defaultValue="09:00" minuteStep={15} />';
+
+/** Drag the clock face or choose a time from the list. */
+export const Dial: Story = {
+  args: { presentation: 'dial' },
+  parameters: { docs: { source: { code: dialSnippet } } },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('combobox');
+    await userEvent.tab();
+    await expect(trigger.ownerDocument.activeElement).toBe(trigger);
+    await expect(getComputedStyle(trigger).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{ArrowDown}{End}{Enter}');
+    await expect(trigger).toHaveTextContent(format('23:45'));
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('23:45');
+    await userEvent.keyboard('{ArrowDown}{Home}{Enter}');
+    await expect(trigger).toHaveTextContent(format('00:00'));
+    await userEvent.click(trigger);
+    const dial = canvasElement.ownerDocument.querySelector<HTMLElement>('[data-ui="time-picker-dial"]')!;
+    await expect(dial).toBeVisible();
+    await expect(dial).toHaveAttribute('aria-hidden', 'true');
+    const panel = body(canvasElement).getByRole('listbox');
+    await expect(dial.getBoundingClientRect().left).toBeGreaterThanOrEqual(panel.getBoundingClientRect().left);
+    await expect(dial.getBoundingClientRect().right).toBeLessThanOrEqual(panel.getBoundingClientRect().right);
+    await userEvent.keyboard('{Escape}');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  },
+};
+export const DialLight: Story = {
+  ...Dial,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+};
+/** Enable reduced motion: the hand snaps without a spring. */
+export const DialReducedMotion: Story = {
+  args: { presentation: 'dial', defaultOpen: true },
+  tags: ['!autodocs'],
+  parameters: { docs: { source: { code: dialSnippet } } },
+  play: async ({ canvas, userEvent }) => {
+    await expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
+    const trigger = canvas.getByRole('combobox');
+    await userEvent.tab();
+    await userEvent.keyboard('{End}{Enter}');
+    await expect(trigger).toHaveTextContent(format('23:45'));
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  },
+};
+export const DialRTL: Story = {
+  ...Dial,
+  args: { presentation: 'dial', dir: 'rtl' },
+};
+export const DialControlledGesture: Story = {
+  args: { presentation: 'dial', value: '09:00', open: true, min: '06:00', max: '18:00' },
+  tags: ['!autodocs'],
+  parameters: { docs: { source: { code: '<TimePicker label="Start time" presentation="dial" locale="en-GB"\n  value={time} onValueChange={setTime} min="06:00" max="18:00" />' } } },
+  play: async ({ canvas, canvasElement, args }) => {
+    const dial = canvasElement.ownerDocument.querySelector<HTMLElement>('[data-ui="time-picker-dial"]')!;
+    const capture = spyOn(dial, 'setPointerCapture').mockImplementation(() => {});
+    const release = spyOn(dial, 'releasePointerCapture').mockImplementation(() => {});
+    const rect = dial.getBoundingClientRect();
+    const point = { pointerId: 1, button: 0, clientX: rect.left + rect.width / 2, clientY: rect.bottom };
+    try {
+      fireEvent.pointerDown(dial, point);
+      fireEvent.pointerMove(dial, point);
+      await expect(args.onValueChange).not.toHaveBeenCalled();
+      fireEvent.pointerCancel(dial, point);
+      await expect(args.onValueChange).not.toHaveBeenCalled();
+      fireEvent.pointerDown(dial, point);
+      fireEvent.pointerUp(dial, point);
+      await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+      await expect(args.onValueChange).toHaveBeenLastCalledWith('12:00');
+      await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+      await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+      await expect(canvas.getByRole('combobox')).toHaveTextContent(format('09:00'));
+      await expect(canvas.getByRole('combobox')).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      capture.mockRestore();
+      release.mockRestore();
+    }
+  },
+};
+export const DialOpenLight: Story = {
+  args: { presentation: 'dial', defaultOpen: true },
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  tags: ['!autodocs'],
+  parameters: { docs: { source: { code: dialSnippet } } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.tab();
+    await expectActive(canvas.getByRole('combobox'), '09:00');
   },
 };
