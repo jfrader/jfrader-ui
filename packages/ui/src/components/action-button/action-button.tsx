@@ -18,6 +18,7 @@ import { WithSx } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { Button, type ButtonProps } from '../button';
+import { buttonBlockSizes } from '../button/button';
 import { Spinner } from '../spinner';
 
 export type ActionButtonValue = 'idle' | 'pending' | 'success' | 'error';
@@ -89,9 +90,9 @@ const iconStyle = css({
   '& svg': { inlineSize: '1em', blockSize: '1em' },
 });
 const heights = {
-  sm: css({ minBlockSize: vars.space[8] }),
-  md: css({ minBlockSize: vars.space[10] }),
-  lg: css({ minBlockSize: vars.space[12] }),
+  sm: css({ minBlockSize: buttonBlockSizes.sm }),
+  md: css({ minBlockSize: buttonBlockSizes.md }),
+  lg: css({ minBlockSize: buttonBlockSizes.lg }),
 };
 
 function ActionButtonFace({ children, value }: { children: ReactNode; value: ActionButtonValue }) {

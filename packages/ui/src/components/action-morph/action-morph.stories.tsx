@@ -128,6 +128,10 @@ export const KeyboardAndDrafts: Story = {
     await userEvent.keyboard('{ArrowUp}');
     const message = await document.findByRole('menuitem', { name: 'Message' });
     await expect(message.ownerDocument.activeElement).toBe(message);
+    await expect(getComputedStyle(message).appearance).toBe('none');
+    await expect(getComputedStyle(message).outlineStyle).toBe('solid');
+    await expect(getComputedStyle(message).outlineWidth).toBe('2px');
+    await expect(getComputedStyle(message).outlineOffset).toBe('-2px');
     await userEvent.keyboard('{Home}');
     const note = document.getByRole('menuitem', { name: 'Note' });
     await expect(note.ownerDocument.activeElement).toBe(note);

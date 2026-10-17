@@ -30,6 +30,7 @@ import { LayerContent, MenuLayer, useLayerDismiss } from '../../overlay/overlay-
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { css, type Interpolation, type Theme } from '../../styling/css';
+import { focusRingInset } from '../../styling/focus-ring';
 import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -170,6 +171,7 @@ const titleStyle = css({
   color: vars.color.text,
 });
 const itemStyle = css({
+  appearance: 'none',
   inlineSize: '100%',
   minBlockSize: vars.space[10],
   border: 0,
@@ -183,6 +185,7 @@ const itemStyle = css({
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   '&[aria-disabled="true"]': { opacity: 0.55 },
+  '&:focus-visible': { ...focusRingInset },
 });
 const formStyle = css({ display: 'grid', gap: vars.space[3] });
 const errorStyle = css({
