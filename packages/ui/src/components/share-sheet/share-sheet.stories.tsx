@@ -67,6 +67,18 @@ function ReplacementAccess(props: ComponentPropsWithRef<typeof Select.Trigger>) 
   return <Select.Trigger {...props} data-replacement="access" />;
 }
 
+export const InlineComposition: Story = {
+  args: { presentation: 'inline', people: [], channels: [] },
+  parameters: { docs: { source: { code: '<ShareSheet presentation="inline" title="Roadmap" link={url} people={[]} accessOptions={access}><Text>Manage collaborators</Text></ShareSheet>', language: 'tsx' } } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('heading', { name: 'Share Roadmap' })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Copy link' })).toBeVisible();
+    await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: 'Share' })).not.toBeInTheDocument();
+  },
+};
+
 export const SlotReplacements: Story = {
   tags: ['!autodocs'],
   args: {

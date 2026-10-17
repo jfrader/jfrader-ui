@@ -24,6 +24,8 @@
   "exports": {
     "./control-center": { "types": "./src/components/control-center/index.ts", "import": "./src/components/control-center/index.ts" },
     "./payment-flow": { "types": "./src/components/payment-flow/index.ts", "import": "./src/components/payment-flow/index.ts" },
+    "./share-access": { "types": "./src/components/share-access/index.ts", "import": "./src/components/share-access/index.ts" },
+    "./voice-recorder": { "types": "./src/components/voice-recorder/index.ts", "import": "./src/components/voice-recorder/index.ts" },
     "./booking-pill": { "types": "./src/components/booking-pill/index.ts", "import": "./src/components/booking-pill/index.ts" },
     "./multi-region-failover": { "types": "./src/components/multi-region-failover/index.ts", "import": "./src/components/multi-region-failover/index.ts" },
     "./password-strength": { "types": "./src/components/password-strength/index.ts", "import": "./src/components/password-strength/index.ts" },

@@ -161,7 +161,8 @@ export interface ShareSheetProps
   onChannel?: (id: string) => void | Promise<unknown>;
   onCopy?: (access: string) => void;
   align?: 'start' | 'end' | 'center';
-  presentation?: 'responsive' | 'popover' | 'sheet';
+  /** Inline renders the heading, children, link copy and access picker without an overlay or trigger. */
+  presentation?: 'responsive' | 'popover' | 'sheet' | 'inline';
   locale?: string;
   messages?: Partial<ShareSheetMessages>;
   slotProps?: ShareSheetSlotProps;
@@ -203,6 +204,15 @@ const rootStyle = css({
   display: 'inline-block',
   fontFamily: vars.font.sans,
   color: vars.color.text,
+});
+const inlinePanelStyle = css({
+  padding: 0,
+  border: 0,
+  borderRadius: 0,
+  boxShadow: 'none',
+  overflow: 'visible',
+  inlineSize: '100%',
+  maxBlockSize: 'none',
 });
 const panelStyle = css({
   ...raisedSurface,
@@ -350,9 +360,11 @@ function measureGeometry(element: Element): Geometry {
 function ShareSheetShell({
   origin,
   children,
+  inline,
 }: {
   origin: (target: Geometry) => Geometry | null;
   children: ReactNode;
+  inline?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const width = useMotionValue<number | string>('auto');
@@ -404,7 +416,8 @@ function ShareSheetShell({
       observer.disconnect();
       for (const value of [width, height, radius]) value.stop();
     };
-  }, [reduced, width, height, radius]);
+  }, [reduced, width, height, radius, inline]);
+  if (inline) return children;
   return (
     <motion.div
       ref={ref}
@@ -445,11 +458,14 @@ function ShareSheetLayer({
   messages,
   slotProps: slots = {},
   slots: replacementSlots,
+  children,
   ...props
 }: ShareSheetProps & { nodeId?: string }) {
   const text = { ...DEFAULT_MESSAGES, ...messages };
   const id = useId();
-  const [open = false, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
+  const inline = presentation === 'inline';
+  const [openState = false, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
+  const open = inline || openState;
   const [selected = EMPTY_IDS, requestSelected] = useControlledState<readonly string[]>(
     valueProp,
     defaultValue,
@@ -472,7 +488,10 @@ function ShareSheetLayer({
   );
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
-  const selectedAnnouncement = useRef<{ value: readonly string[]; message: string } | null>(null);
+  const selectedAnnouncement = useRef<{
+    value: readonly string[];
+    message: string;
+  } | null>(null);
   const accessAnnouncement = useRef<{ value: string; message: string } | null>(null);
   const [sentNames, setSentNames] = useState('');
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -496,7 +515,7 @@ function ShareSheetLayer({
   const [dialogHost, setDialogHost] = useState<HTMLDialogElement | null>(null);
   const [availableHeight, setAvailableHeight] = useState<number>();
   const floating = useOverlayFloating({
-    open,
+    open: open && !inline,
     nodeId,
     placement: align === 'center' ? 'bottom' : `bottom-${align}`,
     transform: false,
@@ -599,7 +618,7 @@ function ShareSheetLayer({
     wasOpen.current = open;
   }, [open, sheet]);
   useEffect(() => {
-    if (!open) return;
+    if (!open || inline) return;
     const win = rootRef.current?.ownerDocument.defaultView;
     const frame = win?.requestAnimationFrame(() => {
       const target = migrationTarget.current;
@@ -614,7 +633,7 @@ function ShareSheetLayer({
     return () => {
       if (frame !== undefined) win?.cancelAnimationFrame(frame);
     };
-  }, [open, sheet, face]);
+  }, [open, sheet, face, inline]);
   useEffect(
     () => () => {
       generation.current += 1;
@@ -703,9 +722,10 @@ function ShareSheetLayer({
     try {
       await onSend(submission);
       if (activeRequest(token)) {
-        const names = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(
-          submission.people.map((person) => person.name),
-        );
+        const names = new Intl.ListFormat(locale, {
+          style: 'long',
+          type: 'conjunction',
+        }).format(submission.people.map((person) => person.name));
         setSentNames(names);
         setFaceMotion(true);
         setFace('sent');
@@ -750,7 +770,7 @@ function ShareSheetLayer({
       if (token === generation.current) channelBusy.current.delete(item.id);
     }
   };
-  const titleId = `${id}-title`;
+  const titleId = slots.title?.id ?? `${id}-title`;
   const errorId = `${id}-error`;
   const copyErrorId = `${id}-copy-error`;
   const channelErrorId = (channelId: string) =>
@@ -758,7 +778,9 @@ function ShareSheetLayer({
   const contentId = `${id}-content`;
   const count = new Intl.NumberFormat(locale).format(selectedPeople.length);
   const category = new Intl.PluralRules(locale).select(selectedPeople.length);
-  const contentStyle: CSSProperties & { '--share-sheet-available-height'?: string } = {
+  const contentStyle: CSSProperties & {
+    '--share-sheet-available-height'?: string;
+  } = {
     ...contentSlot.style,
     '--share-sheet-available-height':
       !sheet && availableHeight !== undefined ? `${availableHeight}px` : undefined,
@@ -773,7 +795,7 @@ function ShareSheetLayer({
     return sheet || !trigger ? { ...target, height: 0 } : measureGeometry(trigger);
   };
   const surface = (
-    <ShareSheetShell origin={entranceOrigin}>
+    <ShareSheetShell origin={entranceOrigin} inline={inline}>
       <Content
         {...contentSlot}
         ref={panelMergedRef}
@@ -782,14 +804,14 @@ function ShareSheetLayer({
         data-ui="share-sheet-content"
         data-sheet={sheet || undefined}
         data-face={face}
-        role={sheet ? undefined : 'dialog'}
+        role={inline || sheet ? undefined : 'dialog'}
         aria-busy={pending || undefined}
         aria-labelledby={[slots.content?.['aria-labelledby'], titleId].filter(Boolean).join(' ')}
         aria-describedby={
           [slots.content?.['aria-describedby'], error && errorId].filter(Boolean).join(' ') ||
           undefined
         }
-        css={[panelStyle, slots.content?.css]}
+        css={[panelStyle, inline && inlinePanelStyle, slots.content?.css]}
         style={contentStyle}
         onKeyDownCapture={(event) => {
           slots.content?.onKeyDownCapture?.(event);
@@ -809,7 +831,11 @@ function ShareSheetLayer({
             onPointerDown={(event) => {
               slots.grabber?.onPointerDown?.(event);
               if (event.defaultPrevented || event.button !== 0 || !event.isPrimary) return;
-              drag.current = { id: event.pointerId, y: event.clientY, time: event.timeStamp };
+              drag.current = {
+                id: event.pointerId,
+                y: event.clientY,
+                time: event.timeStamp,
+              };
               event.currentTarget.setPointerCapture?.(event.pointerId);
             }}
             onPointerUp={(event) => {
@@ -839,6 +865,7 @@ function ShareSheetLayer({
           <Title {...slots.title} id={titleId} css={[titleStyle, slots.title?.css]}>
             {text.heading(title)}
           </Title>
+          {children}
           <motion.div
             key={face}
             data-ui="share-sheet-face"
@@ -964,7 +991,7 @@ function ShareSheetLayer({
                     {text.copyFailed}
                   </p>
                 )}
-                {channels.length > 0 && (
+                {!inline && channels.length > 0 && (
                   <ChannelList {...slots.channelList} css={[rowStyle, slots.channelList?.css]}>
                     {channels.map((item) => (
                       <div key={item.id}>
@@ -1001,7 +1028,7 @@ function ShareSheetLayer({
                     ))}
                   </ChannelList>
                 )}
-                {selectedPeople.length > 0 && (
+                {!inline && selectedPeople.length > 0 && (
                   <SelectedList {...slots.selectedList} css={[rowStyle, slots.selectedList?.css]}>
                     {selectedPeople.map((person) => (
                       <Button
@@ -1017,58 +1044,62 @@ function ShareSheetLayer({
                     ))}
                   </SelectedList>
                 )}
-                <section aria-labelledby={`${id}-recent`}>
-                  <h3 id={`${id}-recent`}>{text.recentPeople}</h3>
-                  <PeopleList
-                    {...slots.peopleList}
-                    ref={peopleMergedRef}
-                    css={[peopleStyle, slots.peopleList?.css]}
-                  >
-                    {people.map((person) => (
-                      <Button
-                        key={person.id}
-                        data-share-control={`person-${person.id}`}
-                        variant="outline"
-                        aria-pressed={selected.includes(person.id)}
-                        css={personStyle}
-                        onClick={() => toggle(person)}
-                      >
-                        <span aria-hidden="true">
-                          <Avatar name={person.name} src={person.src} size="sm" />
-                        </span>
-                        {person.name}
-                        {selected.includes(person.id) && <span aria-hidden="true">✓</span>}
-                      </Button>
-                    ))}
-                  </PeopleList>
-                </section>
+                {!inline && (
+                  <section aria-labelledby={`${id}-recent`}>
+                    <h3 id={`${id}-recent`}>{text.recentPeople}</h3>
+                    <PeopleList
+                      {...slots.peopleList}
+                      ref={peopleMergedRef}
+                      css={[peopleStyle, slots.peopleList?.css]}
+                    >
+                      {people.map((person) => (
+                        <Button
+                          key={person.id}
+                          data-share-control={`person-${person.id}`}
+                          variant="outline"
+                          aria-pressed={selected.includes(person.id)}
+                          css={personStyle}
+                          onClick={() => toggle(person)}
+                        >
+                          <span aria-hidden="true">
+                            <Avatar name={person.name} src={person.src} size="sm" />
+                          </span>
+                          {person.name}
+                          {selected.includes(person.id) && <span aria-hidden="true">✓</span>}
+                        </Button>
+                      ))}
+                    </PeopleList>
+                  </section>
+                )}
                 {error && (
                   <p id={errorId} css={errorStyle}>
                     {error}
                   </p>
                 )}
-                <div css={rowStyle}>
-                  <SendButton
-                    {...slots.sendButton}
-                    data-share-control="send"
-                    loading={pending}
-                    disabled={!validAccess || !onSend || slots.sendButton?.disabled}
-                    aria-describedby={
-                      [slots.sendButton?.['aria-describedby'], error && errorId]
-                        .filter(Boolean)
-                        .join(' ') || undefined
-                    }
-                    onClick={(event) => {
-                      slots.sendButton?.onClick?.(event);
-                      if (!event.defaultPrevented) void send();
-                    }}
-                  >
-                    {pending ? text.sending : text.send(count, category)}
-                  </SendButton>
-                  <Button variant="ghost" data-share-control="close" onClick={close}>
-                    {text.close}
-                  </Button>
-                </div>
+                {!inline && (
+                  <div css={rowStyle}>
+                    <SendButton
+                      {...slots.sendButton}
+                      data-share-control="send"
+                      loading={pending}
+                      disabled={!validAccess || !onSend || slots.sendButton?.disabled}
+                      aria-describedby={
+                        [slots.sendButton?.['aria-describedby'], error && errorId]
+                          .filter(Boolean)
+                          .join(' ') || undefined
+                      }
+                      onClick={(event) => {
+                        slots.sendButton?.onClick?.(event);
+                        if (!event.defaultPrevented) void send();
+                      }}
+                    >
+                      {pending ? text.sending : text.send(count, category)}
+                    </SendButton>
+                    <Button variant="ghost" data-share-control="close" onClick={close}>
+                      {text.close}
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </motion.div>
@@ -1095,6 +1126,16 @@ function ShareSheetLayer({
         : 'dark') as 'light' | 'dark'),
     portalContainer: dialogHost,
   };
+  if (inline)
+    return (
+      <WithSx className={className} styles={rootStyle} sx={sx}>
+        {(rootClass) => (
+          <div {...props} ref={rootMergedRef} className={rootClass} data-ui="share-sheet">
+            {surface}
+          </div>
+        )}
+      </WithSx>
+    );
   return (
     <WithSx className={className} styles={rootStyle} sx={sx}>
       {(rootClass) => (

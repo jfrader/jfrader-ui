@@ -26,7 +26,9 @@ slotProps styles root, label, count, marks and each mark. component is sugar for
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** Display award marks arranged in rows. */
 export const Default: Story = {
+  name: 'Default',
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Awards' });
     await expect(within(group).getByText('7')).toBeVisible();
@@ -41,9 +43,14 @@ export const Default: Story = {
     await expect(marks[6]!.getBoundingClientRect().top).toBeGreaterThan(marks[3]!.getBoundingClientRect().top);
   },
 };
+
+/** Display overlapping award marks in right-to-left layout. */
 export const LightRtlPile: Story = {
+  name: 'Pile, light and RTL',
   globals: { theme: 'light' }, args: { dir: 'rtl', layout: 'pile', locale: 'ar-EG' },
-  parameters: { docs: { source: { language: 'tsx', code: '<GameMarks label="Awards" count={7} maxPerRow={3} dir="rtl" layout="pile" locale="ar-EG" mark={<span>◆</span>} />' } } },
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameMarks } from '@jfrader/ui/game-marks';
+
+<GameMarks label="Awards" count={7} maxPerRow={3} dir="rtl" layout="pile" locale="ar-EG" mark={<span>◆</span>} />` } } },
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Awards' });
     await expect(getComputedStyle(group).direction).toBe('rtl');
@@ -58,9 +65,14 @@ export const LightRtlPile: Story = {
     await expect(marks[3]!.getBoundingClientRect().top).toBeGreaterThan(first.top);
   },
 };
+
+/** Display zero awards without mark icons. */
 export const Empty: Story = {
+  name: 'No awards',
   args: { count: 0 },
-  parameters: { docs: { source: { language: 'tsx', code: '<GameMarks label="Awards" count={0} mark={<span>◆</span>} />' } } },
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameMarks } from '@jfrader/ui/game-marks';
+
+<GameMarks label="Awards" count={0} mark={<span>◆</span>} />` } } },
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Awards' });
     await expect(within(group).getByText('0')).toBeVisible();
@@ -88,6 +100,27 @@ function ReplacementMark(props: ComponentPropsWithRef<'span'> & GameMarksPartPro
 
 /** Use one custom mark element for every mark in the row. */
 export const MarkReplacement: Story = {
+  name: 'Custom mark',
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { GameMarks, type GameMarksPartProps } from '@jfrader/ui/game-marks';
+
+function ReplacementMark(props: ComponentPropsWithRef<'span'> & GameMarksPartProps) {
+  return <span {...props} data-replacement="custom-mark" />;
+}
+
+<GameMarks
+  label="Awards"
+  count={3}
+  maxPerRow={5}
+  mark={<span>◆</span>}
+  layout="rows"
+  slots={{ mark: ReplacementMark }}
+  slotProps={{
+    mark: {
+      'data-ui': 'custom-mark-ui',
+    },
+  }}
+/>` } } },
   args: {
     label: 'Awards',
     count: 3,
