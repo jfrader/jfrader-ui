@@ -403,6 +403,7 @@ const ASPECT_MODES = [
 ] as const;
 
 export const ContainerAspectBands: Story = {
+  name: 'Container aspect bands',
   parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameTable } from '@jfrader/ui/game-table';
@@ -454,6 +455,7 @@ export default function Example() {
 };
 
 export const Default: Story = {
+  name: 'Default',
   play: async ({ canvasElement, args, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]');
     if (!table) throw new Error('Missing table');
@@ -592,7 +594,7 @@ const matrixStory = (caseName: CaseName, theme: 'dark' | 'light'): Story => ({
   },
 });
 
-export const PortraitShortDark = { ...matrixStory('portraitShort', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const PortraitShortDark = { name: 'Portrait short · dark', ...matrixStory('portraitShort', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -683,7 +685,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const PortraitShortLight = { ...matrixStory('portraitShort', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const PortraitShortLight = { name: 'Portrait short · light', ...matrixStory('portraitShort', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -774,7 +776,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const PortraitDark = { ...matrixStory('portrait', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const PortraitDark = { name: 'Portrait · dark', ...matrixStory('portrait', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -865,7 +867,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const PortraitLight = { ...matrixStory('portrait', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const PortraitLight = { name: 'Portrait · light', ...matrixStory('portrait', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -956,7 +958,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const WideDark = { ...matrixStory('wide', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const WideDark = { name: 'Wide · dark', ...matrixStory('wide', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1047,7 +1049,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const WideLight = { ...matrixStory('wide', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const WideLight = { name: 'Wide · light', ...matrixStory('wide', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1138,7 +1140,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const SquareDark = { ...matrixStory('square', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const SquareDark = { name: 'Square · dark', ...matrixStory('square', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1229,7 +1231,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const SquareLight = { ...matrixStory('square', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const SquareLight = { name: 'Square · light', ...matrixStory('square', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1320,7 +1322,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const SquareWideDark = { ...matrixStory('squareWide', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const SquareWideDark = { name: 'Square wide · dark', ...matrixStory('squareWide', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1411,7 +1413,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const SquareWideLight = { ...matrixStory('squareWide', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const SquareWideLight = { name: 'Square wide · light', ...matrixStory('squareWide', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1502,7 +1504,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const WideLargeDark = { ...matrixStory('wideLarge', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const WideLargeDark = { name: 'Wide large · dark', ...matrixStory('wideLarge', 'dark'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1593,7 +1595,7 @@ export default function Example() {
   </ThemeViewport>
 ))}</MatrixGrid>);
 }` } } } };
-export const WideLargeLight = { ...matrixStory('wideLarge', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const WideLargeLight = { name: 'Wide large · light', ...matrixStory('wideLarge', 'light'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, ThemeRoot, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -1686,6 +1688,7 @@ export default function Example() {
 }` } } } };
 
 export const SlotOrderAndGeometry: Story = {
+  name: 'Slot order and geometry',
   play: async () => {
     await expect(resolveTableTurnDirection()).toBe('counterclockwise');
     await expect(resolveTableTurnDirection('clockwise')).toBe('clockwise');
@@ -1709,6 +1712,7 @@ export const SlotOrderAndGeometry: Story = {
 };
 
 export const PrebuiltSlotsAndEmptyPlaces: Story = {
+  name: 'Prebuilt slots and empty places',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -1794,6 +1798,7 @@ export default function Example() {
 };
 
 export const Lobby: Story = {
+  name: 'Lobby',
   args: { surface: 'lobby', players: 4, seats: seatsFor(4) },
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
@@ -1876,6 +1881,7 @@ export default function Example() {
 };
 
 export const LobbyLandscape: Story = {
+  name: 'Lobby landscape',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -1962,6 +1968,7 @@ export default function Example() {
 };
 
 export const ExplicitRegionsAndRtl: Story = {
+  name: 'Explicit regions and RTL',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -2052,6 +2059,7 @@ export default function Example() {
 };
 
 export const MirroredSeats: Story = {
+  name: 'Mirrored seats',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -2284,6 +2292,7 @@ function ChangingPlays() {
 
 /** Large played cards scale to their own floor; empty regions release their footprint. */
 export const PlayRegionResizeAndFloors: Story = {
+  name: 'Play region resize and floors',
   parameters: { docs: { source: { language: "tsx", code: `import { useState, type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -2452,6 +2461,7 @@ export const InputConservation: Story = {
 };
 
 export const LobbyMatrix: Story = {
+  name: 'Lobby matrix',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -2563,6 +2573,7 @@ export default function Example() {
 };
 
 export const RtlMatrix: Story = {
+  name: 'RTL matrix',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -2719,7 +2730,7 @@ const cardComposition = (clearance: boolean): Story => ({
     }
   },
 });
-export const LandscapeCardSizes = { ...cardComposition(false), parameters: { docs: { description: { story: "Compare sm, md and lg cards at 840×480. Their intrinsic sizes stay unchanged; the table scales the composition to fit." }, source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const LandscapeCardSizes = { name: 'Landscape card sizes', ...cardComposition(false), parameters: { docs: { description: { story: "Compare sm, md and lg cards at 840×480. Their intrinsic sizes stay unchanged; the table scales the composition to fit." }, source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -2787,7 +2798,7 @@ export default function Example() {
       </ViewportFrame>
     ))}</Matrix>);
 }` } } } };
-export const LandscapeCardSizesWithClearance = { ...cardComposition(true), parameters: { docs: { description: { story: "Compare the same sm, md and lg cards with additional shell clearance." }, source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const LandscapeCardSizesWithClearance = { name: 'Landscape card sizes with clearance', ...cardComposition(true), parameters: { docs: { description: { story: "Compare the same sm, md and lg cards with additional shell clearance." }, source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -2895,6 +2906,7 @@ function ChangingContent() {
 
 /** Changing card sizes and container dimensions keeps the same card nodes and flight markers. */
 export const ContentResizeAndFlightMarkers: Story = {
+  name: 'Content resize and flight markers',
   parameters: { docs: { source: { language: "tsx", code: `import { StrictMode, useState, type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -3062,6 +3074,7 @@ function ResizingTables() {
   );
 }
 export const WrappedTablesAndViewportUpdate: Story = {
+  name: 'Wrapped tables and viewport update',
   parameters: { docs: { source: { language: "tsx", code: `import { useRef, useState, type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { GameTable as Table, useGameTableSeat, buildTableOrderSlots, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
@@ -3181,6 +3194,7 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 );
 
 export const WithAvatars: Story = {
+  name: 'With avatars',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Avatar, Button, styled, type AvatarSize } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -3277,6 +3291,7 @@ export default function Example() {
 };
 
 export const UprightCasesWithAvatars: Story = {
+  name: 'Upright cases with avatars',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Avatar, Button, styled, type AvatarSize } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -3393,6 +3408,7 @@ export default function Example() {
 };
 
 export const AvatarIndependence: Story = {
+  name: 'Avatar independence',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Avatar, Button, styled, type AvatarSize } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -3508,6 +3524,7 @@ export default function Example() {
 };
 
 export const ChromeRemovalParity: Story = {
+  name: 'Chrome removal parity',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -3665,6 +3682,7 @@ export default function Example() {
 };
 
 export const OversizedInsufficientSpace: Story = {
+  name: 'Oversized content, insufficient space',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -3758,6 +3776,7 @@ export default function Example() {
 };
 
 export const StateStability: Story = {
+  name: 'State stability',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Avatar, Button, styled, type AvatarSize } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -3875,8 +3894,9 @@ function TrucoPlayerSeat() {
     chat={index === 1 ? <span aria-live="polite">Tu turno</span> : undefined} />;
 }
 
-/** Cada plaza muestra al jugador, sus insignias, la mano oculta y el turno. */
+/** Each seat shows the player, badges, hidden hand and turn. */
 export const TrucoPlayerChrome: Story = {
+  name: 'Truco player chrome',
   args: { viewport: VIEWPORTS.wideLarge, players: 4, seats: seatsFor(4) },
   render: (args) => <DeckProvider default="spanish">
     <ViewportFrame viewport={args.viewport}>
@@ -3994,8 +4014,9 @@ export default function Example() {
   },
 };
 
-/** Cartas ocultas al borde y jugadas hacia el centro, en los seis tamaños. */
+/** Hidden cards at the edge and played cards toward the centre, at all six sizes. */
 export const TrucoPlayRing: Story = {
+  name: 'Truco play ring',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -4194,6 +4215,7 @@ export default function Example() {
 
 /** Compare legacy containment, edge-centred cards and cards outside the felt. */
 export const SeatPlacementModes: Story = {
+  name: 'Seat placement modes',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -4338,6 +4360,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 }));
 
 export const RoundRobinTeams: Story = {
+  name: 'Round-robin teams',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -4453,6 +4476,7 @@ export default function Example() {
 
 /** An arbitrary visual order and team numbers do not go through round-robin validation. */
 export const ArbitraryPrebuiltTeams: Story = {
+  name: 'Arbitrary prebuilt teams',
   parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -4593,7 +4617,7 @@ const generalCountMatrix = (seatPlacement: NonNullable<GameTableProps['seatPlace
 });
 
 /** Three round-robin teams, 2–9 places, and one played card per seat. */
-export const GeneralSeatCounts = { ...generalCountMatrix('edge'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const GeneralSeatCounts = { name: 'General seat counts', ...generalCountMatrix('edge'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -4685,7 +4709,7 @@ export default function Example() {
   </ViewportFrame>
 )))}</Matrix>);
 }` } } } };
-export const GeneralSeatCountsInside = { ...generalCountMatrix('inside'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const GeneralSeatCountsInside = { name: 'General seat counts · inside', ...generalCountMatrix('inside'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -4777,7 +4801,7 @@ export default function Example() {
   </ViewportFrame>
 )))}</Matrix>);
 }` } } } };
-export const GeneralSeatCountsOutside = { ...generalCountMatrix('outside'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const GeneralSeatCountsOutside = { name: 'General seat counts · outside', ...generalCountMatrix('outside'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -4869,7 +4893,7 @@ export default function Example() {
   </ViewportFrame>
 )))}</Matrix>);
 }` } } } };
-export const GeneralSeatCountsRtl = { ...generalCountMatrix('edge', 'rtl'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
+export const GeneralSeatCountsRtl = { name: 'General seat counts · RTL', ...generalCountMatrix('edge', 'rtl'), parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -5022,6 +5046,7 @@ function PokerFixture() {
 
 /** Six free-for-all seats, five community cards and a pot. Press Deal board to replay the deal. */
 export const PokerCommunityBoard: Story = {
+  name: 'Poker community board',
   render: () => <PokerFixture />,
   parameters: { a11y: { test: 'error' }, ...{ docs: { source: { language: "tsx", code: `import { useRef, type ComponentProps, type ReactNode } from 'react';
 import { Button, styled } from '@jfrader/ui';

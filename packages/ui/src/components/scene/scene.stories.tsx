@@ -3,6 +3,8 @@ import { expect, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Avatar } from '../avatar';
+import { DeckProvider, defineDeck } from '../deck';
+import { GameCard } from '../game-card';
 import { Scene, sceneSource, type SceneGrade, type SceneSize, type SceneVariant } from './index';
 import { generateSceneSvg, SCENE_PARAMETERS } from './scene-generator';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -483,4 +485,47 @@ export const DarkTheme: Story = {
       <Scene {...args} />
     </WidePreview>
   ),
+};
+
+/** A deck back and a per-card back each contain a warm dusk scene. */
+export const CardBack: Story = {
+  name: 'Card backs',
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+import { Scene } from '@jfrader/ui/scene';
+
+const ComparisonRow = styled.div({ display: 'flex', gap: vars.space[4] });
+const deck = defineDeck({ id: 'scene-backs', suits: {}, ranks: {},
+  back: <Scene seed="northline" variant="dusk" grade="warm" alt="" />,
+});
+
+<DeckProvider decks={[deck]} default="scene-backs">
+  <ComparisonRow>
+    <GameCard label="Deck scene back" />
+    <GameCard label="Per-card scene back">
+      <Scene seed="southline" variant="dusk" grade="warm" alt="" />
+    </GameCard>
+  </ComparisonRow>
+</DeckProvider>` } } },
+  render: () => (
+    <DeckProvider decks={[defineDeck({ id: 'scene-backs', suits: {}, ranks: {},
+      back: <Scene seed="northline" variant="dusk" grade="warm" alt="" />,
+    })]} default="scene-backs">
+      <ComparisonRow>
+        <GameCard label="Deck scene back" />
+        <GameCard label="Per-card scene back">
+          <Scene seed="southline" variant="dusk" grade="warm" alt="" />
+        </GameCard>
+      </ComparisonRow>
+    </DeckProvider>
+  ),
+  play: async ({ canvas }) => {
+    for (const name of ['Deck scene back', 'Per-card scene back']) {
+      const card = canvas.getByRole('img', { name });
+      await expect(card).toHaveAttribute('data-face', 'back');
+      await expect(card.querySelector('[data-ui="scene"]')).not.toBeNull();
+    }
+  },
 };

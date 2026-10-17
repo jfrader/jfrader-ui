@@ -46,7 +46,9 @@ Use slotProps for root, label, list, row, name, value and stage. Repeated slots 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** Default score table with formatted numbers and match stage badges. */
 export const Default: Story = {
+  name: 'Default',
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Score' });
     const terms = within(group).getAllByRole('term');
@@ -59,9 +61,14 @@ export const Default: Story = {
     await expect(group).toHaveAccessibleName('Score');
   },
 };
+
+/** Display scores in right-to-left layout with Arabic numeral formatting. */
 export const LightRtl: Story = {
+  name: 'Light and RTL',
   globals: { theme: 'light' }, args: { dir: 'rtl', locale: 'ar-EG', rows: [{ key: 'east', label: 'East', value: -1234.5 }] },
-  parameters: { docs: { source: { language: 'tsx', code: `<GameScore label="Score" dir="rtl" locale="ar-EG"
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameScore } from '@jfrader/ui/game-score';
+
+<GameScore label="Score" dir="rtl" locale="ar-EG"
   rows={[{ key: 'east', label: 'East', value: -1234.5 }]} />` } } },
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Score' });
@@ -70,30 +77,48 @@ export const LightRtl: Story = {
     await expect(group.querySelector('[data-stage]')).toBeNull();
   },
 };
+
+/** An empty score table without rows. */
 export const Empty: Story = {
+  name: 'No rows',
   args: { rows: [] },
-  parameters: { docs: { source: { language: 'tsx', code: '<GameScore label="Score" rows={[]} />' } } },
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameScore } from '@jfrader/ui/game-score';
+
+<GameScore label="Score" rows={[]} />` } } },
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Score' });
     await expect(within(group).queryAllByRole('term')).toHaveLength(0);
     await expect(within(group).queryAllByRole('definition')).toHaveLength(0);
   },
 };
+
 /** Keep a team's score, awards and round history together. */
 export const MatchSummary: Story = {
+  name: 'Match summary',
   render: (args) => <Summary>
     <GameScore {...args} />
     <GameMarks label="North awards" count={3} mark={<span>◆</span>} />
     <GameRounds label="North rounds" rounds={[{ key: 'opening', label: 'Opening', outcome: 'won' }]}
       outcomeLabels={{ won: 'Won', lost: 'Lost', pending: 'Pending' }} />
   </Summary>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameMarks } from '@jfrader/ui/game-marks';
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { GameScore } from '@jfrader/ui/game-score';
+import { GameMarks } from '@jfrader/ui/game-marks';
 import { GameRounds } from '@jfrader/ui/game-rounds';
-${source}
-<GameMarks label="North awards" count={3} mark={<span>◆</span>} />
-<GameRounds label="North rounds"
-  rounds={[{ key: 'opening', label: 'Opening', outcome: 'won' }]}
-  outcomeLabels={{ won: 'Won', lost: 'Lost', pending: 'Pending' }} />` } } },
+
+const Summary = styled.div({ display: 'grid', gap: vars.space[4] });
+
+<Summary>
+  <GameScore label="Score" locale="de-DE" rows={[
+    { key: 'north', label: 'North', value: 1234.5, stage: 'Final' },
+    { key: 'south', label: 'South', value: 0, stage: '' },
+  ]} />
+  <GameMarks label="North awards" count={3} mark={<span>◆</span>} />
+  <GameRounds label="North rounds"
+    rounds={[{ key: 'opening', label: 'Opening', outcome: 'won' }]}
+    outcomeLabels={{ won: 'Won', lost: 'Lost', pending: 'Pending' }} />
+</Summary>` } } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(within(canvas.getByRole('group', { name: 'Score' })).getAllByRole('term')).toHaveLength(2);
@@ -193,6 +218,27 @@ function ReplacementRow(props: ComponentPropsWithRef<'div'> & GameScorePartProps
 
 /** Supply a custom score row for each player. */
 export const RowReplacement: Story = {
+  name: 'Custom row',
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { GameScore, type GameScorePartProps } from '@jfrader/ui/game-score';
+
+function ReplacementRow(props: ComponentPropsWithRef<'div'> & GameScorePartProps<'div'>) {
+  return <div {...props} data-replacement="custom-row" />;
+}
+
+<GameScore
+  label="Score"
+  rows={[
+    { key: 'north', label: 'North', value: 1234.5, stage: 'Final' },
+    { key: 'south', label: 'South', value: 0, stage: 'Half' },
+  ]}
+  slots={{ row: ReplacementRow }}
+  slotProps={{
+    row: {
+      'data-ui': 'custom-row-ui',
+    },
+  }}
+/>` } } },
   args: {
     label: 'Score',
     rows: [
