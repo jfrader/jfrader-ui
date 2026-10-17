@@ -21,6 +21,7 @@ import {
 } from '../../utils/generated-root';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { moveRovingFocus } from '../../utils/roving-focus';
+import { ANCHOR_GAP } from '../../overlay/use-overlay-floating';
 import {
   MenuController,
   MenuContentPart,
@@ -142,7 +143,6 @@ const statusStyle = css({
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
   marginBlockStart: vars.space[2],
-  '&:empty': { display: 'none' },
 });
 const defaultMessages = {
   pending: (label: string) => `${label}: pending`,
@@ -155,8 +155,12 @@ export function RadialMenu({
   defaultOpen = false,
   onOpenChange,
   disabled = false,
+  radius = DEFAULT_RADIUS,
   ...props
 }: RadialMenuProps) {
+  const clampedRadius = Number.isFinite(radius)
+    ? Math.max(TARGET, radius)
+    : DEFAULT_RADIUS;
   const [linear, setLinear] = useState(false);
   const [current = false, request] = useControlledState(
     open,
@@ -173,19 +177,14 @@ export function RadialMenu({
         onOpenChange={request}
         placement="top"
         positioning={{
-          gap: linear
-            ? 8
-            : -(
-                (Number.isFinite(props.radius)
-                  ? Math.max(TARGET, props.radius!)
-                  : DEFAULT_RADIUS) + TARGET
-              ),
+          gap: linear ? ANCHOR_GAP : -(clampedRadius + TARGET),
           transform: false,
           collision: props.collision,
         }}
       >
         <RadialMenuBody
           {...props}
+          radius={clampedRadius}
           disabled={disabled}
           onLinearChange={setLinear}
         />
@@ -198,7 +197,7 @@ function RadialMenuBody({
   label,
   actions,
   onAction,
-  radius = DEFAULT_RADIUS,
+  radius: r,
   spread = 150,
   direction = -90,
   disabled,
@@ -212,7 +211,8 @@ function RadialMenuBody({
   className,
   onLinearChange,
   ...props
-}: Omit<RadialMenuProps, 'open' | 'defaultOpen' | 'onOpenChange'> & {
+}: Omit<RadialMenuProps, 'open' | 'defaultOpen' | 'onOpenChange' | 'radius'> & {
+  radius: number;
   onLinearChange: (linear: boolean) => void;
 }) {
   const context = useMenuContext('RadialMenu', 'Root');
@@ -271,7 +271,6 @@ function RadialMenuBody({
       setTarget(null);
     }
   }, [disabled]);
-  const r = Number.isFinite(radius) ? Math.max(TARGET, radius) : DEFAULT_RADIUS;
   const arc = Number.isFinite(spread)
     ? Math.min(360, Math.max(1, spread))
     : 150;
@@ -294,7 +293,7 @@ function RadialMenuBody({
   });
   const overlap = positions.some((a, i) =>
     positions.some(
-      (b, j) => i !== j && Math.hypot(a.x - b.x, a.y - b.y) < TARGET + 8,
+      (b, j) => i !== j && Math.hypot(a.x - b.x, a.y - b.y) < TARGET + ANCHOR_GAP,
     ),
   );
   const linear =
@@ -522,21 +521,23 @@ function RadialMenuBody({
           </motion.div>
         ))}
       </MenuContentPart>
-      <WithSx styles={[statusStyle, statusCss]}>
-        {(className) => (
-          <Status
-            {...statusProps}
-            className={[className, statusProps.className]
-              .filter(Boolean)
-              .join(' ')}
-            data-ui="radial-menu-status"
-            role={announce ? 'status' : undefined}
-            aria-atomic="true"
-          >
-            {status}
-          </Status>
-        )}
-      </WithSx>
+      {status && (
+        <WithSx styles={[statusStyle, statusCss]}>
+          {(className) => (
+            <Status
+              {...statusProps}
+              className={[className, statusProps.className]
+                .filter(Boolean)
+                .join(' ')}
+              data-ui="radial-menu-status"
+              role={announce ? 'status' : undefined}
+              aria-atomic="true"
+            >
+              {status}
+            </Status>
+          )}
+        </WithSx>
+      )}
     </GeneratedRoot>
   );
 }

@@ -12,7 +12,7 @@ import {
 } from '@floating-ui/react';
 
 /** Gap between the trigger and the floating surface, in px (matches `space[2]`). */
-const ANCHOR_GAP = 8;
+export const ANCHOR_GAP = 8;
 /** Minimum distance kept from the viewport edge when flipping or shifting, in px. */
 const VIEWPORT_PADDING = 8;
 

@@ -117,6 +117,7 @@ export const Keyboard: Story = {
   tags: ['!autodocs'],
   args: { defaultPaused: true },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await expect(canvas.queryByRole('status')).toBeNull();
     const mail = canvas.getByRole('button', { name: 'Mail' });
     mail.focus();
     await expect(
@@ -133,6 +134,7 @@ export const Keyboard: Story = {
       await canvas.findByRole('region', { name: 'Mail' }),
     ).toBeVisible();
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(canvas.queryByRole('heading')).toBeNull();
     await expect(args.onValueChange).toHaveBeenCalledWith('mail');
     await expect(canvasElement.ownerDocument.activeElement).toBe(mail);
     await expect(getComputedStyle(mail).outlineStyle).not.toBe('none');

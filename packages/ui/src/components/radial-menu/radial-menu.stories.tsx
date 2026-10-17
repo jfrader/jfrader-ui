@@ -103,6 +103,7 @@ export const LinearFallback: Story = {
 export const Keyboard: Story = {
   tags: ['!autodocs'],
   play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await expect(canvas.queryByRole('status')).toBeNull();
     const trigger = canvas.getByRole('button', { name: 'Note actions' });
     const doc = canvasElement.ownerDocument;
     await userEvent.tab();

@@ -805,7 +805,7 @@ function LogoOrbitBody({
                   duration: reduce ? 0 : motionDurationMs.base / 1000,
                 }}
               >
-                <h3 id={titleId}>{detail.name}</h3>
+                <div id={titleId}>{detail.name}</div>
               </motion.div>
               {detail.description != null && <div>{detail.description}</div>}
               <p>{detail.connected ? copy.connected : copy.unconnected}</p>
@@ -916,22 +916,24 @@ function LogoOrbitBody({
           )}
         </WithSx>
       )}
-      <WithSx
-        styles={[statusStyle, statusCss]}
-        className={statusProps.className}
-      >
-        {(className) => (
-          <Status
-            {...statusProps}
-            className={className}
-            data-ui="logo-orbit-status"
-            role="status"
-            aria-atomic="true"
-          >
-            {status}
-          </Status>
-        )}
-      </WithSx>
+      {status && (
+        <WithSx
+          styles={[statusStyle, statusCss]}
+          className={statusProps.className}
+        >
+          {(className) => (
+            <Status
+              {...statusProps}
+              className={className}
+              data-ui="logo-orbit-status"
+              role="status"
+              aria-atomic="true"
+            >
+              {status}
+            </Status>
+          )}
+        </WithSx>
+      )}
     </GeneratedRoot>
   );
 }
