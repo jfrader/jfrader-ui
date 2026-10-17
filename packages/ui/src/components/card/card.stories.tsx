@@ -637,6 +637,29 @@ export const Glass: Story = {
 
 export const GlassLight: Story = { ...Glass, decorators: [withLightTheme], globals: { theme: 'light' } };
 
+export const ReducedTransparency: Story = {
+  name: 'Reduced Transparency',
+  tags: ['!autodocs'],
+  args: { appearance: 'glass' },
+  render: ({ children: _children, ...args }) => <Card {...args} title="Studio" content="Project notes and assets." />,
+  play: async ({ canvasElement }) => {
+    // The Vitest setup emulates this media preference in Chromium, including CSS evaluation.
+    await expect(window.matchMedia('(prefers-reduced-transparency: reduce)').matches).toBe(true);
+    const card = getCards(canvasElement)[0]!;
+    const style = getComputedStyle(card);
+    const reference = document.createElement('div');
+    reference.style.backgroundColor = vars.color.surfaceRaised;
+    card.append(reference);
+    try {
+      await expect(style.backgroundColor).toBe(getComputedStyle(reference).backgroundColor);
+      await expect(style.backgroundImage).toBe('none');
+      await expect(style.backdropFilter).toBe('none');
+    } finally {
+      reference.remove();
+    }
+  },
+};
+
 export const Holo: Story = {
   args: { appearance: 'holo' },
   parameters: { docs: { source: { code: '<Card appearance="holo" title="Founding member" description="Studio membership" content="Member since 2026" />' } } },

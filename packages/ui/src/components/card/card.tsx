@@ -10,7 +10,7 @@
 // with the consumer's component, which receives the part's props and the className its styles
 // resolve to.
 import { createContext, useContext, useEffect, useMemo, useRef, type ComponentPropsWithRef, type ComponentType, type ReactElement, type ReactNode } from 'react';
-import { MotionConfig, MotionConfigContext, useReducedMotion, useSpring } from 'motion/react';
+import { MotionConfig, useReducedMotionConfig, useSpring } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import type { SurfaceAppearance } from '../../styling/surface';
@@ -19,7 +19,7 @@ import { SurfaceRoot, resolveSurfaceValue } from '../surface/surface-root';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { motionDurationMs } from '../../styling/motion-timings';
-import { FORCED_COLORS } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION, REDUCED_TRANSPARENCY } from '../../styling/media';
 
 export type CardVariant = 'flat' | 'raised';
 
@@ -128,13 +128,13 @@ const rootStyle = css({
 const variants = ['flat', 'raised'] as const;
 const appearances = ['default', 'contrast', 'glass', 'holo'] as const;
 const translucentMaterial = css({
-  backgroundColor: vars.color.cardGlass,
+  backgroundColor: vars.color.surfaceGlass,
   backdropFilter: `blur(${vars.cardMaterial.blur})`,
   WebkitBackdropFilter: `blur(${vars.cardMaterial.blur})`,
   borderColor: vars.color.borderStrong,
-  boxShadow: `inset 0 1px 0 ${vars.color.cardHighlight}`,
-  '&[data-variant="raised"]': { boxShadow: `inset 0 1px 0 ${vars.color.cardHighlight}, ${vars.shadow.raised}` },
-  '@media (prefers-reduced-transparency: reduce)': {
+  boxShadow: `inset 0 1px 0 ${vars.color.surfaceHighlight}`,
+  '&[data-variant="raised"]': { boxShadow: `inset 0 1px 0 ${vars.color.surfaceHighlight}, ${vars.shadow.raised}` },
+  [REDUCED_TRANSPARENCY]: {
     backgroundColor: vars.color.surfaceRaised,
     backgroundImage: 'none',
     backdropFilter: 'none',
@@ -146,26 +146,26 @@ const materialStyles = {
   default: undefined,
   contrast: undefined,
   glass: css([{
-    backgroundImage: `linear-gradient(135deg, ${vars.color.cardSheen}, transparent)`,
+    backgroundImage: `linear-gradient(135deg, ${vars.color.surfaceSheen}, transparent)`,
   }, translucentMaterial]),
   holo: css([{
-    backgroundImage: `radial-gradient(ellipse at calc(50% + var(--card-light-x, 0) * 50%) calc(50% + var(--card-light-y, 0) * 50%), ${vars.color.cardSheen}, transparent), linear-gradient(125deg, ${vars.color.cardHoloCyan}, ${vars.color.cardSheen}, ${vars.color.cardHoloRose})`,
+    backgroundImage: `radial-gradient(ellipse at calc(50% + var(--card-light-x, 0) * 50%) calc(50% + var(--card-light-y, 0) * 50%), ${vars.color.surfaceSheen}, transparent), linear-gradient(125deg, ${vars.color.surfaceHoloCyan}, ${vars.color.surfaceSheen}, ${vars.color.surfaceHoloRose})`,
   }, translucentMaterial]),
 };
 const tiltStyle = css({
   transform: `perspective(${vars.cardMaterial.perspective}) rotateX(calc(var(--card-light-y, 0) * -1 * ${vars.cardMaterial.tilt})) rotateY(calc(var(--card-light-x, 0) * ${vars.cardMaterial.tilt}))`,
-  '@media (prefers-reduced-motion: reduce)': { transform: 'none' },
+  [REDUCED_MOTION]: { transform: 'none' },
   [FORCED_COLORS]: { transform: 'none' },
 });
 const tiltSpring = { duration: motionDurationMs.slow / 1000, bounce: 0 };
 
 function useHoloTilt(enabled: boolean, root: SurfaceRootCustomization['component']) {
   const ref = useRef<HTMLDivElement>(null);
-  const reducedMotion = useReducedMotion();
-  const motionConfig = useContext(MotionConfigContext);
-  const active = enabled && reducedMotion === false && motionConfig.reducedMotion !== 'always';
+  const reducedMotion = useReducedMotionConfig();
+  const active = enabled && reducedMotion === false;
   const x = useSpring(0, tiltSpring);
   const y = useSpring(0, tiltSpring);
+  // The root identity keys this effect so listeners re-attach when a replacement swaps nodes.
   useEffect(() => {
     const node = ref.current;
     if (!node || !active) return;
@@ -192,7 +192,7 @@ function useHoloTilt(enabled: boolean, root: SurfaceRootCustomization['component
       node.style.removeProperty('--card-light-y');
     };
   }, [active, root, x, y]);
-  return { ref, active, reducedMotion: reducedMotion || motionConfig.reducedMotion === 'always' };
+  return { ref, active, reducedMotion };
 }
 
 const headerStyle = css({
