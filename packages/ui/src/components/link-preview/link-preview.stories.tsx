@@ -15,10 +15,10 @@ const COVER = svg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 191 100"
 const FAVICON = svg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7"/></svg>');
 const DATA: LinkPreviewData = {
   url: URL,
-  site: 'Example',
-  title: 'Design guide',
-  description: 'Spacing, color and type decisions for the product surfaces.',
-  image: { src: COVER, alt: 'Cover with a large dot' },
+  site: 'Northwind Docs',
+  title: 'Spacing and type guide',
+  description: 'How we size, space and set type across product surfaces.',
+  image: { src: COVER, alt: 'Guide cover with a large dot' },
   favicon: FAVICON,
 };
 const Frame = styled.div({ inlineSize: 'min(100%, 27.5rem)', minInlineSize: 0 });

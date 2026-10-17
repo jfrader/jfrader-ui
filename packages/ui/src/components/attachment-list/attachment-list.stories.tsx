@@ -4,8 +4,8 @@ import { expect, fn } from 'storybook/test';
 import { AttachmentList, type Attachment } from './index';
 
 const FILES: readonly Attachment[] = [
-  { id: 'brief', name: 'Project brief.pdf', kind: 'file', size: 123_000, url: '/brief.pdf' },
-  { id: 'notes', name: 'Meeting notes.txt', kind: 'file', size: 42, url: '/notes.txt' },
+  { id: 'launch-brief', name: 'Launch brief.pdf', kind: 'file', size: 2_400_000, url: '/launch-brief.pdf' },
+  { id: 'notes', name: 'Pricing notes.txt', kind: 'file', size: 4_200, url: '/pricing-notes.txt' },
 ];
 
 const meta = {
@@ -17,7 +17,7 @@ const meta = {
     docs: {
       description: { component: 'Show files and image previews with names, sizes, and download links.' },
       source: { code: `<AttachmentList attachments={[
-  { id: 'brief', name: 'Project brief.pdf', kind: 'file', size: 123000, url: '/brief.pdf' },
+  { id: 'launch-brief', name: 'Launch brief.pdf', kind: 'file', size: 2400000, url: '/launch-brief.pdf' },
 ]} />` },
       usage: `### Files and links
 - Supply a stable id, name, and kind for each attachment. Sizes are bytes; locale formats them with decimal kB and MB units.
@@ -39,14 +39,14 @@ type Story = StoryObj<typeof meta>;
 export const Files: Story = {
   play: async ({ canvas, userEvent }) => {
     await expect(canvas.getByRole('list', { name: 'Attachments' })).toHaveAttribute('data-ui', 'attachment-list');
-    const first = canvas.getByRole('link', { name: 'Project brief.pdf · 123 kB' });
-    await expect(first).toHaveAttribute('href', '/brief.pdf');
-    await expect(first).toHaveAttribute('download', 'Project brief.pdf');
+    const first = canvas.getByRole('link', { name: 'Launch brief.pdf · 2.4 MB' });
+    await expect(first).toHaveAttribute('href', '/launch-brief.pdf');
+    await expect(first).toHaveAttribute('download', 'Launch brief.pdf');
     await userEvent.tab();
     await expect(first.ownerDocument.activeElement).toBe(first);
     await expect(getComputedStyle(first).outlineStyle).not.toBe('none');
     await userEvent.tab();
-    const second = canvas.getByRole('link', { name: 'Meeting notes.txt · 42 byte' });
+    const second = canvas.getByRole('link', { name: 'Pricing notes.txt · 4.2 kB' });
     await expect(second.ownerDocument.activeElement).toBe(second);
     await userEvent.tab({ shift: true });
     await expect(first.ownerDocument.activeElement).toBe(first);
@@ -54,9 +54,9 @@ export const Files: Story = {
 };
 
 export const ImagePreview: Story = {
-  args: { attachments: [{ id: 'image', name: 'Project card.png', kind: 'image', url: '/og-image.png', alt: 'Project share card', width: 1200, height: 630 }] },
+  args: { attachments: [{ id: 'image', name: 'Share card.png', kind: 'image', url: '/og-image.png', alt: 'Share card preview', width: 1200, height: 630 }] },
   play: async ({ canvas }) => {
-    const image = canvas.getByRole('img', { name: 'Project share card' });
+    const image = canvas.getByRole('img', { name: 'Share card preview' });
     await expect(image).toHaveAttribute('src', '/og-image.png');
     await expect(image).toHaveAttribute('width', '1200');
     await expect(image).toHaveAttribute('height', '630');
@@ -81,7 +81,7 @@ export const MissingAndUnsafeURLs: Story = {
 
 export const MoreFiles: Story = {
   args: {
-    attachments: [...FILES, ...Array.from({ length: 4 }, (_, index): Attachment => ({ id: `file-${index}`, name: `Report ${index + 1}.pdf`, kind: 'file' }))],
+    attachments: [...FILES, ...Array.from({ length: 4 }, (_, index): Attachment => ({ id: `file-${index}`, name: `Invoice 2026-0${index + 1}.pdf`, kind: 'file' }))],
     slotProps: { expandButton: { onClick: fn() } },
   },
   play: async ({ canvas, args, userEvent }) => {
@@ -128,14 +128,14 @@ export const LinkReplacement: Story = {
     const [link] = canvas.getAllByRole('link');
     await expect(link).toHaveAttribute('data-slot', 'attachment-link');
     await expect(link).toHaveAttribute('data-ui', 'attachment-list-link');
-    await expect(link).toHaveAttribute('href', '/brief.pdf');
-    await expect(link).toHaveTextContent('Project brief.pdf');
+    await expect(link).toHaveAttribute('href', '/launch-brief.pdf');
+    await expect(link).toHaveTextContent('Launch brief.pdf');
     await expect(canvasElement.querySelector('[data-ui="attachment-list-link"]:not([data-slot])')).toBeNull();
   },
 };
 
 export const LinkTarget: Story = {
-  args: { attachments: [{ ...FILES[0]!, download: false, target: '_blank', url: 'https://example.com/brief.pdf' }] },
+  args: { attachments: [{ ...FILES[0]!, download: false, target: '_blank', url: 'https://example.com/launch-brief.pdf' }] },
   play: async ({ canvas }) => {
     const link = canvas.getByRole('link');
     await expect(link).not.toHaveAttribute('download');
@@ -148,7 +148,7 @@ export const Localized: Story = {
   args: { locale: 'de-DE', labels: { attachments: 'Anhänge', showAttachments: (count) => `${count} weitere Anhänge` }, attachments: [{ ...FILES[0]!, size: 1234 }] },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('list', { name: 'Anhänge' })).toBeInTheDocument();
-    await expect(canvas.getByText('Project brief.pdf · 1,2 kB')).toBeInTheDocument();
+    await expect(canvas.getByText('Launch brief.pdf · 1,2 kB')).toBeInTheDocument();
   },
 };
 
