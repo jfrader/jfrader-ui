@@ -8,6 +8,7 @@
 
 ### Added
 
+- `RadialMenu` shows object actions around a trigger with keyboard navigation, hold-drag targeting and a linear fallback. `LogoOrbit` arranges supplied marks in a pausable integration catalog with filters, details and consumer-owned connection actions. Both support reduced motion and replaceable parts.
 - `PasswordStrength` composes PasswordField with application-owned policy rules, a labelled meter and readable requirement states. Scores describe policy compliance, not password security.
 - `BookingPill` composes Calendar and TimePicker into a party/date/time/review journey with application-owned availability and asynchronous confirmation.
 - `MultiRegionFailover` presents six supplied incident snapshots with readable regional status, metrics, pause/seek/replay controls and reduced-motion playback protection. It is an illustration, not live monitoring.

@@ -33,6 +33,8 @@ export interface OverlayFloatingOptions {
   /** Position with `transform` (default) or with `left`/`top`, which leaves `transform` and
    * `scale` free for the surface's own animation. */
   transform?: boolean;
+  /** Disable viewport flip and shift for geometry owned by the consumer. */
+  collision?: 'shift' | 'none';
 }
 
 export interface OverlayAvailableSize {
@@ -54,6 +56,7 @@ export function useOverlayFloating({
   strategy,
   gap = ANCHOR_GAP,
   transform,
+  collision = 'shift',
 }: OverlayFloatingOptions): UseFloatingReturn<HTMLButtonElement> {
   const detectOverflow = { padding: VIEWPORT_PADDING, ...(boundary ? { boundary } : {}) };
   return useFloating<HTMLButtonElement>({
@@ -65,8 +68,8 @@ export function useOverlayFloating({
     transform,
     middleware: [
       offset(gap),
-      flip(detectOverflow),
-      shift({ ...detectOverflow, crossAxis: true }),
+      collision === 'shift' && flip(detectOverflow),
+      collision === 'shift' && shift({ ...detectOverflow, crossAxis: true }),
       onAvailableSize &&
         size({
           ...detectOverflow,
