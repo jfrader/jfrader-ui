@@ -22,6 +22,9 @@
     "dist"
   ],
   "exports": {
+    "./booking-pill": { "types": "./src/components/booking-pill/index.ts", "import": "./src/components/booking-pill/index.ts" },
+    "./multi-region-failover": { "types": "./src/components/multi-region-failover/index.ts", "import": "./src/components/multi-region-failover/index.ts" },
+    "./password-strength": { "types": "./src/components/password-strength/index.ts", "import": "./src/components/password-strength/index.ts" },
     ".": { "types": "./src/index.ts", "import": "./src/index.ts" },
     "./accordion": { "types": "./src/components/accordion/index.ts", "import": "./src/components/accordion/index.ts" },
     "./action-button": { "types": "./src/components/action-button/index.ts", "import": "./src/components/action-button/index.ts" },
