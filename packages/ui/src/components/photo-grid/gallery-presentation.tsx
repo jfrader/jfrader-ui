@@ -65,6 +65,8 @@ const railStyle = css({
   [FORCED_COLORS]: { perspective: 'none' },
 });
 const coverStyle = css({
+  font: 'inherit',
+  color: vars.color.text,
   '--gallery-direction': 1,
   '&:dir(rtl)': { '--gallery-direction': -1 },
   transform: 'translateX(calc(var(--gallery-offset) * var(--gallery-direction))) rotateY(calc(var(--gallery-rotation) * var(--gallery-direction))) scale(var(--gallery-scale))',
@@ -95,6 +97,13 @@ const choicesStyle = css({
 const choiceStyle = css({
   display: 'flex', alignItems: 'center', gap: vars.space[2], minBlockSize: vars.space[8],
   '& input:focus-visible': focusRingOutset,
+});
+const radioStyle = css({
+  font: 'inherit',
+  color: vars.color.text,
+  accentColor: vars.color.accent,
+  backgroundColor: vars.color.surfaceRaised,
+  borderColor: vars.color.borderControl,
 });
 const captionStyle = css({ fontSize: vars.textSize.md, overflowWrap: 'anywhere', textAlign: 'center' });
 const clearStyle = css({
@@ -310,7 +319,7 @@ export function GalleryPresentation({
           {colors.length > 0 && <Colors {...slotProps?.colors} css={[choicesStyle, slotProps?.colors?.css]}>
             <legend>{labels.colors}</legend>
             {colors.map((item) => <label key={item.value} css={choiceStyle}>
-              <input type="radio" name={`${id}-color`} value={item.value} checked={color === item.value} disabled={item.soldOut} onChange={() => onColorChange(item.value)} />
+              <input css={radioStyle} type="radio" name={`${id}-color`} value={item.value} checked={color === item.value} disabled={item.soldOut} onChange={() => onColorChange(item.value)} />
               {item.label}{item.soldOut && ` — ${labels.soldOut}`}
             </label>)}
           </Colors>}
@@ -319,7 +328,7 @@ export function GalleryPresentation({
             {options.map((item) => {
               const unavailable = isPhotoGridOptionSoldOut(item, color);
               return <label key={item.value} css={choiceStyle}>
-                <input type="radio" name={`${id}-option`} value={item.value} checked={option === item.value} disabled={unavailable} onChange={() => onOptionChange(item.value)} />
+                <input css={radioStyle} type="radio" name={`${id}-option`} value={item.value} checked={option === item.value} disabled={unavailable} onChange={() => onOptionChange(item.value)} />
                 {item.label}{unavailable && ` — ${labels.soldOut}`}
               </label>;
             })}

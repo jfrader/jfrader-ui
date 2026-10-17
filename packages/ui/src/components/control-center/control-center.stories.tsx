@@ -240,8 +240,11 @@ export const ControlledDraftRejects: Story = {
     const requested = args.onValueChange!.mock.calls[0]![0].focus!;
     await expect(Date.parse(requested.until)).toBeGreaterThanOrEqual(before + 45 * 60_000);
     await expect(Date.parse(requested.until)).toBeLessThanOrEqual(after + 45 * 60_000);
-    await expect(within(dialog).getByRole('radio', { name: /Reading/ })).toBeChecked();
-    await expect(within(dialog).getByRole('button', { name: 'Start' })).toBeVisible();
+    // The rejected draft keeps the dialog open through its enter transition: settle before asserting.
+    await waitFor(async () => {
+      await expect(within(dialog).getByRole('radio', { name: /Reading/ })).toBeChecked();
+      await expect(within(dialog).getByRole('button', { name: 'Start' })).toBeVisible();
+    });
     await expect(canvas.getByText('No focus session')).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     await waitFor(async () => {

@@ -36,6 +36,7 @@ export const choiceRowStyle = css({
 
 /** Transparent native input that stays operable and focusable. */
 export const choiceInputStyle = css({
+  font: 'inherit',
   position: 'absolute',
   opacity: 0,
   inlineSize: '16px',
