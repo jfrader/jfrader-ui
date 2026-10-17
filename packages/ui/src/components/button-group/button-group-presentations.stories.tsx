@@ -24,7 +24,9 @@ const expandingCode = `<ButtonGroup aria-label="Message actions" presentation="e
 const meta = {
   title: 'Actions/ButtonGroup',
   component: ButtonGroup,
-  tags: ['autodocs'],
+  // The docs engine keys pages by file; a second autodocs file would publish a second ButtonGroup
+  // page. Share the title and keep the stories for Storybook and the tests.
+  tags: ['!autodocs'],
   args: { 'aria-label': 'Message actions', presentation: 'expanding', restValue: 'reply' },
   parameters: { docs: {
     description: { component: 'Place related actions in a pill tray, or reveal one icon action’s label at a time.' },
