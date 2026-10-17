@@ -11,12 +11,25 @@ const PITCH_EM = 1.6;
 const DIGIT_COUNT = 10;
 const WHEEL_COPIES = 9;
 const CENTER = 4 * DIGIT_COUNT;
-const EASE = base.motion.easeStandard.match(/[\d.]+/g)!.map(Number) as [
-  number,
-  number,
-  number,
-  number,
-];
+export function resolveReelEase(value: string): [number, number, number, number] | 'linear' {
+  const match = /^cubic-bezier\(([^)]+)\)$/.exec(value.trim());
+  const values =
+    match?.[1]?.split(',').map((part) => (part.trim() ? Number(part) : Number.NaN)) ?? [];
+  const [x1, y1, x2, y2] = values;
+  return values.length === 4 &&
+    x1 !== undefined &&
+    y1 !== undefined &&
+    x2 !== undefined &&
+    y2 !== undefined &&
+    values.every(Number.isFinite) &&
+    x1 >= 0 &&
+    x1 <= 1 &&
+    x2 >= 0 &&
+    x2 <= 1
+    ? [x1, y1, x2, y2]
+    : 'linear';
+}
+const EASE = resolveReelEase(base.motion.easeStandard);
 const wheelStyle = css({
   position: 'relative',
   display: 'inline-block',

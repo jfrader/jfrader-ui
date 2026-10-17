@@ -359,11 +359,12 @@ function TextMorphRoot({
     (slotProps?.root?.dir ?? props.dir) === 'rtl' ? 'rtl' : 'ltr',
   );
   const isNumber = typeof value === 'number';
+  const formattingKey = JSON.stringify(formatOptions);
   const numberFormat = useMemo(
     () => (isNumber && !format ? new Intl.NumberFormat(locale, formatOptions) : null),
-    [isNumber, format, locale, formatOptions],
+    [isNumber, format, locale, formattingKey],
   );
-  const formattingKey = numberFormat ? JSON.stringify(numberFormat.resolvedOptions()) : 'text';
+  const resolvedFormattingKey = numberFormat ? JSON.stringify(numberFormat.resolvedOptions()) : 'text';
   const numberParts = useMemo(
     () =>
       numberFormat && typeof value === 'number' && Number.isFinite(value)
@@ -376,7 +377,9 @@ function TextMorphRoot({
       typeof value === 'number'
         ? format
           ? format(value)
-          : numberFormat!.format(value)
+          : numberFormat
+            ? numberFormat.format(value)
+            : String(value)
         : (value ?? children ?? ''),
     [value, children, numberFormat, format],
   );
@@ -454,7 +457,7 @@ function TextMorphRoot({
           </Text>
           {animated && (
             <Decoration
-              key={formattingKey}
+              key={resolvedFormattingKey}
               text={text}
               variant={typeof value === 'number' && !Number.isFinite(value) ? 'crossfade' : variant}
               locale={locale}

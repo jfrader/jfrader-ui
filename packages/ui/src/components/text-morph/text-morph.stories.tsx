@@ -7,6 +7,7 @@ import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { TextMorph, type TextMorphProps, type TextMorphPartProps } from './index';
+import { resolveReelEase } from './reel';
 
 const Row = styled.div({
   display: 'flex',
@@ -50,7 +51,7 @@ Pass a string as children, or a string/number through value. Text is caller-owne
 
 **Variants**
 
-auto matches Latin graphemes and uses a whole-label crossfade for joining scripts and RTL. glyph forces segmentation. crossfade preserves browser shaping. slot rolls localized numeric digits and replaces other graphemes vertically; RTL and complex strings keep whole-label shaping. SandText and SlotText are variants, not separate exports.
+auto matches Latin graphemes and uses a whole-label crossfade when either the current or previous text needs joining-script shaping or RTL. A Latin label following shaped or RTL text may therefore crossfade as a whole label. glyph forces segmentation. crossfade preserves browser shaping. slot rolls localized numeric digits and replaces other graphemes vertically; RTL and complex strings keep whole-label shaping. SandText and SlotText are variants, not separate exports.
 
 Use variant="sand" for decorative short headings. The real text stays visible and selectable beneath the transient grains. sand configures intro, interactive, grainSize, interactionRadius, maxCells, maxPixelRatio and onRenderFallback. Pointer effects do not handle touch gestures. Reduced motion, forced colors, pause and canvas failure leave static text.
 
@@ -254,6 +255,10 @@ export const Slot: Story = {
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(label(canvasElement)).toHaveTextContent('$99');
+    await expect(resolveReelEase('cubic-bezier(0.2, -0.5, 0.8, 1)')).toEqual([0.2, -0.5, 0.8, 1]);
+    for (const easing of ['ease', 'linear', 'cubic-bezier(0, , 1, 1)', 'cubic-bezier(2, 0, 1, 1)']) {
+      await expect(resolveReelEase(easing)).toBe('linear');
+    }
     await userEvent.click(canvas.getByRole('button', { name: 'Change price' }));
     await expect(label(canvasElement)).toHaveTextContent('$1,000');
     await expect(canvasElement.querySelector('[data-direction="up"]')).toBeInTheDocument();
