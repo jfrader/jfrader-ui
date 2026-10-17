@@ -1,3 +1,7 @@
+export const DEFAULT_FOCUS_MINUTES = 25;
+const DEFAULT_VOLUME = 60;
+const DEFAULT_TEXT_SIZE = 100;
+
 export interface ControlCenterValue {
   focus: { mode: string; minutes: number; until: string; allowedPeople: string[] } | null;
   notifications: boolean;
@@ -37,7 +41,7 @@ export function normalizeSettings(
       focus && modes.some((mode) => mode.value === focus.mode) && toEpoch(focus.until) !== null
         ? {
             ...focus,
-            minutes: bounded(focus.minutes, 'minutes', 25),
+            minutes: bounded(focus.minutes, 'minutes', DEFAULT_FOCUS_MINUTES),
             allowedPeople: (focus.allowedPeople ?? []).filter((id) =>
               people.some((person) => person.value === id),
             ),
@@ -52,8 +56,8 @@ export function normalizeSettings(
           (input === undefined && channel.defaultChecked === true),
       ]),
     ),
-    volume: bounded(input?.volume ?? 60, 'volume', 60),
-    textSize: bounded(input?.textSize ?? 100, 'textSize', 100),
+    volume: bounded(input?.volume ?? DEFAULT_VOLUME, 'volume', DEFAULT_VOLUME),
+    textSize: bounded(input?.textSize ?? DEFAULT_TEXT_SIZE, 'textSize', DEFAULT_TEXT_SIZE),
   };
 }
 import { toEpoch } from '../../utils/intl';

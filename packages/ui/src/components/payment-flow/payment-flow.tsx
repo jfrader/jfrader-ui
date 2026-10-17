@@ -34,6 +34,9 @@ import {
 } from './payment-flow-model';
 
 export type { PaymentFlowNodeKey } from './payment-flow-model';
+const MAX_PLAYBACK_SPEED = 3;
+const AUTO_VERTICAL_QUERY = '@container payment-flow (max-width: 700px)';
+
 export interface PaymentFlowNode {
   label: string;
   detail?: ReactNode;
@@ -86,6 +89,7 @@ export interface PaymentFlowProps
   label: string;
   caption?: ReactNode;
   orientation?: 'auto' | 'horizontal' | 'vertical';
+  /** Playback multiplier from 0 (static) to 3. Defaults to 1. */
   speed?: number;
   paused?: boolean;
   defaultPaused?: boolean;
@@ -114,7 +118,7 @@ const sceneStyle = css({
   gap: vars.space[2],
   minInlineSize: 0,
   '&[data-orientation="vertical"]': { gridTemplateColumns: 'minmax(0, 1fr)' },
-  '@container payment-flow (max-width: 700px)': {
+  [AUTO_VERTICAL_QUERY]: {
     '&[data-orientation="auto"]': { gridTemplateColumns: 'minmax(0, 1fr)' },
   },
 });
@@ -187,7 +191,7 @@ export function PaymentFlow({
     authorizationMs < 0 ||
     !Number.isFinite(speed) ||
     speed < 0 ||
-    speed > 3 ||
+    speed > MAX_PLAYBACK_SPEED ||
     summary.length < paymentPhases.length;
   const frozen = paused || speed === 0 || !!reduced;
   const [stepped, setStepped] = useState(false);
@@ -263,7 +267,7 @@ export function PaymentFlow({
   const elapsedLabel = invalid
     ? ''
     : new Intl.NumberFormat(locale, { style: 'unit', unit: 'millisecond' }).format(
-        Math.min(authorizationMs, PAYMENT_PHASE_MS),
+        authorizationMs,
       );
   return (
     <FieldSlot

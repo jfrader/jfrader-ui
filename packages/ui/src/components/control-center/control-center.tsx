@@ -22,6 +22,7 @@ import { Slider, type SliderProps } from '../slider';
 import { Switch, type SwitchProps } from '../switch';
 import { FieldSlot, type FieldParts, type FieldSlots } from '../field/field-slot';
 import {
+  DEFAULT_FOCUS_MINUTES,
   bounded,
   controlCenterLimits,
   focusSession,
@@ -199,7 +200,12 @@ export function ControlCenter({
     return {
       mode: current.focus?.mode ?? focusModes[0]?.value ?? '',
       minutes:
-        current.focus?.minutes ?? bounded(focusModes[0]?.defaultMinutes ?? 25, 'minutes', 25),
+        current.focus?.minutes ??
+        bounded(
+          focusModes[0]?.defaultMinutes ?? DEFAULT_FOCUS_MINUTES,
+          'minutes',
+          DEFAULT_FOCUS_MINUTES,
+        ),
       allowedPeople: current.focus?.allowedPeople ?? [],
     };
   }
@@ -214,6 +220,7 @@ export function ControlCenter({
   }
   function show(target: typeof detail, button: HTMLButtonElement) {
     if (disabled) return;
+    // Safari does not focus clicked buttons; capture the invoker for dialog focus return.
     button.focus();
     setDraft(draftFromCurrent());
     setDetail(target);
@@ -274,7 +281,7 @@ export function ControlCenter({
                 : mode
                   ? focusSession({
                       mode: mode.value,
-                      minutes: bounded(mode.defaultMinutes, 'minutes', 25),
+                      minutes: bounded(mode.defaultMinutes, 'minutes', DEFAULT_FOCUS_MINUTES),
                       allowedPeople: [],
                     })
                   : null,
@@ -406,7 +413,11 @@ export function ControlCenter({
                     setDraft({
                       ...draft,
                       mode,
-                      minutes: bounded(selected?.defaultMinutes ?? draft.minutes, 'minutes', 25),
+                      minutes: bounded(
+                        selected?.defaultMinutes ?? draft.minutes,
+                        'minutes',
+                        DEFAULT_FOCUS_MINUTES,
+                      ),
                     });
                   }}
                 />

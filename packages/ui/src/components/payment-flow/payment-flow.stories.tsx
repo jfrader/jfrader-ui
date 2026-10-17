@@ -104,6 +104,17 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const Paused: Story = { args: { defaultPaused: true } };
+export const LongAuthorization: Story = {
+  args: { defaultPaused: true, authorizationMs: 5_000 },
+  play: async ({ canvas, args }) => {
+    const duration = new Intl.NumberFormat(args.locale, {
+      style: 'unit',
+      unit: 'millisecond',
+    }).format(args.authorizationMs);
+    await expect(canvas.getByRole('list')).toHaveTextContent(duration);
+    await expect(canvas.getByText(duration, { exact: false, selector: 'div' })).toBeVisible();
+  },
+};
 export const Horizontal: Story = { args: { orientation: 'horizontal' } };
 export const Vertical: Story = { args: { orientation: 'vertical' } };
 export const Light: Story = { globals: { theme: 'light' } };
