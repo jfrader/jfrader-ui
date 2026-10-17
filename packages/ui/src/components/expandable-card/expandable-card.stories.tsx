@@ -118,9 +118,9 @@ async function settledAt(measure: () => number, expected: () => number) {
   );
 }
 export const Default: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
-  args: { title: 'Studio plan', description: 'Billing and team details', content: 'Plan details', onOpenChange: fn() },
+  args: { title: 'Studio plan', description: 'Billing and team details', content: 'Billed annually. 5 seats, renews on 12 Jan.', onOpenChange: fn() },
   render: (args) => <ExpandableCard {...args} />,
-  parameters: { docs: { source: { code: `<ExpandableCard title="Studio plan" description="Billing and team details" content={details} />` } } },
+  parameters: { docs: { source: { code: `<ExpandableCard title="Studio plan" description="Billing and team details" content="Billed annually. 5 seats, renews on 12 Jan." />` } } },
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: /^Studio plan/ });
     const panel = trigger.ownerDocument.getElementById(trigger.getAttribute('aria-controls')!)!;
