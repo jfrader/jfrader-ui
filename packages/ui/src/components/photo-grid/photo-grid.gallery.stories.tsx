@@ -31,10 +31,27 @@ const PRODUCT_SOURCE = `<PhotoGrid
   onSelectedOptionChange={setPrintSize}
 />`;
 const COVER_SOURCE = `<PhotoGrid variant="cover-flow" title="Alpine collection" photos={photos} onValueChange={setPhotoId} />`;
+const preference: { matches: boolean; media?: MediaQueryList } = { matches: false };
+function mockPreference(reduced: boolean) {
+  const original = window.matchMedia.bind(window);
+  preference.matches = reduced;
+  if (!preference.media) {
+    preference.media = original('(prefers-reduced-motion)');
+    Object.defineProperty(preference.media, 'matches', { get: () => preference.matches });
+  }
+  preference.media.dispatchEvent(new MediaQueryListEvent('change', { matches: reduced }));
+  window.matchMedia = (query) => query.includes('prefers-reduced-motion') ? preference.media! : original(query);
+  return () => {
+    preference.matches = false;
+    preference.media!.dispatchEvent(new MediaQueryListEvent('change', { matches: false }));
+    window.matchMedia = original;
+  };
+}
 const meta = {
   title: 'Media/PhotoGrid', component: PhotoGrid, tags: ['autodocs'], globals: { theme: 'dark' },
   args: { variant: 'product', title: 'Alpine prints', colors, options, onValueChange: fn(), onOpenChange: fn(), onSelectedColorChange: fn(), onSelectedOptionChange: fn() },
   decorators: [(Story) => <Frame><Story /></Frame>],
+  beforeEach: () => mockPreference(false),
   parameters: { layout: 'fullscreen', docs: {
     source: { code: PRODUCT_SOURCE, language: 'tsx' },
     description: { component: 'Browse a photo collection, inspect product images or select a cover from a depth rail.' },
@@ -229,8 +246,27 @@ export const CoverFlowLight: Story = { args: coverArgs, parameters: coverParamet
 export const CoverFlowFlat: Story = { args: { ...coverArgs, depth: false }, parameters: { docs: { source: { code: '<PhotoGrid variant="cover-flow" depth={false} title="Alpine collection" photos={photos} />', language: 'tsx' } } } };
 export const CoverFlowReflection: Story = { args: { ...coverArgs, reflection: true }, parameters: { docs: { source: { code: '<PhotoGrid variant="cover-flow" reflection title="Alpine collection" photos={photos} />', language: 'tsx' } } } };
 export const CoverFlowReducedMotion: Story = {
-  args: { ...coverArgs, depth: false },
-  parameters: { docs: { source: { code: COVER_SOURCE, language: 'tsx' }, description: { story: 'Browse a flat rail. The depth presentation also becomes flat when the browser requests reduced motion.' } } },
+  tags: ['!autodocs'],
+  args: { ...coverArgs, depth: true },
+  beforeEach: () => mockPreference(true),
+  parameters: coverParameters,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const rail = canvasElement.querySelector<HTMLElement>('[data-ui="photo-grid-presentation-stage"]')!;
+    const covers = rail.querySelectorAll<HTMLElement>('[data-current]');
+    await expect(covers).toHaveLength(prints.length);
+    const expectFlat = async () => {
+      for (const cover of covers) {
+        await expect(cover).toHaveAttribute('data-flat', 'true');
+        await expect(getComputedStyle(cover).transform).toBe('none');
+        await expect(getComputedStyle(cover).transitionDuration).toBe('0s');
+        await expect(getComputedStyle(cover).visibility).toBe(cover.dataset.current === 'true' ? 'visible' : 'hidden');
+      }
+    };
+    await expectFlat();
+    await userEvent.click(canvas.getByRole('button', { name: 'Next photo' }));
+    await expect(covers[1]).toHaveAttribute('data-current', 'true');
+    await expectFlat();
+  },
 };
 export const CoverFlowKeyboard: Story = {
   args: coverArgs,

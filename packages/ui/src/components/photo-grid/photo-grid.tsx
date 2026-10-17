@@ -203,8 +203,11 @@ export interface PhotoGridProps
   selectedOption?: string | null;
   defaultSelectedOption?: string | null;
   onSelectedOptionChange?: (value: string | null) => void;
+  /** Content above the product or cover-flow presentation; ignored by `variant="grid"`. */
   header?: ReactNode;
+  /** Content below the product or cover-flow presentation; ignored by `variant="grid"`. */
   footer?: ReactNode;
+  /** Render the current product or cover-flow caption; ignored by `variant="grid"`. */
   renderCaption?: (photo: PhotoGridPhoto, index: number) => ReactNode;
   /** Fine-pointer inspection. The modal zoom controls remain available when false. */
   magnifier?: boolean;
