@@ -511,7 +511,8 @@ export function MultiRegionFailover({
     visible,
     pageVisible,
     index,
-    stages,
+    // stages is read through refs/closures keyed by index; the raw array identity must not restart the loop.
+    stages.length,
     loop,
     replayKey,
     requestStage,

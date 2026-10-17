@@ -223,8 +223,7 @@ export function PasswordStrength({
   form,
   'aria-describedby': describedBy,
   autoComplete = 'new-password',
-  autoCapitalize = 'off',
-  spellCheck = false,
+  // PasswordField already owns autoCapitalize/spellCheck; overriding them here duplicated its wiring.
   ...fieldProps
 }: PasswordStrengthProps) {
   const initialValue = useRef(defaultValue).current;
@@ -296,8 +295,6 @@ export function PasswordStrength({
         value={current}
         onValueChange={request}
         autoComplete={autoComplete}
-        autoCapitalize={autoCapitalize}
-        spellCheck={spellCheck}
         messages={fieldMessages}
         slots={fieldSlots}
         slotProps={fieldSlotProps}

@@ -800,6 +800,7 @@ export function BookingPill({
                         type="button"
                         styles={[buttonStyle, primaryStyle]}
                         disabled={disabled || (!valid && status !== 'pending')}
+                        // Pending keeps the button focusable (busy) while aria-disabled reports why it cannot confirm.
                         aria-disabled={blocked || !valid}
                         aria-busy={status === 'pending' || undefined}
                         behavior={{
