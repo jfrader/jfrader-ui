@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Dialog } from '../dialog';
 import { GameTable } from '../game-table';
@@ -14,6 +15,26 @@ const SAMPLE_ACTIONS: readonly GameActionItem[] = [
   { key: 'call', label: 'Call 20', tone: 'neutral', onSelect: fn() },
   { key: 'raise', label: 'Raise 50', tone: 'accent', onSelect: fn() },
 ];
+
+const TableFrame = styled.div({
+  position: 'relative',
+  inlineSize: '100%',
+  blockSize: `calc(${vars.space[4]} * 25)`,
+});
+const FloatingActions = styled.div({
+  position: 'absolute',
+  insetInline: 0,
+  insetBlockEnd: vars.space[4],
+  display: 'flex',
+  justifyContent: 'center',
+});
+const ActionSurface = styled(Surface)({ padding: vars.space[2], borderRadius: vars.radius.xl });
+const KeyboardFrame = styled.div({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space[4],
+  alignItems: 'flex-start',
+});
 
 const meta = {
   title: 'Games/GameActions',
@@ -31,14 +52,14 @@ const meta = {
       },
       source: {
         language: 'tsx',
-        code: `import { GameActions } from '@jfrader/ui/game-actions';
+        code: `import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
 
 const actions = [
-  { key: 'fold', label: 'Fold', tone: 'danger', onSelect: handleFold },
-  { key: 'check', label: 'Check', tone: 'neutral', onSelect: handleCheck },
-  { key: 'call', label: 'Call 20', tone: 'neutral', onSelect: handleCall },
-  { key: 'raise', label: 'Raise 50', tone: 'accent', onSelect: handleRaise },
-];
+  { key: 'fold', label: 'Fold', tone: 'danger', onSelect: () => {} },
+  { key: 'check', label: 'Check', tone: 'neutral', onSelect: () => {} },
+  { key: 'call', label: 'Call 20', tone: 'neutral', onSelect: () => {} },
+  { key: 'raise', label: 'Raise 50', tone: 'accent', onSelect: () => {} },
+] satisfies readonly GameActionItem[];
 
 <GameActions actions={actions} label="Turn actions" />`,
       },
@@ -71,19 +92,21 @@ const actions = [
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** Fold, check, call, or raise from a turn toolbar. */
 export const Default: Story = {
+  name: 'Default',
   parameters: {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { GameActions } from '@jfrader/ui/game-actions';
+        code: `import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
 
 const actions = [
-  { key: 'fold', label: 'Fold', tone: 'danger', onSelect: handleFold },
-  { key: 'check', label: 'Check', tone: 'neutral', onSelect: handleCheck },
-  { key: 'call', label: 'Call 20', tone: 'neutral', onSelect: handleCall },
-  { key: 'raise', label: 'Raise 50', tone: 'accent', onSelect: handleRaise },
-];
+  { key: 'fold', label: 'Fold', tone: 'danger', onSelect: () => {} },
+  { key: 'check', label: 'Check', tone: 'neutral', onSelect: () => {} },
+  { key: 'call', label: 'Call 20', tone: 'neutral', onSelect: () => {} },
+  { key: 'raise', label: 'Raise 50', tone: 'accent', onSelect: () => {} },
+] satisfies readonly GameActionItem[];
 
 <GameActions actions={actions} label="Turn actions" />`,
       },
@@ -98,6 +121,7 @@ const actions = [
   },
 };
 
+/** Turn actions sit over a four-player table with a pot of 140. */
 export const InlineTableOverlay: Story = {
   name: 'Inline table overlay',
   parameters: {
@@ -105,29 +129,39 @@ export const InlineTableOverlay: Story = {
       source: {
         language: 'tsx',
         code: `import { GameTable } from '@jfrader/ui/game-table';
-import { GameActions } from '@jfrader/ui/game-actions';
-import { Surface } from '@jfrader/ui';
+import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+import { Surface } from '@jfrader/ui/surface';
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
 
-<div style={{ position: 'relative', inlineSize: '100%', blockSize: '400px' }}>
-  <GameTable
-    players={4}
-    seats={[
-      { key: 's1', name: 'Alice', teamIdx: 0 },
-      { key: 's2', name: 'Bob', teamIdx: 1 },
-      { key: 's3', name: 'Charlie', teamIdx: 0 },
-      { key: 's4', name: 'Dana', teamIdx: 1 },
-    ]}
-  >
+const TableFrame = styled.div({ position: 'relative', inlineSize: '100%', blockSize: \`calc(\${vars.space[4]} * 25)\` });
+const FloatingActions = styled.div({ position: 'absolute', insetInline: 0, insetBlockEnd: vars.space[4], display: 'flex', justifyContent: 'center' });
+const ActionSurface = styled(Surface)({ padding: vars.space[2], borderRadius: vars.radius.xl });
+const actions = [
+  { key: 'fold', label: 'Fold', tone: 'danger', onSelect: () => {} },
+  { key: 'check', label: 'Check', tone: 'neutral', onSelect: () => {} },
+  { key: 'call', label: 'Call 20', tone: 'neutral', onSelect: () => {} },
+  { key: 'raise', label: 'Raise 50', tone: 'accent', onSelect: () => {} },
+] satisfies readonly GameActionItem[];
+const seats = [
+  { key: 's1', name: 'Alice', teamIdx: 0 },
+  { key: 's2', name: 'Bob', teamIdx: 1 },
+  { key: 's3', name: 'Charlie', teamIdx: 0 },
+  { key: 's4', name: 'Dana', teamIdx: 1 },
+];
+
+<TableFrame>
+  <GameTable players={4} seats={seats}>
     <GameTable.Center>Pot: 140</GameTable.Center>
     <GameTable.Floating>
-      <div style={{ position: 'absolute', insetInline: 0, insetBlockEnd: '16px', display: 'flex', justifyContent: 'center' }}>
-        <Surface appearance="contrast" sx={{ padding: '8px', borderRadius: '16px' }}>
+      <FloatingActions>
+        <ActionSurface appearance="contrast">
           <GameActions actions={actions} label="Table actions" />
-        </Surface>
-      </div>
+        </ActionSurface>
+      </FloatingActions>
     </GameTable.Floating>
   </GameTable>
-</div>`,
+</TableFrame>`,
       },
     },
   },
@@ -139,26 +173,18 @@ import { Surface } from '@jfrader/ui';
       { key: 's4', name: 'Dana', teamIdx: 1 },
     ];
     return (
-      <div style={{ position: 'relative', inlineSize: '100%', blockSize: '400px' }}>
+      <TableFrame>
         <GameTable players={4} seats={seats}>
           <GameTable.Center>Pot: 140</GameTable.Center>
           <GameTable.Floating>
-            <div
-              style={{
-                position: 'absolute',
-                insetInline: 0,
-                insetBlockEnd: '16px',
-                display: 'flex',
-                justifyContent: 'center',
-              }}
-            >
-              <Surface appearance="contrast" sx={{ padding: vars.space[2], borderRadius: vars.radius.xl }}>
+            <FloatingActions>
+              <ActionSurface appearance="contrast">
                 <GameActions actions={SAMPLE_ACTIONS} label="Table actions" />
-              </Surface>
-            </div>
+              </ActionSurface>
+            </FloatingActions>
           </GameTable.Floating>
         </GameTable>
-      </div>
+      </TableFrame>
     );
   },
   play: async ({ canvasElement }) => {
@@ -168,13 +194,14 @@ import { Surface } from '@jfrader/ui';
   },
 };
 
+/** Open a challenge prompt to accept, raise, or decline. */
 export const ModalCallOverlay: Story = {
   name: 'Modal call overlay',
   parameters: {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Dialog } from '@jfrader/ui';
+        code: `import { Dialog } from '@jfrader/ui/dialog';
 import { GameActions } from '@jfrader/ui/game-actions';
 
 <Dialog>
@@ -184,9 +211,9 @@ import { GameActions } from '@jfrader/ui/game-actions';
     <Dialog.Description>An opponent challenged with 50 points. Choose your response.</Dialog.Description>
     <GameActions
       actions={[
-        { key: 'accept', label: 'Accept challenge', tone: 'accent', onSelect: handleAccept },
-        { key: 'raise', label: 'Raise to 100', tone: 'neutral', onSelect: handleRaise },
-        { key: 'decline', label: 'Decline', tone: 'danger', onSelect: handleDecline },
+        { key: 'accept', label: 'Accept challenge', tone: 'accent', onSelect: () => {} },
+        { key: 'raise', label: 'Raise to 100', tone: 'neutral', onSelect: () => {} },
+        { key: 'decline', label: 'Decline', tone: 'danger', onSelect: () => {} },
       ]}
       label="Challenge response"
     />
@@ -216,19 +243,20 @@ import { GameActions } from '@jfrader/ui/game-actions';
   },
 };
 
+/** Pass is unavailable and Call 20 is pending while Fold remains enabled. */
 export const DisabledAndPending: Story = {
   name: 'Disabled and pending',
   parameters: {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { GameActions } from '@jfrader/ui/game-actions';
+        code: `import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
 
 const actions = [
-  { key: 'pass', label: 'Pass', disabled: true },
-  { key: 'call', label: 'Call 20', pending: true },
-  { key: 'fold', label: 'Fold', tone: 'danger' },
-];
+  { key: 'pass', label: 'Pass', disabled: true, onSelect: () => {} },
+  { key: 'call', label: 'Call 20', pending: true, onSelect: () => {} },
+  { key: 'fold', label: 'Fold', tone: 'danger', onSelect: () => {} },
+] satisfies readonly GameActionItem[];
 
 <GameActions actions={actions} label="Turn actions" />`,
       },
@@ -251,12 +279,21 @@ const actions = [
   },
 };
 
+/** Turn actions are arranged in a vertical toolbar. */
 export const Vertical: Story = {
+  name: 'Vertical',
   parameters: {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { GameActions } from '@jfrader/ui/game-actions';
+        code: `import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+
+const actions = [
+  { key: 'fold', label: 'Fold', tone: 'danger', onSelect: () => {} },
+  { key: 'check', label: 'Check', tone: 'neutral', onSelect: () => {} },
+  { key: 'call', label: 'Call 20', tone: 'neutral', onSelect: () => {} },
+  { key: 'raise', label: 'Raise 50', tone: 'accent', onSelect: () => {} },
+] satisfies readonly GameActionItem[];
 
 <GameActions actions={actions} orientation="vertical" label="Turn actions" />`,
       },
@@ -267,14 +304,26 @@ export const Vertical: Story = {
   },
 };
 
+/** Turn actions use the light theme. */
 export const Light: Story = {
+  name: 'Light theme',
   parameters: {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { GameActions } from '@jfrader/ui/game-actions';
+        code: `import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
 
-<GameActions actions={actions} label="Turn actions" />`,
+const actions = [
+  { key: 'fold', label: 'Fold', tone: 'danger', onSelect: () => {} },
+  { key: 'check', label: 'Check', tone: 'neutral', onSelect: () => {} },
+  { key: 'call', label: 'Call 20', tone: 'neutral', onSelect: () => {} },
+  { key: 'raise', label: 'Raise 50', tone: 'accent', onSelect: () => {} },
+] satisfies readonly GameActionItem[];
+
+<ThemeRoot theme="light">
+  <GameActions actions={actions} label="Turn actions" />
+</ThemeRoot>`,
       },
     },
   },
@@ -282,17 +331,30 @@ export const Light: Story = {
   globals: { theme: 'light' },
 };
 
+/** Before and After buttons surround a toolbar with an unavailable Check action. */
 export const KeyboardNavigation: Story = {
   name: 'Keyboard navigation',
   parameters: {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { GameActions } from '@jfrader/ui/game-actions';
+        code: `import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
 
-<button type="button">Before</button>
-<GameActions actions={actions} label="Turn actions" />
-<button type="button">After</button>`,
+const KeyboardFrame = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[4], alignItems: 'flex-start' });
+const actions = [
+  { key: 'fold', label: 'Fold', tone: 'danger', onSelect: () => {} },
+  { key: 'check', label: 'Check', disabled: true, onSelect: () => {} },
+  { key: 'call', label: 'Call', onSelect: () => {} },
+  { key: 'raise', label: 'Raise', tone: 'accent', onSelect: () => {} },
+] satisfies readonly GameActionItem[];
+
+<KeyboardFrame>
+  <button type="button" data-testid="before-button">Before</button>
+  <GameActions actions={actions} label="Turn actions" />
+  <button type="button" data-testid="after-button">After</button>
+</KeyboardFrame>`,
       },
     },
   },
@@ -310,7 +372,7 @@ export const KeyboardNavigation: Story = {
     ];
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'flex-start' }}>
+      <KeyboardFrame>
         <button type="button" data-testid="before-button">
           Before
         </button>
@@ -318,7 +380,7 @@ export const KeyboardNavigation: Story = {
         <button type="button" data-testid="after-button">
           After
         </button>
-      </div>
+      </KeyboardFrame>
     );
   },
   play: async ({ canvasElement }) => {
@@ -403,14 +465,30 @@ function FocusPreservationFixture() {
   return <GameActions actions={actions} label="Turn actions" />;
 }
 
+/** Submit action becomes unavailable after activation without losing focus. */
 export const FocusPreservedOnUnavailable: Story = {
   name: 'Focus preserved on unavailable',
   parameters: {
     docs: {
       source: {
         language: 'tsx',
-        code: `// When an action becomes unavailable while focused, focus remains on the action
-<GameActions actions={actions} label="Turn actions" />`,
+        code: `import { useState } from 'react';
+import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+
+export function FocusPreservationExample() {
+  const [disabled, setDisabled] = useState(false);
+  const actions: readonly GameActionItem[] = [
+    {
+      key: 'action-toggle',
+      label: 'Submit action',
+      disabled,
+      onSelect: () => setDisabled(true),
+    },
+    { key: 'action-secondary', label: 'Secondary action' },
+  ];
+
+  return <GameActions actions={actions} label="Turn actions" />;
+}`,
       },
     },
   },
