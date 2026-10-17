@@ -1,6 +1,33 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { ControlCenter } from './control-center';
+import { vars } from '@jfrader/tokens/vars';
+import { styled } from '../../styling/styled';
+import { Surface } from '../surface';
+
+const SettingsPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 18)`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+  display: 'grid',
+  gap: vars.space[5],
+});
+const PanelLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.lg,
+  fontWeight: vars.fontWeight.semibold,
+  color: vars.color.text,
+});
+const SettingsRows = styled.div({
+  '&&': {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gap: vars.space[3],
+  },
+  '& > :last-child': { gridColumn: '1 / -1' },
+});
 
 const labels = {
   focus: 'Focus',
@@ -26,6 +53,16 @@ const meta = {
   title: 'Showcase/ControlCenter',
   component: ControlCenter,
   tags: ['autodocs'],
+  render: (args) => (
+    <SettingsPanel>
+      <PanelLabel>Workspace settings</PanelLabel>
+      <ControlCenter
+        {...args}
+        slots={{ grid: SettingsRows, ...args.slots }}
+        slotProps={{ ...args.slotProps, modes: { orientation: 'horizontal', ...args.slotProps?.modes } }}
+      />
+    </SettingsPanel>
+  ),
   args: {
     label: 'Quick settings',
     labels,

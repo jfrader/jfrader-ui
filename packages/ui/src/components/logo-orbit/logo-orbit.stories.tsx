@@ -4,11 +4,25 @@ import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
 import { LogoOrbit } from './index';
+import { Surface } from '../surface';
+import { Button } from '../button';
 
-const Frame = styled.div({
-  inlineSize: 'min(100%, 36rem)',
-  padding: vars.space[4],
+const Frame = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 24)`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
 });
+const Orbit = styled(LogoOrbit)({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[4],
+  '& > [data-ui="logo-orbit-filters"]': { flex: '1 1 auto' },
+  '& > [data-ui="logo-orbit-stage"]': { flexBasis: '100%', marginInline: 'auto' },
+  '& > [data-ui="logo-orbit-detail"]': { flexBasis: '100%' },
+});
+const PauseControl = styled(Button)({ '&&': { borderRadius: vars.radius.md } });
 const items = [
   {
     id: 'mail',
@@ -53,7 +67,7 @@ const meta = {
   },
   render: (args) => (
     <Frame>
-      <LogoOrbit {...args} />
+      <Orbit {...args} slots={{ pauseButton: PauseControl, ...args.slots }} />
     </Frame>
   ),
   parameters: {

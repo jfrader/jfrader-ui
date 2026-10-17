@@ -7,7 +7,8 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { GameActions } from '../game-actions';
 import { GameTable } from '../game-table';
-import { CallOverlay } from './index';
+import { CallOverlay, type CallOverlayProps } from './index';
+import { Surface } from '../surface';
 
 const Frame = styled.div({
   position: 'relative',
@@ -16,6 +17,23 @@ const Frame = styled.div({
   blockSize: `calc(${vars.space[6]} * 17.5)`,
 });
 const Row = styled.div({ display: 'flex', gap: vars.space[4], padding: vars.space[6] });
+const AnnouncementPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 22)`,
+  maxInlineSize: '100%',
+  minBlockSize: `calc(${vars.space[8]} * 10)`,
+  padding: vars.space[6],
+  display: 'grid',
+  alignContent: 'space-between',
+  justifyItems: 'center',
+  gap: vars.space[6],
+});
+const RoundLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+});
 const preference: { matches: boolean; media?: MediaQueryList } = { matches: false };
 function mockPreference(reduced: boolean) {
   const original = window.matchMedia.bind(window);
@@ -33,6 +51,7 @@ const meta = {
   component: CallOverlay,
   tags: ['autodocs'],
   args: { label: 'Round started', defaultOpen: true },
+  render: (args) => <AnnouncementPanel><CallOverlay {...args} /></AnnouncementPanel>,
   beforeEach: () => mockPreference(false),
   afterEach: async ({ canvasElement }) => {
     for (const status of within(canvasElement).queryAllByRole('status')) {
@@ -61,11 +80,21 @@ type Story = StoryObj<typeof meta>;
 /** A round-start announcement closes automatically. */
 export const Default: Story = {
   name: 'Default',
-  parameters: { docs: { source: { language: 'tsx', code: `import { CallOverlay } from '@jfrader/ui/call-overlay';
+  render: (args) => <ControlledExample {...args} />,
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button } from '@jfrader/ui/button';
+import { CallOverlay } from '@jfrader/ui/call-overlay';
 
-<CallOverlay defaultOpen label="Round started" onOpenChange={() => {}} />` } } },
-  args: { onOpenChange: fn() },
+export function RoundAnnouncement() {
+  const [open, setOpen] = useState(false);
+  return <>
+    <Button onClick={() => setOpen(true)} aria-disabled={open}>Announce</Button>
+    <CallOverlay open={open} onOpenChange={setOpen} label="Round started" />
+  </>;
+}` } } },
+  args: { defaultOpen: false, onOpenChange: fn() },
   play: async ({ canvasElement, args }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Announce' }));
     const status = within(canvasElement).getByRole('status');
     await expect(status).toHaveAttribute('aria-live', 'polite');
     await expect(status).toHaveTextContent('Round started');
@@ -75,6 +104,7 @@ export const Default: Story = {
 };
 /** A round-start announcement uses the light theme. */
 export const Light: Story = {
+  tags: ['!autodocs'],
   name: 'Light theme',
   decorators: [withLightTheme],
   parameters: { docs: { source: { language: 'tsx', code: `import { CallOverlay } from '@jfrader/ui/call-overlay';
@@ -86,6 +116,7 @@ import { ThemeRoot } from '@jfrader/ui/theme-root';
 };
 /** Accepted, Declined, and Your turn announcements use distinct tones. */
 export const Tones: Story = {
+  tags: ['!autodocs'],
   name: 'Tones',
   parameters: { docs: { source: { language: 'tsx', code: `import { CallOverlay } from '@jfrader/ui/call-overlay';
 import { styled } from '@jfrader/ui';
@@ -104,12 +135,16 @@ const Row = styled.div({ display: 'flex', gap: vars.space[4], padding: vars.spac
   <CallOverlay defaultOpen tone="neutral">Your turn</CallOverlay>
 </Row> };
 
-function ControlledExample() {
+function ControlledExample(args: CallOverlayProps) {
   const [open, setOpen] = useState(false);
-  return <>
+  return <AnnouncementPanel>
+    <RoundLabel>North table · Round 2</RoundLabel>
+    <CallOverlay {...args} open={open} onOpenChange={(next) => {
+      setOpen(next);
+      args.onOpenChange?.(next);
+    }} label={args.label ?? 'Your turn'} />
     <Button onClick={() => setOpen(true)} aria-disabled={open}>Announce</Button>
-    <CallOverlay open={open} onOpenChange={setOpen} label="Your turn" />
-  </>;
+  </AnnouncementPanel>;
 }
 /** Announce opens a Your turn message that can be replayed after it closes. */
 export const ControlledReopen: Story = {
@@ -139,6 +174,7 @@ export function ControlledExample() {
 };
 /** The round-start announcement fades without movement under reduced motion. */
 export const ReducedMotion: Story = {
+  tags: ['!autodocs'],
   name: 'Reduced motion',
   parameters: { docs: { source: { language: 'tsx', code: `import { CallOverlay } from '@jfrader/ui/call-overlay';
 
@@ -202,6 +238,7 @@ export function TableExample() {
 function ReplacementRoot(props: ComponentPropsWithRef<'div'>) { return <div {...props} data-replacement="root" />; }
 /** A replacement root shows an italic announcement in right-to-left direction. */
 export const CustomRoot: Story = {
+  tags: ['!autodocs'],
   name: 'Custom root',
   parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { CallOverlay } from '@jfrader/ui/call-overlay';

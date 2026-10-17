@@ -5,12 +5,25 @@ import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
 import { settleMotion } from '../../testing/motion-assertions';
 import { RadialMenu } from './index';
+import { Surface } from '../surface';
 
-const Frame = styled.div({
-  minBlockSize: '24rem',
+const Frame = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 18)`,
+  maxInlineSize: '100%',
+  minBlockSize: `calc(${vars.space[8]} * 12)`,
   display: 'grid',
+  gridTemplateRows: 'auto minmax(0, 1fr)',
   placeItems: 'center',
   padding: vars.space[8],
+  gap: vars.space[4],
+});
+const NoteLabel = styled.p({
+  justifySelf: 'start',
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
 });
 const actions = [
   { id: 'copy', label: 'Copy', icon: '＋' },
@@ -24,6 +37,7 @@ const meta = {
   args: { label: 'Note actions', actions, onAction: fn(), onOpenChange: fn() },
   render: (args) => (
     <Frame>
+      <NoteLabel>Product notes · Launch checklist</NoteLabel>
       <RadialMenu {...args} />
     </Frame>
   ),

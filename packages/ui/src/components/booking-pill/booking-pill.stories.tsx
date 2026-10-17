@@ -4,6 +4,7 @@ import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { Button } from '../button';
+import { Surface } from '../surface';
 import { BookingPill, type BookingDraft } from './index';
 
 const START_DATE = '2026-10-11';
@@ -15,10 +16,30 @@ const Frame = styled.div({
   maxInlineSize: '28rem',
 });
 const NarrowFrame = styled.div({ inlineSize: '320px', maxInlineSize: '100%' });
+const ReservationPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 18)`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+  display: 'grid',
+  gap: vars.space[5],
+});
+const VenueLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+});
 const meta = {
   title: 'Showcase/BookingPill',
   component: BookingPill,
   tags: ['autodocs'],
+  render: (args) => (
+    <ReservationPanel>
+      <VenueLabel>Modern British · Garden dining</VenueLabel>
+      <BookingPill {...args} />
+    </ReservationPanel>
+  ),
   args: {
     venue: 'The Glasshouse',
     startDate: START_DATE,
