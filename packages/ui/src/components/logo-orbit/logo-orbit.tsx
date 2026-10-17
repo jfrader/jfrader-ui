@@ -31,6 +31,7 @@ import {
 import { useControlledState } from '../../utils/use-controlled-state';
 import { safeUrl } from '../../utils/attachment';
 import { moveRovingFocus } from '../../utils/roving-focus';
+import { Button } from '../button';
 
 export interface OrbitLogo {
   id: string;
@@ -149,7 +150,9 @@ const controlsStyle = css({
   flexWrap: 'wrap',
   gap: vars.space[2],
   alignItems: 'center',
+  marginBlockEnd: vars.space[3],
 });
+const filterStyle = css({ borderRadius: vars.radius.full });
 const buttonStyle = css({
   font: 'inherit',
   display: 'inline-flex',
@@ -159,7 +162,7 @@ const buttonStyle = css({
   minInlineSize: vars.space[10],
   paddingInline: vars.space[3],
   border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.full,
+  borderRadius: vars.radius.md,
   background: vars.color.surfaceRaised,
   color: vars.color.text,
   cursor: 'pointer',
@@ -467,7 +470,7 @@ function LogoOrbitBody({
   const Center = slots?.center ?? 'div';
   const Filters = slots?.filters ?? 'div';
   const FilterButton = slots?.filterButton ?? 'button';
-  const PauseButton = slots?.pauseButton ?? 'button';
+  const PauseButton = slots?.pauseButton ?? Button;
   const List = slots?.list ?? 'ul';
   const Item = slots?.item ?? 'li';
   const LogoButton = slots?.logoButton ?? 'button';
@@ -528,7 +531,7 @@ function LogoOrbitBody({
             {[null, ...categories].map((categoryValue) => (
               <WithSx
                 key={categoryValue ?? ''}
-                styles={[buttonStyle, filterCss]}
+                styles={[buttonStyle, filterStyle, filterCss]}
                 className={filterProps.className}
               >
                 {(className) => (
