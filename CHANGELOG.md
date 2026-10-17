@@ -8,12 +8,8 @@
 
 ### Added
 
-<<<<<<< HEAD
-- `ShareAccess` composes ShareSheet's inline presentation with email invitations, member roles, persistent removal undo and link permissions. `VoiceRecorder` composes VoiceOrb with application-owned recording, review, seeking and sending; neither component performs permission or media capture work.
-
-=======
 - `ControlCenter` composes quick-setting toggles, sliders, radio modes and modal focus/channel details with draft application and controlled settings. `PaymentFlow` composes an illustrative five-phase payment journey with safe Intl currency formatting, an ordered narrative and pause/step/replay controls. Custom circular dial gestures, tile morphs, moving payment chips, SVG rails, continuous balance count-up and hover effects are excluded.
->>>>>>> origin/master
+- `ShareAccess` composes ShareSheet's inline presentation with email invitations, member roles, persistent removal undo and link permissions. `VoiceRecorder` composes VoiceOrb with application-owned recording, review, seeking and sending; neither component performs permission or media capture work.
 - `RadialMenu` shows object actions around a trigger with keyboard navigation, hold-drag targeting and a linear fallback. `LogoOrbit` arranges supplied marks in a pausable integration catalog with filters, details and consumer-owned connection actions. Both support reduced motion and replaceable parts.
   Scope excludes lens/pill/swirl/magnet choreography, tilted-ring parking, connector/detail spring, exhaustive announcements, focus-removal repair and the edge-case catalogue.
 - Tabs accepts `variant="glass"` and `variant="liquid"`, line/pill/lens indicators, icon labels, localized badges, compact bars and optional release-only drag selection. Existing tab and panel semantics remain unchanged.
