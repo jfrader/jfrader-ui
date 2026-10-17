@@ -159,6 +159,7 @@ const clamp = (value: number, max: number) =>
 
 /** Turn short editorial sequences with persistent native previous/next controls. */
 export function PageCurl({
+  ref,
   pages,
   value,
   defaultValue = 0,
@@ -199,6 +200,7 @@ export function PageCurl({
   } | null>(null);
   const animation = useRef<ReturnType<typeof animate> | null>(null);
   const suppressClick = useRef(false);
+  const rootRef = useMergeRefs([ref, slotProps?.root?.ref]);
   const bookRef = useMergeRefs([book, slotProps?.book?.ref]);
   const foldRef = useMergeRefs([fold, slotProps?.fold?.ref]);
   const Root = slots?.root ?? component ?? 'div';
@@ -286,6 +288,7 @@ export function PageCurl({
           <Root
             {...props}
             {...root}
+            ref={rootRef}
             className={resolved}
             style={
               {

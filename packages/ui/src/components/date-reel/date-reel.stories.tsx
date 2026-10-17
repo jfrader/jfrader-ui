@@ -60,6 +60,26 @@ export const Default: Story = {
   },
 };
 
+export const InvalidLocale: Story = {
+  args: { locale: 'not_a_locale' },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const expected = new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'full',
+      timeStyle: 'short',
+      calendar: 'gregory',
+      timeZone: 'UTC',
+    }).format(new Date('2026-10-17T15:30:00Z'));
+    await expect(
+      canvasElement.querySelector('[data-ui="date-reel-summary"]'),
+    ).toHaveTextContent(expected);
+    const day = canvas.getByRole('spinbutton', { name: 'Day' });
+    day.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('2026-10-18T15:30');
+    await expect(canvas.queryByRole('alert')).not.toBeInTheDocument();
+  },
+};
+
 export const DateMode: Story = {
   name: 'Date',
   args: {

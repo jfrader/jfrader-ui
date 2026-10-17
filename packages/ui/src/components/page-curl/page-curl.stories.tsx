@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn } from 'storybook/test';
+import { StrictMode, useState } from 'react';
+import { expect, fn, mocked } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { PageCurl } from './index';
+import { Button } from '../button';
 
 const Frame = styled.div({ maxInlineSize: '44rem', inlineSize: '100%' });
 const Heading = styled.h2({
@@ -74,6 +76,43 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const RootRefs: Story = {
+  tags: ['!autodocs'],
+  args: {
+    ref: fn((node: HTMLDivElement | null) => (node ? fn() : undefined)),
+    slotProps: {
+      root: {
+        ref: fn((node: HTMLDivElement | null) => (node ? fn() : undefined)),
+      },
+    },
+  },
+  render: function RootRefsFixture(args) {
+    const [visible, setVisible] = useState(true);
+    return (
+      <StrictMode>
+        <Button onClick={() => setVisible(false)}>Unmount book</Button>
+        {visible && <PageCurl {...args} />}
+      </StrictMode>
+    );
+  },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const root = canvasElement.querySelector('[data-ui="page-curl"]');
+    const refs = [args.ref, args.slotProps?.root?.ref];
+    for (const ref of refs) {
+      await expect(ref).toHaveBeenCalledWith(root);
+    }
+    await userEvent.click(canvas.getByRole('button', { name: 'Unmount book' }));
+    await expect(root).not.toBeInTheDocument();
+    for (const ref of refs) {
+      if (typeof ref !== 'function') throw new Error('Expected a callback ref');
+      for (const result of mocked(ref).mock.results) {
+        if (result.type === 'return' && typeof result.value === 'function') {
+          await expect(result.value).toHaveBeenCalledTimes(1);
+        }
+      }
+    }
+  },
+};
 export const Interior: Story = { args: { defaultValue: 1 } };
 export const BackCover: Story = { args: { defaultValue: 2 } };
 export const OddPages: Story = {

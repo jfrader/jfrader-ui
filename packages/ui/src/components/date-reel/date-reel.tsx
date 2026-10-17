@@ -31,7 +31,7 @@ import { FORCED_COLORS } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { defaultLocale } from '../../utils/intl';
+import { defaultLocale, resolveTimeOptions } from '../../utils/intl';
 import {
   dateFromParts,
   dateFromIso,
@@ -716,7 +716,11 @@ export function DateReel({
   const summaryId = `date-reel-summary-${generatedId}`;
   const errorId = `date-reel-error-${generatedId}`;
 
-  const resolvedLocale = localeProp ?? defaultLocale() ?? 'en-US';
+  const resolvedLocale = useMemo(
+    () =>
+      resolveTimeOptions('DateReel', localeProp ?? defaultLocale(), 'UTC').locale,
+    [localeProp],
+  );
   const effectiveSpeed = Math.min(
     4,
     Math.max(0.25, Number.isFinite(speed) ? speed : 1),
