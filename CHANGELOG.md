@@ -8,6 +8,7 @@
 
 ### Added
 
+- CardStack accepts `variant="wallet"` for compact translucent cards with stitched edges and decision stamps; review, undo and reset behavior is unchanged.
 - Card supports `appearance="glass"` and `appearance="holo"` materials. Opt-in `holoTilt` follows mouse and pen movement, with no tilt under reduced motion.
 
 ## 0.8.1

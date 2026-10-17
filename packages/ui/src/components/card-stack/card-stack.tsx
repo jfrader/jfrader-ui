@@ -29,6 +29,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { translucentSurfaceStyle } from '../../styling/surface';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
@@ -153,6 +154,8 @@ export interface CardStackProps<T>
   visibleCount?: number;
   gesture?: CardStackGestureOptions;
   size?: 'sm' | 'md';
+  /** Use compact wallet cards with an inset stitched edge. Defaults to `default`. */
+  variant?: 'default' | 'wallet';
   icons?: {
     left?: ReactNode;
     right?: ReactNode;
@@ -205,13 +208,13 @@ const rootStyle = css({
 });
 const stageStyle = css({
   position: 'relative',
-  blockSize: `calc(${GEOMETRY.height} + var(--card-stack-peek))`,
+  blockSize: `calc(var(--card-stack-height, ${GEOMETRY.height}) + var(--card-stack-peek))`,
   minInlineSize: 0,
   touchAction: 'pan-y',
   borderRadius: vars.radius.lg,
   '&:focus-visible': focusRingOutset,
   '@container (max-width: 18rem)': {
-    blockSize: `calc(${GEOMETRY.narrowHeight} + var(--card-stack-peek))`,
+    blockSize: `calc(var(--card-stack-height, ${GEOMETRY.narrowHeight}) + var(--card-stack-peek))`,
   },
 });
 const layerStyle = css({
@@ -236,6 +239,36 @@ const paddingStyles = {
   sm: css({ padding: vars.space[3] }),
   md: css({ padding: vars.space[5] }),
 };
+const variantStyles = {
+  default: undefined,
+  wallet: css({ '--card-stack-height': '12rem' }),
+};
+const walletCardStyle = css([
+  {
+    position: 'relative',
+    backgroundImage: `linear-gradient(135deg, ${vars.color.surfaceSheen}, transparent)`,
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      inset: vars.space[2],
+      border: `1px dashed ${vars.color.borderStrong}`,
+      borderRadius: vars.radius.md,
+      pointerEvents: 'none',
+    },
+  },
+  translucentSurfaceStyle,
+  {
+    borderColor: vars.color.borderControl,
+    [FORCED_COLORS]: { borderColor: 'CanvasText' },
+  },
+]);
+const walletStampStyle = css({
+  borderStyle: 'dashed',
+  borderRadius: vars.radius.sm,
+  fontFamily: vars.font.mono,
+  fontWeight: vars.fontWeight.semibold,
+  textTransform: 'uppercase',
+});
 const contentStyle = css({
   overflow: 'auto',
   minBlockSize: 0,
@@ -389,6 +422,7 @@ function Layer<T>({
   reduced,
   dragX,
   size,
+  variant,
   label,
   renderCard,
   slots,
@@ -405,6 +439,7 @@ function Layer<T>({
   reduced: boolean;
   dragX: ReturnType<typeof useMotionValue<number>>;
   size: 'sm' | 'md';
+  variant: 'default' | 'wallet';
   label: string;
   renderCard: (item: T) => ReactNode;
   slots: CardStackSlots;
@@ -481,7 +516,7 @@ function Layer<T>({
     >
       <CardSurface
         {...slot}
-        css={[cardStyle, paddingStyles[size], slot?.css]}
+        css={[cardStyle, variant === 'wallet' && walletCardStyle, paddingStyles[size], slot?.css]}
         role={active ? 'group' : undefined}
         aria-label={slot?.['aria-label']}
         aria-labelledby={ids(slot?.['aria-labelledby'], nameId)}
@@ -508,6 +543,7 @@ function Layer<T>({
               css={[
                 stampStyle,
                 stampSides[side],
+                variant === 'wallet' && walletStampStyle,
                 (side === 'left' ? slotProps.leftStamp : slotProps.rightStamp)?.css,
               ]}
               style={{ opacity: side === 'left' ? leftOpacity : rightOpacity }}
@@ -543,6 +579,7 @@ export function CardStack<T>({
   visibleCount = GEOMETRY.defaultWindow,
   gesture,
   size = 'md',
+  variant = 'default',
   icons,
   slotProps = {},
   slots = {},
@@ -936,13 +973,14 @@ export function CardStack<T>({
   const Status = slots.status ?? 'div';
   return (
     <MotionConfig reducedMotion="user">
-      <WithSx className={className} styles={rootStyle} sx={sx}>
+      <WithSx className={className} styles={[rootStyle, variantStyles[variant]]} sx={sx}>
         {(rootClass) => (
           <div
             {...props}
             ref={ref}
             className={rootClass}
             data-ui="card-stack"
+            data-variant={variant}
             data-state={
               disabled ? 'disabled' : completed ? 'completed' : active ? 'active' : 'empty'
             }
@@ -1010,6 +1048,7 @@ export function CardStack<T>({
                   reduced={reduced}
                   dragX={x}
                   size={size}
+                  variant={variant}
                   label={`${getLabel(entry.item)}, ${labels.position(
                     unique.findIndex((candidate) => candidate.key === entry.key),
                     unique.length,
@@ -1033,6 +1072,7 @@ export function CardStack<T>({
                   reduced={reduced}
                   dragX={x}
                   size={size}
+                  variant={variant}
                   label={getLabel(outgoing.item)}
                   renderCard={renderCard}
                   slots={slots}
