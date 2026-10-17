@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.8.1
+
+### Changed
+
+- `SortableDataTable` sort headers drop the pill-style chip chrome: borderless, text-forward labels with paired chevrons (shape and accent color mark the active direction), quiet surface hover, and the existing focus ring. API and behavior unchanged; 32px targets, forced-colors and reduced-motion preserved.
+
+
 ### Added
 
 - `GameActions`: command toolbars with roving keyboard focus, disabled and pending actions, and replaceable roots and buttons. `CallOverlay` announces game events with reduced-motion support, standalone or inside `GameTable.Floating`. Both are opt-in package subpaths; shortcut bindings stay in consumer code.
