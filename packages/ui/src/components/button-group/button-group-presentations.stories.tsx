@@ -57,7 +57,12 @@ export const Floating: Story = {
     const group = canvas.getByRole('group', { name: 'Board actions' });
     await expect(group).not.toHaveAttribute('aria-orientation');
     await expect(group).toHaveAttribute('data-presentation', 'floating');
-    await expect(canvas.getByRole('separator')).toHaveAttribute('aria-orientation', 'vertical');
+    const separator = canvas.getByRole('separator');
+    await expect(separator).toHaveAttribute('aria-orientation', 'vertical');
+    await expect(separator).toBeVisible();
+    const separatorRect = separator.getBoundingClientRect();
+    await expect(separatorRect.width).toBeGreaterThan(0);
+    await expect(separatorRect.height).toBeGreaterThan(separatorRect.width);
     const items = within(group).getAllByRole('button');
     for (const item of items) {
       await expect(parseFloat(getComputedStyle(item).borderStartStartRadius)).toBeGreaterThan(0);
@@ -70,6 +75,9 @@ export const Floating: Story = {
 /** Move the pointer or focus an action to reveal its label. */
 export const Expanding: Story = {
   play: async ({ canvas, userEvent }) => {
+    const surface = getComputedStyle(canvas.getByRole('group'));
+    await expect(surface.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(surface.boxShadow).toBe('none');
     const reply = canvas.getByRole('button', { name: 'Reply' });
     const forward = canvas.getByRole('button', { name: 'Forward' });
     await expect(reply).toHaveAttribute('data-expanded', 'true');
@@ -191,7 +199,15 @@ export const FloatingVertical: Story = {
       <ButtonGroup.Item>Share</ButtonGroup.Item>
     </ButtonGroup>
   ),
-  play: undefined,
+  play: async ({ canvas }) => {
+    const separator = canvas.getByRole('separator');
+    await expect(separator).toBeVisible();
+    await expect(separator).toHaveAttribute('aria-orientation', 'horizontal');
+    const rect = separator.getBoundingClientRect();
+    await expect(rect.width).toBeGreaterThan(0);
+    await expect(rect.height).toBeGreaterThan(0);
+    await expect(rect.width).toBeGreaterThan(rect.height);
+  },
   parameters: { docs: { source: { code: `<ButtonGroup aria-label="Board actions" presentation="floating" orientation="vertical">
   <ButtonGroup.Item>Undo</ButtonGroup.Item>
   <ButtonGroup.Item>Redo</ButtonGroup.Item>
@@ -249,7 +265,10 @@ function AvailabilityExample({ onValueChange }: Pick<ButtonGroupCompoundProps, '
   const [removed, setRemoved] = useState(false);
   return <>
     <ButtonGroup aria-label="Available actions" presentation="expanding" value="reply" restValue="reply" onValueChange={onValueChange}>
-      {!removed && <ButtonGroup.Item id="reply" disabled={!available} startIcon={<ActionIcon />}>Reply</ButtonGroup.Item>}
+      {!removed && <ButtonGroup.Item id="reply" disabled={!available} startIcon={<ActionIcon />} onKeyDown={(event) => {
+        if (event.key === 'Delete') setRemoved(true);
+        if (event.key === 'Backspace') setAvailable(false);
+      }}>Reply</ButtonGroup.Item>}
       <ButtonGroup.Item id="forward" startIcon={<ActionIcon />}>Forward</ButtonGroup.Item>
     </ButtonGroup>
     <Button onClick={() => setAvailable(!available)}>Change availability</Button>
@@ -278,6 +297,27 @@ export const ExpandingAvailability: Story = {
     await waitFor(async () => { await expect(forward).toHaveAttribute('data-expanded', 'true'); });
     await expect(args.onValueChange).not.toHaveBeenCalled();
     await expect(canvas.getByRole('button', { name: 'Remove reply' })).toHaveFocus();
+  },
+};
+
+export const ExpandingFocusRecovery: Story = {
+  ...ExpandingAvailability,
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const reply = canvas.getByRole('button', { name: 'Reply' });
+    const forward = canvas.getByRole('button', { name: 'Forward' });
+    reply.focus();
+    await expect(reply).toHaveAttribute('data-expanded', 'true');
+    await userEvent.keyboard('{Backspace}');
+    await waitFor(async () => { await expect(forward).toHaveFocus(); });
+    await expect(canvasElement.ownerDocument.activeElement).not.toBe(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole('button', { name: 'Change availability' }));
+    reply.focus();
+    await expect(reply).toHaveAttribute('data-expanded', 'true');
+    await userEvent.keyboard('{Delete}');
+    await waitFor(async () => { await expect(forward).toHaveFocus(); });
+    await expect(reply).not.toBeInTheDocument();
+    await expect(canvasElement.ownerDocument.activeElement).not.toBe(canvasElement.ownerDocument.body);
   },
 };
 

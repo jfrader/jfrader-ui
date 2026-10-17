@@ -412,6 +412,7 @@ function ExpandingLabels({ expanded, children, reserveLabels }: {
     };
   }, [expanded, reduced, width]);
   return (
+    // The action keeps a stable ARIA name; revealing its visual label must not rename it.
     <motion.span css={expandingLabelsStyle} aria-hidden style={{ width: measured ? width : undefined }}>
       <span ref={contentRef}>
         <Labels collapsed={false} reserveLabels={reserveLabels}>
@@ -553,7 +554,27 @@ function ButtonGroupRoot({
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root || presentation !== 'expanding') return;
+    const document = root.ownerDocument;
+    let focused: HTMLElement | null = null;
+    let actions = queryOwnedItems(root, OWNED_ACTIONS);
+    const trackFocus = () => {
+      focused = actions.find((item) => item === document.activeElement) ?? null;
+    };
+    trackFocus();
     const update = () => {
+      const nextActions = queryOwnedItems(root, OWNED_ACTIONS);
+      if (focused && !nextActions.includes(focused)) {
+        const active = document.activeElement;
+        if (active === focused || active === document.body) {
+          const index = Math.max(0, actions.indexOf(focused));
+          const fallback = nextActions[Math.min(index, nextActions.length - 1)];
+          actions = nextActions;
+          fallback?.focus();
+        }
+        focused = null;
+      }
+      actions = nextActions;
+      trackFocus();
       const ids = queryOwnedItems(root, {
         ...OWNED_ACTIONS,
         itemSelector: `${OWNED_ACTIONS.itemSelector}[data-expandable][id]`,
@@ -563,6 +584,7 @@ function ButtonGroupRoot({
       );
     };
     update();
+    document.addEventListener('focusin', trackFocus);
     const observer = new MutationObserver(update);
     observer.observe(root, {
       subtree: true,
@@ -570,7 +592,10 @@ function ButtonGroupRoot({
       attributes: true,
       attributeFilter: ['id', 'disabled', 'aria-disabled', 'data-expandable'],
     });
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('focusin', trackFocus);
+    };
   }, [presentation]);
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -648,7 +673,7 @@ function ButtonGroupRoot({
     >
       <Context.Provider value={context}>
         <MotionConfig reducedMotion="user">
-          <WithSx className={mergedClassName} styles={[rootStyle, presentation !== 'joined' && trayStyle, rootSlotCss, rootSlotSx]} sx={sx}>
+          <WithSx className={mergedClassName} styles={[rootStyle, presentation === 'floating' && trayStyle, rootSlotCss, rootSlotSx]} sx={sx}>
             {(resolvedClassName) => (
               <Root
                 {...rest}
