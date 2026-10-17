@@ -8,6 +8,8 @@
 
 ### Added
 
+- `RadialMenu` shows object actions around a trigger with keyboard navigation, hold-drag targeting and a linear fallback. `LogoOrbit` arranges supplied marks in a pausable integration catalog with filters, details and consumer-owned connection actions. Both support reduced motion and replaceable parts.
+  Scope excludes lens/pill/swirl/magnet choreography, tilted-ring parking, connector/detail spring, exhaustive announcements, focus-removal repair and the edge-case catalogue.
 - Tabs accepts `variant="glass"` and `variant="liquid"`, line/pill/lens indicators, icon labels, localized badges, compact bars and optional release-only drag selection. Existing tab and panel semantics remain unchanged.
 - Navigation accepts `variant="morph"` for a floating disclosure bar with rich link descriptions, compact spacing, keyboard section navigation and one/two-column panels. Destinations remain native links.
 - Tabs and Navigation provide partial reference parity: momentum/refraction, exact reference geometry, integrated search, controlled panel axes, hover intent and hamburger collapse are excluded.

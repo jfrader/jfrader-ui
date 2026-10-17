@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **141**; public callable parts: **162**.
-- Families exposing `slots.root`: **80**; remaining without a family-level root slot: **61** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **110**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
+- Public callable families: **143**; public callable parts: **162**.
+- Families exposing `slots.root`: **82**; remaining without a family-level root slot: **61** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **112**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -204,6 +204,7 @@ may exist and is listed on the corresponding public part).
 | [LinkPreview](../packages/ui/src/components/link-preview/link-preview.tsx) | — | `body`, `image`, `title` | `body`, `image`, `title` | — | — | — |
 | [LinkUnfurl](../packages/ui/src/components/link-unfurl/link-unfurl.tsx) | — | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | — | — | — |
 | [LocaleSwitcher](../packages/ui/src/components/locale-switcher/locale-switcher.tsx) | — | `content`, `option`, `trigger` | `content`, `option`, `trigger` | — | — | — |
+| [LogoOrbit](../packages/ui/src/components/logo-orbit/logo-orbit.tsx) | yes | `center`, `closeButton`, `connectButton`, `detail`, `docsLink`, `filterButton`, `filters`, `item`, `list`, `logoButton`, `nextButton`, `pauseButton`, `previousButton`, `root`, `stage`, `status` | `center`, `closeButton`, `connectButton`, `detail`, `docsLink`, `filterButton`, `filters`, `item`, `list`, `logoButton`, `nextButton`, `pauseButton`, `previousButton`, `root`, `stage`, `status` | — | — | — |
 | [MentionInput](../packages/ui/src/components/mention-input/mention-input.tsx) | yes | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | — | — | — |
 | [Menu](../packages/ui/src/components/menu/menu.tsx) | yes | `content`, `item`, `root`, `separator`, `trigger` | `content`, `item`, `root`, `separator`, `trigger` | — | — | `Content`, `Item`, `Separator`, `Trigger` |
 | [Menu.Content](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
@@ -238,6 +239,7 @@ may exist and is listed on the corresponding public part).
 | [Popover.Content](../packages/ui/src/components/popover/popover.tsx) | — | — | — | — | — | — |
 | [Popover.Trigger](../packages/ui/src/components/popover/popover.tsx) | — | — | — | — | — | — |
 | [Progress](../packages/ui/src/components/progress/progress.tsx) | — | `indicator` | `indicator` | — | — | — |
+| [RadialMenu](../packages/ui/src/components/radial-menu/radial-menu.tsx) | yes | `content`, `item`, `root`, `status`, `trigger` | `content`, `item`, `root`, `status`, `trigger` | — | — | — |
 | [RadioCards](../packages/ui/src/components/radio-cards/radio-cards.tsx) | yes | `error`, `item`, `label`, `root` | `error`, `item`, `label`, `root` | — | — | `Description`, `Item`, `Label` |
 | [RadioCards.Description](../packages/ui/src/components/radio-cards/radio-cards.tsx) | — | — | — | — | — | — |
 | [RadioCards.Item](../packages/ui/src/components/radio-cards/radio-cards.tsx) | — | `control`, `description`, `icon`, `indicator`, `label`, `meta` | `control`, `description`, `icon`, `indicator`, `label`, `meta` | — | — | — |
