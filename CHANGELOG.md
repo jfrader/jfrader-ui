@@ -9,6 +9,8 @@
 
 ### Added
 
+- `PageCurl` presents cover/facing/back-cover spreads with native navigation, RTL keyboard turns, controlled selection and a bounded next-button paper preview. Physical SVG crease geometry, corner handles, backward dragging and teaser choreography are not included.
+- `DateReel` selects Gregorian civil dates/times with localized spinbutton reels, atomic month-end clamping, bounds, presets and asynchronous confirmation. Zoned scheduling, offscreen observation, recycled-window/inertia fidelity and manual screen-reader/touch validation are not included.
 - `GravityWell` arranges noninteractive tiles in a bounded pointer field with keyboard exploration and pause controls. `DataFlow` illustrates source-to-destination routing with a readable summary and pause, step and replay controls. Counts and particles are illustrative, not live telemetry.
 - `ControlCenter` composes quick-setting toggles, sliders, radio modes and modal focus/channel details with draft application and controlled settings. `PaymentFlow` composes an illustrative five-phase payment journey with safe Intl currency formatting, an ordered narrative and pause/step/replay controls. Custom circular dial gestures, tile morphs, moving payment chips, SVG rails, continuous balance count-up and hover effects are excluded.
 - `ShareAccess` composes ShareSheet's inline presentation with email invitations, member roles, persistent removal undo and link permissions. `VoiceRecorder` composes VoiceOrb with application-owned recording, review, seeking and sending; neither component performs permission or media capture work.
