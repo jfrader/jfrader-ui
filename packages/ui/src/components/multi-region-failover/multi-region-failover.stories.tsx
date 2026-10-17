@@ -4,6 +4,7 @@ import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { Button } from '../button';
+import { Surface } from '../surface';
 import {
   MultiRegionFailover,
   type FailoverStage,
@@ -11,8 +12,8 @@ import {
 } from './index';
 
 const actors = {
-  users: { label: 'Clients', meta: 'Global requests' },
-  balancer: { label: 'Load balancer', meta: 'Health-based routing' },
+  users: { label: 'Clients', meta: 'Global requests', detail: 'Web and mobile · 24,000 requests/sec' },
+  balancer: { label: 'Load balancer', meta: 'Health-based routing', detail: 'HTTPS ingress · checks every 10 seconds' },
   primary: { label: 'Primary', detail: 'Region A' },
   secondary: { label: 'Secondary', detail: 'Region B' },
 };
@@ -123,11 +124,23 @@ const metricLabels = {
   failedChecks: 'Failed checks',
 };
 const Frame = styled.div({ display: 'grid', gap: vars.space[4] });
+const IncidentPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 35)`,
+  maxInlineSize: '100%',
+  padding: vars.space[4],
+});
+const SceneNode = styled.div({ alignSelf: 'start' });
 const Narrow = styled.div({ inlineSize: '320px', maxInlineSize: '100%' });
 const meta = {
   title: 'Showcase/MultiRegionFailover',
   component: MultiRegionFailover,
   tags: ['autodocs'],
+  render: (args) => (
+    <IncidentPanel>
+      <MultiRegionFailover {...args} slots={{ node: SceneNode, ...args.slots }} />
+    </IncidentPanel>
+  ),
   args: {
     nodes: actors,
     stages,

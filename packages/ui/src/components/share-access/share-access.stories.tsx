@@ -4,6 +4,7 @@ import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { Button } from '../button';
+import { Surface } from '../surface';
 import { ShareAccess, type ShareAccessMember } from './index';
 
 const members: ShareAccessMember[] = [
@@ -19,6 +20,12 @@ const directory = [
   { email: 'jo@example.com', name: 'Jo Morgan' },
   { email: 'jamie@example.com', name: 'Jamie Bell' },
 ];
+const SharePanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 18)`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+});
 const snippet = `<ShareAccess
   title="Roadmap"
   link="https://example.com/roadmap"
@@ -31,6 +38,7 @@ const meta = {
   title: 'Actions/ShareAccess',
   component: ShareAccess,
   tags: ['autodocs'],
+  render: (args) => <SharePanel><ShareAccess {...args} /></SharePanel>,
   parameters: {
     docs: {
       description: {
