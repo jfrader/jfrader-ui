@@ -8,6 +8,8 @@
 
 ### Added
 
+- `TextReveal` reveals short text with a finite word entrance, preserved whitespace and immediate reduced-motion rendering.
+- `TextShimmer` highlights active work labels with a finite animation budget, explicit pause control and offscreen/page-hidden pausing.
 - Card supports `appearance="glass"` and `appearance="holo"` materials. Opt-in `holoTilt` follows mouse and pen movement, with no tilt under reduced motion.
 
 ## 0.8.1
