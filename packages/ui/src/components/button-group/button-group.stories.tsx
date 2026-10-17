@@ -66,6 +66,10 @@ const meta = {
       usage: `- Pass readonly items with label and native button props, or href for a link. Use the dotted parts for custom anatomy and overflow menus.
 - Use slotProps for generated root, item and link props. component replaces the root, as does slots.root. Item and link replacements compose the corresponding dotted part and forward received props/ref. Declare replacements outside render.
 - This is a named native group, not a toolbar or selection widget. Use ToggleGroup for persistent selection.
+- Use presentation="floating" for a pill tray or presentation="expanding" for icon actions with one revealed label. Placement belongs to your layout or Popover.
+- Expanding Items need a unique id, startIcon and a string child, label or aria-label. Other Items and links remain labelled. Set restValue to the resting action; value/defaultValue/onValueChange control label expansion, not selection. Invalid ids fall back to the resting or first enabled action without a callback. When none are enabled, all labels remain visible.
+- Pointer movement or focus reveals a label; leaving the group returns to the focused action or restValue. Touch activates on the first tap, just like a native button. Expansion never executes an action.
+- Use native onClick for work, loading for pending feedback, and reserveLabels for changing result text. Application code owns async completion and error handling.
 - Give at most one Item solid accent emphasis.
 - Icon-only actions need a translated label or ARIA name. Format numbers in Label with Intl.
 - The menu uses Menu keyboard controls. Accepted Escape or selection returns focus to the trigger; outside press and Tab-out do not.

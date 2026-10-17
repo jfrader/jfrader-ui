@@ -23,6 +23,7 @@ import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { isRenderable } from '../../utils/renderable';
+import { useControlledState } from '../../utils/use-controlled-state';
 import { moveRovingFocus, queryOwnedItems } from '../../utils/roving-focus';
 import { Button, type ButtonProps, type ButtonSize, type ButtonTone, type ButtonVariant } from '../button';
 import {
@@ -48,6 +49,7 @@ const tokens = (...values: Array<unknown>): string | undefined => {
 };
 
 export type ButtonGroupOrientation = 'horizontal' | 'vertical';
+export type ButtonGroupPresentation = 'joined' | 'floating' | 'expanding';
 
 export type ButtonGroupItemRecord =
   | Readonly<Omit<ButtonGroupItemProps, 'children' | 'label'> & {
@@ -80,7 +82,17 @@ export interface ButtonGroupSlotProps {
   link?: Partial<Omit<ButtonGroupLinkProps, 'children' | 'label' | 'href' | 'onClick' | 'disabled'>> & { css?: Interpolation<Theme> };
 }
 
-export interface ButtonGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'role' | 'children'>, SxProps {
+export interface ButtonGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'role' | 'children' | 'defaultValue'>, SxProps {
+  /** Arrange joined segments, a floating pill tray, or icon actions with one revealed label. */
+  presentation?: ButtonGroupPresentation;
+  /** Expanded action id in the expanding presentation; not a selected value. */
+  value?: string;
+  /** Initially expanded action id. */
+  defaultValue?: string;
+  /** Request a different expanded action id on pointer movement or focus. */
+  onValueChange?: (value: string) => void;
+  /** Action id shown at rest; defaults to the first enabled icon-bearing action. */
+  restValue?: string;
   variant?: ButtonVariant;
   tone?: ButtonTone;
   size?: ButtonSize;
@@ -138,9 +150,14 @@ export interface ButtonGroupContentProps extends Omit<MenuContentProps, 'role'> 
 export interface ButtonGroupMenuItemProps extends MenuItemProps {
   tone?: MenuItemTone;
 }
-export interface ButtonGroupSeparatorProps extends MenuSeparatorProps {}
+export interface ButtonGroupSeparatorProps extends MenuSeparatorProps {
+  /** Use vertical between horizontal tray actions; horizontal remains the menu default. */
+  orientation?: ButtonGroupOrientation;
+}
 
 interface GroupContext {
+  presentation: ButtonGroupPresentation;
+  expandedValue: string | undefined;
   variant: ButtonVariant;
   tone: ButtonTone;
   size: ButtonSize;
@@ -233,6 +250,50 @@ const sizeStyles: Record<ButtonSize, SerializedStyles> = {
   lg: css({ minBlockSize: vars.space[12], minInlineSize: vars.space[12] }),
 };
 const iconOnlyStyle = css({ paddingInline: vars.space[2] });
+const trayStyle = css({
+  boxSizing: 'border-box',
+  padding: vars.space[1],
+  gap: vars.space[1],
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.full,
+  backgroundColor: vars.color.surfaceRaised,
+  boxShadow: vars.shadow.floating,
+  '--button-group-start-start-radius': vars.radius.full,
+  '--button-group-end-start-radius': vars.radius.full,
+  '--button-group-start-end-radius': vars.radius.full,
+  '--button-group-end-end-radius': vars.radius.full,
+  '& > [data-button-group-segment]': {
+    '--button-group-start-start-radius': vars.radius.full,
+    '--button-group-end-start-radius': vars.radius.full,
+    '--button-group-start-end-radius': vars.radius.full,
+    '--button-group-end-end-radius': vars.radius.full,
+    '--button-group-inline-start-width': '1px',
+    '--button-group-block-start-width': '1px',
+  },
+  '& > [data-button-group-highlight]': { borderRadius: vars.radius.full },
+  [FORCED_COLORS]: { borderColor: 'ButtonText', boxShadow: 'none' },
+});
+const expandingActionStyle = css({
+  columnGap: 0,
+  paddingInline: vars.space[2],
+});
+const expandingLabelsStyle = css({
+  display: 'inline-block',
+  overflow: 'clip',
+  whiteSpace: 'nowrap',
+  '& > span': {
+    display: 'inline-grid',
+    inlineSize: 'max-content',
+    paddingInlineStart: vars.space[2],
+  },
+});
+const verticalSeparatorStyle = css({
+  alignSelf: 'stretch',
+  inlineSize: '1px',
+  blockSize: 'auto',
+  marginBlock: vars.space[2],
+  marginInline: vars.space[1],
+});
 const fade = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
 const labelsStyle = css({
   display: 'inline-grid',
@@ -321,6 +382,47 @@ function Labels({
   );
 }
 
+function ExpandingLabels({ expanded, children, reserveLabels }: {
+  expanded: boolean;
+  children: ReactNode;
+  reserveLabels?: readonly string[];
+}) {
+  const contentRef = useRef<HTMLSpanElement>(null);
+  const width = useMotionValue(0);
+  const [measured, setMeasured] = useState(false);
+  const reduced = useReducedMotion();
+  const initialized = useRef(false);
+  useLayoutEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
+    const update = () => {
+      const next = expanded ? content.offsetWidth : 0;
+      width.stop();
+      if (initialized.current && !reduced) animate(width, next, SPRING);
+      else width.set(next);
+      initialized.current = true;
+      setMeasured(true);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(content);
+    return () => {
+      observer.disconnect();
+      width.stop();
+    };
+  }, [expanded, reduced, width]);
+  return (
+    // The action keeps a stable ARIA name; revealing its visual label must not rename it.
+    <motion.span css={expandingLabelsStyle} aria-hidden style={{ width: measured ? width : undefined }}>
+      <span ref={contentRef}>
+        <Labels collapsed={false} reserveLabels={reserveLabels}>
+          {children}
+        </Labels>
+      </span>
+    </motion.span>
+  );
+}
+
 function Highlight({ root, target }: { root: HTMLDivElement | null; target: HTMLElement | null }) {
   const reduced = useReducedMotion();
   const x = useMotionValue(0),
@@ -381,7 +483,12 @@ function Highlight({ root, target }: { root: HTMLDivElement | null; target: HTML
 
 function ButtonGroupRoot({
   ref,
-  variant = 'outline',
+  presentation = 'joined',
+  value,
+  defaultValue,
+  onValueChange,
+  restValue,
+  variant = presentation === 'joined' ? 'outline' : 'ghost',
   tone = 'neutral',
   size = 'md',
   orientation = 'horizontal',
@@ -398,6 +505,7 @@ function ButtonGroupRoot({
   onPointerOver,
   onPointerLeave,
   onPointerCancel,
+  onPointerMove,
   onFocus,
   onBlur,
   label,
@@ -423,6 +531,7 @@ function ButtonGroupRoot({
     onPointerOver: rootSlotOnPointerOver,
     onPointerLeave: rootSlotOnPointerLeave,
     onPointerCancel: rootSlotOnPointerCancel,
+    onPointerMove: rootSlotOnPointerMove,
     onFocus: rootSlotOnFocus,
     onBlur: rootSlotOnBlur,
     ...rootSlotRest
@@ -437,11 +546,62 @@ function ButtonGroupRoot({
   const [direction, setDirection] = useState<'ltr' | 'rtl'>();
   const [triggerLabelledBy, setTriggerLabelledBy] = useState<string>();
   const [target, setTarget] = useState<HTMLElement | null>(null);
+  const [expanded, requestExpanded] = useControlledState(value, defaultValue, onValueChange);
+  const [actionIds, setActionIds] = useState<string[]>([]);
+  const pointer = useRef<{ x: number; y: number } | null>(null);
+  const restingValue = actionIds.includes(restValue ?? '') ? restValue : actionIds[0];
+  const expandedValue = actionIds.includes(expanded ?? '') ? expanded : restingValue;
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || presentation !== 'expanding') return;
+    const document = root.ownerDocument;
+    let focused: HTMLElement | null = null;
+    let actions = queryOwnedItems(root, OWNED_ACTIONS);
+    const trackFocus = () => {
+      focused = actions.find((item) => item === document.activeElement) ?? null;
+    };
+    trackFocus();
+    const update = () => {
+      const nextActions = queryOwnedItems(root, OWNED_ACTIONS);
+      if (focused && !nextActions.includes(focused)) {
+        const active = document.activeElement;
+        if (active === focused || active === document.body) {
+          const index = Math.max(0, actions.indexOf(focused));
+          const fallback = nextActions[Math.min(index, nextActions.length - 1)];
+          actions = nextActions;
+          fallback?.focus();
+        }
+        focused = null;
+      }
+      actions = nextActions;
+      trackFocus();
+      const ids = queryOwnedItems(root, {
+        ...OWNED_ACTIONS,
+        itemSelector: `${OWNED_ACTIONS.itemSelector}[data-expandable][id]`,
+      }).map((item) => item.id);
+      setActionIds((previous) =>
+        previous.length === ids.length && previous.every((id, index) => id === ids[index]) ? previous : ids,
+      );
+    };
+    update();
+    document.addEventListener('focusin', trackFocus);
+    const observer = new MutationObserver(update);
+    observer.observe(root, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['id', 'disabled', 'aria-disabled', 'data-expandable'],
+    });
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('focusin', trackFocus);
+    };
+  }, [presentation]);
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     setDirection(getComputedStyle(root).direction === 'rtl' ? 'rtl' : 'ltr');
-    if (!collapseLabels || orientation === 'vertical') {
+    if (presentation !== 'joined' || !collapseLabels || orientation === 'vertical') {
       setCompact(false);
       return;
     }
@@ -470,7 +630,7 @@ function ButtonGroupRoot({
     }).forEach((node) => observer.observe(node));
     measure();
     return () => observer.disconnect();
-  }, [collapseLabels, orientation, children, items, rest.dir]);
+  }, [presentation, collapseLabels, orientation, children, items, rest.dir]);
   useEffect(() => {
     if (
       disabled ||
@@ -480,6 +640,8 @@ function ButtonGroupRoot({
   }, [disabled, children, items, target]);
   const context = useMemo(
     () => ({
+      presentation,
+      expandedValue,
       variant,
       tone: variant === 'solid' ? 'neutral' : tone,
       size,
@@ -489,11 +651,16 @@ function ButtonGroupRoot({
       triggerLabelledBy,
       setTriggerLabelledBy,
     }),
-    [variant, tone, size, disabled, compact, direction, triggerLabelledBy],
+    [presentation, expandedValue, variant, tone, size, disabled, compact, direction, triggerLabelledBy],
   );
   const owned = (node: EventTarget | null) => {
     const item = node instanceof Element ? node.closest<HTMLElement>(OWNED_ACTIONS.itemSelector) : null;
     return item?.closest(OWNER) === rootRef.current ? item : null;
+  };
+  const reveal = (item: HTMLElement | null) => {
+    const next = item && actionIds.includes(item.id) ? item.id : restingValue;
+    if (presentation === 'expanding' && next !== undefined && next !== expandedValue)
+      requestExpanded(next);
   };
   return (
     <Menu
@@ -506,7 +673,7 @@ function ButtonGroupRoot({
     >
       <Context.Provider value={context}>
         <MotionConfig reducedMotion="user">
-          <WithSx className={mergedClassName} styles={[rootStyle, rootSlotCss, rootSlotSx]} sx={sx}>
+          <WithSx className={mergedClassName} styles={[rootStyle, presentation === 'floating' && trayStyle, rootSlotCss, rootSlotSx]} sx={sx}>
             {(resolvedClassName) => (
               <Root
                 {...rest}
@@ -516,6 +683,7 @@ function ButtonGroupRoot({
                 aria-label={rootSlotRest['aria-label'] ?? rest['aria-label'] ?? label}
                 data-ui={tokens('button-group', rootSlotDataUi) ?? 'button-group'}
                 data-orientation={orientation}
+                data-presentation={presentation}
                 data-compact={compact || undefined}
                 style={mergedStyle}
                 className={resolvedClassName}
@@ -528,20 +696,36 @@ function ButtonGroupRoot({
                   (rootSlotOnPointerOver ?? onPointerOver)?.(event);
                   if (!event.defaultPrevented && !disabled) setTarget(owned(event.target));
                 }}
+                onPointerMove={(event) => {
+                  (rootSlotOnPointerMove ?? onPointerMove)?.(event);
+                  if (event.defaultPrevented || disabled || event.pointerType === 'touch') return;
+                  const previous = pointer.current;
+                  pointer.current = { x: event.clientX, y: event.clientY };
+                  if (!previous || previous.x !== event.clientX || previous.y !== event.clientY)
+                    reveal(owned(event.target));
+                }}
                 onPointerLeave={(event) => {
                   (rootSlotOnPointerLeave ?? onPointerLeave)?.(event);
-                  if (!event.defaultPrevented)
+                  if (!event.defaultPrevented) {
+                    pointer.current = null;
                     setTarget(owned(rootRef.current?.ownerDocument.activeElement ?? null));
+                    reveal(owned(rootRef.current?.ownerDocument.activeElement ?? null));
+                  }
                 }}
                 onPointerCancel={(event) => {
                   (rootSlotOnPointerCancel ?? onPointerCancel)?.(event);
-                  if (!event.defaultPrevented) setTarget(null);
+                  if (!event.defaultPrevented) {
+                    pointer.current = null;
+                    setTarget(null);
+                    reveal(owned(rootRef.current?.ownerDocument.activeElement ?? null));
+                  }
                 }}
                 onFocus={(event) => {
                   (rootSlotOnFocus ?? onFocus)?.(event);
                   const item = owned(event.target);
                   if (!event.defaultPrevented && item) {
                     setTarget(item);
+                    reveal(item);
                     item.scrollIntoView({
                       block: 'nearest',
                       inline: 'nearest',
@@ -550,7 +734,11 @@ function ButtonGroupRoot({
                 }}
                 onBlur={(event) => {
                   (rootSlotOnBlur ?? onBlur)?.(event);
-                  if (!event.defaultPrevented) setTarget(owned(event.relatedTarget));
+                  if (!event.defaultPrevented) {
+                    const next = owned(event.relatedTarget);
+                    setTarget(next);
+                    if (!next) reveal(null);
+                  }
                 }}
               >
                 <Highlight root={rootRef.current} target={target} />
@@ -741,9 +929,21 @@ function ButtonGroupItem({
   const inactive =
     isDisabled || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true' || rest.loading;
   const resolvedSize = size ?? group.size;
+  const expandable =
+    group.presentation === 'expanding' &&
+    Boolean(rest.id) &&
+    isRenderable(startIcon) &&
+    startIcon !== '' &&
+    !iconOnly &&
+    Boolean(name);
+  const expanded = !expandable || group.expandedValue === undefined || rest.id === group.expandedValue;
   return (
     <IsolatedOverlay>
-      <ActionTooltip name={name} labelledBy={rest['aria-labelledby']} enabled={collapsed && !inactive}>
+      <ActionTooltip
+        name={name}
+        labelledBy={rest['aria-labelledby']}
+        enabled={(collapsed || (expandable && !expanded)) && !inactive}
+      >
         {(tooltipProps, tooltipRef) => (
           <Button
             {...rest}
@@ -755,10 +955,13 @@ function ButtonGroupItem({
             startIcon={isRenderable(startIcon) && startIcon !== '' ? startIcon : undefined}
             endIcon={isRenderable(endIcon) && endIcon !== '' ? endIcon : undefined}
             aria-label={
-              rest['aria-label'] ?? (collapsed && rest['aria-labelledby'] === undefined ? name : undefined)
+              rest['aria-label'] ??
+              ((collapsed || expandable) && rest['aria-labelledby'] === undefined ? name : undefined)
             }
+            data-expandable={expandable || undefined}
+            data-expanded={expandable ? expanded : undefined}
             data-ui="button-group-item"
-            css={[segmentStyle, sizeStyles[resolvedSize], iconOnly && iconOnlyStyle]}
+            css={[segmentStyle, sizeStyles[resolvedSize], iconOnly && iconOnlyStyle, expandable && expandingActionStyle]}
             sx={sx}
             render={(props) => (
               <TooltipButton
@@ -769,9 +972,15 @@ function ButtonGroupItem({
               />
             )}
           >
-            <Labels reserveLabels={reserveLabels} collapsed={collapsed}>
-              {children}
-            </Labels>
+            {expandable ? (
+              <ExpandingLabels expanded={expanded} reserveLabels={reserveLabels}>
+                {isRenderable(children) ? children : name}
+              </ExpandingLabels>
+            ) : (
+              <Labels reserveLabels={reserveLabels} collapsed={collapsed}>
+                {children}
+              </Labels>
+            )}
           </Button>
         )}
       </ActionTooltip>
@@ -1037,9 +1246,16 @@ function ButtonGroupMenuItem({
   );
 }
 ButtonGroupMenuItem.displayName = 'ButtonGroup.MenuItem';
-function ButtonGroupSeparator(props: ButtonGroupSeparatorProps) {
+function ButtonGroupSeparator({ orientation = 'horizontal', ...props }: ButtonGroupSeparatorProps) {
   useGroup('Separator');
-  return <MenuSeparatorPart {...props} marker="button-group-separator" styles={menuSeparatorStyles} />;
+  return (
+    <MenuSeparatorPart
+      {...props}
+      aria-orientation={orientation}
+      marker="button-group-separator"
+      styles={[menuSeparatorStyles, orientation === 'vertical' && verticalSeparatorStyle]}
+    />
+  );
 }
 ButtonGroupSeparator.displayName = 'ButtonGroup.Separator';
 export const ButtonGroup = Object.assign(ButtonGroupRoot, {

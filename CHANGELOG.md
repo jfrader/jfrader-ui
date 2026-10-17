@@ -10,6 +10,7 @@
 
 - `ActionButton` runs app-owned actions with pending, success and retry feedback, controlled state and replaceable parts. `ActionMorph` combines an action menu with short inline drafts and async submission. Both support reduced motion and preserve keyboard focus.
 - Spinner adds dots, bars, square and stateful ring presentations that morph to success/error marks, plus decorative mode, dimension overrides, an xl size and replacement slots. MorphLoader is consolidated into Spinner rather than a separate export.
+- ButtonGroup accepts `presentation="floating"` for a pill tray and `presentation="expanding"` for icon actions with a revealed label. Both keep native group and button semantics; expanded labels support controlled state and reduced motion.
 - `TextMorph` animates short labels with matched glyphs, whole-label fades, rolling slots, or bounded sand particles. All variants preserve the current readable text and support reduced motion, typed replacement slots and opt-in announcements.
 - CardStack accepts `variant="wallet"` for compact translucent cards with stitched edges and decision stamps; review, undo and reset behavior is unchanged.
 - `TextReveal` reveals short text with a finite word entrance, preserved whitespace and immediate reduced-motion rendering.
