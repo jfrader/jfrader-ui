@@ -637,6 +637,25 @@ export const Glass: Story = {
 
 export const GlassLight: Story = { ...Glass, decorators: [withLightTheme], globals: { theme: 'light' } };
 
+export const TranslucentShadows: Story = {
+  tags: ['!autodocs'],
+  render: () => <>{(['glass', 'holo'] as const).map((appearance) => VARIANTS.map((variant) => (
+    <Card key={`${appearance}-${variant}`} appearance={appearance} variant={variant} title={`${appearance} ${variant}`} content="Project notes and assets." />
+  )))}</>,
+  play: async ({ canvasElement }) => {
+    for (const card of getCards(canvasElement)) {
+      const reference = card.ownerDocument.createElement('div');
+      reference.style.boxShadow = `inset 0 1px 0 ${vars.color.surfaceHighlight}${card.dataset.variant === 'raised' ? `, ${vars.shadow.raised}` : ''}`;
+      card.append(reference);
+      try {
+        await expect(getComputedStyle(card).boxShadow).toBe(getComputedStyle(reference).boxShadow);
+      } finally {
+        reference.remove();
+      }
+    }
+  },
+};
+
 export const ReducedTransparency: Story = {
   name: 'Reduced Transparency',
   tags: ['!autodocs'],

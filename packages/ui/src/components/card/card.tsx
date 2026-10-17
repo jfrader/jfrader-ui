@@ -13,13 +13,13 @@ import { createContext, useContext, useEffect, useMemo, useRef, type ComponentPr
 import { MotionConfig, useReducedMotionConfig, useSpring } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
-import type { SurfaceAppearance } from '../../styling/surface';
+import { translucentSurfaceStyle, type SurfaceAppearance } from '../../styling/surface';
 import type { SurfacePartProps, SurfaceRootCustomization, SurfaceRootSlotProps } from '../surface';
 import { SurfaceRoot, resolveSurfaceValue } from '../surface/surface-root';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { motionDurationMs } from '../../styling/motion-timings';
-import { FORCED_COLORS, REDUCED_MOTION, REDUCED_TRANSPARENCY } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 
 export type CardVariant = 'flat' | 'raised';
 
@@ -127,30 +127,15 @@ const rootStyle = css({
 
 const variants = ['flat', 'raised'] as const;
 const appearances = ['default', 'contrast', 'glass', 'holo'] as const;
-const translucentMaterial = css({
-  backgroundColor: vars.color.surfaceGlass,
-  backdropFilter: `blur(${vars.cardMaterial.blur})`,
-  WebkitBackdropFilter: `blur(${vars.cardMaterial.blur})`,
-  borderColor: vars.color.borderStrong,
-  boxShadow: `inset 0 1px 0 ${vars.color.surfaceHighlight}`,
-  '&[data-variant="raised"]': { boxShadow: `inset 0 1px 0 ${vars.color.surfaceHighlight}, ${vars.shadow.raised}` },
-  [REDUCED_TRANSPARENCY]: {
-    backgroundColor: vars.color.surfaceRaised,
-    backgroundImage: 'none',
-    backdropFilter: 'none',
-    WebkitBackdropFilter: 'none',
-  },
-  [FORCED_COLORS]: { backgroundImage: 'none', backdropFilter: 'none', WebkitBackdropFilter: 'none', '&, &[data-variant="raised"]': { boxShadow: 'none', borderColor: 'CanvasText' } },
-});
 const materialStyles = {
   default: undefined,
   contrast: undefined,
   glass: css([{
     backgroundImage: `linear-gradient(135deg, ${vars.color.surfaceSheen}, transparent)`,
-  }, translucentMaterial]),
+  }, translucentSurfaceStyle]),
   holo: css([{
     backgroundImage: `radial-gradient(ellipse at calc(50% + var(--card-light-x, 0) * 50%) calc(50% + var(--card-light-y, 0) * 50%), ${vars.color.surfaceSheen}, transparent), linear-gradient(125deg, ${vars.color.surfaceHoloCyan}, ${vars.color.surfaceSheen}, ${vars.color.surfaceHoloRose})`,
-  }, translucentMaterial]),
+  }, translucentSurfaceStyle]),
 };
 const tiltStyle = css({
   transform: `perspective(${vars.cardMaterial.perspective}) rotateX(calc(var(--card-light-y, 0) * -1 * ${vars.cardMaterial.tilt})) rotateY(calc(var(--card-light-x, 0) * ${vars.cardMaterial.tilt}))`,

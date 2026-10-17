@@ -30,6 +30,9 @@ const meta = {
       usage: `### Composition
 Pass triggerLabel and items for an action menu. Each record has type="item" with label, onSelect and optional disabled, or type="separator". Do not combine items with children. Use slotProps.root/trigger/content/item/separator for part props and slots for replacement adapters. component aliases slots.root; a root override adds a wrapper around the trigger. Use the compound parts for custom structure.
 
+Set appearance="glass" on Menu for a translucent popup; reduced transparency uses an opaque fill.
+Like Card, menu items use full-opacity text over the near-opaque surfaceGlass fill to retain text contrast.
+
 - Uses menu/menuitem semantics, labelled by the trigger. The trigger exposes aria-haspopup, aria-expanded and aria-controls.
 - Enter, Space or ArrowDown opens on the first enabled item; ArrowUp opens on the last. Pointer opening also focuses the first item.
 - Arrows wrap and skip disabled items; Home/End reach the ends. Typeahead resets after 500ms (the upstream default is 750ms).
@@ -218,6 +221,101 @@ export const Default: EasyStory = {
 
 export const EasyModeOpen: EasyStory = { ...Default, tags: ['!autodocs'], name: 'Easy mode open', args: { ...Default.args, defaultOpen: true }, play: undefined };
 export const EasyModeLight: EasyStory = { ...EasyModeOpen, tags: ['!autodocs'], name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
+
+/** Open a translucent action menu. */
+export const Glass: EasyStory = {
+  args: {
+    appearance: 'glass',
+    triggerLabel: TRIGGER,
+    items: [{ type: 'item', label: 'Edit' }, { type: 'item', label: 'Delete' }],
+  },
+  parameters: { docs: { source: { language: 'tsx', code: '<Menu appearance="glass" triggerLabel="Options" items={[{ type: "item", label: "Edit" }, { type: "item", label: "Delete" }]} />' } } },
+  render: (args) => <Menu {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const trigger = await focusTrigger(canvasElement);
+    await userEvent.keyboard('{ArrowDown}');
+    const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
+    await expect(canvasElement.contains(menu)).toBe(false);
+    await expect(getComputedStyle(menu).backdropFilter).not.toBe('none');
+    await expect(getComputedStyle(menu).backgroundImage).toContain('linear-gradient');
+    const reference = menu.ownerDocument.createElement('div');
+    reference.style.boxShadow = `inset 0 1px 0 ${vars.color.surfaceHighlight}, ${vars.shadow.overlay}`;
+    menu.append(reference);
+    try {
+      await expect(getComputedStyle(menu).boxShadow).toBe(getComputedStyle(reference).boxShadow);
+    } finally {
+      reference.remove();
+    }
+    await expectFocused(canvasElement, 'Edit');
+    await expect(getComputedStyle(canvasElement.ownerDocument.activeElement!).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{ArrowDown}');
+    await expectFocused(canvasElement, 'Delete');
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expect(trigger).toHaveFocus();
+    await userEvent.click(trigger);
+  },
+};
+
+/** The glass popup retains the scoped light palette through its portal. */
+export const GlassLight: EasyStory = {
+  ...Glass,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  play: async (context) => {
+    await Glass.play?.(context);
+    const menu = await bodyOf(context.canvasElement).findByRole('menu');
+    await expect(menu.closest('[data-theme]')).toHaveAttribute('data-theme', 'light');
+  },
+};
+
+/** Apply the same glass material to custom menu anatomy. */
+export const GlassCompound: Story = {
+  args: { appearance: 'glass' },
+  parameters: { docs: { source: { language: 'tsx', code: '<Menu appearance="glass"><Menu.Trigger>Options</Menu.Trigger><Menu.Content><Menu.Item>Edit</Menu.Item><Menu.Item>Delete</Menu.Item></Menu.Content></Menu>' } } },
+  render: (args) => <Menu {...args}><Menu.Trigger>{TRIGGER}</Menu.Trigger><Menu.Content><Menu.Item>Edit</Menu.Item><Menu.Item>Delete</Menu.Item></Menu.Content></Menu>,
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    const menu = await bodyOf(canvasElement).findByRole('menu');
+    await expect(getComputedStyle(menu).backdropFilter).not.toBe('none');
+  },
+};
+
+/** Align glass menu actions for right-to-left text. */
+export const GlassRTL: EasyStory = {
+  ...Glass,
+  args: { ...Glass.args, slotProps: { trigger: { dir: 'rtl' }, content: { dir: 'rtl' } } },
+  parameters: { docs: { source: { language: 'tsx', code: '<Menu appearance="glass" triggerLabel="Options" items={[{ type: "item", label: "Edit" }, { type: "item", label: "Delete" }]} slotProps={{ trigger: { dir: "rtl" }, content: { dir: "rtl" } }} />' } } },
+  play: async (context) => {
+    await Glass.play?.(context);
+    const menu = await bodyOf(context.canvasElement).findByRole('menu');
+    await expect(getComputedStyle(menu).direction).toBe('rtl');
+    await expect(getComputedStyle(within(menu).getByRole('menuitem', { name: 'Edit' })).textAlign).toBe('start');
+  },
+};
+
+/** Reduced transparency replaces the glass popup with an opaque surface. */
+export const ReducedTransparency: EasyStory = {
+  ...Glass,
+  name: 'Reduced Transparency',
+  tags: ['!autodocs'],
+  play: async ({ canvasElement, userEvent }) => {
+    await expect(window.matchMedia('(prefers-reduced-transparency: reduce)').matches).toBe(true);
+    await userEvent.click(getTrigger(canvasElement));
+    const menu = await bodyOf(canvasElement).findByRole('menu');
+    const reference = menu.ownerDocument.createElement('div');
+    reference.style.backgroundColor = vars.color.surfaceRaised;
+    menu.append(reference);
+    try {
+      const style = getComputedStyle(menu);
+      await expect(style.backgroundColor).toBe(getComputedStyle(reference).backgroundColor);
+      await expect(style.backgroundImage).toBe('none');
+      await expect(style.backdropFilter).toBe('none');
+    } finally {
+      reference.remove();
+    }
+  },
+};
 
 export const EasyModeRejectedClose: EasyStory = {
   ...Default,
