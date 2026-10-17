@@ -91,7 +91,29 @@ export const MorphRTL: Story = {
   },
 };
 /** Enable reduced motion in the browser to remove spacing transitions. */
-export const MorphReducedMotion: Story = { args: { compact: true } };
+export const MorphReducedMotion: Story = {
+  args: { compact: true },
+  parameters: { docs: { description: { story: 'The play checks the reduced-motion CSS declaration and disclosure keyboard behavior. Manual QA: emulate prefers-reduced-motion: reduce and toggle compact spacing; padding and gap must change immediately.' } } },
+  play: async ({ canvas, userEvent }) => {
+    const navigation = canvas.getByRole('navigation', { name: 'Site' });
+    const reducedRules = Array.from(navigation.ownerDocument.styleSheets).flatMap((sheet) =>
+      Array.from(sheet.cssRules).flatMap((rule) =>
+        rule instanceof CSSMediaRule && rule.conditionText.includes('prefers-reduced-motion: reduce')
+          ? Array.from(rule.cssRules).filter((inner): inner is CSSStyleRule =>
+            inner instanceof CSSStyleRule && navigation.matches(inner.selectorText),
+          )
+          : [],
+      ),
+    );
+    await expect(reducedRules.some((rule) => rule.style.transitionDuration === '0s')).toBe(true);
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(canvas.getByRole('link', { name: 'Overview Projects and activity' })).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    await expect(canvas.getByText('Product')).toHaveFocus();
+    await expect(canvas.getByText('Product').parentElement).not.toHaveAttribute('open');
+  },
+};
 /** Preserve native modified-click behavior; prevented routing keeps the panel open. */
 export const MorphPreventedRouting: Story = {
   args: { groups: [{ ...groups[0]!, defaultOpen: true, items: [{ label: 'Overview', href: '#overview', onClick: fn((event) => event.preventDefault()) }] }] },

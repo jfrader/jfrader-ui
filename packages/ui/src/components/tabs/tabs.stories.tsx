@@ -36,6 +36,7 @@ const meta = {
 - The focused tab is the list's Tab stop even when it is not selected. Press Tab to leave the list for the active panel; panels default to \`tabIndex={0}\`.
 
 ### Customization
+- Glass and liquid share the same bar material; their default indicators differ (pill for glass, lens for liquid).
 - Use \`variant="glass"\` or \`variant="liquid"\` for a rounded mobile bar with 48px targets and a solid selected boundary. \`indicator\` accepts \`line\`, \`pill\` or \`lens\`; material names do not change tab semantics. Materials use an opaque fallback for reduced transparency and forced colors.
 - Add decorative \`icon\` / \`activeIcon\` and \`badge\` / \`badgeLabel\` per item. Numeric badges use \`locale\`; zero and empty badges are omitted. Supply translated badge descriptions with \`badgeLabel\`.
 - \`labels="active"\`, \`labels="none"\` and \`compact\` hide visual labels only when an icon is present. Names remain available to assistive technology. Pair controlled \`compact\` with \`onCompactChange\`; focus requests expansion. Optional \`collapseOnScroll\` uses the owning window or \`scrollRef\` and pauses while the bar contains focus.

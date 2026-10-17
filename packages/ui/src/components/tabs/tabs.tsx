@@ -617,7 +617,10 @@ function TabsList({
           const previousDistance = previous ? Math.abs(event.clientX - (previous.left + previous.width / 2)) : Infinity;
           return distance < previousDistance ? item : best;
         }, undefined);
-        if (nearest?.dataset.value !== undefined) setValue(nearest.dataset.value);
+        if (nearest?.dataset.value !== undefined) {
+          setFocused(nearest.dataset.value);
+          setValue(nearest.dataset.value);
+        }
       }
     }
     cancelGesture();

@@ -87,6 +87,7 @@ export const LiquidRTL: Story = {
 /** Enable reduced motion in the browser to remove selection travel. */
 export const LiquidReducedMotion: Story = {
   args: { variant: 'liquid' },
+  parameters: { docs: { description: { story: 'Manual QA: emulate prefers-reduced-motion: reduce in the browser, then select Search. The lens must move immediately without spring travel; the Search panel must remain visible. This play checks selection only, not the media preference or animation.' } } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('tab', { name: 'Search' }));
     await expect(canvas.getByRole('tabpanel', { name: 'Search' })).toBeVisible();
@@ -153,24 +154,41 @@ export const MaterialDragSelection: Story = {
     const list = canvas.getByRole('tablist');
     const home = canvas.getByRole('tab', { name: 'Home' });
     const search = canvas.getByRole('tab', { name: 'Search' });
+    home.focus();
     const a = home.getBoundingClientRect();
     const b = search.getBoundingClientRect();
     const start = { pointerId: 1, isPrimary: true, button: 0, clientX: a.left + a.width / 2, clientY: a.top + a.height / 2 };
     const capture = spyOn(list, 'setPointerCapture').mockImplementation(() => {});
     try {
-    fireEvent.pointerDown(home, start);
-    fireEvent.pointerMove(list, { ...start, clientX: b.left + b.width / 2 });
-    fireEvent.pointerCancel(list, start);
-    await expect(args.onValueChange).not.toHaveBeenCalled();
-    fireEvent.pointerDown(home, start);
-    fireEvent.pointerMove(list, { ...start, clientX: b.left + b.width / 2 });
-    fireEvent.pointerUp(list, { ...start, clientX: b.left + b.width / 2 });
-    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('search');
-    await expect(search).toHaveAttribute('aria-selected', 'true');
-    await expect(list.style.getPropertyValue('--tabs-preview-x')).toBe('');
+      fireEvent.pointerDown(home, start);
+      fireEvent.pointerMove(list, { ...start, clientX: b.left + b.width / 2 });
+      fireEvent.pointerCancel(list, start);
+      await expect(args.onValueChange).not.toHaveBeenCalled();
+      fireEvent.pointerDown(home, start);
+      fireEvent.pointerMove(list, { ...start, clientX: b.left + b.width / 2 });
+      await expect(list.style.getPropertyValue('--tabs-preview-x')).not.toBe('');
+      fireEvent.keyDown(home, { key: 'Escape' });
+      await expect(list.style.getPropertyValue('--tabs-preview-x')).toBe('');
+      fireEvent.pointerUp(list, { ...start, clientX: b.left + b.width / 2 });
+      await expect(args.onValueChange).not.toHaveBeenCalled();
+      await expect(home).toHaveAttribute('aria-selected', 'true');
+      fireEvent.pointerDown(home, start);
+      fireEvent.pointerMove(list, { ...start, clientX: b.left + b.width / 2 });
+      fireEvent.pointerUp(list, { ...start, clientX: b.left + b.width / 2 });
+      await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+      await expect(args.onValueChange).toHaveBeenLastCalledWith('search');
+      await expect(search).toHaveAttribute('aria-selected', 'true');
+      await expect(search).toHaveAttribute('tabindex', '0');
+      await expect(home).toHaveAttribute('tabindex', '-1');
+      await expect(list.style.getPropertyValue('--tabs-preview-x')).toBe('');
     } finally { capture.mockRestore(); }
   },
+};
+
+/** Dragging uses physical tab centers in either writing direction. */
+export const MaterialDragSelectionRTL: Story = {
+  ...MaterialDragSelection,
+  args: { ...MaterialDragSelection.args, dir: 'rtl' },
 };
 
 /** Scrolling down compacts the bar; focusing a tab expands it and pauses collapse. */
