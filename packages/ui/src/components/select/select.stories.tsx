@@ -120,14 +120,21 @@ export const MorphControlledRejects: EasyStory = {
   },
 };
 
+const PLAN_LABEL = 'Billing plan';
+const PLANS: readonly SelectOption[] = [
+  { value: 'free', label: 'Free' },
+  { value: 'enterprise', label: 'Enterprise', disabled: true },
+  { value: 'pro', label: 'Pro' },
+];
+
 const snippet = `<Select
-  label="Fruit"
+  label="Billing plan"
   options={[
-    { value: 'apple', label: 'Apple' },
-    { value: 'banana', label: 'Banana', disabled: true },
-    { value: 'cherry', label: 'Cherry' },
+    { value: 'free', label: 'Free' },
+    { value: 'enterprise', label: 'Enterprise', disabled: true },
+    { value: 'pro', label: 'Pro' },
   ]}
-  defaultValue="apple"
+  defaultValue="free"
 />`;
 
 const Row = styled.div({
@@ -235,8 +242,8 @@ function bodyOf(canvasElement: HTMLElement) {
   return within(canvasElement.ownerDocument.body);
 }
 
-function getTrigger(canvasElement: HTMLElement) {
-  return within(canvasElement).getByRole('combobox', { name: LABEL });
+function getTrigger(canvasElement: HTMLElement, name = LABEL) {
+  return within(canvasElement).getByRole('combobox', { name });
 }
 
 function getOption(canvasElement: HTMLElement, name: string) {
@@ -244,16 +251,16 @@ function getOption(canvasElement: HTMLElement, name: string) {
 }
 
 /** Virtual focus: the option is referenced by aria-activedescendant while DOM focus stays on the trigger. */
-async function expectActive(canvasElement: HTMLElement, name: string) {
-  const trigger = getTrigger(canvasElement);
+async function expectActive(canvasElement: HTMLElement, name: string, label = LABEL) {
+  const trigger = getTrigger(canvasElement, label);
   await waitFor(() => expect(trigger).toHaveAttribute('aria-activedescendant', getOption(canvasElement, name).id));
   await expect(getOption(canvasElement, name)).toHaveAttribute('data-active');
   await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
 }
 
-async function expectClosed(canvasElement: HTMLElement) {
+async function expectClosed(canvasElement: HTMLElement, label = LABEL) {
   await waitFor(() => expect(bodyOf(canvasElement).queryByRole('listbox')).toBeNull());
-  const trigger = getTrigger(canvasElement);
+  const trigger = getTrigger(canvasElement, label);
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(trigger).not.toHaveAttribute('aria-activedescendant');
 }
@@ -267,16 +274,16 @@ async function focusTrigger(canvasElement: HTMLElement) {
 
 export const Default: EasyStory = {
   args: {
-    label: LABEL,
-    placeholder: PLACEHOLDER,
-    options: FRUITS,
-    defaultValue: 'apple',
+    label: PLAN_LABEL,
+    placeholder: 'Pick a plan',
+    options: PLANS,
+    defaultValue: 'free',
     onValueChange: fn(),
   },
   render: (args) => (
     <Row>
       <Select {...args} />
-      <Button>After</Button>
+      <Button>Upgrade</Button>
     </Row>
   ),
   parameters: {
@@ -287,29 +294,29 @@ export const Default: EasyStory = {
     },
   },
   play: async ({ args, canvasElement }) => {
-    const trigger = getTrigger(canvasElement);
+    const trigger = getTrigger(canvasElement, PLAN_LABEL);
     await expect(trigger.tagName).toBe('BUTTON');
     await expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await expect(trigger).not.toHaveAttribute('aria-controls');
-    await waitFor(() => expect(trigger).toHaveTextContent('Apple'));
+    await waitFor(() => expect(trigger).toHaveTextContent('Free'));
 
     await userEvent.click(trigger);
-    const listbox = await bodyOf(canvasElement).findByRole('listbox', { name: LABEL });
+    const listbox = await bodyOf(canvasElement).findByRole('listbox', { name: PLAN_LABEL });
     await expect(canvasElement.contains(listbox)).toBe(false);
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await expect(trigger).toHaveAttribute('aria-controls', listbox.id);
     await expect(within(listbox).getAllByRole('option')).toHaveLength(3);
-    await expect(getOption(canvasElement, 'Apple')).toHaveAttribute('aria-selected', 'true');
-    await expect(getOption(canvasElement, 'Cherry')).toHaveAttribute('aria-selected', 'false');
+    await expect(getOption(canvasElement, 'Free')).toHaveAttribute('aria-selected', 'true');
+    await expect(getOption(canvasElement, 'Pro')).toHaveAttribute('aria-selected', 'false');
     // Pointer open highlights the selected option.
-    await expectActive(canvasElement, 'Apple');
+    await expectActive(canvasElement, 'Free', PLAN_LABEL);
 
-    await userEvent.click(getOption(canvasElement, 'Cherry'));
+    await userEvent.click(getOption(canvasElement, 'Pro'));
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('cherry');
-    await expectClosed(canvasElement);
-    await expect(trigger).toHaveTextContent('Cherry');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('pro');
+    await expectClosed(canvasElement, PLAN_LABEL);
+    await expect(trigger).toHaveTextContent('Pro');
     await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
   },
 };

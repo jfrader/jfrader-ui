@@ -72,7 +72,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = { args: { defaultValue: 'Harbor2' } };
 export const Empty: Story = { args: { defaultValue: '' } };
 export const TooShort: Story = {
   args: { defaultValue: 'A1!', shortLength: 8 },
