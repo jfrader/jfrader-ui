@@ -1,5 +1,6 @@
 import { configure, getConfig } from 'storybook/test';
-import { beforeAll } from 'vitest';
+import { beforeAll, beforeEach, afterEach } from 'vitest';
+import { cdp } from 'vitest/browser';
 
 type EventWrapper = ReturnType<typeof getConfig>['eventWrapper'];
 
@@ -52,3 +53,16 @@ function guardEventWrapperReentrancy() {
 }
 
 beforeAll(guardEventWrapperReentrancy);
+
+// Emulate the browser preference itself: mocking matchMedia does not activate CSS media rules.
+beforeEach(async ({ task }) => {
+  if (task.name !== 'Reduced Transparency') return;
+  await cdp().send('Emulation.setEmulatedMedia', {
+    features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }],
+  });
+});
+
+afterEach(async ({ task }) => {
+  if (task.name !== 'Reduced Transparency') return;
+  await cdp().send('Emulation.setEmulatedMedia', { features: [] });
+});

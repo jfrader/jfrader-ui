@@ -44,6 +44,12 @@ export const base = {
     cardInk: 'rgba(0, 0, 0, 0.87)',
     // A card's red for the French deck's two-colour suits (5.35:1 on cardFace).
     cardRed: '#c8102e',
+    /** Translucent panel materials for the Surface root seam, separate from playing-card ink and paper. */
+    surfaceGlass: 'rgb(20 21 22 / 0.92)',
+    surfaceHighlight: 'rgb(255 255 255 / 0.12)',
+    surfaceSheen: 'rgb(167 139 255 / 0.04)',
+    surfaceHoloCyan: 'rgb(111 208 204 / 0.04)',
+    surfaceHoloRose: 'rgb(255 155 143 / 0.04)',
     scrim: 'rgba(1, 2, 3, 0.72)',
     // Syntax highlighting roles (>=4.5:1 against surfaceInset and surfaceRaised).
     syntaxKeyword: '#c4adff',
@@ -64,6 +70,11 @@ export const base = {
   },
   zIndex: {
     cardFlight: '1000',
+  },
+  cardMaterial: {
+    blur: '20px',
+    tilt: '14deg',
+    perspective: '800px',
   },
   radius: {
     sm: '8px',
@@ -208,6 +219,11 @@ export const light = {
     cardFace: '#f4f4f5',
     cardInk: 'rgba(0, 0, 0, 0.87)',
     cardRed: '#c8102e',
+    surfaceGlass: 'rgb(255 255 255 / 0.94)',
+    surfaceHighlight: 'rgb(255 255 255 / 0.8)',
+    surfaceSheen: 'rgb(119 71 255 / 0.04)',
+    surfaceHoloCyan: 'rgb(26 138 160 / 0.04)',
+    surfaceHoloRose: 'rgb(190 58 115 / 0.04)',
     scrim: 'oklch(20% 0 0 / 0.4)',
     syntaxKeyword: 'oklch(48% 0.2 290)',
     syntaxString: 'oklch(47% 0.12 150)',
