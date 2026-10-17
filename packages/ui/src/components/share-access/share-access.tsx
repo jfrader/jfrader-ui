@@ -448,7 +448,10 @@ export function ShareAccess({
         if (!next.some((member) => key(member.email) === key(person.email)))
           next.push({
             ...person,
-            id: crypto.randomUUID(),
+            id:
+              typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `member-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
             role,
             pending: true,
           });

@@ -141,6 +141,44 @@ export const KeyboardInvites: Story = {
   },
 };
 
+export const InviteWithoutRandomUUID: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn() },
+  beforeEach: () => {
+    const descriptor = Object.getOwnPropertyDescriptor(crypto, 'randomUUID');
+    Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: undefined });
+    return () => {
+      if (descriptor) Object.defineProperty(crypto, 'randomUUID', descriptor);
+      else Reflect.deleteProperty(crypto, 'randomUUID');
+    };
+  },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const canvas = within(canvasElement);
+    await expect(crypto.randomUUID).toBeUndefined();
+    await userEvent.type(
+      canvas.getByRole('combobox', { name: 'Name or email' }),
+      'new@example.com{Enter}',
+    );
+    await userEvent.click(canvas.getByRole('button', { name: 'Invite' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith([
+      ...members,
+      expect.objectContaining({
+        id: expect.stringMatching(/^member-\d+-[a-z0-9]+$/),
+        email: 'new@example.com',
+        role: 'editor',
+        pending: true,
+      }),
+    ]);
+    await expect(
+      within(canvas.getByRole('list', { name: 'People with access' })).getByRole('button', {
+        name: 'Remove new@example.com',
+      }),
+    ).toBeVisible();
+    await expect(canvas.getByRole('list', { name: 'Invitations' })).toBeEmptyDOMElement();
+  },
+};
+
 export const InvalidChip: Story = {
   tags: ['!autodocs'],
   play: async ({ canvasElement, userEvent }) => {
