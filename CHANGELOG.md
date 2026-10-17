@@ -8,6 +8,8 @@
 
 ### Added
 
+- Tabs accepts `variant="glass"` and `variant="liquid"`, line/pill/lens indicators, icon labels, localized badges, compact bars and optional release-only drag selection. Existing tab and panel semantics remain unchanged.
+- Navigation accepts `variant="morph"` for a floating disclosure bar with rich link descriptions, compact spacing, keyboard section navigation and one/two-column panels. Destinations remain native links.
 - `PasswordStrength` composes PasswordField with application-owned policy rules, a labelled meter and readable requirement states. Scores describe policy compliance, not password security.
 - `BookingPill` composes Calendar and TimePicker into a party/date/time/review journey with application-owned availability and asynchronous confirmation.
 - `MultiRegionFailover` presents six supplied incident snapshots with readable regional status, metrics, pause/seek/replay controls and reduced-motion playback protection. It is an illustration, not live monitoring.

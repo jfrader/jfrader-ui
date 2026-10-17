@@ -36,6 +36,11 @@ const meta = {
 - The focused tab is the list's Tab stop even when it is not selected. Press Tab to leave the list for the active panel; panels default to \`tabIndex={0}\`.
 
 ### Customization
+- Use \`variant="glass"\` or \`variant="liquid"\` for a rounded mobile bar with 48px targets and a solid selected boundary. \`indicator\` accepts \`line\`, \`pill\` or \`lens\`; material names do not change tab semantics. Materials use an opaque fallback for reduced transparency and forced colors.
+- Add decorative \`icon\` / \`activeIcon\` and \`badge\` / \`badgeLabel\` per item. Numeric badges use \`locale\`; zero and empty badges are omitted. Supply translated badge descriptions with \`badgeLabel\`.
+- \`labels="active"\`, \`labels="none"\` and \`compact\` hide visual labels only when an icon is present. Names remain available to assistive technology. Pair controlled \`compact\` with \`onCompactChange\`; focus requests expansion. Optional \`collapseOnScroll\` uses the owning window or \`scrollRef\` and pauses while the bar contains focus.
+- \`draggableIndicator\` enables release-only nearest-tab selection on material bars. Pointer cancellation and Escape discard the preview. Click and keyboard work without dragging. There is no momentum or refraction effect.
+- Position a floating list in application code and reserve its height plus the device safe-area inset in your content. Horizontal overflow preserves target sizes; use standard line tabs for vertical layouts.
 - In \`items\` mode, use \`slotProps\` for root, list, tab and panel props. Use \`slots\` to replace generated parts; \`slots.root\` takes precedence over \`component\`.
 - Declare replacements outside render. Forward received props and ref to the root element, or to the corresponding \`Tabs\` part for list, tab and panel adapters, to keep keyboard handling and ARIA relationships.`,
     },
@@ -545,4 +550,26 @@ export const RTL: Story = {
     await expect(tabs[0]).toHaveFocus();
     await expect(getComputedStyle(tabs[0]!).direction).toBe('rtl');
   },
+};
+
+/** Use a rounded glass bar for short, in-page section labels. */
+export const Glass: EasyStory = {
+  args: { label: 'Settings', items: ITEMS, defaultValue: 'one', variant: 'glass' },
+  render: (args) => <Tabs {...args} />,
+  parameters: { docs: { source: { language: 'tsx', code: `<Tabs variant="glass" label="Settings" defaultValue="account" items={[
+  { value: 'account', label: 'Account', panel: 'Name, email and avatar.' },
+  { value: 'security', label: 'Security', panel: 'Password and two-factor sign-in.' },
+  { value: 'billing', label: 'Billing', panel: 'Plan and invoices.' },
+]} />` } } },
+};
+
+/** Move a shared lens between tabs while keeping panels mounted. */
+export const Liquid: EasyStory = {
+  ...Glass,
+  args: { ...Glass.args, variant: 'liquid' },
+  parameters: { docs: { source: { language: 'tsx', code: `<Tabs variant="liquid" label="Settings" defaultValue="account" items={[
+  { value: 'account', label: 'Account', panel: 'Name, email and avatar.' },
+  { value: 'security', label: 'Security', panel: 'Password and two-factor sign-in.' },
+  { value: 'billing', label: 'Billing', panel: 'Plan, invoices and payment method.' },
+]} />` } } },
 };

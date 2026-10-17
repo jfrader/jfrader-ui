@@ -56,7 +56,11 @@ const meta = {
 - Use slotProps for generated root, group and item props. component replaces the root, as does slots.root. Group and item replacements compose the corresponding dotted part and forward received props/ref. Declare replacements outside render.
 - Name the navigation landmark with label. The current link exposes aria-current="page".
 - Collapsible groups use native details/summary. defaultOpen sets the initial open attribute; the browser owns later state.
-- Leading icons are decorative and hidden from assistive technology.`,
+- Leading icons are decorative and hidden from assistive technology.
+- Use \`variant="morph"\` for a horizontal floating bar. Groups wrap at narrow widths; collapsible groups remain native disclosures containing links, not menus. \`compact\` reduces spacing; your application owns scroll thresholds.
+- Morph disclosures accept \`columns={2}\` for two columns, and items accept \`description\`. Below 420px, panels use one column. An active disclosure marks its current section with \`aria-current="location"\`; only destination links use \`page\`.
+- Use Left/Right, Home/End between top-level controls. Down opens a disclosure and focuses its first link; Up from its first link returns to the summary. Escape closes and returns focus; outside pointer or focus closes without restoring it. Tab keeps native link order. Enter/Space retain native anchor or disclosure behavior.
+- Compose search separately with Combobox and supply routing in application code. There is no built-in search index, route interception or responsive hamburger.`,
     },
   },
   decorators: [
@@ -560,4 +564,26 @@ export const NarrowLabels: Story = {
     await expect(fireEvent.click(disabled)).toBe(false);
     await expect(disabledActivation).not.toHaveBeenCalled();
   },
+};
+
+/** Open a grouped set of site links from a floating disclosure bar. */
+export const Morph: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
+  args: {
+    variant: 'morph', label: 'Site', activeHref: '#overview',
+    groups: [
+      { label: 'Product', collapsible: true, items: [
+        { label: 'Overview', href: '#overview', description: 'Projects and activity' },
+        { label: 'Reports', href: '#reports', description: 'Usage and performance' },
+      ] },
+      { items: [{ label: 'About', href: '#about' }] },
+    ],
+  },
+  render: (args) => <Navigation {...args} />,
+  parameters: { docs: { source: { language: 'tsx', code: `<Navigation variant="morph" label="Site" activeHref="#overview" groups={[
+  { label: 'Product', collapsible: true, items: [
+    { label: 'Overview', href: '#overview', description: 'Projects and activity' },
+    { label: 'Reports', href: '#reports', description: 'Usage and performance' },
+  ] },
+  { items: [{ label: 'About', href: '#about' }] },
+]} />` } } },
 };
