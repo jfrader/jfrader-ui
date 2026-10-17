@@ -257,6 +257,7 @@ function pointer(stage: HTMLElement) {
 
 export const Default: Story = {
   play: async ({ canvas, canvasElement }) => {
+    await expect(part(canvasElement, 'stage').parentElement).not.toHaveAttribute('data-variant');
     await expect(canvas.getByRole('group', { name: 'Cards' })).toHaveAttribute(
       'aria-roledescription',
       'card stack',
@@ -299,10 +300,19 @@ export const Wallet: Story = {
       source: {
         code: `<CardStack
   variant="wallet"
-  items={passes}
-  getKey={pass => pass.id}
-  getLabel={pass => pass.name}
-  renderCard={pass => <Card.Title>{pass.name}</Card.Title>}
+  items={cities}
+  getKey={city => city.id}
+  getLabel={city => city.name}
+  renderCard={city => (
+    <PassContent>
+      <div>
+        <PassDetail>Weekend pass</PassDetail>
+        <PassTitle>{city.name}</PassTitle>
+      </div>
+      <PassDetail>{city.description}</PassDetail>
+      <PassCode>TRAVEL / {city.id.toUpperCase()}</PassCode>
+    </PassContent>
+  )}
   label="Travel passes"
 />`,
       },
@@ -317,7 +327,11 @@ export const Wallet: Story = {
     await expect(getComputedStyle(surface, '::before').borderStyle).toBe('dashed');
     await expect(getComputedStyle(surface).backdropFilter).not.toBe('none');
     await expect(getComputedStyle(part(top(canvasElement), 'right-stamp')).borderStyle).toBe('dashed');
-    await expect(surface.getBoundingClientRect().height).toBeLessThan(200);
+    const rem = Number.parseFloat(getComputedStyle(surface.ownerDocument.documentElement).fontSize);
+    await expect(surface.getBoundingClientRect().height).toBeCloseTo(12 * rem, 0);
+    await expect(getComputedStyle(surface).borderColor).toBe(
+      getComputedStyle(surface, '::before').borderColor,
+    );
     await expect(canvasElement.querySelectorAll('[data-state="inactive"]')).toHaveLength(3);
     await userEvent.tab();
     await focusRing(part(canvasElement, 'stage'));

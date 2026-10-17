@@ -185,6 +185,7 @@ const GEOMETRY = {
   stageWidth: '20rem',
   height: '19rem',
   narrowHeight: '17.5rem',
+  walletHeight: '12rem',
   tilt: 14,
   tiltDistance: 200,
   scaleStep: 0.025,
@@ -241,7 +242,7 @@ const paddingStyles = {
 };
 const variantStyles = {
   default: undefined,
-  wallet: css({ '--card-stack-height': '12rem' }),
+  wallet: css({ '--card-stack-height': GEOMETRY.walletHeight }),
 };
 const walletCardStyle = css([
   {
@@ -256,11 +257,8 @@ const walletCardStyle = css([
       pointerEvents: 'none',
     },
   },
+  // The noninteractive surface shares the glass borderStrong edge with the inset stitching.
   translucentSurfaceStyle,
-  {
-    borderColor: vars.color.borderControl,
-    [FORCED_COLORS]: { borderColor: 'CanvasText' },
-  },
 ]);
 const walletStampStyle = css({
   borderStyle: 'dashed',
@@ -980,7 +978,7 @@ export function CardStack<T>({
             ref={ref}
             className={rootClass}
             data-ui="card-stack"
-            data-variant={variant}
+            data-variant={variant === 'default' ? undefined : variant}
             data-state={
               disabled ? 'disabled' : completed ? 'completed' : active ? 'active' : 'empty'
             }
