@@ -28,6 +28,9 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { GalleryPresentation, isPhotoGridOptionSoldOut, PRODUCT_ASPECT_RATIO } from './gallery-presentation';
+import { PhotoImage, photoFallbackStyle } from './photo-image';
+export { isPhotoGridOptionSoldOut } from './gallery-presentation';
 import {
   ChromeAction,
   type ChromeActionProps,
@@ -50,12 +53,35 @@ export interface PhotoGridPhoto {
   detail?: ReactNode;
 }
 
+export interface PhotoGridColor {
+  value: string;
+  label: string;
+  photos: readonly PhotoGridPhoto[];
+  soldOut?: boolean;
+}
+
+export interface PhotoGridOption {
+  value: string;
+  label: string;
+  /** Disable everywhere, or for the listed color values. */
+  soldOut?: boolean | readonly string[];
+}
+
 type Slot<Tag extends keyof React.JSX.IntrinsicElements> = ComponentPropsWithRef<Tag> & {
   css?: Interpolation<Theme>;
 };
 type ActionSlot = Slot<'button'>;
 
 export interface PhotoGridSlotProps {
+  presentationStage?: Slot<'div'>;
+  main?: ActionSlot;
+  thumbnails?: Slot<'div'>;
+  details?: Slot<'div'>;
+  colors?: Slot<'fieldset'>;
+  options?: Slot<'fieldset'>;
+  caption?: Slot<'div'>;
+  position?: ActionSlot;
+  navigation?: Slot<'div'>;
   /** Header bar holding the title and density controls. */
   header?: Slot<'header'>;
   /** Heading element displaying the grid title. */
@@ -85,6 +111,15 @@ export interface PhotoGridSlotProps {
 }
 
 export interface PhotoGridSlots {
+  presentationStage?: ComponentType<Slot<'div'>>;
+  main?: ComponentType<ActionSlot>;
+  thumbnails?: ComponentType<Slot<'div'>>;
+  details?: ComponentType<Slot<'div'>>;
+  colors?: ComponentType<Slot<'fieldset'>>;
+  options?: ComponentType<Slot<'fieldset'>>;
+  caption?: ComponentType<Slot<'div'>>;
+  position?: ComponentType<ActionSlot>;
+  navigation?: ComponentType<Slot<'div'>>;
   /** Header holding the title and density controls. */
   header?: ComponentType<Slot<'header'>>;
   /** Heading displaying the grid title. */
@@ -114,6 +149,14 @@ export interface PhotoGridSlots {
 }
 
 export interface PhotoGridLabels {
+  carousel: string;
+  slide: string;
+  navigationHint: string;
+  colors: string;
+  options: string;
+  clearOption: string;
+  soldOut: string;
+  inspect: string;
   /** @deprecated No longer rendered: each density step is a toggle named by `columns`. Removed in the next major. */
   larger: string;
   /** @deprecated No longer rendered: each density step is a toggle named by `columns`. Removed in the next major. */
@@ -144,8 +187,31 @@ export interface PhotoGridLabels {
 
 export interface PhotoGridProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
-  photos: readonly PhotoGridPhoto[];
+  /** Photo collection; product colors may supply their own collections instead. */
+  photos?: readonly PhotoGridPhoto[];
   title: string;
+  /** Keep the grid, show a product detail, or browse a focused cover rail. */
+  variant?: 'grid' | 'product' | 'cover-flow';
+  /** Cover rail geometry; reduced motion and forced colors also flatten depth. */
+  depth?: boolean;
+  reflection?: boolean;
+  colors?: readonly PhotoGridColor[];
+  options?: readonly PhotoGridOption[];
+  selectedColor?: string;
+  defaultSelectedColor?: string;
+  onSelectedColorChange?: (value: string) => void;
+  selectedOption?: string | null;
+  defaultSelectedOption?: string | null;
+  onSelectedOptionChange?: (value: string | null) => void;
+  header?: ReactNode;
+  footer?: ReactNode;
+  renderCaption?: (photo: PhotoGridPhoto, index: number) => ReactNode;
+  /** Fine-pointer inspection. The modal zoom controls remain available when false. */
+  magnifier?: boolean;
+  /** Positive product image ratio; defaults to 4 / 5. */
+  aspectRatio?: number;
+  /** Maximum modal magnification, finite and at least 1; defaults to 3. */
+  zoomFactor?: number;
   /** Column counts offered as density steps. The container width never overrides them. */
   densitySteps?: readonly number[];
   density?: number;
@@ -172,6 +238,14 @@ declare const process: { env: { NODE_ENV?: string } };
 const DEFAULT_STEPS = [5, 3, 2] as const;
 const DEFAULT_DENSITY = 3;
 const EMPTY_IDS: readonly string[] = [];
+const EMPTY_PHOTOS: readonly PhotoGridPhoto[] = [];
+const EMPTY_COLORS: readonly PhotoGridColor[] = [];
+const EMPTY_OPTIONS: readonly PhotoGridOption[] = [];
+interface PhotoSelection {
+  id: string | null;
+  color: string | undefined;
+  previous?: { id: string | null; color: string | undefined };
+}
 const PAGE_ROWS = 3;
 const PINCH_THRESHOLD = 0.15;
 /** Accumulated Ctrl-wheel distance, in px, that requests one density step. */
@@ -195,6 +269,14 @@ const englishPlural = new Intl.PluralRules('en');
 const favoritePop = keyframes({ from: { transform: 'scale(0.85)' }, to: { transform: 'scale(1)' } });
 const captionFade = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
 const defaultLabels: PhotoGridLabels = {
+  carousel: 'carousel',
+  slide: 'slide',
+  navigationHint: 'Use Left and Right arrows, Home or End to choose a photo.',
+  colors: 'Color',
+  options: 'Size',
+  clearOption: 'Clear size',
+  soldOut: 'Sold out',
+  inspect: 'Inspect photo',
   larger: 'Larger thumbnails',
   smaller: 'Smaller thumbnails',
   density: 'Thumbnail size',
@@ -299,20 +381,6 @@ const photoStyle = css({
   overflow: 'hidden',
   '&:focus-visible': focusRingOutset,
   [FORCED_COLORS]: { borderColor: 'ButtonText' },
-});
-const imageStyle = css({
-  display: 'block',
-  inlineSize: '100%',
-  blockSize: '100%',
-  objectFit: 'cover',
-  borderRadius: 'inherit',
-});
-const fallbackStyle = css({
-  padding: vars.space[3],
-  boxSizing: 'border-box',
-  textAlign: 'center',
-  color: vars.color.textMuted,
-  overflowWrap: 'anywhere',
 });
 // Over the photo, the favorite shows while pressed, focused or hovered, and always without hover.
 const tileFavoriteStyle = css({
@@ -427,14 +495,6 @@ const stageStyle = css({
   touchAction: 'none',
   '&:focus-visible': focusRingInset,
 });
-const fullImageStyle = css({
-  display: 'block',
-  inlineSize: '100%',
-  blockSize: '100%',
-  objectFit: 'contain',
-  userSelect: 'none',
-  pointerEvents: 'none',
-});
 const viewerThumbStyle = css({ [COMPACT_CHROME]: { inlineSize: vars.space[8], blockSize: vars.space[8] } });
 const statusStyle = css({
   fontSize: vars.textSize.sm,
@@ -504,39 +564,6 @@ function DensityGlyph({ columns }: { columns: number }) {
   );
 }
 
-function PhotoImage({
-  photo,
-  full,
-  unavailable,
-}: {
-  photo: PhotoGridPhoto;
-  full?: boolean;
-  unavailable: string;
-}) {
-  const [failed, setFailed] = useState(false);
-  if (failed || !photo.src)
-    return (
-      <span data-image-state="error" aria-hidden={!full || undefined} title={unavailable} css={fallbackStyle}>
-        {full ? unavailable : <>▧ {photo.title}</>}
-      </span>
-    );
-  return (
-    <img
-      src={photo.src}
-      srcSet={photo.srcSet}
-      sizes={photo.sizes}
-      alt={full ? photo.alt : ''}
-      width={photo.width}
-      height={photo.height}
-      loading={full ? 'eager' : 'lazy'}
-      decoding="async"
-      draggable={false}
-      css={full ? fullImageStyle : imageStyle}
-      onError={() => setFailed(true)}
-    />
-  );
-}
-
 function PhotoButton({
   component: Component = 'button',
   ref,
@@ -548,6 +575,8 @@ function PhotoButton({
 }
 
 interface ViewerProps {
+  product: boolean;
+  maxZoom: number;
   photos: readonly PhotoGridPhoto[];
   selected: string | null | undefined;
   open: boolean;
@@ -563,6 +592,8 @@ interface ViewerProps {
 }
 
 function PhotoViewer({
+  product,
+  maxZoom,
   photos,
   selected,
   open,
@@ -593,6 +624,10 @@ function PhotoViewer({
     { ...lifecycle, open: open && photos.length > 0 },
     {
       onCancel: (event) => {
+        if (product && zoom > 1 && event.cancelable) {
+          setZoom(1);
+          event.preventDefault();
+        }
         if (event.target === event.currentTarget) viewerSlot.onCancel?.(event);
       },
       onClick: viewerSlot.onClick,
@@ -658,7 +693,7 @@ function PhotoViewer({
   }, [open, photo, index, photos]);
 
   const setZoom = (next: number) => {
-    const value = Math.min(MAX_ZOOM, Math.max(1, next));
+    const value = Math.min(maxZoom, Math.max(1, next));
     setZoomState({ id: selected, value });
     scale.set(value);
     x.set(0);
@@ -787,7 +822,7 @@ function PhotoViewer({
             if (points.length === 2 && drag.distance) {
               const ratio =
                 Math.hypot(points[1]!.x - points[0]!.x, points[1]!.y - points[0]!.y) / drag.distance;
-              scale.set(Math.min(MAX_ZOOM, Math.max(1, drag.zoom * ratio)));
+              scale.set(Math.min(maxZoom, Math.max(1, drag.zoom * ratio)));
             } else if (zoom > 1) {
               pan(
                 drag.x + event.clientX - drag.originX - x.get(),
@@ -863,7 +898,7 @@ function PhotoViewer({
               </motion.div>
             </motion.div>
           ) : (
-            <span css={fallbackStyle}>{labels.unavailable}</span>
+            <span css={photoFallbackStyle}>{labels.unavailable}</span>
           )}
         </Stage>
         <div css={[barStyle, bottomBarStyle]}>
@@ -881,14 +916,14 @@ function PhotoViewer({
                 label={labels.previous}
                 icon={chromeIcons.previous}
                 disabled={index <= 0}
-                styles={compactHiddenStyle}
+                styles={!product && compactHiddenStyle}
                 onClick={() => navigate(index - 1)}
               />
               <ChromeAction
                 label={labels.next}
                 icon={chromeIcons.next}
                 disabled={index < 0 || index >= photos.length - 1}
-                styles={compactHiddenStyle}
+                styles={!product && compactHiddenStyle}
                 onClick={() => navigate(index + 1)}
               />
               <span aria-hidden="true" css={[dividerStyle, compactHiddenStyle]} />
@@ -901,7 +936,7 @@ function PhotoViewer({
               <ChromeAction
                 label={labels.zoomIn}
                 icon={chromeIcons.zoomIn}
-                disabled={!photo || zoom >= MAX_ZOOM}
+                disabled={!photo || zoom >= maxZoom}
                 onClick={() => setZoom(zoom + ZOOM_STEP)}
               />
               <ChromeAction
@@ -920,7 +955,7 @@ function PhotoViewer({
                 </>
               )}
             </Controls>
-            {photo && (
+            {photo && !product && (
               <ViewerFavorite
                 {...favoriteSlot}
                 label={favoriteLabel ?? labels.favorite(photo.title, favorite)}
@@ -972,8 +1007,25 @@ function PhotoViewer({
 
 export function PhotoGrid({
   ref,
-  photos,
+  photos: photosProp = EMPTY_PHOTOS,
   title,
+  variant = 'grid',
+  depth = true,
+  reflection = false,
+  colors = EMPTY_COLORS,
+  options = EMPTY_OPTIONS,
+  selectedColor: colorProp,
+  defaultSelectedColor,
+  onSelectedColorChange,
+  selectedOption: optionProp,
+  defaultSelectedOption = null,
+  onSelectedOptionChange,
+  header,
+  footer,
+  renderCaption,
+  magnifier = true,
+  aspectRatio = PRODUCT_ASPECT_RATIO,
+  zoomFactor = MAX_ZOOM,
   densitySteps = DEFAULT_STEPS,
   density: densityProp,
   defaultDensity,
@@ -997,6 +1049,19 @@ export function PhotoGrid({
   onKeyDown,
   ...rest
 }: PhotoGridProps) {
+  const [color, setColor] = useControlledState(
+    colorProp,
+    defaultSelectedColor ?? colors.find((item) => !item.soldOut)?.value,
+    onSelectedColorChange,
+  );
+  const [option, setOption] = useControlledState(
+    optionProp,
+    defaultSelectedOption,
+    onSelectedOptionChange,
+  );
+  const photos = variant === 'product' && colors.length
+    ? colors.find((item) => item.value === color)?.photos ?? EMPTY_PHOTOS
+    : photosProp;
   const Header = slots?.header ?? 'header';
   const Title = slots?.title ?? 'h2';
   const Density = slots?.density ?? 'div';
@@ -1015,11 +1080,26 @@ export function PhotoGrid({
     (next) => onFavoritesChange?.([...next]),
   );
   const favorites = new Set(favoriteState ?? EMPTY_IDS);
-  const [selected, select] = useControlledState<string | null>(
-    valueProp,
-    defaultValue === undefined ? (photos[0]?.id ?? null) : defaultValue,
-    onValueChange,
+  const [selection, requestSelection] = useControlledState<PhotoSelection>(
+    valueProp === undefined ? undefined : { id: valueProp, color },
+    { id: defaultValue === undefined ? (photos[0]?.id ?? null) : defaultValue, color },
+    (next) => {
+      if (next.id !== selected) onValueChange?.(next.id);
+    },
   );
+  let selectedState = selection?.id;
+  if (variant === 'product' && selection?.color !== color) {
+    selectedState = selection?.previous && selection.previous.color === color
+      ? selection.previous.id
+      : photos[0]?.id ?? null;
+  }
+  const selected = variant !== 'grid' && valueProp === undefined && selectedState !== null &&
+    !photos.some((photo) => photo.id === selectedState)
+      ? photos[0]?.id ?? null
+      : selectedState;
+  const select = (photoId: string | null) => {
+    if (photoId !== selected) requestSelection({ id: photoId, color });
+  };
   const [open, setOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
   const lifecycle = useNativeDialogRoot((open ?? false) && photos.length > 0, setOpen);
   const labels = { ...defaultLabels, ...labelOverrides };
@@ -1139,7 +1219,7 @@ export function PhotoGrid({
   useEffect(() => {
     const previous = lastAccepted.current;
     if (previous.density !== density) setStatus(labels.columns(format.format(density), density));
-    else if (previous.selected !== selected && open) {
+    else if (previous.selected !== selected && (open || variant !== 'grid')) {
       const index = photos.findIndex((photo) => photo.id === selected);
       setStatus(
         index >= 0
@@ -1223,6 +1303,13 @@ export function PhotoGrid({
     }
   };
   const restore = () => {
+    if (variant !== 'grid') {
+      const main = rootRef.current?.querySelector<HTMLElement>(
+        '[role="tabpanel"]:not([hidden]) [data-ui="photo-grid-main"]',
+      );
+      (main ?? rootRef.current)?.focus({ preventScroll: true });
+      return;
+    }
     const photo = photos[Math.min(focused.current?.index ?? 0, photos.length - 1)];
     (
       buttons.current.get(invoker.current ?? '') ??
@@ -1235,6 +1322,7 @@ export function PhotoGrid({
     const root = rootRef.current;
     if (!root) return;
     const onWheel = (event: WheelEvent) => {
+      if (variant !== 'grid') return;
       const target = event.target;
       if (!event.ctrlKey || event.defaultPrevented || !(target instanceof Element) || target.closest('dialog'))
         return;
@@ -1261,7 +1349,9 @@ export function PhotoGrid({
               ref={rootMergedRef}
               className={rootClass}
               data-ui="photo-grid"
+              data-variant={variant}
               role="region"
+              aria-roledescription={rest['aria-roledescription'] ?? (variant === 'cover-flow' ? labels.carousel : undefined)}
               tabIndex={rest.tabIndex ?? -1}
               aria-labelledby={ids(rest['aria-labelledby'], slotProps?.title?.id ?? `${id}-title`)}
               data-density={density}
@@ -1283,10 +1373,10 @@ export function PhotoGrid({
                   </Title>
                   <p css={summaryStyle}>
                     <span>{labels.photoCount(format.format(photos.length), photos.length)}</span>
-                    <span>{labels.columns(format.format(density), density)}</span>
+                    {variant === 'grid' && <span>{labels.columns(format.format(density), density)}</span>}
                   </p>
                 </div>
-                <Density
+                {variant === 'grid' && <Density
                   {...slotProps?.density}
                   role="group"
                   aria-label={slotProps?.density?.['aria-label'] ?? labels.density}
@@ -1305,9 +1395,43 @@ export function PhotoGrid({
                       onClick={() => setDensity(step, { focus: false })}
                     />
                   ))}
-                </Density>
+                </Density>}
               </Header>
-              {photos.length ? (
+              {variant !== 'grid' ? (
+                <GalleryPresentation
+                  photos={photos}
+                  selected={selected}
+                  select={select}
+                  variant={variant}
+                  depth={depth}
+                  reflection={reflection}
+                  aspectRatio={aspectRatio}
+                  magnifier={magnifier}
+                  labels={labels}
+                  format={format}
+                  slots={slots}
+                  slotProps={slotProps}
+                  colors={colors}
+                  options={options}
+                  color={color}
+                  option={option}
+                  onColorChange={(next) => {
+                    setColor(next);
+                    requestSelection({
+                      id: colors.find((item) => item.value === next)?.photos[0]?.id ?? null,
+                      color: next,
+                      previous: { id: selected ?? null, color },
+                    });
+                    const current = options.find((item) => item.value === option);
+                    if (current && isPhotoGridOptionSoldOut(current, next)) setOption(null);
+                  }}
+                  onOptionChange={setOption}
+                  header={header}
+                  footer={footer}
+                  renderCaption={renderCaption}
+                  onOpen={() => setOpen(true)}
+                />
+              ) : photos.length ? (
                 <motion.div style={{ scale: preview, transformOrigin: previewOrigin }}>
                   <List
                     {...slotProps?.list}
@@ -1481,6 +1605,8 @@ export function PhotoGrid({
                 {status}
               </Status>
               <PhotoViewer
+                product={variant === 'product'}
+                maxZoom={Number.isFinite(zoomFactor) && zoomFactor >= 1 ? zoomFactor : MAX_ZOOM}
                 photos={photos}
                 selected={selected}
                 open={open ?? false}
