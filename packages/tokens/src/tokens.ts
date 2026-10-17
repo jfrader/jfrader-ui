@@ -44,6 +44,11 @@ export const base = {
     cardInk: 'rgba(0, 0, 0, 0.87)',
     // A card's red for the French deck's two-colour suits (5.35:1 on cardFace).
     cardRed: '#c8102e',
+    cardGlass: 'rgb(20 21 22 / 0.92)',
+    cardHighlight: 'rgb(255 255 255 / 0.12)',
+    cardSheen: 'rgb(167 139 255 / 0.04)',
+    cardHoloCyan: 'rgb(111 208 204 / 0.04)',
+    cardHoloRose: 'rgb(255 155 143 / 0.04)',
     scrim: 'rgba(1, 2, 3, 0.72)',
     // Syntax highlighting roles (>=4.5:1 against surfaceInset and surfaceRaised).
     syntaxKeyword: '#c4adff',
@@ -64,6 +69,11 @@ export const base = {
   },
   zIndex: {
     cardFlight: '1000',
+  },
+  cardMaterial: {
+    blur: '20px',
+    tilt: '14deg',
+    perspective: '800px',
   },
   radius: {
     sm: '8px',
@@ -208,6 +218,11 @@ export const light = {
     cardFace: '#f4f4f5',
     cardInk: 'rgba(0, 0, 0, 0.87)',
     cardRed: '#c8102e',
+    cardGlass: 'rgb(255 255 255 / 0.94)',
+    cardHighlight: 'rgb(255 255 255 / 0.8)',
+    cardSheen: 'rgb(119 71 255 / 0.04)',
+    cardHoloCyan: 'rgb(26 138 160 / 0.04)',
+    cardHoloRose: 'rgb(190 58 115 / 0.04)',
     scrim: 'oklch(20% 0 0 / 0.4)',
     syntaxKeyword: 'oklch(48% 0.2 290)',
     syntaxString: 'oklch(47% 0.12 150)',

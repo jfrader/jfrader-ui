@@ -48,6 +48,7 @@ interface SurfaceRootProps extends SurfaceProps {
   marker: string;
   variant: SurfaceVariant;
   structure?: Interpolation<Theme>;
+  materialStyle?: Interpolation<Theme>;
   attributes?: SurfacePartProps;
   wrapChildren?: (children: ReactNode) => ReactNode;
   internalRef?: Ref<HTMLDivElement>;
@@ -62,6 +63,7 @@ export function SurfaceRoot({
   marker,
   variant,
   structure,
+  materialStyle,
   attributes,
   wrapChildren,
   internalRef,
@@ -125,7 +127,7 @@ export function SurfaceRoot({
     <AppearanceScope theme={ownTheme} appearance={effectiveAppearance}>
       <WithSx
         styles={[
-          Root === 'div' && [material, shadows[variant], forcedColors],
+          Root === 'div' && [material, shadows[variant], materialStyle, forcedColors],
           declaredTheme && themeColorSchemeStyle,
           structure,
           slotCss,

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Card supports `appearance="glass"` and `appearance="holo"` materials. Opt-in `holoTilt` follows mouse and pen movement, with no tilt under reduced motion.
+
 ## 0.8.1
 
 ### Changed

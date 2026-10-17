@@ -1,3 +1,5 @@
+'use client';
+
 // Static surface for grouping related content. Not an APG widget and not interactive: every part
 // is a plain styled element with no role, so the card adds no landmark on its own. To expose it
 // as a region, pass role="region" with aria-labelledby pointing at the Card.Title id.
@@ -7,7 +9,8 @@
 // anatomy from one place; a part's own className/css still merges last. `slots` replaces a part
 // with the consumer's component, which receives the part's props and the className its styles
 // resolve to.
-import { createContext, useContext, useMemo, type ComponentPropsWithRef, type ComponentType, type ReactElement, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, type ComponentPropsWithRef, type ComponentType, type ReactElement, type ReactNode } from 'react';
+import { MotionConfig, MotionConfigContext, useReducedMotion, useSpring } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import type { SurfaceAppearance } from '../../styling/surface';
@@ -15,6 +18,8 @@ import type { SurfacePartProps, SurfaceRootCustomization, SurfaceRootSlotProps }
 import { SurfaceRoot, resolveSurfaceValue } from '../surface/surface-root';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
+import { motionDurationMs } from '../../styling/motion-timings';
+import { FORCED_COLORS } from '../../styling/media';
 
 export type CardVariant = 'flat' | 'raised';
 
@@ -64,8 +69,11 @@ interface CardBaseProps
   /**
    * `contrast` uses the dark palette with a charcoal surface on any page theme.
    * Omit this prop or use `default` to inherit the enclosing appearance, including contrast.
+   * `glass` and `holo` apply local translucent materials without changing that palette scope.
    */
-  appearance?: SurfaceAppearance;
+  appearance?: SurfaceAppearance | 'glass' | 'holo';
+  /** Enable mouse/pen tilt and moving light for holo only. Disabled by reduced motion. */
+  holoTilt?: boolean;
   slots?: CardSlots;
   slotProps?: CardSlotProps;
 }
@@ -118,6 +126,74 @@ const rootStyle = css({
 });
 
 const variants = ['flat', 'raised'] as const;
+const appearances = ['default', 'contrast', 'glass', 'holo'] as const;
+const translucentMaterial = css({
+  backgroundColor: vars.color.cardGlass,
+  backdropFilter: `blur(${vars.cardMaterial.blur})`,
+  WebkitBackdropFilter: `blur(${vars.cardMaterial.blur})`,
+  borderColor: vars.color.borderStrong,
+  boxShadow: `inset 0 1px 0 ${vars.color.cardHighlight}`,
+  '&[data-variant="raised"]': { boxShadow: `inset 0 1px 0 ${vars.color.cardHighlight}, ${vars.shadow.raised}` },
+  '@media (prefers-reduced-transparency: reduce)': {
+    backgroundColor: vars.color.surfaceRaised,
+    backgroundImage: 'none',
+    backdropFilter: 'none',
+    WebkitBackdropFilter: 'none',
+  },
+  [FORCED_COLORS]: { backgroundImage: 'none', backdropFilter: 'none', WebkitBackdropFilter: 'none', '&, &[data-variant="raised"]': { boxShadow: 'none', borderColor: 'CanvasText' } },
+});
+const materialStyles = {
+  default: undefined,
+  contrast: undefined,
+  glass: css([{
+    backgroundImage: `linear-gradient(135deg, ${vars.color.cardSheen}, transparent)`,
+  }, translucentMaterial]),
+  holo: css([{
+    backgroundImage: `radial-gradient(ellipse at calc(50% + var(--card-light-x, 0) * 50%) calc(50% + var(--card-light-y, 0) * 50%), ${vars.color.cardSheen}, transparent), linear-gradient(125deg, ${vars.color.cardHoloCyan}, ${vars.color.cardSheen}, ${vars.color.cardHoloRose})`,
+  }, translucentMaterial]),
+};
+const tiltStyle = css({
+  transform: `perspective(${vars.cardMaterial.perspective}) rotateX(calc(var(--card-light-y, 0) * -1 * ${vars.cardMaterial.tilt})) rotateY(calc(var(--card-light-x, 0) * ${vars.cardMaterial.tilt}))`,
+  '@media (prefers-reduced-motion: reduce)': { transform: 'none' },
+  [FORCED_COLORS]: { transform: 'none' },
+});
+const tiltSpring = { duration: motionDurationMs.slow / 1000, bounce: 0 };
+
+function useHoloTilt(enabled: boolean, root: SurfaceRootCustomization['component']) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
+  const motionConfig = useContext(MotionConfigContext);
+  const active = enabled && reducedMotion === false && motionConfig.reducedMotion !== 'always';
+  const x = useSpring(0, tiltSpring);
+  const y = useSpring(0, tiltSpring);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || !active) return;
+    const unsubscribeX = x.on('change', (value) => node.style.setProperty('--card-light-x', String(value)));
+    const unsubscribeY = y.on('change', (value) => node.style.setProperty('--card-light-y', String(value)));
+    const reset = () => { x.set(0); y.set(0); };
+    const move = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+      const rect = node.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      x.set(Math.max(-1, Math.min(1, (event.clientX - rect.left) / rect.width * 2 - 1)));
+      y.set(Math.max(-1, Math.min(1, (event.clientY - rect.top) / rect.height * 2 - 1)));
+    };
+    node.addEventListener('pointermove', move, { passive: true });
+    node.addEventListener('pointerleave', reset);
+    node.addEventListener('pointercancel', reset);
+    return () => {
+      node.removeEventListener('pointermove', move);
+      node.removeEventListener('pointerleave', reset);
+      node.removeEventListener('pointercancel', reset);
+      unsubscribeX(); unsubscribeY();
+      x.jump(0); y.jump(0);
+      node.style.removeProperty('--card-light-x');
+      node.style.removeProperty('--card-light-y');
+    };
+  }, [active, root, x, y]);
+  return { ref, active, reducedMotion: reducedMotion || motionConfig.reducedMotion === 'always' };
+}
 
 const headerStyle = css({
   display: 'grid',
@@ -161,35 +237,46 @@ function CardRoot(props: CardEasyProps): ReactElement;
 function CardRoot(props: CardCompoundProps): ReactElement;
 function CardRoot(allProps: CardProps) {
   const easy = 'content' in allProps && allProps.children === undefined;
-  const { variant: variantProp, slots, slotProps, children, title, description, content, footer, ...props } = allProps;
+  const { variant: variantProp, appearance: appearanceProp, holoTilt = false, slots, slotProps, children, title, description, content, footer, ...props } = allProps;
   const customization = useMemo(() => ({ slots, slotProps }), [slots, slotProps]);
   const variant = resolveSurfaceValue('Card', 'variant', variantProp, variants, 'raised');
+  const appearance = resolveSurfaceValue('Card', 'appearance', appearanceProp, appearances, 'default');
+  const tilt = useHoloTilt(appearance === 'holo' && holoTilt, slots?.root ?? props.component);
   return (
-    <SurfaceRoot
-      {...props}
-      title={!easy && typeof title === 'string' ? title : undefined}
-      content={!easy && typeof content === 'string' ? content : undefined}
-      children={easy ? (
-        <>
-          {(isRenderable(title) || isRenderable(description)) && (
-            <CardHeader>
-              {isRenderable(title) && <CardTitle>{title}</CardTitle>}
-              {isRenderable(description) && <CardDescription>{description}</CardDescription>}
-            </CardHeader>
-          )}
-          <CardContent>{content}</CardContent>
-          {isRenderable(footer) && <CardFooter>{footer}</CardFooter>}
-        </>
-      ) : children}
-      slotProps={slotProps}
-      slots={slots}
-      owner="Card"
-      marker="card"
-      variant={variant}
-      structure={rootStyle}
-      attributes={{ 'data-variant': props['data-variant'] ?? variant }}
-      wrapChildren={(children) => <CardSlotContext.Provider value={customization}>{children}</CardSlotContext.Provider>}
-    />
+    <MotionConfig reducedMotion={tilt.reducedMotion ? 'always' : 'user'}>
+      <SurfaceRoot
+        {...props}
+        appearance={appearance === 'contrast' ? 'contrast' : 'default'}
+        internalRef={tilt.ref}
+        title={!easy && typeof title === 'string' ? title : undefined}
+        content={!easy && typeof content === 'string' ? content : undefined}
+        children={easy ? (
+          <>
+            {(isRenderable(title) || isRenderable(description)) && (
+              <CardHeader>
+                {isRenderable(title) && <CardTitle>{title}</CardTitle>}
+                {isRenderable(description) && <CardDescription>{description}</CardDescription>}
+              </CardHeader>
+            )}
+            <CardContent>{content}</CardContent>
+            {isRenderable(footer) && <CardFooter>{footer}</CardFooter>}
+          </>
+        ) : children}
+        slotProps={slotProps}
+        slots={slots}
+        owner="Card"
+        marker="card"
+        variant={variant}
+        materialStyle={materialStyles[appearance]}
+        structure={[rootStyle, tilt.active && tiltStyle]}
+        attributes={{
+          'data-variant': props['data-variant'] ?? variant,
+          'data-card-appearance': appearance,
+          'data-holo-tilt': tilt.active ? '' : undefined,
+        }}
+        wrapChildren={(children) => <CardSlotContext.Provider value={customization}>{children}</CardSlotContext.Provider>}
+      />
+    </MotionConfig>
   );
 }
 

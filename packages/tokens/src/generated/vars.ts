@@ -42,6 +42,11 @@ export const vars = {
     "cardFace": "var(--ui-color-card-face)",
     "cardInk": "var(--ui-color-card-ink)",
     "cardRed": "var(--ui-color-card-red)",
+    "cardGlass": "var(--ui-color-card-glass)",
+    "cardHighlight": "var(--ui-color-card-highlight)",
+    "cardSheen": "var(--ui-color-card-sheen)",
+    "cardHoloCyan": "var(--ui-color-card-holo-cyan)",
+    "cardHoloRose": "var(--ui-color-card-holo-rose)",
     "scrim": "var(--ui-color-scrim)",
     "syntaxKeyword": "var(--ui-color-syntax-keyword)",
     "syntaxString": "var(--ui-color-syntax-string)",
@@ -61,6 +66,11 @@ export const vars = {
   },
   "zIndex": {
     "cardFlight": "var(--ui-z-index-card-flight)"
+  },
+  "cardMaterial": {
+    "blur": "var(--ui-card-material-blur)",
+    "tilt": "var(--ui-card-material-tilt)",
+    "perspective": "var(--ui-card-material-perspective)"
   },
   "radius": {
     "sm": "var(--ui-radius-sm)",

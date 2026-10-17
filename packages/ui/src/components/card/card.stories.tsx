@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { useId } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { MotionConfig } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { ClassNames, css } from '../../styling/css';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -64,7 +65,12 @@ Use component or slots.root to replace the panel material while keeping Card spa
 Root slot props win ordinary conflicts, including children and callbacks. className combines, and style shallow-merges with slot values last. Style order: own → slotProps css → consumer sx. Select composed Card roots with [data-ui~="card"].
 
 ### Appearance
-Omitted appearance and default inherit the enclosing appearance, including contrast. Contrast uses fixed charcoal on either page theme. Use ThemeRoot to change the named theme.`,
+Omitted appearance and default inherit the enclosing appearance, including contrast. Contrast uses fixed charcoal on either page theme. Use ThemeRoot to change the named theme.
+
+Use appearance="glass" for a translucent blurred panel with an inner highlight.
+Use appearance="holo" for a translucent panel with a tinted gradient sheen.
+Glass and holo affect this Card only; nested surfaces and portals keep the enclosing palette, not the material. Keep a similar-tone backdrop behind translucent cards for readable text. Reduced transparency uses an opaque fill.
+Add holoTilt to a holo card for mouse/pen tilt and moving light. It is off by default, does not change keyboard behavior, and is disabled by reduced motion.`,
   } },
   args: { variant: 'raised' },
   argTypes: {
@@ -613,3 +619,99 @@ export const RootAdapters: Story = {
 };
 
 export const RootAdaptersLight: Story = { ...RootAdapters, decorators: [withLightTheme], globals: { theme: 'light' } };
+
+export const Glass: Story = {
+  args: { appearance: 'glass' },
+  parameters: { docs: { source: { code: '<Card appearance="glass" title="Studio" description="Design workspace" content="Project notes and assets." />' } } },
+  render: ({ children: _children, ...args }) => <Card {...args} title="Studio" description="Design workspace" content="Project notes and assets." />,
+  play: async ({ canvasElement }) => {
+    const card = getCards(canvasElement)[0]!;
+    await expect(card).toHaveAttribute('data-card-appearance', 'glass');
+    await expect(card).not.toHaveAttribute('tabindex');
+    await expect(card).not.toHaveAttribute('role');
+    await expect(getComputedStyle(card).backdropFilter).not.toBe('none');
+    await expect(getComputedStyle(card).backgroundImage).toContain('linear-gradient');
+    await expect(card).not.toHaveAttribute('data-holo-tilt');
+  },
+};
+
+export const GlassLight: Story = { ...Glass, decorators: [withLightTheme], globals: { theme: 'light' } };
+
+export const Holo: Story = {
+  args: { appearance: 'holo' },
+  parameters: { docs: { source: { code: '<Card appearance="holo" title="Founding member" description="Studio membership" content="Member since 2026" />' } } },
+  render: ({ children: _children, ...args }) => <Card {...args} title="Founding member" description="Studio membership" content="Member since 2026" />,
+  play: async ({ canvasElement }) => {
+    const card = getCards(canvasElement)[0]!;
+    await expect(card).toHaveAttribute('data-card-appearance', 'holo');
+    await expect(getComputedStyle(card).backgroundImage).toContain('radial-gradient');
+    await expect(getComputedStyle(card).transform).toBe('none');
+    await expect(card).not.toHaveAttribute('data-holo-tilt');
+  },
+};
+
+export const HoloLight: Story = { ...Holo, decorators: [withLightTheme], globals: { theme: 'light' } };
+
+export const HoloTilt: Story = {
+  args: { appearance: 'holo', holoTilt: true },
+  parameters: { docs: { source: { code: '<Card appearance="holo" holoTilt title="Founding member" content="Member since 2026" footer={<Button>View membership</Button>} />' } } },
+  render: ({ children: _children, ...args }) => <Card {...args} title="Founding member" content="Member since 2026" footer={<Button>View membership</Button>} />,
+  play: async ({ canvasElement, canvas, userEvent: user }) => {
+    const card = getCards(canvasElement)[0]!;
+    await expect(card).not.toHaveAttribute('role');
+    await expect(card).not.toHaveAttribute('tabindex');
+    const rect = card.getBoundingClientRect();
+    card.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'touch', clientX: rect.right, clientY: rect.top }));
+    await expect(card.style.getPropertyValue('--card-light-x')).toBe('');
+    card.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'mouse', clientX: rect.right, clientY: rect.top }));
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      await waitFor(() => expect(Number(card.style.getPropertyValue('--card-light-x'))).toBeGreaterThan(0.5));
+      card.dispatchEvent(new PointerEvent('pointerleave'));
+      await waitFor(() => expect(Math.abs(Number(card.style.getPropertyValue('--card-light-x')))).toBeLessThan(0.01));
+    } else {
+      await expect(card).not.toHaveAttribute('data-holo-tilt');
+      await expect(getComputedStyle(card).transform).toBe('none');
+      await expect(card.style.getPropertyValue('--card-light-x')).toBe('');
+    }
+    await user.tab();
+    await expect(canvas.getByRole('button', { name: 'View membership' })).toHaveFocus();
+  },
+};
+
+export const ReducedMotion: Story = {
+  ...HoloTilt,
+  decorators: [(Story) => <MotionConfig reducedMotion="always"><Story /></MotionConfig>],
+  play: async ({ canvasElement }) => {
+    const card = getCards(canvasElement)[0]!;
+    await expect(card).not.toHaveAttribute('data-holo-tilt');
+    const rect = card.getBoundingClientRect();
+    card.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'mouse', clientX: rect.right, clientY: rect.top }));
+    await expect(getComputedStyle(card).transform).toBe('none');
+    await expect(card.style.getPropertyValue('--card-light-x')).toBe('');
+  },
+};
+
+export const MaterialScope: Story = {
+  parameters: { docs: { source: { code: '<Card appearance="contrast"><Card appearance="glass" title="Glass" content={<Surface>Inherited charcoal</Surface>} /><Card appearance="holo" title="Holo" content={<Surface>Inherited charcoal</Surface>} /></Card>' } } },
+  render: () => <Card appearance="contrast"><Card appearance="glass" title="Glass" content={<Surface data-testid="glass-child">Inherited charcoal</Surface>} /><Card appearance="holo" title="Holo" content={<Surface data-testid="holo-child">Inherited charcoal</Surface>} /></Card>,
+  play: async ({ canvas }) => {
+    for (const id of ['glass-child', 'holo-child']) {
+      const surface = canvas.getByTestId(id);
+      await expectContrastSurface(surface, 'dark');
+      await expect(getComputedStyle(surface).backgroundImage).toBe('none');
+      await expect(getComputedStyle(surface).backdropFilter).toBe('none');
+    }
+  },
+};
+
+export const MaterialRootReplacement: Story = {
+  tags: ['!autodocs'],
+  render: () => <Card appearance="holo" component={IndependentCardPaper} title="Membership" content="Member details" />,
+  play: async ({ canvasElement }) => {
+    const card = getCards(canvasElement)[0]!;
+    await expect(getComputedStyle(card).borderTopStyle).toBe('dashed');
+    await expect(getComputedStyle(card).boxShadow).toBe('none');
+    await expect(getComputedStyle(card).backgroundImage).toBe('none');
+    await expect(getComputedStyle(card).backdropFilter).toBe('none');
+  },
+};
