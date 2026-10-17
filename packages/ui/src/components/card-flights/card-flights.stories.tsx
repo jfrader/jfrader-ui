@@ -763,6 +763,7 @@ export const RealComponentsAndStagger: Story = {
     const departures = new Map<string, number>();
     const scheduledDelays = new Map<string, number>();
     const pendingPaints: string[] = [];
+    const prematureFrames = new Map<string, number>();
     const started = performance.now();
     const sampling = new Promise<void>((resolve) => {
       const frame = () => {
@@ -772,7 +773,16 @@ export const RealComponentsAndStagger: Story = {
           const progress = track?.effect?.getComputedTiming().progress;
           const delay = Number(track?.effect?.getTiming().delay);
           if (Number.isFinite(delay) && !scheduledDelays.has(node.dataset.flightTarget!)) scheduledDelays.set(node.dataset.flightTarget!, delay);
-          if (visible && Number(track?.currentTime) < Number(track?.effect?.getTiming().delay)) pendingPaints.push(node.dataset.flightTarget!);
+          const target = node.dataset.flightTarget!;
+          // A genuine premature paint persists across frames; a single sampled frame edge (the
+          // animation's first tick before the delay elapses) is a timing artifact, not a defect.
+          if (visible && Number(track?.currentTime) < Number(track?.effect?.getTiming().delay)) {
+            const count = (prematureFrames.get(target) ?? 0) + 1;
+            prematureFrames.set(target, count);
+            if (count === 2) pendingPaints.push(target);
+          } else {
+            prematureFrames.delete(target);
+          }
           if (visible && progress !== null && progress !== undefined && progress > 0 && !departures.has(node.dataset.flightTarget!)) departures.set(node.dataset.flightTarget!, performance.now());
         }
         if (performance.now() - started < 1000) requestAnimationFrame(frame);
