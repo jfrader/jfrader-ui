@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **141**; public callable parts: **160**.
-- Families exposing `slots.root`: **80**; remaining without a family-level root slot: **61** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **110**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
+- Public callable families: **145**; public callable parts: **162**.
+- Families exposing `slots.root`: **84**; remaining without a family-level root slot: **61** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **114**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -102,6 +102,7 @@ may exist and is listed on the corresponding public part).
 | [ContextMenu.Separator](../packages/ui/src/components/context-menu/context-menu.tsx) | — | — | — | — | — | — |
 | [ContextMenu.Target](../packages/ui/src/components/context-menu/context-menu.tsx) | — | — | — | — | — | — |
 | [ContextMenu.Trigger](../packages/ui/src/components/context-menu/context-menu.tsx) | — | — | — | — | — | — |
+| [ControlCenter](../packages/ui/src/components/control-center/control-center.tsx) | yes | `actions`, `channel`, `detail`, `detailTrigger`, `dial`, `grid`, `meter`, `modes`, `person`, `root`, `status`, `tile` | `actions`, `channel`, `detail`, `detailTrigger`, `dial`, `grid`, `meter`, `modes`, `person`, `root`, `status`, `tile` | — | — | — |
 | [CopyButton](../packages/ui/src/components/copy-button/copy-button.tsx) | — | `icon`, `label`, `status` | `icon`, `label`, `status` | — | — | — |
 | [Countdown](../packages/ui/src/components/countdown/countdown.tsx) | — | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | — | — | — |
 | [DatePicker](../packages/ui/src/components/date-picker/date-picker.tsx) | — | `input`, `popup` | `input`, `popup` | — | — | `Input`, `Popup` |
@@ -204,6 +205,7 @@ may exist and is listed on the corresponding public part).
 | [LinkPreview](../packages/ui/src/components/link-preview/link-preview.tsx) | — | `body`, `image`, `title` | `body`, `image`, `title` | — | — | — |
 | [LinkUnfurl](../packages/ui/src/components/link-unfurl/link-unfurl.tsx) | — | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | — | — | — |
 | [LocaleSwitcher](../packages/ui/src/components/locale-switcher/locale-switcher.tsx) | — | `content`, `option`, `trigger` | `content`, `option`, `trigger` | — | — | — |
+| [LogoOrbit](../packages/ui/src/components/logo-orbit/logo-orbit.tsx) | yes | `center`, `closeButton`, `connectButton`, `detail`, `docsLink`, `filterButton`, `filters`, `item`, `list`, `logoButton`, `nextButton`, `pauseButton`, `previousButton`, `root`, `stage`, `status` | `center`, `closeButton`, `connectButton`, `detail`, `docsLink`, `filterButton`, `filters`, `item`, `list`, `logoButton`, `nextButton`, `pauseButton`, `previousButton`, `root`, `stage`, `status` | — | — | — |
 | [MentionInput](../packages/ui/src/components/mention-input/mention-input.tsx) | yes | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | — | — | — |
 | [Menu](../packages/ui/src/components/menu/menu.tsx) | yes | `content`, `item`, `root`, `separator`, `trigger` | `content`, `item`, `root`, `separator`, `trigger` | — | — | `Content`, `Item`, `Separator`, `Trigger` |
 | [Menu.Content](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
@@ -232,12 +234,14 @@ may exist and is listed on the corresponding public part).
 | [PasswordField](../packages/ui/src/components/password-field/password-field.tsx) | yes | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | — | — | — |
 | [PasswordStrength](../packages/ui/src/components/password-strength/password-strength.tsx) | yes | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | — | `fieldSlotProps` | — |
 | [Pattern](../packages/ui/src/components/pattern/pattern.tsx) | — | — | — | — | — | — |
+| [PaymentFlow](../packages/ui/src/components/payment-flow/payment-flow.tsx) | yes | `caption`, `controls`, `journey`, `node`, `pauseButton`, `replayButton`, `root`, `scene`, `stepButton`, `summary`, `summaryItem` | `caption`, `controls`, `journey`, `node`, `pauseButton`, `replayButton`, `root`, `scene`, `stepButton`, `summary`, `summaryItem` | — | — | — |
 | [PhotoGrid](../packages/ui/src/components/photo-grid/photo-grid.tsx) | — | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | — | — | — |
 | [Pill](../packages/ui/src/components/pill/pill.tsx) | — | — | — | — | — | — |
 | [Popover](../packages/ui/src/components/popover/popover.tsx) | yes | `content`, `root`, `trigger` | `content`, `root`, `trigger` | — | — | `Content`, `Trigger` |
 | [Popover.Content](../packages/ui/src/components/popover/popover.tsx) | — | — | — | — | — | — |
 | [Popover.Trigger](../packages/ui/src/components/popover/popover.tsx) | — | — | — | — | — | — |
 | [Progress](../packages/ui/src/components/progress/progress.tsx) | — | `indicator` | `indicator` | — | — | — |
+| [RadialMenu](../packages/ui/src/components/radial-menu/radial-menu.tsx) | yes | `content`, `item`, `root`, `status`, `trigger` | `content`, `item`, `root`, `status`, `trigger` | — | — | — |
 | [RadioCards](../packages/ui/src/components/radio-cards/radio-cards.tsx) | yes | `error`, `item`, `label`, `root` | `error`, `item`, `label`, `root` | — | — | `Description`, `Item`, `Label` |
 | [RadioCards.Description](../packages/ui/src/components/radio-cards/radio-cards.tsx) | — | — | — | — | — | — |
 | [RadioCards.Item](../packages/ui/src/components/radio-cards/radio-cards.tsx) | — | `control`, `description`, `icon`, `indicator`, `label`, `meta` | `control`, `description`, `icon`, `indicator`, `label`, `meta` | — | — | — |
@@ -263,7 +267,9 @@ may exist and is listed on the corresponding public part).
 | [Select.Value](../packages/ui/src/components/select/select.tsx) | — | — | — | — | — | — |
 | [ShareSheet](../packages/ui/src/components/share-sheet/share-sheet.tsx) | — | `accessControl`, `channelList`, `content`, `copyButton`, `dialog`, `doneButton`, `grabber`, `peopleList`, `selectedList`, `sendButton`, `status`, `title`, `trigger` | `accessControl`, `channelList`, `content`, `copyButton`, `dialog`, `doneButton`, `grabber`, `peopleList`, `selectedList`, `sendButton`, `status`, `title`, `trigger` | — | — | — |
 | [SignaturePad](../packages/ui/src/components/signature-pad/signature-pad.tsx) | — | `action`, `canvas`, `description`, `error`, `guide`, `label`, `root`, `status`, `toolbar` | `action`, `canvas`, `description`, `error`, `guide`, `label`, `root`, `status`, `toolbar` | — | — | — |
-| [Skeleton](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
+| [Skeleton](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | `Block`, `Morph` |
+| [Skeleton.Block](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
+| [Skeleton.Morph](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
 | [Slider](../packages/ui/src/components/slider/slider.tsx) | — | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `start`, `thumb`, `track` | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `start`, `thumb`, `track` | — | — | — |
 | [SortableDataTable](../packages/ui/src/components/sortable-data-table/sortable-data-table.tsx) | — | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | — | — | — |
 | [Spinner](../packages/ui/src/components/spinner/spinner.tsx) | yes | `indicator`, `root`, `status` | `indicator`, `root`, `status` | — | — | — |

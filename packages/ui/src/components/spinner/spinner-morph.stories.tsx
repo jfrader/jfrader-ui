@@ -7,7 +7,8 @@ import { Button } from '../button';
 const meta = {
   title: 'Feedback/Spinner',
   component: Spinner,
-  tags: ['autodocs'],
+  // The docs engine keys pages by file; a second autodocs file would publish a second page.
+  tags: ['!autodocs'],
   args: {
     value: 'loading',
     variant: 'dots',

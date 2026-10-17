@@ -68,7 +68,8 @@ const meta: Meta<ComboboxCompoundProps> = {
 
 ### Customization
 - Supply \`options\` for the generated field, or compose \`Combobox.Input\` and \`Combobox.List\` with \`Combobox.Item\` and \`Combobox.Empty\` inside the list. Do not mix options and children.
-- Filtering defaults to a case-insensitive substring match. Set \`filter\` to change it, and supply \`textValue\` when an option's rendered content is not the text you want searched and committed to the input.`,
+- Filtering defaults to a case-insensitive substring match. Set \`filter\` to change it, and supply \`textValue\` when an option's rendered content is not the text you want searched and committed to the input.
+- For semantic search, supply application-ranked results, \`filter={() => true}\`, and rich option labels with source/score text. Keep the commit label in \`textValue\`. Retrieval, debouncing and stale-response cancellation belong to the application; there is no separate VectorSearch engine or export. See Semantic Search for the composition.`,
     },
   },
 };
@@ -744,7 +745,8 @@ export const Empty: Story = {
     await userEvent.keyboard('a');
     const listbox = await bodyOf(canvasElement).findByRole('listbox');
     await userEvent.keyboard('zz');
-    await expect(within(listbox).queryAllByRole('option')).toHaveLength(0);
+    await expect(within(listbox).getAllByRole('option')).toHaveLength(1);
+    await expect(within(listbox).getByRole('option', { name: EMPTY_LABEL })).toHaveAttribute('aria-disabled', 'true');
     await expect(within(listbox).getByText(EMPTY_LABEL)).toBeVisible();
     await expect(input).toHaveAttribute('aria-expanded', 'true');
     await expect(input).not.toHaveAttribute('aria-activedescendant');

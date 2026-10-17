@@ -8,6 +8,14 @@
 
 ### Added
 
+- `ControlCenter` composes quick-setting toggles, sliders, radio modes and modal focus/channel details with draft application and controlled settings. `PaymentFlow` composes an illustrative five-phase payment journey with safe Intl currency formatting, an ordered narrative and pause/step/replay controls. Custom circular dial gestures, tile morphs, moving payment chips, SVG rails, continuous balance count-up and hover effects are excluded.
+- `RadialMenu` shows object actions around a trigger with keyboard navigation, hold-drag targeting and a linear fallback. `LogoOrbit` arranges supplied marks in a pausable integration catalog with filters, details and consumer-owned connection actions. Both support reduced motion and replaceable parts.
+  Scope excludes lens/pill/swirl/magnet choreography, tilted-ring parking, connector/detail spring, exhaustive announcements, focus-removal repair and the edge-case catalogue.
+- Tabs accepts `variant="glass"` and `variant="liquid"`, line/pill/lens indicators, icon labels, localized badges, compact bars and optional release-only drag selection. Existing tab and panel semantics remain unchanged.
+- Navigation accepts `variant="morph"` for a floating disclosure bar with rich link descriptions, compact spacing, keyboard section navigation and one/two-column panels. Destinations remain native links.
+- Tabs and Navigation provide partial reference parity: momentum/refraction, exact reference geometry, integrated search, controlled panel axes, hover intent and hamburger collapse are excluded.
+- Skeleton adds `Skeleton.Morph` and `Skeleton.Block` for loading-to-content layouts, completion announcements and focus parking on reload. HoldToConfirm adds `variant="morph"` without a second confirmation primitive. Combobox includes a ranked semantic-search composition with source/score labels over its existing listbox.
+- Combobox's empty message is exposed as a disabled option so an open empty listbox retains its required option semantics.
 - `PasswordStrength` composes PasswordField with application-owned policy rules, a labelled meter and readable requirement states. Scores describe policy compliance, not password security.
 - `BookingPill` composes Calendar and TimePicker into a party/date/time/review journey with application-owned availability and asynchronous confirmation.
 - `MultiRegionFailover` presents six supplied incident snapshots with readable regional status, metrics, pause/seek/replay controls and reduced-motion playback protection. It is an illustration, not live monitoring.

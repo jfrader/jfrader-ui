@@ -57,6 +57,32 @@ export const translucentSurfaceStyle = css({
   },
 });
 
+export const translucentControlStyle = css([
+  translucentSurfaceStyle,
+  {
+    borderColor: `color-mix(in srgb, ${vars.color.borderControl} 70%, ${vars.color.text})`,
+    boxShadow: `inset 0 1px 0 ${vars.color.surfaceHighlight}, ${vars.shadow.overlay}`,
+    '@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))': {
+      backgroundColor: vars.color.surfaceRaised,
+    },
+    '@media (prefers-contrast: more)': {
+      backgroundColor: vars.color.surfaceRaised,
+      backgroundImage: 'none',
+      backdropFilter: 'none',
+      WebkitBackdropFilter: 'none',
+    },
+    [FORCED_COLORS]: {
+      backgroundColor: 'Canvas',
+      color: 'CanvasText',
+      borderColor: 'CanvasText',
+      backgroundImage: 'none',
+      backdropFilter: 'none',
+      WebkitBackdropFilter: 'none',
+      boxShadow: 'none',
+    },
+  },
+]);
+
 /** Native `<dialog>` shell reset with the scrim backdrop; the panel inside draws the surface. */
 export const modalShellReset = {
   border: 0,

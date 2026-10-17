@@ -48,7 +48,8 @@ function mockPreference(reduced: boolean) {
   };
 }
 const meta = {
-  title: 'Media/PhotoGrid', component: PhotoGrid, tags: ['autodocs'], globals: { theme: 'dark' },
+  title: 'Media/PhotoGrid', component: PhotoGrid, // The docs engine keys pages by file; a second autodocs file would publish a second page.
+  tags: ['!autodocs'], globals: { theme: 'dark' },
   args: { variant: 'product', title: 'Alpine prints', colors, options, onValueChange: fn(), onOpenChange: fn(), onSelectedColorChange: fn(), onSelectedOptionChange: fn() },
   decorators: [(Story) => <Frame><Story /></Frame>],
   beforeEach: () => mockPreference(false),
