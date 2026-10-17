@@ -29,7 +29,7 @@ export interface TextShimmerProps extends Omit<ComponentPropsWithRef<'span'>, 'c
   tone?: TextShimmerTone;
   /** Full sweep cycle in milliseconds, clamped to 600–10000. */
   durationMs?: number;
-  /** Animation-time budget, default 4000ms. Use 0 only with a pause control. */
+  /** Animation-time budget, default 4000ms; may cut off a partial sweep. Nonpositive values disable the budget and require a pause control. */
   maxDurationMs?: number;
   paused?: boolean;
   'data-ui'?: string;
@@ -113,7 +113,7 @@ export function TextShimmer({
     ? Math.min(MAX_CYCLE_MS, Math.max(MIN_CYCLE_MS, durationMs))
     : DEFAULT_CYCLE_MS;
   const budget =
-    maxDurationMs === 0
+    maxDurationMs <= 0
       ? 0
       : Number.isFinite(maxDurationMs) && maxDurationMs > 0
         ? Math.min(MAX_BUDGET_MS, Math.max(1, maxDurationMs))
@@ -161,12 +161,17 @@ export function TextShimmer({
           data-ui={dataUi}
           data-state={active ? 'active' : 'idle'}
           data-tone={tone}
-          aria-busy={active ? true : (rootProps['aria-busy'] ?? rest['aria-busy'])}
+          aria-busy={rootProps['aria-busy'] ?? rest['aria-busy'] ?? (active ? true : undefined)}
         >
           <Text
             {...slotProps?.text}
             key={String(active)}
-            data-ui="text-shimmer-text"
+            data-ui={[
+              ...new Set([
+                'text-shimmer-text',
+                ...(slotProps?.text?.['data-ui']?.split(/\s+/).filter(Boolean) ?? []),
+              ]),
+            ].join(' ')}
             data-active={active}
             data-continuous={budget === 0}
             data-paused={paused || !visible || !pageVisible}

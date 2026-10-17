@@ -1,6 +1,14 @@
 'use client';
 
-import { Fragment, type ComponentPropsWithRef, type ComponentType, type CSSProperties } from 'react';
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentPropsWithRef,
+  type ComponentType,
+  type CSSProperties,
+} from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
@@ -24,7 +32,7 @@ export interface TextRevealProps extends Omit<ComponentPropsWithRef<'span'>, 'ch
   variant?: TextRevealVariant;
   /** Initial delay in milliseconds, clamped to 0–1000. */
   delayMs?: number;
-  /** Use the same locale on server and client for matching segmentation. */
+  /** Word segmentation locale; segmentation and entrance start after client mount. */
   locale?: Intl.LocalesArgument;
   'data-ui'?: string;
   component?: TextRevealSlots['root'];
@@ -62,6 +70,8 @@ export function TextReveal({
   sx,
   ...rest
 }: TextRevealProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const {
     css: rootCss,
     className: slotClassName,
@@ -73,19 +83,24 @@ export function TextReveal({
   const Root = slots?.root ?? component ?? 'span';
   const Visual = slots?.visual ?? 'span';
   const Word = slots?.word ?? 'span';
-  const segmenter =
-    typeof Intl.Segmenter === 'function' ? new Intl.Segmenter(locale, { granularity: 'word' }) : undefined;
-  const lines = text
-    .split('\n')
-    .map((line) => (segmenter ? Array.from(segmenter.segment(line), ({ segment }) => segment) : [line]));
-  const count = lines.flat().filter((segment) => segment.trim().length > 0).length;
-  let nextWordIndex = 0;
-  const indexedLines = lines.map((line) =>
-    line.map((segment) => ({
-      segment,
-      wordIndex: segment.trim() ? nextWordIndex++ : null,
-    })),
-  );
+  const { indexedLines, count } = useMemo(() => {
+    if (!mounted) return { indexedLines: null, count: 0 };
+    const segmenter =
+      typeof Intl.Segmenter === 'function'
+        ? new Intl.Segmenter(locale, { granularity: 'word' })
+        : undefined;
+    let count = 0;
+    const indexedLines = text.split('\n').map((line) => {
+      const segments = segmenter
+        ? Array.from(segmenter.segment(line), ({ segment }) => segment)
+        : [line];
+      return segments.map((segment) => ({
+        segment,
+        wordIndex: segment.trim() ? count++ : null,
+      }));
+    });
+    return { indexedLines, count };
+  }, [mounted, text, locale]);
   const delay = Number.isFinite(delayMs) ? Math.min(MAX_DELAY_MS, Math.max(0, delayMs)) : 0;
   const dataUi = [
     ...new Set([
@@ -111,33 +126,50 @@ export function TextReveal({
           data-ui={dataUi}
         >
           <span css={hiddenStyle}>{text.replaceAll('\n', ' ')}</span>
-          <Visual {...slotProps?.visual} key={text} data-ui="text-reveal-visual" aria-hidden="true">
-            {indexedLines.map((line, lineIndex) => (
-              <Fragment key={lineIndex}>
-                {lineIndex > 0 && '\n'}
-                {line.map(({ segment, wordIndex }, segmentIndex) => {
-                  if (wordIndex === null) return segment;
-                  const wordDelay = `${delay}ms + ${wordIndex} * min(calc(${vars.motion.duration.fast} / 4), calc(${vars.motion.duration.slow} / ${Math.max(count - 1, 1)}))`;
-                  return (
-                    <Word
-                      {...slotProps?.word}
-                      key={segmentIndex}
-                      data-ui="text-reveal-word"
-                      css={[wordStyle, slotProps?.word?.css]}
-                      style={
-                        {
-                          ...slotProps?.word?.style,
-                          '--text-reveal-blur': BLUR[variant],
-                          '--text-reveal-delay': `calc(${wordDelay})`,
-                        } as CSSProperties
-                      }
-                    >
-                      {segment}
-                    </Word>
-                  );
-                })}
-              </Fragment>
-            ))}
+          <Visual
+            {...slotProps?.visual}
+            key={text}
+            data-ui={[
+              ...new Set([
+                'text-reveal-visual',
+                ...(slotProps?.visual?.['data-ui']?.split(/\s+/).filter(Boolean) ?? []),
+              ]),
+            ].join(' ')}
+            aria-hidden="true"
+          >
+            {indexedLines === null
+              ? text
+              : indexedLines.map((line, lineIndex) => (
+                  <Fragment key={lineIndex}>
+                    {lineIndex > 0 && '\n'}
+                    {line.map(({ segment, wordIndex }, segmentIndex) => {
+                      if (wordIndex === null) return segment;
+                      const wordDelay = `${delay}ms + ${wordIndex} * min(calc(${vars.motion.duration.fast} / 4), calc(${vars.motion.duration.slow} / ${Math.max(count - 1, 1)}))`;
+                      return (
+                        <Word
+                          {...slotProps?.word}
+                          key={segmentIndex}
+                          data-ui={[
+                            ...new Set([
+                              'text-reveal-word',
+                              ...(slotProps?.word?.['data-ui']?.split(/\s+/).filter(Boolean) ?? []),
+                            ]),
+                          ].join(' ')}
+                          css={[wordStyle, slotProps?.word?.css]}
+                          style={
+                            {
+                              ...slotProps?.word?.style,
+                              '--text-reveal-blur': BLUR[variant],
+                              '--text-reveal-delay': `calc(${wordDelay})`,
+                            } as CSSProperties
+                          }
+                        >
+                          {segment}
+                        </Word>
+                      );
+                    })}
+                  </Fragment>
+                ))}
           </Visual>
         </Root>
       )}
