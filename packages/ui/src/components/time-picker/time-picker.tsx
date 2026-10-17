@@ -109,7 +109,7 @@ const DEFAULT_VALUE = '09:00';
 const VIEWPORT_PADDING = 8;
 const ANCHOR_GAP = 8;
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
-function minutes(time: string | undefined): number | undefined {
+export function minutes(time: string | undefined): number | undefined {
   if (time === undefined || !TIME_PATTERN.test(time)) return undefined;
   return Number(time.slice(0, 2)) * MINUTES_PER_HOUR + Number(time.slice(3));
 }

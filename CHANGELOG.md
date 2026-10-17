@@ -8,6 +8,9 @@
 
 ### Added
 
+- `PasswordStrength` composes PasswordField with application-owned policy rules, a labelled meter and readable requirement states. Scores describe policy compliance, not password security.
+- `BookingPill` composes Calendar and TimePicker into a party/date/time/review journey with application-owned availability and asynchronous confirmation.
+- `MultiRegionFailover` presents six supplied incident snapshots with readable regional status, metrics, pause/seek/replay controls and reduced-motion playback protection. It is an illustration, not live monitoring.
 - `TextMorph` animates short labels with matched glyphs, whole-label fades, rolling slots, or bounded sand particles. All variants preserve the current readable text and support reduced motion, typed replacement slots and opt-in announcements.
 - CardStack accepts `variant="wallet"` for compact translucent cards with stitched edges and decision stamps; review, undo and reset behavior is unchanged.
 - `TextReveal` reveals short text with a finite word entrance, preserved whitespace and immediate reduced-motion rendering.
