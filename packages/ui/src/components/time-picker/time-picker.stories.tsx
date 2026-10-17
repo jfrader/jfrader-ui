@@ -67,7 +67,8 @@ const meta = {
 
 ### Dial presentation
 - Set \`presentation="dial"\` to drag a 24-hour face. Release to select the nearest available time and close; cancelling a gesture leaves the value unchanged.
-- The time list remains available for keyboard and screen-reader use. Its keys are unchanged, including in RTL; the clock runs clockwise.
+- The dial is a pointer-only enhancement, hidden from assistive technology with \`aria-hidden\`. The parallel listbox and its options stay visible and exposed to screen readers; focus remains on the combobox trigger through \`aria-activedescendant\`.
+- Use the same keyboard keys with either presentation, including in RTL; the clock runs clockwise.
 - Values remain civil HH:mm. Dates, time-zone comparisons, DST conversion and working-hour bands belong to the app.
 
 ### Keyboard
@@ -770,6 +771,13 @@ export const Dial: Story = {
     await expect(dial).toBeVisible();
     await expect(dial).toHaveAttribute('aria-hidden', 'true');
     const panel = body(canvasElement).getByRole('listbox');
+    await expect(panel).toBeVisible();
+    await expect(trigger).toHaveAttribute('aria-controls', panel.id);
+    await expect(within(panel).getAllByRole('option')).toHaveLength(96);
+    await userEvent.keyboard('{ArrowDown}');
+    await expectActive(trigger, '00:15');
+    await expect(active(trigger)).toBeVisible();
+    await expect(dial).toBeVisible();
     await expect(dial.getBoundingClientRect().left).toBeGreaterThanOrEqual(panel.getBoundingClientRect().left);
     await expect(dial.getBoundingClientRect().right).toBeLessThanOrEqual(panel.getBoundingClientRect().right);
     await userEvent.keyboard('{Escape}');
@@ -812,8 +820,10 @@ export const DialControlledGesture: Story = {
     try {
       fireEvent.pointerDown(dial, point);
       fireEvent.pointerMove(dial, point);
+      await expect(dial.querySelector('[data-ui="time-picker-dial-readout"]')).toHaveTextContent(format('12:00'));
       await expect(args.onValueChange).not.toHaveBeenCalled();
       fireEvent.pointerCancel(dial, point);
+      await expect(within(dial).getByText(format('09:00'))).toBeVisible();
       await expect(args.onValueChange).not.toHaveBeenCalled();
       fireEvent.pointerDown(dial, point);
       fireEvent.pointerUp(dial, point);
@@ -823,6 +833,32 @@ export const DialControlledGesture: Story = {
       await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
       await expect(canvas.getByRole('combobox')).toHaveTextContent(format('09:00'));
       await expect(canvas.getByRole('combobox')).toHaveAttribute('aria-expanded', 'true');
+      await expect(within(dial).getByText(format('09:00'))).toBeVisible();
+    } finally {
+      capture.mockRestore();
+      release.mockRestore();
+    }
+  },
+};
+export const DialMidnightGesture: Story = {
+  args: { presentation: 'dial', value: '09:00', open: true },
+  tags: ['!autodocs'],
+  parameters: { docs: { source: { code: dialSnippet } } },
+  play: async ({ canvasElement, args }) => {
+    const dial = canvasElement.ownerDocument.querySelector<HTMLElement>('[data-ui="time-picker-dial"]')!;
+    const readout = dial.querySelector('[data-ui="time-picker-dial-readout"]');
+    const capture = spyOn(dial, 'setPointerCapture').mockImplementation(() => {});
+    const release = spyOn(dial, 'releasePointerCapture').mockImplementation(() => {});
+    const rect = dial.getBoundingClientRect();
+    const point = { pointerId: 1, button: 0, clientX: rect.left + rect.width / 2 - 1, clientY: rect.top };
+    try {
+      fireEvent.pointerDown(dial, point);
+      await expect(readout).toHaveTextContent(format('00:00'));
+      await expect(args.onValueChange).not.toHaveBeenCalled();
+      fireEvent.pointerUp(dial, point);
+      await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+      await expect(args.onValueChange).toHaveBeenLastCalledWith('00:00');
+      await expect(readout).toHaveTextContent(format('09:00'));
     } finally {
       capture.mockRestore();
       release.mockRestore();

@@ -207,6 +207,7 @@ const dialFrameStyle = css({
   zIndex: 1,
   background: vars.color.surfaceRaised,
   paddingBlock: vars.space[3],
+  [FORCED_COLORS]: { background: 'Canvas', color: 'CanvasText' },
 });
 
 const DIAL_SIZE = 192;
@@ -227,6 +228,11 @@ const dialStyle = css({
   userSelect: 'none',
   cursor: 'grab',
   flexShrink: 0,
+  [FORCED_COLORS]: {
+    background: 'Canvas',
+    color: 'CanvasText',
+    borderColor: 'CanvasText',
+  },
 });
 const dialLabelStyle = css({
   position: 'absolute',
@@ -234,6 +240,7 @@ const dialLabelStyle = css({
   left: '50%',
   fontSize: vars.textSize.xs,
   pointerEvents: 'none',
+  [FORCED_COLORS]: { color: 'CanvasText' },
 });
 const dialHandStyle = css({
   position: 'absolute',
@@ -245,6 +252,10 @@ const dialHandStyle = css({
   background: vars.color.accentText,
   transformOrigin: '50% 100%',
   pointerEvents: 'none',
+  [FORCED_COLORS]: {
+    background: 'Highlight',
+    forcedColorAdjust: 'none',
+  },
 });
 const dialReadoutStyle = css({
   position: 'absolute',
@@ -258,6 +269,7 @@ const dialReadoutStyle = css({
   fontWeight: vars.fontWeight.medium,
   whiteSpace: 'nowrap',
   pointerEvents: 'none',
+  [FORCED_COLORS]: { background: 'Canvas', color: 'CanvasText' },
 });
 
 type TimeOption = { time: number; value: string; label: string };
@@ -270,10 +282,13 @@ interface DialFaceProps {
 }
 function DialFace({ times, value, formatter, onCommit, open }: DialFaceProps) {
   const reduced = useReducedMotion();
+  const [preview, setPreview] = useState<number>();
+  const readout = preview ?? value;
   const rotation = useMotionValue((value ?? 0) / MINUTES_PER_DAY * FULL_TURN);
   const gesture = useRef<{ pointer: number; node: HTMLDivElement; destination?: string } | null>(null);
   const animation = useRef<ReturnType<typeof animate> | null>(null);
   const restore = () => {
+    setPreview(undefined);
     animation.current?.stop();
     const target = ((value ?? 0) / MINUTES_PER_DAY) * FULL_TURN;
     const nearestTurn = target + Math.round((rotation.get() - target) / FULL_TURN) * FULL_TURN;
@@ -297,12 +312,17 @@ function DialFace({ times, value, formatter, onCommit, open }: DialFaceProps) {
     const radians = Math.atan2(x - rect.left - rect.width / 2, -(y - rect.top - rect.height / 2));
     const angle = ((radians * 180) / Math.PI + FULL_TURN) % FULL_TURN;
     const time = (angle / FULL_TURN) * MINUTES_PER_DAY;
+    const distance = (candidate: TimeOption) => {
+      const difference = Math.abs(candidate.time - time);
+      return Math.min(difference, MINUTES_PER_DAY - difference);
+    };
     const destination = times.reduce<TimeOption | undefined>(
-      (best, candidate) => !best || Math.abs(candidate.time - time) < Math.abs(best.time - time) ? candidate : best,
+      (best, candidate) => !best || distance(candidate) < distance(best) ? candidate : best,
       undefined,
     );
     rotation.set(angle + Math.round((rotation.get() - angle) / FULL_TURN) * FULL_TURN);
     if (gesture.current) gesture.current.destination = destination?.value;
+    setPreview(destination?.time);
   };
   const cancel = () => {
     gesture.current = null;
@@ -347,8 +367,8 @@ function DialFace({ times, value, formatter, onCommit, open }: DialFaceProps) {
           );
         })}
         <motion.span css={dialHandStyle} style={{ rotate: rotation }} />
-        <span css={dialReadoutStyle}>
-          {value === undefined ? '' : formatter.format(new Date(value * MILLISECONDS_PER_MINUTE))}
+        <span data-ui="time-picker-dial-readout" css={dialReadoutStyle}>
+          {readout === undefined ? '' : formatter.format(new Date(readout * MILLISECONDS_PER_MINUTE))}
         </span>
       </div>
     </MotionConfig>
