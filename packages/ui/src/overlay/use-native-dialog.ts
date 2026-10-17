@@ -29,6 +29,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -134,6 +135,11 @@ export function useNativeDialog(
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
   const [isNativeOpen, setIsNativeOpen] = useState(false);
+  // Opens happen post-paint (showModal must run after commit). The lock still has to engage
+  // before the first painted frame, so an `opening` window set in a layout effect bridges the
+  // gap; a native close or a refused showModal ends it, keeping the lock tied to the native state.
+  const [opening, setOpening] = useState(false);
+  const [openFailed, setOpenFailed] = useState(false);
   const transitionRef = useRef(transition);
   transitionRef.current = transition;
   // Identity of the running exit; a reopen, a native close or unmount replaces it.
@@ -147,12 +153,21 @@ export function useNativeDialog(
     [setDialogElement],
   );
 
-  // A rejected controlled dismissal can never leave the page stuck.
-  useScrollLock(isNativeOpen, () => dialogRef.current?.ownerDocument);
+  useLayoutEffect(() => {
+    if (open) setOpening(true);
+    else setOpening(false);
+  }, [open]);
+  useLayoutEffect(() => {
+    if (isNativeOpen) setOpening(false);
+  }, [isNativeOpen]);
+  // Lock before the opening frame; keep it while the dialog is natively open; release it when
+  // the platform refuses to open or the native dialog closes (a rejected close unlocks).
+  useScrollLock((opening && !openFailed) || isNativeOpen, () => dialogRef.current?.ownerDocument);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
+    if (!open) setOpenFailed(false);
     const closeNative = () => {
       dialog.close();
       wasOpenRef.current = false;
@@ -168,6 +183,7 @@ export function useNativeDialog(
           dialog.showModal();
         } catch {
           // Disconnected element or conflicting state (already open nonmodally): nothing to do.
+          setOpenFailed(true);
         }
         setIsNativeOpen(dialog.open);
         if (dialog.open) transitionRef.current?.enter(dialog);
