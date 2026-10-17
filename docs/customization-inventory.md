@@ -8,7 +8,7 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **143**; public callable parts: **160**.
+- Public callable families: **143**; public callable parts: **162**.
 - Families exposing `slots.root`: **82**; remaining without a family-level root slot: **61** (includes DOM-less providers).
 - Families exposing any non-root replacement slot: **112**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
@@ -265,7 +265,9 @@ may exist and is listed on the corresponding public part).
 | [Select.Value](../packages/ui/src/components/select/select.tsx) | — | — | — | — | — | — |
 | [ShareSheet](../packages/ui/src/components/share-sheet/share-sheet.tsx) | — | `accessControl`, `channelList`, `content`, `copyButton`, `dialog`, `doneButton`, `grabber`, `peopleList`, `selectedList`, `sendButton`, `status`, `title`, `trigger` | `accessControl`, `channelList`, `content`, `copyButton`, `dialog`, `doneButton`, `grabber`, `peopleList`, `selectedList`, `sendButton`, `status`, `title`, `trigger` | — | — | — |
 | [SignaturePad](../packages/ui/src/components/signature-pad/signature-pad.tsx) | — | `action`, `canvas`, `description`, `error`, `guide`, `label`, `root`, `status`, `toolbar` | `action`, `canvas`, `description`, `error`, `guide`, `label`, `root`, `status`, `toolbar` | — | — | — |
-| [Skeleton](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
+| [Skeleton](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | `Block`, `Morph` |
+| [Skeleton.Block](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
+| [Skeleton.Morph](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
 | [Slider](../packages/ui/src/components/slider/slider.tsx) | — | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `start`, `thumb`, `track` | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `start`, `thumb`, `track` | — | — | — |
 | [SortableDataTable](../packages/ui/src/components/sortable-data-table/sortable-data-table.tsx) | — | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | — | — | — |
 | [Spinner](../packages/ui/src/components/spinner/spinner.tsx) | yes | `indicator`, `root`, `status` | `indicator`, `root`, `status` | — | — | — |
