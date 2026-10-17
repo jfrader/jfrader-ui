@@ -89,6 +89,7 @@ export * from './components/switch';
 export * from './components/tabs';
 export * from './components/tag-input';
 export * from './components/text-field';
+export * from './components/text-morph';
 export * from './components/text-reveal';
 export * from './components/text-shimmer';
 export * from './components/textarea';

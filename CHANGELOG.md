@@ -8,6 +8,7 @@
 
 ### Added
 
+- `TextMorph` animates short labels with matched glyphs, whole-label fades, rolling slots, or bounded sand particles. All variants preserve the current readable text and support reduced motion, typed replacement slots and opt-in announcements.
 - CardStack accepts `variant="wallet"` for compact translucent cards with stitched edges and decision stamps; review, undo and reset behavior is unchanged.
 - `TextReveal` reveals short text with a finite word entrance, preserved whitespace and immediate reduced-motion rendering.
 - `TextShimmer` highlights active work labels with a finite animation budget, explicit pause control and offscreen/page-hidden pausing.

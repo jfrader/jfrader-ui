@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **135**; public callable parts: **160**.
-- Families exposing `slots.root`: **73**; remaining without a family-level root slot: **62** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **103**; remaining without family-level interior slots: **32** (includes components without generated anatomy).
+- Public callable families: **136**; public callable parts: **160**.
+- Families exposing `slots.root`: **74**; remaining without a family-level root slot: **62** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **104**; remaining without family-level interior slots: **32** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -282,6 +282,7 @@ may exist and is listed on the corresponding public part).
 | [TagInput](../packages/ui/src/components/tag-input/tag-input.tsx) | yes | `control`, `description`, `error`, `input`, `label`, `list`, `remove`, `root`, `status`, `token` | `control`, `description`, `error`, `input`, `label`, `list`, `remove`, `root`, `status`, `token` | — | — | — |
 | [Textarea](../packages/ui/src/components/textarea/textarea.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |
 | [TextField](../packages/ui/src/components/text-field/text-field.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |
+| [TextMorph](../packages/ui/src/components/text-morph/text-morph.tsx) | yes | `canvas`, `frame`, `glyph`, `root`, `text` | `canvas`, `frame`, `glyph`, `root`, `text` | — | — | — |
 | [TextReveal](../packages/ui/src/components/text-reveal/text-reveal.tsx) | yes | `root`, `visual`, `word` | `root`, `visual`, `word` | — | — | — |
 | [TextShimmer](../packages/ui/src/components/text-shimmer/text-shimmer.tsx) | yes | `root`, `text` | `root`, `text` | — | — | — |
 | [ThemeProvider](../packages/ui/src/components/theme-provider/theme-provider.tsx) | — | — | — | — | — | — |
