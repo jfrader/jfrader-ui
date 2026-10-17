@@ -84,10 +84,16 @@ const baseStyle = css({
   },
 });
 
+export const buttonBlockSizes = {
+  sm: vars.space[8],
+  md: vars.space[10],
+  lg: vars.space[12],
+} satisfies Record<ButtonSize, string>;
+
 const sizeStyles: Record<ButtonSize, SerializedStyles> = {
-  sm: css({ blockSize: vars.space[8], paddingInline: vars.space[3], fontSize: vars.textSize.sm }),
-  md: css({ blockSize: vars.space[10], paddingInline: vars.space[4], fontSize: vars.textSize.sm }),
-  lg: css({ blockSize: vars.space[12], paddingInline: vars.space[5], fontSize: vars.textSize.md }),
+  sm: css({ blockSize: buttonBlockSizes.sm, paddingInline: vars.space[3], fontSize: vars.textSize.sm }),
+  md: css({ blockSize: buttonBlockSizes.md, paddingInline: vars.space[4], fontSize: vars.textSize.sm }),
+  lg: css({ blockSize: buttonBlockSizes.lg, paddingInline: vars.space[5], fontSize: vars.textSize.md }),
 };
 
 const variantStyles: Record<ButtonVariant, Record<ButtonTone, SerializedStyles>> = {

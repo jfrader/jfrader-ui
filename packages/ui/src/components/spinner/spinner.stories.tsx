@@ -5,8 +5,8 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Spinner, type SpinnerSize } from './index';
 
-const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly SpinnerSize[];
-const SIZE_PX: Record<SpinnerSize, number> = { sm: 16, md: 20, lg: 24 };
+const SIZES = ['sm', 'md', 'lg', 'xl'] as const satisfies readonly SpinnerSize[];
+const SIZE_PX: Record<SpinnerSize, number> = { sm: 16, md: 20, lg: 24, xl: 48 };
 
 const rowStyle = {
   display: 'flex',
