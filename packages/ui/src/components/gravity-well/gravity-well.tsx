@@ -829,6 +829,10 @@ export function GravityWell({
   const showControls = Boolean(interactive && items.length > 0 && controlLabels);
 
   const isFocusable = Boolean(interactive && items.length > 0);
+  const consumerLabelledBy = rest['aria-labelledby'];
+  const hasConsumerLabelledBy = Boolean(consumerLabelledBy?.trim() || slotProps?.root?.['aria-labelledby']?.trim());
+  const mergedLabelledBy = hasConsumerLabelledBy ? [consumerLabelledBy, labelId].filter(Boolean).join(' ') : undefined;
+  const resolvedAriaLabel = hasConsumerLabelledBy ? undefined : (rest['aria-label'] || label);
 
   return (
     <FieldSlot
@@ -838,13 +842,13 @@ export function GravityWell({
       slotProps={slotProps?.root}
       data-ui="gravity-well"
       role="group"
-      aria-label={label}
       ref={ref}
       className={className}
       styles={rootStyle}
       sx={sx}
       {...rest}
-      aria-labelledby={rest['aria-labelledby'] || slotProps?.root?.['aria-labelledby'] ? [rest['aria-labelledby'], labelId].filter(Boolean).join(' ') : undefined}
+      aria-label={resolvedAriaLabel}
+      aria-labelledby={mergedLabelledBy}
     >
       <span id={labelId} css={visuallyHiddenStyle}>{label}</span>
       <FieldSlot
@@ -884,6 +888,7 @@ export function GravityWell({
               <li
                 key={item.id}
                 role="listitem"
+                aria-current={isMarkerActive ? 'true' : undefined}
                 ref={(el) => {
                   if (el) itemElementsRef.current.set(item.id, el);
                   else itemElementsRef.current.delete(item.id);

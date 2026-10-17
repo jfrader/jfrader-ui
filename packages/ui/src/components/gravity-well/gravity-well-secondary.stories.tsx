@@ -81,10 +81,13 @@ export const Keyboard: Story = {
     await userEvent.tab();
     expect(field.ownerDocument.activeElement).toBe(field);
     expect(window.getComputedStyle(field).outlineStyle).not.toBe('none');
+    await expect(canvas.getByRole('listitem', { current: true })).toHaveTextContent('Alpha');
 
     // Arrow navigation
     await userEvent.keyboard('{ArrowRight}');
     expect(args.onValueChange).toHaveBeenCalledWith('item-2');
+    await expect(canvas.getByRole('listitem', { current: true })).toHaveTextContent('Beta');
+    await expect(canvas.getByText('Alpha').closest('li')).not.toHaveAttribute('aria-current');
 
     await userEvent.keyboard('{ArrowDown}');
     expect(args.onValueChange).toHaveBeenCalledWith('item-5');
@@ -183,6 +186,7 @@ export const ControlledRejects: Story = {
     );
     expect(item1).toHaveAttribute('data-active', 'true');
     expect(item2).not.toHaveAttribute('data-active', 'true');
+    await expect(canvas.getByRole('listitem', { current: true })).toHaveTextContent('Alpha');
 
     // Enter pulse emits for item-1
     await userEvent.keyboard('{Enter}');
@@ -218,6 +222,8 @@ export const ExternalAria: Story = {
     expect(root).toHaveAttribute('role', 'group');
     expect(root.getAttribute('aria-labelledby')).toContain('external-heading');
     expect(root.getAttribute('aria-describedby')).toContain('external-desc');
+    await expect(root).not.toHaveAttribute('aria-label');
+    await expect(root).toHaveAccessibleName('External Team Heading Keyboard and state test well');
 
     const list = canvasElement.querySelector('ul[role="list"]');
     expect(list).toBeInTheDocument();
