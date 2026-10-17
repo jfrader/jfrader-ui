@@ -148,7 +148,21 @@ function SlotLink({ component }: { component: CatalogRef }) {
   return <Link href={`#/components/${component.slug}`}>{component.name}</Link>;
 }
 
-const PartLinkButton = Link.withComponent('button');
+const PartLinkButton = styled(Link.withComponent('button'))({
+  // The docs theme styles article buttons as mono chips; a part link must read as a link
+  // (violet, underlined, inherited font) like the public-component links beside it.
+  '&&': {
+    font: 'inherit',
+    color: vars.color.accentText,
+    background: 'none',
+    border: 0,
+    padding: 0,
+    margin: 0,
+    cursor: 'pointer',
+    textDecoration: 'underline',
+    textUnderlineOffset: '0.15em',
+  },
+});
 
 function PartLink({ name }: { name: string }) {
   const jump = () => {
