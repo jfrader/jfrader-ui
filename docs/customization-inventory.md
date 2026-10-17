@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **143**; public callable parts: **162**.
-- Families exposing `slots.root`: **82**; remaining without a family-level root slot: **61** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **112**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
+- Public callable families: **145**; public callable parts: **162**.
+- Families exposing `slots.root`: **84**; remaining without a family-level root slot: **61** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **114**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -104,6 +104,7 @@ may exist and is listed on the corresponding public part).
 | [ContextMenu.Trigger](../packages/ui/src/components/context-menu/context-menu.tsx) | — | — | — | — | — | — |
 | [CopyButton](../packages/ui/src/components/copy-button/copy-button.tsx) | — | `icon`, `label`, `status` | `icon`, `label`, `status` | — | — | — |
 | [Countdown](../packages/ui/src/components/countdown/countdown.tsx) | — | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | `complete`, `content`, `description`, `icon`, `label`, `number`, `unit` | — | — | — |
+| [DataFlow](../packages/ui/src/components/data-flow/data-flow.tsx) | yes | `caption`, `controls`, `node`, `pauseButton`, `replayButton`, `root`, `scene`, `stepButton`, `summary` | `caption`, `controls`, `node`, `pauseButton`, `replayButton`, `root`, `scene`, `stepButton`, `summary` | — | — | — |
 | [DatePicker](../packages/ui/src/components/date-picker/date-picker.tsx) | — | `input`, `popup` | `input`, `popup` | — | — | `Input`, `Popup` |
 | [DatePicker.Input](../packages/ui/src/components/date-picker/date-picker.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |
 | [DatePicker.Popup](../packages/ui/src/components/date-picker/date-picker.tsx) | — | — | — | — | — | — |
@@ -188,6 +189,7 @@ may exist and is listed on the corresponding public part).
 | [GameTablePlay](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |
 | [GameTableSeat](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |
 | [GameTableSeatChrome](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |
+| [GravityWell](../packages/ui/src/components/gravity-well/gravity-well.tsx) | yes | `controls`, `field`, `pauseButton`, `root`, `scene`, `tile` | `controls`, `field`, `pauseButton`, `root`, `scene`, `tile` | — | — | — |
 | [HoldToConfirm](../packages/ui/src/components/hold-to-confirm/hold-to-confirm.tsx) | — | `face`, `fill`, `fillIcon`, `fillLabel`, `hint`, `icon`, `label`, `status` | `face`, `fill`, `fillIcon`, `fillLabel`, `hint`, `icon`, `label`, `status` | — | — | — |
 | [HoverCard](../packages/ui/src/components/hover-card/hover-card.tsx) | — | `content`, `profile`, `trigger` | `content`, `profile`, `trigger` | — | — | `Content`, `Group`, `Profile`, `Trigger` |
 | [HoverCard.Content](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |

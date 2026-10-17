@@ -29,6 +29,8 @@ export * from './components/container';
 export * from './components/context-menu';
 export * from './components/copy-button';
 export * from './components/countdown';
+export * from './components/data-flow';
+export * from './components/gravity-well';
 export * from './components/date-picker';
 export * from './components/date-range-picker';
 export * from './components/dialog';

@@ -22,6 +22,8 @@
     "dist"
   ],
   "exports": {
+    "./data-flow": { "types": "./src/components/data-flow/index.ts", "import": "./src/components/data-flow/index.ts" },
+    "./gravity-well": { "types": "./src/components/gravity-well/index.ts", "import": "./src/components/gravity-well/index.ts" },
     "./booking-pill": { "types": "./src/components/booking-pill/index.ts", "import": "./src/components/booking-pill/index.ts" },
     "./multi-region-failover": { "types": "./src/components/multi-region-failover/index.ts", "import": "./src/components/multi-region-failover/index.ts" },
     "./password-strength": { "types": "./src/components/password-strength/index.ts", "import": "./src/components/password-strength/index.ts" },

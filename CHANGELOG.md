@@ -8,6 +8,7 @@
 
 ### Added
 
+- `GravityWell` arranges noninteractive tiles in a bounded pointer field with keyboard exploration and pause controls. `DataFlow` illustrates source-to-destination routing with a readable summary and pause, step and replay controls. Counts and particles are illustrative, not live telemetry.
 - `RadialMenu` shows object actions around a trigger with keyboard navigation, hold-drag targeting and a linear fallback. `LogoOrbit` arranges supplied marks in a pausable integration catalog with filters, details and consumer-owned connection actions. Both support reduced motion and replaceable parts.
   Scope excludes lens/pill/swirl/magnet choreography, tilted-ring parking, connector/detail spring, exhaustive announcements, focus-removal repair and the edge-case catalogue.
 - Tabs accepts `variant="glass"` and `variant="liquid"`, line/pill/lens indicators, icon labels, localized badges, compact bars and optional release-only drag selection. Existing tab and panel semantics remain unchanged.
