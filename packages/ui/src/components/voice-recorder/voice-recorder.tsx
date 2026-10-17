@@ -389,6 +389,8 @@ const timerStyle = css({
 });
 
 const seekInputStyle = css({
+  font: 'inherit',
+  color: vars.color.text,
   inlineSize: '100%',
   blockSize: vars.space[8],
   appearance: 'none',

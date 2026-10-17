@@ -387,6 +387,7 @@ const photoStyle = css({
 });
 // Over the photo, the favorite shows while pressed, focused or hovered, and always without hover.
 const tileFavoriteStyle = css({
+  font: 'inherit',
   appearance: 'none',
   boxSizing: 'border-box',
   position: 'absolute',
