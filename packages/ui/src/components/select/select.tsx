@@ -1,3 +1,4 @@
+'use client';
 // APG pattern: select-only combobox. The trigger is a <button role="combobox"> with
 // aria-haspopup="listbox", aria-expanded and (while open) aria-controls; the popup is a
 // role="listbox" of role="option" items.
@@ -22,6 +23,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useId,
   useLayoutEffect,
   useMemo,
@@ -47,6 +49,8 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
+import { animate, MotionConfig } from 'motion/react';
+import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import {
   listboxItemStateStyle,
@@ -75,6 +79,14 @@ import { useFormReset } from '../../utils/use-form-reset';
 const TYPEAHEAD_RESET_MS = 500;
 const TYPEAHEAD_COLLATOR = new Intl.Collator(undefined, { usage: 'search', sensitivity: 'base' });
 const SELECTED_GLYPH = '✓';
+const MORPH_SPRING = { type: 'spring', stiffness: 360, damping: 36 } as const;
+const morphTriggerStyle = css({
+  borderRadius: vars.radius.full,
+});
+const morphPanelStyle = css({
+  transformOrigin: '0 0',
+  borderRadius: vars.radius.lg,
+});
 
 export interface SelectOption {
   value: string;
@@ -153,6 +165,8 @@ export interface SelectSlotProps {
 }
 
 export interface SelectBaseProps {
+  /** Morph the pill trigger into the floating panel. Default: `default`. */
+  variant?: 'default' | 'morph';
   value?: string;
   defaultValue?: string;
   /** Fires once per accepted selection with the option's `value`. */
@@ -212,6 +226,8 @@ interface TriggerLabelling {
 }
 
 interface SelectContextValue {
+  variant: 'default' | 'morph';
+  positioned: boolean;
   baseId: string;
   labelId: string | undefined;
   setLabelId: (id: string | undefined) => void;
@@ -326,6 +342,7 @@ const tokens = (...values: Array<unknown>): string | undefined => {
 
 function SelectOverlay(props: SelectProps) {
   const {
+    variant = 'default',
     value: valueProp,
     defaultValue,
     onValueChange,
@@ -376,9 +393,11 @@ function SelectOverlay(props: SelectProps) {
   const selectedRecord = selectedValue === undefined ? undefined : options.get(selectedValue);
   const selectedIndex = selectedRecord && selectedRecord.index !== -1 ? selectedRecord.index : null;
 
-  const { refs, floatingStyles, context } = useOverlayFloating({
+  const { refs, floatingStyles, context, isPositioned } = useOverlayFloating({
     open,
     placement,
+    transform: variant !== 'morph',
+    gap: variant === 'morph' ? 0 : undefined,
     onOpenChange: (next) => requestOpenChange(next),
   });
 
@@ -414,6 +433,8 @@ function SelectOverlay(props: SelectProps) {
       requestOpenChange(false);
     };
     return {
+      variant,
+      positioned: isPositioned,
       baseId,
       labelId,
       setLabelId,
@@ -465,6 +486,8 @@ function SelectOverlay(props: SelectProps) {
       setTriggerLabelling,
     };
   }, [
+    variant,
+    isPositioned,
     baseId,
     labelId,
     descriptionId,
@@ -588,9 +611,11 @@ function SelectOverlay(props: SelectProps) {
 
 function SelectRoot(props: SelectProps) {
   return (
-    <IsolatedOverlay>
-      <SelectOverlay {...props} />
-    </IsolatedOverlay>
+    <MotionConfig reducedMotion="user">
+      <IsolatedOverlay>
+        <SelectOverlay {...props} />
+      </IsolatedOverlay>
+    </MotionConfig>
   );
 }
 
@@ -612,6 +637,7 @@ function SelectTrigger({
     descriptionId,
     errorId,
     open,
+    variant,
     disabled,
     activeIndex,
     refs,
@@ -661,7 +687,7 @@ function SelectTrigger({
   };
 
   return (
-    <WithSx className={className} styles={[triggerStyle, selectTriggerStyle, triggerSizes[size]]} sx={sx}>
+    <WithSx className={className} styles={[triggerStyle, selectTriggerStyle, triggerSizes[size], variant === 'morph' && morphTriggerStyle]} sx={sx}>
       {(className) => (
         <button
           type="button"
@@ -672,6 +698,7 @@ function SelectTrigger({
           aria-invalid={errorId ? true : rest['aria-invalid']}
           data-state={open ? 'open' : 'closed'}
           data-ui="select-trigger"
+          data-variant={variant}
           className={className}
         />
       )}
@@ -706,9 +733,59 @@ function SelectValue({ ref, placeholder, className, sx, ...rest }: SelectValuePr
 SelectValue.displayName = 'Select.Value';
 
 function SelectContent({ ref, style, onMouseDown, children, className, sx, ...rest }: SelectContentProps) {
-  const { open, triggerLabelling, refs, floatingStyles, elementsRef, getFloatingProps } = useSelectContext('Content');
+  const { open, variant, positioned, triggerLabelling, refs, floatingStyles, elementsRef, getFloatingProps } = useSelectContext('Content');
+  const reduced = useReducedMotion();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [exiting, setExiting] = useState(false);
+  const wasOpen = useRef(false);
+  const morphAnimation = useRef<ReturnType<typeof animate> | null>(null);
+  const collapsedTransform = useRef('');
+  const lastPosition = useRef(floatingStyles);
+  const morph = variant === 'morph';
+  const visible = open || (morph && (exiting || wasOpen.current) && !reduced);
   // Only an open listbox is the floating element, so a closed one does no positioning work.
-  const mergedRef = useMergeRefs([open ? refs.setFloating : null, ref]);
+  const mergedRef = useMergeRefs([open ? refs.setFloating : null, panelRef, ref]);
+
+  useLayoutEffect(() => {
+    if (open) lastPosition.current = floatingStyles;
+    const panel = panelRef.current;
+    const trigger = refs.domReference.current;
+    if (!panel || !trigger) return;
+    panel.dir = rest.dir ?? trigger.ownerDocument.defaultView?.getComputedStyle(trigger).direction ?? 'ltr';
+    if (!morph || reduced) {
+      morphAnimation.current?.stop();
+      wasOpen.current = open;
+      setExiting(false);
+      panel.style.transform = morph ? '' : floatingStyles.transform ?? style?.transform ?? '';
+      panel.style.borderRadius = '';
+      return;
+    }
+    if (open && !positioned) return;
+    if (open && wasOpen.current) return;
+    if (!open && !wasOpen.current) return;
+    morphAnimation.current?.stop();
+    const triggerRect = trigger.getBoundingClientRect();
+    const panelRect = { width: panel.offsetWidth, height: panel.offsetHeight };
+    const left = Number.parseFloat(String(floatingStyles.left)) || 0;
+    const top = Number.parseFloat(String(floatingStyles.top)) || 0;
+    const offsetParent = panel.offsetParent;
+    const parentRect = offsetParent instanceof HTMLElement ? offsetParent.getBoundingClientRect() : null;
+    const x = triggerRect.left - (parentRect?.left ?? 0) - left;
+    const y = triggerRect.top - (parentRect?.top ?? 0) - top;
+    const collapsed = `translate(${x}px, ${y}px) scale(${triggerRect.width / (panelRect.width || 1)}, ${triggerRect.height / (panelRect.height || 1)})`;
+    if (open) collapsedTransform.current = collapsed;
+    const expanded = 'translate(0px, 0px) scale(1, 1)';
+    panel.style.borderRadius = '';
+    const expandedRadius = trigger.ownerDocument.defaultView?.getComputedStyle(panel).borderRadius ?? '0px';
+    const opening = open;
+    wasOpen.current = open;
+    setExiting(!open);
+    morphAnimation.current = animate(panel, {
+      transform: opening ? [collapsed, expanded] : [panel.style.transform || expanded, collapsedTransform.current],
+      borderRadius: opening ? [`${triggerRect.height / 2}px`, expandedRadius] : [expandedRadius, `${triggerRect.height / 2}px`],
+    }, { ...MORPH_SPRING, onComplete: () => { if (!opening) setExiting(false); } });
+  }, [open, positioned, morph, reduced, refs, floatingStyles.left, floatingStyles.top, rest.dir]);
+  useEffect(() => () => { morphAnimation.current?.stop(); }, []);
 
   const labelling =
     rest['aria-labelledby'] !== undefined || rest['aria-label'] !== undefined
@@ -727,15 +804,18 @@ function SelectContent({ ref, style, onMouseDown, children, className, sx, ...re
 
   return (
     <OverlayPortal>
-      <WithSx className={className} styles={[listboxSurfaceStyle, listboxScrollStyle]} sx={sx}>
+      <WithSx className={className} styles={[listboxSurfaceStyle, listboxScrollStyle, morph && morphPanelStyle]} sx={sx}>
         {(className) => (
           <div
             {...getFloatingProps({ ...labelling, ...rest, onMouseDown: handleMouseDown })}
             ref={mergedRef}
-            hidden={!open}
+            hidden={!visible}
+            inert={!open ? true : undefined}
+            aria-hidden={!open ? true : undefined}
             data-state={open ? 'open' : 'closed'}
             data-ui="select-listbox"
-            style={{ ...style, ...floatingStyles }}
+            data-variant={variant}
+            style={{ ...style, ...(morph && !open ? lastPosition.current : floatingStyles) }}
             className={className}
           >
             <FloatingList elementsRef={elementsRef}>
