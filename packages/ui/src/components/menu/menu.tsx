@@ -60,7 +60,8 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { listboxItemStateStyle, listboxScrollStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
-import { FORCED_COLORS, REDUCED_MOTION, REDUCED_TRANSPARENCY } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { translucentSurfaceStyle } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { LayerContent, MenuLayer, useLayerDismiss } from '../../overlay/overlay-layer';
@@ -301,29 +302,11 @@ const separatorStyle = css({
 
 const menuMaterialStyles = {
   default: undefined,
-  glass: css({
-    backgroundColor: vars.color.surfaceGlass,
+  glass: css([{
     backgroundImage: `linear-gradient(135deg, ${vars.color.surfaceSheen}, transparent)`,
-    backdropFilter: `blur(${vars.cardMaterial.blur})`,
-    WebkitBackdropFilter: `blur(${vars.cardMaterial.blur})`,
-    borderColor: vars.color.borderStrong,
-    boxShadow: `inset 0 1px 0 ${vars.color.surfaceHighlight}, ${vars.shadow.overlay}`,
-    [REDUCED_TRANSPARENCY]: {
-      backgroundColor: vars.color.surfaceRaised,
-      backgroundImage: 'none',
-      backdropFilter: 'none',
-      WebkitBackdropFilter: 'none',
-    },
-    [FORCED_COLORS]: {
-      backgroundColor: 'Canvas',
-      color: 'CanvasText',
-      borderColor: 'CanvasText',
-      backgroundImage: 'none',
-      backdropFilter: 'none',
-      WebkitBackdropFilter: 'none',
-      boxShadow: 'none',
-    },
-  }),
+  }, translucentSurfaceStyle, {
+    '--ui-translucent-shadow': `inset 0 1px 0 ${vars.color.surfaceHighlight}, ${vars.shadow.overlay}`,
+  }]),
 };
 
 /** Own styles of a menu item, for families that layer their own item styles on top. */

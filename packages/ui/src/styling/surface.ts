@@ -1,8 +1,10 @@
 import { vars } from '@jfrader/tokens/vars';
+import { css } from './css';
+import { FORCED_COLORS, REDUCED_TRANSPARENCY } from './media';
 import type { ThemeName } from './theme-scope';
 
-// Shared declaration fragments for overlay surfaces. Components spread them into their own
-// `css()` objects and keep radius, shadow, layout and spacing local.
+// Shared declarations and material fragments for surfaces. Components keep radius, layout
+// and spacing local.
 
 /** Surface appearance: `contrast` wears the dark theme plus the elevated-charcoal overrides. */
 export type SurfaceAppearance = 'default' | 'contrast';
@@ -27,6 +29,33 @@ export const raisedSurface = {
   fontFamily: vars.font.sans,
   lineHeight: vars.lineHeight.base,
 } as const;
+
+export const translucentSurfaceStyle = css({
+  backgroundColor: vars.color.surfaceGlass,
+  backdropFilter: `blur(${vars.cardMaterial.blur})`,
+  WebkitBackdropFilter: `blur(${vars.cardMaterial.blur})`,
+  borderColor: vars.color.borderStrong,
+  '--ui-translucent-shadow': `inset 0 1px 0 ${vars.color.surfaceHighlight}`,
+  boxShadow: 'var(--ui-translucent-shadow)',
+  '&[data-variant="raised"]': {
+    '--ui-translucent-shadow': `inset 0 1px 0 ${vars.color.surfaceHighlight}, ${vars.shadow.raised}`,
+  },
+  [REDUCED_TRANSPARENCY]: {
+    backgroundColor: vars.color.surfaceRaised,
+    backgroundImage: 'none',
+    backdropFilter: 'none',
+    WebkitBackdropFilter: 'none',
+  },
+  [FORCED_COLORS]: {
+    backgroundColor: 'Canvas',
+    color: 'CanvasText',
+    borderColor: 'CanvasText',
+    backgroundImage: 'none',
+    backdropFilter: 'none',
+    WebkitBackdropFilter: 'none',
+    boxShadow: 'none',
+  },
+});
 
 /** Native `<dialog>` shell reset with the scrim backdrop; the panel inside draws the surface. */
 export const modalShellReset = {

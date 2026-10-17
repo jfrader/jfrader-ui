@@ -31,6 +31,7 @@ const meta = {
 Pass triggerLabel and items for an action menu. Each record has type="item" with label, onSelect and optional disabled, or type="separator". Do not combine items with children. Use slotProps.root/trigger/content/item/separator for part props and slots for replacement adapters. component aliases slots.root; a root override adds a wrapper around the trigger. Use the compound parts for custom structure.
 
 Set appearance="glass" on Menu for a translucent popup; reduced transparency uses an opaque fill.
+Like Card, menu items use full-opacity text over the near-opaque surfaceGlass fill to retain text contrast.
 
 - Uses menu/menuitem semantics, labelled by the trigger. The trigger exposes aria-haspopup, aria-expanded and aria-controls.
 - Enter, Space or ArrowDown opens on the first enabled item; ArrowUp opens on the last. Pointer opening also focuses the first item.
@@ -237,6 +238,14 @@ export const Glass: EasyStory = {
     await expect(canvasElement.contains(menu)).toBe(false);
     await expect(getComputedStyle(menu).backdropFilter).not.toBe('none');
     await expect(getComputedStyle(menu).backgroundImage).toContain('linear-gradient');
+    const reference = menu.ownerDocument.createElement('div');
+    reference.style.boxShadow = `inset 0 1px 0 ${vars.color.surfaceHighlight}, ${vars.shadow.overlay}`;
+    menu.append(reference);
+    try {
+      await expect(getComputedStyle(menu).boxShadow).toBe(getComputedStyle(reference).boxShadow);
+    } finally {
+      reference.remove();
+    }
     await expectFocused(canvasElement, 'Edit');
     await expect(getComputedStyle(canvasElement.ownerDocument.activeElement!).outlineStyle).not.toBe('none');
     await userEvent.keyboard('{ArrowDown}');
