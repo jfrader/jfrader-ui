@@ -51,6 +51,15 @@ const Fixture = styled.div({
 });
 const NarrowFixture = styled.div({ inlineSize: '14rem', maxInlineSize: '100%' });
 const ShrinkWrap = styled.div({ display: 'inline-flex', maxInlineSize: '100%' });
+const PassContent = styled.div({
+  display: 'grid',
+  alignContent: 'space-between',
+  blockSize: '100%',
+  gap: vars.space[3],
+});
+const PassTitle = styled.h3({ margin: 0, fontSize: vars.textSize.xl });
+const PassDetail = styled.p({ margin: 0, fontSize: vars.textSize.sm });
+const PassCode = styled.span({ fontFamily: vars.font.mono, fontSize: vars.textSize.sm });
 const overrideStyle = css({
   paddingInline: vars.space[6],
   borderRadius: vars.radius.sm,
@@ -108,6 +117,8 @@ const meta = {
 Accepted history is the only authority. \`value\` controls that history; \`defaultValue\` seeds it. The active card is the first item whose stable key is not recorded. Unknown history keys remain available for audit and undo. Notifications describe interaction requests, not successful persistence, and run once in order: onValueChange, then onDecide/onUndo/onReset. Rejected controlled requests return home silently.
 
 The default display window is four cards (configurable from one to eight). Inactive and outgoing cards are inert. Buttons remain focusable at exhaustion; undo restores the final history entry and reset requests an empty history. Use Carousel for browsing rather than decisions.
+
+Use \`variant="wallet"\` for compact translucent cards with stitched edges and decision stamps. It keeps the same decision history and keyboard map; it does not select accounts or open activity panels. Supply card content with \`renderCard\` and use only masked payment details.
 
 Drag horizontally from noninteractive content. Default thresholds: 35% of stage width capped at 140px, or a 12px minimum flick at 500px/s. Vertical intent scrolls; cancellation and lost capture always revert. Motion v14 uses velocity-carrying springs. Reduced motion completes immediately without travel or tilt. RTL mirrors presentation, not physical left/right outcomes.
 
@@ -246,6 +257,7 @@ function pointer(stage: HTMLElement) {
 
 export const Default: Story = {
   play: async ({ canvas, canvasElement }) => {
+    await expect(part(canvasElement, 'stage').parentElement).not.toHaveAttribute('data-variant');
     await expect(canvas.getByRole('group', { name: 'Cards' })).toHaveAttribute(
       'aria-roledescription',
       'card stack',
@@ -262,6 +274,108 @@ export const Default: Story = {
       await expect(button.getAttribute('data-ui')?.split(' ')).toContain('button');
       await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
     }
+  },
+};
+/** Review travel passes in a compact wallet stack. Pass and Keep still record decisions. */
+export const Wallet: Story = {
+  args: {
+    variant: 'wallet',
+    label: 'Travel passes',
+    renderCard: (city) => (
+      <PassContent>
+        <div>
+          <PassDetail>Weekend pass</PassDetail>
+          <PassTitle>{city.name}</PassTitle>
+        </div>
+        <PassDetail>{city.description}</PassDetail>
+        <PassCode>TRAVEL / {city.id.toUpperCase()}</PassCode>
+      </PassContent>
+    ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Use variant="wallet" for compact cards with translucent material and stitched edges. Content comes from renderCard. This remains a review queue: arrows decide, Backspace undoes; it does not select accounts or open activity panels. Use a list or Carousel to browse accounts. Put only masked card details in examples and application content.',
+      },
+      source: {
+        code: `<CardStack
+  variant="wallet"
+  items={cities}
+  getKey={city => city.id}
+  getLabel={city => city.name}
+  renderCard={city => (
+    <PassContent>
+      <div>
+        <PassDetail>Weekend pass</PassDetail>
+        <PassTitle>{city.name}</PassTitle>
+      </div>
+      <PassDetail>{city.description}</PassDetail>
+      <PassCode>TRAVEL / {city.id.toUpperCase()}</PassCode>
+    </PassContent>
+  )}
+  label="Travel passes"
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement, canvas, args, userEvent }) => {
+    await expect(part(canvasElement, 'stage').parentElement).toHaveAttribute(
+      'data-variant',
+      'wallet',
+    );
+    const surface = top(canvasElement).querySelector<HTMLElement>('[data-ui~="card"]')!;
+    await expect(getComputedStyle(surface, '::before').borderStyle).toBe('dashed');
+    await expect(getComputedStyle(surface).backdropFilter).not.toBe('none');
+    await expect(getComputedStyle(part(top(canvasElement), 'right-stamp')).borderStyle).toBe('dashed');
+    const rem = Number.parseFloat(getComputedStyle(surface.ownerDocument.documentElement).fontSize);
+    await expect(surface.getBoundingClientRect().height).toBeCloseTo(12 * rem, 0);
+    await expect(getComputedStyle(surface).borderColor).toBe(
+      getComputedStyle(surface, '::before').borderColor,
+    );
+    await expect(canvasElement.querySelectorAll('[data-state="inactive"]')).toHaveLength(3);
+    await userEvent.tab();
+    await focusRing(part(canvasElement, 'stage'));
+    await userEvent.keyboard('{ArrowRight}');
+    await settled(canvasElement);
+    await once(args.onDecide, cities[0], 'right');
+    await expect(top(canvasElement)).toHaveTextContent('Porto');
+    await userEvent.keyboard('{Backspace}');
+    await settled(canvasElement);
+    await expect(top(canvasElement)).toHaveTextContent('Oslo');
+    await expect(canvas.getByRole('status')).toHaveTextContent('Oslo restored');
+  },
+};
+export const WalletLight: Story = {
+  ...Wallet,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+};
+export const WalletRTL: Story = {
+  ...Wallet,
+  args: { ...Wallet.args, dir: 'rtl' },
+  play: async (context) => {
+    await Wallet.play?.(context);
+    await expect(getComputedStyle(part(context.canvasElement, 'controls')).direction).toBe('rtl');
+    await expect(
+      part(context.canvasElement, 'left-button').getBoundingClientRect().left,
+    ).toBeGreaterThan(part(context.canvasElement, 'reset-button').getBoundingClientRect().left);
+  },
+};
+export const WalletReducedMotion: Story = {
+  ...Wallet,
+  name: 'Wallet Reduced Motion',
+  play: async (context) => {
+    await Wallet.play?.(context);
+    await expect(
+      context.canvasElement.ownerDocument.defaultView!.matchMedia('(prefers-reduced-motion: reduce)')
+        .matches,
+    ).toBe(true);
+    for (const layer of context.canvasElement.querySelectorAll<HTMLElement>(
+      '[data-ui="card-stack-card"]',
+    )) {
+      await expect(getComputedStyle(layer).transform).toBe('none');
+    }
+    await expect(context.canvasElement.querySelector('[data-state="outgoing"]')).toBeNull();
   },
 };
 export const Sizes: Story = {
