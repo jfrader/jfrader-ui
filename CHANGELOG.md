@@ -111,6 +111,7 @@
 
 ### Fixed
 
+- Dialog, CommandPalette, Drawer and BottomSheet lock the page before the opening frame and reserve the scrollbar width, so opening an overlay no longer flashes the scrollbar or shifts the layout.
 - `LightboxGallery` and `LinkUnfurl` images show without JavaScript and when they finish loading before hydration. They are hidden only while the client knows they are loading, marked `data-image-state="loading"`. `LinkUnfurl` images now carry `data-image-state` instead of `data-loaded`.
 - The published package no longer carries type declarations for story-only helpers: the build excludes `*fixture.tsx` and `*fixtures.ts`, so the card-flight fixtures, the game-hand parity fixtures and the game-table reference fixtures stop shipping. JavaScript output is unchanged.
 - The docs front consumes `@jfrader/storybook-docs@0.9.1`, which stops the engine from inventing a page-name import for authored snippets and from rendering `children: null` as `{null}`. The docs front no longer shows a fabricated "Usage" snippet for entries whose subject is not a component with that page's name: `Games/Deck` used to read `import { Deck } from '@jfrader/ui'; <Deck>{null}</Deck>`. Deck, CardFlights, Theme, Custom accent, DialogStack and Next author their real examples instead, with their own imports.
