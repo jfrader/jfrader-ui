@@ -25,7 +25,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Choose a civil date, time, or datetime using touch-friendly 3D reels with keyboard spinbutton interaction.',
+          'Choose a civil date, time, or datetime with keyboard spinbutton interaction.',
       },
       usage: `### Values
 - Return Gregorian civil string values: \`YYYY-MM-DDTHH:mm\` for datetime mode, \`YYYY-MM-DD\` for date mode, and \`HH:mm\` for time mode.

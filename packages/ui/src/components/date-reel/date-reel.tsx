@@ -28,6 +28,9 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS } from '../../styling/media';
+
+/** Widest the reel card grows before it centers in its container. */
+const DATE_REEL_INLINE_CAP = '420px';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -445,7 +448,7 @@ const rootStyle = css({
   flexDirection: 'column',
   gap: vars.space[3],
   inlineSize: '100%',
-  maxInlineSize: '420px',
+  maxInlineSize: DATE_REEL_INLINE_CAP,
   boxSizing: 'border-box',
   padding: vars.space[4],
   backgroundColor: vars.color.surfaceRaised,

@@ -152,6 +152,25 @@ export const FixedColumns: Story = {
   },
 };
 
+export const NarrowContainer: Story = {
+  parameters: { docs: { description: { story: 'Fixed columns keep their minimum tile size in a narrow container instead of collapsing.' } } },
+  render: (args) => (
+    <div style={{ inlineSize: 200 }}>
+      <GravityWell {...args} />
+    </div>
+  ),
+  args: { columns: 3, items: defaultItems.slice(0, 9) },
+  play: async ({ canvasElement }) => {
+    const field = canvasElement.querySelector<HTMLElement>('[data-ui="gravity-well-field"]');
+    if (!field) throw new Error('Missing gravity-well field');
+    for (const tile of Array.from(field.querySelectorAll<HTMLElement>('[data-ui="gravity-well-tile"]'))) {
+      await expect(tile.getBoundingClientRect().width).toBeGreaterThanOrEqual(56 - 0.5);
+    }
+    // Borders round the client area down by up to a pixel per side; the tiles must not clip.
+    await expect(field.scrollWidth).toBeLessThanOrEqual(field.clientWidth + 2);
+  },
+};
+
 export const AutoColumns: Story = {
   args: {
     minTileSize: 72,
