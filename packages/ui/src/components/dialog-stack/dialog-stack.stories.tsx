@@ -402,6 +402,17 @@ export const Default: StoryObj<(props: DialogStackEasyProps) => ReactNode> = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
     await expect(args.onValueChange).toHaveBeenLastCalledWith(['settings', 'account']);
 
+    // Back and Close share one top bar: same row, Back at the start, Close at the end.
+    const rowBack = within(shell).getByRole('button', { name: 'Back to Settings' }).getBoundingClientRect();
+    const rowClose = within(shell).getByRole('button', { name: 'Close all' }).getBoundingClientRect();
+    const rowBarElement = shell.querySelector<HTMLElement>('[data-ui="dialog-stack-top-bar"]');
+    if (!rowBarElement) throw new Error('Missing dialog-stack top bar');
+    const rowBar = rowBarElement.getBoundingClientRect();
+    await expect(Math.abs((rowBack.top + rowBack.height / 2) - (rowClose.top + rowClose.height / 2))).toBeLessThan(1);
+    await expect(rowClose.left).toBeGreaterThan(rowBack.right);
+    await expect(rowBack.left).toBeLessThan(rowBar.left + rowBar.width / 3);
+    await expect(rowClose.right).toBeGreaterThan(rowBar.left + rowBar.width * 2 / 3);
+
     // Back button: click Back to pop to settings
     const backButton = within(shell).getByRole('button', { name: 'Back to Settings' });
     await userEvent.click(backButton);

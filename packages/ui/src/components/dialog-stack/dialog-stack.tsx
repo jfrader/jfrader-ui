@@ -534,6 +534,16 @@ const actionStyle = css({
   },
 });
 
+// Back and Close share one top bar: Back at the inline start, Close at the end. Rendering them as
+// scroller children would stack them in the content column.
+const topBarStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space[2],
+  minBlockSize: vars.space[8],
+});
+const topBarEndStyle = css({ marginInlineStart: 'auto' });
+
 // The back chevron points toward the inline start in either direction.
 const backIconStyle = css({ '&:dir(rtl)': { transform: 'scaleX(-1)' } });
 
@@ -823,11 +833,15 @@ function DialogStackRoot(props: DialogStackProps) {
               slots={{ ...mergedSlotProps.content?.slots, root: slots?.root ?? mergedSlotProps.content?.slots?.root }}
               slotProps={{ root: mergedSlotProps.root ?? mergedSlotProps.content?.slotProps?.root }}
             >
-              {pageBack !== undefined && (
-                <BackPart label={pageBack} {...mergedSlotProps.back} />
-              )}
-              {pageClose !== undefined && (
-                <ClosePart label={pageClose} {...mergedSlotProps.close} />
+              {(pageBack !== undefined || pageClose !== undefined) && (
+                <div data-ui="dialog-stack-top-bar" css={topBarStyle}>
+                  {pageBack !== undefined && <BackPart label={pageBack} {...mergedSlotProps.back} />}
+                  {pageClose !== undefined && (
+                    <div css={topBarEndStyle}>
+                      <ClosePart label={pageClose} {...mergedSlotProps.close} />
+                    </div>
+                  )}
+                </div>
               )}
               <GeneratedRoot component={slots?.header} rootSlot={mergedSlotProps.header} marker="dialog-stack-header">
                 <TitlePart {...mergedSlotProps.title}>{pageTitle}</TitlePart>
