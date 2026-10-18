@@ -198,7 +198,12 @@ export const Default: EasyStory = {
     triggerLabel: 'Open profile',
     title: TITLE,
     description: DESCRIPTION,
-    content: <TextField label="Display name" defaultValue="Maya" />,
+    content: (
+      <>
+        <TextField label="Display name" defaultValue="Maya" />
+        <TextField label="Email" type="email" defaultValue="maya@example.com" />
+      </>
+    ),
     closeLabel: 'Close',
     onOpenChange: fn(),
     slotProps: {
@@ -211,7 +216,12 @@ export const Default: EasyStory = {
   triggerLabel="Open profile"
   title="Profile"
   description="Update your display name and avatar."
-  content={<ProfileForm />}
+  content={
+    <>
+      <TextField label="Display name" defaultValue="Maya" />
+      <TextField label="Email" type="email" defaultValue="maya@example.com" />
+    </>
+  }
   closeLabel="Close"
 />` } } },
   render: (args) => <Dialog {...args} />,
@@ -230,11 +240,13 @@ export const Default: EasyStory = {
     await expect(dialog).toHaveAttribute('aria-describedby', dialog.querySelector('[data-ui="dialog-description"]')!.id);
     await expect(canvas.getByRole('textbox', { name: 'Display name' })).toHaveFocus();
     await userEvent.tab();
+    await expect(canvas.getByRole('textbox', { name: 'Email' })).toHaveFocus();
+    await userEvent.tab();
     const close = canvas.getByRole('button', { name: 'Close' });
     await expect(close).toHaveFocus();
     await expect(getComputedStyle(close).outlineStyle).not.toBe('none');
     await userEvent.tab({ shift: true });
-    await expect(canvas.getByRole('textbox', { name: 'Display name' })).toHaveFocus();
+    await expect(canvas.getByRole('textbox', { name: 'Email' })).toHaveFocus();
     await userEvent.click(close);
     await expectClosed(canvasElement, trigger);
     await userEvent.click(trigger);

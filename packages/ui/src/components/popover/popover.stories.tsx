@@ -23,6 +23,17 @@ const Heading = styled.h2({
   fontWeight: vars.fontWeight.semibold,
 });
 
+const LinkText = styled.p({ margin: 0, marginBlockEnd: vars.space[3] });
+
+function ShareLink() {
+  return (
+    <>
+      <LinkText>ui.jfrader.com/s/q3-roadmap</LinkText>
+      <Button size="sm">Copy link</Button>
+    </>
+  );
+}
+
 const Actions = styled.div({
   display: 'flex',
   gap: vars.space[2],
@@ -176,9 +187,18 @@ async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
 }
 
 export const Default: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
-  args: { triggerLabel: TRIGGER, label: HEADING, content: <Button size="sm">Copy link</Button> },
+  args: { triggerLabel: TRIGGER, label: HEADING, content: <ShareLink /> },
   render: (args) => <Popover {...args} />,
-  parameters: { docs: { source: { code: '<Popover triggerLabel="Share" label="Share link" content={<Button>Copy link</Button>} />' } } },
+  parameters: { docs: { source: { code: `<Popover
+  triggerLabel="Share"
+  label="Share link"
+  content={
+    <>
+      <p>ui.jfrader.com/s/q3-roadmap</p>
+      <Button size="sm">Copy link</Button>
+    </>
+  }
+/>` } } },
   play: async ({ canvasElement, userEvent }) => {
     const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
     await userEvent.tab();
