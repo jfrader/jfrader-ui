@@ -4,6 +4,26 @@ import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { ActionButton, type ActionButtonValue } from './index';
 import { Button } from '../button';
+import { styled } from '../../styling/styled';
+import { Surface } from '../surface';
+
+const PublishPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 16)`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+  display: 'grid',
+  justifyItems: 'start',
+  gap: vars.space[5],
+});
+const DocumentLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.md,
+  fontWeight: vars.fontWeight.semibold,
+  color: vars.color.text,
+});
+const ButtonRow = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[3] });
 
 const snippet = `<ActionButton label="Publish" pendingLabel="Publishing" successLabel="Published"
   errorLabel="Publish failed" onAction={publish} />`;
@@ -11,6 +31,12 @@ const meta = {
   title: 'Actions/ActionButton',
   component: ActionButton,
   tags: ['autodocs'],
+  render: (args) => (
+    <PublishPanel>
+      <DocumentLabel>Release notes · October update</DocumentLabel>
+      <ActionButton {...args} />
+    </PublishPanel>
+  ),
   parameters: {
     docs: {
       description: {
@@ -58,21 +84,21 @@ export const Error: Story = { args: { value: 'error', errorIcon: '×' } };
 export const Disabled: Story = { args: { disabled: true } };
 export const Variants: Story = {
   render: (args) => (
-    <>
+    <ButtonRow>
       <ActionButton {...args} variant="solid" />
       <ActionButton {...args} variant="soft" />
       <ActionButton {...args} variant="outline" />
       <ActionButton {...args} variant="ghost" />
-    </>
+    </ButtonRow>
   ),
 };
 export const Sizes: Story = {
   render: (args) => (
-    <>
+    <ButtonRow>
       <ActionButton {...args} size="sm" label="Small" />
       <ActionButton {...args} size="md" label="Medium" />
       <ActionButton {...args} size="lg" label="Large" />
-    </>
+    </ButtonRow>
   ),
   play: async ({ canvas }) => {
     for (const [name, height] of [

@@ -43,6 +43,18 @@ export default defineConfig({
           }]
         }
       }
+    }, {
+      extends: true,
+      test: {
+        name: 'design',
+        include: ['src/design-assertions.test.ts'],
+        browser: {
+          enabled: true,
+          headless: true,
+          provider: playwright({}),
+          instances: [{ browser: 'chromium' }],
+        },
+      },
     }]
   }
 });

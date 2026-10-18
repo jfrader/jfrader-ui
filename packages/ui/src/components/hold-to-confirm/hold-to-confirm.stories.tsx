@@ -39,7 +39,7 @@ const meta = {
         component:
           'Hold a button until the timer finishes to confirm an action.',
       },
-      usage: '- Hold Space, Enter or the primary pointer continuously. Releasing early, Escape, Tab, blur or pointer cancellation cancels the attempt.\n- After completion, the button stays focusable with `aria-disabled`.\n- Provide a confirmation Button in a Dialog as an untimed alternative.\n- `onConfirm` reports the interaction, not an async result. Reset controlled `value` to `false` if the request fails.',
+      usage: '- Hold Space, Enter or the primary pointer continuously. Releasing early, Escape, Tab, blur or pointer cancellation cancels the attempt.\n- After completion, the button stays focusable with `aria-disabled`.\n- Provide a confirmation Button in a Dialog as an untimed alternative.\n- `onConfirm` reports the interaction, not an async result. Reset controlled `value` to `false` if the request fails.\n- Set `variant="morph"` for a pill-shaped face that resizes on completion. It retains the same hold contract and native button; reduced motion skips the size animation. ConfirmMorph is this presentation, not a second confirmation primitive.',
     },
   },
 } satisfies Meta<typeof HoldToConfirm>;

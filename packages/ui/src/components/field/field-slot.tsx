@@ -3,7 +3,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import type { Interpolation, Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 
-export type FieldElement = 'div' | 'span' | 'label' | 'input' | 'textarea' | 'button' | 'ul' | 'li' | 'img' | 'figure' | 'figcaption' | 'ol' | 'h3' | 'p';
+export type FieldElement = 'div' | 'span' | 'label' | 'input' | 'textarea' | 'button' | 'ul' | 'li' | 'img' | 'section' | 'figure' | 'figcaption' | 'ol' | 'h3' | 'p';
 export type FieldElementProps<Element extends FieldElement> = ComponentPropsWithRef<Element> & {
   css?: Interpolation<Theme>;
   [attribute: `data-${string}`]: unknown;

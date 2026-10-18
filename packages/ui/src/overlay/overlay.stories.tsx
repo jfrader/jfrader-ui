@@ -154,6 +154,43 @@ export const StrictModeScrollLocks: Story = {
   },
 };
 
+function CompensationHarness() {
+  const [active, setActive] = useState(false);
+  useScrollLock(active);
+  return (
+    <>
+      <button onClick={() => setActive(true)}>Lock</button>
+      <button onClick={() => setActive(false)}>Release</button>
+    </>
+  );
+}
+
+export const ScrollbarSpaceCompensation: Story = {
+  render: () => <CompensationHarness />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const doc = canvasElement.ownerDocument;
+    const view = doc.defaultView!;
+    const root = doc.documentElement;
+    const innerWidth = Object.getOwnPropertyDescriptor(view, 'innerWidth');
+    const clientWidth = Object.getOwnPropertyDescriptor(root, 'clientWidth');
+    // Simulate a classic 15px scrollbar: the viewport is wider than the client area.
+    Object.defineProperty(view, 'innerWidth', { configurable: true, get: () => 1280 });
+    Object.defineProperty(root, 'clientWidth', { configurable: true, get: () => 1265 });
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Lock' }));
+      // The reserved inline-end padding keeps the content width identical once the scrollbar hides.
+      await expect(root.style.paddingInlineEnd).toBe('15px');
+      await userEvent.click(canvas.getByRole('button', { name: 'Release' }));
+      await expect(root.style.paddingInlineEnd).toBe('');
+    } finally {
+      if (innerWidth) Object.defineProperty(view, 'innerWidth', innerWidth);
+      else Reflect.deleteProperty(view, 'innerWidth');
+      if (clientWidth) Object.defineProperty(root, 'clientWidth', clientWidth);
+      else Reflect.deleteProperty(root, 'clientWidth');
+    }
+  },
+};
+
 function EdgeFloating() {
   const [edge, setEdge] = useState<'top' | 'bottom'>('top');
   const floating = useOverlayFloating({ open: true, onOpenChange: () => {}, placement: 'bottom-start', gap: 4, strategy: 'fixed' });
