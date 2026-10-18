@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.9.1
+
+### Fixed
+
+- `Prose` no longer emits the Emotion SSR warning for `:first-child`/`:last-child`. Table cells keep normal word wrapping.
+- `StreamingCaret` uses a valid token-derived blink duration.
+- The `Prose` story moves to the existing `Data display` section. `InputGroup`, `StreamingCaret` and `Prose` now document their props, usage and source examples against the repo's documentation spec.
+
 ## 0.9.0
 
 ### Changed
