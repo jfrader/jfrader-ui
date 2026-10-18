@@ -262,6 +262,14 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 
 Shared story assertions in `src/testing/` (reuse before writing a local copy):
 
+- `design-assertions.ts`: `auditDesign` checks native-control typography, painted text/background/border
+  colors against the scoped token palette (including token-only `color-mix` derivations), and corner
+  radii against the token scale. Zero and circular `50%` radii are valid. The Storybook Vitest setup
+  runs it after every story in the new component families, including portaled family parts. Hidden
+  elements have typography checked but no paint checks; SVG artwork and shadows are outside this guard.
+  `pnpm test` includes the guard and its deliberately invalid browser fixtures. Run
+  `pnpm --filter @jfrader/storybook verify:design` for the scoped family suite; no dev server is needed.
+
 - [motion-assertions.ts](packages/ui/src/testing/motion-assertions.ts):
   `settleMotion`, `expectEntranceMotion`, `expectRetainedExit`.
   `settleMotion` excludes infinite animations.

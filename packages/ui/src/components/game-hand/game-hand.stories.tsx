@@ -139,11 +139,38 @@ async function checkFan(element: HTMLElement, count: number) {
   await expectMirroredDirection(fan, '[data-ui="game-hand-card"]');
 }
 
-export const Default: Story = { play: async ({ canvasElement }) => checkFan(canvasElement, 3) };
+/** Three cards held in hand with an unselected play button. */
+export const Default: Story = {
+  name: 'Default',
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { GameHand } from '@jfrader/ui/game-hand';
+
+const cards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
+
+<GameHand
+  cards={cards}
+  playLabel="Play card"
+  onPlayIntent={(card) => console.log(card)}
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => checkFan(canvasElement, 3),
+};
 export const OneCard: Story = { tags: ['!autodocs'], args: { cards: CARDS.slice(0, 1) }, play: async ({ canvasElement }) => checkFan(canvasElement, 1) };
 export const TwoCards: Story = { tags: ['!autodocs'], args: { cards: CARDS.slice(0, 2) }, play: async ({ canvasElement }) => checkFan(canvasElement, 2) };
 export const FiveCards: Story = { tags: ['!autodocs'], args: { cards: CARDS }, play: async ({ canvasElement }) => checkFan(canvasElement, 5) };
+
+/** The second card is selected and raised above the fan. */
 export const Selected: Story = {
+  name: 'Selected card',
   args: { defaultValue: CARDS[1]!.id },
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 
@@ -154,9 +181,30 @@ const cards = [
 ];
 <GameHand cards={cards} defaultValue="king-hearts" playLabel="Play card" onPlayIntent={console.log} />` } } },
 };
-export const LightTheme: Story = { decorators: [(Story) => <ThemeRoot theme="light"><Story /></ThemeRoot>] };
+
+/** Hand rendered with the light theme palette. */
+export const LightTheme: Story = {
+  name: 'Light theme',
+  decorators: [(Story) => <ThemeRoot theme="light"><Story /></ThemeRoot>],
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+
+const cards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
+
+<ThemeRoot theme="light">
+  <GameHand cards={cards} playLabel="Play card" onPlayIntent={console.log} />
+</ThemeRoot>` } } },
+};
+
+/** A selected card raised above the fan in the light theme. */
 export const SelectedLightTheme: Story = {
-  ...Selected, decorators: LightTheme.decorators,
+  ...Selected,
+  name: 'Selected card · light',
+  decorators: LightTheme.decorators,
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 
@@ -167,7 +215,10 @@ const cards = [
 ];
 <ThemeRoot theme="light"><GameHand cards={cards} defaultValue="king-hearts" playLabel="Play card" onPlayIntent={console.log} /></ThemeRoot>` } } },
 };
+
+/** Cards fanned out from right to left in right-to-left layout. */
 export const RTL: Story = {
+  name: 'RTL',
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 
 const cards = [
@@ -183,7 +234,9 @@ const cards = [
   await expectMirroredDirection(fan, '[data-ui="game-hand-card"]');
 } };
 
+/** Tab navigates across cards and the play button, with active outline on the focused card. */
 export const KeyboardSelection: Story = {
+  name: 'Keyboard selection',
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { Button } from '@jfrader/ui/button';
 
@@ -235,7 +288,9 @@ const cards = [
   },
 };
 
+/** Cards and confirmation button dimmed with aria-disabled while remaining focusable. */
 export const Disabled: Story = {
+  name: 'Disabled hand',
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { Button } from '@jfrader/ui/button';
 
@@ -287,8 +342,9 @@ function AcceptedHand(args: GameHandProps) {
   }} />;
 }
 
-/** Confirm a card to remove it from your hand. */
+/** Playing the selected card removes it from the hand and disables confirmation. */
 export const AcceptedPlay: Story = {
+  name: 'Playing a card removes it',
   parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
 import { GameHand } from '@jfrader/ui/game-hand';
 
@@ -327,7 +383,10 @@ export function AcceptedPlay() {
     await expect(canvas.getByRole('button', { name: CARDS[2]!.label })).toHaveFocus();
   },
 };
+
+/** Selected card state driven by a parent component value. */
 export const Controlled: Story = {
+  name: 'Controlled selection',
   parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
 import { GameHand } from '@jfrader/ui/game-hand';
 
@@ -372,7 +431,9 @@ function MutableHand(args: GameHandProps) {
     <GameHand {...args} cards={cards} />
   </Controls>;
 }
+/** Selection stays on the chosen card when neighboring cards are removed or reversed. */
 export const StableIdentity: Story = {
+  name: 'Selection follows the card',
   parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
 import { GameHand } from '@jfrader/ui/game-hand';
 import { Button } from '@jfrader/ui/button';
@@ -394,7 +455,6 @@ export function MutableHand() {
     <GameHand cards={cards} playLabel="Play card" onPlayIntent={console.log} />
   </Controls>;
 }` } } },
-  name: 'Remove and reorder cards',
   render: (args) => <MutableHand {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     const card = canvas.getByRole('button', { name: CARDS[1]!.label });
@@ -417,12 +477,16 @@ export function MutableHand() {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
+
+/** An empty hand with no cards and a disabled play button. */
 export const Empty: Story = {
+  name: 'Empty hand',
   args: { cards: [] },
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 
 <GameHand cards={[]} playLabel="Play card" onPlayIntent={console.log} />` } } },
 };
+
 function ReorderedControlledHand(args: GameHandProps) {
   const [cards, setCards] = useState(args.cards);
   return <>
@@ -430,7 +494,10 @@ function ReorderedControlledHand(args: GameHandProps) {
     <GameHand {...args} cards={cards} value={args.cards[0]!.id} />
   </>;
 }
+
+/** Reversing cards in a controlled hand preserves the selected card state. */
 export const ControlledReorder: Story = {
+  name: 'Reordered controlled hand',
   parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
 import { GameHand } from '@jfrader/ui/game-hand';
 import { Button } from '@jfrader/ui/button';
@@ -447,7 +514,6 @@ export function ReorderedControlledHand() {
     <GameHand cards={cards} value="ace-spades" playLabel="Play card" onPlayIntent={console.log} />
   </>;
 }` } } },
-  name: 'Reorder a selected hand',
   render: (args) => <ReorderedControlledHand {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     const selected = canvas.getByRole('button', { name: CARDS[0]!.label });
@@ -461,18 +527,21 @@ export function ReorderedControlledHand() {
     await expect(args.onPlayIntent).toHaveBeenCalledWith(CARDS[0]);
   },
 };
+
+/** Small, medium, and large card hands displayed side by side. */
 export const Sizes: Story = {
+  name: 'Sizes',
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { vars } from '@jfrader/tokens/vars';
+import { styled } from '@jfrader/ui';
+
+const Row = styled.div({ display: 'flex', gap: vars.space[8] });
 
 const cards = [
   { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
   { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
   { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
 ];
-
-import { styled } from '@jfrader/ui';
-const Row = styled.div({ display: 'flex', gap: vars.space[8] });
 
 <Row>
   {(['sm', 'md', 'lg'] as const).map((size) =>
@@ -491,14 +560,16 @@ const Row = styled.div({ display: 'flex', gap: vars.space[8] });
   }
 } };
 
+/** Opponent hands showing one, two, and three facedown cards. */
 export const HiddenHands: Story = {
+  name: 'Opponent hands',
   render: () => <Hands>
     {[1, 2, 3].map((count) => <GameHand.Hidden key={count} count={count} label="Opponent hand" />)}
   </Hands>,
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { vars } from '@jfrader/tokens/vars';
-
 import { styled } from '@jfrader/ui';
+
 const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.space[8] });
 
 <Hands>
@@ -543,9 +614,29 @@ const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.s
     }
   },
 };
-export const HiddenHandsLightTheme: Story = { ...HiddenHands, decorators: LightTheme.decorators };
-// This story demonstrates the slot styling API.
+
+/** Opponent hands showing facedown cards in the light theme. */
+export const HiddenHandsLightTheme: Story = {
+  ...HiddenHands,
+  name: 'Opponent hands · light',
+  decorators: LightTheme.decorators,
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { vars } from '@jfrader/tokens/vars';
+import { styled } from '@jfrader/ui';
+
+const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.space[8] });
+
+<ThemeRoot theme="light">
+  <Hands>
+    {[1, 2, 3].map((count) => <GameHand.Hidden key={count} count={count} label="Opponent hand" />)}
+  </Hands>
+</ThemeRoot>` } } },
+};
+
+/** Hidden opponent cards styled with custom rounded corners via slot props. */
 export const HiddenCardSlots: Story = {
+  name: 'Hidden card slots',
   render: () => <GameHand.Hidden count={3} label="Opponent hand"
     slotProps={{ card: { className: 'custom-hidden-card', css: { borderRadius: vars.radius.lg } } }} />,
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
@@ -562,12 +653,16 @@ import { vars } from '@jfrader/tokens/vars';
     }
   },
 };
+
+/** Opponent hands fanning facedown cards from right to left in RTL layout. */
 export const HiddenHandsRTL: Story = {
-  ...HiddenHands, decorators: [(Story) => <div dir="rtl"><Story /></div>],
+  ...HiddenHands,
+  name: 'Opponent hands · RTL',
+  decorators: [(Story) => <div dir="rtl"><Story /></div>],
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { vars } from '@jfrader/tokens/vars';
-
 import { styled } from '@jfrader/ui';
+
 const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.space[8] });
 
 <div dir="rtl"><Hands>

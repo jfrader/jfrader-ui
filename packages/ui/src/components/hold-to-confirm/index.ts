@@ -5,4 +5,5 @@ export type {
   HoldToConfirmPartProps,
   HoldToConfirmSize,
   HoldToConfirmTone,
+  HoldToConfirmVariant,
 } from './hold-to-confirm';

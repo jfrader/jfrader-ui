@@ -2,20 +2,24 @@
 
 import { useEffect, useId, useRef, useState, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { MotionConfig, motion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
+import { useReducedMotion } from '../../utils/use-reduced-motion';
 
 export type HoldToConfirmTone = 'neutral' | 'accent' | 'danger';
 export type HoldToConfirmSize = 'sm' | 'md' | 'lg';
+export type HoldToConfirmVariant = 'default' | 'morph';
 export interface HoldToConfirmPartProps {
   className?: string;
   css?: Interpolation<Theme>;
@@ -54,6 +58,8 @@ export interface HoldToConfirmProps
   onHoldChange?: (holding: boolean) => void;
   tone?: HoldToConfirmTone;
   size?: HoldToConfirmSize;
+  /** Morphs the pill-shaped button between its idle and confirmed faces. */
+  variant?: HoldToConfirmVariant;
   icon?: ReactNode;
   confirmedIcon?: ReactNode;
   slots?: HoldToConfirmSlots;
@@ -183,6 +189,16 @@ const hintStyle = css([
   },
 ]);
 
+const morphStyle = css({ borderRadius: vars.radius.full });
+function ButtonElement({
+  nativeProps,
+  ...props
+}: ComponentPropsWithRef<'button'> & { nativeProps: ComponentPropsWithRef<'button'> }) {
+  return <button {...nativeProps} {...props} style={{ ...nativeProps.style, ...props.style }} />;
+}
+const MotionButton = motion.create(ButtonElement);
+const morphTransition = { duration: motionDurationMs.base / 1000 };
+
 type Origin = { pointerId: number } | { key: string };
 interface Attempt {
   origin: Origin;
@@ -192,7 +208,7 @@ interface Attempt {
 }
 
 /** Hold Space or Enter to confirm. Provide an untimed confirmation in a Dialog too. */
-export function HoldToConfirm({
+function HoldToConfirmRoot({
   ref,
   label,
   confirmedLabel,
@@ -207,6 +223,7 @@ export function HoldToConfirm({
   onHoldChange,
   tone = 'accent',
   size = 'md',
+  variant = 'default',
   icon,
   confirmedIcon = '✓',
   disabled = false,
@@ -227,6 +244,7 @@ export function HoldToConfirm({
   'aria-describedby': describedBy,
   ...rest
 }: HoldToConfirmProps) {
+  const reducedMotion = useReducedMotion();
   if (!Number.isFinite(duration) || duration <= 0)
     throw new Error('HoldToConfirm: duration must be a finite positive number of milliseconds.');
   const hintId = `${useId()}-hint`;
@@ -414,15 +432,18 @@ export function HoldToConfirm({
 
   return (
     <>
-      <WithSx className={className} styles={[rootStyle, sizeStyles[size], toneStyles[tone]]} sx={sx}>
+      <WithSx className={className} styles={[rootStyle, sizeStyles[size], toneStyles[tone], variant === 'morph' && morphStyle]} sx={sx}>
         {(rootClassName) => (
-          <button
-            {...rest}
+          <MotionButton
+            nativeProps={rest}
             ref={mergedRef}
             className={rootClassName}
             type="button"
             disabled={disabled}
             data-ui="hold-to-confirm"
+            data-variant={variant}
+            layout={variant === 'morph' && !reducedMotion}
+            transition={morphTransition}
             data-state={confirmed ? 'confirmed' : holding ? 'holding' : 'idle'}
             aria-disabled={confirmed ? true : rest['aria-disabled']}
             aria-describedby={[describedBy, hintId].filter(Boolean).join(' ')}
@@ -505,7 +526,7 @@ export function HoldToConfirm({
             >
               {renderFace(true)}
             </Fill>
-          </button>
+          </MotionButton>
         )}
       </WithSx>
       <Hint
@@ -529,6 +550,14 @@ export function HoldToConfirm({
         {announcement}
       </Status>
     </>
+  );
+}
+
+export function HoldToConfirm(props: HoldToConfirmProps) {
+  return (
+    <MotionConfig reducedMotion="user">
+      <HoldToConfirmRoot {...props} />
+    </MotionConfig>
   );
 }
 

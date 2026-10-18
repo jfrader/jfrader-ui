@@ -4,10 +4,23 @@
 
 ### Changed
 
+- PhotoGrid favorites, cover-flow controls and product choices use library typography and themed control colors. LogoOrbit groups its filter chips separately from standard-radius actions, and CardStack headings use the library type scale.
 - Menu accepts `appearance="glass"` for a translucent popup with an opaque reduced-transparency fallback.
 
 ### Added
 
+- `PageCurl` presents cover/facing/back-cover spreads with native navigation, RTL keyboard turns, controlled selection and a bounded next-button paper preview. Physical SVG crease geometry, corner handles, backward dragging and teaser choreography are not included.
+- `DateReel` selects Gregorian civil dates/times with localized spinbutton reels, atomic month-end clamping, bounds, presets and asynchronous confirmation. Zoned scheduling, offscreen observation, recycled-window/inertia fidelity and manual screen-reader/touch validation are not included.
+- `GravityWell` arranges noninteractive tiles in a bounded pointer field with keyboard exploration and pause controls. `DataFlow` illustrates source-to-destination routing with a readable summary and pause, step and replay controls. Counts and particles are illustrative, not live telemetry.
+- `ControlCenter` composes quick-setting toggles, sliders, radio modes and modal focus/channel details with draft application and controlled settings. `PaymentFlow` composes an illustrative five-phase payment journey with safe Intl currency formatting, an ordered narrative and pause/step/replay controls. Custom circular dial gestures, tile morphs, moving payment chips, SVG rails, continuous balance count-up and hover effects are excluded.
+- `ShareAccess` composes ShareSheet's inline presentation with email invitations, member roles, persistent removal undo and link permissions. `VoiceRecorder` composes VoiceOrb with application-owned recording, review, seeking and sending; neither component performs permission or media capture work.
+- `RadialMenu` shows object actions around a trigger with keyboard navigation, hold-drag targeting and a linear fallback. `LogoOrbit` arranges supplied marks in a pausable integration catalog with filters, details and consumer-owned connection actions. Both support reduced motion and replaceable parts.
+  Scope excludes lens/pill/swirl/magnet choreography, tilted-ring parking, connector/detail spring, exhaustive announcements, focus-removal repair and the edge-case catalogue.
+- Tabs accepts `variant="glass"` and `variant="liquid"`, line/pill/lens indicators, icon labels, localized badges, compact bars and optional release-only drag selection. Existing tab and panel semantics remain unchanged.
+- Navigation accepts `variant="morph"` for a floating disclosure bar with rich link descriptions, compact spacing, keyboard section navigation and one/two-column panels. Destinations remain native links.
+- Tabs and Navigation provide partial reference parity: momentum/refraction, exact reference geometry, integrated search, controlled panel axes, hover intent and hamburger collapse are excluded.
+- Skeleton adds `Skeleton.Morph` and `Skeleton.Block` for loading-to-content layouts, completion announcements and focus parking on reload. HoldToConfirm adds `variant="morph"` without a second confirmation primitive. Combobox includes a ranked semantic-search composition with source/score labels over its existing listbox.
+- Combobox's empty message is exposed as a disabled option so an open empty listbox retains its required option semantics.
 - `PasswordStrength` composes PasswordField with application-owned policy rules, a labelled meter and readable requirement states. Scores describe policy compliance, not password security.
 - `BookingPill` composes Calendar and TimePicker into a party/date/time/review journey with application-owned availability and asynchronous confirmation.
 - `MultiRegionFailover` presents six supplied incident snapshots with readable regional status, metrics, pause/seek/replay controls and reduced-motion playback protection. It is an illustration, not live monitoring.
@@ -101,6 +114,7 @@
 
 ### Fixed
 
+- Dialog, CommandPalette, Drawer and BottomSheet lock the page before the opening frame and reserve the scrollbar width, so opening an overlay no longer flashes the scrollbar or shifts the layout.
 - `LightboxGallery` and `LinkUnfurl` images show without JavaScript and when they finish loading before hydration. They are hidden only while the client knows they are loading, marked `data-image-state="loading"`. `LinkUnfurl` images now carry `data-image-state` instead of `data-loaded`.
 - The published package no longer carries type declarations for story-only helpers: the build excludes `*fixture.tsx` and `*fixtures.ts`, so the card-flight fixtures, the game-hand parity fixtures and the game-table reference fixtures stop shipping. JavaScript output is unchanged.
 - The docs front consumes `@jfrader/storybook-docs@0.9.1`, which stops the engine from inventing a page-name import for authored snippets and from rendering `children: null` as `{null}`. The docs front no longer shows a fabricated "Usage" snippet for entries whose subject is not a component with that page's name: `Games/Deck` used to read `import { Deck } from '@jfrader/ui'; <Deck>{null}</Deck>`. Deck, CardFlights, Theme, Custom accent, DialogStack and Next author their real examples instead, with their own imports.

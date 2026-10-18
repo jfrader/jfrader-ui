@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: tabs. The tablist is a single tab stop: the roving tabindex sits on the
 // focused tab, falling back to the selected tab and then to the first enabled tab, so Tab
 // always enters and exits the tablist predictably.
@@ -22,20 +24,29 @@ import {
   type FocusEvent,
   type KeyboardEvent,
   type MouseEvent,
+  type PointerEvent,
   type ReactNode,
+  type RefObject,
 } from 'react';
+import { LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { useMergeRefs } from '@floating-ui/react';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION, REDUCED_TRANSPARENCY } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { translucentControlStyle } from '../../styling/surface';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { isRenderable } from '../../utils/renderable';
 import { partId } from '../../utils/part-id';
 import { findByValue, moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export type TabsOrientation = 'horizontal' | 'vertical';
 export type TabsActivation = 'auto' | 'manual';
+export type TabsVariant = 'line' | 'glass' | 'liquid';
+export type TabsIndicator = 'line' | 'pill' | 'lens';
+export type TabsLabels = 'always' | 'active' | 'none';
 
 interface TabsStateProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue' | 'children'>, SxProps {
   value?: string;
@@ -43,6 +54,24 @@ interface TabsStateProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' |
   onValueChange?: (value: string) => void;
   orientation?: TabsOrientation;
   activation?: TabsActivation;
+  /** Material of the tab list. Defaults to `line`. */
+  variant?: TabsVariant;
+  /** Selection shape on material bars; defaults to pill for glass and lens for liquid. */
+  indicator?: TabsIndicator;
+  /** Visible labels; hidden labels retain their accessible names. Defaults to `always`. */
+  labels?: TabsLabels;
+  /** Hide labels without changing selection. Pair with `onCompactChange` for controlled use. */
+  compact?: boolean;
+  defaultCompact?: boolean;
+  onCompactChange?: (compact: boolean) => void;
+  /** Locale used to display numeric badges. */
+  locale?: Intl.LocalesArgument;
+  /** Drag the selected material indicator to another tab; click and keyboard remain available. */
+  draggableIndicator?: boolean;
+  /** Request compact mode when scrolling down. Disabled by default; material lists only. */
+  collapseOnScroll?: boolean;
+  /** Scroll container for `collapseOnScroll`; defaults to the owning window. */
+  scrollRef?: RefObject<HTMLElement | null>;
 }
 
 export interface TabsSection {
@@ -50,6 +79,10 @@ export interface TabsSection {
   label: ReactNode;
   panel: ReactNode;
   disabled?: boolean;
+  icon?: ReactNode;
+  activeIcon?: ReactNode;
+  badge?: number | string;
+  badgeLabel?: string;
 }
 
 export interface TabsCompoundProps extends TabsStateProps {
@@ -100,6 +133,14 @@ export type TabsListProps = ComponentPropsWithRef<'div'> & SxProps;
 
 export interface TabsTabProps extends ComponentPropsWithRef<'button'>, SxProps {
   value: string;
+  /** Decorative leading icon. Supply an icon when hiding visible labels. */
+  icon?: ReactNode;
+  activeIcon?: ReactNode;
+  /** Zero and empty badges are omitted. Supply `badgeLabel` for a spoken description. */
+  badge?: number | string;
+  badgeLabel?: string;
+  /** An action-shaped tab still selects a matching panel. */
+  variant?: 'default' | 'action';
 }
 
 export interface TabsPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
@@ -114,6 +155,15 @@ interface TabsContextValue {
   orientation: TabsOrientation;
   activation: TabsActivation;
   baseId: string;
+  variant: TabsVariant;
+  indicator: TabsIndicator;
+  labels: TabsLabels;
+  compact: boolean;
+  setCompact: (compact: boolean) => void;
+  locale: Intl.LocalesArgument | undefined;
+  draggableIndicator: boolean;
+  collapseOnScroll: boolean;
+  scrollRef: RefObject<HTMLElement | null> | undefined;
 }
 
 const TabsContext = createContext<TabsContextValue | null>(null);
@@ -213,6 +263,111 @@ const panelStyle = css({
 
 const horizontalPanelStyle = css({ paddingBlockStart: vars.space[3] });
 
+const materialListStyle = css({
+  boxSizing: 'border-box',
+  maxInlineSize: '100%',
+  overflowX: 'auto',
+  padding: vars.space[1],
+  gap: vars.space[1],
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.full,
+  backgroundColor: vars.color.surfaceRaised,
+  boxShadow: vars.shadow.overlay,
+  touchAction: 'pan-y',
+  [FORCED_COLORS]: { borderColor: 'CanvasText' },
+});
+const materialTabStyle = css({
+  position: 'relative',
+  isolation: 'isolate',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  gap: vars.space[2],
+  boxSizing: 'border-box',
+  minBlockSize: vars.space[12],
+  minInlineSize: vars.space[12],
+  maxInlineSize: '100%',
+  margin: 0,
+  border: '1px solid transparent',
+  borderRadius: vars.radius.full,
+  color: vars.color.text,
+  whiteSpace: 'nowrap',
+  '& > [data-ui="tabs-label"]': { minInlineSize: 0, overflow: 'hidden', textOverflow: 'ellipsis' },
+  '&[aria-selected="true"]': { borderColor: vars.color.borderControl, fontWeight: vars.fontWeight.semibold },
+  '&[data-tab-variant="action"]': { marginInlineStart: vars.space[2], borderColor: vars.color.borderControl },
+  [FORCED_COLORS]: { '&[aria-selected="true"]': { borderColor: 'Highlight', textDecoration: 'underline' } },
+});
+const iconStyle = css({
+  display: 'inline-flex',
+  inlineSize: vars.space[5],
+  blockSize: vars.space[5],
+  alignItems: 'center',
+  justifyContent: 'center',
+  '& > svg': { inlineSize: '100%', blockSize: '100%' },
+});
+const badgeStyle = css({
+  borderRadius: vars.radius.full,
+  paddingInline: vars.space[1],
+  fontSize: vars.textSize.xs,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+});
+const selectionStyle = css({
+  position: 'absolute',
+  inset: 0,
+  zIndex: -1,
+  pointerEvents: 'none',
+  translate: 'var(--tabs-preview-x, 0px) 0',
+  borderRadius: 'inherit',
+  backgroundColor: vars.color.surfaceHover,
+  [FORCED_COLORS]: { backgroundColor: 'Canvas', boxShadow: 'none' },
+});
+const indicatorStyles: Record<TabsIndicator, SerializedStyles> = {
+  line: css({ insetBlockStart: 'auto', blockSize: vars.space[1], backgroundColor: vars.color.text, marginInline: vars.space[3] }),
+  pill: css({ backgroundColor: vars.color.accentSoft }),
+  lens: css({
+    backgroundImage: `linear-gradient(${vars.color.surfaceHighlight}, ${vars.color.surfaceSheen})`,
+    boxShadow: vars.shadow.raised,
+  }),
+};
+const selectionFallbackStyle = css({
+  [REDUCED_TRANSPARENCY]: {
+    backgroundColor: vars.color.surfaceHover,
+    backgroundImage: 'none',
+  },
+  [FORCED_COLORS]: {
+    backgroundColor: 'Canvas',
+    backgroundImage: 'none',
+    boxShadow: 'none',
+  },
+});
+const SELECTION_SPRING = { type: 'spring', stiffness: 420, damping: 38 } as const;
+const GESTURE_THRESHOLD = 8;
+const SCROLL_THRESHOLD = 8;
+
+interface DragSnapshot {
+  pointer: number;
+  x: number;
+  y: number;
+  moved: boolean;
+  items: Array<{ element: HTMLElement; value: string | undefined }>;
+}
+
+function Selection({ indicator }: { indicator: TabsIndicator }) {
+  const reducedMotion = useReducedMotion();
+  return (
+    <motion.span
+      aria-hidden="true"
+      data-ui="tabs-selection"
+      layoutId="selection"
+      initial={false}
+      transition={reducedMotion ? { duration: 0 } : SELECTION_SPRING}
+      css={[selectionStyle, indicatorStyles[indicator], selectionFallbackStyle]}
+    />
+  );
+}
+
 function TabsRoot({
   ref,
   value: valueProp,
@@ -220,6 +375,16 @@ function TabsRoot({
   onValueChange,
   orientation = 'horizontal',
   activation = 'auto',
+  variant = 'line',
+  indicator = variant === 'line' ? 'line' : variant === 'glass' ? 'pill' : 'lens',
+  labels = 'always',
+  compact: compactProp,
+  defaultCompact = false,
+  onCompactChange,
+  locale,
+  draggableIndicator = false,
+  collapseOnScroll = false,
+  scrollRef,
   className,
   sx,
   items,
@@ -233,10 +398,18 @@ function TabsRoot({
   const baseId = useId();
   const [value, setValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState<string | null>(null);
+  const [compact, setCompact] = useControlledState(compactProp, defaultCompact, onCompactChange);
 
   const context = useMemo(
-    () => ({ value, setValue, focused, setFocused, orientation, activation, baseId }),
-    [value, setValue, focused, orientation, activation, baseId],
+    () => ({
+      value, setValue, focused, setFocused, orientation, activation, baseId,
+      variant, indicator, labels, compact: Boolean(compact), setCompact, locale,
+      draggableIndicator, collapseOnScroll, scrollRef,
+    }),
+    [
+      value, setValue, focused, orientation, activation, baseId, variant, indicator,
+      labels, compact, setCompact, locale, draggableIndicator, collapseOnScroll, scrollRef,
+    ],
   );
   const { css: rootCss, className: rootClassName, style: rootStyleProp, ref: rootRef, 'data-ui': rootDataUi, ...rootProps } = slotProps?.root ?? {};
   const rootMarker = [...new Set(['tabs-root', ...(rootDataUi?.split(/\s+/).filter(Boolean) ?? [])])].join(' ');
@@ -248,38 +421,109 @@ function TabsRoot({
 
   return (
     <TabsContext.Provider value={context}>
-      <WithSx className={[rootClassName, className].filter(Boolean).join(' ')} styles={[rootStyle, rootCss]} sx={sx}>
-        {(className) => (
-          <RootPart {...rest} {...rootProps} style={{ ...rest.style, ...rootStyleProp }} ref={mergedRef} data-ui={rootMarker} data-orientation={orientation} className={className}>
-            {items !== undefined ? (
-              <>
-                <ListPart {...slotProps?.list} aria-label={label}>
-                  {items.map((item) => (
-                    <TabPart {...slotProps?.tab} key={item.value} value={item.value} disabled={item.disabled}>
-                      {item.label}
-                    </TabPart>
-                  ))}
-                </ListPart>
-                {items.map((item) => (
-                  <PanelPart {...slotProps?.panel} key={item.value} value={item.value}>
-                    {item.panel}
-                  </PanelPart>
-                ))}
-              </>
-            ) : children}
-          </RootPart>
-        )}
-      </WithSx>
+      <MotionConfig reducedMotion="user">
+        <LayoutGroup id={baseId}>
+          <WithSx className={[rootClassName, className].filter(Boolean).join(' ')} styles={[rootStyle, rootCss]} sx={sx}>
+            {(className) => (
+              <RootPart
+                {...rest}
+                {...rootProps}
+                style={{ ...rest.style, ...rootStyleProp }}
+                ref={mergedRef}
+                data-ui={rootMarker}
+                data-orientation={orientation}
+                data-variant={variant}
+                data-compact={compact}
+                className={className}
+              >
+                {items !== undefined ? (
+                  <>
+                    <ListPart {...slotProps?.list} aria-label={label}>
+                      {items.map((item) => (
+                        <TabPart
+                          {...slotProps?.tab}
+                          key={item.value}
+                          value={item.value}
+                          disabled={item.disabled}
+                          icon={item.icon}
+                          activeIcon={item.activeIcon}
+                          badge={item.badge}
+                          badgeLabel={item.badgeLabel}
+                        >
+                          {item.label}
+                        </TabPart>
+                      ))}
+                    </ListPart>
+                    {items.map((item) => (
+                      <PanelPart {...slotProps?.panel} key={item.value} value={item.value}>
+                        {item.panel}
+                      </PanelPart>
+                    ))}
+                  </>
+                ) : children}
+              </RootPart>
+            )}
+          </WithSx>
+        </LayoutGroup>
+      </MotionConfig>
     </TabsContext.Provider>
   );
 }
 
 TabsRoot.displayName = 'Tabs';
 
-function TabsList({ ref, onKeyDown, className, sx, ...rest }: TabsListProps) {
-  const { orientation, value, focused, setFocused } = useTabsContext('List');
+function TabsList({
+  ref, onKeyDown, onPointerDown, onPointerMove, onPointerUp, onPointerCancel,
+  onLostPointerCapture, onClickCapture, className, sx, ...rest
+}: TabsListProps) {
+  const {
+    orientation, value, setValue, focused, setFocused, variant,
+    draggableIndicator, collapseOnScroll, scrollRef, setCompact,
+  } = useTabsContext('List');
   const listRef = useRef<HTMLDivElement>(null);
+  const gesture = useRef<DragSnapshot | null>(null);
+  const suppressClick = useRef(false);
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useImperativeHandle(ref, () => listRef.current as HTMLDivElement, []);
+
+  const cancelGesture = () => {
+    const current = gesture.current;
+    gesture.current = null;
+    const list = listRef.current;
+    list?.style.removeProperty('--tabs-preview-x');
+    if (current && list?.hasPointerCapture(current.pointer)) list.releasePointerCapture(current.pointer);
+  };
+
+  useEffect(() => {
+    cancelGesture();
+    return () => {
+      cancelGesture();
+      clearTimeout(clickTimer.current);
+    };
+  }, [value, draggableIndicator, variant]);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || !collapseOnScroll || variant === 'line') return;
+    const view = list.ownerDocument.defaultView;
+    const container = scrollRef?.current;
+    const target = container ?? view;
+    if (!target) return;
+    const read = () => container ? container.scrollTop : view?.scrollY ?? 0;
+    let last = read();
+    const scroll = () => {
+      const next = read();
+      if (list.contains(list.ownerDocument.activeElement) || gesture.current) {
+        last = next;
+        return;
+      }
+      if (Math.abs(next - last) < SCROLL_THRESHOLD) return;
+      setCompact(next > last);
+      last = next;
+    };
+    target.addEventListener('scroll', scroll, { passive: true });
+    return () => target.removeEventListener('scroll', scroll);
+  });
 
   // Keep exactly one tab in the page tab order, preferring (in order): the focused tab, the
   // selected tab, the first enabled tab. This also recovers when the focused or selected tab
@@ -293,15 +537,97 @@ function TabsList({ ref, onKeyDown, className, sx, ...rest }: TabsListProps) {
     setFocused((findByValue(tabs, value) ?? findByValue(tabs, focused) ?? tabs[0])?.dataset.value ?? null);
   });
 
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || variant === 'line') return;
+    const target = findByValue(queryOwnedItems(list, TAB_QUERY), focused ?? value);
+    if (!target) return;
+    const bounds = list.getBoundingClientRect();
+    const item = target.getBoundingClientRect();
+    const gutter = parseFloat(getComputedStyle(list).paddingInlineStart);
+    const start = bounds.left + gutter;
+    const end = bounds.right - gutter;
+    const delta = item.left < start ? item.left - start : item.right > end ? item.right - end : 0;
+    if (delta) list.scrollBy({ left: delta, behavior: 'instant' });
+  }, [focused, value, variant]);
+
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
     const list = listRef.current;
     if (event.defaultPrevented || !list) return;
+    if (event.key === 'Escape' && gesture.current) {
+      event.preventDefault();
+      cancelGesture();
+      return;
+    }
     moveRovingFocus(event, list, orientation, TAB_QUERY);
   };
 
+  const startDrag = (event: PointerEvent<HTMLDivElement>) => {
+    onPointerDown?.(event);
+    if (event.defaultPrevented || !draggableIndicator || variant === 'line' || event.button !== 0 || !event.isPrimary) return;
+    const target = (event.target as HTMLElement).closest<HTMLElement>('[role="tab"]');
+    if (
+      !target || target.closest('[role="tablist"]') !== event.currentTarget ||
+      target.dataset.value !== value || target.hasAttribute('disabled') ||
+      target.dataset.tabVariant === 'action'
+    ) return;
+    gesture.current = {
+      pointer: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      moved: false,
+      items: queryOwnedItems(event.currentTarget, TAB_QUERY).map((element) => ({ element, value: element.dataset.value })),
+    };
+  };
+
+  const moveDrag = (event: PointerEvent<HTMLDivElement>) => {
+    onPointerMove?.(event);
+    const current = gesture.current;
+    if (event.defaultPrevented || !current || current.pointer !== event.pointerId) return;
+    const x = event.clientX - current.x;
+    const y = event.clientY - current.y;
+    if (!current.moved && Math.abs(y) > Math.abs(x) && Math.abs(y) >= GESTURE_THRESHOLD) {
+      cancelGesture();
+      return;
+    }
+    if (!current.moved && Math.abs(x) < GESTURE_THRESHOLD) return;
+    current.moved = true;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.style.setProperty('--tabs-preview-x', `${x}px`);
+  };
+
+  const finishDrag = (event: PointerEvent<HTMLDivElement>) => {
+    onPointerUp?.(event);
+    const current = gesture.current;
+    if (!current || current.pointer !== event.pointerId) return;
+    if (current.moved) {
+      suppressClick.current = true;
+      clearTimeout(clickTimer.current);
+      clickTimer.current = setTimeout(() => { suppressClick.current = false; }, 0);
+      const items = queryOwnedItems(event.currentTarget, TAB_QUERY);
+      const unchanged = items.length === current.items.length && items.every((item, index) =>
+        item === current.items[index]?.element && item.dataset.value === current.items[index]?.value,
+      );
+      if (!event.defaultPrevented && unchanged) {
+        const nearest = items.reduce<HTMLElement | undefined>((best, item) => {
+          const rect = item.getBoundingClientRect();
+          const previous = best?.getBoundingClientRect();
+          const distance = Math.abs(event.clientX - (rect.left + rect.width / 2));
+          const previousDistance = previous ? Math.abs(event.clientX - (previous.left + previous.width / 2)) : Infinity;
+          return distance < previousDistance ? item : best;
+        }, undefined);
+        if (nearest?.dataset.value !== undefined) {
+          setFocused(nearest.dataset.value);
+          setValue(nearest.dataset.value);
+        }
+      }
+    }
+    cancelGesture();
+  };
+
   return (
-    <WithSx className={className} styles={listStyles[orientation]} sx={sx}>
+    <WithSx className={className} styles={[listStyles[orientation], variant !== 'line' && materialListStyle, variant !== 'line' && translucentControlStyle]} sx={sx}>
       {(className) => (
         <div
           {...rest}
@@ -313,6 +639,19 @@ function TabsList({ ref, onKeyDown, className, sx, ...rest }: TabsListProps) {
           data-roving={focused ?? ''}
           data-selected={value ?? ''}
           onKeyDown={handleKeyDown}
+          onPointerDown={startDrag}
+          onPointerMove={moveDrag}
+          onPointerUp={finishDrag}
+          onPointerCancel={(event) => { onPointerCancel?.(event); cancelGesture(); }}
+          onLostPointerCapture={(event) => { onLostPointerCapture?.(event); cancelGesture(); }}
+          onClickCapture={(event) => {
+            onClickCapture?.(event);
+            if (suppressClick.current && event.detail !== 0) {
+              event.preventDefault();
+              event.stopPropagation();
+              suppressClick.current = false;
+            }
+          }}
           className={className}
         />
       )}
@@ -322,7 +661,7 @@ function TabsList({ ref, onKeyDown, className, sx, ...rest }: TabsListProps) {
 
 TabsList.displayName = 'Tabs.List';
 
-function TabsTab({ ref, value, disabled, onClick, onFocus, onPointerDown, className, sx, ...rest }: TabsTabProps) {
+function TabsTab({ ref, value, disabled, onClick, onFocus, onPointerDown, className, sx, icon, activeIcon, badge, badgeLabel, variant: tabVariant = 'default', children, ...rest }: TabsTabProps) {
   const {
     value: selectedValue,
     setValue,
@@ -331,9 +670,22 @@ function TabsTab({ ref, value, disabled, onClick, onFocus, onPointerDown, classN
     activation,
     baseId,
     orientation,
+    variant,
+    indicator,
+    labels,
+    compact,
+    setCompact,
+    locale,
   } = useTabsContext('Tab');
   const isSelected = selectedValue === value;
   const isTabStop = !disabled && (focused !== null ? focused === value : isSelected);
+  const shownIcon = isSelected ? activeIcon ?? icon : icon;
+  const hasIcon = isRenderable(shownIcon);
+  const hideLabel = hasIcon && (compact || labels === 'none' || (labels === 'active' && !isSelected));
+  const visibleBadge = typeof badge === 'number'
+    ? Number.isInteger(badge) && badge > 0 ? new Intl.NumberFormat(locale).format(badge) : undefined
+    : badge || undefined;
+  const badgeId = useId();
   // Tracks whether the focus event already issued the selection request for this activation,
   // so a click following that focus never notifies twice.
   const focusRequestRef = useRef(false);
@@ -355,11 +707,12 @@ function TabsTab({ ref, value, disabled, onClick, onFocus, onPointerDown, classN
     if (event.defaultPrevented) return;
     focusRequestRef.current = true;
     setFocused(value);
+    if (compact) setCompact(false);
     if (activation === 'auto') setValue(value);
   };
 
   return (
-    <WithSx className={className} styles={[tabStyle, tabOrientationStyles[orientation]]} sx={sx}>
+    <WithSx className={className} styles={[tabStyle, tabOrientationStyles[orientation], variant !== 'line' && materialTabStyle]} sx={sx}>
       {(className) => (
         <button
           {...rest}
@@ -370,6 +723,8 @@ function TabsTab({ ref, value, disabled, onClick, onFocus, onPointerDown, classN
           data-ui="tabs-tab"
           data-value={value}
           data-state={isSelected ? 'active' : 'inactive'}
+          data-tab-variant={tabVariant}
+          aria-describedby={[rest['aria-describedby'], visibleBadge && badgeLabel && badgeId].filter(Boolean).join(' ') || undefined}
           aria-selected={isSelected}
           aria-controls={partId(baseId, 'panel', value)}
           tabIndex={isTabStop ? 0 : -1}
@@ -381,7 +736,13 @@ function TabsTab({ ref, value, disabled, onClick, onFocus, onPointerDown, classN
             onPointerDown?.(event);
           }}
           className={className}
-        />
+        >
+          {isSelected && !disabled && variant !== 'line' && tabVariant !== 'action' && <Selection indicator={indicator} />}
+          {hasIcon && <span aria-hidden="true" data-ui="tabs-icon" css={iconStyle}>{shownIcon}</span>}
+          <span data-ui="tabs-label" css={hideLabel && visuallyHiddenStyle}>{children}</span>
+          {visibleBadge && <span aria-hidden={Boolean(badgeLabel)} css={badgeStyle}>{visibleBadge}</span>}
+          {visibleBadge && badgeLabel && <span id={badgeId} hidden>{badgeLabel}</span>}
+        </button>
       )}
     </WithSx>
   );

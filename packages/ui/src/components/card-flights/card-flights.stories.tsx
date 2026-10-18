@@ -27,82 +27,58 @@ const meta = {
   parameters: { a11y: { test: 'error' }, docs: {
     description: { component: 'Deal cards to a hand and move played cards to their table piles.' },
     source: { language: 'tsx', code: `import { useState } from 'react';
-import {
-  CardFlightsProvider, useBoardFlights,
-  type PlayedFlightCard,
-} from '@jfrader/ui/card-flights';
-import { GameCardStack } from '@jfrader/ui/game-card-stack';
+import { CardFlightsProvider, useBoardFlights, type PlayedFlightCard } from '@jfrader/ui/card-flights';
 import { GameHand, type GameHandCard } from '@jfrader/ui/game-hand';
+import { GameCardStack } from '@jfrader/ui/game-card-stack';
 import { GameTable } from '@jfrader/ui/game-table';
-import { Button } from '@jfrader/ui/button';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
+import { Button } from '@jfrader/ui/button';
+import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
-import { styled } from '@jfrader/ui';
-const Controls = styled.div({ display: 'flex', gap: vars.space[2], padding: vars.space[3] });
-const Board = styled.div({ blockSize: '600px', maxInlineSize: '850px' });
-
-function App() {
-  const [host, setHost] = useState<HTMLDivElement | null>(null);
-  return <div ref={setHost}><ThemeRoot theme="dark" portalContainer={host}>
-    <CardFlightsProvider><Match /></CardFlightsProvider>
-  </ThemeRoot></div>;
-}
-
+const Board = styled.div({ blockSize: \`calc(\${vars.space[6]} * 25)\`, maxInlineSize: '100%' });
+const cards = [
+  { id: 'own-ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'own-two', label: 'Two of spades', value: { deck: 'french', suit: 'spades', rank: 2 } },
+  { id: 'own-three', label: 'Three of spades', value: { deck: 'french', suit: 'spades', rank: 3 } },
+] satisfies GameHandCard[];
+const rivalCards = [
+  { id: 'rival-four', label: 'Four of hearts', value: { deck: 'french', suit: 'hearts', rank: 4 } },
+  { id: 'rival-five', label: 'Five of hearts', value: { deck: 'french', suit: 'hearts', rank: 5 } },
+  { id: 'rival-six', label: 'Six of hearts', value: { deck: 'french', suit: 'hearts', rank: 6 } },
+] satisfies GameHandCard[];
 const seats = [{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }];
-const hands = {
-  own: [
-    { id: 'own-ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
-    { id: 'own-two', label: 'Two of spades', value: { deck: 'french', suit: 'spades', rank: 2 } },
-    { id: 'own-three', label: 'Three of spades', value: { deck: 'french', suit: 'spades', rank: 3 } },
-  ],
-  rival: [
-    { id: 'rival-four', label: 'Four of hearts', value: { deck: 'french', suit: 'hearts', rank: 4 } },
-    { id: 'rival-five', label: 'Five of hearts', value: { deck: 'french', suit: 'hearts', rank: 5 } },
-    { id: 'rival-six', label: 'Six of hearts', value: { deck: 'french', suit: 'hearts', rank: 6 } },
-  ],
-} satisfies Record<string, GameHandCard[]>;
 
 function Match() {
   const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
   const [handKey, setHandKey] = useState(1);
-  const remaining = (player: keyof typeof hands) => hands[player].filter((card) => !plays.some((play) => play.cardId === card.id));
-  const hand = remaining('own');
-  const rivalCards = remaining('rival');
+  const hand = cards.filter((card) => !plays.some((play) => play.cardId === card.id));
+  const rival = rivalCards.filter((card) => !plays.some((play) => play.cardId === card.id));
   const { landing } = useBoardFlights({ hand, handKey, plays });
-
   const play = (card: GameHandCard) => {
     const own: PlayedFlightCard = { ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true };
-    const rival = rivalCards[0];
-    setPlays((current) => [...current, own, ...(rival ? [{
-      ...rival, cardId: rival.id, id: crypto.randomUUID(), playerKey: 'rival', isOwn: false,
+    const reply = rival[0];
+    setPlays((current) => [...current, own, ...(reply ? [{
+      ...reply, cardId: reply.id, id: crypto.randomUUID(), playerKey: 'rival', isOwn: false,
     }] : [])]);
   };
-
-  return (
-    <>
-    <Controls>
-      <Button disabled={landing.size > 0} onClick={() => { setPlays([]); setHandKey((key) => key + 1); }}>Deal hand</Button>
-    </Controls>
-    <Board>
-    <GameTable players={2} seats={seats}>
-      <GameTable.Seat slotKey="rival">
-        <GameHand.Hidden playerKey="rival" count={rivalCards.length} label="Rival hand" />
-      </GameTable.Seat>
+  return <>
+    <Button disabled={landing.size > 0} onClick={() => { setPlays([]); setHandKey((key) => key + 1); }}>Deal hand</Button>
+    <Board><GameTable players={2} seats={seats}>
+      <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rival.length} label="Rival hand" /></GameTable.Seat>
       <GameTable.Dock>
-        <GameHand cards={hand} playLabel="Play selected" disabled={landing.size > 0}
-          onPlayIntent={play} />
+        <GameHand cards={hand} playLabel="Play selected" disabled={landing.size > 0} onPlayIntent={play} />
       </GameTable.Dock>
-      {seats.map((seat) => (
-        <GameTable.Play key={seat.key} slotKey={seat.key}>
-          <GameCardStack.Pile playerKey={seat.key} label={seat.isMe ? 'Own pile' : 'Rival pile'}
-            cards={plays.filter((entry) => entry.playerKey === seat.key)} />
-        </GameTable.Play>
-      ))}
-    </GameTable>
-    </Board>
-    </>
-  );
+      {seats.map((seat) => <GameTable.Play key={seat.key} slotKey={seat.key}>
+        <GameCardStack.Pile playerKey={seat.key} label={seat.isMe ? 'Own pile' : 'Rival pile'}
+          cards={plays.filter((play) => play.playerKey === seat.key)} />
+      </GameTable.Play>)}
+    </GameTable></Board>
+  </>;
+}
+
+export function App() {
+  return <ThemeRoot theme="dark"><CardFlightsProvider><Match /></CardFlightsProvider></ThemeRoot>;
 }` },
     usage: `## Setup
 - Import from \`@jfrader/ui/card-flights\`. Card flights are an opt-in subpath and are not re-exported by the package root.
@@ -134,7 +110,9 @@ function Match() {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** Deal a hand and play cards into the two table piles. */
 export const DealAndPlay: Story = {
+  name: 'Deal and play',
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(fixtureSource).not.toContain('querySelector');
     await waitFor(() => expect(canvasElement.querySelector('[data-ui="game-table"]')).not.toHaveAttribute('data-layout-fit', 'measuring'));
@@ -175,7 +153,9 @@ export const DealAndPlay: Story = {
     await expect(canvas.getByRole('button', { name: 'Ace of spades' })).toBeEnabled();
   },
 };
+/** The deal-and-play board uses the light theme. */
 export const Light: Story = {
+  name: 'Light theme',
   render: () => <CardFlightsFixture theme="light" />,
   parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
 import { CardFlightsProvider, useBoardFlights, type PlayedFlightCard } from '@jfrader/ui/card-flights';
@@ -187,51 +167,49 @@ import { Button } from '@jfrader/ui/button';
 import { vars } from '@jfrader/tokens/vars';
 
 import { styled } from '@jfrader/ui';
-const Controls = styled.div({ display: 'flex', gap: vars.space[2], padding: vars.space[3] });
-const Board = styled.div({ blockSize: '600px', maxInlineSize: '850px' });
-
-const hands = {
-  own: [
-    { id: 'own-ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
-    { id: 'own-two', label: 'Two of spades', value: { deck: 'french', suit: 'spades', rank: 2 } },
-    { id: 'own-three', label: 'Three of spades', value: { deck: 'french', suit: 'spades', rank: 3 } },
-  ],
-  rival: [
-    { id: 'rival-four', label: 'Four of hearts', value: { deck: 'french', suit: 'hearts', rank: 4 } },
-    { id: 'rival-five', label: 'Five of hearts', value: { deck: 'french', suit: 'hearts', rank: 5 } },
-    { id: 'rival-six', label: 'Six of hearts', value: { deck: 'french', suit: 'hearts', rank: 6 } },
-  ],
-} satisfies Record<string, GameHandCard[]>;
+const Board = styled.div({ blockSize: \`calc(\${vars.space[6]} * 25)\`, maxInlineSize: '100%' });
+const cards = [
+  { id: 'own-ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'own-two', label: 'Two of spades', value: { deck: 'french', suit: 'spades', rank: 2 } },
+  { id: 'own-three', label: 'Three of spades', value: { deck: 'french', suit: 'spades', rank: 3 } },
+] satisfies GameHandCard[];
+const rivalCards = [
+  { id: 'rival-four', label: 'Four of hearts', value: { deck: 'french', suit: 'hearts', rank: 4 } },
+  { id: 'rival-five', label: 'Five of hearts', value: { deck: 'french', suit: 'hearts', rank: 5 } },
+  { id: 'rival-six', label: 'Six of hearts', value: { deck: 'french', suit: 'hearts', rank: 6 } },
+] satisfies GameHandCard[];
 const seats = [{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }];
 
-export function LightMatch() {
-  const [host, setHost] = useState<HTMLDivElement | null>(null);
-  return <div ref={setHost}><ThemeRoot theme="light" portalContainer={host}><CardFlightsProvider><Match /></CardFlightsProvider></ThemeRoot></div>;
-}
 function Match() {
-  const [handKey, setHandKey] = useState(1);
   const [plays, setPlays] = useState<PlayedFlightCard[]>([]);
-  const remaining = (player: keyof typeof hands) => hands[player].filter((card) => !plays.some((play) => play.cardId === card.id));
-  const hand = remaining('own');
-  const rivalCards = remaining('rival');
+  const [handKey, setHandKey] = useState(1);
+  const hand = cards.filter((card) => !plays.some((play) => play.cardId === card.id));
+  const rival = rivalCards.filter((card) => !plays.some((play) => play.cardId === card.id));
   const { landing } = useBoardFlights({ hand, handKey, plays });
   const play = (card: GameHandCard) => {
     const own: PlayedFlightCard = { ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true };
-    const rival = rivalCards[0];
-    setPlays((current) => [...current, own, ...(rival ? [{ ...rival, cardId: rival.id, id: crypto.randomUUID(), playerKey: 'rival', isOwn: false }] : [])]);
+    const reply = rival[0];
+    setPlays((current) => [...current, own, ...(reply ? [{
+      ...reply, cardId: reply.id, id: crypto.randomUUID(), playerKey: 'rival', isOwn: false,
+    }] : [])]);
   };
   return <>
-    <Controls>
-      <Button disabled={landing.size > 0} onClick={() => { setPlays([]); setHandKey((key) => key + 1); }}>Deal hand</Button>
-    </Controls>
+    <Button disabled={landing.size > 0} onClick={() => { setPlays([]); setHandKey((key) => key + 1); }}>Deal hand</Button>
     <Board><GameTable players={2} seats={seats}>
-      <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rivalCards.length} label="Rival hand" /></GameTable.Seat>
-      <GameTable.Dock><GameHand cards={hand} playLabel="Play selected" onPlayIntent={play} disabled={landing.size > 0} /></GameTable.Dock>
+      <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rival.length} label="Rival hand" /></GameTable.Seat>
+      <GameTable.Dock>
+        <GameHand cards={hand} playLabel="Play selected" disabled={landing.size > 0} onPlayIntent={play} />
+      </GameTable.Dock>
       {seats.map((seat) => <GameTable.Play key={seat.key} slotKey={seat.key}>
-        <GameCardStack.Pile playerKey={seat.key} label={seat.isMe ? 'Own pile' : 'Rival pile'} cards={plays.filter((entry) => entry.playerKey === seat.key)} />
+        <GameCardStack.Pile playerKey={seat.key} label={seat.isMe ? 'Own pile' : 'Rival pile'}
+          cards={plays.filter((play) => play.playerKey === seat.key)} />
       </GameTable.Play>)}
     </GameTable></Board>
   </>;
+}
+
+export function LightMatch() {
+  return <ThemeRoot theme="light"><CardFlightsProvider><Match /></CardFlightsProvider></ThemeRoot>;
 }` } } },
 };
 
