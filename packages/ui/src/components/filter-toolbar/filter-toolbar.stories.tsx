@@ -54,6 +54,36 @@ const DEFINITIONS: readonly FilterToolbarDefinition[] = [
   },
 ];
 
+const ISSUE_FILTERS: readonly FilterToolbarDefinition[] = [
+  {
+    type: 'select',
+    id: 'status',
+    label: 'Status',
+    placeholder: 'Any status',
+    options: [
+      { value: 'open', label: 'Open' },
+      { value: 'in-review', label: 'In review' },
+      { value: 'closed', label: 'Closed' },
+    ],
+  },
+  {
+    type: 'multiselect',
+    id: 'assignee',
+    label: 'Assignee',
+    placeholder: 'Anyone',
+    options: [
+      { id: 'assignee-ada', value: 'ada', label: 'Ada Lovelace' },
+      { id: 'assignee-grace', value: 'grace', label: 'Grace Hopper' },
+      { id: 'assignee-alan', value: 'alan', label: 'Alan Turing' },
+    ],
+  },
+];
+
+const ISSUE_DEFAULT: readonly FilterValue[] = [
+  { id: 'status', label: 'Status', value: 'open', valueLabel: 'Open' },
+  { id: 'assignee-ada', label: 'Assignee', value: 'ada', valueLabel: 'Ada Lovelace' },
+];
+
 const SOURCE = `<FilterToolbar
   filters={[
     {
@@ -63,17 +93,19 @@ const SOURCE = `<FilterToolbar
       placeholder: 'Any status',
       options: [
         { value: 'open', label: 'Open' },
+        { value: 'in-review', label: 'In review' },
         { value: 'closed', label: 'Closed' },
       ],
     },
     {
       type: 'multiselect',
-      id: 'owner',
-      label: 'Owner',
-      placeholder: 'Any owner',
+      id: 'assignee',
+      label: 'Assignee',
+      placeholder: 'Anyone',
       options: [
-        { id: 'owner-me', value: 'me', label: 'Me' },
-        { id: 'owner-team', value: 'team', label: 'Team' },
+        { id: 'assignee-ada', value: 'ada', label: 'Ada Lovelace' },
+        { id: 'assignee-grace', value: 'grace', label: 'Grace Hopper' },
+        { id: 'assignee-alan', value: 'alan', label: 'Alan Turing' },
       ],
     },
   ]}
@@ -147,8 +179,8 @@ async function focus(element: HTMLElement) {
 export const Default: Story = {
   render: () => (
     <FilterToolbar
-      filters={DEFINITIONS}
-      defaultValue={EASY_FILTERS}
+      filters={ISSUE_FILTERS}
+      defaultValue={ISSUE_DEFAULT}
       resultCount={12}
     />
   ),
