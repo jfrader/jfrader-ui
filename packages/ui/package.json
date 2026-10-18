@@ -22,6 +22,9 @@
     "dist"
   ],
   "exports": {
+    "./input-group": { "types": "./src/components/input-group/index.ts", "import": "./src/components/input-group/index.ts" },
+    "./streaming-caret": { "types": "./src/components/streaming-caret/index.ts", "import": "./src/components/streaming-caret/index.ts" },
+    "./prose": { "types": "./src/components/prose/index.ts", "import": "./src/components/prose/index.ts" },
     "./control-center": { "types": "./src/components/control-center/index.ts", "import": "./src/components/control-center/index.ts" },
     "./date-reel": { "types": "./src/components/date-reel/index.ts", "import": "./src/components/date-reel/index.ts" },
     "./page-curl": { "types": "./src/components/page-curl/index.ts", "import": "./src/components/page-curl/index.ts" },

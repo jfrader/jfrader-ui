@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **151**; public callable parts: **162**.
-- Families exposing `slots.root`: **90**; remaining without a family-level root slot: **61** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **120**; remaining without family-level interior slots: **31** (includes components without generated anatomy).
+- Public callable families: **154**; public callable parts: **165**.
+- Families exposing `slots.root`: **91**; remaining without a family-level root slot: **63** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **120**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -200,6 +200,10 @@ may exist and is listed on the corresponding public part).
 | [HoverCard.Trigger](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |
 | [ImageCompare](../packages/ui/src/components/image-compare/image-compare.tsx) | — | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | — | — | — |
 | [InlineEdit](../packages/ui/src/components/inline-edit/inline-edit.tsx) | yes | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | — | `controlProps` | — |
+| [InputGroup](../packages/ui/src/components/input-group/input-group.tsx) | yes | `root` | `root` | — | — | `Addon`, `Input`, `Textarea` |
+| [InputGroup.Addon](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
+| [InputGroup.Input](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
+| [InputGroup.Textarea](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
 | [JsonViewer](../packages/ui/src/components/json-viewer/json-viewer.tsx) | — | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | — | — | — |
 | [Kbd](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | `Group` |
 | [Kbd.Group](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | — |
@@ -245,6 +249,7 @@ may exist and is listed on the corresponding public part).
 | [Popover.Content](../packages/ui/src/components/popover/popover.tsx) | — | — | — | — | — | — |
 | [Popover.Trigger](../packages/ui/src/components/popover/popover.tsx) | — | — | — | — | — | — |
 | [Progress](../packages/ui/src/components/progress/progress.tsx) | — | `indicator` | `indicator` | — | — | — |
+| [Prose](../packages/ui/src/components/prose/prose.tsx) | — | — | — | — | — | — |
 | [RadialMenu](../packages/ui/src/components/radial-menu/radial-menu.tsx) | yes | `content`, `item`, `root`, `status`, `trigger` | `content`, `item`, `root`, `status`, `trigger` | — | — | — |
 | [RadioCards](../packages/ui/src/components/radio-cards/radio-cards.tsx) | yes | `error`, `item`, `label`, `root` | `error`, `item`, `label`, `root` | — | — | `Description`, `Item`, `Label` |
 | [RadioCards.Description](../packages/ui/src/components/radio-cards/radio-cards.tsx) | — | — | — | — | — | — |
@@ -286,6 +291,7 @@ may exist and is listed on the corresponding public part).
 | [SplitButton.Trigger](../packages/ui/src/components/split-button/split-button.tsx) | — | — | — | — | — | — |
 | [Stack](../packages/ui/src/components/stack/stack.tsx) | — | — | — | — | — | — |
 | [Stepper](../packages/ui/src/components/stepper/stepper.tsx) | — | `caption`, `connector`, `description`, `head`, `item`, `label`, `list`, `marker`, `root` | `caption`, `connector`, `description`, `head`, `item`, `label`, `list`, `marker`, `root` | — | — | — |
+| [StreamingCaret](../packages/ui/src/components/streaming-caret/streaming-caret.tsx) | — | — | — | — | — | — |
 | [StretchRefresh](../packages/ui/src/components/stretch-refresh/stretch-refresh.tsx) | — | `empty`, `feed`, `header`, `indicator`, `item`, `list`, `refreshButton`, `status`, `subtitle`, `title` | `empty`, `feed`, `header`, `indicator`, `item`, `list`, `refreshButton`, `status`, `subtitle`, `title` | — | — | — |
 | [Surface](../packages/ui/src/components/surface/surface.tsx) | yes | `root` | `root` | — | — | — |
 | [SwipeActions](../packages/ui/src/components/swipe-actions/swipe-actions.tsx) | — | `root`, `row` | `root`, `row` | — | — | `Row` |
