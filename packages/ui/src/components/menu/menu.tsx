@@ -159,7 +159,7 @@ export interface MenuSeparatorProps extends ComponentPropsWithRef<'div'>, SxProp
 export type MenuItemTone = 'neutral' | 'danger';
 
 /** Positioning options a family may set on the shared controller; Menu keeps the defaults. */
-export type MenuPositioning = Pick<OverlayFloatingOptions, 'strategy' | 'gap' | 'transform' | 'onAvailableSize'>;
+export type MenuPositioning = Pick<OverlayFloatingOptions, 'strategy' | 'gap' | 'transform' | 'onAvailableSize' | 'collision'>;
 
 export interface MenuControllerProps extends MenuStateProps {
   children?: ReactNode;

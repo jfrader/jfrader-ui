@@ -45,7 +45,9 @@ const meta = {
       description: { component: 'Reserve space for content while it loads.' },
       usage: `- The placeholder is aria-hidden and has no role. Announce loading elsewhere with a Spinner or aria-busy on the region.
 - Numeric dimensions are pixels; strings are CSS lengths.
-- With circle, height follows width unless height is supplied.`,
+- With circle, height follows width unless height is supplied.
+- Compose \`Skeleton.Morph\` and \`Skeleton.Block\` to replace placeholders with ready content. Pass \`value="loading" | "ready"\` and a localized \`loadingLabel\`; optional \`readyLabel\` announces completion. \`defaultValue\` seeds a static presentation and emits no state requests.
+- Ready content is mounted immediately; loading unmounts it. Reload parks focus on the shell only when a removed content control owned focus. Reduced motion swaps immediately. See the Morph Profile example for the complete composition.`,
     },
   },
   tags: ['autodocs'],
