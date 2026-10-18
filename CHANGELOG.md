@@ -11,6 +11,14 @@
 - Select and MultiSelect share one labeled-field layout, and Select triggers show a disclosure caret.
 - ShareAccess member rows share a uniform height, role pickers align on the control line, role labels stay available to assistive technology, and the surface fills its host. ShareSheet keeps the access picker at the end of the copy row while the "Copied" confirmation appears.
 
+## 0.9.1
+
+### Fixed
+
+- `Prose` no longer emits the Emotion SSR warning for `:first-child`/`:last-child`. Table cells keep normal word wrapping.
+- `StreamingCaret` uses a valid token-derived blink duration.
+- The `Prose` story moves to the existing `Data display` section. `InputGroup`, `StreamingCaret` and `Prose` now document their props, usage and source examples against the repo's documentation spec.
+
 ## 0.9.0
 
 ### Changed

@@ -2,6 +2,7 @@ import { useId, useRef, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { withLightTheme } from '../../testing/story-decorators';
+import { Button } from '../button';
 import { InputGroup } from './index';
 
 function Example(args: ComponentPropsWithRef<typeof InputGroup>) {
@@ -22,16 +23,16 @@ const meta = {
   parameters: { docs: {
     description: { component: 'Group an input or textarea with units, icons or actions in one frame.' },
     usage: `### Labels and errors
-Place labels, IDs, descriptions and native value handlers on InputGroup.Input or InputGroup.Textarea. Use React useId for label and error relationships. The frame creates no IDs or validation messages. Native value/defaultValue and onChange work unchanged.
+Put labels, IDs, descriptions and native value handlers on \`InputGroup.Input\` or \`InputGroup.Textarea\`. Use React \`useId\` for label and error relationships. The frame creates no IDs or validation messages. Native \`value\`, \`defaultValue\` and \`onChange\` work unchanged.
 
 ### Keyboard
-This is native form composition, not a separate APG widget. Tab and Shift+Tab follow DOM order; addon placement changes visual order only. Put start addons before the control and end addons after it when they contain buttons. Keyboard focus on the control or an addon action outlines the frame.
+InputGroup composes native controls. \`Tab\` and \`Shift+Tab\` follow DOM order. Addon placement changes visual order only. Put start addons before the control and end addons after it when they contain buttons. Focus on the control or an addon action outlines the frame.
 
 ### Disabled
-disabled disables the input and textarea. Disable addon actions explicitly. invalid marks the frame and defaults the control's aria-invalid to true; provide an error message as well. No submission or text processing is added.
+\`disabled\` disables the input or textarea. Disable addon actions explicitly. \`invalid\` marks the frame and sets the control's \`aria-invalid\` to \`true\`. Provide an error message as well. InputGroup does not submit or process text.
 
 ### Customization
-component, slots.root and slotProps.root replace or configure the frame. Compound parts accept native props, refs and sx. Size belongs to the frame; native input size still controls the input's character width.`,
+\`component\`, \`slots.root\` and \`slotProps.root\` replace or configure the frame. Compound parts accept native props, refs and \`sx\`. \`size\` belongs to the frame. The native input \`size\` still controls the character width.`,
   } },
   args: { size: 'md' }, render: (args) => <Example {...args} />,
 } satisfies Meta<typeof InputGroup>;
@@ -39,6 +40,18 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `<InputGroup>
+  <InputGroup.Addon placement="start">$</InputGroup.Addon>
+  <InputGroup.Input aria-label="Amount" defaultValue="25" />
+  <InputGroup.Addon placement="end">USD</InputGroup.Addon>
+</InputGroup>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByRole('textbox', { name: 'Amount' });
     const frame = input.closest('[data-ui="input-group"]')!;
@@ -91,7 +104,7 @@ function ActionExample() {
   return <InputGroup>
     <InputGroup.Input ref={inputRef} aria-label="Reference" />
     <InputGroup.Addon placement="end">
-      <button type="button" onClick={() => inputRef.current?.focus()}>Focus input</button>
+      <Button size="sm" variant="ghost" type="button" onClick={() => inputRef.current?.focus()}>Focus input</Button>
     </InputGroup.Addon>
   </InputGroup>;
 }

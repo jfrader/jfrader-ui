@@ -8,10 +8,10 @@ const meta = {
   parameters: { docs: {
     description: { component: 'Mark the end of text as it appears.' },
     usage: `### Accessibility
-The span is decorative (aria-hidden by default). Provide any status text or live region separately. It has no APG pattern or keyboard interactions and never moves focus.
+The caret is decorative. It is \`aria-hidden\` by default. Provide status text or a live region separately. It has no APG pattern and never moves focus.
 
 ### Motion
-The caret blinks in the normal motion setting and stays visible when prefers-reduced-motion is reduce. Size sets its font size; color inherits from the surrounding text. No transport, text buffering or timers are owned by this component.`,
+The caret blinks normally and stays visible when \`prefers-reduced-motion\` is \`reduce\`. \`size\` sets the font size. Color inherits from the surrounding text. The component does not own transport, text buffering or timers.`,
   } },
   render: (args) => <p>Writing<StreamingCaret {...args} /></p>,
 } satisfies Meta<typeof StreamingCaret>;
@@ -22,6 +22,7 @@ export const Default: Story = {
     const caret = canvasElement.querySelector('[data-ui="streaming-caret"]')!;
     await expect(caret).toHaveAttribute('aria-hidden', 'true');
     await expect(getComputedStyle(caret).animationName).not.toBe('none');
+    await expect(parseFloat(getComputedStyle(caret).animationDuration)).toBeGreaterThan(0);
     await expect(caret).not.toHaveAttribute('tabindex');
   },
 };
