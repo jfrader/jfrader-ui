@@ -162,6 +162,7 @@ export const DurationFormatMissing: Story = {
         { locale: 'en-US', elapsed: 3661 },
         { locale: 'fi', elapsed: 3723 },
         { locale: 'en-US', elapsed: 108_065 },
+        { locale: 'fr', elapsed: 0 },
       ].map(({ locale, elapsed }) => (
         <VoiceOrb {...args} key={`${locale}-${elapsed}`} locale={locale} elapsed={elapsed} defaultActive>
           <VoiceOrb.Controls aria-label={`${locale} ${elapsed}`} />
@@ -184,6 +185,7 @@ export const DurationFormatMissing: Story = {
     await expect(timer('fi 3723')).toHaveTextContent('1.02.03');
     await expect(timer('en-US 108065')).toHaveTextContent('30:01:05');
     await expect(timer('en-US 108065')).toHaveAccessibleName('30 hours, 1 minute, and 5 seconds');
+    await expect(timer('fr 0')).toHaveAccessibleName(new Intl.NumberFormat('fr', { style: 'unit', unit: 'second', unitDisplay: 'long' }).format(0));
   },
 };
 function InlineCallbacks({ onStart }: { onStart: (renders: number) => void }) {

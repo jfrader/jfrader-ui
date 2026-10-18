@@ -1,6 +1,7 @@
 import { configure, getConfig } from 'storybook/test';
 import { beforeAll, beforeEach, afterEach } from 'vitest';
 import { cdp } from 'vitest/browser';
+import { auditDesign } from '../../../packages/ui/src/testing/design-assertions';
 
 type EventWrapper = ReturnType<typeof getConfig>['eventWrapper'];
 
@@ -54,11 +55,17 @@ function guardEventWrapperReentrancy() {
 
 beforeAll(guardEventWrapperReentrancy);
 
+afterEach(() => {
+  const failures = auditDesign(document);
+  if (failures.length) throw new Error(`Design audit:\n${failures.join('\n')}`);
+});
+
 // Emulate the browser preference itself: mocking matchMedia does not activate CSS media rules.
 const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
   'Reduced Transparency': 'prefers-reduced-transparency',
   'Dial Reduced Motion': 'prefers-reduced-motion',
   'Morph Reduced Motion': 'prefers-reduced-motion',
+  'Semantic Reduced Motion': 'prefers-reduced-motion',
   'Action Reduced Motion': 'prefers-reduced-motion',
   'Action Button Reduced Motion': 'prefers-reduced-motion',
   'Wallet Reduced Motion': 'prefers-reduced-motion',

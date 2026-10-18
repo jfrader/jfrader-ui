@@ -268,6 +268,13 @@ const walletStampStyle = css({
   textTransform: 'uppercase',
 });
 const contentStyle = css({
+  '& :where(h3)': { fontSize: vars.textSize.lg },
+  '& :where(input, textarea, select)': {
+    font: 'inherit',
+    color: vars.color.text,
+    backgroundColor: vars.color.surfaceRaised,
+    borderColor: vars.color.borderControl,
+  },
   overflow: 'auto',
   minBlockSize: 0,
   flex: '1 1 auto',

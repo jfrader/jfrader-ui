@@ -63,8 +63,9 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** Win panel with reward and actions. Consumer owns labels and next actions. */
+/** Match-end win panel showing earned rewards and follow-up actions. */
 export const Win: Story = {
+  name: 'Win',
   args: {
     outcome: 'won',
     eyebrow: 'Partida finalizada',
@@ -83,7 +84,11 @@ export const Win: Story = {
   parameters: {
     docs: {
       source: {
-        code: `<GameResult
+        language: 'tsx',
+        code: `import { Button } from '@jfrader/ui/button';
+import { GameResult } from '@jfrader/ui/game-result';
+
+<GameResult
   outcome="won"
   eyebrow="Partida finalizada"
   title="Victoria"
@@ -113,8 +118,9 @@ export const Win: Story = {
   },
 };
 
-/** Loss panel. */
+/** Match-end loss panel with single return action. */
 export const Loss: Story = {
+  name: 'Loss',
   args: {
     outcome: 'lost',
     eyebrow: 'Partida finalizada',
@@ -125,7 +131,11 @@ export const Loss: Story = {
   parameters: {
     docs: {
       source: {
-        code: `<GameResult
+        language: 'tsx',
+        code: `import { Button } from '@jfrader/ui/button';
+import { GameResult } from '@jfrader/ui/game-result';
+
+<GameResult
   outcome="lost"
   eyebrow="Partida finalizada"
   title="Derrota"
@@ -143,8 +153,24 @@ export const Loss: Story = {
   },
 };
 
-/** Draw state for completeness. */
+/** Match-end draw panel with neutral styling. */
 export const Draw: Story = {
+  name: 'Draw',
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { GameResult } from '@jfrader/ui/game-result';
+
+<GameResult
+  outcome="draw"
+  eyebrow="Partida finalizada"
+  title="Empate"
+  summary="1–1. Sin cambios en ranking."
+/>`,
+      },
+    },
+  },
   args: {
     outcome: 'draw',
     eyebrow: 'Partida finalizada',
@@ -158,8 +184,27 @@ export const Draw: Story = {
   },
 };
 
-/** Light theme variant (globals provide the rest). */
+/** Match-end result panel in light theme. */
 export const Light: Story = {
+  name: 'Light theme',
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ThemeRoot } from '@jfrader/ui';
+import { GameResult } from '@jfrader/ui/game-result';
+
+<ThemeRoot theme="light">
+  <GameResult
+    outcome="won"
+    eyebrow="Match ended"
+    title="You won"
+    summary="Score 3-1"
+  />
+</ThemeRoot>`,
+      },
+    },
+  },
   args: {
     outcome: 'won',
     eyebrow: 'Match ended',
@@ -179,6 +224,33 @@ function ReplacementTitle(props: ComponentPropsWithRef<'div'> & GameResultPartPr
 
 /** Supply a custom title element through slots.title. */
 export const TitleReplacement: Story = {
+  name: 'Custom title',
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { ComponentPropsWithRef } from 'react';
+import { GameResult, type GameResultPartProps } from '@jfrader/ui/game-result';
+
+function ReplacementTitle(props: ComponentPropsWithRef<'div'> & GameResultPartProps) {
+  return <div {...props} data-replacement="custom-title" />;
+}
+
+<GameResult
+  outcome="won"
+  eyebrow="Partida finalizada"
+  title="Victoria"
+  summary="Ganaste 3–1."
+  slots={{ title: ReplacementTitle }}
+  slotProps={{
+    title: {
+      'data-ui': 'custom-title-ui',
+    },
+  }}
+/>`,
+      },
+    },
+  },
   args: {
     outcome: 'won',
     eyebrow: 'Partida finalizada',

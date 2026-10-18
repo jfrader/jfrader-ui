@@ -7,10 +7,33 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { GameActions } from '../game-actions';
 import { GameTable } from '../game-table';
-import { CallOverlay } from './index';
+import { CallOverlay, type CallOverlayProps } from './index';
+import { Surface } from '../surface';
 
-const Frame = styled.div({ position: 'relative', inlineSize: 840, maxInlineSize: '100%', blockSize: 420 });
+const Frame = styled.div({
+  position: 'relative',
+  inlineSize: `calc(${vars.space[6]} * 35)`,
+  maxInlineSize: '100%',
+  blockSize: `calc(${vars.space[6]} * 17.5)`,
+});
 const Row = styled.div({ display: 'flex', gap: vars.space[4], padding: vars.space[6] });
+const AnnouncementPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 22)`,
+  maxInlineSize: '100%',
+  minBlockSize: `calc(${vars.space[8]} * 10)`,
+  padding: vars.space[6],
+  display: 'grid',
+  alignContent: 'space-between',
+  justifyItems: 'center',
+  gap: vars.space[6],
+});
+const RoundLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+});
 const preference: { matches: boolean; media?: MediaQueryList } = { matches: false };
 function mockPreference(reduced: boolean) {
   const original = window.matchMedia.bind(window);
@@ -28,6 +51,7 @@ const meta = {
   component: CallOverlay,
   tags: ['autodocs'],
   args: { label: 'Round started', defaultOpen: true },
+  render: (args) => <AnnouncementPanel><CallOverlay {...args} /></AnnouncementPanel>,
   beforeEach: () => mockPreference(false),
   afterEach: async ({ canvasElement }) => {
     for (const status of within(canvasElement).queryAllByRole('status')) {
@@ -45,15 +69,32 @@ const meta = {
 Use \`defaultOpen\` for a single announcement, or \`open\` and \`onOpenChange\` for controlled visibility. After three seconds the component requests closure. Reopen or remount to replay; no state callback fires on mount. Reduced motion keeps only the fade and the same closure lifecycle.
 
 Place it in \`GameTable.Floating\` to announce over a table, or render standalone. \`slots.root\` (or \`component\`) replaces the status div; forward its props and ref. \`slotProps.root\`, \`className\` and \`sx\` customize it.`,
-    source: { code: `<CallOverlay defaultOpen label="Round started" onOpenChange={setOpen} />`, language: 'tsx' },
+    source: { code: `import { CallOverlay } from '@jfrader/ui/call-overlay';
+
+<CallOverlay defaultOpen label="Round started" />`, language: 'tsx' },
   } },
 } satisfies Meta<typeof CallOverlay>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** A round-start announcement closes automatically. */
 export const Default: Story = {
-  args: { onOpenChange: fn() },
+  name: 'Default',
+  render: (args) => <ControlledExample {...args} />,
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button } from '@jfrader/ui/button';
+import { CallOverlay } from '@jfrader/ui/call-overlay';
+
+export function RoundAnnouncement() {
+  const [open, setOpen] = useState(false);
+  return <>
+    <Button onClick={() => setOpen(true)} aria-disabled={open}>Announce</Button>
+    <CallOverlay open={open} onOpenChange={setOpen} label="Round started" />
+  </>;
+}` } } },
+  args: { defaultOpen: false, onOpenChange: fn() },
   play: async ({ canvasElement, args }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Announce' }));
     const status = within(canvasElement).getByRole('status');
     await expect(status).toHaveAttribute('aria-live', 'polite');
     await expect(status).toHaveTextContent('Round started');
@@ -61,21 +102,64 @@ export const Default: Story = {
     await expect(args.onOpenChange).toHaveBeenCalledWith(false);
   },
 };
-export const Light: Story = { decorators: [withLightTheme] };
-export const Tones: Story = { render: () => <Row>
+/** A round-start announcement uses the light theme. */
+export const Light: Story = {
+  tags: ['!autodocs'],
+  name: 'Light theme',
+  decorators: [withLightTheme],
+  parameters: { docs: { source: { language: 'tsx', code: `import { CallOverlay } from '@jfrader/ui/call-overlay';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
+
+<ThemeRoot theme="light">
+  <CallOverlay defaultOpen label="Round started" />
+</ThemeRoot>` } } },
+};
+/** Accepted, Declined, and Your turn announcements use distinct tones. */
+export const Tones: Story = {
+  tags: ['!autodocs'],
+  name: 'Tones',
+  parameters: { docs: { source: { language: 'tsx', code: `import { CallOverlay } from '@jfrader/ui/call-overlay';
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', gap: vars.space[4], padding: vars.space[6] });
+
+<Row>
+  <CallOverlay defaultOpen tone="success">Accepted</CallOverlay>
+  <CallOverlay defaultOpen tone="danger">Declined</CallOverlay>
+  <CallOverlay defaultOpen tone="neutral">Your turn</CallOverlay>
+</Row>` } } },
+  render: () => <Row>
   <CallOverlay defaultOpen tone="success">Accepted</CallOverlay>
   <CallOverlay defaultOpen tone="danger">Declined</CallOverlay>
   <CallOverlay defaultOpen tone="neutral">Your turn</CallOverlay>
 </Row> };
 
-function ControlledExample() {
+function ControlledExample(args: CallOverlayProps) {
+  const [open, setOpen] = useState(false);
+  return <AnnouncementPanel>
+    <RoundLabel>North table · Round 2</RoundLabel>
+    <CallOverlay {...args} open={open} onOpenChange={(next) => {
+      setOpen(next);
+      args.onOpenChange?.(next);
+    }} label={args.label ?? 'Your turn'} />
+    <Button onClick={() => setOpen(true)} aria-disabled={open}>Announce</Button>
+  </AnnouncementPanel>;
+}
+/** Announce opens a Your turn message that can be replayed after it closes. */
+export const ControlledReopen: Story = {
+  name: 'Controlled reopen',
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button } from '@jfrader/ui/button';
+import { CallOverlay } from '@jfrader/ui/call-overlay';
+
+export function ControlledExample() {
   const [open, setOpen] = useState(false);
   return <>
     <Button onClick={() => setOpen(true)} aria-disabled={open}>Announce</Button>
     <CallOverlay open={open} onOpenChange={setOpen} label="Your turn" />
   </>;
-}
-export const ControlledReopen: Story = {
+}` } } },
   render: () => <ControlledExample />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -88,7 +172,14 @@ export const ControlledReopen: Story = {
     await expect(button).toHaveFocus();
   },
 };
+/** The round-start announcement fades without movement under reduced motion. */
 export const ReducedMotion: Story = {
+  tags: ['!autodocs'],
+  name: 'Reduced motion',
+  parameters: { docs: { source: { language: 'tsx', code: `import { CallOverlay } from '@jfrader/ui/call-overlay';
+
+// With the system's reduced-motion preference enabled.
+<CallOverlay defaultOpen label="Round started" />` } } },
   beforeEach: () => mockPreference(true),
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('status')).toHaveAttribute('data-reduced-motion', 'true');
@@ -107,14 +198,35 @@ function TableExample() {
     <GameTable.Dock><GameActions label="Turn actions" actions={[{ key: 'raise', label: 'Raise', onSelect: () => setCall((value) => value + 1) }]} /></GameTable.Dock>
   </GameTable></Frame>;
 }
+/** Raise announces over a two-player table while turn actions remain available. */
 export const DuringPlay: Story = {
+  name: 'Over a table during play',
   render: () => <TableExample />,
-  parameters: { docs: { source: { code: `<GameTable players={2} seats={seats}>
-  <GameTable.Floating sx={{ display: 'grid', placeItems: 'center', '& > *': { pointerEvents: 'none' } }}>
-    <CallOverlay open={open} onOpenChange={setOpen} label={call} />
-  </GameTable.Floating>
-  <GameTable.Dock><GameActions actions={actions} /></GameTable.Dock>
-</GameTable>` } } },
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { CallOverlay } from '@jfrader/ui/call-overlay';
+import { GameActions } from '@jfrader/ui/game-actions';
+import { GameTable } from '@jfrader/ui/game-table';
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Frame = styled.div({ position: 'relative', inlineSize: \`calc(\${vars.space[6]} * 35)\`, maxInlineSize: '100%', blockSize: \`calc(\${vars.space[6]} * 17.5)\` });
+
+export function TableExample() {
+  const [call, setCall] = useState(0);
+  return <Frame>
+    <GameTable players={2} seats={[{ key: 'north' }, { key: 'south', isMe: true }]}>
+      <GameTable.Center>Round 2</GameTable.Center>
+      <GameTable.Floating sx={{ display: 'grid', placeItems: 'center', '& > *': { pointerEvents: 'none' } }}>
+        <CallOverlay key={call} defaultOpen={call > 0} label="Raise" />
+      </GameTable.Floating>
+      <GameTable.Dock>
+        <GameActions label="Turn actions" actions={[
+          { key: 'raise', label: 'Raise', onSelect: () => setCall((value) => value + 1) },
+        ]} />
+      </GameTable.Dock>
+    </GameTable>
+  </Frame>;
+}` } } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Raise' }));
@@ -124,7 +236,25 @@ export const DuringPlay: Story = {
 };
 
 function ReplacementRoot(props: ComponentPropsWithRef<'div'>) { return <div {...props} data-replacement="root" />; }
+/** A replacement root shows an italic announcement in right-to-left direction. */
 export const CustomRoot: Story = {
+  tags: ['!autodocs'],
+  name: 'Custom root',
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { CallOverlay } from '@jfrader/ui/call-overlay';
+
+function ReplacementRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="root" />;
+}
+
+<CallOverlay
+  defaultOpen
+  label="Round started"
+  component={ReplacementRoot}
+  dir="rtl"
+  slotProps={{ root: { title: 'Announcement' } }}
+  sx={{ fontStyle: 'italic' }}
+/>` } } },
   args: { component: ReplacementRoot, dir: 'rtl', slotProps: { root: { title: 'Announcement' } }, sx: { fontStyle: 'italic' } },
   play: async ({ canvasElement }) => {
     const status = within(canvasElement).getByRole('status');

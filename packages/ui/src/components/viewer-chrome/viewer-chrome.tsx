@@ -41,6 +41,8 @@ export const filmstripStyle = css({
   scrollbarWidth: 'thin',
 });
 export const thumbStyle = css({
+  font: 'inherit',
+  color: vars.color.text,
   position: 'relative',
   flexShrink: 0,
   overflow: 'hidden',

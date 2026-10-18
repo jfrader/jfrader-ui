@@ -904,7 +904,15 @@ function ComboboxEmpty({ ref, children, className, sx, ...rest }: ComboboxEmptyP
   return (
     <WithSx className={className} styles={emptyStyle} sx={sx}>
       {(className) => (
-        <div {...rest} ref={ref} data-ui="combobox-empty" className={className}>
+        <div
+          {...rest}
+          ref={ref}
+          data-ui="combobox-empty"
+          role="option"
+          aria-disabled="true"
+          aria-selected="false"
+          className={className}
+        >
           {isRenderable(children) ? children : DEFAULT_EMPTY_LABEL}
         </div>
       )}
