@@ -823,7 +823,7 @@ export function GravityWell({
   };
 
   const gridTemplateColumns = hasFixedColumns
-    ? `repeat(${fixedColCount}, minmax(0, 1fr))`
+    ? `repeat(${fixedColCount}, minmax(${minTileSizePx}px, 1fr))`
     : `repeat(auto-fill, minmax(${minTileSizePx}px, 1fr))`;
 
   const showControls = Boolean(interactive && items.length > 0 && controlLabels);

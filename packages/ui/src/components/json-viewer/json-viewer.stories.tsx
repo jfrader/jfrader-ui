@@ -22,7 +22,7 @@ const payload: JsonValue = {
 const array = Array.from({ length: 12 }, (_, index) => `record ${index}`);
 const object = Object.fromEntries(array.map((value, index) => [`key${index}`, value]));
 const snippet =
-  '<JsonViewer data={{ active: false, count: 0 }} defaultExpandDepth={2} aria-label="Webhook payload" />';
+  '<JsonViewer data={{ type: "invoice.paid", amount: 4900, customer: { email: "ada@example.com" } }} defaultExpandDepth={2} aria-label="Webhook payload" />';
 const meta = {
   title: 'Data display/JsonViewer',
   component: JsonViewer,
@@ -85,14 +85,25 @@ const expectOwnedGroups = async (canvasElement: HTMLElement) => {
   }
 };
 
+const webhook: JsonValue = {
+  id: 'evt_1042',
+  type: 'invoice.paid',
+  livemode: false,
+  amount: 4900,
+  currency: 'usd',
+  customer: { id: 'cus_88', email: 'ada@example.com', tags: ['pro', 'annual'] },
+  note: null,
+};
+
 export const Default: Story = {
+  args: { data: webhook, defaultExpandDepth: 2 },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('tree', { name: 'Webhook payload' })).toBeInTheDocument();
-    for (const name of [/^active: false/, /^count: 0/, /^empty: ""/, /^missing: null/]) {
+    for (const name of [/^livemode: false/, /^amount: 4900/, /^note: null/]) {
       await expect(canvas.getByRole('treeitem', { name })).not.toHaveAttribute('aria-expanded');
     }
     await expect(canvasElement.querySelectorAll('[role="treeitem"][tabindex="0"]')).toHaveLength(1);
-    await expect(canvas.getAllByRole('group')).toHaveLength(1);
+    await expect(canvas.getAllByRole('group')).toHaveLength(2);
     await expectOwnedGroups(canvasElement);
     for (const row of canvas.getAllByRole('treeitem')) {
       // The accessible name is scoped to the label; without aria-labelledby the nested group's

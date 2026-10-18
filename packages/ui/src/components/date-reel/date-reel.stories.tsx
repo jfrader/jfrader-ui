@@ -1,16 +1,31 @@
 import { useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
 import { DateReel, type DateReelProps, type DateReelValue } from './index';
+import { styled } from '../../styling/styled';
+import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
+
+const Frame = styled.div({
+  inlineSize: `min(420px, calc(100vw - ${vars.space[4]} * 2))`,
+  maxInlineSize: '100%',
+});
 
 const meta = {
   title: 'Pickers/DateReel',
   component: DateReel,
+  decorators: [
+    (Story) => (
+      <Frame>
+        <Story />
+      </Frame>
+    ),
+  ],
   parameters: {
     docs: {
       description: {
         component:
-          'Choose a civil date, time, or datetime using touch-friendly 3D reels with keyboard spinbutton interaction.',
+          'Choose a civil date, time, or datetime with keyboard spinbutton interaction.',
       },
       usage: `### Values
 - Return Gregorian civil string values: \`YYYY-MM-DDTHH:mm\` for datetime mode, \`YYYY-MM-DD\` for date mode, and \`HH:mm\` for time mode.
@@ -57,6 +72,24 @@ export const Default: Story = {
     min: '2026-01-01T00:00',
     max: '2026-12-31T23:55',
     title: 'Schedule Appointment',
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const card = canvasElement.querySelector('[data-ui="date-reel"]')!;
+    await expect(card.getBoundingClientRect().width).toBeGreaterThanOrEqual(360);
+    const columns = canvas.getAllByRole('spinbutton');
+    await expectAligned(columns, 'top');
+    await expectAligned(columns, 'bottom');
+    for (let index = 1; index < columns.length; index += 1) {
+      await expectNoOverlap(columns[index - 1]!, columns[index]!);
+      await expect(columns[index]!.getBoundingClientRect().width).toBeCloseTo(
+        columns[0]!.getBoundingClientRect().width, 1,
+      );
+    }
+    const selected = canvasElement.querySelectorAll('[data-selected="true"]');
+    for (const row of selected) {
+      await expectInside(row, row.closest('[role="spinbutton"]')!);
+      await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
+    }
   },
 };
 
