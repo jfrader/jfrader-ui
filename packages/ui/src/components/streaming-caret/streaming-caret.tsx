@@ -7,8 +7,10 @@ import { css, keyframes } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 
+/** Size options for the caret. */
 export type StreamingCaretSize = 'sm' | 'md' | 'lg';
 export interface StreamingCaretProps extends ComponentPropsWithRef<'span'>, SxProps {
+  /** Sets the caret font size. Defaults to `"md"`. */
   size?: StreamingCaretSize;
 }
 const blink = keyframes({ '0%, 100%': { opacity: 1 }, '50%': { opacity: 0 } });
@@ -19,7 +21,7 @@ const style = css({
   marginInlineStart: vars.space[1],
   backgroundColor: 'currentColor',
   verticalAlign: 'text-bottom',
-  animation: `${blink} calc(${vars.motion.duration.slow} * 3) step-end infinite`,
+  animation: `${blink} calc(${vars.motion.duration.slow} + ${vars.motion.duration.slow} + ${vars.motion.duration.slow}) step-end infinite`,
   '&[data-reduced-motion]': { animation: 'none' },
   [REDUCED_MOTION]: { animation: 'none' },
 });

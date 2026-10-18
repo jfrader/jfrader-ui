@@ -4,11 +4,11 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Prose } from './index';
 
 const meta = {
-  title: 'Typography/Prose', component: Prose, tags: ['autodocs'],
+  title: 'Data display/Prose', component: Prose, tags: ['autodocs'],
   parameters: { docs: {
     description: { component: 'Format longform text with headings, lists, quotes, code and tables.' },
     usage: `### Content
-Pass semantic HTML as children. Size sets the base text size; headings scale with it. Native HTML elements are the styling hooks, so sx can override descendant selectors. The wrapper is a div and does not choose heading levels.
+Pass semantic HTML as children. \`size\` sets the base text size. Headings scale with it. Native HTML elements are the styling hooks. \`sx\` can override descendant selectors. The wrapper is a \`div\` and does not choose heading levels. It does not trim the first or last child's outer margin. Set that in the surrounding layout.
 
 ### Keyboard
 There is no separate APG pattern. Links keep native keyboard activation and visible keyboard focus. No other focus stops are added.
@@ -29,6 +29,23 @@ Prose styles its children only. Choose a parser, sanitize untrusted HTML and set
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `<Prose>
+  <h2>Field notes</h2>
+  <p>A record of the expedition.</p>
+  <ul>
+    <li>Compass</li>
+    <li>Notebook</li>
+  </ul>
+  <blockquote>Leave the trail as you found it.</blockquote>
+  <p><a href="/field-notes">Read the field notes</a></p>
+</Prose>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const root = canvasElement.querySelector('[data-ui="prose"]')!;
@@ -41,6 +58,7 @@ export const Default: Story = {
     await expect(getComputedStyle(code).fontFamily).toContain('monospace');
     await expect(getComputedStyle(canvasElement.querySelector('pre')!).overflowX).toBe('auto');
     await expect(getComputedStyle(canvas.getAllByRole('cell')[0]!).borderTopStyle).toBe('solid');
+    await expect(getComputedStyle(canvas.getAllByRole('cell')[0]!).overflowWrap).toBe('normal');
     await expect(getComputedStyle(canvasElement.querySelector('blockquote')!).borderInlineStartWidth).toBe('3px');
     const link = canvas.getByRole('link');
     await expect(link).toHaveAttribute('href', '#field-notes');

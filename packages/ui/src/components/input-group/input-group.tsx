@@ -12,16 +12,25 @@ type Anatomy = { root: 'div' };
 export type InputGroupSlots = FieldSlots<Anatomy>;
 export type InputGroupSlotProps = FieldParts<Anatomy>;
 export interface InputGroupProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Sets the frame height and text size. Defaults to `"md"`. */
   size?: InputGroupSize;
+  /** Marks the frame invalid and defaults the control's `aria-invalid` to `true`. */
   invalid?: boolean;
+  /** Disables the input or textarea. Addon actions must be disabled explicitly. */
   disabled?: boolean;
+  /** Replaces the frame. Same as `slots.root`. */
   component?: InputGroupSlots['root'];
+  /** Replaces frame parts. */
   slots?: InputGroupSlots;
+  /** Props for frame parts. */
   slotProps?: InputGroupSlotProps;
 }
+/** Native input props plus `sx`. */
 export type InputGroupInputProps = ComponentPropsWithRef<'input'> & SxProps;
+/** Native textarea props plus `sx`. */
 export type InputGroupTextareaProps = ComponentPropsWithRef<'textarea'> & SxProps;
 export interface InputGroupAddonProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Places the addon before or after the control. */
   placement: 'start' | 'end';
 }
 

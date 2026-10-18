@@ -5,8 +5,10 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 
+/** Size options for Prose. */
 export type ProseSize = 'sm' | 'md' | 'lg';
 export interface ProseProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Sets the base text size. Headings scale with it. Defaults to `"md"`. */
   size?: ProseSize;
 }
 const style = css({
@@ -55,12 +57,11 @@ const style = css({
     paddingBlock: vars.space[2],
     paddingInline: vars.space[3],
     textAlign: 'start',
+    overflowWrap: 'normal',
   },
   '& :where(th)': { fontWeight: vars.fontWeight.semibold, backgroundColor: vars.color.surfaceRaised },
   '& :where(a)': { color: vars.color.accentText, textDecoration: 'underline', textUnderlineOffset: '0.15em' },
   '& :where(a:focus-visible)': { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: '2px' },
-  '& > :first-child': { marginBlockStart: 0 },
-  '& > :last-child': { marginBlockEnd: 0 },
 });
 const sizes = {
   sm: css({ fontSize: vars.textSize.sm }),
