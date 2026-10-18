@@ -64,7 +64,7 @@ const meta = {
 ] as const;
 const prices = {
   monthly: { amount: 24, currency: 'USD', period: '/ month' },
-  annual: { amount: 200, currency: 'USD', period: '/ year' },
+  annual: { amount: 230, currency: 'USD', period: '/ year' },
 } as const;
 
 <ToggleSubscription label="Billing period" options={periods} prices={prices} defaultValue="monthly" locale="en-US" />` },
@@ -99,7 +99,7 @@ const periods = [
 const prices = {
   monthly: { amount: 24, currency: 'USD', period: '/ month' },
   quarterly: { amount: 60, currency: 'USD', period: '/ quarter' },
-  annual: { amount: 200, currency: 'USD', period: '/ year' },
+  annual: { amount: 230, currency: 'USD', period: '/ year' },
 } as const;
 async function expectSettledPrice(root: HTMLElement, formatted: string) {
   await waitFor(async () => {
@@ -120,10 +120,10 @@ export const Easy: EasyStory = {
     await userEvent.click(annual);
     await expect(annual).toHaveAttribute('aria-checked', 'true');
     await expect(canvas.getByText('/ year')).toBeInTheDocument();
-    await expect(canvas.getAllByText('$200.00').length).toBeGreaterThan(0);
+    await expect(canvas.getAllByText('$230.00').length).toBeGreaterThan(0);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith('annual');
-    await expectSettledPrice(canvasElement, '$200.00');
+    await expectSettledPrice(canvasElement, '$230.00');
   },
 };
 function EasyControlledExample(args: ToggleSubscriptionEasyProps) {
@@ -147,7 +147,7 @@ export const EasyNoSelection: EasyStory = {
     }
     await userEvent.click(canvas.getByRole('radio', { name: 'Annual' }));
     await expect(canvas.getByText('/ year')).toBeInTheDocument();
-    await expectSettledPrice(canvasElement, '$200.00');
+    await expectSettledPrice(canvasElement, '$230.00');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
@@ -175,7 +175,7 @@ export const EasyKeyboard: EasyStory = {
     await expect(canvas.getByText('/ year')).toBeInTheDocument();
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith('annual');
-    await expectSettledPrice(canvasElement, '$200.00');
+    await expectSettledPrice(canvasElement, '$230.00');
   },
 };
 export const EasyRTL: EasyStory = {
@@ -184,7 +184,7 @@ export const EasyRTL: EasyStory = {
     await userEvent.tab();
     await userEvent.keyboard('{ArrowLeft}');
     await assertFocus(canvas.getByRole('radio', { name: 'Annual' }));
-    const formatted = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'USD' }).format(200);
+    const formatted = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'USD' }).format(230);
     await expectSettledPrice(canvasElement, formatted);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith('annual');
