@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.9.0
+
 ### Changed
 
 - PhotoGrid favorites, cover-flow controls and product choices use library typography and themed control colors. LogoOrbit groups its filter chips separately from standard-radius actions, and CardStack headings use the library type scale.
