@@ -6,25 +6,81 @@ import { styled } from '../../styling/styled';
 import { PageCurl } from './index';
 import { Button } from '../button';
 
-const Frame = styled.div({ maxInlineSize: '44rem', inlineSize: '100%' });
+const Frame = styled.div({
+  inlineSize: `min(720px, calc(100vw - ${vars.space[4]} * 2))`,
+  maxInlineSize: '100%',
+  boxSizing: 'border-box',
+  padding: vars.space[5],
+  borderRadius: vars.radius.xl,
+  background: vars.color.surfaceInset,
+  border: `1px solid ${vars.color.border}`,
+  display: 'grid',
+  gap: vars.space[5],
+});
+const JournalLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+});
 const Heading = styled.h2({
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.lg,
   margin: 0,
+  color: vars.color.text,
 });
 const Paragraph = styled.p({
   fontFamily: vars.font.sans,
   lineHeight: vars.lineHeight.base,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
 });
+const Landscape = styled.svg({
+  display: 'block',
+  inlineSize: '100%',
+  marginBlock: vars.space[5],
+  color: vars.color.accentText,
+});
+
+function TrailDrawing() {
+  return (
+    <Landscape
+      viewBox="0 0 240 180"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
+      <circle cx="180" cy="38" r="18" />
+      <path d="M10 130 72 48 120 110 154 74 230 140M10 148Q70 126 120 148T230 148M10 163Q70 141 120 163T230 163M50 102 72 73 95 103" />
+    </Landscape>
+  );
+}
 const pages = [
-  { id: 'cover', label: 'Cover', content: <Heading>Field notes</Heading> },
+  {
+    id: 'cover',
+    label: 'Cover',
+    content: (
+      <>
+        <JournalLabel>VOL. 04 / AUTUMN</JournalLabel>
+        <TrailDrawing />
+        <Heading>Field notes</Heading>
+        <Paragraph>A walking journal from the coast to the river.</Paragraph>
+      </>
+    ),
+  },
   {
     id: 'coast',
     label: 'Coast',
     content: (
       <>
         <Heading>Coast</Heading>
+        <TrailDrawing />
         <Paragraph>Low tide leaves a new shoreline.</Paragraph>
+        <Paragraph>
+          At the headland, the trail turns inland. Salt grass gives way to pine
+          and the sound of the sea falls behind us.
+        </Paragraph>
       </>
     ),
   },
@@ -34,14 +90,25 @@ const pages = [
     content: (
       <>
         <Heading>Forest</Heading>
+        <TrailDrawing />
         <Paragraph>The path follows the river.</Paragraph>
+        <Paragraph>
+          We stop beneath the canopy to sketch the ridge. The last light catches
+          the water between the trees.
+        </Paragraph>
       </>
     ),
   },
   {
     id: 'back',
     label: 'Back cover',
-    content: <Heading>End of the trail</Heading>,
+    content: (
+      <>
+        <TrailDrawing />
+        <Heading>End of the trail</Heading>
+        <Paragraph>Four days. Two coastlines. One notebook filled.</Paragraph>
+      </>
+    ),
   },
 ];
 const meta = {
@@ -52,6 +119,7 @@ const meta = {
   decorators: [
     (Story) => (
       <Frame>
+        <JournalLabel>THE WALKING JOURNAL / FIELD NOTES</JournalLabel>
         <Story />
       </Frame>
     ),
@@ -75,7 +143,14 @@ const meta = {
 } satisfies Meta<typeof PageCurl>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Default: Story = {};
+export const Default: Story = {
+  play: async ({ canvas }) => {
+    const cover = canvas.getByRole('group', { name: 'Cover' });
+    await expect(cover.getBoundingClientRect().width).toBeGreaterThan(250);
+    await expect(canvas.getByRole('heading', { name: 'Field notes' })).toBeVisible();
+    await expect(canvas.getByText('A walking journal from the coast to the river.')).toBeVisible();
+  },
+};
 export const RootRefs: Story = {
   tags: ['!autodocs'],
   args: {
