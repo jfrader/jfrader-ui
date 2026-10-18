@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { fn } from 'storybook/test';
+import { expect, fn } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { GravityWell, type GravityWellItem } from './index';
@@ -7,8 +7,27 @@ import { GravityWell, type GravityWellItem } from './index';
 const Frame = styled.div({
   display: 'grid',
   gap: vars.space[4],
-  inlineSize: '100%',
-  maxInlineSize: '640px',
+  inlineSize: `min(640px, calc(100vw - ${vars.space[4]} * 2))`,
+  maxInlineSize: '100%',
+  boxSizing: 'border-box',
+  padding: vars.space[5],
+  borderRadius: vars.radius.xl,
+  background: vars.color.surfaceInset,
+  border: `1px solid ${vars.color.border}`,
+});
+
+const WallTitle = styled.h2({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.lg,
+  color: vars.color.text,
+});
+
+const WallCaption = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
 });
 
 const AvatarBadge = styled.span({
@@ -105,6 +124,8 @@ Use the pause button to freeze motion. Reduced motion and forced colors show sta
   },
   render: (args) => (
     <Frame>
+      <WallCaption>STUDIO DIRECTORY</WallCaption>
+      <WallTitle>Meet the teams</WallTitle>
       <GravityWell {...args} />
     </Frame>
   ),
@@ -113,12 +134,40 @@ Use the pause button to freeze motion. Reduced motion and forced colors show sta
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  args: { columns: 6 },
+  play: async ({ canvasElement }) => {
+    const field = canvasElement.querySelector('[data-ui="gravity-well-field"]')!;
+    const box = field.getBoundingClientRect();
+    await expect(box.width).toBeGreaterThan(box.height);
+    const tiles = canvasElement.querySelectorAll('[data-ui="gravity-well-tile"]');
+    await expect(tiles[1]!.getBoundingClientRect().left).toBeGreaterThan(tiles[0]!.getBoundingClientRect().left);
+  },
+};
 
 export const FixedColumns: Story = {
   args: {
     columns: 3,
     items: defaultItems.slice(0, 9),
+  },
+};
+
+export const NarrowContainer: Story = {
+  parameters: { docs: { description: { story: 'Fixed columns keep their minimum tile size in a narrow container instead of collapsing.' } } },
+  render: (args) => (
+    <div style={{ inlineSize: 200 }}>
+      <GravityWell {...args} />
+    </div>
+  ),
+  args: { columns: 3, items: defaultItems.slice(0, 9) },
+  play: async ({ canvasElement }) => {
+    const field = canvasElement.querySelector<HTMLElement>('[data-ui="gravity-well-field"]');
+    if (!field) throw new Error('Missing gravity-well field');
+    for (const tile of Array.from(field.querySelectorAll<HTMLElement>('[data-ui="gravity-well-tile"]'))) {
+      await expect(tile.getBoundingClientRect().width).toBeGreaterThanOrEqual(56 - 0.5);
+    }
+    // Borders round the client area down by up to a pixel per side; the tiles must not clip.
+    await expect(field.scrollWidth).toBeLessThanOrEqual(field.clientWidth + 2);
   },
 };
 

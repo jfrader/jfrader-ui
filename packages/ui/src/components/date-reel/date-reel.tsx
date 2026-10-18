@@ -28,6 +28,9 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS } from '../../styling/media';
+
+/** Widest the reel card grows before it centers in its container. */
+const DATE_REEL_INLINE_CAP = '420px';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -445,7 +448,7 @@ const rootStyle = css({
   flexDirection: 'column',
   gap: vars.space[3],
   inlineSize: '100%',
-  maxInlineSize: '380px',
+  maxInlineSize: DATE_REEL_INLINE_CAP,
   boxSizing: 'border-box',
   padding: vars.space[4],
   backgroundColor: vars.color.surfaceRaised,
@@ -480,11 +483,11 @@ const summaryStyle = css({
 
 const reelsContainerStyle = css({
   label: 'date-reel-reels',
-  display: 'flex',
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: vars.space[1],
+  display: 'grid',
+  gridAutoFlow: 'column',
+  gridAutoColumns: 'minmax(0, 1fr)',
+  alignItems: 'stretch',
+  gap: vars.space[2],
   blockSize: '180px',
   position: 'relative',
   touchAction: 'pan-x',
@@ -494,8 +497,8 @@ const reelsContainerStyle = css({
 
 const reelStyle = css({
   label: 'date-reel-reel',
-  flex: 1,
-  minInlineSize: '36px',
+  minInlineSize: 0,
+  isolation: 'isolate',
   blockSize: '100%',
   position: 'relative',
   perspective: '600px',
@@ -529,6 +532,8 @@ const rowsWrapperStyle = css({
 });
 
 const rowStyle = css({
+  boxSizing: 'border-box',
+  overflow: 'hidden',
   position: 'absolute',
   insetInline: 0,
   insetBlockStart: `calc(50% - ${ROW_HEIGHT / 2}px)`,
