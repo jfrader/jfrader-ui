@@ -12,6 +12,7 @@ import {
   FieldLabel,
   FieldRoot,
   useFieldAnatomy,
+  type FieldLabelPlacement,
   type FieldPartProps,
 } from '../field/field-anatomy';
 import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
@@ -37,6 +38,8 @@ export type TextFieldSlotProps = FieldParts<TextFieldAnatomy>;
 
 export interface TextFieldProps extends Omit<ComponentPropsWithRef<'input'>, 'size'>, SxProps {
   label?: ReactNode;
+  /** Label placement. `hidden` keeps the accessible name without taking layout space. */
+  labelPlacement?: FieldLabelPlacement;
   description?: ReactNode;
   error?: ReactNode;
   size?: TextFieldSize;
@@ -57,6 +60,7 @@ const sizeStyles: Record<TextFieldSize, SerializedStyles> = {
 export function TextField({
   ref,
   label,
+  labelPlacement = 'above',
   description,
   error,
   size = 'md',
@@ -98,7 +102,13 @@ export function TextField({
       sx={sx}
       part={slotProps?.root}
     >
-      <FieldLabel component={slots?.label} htmlFor={field.id} required={required} part={slotProps?.label}>
+      <FieldLabel
+        component={slots?.label}
+        htmlFor={field.id}
+        required={required}
+        hidden={labelPlacement === 'hidden'}
+        part={slotProps?.label}
+      >
         {label}
       </FieldLabel>
       <FieldSlot

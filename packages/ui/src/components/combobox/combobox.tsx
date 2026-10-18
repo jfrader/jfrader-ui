@@ -80,6 +80,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 import { useFormReset } from '../../utils/use-form-reset';
 import { useLatestCallback } from '../../utils/use-latest-callback';
 import { TextField, type TextFieldProps, type TextFieldSize } from '../text-field';
+import type { FieldLabelPlacement } from '../field/field-anatomy';
 
 const PLACEMENT = 'bottom-start';
 const SELECTED_GLYPH = '✓';
@@ -165,6 +166,7 @@ export interface ComboboxCompoundProps extends ComboboxBaseProps {
   options?: never;
   children?: ReactNode;
   label?: never;
+  labelPlacement?: never;
   description?: never;
   error?: never;
   placeholder?: never;
@@ -183,6 +185,8 @@ export interface ComboboxEasyProps extends ComboboxBaseProps {
   options: readonly ComboboxOption[];
   children?: never;
   label?: ReactNode;
+  /** Label placement. `hidden` keeps the accessible name without taking layout space. */
+  labelPlacement?: FieldLabelPlacement;
   description?: ReactNode;
   error?: ReactNode;
   placeholder?: string;
@@ -471,6 +475,7 @@ function ComboboxOverlay(props: ComboboxProps) {
     const {
       options: optionsList,
       label,
+      labelPlacement,
       description,
       error,
       placeholder,
@@ -502,6 +507,7 @@ function ComboboxOverlay(props: ComboboxProps) {
       <>
         <InputPart
           label={label}
+          labelPlacement={labelPlacement}
           description={description}
           error={error}
           placeholder={placeholder}

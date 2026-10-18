@@ -39,6 +39,7 @@ import {
   listboxOptionTextStyle,
   listboxOptionCheckStyle,
 } from '../../styling/listbox-style';
+import { fieldColumnStyle, type FieldLabelPlacement } from '../field/field-anatomy';
 import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
@@ -129,6 +130,7 @@ export interface MultiSelectCompoundProps extends MultiSelectBaseProps {
   options?: never;
   children?: ReactNode;
   label?: never;
+  labelPlacement?: never;
   description?: never;
   error?: never;
   placeholder?: never;
@@ -144,6 +146,8 @@ export interface MultiSelectEasyProps extends MultiSelectBaseProps {
   options: readonly MultiSelectOption[];
   children?: never;
   label?: ReactNode;
+  /** Label placement. `hidden` keeps the accessible name without taking layout space. */
+  labelPlacement?: FieldLabelPlacement;
   description?: ReactNode;
   error?: ReactNode;
   placeholder?: ReactNode;
@@ -187,14 +191,6 @@ interface TriggerName {
   labelledBy?: string;
   label?: string;
 }
-
-const multiSelectFieldStyle = css({
-  display: 'inline-flex',
-  flexDirection: 'column',
-  alignItems: 'flex-start',
-  gap: vars.space[1],
-  maxInlineSize: '100%',
-});
 
 const triggerRowStyle = css({
   display: 'inline-flex',
@@ -497,6 +493,7 @@ function MultiSelectOverlay(props: MultiSelectProps) {
     const {
       options: optionsList,
       label,
+      labelPlacement = 'above',
       description,
       error,
       placeholder,
@@ -550,7 +547,14 @@ function MultiSelectOverlay(props: MultiSelectProps) {
 
     const controlParts = (
       <>
-        {isRenderable(label) && <LabelPart {...slotProps?.label}>{label}</LabelPart>}
+        {isRenderable(label) &&
+          (labelPlacement === 'hidden' ? (
+            <span css={visuallyHiddenStyle}>
+              <LabelPart {...slotProps?.label}>{label}</LabelPart>
+            </span>
+          ) : (
+            <LabelPart {...slotProps?.label}>{label}</LabelPart>
+          ))}
         {controlRow}
         {isRenderable(description) && (
           <DescriptionPart {...slotProps?.description}>{description}</DescriptionPart>
@@ -562,7 +566,7 @@ function MultiSelectOverlay(props: MultiSelectProps) {
     renderedContent = (
       <>
         {hasFieldAnatomy ? (
-          <WithSx className={rootClassName} styles={[multiSelectFieldStyle, rootCss]} sx={rootSx}>
+          <WithSx className={rootClassName} styles={[fieldColumnStyle, rootCss]} sx={rootSx}>
             {(className) => (
               <RootPart
                 {...rootRest}

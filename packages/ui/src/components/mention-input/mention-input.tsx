@@ -35,7 +35,14 @@ import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { FieldRoot, FieldLabel, FieldDescription, FieldError, useFieldAnatomy } from '../field/field-anatomy';
+import {
+  FieldRoot,
+  FieldLabel,
+  FieldDescription,
+  FieldError,
+  useFieldAnatomy,
+  type FieldLabelPlacement,
+} from '../field/field-anatomy';
 import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
 
 export type MentionKind = 'person' | 'channel';
@@ -123,6 +130,8 @@ export interface MentionInputProps
   onSubmit?: (value: MentionValue) => void;
   submitOnEnter?: boolean;
   label?: ReactNode;
+  /** Label placement. `hidden` keeps the accessible name without taking layout space. */
+  labelPlacement?: FieldLabelPlacement;
   description?: ReactNode;
   error?: ReactNode;
   size?: 'sm' | 'md' | 'lg';
@@ -369,6 +378,7 @@ export function MentionInput({
   onSubmit,
   submitOnEnter = false,
   label,
+  labelPlacement = 'above',
   description,
   error,
   size = 'md',
@@ -748,6 +758,7 @@ export function MentionInput({
         id={`${baseId}-label`}
         htmlFor={field.id}
         required={required}
+        hidden={labelPlacement === 'hidden'}
         part={slotProps?.label}
       >
         {label}

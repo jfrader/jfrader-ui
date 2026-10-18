@@ -154,7 +154,6 @@ export interface ShareAccessProps
 const EMPTY: readonly ShareAccessMember[] = [];
 const ROLES: readonly ShareRole[] = ['editor', 'commenter', 'viewer'];
 const SPRING = { type: 'spring', stiffness: 420, damping: 38 } as const;
-const MAX_INLINE_SIZE = '440px';
 const DEFAULT_MESSAGES: ShareAccessMessages = {
   noResults: 'No matching contacts',
   inviteLabel: 'Name or email',
@@ -204,7 +203,6 @@ const rootStyle = css({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '100%',
-  maxInlineSize: MAX_INLINE_SIZE,
   minInlineSize: 0,
   fontFamily: vars.font.sans,
   color: vars.color.text,
@@ -223,6 +221,19 @@ const rowStyle = css({
   alignItems: 'center',
   gap: vars.space[2],
   minInlineSize: 0,
+});
+// A labeled field is taller than its control; align the action to the control's bottom edge
+// instead of centering it against the label.
+const inviteRowStyle = css({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-end',
+  gap: vars.space[2],
+  minInlineSize: 0,
+});
+// Every member row keeps one height even when only some rows carry a role picker.
+const memberRowStyle = css({
+  minBlockSize: vars.space[12],
 });
 const identityStyle = css({
   flex: '1 1 8rem',
@@ -717,7 +728,7 @@ export function ShareAccess({
                   </motion.li>
                 ))}
               </ChipList>
-              <div css={rowStyle}>
+              <div css={inviteRowStyle}>
                 <InviteRole
                   {...slotProps.inviteRole}
                   options={roles}
@@ -762,7 +773,7 @@ export function ShareAccess({
                     key={member.id}
                     layout={!reduced}
                     transition={SPRING}
-                    css={rowStyle}
+                    css={[rowStyle, memberRowStyle]}
                     data-member-id={member.id}
                   >
                     <Avatar name={member.name ?? member.email} src={member.src} size="sm" />
@@ -779,6 +790,7 @@ export function ShareAccess({
                           {...slotProps.memberRole}
                           options={roles}
                           label={text.roleFor(member.name ?? member.email, member.role)}
+                          labelPlacement="hidden"
                           value={member.role}
                           onValueChange={(next) => {
                             const role = next as ShareRole;
