@@ -18,7 +18,8 @@ const SAMPLE_ACTIONS: readonly GameActionItem[] = [
 
 const TableFrame = styled.div({
   position: 'relative',
-  inlineSize: '100%',
+  inlineSize: `calc(${vars.space[8]} * 26)`,
+  maxInlineSize: '100%',
   blockSize: `calc(${vars.space[4]} * 25)`,
 });
 const FloatingActions = styled.div({
@@ -29,6 +30,21 @@ const FloatingActions = styled.div({
   justifyContent: 'center',
 });
 const ActionSurface = styled(Surface)({ padding: vars.space[2], borderRadius: vars.radius.xl });
+const TurnPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 20)`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+  display: 'grid',
+  gap: vars.space[5],
+  justifyItems: 'start',
+});
+const TurnLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+});
 const KeyboardFrame = styled.div({
   display: 'flex',
   flexDirection: 'column',
@@ -40,6 +56,12 @@ const meta = {
   title: 'Games/GameActions',
   component: GameActions,
   tags: ['autodocs'],
+  render: (args) => (
+    <TurnPanel>
+      <TurnLabel>Your turn · Pot 140 · To call 20</TurnLabel>
+      <GameActions {...args} />
+    </TurnPanel>
+  ),
   args: {
     actions: SAMPLE_ACTIONS,
     label: 'Turn actions',
