@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { expect, fn, within } from 'storybook/test';
+import { expect, fn, waitFor, within } from 'storybook/test';
 import { expectAligned } from '../../testing/geometry-assertions';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
@@ -319,6 +319,28 @@ function ConcurrentFixture() {
     </>
   );
 }
+async function expectRowsSettled(canvasElement: HTMLElement) {
+  const boxes = () =>
+    [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="share-access-member-list"] > li')].map(
+      (row) => row.getBoundingClientRect(),
+    );
+  await waitFor(
+    async () => {
+      const current = boxes();
+      const separated = current.every(
+        (box, index) => index === 0 || box.top >= current[index - 1]!.bottom - 1,
+      );
+      if (!separated) return false;
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      const next = boxes();
+      return next.every((box, index) => Math.abs(box.top - current[index]!.top) <= 0.5);
+    },
+    { timeout: 3000 },
+  );
+}
+
 export const ConcurrentUndo: Story = {
   tags: ['!autodocs'],
   render: () => (
@@ -341,6 +363,7 @@ export const ConcurrentUndo: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await expect(canvas.getByRole('button', { name: 'Remove Sam Lee' })).toBeVisible();
     await expect(canvas.getByRole('button', { name: 'Remove new@example.com' })).toBeVisible();
+    await expectRowsSettled(canvasElement);
   },
 };
 
