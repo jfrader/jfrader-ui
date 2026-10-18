@@ -7,6 +7,7 @@ import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Card } from '../card';
+import { Surface } from '../surface';
 import { CardStack, type CardStackDecision, type CardStackProps } from './index';
 
 interface City {
@@ -60,6 +61,20 @@ const PassContent = styled.div({
 const PassTitle = styled.h3({ margin: 0, fontSize: vars.textSize.xl });
 const PassDetail = styled.p({ margin: 0, fontSize: vars.textSize.sm });
 const PassCode = styled.span({ fontFamily: vars.font.mono, fontSize: vars.textSize.sm });
+const WalletPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 15)`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+  display: 'grid',
+  gap: vars.space[6],
+});
+const WalletLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+});
 const overrideStyle = css({
   paddingInline: vars.space[6],
   borderRadius: vars.radius.sm,
@@ -278,6 +293,12 @@ export const Default: Story = {
 };
 /** Review travel passes in a compact wallet stack. Pass and Keep still record decisions. */
 export const Wallet: Story = {
+  render: (args) => (
+    <WalletPanel>
+      <WalletLabel>Weekend passes · Shortlist</WalletLabel>
+      <CardStack {...args} />
+    </WalletPanel>
+  ),
   args: {
     variant: 'wallet',
     label: 'Travel passes',

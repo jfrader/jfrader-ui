@@ -25,7 +25,7 @@ const nodes: readonly TreeNode[] = [
 ];
 const lazyNode: readonly TreeNode[] = [{ id: 'remote', label: 'Remote', hasChildren: true }];
 const usage =
-  '<TreeView label="Files" nodes={[{ id: "app", label: "Application", children: [{ id: "page", label: "Page" }] }]} defaultOpen={["app"]} />';
+  '<TreeView label="Files" nodes={[{ id: "src", label: "src", children: [{ id: "index", label: "index.ts" }] }, { id: "package", label: "package.json" }]} defaultOpen={["src"]} defaultValue="index" />';
 const meta = {
   title: 'Data display/TreeView',
   component: TreeView,
@@ -60,13 +60,37 @@ const focus = async (element: HTMLElement) => {
 const disclosure = (element: HTMLElement) =>
   element.parentElement!.querySelector<HTMLElement>(':scope > [data-ui="tree-view-disclosure"]')!;
 
+const projectFiles: readonly TreeNode[] = [
+  {
+    id: 'src',
+    label: 'src',
+    children: [
+      {
+        id: 'components',
+        label: 'components',
+        children: [
+          { id: 'button', label: 'button.tsx' },
+          { id: 'dialog', label: 'dialog.tsx' },
+        ],
+      },
+      { id: 'index', label: 'index.ts' },
+    ],
+  },
+  { id: 'package', label: 'package.json' },
+  { id: 'readme', label: 'README.md' },
+];
+
 export const Default: Story = {
+  args: { nodes: projectFiles, defaultOpen: ['src'], defaultValue: 'index' },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('tree', { name: 'Files' })).toBeInTheDocument();
     await expect(canvasElement.querySelectorAll('[role="treeitem"][tabindex="0"]')).toHaveLength(1);
-    await expect(canvas.getByRole('treeitem', { name: 'Beta' })).not.toHaveAttribute(
+    await expect(canvas.getByRole('treeitem', { name: 'README.md' })).not.toHaveAttribute(
       'aria-expanded',
     );
+    await expect(canvas.getByRole('treeitem', { name: 'src' })).toHaveAttribute('aria-expanded', 'true');
+    await expect(canvas.getByRole('treeitem', { name: 'components' })).toHaveAttribute('aria-expanded', 'false');
+    await expect(canvas.getByRole('treeitem', { name: 'index.ts' })).toHaveAttribute('aria-selected', 'true');
   },
 };
 export const Expanded: Story = {

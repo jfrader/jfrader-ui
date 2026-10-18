@@ -2,6 +2,16 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn } from 'storybook/test';
 import { PaymentFlow, type PaymentFlowProps } from './payment-flow';
 import { paymentAmounts } from './payment-flow-model';
+import { vars } from '@jfrader/tokens/vars';
+import { styled } from '../../styling/styled';
+import { Surface } from '../surface';
+
+const PaymentPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: `calc(${vars.space[8]} * 30)`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+});
 
 function narrative(args: PaymentFlowProps) {
   const amounts = paymentAmounts(args.amount, args.fee, args.balance, args.currency, args.locale);
@@ -32,8 +42,13 @@ const meta = {
   title: 'Showcase/PaymentFlow',
   component: PaymentFlow,
   tags: ['autodocs'],
-  render: (args) => <PaymentFlow {...args} summary={narrative(args)} />,
+  render: (args) => (
+    <PaymentPanel>
+      <PaymentFlow {...args} summary={narrative(args)} />
+    </PaymentPanel>
+  ),
   args: {
+    orientation: 'horizontal',
     label: 'Illustrative card payment',
     nodes: {
       terminal: { label: 'Terminal' },
@@ -102,7 +117,15 @@ const meta = {
 } satisfies Meta<typeof PaymentFlow>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Default: Story = {};
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const figure = canvasElement.querySelector('figure')!;
+    await expect(figure.getBoundingClientRect().width).toBeGreaterThan(600);
+    const journey = figure.querySelector('[data-ui~="stepper"]')!;
+    await expect(journey.getBoundingClientRect().width).toBeGreaterThan(600);
+    await expect(journey).toHaveAttribute('data-orientation', 'horizontal');
+  },
+};
 export const Paused: Story = { args: { defaultPaused: true } };
 export const LongAuthorization: Story = {
   args: { defaultPaused: true, authorizationMs: 5_000 },
