@@ -1,0 +1,1 @@
+export { InputGroup, type InputGroupProps, type InputGroupSize, type InputGroupSlots, type InputGroupSlotProps, type InputGroupInputProps, type InputGroupTextareaProps, type InputGroupAddonProps } from './input-group';

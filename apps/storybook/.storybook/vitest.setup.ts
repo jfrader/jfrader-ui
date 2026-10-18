@@ -62,6 +62,7 @@ afterEach(() => {
 
 // Emulate the browser preference itself: mocking matchMedia does not activate CSS media rules.
 const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
+  'Caret Reduced Motion': 'prefers-reduced-motion',
   'Reduced Transparency': 'prefers-reduced-transparency',
   'Dial Reduced Motion': 'prefers-reduced-motion',
   'Morph Reduced Motion': 'prefers-reduced-motion',

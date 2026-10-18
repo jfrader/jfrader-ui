@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.9.0
+
 ### Changed
 
 - PhotoGrid favorites, cover-flow controls and product choices use library typography and themed control colors. LogoOrbit groups its filter chips separately from standard-radius actions, and CardStack headings use the library type scale.
@@ -9,6 +11,7 @@
 
 ### Added
 
+- `InputGroup` frames inputs and textareas with leading or trailing addons. `StreamingCaret` adds a decorative reduced-motion-aware caret, and `Prose` styles semantic longform HTML without choosing a parser.
 - `PageCurl` presents cover/facing/back-cover spreads with native navigation, RTL keyboard turns, controlled selection and a bounded next-button paper preview. Physical SVG crease geometry, corner handles, backward dragging and teaser choreography are not included.
 - `DateReel` selects Gregorian civil dates/times with localized spinbutton reels, atomic month-end clamping, bounds, presets and asynchronous confirmation. Zoned scheduling, offscreen observation, recycled-window/inertia fidelity and manual screen-reader/touch validation are not included.
 - `GravityWell` arranges noninteractive tiles in a bounded pointer field with keyboard exploration and pause controls. `DataFlow` illustrates source-to-destination routing with a readable summary and pause, step and replay controls. Counts and particles are illustrative, not live telemetry.

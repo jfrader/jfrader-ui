@@ -4,8 +4,8 @@ import { focusRingOutset } from './focus-ring';
 import { REDUCED_MOTION } from './media';
 
 // A shell is the visible control around its own input; it takes the ring when that input has keyboard focus.
-const FOCUSED = '&:focus-visible, &:has(> input:focus-visible)';
-const NOT_FOCUSED = ':not(:focus-visible, :has(> input:focus-visible))';
+const FOCUSED = '&:focus-visible, &:has(:focus-visible)';
+const NOT_FOCUSED = ':not(:focus-visible, :has(:focus-visible))';
 
 // Shared control skin for text inputs (TextField, Textarea, PasswordField) and for shells wrapping
 // a bare input (SearchField, TagInput).
@@ -23,15 +23,16 @@ export const inputControlStyle = css({
   transitionDuration: vars.motion.duration.fast,
   transitionTimingFunction: vars.motion.easeStandard,
   '&::placeholder': { color: vars.color.textSubtle },
-  [`&:hover:not(:disabled)${NOT_FOCUSED}`]: { borderColor: vars.color.textSubtle },
+  [`&:hover:not(:disabled, [data-disabled])${NOT_FOCUSED}`]: { borderColor: vars.color.textSubtle },
   [FOCUSED]: { ...focusRingOutset, borderColor: vars.color.focusRing },
-  '&:disabled': {
+  '&:disabled, &[data-disabled]': {
     opacity: 0.55,
     cursor: 'not-allowed',
   },
   [`&[aria-invalid="true"]${NOT_FOCUSED}`]: {
     borderColor: vars.color.dangerBorder,
   },
+  [`&[data-invalid]${NOT_FOCUSED}`]: { borderColor: vars.color.dangerBorder },
   [REDUCED_MOTION]: {
     transitionDuration: '0s',
   },
