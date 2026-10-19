@@ -45,7 +45,7 @@ export type ArticleListProps = Omit<ComponentPropsWithRef<'ul'>, 'children'> & S
 };
 const ListContext = createContext<Pick<ArticleListProps, 'variant' | 'size' | 'slots' | 'slotProps'>>({});
 const rootStyle = css({ listStyle: 'none', padding: 0, margin: 0, minInlineSize: 0 });
-const itemStyle = css({ minInlineSize: 0, paddingBlock: vars.space[3], borderBlockEnd: `${vars.editorial.rule.thin} solid ${articleSoftRule}`, color: vars.color.text, display: 'flex', flexDirection: 'column', gap: vars.space[2] });
+const itemStyle = css({ minInlineSize: 0, paddingBlock: vars.space[3], color: vars.color.text, display: 'flex', flexDirection: 'column', gap: vars.space[2], '&:not(:first-child)': { borderBlockStart: `${vars.editorial.rule.thin} solid ${articleSoftRule}` } });
 const rowStyle = css({ [ARTICLE_DESKTOP]: { flexDirection: 'row', alignItems: 'baseline', gap: vars.space[3] } });
 const wireStyle = css({ flexDirection: 'row', alignItems: 'baseline', paddingBlock: vars.space[2] });
 const headlineStyle = css({ margin: 0, minInlineSize: 0, fontFamily: articleHeadingFont, lineHeight: vars.lineHeight.base, overflowWrap: 'anywhere' });
