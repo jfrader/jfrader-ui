@@ -535,6 +535,36 @@ export const PersistentFavorite: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
 args: { defaultOpen: true, defaultFavorites: ['p1'] } };
+export const ViewerFilmstripSelection: Story = {
+  tags: ['!autodocs'],
+  args: { defaultOpen: true, defaultValue: 'p12', slotProps: { filmstrip: { css: { maxInlineSize: '12rem' } } } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const stage = canvas.getByRole('group', { name: 'Night over the Hills' });
+    const strip = canvas.getByRole('group', { name: 'Choose photo' });
+    const expectSelectionVisible = async () => {
+      await waitFor(async () => {
+        const selected = strip.querySelector<HTMLElement>('[aria-current="true"]')!;
+        const viewport = strip.getBoundingClientRect();
+        const thumbnail = selected.getBoundingClientRect();
+        const style = getComputedStyle(selected);
+        const ring = Number.parseFloat(style.outlineWidth) + Number.parseFloat(style.outlineOffset);
+        await expect(thumbnail.left - ring).toBeGreaterThanOrEqual(viewport.left);
+        await expect(thumbnail.right + ring).toBeLessThanOrEqual(viewport.right);
+      });
+    };
+    await expectSelectionVisible();
+    stage.focus();
+    for (const key of ['{Home}', '{End}']) {
+      await userEvent.keyboard(key);
+      await expectSelectionVisible();
+      await expect(canvasElement.ownerDocument.activeElement).toBe(stage);
+    }
+  },
+};
+export const RTLViewerFilmstripSelection: Story = {
+  ...ViewerFilmstripSelection,
+  args: { ...ViewerFilmstripSelection.args, dir: 'rtl' },
+};
 export const PersistentImageZoom: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
