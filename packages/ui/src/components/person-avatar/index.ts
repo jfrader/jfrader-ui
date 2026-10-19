@@ -1,6 +1,6 @@
 export { PersonAvatar } from './person-avatar';
 export type {
   PersonAvatarProps, PersonAvatarSlots, PersonAvatarRootProps,
-  PersonAvatarKit, PersonAvatarSize, PersonAvatarCrop, PersonAvatarAttire,
-  PersonShirtPattern, PersonShortsPattern, PersonSocksPattern,
+  PersonAvatarSize, PersonAvatarCrop,
 } from './person-avatar';
+export * from './kit';

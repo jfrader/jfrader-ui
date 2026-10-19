@@ -1,6 +1,8 @@
 import { PERSON_ART_COLORS } from '@jfrader/tokens';
 import type { PersonAppearance } from './appearance';
-import type { PersonAvatarAttire, PersonAvatarKit, PersonShirtPattern, PersonShortsPattern } from './person-avatar';
+import type { PersonAvatarAttire, PersonAvatarKit } from './kit';
+import { KitArt } from './art/kit-art';
+import { StaffArt } from './art/staff-art';
 import {
   PERSON_EYE_COLORS,
   PERSON_HAIR_COLORS,
@@ -813,75 +815,12 @@ function Accessory({
   );
 }
 
-function JerseyPattern({ pattern, secondary }: { pattern: PersonShirtPattern; secondary: string }) {
-  if (pattern === "solid") return null;
-
-  if (pattern === "split") {
-    return <rect x="24" y="36" width="14" height="12" fill={secondary} />;
-  }
-
-  if (pattern === "hoops") {
-    return (
-      <g>
-        <rect x="10" y="39" width="28" height="3" fill={secondary} />
-        <rect x="8" y="46" width="32" height="2" fill={secondary} />
-      </g>
-    );
-  }
-
-  if (pattern === "shoulders") {
-    return (
-      <g>
-        <rect x="10" y="35" width="28" height="4" fill={secondary} />
-        <rect x="7" y="38" width="7" height="3" fill={secondary} />
-        <rect x="34" y="38" width="7" height="3" fill={secondary} />
-      </g>
-    );
-  }
-
-  return <rect x="21" y="36" width="6" height="12" fill={secondary} />;
-}
-
-function ShortsPattern({ pattern, accent }: { pattern: PersonShortsPattern; accent: string }) {
-  if (pattern === "sideStripe") {
-    return (
-      <>
-        <rect x="15" y="49" width="2" height="5" fill={accent} />
-        <rect x="31" y="49" width="2" height="5" fill={accent} />
-      </>
-    );
-  }
-  if (pattern === "split") return <rect x="24" y="49" width="9" height="5" fill={accent} />;
-  if (pattern === "waistBand") return <rect x="15" y="49" width="18" height="2" fill={accent} />;
-  return null;
-}
-
-function StaffAttire({ accent }: { accent: string }) {
-  return (
-    <>
-      <path d="M6 48V42H10V39H15V36H33V39H38V42H42V48Z" fill={PERSON_ART_COLORS.staffJacket} />
-      <rect x="6" y="42" width="8" height="6" fill={PERSON_ART_COLORS.staffJacket} />
-      <rect x="34" y="42" width="8" height="6" fill={PERSON_ART_COLORS.staffJacket} />
-      <path d="M18 36H30V48H18Z" fill={PERSON_ART_COLORS.staffShirt} />
-      <path d="M15 36H21L24 41L19 48H14V39Z" fill={PERSON_ART_COLORS.staffLapel} />
-      <path d="M27 36H33L34 39V48H29L24 41Z" fill={PERSON_ART_COLORS.staffLapel} />
-      <rect x="23" y="37" width="2" height="3" fill={accent} />
-      <path d="M22 40H26L25 47H23Z" fill={accent} />
-      <rect x="15" y="36" width="18" height="1" fill={PERSON_ART_COLORS.glint} opacity="0.12" />
-    </>
-  );
-}
-
-
 export function PersonArt({ appearance, attire, kit, primary, fullKit }: { appearance: PersonAppearance; attire: PersonAvatarAttire; kit: PersonAvatarKit; primary: string; fullKit: boolean }) {
   const skin = PERSON_SKIN_TONES[appearance.skinTone];
   const hair = PERSON_HAIR_COLORS[appearance.hairColor];
   const iris = PERSON_EYE_COLORS[appearance.eyeColor];
   const isStaff = attire === 'staff';
-  const shirt = isStaff ? PERSON_ART_COLORS.staffJacket : kit.shirt;
   const shirtAccent = isStaff ? PERSON_ART_COLORS.staffShirt : kit.accent;
-  const { shorts, shortsAccent, socks, socksAccent, shortsPattern, socksPattern } = kit;
-  const jerseyPattern = kit.shirtPattern;
   const mouthY = appearance.faceShape === 'long' ? 28 : 27;
   return <>
       <rect x="7" y={fullKit && !isStaff ? 59 : 46} width="34" height="2" fill={PERSON_ART_COLORS.shadow} opacity="0.24" />
@@ -895,44 +834,7 @@ export function PersonArt({ appearance, attire, kit, primary, fullKit }: { appea
           }
           fill={AVATAR_OUTLINE}
         />
-        {isStaff ? (
-          <StaffAttire accent={primary} />
-        ) : (
-          <>
-            <path
-              d={
-                fullKit
-                  ? "M6 47V42H10V39H15V36H33V39H38V42H42V47H33V49H15V47Z"
-                  : "M6 48V42H10V39H15V36H33V39H38V42H42V48Z"
-              }
-              fill={shirt}
-            />
-            <rect x="6" y="42" width="8" height={fullKit ? 5 : 6} fill={shirtAccent} />
-            <rect x="34" y="42" width="8" height={fullKit ? 5 : 6} fill={shirtAccent} />
-            <JerseyPattern pattern={jerseyPattern} secondary={shirtAccent} />
-            <rect x="14" y="36" width="20" height="2" fill={PERSON_ART_COLORS.glint} opacity="0.16" />
-          </>
-        )}
-
-        {fullKit && !isStaff && (
-          <>
-            <rect x="13" y="48" width="22" height="7" fill={AVATAR_OUTLINE} />
-            <rect x="15" y="49" width="18" height="5" fill={shorts} />
-            <ShortsPattern pattern={shortsPattern} accent={shortsAccent} />
-            <rect x="15" y="54" width="7" height="6" fill={AVATAR_OUTLINE} />
-            <rect x="26" y="54" width="7" height="6" fill={AVATAR_OUTLINE} />
-            <rect x="17" y="54" width="4" height="4" fill={socks} />
-            <rect x="27" y="54" width="4" height="4" fill={socks} />
-            {socksPattern === "turnover" && (
-              <>
-                <rect x="17" y="54" width="4" height="2" fill={socksAccent} />
-                <rect x="27" y="54" width="4" height="2" fill={socksAccent} />
-              </>
-            )}
-            <rect x="14" y="58" width="8" height="2" fill={AVATAR_OUTLINE} />
-            <rect x="26" y="58" width="8" height="2" fill={AVATAR_OUTLINE} />
-          </>
-        )}
+        {isStaff ? <StaffArt accent={primary} /> : <KitArt kit={kit} fullKit={fullKit} />}
       </g>
 
       <g data-avatar-layer="neck">

@@ -10,7 +10,10 @@ import { css } from '../../styling/css';
 import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
-import { PersonAvatar, type PersonAvatarKit } from './index';
+import {
+  PersonAvatar, resolvePersonKit, PERSON_SHIRT_PATTERNS, PERSON_SHORTS_PATTERNS, PERSON_SOCKS_PATTERNS,
+  type PersonAvatarKit,
+} from './index';
 import {
   PERSON_SKIN_TONES, PERSON_HAIR_COLORS, PERSON_EYE_COLORS,
   PERSON_HAIR_STYLES, PERSON_FACIAL_HAIR_STYLES, PERSON_FACE_SHAPES, PERSON_BROW_STYLES,
@@ -375,6 +378,24 @@ export const SimpleColors: Story = {
   </Row>,
   play: async ({ canvasElement }) => {
     const [kit, staffWithKit, staff] = Array.from(canvasElement.querySelectorAll('svg'));
+    await expect(PERSON_SHIRT_PATTERNS).toEqual(['solid', 'centerStripe', 'split', 'hoops', 'shoulders']);
+    await expect(PERSON_SHORTS_PATTERNS).toEqual(['solid', 'sideStripe', 'split', 'waistBand']);
+    await expect(PERSON_SOCKS_PATTERNS).toEqual(['solid', 'turnover']);
+    await expect(resolvePersonKit()).toEqual({
+      shirt: PERSON_ART_COLORS.staffJacket, shorts: PERSON_ART_COLORS.staffShirt,
+      socks: PERSON_ART_COLORS.staffJacket, accent: PERSON_ART_COLORS.staffShirt,
+      shortsAccent: PERSON_ART_COLORS.staffJacket, socksAccent: PERSON_ART_COLORS.staffShirt,
+      shirtPattern: 'solid', shortsPattern: 'solid', socksPattern: 'solid',
+    });
+    await expect(resolvePersonKit({ primary: vars.color.accent, secondary: 'currentColor' })).toEqual({
+      shirt: vars.color.accent, shorts: 'currentColor', socks: vars.color.accent,
+      accent: 'currentColor', shortsAccent: vars.color.accent, socksAccent: 'currentColor',
+      shirtPattern: 'solid', shortsPattern: 'solid', socksPattern: 'solid',
+    });
+    await expect(resolvePersonKit({ primary: 'currentColor' }).shorts).toBe(PERSON_ART_COLORS.staffShirt);
+    await expect(resolvePersonKit({ secondary: 'currentColor' }).shirt).toBe(PERSON_ART_COLORS.staffJacket);
+    await expect(resolvePersonKit({ primary: '', secondary: '' }).shirt).toBe('');
+    await expect(resolvePersonKit({ kit: ARTWORK_KIT, primary: vars.color.accent, secondary: 'currentColor' })).toBe(ARTWORK_KIT);
     await expect(kit!.querySelector('path[fill] + rect')).toHaveAttribute('fill', 'currentColor');
     await expect(kit!.querySelector('[x="15"][y="49"][width="18"]')).toHaveAttribute('fill', 'currentColor');
     await expect(kit!.querySelector('[x="17"][y="54"][height="4"]')).toHaveAttribute('fill', vars.color.accent);

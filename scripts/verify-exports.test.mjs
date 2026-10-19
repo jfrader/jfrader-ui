@@ -15,6 +15,9 @@ function runFixture(mutate = () => {}) {
       './button': sourceEntry('./src/components/button/index.ts'),
       './code-block': sourceEntry('./src/components/code-block/index.ts'),
       './code-block/shiki': sourceEntry('./src/components/code-block/shiki.ts'),
+      './person-avatar': sourceEntry('./src/components/person-avatar/index.ts'),
+      './person-avatar/appearance': sourceEntry('./src/components/person-avatar/appearance.ts'),
+      './person-avatar/kit': sourceEntry('./src/components/person-avatar/kit.ts'),
       // Subpath-only by design (GURI-2359): must NOT be required in the barrel.
       './game-card': sourceEntry('./src/components/game-card/index.ts'),
     },
@@ -22,12 +25,12 @@ function runFixture(mutate = () => {}) {
     peerDependencies: { react: '^19.0.0', 'react-dom': '^19.0.0', shiki: '^4.4.3' },
     peerDependenciesMeta: { shiki: { optional: true } },
   };
-  const fixture = { manifest, index: "export * from './components/button';\nexport * from './components/code-block';\n" };
+  const fixture = { manifest, index: "export * from './components/button';\nexport * from './components/code-block';\nexport * from './components/person-avatar';\n" };
   mutate(fixture);
   try {
     mkdirSync(path.join(dir, 'scripts'), { recursive: true });
     writeFileSync(path.join(dir, 'scripts/verify-exports.mjs'), gate);
-    for (const file of ['src/components/button/index.ts', 'src/components/code-block/index.ts', 'src/components/code-block/shiki.ts', 'src/components/game-card/index.ts']) {
+    for (const file of ['src/components/button/index.ts', 'src/components/code-block/index.ts', 'src/components/code-block/shiki.ts', 'src/components/game-card/index.ts', 'src/components/person-avatar/index.ts', 'src/components/person-avatar/appearance.ts', 'src/components/person-avatar/kit.ts']) {
       const target = path.join(dir, 'packages/ui', file);
       mkdirSync(path.dirname(target), { recursive: true });
       writeFileSync(target, 'export {};\n');
@@ -44,6 +47,7 @@ test('accepts complete source exports', () => assert.equal(runFixture().status, 
 
 for (const [name, mutate, message] of [
   ['missing subpath', ({ manifest }) => { delete manifest.exports['./button']; }, /export "\.\/button"/],
+  ['missing kit subpath', ({ manifest }) => { delete manifest.exports['./person-avatar/kit']; }, /export "\.\/person-avatar\/kit"/],
   ['wrong existing target', ({ manifest }) => { manifest.exports['./button'] = manifest.exports['./code-block']; }, /export "\.\/button"/],
   ['missing types condition', ({ manifest }) => { delete manifest.exports['./button'].types; }, /types then import/],
   ['types after import', ({ manifest }) => { manifest.exports['./button'] = { import: './src/components/button/index.ts', types: './src/components/button/index.ts' }; }, /types before import/],

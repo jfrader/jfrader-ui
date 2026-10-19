@@ -9,25 +9,11 @@ import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { personAppearanceSignature, resolveAppearanceId, resolvePersonAppearance } from './appearance';
 import { PersonArt } from './person-art';
+import { resolvePersonKit, type PersonAvatarAttire, type PersonAvatarKit } from './kit';
+export type { PersonAvatarAttire, PersonAvatarKit, PersonShirtPattern, PersonShortsPattern, PersonSocksPattern } from './kit';
 
 export type PersonAvatarSize = 'sm' | 'md' | 'lg';
 export type PersonAvatarCrop = 'none' | 'circle';
-export type PersonAvatarAttire = 'kit' | 'staff';
-export type PersonShirtPattern = 'solid' | 'centerStripe' | 'split' | 'hoops' | 'shoulders';
-export type PersonShortsPattern = 'solid' | 'sideStripe' | 'split' | 'waistBand';
-export type PersonSocksPattern = 'solid' | 'turnover';
-
-export interface PersonAvatarKit {
-  shirt: string;
-  shorts: string;
-  socks: string;
-  accent: string;
-  shortsAccent: string;
-  socksAccent: string;
-  shirtPattern: PersonShirtPattern;
-  shortsPattern: PersonShortsPattern;
-  socksPattern: PersonSocksPattern;
-}
 
 export interface PersonAvatarSlots {
   /** Replaces the root with an adapter that forwards props and ref to one SVG. */
@@ -106,11 +92,7 @@ export function PersonAvatar({
     (!labelledBy && !name?.trim());
   const visualId = resolveAppearanceId(seed, appearanceId);
   const appearance = resolvePersonAppearance(visualId);
-  const resolvedKit: PersonAvatarKit = kit ?? {
-    shirt: primary, shorts: secondary, socks: primary,
-    accent: secondary, shortsAccent: primary, socksAccent: secondary,
-    shirtPattern: 'solid', shortsPattern: 'solid', socksPattern: 'solid',
-  };
+  const resolvedKit = resolvePersonKit({ kit, primary, secondary });
 
   // Kit and role diagnostics stay app-owned: this renderer receives resolved presentation.
   return (
