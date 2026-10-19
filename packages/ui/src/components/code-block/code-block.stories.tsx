@@ -4,6 +4,8 @@ import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
+import { expectInside } from '../../testing/geometry-assertions';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { Button } from '../button';
@@ -14,6 +16,21 @@ const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
 const ConstrainedFrame = styled.div({ maxInlineSize: '20rem' });
 
 const SOURCE = 'export const answer = 42;\nconsole.log(answer);\n';
+
+/** Inherited light material and fixed charcoal with the same source geometry. */
+export const PanelAppearance: StoryObj<typeof CodeBlock> = {
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+  render: (args) => <Stack><CodeBlock {...args} aria-label="Inherited source" /><CodeBlock {...args} aria-label="Contrast source" appearance="contrast" /></Stack>,
+  play: async ({ canvasElement }) => {
+    const [light, contrast] = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui~="code-block"]'));
+    await expectThemedSurface(light!, 'light');
+    await expectContrastSurface(contrast!, 'light');
+    await expect(contrast!.tagName).toBe('SECTION');
+    await expect(contrast!.getBoundingClientRect().height).toBe(light!.getBoundingClientRect().height);
+    await expectInside(contrast!.querySelector('pre')!, contrast!);
+  },
+};
 function ReplacementRoot(props: ComponentPropsWithRef<'section'>) {
   return <section {...props} data-testid="replacement-root" />;
 }
@@ -36,6 +53,8 @@ export const RootReplacement: StoryObj<typeof CodeBlock> = {
   render: (args) => <CodeBlock {...args} data-ui="consumer" />,
   play: async ({ canvasElement, args }) => {
     const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(getComputedStyle(root).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(root).boxShadow).toBe('none');
     await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
     await expect(root.tagName).toBe('SECTION');
     await expect(root).toHaveClass('consumer-root', 'slot-root');

@@ -3,6 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import {
   TypewriterTerminal,
@@ -14,6 +16,22 @@ import {
 import { styled } from '../../index';
 
 const NarrowFrame = styled.div({ inlineSize: '18em', maxInlineSize: '100%' });
+const AppearanceStack = styled.div({ display: 'grid', gap: vars.space[4] });
+
+/** Inherited light material and fixed charcoal with paused playback. */
+export const PanelAppearance: StoryObj<typeof TypewriterTerminal> = {
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+  render: (args) => <AppearanceStack><TypewriterTerminal {...args} paused /><TypewriterTerminal {...args} paused appearance="contrast" /></AppearanceStack>,
+  play: async ({ canvasElement }) => {
+    const [light, contrast] = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui~="typewriter-terminal"]'));
+    await expectThemedSurface(light!, 'light');
+    await expectContrastSurface(contrast!, 'light');
+    await expect(contrast!.tagName).toBe('FIGURE');
+    await expect(contrast!.getBoundingClientRect().height).toBe(light!.getBoundingClientRect().height);
+    await expectInside(contrast!.querySelector('[data-ui="typewriter-terminal-screen"]')!, contrast!);
+  },
+};
 
 const SCRIPT: readonly TerminalStep[] = [
   {
@@ -47,6 +65,8 @@ export const RootReplacement: StoryObj<typeof TypewriterTerminal> = {
   render: (args) => <TypewriterTerminal {...args} data-ui="consumer" />,
   play: async ({ canvasElement, args }) => {
     const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(getComputedStyle(root).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(root).boxShadow).toBe('none');
     await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
     await expect(root.tagName).toBe('FIGURE');
     await expect(root).toHaveClass('consumer-root', 'slot-root');

@@ -4,12 +4,41 @@ import { vars } from '@jfrader/tokens/vars';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import { JsonViewer, type JsonValue, type JsonViewerProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
 const NarrowFrame = styled.div({ maxInlineSize: '28rem' });
+const CompactFrame = styled.div({ inlineSize: '14rem', maxInlineSize: '100%' });
+const AppearanceStack = styled.div({ display: 'grid', gap: vars.space[4] });
+
+/** Toolbar actions wrap inside a narrow container. */
+export const NarrowToolbar: StoryObj<typeof JsonViewer> = {
+  tags: ['!autodocs'],
+  render: (args) => <CompactFrame><JsonViewer {...args} appearance="contrast" /></CompactFrame>,
+  play: async ({ canvasElement }) => {
+    const toolbar = canvasElement.querySelector<HTMLElement>('[data-ui="json-viewer-toolbar"]')!;
+    for (const action of within(toolbar).getAllByRole('button')) await expectInside(action, toolbar);
+  },
+};
+
+/** Inherited light material and fixed charcoal around the same JSON tree. */
+export const PanelAppearance: StoryObj<typeof JsonViewer> = {
+  tags: ['!autodocs'],
+  decorators: [withLightTheme],
+  render: (args) => <AppearanceStack><JsonViewer {...args} /><JsonViewer {...args} appearance="contrast" /></AppearanceStack>,
+  play: async ({ canvasElement }) => {
+    const [light, contrast] = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui~="json-viewer"]'));
+    await expectThemedSurface(light!, 'light');
+    await expectContrastSurface(contrast!, 'light');
+    await expect(contrast!.tagName).toBe('DIV');
+    await expect(contrast!.getBoundingClientRect().height).toBe(light!.getBoundingClientRect().height);
+    await expectInside(within(contrast!).getByRole('tree'), contrast!);
+  },
+};
 
 const payload: JsonValue = {
   active: false,
@@ -41,6 +70,8 @@ export const RootReplacement: StoryObj<typeof JsonViewer> = {
   render: (args) => <JsonViewer {...args} data-ui="consumer" />,
   play: async ({ canvasElement, args, userEvent }) => {
     const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(getComputedStyle(root).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(root).boxShadow).toBe('none');
     await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
     await expect(root.tagName).toBe('DIV');
     await expect(root).toHaveClass('consumer-root', 'slot-root');

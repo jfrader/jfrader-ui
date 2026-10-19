@@ -21,7 +21,9 @@ import { css, keyframes, type Interpolation, type Theme } from '../../styling/cs
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import type { SlotCss, SxProps } from '../../styling/sx';
-import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
+import type { PresentationProps } from '../../utils/presentation-slot';
+import { SurfaceRoot } from '../surface/surface-root';
+import type { SurfaceAppearance } from '../../styling/surface';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -121,6 +123,8 @@ export interface TypewriterTerminalSlots {
 }
 export interface TypewriterTerminalProps
   extends Omit<ComponentPropsWithRef<'figure'>, 'children' | 'onChange'>, SxProps {
+  /** Use fixed charcoal with `contrast`; `default` inherits the parent appearance. */
+  appearance?: SurfaceAppearance;
   steps: readonly TerminalStep[];
   title?: string;
   cwd?: string;
@@ -191,16 +195,10 @@ const rootStyle = css({
   margin: 0,
   minInlineSize: 0,
   maxInlineSize: '100%',
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
-  boxShadow: vars.shadow.raised,
-  backgroundColor: vars.color.surfaceRaised,
-  color: vars.color.text,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   lineHeight: vars.lineHeight.base,
   overflow: 'hidden',
-  [FORCED_COLORS]: { borderColor: 'CanvasText', boxShadow: 'none' },
 });
 const headerStyle = css({
   display: 'flex',
@@ -427,6 +425,7 @@ function joined(...ids: (string | undefined)[]) {
 
 /** Scripted playback only. Native buttons; slider arrows/Page keys jump command boundaries. */
 export function TypewriterTerminal({
+  appearance,
   ref,
   steps,
   title = 'Terminal',
@@ -709,14 +708,18 @@ export function TypewriterTerminal({
 
   return (
     <MotionConfig reducedMotion="user">
-          <PresentationSlot
+          <SurfaceRoot
             element="figure"
-            component={slots?.root ?? component}
-            slotProps={slotProps?.root}
-            styles={rootStyle}
+            owner="TypewriterTerminal"
+            appearance={appearance}
+            variant="raised"
+            component={component}
+            slots={slots}
+            slotProps={slotProps}
+            structure={rootStyle}
             sx={sx}
             {...rest}
-            ref={ref}
+            internalRef={ref}
             className={className}
             marker="typewriter-terminal"
             aria-label={rest['aria-label'] ?? (labelledBy ? undefined : label)}
@@ -936,7 +939,7 @@ export function TypewriterTerminal({
                 {caption}
               </Caption>
             )}
-          </PresentationSlot>
+          </SurfaceRoot>
     </MotionConfig>
   );
 }

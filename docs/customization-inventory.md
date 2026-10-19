@@ -21,6 +21,17 @@ also get their own row. Anatomy-prop columns record additional `*Props` / `*Clas
 props; styling-only keys mean no same-named replacement key on that row (nested part customization
 may exist and is listed on the corresponding public part).
 
+## Panel material
+
+SurfaceRoot supplies material and appearance for Surface, Card, Drawer.Panel, BottomSheet.Panel,
+Dialog.Panel, DialogStack.Content, CodeBlock, TypewriterTerminal and JsonViewer. CodeBlock retains
+its section root and TypewriterTerminal its figure root; the others retain div roots. Replacements
+own material and forward the native root's props, ref and className. Declare replacement types
+outside render and apply their material before the supplied className.
+
+CommentThread's section is a layout/container-query lane around Card, which already supplies its
+panel material. The section has no background, border or radius to migrate.
+
 ## Public APIs
 
 | Component / part | component | slots | slotProps | Styling-only keys | Other anatomy props | Public parts |
