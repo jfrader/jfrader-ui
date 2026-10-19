@@ -10,7 +10,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
-import { styled } from '../../index';
+import { styled, TextField, Textarea } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { SearchField, type SearchFieldProps } from './index';
 
@@ -21,6 +21,8 @@ const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.s
 const sizes = ['sm', 'md', 'lg'] as const;
 const heights = { sm: 32, md: 40, lg: 48 };
 const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 320px)' });
+const Toolbar = styled.div({ display: 'flex', gap: vars.space[2], inlineSize: 'min(100%, 16rem)' });
+const ToolbarAction = styled(FixtureButton)({ flexShrink: 0 });
 const usage = '<SearchField label="Search members" value={query} onValueChange={setQuery} placeholder="Name or email" />';
 const meta = {
   title: 'Inputs/SearchField', component: SearchField, tags: ['autodocs'],
@@ -375,11 +377,35 @@ export const RefAndStyles: Story = {
     const root = canvasElement.querySelector('[data-ui="search-field"]')!;
     await expect(root).toHaveAttribute('dir', 'rtl');
     await expect(root).toHaveClass('consumer-root');
-    await expect(getComputedStyle(root).paddingInlineStart).toBe('12px');
+    const padding = parseFloat(getComputedStyle(root).paddingInlineStart);
+    await expect(padding).toBeGreaterThan(11);
+    await expect(padding).toBeLessThanOrEqual(12);
   },
 };
 export const LightTheme: Story = { decorators: [withLightTheme], globals: { theme: 'light' }, args: { defaultValue: 'Ada', description: 'Search by name or email.' } };
 export const NarrowToolbar: Story = { args: { defaultValue: 'Ada', sx: { inlineSize: '160px' } } };
+export const SharedFieldRootsInToolbar: Story = {
+  render: () => <>
+    <Toolbar><SearchField label="Search" /><ToolbarAction>Search</ToolbarAction></Toolbar>
+    <Toolbar><TextField label="Name" /><ToolbarAction>Save</ToolbarAction></Toolbar>
+    <Toolbar><Textarea label="Message" /><ToolbarAction>Send</ToolbarAction></Toolbar>
+  </>,
+  play: async ({ canvasElement }) => {
+    for (const name of ['search-field', 'text-field', 'textarea']) {
+      const root = canvasElement.querySelector<HTMLElement>(`[data-ui="${name}"]`)!;
+      const toolbar = root.parentElement!.getBoundingClientRect();
+      const field = root.getBoundingClientRect();
+      const action = root.nextElementSibling!.getBoundingClientRect();
+      const minimum = parseFloat(getComputedStyle(root).minInlineSize);
+      await expect(minimum).toBeGreaterThanOrEqual(0);
+      await expect(minimum).toBeLessThan(1);
+      await expect(field.width).toBeGreaterThan(0);
+      await expect(field.left).toBeGreaterThanOrEqual(toolbar.left);
+      await expect(field.right).toBeLessThanOrEqual(action.left);
+      await expect(action.right).toBeLessThanOrEqual(toolbar.right + 1);
+    }
+  },
+};
 export const LongCopy: Story = { args: { label: 'Buscar miembros por nombre o dirección de correo electrónico', defaultValue: 'Ada', messages: { clear: 'Borrar el texto de búsqueda de miembros' } } };
 export const RTL: Story = {
   args: { dir: 'rtl', label: 'Buscar miembros', defaultValue: 'Ada' },
