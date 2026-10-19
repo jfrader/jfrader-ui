@@ -1,8 +1,8 @@
-// Nesting for floating overlays (Popover, HoverCard, DateRangePicker, Menu). Each layer registers a
+// Nesting for floating overlays. Each layer registers a
 // node in one shared floating tree, so a layer opened inside another one is its child: Escape and outside presses
 // reach only the topmost open layer, and a press inside a child is not outside its parent.
 // The first layer creates the tree; nested layers join it through React context, across portals.
-// Overlays that do not take part (Select, Combobox, …) render inside `IsolatedOverlay`, so the
+// Overlays that do not take part render inside `IsolatedOverlay`, so the
 // enclosing layer's tree and node never change their roles, list navigation or focus handling.
 import { useMemo, type KeyboardEvent, type ReactNode } from 'react';
 import {
@@ -13,7 +13,7 @@ import {
   useFloatingParentNodeId,
   useFloatingTree,
   type ElementProps,
-  type FloatingContext,
+  type FloatingRootContext,
   type UseDismissProps,
 } from '@floating-ui/react';
 import { getDeepestNode } from '@floating-ui/react/utils';
@@ -28,6 +28,8 @@ import { getDeepestNode } from '@floating-ui/react/utils';
  */
 export type LayerKind = 'container' | 'leaf';
 
+type LayerContext = FloatingRootContext & { nodeId?: string };
+
 const CONTAINER_DISMISS = { escapeKey: true, outsidePress: true, bubbles: false } satisfies UseDismissProps;
 
 const LAYER_DISMISS = {
@@ -40,7 +42,7 @@ const LAYER_DISMISS = {
  * container's own content, not in the child) closes the topmost open descendant. The
  * container's dismiss handler, which runs next, keeps the container open and stops the event.
  */
-function useTopmostEscape(context: FloatingContext, enabled: boolean): ElementProps {
+function useTopmostEscape(context: LayerContext, enabled: boolean): ElementProps {
   const tree = useFloatingTree();
   const { nodeId } = context;
 
@@ -56,7 +58,7 @@ function useTopmostEscape(context: FloatingContext, enabled: boolean): ElementPr
 }
 
 /** Escape and outside-press dismissal for one layer; pass the result into `useInteractions`. */
-export function useLayerDismiss(context: FloatingContext, kind: LayerKind): ElementProps[] {
+export function useLayerDismiss(context: LayerContext, kind: LayerKind): ElementProps[] {
   const topmostEscape = useTopmostEscape(context, kind === 'container');
   const dismiss = useDismiss(context, LAYER_DISMISS[kind]);
   return [topmostEscape, dismiss];

@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Nested Select, Combobox, DatePicker and Tooltip overlays close only the topmost layer on Escape or an outside press, leaving their parent open and preserving focus.
 - Select and MultiSelect share one labeled-field layout, and Select triggers show a disclosure caret.
 - ShareAccess member rows share a uniform height, role pickers align on the control line, role labels stay available to assistive technology, and the surface fills its host. ShareSheet keeps the access picker at the end of the copy row while the "Copied" confirmation appears.
 

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import {
   autoUpdate,
   flip,
@@ -5,11 +6,13 @@ import {
   shift,
   size,
   useFloating,
+  useFloatingTree,
   type OpenChangeReason,
   type Placement,
   type Strategy,
   type UseFloatingReturn,
 } from '@floating-ui/react';
+import { getDeepestNode } from '@floating-ui/react/utils';
 
 /** Gap between the trigger and the floating surface, in px (matches `space[2]`). */
 export const ANCHOR_GAP = 8;
@@ -58,10 +61,15 @@ export function useOverlayFloating({
   transform,
   collision = 'shift',
 }: OverlayFloatingOptions): UseFloatingReturn<HTMLButtonElement> {
+  const tree = useFloatingTree();
+  const childOwnsPointerRef = useRef(false);
   const detectOverflow = { padding: VIEWPORT_PADDING, ...(boundary ? { boundary } : {}) };
-  return useFloating<HTMLButtonElement>({
+  const floating = useFloating<HTMLButtonElement>({
     open,
-    onOpenChange,
+    onOpenChange: (next, event, reason) => {
+      if (!next && reason === 'focus-out' && childOwnsPointerRef.current) return;
+      onOpenChange(next, event, reason);
+    },
     placement,
     nodeId,
     strategy,
@@ -79,4 +87,28 @@ export function useOverlayFloating({
     ],
     whileElementsMounted: autoUpdate,
   });
+
+  const reference = floating.elements.domReference;
+  useEffect(() => {
+    if (!open || !tree || nodeId === undefined || !reference) return;
+    const doc = reference.ownerDocument;
+    const onPointerDown = () => {
+      const topmost = getDeepestNode(tree.nodesRef.current, nodeId);
+      childOwnsPointerRef.current = Boolean(topmost && topmost.id !== nodeId);
+    };
+    const reset = () => { childOwnsPointerRef.current = false; };
+    doc.addEventListener('pointerdown', onPointerDown, true);
+    doc.addEventListener('pointerup', reset, true);
+    doc.addEventListener('pointercancel', reset, true);
+    doc.addEventListener('keydown', reset, true);
+    return () => {
+      reset();
+      doc.removeEventListener('pointerdown', onPointerDown, true);
+      doc.removeEventListener('pointerup', reset, true);
+      doc.removeEventListener('pointercancel', reset, true);
+      doc.removeEventListener('keydown', reset, true);
+    };
+  }, [open, tree, nodeId, reference]);
+
+  return floating;
 }

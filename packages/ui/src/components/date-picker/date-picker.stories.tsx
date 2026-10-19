@@ -6,6 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
+import { Popover } from '../popover';
 import { TextField, type TextFieldProps } from '../text-field';
 import { DatePicker, type DatePickerCompoundProps as DatePickerProps, type DatePickerEasyProps } from './index';
 
@@ -13,6 +14,40 @@ const LABEL = 'Departure';
 const LOCALE = 'en-US';
 const OUTSIDE = 'After';
 const FIELD_NAME = 'departure';
+
+export const NestedDismissal: StoryObj = {
+  tags: ['!autodocs'],
+  render: () => (
+    <>
+      <Popover defaultOpen>
+        <Popover.Trigger>Parent</Popover.Trigger>
+        <Popover.Content aria-label="Parent">
+          <DatePicker label="Nested date" defaultValue="2026-10-18" locale={LOCALE} />
+        </Popover.Content>
+      </Popover>
+      <Button>Outside</Button>
+    </>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const parent = body.getByRole('dialog', { name: 'Parent' });
+    const input = within(parent).getByRole('combobox', { name: 'Nested date' });
+    input.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    await body.findByRole('grid');
+    await userEvent.keyboard('{ArrowRight}{Escape}');
+    await waitFor(() => expect(body.queryByRole('grid')).toBeNull());
+    await expect(parent).toBeVisible();
+    await expect(input).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    await body.findByRole('grid');
+    const outside = body.getByRole('button', { name: 'Outside' });
+    await userEvent.click(outside);
+    await waitFor(() => expect(body.queryByRole('grid')).toBeNull());
+    await expect(parent).toBeVisible();
+    await expect(outside).toHaveFocus();
+  },
+};
 const DISPLAY_FORMAT = new Intl.DateTimeFormat(LOCALE, { dateStyle: 'medium', calendar: 'gregory', timeZone: 'UTC' });
 
 const stackStyle = {
