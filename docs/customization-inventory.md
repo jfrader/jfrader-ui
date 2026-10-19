@@ -8,10 +8,10 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **156**; public callable parts: **165**.
-- Families exposing `slots.root`: **92**; remaining without a family-level root slot: **64** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **121**; remaining without family-level interior slots: **35** (includes components without generated anatomy).
-- Rows with styling-only `slotProps` keys: **2**.
+- Public callable families: **157**; public callable parts: **165**.
+- Families exposing `slots.root`: **92**; remaining without a family-level root slot: **65** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **121**; remaining without family-level interior slots: **36** (includes components without generated anatomy).
+- Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
 behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, GameCardStack and CardFlights are owner-held;
@@ -245,6 +245,7 @@ may exist and is listed on the corresponding public part).
 | [PasswordStrength](../packages/ui/src/components/password-strength/password-strength.tsx) | yes | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | — | `fieldSlotProps` | — |
 | [Pattern](../packages/ui/src/components/pattern/pattern.tsx) | — | — | — | — | — | — |
 | [PaymentFlow](../packages/ui/src/components/payment-flow/payment-flow.tsx) | yes | `caption`, `controls`, `journey`, `node`, `pauseButton`, `replayButton`, `root`, `scene`, `stepButton`, `summary`, `summaryItem` | `caption`, `controls`, `journey`, `node`, `pauseButton`, `replayButton`, `root`, `scene`, `stepButton`, `summary`, `summaryItem` | — | — | — |
+| [PhoneInput](../packages/ui/src/components/phone-input/phone-input.tsx) | — | — | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | — | — |
 | [PhotoGrid](../packages/ui/src/components/photo-grid/photo-grid.tsx) | — | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | — | — | — |
 | [Pill](../packages/ui/src/components/pill/pill.tsx) | — | — | — | — | — | — |
 | [Popover](../packages/ui/src/components/popover/popover.tsx) | yes | `content`, `root`, `trigger` | `content`, `root`, `trigger` | — | — | `Content`, `Trigger` |
