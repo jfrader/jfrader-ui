@@ -429,6 +429,8 @@ const bodyStyle = css({
   '&[data-deleted]': { color: vars.color.textMuted, fontStyle: 'italic' },
 });
 
+const timeStyle = css({ whiteSpace: 'normal', overflowWrap: 'anywhere' });
+
 const actionsStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[1] });
 
 const confirmStyle = css({
@@ -929,7 +931,7 @@ export function CommentThread({
           size={size}
           baseId={baseId}
           messageId={id}
-          slots={{ article: slotProps?.article, time: slotProps?.time }}
+          slots={{ article: slotProps?.article, time: { ...slotProps?.time, css: [timeStyle, slotProps?.time?.css] } }}
           components={{ article: slots?.article, time: slots?.time }}
         >
           {editing ? (

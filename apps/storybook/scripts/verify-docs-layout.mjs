@@ -5,6 +5,7 @@ import { chromium } from 'playwright';
 import { preview } from 'vite';
 
 const cases = [
+  { id: 'data-display-commentthread--docs', primary: '[data-ui="comment-thread"]', containPreview: true },
   { id: 'surfaces-bottomsheet--docs', primary: '[data-ui="bottom-sheet-trigger"]' },
   { id: 'media-articlecard--docs', primary: '[data-ui~="article-card"]' },
   { id: 'media-articlelist--docs', primary: '[data-ui~="article-list"]' },
@@ -70,7 +71,7 @@ try {
   const page = await browser.newPage();
   page.setDefaultTimeout(30_000);
 
-  for (const { id, primary } of cases) {
+  for (const { id, primary, containPreview } of cases) {
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
       await page.goto(new URL(`iframe.html?id=${id}&viewMode=docs`, baseURL).href);
@@ -87,6 +88,16 @@ try {
       }));
       assert.ok(dimensions.scrollWidth <= dimensions.width,
         `${id} at ${viewport.width}px: expanded docs overflow (${dimensions.scrollWidth}px)`);
+      if (containPreview) {
+        const contained = await page.locator(primary).first().evaluate((element) => {
+          const preview = element.closest('.docs-story');
+          if (!preview) return false;
+          const bounds = preview.getBoundingClientRect();
+          const content = element.getBoundingClientRect();
+          return content.left >= bounds.left - 1 && content.right <= bounds.right + 1;
+        });
+        assert.ok(contained, `${id} at ${viewport.width}px: primary example is clipped by its preview`);
+      }
       assert.equal(await summary.evaluate((element) => element === document.activeElement), true,
         `${id}: focus stays on the summary`);
       await summary.press('Space');

@@ -268,6 +268,7 @@ const meta = {
     ),
   ],
   parameters: {
+    layout: 'padded',
     docs: {
       source: { code: usage },
       description: {
@@ -951,6 +952,7 @@ export const InvalidDate: Story = {
 };
 
 export const InvalidInputs: Story = {
+  args: { sx: { inlineSize: '16rem', maxInlineSize: '100%' } },
   render: (args) => {
     const cycle: { id: string; author: CommentAuthor; body: string; createdAt: number; replies: ThreadComment[] } = {
       id: 'loop',
@@ -969,6 +971,8 @@ export const InvalidInputs: Story = {
   },
   play: async ({ canvasElement }) => {
     await expect(itemIds(canvasElement)).toEqual(['loop']);
+    const region = canvasElement.querySelector<HTMLElement>('[data-ui="comment-thread"]')!;
+    await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth + GEOMETRY_TOLERANCE);
     await expect(articleOf(canvasElement, 'loop').querySelector('time')).toHaveTextContent(fullDate('UTC').format(NOW));
     await waitFor(() => expect(console.error).toHaveBeenCalled());
     const message = (console.error as Mock).mock.calls.map(([first]) => String(first)).join('\n');
