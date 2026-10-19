@@ -5,6 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { GamePanel, type GamePanelProps, type GamePanelCustomization, type GamePanelSlotProps } from '../game-panel/game-panel';
 import { GameHand } from '../game-hand';
@@ -64,6 +65,8 @@ export interface GameSeatProps extends Omit<GamePanelProps, 'children'>, Omit<Ga
   hand?: ReactNode;
   /** Hidden hand count; the decorative fan shows at most three backs. */
   handCount?: number;
+  /** Accessible description of the public hand count; omitted means the hidden fan stays decorative. */
+  handLabel?: string;
   /** Compact plaque for a table edge; panel is a larger standalone plaque that includes chat. Defaults to chip. */
   variant?: 'chip' | 'panel';
   /** Decorative avatar fan (at most three backs), localized count, or no shorthand hand. */
@@ -245,7 +248,7 @@ function TurnRing({ turn, onMilestone, component, ...props }: { turn: GameSeatTu
   </Timer>}</WithSx>;
 }
 
-export function GameSeat({ name, avatar, badges, points, hand, handCount, chat, turn, onTurnMilestone,
+export function GameSeat({ name, avatar, badges, points, hand, handCount, handLabel, chat, turn, onTurnMilestone,
   variant = 'chip', handDisplay = 'fan', locale, formatHandCount, state,
   turned = false, offline = false, dimmed = false, slotProps, slots, artSet, cardArtSets, ...props }: GameSeatProps) {
   const nameId = useId();
@@ -274,6 +277,7 @@ export function GameSeat({ name, avatar, badges, points, hand, handCount, chat, 
     </WithSx>
     {isRenderable(badges) && <SeatPart {...slotProps?.badges} component={slots?.badges} marker="badges" styles={badgesStyle}>{badges}</SeatPart>}
     {isRenderable(points) && <SeatPart {...slotProps?.points} component={slots?.points} marker="points" styles={pointsStyle}>{points}</SeatPart>}
+    {hand === undefined && handDisplay === 'fan' && handCount !== undefined && handLabel ? <span css={visuallyHiddenStyle} data-ui="game-seat-hand-label">{handLabel}</span> : null}
     {isRenderable(handContent) && <SeatPart {...slotProps?.hand} component={slots?.hand} marker="hand" styles={[handStyle, hand === undefined && handCountStyle]}>{handContent}</SeatPart>}
     {variant === 'panel' && isRenderable(chat) && <SeatPart {...slotProps?.chat} component={slots?.chat} marker="chat" styles={chatStyle}>{chat}</SeatPart>}
   </GamePanel></DeckArtProvider>;
