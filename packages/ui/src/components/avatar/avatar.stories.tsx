@@ -71,6 +71,8 @@ export const Initials: Story = {
     const avatar = within(canvasElement).getByRole('img', { name: NAME });
     await expect(avatar).toHaveTextContent('AL');
     await expect(avatar.querySelector('img')).toBeNull();
+    // The fallback circle needs a visible boundary against bg/surfaceHover.
+    await expect(getComputedStyle(avatar).boxShadow).toContain('inset');
   },
 };
 

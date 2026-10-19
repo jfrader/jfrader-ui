@@ -66,6 +66,7 @@ const rootStyle = css({
   boxSizing: 'border-box',
   borderRadius: vars.radius.full,
   backgroundColor: vars.color.surfaceHover,
+  boxShadow: `inset 0 0 0 1px ${vars.color.borderControl}`,
   color: vars.color.text,
   fontWeight: vars.fontWeight.medium,
   lineHeight: 1,
