@@ -459,22 +459,27 @@ function NowPlayingRoot({
   const expand = useRef<HTMLButtonElement>(null);
   const collapse = useRef<HTMLButtonElement>(null);
   const full = useRef<HTMLDivElement>(null);
+  const miniPanel = useRef<HTMLDivElement>(null);
   const expandRef = useMergeRefs([expand, slotProps?.expand?.ref]);
   const collapseRef = useMergeRefs([collapse, slotProps?.collapse?.ref]);
   const fullRef = useMergeRefs([full, slotProps?.full?.ref]);
+  const miniRef = useMergeRefs([miniPanel, slotProps?.mini?.ref]);
   const keyboardOpen = useRef(false);
   const focusInFull = useRef(false);
   const reduced = useReducedMotion();
   const faceHeight = useMotionValue(0);
   const [faceReady, setFaceReady] = useState(false);
-  const faceInnerRef = useRef<HTMLDivElement>(null);
   const faceInitialized = useRef(false);
   const faceAnimation = useRef<ReturnType<typeof animate> | null>(null);
   useLayoutEffect(() => {
-    const inner = faceInnerRef.current;
-    if (!inner) return;
+    // Measure the panel that is actually visible. The face clips its content, so its inner
+    // wrapper reports transient heights mid-collapse and would freeze the spring on a stale
+    // target; the active panel keeps its natural height.
     const measure = () => {
-      const target = inner.scrollHeight;
+      const panel = isOpen ? full.current : miniPanel.current;
+      if (!panel || panel.hidden) return;
+      const target = panel.getBoundingClientRect().height;
+      if (target <= 0) return;
       if (!faceInitialized.current || reduced) {
         faceAnimation.current?.stop();
         faceHeight.jump(target);
@@ -488,12 +493,13 @@ function NowPlayingRoot({
     };
     measure();
     const observer = new ResizeObserver(measure);
-    observer.observe(inner);
+    if (miniPanel.current) observer.observe(miniPanel.current);
+    if (full.current) observer.observe(full.current);
     return () => {
       observer.disconnect();
       faceAnimation.current?.stop();
     };
-  }, [reduced, faceHeight]);
+  }, [isOpen, reduced, faceHeight]);
 
   const pendingDirection = useRef(0);
   const dragCancelled = useRef(false);
@@ -616,8 +622,8 @@ function NowPlayingRoot({
             >
               <Card css={surfaceStyle}>
                   <motion.div style={faceReady ? { height: faceHeight } : undefined} css={faceStyle}>
-                    <div ref={faceInnerRef}>
-                  <Mini {...slotProps?.mini} css={[miniStyle, slotProps?.mini?.css]} hidden={isOpen}>
+                    <div>
+                  <Mini {...slotProps?.mini} ref={miniRef} css={[miniStyle, slotProps?.mini?.css]} hidden={isOpen}>
                     {!isOpen && artwork(true)}
                     {!isOpen && metadata}
                     <NowPlayingLevels />
