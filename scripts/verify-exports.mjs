@@ -23,6 +23,7 @@ const expectedExports = new Map([
   ['.', './src/index.ts'],
   ['./code-block/shiki', './src/components/code-block/shiki.ts'],
   ['./person-avatar/appearance', './src/components/person-avatar/appearance.ts'],
+  ['./person-avatar/kit', './src/components/person-avatar/kit.ts'],
 ]);
 
 if (manifest.sideEffects !== false) errors.push('sideEffects must be false');

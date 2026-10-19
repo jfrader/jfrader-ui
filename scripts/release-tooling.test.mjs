@@ -110,6 +110,29 @@ const flipFixture = (dir) => {
 };
 const flip = (dir, ...args) => spawnSync(process.execPath, [path.join(dir, 'scripts/flip-exports.mjs'), ...args], { encoding: 'utf8' });
 
+test('flip rewrites and restores the person kit module subpath', (t) => {
+  const dir = fixture(t);
+  flipFixture(dir);
+  const packageDir = path.join(dir, 'packages/ui');
+  const manifestPath = path.join(packageDir, 'package.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  const source = './src/components/person-avatar/kit.ts';
+  const types = './dist/types/components/person-avatar/kit.d.ts';
+  const runtime = './dist/person-avatar/kit.js';
+  for (const file of [source, types, runtime]) {
+    mkdirSync(path.dirname(path.join(packageDir, file)), { recursive: true });
+    writeFileSync(path.join(packageDir, file), '');
+  }
+  manifest.exports['./person-avatar/kit'] = { types: source, import: source };
+  writeFileSync(manifestPath, JSON.stringify(manifest));
+  assert.equal(flip(dir, 'dist', '--package', 'ui').status, 0);
+  assert.deepEqual(JSON.parse(readFileSync(manifestPath, 'utf8')).exports['./person-avatar/kit'], {
+    types, import: runtime,
+  });
+  assert.equal(flip(dir, 'src', '--package', 'ui').status, 0);
+  assert.deepEqual(JSON.parse(readFileSync(manifestPath, 'utf8')), manifest);
+});
+
 test('flip dry-run does not mutate; repeated flips are idempotent; src restores exports', (t) => {
   const dir = fixture(t);
   flipFixture(dir);
