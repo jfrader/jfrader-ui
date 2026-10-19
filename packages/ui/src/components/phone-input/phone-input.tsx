@@ -92,7 +92,7 @@ const numberStyle = css({
 });
 const panelStyle = css({
   inlineSize: 'var(--phone-width)', minInlineSize: 0, maxInlineSize: 'var(--phone-available-width)',
-  maxBlockSize: 'min(50dvh, var(--phone-available-height))', overflow: 'hidden', zIndex: 1,
+  maxBlockSize: 'min(20rem, var(--phone-available-height, 50dvh))', overflow: 'hidden', zIndex: 1,
   transitionProperty: 'opacity', transitionDuration: vars.motion.duration.base, transitionTimingFunction: vars.motion.easeStandard,
   '@starting-style': { opacity: 0 }, [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: { background: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText' },
