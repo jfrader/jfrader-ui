@@ -165,12 +165,17 @@ const currencyStyle = css({
   minInlineSize: 0,
   maxInlineSize: '45%',
 });
-const currencyTriggerStyle = { minInlineSize: 0, maxInlineSize: '100%' } as const;
-const currencyValueStyle = {
+const currencyTriggerStyle = {
   minInlineSize: 0,
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
+  maxInlineSize: '100%',
+  alignSelf: 'stretch',
+  border: 0,
+  borderRadius: 0,
+  backgroundColor: 'transparent',
+  borderInlineStart: `1px solid ${vars.color.borderControl}`,
+  paddingInline: vars.space[3],
+  gap: vars.space[1],
+  '&:focus-visible': { outline: 'none' },
 } as const;
 const stepDirections: Readonly<Record<string, number>> = {
   ArrowUp: 1,
@@ -525,7 +530,7 @@ export function MoneyInput({
                 sx={currencyTriggerStyle}
                 aria-label={messages.currencyName(names?.of(code) ?? code)}
               >
-                <Select.Value sx={currencyValueStyle} />
+                <span>{code}</span>
               </Select.Trigger>
               <Select.Content>
                 {currencies.map((choice) => (
