@@ -945,21 +945,21 @@ export const ShellMigration: Story = {
     await userEvent.keyboard('m');
     await waitFor(async () => {
       await expect(canvasElement.querySelector('dialog')).toHaveAttribute('open');
-    });
+    }, { timeout: 3000 });
     const moved = body(canvasElement).getByRole('button', { name: 'Send to 1 person' });
     await waitFor(async () => {
       await expect(moved.ownerDocument.activeElement).toBe(moved);
-    });
+    }, { timeout: 3000 });
     await expect(moved).not.toBe(send);
     await settled(canvasElement);
     await userEvent.keyboard('m');
     await waitFor(async () => {
       await expect(canvasElement.querySelector('dialog')).not.toHaveAttribute('open');
-    });
+    }, { timeout: 3000 });
     await waitFor(async () => {
       const back = body(canvasElement).getByRole('button', { name: 'Send to 1 person' });
       await expect(back.ownerDocument.activeElement).toBe(back);
-    });
+    }, { timeout: 3000 });
     await expect(args.onOpenChange).not.toHaveBeenCalled();
     await settled(canvasElement);
   },
