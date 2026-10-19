@@ -627,9 +627,14 @@ const identityEmailStyle = css({
 
 const identityPlanStyle = css({
   alignSelf: 'flex-start',
+  display: 'block',
+  maxInlineSize: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
 });
 
 const itemLayoutStyle = css({
+  inlineSize: 'auto',
   minBlockSize: `var(${TARGET_SIZE_VAR}, ${MENU_TARGET_SIZE})`,
   gap: vars.space[2],
   lineHeight: vars.lineHeight.base,
@@ -1054,6 +1059,10 @@ function UserMenuSurface({
     if (trigger) setDirection(getComputedStyle(trigger).direction === 'rtl' ? 'rtl' : 'ltr');
   }, [refs]);
 
+  useLayoutEffect(() => {
+    floatingContext.update();
+  }, [dir, direction, floatingContext.update]);
+
   useScrollLock(sheet, () => refs.floating.current?.ownerDocument);
 
   // Nothing enabled to land on: focus the sheet's Close button, or the menu itself on desktop.
@@ -1168,7 +1177,7 @@ function UserMenuSurface({
         returnFocus={false}
         restoreFocus
       >
-        <div ref={refs.setFloating} data-ui="user-menu-layer" style={sheet ? undefined : floatingStyles}>
+        <div ref={refs.setFloating} dir={dir ?? direction} data-ui="user-menu-layer" style={sheet ? undefined : floatingStyles}>
           {sheet && (
             <div
               aria-hidden="true"
