@@ -450,13 +450,17 @@ const guideStyle = css({
   pointerEvents: 'none',
   color: vars.color.textMuted,
   display: 'flex',
+  alignItems: 'end',
   justifyContent: 'space-between',
   gap: vars.space[2],
+  overflowWrap: 'anywhere',
   fontSize: vars.textSize.xs,
   transitionProperty: 'opacity',
   transitionDuration: vars.motion.duration.base,
   [REDUCED_MOTION]: { transitionDuration: '0s' },
 });
+const guideTextStyle = css({ minInlineSize: 0 });
+const signerStyle = css({ minInlineSize: 0, marginInlineStart: 'auto', textAlign: 'end' });
 const toolbarStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
@@ -1067,8 +1071,8 @@ export function SignaturePad({
                 className={slotProps?.guide?.className}
                 css={[guideStyle, slotProps?.guide?.css]}
               >
-                {!current.length && hasContent(hint) && <span>{hint}</span>}
-                {hasContent(signer) && <span>{signer}</span>}
+                {!current.length && hasContent(hint) && <span css={guideTextStyle}>{hint}</span>}
+                {hasContent(signer) && <span css={signerStyle}>{signer}</span>}
               </Guide>
             )}
           </div>

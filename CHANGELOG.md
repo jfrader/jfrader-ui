@@ -5,6 +5,7 @@
 ### Fixed
 
 - `JsonViewer` keeps selected counts and muted values readable on contrast panels, and wraps toolbar actions inside narrow containers.
+- `SignaturePad` keeps signer text at the end of its baseline after drawing and clearing, and wraps long guide text inside narrow pads.
 - `LightboxGallery` keeps long captions and viewer controls inside the dialog, reveals the selected thumbnail in LTR and RTL, and fits its documentation examples on narrow screens.
 - `VoiceRecorder` wraps long action labels and message metadata on narrow screens, and aligns waveform progress with right-to-left seeking while keeping timers in playback order.
 - `ShareSheet` inline layouts retain their content width, the access picker stays on the copy row at phone widths, and confirmation faces appear without fading when reduced motion is enabled.
