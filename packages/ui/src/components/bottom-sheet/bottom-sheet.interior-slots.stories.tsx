@@ -3,9 +3,10 @@ import { styled } from '../../index';
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { Button } from '../button';
+import { expectInside } from '../../testing/geometry-assertions';
 import {
   createRefCleanupTracker,
   expectMergedClasses,
@@ -136,6 +137,8 @@ export const Customization: Story = {
     await expectMergedClasses(panel, 'top-sheet-class', 'slot-sheet-class');
     await expect(panel).toHaveStyle({ textTransform: 'none', letterSpacing: '2px', zIndex: '42' });
     await expect(panel).toHaveAttribute('data-winner', 'slotProps-root');
+    await expect(getComputedStyle(panel).boxSizing).toBe('border-box');
+    await waitFor(() => expectInside(panel, canvasElement.querySelector('dialog')!));
 
     // 3. Interior slot replacement
     const header = canvasElement.ownerDocument.querySelector('[data-slot="custom-sheet-header"]');

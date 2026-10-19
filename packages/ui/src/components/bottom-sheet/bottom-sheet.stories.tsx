@@ -6,9 +6,11 @@ import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectContrastSurface } from '../../testing/theme-assertions';
+import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { Surface, type SurfacePartProps } from '../surface';
 import { Card } from '../card';
+import { Button as FixtureButton } from '../button';
 import { ThemeRoot } from '../theme-root';
 import { Popover } from '../popover';
 import {
@@ -56,12 +58,6 @@ const USAGE = `<BottomSheet
   closeLabel="Close"
 />`;
 
-const FixtureButton = styled.button({
-  minHeight: vars.space[6],
-  minWidth: vars.space[6],
-  padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`,
-});
-
 const meta = {
   title: 'Surfaces/BottomSheet',
   component: BottomSheet,
@@ -75,7 +71,7 @@ const meta = {
           'Open content from the bottom of the screen. Drag the handle or use the keyboard to change its height.',
       },
       usage: `### Composition
-Pass triggerLabel, title, content and closeLabel for a standard bottom sheet; description is optional. Do not combine these props with children. Use slotProps.trigger/content/panel/header/handle/title/description/close/body for part props. For custom hierarchy, keep the compound parts.
+Pass triggerLabel, title, content and closeLabel for a standard bottom sheet; description is optional. Do not combine these props with children. Use slotProps for trigger, content, panel, header, handle, title, description, close and body props. For custom hierarchy, keep the compound parts.
 
 - The sheet is always modal. Its native dialog contains focus and blocks the background, even at peek height.
 - Detents are stable, ascending fractions. \`value/defaultValue/onValueChange\` manages their numeric index independently of open state. Remount to change detent values.
@@ -174,6 +170,10 @@ export const BottomSheetContrastPortal: Story = {
     await expect(portal.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-appearance', 'contrast');
     await expect(getComputedStyle(portal).backgroundColor).toBe(getComputedStyle(panel).backgroundColor);
     await expect(getComputedStyle(canvas.getByTestId('inherited-sheet-surface')).backgroundColor).toBe(getComputedStyle(panel).backgroundColor);
+    await expectAligned([
+      canvas.getByRole('heading', { name: TITLE }),
+      canvas.getByRole('button', { name: 'Close' }),
+    ], 'top');
   },
 };
 export const BottomSheetContrastPortalDark: Story = {
@@ -401,6 +401,16 @@ export const EasyModeKeyboard: StoryObj<(props: BottomSheetEasyProps) => ReactNo
     await settled(canvasElement, 0.45);
 
     const handle = canvas.getByRole('button', { name: TITLE });
+    const originalCapture = handle.setPointerCapture;
+    const capture = fn();
+    handle.setPointerCapture = capture;
+    try {
+      pointer(handle, 'pointerdown', 100, 0);
+      await expect(capture).toHaveBeenCalledWith(1);
+      pointer(handle, 'pointercancel', 100, 1);
+    } finally {
+      handle.setPointerCapture = originalCapture;
+    }
     await userEvent.click(handle);
     await userEvent.keyboard('{ArrowUp}');
     await settled(canvasElement, 0.92);
@@ -754,6 +764,35 @@ export const LongContent: Story = {
     await expect(body.scrollTop).toBeGreaterThan(0);
   },
 };
+
+/** Long names wrap beside the close button on narrow sheets. */
+export const LongHeader: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    triggerLabel: TRIGGER,
+    title: 'InternationalIntercontinentalConnectionConfirmation',
+    description: 'Departure and arrival information. Check the platform before boarding.',
+    content: <p>Train 42 · Platform 3</p>,
+    closeLabel: 'Close',
+    sx: { maxInlineSize: '24rem' },
+  },
+  render: (args) => <BottomSheet {...args} />,
+  play: async ({ canvas, canvasElement }) => {
+    await settled(canvasElement, 0.45);
+    const panel = panelIn(canvasElement);
+    const title = canvas.getByRole('heading');
+    const close = canvas.getByRole('button', { name: 'Close' });
+    for (const direction of ['ltr', 'rtl']) {
+      panel.dir = direction;
+      await expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth + 1);
+      await expectInside(title, panel);
+      await expectInside(close, panel);
+      await expectNoOverlap(title, close);
+    }
+    panel.removeAttribute('dir');
+  },
+};
 export const LightTheme: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
@@ -972,7 +1011,7 @@ export const DragSettleAndDismiss: Story = {
     await expect(args.onOpenChange).not.toHaveBeenCalled();
     pointer(header, 'pointerdown', h * 0.4, 400);
     pointer(header, 'pointermove', h * 0.95, 500);
-    await expect(panelIn(canvasElement).getBoundingClientRect().height).toBeLessThan(h * 0.1);
+    await waitFor(() => expect(panelIn(canvasElement).getBoundingClientRect().height).toBeLessThan(h * 0.1));
     pointer(header, 'pointerup', h * 0.95, 700);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await waitFor(async () => {
