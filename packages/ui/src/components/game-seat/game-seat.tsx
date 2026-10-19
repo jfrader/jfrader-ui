@@ -5,6 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { CardRoot, type GameCardRootProps, type GameCardRootCustomization, type GameCardRootSlotProps } from '../game-card/game-card-root';
 import { GameHand } from '../game-hand';
@@ -61,6 +62,8 @@ export interface GameSeatProps extends Omit<GameCardRootProps, 'children'>, Omit
   hand?: ReactNode;
   /** Render a decorative GameHand.Hidden when `hand` is absent. */
   handCount?: number;
+  /** Accessible description of the public hand count; omitted means the hidden fan stays decorative. */
+  handLabel?: string;
   turn?: GameSeatTurn;
   /** Notify once at each remaining-time threshold: 50%, 25%, and zero. Increasing a live deadline emits `extended`. */
   onTurnMilestone?: (milestone: GameSeatTurnMilestone) => void;
@@ -158,14 +161,17 @@ function TurnRing({ turn, onMilestone, component, ...props }: { turn: GameSeatTu
   </Timer>}</WithSx>;
 }
 
-export function GameSeat({ name, avatar, badges, points, hand, handCount, chat, turn, onTurnMilestone,
+export function GameSeat({ name, avatar, badges, points, hand, handCount, handLabel, chat, turn, onTurnMilestone,
   turned = turn !== undefined, offline = false, dimmed = false, slotProps, slots, artSet, cardArtSets, ...props }: GameSeatProps) {
   const nameId = useId();
   const seat = useOptionalGameTableSeat();
   const labelId = slotProps?.name?.id ?? nameId;
   const externalLabel = slotProps?.root?.['aria-labelledby'] ?? props['aria-labelledby'];
   const handContent = hand !== undefined ? hand : handCount !== undefined
-    ? <GameHand.Hidden playerKey={seat?.player?.key} count={handCount} label="" aria-hidden="true" artSet={artSet} cardArtSets={cardArtSets} /> : undefined;
+    ? <>
+        {handLabel ? <span css={visuallyHiddenStyle} data-ui="game-seat-hand-label">{handLabel}</span> : null}
+        <GameHand.Hidden playerKey={seat?.player?.key} count={handCount} label="" aria-hidden="true" artSet={artSet} cardArtSets={cardArtSets} />
+      </> : undefined;
   const Name = slots?.name ?? 'span';
   const nameIdentity = [...new Set(['game-seat-name', slotProps?.name?.['data-ui']].flatMap((value) => value?.split(/\s+/).filter(Boolean) ?? []))].join(' ');
   return <DeckArtProvider artSet={artSet} cardArtSets={cardArtSets}><CardRoot {...props} slots={slots} marker="game-seat" structure={rootStyle} rootSlot={slotProps?.root}
