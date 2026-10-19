@@ -23,8 +23,8 @@ Not for: application composition (consumers), token-only work, repo tooling. Tho
    implementations for patterns in this file.
 4. `packages/tokens/src/tokens.ts` — the token source. If a needed color/size role is missing, add a
    token (base + light) and regenerate; never inline a raw value.
-5. Verify with the repo commands: `pnpm generate`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-   Never claim a check you did not run.
+5. Verify with the repo commands: `pnpm generate`, `pnpm typecheck`, `pnpm test`, `pnpm build`,
+   `pnpm verify:exports`, `pnpm verify:slots`, `pnpm verify:docs`. Never claim a check you did not run.
 
 ## 2. Non-negotiables
 
@@ -88,6 +88,11 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 
 - **Tokens only.** Import typed references from `@jfrader/tokens/vars`. No raw colors, no magic pixel
   values where a token exists.
+- **Standards-driven inputs use their engine.** Locale number parsing/formatting goes through
+  `@internationalized/number`, with exact minor-unit arithmetic in `decimal.js` (NumberField,
+  MoneyInput); country metadata, AsYouType formatting and E.164 validation go through
+  `libphonenumber-js/max` (PhoneInput); color-space conversion and contrast go through `culori`
+  (ColorPicker). Never hand-roll a locale parser, a country/format table or OKLCH math.
 - **Module-level `css()` constants.** Never build style objects per render. Compose a public part's
   root through `WithSx` (`src/styling/sx.tsx`):
   `<WithSx className={className} styles={[base, variants[variant], slotProps?.x?.css]} sx={sx}>` and
@@ -152,6 +157,11 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - **A reduced-motion branch completes the state.** Skipping the move is not enough: the consumer's
   bookkeeping (landing, focus, "this card is now in the hand") has to finish anyway, and nothing in the
   component's contract may wait for `transitionend`, `animationend` or a finished Motion promise.
+- **A measured height measures the visible panel.** When a card animates between two settled states,
+  read the panel the reader is looking at (Mini/Full), never a wrapper whose overflow clips. Re-measure
+  in a layout effect keyed on the state axis and observe the panels; a clipped shell reports transient
+  heights mid-transition and freezes the spring on a stale target (NowPlaying, GURI-2553: the face
+  settled at 451px over 97px of content and cut the action row).
 
 ### Performance (author-level)
 
@@ -209,7 +219,7 @@ src/components/<kebab-case>/
   <kebab-case>.tsx          # implementation, module-level styles
   <kebab-case>.stories.tsx  # CSF3 + play tests
   index.ts                  # re-exports component + types
-src/utils/                  # shared helpers: renderable, use-controlled-state, use-latest-callback, collection-registry, part-id, roving-focus
+src/utils/                  # shared helpers: attachment, collection-registry, duration-format, generated-root, initials, intl, part-id, renderable, roving-focus, use-controlled-state, use-form-reset, use-image-status, use-latest-callback, use-reduced-motion
 src/overlay/                # internal: overlay-portal, overlay-layer, use-scroll-lock, use-native-dialog, use-overlay-floating — not exported
 src/styling/                # styling modules (see list below); public API: styled, theme, JfraderTheme, SxProps; ThemeProvider/useTheme via theme-provider/
 src/testing/                # story-only assertions (see list below)
@@ -254,11 +264,13 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
   `aria-pressed`; unportaled inside a modal dialog, `portaled` elsewhere), the stroke glyphs and the
   thumbnail-strip styles.
 - `trigger-style` — overlay trigger button (Dialog, Popover, Menu).
-- `listbox-style` — popup surface, item and option fragments (Menu, Select, Combobox, CommandPalette).
-- `input-control` — text-input control skin (TextField, Textarea).
+- `listbox-style` — popup surface, item and option fragments (Menu, Select, Combobox, CommandPalette, PhoneInput).
+- `input-control` — text-input control skin (TextField, Textarea, SearchField, TagInput, MentionInput, PasswordField, NumberField, MoneyInput, PhoneInput, InlineEdit, InputGroup, LinkUnfurl).
 - `choice-control` — root, row and hidden-input fragments (Checkbox, Switch, RadioGroup.Radio).
 - `layout-style` — `flexLayoutStyles` (Flex, Stack) and the layout space scale (Container).
 - `motion-timings` — `motionDurationMs`, the numeric side of the duration tokens for Motion and timers.
+- `overlay-motion` — `@starting-style` entrances and `data-state="closing"` exits shared by native
+  dialogs and floating surfaces; see the overlay motion contract in section 6.
 
 Shared story assertions in `src/testing/` (reuse before writing a local copy):
 
@@ -278,6 +290,12 @@ Shared story assertions in `src/testing/` (reuse before writing a local copy):
 - [geometry-assertions.ts](packages/ui/src/testing/geometry-assertions.ts):
   `expectInside`, `expectAligned`, `expectMirrored`, `expectNoOverlap`, `expectMirroredDirection`.
   Measures transformed viewport rectangular boxes, not curved silhouettes; failures include measures.
+- `contrast-assertions.ts`: `expectTranslucentContrast` for text over a translucent surface.
+- `interior-slot-assertions.tsx`: `expectRootPrecedence`, `expectMergedClasses`,
+  `expectSameDomIdentity`, `createRefCleanupTracker` for replacement-slot contracts.
+- `story-decorators.tsx`: `withLightTheme` for the light-theme story variant.
+- `field-slot-fixtures.tsx`: `expectFieldSlotCustomization` and the field replacement fixtures shared by
+  the form-field families.
 
 - PascalCase components, `<Name>Props` types, explicit public exports; helpers stay private.
 - Storybook groups components by the `storySort` order in `apps/storybook/.storybook/preview.tsx` (`Home`,
@@ -292,7 +310,7 @@ Shared story assertions in `src/testing/` (reuse before writing a local copy):
 - `data-ui="<name>"` on every component root (and `data-ui="<name>-<part>"` on compound parts).
   Composed roots retain deduplicated identity tokens; use `[data-ui~="<name>"]` selectors.
   Surface uses `data-surface-variant`, leaving host `data-variant` untouched.
-- One folder per component; `field/` and `thread/` hold shared internal anatomy rather than public components. A shared hook only when a second consumer exists.
+- One folder per component; `field/` and `thread/` hold shared internal anatomy rather than public components. A shared hook only when a second consumer exists. `field/field-anatomy.tsx` (`FieldRoot`) owns the labeled-field anatomy, the optional `dir` route to the visual root and `minInlineSize: 0`; TextField, Textarea, SearchField, TagInput, MentionInput, PasswordField, NumberField, MoneyInput, PhoneInput and ColorPicker compose it instead of forking a visual root.
 - The package index re-exports components + types with `export *`, plus the styling API (`styled`,
   `theme`, `ThemeProvider`, `useTheme`, `createTheme`, `themeTokenStyle`, `SxProps`). `theme-provider/` has no `index.ts`, so it gets
   no subpath export.
@@ -334,6 +352,10 @@ Pitfalls this pattern exists to avoid:
 | Toast | text-only `status`/`alert` live region with explicit `aria-atomic`; interactive controls sit outside it; imperative queue via `useToast()` | Tab between controls; Enter/Space activate | appearing never moves focus; hover/focus pauses auto-dismiss; removing a focused toast continues focus to the next toast's dismiss button; closing toasts are inert |
 | Accordion | `h3` heading wrapping a native button (`aria-expanded`/`aria-controls`); panel is `role="region"` + `aria-labelledby`, kept mounted, `hidden` when closed | Enter/Space toggle; ArrowUp/Down wrap between enabled headers; Home/End | focus ring on the trigger; disabled triggers (Item or Trigger) are skipped and non-activatable |
 | Select | select-only combobox: `role="combobox"` trigger + portaled `listbox` with **virtual focus** (`aria-activedescendant`; DOM focus never leaves the trigger) | Enter/Space/ArrowDown open on the selected/first enabled option; arrows + Home/End move the highlight; typeahead (500ms buffer, continues across opening); Enter/Space select; Escape closes without selecting; Tab closes | never moves DOM focus; `value` and `open` are independent controlled axes; hidden input carries the form value |
+| NumberField | native `input type="text"` with `role="spinbutton"`, `aria-valuenow`/`min`/`max`, `inputMode="decimal"`; hidden input carries the canonical serialized value | Up/Down and PageUp/PageDown step, Home/End jump to bounds, native editing; Enter commits the draft | ring on the control; commit/limit feedback in a polite live region |
+| MoneyInput | `spinbutton` semantics over **integer minor units** (`aria-valuenow` in major units); currency picker composes Select; hidden input carries the minor-unit integer | typing with locale parsing, arrow stepping per spec, currency picker keyboard, quick-add buttons | ring on the control; status/limit feedback in a polite live region |
+| PhoneInput | `input type="tel"` + a country picker `dialog` containing a search `combobox` and a `listbox`; the E.164 storage candidate is separate from validity; hidden input carries the candidate | national typing and international paste/autofill; picker: type to search, arrows, Enter selects, Escape closes | ring on the input; country name always available, flags decorative |
+| ColorPicker | popover with two native `range` inputs for saturation and value (no invented 2D slider role), swatches as a `listbox`, uppercase sRGB hex at the API boundary | arrows on both ranges, swatch list traversal, format fields; Escape closes the popover | ring on ranges/swatches; contrast feedback is text, never color alone |
 
 Overlay family contracts (Popover/Tooltip/Menu follow these):
 
@@ -381,6 +403,11 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
   transitions, so both directions are instant.
 - **Nesting:** only the topmost layer handles Escape/outside-dismiss; opening a child layer keeps the
   parent intact.
+- **Joining the shared dismissal tree:** a portaled overlay never uses a bare `useDismiss`. Wrap the
+  overlay in `OverlayLayer` to get its `nodeId`, pass it to `useOverlayFloating({ nodeId })`, and
+  dismiss with `useLayerDismiss(context, …)`. On top of the tree, only the topmost open node reacts to
+  Escape or an outside press; an overlay still on `IsolatedOverlay` is outside the tree and will
+  double-dismiss a nested child (MultiSelect is the remaining adopter).
 - **Nested overlays and the top layer:** a body portal does not enter the native top layer; render
   child overlays inside the active modal's DOM/top-layer subtree so they are neither inert nor
   obscured.
@@ -468,7 +495,11 @@ Per component (all in the colocated stories file):
 13. **Standalone Testing Library** (only for future non-Storybook tests): RTL 16.3.3 supports React
     19 and needs `@testing-library/dom` as peer; use `act` from `react` for manual update flows;
     never suppress act warnings.
-14. **Build**: `pnpm typecheck`, `pnpm test`, `pnpm build` green.
+14. **Build**: `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm verify:exports`, `pnpm verify:slots`
+    and `pnpm verify:docs` green. A change to a shared rule also runs the sibling family's story file
+    (toast ↔ toast-stack, field ↔ its consumers): a green file is not a green family.
+15. **Docs layout**: `pnpm --filter @jfrader/storybook verify:docs:layout` catches a docs page whose
+    frame overflows; run it when a story or decorator changes.
 
 Manual gates before calling a component 1.0 (record what was and wasn't tested):
 
@@ -580,6 +611,9 @@ disclosure with the keyboard, and check the first example and prop table still a
   style-override registries.
 - **Dependencies**: `AGENTS.md` owns the allowlist, including runtime, optional-peer and
   development-only import boundaries. Update it before adding any other dependency.
+- **Generated docs**: `docs/customization-inventory.md` is produced by
+  `scripts/customization-inventory.mjs` (`pnpm verify:docs` checks it); regenerate it after an API or
+  slot change, never hand-edit it.
 - **Compound part naming stays consistent** across components: callable roots (`Tabs`, `Dialog`) with
   the same part names — `Trigger`, `Content`, `Title`, `Description`, `Close`, `List`, `Tab`, `Panel`.
 - Keep `SKILL.md`, `AGENTS.md`, `PLAN.md` and `README.md` status in sync in the same change that
