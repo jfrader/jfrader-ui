@@ -1,4 +1,4 @@
-import { act, StrictMode, useState } from 'react';
+import { act, StrictMode, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -25,6 +25,48 @@ const SCRIPT: readonly TerminalStep[] = [
     output: ['Usage: example [command]', { text: 'Documentation', href: '/docs' }],
   },
 ];
+function ReplacementRoot(props: ComponentPropsWithRef<'figure'>) {
+  return <figure {...props} data-testid="replacement-root" />;
+}
+function SugarRoot(props: ComponentPropsWithRef<'figure'>) {
+  return <figure {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the outer figure while keeping playback and its transcript. */
+export const RootReplacement: StoryObj<typeof TypewriterTerminal> = {
+  tags: ['!autodocs'],
+  args: {
+    steps: SCRIPT,
+    defaultPaused: true,
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    ref: fn(),
+    className: 'consumer-root',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'slot title', 'data-ui': 'custom consumer' } },
+  },
+  render: (args) => <TypewriterTerminal {...args} data-ui="consumer" />,
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('FIGURE');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('title', 'slot title');
+    await expect(root).toHaveAttribute('data-ui', 'typewriter-terminal consumer custom');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(root.querySelector('ol')).not.toBeNull();
+    await expect(root).toHaveAccessibleName('Terminal session');
+  },
+};
+
+/** Use component as shorthand for the root slot. */
+export const RootComponent: StoryObj<typeof TypewriterTerminal> = {
+  tags: ['!autodocs'],
+  args: { steps: SCRIPT, defaultPaused: true, component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'typewriter-terminal');
+  },
+};
 const CLOCK_SCRIPT: readonly TerminalStep[] = [
   { command: 'A👩🏽‍💻', output: ['', 'Done'], pauseMs: 0 },
 ];

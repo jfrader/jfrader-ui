@@ -20,6 +20,49 @@ function ReplacementComposer(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-testid="custom-composer" />;
 }
 
+function ReplacementRoot(props: ComponentPropsWithRef<'section'>) {
+  return <section {...props} data-testid="replacement-root" />;
+}
+function SugarRoot(props: ComponentPropsWithRef<'section'>) {
+  return <section {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the outer section while keeping the comments and composer. */
+export const RootReplacement: StoryObj<typeof CommentThread> = {
+  tags: ['!autodocs'],
+  args: {
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    ref: fn(),
+    className: 'consumer-root',
+    title: 'Discussion',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'slot title', 'data-ui': 'custom consumer' } },
+  },
+  render: (args) => <CommentThread {...args} data-ui="consumer" />,
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('SECTION');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('title', 'slot title');
+    await expect(root).toHaveAttribute('data-ui', 'comment-thread consumer custom');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(root.querySelector('[data-ui="comment-thread-list"]')).not.toBeNull();
+    await expect(root).toHaveAttribute('data-state', 'open');
+    await expect(root).toHaveAccessibleName('Discussion');
+  },
+};
+
+/** Use component as shorthand for the root slot. */
+export const RootComponent: StoryObj<typeof CommentThread> = {
+  tags: ['!autodocs'],
+  args: { component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'comment-thread');
+  },
+};
+
 function ReplacementCommentTextarea(props: TextareaProps) {
   return <Textarea {...props} data-testid="custom-comment-textarea" />;
 }

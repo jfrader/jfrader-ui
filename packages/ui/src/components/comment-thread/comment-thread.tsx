@@ -40,7 +40,8 @@ import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { partId } from '../../utils/part-id';
 import { isRenderable } from '../../utils/renderable';
@@ -161,6 +162,8 @@ type CommentThreadPart =
     'status';
 
 export type CommentThreadSlotProps = Partial<Record<CommentThreadPart, CommentThreadPartProps>> & {
+  /** Props for the outer section. */
+  root?: Omit<PresentationProps<'section'>, 'children'>;
   /** Multiline textarea input for composing or editing comments. */
   textarea?: ThreadTextareaProps;
   /** Button element submitting or saving a comment. */
@@ -211,9 +214,13 @@ export interface CommentThreadProps
   labels?: Partial<CommentThreadLabels>;
   slotProps?: CommentThreadSlotProps;
   slots?: CommentThreadSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: CommentThreadSlots['root'];
 }
 
 export interface CommentThreadSlots {
+    /** Replaces the outer section; forwards its props, ref and className. */
+    root?: ComponentType<ComponentPropsWithRef<'section'>>;
     /** Holds the comment composer. */
     composer?: ComponentType<CommentThreadPartProps & ComponentPropsWithRef<'div'>>;
     /** Displays the comment field. */
@@ -540,6 +547,7 @@ export function CommentThread({
   labels: labelProps,
   slotProps,
   slots,
+  component,
   className,
   sx,
   onFocus,
@@ -729,14 +737,14 @@ export function CommentThread({
   }, [diagnostics]);
 
   const handleFocus = (event: FocusEvent<HTMLElement>) => {
-    onFocus?.(event);
+    (slotProps?.root?.onFocus ?? onFocus)?.(event);
     const item = event.target.closest<HTMLElement>(`[data-ui="${UI}-item"]`);
     lastFocus.current = { element: event.target, commentId: item?.dataset.commentId ?? null };
     if (focusReturn.current && !focusReturn.current.invoker.contains(event.target)) focusReturn.current = null;
   };
 
   const handleBlur = (event: FocusEvent<HTMLElement>) => {
-    onBlur?.(event);
+    (slotProps?.root?.onBlur ?? onBlur)?.(event);
     const { target } = event;
     // A focused element removed by an update also blurs; keep its records so focus can be repaired.
     // Focus that really left (still connected, nothing inside took it) releases them.
@@ -1118,20 +1126,25 @@ export function CommentThread({
   };
 
   return (
-    <WithSx className={className} styles={[rootStyle, threadSizeStyles[size], sizeStyles[size]]} sx={sx}>
-      {(rootClassName) => (
-        <section
+        <PresentationSlot
+          element="section"
+          component={slots?.root ?? component}
+          slotProps={{
+            ...slotProps?.root,
+            'data-size': size,
+            'data-state': resolved ? 'resolved' : 'open',
+            onFocus: handleFocus,
+            onBlur: handleBlur,
+          }}
+          styles={[rootStyle, threadSizeStyles[size], sizeStyles[size]]}
+          sx={sx}
           {...rest}
           ref={mergedRef}
           aria-label={ariaLabel ?? (labelledBy ? undefined : labels.thread)}
           aria-labelledby={labelledBy}
           aria-describedby={describedBy}
-          data-ui={UI}
-          data-size={size}
-          data-state={resolved ? 'resolved' : 'open'}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          className={rootClassName}
+          marker={UI}
+          className={className}
         >
           <Card>
             <Header {...slotProps?.header} className={slotProps?.header?.className} css={[headerStyle, slotProps?.header?.css]}>
@@ -1245,9 +1258,7 @@ export function CommentThread({
           >
             {announcement.text ? <span key={announcement.key}>{announcement.text}</span> : null}
           </Status>
-        </section>
-      )}
-    </WithSx>
+        </PresentationSlot>
   );
 }
 

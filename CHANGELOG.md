@@ -21,6 +21,7 @@
 
 ### Added
 
+- `CommentThread`, `TypewriterTerminal`, `CodeBlock` and `JsonViewer` accept `slots.root`, `slotProps.root` and `component` to replace their outer element while retaining generated content and existing panel styling.
 - `Avatar` accepts fallback children, including `PersonAvatar size="full"`; `AvatarGroup` forwards shared and per-member artwork and customization.
 - `ArticleBody`, `ArticleSources` and `SectionHeading` add article text, fact boxes, quotations, two-cell comparisons, source lists and section titles.
 - `ColorPicker` opens a modal dialog that fits the viewport instead of an anchored popover: focus moves inside, Escape and backdrop cancel, and the swatch checker matches its box.

@@ -22,7 +22,8 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
+import type { SlotCss, SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
@@ -38,6 +39,8 @@ export interface CodeBlockSlotPartProps {
 }
 
 export interface CodeBlockSlotProps {
+  /** Props for the outer section. */
+  root?: Omit<PresentationProps<'section'>, 'children'>;
   /** Header bar holding the label, language tag, and copy button. */
   header?: CodeBlockSlotPartProps;
   /** Label element displaying the filename or snippet caption. */
@@ -97,9 +100,13 @@ export interface CodeBlockProps extends Omit<ComponentPropsWithRef<'section'>, '
   highlight?: CodeHighlightLoader;
   slotProps?: CodeBlockSlotProps;
   slots?: CodeBlockSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: CodeBlockSlots['root'];
 }
 
 export interface CodeBlockSlots {
+    /** Replaces the outer section; forwards its props, ref and className. */
+    root?: ComponentType<ComponentPropsWithRef<'section'>>;
     /** Holds the gutter and source text. */
     sourceFrame?: ComponentType<CodeBlockSlotPartProps>;
     /** Holds the label, language and copy action. */
@@ -288,6 +295,7 @@ export function CodeBlock({
   highlight,
   slotProps,
   slots,
+  component,
   className,
   sx,
   'aria-label': ariaLabel,
@@ -362,16 +370,18 @@ export function CodeBlock({
   });
 
   return (
-    <WithSx className={className} styles={rootStyle} sx={sx}>
-      {(mergedClassName) => (
-        <section
+        <PresentationSlot
+          element="section"
+          component={slots?.root ?? component}
+          slotProps={{ ...slotProps?.root, 'data-highlighted': highlightedLines ? '' : undefined }}
+          styles={rootStyle}
+          sx={sx}
           {...rest}
           ref={ref}
-          data-ui="code-block"
-          className={mergedClassName}
+          marker="code-block"
+          className={className}
           aria-label={ariaLabel}
           aria-labelledby={labelledBy ? `${labelledBy} ${labelId}` : ariaLabel !== undefined ? undefined : labelId}
-          data-highlighted={highlightedLines ? '' : undefined}
         >
           <Header
             {...slotProps?.header}
@@ -477,9 +487,7 @@ export function CodeBlock({
               {expanded ? collapseLabel : getExpandLabel(lines.length, formatter.format(lines.length))}
             </Toggle>
           )}
-        </section>
-      )}
-    </WithSx>
+        </PresentationSlot>
   );
 }
 

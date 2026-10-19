@@ -19,6 +19,53 @@ const payload: JsonValue = {
   user: { name: 'Ada', roles: ['reader', 'writer'] },
   'a.b': { 'quoted"key': 'value' },
 };
+function ReplacementRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="replacement-root" />;
+}
+function SugarRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the outer div while keeping the JSON tree and toolbar. */
+export const RootReplacement: StoryObj<typeof JsonViewer> = {
+  tags: ['!autodocs'],
+  args: {
+    data: payload,
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    ref: fn(),
+    className: 'consumer-root',
+    title: 'consumer title',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'slot title', 'data-ui': 'custom consumer' } },
+  },
+  render: (args) => <JsonViewer {...args} data-ui="consumer" />,
+  play: async ({ canvasElement, args, userEvent }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('DIV');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('title', 'slot title');
+    await expect(root).toHaveAttribute('data-ui', 'json-viewer consumer custom');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    const tree = within(root).getByRole('tree');
+    const first = within(tree).getAllByRole('treeitem')[0]!;
+    await userEvent.click(first);
+    await expect(root.ownerDocument.activeElement).toBe(first);
+    await userEvent.keyboard('{ArrowRight}');
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(root.ownerDocument.activeElement).not.toBe(first);
+  },
+};
+
+/** Use component as shorthand for the root slot. */
+export const RootComponent: StoryObj<typeof JsonViewer> = {
+  tags: ['!autodocs'],
+  args: { data: payload, component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'json-viewer');
+  },
+};
 const array = Array.from({ length: 12 }, (_, index) => `record ${index}`);
 const object = Object.fromEntries(array.map((value, index) => [`key${index}`, value]));
 const snippet =
