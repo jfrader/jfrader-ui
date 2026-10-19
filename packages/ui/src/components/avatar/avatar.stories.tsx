@@ -46,6 +46,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Avatar name="Ada Lovelace" src="/portraits/ada.jpg" size="md" />` } } },
   args: { src: PHOTO_SRC },
   play: async ({ canvasElement }) => {
     const avatar = within(canvasElement).getByRole('img', { name: NAME });
@@ -69,6 +70,15 @@ export const Initials: Story = {
 };
 
 export const InitialsEdgeCases: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+
+<>
+  <Avatar name="cher" />
+  <Avatar name="  grace   brewster murray hopper " />
+  <Avatar name="Émile Zola" />
+  <Avatar name="👩🏽💻 Smith" />
+  <Avatar name="\u674e \u5c0f\u9f8d" />
+</>` } } },
   render: (args) => (
     <div style={rowStyle}>
       <Avatar {...args} name="cher" />
@@ -89,6 +99,7 @@ export const InitialsEdgeCases: Story = {
 };
 
 export const BrokenImage: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Avatar name="Ada Lovelace" src="/portraits/missing.jpg" status="online" />` } } },
   args: { src: BROKEN_SRC, status: 'online' },
   play: async ({ canvasElement }) => {
     const avatar = within(canvasElement).getByRole('img', { name: `${NAME}, online` });
@@ -98,6 +109,13 @@ export const BrokenImage: Story = {
 };
 
 export const Sizes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+
+<>
+  <Avatar name="Size sm" size="sm" />
+  <Avatar name="Size md" size="md" />
+  <Avatar name="Size lg" size="lg" />
+</>` } } },
   render: (args) => (
     <div style={rowStyle}>
       {SIZES.map((size) => (
@@ -116,6 +134,15 @@ export const Sizes: Story = {
 };
 
 export const Status: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+
+<>
+  <Avatar name="Ada Lovelace" status="online" />
+  <Avatar name="Ada Lovelace" status="away" />
+  <Avatar name="Ada Lovelace" status="busy" />
+  <Avatar name="Ada Lovelace" status="offline" />
+  <Avatar name="Ada Lovelace" src="/portraits/ada.jpg" size="lg" status="online" statusLabel="en línea" />
+</>` } } },
   render: (args) => (
     <div style={rowStyle}>
       {STATUSES.map((status) => (
@@ -142,6 +169,14 @@ function SlotFallback(props: ComponentPropsWithRef<'span'>) {
 }
 
 export const FallbackReplacement: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Avatar } from '@jfrader/ui';
+
+function ProfileInitials(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-profile-initials />;
+}
+
+<Avatar name="Ada Lovelace" slots={{ fallback: ProfileInitials }} />` } } },
   render: (args) => <Avatar {...args} src={undefined} slots={{ fallback: SlotFallback }} />,
   play: async ({ canvasElement }) => {
     const fallback = canvasElement.querySelector('[data-slot="avatar-fallback"]');
@@ -154,6 +189,13 @@ export const FallbackReplacement: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, ThemeRoot } from '@jfrader/ui';
+
+<ThemeRoot theme="light">
+  <Avatar name="Ada Lovelace" src="/portraits/ada.jpg" status="online" />
+  <Avatar name="Ada Lovelace" status="busy" />
+  <Avatar name="Ada Lovelace" status="offline" />
+</ThemeRoot>` } } },
   decorators: [withLightTheme],
   render: (args) => (
     <div style={rowStyle}>
@@ -234,6 +276,17 @@ async function expectPresenceCycle(badge: HTMLElement) {
 }
 
 export const OnlinePulse: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Fragment } from 'react';
+import { Avatar } from '@jfrader/ui';
+
+<>
+  {(['sm', 'md', 'lg'] as const).map((size) => (
+    <Fragment key={size}>
+      <Avatar name={\`Photo \${size}\`} src="/portraits/ada.jpg" size={size} status="online" pulse />
+      <Avatar name={\`Initials \${size}\`} size={size} status="online" pulse />
+    </Fragment>
+  ))}
+</>` } } },
   args: { status: 'online', pulse: true },
   render: (args) => (
     <div style={rowStyle}>
@@ -283,10 +336,31 @@ export const OnlinePulse: Story = {
 
 export const OnlinePulseLight: Story = {
   ...OnlinePulse,
+  parameters: { docs: { source: { language: 'tsx', code: `import { Fragment } from 'react';
+import { Avatar, ThemeRoot } from '@jfrader/ui';
+
+<ThemeRoot theme="light">
+  {(['sm', 'md', 'lg'] as const).map((size) => (
+    <Fragment key={size}>
+      <Avatar name={\`Photo \${size}\`} src="/portraits/ada.jpg" size={size} status="online" pulse />
+      <Avatar name={\`Initials \${size}\`} size={size} status="online" pulse />
+    </Fragment>
+  ))}
+</ThemeRoot>` } } },
   decorators: [withLightTheme],
 };
 
 export const StaticPresence: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+
+<>
+  <Avatar name="Ada Lovelace" status="online" />
+  <Avatar name="Ada Lovelace" status="online" pulse={false} />
+  <Avatar name="Ada Lovelace" status="away" pulse />
+  <Avatar name="Ada Lovelace" status="busy" pulse />
+  <Avatar name="Ada Lovelace" status="offline" pulse />
+  <Avatar name="Ada Lovelace" pulse />
+</>` } } },
   render: (args) => (
     <div style={rowStyle}>
       <Avatar {...args} status="online" />
@@ -351,6 +425,14 @@ export const PulseForcedColorsRule: Story = {
 const presenceButtonStyle = { padding: vars.space[6] } satisfies CSSProperties;
 
 export const PulsePointerPassthrough: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ProfileButton = styled.button({ padding: vars.space[6] });
+
+<ProfileButton type="button" aria-label="Open profile">
+  <Avatar name="Ada Lovelace" src="/portraits/ada.jpg" status="online" pulse />
+</ProfileButton>` } } },
   args: { src: PHOTO_SRC, status: 'online', pulse: true, onClick: fn() },
   render: (args) => (
     <button type="button" aria-label="Open profile" onClick={args.onClick} style={presenceButtonStyle}>
