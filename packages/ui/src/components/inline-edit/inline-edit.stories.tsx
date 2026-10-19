@@ -36,13 +36,55 @@ const actionSizes = { sm: 24, md: 32, lg: 40 };
 const Frame = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 420px)' });
 const Narrow = styled.div({ inlineSize: '220px' });
 
-const usage = `<InlineEdit
-  label="Project name"
-  value={name}
-  onValueChange={setName}
-  validate={(next) => (next.trim() ? null : 'Enter a name')}
-  onSave={renameProject}
-/>`;
+const saveSource = `import { InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  return <InlineEdit label="Project name" defaultValue="Apollo" onSave={save} />;
+}`;
+const parentSource = `import { useState } from 'react';
+import { Button, InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(true);
+  return <>
+    {mounted && <InlineEdit label="Project name" defaultValue="Apollo"
+      open={open} onOpenChange={setOpen} onSave={save} />}
+    <Button onClick={() => setOpen(false)}>Close editor</Button>
+    <Button onClick={() => setMounted(false)}>Remove widget</Button>
+  </>;
+}`;
+const deferredOpenSource = `import { useState } from 'react';
+import { Button, InlineEdit, styled, theme, type InlineEditProps } from '@jfrader/ui';
+
+const Notes = styled.p({ margin: 0, color: theme.color.text });
+
+export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState<boolean | null>(null);
+  return <>
+    <InlineEdit label="Project name" defaultValue="Apollo" open={open}
+      onOpenChange={setPending} onSave={save} />
+    <Button onMouseDown={event => event.preventDefault()} onClick={() => {
+      if (pending !== null) setOpen(pending);
+      setPending(null);
+    }}>Apply request</Button>
+    <Button>Elsewhere</Button>
+    <Notes>Release notes</Notes>
+  </>;
+}`;
+const externalValueSource = `import { useState } from 'react';
+import { Button, InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  const [name, setName] = useState('Apollo');
+  return <>
+    <InlineEdit label="Project name" value={name} onValueChange={setName} onSave={save} />
+    <Button onMouseDown={event => event.preventDefault()} onClick={() => setName('Hermes')}>
+      Rename to Hermes
+    </Button>
+  </>;
+}`;
 
 const ProjectHeading = styled.h2({ margin: 0, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
@@ -76,7 +118,6 @@ const meta = {
 - \`saveOnBlur\` defaults to saving when focus leaves the widget. Moving between its controls or switching windows does not save. IME composition bypasses Enter, Escape and leave-to-save.
 - Keyboard or button save/cancel returns focus to the value after an accepted close. Leaving or a parent-driven close does not move focus.
 - The root is a \`div\`; do not put it inside \`h1\`–\`h6\`. Render the heading separately (see HeadingContext) and use \`variant="title"\` for typography.`,
-      source: { code: usage },
     },
   },
 } satisfies Meta<typeof InlineEdit>;
@@ -433,6 +474,15 @@ export const ActionButtons: Story = {
 };
 
 export const LeaveSaves: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  return <>
+    <Button>Before</Button>
+    <InlineEdit label="Project name" defaultValue="Apollo" onSave={save} />
+    <Button>After</Button>
+  </>;
+}` } } },
   args: { onValueChange: fn() },
   render: (args) => (
     <>
@@ -488,6 +538,20 @@ export const LeaveSaves: Story = {
 };
 
 export const LeaveInFrame: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Button, InlineEdit, ThemeRoot, type InlineEditProps } from '@jfrader/ui';
+
+export function EmbeddedProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  const [body, setBody] = useState<HTMLElement | null>(null);
+  return <>
+    <iframe title="Embedded editor" ref={frame => setBody(frame?.contentDocument?.body ?? null)} />
+    {body && createPortal(<ThemeRoot>
+      <InlineEdit label="Project name" defaultValue="Apollo" onSave={save} />
+      <Button>After</Button>
+    </ThemeRoot>, body)}
+  </>;
+}` } } },
   args: { onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <FrameField {...args} />,
   play: async ({ canvasElement, args }) => {
@@ -520,6 +584,14 @@ export const LeaveInFrame: Story = {
 };
 
 export const NoBlurSave: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  return <>
+    <InlineEdit label="Project name" defaultValue="Apollo" saveOnBlur={false} onSave={save} />
+    <Button>After</Button>
+  </>;
+}` } } },
   args: { saveOnBlur: false, onOpenChange: fn() },
   render: (args) => (
     <>
@@ -625,6 +697,12 @@ export const Open: Story = {
 };
 
 export const ValidationError: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  return <InlineEdit label="Project name" defaultValue="Apollo" onSave={save}
+    validate={next => next.trim() ? null : 'Enter a name'} />;
+}` } } },
   args: {
     validate: (next: string) => (next.trim() ? null : 'Enter a name'),
     onValueChange: fn(),
@@ -661,6 +739,7 @@ export const ExternalError: Story = {
 };
 
 export const Saving: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: saveSource } } },
   args: { onSave: fn(() => new Promise<void>(() => {})), normalize: fn((next: string) => next) },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.tab();
@@ -690,6 +769,7 @@ export const Saved: Story = {
 };
 
 export const Failed: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: saveSource } } },
   args: { onSave: fn(() => Promise.reject(new Error('Offline'))), onValueChange: fn(), onOpenChange: fn() },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const onSave = args.onSave as Spy;
@@ -716,6 +796,7 @@ export const Failed: Story = {
 };
 
 export const Retry: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: parentSource } } },
   args: { onSave: fn(() => Promise.reject(new Error('Offline'))), onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <ParentControls {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -747,6 +828,7 @@ export const Retry: Story = {
 };
 
 export const RetryResolves: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: parentSource } } },
   args: { onSave: fn(() => Promise.reject(new Error('Offline'))), onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <ParentControls {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -775,6 +857,22 @@ export const RetryResolves: Story = {
 };
 
 export const RetryGuards: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  const [open, setOpen] = useState(false);
+  const [conflict, setConflict] = useState(false);
+  const [requireName, setRequireName] = useState(false);
+  return <>
+    <InlineEdit label="Project name" defaultValue="Apollo" open={open} onOpenChange={setOpen}
+      onSave={save} error={conflict ? 'That name is taken.' : undefined}
+      validate={requireName ? next => next.trim() ? null : 'Enter a name' : undefined} />
+    <Button onClick={() => setOpen(false)}>Close editor</Button>
+    <Button aria-pressed={conflict} onClick={() => setConflict(!conflict)}>Report conflict</Button>
+    <Button onClick={() => setRequireName(true)}>Require a name</Button>
+  </>;
+}` } } },
   args: { onSave: fn(() => Promise.reject(new Error('Offline'))), onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <RetryPolicyField {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -812,6 +910,18 @@ export const RetryGuards: Story = {
 };
 
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  const [name, setName] = useState('Apollo');
+  const [open, setOpen] = useState(false);
+  return <>
+    <InlineEdit label="Project name" value={name} onValueChange={setName}
+      open={open} onOpenChange={setOpen} onSave={save} />
+    <output>{name}</output>
+  </>;
+}` } } },
   args: { onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <ControlledField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -888,6 +998,7 @@ export const RejectedValue: Story = {
 };
 
 export const DeferredOpen: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: deferredOpenSource } } },
   args: { onOpenChange: fn() },
   render: (args) => <DeferredOpenField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -921,6 +1032,7 @@ export const DeferredOpen: Story = {
 };
 
 export const DeferredAfterOutsidePress: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: deferredOpenSource } } },
   args: { onOpenChange: fn() },
   render: (args) => <DeferredOpenField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -953,6 +1065,7 @@ export const DeferredAfterOutsidePress: Story = {
 };
 
 export const DeferredAfterBlur: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: deferredOpenSource } } },
   args: { onOpenChange: fn() },
   render: (args) => <DeferredOpenField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -988,6 +1101,7 @@ export const DeferredAfterBlur: Story = {
 };
 
 export const DeferredClose: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: deferredOpenSource } } },
   args: { onOpenChange: fn(), onValueChange: fn() },
   render: (args) => <DeferredOpenField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -1068,6 +1182,7 @@ export const EscapeInsideLayer: Story = {
 };
 
 export const ExternalUpdateWhileEditing: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: externalValueSource } } },
   args: { onValueChange: fn() },
   render: (args) => <ExternalValueField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -1088,6 +1203,7 @@ export const ExternalUpdateWhileEditing: Story = {
 };
 
 export const StaleSave: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: externalValueSource } } },
   args: { onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <ExternalValueField {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -1160,6 +1276,7 @@ export const StaleSave: Story = {
 };
 
 export const UnmountWhileSaving: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: parentSource } } },
   args: { onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <ParentControls {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -1206,6 +1323,14 @@ export const ReadOnly: Story = {
 export const Title: Story = { args: { variant: 'title' } };
 
 export const Body: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function Summary({ save }: { save: InlineEditProps['onSave'] }) {
+  return <>
+    <InlineEdit label="Summary" defaultValue="Ships the rename flow." variant="body" onSave={save} />
+    <InlineEdit label="Heading" defaultValue="Ships the rename flow." variant="title" onSave={save} />
+  </>;
+}` } } },
   args: { variant: 'body', label: 'Summary', defaultValue: 'Ships the rename flow.' },
   render: (args) => (
     <>
@@ -1291,6 +1416,16 @@ export const LongText: Story = {
 };
 
 export const HeadingContext: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { InlineEdit, styled, theme, type InlineEditProps } from '@jfrader/ui';
+
+const ProjectHeading = styled.h2({ margin: 0, fontSize: theme.textSize.sm, color: theme.color.textMuted });
+
+export function Project({ save }: { save: InlineEditProps['onSave'] }) {
+  return <section aria-labelledby="project-heading">
+    <ProjectHeading id="project-heading">Project</ProjectHeading>
+    <InlineEdit label="Project name" defaultValue="Apollo" onSave={save} />
+  </section>;
+}` } } },
   render: (args) => (
     <section aria-labelledby="project-heading">
       <ProjectHeading id="project-heading">
@@ -1397,6 +1532,18 @@ const rootCssStyle = css({ paddingInline: vars.space[2] });
 const StyledInlineEdit = styled(InlineEdit)(rootCssStyle);
 const rootSxStyle = css({ paddingInline: vars.space[6] });
 export const RefAndStyles: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+import { InlineEdit, styled, theme, type InlineEditProps } from '@jfrader/ui';
+
+const ProjectName = styled(InlineEdit)({ paddingInline: theme.space[6] });
+
+export function Project({ save }: { save: InlineEditProps['onSave'] }) {
+  const root = useRef<HTMLDivElement>(null);
+  const control = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  return <ProjectName label="Project name" defaultValue="Apollo" onSave={save} ref={root} controlRef={control}
+    className="consumer-root"
+    slotProps={{ trigger: { css: { color: theme.color.accentText }, className: 'consumer-trigger' } }} />;
+}` } } },
   args: { ref: fn(), controlRef: fn() },
   render: (args) => (
     <StyledInlineEdit
@@ -1512,6 +1659,7 @@ export const ReducedMotion: Story = {
   args: { onSave: fn(() => new Promise<void>(() => {})) },
   parameters: {
     docs: {
+      source: { language: 'tsx', code: saveSource },
       description: {
         story:
           'Manual check: enable prefers-reduced-motion: reduce in the browser (see docs/qa-gates.md), then save to see the static busy indicator. Not automated here.',
@@ -1571,6 +1719,14 @@ export const SlotCustomization: Story = {
 
 /** Use component as shorthand for the wrapper's root slot. */
 export const ComponentRoot: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+function ProjectNameRoot(props: ComponentPropsWithRef<'div'>) { return <div {...props} />; }
+
+export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  return <InlineEdit label="Project name" defaultValue="Apollo" onSave={save} component={ProjectNameRoot} />;
+}` } } },
   args: { component: FieldSugarRoot },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();
