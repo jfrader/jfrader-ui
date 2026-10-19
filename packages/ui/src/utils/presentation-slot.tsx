@@ -5,7 +5,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { WithSx, type SxProps } from '../styling/sx';
 import type { Interpolation, Theme } from '../styling/css';
 
-type PresentationElement = 'article' | 'div' | 'p' | 'span' | 'a' | 'time' | 'figure' | 'figcaption' | 'ul' | 'li' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+type PresentationElement = 'article' | 'aside' | 'section' | 'header' | 'footer' | 'blockquote' | 'div' | 'p' | 'span' | 'a' | 'time' | 'figure' | 'figcaption' | 'ul' | 'li' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 export type PresentationProps<E extends PresentationElement> = ComponentPropsWithRef<E> & {
   css?: Interpolation<Theme>;
   'data-ui'?: string;
@@ -19,6 +19,7 @@ export type PresentationParts<A extends Record<string, PresentationElement>> = {
 };
 export type PrintedTime = { dateTime: string; label: ReactNode };
 export type ArticleHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
+export type PresentationHeadingProps = ComponentPropsWithRef<'h2'> & { level?: ArticleHeadingLevel };
 export type RenderArticleLink = (props: ComponentPropsWithRef<'a'>) => ReactNode;
 
 export function PresentationSlot<E extends PresentationElement>({

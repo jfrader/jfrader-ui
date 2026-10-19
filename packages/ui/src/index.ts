@@ -139,3 +139,6 @@ export * from './components/money-input';
 export * from './components/phone-input';
 export * from './components/color-picker';
 export * from './components/person-avatar';
+export * from './components/article-body';
+export * from './components/article-sources';
+export * from './components/section-heading';
