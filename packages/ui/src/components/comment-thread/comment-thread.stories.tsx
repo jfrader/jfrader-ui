@@ -239,11 +239,11 @@ const FixtureButton = styled.button({
   font: 'inherit',
 });
 
-const Frame = styled.div({ inlineSize: '36rem', maxInlineSize: '100%' });
+const Frame = styled.div({ inlineSize: `min(36rem, calc(100vw - 2 * ${vars.space[4]}))`, maxInlineSize: '100%' });
 
 const Stack = styled.div({ display: 'grid', gap: vars.space[6] });
 
-const NarrowFrame = styled.div({ inlineSize: '20rem' });
+const NarrowFrame = styled.div({ inlineSize: '20rem', maxInlineSize: '100%' });
 
 const meta = {
   title: 'Data display/CommentThread',
@@ -306,6 +306,9 @@ export const Default: Story = {
   play: async ({ canvas, canvasElement }) => {
     await expect(CommentThread.displayName).toBe('CommentThread');
     const region = canvas.getByRole('region', { name: 'Review' });
+    await expect(canvasElement.ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(
+      canvasElement.ownerDocument.documentElement.clientWidth + GEOMETRY_TOLERANCE,
+    );
     await expect(region.tagName).toBe('SECTION');
     await expect(region).toHaveAttribute('data-ui', 'comment-thread');
     await expect(canvas.getByRole('heading', { level: 3, name: 'Review' })).toBeVisible();
@@ -390,6 +393,28 @@ export const NestedReplies: Story = {
   },
 };
 
+export const ReplyComposer: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const reply = action(canvasElement, 'c1r1r1', 'reply')!;
+    await userEvent.click(reply);
+    const composer = field(canvasElement, 'reply');
+    await expect(composer).toHaveFocus();
+    await userEvent.type(composer, 'Checking the narrow layout.');
+    await userEvent.keyboard('{Escape}');
+    await expect(reply).toHaveFocus();
+    await expect(field(canvasElement, 'reply')).toBeNull();
+    await userEvent.click(reply);
+    const region = canvas.getByRole('region');
+    const bounds = region.getBoundingClientRect();
+    for (const control of [field(canvasElement, 'reply'), submitOf(canvasElement, 'reply')]) {
+      const rect = control.getBoundingClientRect();
+      await expect(rect.left).toBeGreaterThanOrEqual(bounds.left - GEOMETRY_TOLERANCE);
+      await expect(rect.right).toBeLessThanOrEqual(bounds.right + GEOMETRY_TOLERANCE);
+      await expect(rect.height).toBeGreaterThanOrEqual(MIN_CONTROL - GEOMETRY_TOLERANCE);
+    }
+  },
+};
+
 export const MaxDepthZero: Story = {
   args: { maxDepth: 0 },
   play: async ({ args, canvasElement, userEvent }) => {
@@ -419,7 +444,7 @@ const DEEP_CHAIN = DEEP_IDS.reduceRight<ThreadComment[]>(
 
 export const DeepNesting: Story = {
   args: { defaultValue: DEEP_CHAIN },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvas, canvasElement }) => {
     // Trees deeper than maxDepth are shown as given.
     await expect(itemIds(canvasElement)).toEqual(DEEP_IDS);
     const repliesOf = (id: string) => item(canvasElement, id).querySelector<HTMLElement>(':scope > ul')!;
@@ -439,6 +464,14 @@ export const DeepNesting: Story = {
     const left = (id: string) => articleOf(canvasElement, id).getBoundingClientRect().left;
     await expect(left('deep-3')).toBeGreaterThan(left('deep-2'));
     await expect(Math.abs(left('deep-5') - left('deep-3'))).toBeLessThan(GEOMETRY_TOLERANCE);
+    const region = canvas.getByRole('region');
+    await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth + GEOMETRY_TOLERANCE);
+    const bounds = region.getBoundingClientRect();
+    for (const id of DEEP_IDS) {
+      const article = articleOf(canvasElement, id).getBoundingClientRect();
+      await expect(article.left).toBeGreaterThanOrEqual(bounds.left - GEOMETRY_TOLERANCE);
+      await expect(article.right).toBeLessThanOrEqual(bounds.right + GEOMETRY_TOLERANCE);
+    }
   },
 };
 
