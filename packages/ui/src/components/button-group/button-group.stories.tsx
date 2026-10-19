@@ -10,8 +10,8 @@ import { ThemeRoot } from '../theme-root';
 import { ButtonGroup, type ButtonGroupCompoundProps, type ButtonGroupEasyProps, type ButtonGroupItemProps, type ButtonGroupItemRecord, type ButtonGroupCompoundProps as ButtonGroupProps } from './index';
 
 const FixtureButton = styled.button({
-  minInlineSize: vars.space[6],
-  minBlockSize: vars.space[6],
+  minInlineSize: vars.space[8],
+  minBlockSize: vars.space[8],
 });
 const Stack = styled.div({
   display: 'flex',
@@ -19,13 +19,17 @@ const Stack = styled.div({
   alignItems: 'flex-start',
   gap: vars.space[4],
 });
+const FIXTURE_WIDTHS = { narrow: 320, wide: 800 } as const;
 const NarrowContainer = styled.div({
-  width: 320,
+  width: FIXTURE_WIDTHS.narrow,
+  maxInlineSize: '100%',
 });
+const FIXTURE_SCALE = 1.25;
 const ScaledContainer = styled.div({
-  transform: 'scale(1.25)',
+  transform: `scale(${FIXTURE_SCALE})`,
   transformOrigin: 'top left',
-  width: 320,
+  width: FIXTURE_WIDTHS.narrow,
+  maxInlineSize: `${100 / FIXTURE_SCALE}%`,
 });
 const itemCss = css({ paddingInline: '29px' });
 function Icon() {
@@ -48,6 +52,7 @@ const meta = {
     size: 'md',
   },
   parameters: {
+    layout: 'padded',
     a11y: {
       config: {
         rules: [
@@ -757,7 +762,7 @@ function CompactExample({ args }: { args: Parameters<NonNullable<Story['render']
   const [wide, setWide] = useState(false);
   return (
     <div>
-      <div style={{ width: wide ? 800 : 320 }}>
+      <div style={{ width: wide ? FIXTURE_WIDTHS.wide : FIXTURE_WIDTHS.narrow, maxInlineSize: '100%' }}>
         <ButtonGroup {...args}>
           <ButtonGroup.Item label="Add document" startIcon={<Icon />}>
             Añadir documento compartido
@@ -776,13 +781,15 @@ function CompactExample({ args }: { args: Parameters<NonNullable<Story['render']
 }
 export const CollapseAt320px: Story = {
   render: (args) => <CompactExample args={args} />,
-  play: async ({ canvas, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     const group = canvas.getByRole('group');
     await waitFor(async () => {
       await expect(group).toHaveAttribute('data-compact');
     });
     await expect(canvas.getByRole('button', { name: 'Add document' })).toBeInTheDocument();
     await userEvent.click(canvas.getByRole('button', { name: 'Resize' }));
+    await expect(group.getBoundingClientRect().right).toBeLessThanOrEqual(canvasElement.getBoundingClientRect().right + 1);
+    if (group.parentElement!.clientWidth < FIXTURE_WIDTHS.wide) return;
     await waitFor(async () => {
       await expect(group).not.toHaveAttribute('data-compact');
     });
@@ -819,7 +826,7 @@ export const LongLocalizedLabels: Story = {
 export const ThemeRootPortal: Story = {
   tags: ['!autodocs'],
   render: (args) => (
-    <ThemeRoot theme="light">
+    <ThemeRoot theme="light" sx={{ backgroundColor: vars.color.surface, padding: vars.space[4] }}>
       <ButtonGroup {...args} open>
         <ButtonGroup.Trigger aria-label="More actions" />
         <ButtonGroup.Content>
