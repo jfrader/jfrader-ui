@@ -6,6 +6,7 @@
 
 - `BottomSheet` restores pointer activation on its drag handle, wraps long headings beside Close, aligns Close when the handle is omitted, and keeps bordered replacement panels inside the viewport.
 - Vertical floating `ButtonGroup` trays no longer clip the first and last buttons' rounded corners.
+- `DataFlow` wraps long summaries on narrow screens, keeps horizontal diagrams readable in a scrolling scene, and routes vertical connections outside the nodes. Connections stay attached when the inherited text direction changes.
 - `PhotoGrid` keeps the current viewer thumbnail visible when opening or navigating a scrolling filmstrip, including RTL layouts.
 - `PhotoGrid` fits unzoomed viewer images inside the stage instead of clipping images taller than the viewport.
 

@@ -61,6 +61,7 @@ const meta = {
     onPausedChange: fn(),
   },
   parameters: {
+    layout: 'padded',
     docs: {
       description: {
         component:
@@ -112,6 +113,11 @@ export const OffscreenPause: Story = {
     const figure = canvasElement.querySelector<HTMLElement>('figure[data-ui="data-flow"]')!;
     const particles = () => [...figure.querySelectorAll('circle, rect')].map((node) => `${node.getAttribute('transform')}/${node.getAttribute('opacity')}`).join('|');
     const initial = particles();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(particles()).toBe(initial);
+      return;
+    }
     await waitFor(() => expect(particles()).not.toBe(initial));
     figure.style.position = 'fixed';
     figure.style.top = '-10000px';
@@ -129,7 +135,7 @@ export const ResizePreservesClock: Story = {
   render: (args) => {
     const [width, setWidth] = useState(700);
     return (
-      <div style={{ width: `${width}px` }}>
+      <div style={{ inlineSize: width, maxInlineSize: '100%' }}>
         <DataFlow {...args} />
         <Button onClick={() => setWidth((prev) => (prev === 700 ? 400 : 700))}>
           Toggle Width
@@ -257,6 +263,12 @@ export const ExternalResumeAfterStep: Story = {
     const particle = canvasElement.querySelector('circle')!;
     const frozen = particle.getAttribute('transform');
     await userEvent.click(canvas.getByRole('button', { name: 'Resume externally' }));
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(particle.getAttribute('transform')).toBe(frozen);
+      expect(canvas.getByRole('button', { name: 'Step' })).toBeEnabled();
+      return;
+    }
     await waitFor(() => expect(particle.getAttribute('transform')).not.toBe(frozen));
     expect(canvas.getByRole('button', { name: 'Step' })).toBeDisabled();
   },

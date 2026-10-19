@@ -27,7 +27,6 @@ import {
 import { Button } from '../button';
 import {
   createHorizontalPath,
-  createVerticalPath,
   isEmissionEligible,
   samplePath,
   type PathSampleTable,
@@ -278,6 +277,7 @@ const rootStyle = css({
   gap: vars.space[4],
   inlineSize: '100%',
   minInlineSize: 0,
+  overflowWrap: 'anywhere',
   boxSizing: 'border-box',
   margin: 0,
   padding: vars.space[4],
@@ -294,7 +294,7 @@ const sceneStyle = css({
   display: 'grid',
   gap: vars.space[4],
   minInlineSize: 0,
-  overflow: 'hidden',
+  overflow: 'auto',
   backgroundColor: vars.color.surfaceInset,
   borderRadius: vars.radius.md,
   padding: vars.space[4],
@@ -343,39 +343,25 @@ const layoutStyle = css({
   gap: vars.space[6],
   minInlineSize: 0,
   '&[data-orientation="horizontal"]': {
-    gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+    minInlineSize: NARROW_BREAKPOINT,
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
     alignItems: 'center',
   },
   '&[data-orientation="vertical"]': {
     gridTemplateRows: 'auto auto auto',
-    justifyItems: 'center',
+    '& [data-ui="data-flow-node"]': {
+      inlineSize: '100%',
+      boxSizing: 'border-box',
+    },
   },
 });
 
-const sourcesContainerStyle = css({
+const nodeGroupStyle = css({
   display: 'flex',
   flexDirection: 'column',
   gap: vars.space[3],
   justifyContent: 'center',
   minInlineSize: 0,
-  '&[data-orientation="vertical"]': {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
-});
-
-const destsContainerStyle = css({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space[3],
-  justifyContent: 'center',
-  minInlineSize: 0,
-  '&[data-orientation="vertical"]': {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
 });
 
 const coreContainerStyle = css({
@@ -613,6 +599,7 @@ export function DataFlow({
     if (!sceneEl || !coreEl) return;
 
     const sceneRect = sceneEl.getBoundingClientRect();
+    const originLeft = sceneRect.left - sceneEl.scrollLeft;
     if (sceneRect.width === 0 || sceneRect.height === 0) {
       geometryRef.current = null;
       setGeometry(null);
@@ -622,21 +609,14 @@ export function DataFlow({
     const isRtl = getComputedStyle(sceneEl).direction === 'rtl';
     const cRect = coreEl.getBoundingClientRect();
 
-    let coreIn: Point;
-    let coreOut: Point;
-
-    if (effectiveOrientation === 'horizontal') {
-      if (!isRtl) {
-        coreIn = { x: cRect.left - sceneRect.left, y: cRect.top + cRect.height * 0.5 - sceneRect.top };
-        coreOut = { x: cRect.right - sceneRect.left, y: cRect.top + cRect.height * 0.5 - sceneRect.top };
-      } else {
-        coreIn = { x: cRect.right - sceneRect.left, y: cRect.top + cRect.height * 0.5 - sceneRect.top };
-        coreOut = { x: cRect.left - sceneRect.left, y: cRect.top + cRect.height * 0.5 - sceneRect.top };
-      }
-    } else {
-      coreIn = { x: cRect.left + cRect.width * 0.5 - sceneRect.left, y: cRect.top - sceneRect.top };
-      coreOut = { x: cRect.left + cRect.width * 0.5 - sceneRect.left, y: cRect.bottom - sceneRect.top };
-    }
+    const coreIn: Point = {
+      x: (isRtl ? cRect.right : cRect.left) - originLeft,
+      y: cRect.top + cRect.height * 0.5 - sceneRect.top,
+    };
+    const coreOut: Point = {
+      x: (isRtl ? cRect.left : cRect.right) - originLeft,
+      y: coreIn.y,
+    };
 
     const sourcePoints: Point[] = [];
     const sourcePaths: PathSampleTable[] = [];
@@ -648,14 +628,14 @@ export function DataFlow({
       let start: Point;
       if (effectiveOrientation === 'horizontal') {
         start = !isRtl
-          ? { x: sRect.right - sceneRect.left, y: sRect.top + sRect.height * 0.5 - sceneRect.top }
-          : { x: sRect.left - sceneRect.left, y: sRect.top + sRect.height * 0.5 - sceneRect.top };
+          ? { x: sRect.right - originLeft, y: sRect.top + sRect.height * 0.5 - sceneRect.top }
+          : { x: sRect.left - originLeft, y: sRect.top + sRect.height * 0.5 - sceneRect.top };
         sourcePoints.push(start);
         sourcePaths.push(createHorizontalPath(start, coreIn));
       } else {
-        start = { x: sRect.left + sRect.width * 0.5 - sceneRect.left, y: sRect.bottom - sceneRect.top };
+        start = { x: (isRtl ? sRect.right : sRect.left) - originLeft, y: sRect.top + sRect.height * 0.5 - sceneRect.top };
         sourcePoints.push(start);
-        sourcePaths.push(createVerticalPath(start, coreIn));
+        sourcePaths.push(createHorizontalPath(start, coreIn, (coreIn.x + (isRtl ? sceneRect.width : 0)) * 0.5));
       }
     }
 
@@ -669,14 +649,14 @@ export function DataFlow({
       let end: Point;
       if (effectiveOrientation === 'horizontal') {
         end = !isRtl
-          ? { x: dRect.left - sceneRect.left, y: dRect.top + dRect.height * 0.5 - sceneRect.top }
-          : { x: dRect.right - sceneRect.left, y: dRect.top + dRect.height * 0.5 - sceneRect.top };
+          ? { x: dRect.left - originLeft, y: dRect.top + dRect.height * 0.5 - sceneRect.top }
+          : { x: dRect.right - originLeft, y: dRect.top + dRect.height * 0.5 - sceneRect.top };
         destPoints.push(end);
         destPaths.push(createHorizontalPath(coreOut, end));
       } else {
-        end = { x: dRect.left + dRect.width * 0.5 - sceneRect.left, y: dRect.top - sceneRect.top };
+        end = { x: (isRtl ? dRect.left : dRect.right) - originLeft, y: dRect.top + dRect.height * 0.5 - sceneRect.top };
         destPoints.push(end);
-        destPaths.push(createVerticalPath(coreOut, end));
+        destPaths.push(createHorizontalPath(coreOut, end, (coreOut.x + (isRtl ? 0 : sceneRect.width)) * 0.5));
       }
     }
 
@@ -741,10 +721,15 @@ export function DataFlow({
             recomputeGeometry();
           });
     resize?.observe(sceneEl);
+    const directionObserver = new MutationObserver(recomputeGeometry);
+    for (let ancestor: HTMLElement | null = sceneEl; ancestor; ancestor = ancestor.parentElement) {
+      directionObserver.observe(ancestor, { attributes: true, attributeFilter: ['dir'] });
+    }
     recomputeGeometry();
 
     return () => {
       resize?.disconnect();
+      directionObserver.disconnect();
     };
   }, [sources, destinations, core, effectiveOrientation, isValid, isEmpty]);
 
@@ -1125,6 +1110,7 @@ export function DataFlow({
         slotProps={slotProps?.scene}
         data-ui="data-flow-scene"
         aria-hidden="true"
+        tabIndex={-1}
         styles={sceneStyle}
         ref={sceneRef}
       >
@@ -1173,7 +1159,7 @@ export function DataFlow({
         <div css={layoutStyle} data-orientation={effectiveOrientation}>
           {/* Sources Column */}
           <div
-            css={sourcesContainerStyle}
+            css={nodeGroupStyle}
             data-orientation={effectiveOrientation}
             data-ui="data-flow-sources"
           >
@@ -1230,7 +1216,7 @@ export function DataFlow({
 
           {/* Destinations Column */}
           <div
-            css={destsContainerStyle}
+            css={nodeGroupStyle}
             data-orientation={effectiveOrientation}
             data-ui="data-flow-destinations"
           >
