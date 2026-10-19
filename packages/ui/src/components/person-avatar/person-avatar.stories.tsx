@@ -117,7 +117,7 @@ export const Sizes: Story = {
 };
 
 export const Crops: Story = {
-  render: (args) => <Row><PersonAvatar {...args} /><PersonAvatar {...args} fullKit={false} crop="circle" /></Row>,
+  render: (args) => <Row><PersonAvatar {...args} size="lg" /><PersonAvatar {...args} size="lg" fullKit={false} crop="circle" /></Row>,
   play: async ({ canvasElement }) => {
     const plain = canvasElement.querySelectorAll('svg')[0]!;
     const circle = canvasElement.querySelectorAll('svg')[1]!;
@@ -129,17 +129,17 @@ export const Crops: Story = {
 };
 
 export const FullKit: Story = {
-  args: { fullKit: true, kit: ARTWORK_KIT },
+  args: { fullKit: true, kit: ARTWORK_KIT, size: 'lg' },
   play: async ({ canvasElement }) => {
     const avatar = canvasElement.querySelector('svg')!;
     await expect(avatar).toHaveAttribute('viewBox', '0 0 48 61');
     await expect(avatar).toHaveAttribute('preserveAspectRatio', 'xMidYMid meet');
-    await expect(avatar.getBoundingClientRect().width).toBe(48);
-    await expect(avatar.getBoundingClientRect().height).toBe(48);
+    await expect(avatar.getBoundingClientRect().width).toBe(72);
+    await expect(avatar.getBoundingClientRect().height).toBe(72);
   },
 };
 export const Staff: Story = {
-  args: { attire: 'staff', fullKit: true },
+  args: { attire: 'staff', fullKit: true, size: 'lg' },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('svg')).toHaveAttribute('viewBox', '0 0 48 48');
     await expect(canvasElement.querySelector(`path[fill="${PERSON_ART_COLORS.staffJacket}"]`)).not.toBeNull();
@@ -239,7 +239,7 @@ const patternKits: PersonAvatarKit[] = ['solid', 'centerStripe', 'split', 'hoops
   socksPattern: index % 2 ? 'turnover' : 'solid',
 }));
 export const KitVariants: Story = {
-  render: (args) => <Row>{patternKits.map((kit, index) => <PersonAvatar {...args} key={index} kit={kit} fullKit crop="none"
+  render: (args) => <Row>{patternKits.map((kit, index) => <PersonAvatar {...args} key={index} kit={kit} size="lg" fullKit crop="none"
     primary="currentColor" secondary="currentColor" />)}</Row>,
   play: async ({ canvasElement }) => {
     for (const [index, svg] of Array.from(canvasElement.querySelectorAll('svg')).entries()) {
