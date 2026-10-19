@@ -4,6 +4,7 @@
 
 ### Added
 
+- `NumberField` adds locale-aware quantity entry, exact decimal steps, keyboard and pointer controls, draft validation, and canonical form values.
 - `labelPlacement="hidden"` keeps a field's label as the control's accessible name without taking layout space. Available on TextField, Textarea, PasswordField, SearchField, TagInput, MentionInput, TimePicker, Combobox, Select and MultiSelect.
 
 ### Fixed
