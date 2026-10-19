@@ -125,6 +125,7 @@ export * from './components/voice-orb';
 export * from './components/voice-recorder';
 export * from './components/share-access';
 export { styled } from './styling/styled';
+export type { FieldLabelPlacement } from './components/field/field-anatomy';
 export type { SxProps } from './styling/sx';
 export { theme, type JfraderTheme } from './styling/theme';
 export * from './components/page-curl';

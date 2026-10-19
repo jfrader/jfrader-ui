@@ -20,10 +20,11 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS } from '../../styling/media';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { useFieldAnatomy } from '../field/field-anatomy';
+import { useFieldAnatomy, type FieldLabelPlacement } from '../field/field-anatomy';
 import { Select, type SelectTriggerProps, type SelectContentProps, type SelectItemProps } from '../select';
 
 export type TimePickerSize = 'sm' | 'md' | 'lg';
@@ -87,6 +88,8 @@ export interface TimePickerProps
   locale?: string;
   hourCycle?: TimePickerHourCycle;
   label?: ReactNode;
+  /** Label placement. `hidden` keeps the accessible name without taking layout space. */
+  labelPlacement?: FieldLabelPlacement;
   description?: ReactNode;
   error?: ReactNode;
   placeholder?: ReactNode;
@@ -390,6 +393,7 @@ export function TimePicker({
   locale,
   hourCycle,
   label,
+  labelPlacement = 'above',
   description,
   error,
   placeholder,
@@ -575,7 +579,7 @@ export function TimePicker({
               {...slotProps?.label}
               id={labelId}
               htmlFor={field.id}
-              css={[labelStyle, slotProps?.label?.css]}
+              css={[labelStyle, labelPlacement === 'hidden' && visuallyHiddenStyle, slotProps?.label?.css]}
             >
               {label}
               {required && (

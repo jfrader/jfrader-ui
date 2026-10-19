@@ -143,6 +143,13 @@ const Row = styled.div({
   gap: vars.space[3],
 });
 
+// A labeled field is taller than its control; an action beside it aligns to the control's bottom.
+const FieldRow = styled.div({
+  display: 'flex',
+  alignItems: 'flex-end',
+  gap: vars.space[3],
+});
+
 const meta: Meta<SelectCompoundProps> = {
   title: 'Inputs/Select',
   component: Select,
@@ -281,10 +288,10 @@ export const Default: EasyStory = {
     onValueChange: fn(),
   },
   render: (args) => (
-    <Row>
+    <FieldRow>
       <Select {...args} />
       <Button>Upgrade</Button>
-    </Row>
+    </FieldRow>
   ),
   parameters: {
     docs: {

@@ -14,6 +14,7 @@ import {
   FieldLabel,
   FieldRoot,
   useFieldAnatomy,
+  type FieldLabelPlacement,
   type FieldPartProps,
 } from '../field/field-anatomy';
 import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
@@ -40,6 +41,8 @@ export type TextareaSlotProps = FieldParts<TextareaAnatomy>;
 
 export interface TextareaProps extends ComponentPropsWithRef<'textarea'>, SxProps {
   label?: ReactNode;
+  /** Label placement. `hidden` keeps the accessible name without taking layout space. */
+  labelPlacement?: FieldLabelPlacement;
   description?: ReactNode;
   error?: ReactNode;
   size?: TextareaSize;
@@ -76,6 +79,7 @@ const autoResizeStyle = css({ fieldSizing: 'content' });
 export function Textarea({
   ref,
   label,
+  labelPlacement = 'above',
   description,
   error,
   size = 'md',
@@ -120,7 +124,13 @@ export function Textarea({
       sx={sx}
       part={slotProps?.root}
     >
-      <FieldLabel component={slots?.label} htmlFor={field.id} required={required} part={slotProps?.label}>
+      <FieldLabel
+        component={slots?.label}
+        htmlFor={field.id}
+        required={required}
+        hidden={labelPlacement === 'hidden'}
+        part={slotProps?.label}
+      >
         {label}
       </FieldLabel>
       <FieldSlot

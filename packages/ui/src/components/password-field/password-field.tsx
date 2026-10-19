@@ -24,6 +24,7 @@ import {
   FieldLabel,
   FieldRoot,
   useFieldAnatomy,
+  type FieldLabelPlacement,
   type FieldPartProps,
 } from '../field/field-anatomy';
 import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
@@ -68,6 +69,8 @@ export interface PasswordFieldProps
   defaultRevealed?: boolean;
   onRevealedChange?: (revealed: boolean) => void;
   label?: ReactNode;
+  /** Label placement. `hidden` keeps the accessible name without taking layout space. */
+  labelPlacement?: FieldLabelPlacement;
   description?: ReactNode;
   error?: ReactNode;
   size?: PasswordFieldSize;
@@ -211,6 +214,7 @@ export function PasswordField({
   defaultRevealed = false,
   onRevealedChange,
   label,
+  labelPlacement = 'above',
   description,
   error,
   size = 'md',
@@ -283,7 +287,14 @@ export function PasswordField({
       sx={sx}
       part={slotProps?.root}
     >
-      <FieldLabel component={slots?.label} id={labelId} htmlFor={field.id} required={required} part={slotProps?.label}>
+      <FieldLabel
+        component={slots?.label}
+        id={labelId}
+        htmlFor={field.id}
+        required={required}
+        hidden={labelPlacement === 'hidden'}
+        part={slotProps?.label}
+      >
         {label}
       </FieldLabel>
       <FieldSlot element="div" component={slots?.shell} slotProps={slotProps?.shell} styles={[shellStyle]}>

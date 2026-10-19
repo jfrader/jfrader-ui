@@ -2,10 +2,16 @@
 
 ## Unreleased
 
+### Added
+
+- `labelPlacement="hidden"` keeps a field's label as the control's accessible name without taking layout space. Available on TextField, Textarea, PasswordField, SearchField, TagInput, MentionInput, TimePicker, Combobox, Select and MultiSelect.
+
 ### Fixed
 
 - NowPlaying expands and collapses by revealing its content as the card grows, instead of scaling the text and controls with the card. A rejected sheet drag on UserMenu springs back, and Carousel clears a pointer released outside before the drag threshold.
 - Dialogs close even when a child animation is paused or long-running: exits wait only for the surface's running exit effects, with a bounded fallback. PhotoGrid retains its viewer through the closing transition instead of cutting to the grid immediately.
+- Select and MultiSelect share one labeled-field layout, and Select triggers show a disclosure caret.
+- ShareAccess member rows share a uniform height, role pickers align on the control line, role labels stay available to assistive technology, and the surface fills its host. ShareSheet keeps the access picker at the end of the copy row while the "Copied" confirmation appears.
 
 ## 0.9.1
 
