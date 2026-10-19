@@ -13,7 +13,7 @@ type Anatomy = { root: 'div' };
 type ParagraphAnatomy = { root: 'p' };
 type HeadingAnatomy = { root: 'h2' };
 type FactAnatomy = { root: 'aside'; title: 'p'; list: 'ul'; item: 'li' };
-type QuoteAnatomy = { root: 'blockquote'; excerpt: 'div'; speaker: 'span'; attribution: 'footer' };
+type QuoteAnatomy = { root: 'blockquote'; excerpt: 'div'; speaker: 'p'; attribution: 'footer' };
 type CellAnatomy = { root: 'div'; label: 'p'; content: 'div' };
 type Customization<A extends Record<string, 'div' | 'p' | 'h2' | 'aside' | 'ul' | 'li' | 'blockquote' | 'span' | 'footer'>> = {
   component?: PresentationSlots<A>['root']; slots?: PresentationSlots<A>; slotProps?: PresentationParts<A>;
@@ -34,12 +34,13 @@ export type ArticleBodySplitProps = Omit<ComponentPropsWithRef<'div'>, 'children
 
 const bodyStyle = css({ maxInlineSize: articleMeasure, fontFamily: articleBodyFont, fontSize: vars.editorial.body });
 const paragraphStyle = css({ fontFamily: articleBodyFont, fontSize: vars.editorial.body, lineHeight: vars.lineHeight.relaxed, overflowWrap: 'anywhere' });
-const dropCapStyle = css({ display: 'flow-root', '&::first-letter': { float: 'inline-start', fontFamily: articleHeadingFont, fontSize: vars.editorial.dropCap, lineHeight: vars.editorial.lineHeight.dropCap, paddingInlineEnd: vars.space[2] } });
+const dropCapStyle = css({ display: 'flow-root', '&::first-letter': { float: 'inline-start', fontFamily: articleHeadingFont, fontSize: vars.editorial.dropCap, fontWeight: vars.fontWeight.bold, color: vars.color.text, lineHeight: vars.editorial.lineHeight.dropCap, paddingInlineEnd: vars.space[2] } });
 const headingStyle = css({ fontFamily: articleHeadingFont, overflowWrap: 'anywhere' });
 const factStyle = css({ border: `${vars.editorial.rule.thin} solid ${articleSoftRule}`, padding: vars.space[4], marginBlock: vars.space[6], backgroundColor: vars.color.surfaceRaised });
-const listStyle = css({ listStyle: 'none', padding: 0 });
-const itemStyle = css({ paddingBlock: vars.space[2], '& + &': { borderBlockStart: `${vars.editorial.rule.thin} solid ${articleSoftRule}` } });
-const quoteStyle = css({ borderInlineStart: `${vars.editorial.rule.strong} solid ${vars.color.accentText}`, paddingInlineStart: vars.space[4], marginInline: 0, fontFamily: articleBodyFont, lineHeight: vars.lineHeight.relaxed, fontStyle: 'italic', overflowWrap: 'anywhere' });
+const listStyle = css({ listStyle: 'none', margin: 0, padding: 0 });
+const itemStyle = css({ margin: 0, paddingBlock: vars.space[2], '& + &': { borderBlockStart: `${vars.editorial.rule.thin} solid ${articleSoftRule}` } });
+const quoteStyle = css({ borderInlineStart: `${vars.editorial.rule.strong} solid ${vars.color.accentText}`, paddingInlineStart: vars.space[4], marginInline: 0, marginBlock: 0, color: vars.color.text, fontFamily: articleBodyFont, lineHeight: vars.lineHeight.relaxed, fontStyle: 'italic', overflowWrap: 'anywhere' });
+const speakerStyle = css({ fontFamily: articleBodyFont, fontSize: vars.editorial.body, lineHeight: vars.lineHeight.base, color: vars.color.text, textTransform: 'none', fontStyle: 'normal', marginBlockStart: vars.space[2], marginBlockEnd: 0 });
 const attributionStyle = css({ marginBlockStart: vars.space[3], fontStyle: 'normal', display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
 const splitStyle = css({
   display: 'grid',
@@ -57,7 +58,7 @@ const splitStyle = css({
     },
   },
 });
-const cellStyle = css({ minInlineSize: 0, padding: vars.space[4], overflowWrap: 'anywhere' });
+const cellStyle = css({ minInlineSize: 0, padding: vars.space[4], overflowWrap: 'anywhere', '& :where(p)': { margin: 0 } });
 
 function ArticleBodyRoot({ component, slots, slotProps, ...props }: ArticleBodyProps) {
   return <PresentationSlot {...props} element="div" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body" styles={[proseTypography, bodyStyle]} />;
@@ -84,15 +85,14 @@ function Quote({ children, speaker, attribution, component, slots, slotProps, ..
   if (!isRenderable(children)) return null;
   return <PresentationSlot {...props} element="blockquote" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body-quote" styles={quoteStyle}>
     <PresentationSlot element="div" component={slots?.excerpt} slotProps={slotProps?.excerpt} marker="article-body-quote-excerpt">{children}</PresentationSlot>
-    {(isRenderable(speaker) || isRenderable(attribution)) && <PresentationSlot element="footer" component={slots?.attribution} slotProps={slotProps?.attribution} marker="article-body-quote-attribution" styles={[articleLabelStyle, attributionStyle]}>
-      {isRenderable(speaker) && <PresentationSlot element="span" component={slots?.speaker} slotProps={slotProps?.speaker} marker="article-body-quote-speaker">{speaker}</PresentationSlot>}{attribution}
-    </PresentationSlot>}
+    {isRenderable(speaker) && <PresentationSlot element="p" component={slots?.speaker} slotProps={slotProps?.speaker} marker="article-body-quote-speaker" styles={speakerStyle}>{speaker}</PresentationSlot>}
+    {isRenderable(attribution) && <PresentationSlot element="footer" component={slots?.attribution} slotProps={slotProps?.attribution} marker="article-body-quote-attribution" styles={[articleLabelStyle, attributionStyle]}>{attribution}</PresentationSlot>}
   </PresentationSlot>;
 }
 Quote.displayName = 'ArticleBody.Quote';
 function Split({ children, component, slots, slotProps, ...props }: ArticleBodySplitProps) {
   const cells = Children.toArray(children);
-  if (cells.length !== 2 || cells.some((child) => !isValidElement(child) || child.type !== Cell)) throw new Error('ArticleBody.Split requires exactly two ArticleBody.Cell children.');
+  if (cells.length !== 2 || cells.some((child) => !isValidElement(child))) throw new Error('ArticleBody.Split requires exactly two elements.');
   return <PresentationSlot {...props} element="div" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body-split" styles={splitStyle}>{children}</PresentationSlot>;
 }
 Split.displayName = 'ArticleBody.Split';
