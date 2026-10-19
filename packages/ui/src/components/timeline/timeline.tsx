@@ -38,7 +38,8 @@ import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import {
   DEFAULT_TIME_ZONE,
@@ -94,6 +95,8 @@ export interface TimelinePartProps {
   css?: Interpolation<Theme>;
 }
 export interface TimelineSlots {
+  /** Replaces the outer div; forwards its props, ref and className. */
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Scrollable container holding the day groups. */
   scroller?: ComponentType<ComponentPropsWithRef<'div'> & TimelinePartProps>;
   /** Section containing one day of events. */
@@ -117,7 +120,10 @@ export interface TimelineSlots {
 }
 
 export type TimelineSlotProps = {
-  [Part in keyof TimelineSlots]?: ComponentProps<NonNullable<TimelineSlots[Part]>>;
+  [Part in Exclude<keyof TimelineSlots, 'root'>]?: ComponentProps<NonNullable<TimelineSlots[Part]>>;
+} & {
+  /** Props for the outer div. */
+  root?: Omit<PresentationProps<'div'>, 'children'>;
 };
 
 export interface TimelineProps
@@ -145,6 +151,8 @@ export interface TimelineProps
   labels?: Partial<TimelineLabels>;
   slotProps?: TimelineSlotProps;
   slots?: TimelineSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: TimelineSlots['root'];
 }
 
 interface Row {
@@ -191,10 +199,10 @@ const RELATIVE_STEPS: readonly (readonly [Intl.RelativeTimeFormatUnit, number])[
 ];
 /** Machine day keys stay Gregorian with Latin digits whatever the display locale. */
 const DAY_KEY_LOCALE = 'en-US';
-const ITEM_QUERY: OwnedItemsQuery = { itemSelector: '[data-ui="timeline-item"]', ownerSelector: '[data-ui="timeline"]' };
+const ITEM_QUERY: OwnedItemsQuery = { itemSelector: '[data-ui="timeline-item"]', ownerSelector: '[data-ui~="timeline"]' };
 const TRIGGER_QUERY: OwnedItemsQuery = {
   itemSelector: '[data-ui="timeline-trigger"]',
-  ownerSelector: '[data-ui="timeline"]',
+  ownerSelector: '[data-ui~="timeline"]',
 };
 const KEY_TARGETS: Partial<Record<string, (index: number, count: number) => number>> = {
   ArrowDown: (index, count) => Math.min(index + 1, count - 1),
@@ -571,6 +579,7 @@ export function Timeline({
   labels: labelProps,
   slotProps,
   slots,
+  component,
   className,
   sx,
   onKeyDown,
@@ -721,7 +730,7 @@ export function Timeline({
   }, [diagnostics]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    onKeyDown?.(event);
+    (slotProps?.root?.onKeyDown ?? onKeyDown)?.(event);
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const target = KEY_TARGETS[event.key];
     if (!target) return;
@@ -733,7 +742,7 @@ export function Timeline({
   };
 
   const handleFocus = (event: FocusEvent<HTMLDivElement>) => {
-    onFocus?.(event);
+    (slotProps?.root?.onFocus ?? onFocus)?.(event);
     const item = event.target.closest<HTMLElement>(ITEM_QUERY.itemSelector);
     focused.current = item?.closest(ITEM_QUERY.ownerSelector) === event.currentTarget
       ? { element: event.target, id: item.dataset.eventId! }
@@ -742,7 +751,7 @@ export function Timeline({
   };
 
   const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
-    onBlur?.(event);
+    (slotProps?.root?.onBlur ?? onBlur)?.(event);
     if (event.currentTarget.contains(event.relatedTarget)) return;
     const { target } = event;
     // A focused element removed by an update also blurs; keep its record so focus can be repaired.
@@ -760,20 +769,19 @@ export function Timeline({
   const describedBy = [ariaDescribedBy, empty ? emptyId : undefined].filter(Boolean).join(' ') || undefined;
 
   return (
-    <WithSx className={className} styles={[rootStyle, sizeStyles[size]]} sx={sx}>
-      {(rootClassName) => (
-        <div
+        <PresentationSlot
+          element="div"
+          component={slots?.root ?? component}
+          slotProps={{ ...slotProps?.root, role: 'region', 'data-size': size, onKeyDown: handleKeyDown, onFocus: handleFocus, onBlur: handleBlur }}
+          styles={[rootStyle, sizeStyles[size]]}
+          sx={sx}
           {...rest}
           ref={mergedRef}
           role="region"
           {...name}
           aria-describedby={describedBy}
-          data-ui="timeline"
-          data-size={size}
-          onKeyDown={handleKeyDown}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          className={rootClassName}
+          marker="timeline"
+          className={className}
         >
           <Scroller
             {...slotProps?.scroller}
@@ -935,9 +943,7 @@ export function Timeline({
           >
             {announcement.text ? <span key={announcement.key}>{announcement.text}</span> : null}
           </Status>
-        </div>
-      )}
-    </WithSx>
+        </PresentationSlot>
   );
 }
 

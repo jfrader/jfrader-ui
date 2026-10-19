@@ -2,13 +2,16 @@ import { useId, type ComponentPropsWithRef, type ComponentType, type ReactNode }
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { Card, type CardHeadingLevel, type CardPartProps, type CardVariant } from '../card';
 import { Pill, type PillTone } from '../pill';
 
 export interface MetricCardSlotProps {
+  /** Props for the outer div. */
+  root?: Omit<PresentationProps<'div'>, 'children'>;
   /** Card surface element; renders `Card`. */
   surface?: CardPartProps;
   /** Header container wrapping the metric label and delta pill. */
@@ -24,6 +27,8 @@ export interface MetricCardSlotProps {
 }
 
 export interface MetricCardSlots {
+  /** Replaces the outer div; forwards its props, ref and className. */
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Replaces the card surface. */
   surface?: ComponentType<CardPartProps & ComponentPropsWithRef<typeof Card>>;
   /** Replaces the header container. */
@@ -57,6 +62,8 @@ export interface MetricCardProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
   loading?: boolean;
   missingValueLabel?: string;
   slots?: MetricCardSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: MetricCardSlots['root'];
   slotProps?: MetricCardSlotProps;
 }
 
@@ -124,6 +131,7 @@ export function MetricCard({
   loading = false,
   missingValueLabel = 'Unavailable',
   slots,
+  component,
   slotProps,
   className,
   sx,
@@ -165,14 +173,17 @@ export function MetricCard({
       : undefined;
 
   return (
-    <WithSx className={className} styles={rootStyle} sx={sx}>
-      {(className) => (
-        <div
+        <PresentationSlot
+          element="div"
+          component={slots?.root ?? component}
+          slotProps={slotProps?.root}
+          styles={rootStyle}
+          sx={sx}
           {...rest}
           ref={ref}
           role={role}
           className={className}
-          data-ui="metric-card"
+          marker="metric-card"
           aria-busy={loading || busy}
           aria-labelledby={
             [labelledBy, role === 'region' && hasLabel && labelId].filter(Boolean).join(' ') || undefined
@@ -238,9 +249,7 @@ export function MetricCard({
               </Description>
             )}
           </Surface>
-        </div>
-      )}
-    </WithSx>
+        </PresentationSlot>
   );
 }
 

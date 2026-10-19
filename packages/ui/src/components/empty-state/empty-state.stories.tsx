@@ -10,6 +10,51 @@ import { Button } from '../button';
 import { EmptyState, type EmptyStateProps, type EmptyStateVariant } from './index';
 
 const VARIANTS = ['centered', 'inline'] as const satisfies readonly EmptyStateVariant[];
+function ReplacementRoot(props: ComponentPropsWithRef<'section'>) {
+  return <section {...props} data-testid="replacement-root" />;
+}
+
+function SugarRoot(props: ComponentPropsWithRef<'section'>) {
+  return <section {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the outer section while keeping its heading and description. */
+export const RootReplacement: Story = {
+  tags: ['!autodocs'],
+  args: {
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    title: 'No results',
+    description: 'Try another search.',
+    ref: fn(),
+    className: 'consumer-root',
+    'aria-label': 'Search results',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'slot title', 'data-ui': 'custom consumer' } },
+  },
+  render: (args) => <EmptyState {...args} data-ui="consumer" />,
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('SECTION');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('title', 'slot title');
+    await expect(root).toHaveAttribute('data-ui', 'empty-state consumer custom');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(root).toHaveAccessibleName('Search results');
+    await expect(root).toHaveAccessibleDescription('Try another search.');
+    await expect(within(root).getByRole('heading', { name: 'No results' })).toBeInTheDocument();
+  },
+};
+
+/** Use component as shorthand for the root slot. */
+export const RootComponent: Story = {
+  tags: ['!autodocs'],
+  args: { component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'empty-state');
+  },
+};
 
 function SlotIcon(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-slot="empty-state-icon" />;
