@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- `PhotoGrid` keeps the current viewer thumbnail visible when opening or navigating a scrolling filmstrip, including RTL layouts.
+- `PhotoGrid` fits unzoomed viewer images inside the stage instead of clipping images taller than the viewport.
+
 - The new inputs match the field skin: `ColorPicker`'s trigger is no longer a native grey button (surface, border, radius, padding, one focus ring) and its hex reads LTR; `NumberField` keeps one focus ring on the shell and its range text isolates direction in RTL; `PhoneInput` isolates `+44` in RTL and shows a disclosure caret.
 
 - `PhoneInput` keeps its country panel anchored to the field: the panel is capped at 20rem with the list scrolling inside, instead of being clamped to the viewport edge when neither side fits.

@@ -419,7 +419,7 @@ const tileFavoriteStyle = css({
   [REDUCED_MOTION]: { transitionDuration: '0s', '&[aria-pressed="true"]': { animation: 'none' } },
   [FORCED_COLORS]: { borderColor: 'ButtonText', '&[aria-pressed="true"]': { borderColor: 'Highlight' } },
 });
-const imageBoxStyle = css({ inlineSize: '100%', blockSize: '100%', borderRadius: 'inherit' });
+const imageBoxStyle = css({ inlineSize: '100%', blockSize: '100%', minInlineSize: 0, minBlockSize: 0, borderRadius: 'inherit' });
 const viewerStyle = css({
   boxSizing: 'border-box',
   inlineSize: '100%',
@@ -505,7 +505,10 @@ const stageStyle = css({
   touchAction: 'none',
   '&:focus-visible': focusRingInset,
 });
-const viewerThumbStyle = css({ [COMPACT_CHROME]: { inlineSize: vars.space[8], blockSize: vars.space[8] } });
+const viewerThumbStyle = css({
+  scrollMarginInline: vars.space[1],
+  [COMPACT_CHROME]: { inlineSize: vars.space[8], blockSize: vars.space[8] },
+});
 const statusStyle = css({
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
@@ -625,8 +628,10 @@ function PhotoViewer({
   const id = useId();
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const filmstripRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const mergedStageRef = useMergeRefs([stageRef, slots?.stage?.ref]);
+  const mergedFilmstripRef = useMergeRefs([filmstripRef, slots?.filmstrip?.ref]);
   const lifecycle = controller;
   const viewerSlot = omitNativeOpen(slots?.viewer ?? {});
   const { label: favoriteLabel, css: favoriteCss, ...favoriteSlot } = slots?.viewerFavorite ?? {};
@@ -689,6 +694,14 @@ function PhotoViewer({
   useEffect(() => {
     if (dialogRef.current?.open) closeRef.current?.focus({ preventScroll: true });
   }, [open, lifecycle.repairToken]);
+  useEffect(() => {
+    if (!open) return;
+    filmstripRef.current?.querySelector<HTMLElement>('[aria-current="true"]')?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+      behavior: 'instant',
+    });
+  }, [open, selected, lifecycle.repairToken]);
   useEffect(() => {
     if (!open || !photo || dialogRef.current?.ownerDocument.visibilityState === 'hidden') return;
     const ImageConstructor = dialogRef.current?.ownerDocument.defaultView?.Image;
@@ -987,6 +1000,7 @@ function PhotoViewer({
           {photos.length > 1 && (
             <Filmstrip
               {...slots?.filmstrip}
+              ref={mergedFilmstripRef}
               data-ui="photo-grid-filmstrip"
               role="group"
               aria-label={slots?.filmstrip?.['aria-label'] ?? labels.filmstrip}
