@@ -287,7 +287,7 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `overlay-motion` — `@starting-style` entrances and `data-state="closing"` exits shared by native
   dialogs and floating surfaces; see the overlay motion contract in section 6.
 
-Family owners (paths relative to `packages/ui/src/`):
+Family owners (repository paths):
 
 | Family | Owners and dependency direction | Adoption gaps / distinctions |
 | --- | --- | --- |
