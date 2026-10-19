@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **157**; public callable parts: **165**.
-- Families exposing `slots.root`: **92**; remaining without a family-level root slot: **65** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **121**; remaining without family-level interior slots: **36** (includes components without generated anatomy).
+- Public callable families: **158**; public callable parts: **165**.
+- Families exposing `slots.root`: **93**; remaining without a family-level root slot: **65** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **122**; remaining without family-level interior slots: **36** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -80,6 +80,7 @@ may exist and is listed on the corresponding public part).
 | [Checkbox](../packages/ui/src/components/checkbox/checkbox.tsx) | — | `control`, `description`, `label` | `control`, `description`, `label`, `root` | `root` | — | — |
 | [ChipGroup](../packages/ui/src/components/chip-group/chip-group.tsx) | — | `check`, `chip`, `frame`, `label`, `overflow`, `row` | `check`, `chip`, `frame`, `label`, `overflow`, `row` | — | — | — |
 | [CodeBlock](../packages/ui/src/components/code-block/code-block.tsx) | — | `code`, `gutter`, `header`, `label`, `language`, `pre`, `sourceFrame`, `toggle` | `code`, `gutter`, `header`, `label`, `language`, `pre`, `sourceFrame`, `toggle` | — | `copyButtonProps` | — |
+| [ColorPicker](../packages/ui/src/components/color-picker/color-picker.tsx) | yes | `content`, `contrast`, `description`, `error`, `field`, `pad`, `range`, `root`, `swatches`, `trigger` | `content`, `contrast`, `description`, `error`, `field`, `pad`, `range`, `root`, `swatches`, `trigger` | — | — | — |
 | [Combobox](../packages/ui/src/components/combobox/combobox.tsx) | yes | `description`, `empty`, `error`, `input`, `item`, `label`, `list`, `root` | `description`, `empty`, `error`, `input`, `item`, `label`, `list`, `root` | — | — | `Empty`, `Input`, `Item`, `List` |
 | [Combobox.Empty](../packages/ui/src/components/combobox/combobox.tsx) | — | — | — | — | — | — |
 | [Combobox.Input](../packages/ui/src/components/combobox/combobox.tsx) | yes | `control`, `description`, `error`, `label`, `root` | `control`, `description`, `error`, `label`, `root` | — | — | — |

@@ -25,6 +25,7 @@
     "./number-field": { "types": "./src/components/number-field/index.ts", "import": "./src/components/number-field/index.ts" },
     "./money-input": { "types": "./src/components/money-input/index.ts", "import": "./src/components/money-input/index.ts" },
     "./phone-input": { "types": "./src/components/phone-input/index.ts", "import": "./src/components/phone-input/index.ts" },
+    "./color-picker": { "types": "./src/components/color-picker/index.ts", "import": "./src/components/color-picker/index.ts" },
     "./input-group": { "types": "./src/components/input-group/index.ts", "import": "./src/components/input-group/index.ts" },
     "./streaming-caret": { "types": "./src/components/streaming-caret/index.ts", "import": "./src/components/streaming-caret/index.ts" },
     "./prose": { "types": "./src/components/prose/index.ts", "import": "./src/components/prose/index.ts" },
