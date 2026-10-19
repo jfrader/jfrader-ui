@@ -1,3 +1,5 @@
+'use client';
+
 // Semantics: one `role="img"` root per avatar whose accessible name is the person's name, plus
 // the status word when a status is set ("Ada Lovelace, online"). The photo, initials and status
 // badge are presentational children of that root. Status uses shape and color for sighted users
@@ -8,6 +10,7 @@ import { css, keyframes, type Interpolation, type SerializedStyles, type Theme }
 import { WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { getInitials } from '../../utils/initials';
+import { isRenderable } from '../../utils/renderable';
 
 export type AvatarSize = 'sm' | 'md' | 'lg';
 export type AvatarStatus = 'online' | 'away' | 'busy' | 'offline';
@@ -20,7 +23,7 @@ export interface AvatarPartProps {
 export interface AvatarSlots {
   /** Image element displaying the avatar photo. */
   image?: ComponentType<ComponentPropsWithRef<'img'>>;
-  /** Span element displaying initials when no image loads. */
+  /** Span element displaying fallback content when no image loads. */
   fallback?: ComponentType<ComponentPropsWithRef<'span'>>;
   /** Presence indicator dot reflecting online or busy status. */
   status?: ComponentType<ComponentPropsWithRef<'span'>>;
@@ -31,6 +34,8 @@ export interface AvatarProps
     SxProps {
   /** Used for the accessible name and the initials fallback. */
   name: string;
+  /** Shown when src is missing or fails. Noninteractive content only; defaults to initials. */
+  children?: ComponentPropsWithRef<'span'>['children'];
   src?: string;
   size?: AvatarSize;
   status?: AvatarStatus;
@@ -41,11 +46,11 @@ export interface AvatarProps
   slots?: AvatarSlots;
   slotProps?: {
     /** Image element displaying the avatar photo. */
-    image?: AvatarPartProps;
-    /** Span element displaying initials when no image loads. */
-    fallback?: AvatarPartProps;
+    image?: AvatarPartProps & ComponentPropsWithRef<'img'>;
+    /** Span element displaying fallback content when no image loads. */
+    fallback?: AvatarPartProps & ComponentPropsWithRef<'span'>;
     /** Presence indicator dot reflecting online or busy status. */
-    status?: AvatarPartProps;
+    status?: AvatarPartProps & ComponentPropsWithRef<'span'>;
   };
 }
 
@@ -83,6 +88,16 @@ const imageStyle = css({
   blockSize: '100%',
   borderRadius: vars.radius.full,
   objectFit: 'cover',
+});
+
+const fallbackStyle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  inlineSize: '100%',
+  blockSize: '100%',
+  borderRadius: vars.radius.full,
+  overflow: 'hidden',
 });
 
 // The page-colored outline separates each shape from the photo; it is not the state cue.
@@ -169,6 +184,7 @@ const statusPulseStyle = css({
 export function Avatar({
   ref,
   name,
+  children,
   src,
   size = 'md',
   status,
@@ -195,20 +211,38 @@ export function Avatar({
         <span {...rest} ref={ref} data-ui="avatar" role="img" aria-label={label} className={className}>
           {showImage ? (
             <Image
+              {...slotProps?.image}
               src={src}
               alt=""
-              onError={() => setFailedSrc(src)}
+              role={undefined}
+              aria-hidden="true"
+              aria-label={undefined}
+              aria-labelledby={undefined}
+              children={undefined}
+              dangerouslySetInnerHTML={undefined}
+              onError={(event) => {
+                setFailedSrc(src);
+                slotProps?.image?.onError?.(event);
+              }}
               data-ui="avatar-image"
               className={slotProps?.image?.className}
               css={[imageStyle, slotProps?.image?.css]}
             />
           ) : (
-            <Fallback aria-hidden="true" data-ui="avatar-fallback" className={slotProps?.fallback?.className} css={slotProps?.fallback?.css}>
-              {getInitials(name, MAX_INITIALS)}
+            <Fallback {...slotProps?.fallback} role={undefined} aria-label={undefined} aria-labelledby={undefined}
+              dangerouslySetInnerHTML={undefined} aria-hidden="true" data-ui="avatar-fallback"
+              className={slotProps?.fallback?.className} css={[fallbackStyle, slotProps?.fallback?.css]}>
+              {isRenderable(children) ? children : getInitials(name, MAX_INITIALS)}
             </Fallback>
           )}
           {status !== undefined && (
             <Status
+              {...slotProps?.status}
+              role={undefined}
+              aria-label={undefined}
+              aria-labelledby={undefined}
+              children={undefined}
+              dangerouslySetInnerHTML={undefined}
               aria-hidden="true"
               data-ui="avatar-status"
               data-status={status}

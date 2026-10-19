@@ -1,3 +1,5 @@
+'use client';
+
 // Semantics: one `role="group"` root named by `aria-labelledby`, `aria-label`, or fallback `label`.
 // Each visible member is a presentational span wrapping an `Avatar` with `role="img"`.
 // If hidden members exist, an overflow circle is rendered with `role="img"` and accessible name
@@ -5,6 +7,7 @@
 // A visually hidden summary span describes the total member count once for assistive tech.
 // Not interactive; skips tab sequence.
 import { useId, type ComponentPropsWithRef, type ComponentType } from 'react';
+import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
@@ -19,6 +22,7 @@ export interface AvatarGroupMember {
   src?: string;
   status?: AvatarStatus;
   statusLabel?: string;
+  avatarProps?: Pick<AvatarProps, 'children' | 'slots' | 'slotProps' | 'sx' | 'className'>;
 }
 
 export interface AvatarGroupPartProps {
@@ -62,8 +66,50 @@ export interface AvatarGroupProps
     /** Screen-reader element describing the total membership count. */
     summary?: AvatarGroupPartProps;
   };
-  /** Style overrides for each Avatar. Cannot override id/name/status. */
-  avatarProps?: Pick<AvatarProps, 'slotProps' | 'sx' | 'className'>;
+  /** Shared fallback content and customization; member overrides take precedence. */
+  avatarProps?: AvatarGroupMember['avatarProps'];
+}
+
+function mergeAvatarPart<P extends { className?: string; style?: ComponentPropsWithRef<'span'>['style']; css?: Interpolation<Theme> }>(
+  shared: P | undefined, member: P | undefined,
+) {
+  return {
+    ...shared,
+    ...member,
+    className: [shared?.className, member?.className].filter(Boolean).join(' ') || undefined,
+    style: { ...shared?.style, ...member?.style },
+    css: [shared?.css, member?.css],
+  };
+}
+
+function MemberAvatar({ member, shared, size }: {
+  member: AvatarGroupMember;
+  shared: AvatarGroupMember['avatarProps'];
+  size: AvatarSize;
+}) {
+  const own = member.avatarProps;
+  const imageRef = useMergeRefs([shared?.slotProps?.image?.ref, own?.slotProps?.image?.ref]);
+  const fallbackRef = useMergeRefs([shared?.slotProps?.fallback?.ref, own?.slotProps?.fallback?.ref]);
+  const statusRef = useMergeRefs([shared?.slotProps?.status?.ref, own?.slotProps?.status?.ref]);
+  return (
+    <Avatar
+      size={size}
+      name={member.name}
+      src={member.src}
+      status={member.status}
+      statusLabel={member.statusLabel}
+      slots={{ ...shared?.slots, ...own?.slots }}
+      slotProps={{
+        image: { ...mergeAvatarPart(shared?.slotProps?.image, own?.slotProps?.image), ref: imageRef },
+        fallback: { ...mergeAvatarPart(shared?.slotProps?.fallback, own?.slotProps?.fallback), ref: fallbackRef },
+        status: { ...mergeAvatarPart(shared?.slotProps?.status, own?.slotProps?.status), ref: statusRef },
+      }}
+      className={[shared?.className, own?.className].filter(Boolean).join(' ') || undefined}
+      sx={[avatarSeparationStyle, shared?.sx, own?.sx]}
+    >
+      {own?.children !== undefined ? own.children : shared?.children}
+    </Avatar>
+  );
 }
 
 const defaultPluralRules = new Intl.PluralRules('en');
@@ -225,15 +271,10 @@ export function AvatarGroup({
               className={slotProps?.member?.className}
               css={[memberStyle, slotProps?.member?.css]}
             >
-              <Avatar
+              <MemberAvatar
                 size={size}
-                name={member.name}
-                src={member.src}
-                status={member.status}
-                statusLabel={member.statusLabel}
-                slotProps={avatarProps?.slotProps}
-                className={avatarProps?.className}
-                sx={[avatarSeparationStyle, avatarProps?.sx]}
+                member={member}
+                shared={avatarProps}
               />
             </Member>
           ))}
