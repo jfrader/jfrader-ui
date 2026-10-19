@@ -1,0 +1,569 @@
+'use client';
+
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentPropsWithRef,
+  type ReactNode,
+} from 'react';
+import { useMergeRefs } from '@floating-ui/react';
+import { vars } from '@jfrader/tokens/vars';
+import { css } from '../../styling/css';
+import { type SxProps } from '../../styling/sx';
+import { inputControlStyle } from '../../styling/input-control';
+import { focusRingOutset } from '../../styling/focus-ring';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { useControlledState } from '../../utils/use-controlled-state';
+import { useFormReset } from '../../utils/use-form-reset';
+import { isRenderable } from '../../utils/renderable';
+import {
+  FieldRoot,
+  FieldLabel,
+  FieldDescription,
+  FieldError,
+  useFieldAnatomy,
+  type FieldPartProps,
+} from '../field/field-anatomy';
+import { Select } from '../select';
+import { addMinor, assertMinor, currencyChoices, moneyFormat, MONEY_LIMIT } from './money-math';
+
+export interface MoneyInputDetails {
+  currency: string;
+  /** Display amount in major units; store the callback's integer minor units instead. */
+  major: number | null;
+  formatted: string;
+}
+
+export interface MoneyInputMessages {
+  currencyName: (name: string) => string;
+  empty: string;
+  range: (min: string, max: string) => string;
+  min: (min: string) => string;
+  max: (max: string) => string;
+  invalid: string;
+  add: (amount: string) => string;
+  quickAdd: string;
+  changed: (amount: string) => string;
+}
+
+const defaultMessages: MoneyInputMessages = {
+  currencyName: (name) => `Currency: ${name}`,
+  empty: 'Enter an amount.',
+  range: (min, max) => `Amount from ${min} to ${max}.`,
+  min: (min) => `Enter at least ${min}.`,
+  max: (max) => `Enter no more than ${max}.`,
+  invalid: 'Enter a valid amount in this currency and locale.',
+  add: (amount) => `Add ${amount}`,
+  quickAdd: 'Quick add',
+  changed: (amount) => `Amount: ${amount}`,
+};
+
+export type MoneyInputSlotProps = Partial<
+  Record<
+    | 'root'
+    | 'label'
+    | 'shell'
+    | 'control'
+    | 'currency'
+    | 'quickAdd'
+    | 'quickAddButton'
+    | 'range'
+    | 'description'
+    | 'error'
+    | 'status',
+    FieldPartProps
+  >
+>;
+
+export interface MoneyInputProps
+  extends
+    Omit<
+      ComponentPropsWithRef<'input'>,
+      'type' | 'size' | 'value' | 'defaultValue' | 'min' | 'max' | 'step' | 'children'
+    >,
+    SxProps {
+  /** Integer minor units; `null` is controlled empty. */
+  value?: number | null;
+  defaultValue?: number | null;
+  onValueChange?: (value: number | null, details: MoneyInputDetails) => void;
+  currency?: string;
+  defaultCurrency?: string;
+  onCurrencyChange?: (currency: string) => void;
+  currencyOpen?: boolean;
+  defaultCurrencyOpen?: boolean;
+  onCurrencyOpenChange?: (open: boolean) => void;
+  /** Unique ISO currency codes supported by Intl. Changing currency preserves minor units, not major units. */
+  currencies: readonly string[];
+  /** Inclusive integer minor-unit lower bound. @default 0 */
+  min?: number;
+  /** Inclusive integer minor-unit upper bound. @default 999999999999 */
+  max?: number;
+  /** Positive integer minor-unit increment; defaults to one major unit. */
+  step?: number;
+  /** Positive integer minor-unit increments. */
+  quickAdd?: readonly number[];
+  locale?: Intl.LocalesArgument;
+  currencyDisplay?: 'symbol' | 'narrowSymbol' | 'code' | 'name';
+  label?: ReactNode;
+  description?: ReactNode;
+  error?: ReactNode;
+  hideLabel?: boolean;
+  variant?: 'standard' | 'prominent';
+  size?: 'sm' | 'md' | 'lg';
+  messages?: Partial<MoneyInputMessages>;
+  slotProps?: MoneyInputSlotProps;
+}
+
+const rootStyle = css({ minInlineSize: 0, fontFamily: vars.font.sans });
+const shellStyle = css({ display: 'flex', alignItems: 'center', gap: vars.space[2], minInlineSize: 0 });
+const controlStyle = css({
+  minInlineSize: 0,
+  flex: 1,
+  paddingInline: vars.space[3],
+  lineHeight: vars.lineHeight.base,
+  fontVariantNumeric: 'tabular-nums',
+  borderRadius: vars.radius.sm,
+  '&[data-variant="prominent"]': {
+    minBlockSize: `calc(${vars.space[10]} * 2)`,
+    fontSize: vars.textSize['2xl'],
+    borderRadius: vars.radius.md,
+  },
+  '@media (pointer: coarse)': { fontSize: vars.textSize.md },
+  [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText' },
+});
+const sizes = {
+  sm: css({ blockSize: vars.space[8], fontSize: vars.textSize.sm }),
+  md: css({ blockSize: vars.space[10], fontSize: vars.textSize.md }),
+  lg: css({ blockSize: vars.space[12], fontSize: vars.textSize.xl }),
+};
+const currencyStyle = css({
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+  unicodeBidi: 'isolate',
+  flexShrink: 0,
+  minInlineSize: 0,
+  maxInlineSize: '45%',
+});
+const currencyTriggerStyle = { minInlineSize: 0, maxInlineSize: '100%' } as const;
+const currencyValueStyle = {
+  minInlineSize: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const;
+const stepDirections: Readonly<Record<string, number>> = {
+  ArrowUp: 1,
+  ArrowDown: -1,
+  PageUp: 10,
+  PageDown: -10,
+};
+const quickAddStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
+const chipStyle = css({
+  minBlockSize: vars.space[8],
+  paddingInline: vars.space[3],
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  lineHeight: vars.lineHeight.base,
+  color: vars.color.text,
+  backgroundColor: vars.color.surfaceRaised,
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.sm,
+  cursor: 'pointer',
+  transitionProperty: 'background-color',
+  transitionDuration: vars.motion.duration.fast,
+  transitionTimingFunction: vars.motion.easeStandard,
+  '&:hover:not([aria-disabled="true"])': { backgroundColor: vars.color.surfaceHover },
+  '&:focus-visible': focusRingOutset,
+  '&[aria-disabled="true"]': { cursor: 'not-allowed' },
+  [REDUCED_MOTION]: { transitionDuration: '0s' },
+  [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText' },
+});
+const rangeStyle = css({ fontSize: vars.textSize.sm, color: vars.color.textMuted });
+
+export function MoneyInput({
+  ref,
+  value,
+  defaultValue = null,
+  onValueChange,
+  currency,
+  defaultCurrency,
+  onCurrencyChange,
+  currencyOpen,
+  defaultCurrencyOpen = false,
+  onCurrencyOpenChange,
+  currencies,
+  min = 0,
+  max = MONEY_LIMIT,
+  step,
+  quickAdd = [],
+  locale,
+  currencyDisplay = 'symbol',
+  label,
+  description,
+  error,
+  hideLabel = false,
+  variant = 'standard',
+  size = 'md',
+  messages: messageOverrides,
+  slotProps,
+  className,
+  sx,
+  dir,
+  id,
+  name,
+  form,
+  disabled,
+  readOnly,
+  required,
+  onChange,
+  onFocus,
+  onBlur,
+  onKeyDown,
+  onCompositionStart,
+  onCompositionEnd,
+  'aria-describedby': describedBy,
+  'aria-labelledby': labelledBy,
+  'aria-invalid': ariaInvalid,
+  style,
+  title,
+  ...native
+}: MoneyInputProps) {
+  useMemo(() => currencyChoices(currencies), [currencies]);
+  const [code, requestCurrency, resetCurrency] = useControlledState(
+    currency,
+    defaultCurrency ?? currencies[0],
+    onCurrencyChange,
+  );
+  if (!code || !currencies.includes(code))
+    throw new RangeError('MoneyInput: currency must be in currencies.');
+  const money = useMemo(() => moneyFormat(locale, code, currencyDisplay), [locale, code, currencyDisplay]);
+  const messages = { ...defaultMessages, ...messageOverrides };
+  const [amount, requestAmount, resetAmount] = useControlledState<number | null>(
+    value,
+    defaultValue,
+    (next) => {
+      onValueChange?.(next, {
+        currency: code,
+        major: next === null ? null : money.major(next),
+        formatted: next === null ? '' : money.format(next),
+      });
+    },
+  );
+  const current = amount ?? null;
+  const increment = step ?? money.factor;
+  assertMinor(min, 'min');
+  assertMinor(max, 'max');
+  if (min > max) throw new RangeError('MoneyInput: min must not exceed max.');
+  assertMinor(increment, 'step', true);
+  quickAdd.forEach((add) => assertMinor(add, 'quickAdd', true));
+  if (current !== null) assertMinor(current, 'value');
+  if (defaultValue !== null) assertMinor(defaultValue, 'defaultValue');
+  const [edit, setEdit] = useState<{ currency: string; text: string } | null>(null);
+  const draft = edit?.currency === code ? edit.text : null;
+  const [failure, setFailure] = useState<{ currency: string; message: string } | null>(null);
+  const [status, setStatus] = useState('');
+  const input = useRef<HTMLInputElement>(null);
+  const inputRef = useMergeRefs([input, ref]);
+  const composing = useRef(false);
+  const previousCode = useRef(code);
+  useEffect(() => {
+    if (previousCode.current !== code) {
+      previousCode.current = code;
+      setEdit(null);
+      setFailure(null);
+      setStatus(messages.currencyName(names?.of(code) ?? code));
+    }
+  });
+  const selection = useRef<{ start: number | null; end: number | null }>({ start: null, end: null });
+  const rangeId = useId();
+  const labelId = useId();
+  const ownError = failure?.currency === code ? failure.message : undefined;
+  const requiredError = required && current === null && draft === null ? messages.empty : undefined;
+  const rangeError =
+    current !== null && (current < min || current > max) && draft === null
+      ? current < min
+        ? messages.min(money.format(min))
+        : messages.max(money.format(max))
+      : undefined;
+  const validation = ownError ?? requiredError ?? rangeError;
+  const fieldError = isRenderable(error) ? error : validation;
+  const field = useFieldAnatomy({
+    id,
+    description,
+    error: fieldError,
+    'aria-describedby': [describedBy, rangeId].filter(Boolean).join(' '),
+    'aria-invalid': ariaInvalid,
+  });
+  useEffect(() => {
+    input.current?.setCustomValidity(validation ?? (isRenderable(error) ? String(error) : ''));
+  }, [validation, error]);
+  useFormReset(
+    input,
+    () => {
+      resetAmount();
+      resetCurrency();
+      setEdit(null);
+      setFailure(null);
+      setStatus('');
+    },
+    form,
+  );
+  const names = useMemo(
+    () =>
+      typeof Intl.DisplayNames === 'function'
+        ? new Intl.DisplayNames(money.locale, { type: 'currency' })
+        : null,
+    [money.locale],
+  );
+  const fail = (message: string) => setFailure({ currency: code, message });
+  const settle = () => {
+    if (composing.current) return;
+    if (draft !== null) {
+      const parsed = money.parse(draft);
+      if (parsed.kind === 'partial' || parsed.kind === 'invalid') {
+        fail(messages.invalid);
+        return;
+      }
+      if (parsed.kind === 'value' && parsed.value < min) {
+        fail(messages.min(money.format(min)));
+        return;
+      }
+    }
+    setEdit(null);
+    setFailure(null);
+  };
+  const adjust = (delta: number) => {
+    if (disabled || readOnly || composing.current) return;
+    const parsed = draft === null ? null : money.parse(draft);
+    if (parsed?.kind === 'invalid' || parsed?.kind === 'partial') {
+      fail(messages.invalid);
+      return;
+    }
+    const base = parsed?.kind === 'value' ? parsed.value : (current ?? 0);
+    const next = addMinor(base, delta, min, max);
+    requestAmount(next);
+    setEdit(null);
+    setFailure(null);
+    setStatus(
+      next === current
+        ? delta > 0
+          ? messages.max(money.format(max))
+          : messages.min(money.format(min))
+        : messages.changed(money.format(next)),
+    );
+  };
+  return (
+    <FieldRoot
+      data-ui="money-input"
+      dir={dir}
+      className={className}
+      sx={sx}
+      style={style}
+      title={title}
+      part={{ ...slotProps?.root, css: [rootStyle, slotProps?.root?.css] }}
+    >
+      <FieldLabel
+        id={labelId}
+        htmlFor={field.id}
+        required={required}
+        hidden={hideLabel}
+        part={slotProps?.label}
+      >
+        {label}
+      </FieldLabel>
+      <div {...slotProps?.shell} css={[shellStyle, slotProps?.shell?.css]}>
+        <input
+          {...native}
+          {...slotProps?.control}
+          ref={inputRef}
+          id={field.id}
+          form={form}
+          type="text"
+          role="spinbutton"
+          inputMode="decimal"
+          required={required}
+          readOnly={readOnly}
+          disabled={disabled}
+          data-variant={variant}
+          css={[inputControlStyle, controlStyle, sizes[size], slotProps?.control?.css]}
+          value={draft ?? (current === null ? '' : money.format(current))}
+          aria-valuenow={current === null ? undefined : money.major(current)}
+          aria-valuemin={money.major(min)}
+          aria-valuemax={money.major(max)}
+          aria-valuetext={current === null ? messages.empty : money.format(current)}
+          aria-invalid={field.ariaInvalid}
+          aria-describedby={field.describedBy}
+          aria-labelledby={
+            [labelledBy, isRenderable(label) && labelId].filter(Boolean).join(' ') || undefined
+          }
+          onSelect={(event) => {
+            selection.current = {
+              start: event.currentTarget.selectionStart,
+              end: event.currentTarget.selectionEnd,
+            };
+            native.onSelect?.(event);
+          }}
+          onFocus={(event) => {
+            if (!readOnly && !disabled)
+              setEdit({ currency: code, text: current === null ? '' : money.draft(current) });
+            onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            if (!readOnly && !disabled) settle();
+            onBlur?.(event);
+          }}
+          onChange={(event) => {
+            onChange?.(event);
+            if (disabled || readOnly) return;
+            const text = event.currentTarget.value;
+            if (composing.current) {
+              setEdit({ currency: code, text });
+              return;
+            }
+            const parsed = money.parse(text);
+            if (
+              parsed.kind === 'invalid' ||
+              (parsed.kind === 'value' && (parsed.value > max || (parsed.value < 0 && min >= 0)))
+            ) {
+              fail(
+                parsed.kind === 'value' && parsed.value > max
+                  ? messages.max(money.format(max))
+                  : messages.invalid,
+              );
+              event.currentTarget.value = draft ?? (current === null ? '' : money.draft(current));
+              event.currentTarget.setSelectionRange(selection.current.start, selection.current.end);
+              return;
+            }
+            setEdit({ currency: code, text });
+            setFailure(null);
+            if (parsed.kind === 'empty') requestAmount(null);
+            if (parsed.kind === 'value' && parsed.value >= min) requestAmount(parsed.value);
+          }}
+          onCompositionStart={(event) => {
+            composing.current = true;
+            onCompositionStart?.(event);
+          }}
+          onCompositionEnd={(event) => {
+            composing.current = false;
+            const parsed = money.parse(event.currentTarget.value);
+            if (parsed.kind === 'value' && parsed.value >= min && parsed.value <= max) {
+              requestAmount(parsed.value);
+              setFailure(null);
+            } else if (parsed.kind === 'empty') requestAmount(null);
+            else if (parsed.kind !== 'partial') fail(messages.invalid);
+            onCompositionEnd?.(event);
+          }}
+          onKeyDown={(event) => {
+            onKeyDown?.(event);
+            if (
+              event.defaultPrevented ||
+              event.nativeEvent.isComposing ||
+              composing.current ||
+              disabled ||
+              readOnly
+            )
+              return;
+            const direction = stepDirections[event.key];
+            if (direction) {
+              event.preventDefault();
+              adjust(direction * increment * (event.shiftKey && Math.abs(direction) === 1 ? 10 : 1));
+            }
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              settle();
+            }
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              setEdit(null);
+              setFailure(null);
+            }
+          }}
+        />
+        <span {...slotProps?.currency} css={[currencyStyle, slotProps?.currency?.css]}>
+          {currencies.length === 1 ? (
+            code
+          ) : (
+            <Select
+              value={code}
+              onValueChange={(next) => {
+                if (!readOnly && !disabled) requestCurrency(next);
+              }}
+              open={currencyOpen}
+              defaultOpen={defaultCurrencyOpen}
+              onOpenChange={onCurrencyOpenChange}
+              disabled={disabled || readOnly}
+            >
+              <Select.Trigger
+                size={size}
+                sx={currencyTriggerStyle}
+                aria-label={messages.currencyName(names?.of(code) ?? code)}
+              >
+                <Select.Value sx={currencyValueStyle} />
+              </Select.Trigger>
+              <Select.Content>
+                {currencies.map((choice) => (
+                  <Select.Item key={choice} value={choice} textValue={names?.of(choice) ?? choice}>
+                    {names?.of(choice) ?? choice} ({choice})
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select>
+          )}
+        </span>
+      </div>
+      {quickAdd.length > 0 && (
+        <div
+          {...slotProps?.quickAdd}
+          role="group"
+          aria-label={messages.quickAdd}
+          css={[quickAddStyle, slotProps?.quickAdd?.css]}
+        >
+          {quickAdd.map((add, index) => (
+            <button
+              {...slotProps?.quickAddButton}
+              key={`${add}-${index}`}
+              type="button"
+              disabled={disabled}
+              aria-disabled={readOnly || (current !== null && current >= max)}
+              aria-label={messages.add(money.format(add))}
+              aria-controls={field.id}
+              css={[chipStyle, slotProps?.quickAddButton?.css]}
+              onClick={() => {
+                if (disabled || readOnly || composing.current) return;
+                if (current !== null && current >= max) setStatus(messages.max(money.format(max)));
+                else adjust(add);
+              }}
+            >
+              {messages.add(money.format(add))}
+            </button>
+          ))}
+        </div>
+      )}
+      <span {...slotProps?.range} id={rangeId} css={[rangeStyle, slotProps?.range?.css]}>
+        {messages.range(money.format(min), money.format(max))}
+      </span>
+      <FieldDescription id={field.descriptionId} part={slotProps?.description}>
+        {description}
+      </FieldDescription>
+      <FieldError id={field.errorId} part={slotProps?.error}>
+        {fieldError}
+      </FieldError>
+      <span
+        {...slotProps?.status}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        css={[visuallyHiddenStyle, slotProps?.status?.css]}
+      >
+        {status}
+      </span>
+      <input type="hidden" name={name} form={form} disabled={disabled} value={current ?? ''} />
+    </FieldRoot>
+  );
+}
+
+MoneyInput.displayName = 'MoneyInput';

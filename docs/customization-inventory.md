@@ -8,10 +8,10 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **155**; public callable parts: **165**.
-- Families exposing `slots.root`: **92**; remaining without a family-level root slot: **63** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **121**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
-- Rows with styling-only `slotProps` keys: **1**.
+- Public callable families: **156**; public callable parts: **165**.
+- Families exposing `slots.root`: **92**; remaining without a family-level root slot: **64** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **121**; remaining without family-level interior slots: **35** (includes components without generated anatomy).
+- Rows with styling-only `slotProps` keys: **2**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
 behavior-owned. GameTable, GameCard, GameHand, FlipGameCard, GameCardStack and CardFlights are owner-held;
@@ -220,6 +220,7 @@ may exist and is listed on the corresponding public part).
 | [Menu.Separator](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
 | [Menu.Trigger](../packages/ui/src/components/menu/menu.tsx) | — | — | — | — | — | — |
 | [MetricCard](../packages/ui/src/components/metric-card/metric-card.tsx) | — | `delta`, `description`, `header`, `label`, `surface`, `value` | `delta`, `description`, `header`, `label`, `surface`, `value` | — | — | — |
+| [MoneyInput](../packages/ui/src/components/money-input/money-input.tsx) | — | — | `control`, `currency`, `description`, `error`, `label`, `quickAdd`, `quickAddButton`, `range`, `root`, `shell`, `status` | `control`, `currency`, `description`, `error`, `label`, `quickAdd`, `quickAddButton`, `range`, `root`, `shell`, `status` | — | — |
 | [MultiRegionFailover](../packages/ui/src/components/multi-region-failover/multi-region-failover.tsx) | yes | `caption`, `controls`, `next`, `node`, `pause`, `previous`, `replay`, `root`, `scene`, `stageButton`, `summary` | `caption`, `controls`, `next`, `node`, `pause`, `previous`, `replay`, `root`, `scene`, `stageButton`, `summary` | — | — | — |
 | [MultiSelect](../packages/ui/src/components/multi-select/multi-select.tsx) | yes | `clear`, `content`, `description`, `empty`, `error`, `item`, `label`, `root`, `trigger`, `value` | `clear`, `content`, `description`, `empty`, `error`, `item`, `label`, `root`, `trigger`, `value` | — | — | `Clear`, `Content`, `Description`, `Empty`, `Error`, `Item`, `Label`, `Trigger`, `Value` |
 | [MultiSelect.Clear](../packages/ui/src/components/multi-select/multi-select.tsx) | — | — | — | — | — | — |
