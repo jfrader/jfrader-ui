@@ -181,6 +181,26 @@ export const PersistentOpen: Story = {
   args: { defaultOpen: true, background: '#08090A', defaultSwatches: palette },
   tags: ['!autodocs'],
 };
+export const OpenGeometry: Story = {
+  args: { defaultOpen: true, background: '#08090A', defaultSwatches: palette },
+  tags: ['!autodocs'],
+  play: async ({ canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole('dialog');
+    // The panel fits its viewport; it must not fall back to an internal scroll.
+    await expect(dialog.scrollHeight - dialog.clientHeight).toBeLessThanOrEqual(1);
+    const wide = (canvasElement.ownerDocument.defaultView?.innerWidth ?? 0) >= 900;
+    if (wide) await expect(dialog.getBoundingClientRect().width).toBeGreaterThan(420);
+    // The checker wrapper is the swatch box, not a taller inline line box.
+    const trigger = canvasElement.querySelector('[data-ui="color-picker"] button') as HTMLElement;
+    const checker = trigger.querySelector('span[aria-hidden]') as HTMLElement;
+    const swatch = checker.querySelector('span') as HTMLElement;
+    const checkerBox = checker.getBoundingClientRect();
+    const swatchBox = swatch.getBoundingClientRect();
+    await expect(Math.abs(checkerBox.height - swatchBox.height)).toBeLessThan(1);
+    await expect(Math.abs(checkerBox.width - swatchBox.width)).toBeLessThan(1);
+  },
+};
 export const OpenInvalid: Story = {
   args: { value: '', open: true },
   tags: ['!autodocs'],

@@ -119,14 +119,27 @@ export interface MoneyInputProps
 }
 
 const rootStyle = css({ minInlineSize: 0, fontFamily: vars.font.sans });
-const shellStyle = css({ display: 'flex', alignItems: 'center', gap: vars.space[2], minInlineSize: 0 });
+const shellStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space[2],
+  minInlineSize: 0,
+  paddingInline: vars.space[3],
+});
 const controlStyle = css({
   minInlineSize: 0,
   flex: 1,
-  paddingInline: vars.space[3],
+  inlineSize: 0,
+  blockSize: '100%',
+  padding: 0,
+  border: 0,
+  borderRadius: 0,
+  background: 'transparent',
+  color: 'inherit',
+  font: 'inherit',
   lineHeight: vars.lineHeight.base,
   fontVariantNumeric: 'tabular-nums',
-  borderRadius: vars.radius.sm,
+  '&:focus-visible': { outline: 'none' },
   '&[data-variant="prominent"]': {
     minBlockSize: `calc(${vars.space[10]} * 2)`,
     fontSize: vars.textSize['2xl'],
@@ -375,7 +388,7 @@ export function MoneyInput({
       >
         {label}
       </FieldLabel>
-      <div {...slotProps?.shell} css={[shellStyle, slotProps?.shell?.css]}>
+      <div {...slotProps?.shell} data-disabled={disabled ? '' : undefined} data-invalid={field.ariaInvalid === true ? '' : undefined} css={[inputControlStyle, shellStyle, sizes[size], slotProps?.shell?.css]}>
         <input
           {...native}
           {...slotProps?.control}
@@ -389,7 +402,7 @@ export function MoneyInput({
           readOnly={readOnly}
           disabled={disabled}
           data-variant={variant}
-          css={[inputControlStyle, controlStyle, sizes[size], slotProps?.control?.css]}
+          css={[controlStyle, slotProps?.control?.css]}
           value={draft ?? (current === null ? '' : money.format(current))}
           aria-valuenow={current === null ? undefined : money.major(current)}
           aria-valuemin={money.major(min)}
