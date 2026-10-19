@@ -299,7 +299,7 @@ Shared story assertions in `src/testing/` (reuse before writing a local copy):
 
 - PascalCase components, `<Name>Props` types, explicit public exports; helpers stay private.
 - Storybook groups components by the `storySort` order in `apps/storybook/.storybook/preview.tsx` (`Home`,
-  `Foundations`, `Inputs`, `Pickers`, `Data display`, `Data`, `Media`, `Feedback`, `Navigation`,
+  `Foundations`, `Inputs`, `Data display`, `Data`, `Media`, `Feedback`, `Navigation`,
   `Surfaces`, `Layout`, `Actions`, `Games`, `Showcase`). A new section is added there
   and to this list in the same change.
 - Story files for the same component within a section share one `title`, even when integration

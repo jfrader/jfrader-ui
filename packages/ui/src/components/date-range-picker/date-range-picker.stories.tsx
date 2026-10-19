@@ -112,7 +112,7 @@ function LightThemeRoot(props: Omit<ComponentPropsWithRef<typeof ThemeRoot>, 'th
 const LightScope = styled(LightThemeRoot)({ padding: vars.space[4], backgroundColor: vars.color.bg });
 
 const meta: Meta<DateRangePickerProps> = {
-  title: 'Pickers/DateRangePicker',
+  title: 'Inputs/DateRangePicker',
   component: DateRangePicker,
   tags: ['autodocs'],
   args: { locale: LOCALE, today: TODAY, messages: rangeMessages },
