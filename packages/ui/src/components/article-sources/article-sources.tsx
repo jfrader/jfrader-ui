@@ -4,7 +4,7 @@ import { useId, type ComponentPropsWithRef, type ComponentType, type ReactNode }
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import type { SxProps } from '../../styling/sx';
-import { articleLabelStyle, articleLinkStyle } from '../../styling/article';
+import { articleBodyFont, articleLabelStyle, articleLinkStyle } from '../../styling/article';
 import { isRenderable } from '../../utils/renderable';
 import { PresentationSlot, repeatedTemplate, type ArticleHeadingLevel, type PresentationHeadingProps, type PresentationParts, type PresentationSlots, type RenderArticleLink } from '../../utils/presentation-slot';
 
@@ -24,7 +24,7 @@ export type ArticleSourcesProps = Omit<ComponentPropsWithRef<'section'>, 'title'
 );
 
 const rootStyle = css({ minInlineSize: 0, color: vars.color.text, overflowWrap: 'anywhere' });
-const listStyle = css({ listStyle: 'none', margin: 0, marginBlockStart: vars.space[3], padding: 0, display: 'flex', gap: vars.space[3], fontFamily: vars.font.sans, fontSize: vars.textSize.sm, lineHeight: vars.lineHeight.relaxed });
+const listStyle = css({ listStyle: 'none', margin: 0, marginBlockStart: vars.space[3], padding: 0, display: 'flex', gap: vars.space[3], fontFamily: articleBodyFont, fontSize: vars.textSize.sm, lineHeight: vars.lineHeight.relaxed });
 const variants = { inline: css({ flexWrap: 'wrap' }), stacked: css({ flexDirection: 'column', gap: vars.space[2] }) };
 const itemStyle = css({ minInlineSize: 0, maxInlineSize: '100%' });
 

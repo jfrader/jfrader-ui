@@ -1,6 +1,7 @@
 import { createRef, type ComponentPropsWithRef, type MouseEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
 import { ArticleSources } from './index';
 import { expectArticleHydration } from '../../testing/article-assertions';
 import type { PresentationHeadingProps } from '../../utils/presentation-slot';
@@ -61,10 +62,11 @@ function List(props: ComponentPropsWithRef<'ul'>) { return <ul {...props} data-r
 function Item(props: ComponentPropsWithRef<'li'>) { return <li {...props} data-replacement="item" />; }
 function Link(props: ComponentPropsWithRef<'a'>) { return <a {...props} data-replacement="link" />; }
 const rootRef = createRef<HTMLElement>();
-export const ReplacementSlots: Story = { args: { ref: rootRef, slots: { root: Section, heading: Heading, list: List, item: Item, link: Link }, id: 'consumer-sources', className: 'consumer', slotProps: { root: { id: 'slot-sources', 'data-ui': 'custom article-sources', className: 'slot' }, item: { id: 'not-repeated' }, link: { id: 'not-repeated-link' } } }, play: async ({ canvasElement }) => {
+export const ReplacementSlots: Story = { args: { ref: rootRef, slots: { root: Section, heading: Heading, list: List, item: Item, link: Link }, id: 'consumer-sources', className: 'consumer', sx: { '--article-font-body': vars.font.mono }, slotProps: { root: { id: 'slot-sources', 'data-ui': 'custom article-sources', className: 'slot' }, item: { id: 'not-repeated' }, link: { id: 'not-repeated-link' } } }, play: async ({ canvasElement }) => {
   await expect(rootRef.current).toHaveAttribute('id', 'slot-sources'); await expect(rootRef.current).toHaveClass('slot', 'consumer');
   await expect(rootRef.current).toHaveAttribute('data-ui', 'article-sources custom');
   await expect(canvasElement.querySelector('a')?.tagName).toBe('A');
   await expect(canvasElement.querySelector('#not-repeated, #not-repeated-link')).toBeNull();
   await expect(canvasElement.querySelectorAll('[data-replacement]')).toHaveLength(6);
+  await expect(getComputedStyle(canvasElement.querySelector('ul')!).fontFamily).toContain('monospace');
 } };
