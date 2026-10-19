@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **162**; public callable parts: **171**.
-- Families exposing `slots.root`: **97**; remaining without a family-level root slot: **65** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **126**; remaining without family-level interior slots: **36** (includes components without generated anatomy).
+- Public callable families: **163**; public callable parts: **171**.
+- Families exposing `slots.root`: **98**; remaining without a family-level root slot: **65** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **126**; remaining without family-level interior slots: **37** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
