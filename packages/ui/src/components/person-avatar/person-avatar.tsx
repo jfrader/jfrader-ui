@@ -12,7 +12,7 @@ import { PersonArt } from './person-art';
 import { resolvePersonKit, type PersonAvatarAttire, type PersonAvatarKit } from './kit';
 export type { PersonAvatarAttire, PersonAvatarKit, PersonShirtPattern, PersonShortsPattern, PersonSocksPattern } from './kit';
 
-export type PersonAvatarSize = 'sm' | 'md' | 'lg';
+export type PersonAvatarSize = 'sm' | 'md' | 'lg' | 'full';
 export type PersonAvatarCrop = 'none' | 'circle';
 
 export interface PersonAvatarSlots {
@@ -42,7 +42,7 @@ interface PersonAvatarBaseProps extends Omit<ComponentPropsWithRef<'svg'>,
   primary?: string;
   /** Simple shorts and shirt accent color. */
   secondary?: string;
-  /** Square viewport: 32px, 48px or 72px. @default 'md' */
+  /** Square viewport: 32px, 48px, 72px, or the containing frame with full. @default 'md' */
   size?: PersonAvatarSize;
   /** Accessible name. Omit for decorative artwork; an empty string forces decoration. */
   alt?: string;
@@ -70,6 +70,7 @@ const sizeStyles = {
   sm: css({ inlineSize: vars.space[8], blockSize: vars.space[8] }),
   md: css({ inlineSize: vars.space[12], blockSize: vars.space[12] }),
   lg: css({ inlineSize: vars.size.personAvatarLg, blockSize: vars.size.personAvatarLg }),
+  full: css({ inlineSize: '100%', blockSize: '100%' }),
 };
 const cropStyles = {
   none: css({ overflow: 'visible' }),

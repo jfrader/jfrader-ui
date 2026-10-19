@@ -1,14 +1,18 @@
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
-import { useId, useState, type ComponentPropsWithRef } from 'react';
+import { StrictMode, useId, useState, type ComponentPropsWithRef } from 'react';
+import { createRoot } from 'react-dom/client';
+import { flushSync } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { createRefCleanupTracker } from '../../testing/interior-slot-assertions';
 import { Button } from '../button';
 import type { AvatarSize, AvatarStatus } from '../avatar';
 import { AvatarGroup, type AvatarGroupMember } from './index';
+import { PersonAvatar } from '../person-avatar';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly AvatarSize[];
 
@@ -41,6 +45,89 @@ const PHOTO_SRC = `data:image/svg+xml,${encodeURIComponent(
     '<rect width="64" height="64" filter="url(#n)"/></svg>',
 )}`;
 const BROKEN_SRC = 'data:image/png;base64,broken';
+
+function SharedFallback(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replacement="shared" />;
+}
+
+function MemberFallback(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replacement="member" />;
+}
+
+export const ComposedMembers: Story = {
+  render: (args) => <AvatarGroup {...args} max={3} avatarProps={{
+    children: '★', className: 'shared-avatar',
+    slots: { fallback: SharedFallback },
+    slotProps: { fallback: { className: 'shared-fallback', title: 'Shared artwork', css: { fontWeight: vars.fontWeight.bold } } },
+    sx: { outline: `1px solid ${vars.color.border}` },
+  }} members={[
+    { id: 'ada', name: 'Ada Lovelace', avatarProps: {
+      children: <PersonAvatar seed="ada" alt="" size="full" crop="circle" />,
+      className: 'member-avatar', slots: { fallback: MemberFallback },
+      slotProps: { fallback: { className: 'member-fallback', title: 'Ada artwork', css: { opacity: 1 } } },
+      sx: { outlineWidth: '2px' },
+    } },
+    { id: 'grace', name: 'Grace Hopper' },
+    { id: 'margaret', name: 'Margaret Hamilton', avatarProps: { children: null } },
+    { id: 'hidden', name: 'Katherine Johnson' },
+  ]} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByRole('img')).toHaveLength(4);
+    const ada = canvas.getByRole('img', { name: 'Ada Lovelace' });
+    await expect(ada).toHaveClass('shared-avatar', 'member-avatar');
+    const art = ada.querySelector('[data-ui="avatar-fallback"]')!;
+    await expect(art).toHaveClass('shared-fallback', 'member-fallback');
+    await expect(art).toHaveAttribute('data-replacement', 'member');
+    await expect(art).toHaveAttribute('title', 'Ada artwork');
+    await expect(getComputedStyle(art).fontWeight).toBe('700');
+    await expect(getComputedStyle(art).opacity).toBe('1');
+    await expect(getComputedStyle(ada).outlineWidth).toBe('2px');
+    await expectBorderWidth(ada, SEPARATION_BORDER_WIDTH);
+    await expect(canvas.getByRole('img', { name: 'Grace Hopper' })).toHaveTextContent('★');
+    await expect(canvas.getByRole('img', { name: 'Margaret Hamilton' })).toHaveTextContent('MH');
+    await expect(canvas.getByRole('img', { name: '1 more member' })).toHaveTextContent('+1');
+    await expect(ada.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+  },
+};
+
+export const ComposedRefCleanup: Story = {
+  play: async ({ canvasElement }) => {
+    const host = canvasElement.ownerDocument.createElement('div');
+    canvasElement.append(host);
+    const root = createRoot(host);
+    const sharedImage = createRefCleanupTracker<HTMLImageElement>();
+    const ownImage = createRefCleanupTracker<HTMLImageElement>();
+    const sharedFallback = createRefCleanupTracker<HTMLSpanElement>();
+    const ownFallback = createRefCleanupTracker<HTMLSpanElement>();
+    const sharedStatus = createRefCleanupTracker<HTMLSpanElement>();
+    const ownStatus = createRefCleanupTracker<HTMLSpanElement>();
+    const render = (src?: string) => flushSync(() => root.render(<StrictMode><AvatarGroup members={[
+      { id: 'ada', name: 'Ada', src, status: 'online', avatarProps: { slotProps: {
+        image: { ref: ownImage.ref }, fallback: { ref: ownFallback.ref }, status: { ref: ownStatus.ref },
+      } } },
+    ]} avatarProps={{ slotProps: {
+      image: { ref: sharedImage.ref }, fallback: { ref: sharedFallback.ref }, status: { ref: sharedStatus.ref },
+    } }} /></StrictMode>));
+    try {
+      render();
+      await expect(sharedFallback.getNode()).toBe(host.querySelector('[data-ui="avatar-fallback"]'));
+      await expect(ownFallback.getNode()).toBe(sharedFallback.getNode());
+      await expect(sharedStatus.getNode()).toBe(host.querySelector('[data-ui="avatar-status"]'));
+      await expect(ownStatus.getNode()).toBe(sharedStatus.getNode());
+      render(PHOTO_SRC);
+      await expect(sharedFallback.isCleanedUp()).toBe(true);
+      await expect(ownFallback.isCleanedUp()).toBe(true);
+      await expect(sharedImage.getNode()).toBe(host.querySelector('img'));
+      await expect(ownImage.getNode()).toBe(sharedImage.getNode());
+    } finally { flushSync(() => root.unmount()); host.remove(); }
+    for (const tracker of [sharedImage, ownImage, sharedFallback, ownFallback, sharedStatus, ownStatus]) {
+      await expect(tracker.getAttachCount()).toBeGreaterThan(0);
+      await expect(tracker.getCleanupCount()).toBe(tracker.getAttachCount());
+      await expect(tracker.getNode()).toBeNull();
+    }
+  },
+};
 
 // Overflow count wider than every size token: six digits plus grouping separators.
 const HUGE_VISIBLE = 3;

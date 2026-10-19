@@ -24,6 +24,7 @@ import { ARTWORK_FIXTURES, ARTWORK_KIT, PALETTE_FIXTURES, RECIPE_FIXTURES } from
 
 const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
 const CustomAvatar = styled(PersonAvatar)({ outline: `1px solid ${vars.color.border}` });
+const FullSizeFrame = styled.div({ inlineSize: vars.space[10], blockSize: vars.space[10] });
 const slotCss = css({ inlineSize: vars.space[8] });
 const kitSource = `import { PersonAvatar, type PersonAvatarKit } from '@jfrader/ui';
 import { PERSON_ART_COLORS } from '@jfrader/tokens';
@@ -581,6 +582,23 @@ export const Refs: Story = {
     await expect(slotCleaned.mock.calls.length).toBe(slotAttached.mock.calls.length);
     await expect(slotAttached.mock.calls).toEqual(attached.mock.calls);
     await expect(attached.mock.calls.every(([node]) => node instanceof SVGSVGElement)).toBe(true);
+  },
+};
+
+export const FullSize: Story = {
+  render: args => <Row>
+    <FullSizeFrame><PersonAvatar {...args} size="full" alt="Portrait" /></FullSizeFrame>
+    <FullSizeFrame><PersonAvatar {...args} size="full" fullKit crop="none" alt="Full kit" /></FullSizeFrame>
+  </Row>,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const name of ['Portrait', 'Full kit']) {
+      const svg = canvas.getByRole('img', { name });
+      await expect(svg.getBoundingClientRect().width).toBe(40);
+      await expect(svg.getBoundingClientRect().height).toBe(40);
+      await expect(svg).toHaveAttribute('viewBox', name === 'Full kit' ? '0 0 48 61' : '0 0 48 48');
+      await expect(svg).toHaveAttribute('preserveAspectRatio', 'xMidYMid meet');
+    }
   },
 };
 

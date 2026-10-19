@@ -1,9 +1,14 @@
-import type { ComponentPropsWithRef, CSSProperties } from 'react';
+import { StrictMode, createRef, type ComponentPropsWithRef, type CSSProperties } from 'react';
+import { createRoot, hydrateRoot } from 'react-dom/client';
+import { flushSync } from 'react-dom';
+import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Avatar, type AvatarSize, type AvatarStatus } from './index';
+import { PersonAvatar } from '../person-avatar';
+import { Flex } from '../flex';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly AvatarSize[];
 const SIZE_PX = { sm: 24, md: 32, lg: 40 } as const;
@@ -31,7 +36,7 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show a person’s photo or initials, with an optional status.' },
-      usage: '### Presence\nSet `pulse` with `status="online"` for an expanding ring. The default is static; reduced motion and forced colors hide the ring.',
+      usage: '### Fallback content\nPass noninteractive children to show artwork when `src` is missing or fails. Use `alt=""` and `size="full"` on a PersonAvatar child. With no renderable children, Avatar shows initials.\n\n### Presence\nSet `pulse` with `status="online"` for an expanding ring. The default is static; reduced motion and forced colors hide the ring.\n\n### Naming\nAn external `aria-labelledby` takes precedence over the generated name and status label.',
     },
   },
   args: { name: NAME, size: 'md' },
@@ -66,6 +71,155 @@ export const Initials: Story = {
     const avatar = within(canvasElement).getByRole('img', { name: NAME });
     await expect(avatar).toHaveTextContent('AL');
     await expect(avatar.querySelector('img')).toBeNull();
+  },
+};
+
+export const Artwork: Story = {
+  parameters: { docs: { source: { code: `import { Avatar, PersonAvatar } from '@jfrader/ui';
+
+<Avatar name="Ada Lovelace" status="online" pulse>
+  <PersonAvatar seed="member-ada" alt="" size="full" crop="circle" />
+</Avatar>` } } },
+  render: (args) => (
+    <Flex gap="md">
+      {SIZES.map(size => <Avatar {...args} key={size} size={size} status="online" statusLabel="en línea" pulse dir="rtl">
+        <PersonAvatar seed="member-ada" alt="" size="full" crop="circle" />
+      </Avatar>)}
+    </Flex>
+  ),
+  play: async ({ canvasElement }) => {
+    const avatars = within(canvasElement).getAllByRole('img', { name: `${NAME}, en línea` });
+    await expect(avatars).toHaveLength(3);
+    for (const [index, avatar] of avatars.entries()) {
+      const fallback = avatar.querySelector<HTMLElement>('[data-ui="avatar-fallback"]')!;
+      const svg = fallback.querySelector('svg')!;
+      const size = SIZE_PX[SIZES[index]!];
+      for (const element of [avatar, fallback, svg]) {
+        await expect(element.getBoundingClientRect().width).toBe(size);
+        await expect(element.getBoundingClientRect().height).toBe(size);
+      }
+      await expect(svg).toHaveAttribute('viewBox', '0 0 48 48');
+      await expect(svg).toHaveAttribute('preserveAspectRatio', 'xMidYMid meet');
+      await expect(fallback).toHaveAttribute('aria-hidden', 'true');
+      await expect(getComputedStyle(fallback).overflow).toBe('hidden');
+      await expect(getComputedStyle(fallback).borderRadius).toBe(getComputedStyle(avatar).borderRadius);
+      await expect(getComputedStyle(avatar).overflow).toBe('visible');
+      const status = avatar.querySelector<HTMLElement>('[data-status]')!;
+      await expect(status.parentElement).toBe(avatar);
+      await expect(getComputedStyle(status).left).toBe('0px');
+      await expect(avatar.querySelector('button, a, input, [tabindex="0"]')).toBeNull();
+    }
+  },
+};
+
+export const PhotoWithArtworkFallback: Story = {
+  args: { src: PHOTO_SRC, children: <PersonAvatar seed="member-ada" alt="" size="full" crop="circle" /> },
+  play: async ({ canvasElement }) => {
+    const avatar = within(canvasElement).getByRole('img', { name: NAME });
+    await waitFor(() => expect(avatar.querySelector('img')?.naturalWidth).toBeGreaterThan(0));
+    await expect(avatar.querySelector('svg')).toBeNull();
+  },
+};
+
+export const BrokenPhotoWithArtwork: Story = {
+  ...PhotoWithArtworkFallback,
+  args: { ...PhotoWithArtworkFallback.args, src: BROKEN_SRC },
+  play: async ({ canvasElement }) => {
+    const avatar = within(canvasElement).getByRole('img', { name: NAME });
+    await waitFor(() => expect(avatar.querySelector('svg')).not.toBeNull());
+    await expect(avatar.querySelector('img')).toBeNull();
+  },
+};
+
+export const FallbackValues: Story = {
+  render: () => <Flex gap="md">
+    <Avatar name="Zero">{0}</Avatar>
+    <Avatar name="False">{false}</Avatar>
+    <Avatar name="Null">{null}</Avatar>
+    <Avatar name="Empty">{''}</Avatar>
+    <Avatar name="Fragment"><></></Avatar>
+    <Avatar name="Empty source" src="">art</Avatar>
+  </Flex>,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const [name, text] of [['Zero', '0'], ['False', 'F'], ['Null', 'N'], ['Empty', ''], ['Fragment', ''], ['Empty source', 'art']]) {
+      await expect(canvas.getByRole('img', { name })).toHaveTextContent(new RegExp(`^${text}$`));
+    }
+  },
+};
+
+export const ContentLifecycle: Story = {
+  play: async ({ canvasElement }) => {
+    const host = canvasElement.ownerDocument.createElement('div');
+    canvasElement.append(host);
+    const root = createRoot(host);
+    const ref = createRef<HTMLImageElement>();
+    const loaded = fn();
+    const failed = fn((event: { preventDefault(): void }) => event.preventDefault());
+    const attached = fn();
+    const cleaned = fn();
+    const fallbackRef = (node: HTMLSpanElement | null) => { attached(node); return () => cleaned(node); };
+    const render = (src?: string) => flushSync(() => root.render(
+      <StrictMode><Avatar name={NAME} src={src} status="online" statusLabel="en línea"
+        slots={{ fallback: SlotFallback }} slotProps={{
+          image: { ref, onLoad: loaded, onError: failed, title: 'Photo', src: BROKEN_SRC, alt: 'Ignored' },
+          fallback: { ref: fallbackRef, title: 'Artwork', children: 'Ignored', 'aria-hidden': false },
+          status: { title: 'Presence', children: 'Ignored' },
+        }}><PersonAvatar seed="member-ada" size="full" alt="" /></Avatar></StrictMode>,
+    ));
+    try {
+      render();
+      await expect(host.querySelector('svg')).not.toBeNull();
+      await expect(host.querySelector('[title="Artwork"]')).toHaveAttribute('aria-hidden', 'true');
+      await expect(host).not.toHaveTextContent('Ignored');
+      render(PHOTO_SRC);
+      await waitFor(() => expect(loaded).toHaveBeenCalledTimes(1));
+      await expect(ref.current).toBe(host.querySelector('img'));
+      await expect(ref.current).toHaveAttribute('alt', '');
+      await expect(host.querySelector('svg')).toBeNull();
+      render(BROKEN_SRC);
+      await waitFor(() => expect(failed).toHaveBeenCalledTimes(1));
+      await expect(ref.current).toBeNull();
+      await expect(host.querySelector('svg')).not.toBeNull();
+      render(PHOTO_SRC);
+      await waitFor(() => expect(loaded).toHaveBeenCalledTimes(2));
+      render(BROKEN_SRC);
+      await expect(host.querySelector('img')).toBeNull();
+      await expect(failed).toHaveBeenCalledTimes(1);
+      await expect(within(host).getByRole('img')).toHaveAccessibleName(`${NAME}, en línea`);
+    } finally { flushSync(() => root.unmount()); host.remove(); }
+    await expect(cleaned.mock.calls).toEqual(attached.mock.calls);
+  },
+};
+
+export const CompositionHydration: Story = {
+  play: async ({ canvasElement }) => {
+    for (const src of [undefined, PHOTO_SRC]) {
+      const host = canvasElement.ownerDocument.createElement('div');
+      const element = <Avatar name={NAME} src={src}><PersonAvatar seed="member-ada" size="full" alt="" /></Avatar>;
+      host.innerHTML = renderToString(element);
+      await expect(Boolean(host.querySelector('svg'))).toBe(src === undefined);
+      const before = host.querySelector('[data-ui="avatar"]');
+      canvasElement.append(host);
+      const ref = createRef<HTMLSpanElement>();
+      const errors = fn();
+      const root = hydrateRoot(host, <Avatar name={NAME} src={src} ref={ref}><PersonAvatar seed="member-ada" size="full" alt="" /></Avatar>, { onRecoverableError: errors });
+      try {
+        await waitFor(() => expect(ref.current).toBe(before));
+        await expect(errors).not.toHaveBeenCalled();
+      } finally { flushSync(() => root.unmount()); host.remove(); }
+    }
+  },
+};
+
+export const ExternalLabelWithStatus: Story = {
+  render: () => <><span id="avatar-external-label">Profile</span><Avatar name={NAME} status="online" aria-labelledby="avatar-external-label">
+    <PersonAvatar seed="member-ada" size="full" alt="" />
+  </Avatar></>,
+  play: async ({ canvasElement }) => {
+    const avatar = within(canvasElement).getByRole('img', { name: 'Profile' });
+    await expect(avatar).toHaveAttribute('aria-label', `${NAME}, online`);
+    await expect(avatar).toHaveAttribute('aria-labelledby', 'avatar-external-label');
   },
 };
 
