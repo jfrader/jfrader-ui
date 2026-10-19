@@ -65,6 +65,9 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 - `lucide-react` is approved for consumer apps and examples (e.g. `apps/pilot`); `@jfrader/ui` itself must not depend on it.
 - `shiki` is an optional peer (`peerDependenciesMeta.optional`; devDependency for stories). Only `packages/ui/src/components/code-block/shiki.ts`, published as the `./code-block/shiki` subpath, may import it; nothing in the main graph does.
 - `react-hook-form` is approved only as an `apps/storybook` devDependency for app-owned editor fixtures. No runtime or peer dependency, import, or declaration in `@jfrader/ui` may depend on it.
+- `@internationalized/number` and `decimal.js` are approved for locale-aware parsing/formatting and exact minor-unit arithmetic in NumberField and MoneyInput. Never hand-roll a locale number parser.
+- `libphonenumber-js` (the `/max` build) is approved for PhoneInput country metadata, AsYouType formatting and E.164 validation. Never hand-roll country or format datasets.
+- `culori` is approved for ColorPicker color-space conversion and contrast math. Never hand-roll OKLCH/contrast conversions.
 - `next` and `@emotion/cache` are optional peers (`peerDependenciesMeta.optional`; devDependencies for build and stories). Only `packages/ui/src/components/next/`, published as the `./next` subpath, may import them; nothing in the main graph does.
 - Any other dependency requires updating this file first.
 - `typescript-compiler` (an alias of TypeScript 5.9) is development-only for the customization inventory; TypeScript 7 remains the typecheck command.
