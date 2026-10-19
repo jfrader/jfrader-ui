@@ -34,7 +34,7 @@ const meta = {
 GameTable.Seat is the region that places a player around the table. GameSeat is the player’s appearance inside that region; it also works on its own.
 
 ## Content
-Pass name and any avatar, badges, points, chat or hand nodes. The shell does not choose avatar sizes, badge meanings or chat behavior. handCount renders a decorative GameHand.Hidden when hand is absent. Supply a labeled GameHand.Hidden through hand if the count needs an accessible description. null explicitly suppresses the hand shorthand.
+Pass name and any avatar, badges, points, chat or hand nodes. The shell does not choose avatar sizes, badge meanings or chat behavior. handCount renders a decorative GameHand.Hidden when hand is absent. Pass handLabel with the consumer-localized count for assistive tech; supply a labeled GameHand.Hidden through hand only when you need different markup. null explicitly suppresses the hand shorthand.
 
 ## Turn
 deadline and now are epoch milliseconds; durationMs is the full positive turn length. Inject now for server rendering and deterministic synchronization. Without now, the clock is sampled when deadline or durationMs changes. CSS drains the ring with no React ticks. Reduced motion keeps the sampled geometry without movement. A changed now resynchronizes it.
@@ -70,6 +70,19 @@ export const Default: Story = {
     await expect(seat).toHaveAttribute('data-turned', 'true');
     await expect(seat.querySelector('[data-ui="game-seat-points"]')).toHaveTextContent('0');
     await expect(seat.querySelector('[data-ui="game-seat-timer"]')).toHaveAttribute('aria-hidden', 'true');
+  },
+};
+
+/** Hidden hand count exposed to assistive tech without replacing the decorative fan. */
+export const HandCountLabel: Story = {
+  name: 'Accessible hand count',
+  args: { handLabel: '3 hidden cards' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const seat = canvas.getByRole('group', { name: 'Alex' });
+    const label = canvas.getByText('3 hidden cards');
+    await expect(label).toHaveAttribute('data-ui', 'game-seat-hand-label');
+    await expect(seat.contains(label)).toBe(true);
   },
 };
 
