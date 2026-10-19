@@ -437,6 +437,27 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
 
 ## 7. Testing requirements (definition of done, expanded)
 
+### Visual pass (required, not optional)
+
+Automated tests prove behavior, not that a component looks right. Every component change gets a
+visual pass after the first working version, and again after any fix it surfaces:
+
+1. Run the docs page and Storybook. Capture **1440×900, 768×900 and 390×844**.
+2. Open **every story**, including the page's "Other stories" section, and every overlay (popover,
+   dialog, menu, country/date picker). A closed overlay is untested.
+3. Exercise the states a reader will meet: default, hover, focus, disabled, invalid, empty, long
+   content, light/dark, RTL, forced colors and reduced motion.
+4. Check geometry, not just presence: nothing clipped by a card or panel, overlays anchored to their
+   trigger and inside the viewport, no text collisions or overflow, targets ≥24px (32px on the main
+   axis). A panel that opens at the viewport edge instead of under its field is a bug.
+5. Compare with the closest sibling component: reuse `Button`, `Select`, `TextField`, `Dialog`,
+   `Surface` and the field anatomy before inventing a local control.
+6. Fix what the pass surfaces **in the same branch**; do not defer it to a follow-up. Add a geometry
+   or interaction regression that fails on the old behavior.
+7. Attach the screenshots (or a link to them) to the PR. "Tests green" is not visual proof.
+
+A component that only passed the first pass is not done. Plan for at least one polish cycle.
+
 Stories are CSF3 (`satisfies Meta` / `StoryObj`). Storybook's CSF Next factory API
 (`definePreview` → `meta.story`) exists in preview; this repo stays on CSF3 unless a migration is
 explicitly approved.
@@ -599,6 +620,7 @@ disclosure with the keyboard, and check the first example and prop table still a
 - [ ] Stories + play tests per section 7; dimensions/regressions covered.
 - [ ] Performance: module-level styles, stable context values, explicit transition properties.
 - [ ] Docs surfaces updated and reviewed against the writing spec above; `pnpm verify:docs` passes.
+- [ ] Visual pass done at 1440/768/390 with every story and overlay opened; screenshots in the PR; issues fixed in this branch.
 - [ ] Every claimed check actually run; unverified items listed honestly.
 
 ## 9. Maintenance
