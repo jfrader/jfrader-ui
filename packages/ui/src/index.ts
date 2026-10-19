@@ -131,3 +131,4 @@ export { theme, type JfraderTheme } from './styling/theme';
 export * from './components/page-curl';
 export * from './components/date-reel';
 export * from './components/number-field';
+export * from './components/money-input';
