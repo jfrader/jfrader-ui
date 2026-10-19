@@ -44,7 +44,7 @@ export const LocaleHydration: Story = {
 };
 
 const meta = {
-  title: 'Pickers/TimePicker',
+  title: 'Inputs/TimePicker',
   component: TimePicker,
   tags: ['autodocs'],
   args: {

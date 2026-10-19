@@ -57,7 +57,7 @@ const stackStyle = {
 } satisfies CSSProperties;
 
 const meta: Meta<DatePickerProps> = {
-  title: 'Pickers/DatePicker',
+  title: 'Inputs/DatePicker',
   component: DatePicker,
   args: { locale: LOCALE },
   parameters: {

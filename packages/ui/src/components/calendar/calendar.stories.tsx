@@ -12,7 +12,7 @@ const LOCALE = 'en-US';
 const REJECTED_DATE = '2026-10-17';
 
 const meta: Meta<CalendarProps> = {
-  title: 'Pickers/Calendar',
+  title: 'Inputs/Calendar',
   component: Calendar,
   parameters: { docs: {
     description: { component: 'Choose a date or show a range of dates. Move between months to find a day.' },

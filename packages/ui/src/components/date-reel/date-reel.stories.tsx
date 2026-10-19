@@ -12,7 +12,7 @@ const Frame = styled.div({
 });
 
 const meta = {
-  title: 'Pickers/DateReel',
+  title: 'Inputs/DateReel',
   component: DateReel,
   decorators: [
     (Story) => (

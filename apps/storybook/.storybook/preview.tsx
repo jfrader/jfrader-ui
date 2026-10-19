@@ -86,7 +86,6 @@ const preview: Preview = {
           'Foundations',
           ['Getting started', 'Theming', 'Styling', 'Theme', 'Custom accent', 'Next.js', '*'],
           'Inputs',
-          'Pickers',
           'Data display',
           'Data',
           'Media',
