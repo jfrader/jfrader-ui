@@ -17,6 +17,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
+import { inputControlStyle } from '../../styling/input-control';
 import type { SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { isRenderable } from '../../utils/renderable';
@@ -207,8 +208,17 @@ const triggerStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
   gap: vars.space[2],
+  minInlineSize: '10rem',
+  paddingInline: vars.space[3],
+  cursor: 'pointer',
+  textAlign: 'start',
   fontFamily: vars.font.mono,
-  '&:focus-visible': focusRingOutset,
+});
+const triggerValueStyle = css({
+  minInlineSize: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 const padStyle = css({
   position: 'relative',
@@ -787,6 +797,7 @@ export function ColorPicker({
       />
       <TextField
         label={messages.color}
+        dir="ltr"
         value={text}
         ref={inputRef}
         readOnly={readOnly}
@@ -980,7 +991,7 @@ export function ColorPicker({
               .join(' ') || undefined
           }
           aria-invalid={field.ariaInvalid ?? slotProps?.trigger?.['aria-invalid']}
-          css={[triggerStyle, triggerStyles[size], slotProps?.trigger?.css]}
+          css={[inputControlStyle, triggerStyle, triggerStyles[size], slotProps?.trigger?.css]}
           onClick={(event) => {
             slotProps?.trigger?.onClick?.(event);
             if (!event.defaultPrevented && !disabled) requestOpen(true);
@@ -989,7 +1000,7 @@ export function ColorPicker({
           <span css={checkerStyle} aria-hidden>
             <span css={swatchStyle} style={colorStyle(color?.hex)} />
           </span>
-          <span id={`${id}-value`}>{color?.hex ?? messages.empty}</span>
+          <span id={`${id}-value`} css={triggerValueStyle} dir="ltr">{color?.hex ?? messages.empty}</span>
         </Trigger>
       <FieldDescription
         id={field.descriptionId}

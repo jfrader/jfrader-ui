@@ -412,7 +412,9 @@ export const Keyboard: Story = {
     await expect(getComputedStyle(decrease).outlineStyle).not.toBe('none');
     await userEvent.tab();
     await expect(input.ownerDocument.activeElement).toBe(input);
-    await expect(getComputedStyle(input).outlineStyle).not.toBe('none');
+    await expect(
+      getComputedStyle(input.parentElement!).outlineStyle,
+    ).not.toBe('none');
     await userEvent.keyboard('{ArrowUp}{ArrowDown}{Shift>}{ArrowUp}{/Shift}{PageDown}{PageUp}');
     await expect(input).toHaveValue('15');
     await userEvent.keyboard('{Home}');

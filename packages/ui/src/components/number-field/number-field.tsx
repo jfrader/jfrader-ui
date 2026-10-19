@@ -95,7 +95,7 @@ const controlStyle = css({
   flex: '1 1 0', minInlineSize: vars.space[8], inlineSize: 0, minBlockSize: `calc(${vars.space[8]} - 2px)`,
   padding: 0, border: 0, borderRadius: 0, background: 'transparent', color: 'inherit',
   font: 'inherit', lineHeight: vars.lineHeight.base, fontVariantNumeric: 'tabular-nums', textAlign: 'center',
-  '&:focus-visible': focusRingInset,
+  '&:focus-visible': { outline: 'none' },
   '@media (pointer: coarse)': { fontSize: vars.textSize.md },
   [FORCED_COLORS]: { color: 'CanvasText' },
 });
@@ -337,10 +337,10 @@ export function NumberField({
         {isRenderable(suffixNode) && <FieldSlot element="span" component={slots?.suffix} slotProps={slotProps?.suffix} styles={affixStyle} aria-hidden="true">{suffixNode}</FieldSlot>}
         {renderStepper('increment', 1, incrementIcon ?? <StepIcon increment />, incrementLabel ?? messages.increment(labelText))}
       </FieldSlot>
-      <FieldSlot element="span" component={slots?.range} slotProps={slotProps?.range} styles={messageStyle} id={rangeId}>{messages.range(model.format(min), model.format(max))}</FieldSlot>
+      <FieldSlot element="span" component={slots?.range} slotProps={slotProps?.range} styles={messageStyle} id={rangeId} dir="auto">{messages.range(model.format(min), model.format(max))}</FieldSlot>
       <FieldDescription component={slots?.description} part={slotProps?.description} id={field.descriptionId}>{description}</FieldDescription>
       <FieldError component={slots?.error} part={slotProps?.error} id={field.errorId}>{displayedError}</FieldError>
-      <FieldSlot element="span" component={slots?.status} slotProps={slotProps?.status} styles={statusStyle} role="status" aria-live="polite" aria-atomic="true">{status}</FieldSlot>
+      <FieldSlot element="span" component={slots?.status} slotProps={slotProps?.status} styles={statusStyle} role="status" aria-live="polite" aria-atomic="true" dir="auto">{status}</FieldSlot>
       {name !== undefined && <input type="hidden" name={name} form={form} disabled={disabled} value={current === null ? '' : model.serialize(current)} />}
     </FieldSlot>
   );
