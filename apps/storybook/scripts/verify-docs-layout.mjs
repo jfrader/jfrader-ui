@@ -5,6 +5,7 @@ import { chromium } from 'playwright';
 import { preview } from 'vite';
 
 const cases = [
+  { id: 'media-lightboxgallery--docs', primary: '[data-ui="lightbox-gallery"]', containPreview: true },
   { id: 'data-display-commentthread--docs', primary: '[data-ui="comment-thread"]', containPreview: true },
   { id: 'surfaces-bottomsheet--docs', primary: '[data-ui="bottom-sheet-trigger"]' },
   { id: 'media-articlecard--docs', primary: '[data-ui~="article-card"]' },

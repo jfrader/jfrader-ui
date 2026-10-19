@@ -7,6 +7,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { sceneSource } from '../scene';
@@ -110,6 +111,7 @@ const meta = {
     ),
   ],
   parameters: {
+    layout: 'padded',
     docs: {
       source: { code: '<LightboxGallery images={photos} label="Trip photos" minColumnWidth={180} />' },
       description: {
@@ -227,9 +229,12 @@ export const DefaultMixedRatios: Story = {
     await expect(canvas.getByRole('list')).toBeInTheDocument();
     await expect(tiles(canvasElement)).toHaveLength(images.length);
     await waitFor(async () => {
+      const grid = canvas.getByRole('list');
+      const gap = Number.parseFloat(getComputedStyle(grid).columnGap);
+      const columns = Math.max(2, Math.floor((grid.clientWidth + gap) / (150 + gap)));
       await expect(canvasElement.querySelector('[data-ui="lightbox-gallery"]')).toHaveAttribute(
         'data-columns',
-        '4',
+        String(columns),
       );
     });
     for (const [index, tile] of tiles(canvasElement).entries()) {
@@ -249,6 +254,51 @@ export const TitlesCaptions: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true },
   play: settled,
+};
+export const LongContent: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    images: images.map((image) => ({
+      ...image,
+      title: `${image.title} — A walking journal from the coast to the highland trails`,
+      caption: Array(16).fill('We followed the trail along the coast, stopping at each headland to watch the changing light.').join(' '),
+    })),
+    slotProps: { viewer: { css: css({ maxInlineSize: '24rem', blockSize: 'min(100dvh, 40rem)' }) } },
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = viewer(canvasElement);
+    await settleMotion(dialog);
+    for (const child of dialog.firstElementChild!.children) await expectInside(child, dialog);
+    await expectInside(imageLayer(canvasElement), stage(canvasElement));
+    const caption = dialog.querySelector('p')!;
+    await expect(caption.scrollHeight).toBeGreaterThan(caption.clientHeight);
+    await expectNoOverlap(stage(canvasElement), caption);
+    await expect(dialog.scrollHeight).toBeLessThanOrEqual(dialog.clientHeight + 1);
+    caption.focus();
+    await focusVisible(caption);
+  },
+};
+export const FilmstripSelection: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    slotProps: { viewer: { css: css({ maxInlineSize: '24rem' }) } },
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = viewer(canvasElement);
+    await settleMotion(dialog);
+    const strip = within(dialog).getByRole('group', { name: 'Choose image' });
+    for (const direction of ['ltr', 'rtl']) {
+      dialog.dir = direction;
+      stage(canvasElement).focus();
+      await userEvent.keyboard('{End}');
+      await waitFor(() => expectInside(strip.querySelector('[aria-current="true"]')!, strip));
+      await userEvent.keyboard('{Home}');
+      await waitFor(() => expectInside(strip.querySelector('[aria-current="true"]')!, strip));
+    }
+    dialog.removeAttribute('dir');
+  },
 };
 export const PersistentViewer: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.

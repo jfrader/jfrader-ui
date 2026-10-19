@@ -192,7 +192,7 @@ const rootStyle = css({
 });
 const gridStyle = css({
   display: 'grid',
-   gridTemplateColumns: 'repeat(var(--lightbox-columns, 2), minmax(0, 1fr))',
+  gridTemplateColumns: 'repeat(var(--lightbox-columns, 2), minmax(0, 1fr))',
   gridAutoRows: '1px',
   gap: 'var(--lightbox-gap)',
   padding: 0,
@@ -255,7 +255,9 @@ const contentStyle = css({
   display: 'flex',
   flexDirection: 'column',
   gap: vars.space[3],
-  minBlockSize: '100%',
+  blockSize: '100%',
+  minBlockSize: 0,
+  '& > *': { flexShrink: 0 },
   [`& > ${CHROME}`]: { transitionProperty: 'opacity', ...enter, '@starting-style': { opacity: 0 } },
   [`&[data-state="closing"] > ${CHROME}`]: { opacity: 0, ...exit },
   [REDUCED_MOTION]: { [`& > ${CHROME}, &[data-state="closing"] > ${CHROME}`]: { transitionDuration: '0s' } },
@@ -264,7 +266,7 @@ const stageStyle = css({
   position: 'relative',
   display: 'grid',
   placeItems: 'center',
-  flex: '1 0 auto',
+  flex: '1 1 auto',
   blockSize: '50dvh',
   minBlockSize: vars.space[12],
   overflow: 'hidden',
@@ -289,6 +291,9 @@ const captionStyle = css({
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
   overflowWrap: 'anywhere',
+  maxBlockSize: '25%',
+  overflow: 'auto',
+  '&:focus-visible': focusRingOutset,
 });
 const fallbackStyle = css({
   position: 'absolute',
@@ -948,7 +953,7 @@ function Viewer({
           )}
         </Stage>
         {hasCaption && (
-          <Caption {...slotProps?.caption} id={captionId} css={[captionStyle, slotProps?.caption?.css]}>
+          <Caption {...slotProps?.caption} id={captionId} tabIndex={slotProps?.caption?.tabIndex ?? 0} css={[captionStyle, slotProps?.caption?.css]}>
             {image.caption}
           </Caption>
         )}
