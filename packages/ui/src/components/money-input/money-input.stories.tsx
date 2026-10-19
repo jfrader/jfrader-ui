@@ -639,7 +639,10 @@ export const CurrencyKeyboard: Story = {
     const trigger = canvas.getByRole('combobox');
     await userEvent.click(canvas.getByRole('spinbutton'));
     await userEvent.tab();
-    await expect(getComputedStyle(trigger).outlineStyle).not.toBe('none');
+    await expect(trigger.ownerDocument.activeElement).toBe(trigger);
+    await expect(
+      getComputedStyle(canvas.getByRole('spinbutton').parentElement!).outlineStyle,
+    ).not.toBe('none');
     await userEvent.keyboard('j{Enter}');
     await expect(canvas.getByRole('spinbutton')).toHaveValue('¥1,250');
     await expect(trigger.ownerDocument.activeElement).toBe(trigger);
