@@ -55,6 +55,43 @@ const Frame = styled.div({
 });
 // The keyboard focus probe uses sx to disable transitions during measurement.
 const testMotion = css({ '&, & *': { transitionDuration: '0s' } });
+const messagesSource = `import { FileDropzone, type FileDropzoneMessages } from '@jfrader/ui';
+
+const messages: FileDropzoneMessages = {
+  browse: 'Browse files',
+  files: 'Files',
+  remove: name => \`Remove \${name}\`,
+  retry: name => \`Retry \${name}\`,
+  rejection: code => ({
+    type: 'Choose an accepted file type.',
+    size: 'File exceeds the size limit.',
+    count: 'File count limit reached.',
+  })[code],
+  status: status => ({
+    idle: 'Ready', uploading: 'Uploading', uploaded: 'Uploaded', failed: 'Upload failed',
+  })[status],
+  added: count => \`\${new Intl.NumberFormat('en').format(count)} added\`,
+  removed: name => \`\${name} removed\`,
+  count: count => \`\${new Intl.NumberFormat('en').format(count)} selected\`,
+  uploadError: 'Upload failed. Retry the file.',
+};`;
+const emptySource = `${messagesSource}
+
+<FileDropzone label="Add receipts" description="Drop files or browse."
+  note="PDF and image attachments" messages={messages} />`;
+const selectedSource = `${messagesSource}
+
+<FileDropzone label="Add receipts" description="Drop files or browse."
+  note="PDF and image attachments" messages={messages}
+  defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />`;
+const uploadSource = `${messagesSource}
+
+import type { FileDropzoneUpload } from '@jfrader/ui';
+
+export function ReceiptUpload({ upload }: { upload: FileDropzoneUpload }) {
+  return <FileDropzone label="Add receipts" description="Drop files or browse."
+    note="PDF and image attachments" messages={messages} onUpload={upload} />;
+}`;
 const meta = {
   title: 'Inputs/FileDropzone',
   component: FileDropzone,
@@ -81,11 +118,6 @@ const meta = {
           'Choose, drop or paste files, then manage the selection and upload progress.',
       },
       usage: '- The surface labels the native file input; it has no custom dropzone role or second picker button. Clicking the surface opens the picker.\n- Tab reaches the input, with a focus ring on the surface, then row actions. Enter/Space open the picker once. ArrowUp/Down preserve the row action without wrapping; Delete/Backspace remove. Escape passes through.\n- Paste accepts files only while focus is inside, excluding editable controls.\n- Upload requests and image previews start only for committed selections. Existing rows never auto-upload.\n- Submit `value` items, not `input.files`: dropped and accumulated files are absent from native FormData. Required validation checks the committed list. Validate uploads on the server.\n- Sizes use Intl with decimal 1000 scaling.\n- Test the OS picker, screen readers, mobile devices and media settings in browser/manual QA.',
-      source: {
-        code: `<FileDropzone label="Add receipts" accept="image/*,.pdf" maxFiles={3}
-  value={items} onValueChange={setItems} messages={fileMessages}
-  onUpload={(item, { signal, onProgress }) => uploadReceipt(item.file, { signal, onProgress })} />`,
-      },
     },
   },
 } satisfies Meta<typeof FileDropzone>;
@@ -138,6 +170,7 @@ async function dispatchFiles(
 }
 
 export const Default: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: emptySource } } },
   play: async ({ canvasElement, userEvent, args }) => {
     const selected = file();
     await userEvent.upload(inputOf(canvasElement), selected);
@@ -214,6 +247,11 @@ export const RequiredControlledCommit: Story = {
   },
 };
 export const Single: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} multiple={false} accept=".pdf"
+  defaultValue={[{ id: 'old', name: 'old.pdf', size: 3,
+    file: new File(['pdf'], 'old.pdf', { type: 'application/pdf' }) }]} />` } } },
   args: {
     multiple: false,
     defaultValue: [{ id: 'old', name: 'old.pdf', size: 3, file: file('old.pdf') }],
@@ -230,6 +268,7 @@ export const Single: Story = {
   },
 };
 export const Multiple: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: emptySource } } },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.upload(inputOf(canvasElement), [file('one.pdf'), file('two.pdf')]);
     await expect(within(canvasElement).getAllByRole('listitem')).toHaveLength(2);
@@ -237,6 +276,9 @@ export const Multiple: Story = {
   },
 };
 export const AcceptedTypes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} accept="IMAGE/*, .PDF, text/plain" />` } } },
   args: { accept: 'IMAGE/*, .PDF, text/plain' },
   play: async ({ canvasElement, userEvent, args }) => {
     const batch = [
@@ -260,6 +302,9 @@ export const AcceptedTypes: Story = {
   },
 };
 export const SizeLimit: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} maxSize={3} />` } } },
   args: { maxSize: 3 },
   play: async ({ canvasElement, userEvent, args }) => {
     const tooBig = file('large.pdf', 'four');
@@ -276,6 +321,10 @@ export const SizeLimit: Story = {
   },
 };
 export const CountLimit: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} maxFiles={2}
+  defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { maxFiles: 2, defaultValue: existing },
   play: async ({ canvasElement, userEvent, args }) => {
     const overflow = file('third.pdf');
@@ -292,6 +341,10 @@ export const CountLimit: Story = {
   },
 };
 export const CustomValidation: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages}
+  validate={file => file.name.startsWith('private') ? 'Choose a public receipt.' : null} />` } } },
   args: {
     validate: file => (file.name.startsWith('private') ? 'Choose a public receipt.' : null),
   },
@@ -306,6 +359,7 @@ export const CustomValidation: Story = {
   },
 };
 export const Duplicates: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: emptySource } } },
   play: async ({ canvasElement, userEvent, args }) => {
     const same = file();
     await userEvent.upload(inputOf(canvasElement), [same, same]);
@@ -336,6 +390,7 @@ export const DropAndPaste: Story = {
   },
   parameters: {
     docs: {
+      source: { language: 'tsx', code: emptySource },
       description: {
         story:
           'Tests drag/drop and focused paste with DataTransfer events. Test OS dragging and picker dialogs separately in the browser.',
@@ -344,6 +399,9 @@ export const DropAndPaste: Story = {
   },
 };
 export const DragAnnouncement: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} dropLabel="Drop receipts here" />` } } },
   args: { dropLabel: 'Drop receipts here' },
   play: async ({ canvasElement, args }) => {
     const root = rootOf(canvasElement);
@@ -362,6 +420,10 @@ export const DragAnnouncement: Story = {
   },
 };
 export const SingleRemoteCapacity: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} multiple={false} maxFiles={1}
+  defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { multiple: false, maxFiles: 1, defaultValue: existing },
   play: async ({ canvasElement, userEvent, args }) => {
     const selected = file();
@@ -380,22 +442,41 @@ export const SingleRemoteCapacity: Story = {
 };
 
 export const ExistingUploads: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: selectedSource } } },
   args: { defaultValue: existing, onUpload: fn(async () => {}) },
   play: async ({ args }) => {
     await expect(args.onUpload).not.toHaveBeenCalled();
   },
 };
 export const ListInside: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} listPlacement="inside"
+  defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { defaultValue: existing, listPlacement: 'inside' },
 };
-export const ListBelow: Story = { args: { defaultValue: existing } };
+export const ListBelow: Story = {
+  args: { defaultValue: existing },
+  parameters: { docs: { source: { language: 'tsx', code: selectedSource } } },
+};
 export const CompactThreshold: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} compactAt={1}
+  defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { defaultValue: existing, compactAt: 1 },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-compact]')).toHaveAttribute('data-compact', 'true');
   },
 };
 export const Sizes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<>
+  <FileDropzone label="Add receipts" messages={messages} size="sm" />
+  <FileDropzone label="Add receipts" messages={messages} size="md" />
+  <FileDropzone label="Add receipts" messages={messages} size="lg" />
+</>` } } },
   render: args => (
     <>
       {(['sm', 'md', 'lg'] as const).map(size => (
@@ -405,9 +486,18 @@ export const Sizes: Story = {
   ),
 };
 export const ZeroByte: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages}
+  defaultValue={[{ id: 'empty', name: 'empty.txt', size: 0 }]} />` } } },
   args: { defaultValue: [{ id: 'empty', name: 'empty.txt', size: 0 }] },
 };
 export const LongNames: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} locale="de-DE"
+  defaultValue={[{ id: 'long', size: 999999999999,
+    name: 'receipt-from-the-international-conference-and-customer-meeting-in-october.pdf' }]} />` } } },
   args: {
     defaultValue: [
       {
@@ -421,6 +511,17 @@ export const LongNames: Story = {
 };
 export const Narrow: Story = {
   ...LongNames,
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+import { styled } from '@jfrader/ui';
+
+const ReceiptLane = styled.div({ inlineSize: '18rem', maxInlineSize: '100%' });
+
+<ReceiptLane>
+  <FileDropzone label="Add receipts" messages={messages} locale="de-DE"
+    defaultValue={[{ id: 'long', size: 999999999999,
+      name: 'receipt-from-the-international-conference-and-customer-meeting-in-october.pdf' }]} />
+</ReceiptLane>` } } },
   decorators: [
     Story => (
       <NarrowFrame>
@@ -430,12 +531,21 @@ export const Narrow: Story = {
   ],
 };
 export const RTL: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} dir="rtl"
+  defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { dir: 'rtl', defaultValue: existing },
   play: async ({ canvasElement }) => {
     await expect(getComputedStyle(rootOf(canvasElement)).direction).toBe('rtl');
   },
 };
 export const PreviewBroken: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} renderFileIcon={() => <span>▤</span>}
+  defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true,
+    preview: 'data:image/png;base64,invalid' }]} />` } } },
   args: {
     defaultValue: [{ ...existing[0]!, preview: 'data:image/png;base64,invalid' }],
     renderFileIcon: () => <span>▤</span>,
@@ -447,12 +557,14 @@ export const PreviewBroken: Story = {
   },
 };
 export const LightTheme: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: selectedSource } } },
   args: { defaultValue: existing },
   decorators: [withLightTheme],
 };
 
 const neverUpload: FileDropzoneUpload = () => new Promise(() => {});
 export const UploadIndeterminate: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: uploadSource } } },
   args: { onUpload: fn(neverUpload) },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.upload(inputOf(canvasElement), file());
@@ -465,6 +577,7 @@ export const UploadIndeterminate: Story = {
   },
 };
 export const UploadProgress: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: uploadSource } } },
   args: {
     onUpload: fn(async (_item, { onProgress }) => {
       onProgress(45);
@@ -486,6 +599,7 @@ export const UploadProgress: Story = {
   },
 };
 export const UploadSuccess: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: uploadSource } } },
   args: {
     onUpload: fn(async (_item, { onProgress }) => {
       onProgress(200);
@@ -501,6 +615,7 @@ export const UploadSuccess: Story = {
   },
 };
 export const UploadFailed: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: uploadSource } } },
   args: {
     onUpload: fn(async () => {
       throw new Error('<server> rejected the upload');
@@ -527,6 +642,18 @@ function RetryAction(props: ButtonProps) {
   return <Button {...props} data-slot="upload-retry" />;
 }
 export const UploadRetry: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+import { Button, type ButtonProps, type FileDropzoneUpload } from '@jfrader/ui';
+
+function RetryAction(props: ButtonProps) {
+  return <Button {...props} />;
+}
+
+export function ReceiptUpload({ upload }: { upload: FileDropzoneUpload }) {
+  return <FileDropzone label="Add receipts" messages={messages} onUpload={upload}
+    slots={{ retry: RetryAction }} slotProps={{ retry: { className: 'custom-retry' } }} />;
+}` } } },
   args: {
     slots: { retry: RetryAction },
     slotProps: { retry: { ref: fn(), className: 'custom-retry' } },
@@ -561,6 +688,7 @@ export const UploadRetry: Story = {
   },
 };
 export const UploadAbort: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: uploadSource } } },
   args: { onUpload: fn(neverUpload) },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.upload(inputOf(canvasElement), file());
@@ -580,10 +708,23 @@ export const UploadAbort: Story = {
   },
 };
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+import { useState } from 'react';
+import type { FileDropzoneItem } from '@jfrader/ui';
+
+export function Receipts() {
+  const [items, setItems] = useState<FileDropzoneItem[]>([]);
+  return <FileDropzone label="Add receipts" messages={messages}
+    value={items} onValueChange={setItems} />;
+}` } } },
   render: args => <ControlledExample {...args} />,
   play: Default.play,
 };
 export const ControlledRejects: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} value={[]} />` } } },
   args: { value: [], onUpload: fn(neverUpload) },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.upload(inputOf(canvasElement), file('image.png', 'image', 'image/png'));
@@ -594,6 +735,10 @@ export const ControlledRejects: Story = {
   },
 };
 export const ControlledRemoveRejects: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages}
+  value={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { value: existing },
   play: async ({ canvasElement, userEvent, args }) => {
     const remove = within(canvasElement).getByRole('button', {
@@ -608,6 +753,10 @@ export const ControlledRemoveRejects: Story = {
   },
 };
 export const Disabled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} disabled
+  defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { disabled: true, defaultValue: existing },
   play: async ({ canvasElement, args }) => {
     await expect(inputOf(canvasElement)).toBeDisabled();
@@ -616,6 +765,10 @@ export const Disabled: Story = {
   },
 };
 export const ReadOnly: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} readOnly
+  defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { readOnly: true, defaultValue: existing },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Remove invoice.pdf' }));
@@ -626,12 +779,24 @@ export const ReadOnly: Story = {
   },
 };
 export const Required: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} required />` } } },
   args: { required: true },
   play: async ({ canvasElement }) => {
     await expect(inputOf(canvasElement)).toBeRequired();
   },
 };
 export const FormReset: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+import { Button } from '@jfrader/ui';
+
+<form>
+  <FileDropzone label="Add receipts" messages={messages}
+    defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />
+  <Button type="reset">Reset</Button>
+</form>` } } },
   args: { defaultValue: existing },
   render: args => (
     <form>
@@ -647,11 +812,21 @@ export const FormReset: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
-export const PersistentSelected: Story = { args: { defaultValue: existing } };
+export const PersistentSelected: Story = {
+  args: { defaultValue: existing },
+  parameters: { docs: { source: { language: 'tsx', code: selectedSource } } },
+};
 export const PersistentUploading: Story = { ...UploadProgress };
 export const PersistentFailed: Story = { ...UploadFailed };
 export const PersistentRejections: Story = { ...SizeLimit };
 export const Keyboard: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages}
+  defaultValue={[
+    { id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true },
+    { id: 'two', name: 'two.pdf', size: 0 },
+  ]} />` } } },
   args: {
     defaultValue: [...existing, { id: 'two', name: 'two.pdf', size: 0 }],
     sx: testMotion,
@@ -731,6 +906,10 @@ export const SurfaceOpensPicker: Story = {
   },
   parameters: {
     docs: {
+      source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} listPlacement="inside"
+  defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` },
       description: {
         story:
           'Click the surface or blank area around the list to open the picker once. File rows and their actions do not open it. Test the OS picker separately.',
@@ -739,6 +918,17 @@ export const SurfaceOpensPicker: Story = {
   },
 };
 export const ExternalAria: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<>
+  <span id="receipt-name">External</span>
+  <span id="receipt-description">External description</span>
+  <FileDropzone label="Add receipts" messages={messages} error="Fix the receipt"
+    slotProps={{ input: {
+      'aria-label': 'Receipt input', 'aria-labelledby': 'receipt-name',
+      'aria-describedby': 'receipt-description', 'aria-invalid': 'grammar',
+    } }} />
+</>` } } },
   args: {
     error: 'Fix the receipt',
     slotProps: {
@@ -770,6 +960,15 @@ export const ExternalAria: Story = {
   },
 };
 export const FalsyLabels: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<>
+  {[false, null, 0, ''].map((label, index) => (
+    <FileDropzone key={index} messages={messages} label={label} description={label}
+      note={label} error={label} dropLabel={label} renderFileIcon={() => label}
+      defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />
+  ))}
+</>` } } },
   render: args => (
     <>
       {[false, null, 0, ''].map((node, index) => (
@@ -809,6 +1008,7 @@ export const ForcedColors: Story = {
   args: { defaultValue: existing },
   parameters: {
     docs: {
+      source: { language: 'tsx', code: selectedSource },
       description: {
         story:
           'Structural fixture for manual forced-colors QA; the test runner does not emulate this media setting.',
@@ -820,6 +1020,7 @@ export const ReducedMotion: Story = {
   ...UploadIndeterminate,
   parameters: {
     docs: {
+      source: { language: 'tsx', code: uploadSource },
       description: {
         story: 'Structural upload fixture for manual reduced-motion QA; no media emulation is claimed.',
       },
@@ -828,6 +1029,9 @@ export const ReducedMotion: Story = {
 };
 
 export const SingleBatch: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} multiple={false} />` } } },
   args: { multiple: false },
   play: async ({ canvasElement, args }) => {
     const first = file('first.pdf');
@@ -846,6 +1050,11 @@ export const SingleBatch: Story = {
   },
 };
 export const LocalizedRejections: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" locale="es" maxSize={0}
+  messages={{ ...messages, browse: 'Elegir archivos',
+    rejection: () => 'El archivo supera el tamaño permitido.' }} />` } } },
   args: {
     maxSize: 0,
     locale: 'es',
@@ -872,6 +1081,10 @@ export const LocalizedRejections: Story = {
   },
 };
 export const MixedRejectionOrder: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} accept=".pdf" maxSize={3} maxFiles={1}
+  validate={file => file.name === 'private.pdf' ? 'Private receipt' : null} />` } } },
   args: {
     accept: '.pdf',
     maxSize: 3,
@@ -926,6 +1139,19 @@ function RejectRemoval(props: FileDropzoneProps) {
   );
 }
 export const ControlledUploadRemoval: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+import { useState } from 'react';
+import { Button, type FileDropzoneItem, type FileDropzoneUpload } from '@jfrader/ui';
+
+export function Receipts({ upload }: { upload: FileDropzoneUpload }) {
+  const [items, setItems] = useState<FileDropzoneItem[]>([]);
+  return <>
+    <FileDropzone label="Add receipts" messages={messages} value={items} onUpload={upload}
+      onValueChange={next => { if (next.length > items.length) setItems(next); }} />
+    <Button onClick={() => setItems([])}>Clear externally</Button>
+  </>;
+}` } } },
   args: { onUpload: fn(neverUpload) },
   render: args => <RejectRemoval {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
@@ -950,6 +1176,7 @@ export const ControlledUploadRemoval: Story = {
   },
 };
 export const PreviewOwnership: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: emptySource } } },
   play: async ({ canvasElement, userEvent }) => {
     const create = spyOn(URL, 'createObjectURL');
     const revoke = spyOn(URL, 'revokeObjectURL');
@@ -973,6 +1200,9 @@ export const PreviewOwnership: Story = {
   },
 };
 export const RejectedPreviewOwnership: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} value={[]} />` } } },
   args: { value: [], onUpload: fn(neverUpload) },
   play: async ({ canvasElement, userEvent, args }) => {
     const create = spyOn(URL, 'createObjectURL');
@@ -986,6 +1216,11 @@ export const RejectedPreviewOwnership: Story = {
   },
 };
 export const SuppliedPreviewOwnership: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages}
+  defaultValue={[{ id: 'supplied', name: 'supplied.png', size: 1,
+    preview: 'data:image/png;base64,invalid' }]} />` } } },
   args: {
     defaultValue: [
       {
@@ -1011,6 +1246,7 @@ export const SuppliedPreviewOwnership: Story = {
   },
 };
 export const ProgressBounds: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: uploadSource } } },
   args: { onUpload: fn(neverUpload) },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.upload(inputOf(canvasElement), file());
@@ -1030,6 +1266,7 @@ export const ProgressBounds: Story = {
   },
 };
 export const FailureFallback: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: uploadSource } } },
   args: {
     onUpload: fn(async () => {
       throw new Error('');
@@ -1045,6 +1282,19 @@ export const FailureFallback: Story = {
 };
 // This story tests refs and styles forwarded through the slot API.
 export const RefAndSlots: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+import { styled, theme } from '@jfrader/ui';
+
+const ReceiptPicker = styled(FileDropzone)({ padding: theme.space[4] });
+
+<ReceiptPicker label="Add receipts" messages={messages}
+  slotProps={{
+    target: { css: { borderRadius: 0 } },
+    label: { css: { fontWeight: 700 } },
+    action: { css: { borderRadius: 0 } },
+    browse: { css: { borderStyle: 'dotted' } },
+  }} />` } } },
   args: {
     ref: fn(),
     inputRef: fn(),
@@ -1068,12 +1318,25 @@ export const RefAndSlots: Story = {
   },
 };
 export const ExplicitInvalid: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} error={false}
+  slotProps={{ input: { 'aria-invalid': 'grammar' } }} />` } } },
   args: { error: false, slotProps: { input: { 'aria-invalid': 'grammar' } } },
   play: async ({ canvasElement }) => {
     await expect(inputOf(canvasElement)).toHaveAttribute('aria-invalid', 'grammar');
   },
 };
 export const ControlledFormReset: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+import { Button } from '@jfrader/ui';
+
+<form>
+  <FileDropzone label="Add receipts" messages={messages} defaultValue={[]}
+    value={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />
+  <Button type="reset">Reset</Button>
+</form>` } } },
   args: { value: existing, defaultValue: [] },
   render: args => (
     <form>
@@ -1103,6 +1366,7 @@ const deferredUpload: FileDropzoneUpload = (item, context) =>
     deferredUploads.set(item.file, attempts);
   });
 export const LateAttemptEvents: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: uploadSource } } },
   args: { onUpload: fn(deferredUpload) },
   play: async ({ canvasElement, userEvent, args }) => {
     const selected = file();
@@ -1135,6 +1399,7 @@ export const LateAttemptEvents: Story = {
   },
 };
 export const AbortErrorIsQuiet: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: uploadSource } } },
   args: {
     onUpload: fn(async () => {
       throw new DOMException('Canceled', 'AbortError');
@@ -1161,6 +1426,18 @@ function UnmountFixture(props: FileDropzoneProps) {
   );
 }
 export const UnmountCleanup: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+import { useState } from 'react';
+import { Button, type FileDropzoneUpload } from '@jfrader/ui';
+
+export function ReceiptUpload({ upload }: { upload: FileDropzoneUpload }) {
+  const [mounted, setMounted] = useState(true);
+  return <>
+    {mounted && <FileDropzone label="Add receipts" messages={messages} onUpload={upload} />}
+    <Button onClick={() => setMounted(false)}>Unmount</Button>
+  </>;
+}` } } },
   args: { onUpload: fn(deferredUpload) },
   render: args => <UnmountFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
@@ -1192,6 +1469,13 @@ export const UnmountCleanup: Story = {
   },
 };
 export const SingleReplacementCleanup: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+import type { FileDropzoneUpload } from '@jfrader/ui';
+
+export function ReceiptUpload({ upload }: { upload: FileDropzoneUpload }) {
+  return <FileDropzone label="Add receipts" messages={messages} multiple={false} onUpload={upload} />;
+}` } } },
   args: { multiple: false, onUpload: fn(deferredUpload) },
   play: async ({ canvasElement, userEvent, args }) => {
     const firstFile = file('first.pdf');
@@ -1213,6 +1497,10 @@ export const SingleReplacementCleanup: Story = {
   },
 };
 export const PasteExcludesEditing: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages}
+  description={<input aria-label="Attachment comment" />} />` } } },
   args: { description: <input aria-label="Attachment comment" /> },
   play: async ({ canvasElement, userEvent, args }) => {
     const comment = within(canvasElement).getByRole('textbox', { name: 'Attachment comment' });
@@ -1226,6 +1514,9 @@ export const PasteExcludesEditing: Story = {
   },
 };
 export const PasteDisabled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages} paste={false} />` } } },
   args: { paste: false },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.tab();
@@ -1235,6 +1526,11 @@ export const PasteDisabled: Story = {
   },
 };
 export const ConsumerEventVeto: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<FileDropzone label="Add receipts" messages={messages}
+  onDrop={event => event.preventDefault()}
+  slotProps={{ input: { onChange: event => event.preventDefault() } }} />` } } },
   args: {
     onDrop: fn(event => event.preventDefault()),
     slotProps: { input: { onChange: fn(event => event.preventDefault()) } },
@@ -1248,6 +1544,19 @@ export const ConsumerEventVeto: Story = {
   },
 };
 export const ActionAriaPreserved: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+<>
+  <span id="receipt-actions">Remove invoice.pdf Remove two.pdf</span>
+  <span id="receipt-action-help">Action help</span>
+  <FileDropzone label="Add receipts" messages={messages}
+    defaultValue={[
+      { id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true },
+      { id: 'two', name: 'two.pdf', size: 0 },
+    ]}
+    slotProps={{ action: { 'aria-label': 'Attachment action',
+      'aria-labelledby': 'receipt-actions', 'aria-describedby': 'receipt-action-help' } }} />
+</>` } } },
   args: {
     defaultValue: [...existing, { id: 'two', name: 'two.pdf', size: 0 }],
     slotProps: {
@@ -1309,7 +1618,20 @@ export const SlotCustomization: Story = {
   parameters: {
     docs: {
       source: {
-        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<FileDropzone label=\"Name\" messages={messages}\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { css: { borderRadius: '8px' } }, label: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
+        language: 'tsx',
+        code: `${messagesSource}
+
+import type { ComponentPropsWithRef } from 'react';
+import { styled } from '@jfrader/ui';
+
+function ReceiptRoot(props: ComponentPropsWithRef<'div'>) { return <div {...props} />; }
+function ReceiptLabel(props: ComponentPropsWithRef<'label'>) { return <label {...props} />; }
+const ReceiptPicker = styled(FileDropzone)({ borderRadius: '9px' });
+
+<ReceiptPicker label="Add receipts" messages={messages} className="consumer-root" title="consumer title"
+  component={ReceiptRoot} slots={{ root: ReceiptRoot, label: ReceiptLabel }}
+  slotProps={{ root: { className: 'slot-root', title: 'slot title', css: { borderRadius: '8px' } },
+    label: { title: 'generated part' } }} sx={{ borderRadius: '11px' }} />`,
       },
     },
   },
@@ -1330,6 +1652,13 @@ export const SlotCustomization: Story = {
 
 /** Use component as shorthand for the wrapper's root slot. */
 export const ComponentRoot: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+import type { ComponentPropsWithRef } from 'react';
+
+function ReceiptRoot(props: ComponentPropsWithRef<'div'>) { return <div {...props} />; }
+
+<FileDropzone label="Add receipts" messages={messages} component={ReceiptRoot} />` } } },
   args: { component: FieldSugarRoot },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();
@@ -1353,6 +1682,14 @@ function UploadMeter(props: ProgressProps) {
 
 /** Disabled upload controls keep their state when root props conflict. */
 export const SlotDisabledState: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+
+import type { ComponentPropsWithRef } from 'react';
+
+function ReceiptRoot(props: ComponentPropsWithRef<'div'>) { return <div {...props} />; }
+
+<FileDropzone label="Add receipts" messages={messages} disabled
+  slots={{ root: ReceiptRoot }} slotProps={{ root: { 'aria-disabled': false } }} />` } } },
   args: { disabled: true, slots: { root: FieldReplacementRoot }, slotProps: { root: { 'aria-disabled': false } } },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-slot-root]')).toHaveAttribute('aria-disabled', 'true');
@@ -1365,7 +1702,19 @@ export const UploadPartSlots: Story = {
   parameters: {
     docs: {
       source: {
-        code: '<FileDropzone label="Add receipts" messages={messages} onUpload={uploadReceipt} slots={{ action: UploadAction, progress: UploadMeter }} slotProps={{ action: { variant: "ghost" } }} />',
+        language: 'tsx',
+        code: `${messagesSource}
+
+import { Button, Progress, type ButtonProps, type ProgressProps, type FileDropzoneUpload } from '@jfrader/ui';
+
+function UploadAction(props: ButtonProps) { return <Button {...props} />; }
+function UploadMeter(props: ProgressProps) { return <Progress {...props} />; }
+
+export function ReceiptUpload({ upload }: { upload: FileDropzoneUpload }) {
+  return <FileDropzone label="Add receipts" messages={messages} onUpload={upload}
+    slots={{ action: UploadAction, progress: UploadMeter }}
+    slotProps={{ action: { variant: 'ghost' } }} />;
+}`,
       },
     },
   },

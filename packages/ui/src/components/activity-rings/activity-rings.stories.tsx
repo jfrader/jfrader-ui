@@ -20,6 +20,17 @@ function SlotMetric(props: ComponentPropsWithRef<'button'>) {
 }
 
 export const MetricReplacement: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { ActivityRings } from '@jfrader/ui';
+
+function MetricButton(props: ComponentPropsWithRef<'button'>) { return <button {...props} />; }
+
+<ActivityRings locale="en-GB" interactiveLegend slots={{ metric: MetricButton }}
+  metrics={[
+    { id: 'distance', label: 'Distance', goal: 6, unit: 'kilometer', tone: 'accent' },
+    { id: 'exercise', label: 'Exercise', goal: 30, unit: 'minute', tone: 'success' },
+    { id: 'stand', label: 'Stand', goal: 12, unit: 'hour', tone: 'info' },
+  ]} values={{ distance: 4.5, exercise: 34, stand: 9 }} />` } } },
   render: (args) => <Rings {...args} interactiveLegend slots={{ metric: SlotMetric }} />,
   play: async ({ canvasElement, userEvent }) => {
     const metric = canvasElement.querySelector('[data-slot="activity-rings-metric"]');
@@ -62,6 +73,48 @@ const week: ActivityDay[] = [
   { id: 'day-2026-10-11', date: '2026-10-11', values: today },
 ];
 const lastDay = week.at(-1)!.id;
+const metricsSource = `import { ActivityRings, type ActivityMetric } from '@jfrader/ui';
+
+const metrics: ActivityMetric[] = [
+  { id: 'distance', label: 'Distance', goal: 6, unit: 'kilometer', tone: 'accent' },
+  { id: 'exercise', label: 'Exercise', goal: 30, unit: 'minute', tone: 'success' },
+  { id: 'stand', label: 'Stand', goal: 12, unit: 'hour', tone: 'info' },
+];`;
+const weekSource = `${metricsSource}
+
+import type { ActivityDay } from '@jfrader/ui';
+
+const days: ActivityDay[] = [
+  { id: 'mon', date: '2026-10-05', values: { distance: 6.1, exercise: 41, stand: 12 } },
+  { id: 'tue', date: '2026-10-06', values: { distance: 3.2, exercise: 12, stand: 8 } },
+  { id: 'wed', date: '2026-10-07', values: { distance: 5.4, exercise: 30, stand: 11 } },
+  { id: 'thu', date: '2026-10-08', values: { distance: 7, exercise: 52, stand: 13 } },
+  { id: 'fri', date: '2026-10-09', values: { distance: 0, exercise: 0, stand: 0 } },
+  { id: 'sat', date: '2026-10-10', values: { distance: null, exercise: null, stand: null } },
+  { id: 'sun', date: '2026-10-11', values: { distance: 4.5, exercise: 34, stand: 9 } },
+];`;
+const sizesSource = `${metricsSource}
+
+<>
+  <ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB" size="sm" aria-label="sm rings" />
+  <ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB" size="md" aria-label="md rings" />
+  <ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB" size="lg" aria-label="lg rings" />
+</>`;
+const longUnitsDataSource = `import { ActivityRings, type ActivityMetric } from '@jfrader/ui';
+
+const metrics: ActivityMetric[] = [
+  { id: 'distance', label: 'Zurückgelegte Strecke im Wochenvergleich', goal: 123456.7, unit: 'kilometer' },
+  { id: 'speed', label: 'Durchschnittsgeschwindigkeit', goal: 98765.4, unit: 'kilometer-per-hour' },
+  { id: 'volume', label: 'Wasseraufnahme', goal: 3, unit: 'liter' },
+];
+const values = { distance: 98765432.1, speed: 12345.6, volume: 2.25 };`;
+const defaultSource = `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB" />`;
+const neutralSource = `${metricsSource}
+
+<ActivityRings metrics={metrics.map(({ tone, ...metric }) => metric)}
+  values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB" />`;
 /** Text matchers collapse whitespace on the received side only; Intl output uses no-break spaces. */
 const collapse = (text: string) => text.replace(/\s+/g, ' ');
 const fullDate = (iso: string, locale = 'en-GB') =>
@@ -192,12 +245,6 @@ const meta = {
 ### Keyboard
 - The day picker has one Tab stop. Arrow keys move between days; Home/End choose the first/last day.
 - With the legend toggle buttons enabled, Enter/Space isolate one ring.`,
-      source: {
-        code: [
-          '<ActivityRings metrics={goals} days={week} locale="en-GB"',
-          '  value={dayId} onValueChange={setDayId} interactiveLegend />',
-        ].join('\n'),
-      },
     },
   },
 } satisfies Meta<RingsArgs>;
@@ -205,6 +252,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: defaultSource } } },
   play: async ({ canvasElement, args }) => {
     await expectLegendAlignment(canvasElement);
     await expectTickContrast(canvasElement);
@@ -239,6 +287,7 @@ export const Default: Story = {
 };
 
 export const Neutral: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: neutralSource } } },
   args: { metrics: goals.map(({ tone, ...metric }) => metric) },
   play: async ({ canvasElement }) => expectTickContrast(canvasElement),
 };
@@ -246,11 +295,15 @@ export const Neutral: Story = {
 export const NeutralLight: Story = { ...Neutral, decorators: [withLightTheme] };
 
 export const ColourLight: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: defaultSource } } },
   decorators: [withLightTheme],
   play: async ({ canvasElement }) => expectTickContrast(canvasElement),
 };
 
 export const ColouredStates: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: 6, exercise: 67.5, stand: null }} locale="en-GB" />` } } },
   args: { values: { distance: 6, exercise: 67.5, stand: null } },
   play: async ({ canvasElement }) => {
     await expectTickContrast(canvasElement);
@@ -272,6 +325,9 @@ export const ColouredStatesLight: Story = {
 };
 
 export const WeekSelector: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+<ActivityRings metrics={metrics} days={days} locale="en-GB" />` } } },
   args: { values: undefined, days: week },
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -297,6 +353,9 @@ export const WeekSelector: Story = {
 };
 
 export const InteractiveLegend: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB" interactiveLegend />` } } },
   args: { interactiveLegend: true },
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -320,6 +379,10 @@ export const InteractiveLegend: Story = {
 
 /** Persistent isolated state for the axe gate. */
 export const Isolated: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }}
+  locale="en-GB" interactiveLegend defaultFocusedMetric="stand" />` } } },
   args: { interactiveLegend: true, defaultFocusedMetric: 'stand' },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('button', { name: /Stand/ })).toHaveAttribute(
@@ -331,6 +394,10 @@ export const Isolated: Story = {
 
 /** Hover previews another metric without replacing a controlled pin. */
 export const MetricPreview: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }}
+  locale="en-GB" interactiveLegend focusedMetric="stand" />` } } },
   args: { interactiveLegend: true, focusedMetric: 'stand' },
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -350,6 +417,18 @@ export const MetricPreview: Story = {
 };
 
 export const CancelledPreview: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+import type { SyntheticEvent } from 'react';
+
+const preventPreview = (event: SyntheticEvent) => event.preventDefault();
+
+<ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }}
+  locale="en-GB" interactiveLegend slotProps={{ metric: {
+    onMouseEnter: preventPreview,
+    onFocus: preventPreview,
+    onClick: preventPreview,
+  } }} />` } } },
   args: {
     interactiveLegend: true,
     slotProps: {
@@ -372,6 +451,7 @@ export const CancelledPreview: Story = {
 };
 
 export const Sizes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: sizesSource } } },
   render: (args) => (
     <>
       {(['sm', 'md', 'lg'] as const).map((size) => (
@@ -389,8 +469,21 @@ export const Sizes: Story = {
   },
 };
 
-export const OneMetric: Story = { args: { metrics: goals.slice(0, 1) } };
+export const OneMetric: Story = {
+  args: { metrics: goals.slice(0, 1) },
+  parameters: { docs: { source: { language: 'tsx', code: `import { ActivityRings } from '@jfrader/ui';
+
+<ActivityRings locale="en-GB" values={{ distance: 4.5 }}
+  metrics={[{ id: 'distance', label: 'Distance', goal: 6, unit: 'kilometer', tone: 'accent' }]} />` } } },
+};
 export const FiveMetrics: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings locale="en-GB" metrics={[
+  ...metrics,
+  { id: 'steps', label: 'Steps', goal: 8000, tone: 'warning' },
+  { id: 'water', label: 'Water', goal: 2, unit: 'liter', tone: 'info' },
+]} values={{ distance: 4.5, exercise: 34, stand: 9, steps: 9100, water: 1.4 }} />` } } },
   args: {
     metrics: [
       ...goals,
@@ -406,6 +499,14 @@ const manyMetrics: ActivityMetric[] = Array.from({ length: 12 }, (_, index) => (
   goal: 10,
 }));
 export const ManyMetrics: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ActivityRings, type ActivityMetric } from '@jfrader/ui';
+
+const metrics: ActivityMetric[] = Array.from({ length: 12 }, (_, index) => ({
+  id: \`metric-\${index}\`, label: \`Goal \${index + 1}\`, goal: 10,
+}));
+const values = Object.fromEntries(metrics.map((metric, index) => [metric.id, index * 2]));
+
+<ActivityRings metrics={metrics} values={values} locale="en-GB" />` } } },
   args: {
     metrics: manyMetrics,
     values: Object.fromEntries(manyMetrics.map((metric, index) => [metric.id, index * 2])),
@@ -433,6 +534,15 @@ const boundaryMetrics: ActivityMetric[] = [0, 1, 1.5, 2, 3.2].map((ratio) => ({
   goal: 100,
 }));
 export const CompletionBoundaries: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ActivityRings, type ActivityMetric } from '@jfrader/ui';
+
+const ratios = [0, 1, 1.5, 2, 3.2];
+const metrics: ActivityMetric[] = ratios.map(ratio => ({
+  id: \`ratio-\${ratio}\`, label: \`Ratio \${ratio}\`, goal: 100,
+}));
+const values = Object.fromEntries(ratios.map(ratio => [\`ratio-\${ratio}\`, ratio * 100]));
+
+<ActivityRings metrics={metrics} values={values} locale="en-GB" />` } } },
   args: {
     metrics: boundaryMetrics,
     values: Object.fromEntries([0, 1, 1.5, 2, 3.2].map((ratio) => [`ratio-${ratio}`, ratio * 100])),
@@ -455,9 +565,22 @@ export const CompletionBoundaries: Story = {
   },
 };
 
-export const OverGoal: Story = { args: { values: { distance: 9, exercise: 52, stand: 13 } } };
-export const BelowGoals: Story = { args: { values: { ...today, exercise: 24 } } };
+export const OverGoal: Story = {
+  args: { values: { distance: 9, exercise: 52, stand: 13 } },
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: 9, exercise: 52, stand: 13 }} locale="en-GB" />` } } },
+};
+export const BelowGoals: Story = {
+  args: { values: { ...today, exercise: 24 } },
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 24, stand: 9 }} locale="en-GB" />` } } },
+};
 export const BeyondDoubleGoal: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 67.5, stand: 9 }} locale="en-GB" interactiveLegend />` } } },
   args: { values: { ...today, exercise: 67.5 }, interactiveLegend: true },
   play: async ({ canvasElement }) => {
     const exercise = within(canvasElement).getByRole('button', { name: /^Exercise/ });
@@ -472,6 +595,9 @@ export const BeyondDoubleGoal: Story = {
   },
 };
 export const SurplusWithMissingMetric: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: null, exercise: 67.5, stand: 9 }} locale="en-GB" />` } } },
   args: { values: { distance: null, exercise: 67.5, stand: 9 } },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-ui="activity-rings-center"]')).toHaveTextContent('—');
@@ -511,6 +637,25 @@ function SurplusStatesFixture(args: RingsArgs) {
 }
 /** Rounded percentages do not decide completion; surplus text remains uncapped. */
 export const SurplusStates: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { ActivityRings, Button } from '@jfrader/ui';
+
+export function ExerciseGoal() {
+  const [ratio, setRatio] = useState(0);
+  return <>
+    {[0, 0.999, 1, 1.001, 1.13, 1.99, 2, 3.5].map(next => (
+      <Button key={next} onClick={() => setRatio(next)}>
+        {new Intl.NumberFormat('en-GB', { style: 'percent', maximumFractionDigits: 1 }).format(next)}
+      </Button>
+    ))}
+    <ActivityRings locale="en-GB" interactiveLegend values={{ exercise: ratio * 30 }}
+      metrics={[{ id: 'exercise', label: 'Exercise', goal: 30, unit: 'minute', tone: 'success',
+        formatValue: (value, locale) => new Intl.NumberFormat(locale, {
+          style: 'unit', unit: 'minute', unitDisplay: 'short', maximumFractionDigits: 2,
+        }).format(value),
+      }]} />
+  </>;
+}` } } },
   render: (args) => <SurplusStatesFixture {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -543,6 +688,10 @@ export const SurplusStates: Story = {
 };
 
 export const SurplusLabel: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }}
+  locale="en-GB" interactiveLegend labels={{ overGoal: amount => \`\${amount} above target\` }} />` } } },
   args: { interactiveLegend: true, labels: { overGoal: (amount) => `${amount} above target` } },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('button', { name: /^Exercise/ })).toHaveAccessibleName(
@@ -556,6 +705,9 @@ export const SurplusLabel: Story = {
   },
 };
 export const ZeroDay: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+<ActivityRings metrics={metrics} days={days} defaultValue="fri" locale="en-GB" />` } } },
   args: { days: week, values: undefined, defaultValue: week[4]!.id },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-ui="activity-rings-center"]')).toHaveTextContent('0%');
@@ -565,6 +717,10 @@ export const ZeroDay: Story = {
   },
 };
 export const UnknownAndInvalid: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={[metrics[0]!, metrics[1]!, { ...metrics[2]!, goal: 0 }]}
+  values={{ distance: null, exercise: null, stand: 9 }} locale="en-GB" />` } } },
   args: {
     metrics: [goals[0]!, goals[1]!, { ...goals[2]!, goal: 0 }],
     values: { distance: null, exercise: null, stand: 9 },
@@ -581,6 +737,19 @@ export const UnknownAndInvalid: Story = {
 };
 
 export const ValueBoundaries: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ActivityRings } from '@jfrader/ui';
+
+<ActivityRings locale="en-GB" metrics={[
+  { id: 'missing', label: 'Missing', goal: 10 },
+  { id: 'null', label: 'Null', goal: 10 },
+  { id: 'nan', label: 'Not a number', goal: 10 },
+  { id: 'infinite', label: 'Infinite', goal: 10 },
+  { id: 'zero', label: 'Zero', goal: 10 },
+  { id: 'negative', label: 'Negative', goal: 10 },
+  { id: 'zero-goal', label: 'Zero goal', goal: 0 },
+  { id: 'bad-goal', label: 'Bad goal', goal: Number.NaN },
+]} values={{ null: null, nan: Number.NaN, infinite: Infinity, zero: 0, negative: -4,
+  'zero-goal': 5, 'bad-goal': 5 }} />` } } },
   args: {
     metrics: [
       { id: 'missing', label: 'Missing', goal: 10 },
@@ -634,6 +803,9 @@ export const ValueBoundaries: Story = {
 };
 
 export const EmptyMetrics: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ActivityRings } from '@jfrader/ui';
+
+<ActivityRings metrics={[]} locale="en-GB" />` } } },
   args: { metrics: [] },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole('list')).toBeNull();
@@ -644,6 +816,9 @@ export const EmptyMetrics: Story = {
   },
 };
 export const EmptyDays: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} days={[]} locale="en-GB" />` } } },
   args: { values: undefined, days: [] },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole('radio')).toBeNull();
@@ -651,6 +826,9 @@ export const EmptyDays: Story = {
   },
 };
 export const MissingSelectedDay: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+<ActivityRings metrics={metrics} days={days} value="day-1999-01-01" locale="en-GB" />` } } },
   args: { values: undefined, days: week, value: 'day-1999-01-01' },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
@@ -663,6 +841,9 @@ export const MissingSelectedDay: Story = {
   },
 };
 export const EmptyStringDay: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+<ActivityRings metrics={metrics} days={days} defaultValue="" locale="en-GB" />` } } },
   args: { values: undefined, days: week, defaultValue: '' },
   play: async ({ canvasElement, userEvent, args }) => {
     const radios = within(canvasElement).getAllByRole('radio');
@@ -674,6 +855,11 @@ export const EmptyStringDay: Story = {
   },
 };
 export const InvalidDayDate: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} locale="en-GB" days={[
+  { id: 'not-a-date', date: '2026-02-30', values: { distance: 4.5, exercise: 34, stand: 9 } },
+]} />` } } },
   args: { values: undefined, days: [{ id: 'not-a-date', date: '2026-02-30', values: today }] },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('radio')).toHaveAccessibleName('not-a-date');
@@ -681,6 +867,15 @@ export const InvalidDayDate: Story = {
 };
 
 export const KeyboardWeek: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+import { Button } from '@jfrader/ui';
+
+<>
+  <Button>Before</Button>
+  <ActivityRings metrics={metrics} days={days} locale="en-GB" interactiveLegend />
+  <Button>After</Button>
+</>` } } },
   args: { values: undefined, days: week, interactiveLegend: true },
   render: (args) => (
     <>
@@ -747,6 +942,10 @@ export const KeyboardWeek: Story = {
 };
 
 export const ControlledRejects: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+<ActivityRings metrics={metrics} days={days} locale="en-GB" value="sun"
+  interactiveLegend focusedMetric={null} />` } } },
   args: { values: undefined, days: week, value: lastDay, interactiveLegend: true, focusedMetric: null },
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -806,6 +1005,22 @@ function ControlledFixture(args: RingsArgs) {
   );
 }
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+import { useState } from 'react';
+import { Button } from '@jfrader/ui';
+
+export function WeeklyActivity() {
+  const [day, setDay] = useState<string | null>('mon');
+  const [focused, setFocused] = useState<string | null>(null);
+  return <>
+    <Button onClick={() => setDay('sun')}>Show last day</Button>
+    <Button onClick={() => setFocused('exercise')}>Isolate exercise</Button>
+    <Button onClick={() => setFocused('')}>Isolate empty id</Button>
+    <ActivityRings metrics={metrics} days={days} locale="en-GB" interactiveLegend
+      value={day} onValueChange={setDay} focusedMetric={focused} onFocusedMetricChange={setFocused} />
+  </>;
+}` } } },
   args: { interactiveLegend: true },
   render: (args) => <ControlledFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
@@ -844,6 +1059,18 @@ function SeedFixture(args: RingsArgs) {
   );
 }
 export const SeededOnce: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+import { useState } from 'react';
+import { Button } from '@jfrader/ui';
+
+export function WeeklyActivity() {
+  const [loadedDays, setLoadedDays] = useState(days.slice(0, 3));
+  return <>
+    <Button onClick={() => setLoadedDays(days)}>Load full week</Button>
+    <ActivityRings metrics={metrics} days={loadedDays} locale="en-GB" />
+  </>;
+}` } } },
   render: (args) => <SeedFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -872,6 +1099,20 @@ function CrossingFixture(args: RingsArgs) {
   );
 }
 export const GoalCrossing: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+import { useState } from 'react';
+import { Button } from '@jfrader/ui';
+
+export function DailyActivity() {
+  const [distance, setDistance] = useState<number | null>(5.94);
+  return <>
+    {[5.94, 6, 6.12, null].map(next => (
+      <Button key={String(next)} onClick={() => setDistance(next)}>Set {next ?? 'unknown'}</Button>
+    ))}
+    <ActivityRings metrics={metrics} values={{ distance, exercise: 34, stand: 9 }} locale="en-GB" />
+  </>;
+}` } } },
   render: (args) => <CrossingFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -924,6 +1165,19 @@ function GoalValidityFixture(args: RingsArgs) {
 
 /** Restoring a goal starts a new baseline, even when its previous ratio was zero. */
 export const GoalValidityBaseline: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { ActivityRings, Button } from '@jfrader/ui';
+
+export function DistanceGoal() {
+  const [state, setState] = useState({ goal: 6, distance: 0 });
+  return <>
+    <Button onClick={() => setState({ goal: 0, distance: 0 })}>Remove goal</Button>
+    <Button onClick={() => setState({ goal: 6, distance: 6 })}>Restore completed goal</Button>
+    <Button onClick={() => setState({ goal: 6, distance: 3 })}>Walk 3 km</Button>
+    <ActivityRings locale="en-GB" values={{ distance: state.distance }}
+      metrics={[{ id: 'distance', label: 'Distance', goal: state.goal, unit: 'kilometer', tone: 'accent' }]} />
+  </>;
+}` } } },
   render: (args) => <GoalValidityFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -950,6 +1204,18 @@ function DayCrossingFixture(args: RingsArgs) {
   );
 }
 export const DaySwitchNoCelebration: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+import { useState } from 'react';
+import { Button } from '@jfrader/ui';
+
+export function WeeklyActivity() {
+  const [mounted, setMounted] = useState(true);
+  return <>
+    <Button onClick={() => setMounted(!mounted)}>Remount</Button>
+    {mounted && <ActivityRings metrics={metrics} days={days} defaultValue="tue" locale="en-GB" />}
+  </>;
+}` } } },
   render: (args) => <DayCrossingFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -977,6 +1243,18 @@ function UnavailableBaselineFixture(args: RingsArgs) {
   );
 }
 export const UnavailableResetsBaseline: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { ActivityRings, Button } from '@jfrader/ui';
+
+export function DistanceGoal() {
+  const [state, setState] = useState({ goal: 10, distance: 0 });
+  return <>
+    <Button onClick={() => setState({ goal: 0, distance: 0 })}>Unavailable goal</Button>
+    <Button onClick={() => setState({ goal: 10, distance: 10 })}>Restore completed goal</Button>
+    <ActivityRings locale="en-GB" values={{ distance: state.distance }}
+      metrics={[{ id: 'distance', label: 'Distance', goal: state.goal, unit: 'kilometer', tone: 'accent' }]} />
+  </>;
+}` } } },
   render: (args) => <UnavailableBaselineFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -1007,6 +1285,19 @@ function QuickUpdatesFixture(args: RingsArgs) {
   );
 }
 export const QuickInterruptedUpdates: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { ActivityRings, Button } from '@jfrader/ui';
+
+export function DistanceGoal() {
+  const [distance, setDistance] = useState(0);
+  return <>
+    <Button onClick={() => { setDistance(5); requestAnimationFrame(() => setDistance(3)); }}>
+      Interrupt
+    </Button>
+    <ActivityRings locale="en-GB" values={{ distance }}
+      metrics={[{ id: 'distance', label: 'Distance', goal: 6, unit: 'kilometer', tone: 'accent' }]} />
+  </>;
+}` } } },
   render: (args) => <QuickUpdatesFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -1073,6 +1364,18 @@ function ReturnBelowGoalFixture(args: RingsArgs) {
 
 /** The ticks stay full while the displayed amount exceeds the goal, then retract with the count. */
 export const ReturningBelowGoal: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { ActivityRings, Button } from '@jfrader/ui';
+
+export function DistanceGoal() {
+  const [distance, setDistance] = useState(9);
+  return <>
+    <Button onClick={() => setDistance(3)}>Walk 3 km</Button>
+    <Button onClick={() => setDistance(9)}>Walk 9 km</Button>
+    <ActivityRings locale="en-GB" values={{ distance }}
+      metrics={[{ id: 'distance', label: 'Distance', goal: 6, unit: 'kilometer', tone: 'accent' }]} />
+  </>;
+}` } } },
   render: (args) => <ReturnBelowGoalFixture {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -1120,6 +1423,13 @@ export const ReturningBelowGoal: Story = {
 };
 
 export const IntlFormatting: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+<>
+  {['en-GB', 'de', 'ar-EG'].map(locale => (
+    <ActivityRings key={locale} metrics={metrics} days={days} locale={locale} aria-label={locale} />
+  ))}
+</>` } } },
   render: (args) => (
     <>
       {['en-GB', 'de', 'ar-EG'].map((locale) => (
@@ -1143,6 +1453,12 @@ export const IntlFormatting: Story = {
 const formatSteps = (value: number, locale: string | undefined) =>
   new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
 export const CustomFormatter: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ActivityRings } from '@jfrader/ui';
+
+<ActivityRings locale="en-GB" values={{ steps: 12345 }}
+  metrics={[{ id: 'steps', label: 'Steps', goal: 10000,
+    formatValue: (value, locale) => new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value),
+  }]} />` } } },
   args: {
     metrics: [{ id: 'steps', label: 'Steps', goal: 10000, formatValue: formatSteps }],
     values: { steps: 12345 },
@@ -1155,6 +1471,9 @@ export const CustomFormatter: Story = {
 };
 
 export const LongIntlUnits: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${longUnitsDataSource}
+
+<ActivityRings metrics={metrics} values={values} locale="de" />` } } },
   args: {
     locale: 'de',
     metrics: [
@@ -1178,6 +1497,15 @@ export const LongIntlUnits: Story = {
 
 export const NarrowLongUnits: Story = {
   ...LongIntlUnits,
+  parameters: { docs: { source: { language: 'tsx', code: `${longUnitsDataSource}
+
+import { styled } from '@jfrader/ui';
+
+const ActivityLane = styled.div({ inlineSize: 320, maxInlineSize: '100%' });
+
+<ActivityLane>
+  <ActivityRings metrics={metrics} values={values} locale="de" interactiveLegend />
+</ActivityLane>` } } },
   args: { ...LongIntlUnits.args, interactiveLegend: true },
   decorators: [
     (Story) => (
@@ -1197,6 +1525,15 @@ export const NarrowLongUnits: Story = {
   },
 };
 export const Narrow: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+import { styled } from '@jfrader/ui';
+
+const ActivityLane = styled.div({ inlineSize: 320, maxInlineSize: '100%' });
+
+<ActivityLane>
+  <ActivityRings metrics={metrics} days={days} locale="en-GB" interactiveLegend />
+</ActivityLane>` } } },
   args: { days: week, values: undefined, interactiveLegend: true },
   decorators: [
     (Story) => (
@@ -1214,6 +1551,15 @@ export const Narrow: Story = {
   },
 };
 export const Wide: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+import { styled, theme } from '@jfrader/ui';
+
+const ActivityLane = styled.div({ inlineSize: '40rem', maxInlineSize: \`calc(100vw - \${theme.space[8]})\` });
+
+<ActivityLane>
+  <ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB" />
+</ActivityLane>` } } },
   decorators: [
     (Story) => (
       <WideFrame>
@@ -1229,6 +1575,9 @@ export const Wide: Story = {
 };
 
 export const HiddenLegend: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB" hideLegend />` } } },
   args: { hideLegend: true },
   play: async ({ canvasElement }) => {
     const list = within(canvasElement).getByRole('list', { name: 'Goals' });
@@ -1238,6 +1587,20 @@ export const HiddenLegend: Story = {
 };
 
 export const ExternalAria: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+import { styled, theme } from '@jfrader/ui';
+
+const ActivityText = styled.p({ margin: 0, color: theme.color.text });
+
+<>
+  <ActivityText id="activity-name">Weekly</ActivityText>
+  <ActivityText id="activity-description">Goals reset at midnight</ActivityText>
+  <ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB"
+    aria-labelledby="activity-name" aria-describedby="activity-description" />
+  <ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB"
+    aria-label="Consumer name" />
+</>` } } },
   render: (args) => (
     <>
       <span id="rings-external-name">Weekly</span>
@@ -1266,6 +1629,12 @@ export const ExternalAria: Story = {
 };
 
 export const MultipleInstances: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+<>
+  <ActivityRings metrics={metrics} days={days} locale="en-GB" aria-label="First" />
+  <ActivityRings metrics={metrics} days={days} locale="en-GB" aria-label="Second" />
+</>` } } },
   args: { values: undefined, days: week },
   render: (args) => (
     <>
@@ -1303,6 +1672,22 @@ function RefFixture(args: RingsArgs) {
   );
 }
 export const RootRef: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+import { StrictMode, useRef, useState } from 'react';
+import { Button } from '@jfrader/ui';
+
+export function DailyActivity() {
+  const root = useRef<HTMLElement>(null);
+  const [mounted, setMounted] = useState(true);
+  return <>
+    <Button onClick={() => setMounted(false)}>Unmount</Button>
+    {mounted && <StrictMode>
+      <ActivityRings ref={root} metrics={metrics} locale="en-GB"
+        values={{ distance: 4.5, exercise: 34, stand: 9 }} />
+    </StrictMode>}
+  </>;
+}` } } },
   args: { ref: fn((element: HTMLElement | null) => (element ? fn() : undefined)) },
   render: (args) => <RefFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
@@ -1323,6 +1708,12 @@ export const RootRef: Story = {
 };
 
 export const UnsanctionedUnit: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ActivityRings } from '@jfrader/ui';
+
+<ActivityRings locale="en-GB" metrics={[
+  { id: 'energy', label: 'Energy', goal: 500, unit: 'kcal' },
+  { id: 'distance', label: 'Distance', goal: 6, unit: 'kilometer' },
+]} values={{ energy: 320.25, distance: 4.5 }} />` } } },
   args: {
     metrics: [
       { id: 'energy', label: 'Energy', goal: 500, unit: 'kcal' },
@@ -1345,6 +1736,22 @@ export const UnsanctionedUnit: Story = {
 
 // The slot API takes `css` values, so this story keeps the documented spelling.
 export const SlotStyles: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+import { styled, theme } from '@jfrader/ui';
+
+const WeeklyActivity = styled(ActivityRings)({ padding: theme.space[4] });
+const ActivityHint = styled.p({ margin: 0, color: theme.color.text });
+
+<>
+  <ActivityHint id="activity-hint">Isolates one ring</ActivityHint>
+  <WeeklyActivity metrics={metrics} days={days} locale="en-GB" interactiveLegend
+    slotProps={{
+      metric: { css: { paddingBlock: theme.space[3] }, 'aria-describedby': 'activity-hint' },
+      summary: { css: { fontWeight: theme.fontWeight.regular } },
+      dayLabel: { css: { minInlineSize: theme.space[12] } },
+    }} />
+</>` } } },
   args: {
     interactiveLegend: true,
     days: week,
@@ -1378,6 +1785,17 @@ export const SlotStyles: Story = {
 };
 
 export const StaticSlotProps: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+import { styled, theme } from '@jfrader/ui';
+
+const ActivityHint = styled.p({ margin: 0, color: theme.color.text });
+
+<>
+  <ActivityHint id="activity-hint">Updated hourly</ActivityHint>
+  <ActivityRings metrics={metrics} locale="en-GB" values={{ distance: 4.5, exercise: 34, stand: 9 }}
+    slotProps={{ metric: { 'aria-describedby': 'activity-hint' } }} />
+</>` } } },
   args: {
     slotProps: { metric: { 'aria-describedby': 'rings-static-hint', onMouseEnter: fn() } },
   },
@@ -1421,12 +1839,18 @@ function slotTypeRegressions(flag: boolean) {
 export type ActivityRingsTypeRegression = typeof slotTypeRegressions;
 
 export const LightTheme: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+<ActivityRings metrics={metrics} days={days} locale="en-GB" interactiveLegend defaultFocusedMetric="distance" />` } } },
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   args: { days: week, values: undefined, interactiveLegend: true, defaultFocusedMetric: 'distance' },
 };
 
 export const RTL: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+<ActivityRings metrics={metrics} days={days} locale="ar-EG" dir="rtl" />` } } },
   args: { dir: 'rtl', locale: 'ar-EG', days: week, values: undefined },
   play: async ({ canvasElement, userEvent, args }) => {
     await expectLegendAlignment(canvasElement);
@@ -1447,6 +1871,9 @@ export const ReducedMotion: Story = {
   args: { values: { distance: 9, exercise: 12, stand: 12 } },
   parameters: {
     docs: {
+      source: { language: 'tsx', code: `${metricsSource}
+
+<ActivityRings metrics={metrics} values={{ distance: 9, exercise: 12, stand: 12 }} locale="en-GB" />` },
       description: {
         story:
           'Enable reduced motion in the browser. Ticks should show their final fill without a sweep, and isolation dimming should have no transition. Surplus remains in the legend.',
@@ -1459,6 +1886,9 @@ export const ForcedColors: Story = {
   args: { interactiveLegend: true, defaultFocusedMetric: 'exercise', days: week, values: undefined },
   parameters: {
     docs: {
+      source: { language: 'tsx', code: `${weekSource}
+
+<ActivityRings metrics={metrics} days={days} locale="en-GB" interactiveLegend defaultFocusedMetric="exercise" />` },
       description: {
         story:
           'Enable forced colors in the browser. Check CanvasText ring fills, alternating dashed tracks, the numbered legend, and Highlight borders on the isolated ring.',
@@ -1473,6 +1903,15 @@ const centered = (Story: ComponentType) => (
   </Centered>
 );
 export const CenteredFlexParent: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+import { styled } from '@jfrader/ui';
+
+const ActivityLane = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' });
+
+<ActivityLane>
+  <ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB" />
+</ActivityLane>` } } },
   decorators: [centered],
   play: async ({ canvasElement }) => {
     await expectLegendAlignment(canvasElement);
@@ -1482,6 +1921,45 @@ export const CenteredFlexParent: Story = {
     await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth + 1);
   },
 };
-export const CenteredSizes: Story = { ...Sizes, decorators: [centered] };
-export const CenteredLongIntlUnits: Story = { ...LongIntlUnits, decorators: [centered] };
-export const CenteredRTL: Story = { ...RTL, decorators: [centered] };
+export const CenteredSizes: Story = {
+  ...Sizes,
+  decorators: [centered],
+  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+
+import { styled } from '@jfrader/ui';
+
+const ActivityLane = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' });
+
+<ActivityLane>
+  {(['sm', 'md', 'lg'] as const).map(size => (
+    <ActivityRings key={size} metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }}
+      locale="en-GB" size={size} aria-label={\`\${size} rings\`} />
+  ))}
+</ActivityLane>` } } },
+};
+export const CenteredLongIntlUnits: Story = {
+  ...LongIntlUnits,
+  decorators: [centered],
+  parameters: { docs: { source: { language: 'tsx', code: `${longUnitsDataSource}
+
+import { styled } from '@jfrader/ui';
+
+const ActivityLane = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' });
+
+<ActivityLane>
+  <ActivityRings metrics={metrics} values={values} locale="de" />
+</ActivityLane>` } } },
+};
+export const CenteredRTL: Story = {
+  ...RTL,
+  decorators: [centered],
+  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+
+import { styled } from '@jfrader/ui';
+
+const ActivityLane = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' });
+
+<ActivityLane>
+  <ActivityRings metrics={metrics} days={days} locale="ar-EG" dir="rtl" />
+</ActivityLane>` } } },
+};
