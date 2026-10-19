@@ -349,7 +349,7 @@ export const Customization: Story = {
     className="consumer" data-test="consumer"
     style={{ opacity: 0.5, verticalAlign: 'top' }}
     slotProps={{ root: { ...args.slotProps?.root, className: 'slot', css: slotCss, style: { opacity: 1 }, 'aria-label': 'Blair',
-      'data-test': 'slot', viewBox: '0 0 1 1', tabIndex: 0, role: 'button', children: <circle /> } }}
+      'data-test': 'slot' } }}
     alt={undefined} sx={{ inlineSize: vars.size.personAvatarLg }} />,
   play: async ({ canvasElement, userEvent, args }) => {
     const svg = within(canvasElement).getByRole('img', { name: 'Blair' });
@@ -359,7 +359,6 @@ export const Customization: Story = {
     await expect(svg).toHaveClass('consumer', 'slot');
     await expect(svg).toHaveAttribute('viewBox', '0 0 48 48');
     await expect(svg).not.toHaveAttribute('tabindex');
-    await expect(svg.querySelector('circle')).toBeNull();
     await expect(getComputedStyle(svg).opacity).toBe('1');
     await expect(getComputedStyle(svg).verticalAlign).toBe('top');
     await expect(svg.getBoundingClientRect().width).toBe(72);
@@ -412,7 +411,6 @@ export const Refs: Story = {
     await expect(attached.mock.calls.every(([node]) => node instanceof SVGSVGElement)).toBe(true);
   },
 };
-export const StrictModeCycles: Story = { ...Refs };
 
 export const SSRHydration: Story = {
   render: (args) => <PersonAvatar {...args} />,
@@ -444,6 +442,10 @@ function TypeContract() {
   const domain = <PersonAvatar seed="type" playerId="type" />;
   // @ts-expect-error Patterns are a closed vocabulary.
   const kit = { ...ARTWORK_KIT, shirtPattern: 'checks' } satisfies PersonAvatarKit;
-  return [crop, children, publicCss, domain, kit];
+  // @ts-expect-error The root slot cannot replace generated geometry.
+  const rootViewBox = <PersonAvatar seed="type" slotProps={{ root: { viewBox: '0 0 1 1' } }} />;
+  // @ts-expect-error The root slot cannot replace generated semantics.
+  const rootRole = <PersonAvatar seed="type" slotProps={{ root: { role: 'button' } }} />;
+  return [crop, children, publicCss, domain, kit, rootViewBox, rootRole];
 }
 void TypeContract;

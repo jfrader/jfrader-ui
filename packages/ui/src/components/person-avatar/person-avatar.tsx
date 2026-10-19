@@ -34,7 +34,9 @@ export interface PersonAvatarSlots {
   root?: ComponentType<ComponentPropsWithRef<'svg'>>;
 }
 
-export interface PersonAvatarRootProps extends ComponentPropsWithRef<'svg'> {
+export interface PersonAvatarRootProps extends Omit<ComponentPropsWithRef<'svg'>,
+  'children' | 'dangerouslySetInnerHTML' | 'viewBox' | 'preserveAspectRatio' | 'width' | 'height' |
+  'role' | 'tabIndex' | 'focusable'> {
   css?: Interpolation<Theme>;
   [attribute: `data-${string}`]: string | number | boolean | undefined;
 }
@@ -110,6 +112,7 @@ export function PersonAvatar({
     shirtPattern: 'solid', shortsPattern: 'solid', socksPattern: 'solid',
   };
 
+  // Kit and role diagnostics stay app-owned: this renderer receives resolved presentation.
   return (
     <WithSx className={[slotClass, className].filter(Boolean).join(' ')}
       styles={[rootStyle, sizeStyles[size], cropStyles[crop], slotCss]} sx={sx}>
