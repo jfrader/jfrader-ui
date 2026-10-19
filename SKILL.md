@@ -190,6 +190,16 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - Component documentation and the primary story snippet show the easy path first as the default usage, followed by compound examples for custom anatomy.
 - Incompatible modes (passing both `options` and `children`) are rejected at compile time with TypeScript type errors.
 
+### Families and composition
+
+- Before adding a variant or sibling, name its family and the module that already owns its material, content generation, anatomy, state and accessibility. Reuse those modules; do not copy their JSX or event logic.
+- Compose different responsibilities. Avatar owns a person's accessible identity and presence; PersonAvatar owns deterministic person artwork; Scene owns procedural scene artwork. Avatar content may be PersonAvatar; neither renderer reimplements presence or initials.
+- Ordinary children are content. `slots` replaces structure and `slotProps` forwards its props. A replacement preserves its host element/ref contract; an SVG is not an img replacement. Generated semantics and lifecycle stay owned by the host.
+- Keep serializable data and deterministic resolvers below UI shells. Kit vocabulary/resolution lives in person-avatar/kit; geometry imports it, never the shell. Existing public imports survive internal moves.
+- Easy mode calls the same parts as compound mode. A sibling may share a material/collection/field seam without sharing a semantic role or state machine.
+- The family catalog is: Avatar/artwork; Surface/panels/disclosures; native modal shells; selection collections; Tabs/value choices; field anatomy; viewer chrome. Record adoption gaps explicitly, not as claims that the entire family is already generalized.
+- Examples use the library's own artwork, layout, fields, buttons and surfaces. Use Scene/sceneSource for generated imagery and PersonAvatar for generated people. Raw fixtures are reserved for the specific native/error behavior under test, not copied application UI.
+
 ## 3. Component contract worksheet
 
 Fill this in the spec/PR before coding (it prevents 80% of review findings):
@@ -276,6 +286,18 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `motion-timings` — `motionDurationMs`, the numeric side of the duration tokens for Motion and timers.
 - `overlay-motion` — `@starting-style` entrances and `data-state="closing"` exits shared by native
   dialogs and floating surfaces; see the overlay motion contract in section 6.
+
+Family owners (repository paths):
+
+| Family | Owners and dependency direction | Adoption gaps / distinctions |
+| --- | --- | --- |
+| Avatar/artwork | [Avatar](packages/ui/src/components/avatar/avatar.tsx) owns identity/presence; [PersonAvatar](packages/ui/src/components/person-avatar/person-avatar.tsx) calls [appearance](packages/ui/src/components/person-avatar/appearance.ts) and [kit](packages/ui/src/components/person-avatar/kit.ts) resolvers, then [PersonArt](packages/ui/src/components/person-avatar/person-art.tsx). Internal [kit art](packages/ui/src/components/person-avatar/art/kit-art.tsx) and [staff art](packages/ui/src/components/person-avatar/art/staff-art.tsx) depend downward on kit data/tokens, never the shell. [Scene](packages/ui/src/components/scene/scene.tsx) owns independent scene generation. | AvatarGroup delegates member identity to Avatar; artwork stays ordinary content. |
+| Surface/panels/disclosures | [SurfaceRoot](packages/ui/src/components/surface/surface-root.tsx) owns material and appearance. | ExpandableCard still uses raisedSurface directly; disclosure/measurement remains its own responsibility. |
+| Native modal shells | [useNativeDialog](packages/ui/src/overlay/use-native-dialog.ts) owns native lifecycle; SurfaceRoot owns panel material. | Dialog, Drawer, BottomSheet and DialogStack retain distinct host behavior. Shared panel types currently live in Drawer. |
+| Selection collections | [collection-registry](packages/ui/src/utils/collection-registry.ts) owns registration; [OverlayLayer](packages/ui/src/overlay/overlay-layer.tsx) owns dismissal-tree membership. | MultiSelect still uses IsolatedOverlay. Select-only, editable-text and multi-value state remain distinct. |
+| Tabs/value choices | [roving-focus](packages/ui/src/utils/roving-focus.ts) owns shared focus helpers. | Tabs owns panels/activation; SegmentedControl owns value choice. Indicators remain family-local. |
+| Field anatomy | [FieldRoot](packages/ui/src/components/field/field-anatomy.tsx) owns labeled anatomy; adopter list below. | Each control retains its native target and edit/commit axes. |
+| Viewer chrome | [viewer-chrome](packages/ui/src/components/viewer-chrome/viewer-chrome.tsx) owns LightboxGallery/PhotoGrid actions, glyphs and thumbnail styles. | Modal versus portaled tooltip ownership remains with the host. |
 
 Shared story assertions in `src/testing/` (reuse before writing a local copy):
 
@@ -615,6 +637,9 @@ disclosure with the keyboard, and check the first example and prop table still a
 ### Component review
 
 - [ ] Need + API approved; no duplicate component; contract worksheet filled.
+- [ ] Family sibling integration tested; one owner per semantic/state axis.
+- [ ] Replacement props, refs and children forwarded with the host contract preserved.
+- [ ] Examples compose library pieces; no story-local reimplementations of artwork, layouts, controls or surfaces.
 - [ ] Controlled/uncontrolled matrix incl. falsy values, rejected controlled requests, callback
       count/order, external prop updates, reset behavior.
 - [ ] ARIA merge behavior; name/description/error wiring; id validity (values embedded in ids are

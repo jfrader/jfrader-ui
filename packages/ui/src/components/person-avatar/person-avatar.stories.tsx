@@ -10,6 +10,12 @@ import { css } from '../../styling/css';
 import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
+import { Avatar } from '../avatar';
+import { Button } from '../button';
+import { Flex } from '../flex';
+import { Stack } from '../stack';
+import { Surface } from '../surface';
+import { Scene } from '../scene';
 import {
   PersonAvatar, resolvePersonKit, PERSON_SHIRT_PATTERNS, PERSON_SHORTS_PATTERNS, PERSON_SOCKS_PATTERNS,
   type PersonAvatarKit,
@@ -22,7 +28,9 @@ import {
 } from './appearance';
 import { ARTWORK_FIXTURES, ARTWORK_KIT, PALETTE_FIXTURES, RECIPE_FIXTURES } from './reference-fixtures';
 
-const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const ContextSurface = styled(Surface)({
+  padding: vars.space[4], maxInlineSize: `calc(${vars.space[12]} * 8)`,
+});
 const CustomAvatar = styled(PersonAvatar)({ outline: `1px solid ${vars.color.border}` });
 const FullSizeFrame = styled.div({ inlineSize: vars.space[10], blockSize: vars.space[10] });
 const slotCss = css({ inlineSize: vars.space[8] });
@@ -84,7 +92,7 @@ An empty \`alt\` or explicit \`aria-hidden\` makes the artwork decorative, even 
 The SVG is not a keyboard target; wrap decorative artwork in a named button or link for actions.
 
 ### Size and crop
-Sizes are square: \`sm\` 32px, \`md\` 48px, \`lg\` 72px. Set custom dimensions with \`sx\`.
+Sizes are square: \`sm\` 32px, \`md\` 48px, \`lg\` 72px. Use \`size="full"\` to fill an Avatar frame or set custom dimensions with \`sx\`.
 Portrait \`crop="circle"\` clips peripheral hair and clothing without zooming. Full kits remain square letterboxed viewports.
 Artwork fills stay fixed across themes and forced colors; the forced-colors boundary uses a CanvasText outline.
 `,
@@ -108,6 +116,63 @@ export const Default: Story = {
 export const LightTheme: Story = { ...Default, decorators: [withLightTheme], globals: { theme: 'light' } };
 export const DarkTheme: Story = { ...Default, globals: { theme: 'dark' } };
 
+/** A decorative portrait inside Avatar's named identity and presence frame. */
+export const InAvatar: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, PersonAvatar } from '@jfrader/ui';
+
+<Avatar name="Alex" status="online">
+  <PersonAvatar seed="member-alex" alt="" size="full" crop="circle" />
+</Avatar>` } } },
+  render: () => <Avatar name="Alex" status="online">
+    <PersonAvatar seed="member-alex" alt="" size="full" crop="circle" />
+  </Avatar>,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByRole('img')).toHaveLength(1);
+    const avatar = canvas.getByRole('img', { name: 'Alex, online' });
+    const portrait = avatar.querySelector('svg')!;
+    await expect(portrait).toHaveAttribute('aria-hidden', 'true');
+    await expect(portrait.getBoundingClientRect().width).toBe(avatar.getBoundingClientRect().width);
+    await expect(portrait.getBoundingClientRect().height).toBe(avatar.getBoundingClientRect().height);
+  },
+};
+
+/** Procedural Scene artwork beside two independently named people. */
+export const SceneContext: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Flex, PersonAvatar, Scene, Stack, Surface, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const MeetingSurface = styled(Surface)({
+  padding: vars.space[4], maxInlineSize: \`calc(\${vars.space[12]} * 8)\`,
+});
+
+<MeetingSurface>
+  <Stack gap="md">
+    <Scene seed="studio-garden" alt="" />
+    <Flex gap="md" align="center" wrap>
+      <PersonAvatar seed="member-alex" alt="Alex" size="lg" />
+      <PersonAvatar seed="member-blair" alt="Blair" size="lg" attire="staff" />
+    </Flex>
+  </Stack>
+</MeetingSurface>` } } },
+  render: () => <ContextSurface>
+    <Stack gap="md">
+      <Scene seed="studio-garden" alt="" />
+      <Flex gap="md" align="center" wrap>
+        <PersonAvatar seed="member-alex" alt="Alex" size="lg" />
+        <PersonAvatar seed="member-blair" alt="Blair" size="lg" attire="staff" />
+      </Flex>
+    </Stack>
+  </ContextSurface>,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByRole('img')).toHaveLength(2);
+    await expect(canvas.getByRole('img', { name: 'Alex' })).toBeInTheDocument();
+    await expect(canvas.getByRole('img', { name: 'Blair' })).toBeInTheDocument();
+    await expect(canvasElement.querySelector('[data-ui="scene"]')).toHaveAttribute('aria-hidden', 'true');
+  },
+};
+
 export const ThemeParity: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar, ThemeRoot } from '@jfrader/ui';
 
@@ -115,8 +180,8 @@ export const ThemeParity: Story = {
   <ThemeRoot theme="light"><PersonAvatar seed="stable-visual-seed" alt="Alex" crop="circle" /></ThemeRoot>
   <ThemeRoot theme="dark"><PersonAvatar seed="stable-visual-seed" alt="Alex" crop="circle" /></ThemeRoot>
 </>` } } },
-  render: (args) => <Row><ThemeRoot theme="light"><PersonAvatar {...args} crop="circle" fullKit={false} /></ThemeRoot>
-    <ThemeRoot theme="dark"><PersonAvatar {...args} crop="circle" fullKit={false} /></ThemeRoot></Row>,
+  render: (args) => <Flex wrap align="center" gap="md"><ThemeRoot theme="light"><PersonAvatar {...args} crop="circle" fullKit={false} /></ThemeRoot>
+    <ThemeRoot theme="dark"><PersonAvatar {...args} crop="circle" fullKit={false} /></ThemeRoot></Flex>,
   play: async ({ canvasElement }) => {
     const [light, dark] = Array.from(canvasElement.querySelectorAll('svg'));
     await expect(light!.innerHTML).toBe(dark!.innerHTML);
@@ -140,10 +205,10 @@ const LargePortrait = styled(PersonAvatar)({
   <PersonAvatar seed="stable-visual-seed" alt="Alex" size="lg" />
   <LargePortrait seed="stable-visual-seed" alt="Alex" />
 </>` } } },
-  render: (args) => <Row>
+  render: (args) => <Flex wrap align="center" gap="md">
     <PersonAvatar {...args} size="sm" /><PersonAvatar {...args} size="md" /><PersonAvatar {...args} size="lg" />
     <CustomAvatar {...args} sx={{ inlineSize: `calc(${vars.space[12]} * 2)`, blockSize: `calc(${vars.space[12]} * 2)` }} />
-  </Row>,
+  </Flex>,
   play: async ({ canvasElement }) => {
     const avatars = canvasElement.querySelectorAll('svg');
     for (const [index, size] of [32, 48, 72, 96].entries()) {
@@ -162,7 +227,7 @@ export const Crops: Story = {
   <PersonAvatar seed="stable-visual-seed" alt="Alex" size="lg" />
   <PersonAvatar seed="stable-visual-seed" alt="Alex" size="lg" crop="circle" />
 </>` } } },
-  render: (args) => <Row><PersonAvatar {...args} size="lg" /><PersonAvatar {...args} size="lg" fullKit={false} crop="circle" /></Row>,
+  render: (args) => <Flex wrap align="center" gap="md"><PersonAvatar {...args} size="lg" /><PersonAvatar {...args} size="lg" fullKit={false} crop="circle" /></Flex>,
   play: async ({ canvasElement }) => {
     const plain = canvasElement.querySelectorAll('svg')[0]!;
     const circle = canvasElement.querySelectorAll('svg')[1]!;
@@ -203,7 +268,7 @@ export const PaletteCoverage: Story = {
 const seeds = ${JSON.stringify(paletteSeeds)};
 
 <>{seeds.map((seed) => <PersonAvatar key={seed} seed={seed} />)}</>` } } },
-  render: () => <Row>{paletteSeeds.map(seed => <PersonAvatar key={seed} seed={seed} />)}</Row>,
+  render: () => <Flex wrap align="center" gap="md">{paletteSeeds.map(seed => <PersonAvatar key={seed} seed={seed} />)}</Flex>,
   play: async ({ canvasElement }) => {
     await expect(PERSON_SKIN_TONES).toEqual(PALETTE_FIXTURES.skin);
     await expect(PERSON_HAIR_COLORS).toEqual(PALETTE_FIXTURES.hair);
@@ -228,7 +293,7 @@ export const Determinism: Story = {
   <PersonAvatar seed="stable-visual-seed" alt="Alex" />
   <PersonAvatar seed="stable-visual-seed" alt="Alex" />
 </>` } } },
-  render: (args) => <Row><PersonAvatar {...args} /><PersonAvatar {...args} /></Row>,
+  render: (args) => <Flex wrap align="center" gap="md"><PersonAvatar {...args} /><PersonAvatar {...args} /></Flex>,
   play: async ({ canvasElement }) => {
     const first = canvasElement.querySelectorAll('svg')[0]!;
     const second = canvasElement.querySelectorAll('svg')[1]!;
@@ -268,10 +333,10 @@ export const TraitCoverage: Story = {
 const seeds = ${JSON.stringify(PERSON_HAIR_STYLES.map(hair => RECIPE_FIXTURES.find(([, recipe]) => recipe.hairStyle === hair)![0]))};
 
 <>{seeds.map((seed) => <PersonAvatar key={seed} seed={seed} />)}</>` } } },
-  render: () => <Row>{PERSON_HAIR_STYLES.map(hair => {
+  render: () => <Flex wrap align="center" gap="md">{PERSON_HAIR_STYLES.map(hair => {
     const seed = RECIPE_FIXTURES.find(([, recipe]) => recipe.hairStyle === hair)![0];
     return <PersonAvatar key={hair} seed={seed} />;
-  })}</Row>,
+  })}</Flex>,
   play: async () => {
     const recipes = RECIPE_FIXTURES.slice(8).map(([seed]) => resolvePersonAppearance(seed));
     const options = {
@@ -290,34 +355,42 @@ const seeds = ${JSON.stringify(PERSON_HAIR_STYLES.map(hair => RECIPE_FIXTURES.fi
   },
 };
 
-const patternKits: PersonAvatarKit[] = ['solid', 'centerStripe', 'split', 'hoops', 'shoulders'].map((shirtPattern, index) => ({
+const patternKits: PersonAvatarKit[] = PERSON_SHIRT_PATTERNS.map((shirtPattern, index) => ({
   ...ARTWORK_KIT,
   shirt: PERSON_ART_COLORS.staffJacket, shorts: PERSON_ART_COLORS.staffShirt,
   socks: PERSON_ART_COLORS.headband, accent: PERSON_ART_COLORS.earring,
   shortsAccent: PERSON_ART_COLORS.mouth, socksAccent: PERSON_ART_COLORS.shadow,
-  shirtPattern: shirtPattern as PersonAvatarKit['shirtPattern'],
-  shortsPattern: (['solid', 'sideStripe', 'split', 'waistBand'] as const)[index % 4]!,
-  socksPattern: index % 2 ? 'turnover' : 'solid',
+  shirtPattern,
+  shortsPattern: PERSON_SHORTS_PATTERNS[index % PERSON_SHORTS_PATTERNS.length]!,
+  socksPattern: PERSON_SOCKS_PATTERNS[index % PERSON_SOCKS_PATTERNS.length]!,
 }));
 export const KitVariants: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${kitSource}const shirts = ['solid', 'centerStripe', 'split', 'hoops', 'shoulders'] as const;
-const shorts = ['solid', 'sideStripe', 'split', 'waistBand'] as const;
-const kits: PersonAvatarKit[] = shirts.map((shirtPattern, index) => ({
+  parameters: { docs: { source: { language: 'tsx', code: `${kitSource}import { PERSON_SHIRT_PATTERNS, PERSON_SHORTS_PATTERNS, PERSON_SOCKS_PATTERNS } from '@jfrader/ui/person-avatar/kit';
+
+const kits: PersonAvatarKit[] = PERSON_SHIRT_PATTERNS.map((shirtPattern, index) => ({
   ...kit,
   socks: PERSON_ART_COLORS.headband,
   accent: PERSON_ART_COLORS.earring,
   shortsAccent: PERSON_ART_COLORS.mouth,
   socksAccent: PERSON_ART_COLORS.shadow,
-  shirtPattern, shortsPattern: shorts[index % shorts.length]!,
-  socksPattern: index % 2 ? 'turnover' : 'solid',
+  shirtPattern,
+  shortsPattern: PERSON_SHORTS_PATTERNS[index % PERSON_SHORTS_PATTERNS.length]!,
+  socksPattern: PERSON_SOCKS_PATTERNS[index % PERSON_SOCKS_PATTERNS.length]!,
 }));
 
 <>{kits.map((kit, index) => (
   <PersonAvatar key={index} seed="stable-visual-seed" alt="Alex" kit={kit} size="lg" fullKit />
 ))}</>` } } },
-  render: (args) => <Row>{patternKits.map((kit, index) => <PersonAvatar {...args} key={index} kit={kit} size="lg" fullKit crop="none"
-    primary="currentColor" secondary="currentColor" />)}</Row>,
+  render: (args) => <Flex wrap align="center" gap="md">{patternKits.map((kit, index) => <PersonAvatar {...args} key={index} kit={kit} size="lg" fullKit crop="none"
+    primary="currentColor" secondary="currentColor" />)}</Flex>,
   play: async ({ canvasElement }) => {
+    for (const [key, patterns] of [
+      ['shirtPattern', PERSON_SHIRT_PATTERNS],
+      ['shortsPattern', PERSON_SHORTS_PATTERNS],
+      ['socksPattern', PERSON_SOCKS_PATTERNS],
+    ] as const) {
+      await expect(new Set(patternKits.map(kit => kit[key]))).toEqual(new Set(patterns));
+    }
     for (const [index, svg] of Array.from(canvasElement.querySelectorAll('svg')).entries()) {
       const kit = patternKits[index]!;
       await expect(svg.querySelector('[fill="currentColor"]')).toBeNull();
@@ -347,11 +420,11 @@ const awayKit: PersonAvatarKit = {
   <PersonAvatar seed="${glassesSeed}" kit={awayKit} size="lg" fullKit />
   <PersonAvatar seed="${glassesSeed}" attire="staff" kit={awayKit} />
 </>` } } },
-  render: () => <Row>
+  render: () => <Flex wrap align="center" gap="md">
     <PersonAvatar seed={glassesSeed} kit={patternKits[0]} />
     <PersonAvatar seed={glassesSeed} kit={patternKits[3]} size="lg" fullKit />
     <PersonAvatar seed={glassesSeed} attire="staff" kit={patternKits[3]} />
-  </Row>,
+  </Flex>,
   play: async ({ canvasElement }) => {
     const avatars = Array.from(canvasElement.querySelectorAll('svg'));
     await expect(new Set(avatars.map(svg => svg.getAttribute('data-avatar-appearance-signature'))).size).toBe(1);
@@ -372,16 +445,13 @@ export const SimpleColors: Story = {
   <PersonAvatar seed="simple-colors" primary={vars.color.accent} secondary="currentColor" attire="staff" kit={kit} />
   <PersonAvatar seed="simple-colors" primary={vars.color.accent} secondary="currentColor" attire="staff" />
 </>` } } },
-  render: () => <Row>
+  render: () => <Flex wrap align="center" gap="md">
     <PersonAvatar seed="simple-colors" primary={vars.color.accent} secondary="currentColor" fullKit />
     <PersonAvatar seed="simple-colors" primary={vars.color.accent} secondary="currentColor" attire="staff" kit={patternKits[2]} />
     <PersonAvatar seed="simple-colors" primary={vars.color.accent} secondary="currentColor" attire="staff" />
-  </Row>,
+  </Flex>,
   play: async ({ canvasElement }) => {
     const [kit, staffWithKit, staff] = Array.from(canvasElement.querySelectorAll('svg'));
-    await expect(PERSON_SHIRT_PATTERNS).toEqual(['solid', 'centerStripe', 'split', 'hoops', 'shoulders']);
-    await expect(PERSON_SHORTS_PATTERNS).toEqual(['solid', 'sideStripe', 'split', 'waistBand']);
-    await expect(PERSON_SOCKS_PATTERNS).toEqual(['solid', 'turnover']);
     await expect(resolvePersonKit()).toEqual({
       shirt: PERSON_ART_COLORS.staffJacket, shorts: PERSON_ART_COLORS.staffShirt,
       socks: PERSON_ART_COLORS.staffJacket, accent: PERSON_ART_COLORS.staffShirt,
@@ -415,13 +485,13 @@ export const Decorative: Story = {
   <PersonAvatar seed="unannounced-seed" alt="   " />
   <PersonAvatar seed="unannounced-seed" aria-label="   " />
 </>` } } },
-  render: () => <Row>
+  render: () => <Flex wrap align="center" gap="md">
     <PersonAvatar seed="unannounced-seed" />
     <PersonAvatar seed="unannounced-seed" alt="" aria-label="Hidden" aria-labelledby="hidden-label" />
     <PersonAvatar seed="unannounced-seed" alt="Hidden" aria-hidden />
     <PersonAvatar seed="unannounced-seed" alt="   " aria-hidden={false} />
     <PersonAvatar seed="unannounced-seed" aria-label="   " aria-hidden={false} />
-  </Row>,
+  </Flex>,
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole('img')).toBeNull();
     for (const svg of canvasElement.querySelectorAll('svg')) {
@@ -439,8 +509,8 @@ export const Named: Story = {
   <PersonAvatar seed="unannounced-seed" alt="Alex" aria-label="Blair" />
   <PersonAvatar seed="unannounced-seed" aria-label="Blair" />
 </>` } } },
-  render: () => <Row><PersonAvatar seed="unannounced-seed" alt="Alex" aria-label="Blair" />
-    <PersonAvatar seed="unannounced-seed" aria-label="Blair" /></Row>,
+  render: () => <Flex wrap align="center" gap="md"><PersonAvatar seed="unannounced-seed" alt="Alex" aria-label="Blair" />
+    <PersonAvatar seed="unannounced-seed" aria-label="Blair" /></Flex>,
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('img', { name: 'Alex' })).toBeInTheDocument();
     await expect(within(canvasElement).getByRole('img', { name: 'Blair' })).toBeInTheDocument();
@@ -464,9 +534,9 @@ function CaptainPortrait() {
     </>
   );
 }` } } },
-  render: () => <Row><span id="person-name">Blair</span><span id="person-description">Captain</span>
+  render: () => <Flex wrap align="center" gap="md"><span id="person-name">Blair</span><span id="person-description">Captain</span>
     <PersonAvatar seed="external" alt="Alex" aria-label="Casey"
-      slotProps={{ root: { 'aria-labelledby': 'person-name', 'aria-describedby': 'person-description' } }} /></Row>,
+      slotProps={{ root: { 'aria-labelledby': 'person-name', 'aria-describedby': 'person-description' } }} /></Flex>,
   play: async ({ canvasElement }) => {
     const svg = within(canvasElement).getByRole('img', { name: 'Blair' });
     await expect(svg).not.toHaveAttribute('aria-label');
@@ -475,16 +545,16 @@ function CaptainPortrait() {
   },
 };
 export const Keyboard: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar } from '@jfrader/ui';
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, PersonAvatar } from '@jfrader/ui';
 
 <>
-  <button type="button">Before</button>
+  <Button>Before</Button>
   <PersonAvatar seed="keyboard" alt="Alex" />
   <PersonAvatar seed="keyboard" />
-  <button type="button">After</button>
+  <Button>After</Button>
 </>` } } },
-  render: () => <Row><button type="button">Before</button><PersonAvatar seed="keyboard" alt="Alex" />
-    <PersonAvatar seed="keyboard" /><button type="button">After</button></Row>,
+  render: () => <Flex wrap align="center" gap="md"><Button>Before</Button><PersonAvatar seed="keyboard" alt="Alex" />
+    <PersonAvatar seed="keyboard" /><Button>After</Button></Flex>,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     canvas.getByRole('button', { name: 'Before' }).focus();
@@ -586,10 +656,10 @@ export const Refs: Story = {
 };
 
 export const FullSize: Story = {
-  render: args => <Row>
+  render: args => <Flex wrap align="center" gap="md">
     <FullSizeFrame><PersonAvatar {...args} size="full" alt="Portrait" /></FullSizeFrame>
     <FullSizeFrame><PersonAvatar {...args} size="full" fullKit crop="none" alt="Full kit" /></FullSizeFrame>
-  </Row>,
+  </Flex>,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     for (const name of ['Portrait', 'Full kit']) {
