@@ -362,6 +362,7 @@ const stageStyle = css({
 });
 
 const panelStyle = css({
+  boxSizing: 'border-box',
   position: 'absolute',
   zIndex: INDEX,
   display: 'flex',
@@ -408,7 +409,7 @@ const panelVariantStyles: Record<ResolvedVariant, SerializedStyles> = {
     margin: 'auto',
     inlineSize: `min(${DIALOG_INLINE_CAP}, calc(100% - 2 * ${LAYER_GUTTER}))`,
     blockSize: 'fit-content',
-    maxBlockSize: depthCappedBlockSize(`2 * ${LAYER_GUTTER}`, vars.size.dialogStackDialogPeek),
+    maxBlockSize: depthCappedBlockSize(`2 * ${LAYER_GUTTER}`, `2 * ${vars.size.dialogStackDialogPeek}`),
     borderRadius: vars.radius.lg,
     animationName: dialogEntry,
   }),
@@ -424,7 +425,7 @@ const parentStyles: Record<ResolvedVariant, SerializedStyles> = {
   }),
   dialog: css({
     animationName: 'none',
-    minBlockSize: ACTIVE_SIZE,
+    blockSize: ACTIVE_SIZE,
     transform: `translateY(calc(-1 * ${DEPTH} * ${vars.size.dialogStackDialogPeek})) ${parentScale}`,
   }),
 };

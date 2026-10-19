@@ -9,6 +9,7 @@ const cases = [
   { id: 'media-articlelist--docs', primary: '[data-ui~="article-list"]' },
   { id: 'media-articlekicker--docs', primary: '[data-ui~="article-kicker"]' },
   { id: 'media-articlemeta--docs', primary: '[data-ui~="article-meta"]' },
+  { id: 'surfaces-dialogstack--docs', primary: '[data-ui="dialog-stack-trigger"]' },
   { id: 'inputs-linkunfurl--docs', primary: '[data-ui="link-unfurl"]' },
   { id: 'inputs-mentioninput--docs', primary: '[data-ui="mention-input"]' },
   { id: 'showcase-editabledetails--docs', primary: '[data-ui="editable-details"]' },

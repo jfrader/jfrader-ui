@@ -8,6 +8,7 @@ import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
+import { Button as FixtureButton } from '../button';
 import { Dialog } from '../dialog';
 import { Popover } from '../popover';
 import { TextField } from '../text-field';
@@ -27,10 +28,11 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const SHEET_PEEK = Number.parseFloat(base.size.dialogStackSheetPeek);
 const DIALOG_PEEK = Number.parseFloat(base.size.dialogStackDialogPeek);
 const BREAKPOINT = Number.parseFloat(base.size.dialogStackBreakpoint);
+const STORY_INLINE_CAP = `calc(100vw - 2 * ${vars.space[4]})`;
 
 const Container = styled.div({
   position: 'relative',
-  inlineSize: '480px',
+  inlineSize: `min(480px, ${STORY_INLINE_CAP})`,
   blockSize: '440px',
   maxInlineSize: '100%',
   border: `1px solid ${vars.color.border}`,
@@ -46,12 +48,9 @@ const Header = styled.div({
   gap: vars.space[2],
 });
 
-const ResizableFrame = styled(Container)({ maxInlineSize: 'none' });
 const CompactContainer = styled(Container)({ blockSize: '160px', inlineSize: '200px' });
 
 const Stack = styled.div({ display: 'grid', gap: vars.space[3] });
-
-const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
 
 const Prose = styled.p({ margin: 0 });
 
@@ -64,6 +63,7 @@ const meta = {
   component: DialogStack,
   tags: ['autodocs'],
   args: { onValueChange: fn() },
+  argTypes: { pages: { control: false } },
   parameters: {
     docs: {
       description: {
@@ -191,6 +191,8 @@ function rootAdapterStory(component: DialogStackContentProps['component']): Stor
       const body = within(canvasElement.ownerDocument.body);
       const shell = canvasElement.querySelector('dialog')!;
       const panel = shell.querySelector<HTMLElement>('[data-ui~="dialog-stack"]')!;
+      await settle(shell);
+      await expect(rect(panel).width).toBeCloseTo(Number.parseFloat(getComputedStyle(panel).inlineSize), 0);
       await expect(panel).toHaveAttribute('data-root-ref', 'slot');
       await expect(panel).toHaveAttribute('data-state', 'active');
       await expect(panel).not.toHaveAttribute('inert');
@@ -678,7 +680,7 @@ export const DialogLayout: Story = {
 
 function ResizableContainer({ children }: { children: (setWidth: (width: number) => void) => ReactNode }) {
   const [width, setWidth] = useState(400);
-  return <ResizableFrame style={{ inlineSize: `${width}px` }}>{children(setWidth)}</ResizableFrame>;
+  return <Container style={{ inlineSize: `min(${width}px, ${STORY_INLINE_CAP})` }}>{children(setWidth)}</Container>;
 }
 ResizableContainer.displayName = 'ResizableContainer';
 
@@ -708,10 +710,12 @@ export const AutoResize: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
     const panel = await canvas.findByRole('dialog', { name: 'Settings' });
     await waitFor(() => expect(panel).toHaveAttribute('data-variant', 'sheet'));
+    await expect(rect(layer(canvasElement)).right).toBeLessThanOrEqual(canvasElement.ownerDocument.documentElement.clientWidth);
     const widen = within(panel).getByRole('button', { name: 'Widen' });
     await userEvent.click(widen);
     // Layout follows the measured layer width; DOM, focus and value stay put.
-    await waitFor(() => expect(panel).toHaveAttribute('data-variant', 'dialog'));
+    await waitFor(() => expect(panel).toHaveAttribute('data-variant', rect(layer(canvasElement)).width >= BREAKPOINT ? 'dialog' : 'sheet'));
+    await expect(rect(layer(canvasElement)).right).toBeLessThanOrEqual(canvasElement.ownerDocument.documentElement.clientWidth);
     await expect(canvas.getByRole('dialog', { name: 'Settings' })).toBe(panel);
     await expect(widen).toHaveFocus();
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
@@ -750,6 +754,7 @@ export const Contained: Story = {
     const container = layer(canvasElement).parentElement!;
     await expect(rect(layer(canvasElement)).top).toBeCloseTo(rect(container).top + 1, 0);
     await expect(rect(layer(canvasElement)).width).toBeLessThanOrEqual(rect(container).width);
+    await expect(rect(layer(canvasElement)).right).toBeLessThanOrEqual(doc.documentElement.clientWidth);
     await waitFor(() => expect(pageAction.closest('[inert]')).not.toBeNull());
     await expect(doc.documentElement.style.overflow).toBe('');
 
@@ -837,7 +842,7 @@ export const LongBody: Story = {
   tags: ['!autodocs'],
   args: { defaultValue: ['settings', 'account'] },
   render: (args) => <Levels {...args} footer body={<LongCopy />} contentProps={{ account: { children: undefined } }} />,
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const shell = layer(canvasElement);
     await waitFor(() => expect(shell).toHaveAttribute('open'));
     await settle(shell);
@@ -846,6 +851,15 @@ export const LongBody: Story = {
     const body = settings.querySelector<HTMLElement>('[data-ui="dialog-stack-body"]')!;
     await expect(rect(settings).height).toBeLessThanOrEqual(rect(shell).height);
     await expect(body.scrollHeight).toBeGreaterThan(body.clientHeight);
+    await userEvent.click(within(activePanel(canvasElement)!).getByRole('button', { name: 'Change password' }));
+    await expectActive(canvasElement, 'Change password');
+    await settle(shell);
+    const active = activePanel(canvasElement)!;
+    for (const panel of panels(canvasElement)) {
+      await expect(rect(panel).top).toBeGreaterThanOrEqual(rect(shell).top);
+      await expect(rect(panel).bottom).toBeLessThanOrEqual(rect(shell).bottom + 1);
+      if (panel.dataset.variant === 'dialog') await expect(panel.offsetHeight).toBe(active.offsetHeight);
+    }
   },
 };
 
@@ -1225,6 +1239,10 @@ export const HookActions: Story = {
 
       await userEvent.click(canvas.getByRole('button', { name: 'Open settings' }));
       await expectActive(canvasElement, 'settings');
+      for (const control of within(activePanel(canvasElement)!).getAllByRole('button')) {
+        await expect(rect(control).height).toBeGreaterThanOrEqual(Number.parseFloat(base.space[8]));
+        await expect(rect(control).width).toBeGreaterThanOrEqual(Number.parseFloat(base.space[6]));
+      }
       await userEvent.click(button('push account'));
       await expectActive(canvasElement, 'account');
       await userEvent.click(button('push password'));
