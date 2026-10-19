@@ -887,6 +887,7 @@ export const InsidePopover: Story = {
     await expectFocused(canvasElement, 'Edit');
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Outside' }));
     await expectHostedMenuClosed(canvasElement, trigger);
+    await expect(within(canvasElement).getByRole('button', { name: 'Outside' })).toHaveFocus();
     await expect(popoverOpenChange).not.toHaveBeenCalled();
     await expect(popover).toBeVisible();
     await expect(callValues(args.onOpenChange)).toEqual([true, false, true, false, true, false, true, false]);

@@ -40,7 +40,6 @@ import {
 import {
   FloatingList,
   useClick,
-  useDismiss,
   useInteractions,
   useListNavigation,
   useMergeRefs,
@@ -66,7 +65,7 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { fieldColumnStyle, type FieldLabelPlacement } from '../field/field-anatomy';
-import { IsolatedOverlay } from '../../overlay/overlay-layer';
+import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import {
@@ -360,7 +359,7 @@ const tokens = (...values: Array<unknown>): string | undefined => {
   return list.join(' ') || undefined;
 };
 
-function SelectOverlay(props: SelectProps) {
+function SelectOverlay({ nodeId, ...props }: SelectProps & { nodeId: string | undefined }) {
   const {
     variant = 'default',
     value: valueProp,
@@ -414,6 +413,7 @@ function SelectOverlay(props: SelectProps) {
   const selectedIndex = selectedRecord && selectedRecord.index !== -1 ? selectedRecord.index : null;
 
   const { refs, floatingStyles, context, isPositioned } = useOverlayFloating({
+    nodeId,
     open,
     placement,
     transform: variant !== 'morph',
@@ -423,7 +423,7 @@ function SelectOverlay(props: SelectProps) {
 
   const click = useClick(context, { enabled: !disabled });
   const role = useRole(context, { role: 'listbox' });
-  const dismiss = useDismiss(context, { escapeKey: true, outsidePress: true });
+  const dismiss = useLayerDismiss(context, 'container');
   const listNavigation = useListNavigation(context, {
     enabled: !disabled,
     listRef: elementsRef,
@@ -440,7 +440,7 @@ function SelectOverlay(props: SelectProps) {
   const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
     click,
     role,
-    dismiss,
+    ...dismiss,
     listNavigation,
   ]);
 
@@ -640,9 +640,9 @@ function SelectOverlay(props: SelectProps) {
 function SelectRoot(props: SelectProps) {
   return (
     <MotionConfig reducedMotion="user">
-      <IsolatedOverlay>
-        <SelectOverlay {...props} />
-      </IsolatedOverlay>
+      <OverlayLayer>
+        {(nodeId) => <SelectOverlay {...props} nodeId={nodeId} />}
+      </OverlayLayer>
     </MotionConfig>
   );
 }
