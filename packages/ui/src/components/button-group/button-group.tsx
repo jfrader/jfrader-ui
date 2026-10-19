@@ -271,6 +271,7 @@ const trayStyle = css({
     '--button-group-block-start-width': '1px',
   },
   '& > [data-button-group-highlight]': { borderRadius: vars.radius.full },
+  '&[data-orientation="vertical"]': { borderRadius: vars.radius.lg },
   [FORCED_COLORS]: { borderColor: 'ButtonText', boxShadow: 'none' },
 });
 const expandingActionStyle = css({

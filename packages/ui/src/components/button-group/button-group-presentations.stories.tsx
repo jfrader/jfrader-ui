@@ -209,6 +209,14 @@ export const FloatingVertical: Story = {
     await expect(rect.width).toBeGreaterThan(0);
     await expect(rect.height).toBeGreaterThan(0);
     await expect(rect.width).toBeGreaterThan(rect.height);
+    const items = canvas.getAllByRole('button');
+    for (const [item, edge] of [[items[0]!, 'top'], [items[items.length - 1]!, 'bottom']] as const) {
+      const bounds = item.getBoundingClientRect();
+      const y = edge === 'top' ? bounds.top + bounds.height * 0.075 : bounds.bottom - bounds.height * 0.075;
+      for (const x of [bounds.left + bounds.height / 4, bounds.right - bounds.height / 4]) {
+        await expect(item.contains(item.ownerDocument.elementFromPoint(x, y))).toBe(true);
+      }
+    }
   },
   parameters: { docs: { source: { code: `<ButtonGroup aria-label="Board actions" presentation="floating" orientation="vertical">
   <ButtonGroup.Item>Undo</ButtonGroup.Item>
