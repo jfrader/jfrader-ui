@@ -117,6 +117,37 @@ export const ExpandGeometry: Story = {
   },
 };
 
+export const CollapseGeometry: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvas, userEvent }) => {
+    const section = canvas.getByRole('region', { name: 'Now playing' });
+    await userEvent.click(canvas.getByRole('button', { name: 'Expand' }));
+    const collapse = await waitFor(() => canvas.getByRole('button', { name: 'Collapse' }));
+    await waitFor(() => expect(collapse.getBoundingClientRect().height).toBeGreaterThan(39));
+    await userEvent.click(collapse);
+    const expand = canvas.getByRole('button', { name: 'Expand' });
+    await waitFor(() => expect(expand).toBeVisible());
+    // The face must settle on the visible mini's height. A stale measurement leaves the card
+    // hundreds of px tall (or clips the wrapped action row).
+    await waitFor(() => {
+      const card = section.querySelector('[data-ui="card"]') as HTMLElement;
+      const face = card.firstElementChild as HTMLElement;
+      const mini = expand.parentElement as HTMLElement;
+      const faceBox = face.getBoundingClientRect();
+      const miniBox = mini.getBoundingClientRect();
+      expect(Math.abs(faceBox.height - (miniBox.height + 8))).toBeLessThan(3);
+      expect(faceBox.height).toBeLessThan(200);
+      expect(face.scrollHeight - face.clientHeight).toBeLessThanOrEqual(1);
+      const lowest = Math.max(
+        ...canvas
+          .getAllByRole('button')
+          .filter((button) => button.getBoundingClientRect().width > 0)
+          .map((button) => button.getBoundingClientRect().bottom),
+      );
+      expect(lowest).toBeLessThanOrEqual(faceBox.bottom - 4 + 1);
+    });
+  },
+};
 export const Expanded: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true, defaultPosition: 45 },
