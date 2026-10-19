@@ -22,6 +22,20 @@ import { ARTWORK_FIXTURES, ARTWORK_KIT, PALETTE_FIXTURES, RECIPE_FIXTURES } from
 const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
 const CustomAvatar = styled(PersonAvatar)({ outline: `1px solid ${vars.color.border}` });
 const slotCss = css({ inlineSize: vars.space[8] });
+const kitSource = `import { PersonAvatar, type PersonAvatarKit } from '@jfrader/ui';
+import { PERSON_ART_COLORS } from '@jfrader/tokens';
+
+const kit = {
+  shirt: PERSON_ART_COLORS.staffJacket,
+  shorts: PERSON_ART_COLORS.staffShirt,
+  socks: PERSON_ART_COLORS.staffJacket,
+  accent: PERSON_ART_COLORS.staffShirt,
+  shortsAccent: PERSON_ART_COLORS.staffJacket,
+  socksAccent: PERSON_ART_COLORS.staffShirt,
+  shirtPattern: 'solid', shortsPattern: 'solid', socksPattern: 'solid',
+} satisfies PersonAvatarKit;
+
+`;
 function RootAdapter(props: ComponentPropsWithRef<'svg'>) { return <svg {...props} data-adapter="root" />; }
 function ComponentAdapter(props: ComponentPropsWithRef<'svg'>) { return <svg {...props} data-adapter="component" />; }
 
@@ -91,6 +105,12 @@ export const LightTheme: Story = { ...Default, decorators: [withLightTheme], glo
 export const DarkTheme: Story = { ...Default, globals: { theme: 'dark' } };
 
 export const ThemeParity: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar, ThemeRoot } from '@jfrader/ui';
+
+<>
+  <ThemeRoot theme="light"><PersonAvatar seed="stable-visual-seed" alt="Alex" crop="circle" /></ThemeRoot>
+  <ThemeRoot theme="dark"><PersonAvatar seed="stable-visual-seed" alt="Alex" crop="circle" /></ThemeRoot>
+</>` } } },
   render: (args) => <Row><ThemeRoot theme="light"><PersonAvatar {...args} crop="circle" fullKit={false} /></ThemeRoot>
     <ThemeRoot theme="dark"><PersonAvatar {...args} crop="circle" fullKit={false} /></ThemeRoot></Row>,
   play: async ({ canvasElement }) => {
@@ -101,6 +121,21 @@ export const ThemeParity: Story = {
 };
 
 export const Sizes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const LargePortrait = styled(PersonAvatar)({
+  outline: \`1px solid \${vars.color.border}\`,
+  inlineSize: \`calc(\${vars.space[12]} * 2)\`,
+  blockSize: \`calc(\${vars.space[12]} * 2)\`,
+});
+
+<>
+  <PersonAvatar seed="stable-visual-seed" alt="Alex" size="sm" />
+  <PersonAvatar seed="stable-visual-seed" alt="Alex" size="md" />
+  <PersonAvatar seed="stable-visual-seed" alt="Alex" size="lg" />
+  <LargePortrait seed="stable-visual-seed" alt="Alex" />
+</>` } } },
   render: (args) => <Row>
     <PersonAvatar {...args} size="sm" /><PersonAvatar {...args} size="md" /><PersonAvatar {...args} size="lg" />
     <CustomAvatar {...args} sx={{ inlineSize: `calc(${vars.space[12]} * 2)`, blockSize: `calc(${vars.space[12]} * 2)` }} />
@@ -117,6 +152,12 @@ export const Sizes: Story = {
 };
 
 export const Crops: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar } from '@jfrader/ui';
+
+<>
+  <PersonAvatar seed="stable-visual-seed" alt="Alex" size="lg" />
+  <PersonAvatar seed="stable-visual-seed" alt="Alex" size="lg" crop="circle" />
+</>` } } },
   render: (args) => <Row><PersonAvatar {...args} size="lg" /><PersonAvatar {...args} size="lg" fullKit={false} crop="circle" /></Row>,
   play: async ({ canvasElement }) => {
     const plain = canvasElement.querySelectorAll('svg')[0]!;
@@ -129,6 +170,7 @@ export const Crops: Story = {
 };
 
 export const FullKit: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${kitSource}<PersonAvatar seed="stable-visual-seed" alt="Alex" fullKit kit={kit} size="lg" />` } } },
   args: { fullKit: true, kit: ARTWORK_KIT, size: 'lg' },
   play: async ({ canvasElement }) => {
     const avatar = canvasElement.querySelector('svg')!;
@@ -152,6 +194,11 @@ const paletteSeeds = [...new Set([
   ...Object.keys(PERSON_EYE_COLORS).map(id => RECIPE_FIXTURES.find(([, r]) => r.eyeColor === id)![0]),
 ])];
 export const PaletteCoverage: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar } from '@jfrader/ui';
+
+const seeds = ${JSON.stringify(paletteSeeds)};
+
+<>{seeds.map((seed) => <PersonAvatar key={seed} seed={seed} />)}</>` } } },
   render: () => <Row>{paletteSeeds.map(seed => <PersonAvatar key={seed} seed={seed} />)}</Row>,
   play: async ({ canvasElement }) => {
     await expect(PERSON_SKIN_TONES).toEqual(PALETTE_FIXTURES.skin);
@@ -171,6 +218,12 @@ export const PaletteCoverage: Story = {
 };
 
 export const Determinism: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar } from '@jfrader/ui';
+
+<>
+  <PersonAvatar seed="stable-visual-seed" alt="Alex" />
+  <PersonAvatar seed="stable-visual-seed" alt="Alex" />
+</>` } } },
   render: (args) => <Row><PersonAvatar {...args} /><PersonAvatar {...args} /></Row>,
   play: async ({ canvasElement }) => {
     const first = canvasElement.querySelectorAll('svg')[0]!;
@@ -184,7 +237,6 @@ export const Determinism: Story = {
 };
 
 export const AppearanceParity: Story = {
-  render: (args) => <PersonAvatar {...args} />,
   play: async ({ canvasElement }) => {
     const recipeFailures = RECIPE_FIXTURES.filter(([seed, recipe, signature]) => {
       const actual = resolvePersonAppearance(seed);
@@ -207,6 +259,11 @@ export const AppearanceParity: Story = {
 };
 
 export const TraitCoverage: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar } from '@jfrader/ui';
+
+const seeds = ${JSON.stringify(PERSON_HAIR_STYLES.map(hair => RECIPE_FIXTURES.find(([, recipe]) => recipe.hairStyle === hair)![0]))};
+
+<>{seeds.map((seed) => <PersonAvatar key={seed} seed={seed} />)}</>` } } },
   render: () => <Row>{PERSON_HAIR_STYLES.map(hair => {
     const seed = RECIPE_FIXTURES.find(([, recipe]) => recipe.hairStyle === hair)![0];
     return <PersonAvatar key={hair} seed={seed} />;
@@ -239,6 +296,21 @@ const patternKits: PersonAvatarKit[] = ['solid', 'centerStripe', 'split', 'hoops
   socksPattern: index % 2 ? 'turnover' : 'solid',
 }));
 export const KitVariants: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${kitSource}const shirts = ['solid', 'centerStripe', 'split', 'hoops', 'shoulders'] as const;
+const shorts = ['solid', 'sideStripe', 'split', 'waistBand'] as const;
+const kits: PersonAvatarKit[] = shirts.map((shirtPattern, index) => ({
+  ...kit,
+  socks: PERSON_ART_COLORS.headband,
+  accent: PERSON_ART_COLORS.earring,
+  shortsAccent: PERSON_ART_COLORS.mouth,
+  socksAccent: PERSON_ART_COLORS.shadow,
+  shirtPattern, shortsPattern: shorts[index % shorts.length]!,
+  socksPattern: index % 2 ? 'turnover' : 'solid',
+}));
+
+<>{kits.map((kit, index) => (
+  <PersonAvatar key={index} seed="stable-visual-seed" alt="Alex" kit={kit} size="lg" fullKit />
+))}</>` } } },
   render: (args) => <Row>{patternKits.map((kit, index) => <PersonAvatar {...args} key={index} kit={kit} size="lg" fullKit crop="none"
     primary="currentColor" secondary="currentColor" />)}</Row>,
   play: async ({ canvasElement }) => {
@@ -258,6 +330,19 @@ export const KitVariants: Story = {
 
 const glassesSeed = RECIPE_FIXTURES.find(([, r]) => r.accessory === 'glasses')![0];
 export const IdentityVsAttire: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${kitSource}const homeKit: PersonAvatarKit = {
+  ...kit, socks: PERSON_ART_COLORS.headband, accent: PERSON_ART_COLORS.earring,
+  shortsAccent: PERSON_ART_COLORS.mouth, socksAccent: PERSON_ART_COLORS.shadow,
+};
+const awayKit: PersonAvatarKit = {
+  ...homeKit, shirtPattern: 'hoops', shortsPattern: 'waistBand', socksPattern: 'turnover',
+};
+
+<>
+  <PersonAvatar seed="${glassesSeed}" kit={homeKit} />
+  <PersonAvatar seed="${glassesSeed}" kit={awayKit} size="lg" fullKit />
+  <PersonAvatar seed="${glassesSeed}" attire="staff" kit={awayKit} />
+</>` } } },
   render: () => <Row>
     <PersonAvatar seed={glassesSeed} kit={patternKits[0]} />
     <PersonAvatar seed={glassesSeed} kit={patternKits[3]} size="lg" fullKit />
@@ -276,6 +361,13 @@ export const IdentityVsAttire: Story = {
 };
 
 export const SimpleColors: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${kitSource}import { vars } from '@jfrader/tokens/vars';
+
+<>
+  <PersonAvatar seed="simple-colors" primary={vars.color.accent} secondary="currentColor" fullKit />
+  <PersonAvatar seed="simple-colors" primary={vars.color.accent} secondary="currentColor" attire="staff" kit={kit} />
+  <PersonAvatar seed="simple-colors" primary={vars.color.accent} secondary="currentColor" attire="staff" />
+</>` } } },
   render: () => <Row>
     <PersonAvatar seed="simple-colors" primary={vars.color.accent} secondary="currentColor" fullKit />
     <PersonAvatar seed="simple-colors" primary={vars.color.accent} secondary="currentColor" attire="staff" kit={patternKits[2]} />
@@ -292,6 +384,15 @@ export const SimpleColors: Story = {
 };
 
 export const Decorative: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar } from '@jfrader/ui';
+
+<>
+  <PersonAvatar seed="unannounced-seed" />
+  <PersonAvatar seed="unannounced-seed" alt="" />
+  <PersonAvatar seed="unannounced-seed" alt="Hidden" aria-hidden />
+  <PersonAvatar seed="unannounced-seed" alt="   " />
+  <PersonAvatar seed="unannounced-seed" aria-label="   " />
+</>` } } },
   render: () => <Row>
     <PersonAvatar seed="unannounced-seed" />
     <PersonAvatar seed="unannounced-seed" alt="" aria-label="Hidden" aria-labelledby="hidden-label" />
@@ -310,6 +411,12 @@ export const Decorative: Story = {
   },
 };
 export const Named: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar } from '@jfrader/ui';
+
+<>
+  <PersonAvatar seed="unannounced-seed" alt="Alex" aria-label="Blair" />
+  <PersonAvatar seed="unannounced-seed" aria-label="Blair" />
+</>` } } },
   render: () => <Row><PersonAvatar seed="unannounced-seed" alt="Alex" aria-label="Blair" />
     <PersonAvatar seed="unannounced-seed" aria-label="Blair" /></Row>,
   play: async ({ canvasElement }) => {
@@ -319,6 +426,22 @@ export const Named: Story = {
   },
 };
 export const ExternalAria: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { PersonAvatar } from '@jfrader/ui';
+
+function CaptainPortrait() {
+  const nameId = useId();
+  const descriptionId = useId();
+  return (
+    <>
+      <span id={nameId}>Blair</span>
+      <span id={descriptionId}>Captain</span>
+      <PersonAvatar seed="external" slotProps={{ root: {
+        'aria-labelledby': nameId, 'aria-describedby': descriptionId,
+      } }} />
+    </>
+  );
+}` } } },
   render: () => <Row><span id="person-name">Blair</span><span id="person-description">Captain</span>
     <PersonAvatar seed="external" alt="Alex" aria-label="Casey"
       slotProps={{ root: { 'aria-labelledby': 'person-name', 'aria-describedby': 'person-description' } }} /></Row>,
@@ -330,6 +453,14 @@ export const ExternalAria: Story = {
   },
 };
 export const Keyboard: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar } from '@jfrader/ui';
+
+<>
+  <button type="button">Before</button>
+  <PersonAvatar seed="keyboard" alt="Alex" />
+  <PersonAvatar seed="keyboard" />
+  <button type="button">After</button>
+</>` } } },
   render: () => <Row><button type="button">Before</button><PersonAvatar seed="keyboard" alt="Alex" />
     <PersonAvatar seed="keyboard" /><button type="button">After</button></Row>,
   play: async ({ canvasElement, userEvent }) => {
@@ -344,6 +475,19 @@ export const Keyboard: Story = {
 };
 
 export const Customization: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { PersonAvatar, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+function PortraitRoot(props: ComponentPropsWithRef<'svg'>) {
+  return <svg {...props} data-profile-portrait />;
+}
+const ProfilePortrait = styled(PersonAvatar)({
+  inlineSize: vars.size.personAvatarLg, verticalAlign: 'top',
+});
+
+<ProfilePortrait seed="stable-visual-seed" slots={{ root: PortraitRoot }}
+  className="consumer" slotProps={{ root: { className: 'slot', 'aria-label': 'Blair' } }} />` } } },
   args: { onClick: fn(), slotProps: { root: { onClick: fn() } } },
   render: (args) => <PersonAvatar {...args} component={ComponentAdapter} slots={{ root: RootAdapter }}
     className="consumer" data-test="consumer"
@@ -369,6 +513,14 @@ export const Customization: Story = {
 };
 
 export const ComponentReplacement: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { PersonAvatar } from '@jfrader/ui';
+
+function PortraitRoot(props: ComponentPropsWithRef<'svg'>) {
+  return <svg {...props} data-profile-portrait />;
+}
+
+<PersonAvatar seed="stable-visual-seed" alt="Alex" component={PortraitRoot} />` } } },
   args: { component: ComponentAdapter },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelectorAll('svg')).toHaveLength(1);
@@ -377,7 +529,6 @@ export const ComponentReplacement: Story = {
 };
 
 export const Refs: Story = {
-  render: (args) => <PersonAvatar {...args} />,
   play: async ({ canvasElement }) => {
     const host = canvasElement.ownerDocument.createElement('div');
     canvasElement.append(host);
@@ -413,7 +564,6 @@ export const Refs: Story = {
 };
 
 export const SSRHydration: Story = {
-  render: (args) => <PersonAvatar {...args} />,
   play: async ({ canvasElement }) => {
     const host = canvasElement.ownerDocument.createElement('div');
     const element = <PersonAvatar seed="é⚽" alt="Alex" kit={ARTWORK_KIT} fullKit />;

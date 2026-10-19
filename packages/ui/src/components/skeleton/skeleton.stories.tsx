@@ -58,6 +58,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Skeleton } from '@jfrader/ui';
+
+<Skeleton width={240} height={16} />` } } },
   args: { width: 240, height: 16 },
   play: async ({ canvasElement }) => {
     const [skeleton] = skeletonsIn(canvasElement);
@@ -69,6 +72,16 @@ export const Default: Story = {
 };
 
 export const Text: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Skeleton, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const TextPlaceholder = styled.div({ display: 'grid', gap: vars.space[2], inlineSize: '20rem' });
+
+<TextPlaceholder>
+  <Skeleton />
+  <Skeleton />
+  <Skeleton width="60%" />
+</TextPlaceholder>` } } },
   render: (args) => (
     <div style={linesStyle}>
       <Skeleton {...args} />
@@ -84,6 +97,9 @@ export const Text: Story = {
 };
 
 export const Circle: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Skeleton } from '@jfrader/ui';
+
+<Skeleton circle width={48} />` } } },
   args: { circle: true, width: 48 },
   play: async ({ canvasElement }) => {
     const [skeleton] = skeletonsIn(canvasElement);
@@ -95,6 +111,9 @@ export const Circle: Story = {
 };
 
 export const CustomRadius: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Skeleton } from '@jfrader/ui';
+
+<Skeleton width={120} height={32} radius={0} />` } } },
   args: { width: 120, height: 32, radius: 0 },
   play: async ({ canvasElement }) => {
     const [skeleton] = skeletonsIn(canvasElement);
@@ -103,6 +122,29 @@ export const CustomRadius: Story = {
 };
 
 export const Card: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Skeleton, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ProfilePlaceholder = styled.div({
+  display: 'grid', gap: vars.space[4], inlineSize: '20rem', padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`, borderRadius: vars.radius.md,
+  backgroundColor: vars.color.surface,
+});
+const Header = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+const HeaderText = styled.div({ display: 'grid', flex: 1, gap: vars.space[2] });
+
+<ProfilePlaceholder>
+  <Header>
+    <Skeleton circle />
+    <HeaderText>
+      <Skeleton width="50%" />
+      <Skeleton width="30%" height={12} />
+    </HeaderText>
+  </Header>
+  <Skeleton height={120} radius={vars.radius.md} />
+  <Skeleton />
+  <Skeleton width="80%" />
+</ProfilePlaceholder>` } } },
   render: (args) => (
     <div style={cardStyle}>
       <div style={headerStyle}>
@@ -120,6 +162,7 @@ export const Card: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: Card.parameters,
   decorators: [withLightTheme],
   render: Card.render,
 };

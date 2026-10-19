@@ -60,6 +60,14 @@ export const CustomLabel: Story = {
 };
 
 export const Sizes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Spinner } from '@jfrader/ui';
+
+<>
+  <Spinner size="sm" label="Loading sm" />
+  <Spinner size="md" label="Loading md" />
+  <Spinner size="lg" label="Loading lg" />
+  <Spinner size="xl" label="Loading xl" />
+</>` } } },
   render: (args) => (
     <div style={rowStyle}>
       {SIZES.map((size) => (
@@ -81,6 +89,12 @@ export const Sizes: Story = {
 };
 
 export const InheritsColor: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Spinner, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const LoadingStatus = styled.div({ color: vars.color.accentText });
+
+<LoadingStatus><Spinner label="Loading" /></LoadingStatus>` } } },
   render: (args) => (
     <div style={accentStyle}>
       <Spinner {...args} />

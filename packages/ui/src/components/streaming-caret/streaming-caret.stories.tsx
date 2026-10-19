@@ -18,6 +18,9 @@ The caret blinks normally and stays visible when \`prefers-reduced-motion\` is \
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { StreamingCaret } from '@jfrader/ui';
+
+<p>Writing<StreamingCaret /></p>` } } },
   play: async ({ canvasElement }) => {
     const caret = canvasElement.querySelector('[data-ui="streaming-caret"]')!;
     await expect(caret).toHaveAttribute('aria-hidden', 'true');
@@ -36,6 +39,23 @@ export const CaretReducedMotion: Story = {
     await expect(getComputedStyle(caret).opacity).toBe('1');
   },
 };
-export const Small: Story = { args: { size: 'sm' } };
-export const Large: Story = { args: { size: 'lg' } };
-export const LightTheme: Story = { decorators: [withLightTheme] };
+export const Small: Story = {
+  args: { size: 'sm' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { StreamingCaret } from '@jfrader/ui';
+
+<p>Writing<StreamingCaret size="sm" /></p>` } } },
+};
+export const Large: Story = {
+  args: { size: 'lg' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { StreamingCaret } from '@jfrader/ui';
+
+<p>Writing<StreamingCaret size="lg" /></p>` } } },
+};
+export const LightTheme: Story = {
+  decorators: [withLightTheme],
+  parameters: { docs: { source: { language: 'tsx', code: `import { StreamingCaret, ThemeRoot } from '@jfrader/ui';
+
+<ThemeRoot theme="light">
+  <p>Writing<StreamingCaret /></p>
+</ThemeRoot>` } } },
+};

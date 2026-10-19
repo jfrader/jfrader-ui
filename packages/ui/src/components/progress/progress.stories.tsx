@@ -18,6 +18,15 @@ function ReplacementIndicator(props: ComponentPropsWithRef<'div'>) {
 }
 
 export const ReplaceIndicator: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Progress } from '@jfrader/ui';
+
+function UploadIndicator(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-upload-indicator />;
+}
+
+<Progress value={40} label="Uploading" slots={{ indicator: UploadIndicator }}
+  slotProps={{ indicator: { title: 'Upload progress' } }} />` } } },
   args: { value: 40, label: 'Uploading', slots: { indicator: ReplacementIndicator }, slotProps: { indicator: { title: 'Upload progress' } } },
   play: async ({ canvasElement }) => {
     const indicator = within(canvasElement).getByTestId('replacement-indicator');
@@ -90,6 +99,17 @@ export const Indeterminate: Story = {
 };
 
 export const RTL: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Progress, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ThickProgress = styled(Progress)({ blockSize: vars.space[2] });
+
+<>
+  <Progress dir="rtl" label="Empty" value={0} />
+  <Progress dir="rtl" aria-label="Half complete" value={50} />
+  <ThickProgress dir="rtl" label="Complete" value={100} />
+  <ThickProgress dir="rtl" label="Preparing" />
+</>` } } },
   render: (args) => (
     <>
       <Progress {...args} dir="rtl" label="Empty" value={0} />
@@ -107,6 +127,8 @@ export const RTL: Story = {
 };
 
 export const ValueText: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Progress label="Importing files" value={3} max={8}
+  getValueLabel={(value, max) => \`\${value} of \${max} files\`} />` } } },
   args: {
     label: 'Importing files',
     value: 3,
@@ -123,6 +145,22 @@ export const ValueText: Story = {
 };
 
 export const VisibleLabel: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { Progress, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const StorageField = styled.div({ display: 'grid', gap: vars.space[2],
+  fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.text });
+
+function StorageUsage() {
+  const labelId = useId();
+  return (
+    <StorageField>
+      <span id={labelId}>Storage used</span>
+      <Progress value={70} aria-labelledby={labelId} />
+    </StorageField>
+  );
+}` } } },
   args: { value: 70 },
   render: (args) => (
     <Field>
@@ -137,6 +175,14 @@ export const VisibleLabel: Story = {
 };
 
 export const AccessibleValueText: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Progress } from '@jfrader/ui';
+
+<>
+  <Progress aria-label="Download" value={40} aria-valuetext="40 megabytes downloaded" />
+  <Progress aria-label="Preparing download" aria-valuetext="Connecting" />
+  <Progress aria-label="Formatted download" value={40} aria-valuetext="Consumer value"
+    getValueLabel={() => 'Generated value'} />
+</>` } } },
   render: (args) => (
     <>
       <Progress {...args} aria-label="Download" value={40} aria-valuetext="40 megabytes downloaded" />
@@ -167,6 +213,13 @@ export const AccessibleValueText: Story = {
 };
 
 export const Bounds: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Progress } from '@jfrader/ui';
+
+<>
+  <Progress label="Empty" value={0} />
+  <Progress label="Overflow" value={150} />
+  <Progress label="Underflow" value={-20} />
+</>` } } },
   render: (args) => (
     <>
       <Progress {...args} label="Empty" value={0} />
@@ -200,6 +253,18 @@ const normalizationCases = [
 ];
 
 export const NormalizedNumbers: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Progress } from '@jfrader/ui';
+
+<>
+  <Progress label="Clamped overflow" value={150} max={100} />
+  <Progress label="Negative maximum" value={40} max={-5} />
+  <Progress label="Zero maximum" value={40} max={0} />
+  <Progress label="NaN value" value={NaN} />
+  <Progress label="Infinite value" value={Infinity} />
+  <Progress label="Negative infinite value" value={-Infinity} />
+  <Progress label="NaN maximum" value={40} max={NaN} />
+  <Progress label="Infinite maximum" value={40} max={Infinity} />
+</>` } } },
   render: (args) => (
     <>
       {normalizationCases.map(({ label, value, max }) => (
@@ -229,6 +294,12 @@ export const NormalizedNumbers: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Progress, ThemeRoot } from '@jfrader/ui';
+
+<ThemeRoot theme="light">
+  <Progress label="Uploading file" value={60} />
+  <Progress label="Preparing" />
+</ThemeRoot>` } } },
   decorators: [withLightTheme],
   render: (args) => (
     <>

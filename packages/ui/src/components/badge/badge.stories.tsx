@@ -10,11 +10,33 @@ import { Badge, type BadgeTone } from './index';
 
 const TONES = ['accent', 'danger', 'neutral'] as const satisfies readonly BadgeTone[];
 
+const badgeSource = `import { Badge, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const NotificationTarget = styled.span({
+  display: 'block',
+  inlineSize: vars.space[6],
+  blockSize: vars.space[6],
+  borderRadius: vars.radius.sm,
+  backgroundColor: vars.color.surfaceHover,
+  border: \`1px solid \${vars.color.borderStrong}\`,
+  boxSizing: 'border-box',
+});
+
+`;
+
 function SlotBadge(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-slot="badge-marker" />;
 }
 
 export const MarkerReplacement: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}function NotificationMarker(props: import('react').ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-notification-marker />;
+}
+
+<Badge variant="dot" slots={{ badge: NotificationMarker }}>
+  <NotificationTarget />
+</Badge>` } } },
   render: (args) => <Badge {...args} variant="dot" slots={{ badge: SlotBadge }} />,
   play: async ({ canvasElement }) => {
     const marker = canvasElement.querySelector('[data-slot="badge-marker"]');
@@ -109,6 +131,7 @@ type Story = StoryObj<typeof meta>;
 
 /** If the wrapped control has an `aria-label`, include the count in it: `aria-label="Inbox, 3 unread"`. */
 export const Default: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<Badge badgeContent={4}><NotificationTarget /></Badge>` } } },
   play: async ({ canvasElement }) => {
     const [root] = getRoots(canvasElement);
     const marker = within(canvasElement).getByText('4');
@@ -122,6 +145,13 @@ export const Default: Story = {
 };
 
 export const MaxContent: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<>
+  <Badge badgeContent={1500}><NotificationTarget /></Badge>
+  <Badge badgeContent={10} max={9}><NotificationTarget /></Badge>
+  <Badge badgeContent={9} max={9}><NotificationTarget /></Badge>
+  <Badge badgeContent={-7}><NotificationTarget /></Badge>
+  <Badge badgeContent={7} max={0}><NotificationTarget /></Badge>
+</>` } } },
   render: (args) => (
     <>
       <Badge {...args} badgeContent={1500} />
@@ -138,6 +168,10 @@ export const MaxContent: Story = {
 };
 
 export const ShowZero: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<>
+  <Badge badgeContent={0}><NotificationTarget /></Badge>
+  <Badge badgeContent={0} showZero><NotificationTarget /></Badge>
+</>` } } },
   render: (args) => (
     <>
       <Badge {...args} badgeContent={0} />
@@ -152,6 +186,16 @@ export const ShowZero: Story = {
 };
 
 export const VisibilityMatrix: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<>
+  <Badge badgeContent={0}><NotificationTarget /></Badge>
+  <Badge badgeContent={0} showZero><NotificationTarget /></Badge>
+  <Badge><NotificationTarget /></Badge>
+  <Badge showZero><NotificationTarget /></Badge>
+  <Badge badgeContent={null}><NotificationTarget /></Badge>
+  <Badge badgeContent={false}><NotificationTarget /></Badge>
+  <Badge badgeContent={true}><NotificationTarget /></Badge>
+  <Badge badgeContent={7}><NotificationTarget /></Badge>
+</>` } } },
   render: (args) => (
     <>
       <Badge {...args} badgeContent={0} />
@@ -178,6 +222,11 @@ export const VisibilityMatrix: Story = {
 };
 
 export const Dot: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<>
+  <Badge variant="dot" badgeContent={4}><NotificationTarget /></Badge>
+  <Badge variant="dot"><NotificationTarget /></Badge>
+  <Badge variant="dot" invisible><NotificationTarget /></Badge>
+</>` } } },
   args: { variant: 'dot' },
   render: (args) => (
     <>
@@ -205,6 +254,7 @@ export const Dot: Story = {
 };
 
 export const Invisible: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<Badge badgeContent={4} invisible><NotificationTarget /></Badge>` } } },
   args: { invisible: true },
   play: async ({ canvasElement }) => {
     const [root] = getRoots(canvasElement);
@@ -214,6 +264,12 @@ export const Invisible: Story = {
 };
 
 export const Anchors: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<>
+  <Badge badgeContent={4} anchor={{ vertical: 'top', horizontal: 'start' }}><NotificationTarget /></Badge>
+  <Badge badgeContent={4} anchor={{ vertical: 'top', horizontal: 'end' }}><NotificationTarget /></Badge>
+  <Badge badgeContent={4} anchor={{ vertical: 'bottom', horizontal: 'start' }}><NotificationTarget /></Badge>
+  <Badge badgeContent={4} anchor={{ vertical: 'bottom', horizontal: 'end' }}><NotificationTarget /></Badge>
+</>` } } },
   render: (args) => (
     <>
       <Badge {...args} anchor={{ vertical: 'top', horizontal: 'start' }} />
@@ -238,6 +294,9 @@ export const Anchors: Story = {
 };
 
 export const OverlapCircular: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}const RoundTarget = styled(NotificationTarget)({ borderRadius: vars.radius.full });
+
+<Badge badgeContent={4} overlap="circular"><RoundTarget /></Badge>` } } },
   args: { overlap: 'circular', children: <Square round /> },
   play: async ({ canvasElement }) => {
     const marker = getMarker(getRoots(canvasElement)[0]!) as HTMLElement;
@@ -247,6 +306,9 @@ export const OverlapCircular: Story = {
 };
 
 export const RTL: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<div dir="rtl">
+  <Badge badgeContent={4}><NotificationTarget /></Badge>
+</div>` } } },
   render: (args) => (
     <div dir="rtl">
       <Badge {...args} />
@@ -264,6 +326,16 @@ export const RTL: Story = {
 };
 
 export const SlotProps: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<Badge
+  badgeContent={4}
+  className="consumer-root"
+  slotProps={{
+    root: { className: 'slot-root', css: { marginInlineStart: vars.space[4] } },
+    badge: { className: 'slot-badge', css: { fontWeight: vars.fontWeight.semibold } },
+  }}
+>
+  <NotificationTarget />
+</Badge>` } } },
   args: {
     className: 'consumer-root',
     slotProps: {
@@ -282,6 +354,15 @@ export const SlotProps: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ThemeRoot } from '@jfrader/ui';
+${badgeSource}<ThemeRoot theme="light">
+  {(['accent', 'danger', 'neutral'] as const).map((tone) => (
+    <Badge key={tone} tone={tone} badgeContent={4}><NotificationTarget /></Badge>
+  ))}
+  {(['accent', 'danger', 'neutral'] as const).map((tone) => (
+    <Badge key={tone} tone={tone} variant="dot"><NotificationTarget /></Badge>
+  ))}
+</ThemeRoot>` } } },
   decorators: [withLightTheme],
   render: (args) => (
     <>
