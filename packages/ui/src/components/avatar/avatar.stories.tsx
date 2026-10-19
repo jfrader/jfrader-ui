@@ -1,4 +1,4 @@
-import { StrictMode, createRef, type ComponentPropsWithRef, type CSSProperties } from 'react';
+import { StrictMode, createRef, type ComponentPropsWithRef } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { renderToString } from 'react-dom/server';
@@ -9,34 +9,25 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Avatar, type AvatarSize, type AvatarStatus } from './index';
 import { PersonAvatar } from '../person-avatar';
 import { Flex } from '../flex';
+import { Button } from '../button';
+import { sceneSource } from '../scene';
+import { styled } from '../../styling/styled';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly AvatarSize[];
 const SIZE_PX = { sm: 24, md: 32, lg: 40 } as const;
 const STATUSES = ['online', 'away', 'busy', 'offline'] as const satisfies readonly AvatarStatus[];
 const NAME = 'Ada Lovelace';
 
-// Procedural noise portrait: the image draws its own pixels, so the fixture needs no color literals.
-const PHOTO_SRC = `data:image/svg+xml,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
-    '<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="7"/>' +
-    '<feColorMatrix values="1.6 0 0 0 -0.2  0 1.1 0 0 -0.1  0 0 1.8 0 0  0 0 0 0 1"/></filter>' +
-    '<rect width="64" height="64" filter="url(#n)"/></svg>',
-)}`;
+const PHOTO_SRC = sceneSource('avatar-ada');
 const BROKEN_SRC = 'data:image/png;base64,broken';
-
-const rowStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space[3],
-} satisfies CSSProperties;
 
 const meta = {
   title: 'Data display/Avatar',
   component: Avatar,
   parameters: {
     docs: {
-      description: { component: 'Show a person’s photo or initials, with an optional status.' },
-      usage: '### Fallback content\nPass noninteractive children to show artwork when `src` is missing or fails. Use `alt=""` and `size="full"` on a PersonAvatar child. With no renderable children, Avatar shows initials.\n\n### Presence\nSet `pulse` with `status="online"` for an expanding ring. The default is static; reduced motion and forced colors hide the ring.\n\n### Naming\nAn external `aria-labelledby` takes precedence over the generated name and status label.',
+      description: { component: 'Show a person’s portrait, photo or initials, with an optional status.' },
+      usage: '### Fallback content\nPass noninteractive children to show artwork when `src` is missing or fails. Use a durable member id as the PersonAvatar seed, with `alt=""`, `size="full"` and portrait `crop="circle"`. With no renderable children, Avatar shows initials.\n\n### Images\nThe native image examples use procedural Scene artwork from `sceneSource`, not photographs. You can pass a photo URL through the same `src` prop.\n\n### Presence\nSet `pulse` with `status="online"` for an expanding ring. The default is static; reduced motion and forced colors hide the ring.\n\n### Naming\nAn external `aria-labelledby` takes precedence over the generated name and status label.',
     },
   },
   args: { name: NAME, size: 'md' },
@@ -51,7 +42,26 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<Avatar name="Ada Lovelace" src="/portraits/ada.jpg" size="md" />` } } },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, PersonAvatar } from '@jfrader/ui';
+
+<Avatar name="Ada Lovelace">
+  <PersonAvatar seed="member-ada" alt="" size="full" crop="circle" />
+</Avatar>` } } },
+  args: { children: <PersonAvatar seed="member-ada" alt="" size="full" crop="circle" /> },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByRole('img')).toHaveLength(1);
+    const avatar = canvas.getByRole('img', { name: NAME });
+    await expect(avatar.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    await expect(avatar.querySelector('svg')).toHaveAttribute('viewBox', '0 0 48 48');
+  },
+};
+
+/** Procedural Scene artwork loaded through the native image path. */
+export const SceneImage: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, sceneSource } from '@jfrader/ui';
+
+<Avatar name="Ada Lovelace" src={sceneSource('avatar-ada')} />` } } },
   args: { src: PHOTO_SRC },
   play: async ({ canvasElement }) => {
     const avatar = within(canvasElement).getByRole('img', { name: NAME });
@@ -77,7 +87,7 @@ export const Initials: Story = {
 };
 
 export const Artwork: Story = {
-  parameters: { docs: { source: { code: `import { Avatar, PersonAvatar } from '@jfrader/ui';
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, PersonAvatar } from '@jfrader/ui';
 
 <Avatar name="Ada Lovelace" status="online" pulse>
   <PersonAvatar seed="member-ada" alt="" size="full" crop="circle" />
@@ -115,6 +125,16 @@ export const Artwork: Story = {
 };
 
 export const PhotoWithArtworkFallback: Story = {
+  parameters: { docs: {
+    description: { story: 'Pass a photo URL as src and a procedural portrait as fallback. This example uses Scene artwork in place of a photo.' },
+    source: { language: 'tsx', code: `import { Avatar, PersonAvatar, sceneSource } from '@jfrader/ui';
+
+const imageSource = sceneSource('avatar-ada'); // Replace with your photo URL.
+
+<Avatar name="Ada Lovelace" src={imageSource}>
+  <PersonAvatar seed="member-ada" alt="" size="full" crop="circle" />
+</Avatar>` },
+  } },
   args: { src: PHOTO_SRC, children: <PersonAvatar seed="member-ada" alt="" size="full" crop="circle" /> },
   play: async ({ canvasElement }) => {
     const avatar = within(canvasElement).getByRole('img', { name: NAME });
@@ -236,13 +256,13 @@ export const InitialsEdgeCases: Story = {
   <Avatar name="\u674e \u5c0f\u9f8d" />
 </>` } } },
   render: (args) => (
-    <div style={rowStyle}>
+    <Flex align="center" gap="sm" wrap>
       <Avatar {...args} name="cher" />
       <Avatar {...args} name="  grace   brewster murray hopper " />
       <Avatar {...args} name="Émile Zola" />
       <Avatar {...args} name="👩🏽💻 Smith" />
       <Avatar {...args} name="李 小龍" />
-    </div>
+    </Flex>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -273,11 +293,11 @@ export const Sizes: Story = {
   <Avatar name="Size lg" size="lg" />
 </>` } } },
   render: (args) => (
-    <div style={rowStyle}>
+    <Flex align="center" gap="sm" wrap>
       {SIZES.map((size) => (
         <Avatar {...args} key={size} size={size} name={`Size ${size}`} />
       ))}
-    </div>
+    </Flex>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -290,22 +310,22 @@ export const Sizes: Story = {
 };
 
 export const Status: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, sceneSource } from '@jfrader/ui';
 
 <>
   <Avatar name="Ada Lovelace" status="online" />
   <Avatar name="Ada Lovelace" status="away" />
   <Avatar name="Ada Lovelace" status="busy" />
   <Avatar name="Ada Lovelace" status="offline" />
-  <Avatar name="Ada Lovelace" src="/portraits/ada.jpg" size="lg" status="online" statusLabel="en línea" />
+  <Avatar name="Ada Lovelace" src={sceneSource('avatar-ada')} size="lg" status="online" statusLabel="en línea" />
 </>` } } },
   render: (args) => (
-    <div style={rowStyle}>
+    <Flex align="center" gap="sm" wrap>
       {STATUSES.map((status) => (
         <Avatar {...args} key={status} status={status} />
       ))}
       <Avatar {...args} src={PHOTO_SRC} size="lg" status="online" statusLabel="en línea" />
-    </div>
+    </Flex>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -345,20 +365,20 @@ function ProfileInitials(props: ComponentPropsWithRef<'span'>) {
 };
 
 export const LightTheme: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, ThemeRoot } from '@jfrader/ui';
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, ThemeRoot, sceneSource } from '@jfrader/ui';
 
 <ThemeRoot theme="light">
-  <Avatar name="Ada Lovelace" src="/portraits/ada.jpg" status="online" />
+  <Avatar name="Ada Lovelace" src={sceneSource('avatar-ada')} status="online" />
   <Avatar name="Ada Lovelace" status="busy" />
   <Avatar name="Ada Lovelace" status="offline" />
 </ThemeRoot>` } } },
   decorators: [withLightTheme],
   render: (args) => (
-    <div style={rowStyle}>
+    <Flex align="center" gap="sm" wrap>
       <Avatar {...args} src={PHOTO_SRC} status="online" />
       <Avatar {...args} status="busy" />
       <Avatar {...args} status="offline" />
-    </div>
+    </Flex>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -433,24 +453,24 @@ async function expectPresenceCycle(badge: HTMLElement) {
 
 export const OnlinePulse: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { Fragment } from 'react';
-import { Avatar } from '@jfrader/ui';
+import { Avatar, sceneSource } from '@jfrader/ui';
 
 <>
   {(['sm', 'md', 'lg'] as const).map((size) => (
     <Fragment key={size}>
-      <Avatar name={\`Photo \${size}\`} src="/portraits/ada.jpg" size={size} status="online" pulse />
+      <Avatar name={\`Photo \${size}\`} src={sceneSource('avatar-ada')} size={size} status="online" pulse />
       <Avatar name={\`Initials \${size}\`} size={size} status="online" pulse />
     </Fragment>
   ))}
 </>` } } },
   args: { status: 'online', pulse: true },
   render: (args) => (
-    <div style={rowStyle}>
+    <Flex align="center" gap="sm" wrap>
       {SIZES.flatMap((size) => [
         <Avatar {...args} key={`${size}-photo`} size={size} src={PHOTO_SRC} name={`Photo ${size}`} />,
         <Avatar {...args} key={`${size}-initials`} size={size} name={`Initials ${size}`} />,
       ])}
-    </div>
+    </Flex>
   ),
   play: async ({ canvasElement }) => {
     const avatars = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="avatar"]'));
@@ -493,12 +513,12 @@ import { Avatar } from '@jfrader/ui';
 export const OnlinePulseLight: Story = {
   ...OnlinePulse,
   parameters: { docs: { source: { language: 'tsx', code: `import { Fragment } from 'react';
-import { Avatar, ThemeRoot } from '@jfrader/ui';
+import { Avatar, ThemeRoot, sceneSource } from '@jfrader/ui';
 
 <ThemeRoot theme="light">
   {(['sm', 'md', 'lg'] as const).map((size) => (
     <Fragment key={size}>
-      <Avatar name={\`Photo \${size}\`} src="/portraits/ada.jpg" size={size} status="online" pulse />
+      <Avatar name={\`Photo \${size}\`} src={sceneSource('avatar-ada')} size={size} status="online" pulse />
       <Avatar name={\`Initials \${size}\`} size={size} status="online" pulse />
     </Fragment>
   ))}
@@ -518,14 +538,14 @@ export const StaticPresence: Story = {
   <Avatar name="Ada Lovelace" pulse />
 </>` } } },
   render: (args) => (
-    <div style={rowStyle}>
+    <Flex align="center" gap="sm" wrap>
       <Avatar {...args} status="online" />
       <Avatar {...args} status="online" pulse={false} />
       {STATUSES.filter((status) => status !== 'online').map((status) => (
         <Avatar {...args} key={status} status={status} pulse />
       ))}
       <Avatar {...args} pulse />
-    </div>
+    </Flex>
   ),
   play: async ({ canvasElement }) => {
     const avatars = canvasElement.querySelectorAll<HTMLElement>('[data-ui="avatar"]');
@@ -578,22 +598,22 @@ export const PulseForcedColorsRule: Story = {
   },
 };
 
-const presenceButtonStyle = { padding: vars.space[6] } satisfies CSSProperties;
+const ProfileButton = styled(Button)({ padding: vars.space[6] });
 
 export const PulsePointerPassthrough: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, styled } from '@jfrader/ui';
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Button, sceneSource, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
-const ProfileButton = styled.button({ padding: vars.space[6] });
+const ProfileButton = styled(Button)({ padding: vars.space[6] });
 
 <ProfileButton type="button" aria-label="Open profile">
-  <Avatar name="Ada Lovelace" src="/portraits/ada.jpg" status="online" pulse />
+  <Avatar name="Ada Lovelace" src={sceneSource('avatar-ada')} status="online" pulse />
 </ProfileButton>` } } },
   args: { src: PHOTO_SRC, status: 'online', pulse: true, onClick: fn() },
   render: (args) => (
-    <button type="button" aria-label="Open profile" onClick={args.onClick} style={presenceButtonStyle}>
+    <ProfileButton type="button" aria-label="Open profile" onClick={args.onClick}>
       <Avatar {...args} onClick={undefined} />
-    </button>
+    </ProfileButton>
   ),
   play: async ({ canvasElement, userEvent, args }) => {
     const button = within(canvasElement).getByRole('button', { name: 'Open profile' });

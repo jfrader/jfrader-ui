@@ -1,5 +1,3 @@
-// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
-import { styled } from '../../index';
 import { StrictMode, useId, useState, type ComponentPropsWithRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
@@ -13,8 +11,54 @@ import { Button } from '../button';
 import type { AvatarSize, AvatarStatus } from '../avatar';
 import { AvatarGroup, type AvatarGroupMember } from './index';
 import { PersonAvatar } from '../person-avatar';
+import { sceneSource } from '../scene';
+import { Stack } from '../stack';
+import { Flex } from '../flex';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly AvatarSize[];
+
+export const Default: Story = {
+  parameters: {
+    docs: {
+      description: { story: 'Mix procedural Scene images, PersonAvatar portraits and initials. Keep each portrait seed tied to its member id.' },
+      source: {
+        language: 'tsx',
+        code: `import { AvatarGroup, PersonAvatar, sceneSource } from '@jfrader/ui';
+
+<AvatarGroup
+  members={[
+    { id: 'ada', name: 'Ada Lovelace', src: sceneSource('avatar-ada') },
+    { id: 'grace', name: 'Grace Hopper', status: 'online', avatarProps: {
+      children: <PersonAvatar seed="grace" alt="" size="full" crop="circle" />,
+    } },
+    { id: 'margaret', name: 'Margaret Hamilton', status: 'busy' },
+    { id: 'katherine', name: 'Katherine Johnson' },
+    { id: 'hedy', name: 'Hedy Lamarr', status: 'away' },
+  ]}
+  max={4}
+  size="md"
+  label="Team members"
+/>`,
+      },
+    },
+  },
+  args: { ref: fn() },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const group = canvas.getByRole('group', { name: 'Team members' });
+    await expect(group).toBeInstanceOf(HTMLDivElement);
+    await expect(args.ref).toHaveBeenCalledWith(group);
+    await expect(canvas.getAllByRole('img')).toHaveLength(5);
+    await expect(canvas.getByRole('img', { name: 'Ada Lovelace' }).querySelector('img')).not.toBeNull();
+    await expect(canvas.getByRole('img', { name: 'Grace Hopper, online' }).querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    await expect(canvas.getByRole('img', { name: 'Margaret Hamilton, busy' })).toHaveTextContent('MH');
+    await expect(canvas.getByRole('img', { name: 'Katherine Johnson' })).toBeInTheDocument();
+    await expect(canvas.getByRole('img', { name: '1 more member' })).toBeInTheDocument();
+    const describedBy = group.getAttribute('aria-describedby') ?? '';
+    const summary = canvasElement.ownerDocument.getElementById(describedBy);
+    await expect(summary).toHaveTextContent('5 members');
+  },
+};
 
 function SlotOverflow(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-slot="avatar-group-overflow" />;
@@ -37,13 +81,7 @@ const SEPARATION_BORDER_WIDTH = '2px';
 const CSS_PIXEL = 1;
 const STATUSES = ['online', 'away', 'busy', 'offline'] as const satisfies readonly AvatarStatus[];
 
-// Procedural noise portrait: self-contained pixels, zero color literals.
-const PHOTO_SRC = `data:image/svg+xml,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
-    '<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="7"/>' +
-    '<feColorMatrix values="1.6 0 0 0 -0.2  0 1.1 0 0 -0.1  0 0 1.8 0 0  0 0 0 0 1"/></filter>' +
-    '<rect width="64" height="64" filter="url(#n)"/></svg>',
-)}`;
+const PHOTO_SRC = sceneSource('avatar-ada');
 const BROKEN_SRC = 'data:image/png;base64,broken';
 
 function SharedFallback(props: ComponentPropsWithRef<'span'>) {
@@ -175,17 +213,13 @@ function summaryOf(group: HTMLElement): HTMLElement {
 
 const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
   { id: 'ada', name: 'Ada Lovelace', src: PHOTO_SRC },
-  { id: 'grace', name: 'Grace Hopper', status: 'online' },
+  { id: 'grace', name: 'Grace Hopper', status: 'online', avatarProps: {
+    children: <PersonAvatar seed="grace" alt="" size="full" crop="circle" />,
+  } },
   { id: 'margaret', name: 'Margaret Hamilton', status: 'busy' },
   { id: 'katherine', name: 'Katherine Johnson' },
   { id: 'hedy', name: 'Hedy Lamarr', status: 'away' },
 ];
-
-const Stack = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[4] });
-
-const CompactStack = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[3] });
-
-const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
 
 const meta = {
   title: 'Data display/AvatarGroup',
@@ -218,46 +252,6 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `<AvatarGroup
-  members={[
-    { id: 'ada', name: 'Ada Lovelace', src: '${PHOTO_SRC}' },
-    { id: 'grace', name: 'Grace Hopper', status: 'online' },
-    { id: 'margaret', name: 'Margaret Hamilton', status: 'busy' },
-    { id: 'katherine', name: 'Katherine Johnson' },
-    { id: 'hedy', name: 'Hedy Lamarr', status: 'away' },
-  ]}
-  max={4}
-  size="md"
-  label="Team members"
-/>`,
-      },
-    },
-  },
-  args: { ref: fn() },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const group = canvas.getByRole('group', { name: 'Team members' });
-    await expect(group).toBeInstanceOf(HTMLDivElement);
-    await expect(args.ref).toHaveBeenCalledWith(group);
-
-    // Max 4 with 5 members -> 4 visible avatars + 1 overflow
-    await expect(canvas.getByRole('img', { name: 'Ada Lovelace' })).toBeInTheDocument();
-    await expect(canvas.getByRole('img', { name: 'Grace Hopper, online' })).toBeInTheDocument();
-    await expect(canvas.getByRole('img', { name: 'Margaret Hamilton, busy' })).toBeInTheDocument();
-    await expect(canvas.getByRole('img', { name: 'Katherine Johnson' })).toBeInTheDocument();
-    await expect(canvas.getByRole('img', { name: '1 more member' })).toBeInTheDocument();
-
-    const describedBy = group.getAttribute('aria-describedby') ?? '';
-    const summary = canvasElement.ownerDocument.getElementById(describedBy);
-    await expect(summary).toHaveTextContent('5 members');
-  },
-};
 
 export const Sizes: Story = {
   render: (args) => (
@@ -296,6 +290,7 @@ export const Sizes: Story = {
 };
 
 export const PhotosAndFallbacks: Story = {
+  parameters: { docs: { description: { story: 'A procedural Scene image, a failed image showing initials, and initials without a source.' } } },
   args: {
     max: 3,
     members: [
@@ -521,7 +516,7 @@ function MemberUpdatesHarness() {
   ]);
 
   return (
-    <CompactStack>
+    <Stack gap="sm">
       <Button
         onClick={() => {
           setMembers((prev) => [prev[1]!, prev[0]!, prev[2]!]);
@@ -530,7 +525,7 @@ function MemberUpdatesHarness() {
         Reorder members
       </Button>
       <AvatarGroup members={members} max={3} />
-    </CompactStack>
+    </Stack>
   );
 }
 
@@ -561,7 +556,7 @@ function ExternalAriaHarness() {
   const titleId = useId();
   const crewTitleId = useId();
   return (
-    <CompactStack>
+    <Stack gap="sm">
       <h3 id={titleId}>Design Leads</h3>
       <AvatarGroup
         aria-labelledby={titleId}
@@ -591,7 +586,7 @@ function ExternalAriaHarness() {
         aria-describedby="external-hint"
         members={[{ id: '3', name: 'Margaret Hamilton' }]}
       />
-    </CompactStack>
+    </Stack>
   );
 }
 
@@ -798,11 +793,11 @@ export const StaticMotion: Story = {
 
 export const KeyboardSkipsGroup: Story = {
   render: (args) => (
-    <Row>
+    <Flex align="center" gap="sm" wrap>
       <Button>Before</Button>
       <AvatarGroup {...args} />
       <Button>After</Button>
-    </Row>
+    </Flex>
   ),
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
