@@ -570,9 +570,10 @@ export const SliderChannels: Story = {
       await expect(slider).toHaveValue('0');
       await userEvent.keyboard('{End}{ArrowRight}');
       await expect(slider).toHaveValue(max);
+      // Authored 32px; fractional DPR reports ~31.99, so allow a sub-pixel tolerance.
       await expect(
         slider.getBoundingClientRect().height,
-      ).toBeGreaterThanOrEqual(32);
+      ).toBeGreaterThanOrEqual(31.5);
     }
   },
 };
