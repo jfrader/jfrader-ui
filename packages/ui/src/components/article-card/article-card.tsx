@@ -81,6 +81,7 @@ const variants = {
   centered: css({ textAlign: 'center', '--_article-inline-justify': 'center' }),
 };
 const treatmentHeadlineStyle = css({ lineHeight: vars.editorial.lineHeight.secondary, letterSpacing: vars.editorial.tracking.secondary });
+const timeColumnSingleStyle = css({ [ARTICLE_DESKTOP]: { gridTemplateColumns: 'minmax(0, 1fr)' } });
 const centeredDekStyle = css({ maxInlineSize: vars.editorial.centeredMeasure, marginInline: 'auto' });
 const headlineStyle = css({ margin: 0, minInlineSize: 0, fontFamily: articleHeadingFont, fontWeight: vars.fontWeight.semibold, textWrap: 'balance', overflowWrap: 'anywhere', color: vars.color.text });
 const sizes = {
@@ -101,10 +102,11 @@ const ruleStyle = css({ inlineSize: vars.space[10], borderBlockStart: `${vars.ed
 function ArticleCardRoot({ size = 'standard', variant = 'standard', component, slots, slotProps, children, headline, href, renderLink, level, kicker, dek, lede, meta, time, media, ...props }: ArticleCardProps) {
   const context = useMemo(() => ({ size, variant, slots, slotProps }), [size, variant, slots, slotProps]);
   const easy = headline !== undefined;
+  const hasTime = time !== undefined && isRenderable(time.label);
   return <CardContext.Provider value={context}>
-    <PresentationSlot {...props} element="article" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-card" data-size={size} data-variant={variant} styles={[rootStyle, variants[variant], variant === 'standard' && (size === 'lead' ? leadSpacing : standardSpacing)]}>
+    <PresentationSlot {...props} element="article" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-card" data-size={size} data-variant={variant} styles={[rootStyle, variants[variant], variant === 'time-column' && !hasTime && timeColumnSingleStyle, variant === 'standard' && (size === 'lead' ? leadSpacing : standardSpacing)]}>
       {easy ? <>
-        {time && isRenderable(time.label) && <PresentationSlot element="time" component={slots?.time} slotProps={slotProps?.time} data-ui="article-card-time" dateTime={time.dateTime} styles={[articleLabelStyle, articleTimeStyle]}>{time.label}</PresentationSlot>}
+        {hasTime && time && <PresentationSlot element="time" component={slots?.time} slotProps={slotProps?.time} data-ui="article-card-time" dateTime={time.dateTime} styles={[articleLabelStyle, articleTimeStyle]}>{time.label}</PresentationSlot>}
         <PresentationSlot element="div" component={slots?.content} slotProps={slotProps?.content} data-ui="article-card-content" styles={contentStyle}>
           {variant !== 'rule-bottom' && isRenderable(kicker) && <PresentationSlot element="div" component={slots?.kicker} slotProps={slotProps?.kicker} data-ui="article-card-kicker">{kicker}</PresentationSlot>}
           <ArticleCardHeadline href={href} {...(renderLink ? { renderLink } : {})} level={level}>{headline}</ArticleCardHeadline>

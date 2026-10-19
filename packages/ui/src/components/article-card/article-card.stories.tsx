@@ -59,6 +59,7 @@ export const Brief: Story = { args: { size: 'brief' }, play: async ({ canvasElem
 export const Wide: Story = { args: { variant: 'wide', size: 'lead', slotProps: { dek: { variant: 'columns' } } } };
 export const WideNarrow: Story = { args: { variant: 'wide' } };
 export const TimeColumn: Story = { args: { variant: 'time-column', time, kicker: <ArticleKicker items={[{ id: 'city', label: 'The city' }]} />, meta: <ArticleMeta published={time} place="Northline" /> } };
+export const TimeColumnWithoutTime: Story = { args: { variant: 'time-column' } };
 export const RuleTop: Story = { args: { variant: 'rule-top' } };
 export const NoDek: Story = { args: { variant: 'no-dek' } };
 export const RuleBottom: Story = { args: { variant: 'rule-bottom', kicker: 'The city', meta: <ArticleMeta published={time} /> }, play: async ({ canvasElement }) => {
