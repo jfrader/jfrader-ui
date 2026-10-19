@@ -1,0 +1,99 @@
+'use client';
+
+import { createContext, useContext, useMemo, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
+import { vars } from '@jfrader/tokens/vars';
+import { css, type Interpolation, type Theme } from '../../styling/css';
+import type { SxProps } from '../../styling/sx';
+import { ARTICLE_DESKTOP, articleHeadingFont, articleLabelStyle, articleLinkStyle, articleSoftRule, articleTimeStyle } from '../../styling/article';
+import { isRenderable } from '../../utils/renderable';
+import { PresentationSlot, repeatedTemplate, safeArticleRel, type ArticleHeadingLevel, type PresentationParts, type PresentationSlots, type PrintedTime, type RenderArticleLink } from '../../utils/presentation-slot';
+
+export type ArticleListVariant = 'headlines' | 'wire' | 'stacked';
+export type ArticleListItemVariant = 'headline-time' | 'headline-tag' | 'headline-place' | 'wire' | 'stacked';
+export type ArticleListSize = 'sm' | 'md';
+type ItemAnatomy = { root: 'li'; meta: 'div'; time: 'time'; label: 'span'; headline: 'span'; link: 'a'; place: 'span' };
+type ItemSlots = Omit<PresentationSlots<ItemAnatomy>, 'headline'> & { headline?: ComponentType<ComponentPropsWithRef<'h2'> & { level?: ArticleHeadingLevel }> };
+type ItemLink = { renderLink: RenderArticleLink; slots?: Omit<ItemSlots, 'link'> & { link?: never } } | { renderLink?: never; slots?: ItemSlots };
+export type ArticleListItemProps = Omit<ComponentPropsWithRef<'li'>, 'children'> & SxProps & ItemLink & {
+  headline: ReactNode;
+  href?: string;
+  time?: PrintedTime;
+  label?: ReactNode;
+  place?: ReactNode;
+  level?: ArticleHeadingLevel;
+  variant?: ArticleListItemVariant;
+  size?: ArticleListSize;
+  component?: ItemSlots['root'];
+  slotProps?: PresentationParts<ItemAnatomy>;
+};
+type WithEntryId<P> = P extends unknown ? Omit<P, 'id'> & { id: string } : never;
+export type ArticleListEntry = WithEntryId<ArticleListItemProps>;
+export interface ArticleListSlots {
+  root?: ComponentType<ComponentPropsWithRef<'ul'>>;
+  item?: ComponentType<ComponentPropsWithRef<'li'>>;
+}
+export interface ArticleListSlotProps {
+  root?: PresentationParts<{ root: 'ul' }>['root'];
+  item?: Partial<ArticleListItemProps> & { css?: Interpolation<Theme> };
+}
+export type ArticleListProps = Omit<ComponentPropsWithRef<'ul'>, 'children'> & SxProps & ({ items: readonly ArticleListEntry[]; children?: never } | { items?: never; children?: ReactNode }) & {
+  variant?: ArticleListVariant;
+  size?: ArticleListSize;
+  component?: ArticleListSlots['root'];
+  slots?: ArticleListSlots;
+  slotProps?: ArticleListSlotProps;
+};
+const ListContext = createContext<Pick<ArticleListProps, 'variant' | 'size' | 'slots' | 'slotProps'>>({});
+const rootStyle = css({ listStyle: 'none', padding: 0, margin: 0, minInlineSize: 0 });
+const itemStyle = css({ minInlineSize: 0, paddingBlock: vars.space[3], borderBlockEnd: `${vars.editorial.rule.thin} solid ${articleSoftRule}`, color: vars.color.text, display: 'flex', flexDirection: 'column', gap: vars.space[2] });
+const rowStyle = css({ [ARTICLE_DESKTOP]: { flexDirection: 'row', alignItems: 'baseline', gap: vars.space[3] } });
+const wireStyle = css({ flexDirection: 'row', alignItems: 'baseline', paddingBlock: vars.space[2] });
+const headlineStyle = css({ margin: 0, minInlineSize: 0, fontFamily: articleHeadingFont, lineHeight: vars.lineHeight.base, overflowWrap: 'anywhere' });
+const itemSizes = { sm: css({ fontSize: vars.editorial.body }), md: css({ fontSize: vars.editorial.headline.brief }) };
+const boldStyle = css({ fontWeight: vars.fontWeight.bold });
+const regularStyle = css({ fontWeight: vars.fontWeight.regular });
+const placeStyle = css({ [ARTICLE_DESKTOP]: { marginInlineStart: 'auto' } });
+const metaStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: vars.space[2] });
+const wireLabelStyle = css({ marginInlineEnd: vars.space[2] });
+const defaultItemVariant: Record<ArticleListVariant, ArticleListItemVariant> = { headlines: 'headline-time', wire: 'wire', stacked: 'stacked' };
+
+function ArticleListRoot({ items, children, variant = 'headlines', size, component, slots, slotProps, ...props }: ArticleListProps) {
+  const context = useMemo(() => ({ variant, size, slots, slotProps }), [variant, size, slots, slotProps]);
+  if (items && !items.some((item) => isRenderable(item.headline))) return null;
+  return <ListContext.Provider value={context}>
+    <PresentationSlot {...props} element="ul" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-list" data-variant={variant} styles={rootStyle}>
+      {items ? items.map(({ id, ...item }) => <ArticleListItem key={id} {...item} />) : children}
+    </PresentationSlot>
+  </ListContext.Provider>;
+}
+ArticleListRoot.displayName = 'ArticleList';
+
+function ArticleListItem(allProps: ArticleListItemProps) {
+  const parent = useContext(ListContext);
+  const template = repeatedTemplate(parent.slotProps?.item);
+  const { headline, href, renderLink, time, label, place, level, variant: ownVariant, size: ownSize, component, slots, slotProps, ...props } = {
+    ...template, ...allProps,
+    className: [template?.className, allProps.className].filter(Boolean).join(' ') || undefined,
+    style: { ...template?.style, ...allProps.style },
+  };
+  const variant = ownVariant ?? parent.slotProps?.item?.variant ?? defaultItemVariant[parent.variant ?? 'headlines'];
+  const size = ownSize ?? parent.slotProps?.item?.size ?? parent.size ?? (variant === 'wire' || variant === 'stacked' ? 'sm' : 'md');
+  if (!isRenderable(headline)) return null;
+  const hasTime = time !== undefined && isRenderable(time.label);
+  const hasLabel = isRenderable(label);
+  const Time = hasTime ? <PresentationSlot element="time" component={slots?.time} slotProps={slotProps?.time} dateTime={time.dateTime} data-ui="article-list-time" styles={[articleLabelStyle, articleTimeStyle]}>{time.label}</PresentationSlot> : null;
+  const Label = hasLabel ? <PresentationSlot element="span" component={slots?.label} slotProps={slotProps?.label} data-ui="article-list-label" styles={[articleLabelStyle, variant === 'wire' && wireLabelStyle]}>{label}</PresentationSlot> : null;
+  const link = slotProps?.link;
+  const content = <>{variant === 'wire' && Label}{headline}</>;
+  return <PresentationSlot {...props} element="li" component={slots?.root ?? component ?? parent.slots?.item} slotProps={slotProps?.root} marker="article-list-item" data-variant={variant} data-size={size} styles={[itemStyle, variant.startsWith('headline-') && rowStyle, variant === 'wire' && wireStyle]}>
+    {variant === 'stacked' && (hasTime || hasLabel) && <PresentationSlot element="div" component={slots?.meta} slotProps={slotProps?.meta} data-ui="article-list-meta" styles={metaStyle}>{Label}{hasTime && hasLabel && <span aria-hidden="true">·</span>}{Time}</PresentationSlot>}
+    {(variant === 'headline-time' || variant === 'wire') && Time}
+    {variant === 'headline-tag' && Label}
+    <PresentationSlot element={level ? `h${level}` : 'span'} component={slots?.headline} slotProps={slotProps?.headline} data-ui="article-list-headline" styles={[headlineStyle, itemSizes[size], variant.startsWith('headline-') ? boldStyle : regularStyle]} {...(slots?.headline ? { level } : {})}>
+      {href !== undefined || renderLink ? <PresentationSlot element="a" component={slots?.link} slotProps={link} renderLink={renderLink} href={href} rel={safeArticleRel(link?.target, link?.rel)} data-ui="article-list-link" styles={articleLinkStyle}>{content}</PresentationSlot> : content}
+    </PresentationSlot>
+    {variant === 'headline-place' && isRenderable(place) && <PresentationSlot element="span" component={slots?.place} slotProps={slotProps?.place} data-ui="article-list-place" styles={[articleLabelStyle, placeStyle]}>{place}</PresentationSlot>}
+  </PresentationSlot>;
+}
+ArticleListItem.displayName = 'ArticleList.Item';
+export const ArticleList = Object.assign(ArticleListRoot, { Item: ArticleListItem });

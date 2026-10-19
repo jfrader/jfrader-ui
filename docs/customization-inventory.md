@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **159**; public callable parts: **165**.
-- Families exposing `slots.root`: **94**; remaining without a family-level root slot: **65** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **122**; remaining without family-level interior slots: **37** (includes components without generated anatomy).
+- Public callable families: **162**; public callable parts: **171**.
+- Families exposing `slots.root`: **97**; remaining without a family-level root slot: **65** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **126**; remaining without family-level interior slots: **36** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -34,6 +34,16 @@ may exist and is listed on the corresponding public part).
 | [ActivityRings](../packages/ui/src/components/activity-rings/activity-rings.tsx) | — | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | `dayLabel`, `dayPicker`, `legend`, `metric`, `rings`, `summary` | — | — | — |
 | [Alert](../packages/ui/src/components/alert/alert.tsx) | — | `body`, `dismiss`, `root`, `title` | `body`, `dismiss`, `root`, `title` | — | — | — |
 | [AnnouncementBar](../packages/ui/src/components/announcement-bar/announcement-bar.tsx) | — | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | `action`, `content`, `countdown`, `dismiss`, `message`, `next`, `previous`, `root`, `rotation` | — | — | — |
+| [ArticleCard](../packages/ui/src/components/article-card/article-card.tsx) | yes | `content`, `dek`, `headline`, `kicker`, `lede`, `media`, `meta`, `root`, `rule`, `time` | `content`, `dek`, `headline`, `kicker`, `lede`, `media`, `meta`, `root`, `rule`, `time` | — | — | `Dek`, `Headline`, `Lede`, `Media` |
+| [ArticleCard.Dek](../packages/ui/src/components/article-card/article-card.tsx) | yes | `root` | `root` | — | — | — |
+| [ArticleCard.Headline](../packages/ui/src/components/article-card/article-card.tsx) | yes | `link`, `root` | `link`, `root` | — | — | — |
+| [ArticleCard.Lede](../packages/ui/src/components/article-card/article-card.tsx) | yes | `root` | `root` | — | — | — |
+| [ArticleCard.Media](../packages/ui/src/components/article-card/article-card.tsx) | yes | `caption`, `credit`, `root` | `caption`, `credit`, `root` | — | — | — |
+| [ArticleKicker](../packages/ui/src/components/article-kicker/article-kicker.tsx) | yes | `item`, `root` | `item`, `root` | — | — | `Item` |
+| [ArticleKicker.Item](../packages/ui/src/components/article-kicker/article-kicker.tsx) | yes | `link`, `root` | `link`, `root` | — | — | — |
+| [ArticleList](../packages/ui/src/components/article-list/article-list.tsx) | yes | `item`, `root` | `item`, `root` | — | — | `Item` |
+| [ArticleList.Item](../packages/ui/src/components/article-list/article-list.tsx) | yes | `headline`, `label`, `link`, `meta`, `place`, `root`, `time` | `headline`, `label`, `link`, `meta`, `place`, `root`, `time` | — | — | — |
+| [ArticleMeta](../packages/ui/src/components/article-meta/article-meta.tsx) | yes | `place`, `placeSeparator`, `published`, `publishedLabel`, `root`, `updateSeparator`, `updated`, `updatedLabel` | `place`, `placeSeparator`, `published`, `publishedLabel`, `root`, `updateSeparator`, `updated`, `updatedLabel` | — | — | — |
 | [AttachmentList](../packages/ui/src/components/attachment-list/attachment-list.tsx) | — | `expandButton`, `item`, `link` | `expandButton`, `item`, `link` | — | — | — |
 | [Avatar](../packages/ui/src/components/avatar/avatar.tsx) | — | `fallback`, `image`, `status` | `fallback`, `image`, `status` | — | — | — |
 | [AvatarGroup](../packages/ui/src/components/avatar-group/avatar-group.tsx) | — | `member`, `overflow`, `summary` | `member`, `overflow`, `summary` | — | `avatarProps` | — |

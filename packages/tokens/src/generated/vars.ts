@@ -111,7 +111,45 @@ export const vars = {
   "fontWeight": {
     "regular": "var(--ui-font-weight-regular)",
     "medium": "var(--ui-font-weight-medium)",
-    "semibold": "var(--ui-font-weight-semibold)"
+    "semibold": "var(--ui-font-weight-semibold)",
+    "bold": "var(--ui-font-weight-bold)"
+  },
+  "editorial": {
+    "headline": {
+      "lead": "var(--ui-editorial-headline-lead)",
+      "secondary": "var(--ui-editorial-headline-secondary)",
+      "standard": "var(--ui-editorial-headline-standard)",
+      "brief": "var(--ui-editorial-headline-brief)"
+    },
+    "dek": "var(--ui-editorial-dek)",
+    "summary": "var(--ui-editorial-summary)",
+    "lede": "var(--ui-editorial-lede)",
+    "body": "var(--ui-editorial-body)",
+    "meta": "var(--ui-editorial-meta)",
+    "kicker": "var(--ui-editorial-kicker)",
+    "measure": "var(--ui-editorial-measure)",
+    "centeredMeasure": "var(--ui-editorial-centered-measure)",
+    "dropCap": "var(--ui-editorial-drop-cap)",
+    "lineHeight": {
+      "lead": "var(--ui-editorial-line-height-lead)",
+      "secondary": "var(--ui-editorial-line-height-secondary)",
+      "brief": "var(--ui-editorial-line-height-brief)",
+      "dropCap": "var(--ui-editorial-line-height-drop-cap)"
+    },
+    "tracking": {
+      "headline": "var(--ui-editorial-tracking-headline)",
+      "secondary": "var(--ui-editorial-tracking-secondary)",
+      "standard": "var(--ui-editorial-tracking-standard)",
+      "label": "var(--ui-editorial-tracking-label)"
+    },
+    "rule": {
+      "thin": "var(--ui-editorial-rule-thin)",
+      "strong": "var(--ui-editorial-rule-strong)"
+    },
+    "breakpoint": {
+      "columns": "var(--ui-editorial-breakpoint-columns)",
+      "desktop": "var(--ui-editorial-breakpoint-desktop)"
+    }
   },
   "font": {
     "sans": "var(--ui-font-sans)",
