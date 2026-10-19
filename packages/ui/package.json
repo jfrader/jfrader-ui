@@ -22,6 +22,10 @@
     "dist"
   ],
   "exports": {
+    "./article-card": { "types": "./src/components/article-card/index.ts", "import": "./src/components/article-card/index.ts" },
+    "./article-list": { "types": "./src/components/article-list/index.ts", "import": "./src/components/article-list/index.ts" },
+    "./article-kicker": { "types": "./src/components/article-kicker/index.ts", "import": "./src/components/article-kicker/index.ts" },
+    "./article-meta": { "types": "./src/components/article-meta/index.ts", "import": "./src/components/article-meta/index.ts" },
     "./person-avatar": { "types": "./src/components/person-avatar/index.ts", "import": "./src/components/person-avatar/index.ts" },
     "./person-avatar/appearance": { "types": "./src/components/person-avatar/appearance.ts", "import": "./src/components/person-avatar/appearance.ts" },
     "./number-field": { "types": "./src/components/number-field/index.ts", "import": "./src/components/number-field/index.ts" },

@@ -5,6 +5,10 @@ import { chromium } from 'playwright';
 import { preview } from 'vite';
 
 const cases = [
+  { id: 'media-articlecard--docs', primary: '[data-ui~="article-card"]' },
+  { id: 'media-articlelist--docs', primary: '[data-ui~="article-list"]' },
+  { id: 'media-articlekicker--docs', primary: '[data-ui~="article-kicker"]' },
+  { id: 'media-articlemeta--docs', primary: '[data-ui~="article-meta"]' },
   { id: 'inputs-linkunfurl--docs', primary: '[data-ui="link-unfurl"]' },
   { id: 'inputs-mentioninput--docs', primary: '[data-ui="mention-input"]' },
   { id: 'showcase-editabledetails--docs', primary: '[data-ui="editable-details"]' },
