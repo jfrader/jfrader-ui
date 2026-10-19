@@ -108,6 +108,7 @@ const MILLISECONDS_PER_MINUTE = 60_000;
 const POPUP_BLOCK_LIMIT = '250px';
 const DIAL_POPUP_BLOCK_LIMIT = '480px';
 const DIAL_POPUP_INLINE_SIZE = '240px';
+const DIAL_SIZE = 192;
 const DEFAULT_VALUE = '09:00';
 const VIEWPORT_PADDING = 8;
 const ANCHOR_GAP = 8;
@@ -118,12 +119,6 @@ export function minutes(time: string | undefined): number | undefined {
 }
 function canonical(time: number): string {
   return `${String(Math.floor(time / MINUTES_PER_HOUR)).padStart(2, '0')}:${String(time % MINUTES_PER_HOUR).padStart(2, '0')}`;
-}
-function keepOptionVisible(option: HTMLElement, popup: HTMLElement) {
-  const inset = popup.querySelector<HTMLElement>('[data-time-dial-frame]')?.offsetHeight ?? 0;
-  if (option.offsetTop < popup.scrollTop + inset) popup.scrollTop = option.offsetTop - inset;
-  else if (option.offsetTop + option.offsetHeight > popup.scrollTop + popup.clientHeight)
-    popup.scrollTop = option.offsetTop + option.offsetHeight - popup.clientHeight;
 }
 const rootStyle = css({
   display: 'grid',
@@ -203,6 +198,7 @@ const optionStyle = css({
 const dialContentStyle = css({
   inlineSize: `max(${DIAL_POPUP_INLINE_SIZE}, var(--time-picker-inline-size))`,
   maxBlockSize: `min(${DIAL_POPUP_BLOCK_LIMIT}, var(--time-picker-available-height, ${DIAL_POPUP_BLOCK_LIMIT}))`,
+  scrollPaddingBlockStart: `calc(${DIAL_SIZE}px + ${vars.space[3]} * 2)`,
 });
 const dialFrameStyle = css({
   position: 'sticky',
@@ -213,7 +209,6 @@ const dialFrameStyle = css({
   [FORCED_COLORS]: { background: 'Canvas', color: 'CanvasText' },
 });
 
-const DIAL_SIZE = 192;
 const DIAL_LABEL_RADIUS = 76;
 const DIAL_HAND_LENGTH = 60;
 const FULL_TURN = 360;
@@ -429,11 +424,9 @@ export function TimePicker({
   const Error = slots?.error ?? 'span';
   const Icon = slots?.icon ?? 'span';
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
   const [popupNode, setPopupNode] = useState<HTMLDivElement | null>(null);
-  const openedByTypeaheadRef = useRef(false);
   const mergedRef = useMergeRefs([triggerRef, ref, slotProps?.control?.ref]);
-  const mergedContentRef = useMergeRefs([contentRef, setPopupNode, slotProps?.content?.ref]);
+  const mergedContentRef = useMergeRefs([setPopupNode, slotProps?.content?.ref]);
   const labelId = `${useId()}-label`;
   const formatter = useMemo(
     () =>
@@ -465,6 +458,9 @@ export function TimePicker({
     [minuteStep, lower, upper, invalidBounds, formatter],
   );
   const selectedMinutes = minutes(value);
+  const initialActiveValue = selectedMinutes === undefined
+    ? undefined
+    : (times.find((time) => time.time >= selectedMinutes) ?? times.at(-1))?.value;
   const invalid = invalidBounds || (value !== '' && selectedMinutes === undefined);
   const control = slotProps?.control;
   const field = useFieldAnatomy({
@@ -521,44 +517,11 @@ export function TimePicker({
     const resize = new ResizeObserver(measure);
     resize.observe(trigger);
     view.addEventListener('resize', measure);
-    let centered = false;
-    const scrollActive = () => {
-      const active = popup.querySelector<HTMLElement>('[data-active]');
-      if (!active) return;
-      const inset = popup.querySelector<HTMLElement>('[data-time-dial-frame]')?.offsetHeight ?? 0;
-      const top = active.offsetTop;
-      if (!centered) {
-        popup.scrollTop = top - inset - (popup.clientHeight - inset - active.offsetHeight) / 2;
-        centered = true;
-      } else keepOptionVisible(active, popup);
-    };
-    const observer = new MutationObserver(scrollActive);
-    observer.observe(popup, {
-      attributes: true,
-      subtree: true,
-      attributeFilter: ['data-active'],
-    });
-    // Select's public option hover interaction synchronizes the dial or seeds an off-grid value.
-    // This does not commit or alter aria-selected; subsequent navigation belongs to Select.
-    const frame = view.requestAnimationFrame(() => {
-      if (
-        !openedByTypeaheadRef.current &&
-        selectedMinutes !== undefined &&
-        (presentation === 'dial' || !times.some((time) => time.value === value))
-      ) {
-        const following = times.find((time) => time.time >= selectedMinutes) ?? times.at(-1);
-        const option = following && popup.querySelector<HTMLElement>(`[data-time="${following.value}"]`);
-        option?.dispatchEvent(new view.MouseEvent('mousemove', { bubbles: true }));
-      }
-      scrollActive();
-    });
     return () => {
       resize.disconnect();
-      observer.disconnect();
       view.removeEventListener('resize', measure);
-      view.cancelAnimationFrame(frame);
     };
-  }, [open, popupNode, selectedMinutes, times, value, presentation, dir, control?.dir, slotProps?.root?.dir]);
+  }, [open, popupNode, dir, control?.dir, slotProps?.root?.dir]);
 
   return (
     <WithSx
@@ -592,6 +555,7 @@ export function TimePicker({
           )}
           <Select
             value={value}
+            initialActiveValue={initialActiveValue}
             onValueChange={requestValue}
             open={open}
             onOpenChange={(next) => {
@@ -621,7 +585,6 @@ export function TimePicker({
                 rest.onClickCapture?.(event);
                 control?.onClick?.(event);
                 onClick?.(event);
-                if (!open) openedByTypeaheadRef.current = false;
                 if (locked || times.length === 0) event.preventDefault();
                 if (event.defaultPrevented) event.stopPropagation();
               }}
@@ -630,13 +593,6 @@ export function TimePicker({
                 rest.onKeyDownCapture?.(event);
                 control?.onKeyDown?.(event);
                 onKeyDown?.(event);
-                if (!open)
-                  openedByTypeaheadRef.current =
-                    event.key.length === 1 &&
-                    event.key !== ' ' &&
-                    !event.ctrlKey &&
-                    !event.altKey &&
-                    !event.metaKey;
                 if ((locked || times.length === 0) && event.key !== 'Tab') event.preventDefault();
                 if (event.defaultPrevented) event.stopPropagation();
               }}
@@ -682,25 +638,6 @@ export function TimePicker({
                   value={time.value}
                   data-time={time.value}
                   css={[optionStyle, slotProps?.option?.css]}
-                  ref={(node) => {
-                    const consumerRef = slotProps?.option?.ref;
-                    const cleanup = typeof consumerRef === 'function' ? consumerRef(node) : undefined;
-                    if (consumerRef && typeof consumerRef !== 'function') consumerRef.current = node;
-                    if (!node) return cleanup;
-                    const original = node.scrollIntoView;
-                    // Limit Select's navigation scrolling to this list; never move the page.
-                    node.scrollIntoView = () => {
-                      const popup = contentRef.current;
-                      if (!popup) return;
-                      keepOptionVisible(node, popup);
-                    };
-                    return () => {
-                      node.scrollIntoView = original;
-                      if (typeof cleanup === 'function') cleanup();
-                      else if (typeof consumerRef === 'function') consumerRef(null);
-                      else if (consumerRef) consumerRef.current = null;
-                    };
-                  }}
                 >
                   {time.label}
                 </Option>
