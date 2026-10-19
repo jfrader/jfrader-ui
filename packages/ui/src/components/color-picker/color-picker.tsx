@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
+  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
@@ -31,7 +32,7 @@ import {
   type FieldParts,
   type FieldSlots,
 } from '../field/field-slot';
-import { Popover } from '../popover';
+import { Dialog } from '../dialog';
 import { TextField } from '../text-field';
 import { Select } from '../select';
 import { Button } from '../button';
@@ -145,7 +146,7 @@ const panelStyle = css({
   display: 'grid',
   gap: vars.space[2],
   inlineSize: 'min(30rem, calc(100vi - 2rem))',
-  maxInlineSize: 'calc(100vi - 2rem)',
+  maxInlineSize: '100%',
   minInlineSize: 0,
   containerType: 'inline-size',
   color: vars.color.text,
@@ -242,6 +243,9 @@ const paletteStyle = css({
   padding: vars.space[2],
 });
 const optionStyle = css({
+  display: 'grid',
+  justifyItems: 'center',
+  gap: vars.space[1],
   minInlineSize: vars.space[8],
   minBlockSize: vars.space[8],
   padding: vars.space[1],
@@ -686,11 +690,14 @@ export function ColorPicker({
           : []),
       ]
     : [];
+  const Trigger = (slots?.trigger ?? 'button') as ComponentType<
+    ComponentPropsWithRef<'button'>
+  >;
+  const Content = (slots?.content ?? 'div') as ComponentType<
+    ComponentPropsWithRef<'div'>
+  >;
   const panel = (
     <>
-      <h3 id={`${id}-heading`} css={headingStyle}>
-        {messages.dialog}
-      </h3>
       <div css={panelGridStyle}>
         <div css={panelColumnStyle}>
       <FieldSlot
@@ -931,6 +938,12 @@ export function ColorPicker({
     </>
   );
   return (
+    <Dialog
+      open={open && !disabled}
+      onOpenChange={(next) => {
+        if (!disabled) requestOpen(next);
+      }}
+    >
     <FieldRoot
       {...rest}
       ref={rootRefs}
@@ -944,59 +957,40 @@ export function ColorPicker({
       <FieldLabel id={`${id}-label`} htmlFor={field.id} required={required}>
         {label}
       </FieldLabel>
-      <Popover
-        open={open && !disabled}
-        onOpenChange={(next) => {
-          if (!disabled) requestOpen(next);
-        }}
-        label={messages.dialog}
-        triggerLabel={
-          <>
-            <span css={checkerStyle} aria-hidden>
-              <span css={swatchStyle} style={colorStyle(color?.hex)} />
-            </span>
-            <span id={`${id}-value`}>{color?.hex ?? messages.empty}</span>
-          </>
-        }
-        content={panel}
-        slots={{ trigger: slots?.trigger, content: slots?.content }}
-        slotProps={{
-          trigger: {
-            ...slotProps?.trigger,
-            ref: triggerRefs,
-            id: field.id,
-            type: 'button',
-            disabled,
-            dir,
-            'aria-labelledby': [
-              `${id}-label`,
-              `${id}-value`,
-              labelledBy,
-              slotProps?.trigger?.['aria-labelledby'],
-            ]
+        <Trigger
+          {...slotProps?.trigger}
+          ref={triggerRefs}
+          id={field.id}
+          type="button"
+          disabled={disabled}
+          dir={dir}
+          aria-haspopup="dialog"
+          aria-expanded={open && !disabled}
+          aria-labelledby={[
+            `${id}-label`,
+            `${id}-value`,
+            labelledBy,
+            slotProps?.trigger?.['aria-labelledby'],
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          aria-describedby={
+            [field.describedBy, slotProps?.trigger?.['aria-describedby']]
               .filter(Boolean)
-              .join(' '),
-            'aria-describedby':
-              [field.describedBy, slotProps?.trigger?.['aria-describedby']]
-                .filter(Boolean)
-                .join(' ') || undefined,
-            'aria-invalid':
-              field.ariaInvalid ?? slotProps?.trigger?.['aria-invalid'],
-            css: [triggerStyle, triggerStyles[size], slotProps?.trigger?.css],
-          },
-          content: {
-            ...slotProps?.content,
-            dir: effectiveDirection,
-            'aria-labelledby': [
-              `${id}-heading`,
-              slotProps?.content?.['aria-labelledby'],
-            ]
-              .filter(Boolean)
-              .join(' '),
-            css: [panelStyle, slotProps?.content?.css],
-          },
-        }}
-      />
+              .join(' ') || undefined
+          }
+          aria-invalid={field.ariaInvalid ?? slotProps?.trigger?.['aria-invalid']}
+          css={[triggerStyle, triggerStyles[size], slotProps?.trigger?.css]}
+          onClick={(event) => {
+            slotProps?.trigger?.onClick?.(event);
+            if (!event.defaultPrevented && !disabled) requestOpen(true);
+          }}
+        >
+          <span css={checkerStyle} aria-hidden>
+            <span css={swatchStyle} style={colorStyle(color?.hex)} />
+          </span>
+          <span id={`${id}-value`}>{color?.hex ?? messages.empty}</span>
+        </Trigger>
       <FieldDescription
         id={field.descriptionId}
         component={slots?.description}
@@ -1019,7 +1013,16 @@ export function ColorPicker({
           disabled={disabled}
         />
       )}
-    </FieldRoot>
+      </FieldRoot>
+      <Dialog.Content dir={effectiveDirection}>
+        <Dialog.Panel>
+          <Dialog.Title>{messages.dialog}</Dialog.Title>
+          <Content {...slotProps?.content} css={[panelStyle, slotProps?.content?.css]}>
+            {panel}
+          </Content>
+        </Dialog.Panel>
+      </Dialog.Content>
+    </Dialog>
   );
 }
 ColorPicker.displayName = 'ColorPicker';

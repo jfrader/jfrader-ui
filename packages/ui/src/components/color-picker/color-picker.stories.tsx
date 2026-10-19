@@ -89,9 +89,9 @@ Out-of-gamut colors use Culori perceptual sRGB mapping in OKLCH. The warning rep
 Supply an opaque \`background\` to show the WCAG luminance ratio after foreground alpha compositing. Missing, invalid or translucent backgrounds hide the result. Categories use the unrounded ratio: 7 AAA normal text, 4.5 AA normal text, 3 AA large text. This evaluates this color pair for text, not the accessibility of a whole interface.
 
 ### Keyboard
-The non-modal Popover leaves focus on its trigger when opened; Tab traverses controls without a trap. Saturation and Value are separate native sliders, not a two-dimensional ARIA slider. Arrows step by one, Shift+arrows and PageUp/Down by ten, Home/End reach bounds. Inline arrows follow RTL; the visual pad remains left-to-right.
+The picker is a modal dialog: focus moves inside on open, Tab stays in the dialog, Escape closes and focus returns to the trigger. Saturation and Value are separate native sliders, not a two-dimensional ARIA slider. Arrows step by one, Shift+arrows and PageUp/Down by ten, Home/End reach bounds. Inline arrows follow RTL; the visual pad remains left-to-right.
 
-Enter or blur commits valid text. Invalid text remains visible. Escape first discards a dirty draft, then closes the popup and restores trigger focus after acceptance. Outside dismissal does not move focus. Done validates before closing. Format changes validate first.
+Enter or blur commits valid text. Invalid text remains visible. Escape first discards a dirty draft, then closes the dialog and restores trigger focus after acceptance. Done validates before closing. Format changes validate first.
 
 Saved colors use a horizontal listbox: arrows, Home and End move focus without selecting; Enter/Space applies. Alt+inline arrows reorder; Delete/Backspace removes. Move and Remove buttons offer the same actions. Saving at capacity evicts the oldest. IDs must be unique.
 
@@ -283,7 +283,7 @@ export const Keyboard: Story = {
     await userEvent.keyboard('{Enter}');
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     const dialog = await page.findByRole('dialog', { name: messages.dialog });
-    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+    await expect(dialog.contains(canvasElement.ownerDocument.activeElement)).toBe(true);
     const value = within(dialog).getByRole('slider', { name: 'Value' });
     value.focus();
     await expect(getComputedStyle(value).outlineStyle).not.toBe('none');
@@ -297,9 +297,31 @@ export const Keyboard: Story = {
     await userEvent.keyboard('{Escape}');
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(input).toHaveValue('#FF0000');
-    await userEvent.keyboard('{Escape}');
-    await expect(page.queryByRole('dialog')).not.toBeInTheDocument();
-    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+    await userEvent.click(page.getByRole('button', { name: 'Done' }));
+    await waitFor(() =>
+      expect(
+        canvasElement.ownerDocument.querySelector('dialog[data-ui="dialog"]'),
+      ).not.toHaveAttribute('open'),
+    );
+    await waitFor(() =>
+      expect(canvasElement.ownerDocument.activeElement).toBe(trigger),
+    );
+  },
+};
+export const EscapeCloses: Story = {
+  args: { defaultOpen: true },
+  tags: ['!autodocs'],
+  play: async ({ canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole('dialog', { name: messages.dialog });
+    // Synthetic key events do not trigger the native cancel; dispatch it directly.
+    dialog.dispatchEvent(new Event('cancel', { bubbles: false, cancelable: true }));
+    await waitFor(() =>
+      expect(
+        canvasElement.ownerDocument.querySelector('dialog[data-ui="dialog"]'),
+      ).not.toHaveAttribute('open'),
+    );
+    await expect(dialog).not.toBeVisible();
   },
 };
 export const InvalidInput: Story = {
@@ -642,7 +664,11 @@ export const SlotOverrides: Story = {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole(
       'dialog',
     );
-    await expect(dialog).toHaveAttribute('data-replaced-content');
+    const content = canvasElement.ownerDocument.querySelector(
+      '[data-replaced-content]',
+    );
+    await expect(content).toBeInTheDocument();
+    await expect(dialog).toContainElement(content as HTMLElement);
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   },
 };
