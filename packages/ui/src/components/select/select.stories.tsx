@@ -207,6 +207,8 @@ const meta: Meta<SelectCompoundProps> = {
 
 ### Values and forms
 - value and open support controlled state independently. Option values must be unique.
+- Set \`initialActiveValue\` to highlight an enabled option when the value has no matching option. Opening by typeahead uses the match instead. Highlighting does not select an option.
+- Long lists scroll inside the popup. Use CSS \`scroll-padding\` on Content to reserve space for sticky content.
 - The list stays mounted and hidden when closed so labels remain available; positioning runs only when open.
 - name adds a hidden form input. Native required validation is not supported.
 
@@ -222,6 +224,164 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 type EasyStory = StoryObj<(props: SelectEasyProps) => ReactNode>;
+
+const LONG_OPTIONS = Array.from({ length: 1440 }, (_, index) => ({
+  value: String(index), label: `Option ${index}`,
+}));
+const ScrollHost = styled.div({ blockSize: 240, overflow: 'auto' });
+const ScrollSpace = styled.div({ blockSize: 600 });
+
+/** Open a long list inside a scrolling region. */
+export const LongList: EasyStory = {
+  args: { label: 'Option', options: LONG_OPTIONS, initialActiveValue: '720', onValueChange: fn() },
+  tags: ['!autodocs'],
+  render: (args) => (
+    <>
+      <ScrollHost data-testid="scroll-host">
+        <Select {...args} />
+        <ScrollSpace />
+      </ScrollHost>
+      <ScrollSpace />
+      <ScrollSpace />
+    </>
+  ),
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('combobox');
+    const host = canvas.getByTestId('scroll-host');
+    const view = canvasElement.ownerDocument.defaultView!;
+    trigger.focus({ preventScroll: true });
+    const pageScroll = [view.scrollX, view.scrollY];
+    const hostScroll = host.scrollTop;
+    const start = performance.now();
+    await userEvent.keyboard('{ArrowDown}');
+    const popup = await within(canvasElement.ownerDocument.body).findByRole('listbox');
+    const options = within(popup).getAllByRole('option');
+    await expect(options.length).toBe(1440);
+    await expect(options.every((option) => !Object.hasOwn(option, 'scrollIntoView'))).toBe(true);
+    const expectActiveVisible = async (index: number) => {
+      const option = options[index]!;
+      await waitFor(async () => {
+        await expect(trigger).toHaveAttribute('aria-activedescendant', option.id);
+        await expect(option).toHaveAttribute('data-active');
+        const panelRect = popup.getBoundingClientRect();
+        const optionRect = option.getBoundingClientRect();
+        await expect(optionRect.top).toBeGreaterThanOrEqual(panelRect.top);
+        await expect(optionRect.bottom).toBeLessThanOrEqual(panelRect.bottom);
+      });
+      await expect([view.scrollX, view.scrollY]).toEqual(pageScroll);
+      await expect(host.scrollTop).toBe(hostScroll);
+      await expect(trigger).toHaveFocus();
+    };
+    await expectActiveVisible(720);
+    await expect(performance.now() - start).toBeLessThan(10_000);
+    await expect(popup.scrollTop).toBeGreaterThan(0);
+    await expect(popup.querySelector('[aria-selected="true"]')).toBeNull();
+    await userEvent.keyboard('{End}');
+    await expectActiveVisible(1439);
+    await userEvent.keyboard('{ArrowDown}');
+    await expectActiveVisible(0);
+    await userEvent.keyboard('{ArrowUp}');
+    await expectActiveVisible(1439);
+    await userEvent.keyboard('{Home}');
+    await expectActiveVisible(0);
+    await userEvent.keyboard('{Escape}{ArrowDown}');
+    await expectActiveVisible(720);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.keyboard('{Escape}');
+  },
+};
+
+/** Seed a highlight without selecting an option. */
+export const InitialActive: EasyStory = {
+  args: { label: LABEL, options: FRUITS, initialActiveValue: 'cherry', onValueChange: fn() },
+  render: (args) => <Select {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('combobox');
+    await userEvent.click(trigger);
+    const cherry = within(canvasElement.ownerDocument.body).getByRole('option', { name: 'Cherry' });
+    await waitFor(() => expect(trigger).toHaveAttribute('aria-activedescendant', cherry.id));
+    await expect(cherry).toHaveAttribute('aria-selected', 'false');
+    await userEvent.keyboard('{Escape}a');
+    const apple = within(canvasElement.ownerDocument.body).getByRole('option', { name: 'Apple' });
+    await waitFor(() => expect(trigger).toHaveAttribute('aria-activedescendant', apple.id));
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.keyboard('{Escape}');
+  },
+};
+
+export const InitialActiveDisabled: EasyStory = {
+  ...InitialActive,
+  args: { label: LABEL, options: FRUITS, initialActiveValue: 'banana' },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole('combobox'));
+    const apple = within(canvasElement.ownerDocument.body).getByRole('option', { name: 'Apple' });
+    await waitFor(() => expect(canvas.getByRole('combobox')).toHaveAttribute('aria-activedescendant', apple.id));
+    await userEvent.keyboard('{Escape}');
+  },
+};
+
+export const InitialActiveSelected: EasyStory = {
+  ...InitialActiveDisabled,
+  args: { label: LABEL, options: FRUITS, initialActiveValue: 'cherry', defaultValue: 'apple' },
+};
+
+export const InitialActiveOpen: EasyStory = {
+  ...InitialActive,
+  args: { label: LABEL, options: FRUITS, initialActiveValue: 'cherry', defaultOpen: true },
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement }) => {
+    const cherry = within(canvasElement.ownerDocument.body).getByRole('option', { name: 'Cherry' });
+    await waitFor(() => expect(canvas.getByRole('combobox')).toHaveAttribute('aria-activedescendant', cherry.id));
+    await expect(cherry).toHaveAttribute('data-active');
+  },
+};
+
+export const UnselectedOpen: EasyStory = {
+  ...InitialActiveOpen,
+  args: { label: LABEL, options: FRUITS, defaultOpen: true },
+  play: async ({ canvas, canvasElement }) => {
+    const apple = within(canvasElement.ownerDocument.body).getByRole('option', { name: 'Apple' });
+    await waitFor(() => expect(canvas.getByRole('combobox')).toHaveAttribute('aria-activedescendant', apple.id));
+  },
+};
+
+const StickyHeader = styled.div({
+  position: 'sticky', insetBlockStart: 0, blockSize: vars.space[12], flexShrink: 0,
+  background: vars.color.surfaceRaised, zIndex: 1,
+});
+const HeaderContent = styled(Select.Content)({ scrollPaddingBlockStart: vars.space[12] });
+
+/** Keep the highlighted option below a sticky header. */
+export const StickyList: Story = {
+  render: () => (
+    <Select initialActiveValue="720">
+      <Select.Trigger aria-label="Option"><Select.Value placeholder="Choose an option" /></Select.Trigger>
+      <HeaderContent>
+        <StickyHeader aria-hidden>Options</StickyHeader>
+        {LONG_OPTIONS.map((option) => <Select.Item key={option.value} value={option.value}>{option.label}</Select.Item>)}
+      </HeaderContent>
+    </Select>
+  ),
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('combobox');
+    await userEvent.click(trigger);
+    const popup = within(canvasElement.ownerDocument.body).getByRole('listbox');
+    const expectVisible = async () => {
+      await waitFor(async () => {
+        const option = canvasElement.ownerDocument.getElementById(trigger.getAttribute('aria-activedescendant')!)!;
+        const panelRect = popup.getBoundingClientRect();
+        const optionRect = option.getBoundingClientRect();
+        await expect(optionRect.top).toBeGreaterThanOrEqual(panelRect.top + parseFloat(getComputedStyle(popup).scrollPaddingTop));
+        await expect(optionRect.bottom).toBeLessThanOrEqual(panelRect.bottom);
+      });
+    };
+    await expectVisible();
+    await userEvent.keyboard('{End}{ArrowUp}{Home}');
+    await expectVisible();
+    await userEvent.keyboard('{Escape}');
+  },
+};
 // @ts-expect-error Generated-part slot keys are closed.
 type UnknownSlot = NonNullable<SelectEasyProps['slotProps']>['unknown'];
 // @ts-expect-error Replacement slot keys are closed.

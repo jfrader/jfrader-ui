@@ -171,6 +171,8 @@ export interface SelectBaseProps {
   variant?: 'default' | 'morph';
   value?: string;
   defaultValue?: string;
+  /** Highlight this enabled option on opening when no selected option exists. Typeahead takes precedence. */
+  initialActiveValue?: string;
   /** Fires once per accepted selection with the option's `value`. */
   onValueChange?: (value: string) => void;
   open?: boolean;
@@ -364,6 +366,7 @@ function SelectOverlay({ nodeId, ...props }: SelectProps & { nodeId: string | un
     variant = 'default',
     value: valueProp,
     defaultValue,
+    initialActiveValue,
     onValueChange,
     open: openProp,
     defaultOpen = false,
@@ -411,6 +414,8 @@ function SelectOverlay({ nodeId, ...props }: SelectProps & { nodeId: string | un
 
   const selectedRecord = selectedValue === undefined ? undefined : options.get(selectedValue);
   const selectedIndex = selectedRecord && selectedRecord.index !== -1 ? selectedRecord.index : null;
+  const initialRecord = initialActiveValue === undefined ? undefined : options.get(initialActiveValue);
+  const initialIndex = initialRecord && !initialRecord.disabled && initialRecord.index !== -1 ? initialRecord.index : null;
 
   const { refs, floatingStyles, context, isPositioned } = useOverlayFloating({
     nodeId,
@@ -424,17 +429,18 @@ function SelectOverlay({ nodeId, ...props }: SelectProps & { nodeId: string | un
   const click = useClick(context, { enabled: !disabled });
   const role = useRole(context, { role: 'listbox' });
   const dismiss = useLayerDismiss(context, 'container');
-  const listNavigation = useListNavigation(context, {
+  const listNavigation = useListNavigation({ ...context, open: open && valuesByIndex.length > 0 }, {
     enabled: !disabled,
     listRef: elementsRef,
     activeIndex,
     onNavigate: setActiveIndex,
     virtual: true,
     virtualItemRef,
+    scrollItemIntoView: false,
     loop: true,
     // Pointer opens also highlight the selected option (or the first enabled one).
     focusItemOnOpen: true,
-    selectedIndex: openedByTypeahead ? null : selectedIndex,
+    selectedIndex: openedByTypeahead ? null : selectedIndex ?? initialIndex,
     disabledIndices: (index) => disabledIndices.has(index),
   });
   const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
@@ -771,7 +777,7 @@ function SelectValue({ ref, placeholder, className, sx, ...rest }: SelectValuePr
 SelectValue.displayName = 'Select.Value';
 
 function SelectContent({ ref, style, onMouseDown, children, className, sx, ...rest }: SelectContentProps) {
-  const { open, variant, positioned, triggerLabelling, refs, floatingStyles, elementsRef, getFloatingProps } = useSelectContext('Content');
+  const { open, activeIndex, variant, positioned, triggerLabelling, refs, floatingStyles, elementsRef, getFloatingProps } = useSelectContext('Content');
   const reduced = useReducedMotion();
   const panelRef = useRef<HTMLDivElement>(null);
   const [exiting, setExiting] = useState(false);
@@ -783,6 +789,36 @@ function SelectContent({ ref, style, onMouseDown, children, className, sx, ...re
   const visible = open || (morph && (exiting || wasOpen.current) && !reduced);
   // Only an open listbox is the floating element, so a closed one does no positioning work.
   const mergedRef = useMergeRefs([open ? refs.setFloating : null, panelRef, ref]);
+  const centered = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!open) centered.current = false;
+    const panel = panelRef.current;
+    if (!open || !positioned || !panel || activeIndex === null) return;
+    const option = elementsRef.current[activeIndex];
+    if (!option) return;
+    const scrollActive = () => {
+      const view = panel.ownerDocument.defaultView;
+      if (!view || !panel.clientHeight) return;
+      const styles = view.getComputedStyle(panel);
+      const start = Number.parseFloat(styles.scrollPaddingTop) || 0;
+      const end = Number.parseFloat(styles.scrollPaddingBottom) || 0;
+      const panelRect = panel.getBoundingClientRect();
+      const scale = panelRect.height / panel.offsetHeight || 1;
+      const optionRect = option.getBoundingClientRect();
+      const top = (optionRect.top - panelRect.top) / scale - panel.clientTop;
+      const bottom = top + option.offsetHeight;
+      if (!centered.current) {
+        panel.scrollTop += top - start - (panel.clientHeight - start - end - option.offsetHeight) / 2;
+        centered.current = true;
+      } else if (top < start) panel.scrollTop += top - start;
+      else if (bottom > panel.clientHeight - end) panel.scrollTop += bottom - panel.clientHeight + end;
+    };
+    scrollActive();
+    const observer = new ResizeObserver(scrollActive);
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, [open, positioned, activeIndex, elementsRef]);
 
   useLayoutEffect(() => {
     if (open) lastPosition.current = floatingStyles;
