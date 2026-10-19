@@ -11,7 +11,7 @@ export interface ProseProps extends ComponentPropsWithRef<'div'>, SxProps {
   /** Sets the base text size. Headings scale with it. Defaults to `"md"`. */
   size?: ProseSize;
 }
-const style = css({
+export const proseTypography = css({
   color: vars.color.text,
   fontFamily: vars.font.sans,
   lineHeight: vars.lineHeight.relaxed,
@@ -70,7 +70,7 @@ const sizes = {
 };
 export function Prose({ size = 'md', ref, className, sx, ...props }: ProseProps) {
   return (
-    <WithSx styles={[style, sizes[size]]} className={className} sx={sx}>
+    <WithSx styles={[proseTypography, sizes[size]]} className={className} sx={sx}>
       {(className) => <div {...props} ref={ref} data-ui="prose" className={className} />}
     </WithSx>
   );

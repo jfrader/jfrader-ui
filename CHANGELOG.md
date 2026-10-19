@@ -17,6 +17,7 @@
 ### Added
 
 - `Avatar` accepts fallback children, including `PersonAvatar size="full"`; `AvatarGroup` forwards shared and per-member artwork and customization.
+- `ArticleBody`, `ArticleSources` and `SectionHeading` add article text, fact boxes, quotations, two-cell comparisons, source lists and section titles.
 - `ColorPicker` opens a modal dialog that fits the viewport instead of an anchored popover: focus moves inside, Escape and backdrop cancel, and the swatch checker matches its box.
 - `MoneyInput` accepts non-ISO assets with `decimals` (0–18) and a display `symbol`, storing integer base units such as bitcoin satoshis.
 - `PersonAvatar` draws seeded pixel-art portraits, full kits and staff attire, with a pure v3 appearance entry for shared identity data.
