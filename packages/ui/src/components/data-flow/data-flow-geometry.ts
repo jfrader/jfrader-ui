@@ -84,19 +84,13 @@ export function samplePath(table: PathSampleTable, progress: number): Point {
 }
 
 /** Builds a horizontal S-curve connecting start to end. */
-export function createHorizontalPath(start: Point, end: Point): PathSampleTable {
-  const dx = end.x - start.x;
-  const c1 = { x: start.x + dx * 0.5, y: start.y };
-  const c2 = { x: start.x + dx * 0.5, y: end.y };
-  const d = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} C ${c1.x.toFixed(1)} ${c1.y.toFixed(1)}, ${c2.x.toFixed(1)} ${c2.y.toFixed(1)}, ${end.x.toFixed(1)} ${end.y.toFixed(1)}`;
-  return createSampleTable(start, c1, c2, end, d);
-}
-
-/** Builds a vertical S-curve connecting start to end. */
-export function createVerticalPath(start: Point, end: Point): PathSampleTable {
-  const dy = end.y - start.y;
-  const c1 = { x: start.x, y: start.y + dy * 0.5 };
-  const c2 = { x: end.x, y: start.y + dy * 0.5 };
+export function createHorizontalPath(
+  start: Point,
+  end: Point,
+  bendX = start.x + (end.x - start.x) * 0.5,
+): PathSampleTable {
+  const c1 = { x: bendX, y: start.y };
+  const c2 = { x: bendX, y: end.y };
   const d = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} C ${c1.x.toFixed(1)} ${c1.y.toFixed(1)}, ${c2.x.toFixed(1)} ${c2.y.toFixed(1)}, ${end.x.toFixed(1)} ${end.y.toFixed(1)}`;
   return createSampleTable(start, c1, c2, end, d);
 }

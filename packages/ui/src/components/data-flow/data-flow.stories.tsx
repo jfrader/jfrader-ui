@@ -133,6 +133,7 @@ const meta = {
     onPausedChange: fn(),
   },
   parameters: {
+    layout: 'padded',
     docs: {
       source: {
         language: 'tsx',
@@ -180,6 +181,29 @@ export const Default: Story = {};
 
 export const Horizontal: Story = {
   args: { orientation: 'horizontal' },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const figure = canvasElement.querySelector<HTMLElement>('[data-ui="data-flow"]')!;
+    const scene = figure.querySelector<HTMLElement>('[data-ui="data-flow-scene"]')!;
+    const previousSize = figure.style.inlineSize;
+    figure.style.inlineSize = '360px';
+    try {
+      await waitFor(() => {
+        expect(scene.scrollWidth).toBeGreaterThan(scene.clientWidth);
+        for (const node of scene.querySelectorAll('[data-ui="data-flow-node"]')) {
+          expect(node.getBoundingClientRect().width).toBeGreaterThan(100);
+        }
+      });
+      scene.scrollLeft = getComputedStyle(scene).direction === 'rtl' ? -scene.scrollWidth : scene.scrollWidth;
+      const destination = scene.querySelector('[data-ui="data-flow-destinations"]')!;
+      await expect(destination.getBoundingClientRect().left).toBeGreaterThanOrEqual(scene.getBoundingClientRect().left - 1);
+      await expect(destination.getBoundingClientRect().right).toBeLessThanOrEqual(scene.getBoundingClientRect().right + 1);
+      await userEvent.tab();
+      await expect(figure.ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'Resume animation' }));
+    } finally {
+      scene.scrollLeft = 0;
+      figure.style.inlineSize = previousSize;
+    }
+  },
 };
 
 export const Vertical: Story = {
@@ -316,6 +340,21 @@ export const LongLabels: Story = {
       },
     ],
   },
+  play: async ({ canvasElement }) => {
+    const figure = canvasElement.querySelector<HTMLElement>('[data-ui="data-flow"]')!;
+    const previousSize = figure.style.inlineSize;
+    figure.style.inlineSize = '360px';
+    try {
+      await waitFor(() => {
+        expect(figure.getBoundingClientRect().width).toBeLessThanOrEqual(360);
+        expect(figure.scrollWidth).toBeLessThanOrEqual(figure.clientWidth + 1);
+        const summary = figure.querySelector('[data-ui="data-flow-summary"]')!;
+        expect(summary.scrollWidth).toBeLessThanOrEqual(summary.clientWidth + 1);
+      });
+    } finally {
+      figure.style.inlineSize = previousSize;
+    }
+  },
 };
 
 export const EightByEightBudget: Story = {
@@ -356,6 +395,27 @@ export const RTL: Story = {
       <DataFlow {...args} />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const scene = canvasElement.querySelector<HTMLElement>('[data-ui="data-flow-scene"]')!;
+    const container = scene.closest('[dir]')!;
+    try {
+      for (const direction of ['ltr', 'rtl']) {
+        container.setAttribute('dir', direction);
+        await waitFor(() => {
+          const node = scene.querySelector('[data-ui="data-flow-sources"] [data-ui="data-flow-node"]')!;
+          const path = scene.querySelector('path')!;
+          const rect = node.getBoundingClientRect();
+          const point = path.getPointAtLength(0).matrixTransform(path.getScreenCTM()!);
+          const horizontal = scene.querySelector('[data-orientation]')?.getAttribute('data-orientation') === 'horizontal';
+          const usesRightEdge = horizontal ? direction === 'ltr' : direction === 'rtl';
+          expect(Math.abs(point.x - (usesRightEdge ? rect.right : rect.left))).toBeLessThan(1);
+          expect(Math.abs(point.y - (rect.top + rect.height / 2))).toBeLessThan(1);
+        });
+      }
+    } finally {
+      container.setAttribute('dir', 'rtl');
+    }
+  },
 };
 
 export const ReducedMotion: Story = {
@@ -376,6 +436,21 @@ export const NarrowContainer: Story = {
       <DataFlow {...args} />
     </NarrowFrame>
   ),
+  play: async ({ canvasElement }) => {
+    const scene = canvasElement.querySelector<HTMLElement>('[data-ui="data-flow-scene"]')!;
+    await waitFor(() => {
+      const nodes = [...scene.querySelectorAll('[data-ui="data-flow-node"]')].map(node => node.getBoundingClientRect());
+      const paths = scene.querySelectorAll('path');
+      expect(paths.length).toBe(sources.length + destinations.length);
+      for (const path of paths) {
+        const matrix = path.getScreenCTM()!;
+        const length = path.getTotalLength();
+        const points = Array.from({ length: 99 }, (_, index) => path.getPointAtLength(length * (index + 1) / 100).matrixTransform(matrix));
+        const collisions = points.filter(point => nodes.some(node => point.x > node.left + 1 && point.x < node.right - 1 && point.y > node.top + 1 && point.y < node.bottom - 1));
+        expect(collisions).toEqual([]);
+      }
+    });
+  },
 };
 
 export const Keyboard: Story = {
@@ -388,9 +463,8 @@ export const Keyboard: Story = {
     await expect(pause.ownerDocument.activeElement).toBe(pause);
     await expect(getComputedStyle(pause).outlineStyle).not.toBe('none');
 
-    // While running, step button is disabled
     const step = canvas.getByRole('button', { name: 'Step forward' });
-    await expect(step).toBeDisabled();
+    await expect(step).toHaveProperty('disabled', !matchMedia('(prefers-reduced-motion: reduce)').matches);
 
     // Pause playback via Space
     await userEvent.keyboard(' ');
@@ -446,7 +520,7 @@ export const AcceptedPause: Story = {
     const pauseBtn = canvas.getByRole('button', { name: 'Pause animation' });
     const stepBtn = canvas.getByRole('button', { name: 'Step forward' });
 
-    await expect(stepBtn).toBeDisabled();
+    await expect(stepBtn).toHaveProperty('disabled', !matchMedia('(prefers-reduced-motion: reduce)').matches);
     await userEvent.click(pauseBtn);
 
     // Once accepted, button toggles to resume and step button is enabled
