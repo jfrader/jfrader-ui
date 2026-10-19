@@ -91,6 +91,24 @@ export const Default: Story = {
     await expect(canvas.getByRole('button', { name: 'United Kingdom +44' })).toHaveAttribute('aria-expanded', 'false');
   },
 };
+export const MouseSelectsCountry: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'United Kingdom +44' });
+    await userEvent.click(trigger);
+    const page = portal(canvasElement);
+    const spain = await page.findByRole('option', { name: /Spain/ });
+    // A real mousedown must not blur the field, or the panel closes before the click.
+    const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    spain.dispatchEvent(down);
+    await expect(down.defaultPrevented).toBe(true);
+    await userEvent.click(spain);
+    await expect(trigger).toHaveAccessibleName(/Spain/);
+    await expect(
+      page.queryByRole('dialog', { name: 'Countries' }),
+    ).not.toBeInTheDocument();
+  },
+};
 /** All three control heights share the same country picker. */
 export const Sizes: Story = {
   render: (args) => <>{(['sm', 'md', 'lg'] as const).map((size) => <PhoneInput {...args} key={size} size={size} label={`Phone ${size}`} />)}</>,

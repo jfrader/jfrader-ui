@@ -350,7 +350,7 @@ export function PhoneInput({
                   <div id={`${uid}-group-${groupIndex}`} css={headingStyle}>{heading}</div>
                   {group.map((code) => {
                     const index = rows.indexOf(code);
-                    return <div {...getItemProps({ onClick: () => selectCountry(code), onMouseMove: () => setActiveIndex(index) })} {...slotProps?.option} ref={(element) => { listRef.current[index] = element; }} key={code} id={optionId(code)} role="option" aria-selected={code === currentCountry} data-active={code === activeCountry ? '' : undefined} css={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle, optionStyle, slotProps?.option?.css]}>
+                    return <div {...getItemProps({ onClick: () => selectCountry(code), onMouseMove: () => setActiveIndex(index) })} {...slotProps?.option} onMouseDown={(event) => event.preventDefault()} ref={(element) => { listRef.current[index] = element; }} key={code} id={optionId(code)} role="option" aria-selected={code === currentCountry} data-active={code === activeCountry ? '' : undefined} css={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle, optionStyle, slotProps?.option?.css]}>
                       <span>{countryName(code)}</span><span>+{getCountryCallingCode(code)}{code === currentCountry ? ' ✓' : ''}</span>
                     </div>;
                   })}
