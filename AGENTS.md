@@ -88,6 +88,9 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 - [ ] axe clean (a11y gate is `error`, WCAG 2.0–2.2 AA + best-practice ruleset).
 - [ ] Exported from the package index.
 - [ ] Docs via autodocs; follow the documentation writing spec in `SKILL.md`.
+- [ ] Visual pass done, not deferred: the docs page and every story (including "Other stories") opened at 1440×900, 768×900 and 390×844; overlays opened; dark, light, RTL, forced colors and reduced motion checked; no clipped content, detached overlays or collisions. Fix what it surfaces in the same branch.
+
+A component is not done in one pass. After the first working version, run the visual pass and iterate; a green test run is not visual proof. Put the screenshots that show the pass in the PR.
 
 ## Accessibility
 
