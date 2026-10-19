@@ -1,8 +1,10 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { focusRingOutset } from '../../styling/focus-ring';
 import { ChromeAction, chromeIcons as icons, filmstripStyle, thumbStyle } from '../viewer-chrome/viewer-chrome';
 import type { LightboxGalleryImage, LightboxGalleryLabels, LightboxGallerySlotProps, LightboxGallerySlots } from './lightbox-gallery';
 
@@ -17,12 +19,20 @@ const titleStyle = css({
   fontSize: vars.textSize.md,
   fontWeight: vars.fontWeight.semibold,
   overflowWrap: 'anywhere',
+  minInlineSize: 0,
+  maxBlockSize: '20dvh',
+  overflow: 'auto',
+  '&:focus-visible': focusRingOutset,
 });
 const toolbarStyle = css({
   display: 'grid',
-  gridTemplateColumns: '1fr auto 1fr',
+  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr)',
   alignItems: 'center',
   gap: vars.space[2],
+  '@media (max-width: 40rem)': {
+    gridTemplateColumns: 'minmax(0, 1fr)',
+    justifyItems: 'center',
+  },
 });
 const counterStyle = css({
   fontSize: vars.textSize.sm,
@@ -32,6 +42,9 @@ const counterStyle = css({
 });
 const controlsStyle = css({
   display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  minInlineSize: 0,
   alignItems: 'center',
   gap: vars.space[1],
 });
@@ -72,7 +85,7 @@ export function ViewerHeader({
   const Title = component ?? 'h2';
   return (
     <div css={headerStyle}>
-      <Title {...slot} id={titleId} css={[titleStyle, slot?.css]}>
+      <Title {...slot} id={titleId} tabIndex={slot?.tabIndex ?? 0} css={[titleStyle, slot?.css]}>
         {title}
       </Title>
       <ChromeAction ref={autofocus} label={labels.close} icon={icons.close} placement="bottom" onClick={onClose} />
@@ -153,8 +166,27 @@ export function Filmstrip({
   thumbnail: (image: LightboxGalleryImage) => ReactNode;
 }) {
   const Thumbnails = component ?? 'div';
+  const stripRef = useRef<HTMLDivElement | null>(null);
+  const ref = useMergeRefs([stripRef, slot?.ref]);
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    const reveal = () => {
+      const current = strip.querySelector('[aria-current="true"]');
+      if (!current) return;
+      const frame = strip.getBoundingClientRect();
+      const item = current.getBoundingClientRect();
+      if (item.left < frame.left || item.right > frame.right) {
+        strip.scrollBy({ left: item.left - frame.left - (strip.clientWidth - item.width) / 2, behavior: 'instant' });
+      }
+    };
+    reveal();
+    const observer = new ResizeObserver(reveal);
+    observer.observe(strip);
+    return () => observer.disconnect();
+  }, [selected]);
   return (
-    <Thumbnails {...slot} role="group" aria-label={slot?.['aria-label'] ?? labels.thumbnails} css={[filmstripStyle, slot?.css]}>
+    <Thumbnails {...slot} ref={ref} role="group" aria-label={slot?.['aria-label'] ?? labels.thumbnails} css={[filmstripStyle, slot?.css]}>
       {images.map((item, index) => (
         <button
           key={item.id}
