@@ -20,7 +20,8 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
+import type { SlotCss, SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -71,6 +72,8 @@ type Slot<E extends keyof JSX.IntrinsicElements> = ComponentPropsWithRef<E> & {
   css?: Interpolation<Theme>;
 };
 export interface TypewriterTerminalSlotProps {
+  /** Props for the outer figure. */
+  root?: Omit<PresentationProps<'figure'>, 'children'>;
   /** Header bar element displaying the terminal title and actions. */
   header?: Slot<'header'>;
   /** Screen viewport container element displaying the terminal lines. */
@@ -93,6 +96,8 @@ export interface TypewriterTerminalSlotProps {
   status?: Slot<'div'>;
 }
 export interface TypewriterTerminalSlots {
+  /** Replaces the outer figure; forwards its props, ref and className. */
+  root?: ComponentType<ComponentPropsWithRef<'figure'>>;
   /** Header holding the terminal title and copy action. */
   header?: ComponentType<Slot<'header'>>;
   /** Viewport displaying terminal output. */
@@ -138,6 +143,8 @@ export interface TypewriterTerminalProps
   locale?: Intl.LocalesArgument;
   slotProps?: TypewriterTerminalSlotProps;
   slots?: TypewriterTerminalSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: TypewriterTerminalSlots['root'];
 }
 
 /** Commands advance one grapheme every 40ms; output pauses default to 160ms, tasks to 1200ms. */
@@ -441,6 +448,7 @@ export function TypewriterTerminal({
   locale,
   slotProps,
   slots,
+  component,
   className,
   sx,
   style,
@@ -701,13 +709,16 @@ export function TypewriterTerminal({
 
   return (
     <MotionConfig reducedMotion="user">
-      <WithSx className={className} styles={rootStyle} sx={sx}>
-        {(rootClass) => (
-          <figure
+          <PresentationSlot
+            element="figure"
+            component={slots?.root ?? component}
+            slotProps={slotProps?.root}
+            styles={rootStyle}
+            sx={sx}
             {...rest}
             ref={ref}
-            className={rootClass}
-            data-ui="typewriter-terminal"
+            className={className}
+            marker="typewriter-terminal"
             aria-label={rest['aria-label'] ?? (labelledBy ? undefined : label)}
             aria-labelledby={labelledBy}
             aria-describedby={joined(describedBy, captionPresent ? captionId : undefined)}
@@ -925,9 +936,7 @@ export function TypewriterTerminal({
                 {caption}
               </Caption>
             )}
-          </figure>
-        )}
-      </WithSx>
+          </PresentationSlot>
     </MotionConfig>
   );
 }

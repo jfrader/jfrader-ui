@@ -14,6 +14,48 @@ const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
 const ConstrainedFrame = styled.div({ maxInlineSize: '20rem' });
 
 const SOURCE = 'export const answer = 42;\nconsole.log(answer);\n';
+function ReplacementRoot(props: ComponentPropsWithRef<'section'>) {
+  return <section {...props} data-testid="replacement-root" />;
+}
+function SugarRoot(props: ComponentPropsWithRef<'section'>) {
+  return <section {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the outer section without changing the source or copy controls. */
+export const RootReplacement: StoryObj<typeof CodeBlock> = {
+  tags: ['!autodocs'],
+  args: {
+    code: SOURCE,
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    ref: fn(),
+    className: 'consumer-root',
+    title: 'consumer title',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'slot title', 'data-ui': 'custom consumer' } },
+  },
+  render: (args) => <CodeBlock {...args} data-ui="consumer" />,
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('SECTION');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('title', 'slot title');
+    await expect(root).toHaveAttribute('data-ui', 'code-block consumer custom');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(root.querySelector('pre code')).toHaveTextContent('export const answer = 42;');
+    await expect(root).toHaveAttribute('aria-labelledby', root.querySelector('[data-ui="code-block-label"]')!.id);
+  },
+};
+
+/** Use component as shorthand for the root slot. */
+export const RootComponent: StoryObj<typeof CodeBlock> = {
+  tags: ['!autodocs'],
+  args: { code: SOURCE, component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'code-block');
+  },
+};
 function CustomSourceFrame(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-testid="custom-source-frame" />;
 }

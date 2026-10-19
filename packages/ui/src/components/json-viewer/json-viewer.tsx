@@ -18,7 +18,8 @@ import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { raisedSurface } from '../../styling/surface';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
@@ -69,8 +70,13 @@ export type JsonViewerSlotProps = Partial<
       'action',
     JsonViewerPartProps
   >
->;
+> & {
+  /** Props for the outer div. */
+  root?: Omit<PresentationProps<'div'>, 'children'>;
+};
 export interface JsonViewerSlots {
+  /** Replaces the outer div; forwards its props, ref and className. */
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Replaces the toolbar container. */
   toolbar?: ComponentType<JsonViewerPartProps & ComponentPropsWithRef<'div'>>;
   /** Replaces the search field. */
@@ -118,6 +124,8 @@ export interface JsonViewerProps
   onCopy?: (detail: { kind: 'value' | 'path'; path: string; text: string }) => void;
   onCopyError?: (detail: { kind: 'value' | 'path'; path: string; error: unknown }) => void;
   slots?: JsonViewerSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: JsonViewerSlots['root'];
   slotProps?: JsonViewerSlotProps;
 }
 
@@ -508,6 +516,7 @@ export function JsonViewer({
   onCopy,
   onCopyError,
   slots,
+  component,
   slotProps,
   ref,
   className,
@@ -792,7 +801,7 @@ export function JsonViewer({
     }
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    onKeyDown?.(event);
+    (slotProps?.root?.onKeyDown ?? onKeyDown)?.(event);
     if (event.defaultPrevented) return;
     if (event.target === searchRef.current) {
       if (event.key === 'Enter') {
@@ -1011,12 +1020,29 @@ export function JsonViewer({
   );
   const separator = <span aria-hidden="true" css={separatorStyle} />;
   return (
-    <WithSx className={className} styles={rootStyle} sx={sx}>
-      {(className) => (
-        <div
+        <PresentationSlot
+          element="div"
+          component={slots?.root ?? component}
+          styles={rootStyle}
+          sx={sx}
+          slotProps={{
+            ...slotProps?.root,
+            onKeyDown: handleKeyDown,
+            onClick: (event) => {
+              (slotProps?.root?.onClick ?? onClick)?.(event);
+              if (event.defaultPrevented) return;
+              const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
+              if (!item || !treeRef.current?.contains(item)) return;
+              const row = visible.find((row) => rowRefs.current.get(row.path) === item);
+              if (row) {
+                moveFocus(row.path);
+                activate(row);
+              }
+            },
+          }}
           {...rest}
           ref={ref}
-          data-ui="json-viewer"
+          marker="json-viewer"
           className={className}
           style={
             {
@@ -1025,18 +1051,6 @@ export function JsonViewer({
               ...style,
             } as CSSProperties
           }
-          onKeyDown={handleKeyDown}
-          onClick={(event) => {
-            onClick?.(event);
-            if (event.defaultPrevented) return;
-            const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
-            if (!item || !treeRef.current?.contains(item)) return;
-            const row = visible.find((row) => rowRefs.current.get(row.path) === item);
-            if (row) {
-              moveFocus(row.path);
-              activate(row);
-            }
-          }}
         >
           {!nodes ? (
             <div
@@ -1162,9 +1176,7 @@ export function JsonViewer({
           >
             {status}
           </Status>
-        </div>
-      )}
-    </WithSx>
+        </PresentationSlot>
   );
 }
 JsonViewer.displayName = 'JsonViewer';

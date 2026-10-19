@@ -9,7 +9,7 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 ## Counts
 
 - Public callable families: **166**; public callable parts: **177**.
-- Families exposing `slots.root`: **101**; remaining without a family-level root slot: **65** (includes DOM-less providers).
+- Families exposing `slots.root`: **105**; remaining without a family-level root slot: **61** (includes DOM-less providers).
 - Families exposing any non-root replacement slot: **128**; remaining without family-level interior slots: **38** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
@@ -97,7 +97,7 @@ may exist and is listed on the corresponding public part).
 | [ChatThread.Composer](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | — | — | — |
 | [Checkbox](../packages/ui/src/components/checkbox/checkbox.tsx) | — | `control`, `description`, `label` | `control`, `description`, `label`, `root` | `root` | — | — |
 | [ChipGroup](../packages/ui/src/components/chip-group/chip-group.tsx) | — | `check`, `chip`, `frame`, `label`, `overflow`, `row` | `check`, `chip`, `frame`, `label`, `overflow`, `row` | — | — | — |
-| [CodeBlock](../packages/ui/src/components/code-block/code-block.tsx) | — | `code`, `gutter`, `header`, `label`, `language`, `pre`, `sourceFrame`, `toggle` | `code`, `gutter`, `header`, `label`, `language`, `pre`, `sourceFrame`, `toggle` | — | `copyButtonProps` | — |
+| [CodeBlock](../packages/ui/src/components/code-block/code-block.tsx) | yes | `code`, `gutter`, `header`, `label`, `language`, `pre`, `root`, `sourceFrame`, `toggle` | `code`, `gutter`, `header`, `label`, `language`, `pre`, `root`, `sourceFrame`, `toggle` | — | `copyButtonProps` | — |
 | [ColorPicker](../packages/ui/src/components/color-picker/color-picker.tsx) | yes | `content`, `contrast`, `description`, `error`, `field`, `pad`, `range`, `root`, `swatches`, `trigger` | `content`, `contrast`, `description`, `error`, `field`, `pad`, `range`, `root`, `swatches`, `trigger` | — | — | — |
 | [Combobox](../packages/ui/src/components/combobox/combobox.tsx) | yes | `description`, `empty`, `error`, `input`, `item`, `label`, `list`, `root` | `description`, `empty`, `error`, `input`, `item`, `label`, `list`, `root` | — | — | `Empty`, `Input`, `Item`, `List` |
 | [Combobox.Empty](../packages/ui/src/components/combobox/combobox.tsx) | — | — | — | — | — | — |
@@ -112,7 +112,7 @@ may exist and is listed on the corresponding public part).
 | [CommandPalette.Item](../packages/ui/src/components/command-palette/command-palette.tsx) | — | — | — | — | — | — |
 | [CommandPalette.List](../packages/ui/src/components/command-palette/command-palette.tsx) | — | — | — | — | — | — |
 | [CommandPalette.Trigger](../packages/ui/src/components/command-palette/command-palette.tsx) | — | — | — | — | — | — |
-| [CommentThread](../packages/ui/src/components/comment-thread/comment-thread.tsx) | — | `actions`, `article`, `body`, `composer`, `header`, `item`, `list`, `reaction`, `replies`, `resolved`, `send`, `status`, `textarea`, `time`, `title` | `actions`, `article`, `body`, `composer`, `header`, `item`, `list`, `reaction`, `replies`, `resolved`, `send`, `status`, `textarea`, `time`, `title` | — | — | — |
+| [CommentThread](../packages/ui/src/components/comment-thread/comment-thread.tsx) | yes | `actions`, `article`, `body`, `composer`, `header`, `item`, `list`, `reaction`, `replies`, `resolved`, `root`, `send`, `status`, `textarea`, `time`, `title` | `actions`, `article`, `body`, `composer`, `header`, `item`, `list`, `reaction`, `replies`, `resolved`, `root`, `send`, `status`, `textarea`, `time`, `title` | — | — | — |
 | [Container](../packages/ui/src/components/container/container.tsx) | — | — | — | — | — | — |
 | [ContextMenu](../packages/ui/src/components/context-menu/context-menu.tsx) | yes | `content`, `item`, `root`, `separator`, `target` | `content`, `item`, `root`, `separator`, `target` | — | — | `CheckboxItem`, `Content`, `Item`, `Separator`, `Target`, `Trigger` |
 | [ContextMenu.CheckboxItem](../packages/ui/src/components/context-menu/context-menu.tsx) | — | — | — | — | — | — |
@@ -223,7 +223,7 @@ may exist and is listed on the corresponding public part).
 | [InputGroup.Addon](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
 | [InputGroup.Input](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
 | [InputGroup.Textarea](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
-| [JsonViewer](../packages/ui/src/components/json-viewer/json-viewer.tsx) | — | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | `action`, `group`, `pathBar`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | — | — | — |
+| [JsonViewer](../packages/ui/src/components/json-viewer/json-viewer.tsx) | yes | `action`, `group`, `pathBar`, `root`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | `action`, `group`, `pathBar`, `root`, `row`, `search`, `status`, `toolbar`, `tree`, `value` | — | — | — |
 | [Kbd](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | `Group` |
 | [Kbd.Group](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | — |
 | [KeycapKeyboard](../packages/ui/src/components/keycap-keyboard/keycap-keyboard.tsx) | — | `key`, `legend`, `row` | `key`, `legend`, `row` | — | — | — |
@@ -351,7 +351,7 @@ may exist and is listed on the corresponding public part).
 | [Tooltip.Content](../packages/ui/src/components/tooltip/tooltip.tsx) | — | — | — | — | — | — |
 | [Tooltip.Trigger](../packages/ui/src/components/tooltip/tooltip.tsx) | — | — | — | — | — | — |
 | [TreeView](../packages/ui/src/components/tree-view/tree-view.tsx) | — | `disclosure`, `group`, `icon`, `label`, `row`, `status`, `tree` | `disclosure`, `group`, `icon`, `label`, `row`, `status`, `tree` | — | — | — |
-| [TypewriterTerminal](../packages/ui/src/components/typewriter-terminal/typewriter-terminal.tsx) | — | `caption`, `controls`, `copyButton`, `header`, `playButton`, `replayButton`, `screen`, `scrubber`, `status`, `transcript` | `caption`, `controls`, `copyButton`, `header`, `playButton`, `replayButton`, `screen`, `scrubber`, `status`, `transcript` | — | — | — |
+| [TypewriterTerminal](../packages/ui/src/components/typewriter-terminal/typewriter-terminal.tsx) | yes | `caption`, `controls`, `copyButton`, `header`, `playButton`, `replayButton`, `root`, `screen`, `scrubber`, `status`, `transcript` | `caption`, `controls`, `copyButton`, `header`, `playButton`, `replayButton`, `root`, `screen`, `scrubber`, `status`, `transcript` | — | — | — |
 | [UsageMeter](../packages/ui/src/components/usage-meter/usage-meter.tsx) | — | `item`, `legend`, `limit`, `overage`, `root`, `segment`, `status`, `title`, `total`, `track` | `item`, `legend`, `limit`, `overage`, `root`, `segment`, `status`, `title`, `total`, `track` | — | — | — |
 | [UserMenu](../packages/ui/src/components/user-menu/user-menu.tsx) | yes | `content`, `identity`, `item`, `root`, `separator`, `signOut`, `statusGroup`, `themeGroup`, `trigger` | `content`, `identity`, `item`, `root`, `separator`, `signOut`, `statusGroup`, `themeGroup`, `trigger` | — | — | `Content`, `Identity`, `Item`, `Separator`, `SignOut`, `StatusGroup`, `ThemeGroup`, `Trigger` |
 | [UserMenu.Content](../packages/ui/src/components/user-menu/user-menu.tsx) | — | `close`, `handle`, `menu` | `close`, `handle`, `menu` | — | — | — |
