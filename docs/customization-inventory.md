@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **154**; public callable parts: **165**.
-- Families exposing `slots.root`: **91**; remaining without a family-level root slot: **63** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **120**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
+- Public callable families: **155**; public callable parts: **165**.
+- Families exposing `slots.root`: **92**; remaining without a family-level root slot: **63** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **121**; remaining without family-level interior slots: **34** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **1**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -237,6 +237,7 @@ may exist and is listed on the corresponding public part).
 | [NowPlaying](../packages/ui/src/components/now-playing/now-playing.tsx) | — | `artist`, `artwork`, `collapse`, `controls`, `error`, `expand`, `full`, `mini`, `seek`, `status`, `title`, `waveform` | `artist`, `artwork`, `collapse`, `controls`, `error`, `expand`, `full`, `mini`, `seek`, `status`, `title`, `waveform` | — | — | `Levels` |
 | [NowPlaying.Levels](../packages/ui/src/components/now-playing/now-playing.tsx) | — | — | — | — | — | — |
 | [NowPlayingLevels](../packages/ui/src/components/now-playing/now-playing.tsx) | — | — | — | — | — | — |
+| [NumberField](../packages/ui/src/components/number-field/number-field.tsx) | yes | `control`, `decrement`, `description`, `error`, `increment`, `label`, `prefix`, `range`, `root`, `shell`, `status`, `suffix` | `control`, `decrement`, `description`, `error`, `increment`, `label`, `prefix`, `range`, `root`, `shell`, `status`, `suffix` | — | — | — |
 | [PageCurl](../packages/ui/src/components/page-curl/page-curl.tsx) | yes | `book`, `controls`, `fold`, `hint`, `nextButton`, `page`, `previousButton`, `root`, `status` | `book`, `controls`, `fold`, `hint`, `nextButton`, `page`, `previousButton`, `root`, `status` | — | — | — |
 | [Pagination](../packages/ui/src/components/pagination/pagination.tsx) | — | — | — | — | — | — |
 | [PasswordField](../packages/ui/src/components/password-field/password-field.tsx) | yes | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | — | — | — |
