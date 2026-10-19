@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -32,7 +33,9 @@ const meta = {
       usage: `### Values
 All numeric props are integer minor units: USD 12.50 is \`1250\`, JPY 12 is \`12\`, KWD 12.345 is \`12345\`. This includes \`min\`, \`max\`, \`step\` and \`quickAdd\`. Values are limited to 12 minor-unit digits and currencies with zero to three decimal places.
 
-Changing currency preserves the integer, without conversion or FX. \`details.major\` and \`details.formatted\` are for display, not storage. Supply the same explicit locale on the server and client. Intl.supportedValuesOf('currency') is required.
+Set \`decimals\` to an integer from 0 to 18 for non-ISO assets. Values then use base units at a scale of 10^decimals; \`symbol\` prefixes the locale-formatted amount and defaults to the currency code. The default step is one base unit in this mode, or one major unit for ISO currencies.
+
+Changing currency preserves the integer, without conversion or FX. \`details.major\` and \`details.formatted\` are for display, not storage. Supply the same explicit locale on the server and client. Intl.supportedValuesOf('currency') is required only for ISO currencies.
 
 ### Editing and keyboard
 The focused field uses ungrouped decimal text. Blur or Enter settles to a full currency string; below-minimum drafts show an error without clamping. Sub-minor precision and over-maximum edits are rejected. Escape discards the draft. ArrowUp/Down changes by \`step\`; Shift+Arrow or PageUp/Down changes by ten steps. Add buttons commit the draft and add once, clamped to the range. The currency picker uses Select's arrows, Home/End, typeahead, Enter/Space, Escape and Tab; focus stays on its trigger.
@@ -52,6 +55,99 @@ Supply \`label\` or an accessible name. \`hideLabel\` keeps the label available 
 } satisfies Meta<typeof MoneyInput>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+/** Enter bitcoin amounts stored as satoshis. */
+export const CryptoBitcoin: Story = {
+  name: 'Crypto (Bitcoin)',
+  args: { currencies: ['BTC'], currency: 'BTC', decimals: 8, symbol: '₿', defaultValue: 1, onValueChange: fn() },
+  parameters: {
+    docs: {
+      source: {
+        code: `<MoneyInput label="Amount" name="amount" currencies={['BTC']} currency="BTC"
+  decimals={8} symbol="₿" defaultValue={1} locale="en-US" />`,
+      },
+    },
+  },
+  render: (args) => (
+    <Form>
+      <MoneyInput {...args} name="amount" />
+      <Button type="reset">Reset</Button>
+    </Form>
+  ),
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const input = canvas.getByRole('spinbutton');
+    const form = canvasElement.querySelector('form')!;
+    await expect(input).toHaveValue('₿0.00000001');
+    await expect(input).toHaveAttribute('aria-valuenow', '0.00000001');
+    await expect(input).toHaveAttribute('aria-valuetext', '₿0.00000001');
+    await expect(new FormData(form).get('amount')).toBe('1');
+    await expect(canvas.queryByRole('combobox')).not.toBeInTheDocument();
+    await userEvent.click(input);
+    await expect(input).toHaveValue('0.00000001');
+    await userEvent.clear(input);
+    await userEvent.type(input, '0.00000001');
+    await userEvent.keyboard('{Enter}');
+    await expect(input).toHaveValue('₿0.00000001');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(1, {
+      currency: 'BTC', major: 1e-8, formatted: '₿0.00000001',
+    });
+    await userEvent.keyboard('{ArrowUp}');
+    await expect(new FormData(form).get('amount')).toBe('2');
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(new FormData(form).get('amount')).toBe('1');
+    await userEvent.keyboard('{PageUp}');
+    await expect(new FormData(form).get('amount')).toBe('11');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(6);
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
+    await waitFor(() => expect(input).toHaveValue('₿0.00000001'));
+    await expect(new FormData(form).get('amount')).toBe('1');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(6);
+  },
+};
+
+/** Type bitcoin amounts with a decimal comma. */
+export const CryptoDecimalComma: Story = {
+  args: { currencies: ['BTC'], decimals: 8, symbol: '₿', locale: 'es-AR', defaultValue: null, step: 1 },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('spinbutton');
+    await userEvent.click(input);
+    await userEvent.type(input, '0,00000001');
+    await expect(input).toHaveValue('0,00000001');
+    await userEvent.keyboard('{Enter}');
+    await expect(input).toHaveValue('₿0,00000001');
+    await expect(input).toHaveAttribute('aria-valuenow', '0.00000001');
+  },
+};
+
+/** Reject amounts smaller than one base unit and invalid precision settings. */
+export const CryptoContract: Story = {
+  args: { currencies: ['BTC'], decimals: 8, symbol: '₿', defaultValue: 1, step: 1 },
+  play: async () => {
+    const btc = moneyFormat('en-US', 'BTC', 'symbol', 8, '₿');
+    await expect(btc.parse(btc.format(1))).toEqual({ kind: 'value', value: 1 });
+    await expect(btc.parse('₿1,234.00000001')).toEqual({ kind: 'value', value: 123400000001 });
+    await expect(btc.parse(' ₿0.00000001 ')).toEqual({ kind: 'value', value: 1 });
+    await expect(btc.parse('₿12,34.00000001').kind).toBe('invalid');
+    await expect(btc.parse('0.000000001').kind).toBe('invalid');
+    await expect(btc.parse('0.0000000100')).toEqual({ kind: 'value', value: 1 });
+    await expect(btc.parse('9999.99999999')).toEqual({ kind: 'value', value: MONEY_LIMIT });
+    await expect(btc.parse('10000').kind).toBe('invalid');
+    await expect(moneyFormat('en-US', 'custom-asset', 'symbol', 0).format(1)).toBe('custom-asset1');
+    const precise = moneyFormat('en-US', 'TOKEN', 'symbol', 18);
+    await expect(precise.parse(precise.format(1))).toEqual({ kind: 'value', value: 1 });
+    await expect(precise.draft(1)).toBe('0.000000000000000001');
+    await expect(renderToString(
+      <MoneyInput currencies={['custom-asset']} decimals={18} defaultValue={1} label="Amount" />,
+    )).toContain('custom-asset0.000000000000000001');
+    await expect(moneyFormat('en-US', 'USD', 'symbol').parse('$1,234.50')).toEqual({ kind: 'value', value: 123450 });
+    for (const decimals of [-1, 1.5, 19, NaN, Infinity]) {
+      await expect(() => renderToString(
+        <MoneyInput currencies={['BTC']} decimals={decimals} label="Amount" />,
+      )).toThrow(RangeError);
+    }
+  },
+};
 
 /** Enter an amount in US dollars. */
 export const Default: Story = {

@@ -5,6 +5,7 @@
 ### Added
 
 - `ColorPicker` opens a modal dialog that fits the viewport instead of an anchored popover: focus moves inside, Escape and backdrop cancel, and the swatch checker matches its box.
+- `MoneyInput` accepts non-ISO assets with `decimals` (0–18) and a display `symbol`, storing integer base units such as bitcoin satoshis.
 - `NumberField` adds locale-aware quantity entry, exact decimal steps, keyboard and pointer controls, draft validation, and canonical form values.
 - `MoneyInput` enters integer minor-unit amounts with locale-aware currency formatting, a currency picker, quick-add buttons and native form reset. Changing currency preserves the stored integer without conversion.
 - `PhoneInput` collects international telephone numbers with a searchable country picker, national formatting, incomplete storage candidates, metadata validation and independent controlled number, country and picker state.
