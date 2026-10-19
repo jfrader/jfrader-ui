@@ -93,6 +93,11 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   MoneyInput); country metadata, AsYouType formatting and E.164 validation go through
   `libphonenumber-js/max` (PhoneInput); color-space conversion and contrast go through `culori`
   (ColorPicker). Never hand-roll a locale parser, a country/format table or OKLCH math.
+- **Illustration content.** PersonAvatar imports immutable typed skin, hair, eye and artwork tables from
+  `@jfrader/tokens`, outside the theme trees. They do not generate CSS variables or change with themes.
+  This exception permits typed illustration data, not raw colors in UI code or theme-free chrome.
+  Frozen upstream parity fixtures retain source literals. Preserve illustration fills in forced colors
+  and add a real CanvasText boundary outline; this does not exempt controls or text from contrast rules.
 - **Module-level `css()` constants.** Never build style objects per render. Compose a public part's
   root through `WithSx` (`src/styling/sx.tsx`):
   `<WithSx className={className} styles={[base, variants[variant], slotProps?.x?.css]} sx={sx}>` and

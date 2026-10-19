@@ -6,7 +6,9 @@ import { Avatar } from '../avatar';
 import { DeckProvider, defineDeck } from '../deck';
 import { GameCard } from '../game-card';
 import { Scene, sceneSource, type SceneGrade, type SceneSize, type SceneVariant } from './index';
-import { generateSceneSvg, SCENE_PARAMETERS } from './scene-generator';
+import { generateSceneParts, generateSceneSvg, SCENE_PARAMETERS } from './scene-generator';
+import { hashSeed, createPrng } from '../../utils/seeded';
+import { SCENE_FIXTURES, HASH_FIXTURES, PRNG_FIXTURES } from './reference-fixtures';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
@@ -149,6 +151,23 @@ Provide \`alt\` or \`aria-label\` to describe the scene. Pass \`aria-hidden\` or
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+/** Frozen terrain and color grades across four seeds. */
+export const SeededCoreParity: Story = {
+  render: (args) => <Scene {...args} />,
+  play: async () => {
+    for (const { seed, variant, grade, parts, svg, url } of SCENE_FIXTURES) {
+      await expect(generateSceneParts(seed, variant, grade)).toEqual(parts);
+      await expect(generateSceneSvg(seed, variant, grade)).toBe(svg);
+      await expect(sceneSource(seed, { variant, grade })).toBe(url);
+    }
+    for (const [seed, hash] of HASH_FIXTURES) await expect(hashSeed(seed)).toBe(hash);
+    for (const [seed, draws] of PRNG_FIXTURES) {
+      const next = createPrng(seed);
+      await expect(Array.from({ length: 16 }, next)).toEqual(draws);
+    }
+  },
+};
 
 /** Default scene rendered inline at full container width. */
 export const Default: Story = {

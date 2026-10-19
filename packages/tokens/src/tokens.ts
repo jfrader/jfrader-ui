@@ -146,6 +146,7 @@ export const base = {
   },
   // Component structural sizes; theme-independent, so light shares them.
   size: {
+    personAvatarLg: '72px',
     // Emblem plate: the square side for circle, squircle and hexagon; the shield is 8:7 on top of it.
     emblemSm: '24px',
     emblemMd: '32px',
@@ -270,3 +271,50 @@ export const contrast = {
     textSubtle: '#9a9ea7',
   },
 } as const satisfies AppearanceOverrides;
+
+export const PERSON_SKIN_TONES = {
+  porcelain: { base: '#f3c9a4', highlight: '#ffe0be', shadow: '#c98961' },
+  ivory: { base: '#eebd93', highlight: '#ffd6ac', shadow: '#bd7d55' },
+  golden: { base: '#dfa273', highlight: '#f7c396', shadow: '#ae704b' },
+  olive: { base: '#c58b62', highlight: '#dda77c', shadow: '#925f42' },
+  amber: { base: '#b17a53', highlight: '#cd9569', shadow: '#7f5137' },
+  umber: { base: '#995f43', highlight: '#b87855', shadow: '#6c3d2e' },
+  cocoa: { base: '#7d4e37', highlight: '#9c6648', shadow: '#553024' },
+  deep: { base: '#6d422f', highlight: '#8b5940', shadow: '#45271f' },
+} as const;
+
+export const PERSON_HAIR_COLORS = {
+  black: { base: '#171416', highlight: '#383035' },
+  espresso: { base: '#35231f', highlight: '#654334' },
+  chestnut: { base: '#653b27', highlight: '#98633e' },
+  auburn: { base: '#7a3620', highlight: '#b05f31' },
+  copper: { base: '#9a4a1e', highlight: '#cf7a34' },
+  blond: { base: '#a87838', highlight: '#d7aa5a' },
+  platinum: { base: '#c2ab77', highlight: '#efdda6' },
+  ash: { base: '#4a4448', highlight: '#7d757b' },
+  silver: { base: '#68676b', highlight: '#a5a4a8' },
+} as const;
+
+export const PERSON_EYE_COLORS = {
+  coffee: { iris: '#4a2c1c', light: '#6f452b' },
+  hazel: { iris: '#7a5321', light: '#a5773a' },
+  amber: { iris: '#94601c', light: '#c08a34' },
+  moss: { iris: '#3f5a33', light: '#5f7f4c' },
+  slate: { iris: '#3d5566', light: '#5b7c92' },
+  sky: { iris: '#2f6f8f', light: '#4f9ab9' },
+} as const;
+
+export const PERSON_ART_COLORS = {
+  outline: '#11181d',
+  pupil: '#182229',
+  eyeWhite: '#f7f1e8',
+  mouth: '#713f3d',
+  glint: '#ffffff',
+  headband: '#f4f1e8',
+  earring: '#e8c86a',
+  tape: '#f7f2e6',
+  staffJacket: '#263238',
+  staffShirt: '#e7ece8',
+  staffLapel: '#34434a',
+  shadow: '#090e12',
+} as const;
