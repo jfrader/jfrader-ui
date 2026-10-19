@@ -677,13 +677,15 @@ function PhotoViewer({
   } | null>(null);
 
   useEffect(() => {
+    // Keep the last zoom/pan through the retained exit so the closing frame does not snap.
+    if (!open && present) return;
     x.set(0);
     y.set(0);
     scale.set(1);
     if (!open) setZoomState({ id: selected, value: 1 });
     pointers.current.clear();
     gesture.current = null;
-  }, [selected, open, x, y, scale]);
+  }, [selected, open, present, x, y, scale]);
   useEffect(() => {
     if (dialogRef.current?.open) closeRef.current?.focus({ preventScroll: true });
   }, [open, lifecycle.repairToken]);

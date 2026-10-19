@@ -324,18 +324,32 @@ async function expectRowsSettled(canvasElement: HTMLElement) {
     [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="share-access-member-list"] > li')].map(
       (row) => row.getBoundingClientRect(),
     );
+  const targetsClear = () =>
+    [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="select-trigger"], button[aria-label^="Remove "]')].every(
+      (target) => {
+        const box = target.getBoundingClientRect();
+        if (box.width === 0 || box.height === 0) return true;
+        return [box.top + 2, box.top + box.height / 2, box.bottom - 2].every((y) => {
+          const hit = target.ownerDocument.elementFromPoint(box.left + box.width / 2, y);
+          return !!hit && target.contains(hit);
+        });
+      },
+    );
   await waitFor(
     async () => {
       const current = boxes();
       const separated = current.every(
         (box, index) => index === 0 || box.top >= current[index - 1]!.bottom - 1,
       );
-      if (!separated) return false;
+      if (!separated || !targetsClear()) return false;
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );
       const next = boxes();
-      return next.every((box, index) => Math.abs(box.top - current[index]!.top) <= 0.5);
+      return (
+        targetsClear() &&
+        next.every((box, index) => Math.abs(box.top - current[index]!.top) <= 0.5)
+      );
     },
     { timeout: 3000 },
   );
