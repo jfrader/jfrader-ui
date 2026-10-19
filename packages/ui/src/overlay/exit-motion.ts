@@ -2,7 +2,12 @@
 // are transitions keyed on `data-state="closing"`. Reduced motion zeroes those transitions, so
 // there is nothing to wait for and the exit completes on the next microtask.
 import { useEffect, useRef, useState } from 'react';
+import { motionDurationMs } from '../styling/motion-timings';
 import type { NativeDialogTransition } from './use-native-dialog';
+
+// The house exit transitions are `slow` (240ms). A little headroom absorbs scheduling jitter,
+// while keeping an unrelated long animation from holding a close open.
+const EXIT_SETTLE_CAP_MS = motionDurationMs.slow + 160;
 
 /**
  * Settles once the finite animations and transitions running on `element` (and, with `subtree`,
@@ -15,8 +20,17 @@ export function exitMotionFinished(element: Element, { subtree = true } = {}): P
       ? element
           .getAnimations({ subtree })
           .filter((animation) => Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)))
+          // A paused finite animation (for example a paused TextShimmer) never resolves its
+          // `finished` promise. Only running effects belong to this exit.
+          .filter((animation) => animation.playState === 'running')
       : [];
-  return Promise.allSettled(running.map((animation) => animation.finished));
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, EXIT_SETTLE_CAP_MS);
+    void Promise.allSettled(running.map((animation) => animation.finished)).then(() => {
+      clearTimeout(timer);
+      resolve(undefined);
+    });
+  });
 }
 
 /**

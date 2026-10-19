@@ -13,7 +13,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
-import { MotionConfig, motion, useInView, useReducedMotion } from 'motion/react';
+import { animate, MotionConfig, motion, useInView, useMotionValue, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -196,6 +196,14 @@ const rootStyle = css({
   color: vars.color.text,
 });
 const surfaceStyle = css({ padding: vars.space[4], overflowWrap: 'anywhere' });
+// The card grows by clipping the settled face, not by scaling it: the content reflows and the
+// outer height reveals it, so text and controls never appear squashed.
+const faceStyle = css({
+  overflow: 'clip',
+  minInlineSize: 0,
+  // Room for the 2px focus ring and its 2px offset at the top and bottom edges.
+  paddingBlock: vars.space[1],
+});
 const miniStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
@@ -457,6 +465,36 @@ function NowPlayingRoot({
   const keyboardOpen = useRef(false);
   const focusInFull = useRef(false);
   const reduced = useReducedMotion();
+  const faceHeight = useMotionValue(0);
+  const [faceReady, setFaceReady] = useState(false);
+  const faceInnerRef = useRef<HTMLDivElement>(null);
+  const faceInitialized = useRef(false);
+  const faceAnimation = useRef<ReturnType<typeof animate> | null>(null);
+  useLayoutEffect(() => {
+    const inner = faceInnerRef.current;
+    if (!inner) return;
+    const measure = () => {
+      const target = inner.scrollHeight;
+      if (!faceInitialized.current || reduced) {
+        faceAnimation.current?.stop();
+        faceHeight.jump(target);
+        faceInitialized.current = true;
+        setFaceReady(true);
+        return;
+      }
+      if (Math.abs(faceHeight.get() - target) < 1) return;
+      faceAnimation.current?.stop();
+      faceAnimation.current = animate(faceHeight, target, { ...SHELL_SPRING });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(inner);
+    return () => {
+      observer.disconnect();
+      faceAnimation.current?.stop();
+    };
+  }, [reduced, faceHeight]);
+
   const pendingDirection = useRef(0);
   const dragCancelled = useRef(false);
   const previousIndex = useRef(index);
@@ -576,8 +614,9 @@ function NowPlayingRoot({
                 }
               }}
             >
-              <motion.div layout={!reduced} transition={reduced ? { duration: 0 } : SHELL_SPRING}>
-                <Card css={surfaceStyle}>
+              <Card css={surfaceStyle}>
+                  <motion.div style={faceReady ? { height: faceHeight } : undefined} css={faceStyle}>
+                    <div ref={faceInnerRef}>
                   <Mini {...slotProps?.mini} css={[miniStyle, slotProps?.mini?.css]} hidden={isOpen}>
                     {!isOpen && artwork(true)}
                     {!isOpen && metadata}
@@ -700,6 +739,8 @@ function NowPlayingRoot({
                     </Controls>
                     <NowPlayingLevels />
                   </Full>
+                    </div>
+                  </motion.div>
                   {busy && <Progress label={labels.busy} />}
                   <Status
                     {...slotProps?.status}
@@ -722,8 +763,7 @@ function NowPlayingRoot({
                       {error}
                     </Error>
                   )}
-                </Card>
-              </motion.div>
+              </Card>
             </section>
           )}
         </WithSx>

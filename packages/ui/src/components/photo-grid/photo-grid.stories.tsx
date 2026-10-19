@@ -238,6 +238,20 @@ export const ViewerVisibility: Story = {
     await expect(album).toBeVisible();
   },
 };
+export const RetainedClose: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const viewer = canvasElement.querySelector<HTMLDialogElement>('[data-ui="photo-grid-viewer"]')!;
+    await userEvent.click(tiles(canvasElement)[0]!);
+    await waitFor(() => expect(viewer).toHaveAttribute('open'));
+    await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
+    await waitFor(() => expect(viewer).toHaveAttribute('data-state', 'closing'));
+    await expect(viewer).toHaveAttribute('open');
+    const stage = viewer.querySelector<HTMLElement>('[data-ui="photo-grid-stage"]')!;
+    await expect(stage.getBoundingClientRect().height).toBeGreaterThan(0);
+    await waitFor(() => expect(viewer).not.toHaveAttribute('open'), { timeout: 800 });
+  },
+};
+
 export const CustomSteps: Story = {
   args: { densitySteps: [4, 2, 1] },
   play: async ({ canvas }) => {

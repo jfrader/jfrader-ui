@@ -11,6 +11,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { TextField } from '../text-field';
+import { TextShimmer } from '../text-shimmer';
 import { ThemeRoot } from '../theme-root';
 import { Surface, type SurfacePartProps } from '../surface';
 import { Card } from '../card';
@@ -953,5 +954,37 @@ export const NestedDialog: Story = {
     await waitFor(() => expect(outer).not.toHaveAttribute('open'));
     await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+  },
+};
+
+
+/**
+ * Regression: `exitMotionFinished` must not wait for a paused child animation. A paused
+ * TextShimmer's finite animation never resolves, so this dialog used to stay open forever.
+ */
+export const ClosingWithPausedChild: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <Dialog
+      triggerLabel="Open audit dialog"
+      title="Audit dialog"
+      closeLabel="Close"
+      content={
+        <div>
+          <p>Body</p>
+          <TextShimmer paused>Generating summary</TextShimmer>
+        </div>
+      }
+    />
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Open audit dialog' }));
+    const dialog = await waitFor(() => {
+      const element = canvasElement.querySelector<HTMLDialogElement>('dialog[open]');
+      if (!element) throw new Error('dialog did not open');
+      return element;
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(dialog).not.toHaveAttribute('open'), { timeout: 700 });
   },
 };

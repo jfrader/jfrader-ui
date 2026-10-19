@@ -466,6 +466,7 @@ export function Carousel({
   const tabListRefs = useMergeRefs([slotProps?.tabList?.ref, tabListRef]);
   const lastFocusRef = useRef<Element | null>(null);
   const dragRef = useRef<DragSession | null>(null);
+  const releaseRef = useRef<(() => void) | null>(null);
   // The slide a gesture already requested, so its trailing scrollend does not request it again.
   const gestureRequestRef = useRef<number | null>(null);
   // Indicator focus that already issued the auto-activation request for the click that follows.
@@ -664,19 +665,40 @@ export function Carousel({
     requestIndex(target);
   };
 
+  useEffect(() => () => releaseRef.current?.(), []);
+
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     resetGesture();
     if (!navigable || event.pointerType !== 'mouse' || event.button !== 0) return;
     const viewport = event.currentTarget;
     const interactive = (event.target as Element).closest(INTERACTIVE_SELECTOR);
     if (interactive && interactive !== viewport && viewport.contains(interactive)) return;
-    dragRef.current = {
+    const session = {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       startScroll: viewport.scrollLeft,
       active: false,
     };
+    dragRef.current = session;
+    // Before capture starts, a release outside the viewport never reaches the viewport handler.
+    // Keep a document-level release for that window; once the drag is active the viewport owns
+    // the pointer through capture, so the listener only has to remove itself.
+    const ownerDocument = viewport.ownerDocument;
+    const release = (releaseEvent: globalThis.PointerEvent) => {
+      if (releaseEvent.pointerId !== session.pointerId) return;
+      if (dragRef.current === session && !session.active) dragRef.current = null;
+      detach();
+    };
+    const detach = () => {
+      ownerDocument.removeEventListener('pointerup', release);
+      ownerDocument.removeEventListener('pointercancel', release);
+      if (releaseRef.current === detach) releaseRef.current = null;
+    };
+    releaseRef.current?.();
+    releaseRef.current = detach;
+    ownerDocument.addEventListener('pointerup', release);
+    ownerDocument.addEventListener('pointercancel', release);
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -702,6 +724,7 @@ export function Carousel({
   };
 
   const endDrag = (event: PointerEvent<HTMLDivElement>, commit: boolean) => {
+    releaseRef.current?.();
     const session = dragRef.current;
     if (!session || session.pointerId !== event.pointerId) return;
     dragRef.current = null;
@@ -820,6 +843,7 @@ export function Carousel({
               onPointerMove={chain(viewportSlot?.onPointerMove, handlePointerMove)}
               onPointerUp={chain(viewportSlot?.onPointerUp, (event) => endDrag(event, true))}
               onPointerCancel={chain(viewportSlot?.onPointerCancel, (event) => endDrag(event, false))}
+              onLostPointerCapture={chain(viewportSlot?.onLostPointerCapture, (event) => endDrag(event, false))}
               onScroll={chain(viewportSlot?.onScroll, supportsScrollEnd ? noop : scrollFallback)}
               onScrollEnd={chain(viewportSlot?.onScrollEnd, settle)}
             >

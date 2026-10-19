@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+
+- NowPlaying expands and collapses by revealing its content as the card grows, instead of scaling the text and controls with the card. A rejected sheet drag on UserMenu springs back, and Carousel clears a pointer released outside before the drag threshold.
+- Dialogs close even when a child animation is paused or long-running: exits wait only for the surface's running exit effects, with a bounded fallback. PhotoGrid retains its viewer through the closing transition instead of cutting to the grid immediately.
+
 ## 0.9.1
 
 ### Fixed

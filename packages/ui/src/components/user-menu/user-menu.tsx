@@ -46,6 +46,7 @@ import {
 import { GeneratedRoot, type GeneratedRootProps, type GeneratedRootSlotProps } from '../../utils/generated-root';
 import { createPortal } from 'react-dom';
 import { FloatingFocusManager, useMergeRefs, type Placement } from '@floating-ui/react';
+import { animate } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
@@ -1037,6 +1038,7 @@ function UserMenuSurface({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const dragRef = useRef<{ pointerId: number; startY: number; distance: number } | null>(null);
+  const dragAnimation = useRef<ReturnType<typeof animate> | null>(null);
   const mergedRef = useMergeRefs([setShell, ref]);
 
   useLayoutEffect(() => {
@@ -1093,13 +1095,40 @@ function UserMenuSurface({
     if (distance === null) shell?.style.removeProperty(DRAG_VAR);
     else shell?.style.setProperty(DRAG_VAR, `${distance}px`);
   };
-  const endDrag = () => {
-    dragRef.current = null;
-    setDrag(null);
+  const stopDragAnimation = () => {
+    dragAnimation.current?.stop();
+    dragAnimation.current = null;
   };
+  const endDrag = (settle = false) => {
+    const settling = dragAnimation.current !== null;
+    stopDragAnimation();
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag) {
+      if (settling) setDrag(null);
+      return;
+    }
+    if (!settle || drag.distance === 0 || view()?.matchMedia(REDUCED_MOTION_QUERY).matches) {
+      setDrag(null);
+      return;
+    }
+    dragAnimation.current = animate(drag.distance, 0, {
+      type: 'spring',
+      stiffness: 420,
+      damping: 38,
+      onUpdate: (value) => setDrag(value),
+      onComplete: () => {
+        dragAnimation.current = null;
+        setDrag(null);
+      },
+    });
+  };
+  useEffect(() => () => stopDragAnimation(), []);
   const handleGesture = {
     onPointerDown: (event: PointerEvent<HTMLDivElement>) => {
       if (!event.isPrimary || event.button !== 0 || view()?.matchMedia(REDUCED_MOTION_QUERY).matches) return;
+      stopDragAnimation();
+      setDrag(null);
       event.currentTarget.setPointerCapture?.(event.pointerId);
       dragRef.current = { pointerId: event.pointerId, startY: event.clientY, distance: 0 };
     },
@@ -1112,12 +1141,13 @@ function UserMenuSurface({
     onPointerUp: (event: PointerEvent<HTMLDivElement>) => {
       const drag = dragRef.current;
       if (drag?.pointerId !== event.pointerId) return;
-      endDrag();
-      if (drag.distance >= DISMISS_DRAG_PX) requestClose(true);
+      const dismiss = drag.distance >= DISMISS_DRAG_PX;
+      endDrag(!dismiss);
+      if (dismiss) requestClose(true);
     },
-    onPointerCancel: endDrag,
+    onPointerCancel: () => endDrag(false),
     onLostPointerCapture: (event: PointerEvent<HTMLDivElement>) => {
-      if (dragRef.current?.pointerId === event.pointerId) endDrag();
+      if (dragRef.current?.pointerId === event.pointerId) endDrag(false);
     },
   };
 
