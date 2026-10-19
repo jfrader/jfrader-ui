@@ -419,7 +419,7 @@ const tileFavoriteStyle = css({
   [REDUCED_MOTION]: { transitionDuration: '0s', '&[aria-pressed="true"]': { animation: 'none' } },
   [FORCED_COLORS]: { borderColor: 'ButtonText', '&[aria-pressed="true"]': { borderColor: 'Highlight' } },
 });
-const imageBoxStyle = css({ inlineSize: '100%', blockSize: '100%', borderRadius: 'inherit' });
+const imageBoxStyle = css({ inlineSize: '100%', blockSize: '100%', minInlineSize: 0, minBlockSize: 0, borderRadius: 'inherit' });
 const viewerStyle = css({
   boxSizing: 'border-box',
   inlineSize: '100%',

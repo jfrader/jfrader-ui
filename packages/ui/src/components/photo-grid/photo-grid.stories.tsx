@@ -5,6 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 import { PhotoGrid, type PhotoGridPhoto } from './index';
 import { sceneSource } from '../scene';
 import { ChromeAction, type ChromeActionProps } from '../viewer-chrome/viewer-chrome';
@@ -233,6 +234,9 @@ export const ViewerVisibility: Story = {
       await expect(image.complete).toBe(true);
       await expect(image.naturalWidth).toBeGreaterThan(0);
     });
+    await expect(image.clientHeight).toBeLessThanOrEqual(stage.clientHeight);
+    await expect(image.clientWidth).toBeLessThanOrEqual(stage.clientWidth);
+    await waitFor(() => expectInside(image, stage));
     await userEvent.click(canvas.getByRole('button', { name: 'Close viewer' }));
     await waitFor(expectClosed);
     await expect(album).toBeVisible();
