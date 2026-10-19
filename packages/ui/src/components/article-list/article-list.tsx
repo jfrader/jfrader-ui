@@ -6,7 +6,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import type { SxProps } from '../../styling/sx';
 import { ARTICLE_DESKTOP, articleHeadingFont, articleLabelStyle, articleLinkStyle, articleSoftRule, articleTimeStyle } from '../../styling/article';
 import { isRenderable } from '../../utils/renderable';
-import { PresentationSlot, repeatedTemplate, safeArticleRel, type ArticleHeadingLevel, type PresentationParts, type PresentationSlots, type PrintedTime, type RenderArticleLink } from '../../utils/presentation-slot';
+import { PresentationSlot, repeatedTemplate, type ArticleHeadingLevel, type PresentationParts, type PresentationSlots, type PrintedTime, type RenderArticleLink } from '../../utils/presentation-slot';
 
 export type ArticleListVariant = 'headlines' | 'wire' | 'stacked';
 export type ArticleListItemVariant = 'headline-time' | 'headline-tag' | 'headline-place' | 'wire' | 'stacked';
@@ -48,9 +48,9 @@ const rootStyle = css({ listStyle: 'none', padding: 0, margin: 0, minInlineSize:
 const itemStyle = css({ minInlineSize: 0, paddingBlock: vars.space[3], color: vars.color.text, display: 'flex', flexDirection: 'column', gap: vars.space[2], '&:not(:first-child)': { borderBlockStart: `${vars.editorial.rule.thin} solid ${articleSoftRule}` } });
 const rowStyle = css({ [ARTICLE_DESKTOP]: { flexDirection: 'row', alignItems: 'baseline', gap: vars.space[3] } });
 const wireStyle = css({ flexDirection: 'row', alignItems: 'baseline', paddingBlock: vars.space[2] });
-const headlineStyle = css({ margin: 0, minInlineSize: 0, fontFamily: articleHeadingFont, lineHeight: vars.lineHeight.base, overflowWrap: 'anywhere' });
+const headlineStyle = css({ margin: 0, minInlineSize: 0, fontFamily: articleHeadingFont, lineHeight: vars.editorial.lineHeight.brief, overflowWrap: 'anywhere' });
 const itemSizes = { sm: css({ fontSize: vars.editorial.body }), md: css({ fontSize: vars.editorial.headline.brief }) };
-const boldStyle = css({ fontWeight: vars.fontWeight.bold });
+const boldStyle = css({ fontWeight: vars.fontWeight.semibold });
 const regularStyle = css({ fontWeight: vars.fontWeight.regular });
 const placeStyle = css({ [ARTICLE_DESKTOP]: { marginInlineStart: 'auto' } });
 const metaStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: vars.space[2] });
@@ -76,8 +76,8 @@ function ArticleListItem(allProps: ArticleListItemProps) {
     className: [template?.className, allProps.className].filter(Boolean).join(' ') || undefined,
     style: { ...template?.style, ...allProps.style },
   };
-  const variant = ownVariant ?? parent.slotProps?.item?.variant ?? defaultItemVariant[parent.variant ?? 'headlines'];
-  const size = ownSize ?? parent.slotProps?.item?.size ?? parent.size ?? (variant === 'wire' || variant === 'stacked' ? 'sm' : 'md');
+  const variant = ownVariant ?? template?.variant ?? defaultItemVariant[parent.variant ?? 'headlines'];
+  const size = ownSize ?? template?.size ?? parent.size ?? (variant === 'stacked' ? 'sm' : 'md');
   if (!isRenderable(headline)) return null;
   const hasTime = time !== undefined && isRenderable(time.label);
   const hasLabel = isRenderable(label);
@@ -90,7 +90,7 @@ function ArticleListItem(allProps: ArticleListItemProps) {
     {(variant === 'headline-time' || variant === 'wire') && Time}
     {variant === 'headline-tag' && Label}
     <PresentationSlot element={level ? `h${level}` : 'span'} component={slots?.headline} slotProps={slotProps?.headline} data-ui="article-list-headline" styles={[headlineStyle, itemSizes[size], variant.startsWith('headline-') ? boldStyle : regularStyle]} {...(slots?.headline ? { level } : {})}>
-      {href !== undefined || renderLink ? <PresentationSlot element="a" component={slots?.link} slotProps={link} renderLink={renderLink} href={href} rel={safeArticleRel(link?.target, link?.rel)} data-ui="article-list-link" styles={articleLinkStyle}>{content}</PresentationSlot> : content}
+      {href !== undefined || renderLink ? <PresentationSlot element="a" component={slots?.link} slotProps={link} renderLink={renderLink} href={href} data-ui="article-list-link" styles={articleLinkStyle}>{content}</PresentationSlot> : content}
     </PresentationSlot>
     {variant === 'headline-place' && isRenderable(place) && <PresentationSlot element="span" component={slots?.place} slotProps={slotProps?.place} data-ui="article-list-place" styles={[articleLabelStyle, placeStyle]}>{place}</PresentationSlot>}
   </PresentationSlot>;

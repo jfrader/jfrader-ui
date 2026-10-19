@@ -130,6 +130,7 @@ export const vars = {
     "measure": "var(--ui-editorial-measure)",
     "centeredMeasure": "var(--ui-editorial-centered-measure)",
     "dropCap": "var(--ui-editorial-drop-cap)",
+    "hit": "var(--ui-editorial-hit)",
     "lineHeight": {
       "lead": "var(--ui-editorial-line-height-lead)",
       "secondary": "var(--ui-editorial-line-height-secondary)",
@@ -140,7 +141,8 @@ export const vars = {
       "headline": "var(--ui-editorial-tracking-headline)",
       "secondary": "var(--ui-editorial-tracking-secondary)",
       "standard": "var(--ui-editorial-tracking-standard)",
-      "label": "var(--ui-editorial-tracking-label)"
+      "label": "var(--ui-editorial-tracking-label)",
+      "kicker": "var(--ui-editorial-tracking-kicker)"
     },
     "rule": {
       "thin": "var(--ui-editorial-rule-thin)",

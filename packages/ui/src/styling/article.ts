@@ -26,6 +26,8 @@ export const articleLinkStyle = css({
   textDecoration: 'none',
   textDecorationThickness: 'from-font',
   textUnderlineOffset: '0.18em',
+  paddingBlock: vars.editorial.hit,
+  marginBlock: `calc(${vars.editorial.hit} * -1)`,
   '&:hover': { color: vars.color.accentText, textDecoration: 'underline' },
   '&:focus-visible': focusRingOutset,
   '@media (forced-colors: active)': { color: 'LinkText', textDecoration: 'underline', '&:focus-visible': { outlineColor: 'Highlight' } },
