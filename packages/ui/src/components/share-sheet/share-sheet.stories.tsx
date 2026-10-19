@@ -76,6 +76,14 @@ export const InlineComposition: Story = {
     await expect(canvas.getByRole('button', { name: 'Copy link' })).toBeVisible();
     await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument();
     await expect(canvas.queryByRole('button', { name: 'Share' })).not.toBeInTheDocument();
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="share-sheet"]')!;
+    const panel = root.querySelector<HTMLElement>('[data-ui="share-sheet-content"]')!;
+    await expect(panel.getBoundingClientRect().width).toBeGreaterThan(
+      canvas.getByRole('button', { name: 'Copy link' }).getBoundingClientRect().width +
+        canvas.getByRole('combobox').getBoundingClientRect().width,
+    );
+    await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth + 1);
+    await expect(canvas.getByRole('heading').getBoundingClientRect().height).toBeLessThan(60);
   },
 };
 
@@ -280,6 +288,37 @@ export const EmptyPeople: Story = {
     );
   },
 };
+export const LongMemberList: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    presentation: 'responsive',
+    people: Array.from({ length: 40 }, (_, index) => ({
+      id: `member-${index}`,
+      name: `Team member ${index + 1}`,
+    })),
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    await body(canvasElement).findByRole('dialog');
+    await settled(canvasElement);
+    const panel = canvasElement.ownerDocument.querySelector<HTMLElement>(
+      '[data-ui="share-sheet-content"]',
+    )!;
+    await expect(panel.scrollHeight).toBeGreaterThan(panel.clientHeight);
+    await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth + 1);
+    const last = body(canvasElement).getByRole('button', { name: 'Team member 40' });
+    await userEvent.click(last);
+    await expect(last).toHaveAttribute('aria-pressed', 'true');
+    const close = body(canvasElement).getByRole('button', { name: 'Close' });
+    close.focus();
+    await waitFor(async () => {
+      const bounds = close.getBoundingClientRect();
+      const outer = panel.getBoundingClientRect();
+      await expect(bounds.bottom).toBeLessThanOrEqual(outer.bottom);
+      await expect(bounds.top).toBeGreaterThanOrEqual(outer.top);
+    });
+  },
+};
 export const NoAccessOptions: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true, accessOptions: [] },
@@ -415,6 +454,10 @@ export const CopyFeedback: Story = {
         return [left, top, width, height];
       });
     const before = geometry();
+    await expect(parseFloat(win.getComputedStyle(access).columnGap)).toBeGreaterThan(0);
+    await expect(
+      Math.abs(copy.getBoundingClientRect().top - access.getBoundingClientRect().top),
+    ).toBeLessThan(1.1);
     await expect(win.getComputedStyle(copied).visibility).toBe('hidden');
     const write = fn(async (_value: string) => {});
     await clipboard(canvasElement, write, async () => {
@@ -549,7 +592,7 @@ export const ForcedColors: Story = {
 };
 export const ReducedMotion: Story = {
   tags: ['!autodocs'],
-  args: { defaultOpen: true },
+  args: { defaultOpen: true, defaultValue: ['ada'] },
   parameters: {
     docs: {
       description: {
@@ -557,6 +600,18 @@ export const ReducedMotion: Story = {
           'Persistent surface for manual reduced-motion browser emulation; this story does not emulate the media preference.',
       },
     },
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.click(
+      await body(canvasElement).findByRole('button', { name: 'Send to 1 person' }),
+    );
+    await body(canvasElement).findByRole('button', { name: 'Done' });
+    const win = canvasElement.ownerDocument.defaultView!;
+    if (win.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const face = canvasElement.ownerDocument.querySelector('[data-ui="share-sheet-face"]')!;
+      await expect(win.getComputedStyle(face).opacity).toBe('1');
+    }
+    await settled(canvasElement);
   },
 };
 export const MultiInstance: Story = {

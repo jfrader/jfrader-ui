@@ -205,7 +205,9 @@ const rootStyle = css({
   fontFamily: vars.font.sans,
   color: vars.color.text,
 });
+const inlineRootStyle = css({ display: 'block', inlineSize: '100%', minInlineSize: 0 });
 const inlinePanelStyle = css({
+  containerType: 'normal',
   padding: 0,
   border: 0,
   borderRadius: 0,
@@ -305,6 +307,7 @@ const copyStyle = css({
   whiteSpace: 'normal',
   overflowWrap: 'anywhere',
 });
+const accessStyle = css({ minInlineSize: 0, maxInlineSize: '100%', gap: vars.space[2] });
 // Always laid out so the row keeps its geometry; only visibility changes. It is the flexible
 // middle of the row, which anchors the access picker to the inline end even while hidden.
 const copiedStyle = css({
@@ -466,6 +469,7 @@ function ShareSheetLayer({
   ...props
 }: ShareSheetProps & { nodeId?: string }) {
   const text = { ...DEFAULT_MESSAGES, ...messages };
+  const reduced = useReducedMotion();
   const id = useId();
   const inline = presentation === 'inline';
   const [openState = false, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
@@ -874,9 +878,9 @@ function ShareSheetLayer({
             key={face}
             data-ui="share-sheet-face"
             css={columnStyle}
-            initial={faceMotion ? { opacity: 0 } : false}
+            initial={faceMotion && !reduced ? { opacity: 0 } : false}
             animate={{ opacity: 1 }}
-            transition={FACE_FADE}
+            transition={reduced ? { duration: 0 } : FACE_FADE}
           >
             {face === 'sent' ? (
               <>
@@ -940,6 +944,7 @@ function ShareSheetLayer({
                   >
                     <AccessControl
                       {...slots.accessControl}
+                      css={[accessStyle, slots.accessControl?.css]}
                       data-share-control="access"
                       aria-label={slots.accessControl?.['aria-label'] ?? text.sendTo}
                       onKeyDownCapture={(event) => {
@@ -1132,7 +1137,7 @@ function ShareSheetLayer({
   };
   if (inline)
     return (
-      <WithSx className={className} styles={rootStyle} sx={sx}>
+      <WithSx className={className} styles={[rootStyle, inlineRootStyle]} sx={sx}>
         {(rootClass) => (
           <div {...props} ref={rootMergedRef} className={rootClass} data-ui="share-sheet">
             {surface}

@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- `ShareSheet` inline layouts retain their content width, the access picker stays on the copy row at phone widths, and confirmation faces appear without fading when reduced motion is enabled.
 - `BottomSheet` restores pointer activation on its drag handle, wraps long headings beside Close, aligns Close when the handle is omitted, and keeps bordered replacement panels inside the viewport.
 - Vertical floating `ButtonGroup` trays no longer clip the first and last buttons' rounded corners.
 - `DataFlow` wraps long summaries on narrow screens, keeps horizontal diagrams readable in a scrolling scene, and routes vertical connections outside the nodes. Connections stay attached when the inherited text direction changes.
