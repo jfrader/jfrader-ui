@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **158**; public callable parts: **165**.
-- Families exposing `slots.root`: **93**; remaining without a family-level root slot: **65** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **122**; remaining without family-level interior slots: **36** (includes components without generated anatomy).
+- Public callable families: **159**; public callable parts: **165**.
+- Families exposing `slots.root`: **94**; remaining without a family-level root slot: **65** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **122**; remaining without family-level interior slots: **37** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -246,6 +246,7 @@ may exist and is listed on the corresponding public part).
 | [PasswordStrength](../packages/ui/src/components/password-strength/password-strength.tsx) | yes | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | — | `fieldSlotProps` | — |
 | [Pattern](../packages/ui/src/components/pattern/pattern.tsx) | — | — | — | — | — | — |
 | [PaymentFlow](../packages/ui/src/components/payment-flow/payment-flow.tsx) | yes | `caption`, `controls`, `journey`, `node`, `pauseButton`, `replayButton`, `root`, `scene`, `stepButton`, `summary`, `summaryItem` | `caption`, `controls`, `journey`, `node`, `pauseButton`, `replayButton`, `root`, `scene`, `stepButton`, `summary`, `summaryItem` | — | — | — |
+| [PersonAvatar](../packages/ui/src/components/person-avatar/person-avatar.tsx) | yes | `root` | `root` | — | — | — |
 | [PhoneInput](../packages/ui/src/components/phone-input/phone-input.tsx) | — | — | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | — | — |
 | [PhotoGrid](../packages/ui/src/components/photo-grid/photo-grid.tsx) | — | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | — | — | — |
 | [Pill](../packages/ui/src/components/pill/pill.tsx) | — | — | — | — | — | — |

@@ -22,6 +22,8 @@
     "dist"
   ],
   "exports": {
+    "./person-avatar": { "types": "./src/components/person-avatar/index.ts", "import": "./src/components/person-avatar/index.ts" },
+    "./person-avatar/appearance": { "types": "./src/components/person-avatar/appearance.ts", "import": "./src/components/person-avatar/appearance.ts" },
     "./number-field": { "types": "./src/components/number-field/index.ts", "import": "./src/components/number-field/index.ts" },
     "./money-input": { "types": "./src/components/money-input/index.ts", "import": "./src/components/money-input/index.ts" },
     "./phone-input": { "types": "./src/components/phone-input/index.ts", "import": "./src/components/phone-input/index.ts" },

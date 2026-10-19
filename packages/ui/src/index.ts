@@ -134,3 +134,4 @@ export * from './components/number-field';
 export * from './components/money-input';
 export * from './components/phone-input';
 export * from './components/color-picker';
+export * from './components/person-avatar';

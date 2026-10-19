@@ -17,6 +17,8 @@ Requires React 19 and the `@jfrader/tokens/tokens.css` stylesheet. The same guid
 | `@jfrader/ui/accordion` | `Accordion` |
 | `@jfrader/ui/alert` | `Alert` |
 | `@jfrader/ui/avatar` | `Avatar` |
+| `@jfrader/ui/person-avatar` | `PersonAvatar` |
+| `@jfrader/ui/person-avatar/appearance` | Pure v3 appearance recipe and palettes |
 | `@jfrader/ui/badge` | `Badge` |
 | `@jfrader/ui/breadcrumbs` | `Breadcrumbs` |
 | `@jfrader/ui/button` | `Button` |
@@ -121,6 +123,17 @@ pnpm --filter @jfrader/ui pack --pack-destination /tmp/opencode
 Root `pnpm build` builds Storybook, not the published packages. If packing fails after `prepack`, run `node scripts/flip-exports.mjs src` from the repo root to restore workspace exports.
 
 The tarball must contain only `dist/**`, `package.json`, `README.md` and `LICENSE`.
+
+### Person appearance data
+
+```ts
+import { resolveAppearanceId, resolvePersonAppearance } from '@jfrader/ui/person-avatar/appearance';
+
+const appearance = resolvePersonAppearance(resolveAppearanceId('person-42', 'durable-visual-seed'));
+```
+
+The pure entry imports no React, Emotion or DOM code. Version 3 preserves the original recipe and
+palette ordering. A blank override falls back to the untrimmed seed. Signatures are not unique IDs.
 
 <a id="registry-choice--installing"></a>
 
