@@ -6,6 +6,7 @@ import { getCountries, getCountryCallingCode } from 'libphonenumber-js/max';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
+import { disclosureCaret } from '../../styling/disclosure-caret';
 import { inputControlStyle } from '../../styling/input-control';
 import { listboxSurfaceStyle, listboxItemStyle, listboxItemStateStyle, listboxOptionStyle } from '../../styling/listbox-style';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
@@ -83,7 +84,7 @@ const buttonStyle = css({
   '&:hover:not(:disabled)': { backgroundColor: vars.color.surfaceHover },
   [FORCED_COLORS]: { border: '1px solid ButtonText' },
 });
-const triggerStyle = css({ alignSelf: 'stretch', maxInlineSize: '55%', whiteSpace: 'nowrap', borderInlineEnd: `1px solid ${vars.color.borderControl}`, display: 'flex', alignItems: 'center', gap: vars.space[2] });
+const triggerStyle = css({ alignSelf: 'stretch', maxInlineSize: '55%', whiteSpace: 'nowrap', borderInlineEnd: `1px solid ${vars.color.borderControl}`, display: 'flex', alignItems: 'center', gap: vars.space[2], '&::after': { ...disclosureCaret, transform: 'rotate(90deg)', marginInlineStart: vars.space[1] }, '&[aria-expanded="true"]::after': { transform: 'rotate(-90deg)' } });
 const countryTextStyle = css({ overflow: 'hidden', textOverflow: 'ellipsis' });
 const numberStyle = css({
   flex: 1, minInlineSize: 0, inlineSize: '100%', blockSize: '100%', boxSizing: 'border-box', font: 'inherit', color: vars.color.text,
@@ -292,7 +293,7 @@ export function PhoneInput({
           css={[buttonStyle, triggerStyle, slotProps?.countryTrigger?.css]}>
           {currentCountry && renderCountryIcon && <span aria-hidden>{renderCountryIcon(currentCountry)}</span>}
           <span css={countryTextStyle}>{countryLabel}</span>
-          {currentCountry && <span aria-hidden>{' '}+{getCountryCallingCode(currentCountry)}</span>}
+          {currentCountry && <span aria-hidden dir="ltr">{` +${getCountryCallingCode(currentCountry)}`}</span>}
         </button>
         <input {...slotProps?.number} {...native} ref={mergedInputRef} id={field.id} type="tel" inputMode="tel" dir="ltr" form={form}
           disabled={disabled} readOnly={readOnly} required={required} value={details.formatted}
