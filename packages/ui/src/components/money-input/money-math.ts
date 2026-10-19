@@ -12,7 +12,19 @@ export function assertMinor(value: number, name: string, positive = false) {
   }
 }
 
-export function currencyChoices(currencies: readonly string[]) {
+export function assertDecimals(decimals: number | undefined) {
+  if (decimals !== undefined && (!Number.isInteger(decimals) || decimals < 0 || decimals > 18)) {
+    throw new RangeError('MoneyInput: decimals must be an integer from 0 to 18.');
+  }
+}
+
+export function currencyChoices(currencies: readonly string[], decimals?: number) {
+  assertDecimals(decimals);
+  if (decimals !== undefined) {
+    if (!currencies.length || currencies.some((code) => !code.trim()) || new Set(currencies).size !== currencies.length)
+      throw new RangeError('MoneyInput: currencies must contain at least one unique currency code.');
+    return;
+  }
   if (typeof Intl.supportedValuesOf !== 'function') {
     throw new Error('MoneyInput requires Intl.supportedValuesOf currency support.');
   }
@@ -35,16 +47,20 @@ export function moneyFormat(
   locale: Intl.LocalesArgument | undefined,
   currency: string,
   currencyDisplay: Intl.NumberFormatOptions['currencyDisplay'],
+  decimals?: number,
+  symbol = currency,
 ) {
-  const formatter = new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay });
+  assertDecimals(decimals);
+  const formatOptions: Intl.NumberFormatOptions = decimals === undefined
+    ? { style: 'currency', currency, currencyDisplay }
+    : { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: decimals, useGrouping: true };
+  const formatter = new Intl.NumberFormat(locale, formatOptions);
   const resolved = formatter.resolvedOptions();
   const digits = resolved.maximumFractionDigits ?? 0;
-  if (digits > 3) throw new RangeError('MoneyInput supports currencies with zero to three fraction digits.');
+  if (decimals === undefined && digits > 3) throw new RangeError('MoneyInput supports currencies with zero to three fraction digits.');
   const factor = 10 ** digits;
   const parser = new NumberParser(resolved.locale, {
-    style: 'currency',
-    currency,
-    currencyDisplay,
+    ...formatOptions,
     maximumFractionDigits: 20,
   });
   const decimal = new Intl.NumberFormat(resolved.locale, { useGrouping: false, maximumFractionDigits: 20 });
@@ -52,12 +68,17 @@ export function moneyFormat(
   const group = new Intl.NumberFormat(resolved.locale)
     .formatToParts(10000)
     .find((part) => part.type === 'group')?.value;
-  const format = (minor: number) => formatter.format(new Exact(minor).div(factor).toNumber());
+  const withSymbol = (text: string) => decimals === undefined ? text : `${symbol}${text}`;
+  const format = (minor: number) => withSymbol(formatter.format(new Exact(minor).div(factor).toNumber()));
   const major = (minor: number) => new Exact(minor).div(factor).toNumber();
   const parse = (
     text: string,
   ): { kind: 'empty' | 'partial' | 'invalid' } | { kind: 'value'; value: number } => {
     if (!text.trim()) return { kind: 'empty' };
+    if (decimals !== undefined) {
+      text = text.trim();
+      if (symbol && text.startsWith(symbol)) text = text.slice(symbol.length).trim();
+    }
     const parsed = parser.parse(text);
     if (
       parser.isValidPartialNumber(text) &&
@@ -70,10 +91,8 @@ export function moneyFormat(
       const options = { numberingSystem, maximumFractionDigits: 20 };
       const grouped = new Intl.NumberFormat(resolved.locale, options).format(parsed);
       const groupedCurrency = new Intl.NumberFormat(resolved.locale, {
+        ...formatOptions,
         ...options,
-        style: 'currency',
-        currency,
-        currencyDisplay,
       }).format(parsed);
       if (![grouped, groupedCurrency].some((candidate) => normalize(candidate) === normalize(text)))
         return { kind: 'invalid' };
@@ -85,6 +104,7 @@ export function moneyFormat(
   return {
     format,
     major,
+    serialize: (minor: number) => new Exact(minor).div(factor).toFixed(),
     parse,
     draft: (minor: number) => decimal.format(major(minor)),
     factor,

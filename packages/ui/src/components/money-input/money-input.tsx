@@ -29,7 +29,7 @@ import {
   type FieldPartProps,
 } from '../field/field-anatomy';
 import { Select } from '../select';
-import { addMinor, assertMinor, currencyChoices, moneyFormat, MONEY_LIMIT } from './money-math';
+import { addMinor, assertDecimals, assertMinor, currencyChoices, moneyFormat, MONEY_LIMIT } from './money-math';
 
 export interface MoneyInputDetails {
   currency: string;
@@ -96,13 +96,17 @@ export interface MoneyInputProps
   currencyOpen?: boolean;
   defaultCurrencyOpen?: boolean;
   onCurrencyOpenChange?: (open: boolean) => void;
-  /** Unique ISO currency codes supported by Intl. Changing currency preserves minor units, not major units. */
+  /** Unique ISO currency codes, or free-form asset codes when `decimals` is set. Changing currency preserves minor units. */
   currencies: readonly string[];
+  /** Use non-ISO base units with this precision. Must be an integer from 0 to 18. */
+  decimals?: number;
+  /** Prefix for non-ISO amounts; defaults to the currency code. */
+  symbol?: string;
   /** Inclusive integer minor-unit lower bound. @default 0 */
   min?: number;
   /** Inclusive integer minor-unit upper bound. @default 999999999999 */
   max?: number;
-  /** Positive integer minor-unit increment; defaults to one major unit. */
+  /** Positive integer minor-unit increment; defaults to one major unit for ISO currencies, one base unit for non-ISO assets. */
   step?: number;
   /** Positive integer minor-unit increments. */
   quickAdd?: readonly number[];
@@ -209,6 +213,8 @@ export function MoneyInput({
   defaultCurrencyOpen = false,
   onCurrencyOpenChange,
   currencies,
+  decimals,
+  symbol,
   min = 0,
   max = MONEY_LIMIT,
   step,
@@ -245,7 +251,8 @@ export function MoneyInput({
   title,
   ...native
 }: MoneyInputProps) {
-  useMemo(() => currencyChoices(currencies), [currencies]);
+  assertDecimals(decimals);
+  useMemo(() => currencyChoices(currencies, decimals), [currencies, decimals]);
   const [code, requestCurrency, resetCurrency] = useControlledState(
     currency,
     defaultCurrency ?? currencies[0],
@@ -253,7 +260,7 @@ export function MoneyInput({
   );
   if (!code || !currencies.includes(code))
     throw new RangeError('MoneyInput: currency must be in currencies.');
-  const money = useMemo(() => moneyFormat(locale, code, currencyDisplay), [locale, code, currencyDisplay]);
+  const money = useMemo(() => moneyFormat(locale, code, currencyDisplay, decimals, symbol), [locale, code, currencyDisplay, decimals, symbol]);
   const messages = { ...defaultMessages, ...messageOverrides };
   const [amount, requestAmount, resetAmount] = useControlledState<number | null>(
     value,
@@ -267,7 +274,7 @@ export function MoneyInput({
     },
   );
   const current = amount ?? null;
-  const increment = step ?? money.factor;
+  const increment = step ?? (decimals === undefined ? money.factor : 1);
   assertMinor(min, 'min');
   assertMinor(max, 'max');
   if (min > max) throw new RangeError('MoneyInput: min must not exceed max.');
@@ -327,10 +334,10 @@ export function MoneyInput({
   );
   const names = useMemo(
     () =>
-      typeof Intl.DisplayNames === 'function'
+      decimals === undefined && typeof Intl.DisplayNames === 'function'
         ? new Intl.DisplayNames(money.locale, { type: 'currency' })
         : null,
-    [money.locale],
+    [money.locale, decimals],
   );
   const fail = (message: string) => setFailure({ currency: code, message });
   const settle = () => {
@@ -369,6 +376,11 @@ export function MoneyInput({
         : messages.changed(money.format(next)),
     );
   };
+  const numericAria: Record<`aria-${string}`, string | number | undefined> = {
+    'aria-valuenow': current === null ? undefined : decimals === undefined ? money.major(current) : money.serialize(current),
+    'aria-valuemin': decimals === undefined ? money.major(min) : money.serialize(min),
+    'aria-valuemax': decimals === undefined ? money.major(max) : money.serialize(max),
+  };
   return (
     <FieldRoot
       data-ui="money-input"
@@ -404,9 +416,7 @@ export function MoneyInput({
           data-variant={variant}
           css={[controlStyle, slotProps?.control?.css]}
           value={draft ?? (current === null ? '' : money.format(current))}
-          aria-valuenow={current === null ? undefined : money.major(current)}
-          aria-valuemin={money.major(min)}
-          aria-valuemax={money.major(max)}
+          {...numericAria}
           aria-valuetext={current === null ? messages.empty : money.format(current)}
           aria-invalid={field.ariaInvalid}
           aria-describedby={field.describedBy}
