@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- `BottomSheet` restores pointer activation on its drag handle, wraps long headings beside Close, aligns Close when the handle is omitted, and keeps bordered replacement panels inside the viewport.
 - `PhotoGrid` keeps the current viewer thumbnail visible when opening or navigating a scrolling filmstrip, including RTL layouts.
 - `PhotoGrid` fits unzoomed viewer images inside the stage instead of clipping images taller than the viewport.
 
