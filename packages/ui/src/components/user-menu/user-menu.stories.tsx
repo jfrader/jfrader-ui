@@ -4,6 +4,7 @@ import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storyb
 import { vars } from '@jfrader/tokens/vars';
 import { ClassNames, css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
+import { expectAligned, expectInside, expectMirroredDirection } from '../../testing/geometry-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { ThemeRoot } from '../theme-root';
@@ -22,6 +23,12 @@ import { styled } from '../../index';
 const LightThemeFrame = styled.div({ padding: vars.space[4], backgroundColor: vars.color.bg });
 
 const USER: UserMenuUser = { name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' };
+const LONG_USER: UserMenuUser = {
+  name: 'Maximiliana Alexandra Fernández de la Peña y Montenegro',
+  email: 'maximiliana.alexandra.fernandez.de.la.pena@a-very-long-company-domain.example.com',
+  plan: 0,
+};
+const LONG_PLAN = 'Enterprise workspace administrator with billing access';
 const TRIGGER_LABEL = 'Account menu, Ada Lovelace';
 const CLOSE_LABEL = 'Close account menu';
 const PENDING_LABEL = 'Signing out';
@@ -689,7 +696,7 @@ export const TabAndOutsidePress: Story = {
 };
 
 export const ShowName: Story = {
-  args: { showName: true },
+  args: { showName: true, compactBreakpoint: NEVER_COMPACT },
   play: async ({ canvasElement }) => {
     const trigger = getTrigger(canvasElement);
     // The visible name sits beside the avatar; the aria-label still names the button.
@@ -758,11 +765,7 @@ export const PlanZeroAndLongIdentity: Story = {
   tags: ['!autodocs'],
   args: {
     defaultOpen: true,
-    user: {
-      name: 'Maximiliana Alexandra Fernández de la Peña y Montenegro',
-      email: 'maximiliana.alexandra.fernandez.de.la.pena@a-very-long-company-domain.example.com',
-      plan: 0,
-    },
+    user: LONG_USER,
   },
   play: async ({ canvasElement }) => {
     const shell = shellOf(canvasElement)!;
@@ -784,6 +787,30 @@ export const PlanZeroAndLongIdentity: Story = {
     // The preferred 17.5rem width holds; long identities never widen the menu.
     await expect(near(box.width, resolvedPx(shell, '17.5rem'))).toBe(true);
   },
+};
+
+export const LongPlan: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    user: { ...LONG_USER, plan: LONG_PLAN },
+  },
+  play: async ({ canvasElement }) => {
+    await findMenu(canvasElement);
+    await wait(SETTLE_MS);
+    const shell = shellOf(canvasElement)!;
+    const plan = shell.querySelector<HTMLElement>('[data-ui="pill"]')!;
+    const text = plan.parentElement!;
+    await expectInside(plan, text);
+    await expect(shell.scrollWidth).toBeLessThanOrEqual(shell.clientWidth);
+    await expect(plan).toHaveTextContent(LONG_PLAN);
+    await expectMirroredDirection(shell, '[data-ui="pill"]');
+  },
+};
+
+export const LongPlanSheet: Story = {
+  ...LongPlan,
+  args: { ...LongPlan.args, variant: 'sheet' },
 };
 
 export const AccountCommands: Story = {
@@ -1653,6 +1680,14 @@ export const RTL: Story = {
     await findMenu(canvasElement);
     // The portaled surface takes the Trigger's direction.
     await expect(shellOf(canvasElement)).toHaveAttribute('dir', 'rtl');
+    const shell = shellOf(canvasElement)!;
+    await expect(getComputedStyle(shell.parentElement!).direction).toBe('rtl');
+    await wait(SETTLE_MS);
+    const trigger = getTrigger(canvasElement);
+    const viewport = canvasElement.ownerDocument.defaultView!;
+    if (trigger.getBoundingClientRect().left + shell.getBoundingClientRect().width < viewport.innerWidth) {
+      await expectAligned([shell, trigger], 'left');
+    }
     await expectFocused(canvasElement, 'Profile');
     await userEvent.keyboard('{ArrowDown}{ArrowDown}');
     await expectFocused(canvasElement, 'Light', 'menuitemradio');
@@ -1798,6 +1833,10 @@ export const SxAndSlots: Story = {
     for (const option of within(menu).getAllByRole('menuitemradio')) {
       await expect(option).toHaveClass('consumer-option');
       await expect(getComputedStyle(option).outlineStyle).toBe('dashed');
+    }
+    await wait(SETTLE_MS);
+    for (const item of within(menu).getAllByRole('menuitem')) {
+      await expectInside(item, menu);
     }
   },
 };
