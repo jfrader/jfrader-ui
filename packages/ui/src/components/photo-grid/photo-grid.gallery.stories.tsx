@@ -208,7 +208,10 @@ export const ProductViewer: Story = {
     await expect(dialog).toHaveAttribute('open');
     fireEvent(dialog, new Event('cancel', { cancelable: true }));
     await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
-    await expect(canvasElement.ownerDocument.activeElement).toBe(canvasElement.querySelector('[data-ui="photo-grid-main"]'));
+    const main = canvasElement.querySelector('[data-ui="photo-grid-main"]');
+    // The retained exit returns focus after the native close; wait for it instead of sampling
+    // the frame where `open` has just been removed.
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(main));
   },
 };
 export const ProductEmpty: Story = { args: { colors: [], photos: [] } };

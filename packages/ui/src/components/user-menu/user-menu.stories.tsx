@@ -1377,7 +1377,11 @@ export const SheetHandle: Story = {
       pointer(handle, 'pointermove', 100 + DISMISS_DRAG_PX / 2);
       await expect(sheet.style.getPropertyValue('--user-menu-drag')).toBe(`${DISMISS_DRAG_PX / 2}px`);
       pointer(handle, 'pointerup', 100 + DISMISS_DRAG_PX / 2);
-      await expect(sheet.style.getPropertyValue('--user-menu-drag')).toBe('');
+      // A rejected drag springs home instead of jumping in one frame.
+      await expect(Number.parseFloat(sheet.style.getPropertyValue('--user-menu-drag'))).toBeGreaterThan(0);
+      await waitFor(() => expect(sheet.style.getPropertyValue('--user-menu-drag')).toBe(''), {
+        timeout: 600,
+      });
       pointer(handle, 'pointerdown', 100);
       pointer(handle, 'pointermove', 20);
       await expect(sheet.style.getPropertyValue('--user-menu-drag')).toBe('0px');

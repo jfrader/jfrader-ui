@@ -324,18 +324,34 @@ async function expectRowsSettled(canvasElement: HTMLElement) {
     [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="share-access-member-list"] > li')].map(
       (row) => row.getBoundingClientRect(),
     );
+  const targetsClear = () =>
+    [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="select-trigger"], button[aria-label^="Remove "]')].every(
+      (target) => {
+        const box = target.getBoundingClientRect();
+        // A row mid-layout can scale the control below the 24px target-size floor while the
+        // hit-test still lands inside it; require the settled size as well.
+        if (box.width < 24 || box.height < 24) return false;
+        return [box.top + 2, box.top + box.height / 2, box.bottom - 2].every((y) => {
+          const hit = target.ownerDocument.elementFromPoint(box.left + box.width / 2, y);
+          return !!hit && target.contains(hit);
+        });
+      },
+    );
   await waitFor(
     async () => {
       const current = boxes();
       const separated = current.every(
         (box, index) => index === 0 || box.top >= current[index - 1]!.bottom - 1,
       );
-      if (!separated) return false;
+      if (!separated || !targetsClear()) return false;
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );
       const next = boxes();
-      return next.every((box, index) => Math.abs(box.top - current[index]!.top) <= 0.5);
+      return (
+        targetsClear() &&
+        next.every((box, index) => Math.abs(box.top - current[index]!.top) <= 0.5)
+      );
     },
     { timeout: 3000 },
   );
@@ -363,6 +379,10 @@ export const ConcurrentUndo: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await expect(canvas.getByRole('button', { name: 'Remove Sam Lee' })).toBeVisible();
     await expect(canvas.getByRole('button', { name: 'Remove new@example.com' })).toBeVisible();
+    await expectRowsSettled(canvasElement);
+    // Motion's layout spring has no DOM completion event; two stable frames can land on a
+    // momentary plateau. Wait out the ~500ms settle before Storybook's a11y afterEach.
+    await new Promise((resolve) => setTimeout(resolve, 600));
     await expectRowsSettled(canvasElement);
   },
 };

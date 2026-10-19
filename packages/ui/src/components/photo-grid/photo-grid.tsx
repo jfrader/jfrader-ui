@@ -21,6 +21,7 @@ import {
   omitNativeOpen,
   type NativeDialogController,
 } from '../../overlay/use-native-dialog';
+import { styledDialogTransition } from '../../overlay/exit-motion';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION, REDUCED_TRANSPARENCY } from '../../styling/media';
@@ -446,6 +447,11 @@ const viewerContentStyle = css({
   gridTemplateColumns: 'minmax(0, 1fr)',
   flex: '1 1 0',
   minBlockSize: 0,
+  transitionProperty: 'opacity, transform',
+  transitionDuration: vars.motion.duration.slow,
+  transitionTimingFunction: vars.motion.easeStandard,
+  'dialog[data-state="closing"] &': { opacity: 0, transform: 'scale(0.98)' },
+  [REDUCED_MOTION]: { transitionDuration: '0s' },
 });
 const barStyle = css({
   zIndex: 1,
@@ -644,7 +650,9 @@ function PhotoViewer({
     },
     viewerSlot.ref,
     dialogRef,
+    styledDialogTransition,
   );
+  const present = open || native['data-state'] === 'closing';
   const index = photos.findIndex((photo) => photo.id === selected);
   const photo = photos[index];
   const [zoomState, setZoomState] = useState({ id: selected, value: 1 });
@@ -669,13 +677,15 @@ function PhotoViewer({
   } | null>(null);
 
   useEffect(() => {
+    // Keep the last zoom/pan through the retained exit so the closing frame does not snap.
+    if (!open && present) return;
     x.set(0);
     y.set(0);
     scale.set(1);
     if (!open) setZoomState({ id: selected, value: 1 });
     pointers.current.clear();
     gesture.current = null;
-  }, [selected, open, x, y, scale]);
+  }, [selected, open, present, x, y, scale]);
   useEffect(() => {
     if (dialogRef.current?.open) closeRef.current?.focus({ preventScroll: true });
   }, [open, lifecycle.repairToken]);
@@ -761,6 +771,7 @@ function PhotoViewer({
       {...viewerSlot}
       ref={native.ref}
       data-ui="photo-grid-viewer"
+      data-state={native['data-state']}
       aria-modal="true"
       aria-labelledby={ids(viewerSlot['aria-labelledby'], `${id}-title`)}
       aria-describedby={ids(viewerSlot['aria-describedby'], hasDetail && `${id}-detail`)}
@@ -886,12 +897,12 @@ function PhotoViewer({
           {photo ? (
             <motion.div
               key={photo.id}
-              layoutId={open && !reduced ? photo.id : undefined}
+              layoutId={present && !reduced ? photo.id : undefined}
               transition={SPRING}
               css={imageBoxStyle}
             >
               <motion.div style={{ x, y, scale }} css={imageBoxStyle}>
-                {open && (
+                {present && (
                   <PhotoImage
                     key={`${photo.src}\u0000${photo.srcSet ?? ''}`}
                     photo={photo}

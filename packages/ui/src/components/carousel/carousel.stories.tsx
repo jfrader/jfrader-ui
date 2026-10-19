@@ -577,6 +577,40 @@ export const PointerSnap: Story = {
   },
 };
 
+export const OutsideReleaseBeforeCapture: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A press released outside the viewport before the drag threshold must not leave a live session that a later pointer move can drag.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const viewport = viewportOf(canvasElement);
+    const mouse = mouseOn(viewport);
+    const box = viewport.getBoundingClientRect();
+    const startScroll = viewport.scrollLeft;
+    mouse.fire('pointerdown', 0);
+    mouse.fire('pointermove', -SUB_THRESHOLD_PX);
+    fireEvent(
+      canvasElement.ownerDocument,
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: MOUSE_POINTER_ID,
+        pointerType: 'mouse',
+        button: 0,
+        clientX: box.left - 50,
+        clientY: box.top + box.height / 2,
+      }),
+    );
+    mouse.fire('pointermove', -DRAG_PX);
+    await expect(mouse.capture).not.toHaveBeenCalled();
+    await expect(viewport.scrollLeft).toBe(startScroll);
+    await expect(viewport).not.toHaveAttribute('data-dragging');
+  },
+};
+
 export const RTLPointerDrag: Story = {
   args: { dir: 'rtl', onValueChange: fn() },
   parameters: {

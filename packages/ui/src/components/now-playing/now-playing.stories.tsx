@@ -103,6 +103,20 @@ export const DefaultMiniPaused: Story = {
     await expect(canvasElement.querySelector('audio')).not.toBeInTheDocument();
   },
 };
+export const ExpandGeometry: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Expand' }));
+    const collapse = await waitFor(() => canvas.getByRole('button', { name: 'Collapse' }));
+    // The card grows by clipping its settled face; the control must never be scaled with it.
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+    await expect(collapse.getBoundingClientRect().height).toBeGreaterThan(30);
+    await waitFor(() => expect(collapse.getBoundingClientRect().height).toBeGreaterThan(39));
+  },
+};
+
 export const Expanded: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true, defaultPosition: 45 },
