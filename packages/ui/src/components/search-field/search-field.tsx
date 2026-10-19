@@ -11,6 +11,7 @@ import {
   FieldDescription,
   FieldError,
   FieldLabel,
+  FieldRoot,
   useFieldAnatomy,
   type FieldLabelPlacement,
 } from '../field/field-anatomy';
@@ -65,7 +66,6 @@ export interface SearchFieldProps
   slotProps?: SearchFieldSlotProps;
 }
 
-const rootStyle = css({ display: 'grid', gap: vars.space[1], inlineSize: '100%', minInlineSize: 0 });
 const shellStyle = css({
   display: 'flex',
   alignItems: 'center',
@@ -245,14 +245,11 @@ export function SearchField({
   };
 
   return (
-    <FieldSlot
+    <FieldRoot
       style={rest.style}
       title={rest.title}
-      element="div"
       component={slots?.root ?? component}
-      slotProps={slotProps?.root}
-      root
-      styles={rootStyle}
+      part={slotProps?.root}
       sx={sx}
       data-ui="search-field"
       dir={dir}
@@ -347,7 +344,7 @@ export function SearchField({
       <FieldError component={slots?.error} id={field.errorId} part={slotProps?.error}>
         {error}
       </FieldError>
-    </FieldSlot>
+    </FieldRoot>
   );
 }
 SearchField.displayName = 'SearchField';

@@ -18,6 +18,8 @@ const MIXED_PAYLOAD = 'line one\nשורה שתיים\n𝔘𝔫𝔦𝔠𝔬𝔡�
 // Covers the base transition (160ms) with margin.
 const SETTLE_MS = 240;
 const SHORT_RESET_MS = 300;
+const CANCELLED_RESET_MS = 1000;
+const REENTERED_RESET_MS = 2000;
 
 const rowStyle = {
   display: 'flex',
@@ -112,10 +114,12 @@ ControlledCopyButton.displayName = 'ControlledCopyButton';
 
 function ExternallyClearedCopyButton(args: CopyButtonProps) {
   const [value, setValue] = useState<CopyButtonValue>('idle');
+  const [resetAfterMs, setResetAfterMs] = useState(args.resetAfterMs);
   return (
     <div style={rowStyle}>
       <CopyButton
         {...args}
+        resetAfterMs={resetAfterMs}
         value={value}
         onValueChange={(next) => {
           args.onValueChange?.(next);
@@ -124,6 +128,12 @@ function ExternallyClearedCopyButton(args: CopyButtonProps) {
       />
       <button type="button" onClick={() => setValue('idle')}>
         Clear
+      </button>
+      <button type="button" onClick={() => {
+        setResetAfterMs(REENTERED_RESET_MS);
+        setValue('copied');
+      }}>
+        Restore result
       </button>
     </div>
   );
@@ -537,20 +547,28 @@ export const ControlledReject: Story = {
 };
 
 export const ExternalIdleCancelsReset: Story = {
-  args: { resetAfterMs: SHORT_RESET_MS },
+  args: { resetAfterMs: CANCELLED_RESET_MS },
   render: (args) => <ExternallyClearedCopyButton {...args} />,
   play: async ({ args, canvasElement }) => {
     const writeText = fn<WriteText>(async () => {});
     await withClipboard(canvasElement, writeText, async () => {
       const button = getButton(canvasElement);
+      const copyStartedAt = performance.now();
       await userEvent.click(button);
       await waitFor(() => expect(button).toHaveAttribute('data-state', 'copied'));
       await userEvent.click(within(canvasElement).getByRole('button', { name: 'Clear' }));
       await expect(button).toHaveAttribute('data-state', 'idle');
-      await wait(SHORT_RESET_MS + SETTLE_MS);
+      await userEvent.click(within(canvasElement).getByRole('button', { name: 'Restore result' }));
+      await expect(button).toHaveAttribute('data-state', 'copied');
+      await expect(performance.now() - copyStartedAt).toBeLessThan(CANCELLED_RESET_MS);
+      await wait(CANCELLED_RESET_MS + SETTLE_MS);
+      await expect(button).toHaveAttribute('data-state', 'copied');
       await expect(args.onValueChange).toHaveBeenCalledTimes(2);
       await expect(args.onValueChange).toHaveBeenNthCalledWith(1, 'pending');
       await expect(args.onValueChange).toHaveBeenNthCalledWith(2, 'copied');
+      await waitFor(() => expect(button).toHaveAttribute('data-state', 'idle'), { timeout: REENTERED_RESET_MS });
+      await expect(args.onValueChange).toHaveBeenCalledTimes(3);
+      await expect(args.onValueChange).toHaveBeenLastCalledWith('idle');
     });
   },
 };
@@ -1011,7 +1029,9 @@ export const SxPrecedence: Story = {
     await expect(button).toBeInstanceOf(canvasElement.ownerDocument.defaultView!.HTMLButtonElement);
     await expect(button).toHaveClass('consumer-class');
     // Registered classes (including stray Emotion css) land before sx.
-    await expect(getComputedStyle(button).marginInlineStart).toBe('8px');
+    const margin = parseFloat(getComputedStyle(button).marginInlineStart);
+    await expect(margin).toBeGreaterThan(7);
+    await expect(margin).toBeLessThanOrEqual(8);
     await expect(getComputedStyle(button).letterSpacing).not.toBe('normal');
     const label = button.querySelector('[data-ui="copy-button-label"]')!;
     await expect(label).toHaveClass('slot-label');

@@ -37,6 +37,7 @@ const rootStyle = css({
   display: 'grid',
   gap: vars.space[1],
   inlineSize: '100%',
+  minInlineSize: 0,
 });
 
 const labelStyle = css({
