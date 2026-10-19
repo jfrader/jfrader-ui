@@ -6,6 +6,7 @@
 
 - `NumberField` adds locale-aware quantity entry, exact decimal steps, keyboard and pointer controls, draft validation, and canonical form values.
 - `MoneyInput` enters integer minor-unit amounts with locale-aware currency formatting, a currency picker, quick-add buttons and native form reset. Changing currency preserves the stored integer without conversion.
+- `PhoneInput` collects international telephone numbers with a searchable country picker, national formatting, incomplete storage candidates, metadata validation and independent controlled number, country and picker state.
 - `labelPlacement="hidden"` keeps a field's label as the control's accessible name without taking layout space. Available on TextField, Textarea, PasswordField, SearchField, TagInput, MentionInput, TimePicker, Combobox, Select and MultiSelect.
 
 ### Fixed
