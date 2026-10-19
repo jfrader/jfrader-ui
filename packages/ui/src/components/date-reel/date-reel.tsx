@@ -510,7 +510,7 @@ const reelStyle = css({
   },
   '&:focus-visible': {
     outline: `2px solid ${vars.color.focusRing}`,
-    outlineOffset: '2px',
+    outlineOffset: '-2px',
     borderRadius: vars.radius.md,
   },
   '&[aria-disabled="true"]': {
