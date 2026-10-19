@@ -65,6 +65,25 @@ async function expectFocused(element: HTMLElement) {
   await expect(getComputedStyle(element).outlineStyle).not.toBe('none');
 }
 
+export const PanelPlacement: Story = {
+  args: { defaultOpen: true, defaultValue: '+447911123456' },
+  tags: ['!autodocs'],
+  play: async ({ canvasElement }) => {
+    const page = portal(canvasElement);
+    const panel = await page.findByRole('dialog', { name: 'Countries' });
+    const trigger = canvasElement.querySelector(
+      '[data-ui="phone-input"] button',
+    ) as HTMLElement;
+    const triggerBox = trigger.getBoundingClientRect();
+    const panelBox = panel.getBoundingClientRect();
+    const below = Math.abs(panelBox.top - (triggerBox.bottom + 8));
+    const above = Math.abs(triggerBox.top - (panelBox.bottom + 8));
+    await expect(Math.min(below, above)).toBeLessThan(2);
+    await expect(panelBox.top).toBeGreaterThan(16);
+    // The panel never grows past 20rem, so it stays anchored instead of being clamped to the edge.
+    await expect(panelBox.height).toBeLessThanOrEqual(321);
+  },
+};
 export const Default: Story = {
   play: async ({ canvas }) => {
     const input = canvas.getByRole('textbox', { name: 'Phone number' });

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- `PhoneInput` keeps its country panel anchored to the field: the panel is capped at 20rem with the list scrolling inside, instead of being clamped to the viewport edge when neither side fits.
+
 ### Added
 
 - `ColorPicker` opens a modal dialog that fits the viewport instead of an anchored popover: focus moves inside, Escape and backdrop cancel, and the swatch checker matches its box.
