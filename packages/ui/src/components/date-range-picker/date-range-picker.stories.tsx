@@ -4,6 +4,8 @@ import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
+import { ANCHOR_GAP } from '../../overlay/use-overlay-floating';
+import { expectAligned } from '../../testing/geometry-assertions';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -1056,6 +1058,8 @@ export const MonthsOne: Story = {
     const dialog = await findDialog(canvasElement);
     await expect(within(dialog).getAllByRole('grid')).toHaveLength(1);
     await expect(dialog).toHaveAttribute('data-layout', 'row');
+    const presets = within(dialog).getByRole('group', { name: rangeMessages.presets });
+    await expect(presets.scrollWidth).toBeGreaterThan(presets.clientWidth);
   },
 };
 
@@ -1066,19 +1070,21 @@ export const MonthsTwo: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await findDialog(canvasElement);
     await expect(within(dialog).getAllByRole('grid')).toHaveLength(2);
-    await expect(dialog).toHaveAttribute('data-layout', 'rail');
+    await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth + PX_TOLERANCE);
     await expect(bodyOf(canvasElement).getByRole('grid', { name: monthName('2026-10') })).toBeVisible();
     await expect(bodyOf(canvasElement).getByRole('grid', { name: monthName('2026-11') })).toBeVisible();
   },
 };
 
 const BoundaryBox = styled.div({
+  boxSizing: 'border-box',
+  maxInlineSize: `calc(100vw - ${vars.space[8]})`,
   overflow: 'hidden',
   padding: vars.space[2],
   border: `1px dashed ${vars.color.borderControl}`,
 });
 
-function BoundaryExample({ inlineSize, blockSize = 'auto', ...props }: ExampleProps & { inlineSize: string; blockSize?: string }) {
+function BoundaryExample({ inlineSize, blockSize = '640px', ...props }: ExampleProps & { inlineSize: string; blockSize?: string }) {
   const [boundary, setBoundary] = useState<HTMLDivElement | null>(null);
   return (
     <BoundaryBox ref={setBoundary} data-boundary="" style={{ inlineSize, blockSize }}>
@@ -1095,7 +1101,7 @@ BoundaryExample.displayName = 'BoundaryExample';
 export const MonthsAuto: Story = {
   tags: ['!autodocs'],
   args: { defaultValue: WEEK, presets: PRESETS, defaultOpen: true },
-  render: (args) => <BoundaryExample {...args} inlineSize="min(900px, 100%)" />,
+  render: (args) => <BoundaryExample {...args} inlineSize="900px" />,
   play: async ({ canvasElement }) => {
     const dialog = await findDialog(canvasElement);
     const boundary = canvasElement.querySelector<HTMLElement>('[data-boundary]')!;
@@ -1137,6 +1143,52 @@ export const NarrowForcedTwoMonths: Story = {
   },
 };
 
+export const NarrowTwoMonthsWithPresets: Story = {
+  tags: ['!autodocs'],
+  args: { defaultValue: WEEK, months: 2, presets: PRESETS, defaultOpen: true },
+  render: (args) => <BoundaryExample {...args} inlineSize="360px" />,
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await findDialog(canvasElement);
+    await waitFor(() => expect(dialog).toHaveAttribute('data-layout', 'row'));
+    await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth + PX_TOLERANCE);
+    const [first, second] = within(dialog).getAllByRole('grid');
+    await expect(second!.getBoundingClientRect().top).toBeGreaterThan(first!.getBoundingClientRect().bottom);
+    const presets = within(dialog).getByRole('group', { name: rangeMessages.presets });
+    await userEvent.click(within(presets).getByRole('button', { name: 'Today' }));
+    await userEvent.keyboard('{End}');
+    await expectFocused(canvasElement, () => within(presets).getByRole('button', { name: 'Year to date' }));
+    await userEvent.keyboard('{Enter}');
+    await userEvent.click(dialogButton(canvasElement, 'Apply'));
+    await expect(getTrigger(canvasElement)).toHaveTextContent('1 Jan – 11 Oct 2026');
+  },
+};
+
+export const LongLabels: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultValue: WEEK, months: 2, defaultOpen: true,
+    presets: PRESETS.map((preset) => ({ ...preset, label: `${preset.label} — consolidated reporting period for all departments` })),
+    messages: { ...rangeMessages, apply: 'Apply reporting period', cancel: 'Discard selected dates' },
+  },
+  render: (args) => <BoundaryExample {...args} inlineSize="900px" />,
+  play: async ({ canvasElement }) => {
+    const dialog = await findDialog(canvasElement);
+    await waitFor(() => expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth + PX_TOLERANCE));
+    const group = within(dialog).getByRole('group', { name: rangeMessages.presets });
+    for (const preset of within(group).getAllByRole('button')) {
+      await expect(preset.getBoundingClientRect().width).toBeLessThanOrEqual(group.clientWidth + PX_TOLERANCE);
+    }
+    if (dialog.dataset.layout === 'rail') {
+      await expect(group.scrollHeight).toBeGreaterThan(group.clientHeight);
+    }
+    for (const action of ['Apply reporting period', 'Discard selected dates']) {
+      const button = dialogButton(canvasElement, action);
+      await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth + PX_TOLERANCE);
+      await expectTargetSize(button);
+    }
+  },
+};
+
 /** A short boundary caps the dialog height; the dialog scrolls internally. */
 export const ShortViewport: Story = {
   tags: ['!autodocs'],
@@ -1146,8 +1198,13 @@ export const ShortViewport: Story = {
     const dialog = await findDialog(canvasElement);
     const boundary = canvasElement.querySelector<HTMLElement>('[data-boundary]')!.getBoundingClientRect();
     await waitFor(() => expect(dialog.getBoundingClientRect().height).toBeLessThanOrEqual(boundary.height + PX_TOLERANCE));
+    await settleMotion(dialog);
     await expect(getComputedStyle(dialog).overflowY).toBe('auto');
     await expect(dialog.scrollHeight).toBeGreaterThan(dialog.clientHeight);
+    const trigger = getTrigger(canvasElement).getBoundingClientRect();
+    const panel = dialog.getBoundingClientRect();
+    const gap = dialog.dataset.side === 'bottom' ? panel.top - trigger.bottom : trigger.top - panel.bottom;
+    await expect(gap).toBeCloseTo(ANCHOR_GAP, 0);
   },
 };
 
@@ -1182,11 +1239,23 @@ export const LongLocaleValue: Story = {
       <DateRangePicker.Content />
     </DateRangePicker>
   ),
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     const text = trigger.querySelector<HTMLElement>('span')!;
     await expect(trigger.scrollWidth).toBeLessThanOrEqual(trigger.clientWidth + PX_TOLERANCE);
     await expect(text.getBoundingClientRect().right).toBeLessThanOrEqual(trigger.getBoundingClientRect().right + PX_TOLERANCE);
+    await userEvent.click(trigger);
+    const dialog = await findDialog(canvasElement);
+    for (const grid of within(dialog).getAllByRole('grid')) {
+      const columns = within(grid).getAllByRole('columnheader');
+      for (const row of within(grid).getAllByRole('row')) {
+        const cells = within(row).queryAllByRole('gridcell');
+        for (const [index, cell] of cells.entries()) {
+          const button = within(cell).queryByRole('button');
+          if (button) await expectAligned([button, columns[index]!], 'center-x');
+        }
+      }
+    }
   },
 };
 
@@ -1443,6 +1512,9 @@ export const RTL: Story = {
   render: (args) => <RangeExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     await expectRtlArrows(canvasElement, userEvent);
+    const value = getTrigger(canvasElement).querySelector<HTMLElement>('span')!;
+    await expect(getComputedStyle(value).direction).toBe('ltr');
+    await expect(getComputedStyle(summary(canvasElement)).direction).toBe('ltr');
   },
 };
 

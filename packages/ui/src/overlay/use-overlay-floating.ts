@@ -38,6 +38,7 @@ export interface OverlayFloatingOptions {
   transform?: boolean;
   /** Disable viewport flip and shift for geometry owned by the consumer. */
   collision?: 'shift' | 'none';
+  shiftCrossAxis?: boolean;
 }
 
 export interface OverlayAvailableSize {
@@ -60,6 +61,7 @@ export function useOverlayFloating({
   gap = ANCHOR_GAP,
   transform,
   collision = 'shift',
+  shiftCrossAxis = true,
 }: OverlayFloatingOptions): UseFloatingReturn<HTMLButtonElement> {
   const tree = useFloatingTree();
   const childOwnsPointerRef = useRef(false);
@@ -77,7 +79,7 @@ export function useOverlayFloating({
     middleware: [
       offset(gap),
       collision === 'shift' && flip(detectOverflow),
-      collision === 'shift' && shift({ ...detectOverflow, crossAxis: true }),
+      collision === 'shift' && shift({ ...detectOverflow, crossAxis: shiftCrossAxis }),
       onAvailableSize &&
         size({
           ...detectOverflow,

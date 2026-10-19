@@ -100,6 +100,7 @@ import {
 const PLACEMENT = 'bottom-start';
 /** Available boundary width from which `months="auto"` shows two months side by side. */
 const TWO_MONTH_MIN_WIDTH = 712;
+const PRESET_RAIL_MIN_WIDTH = 800;
 const MS_PER_DAY = 86_400_000;
 const OPEN_KEYS = new Set(['Enter', 'ArrowDown']);
 const SPACE = ' ';
@@ -357,6 +358,7 @@ const triggerStyle = css({
   gap: vars.space[2],
   boxSizing: 'border-box',
   maxInlineSize: '100%',
+  overflowWrap: 'anywhere',
   border: `1px solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.md,
   backgroundColor: vars.color.surfaceRaised,
@@ -413,6 +415,8 @@ const errorStyle = css({
 const contentStyle = css({
   ...raisedSurface,
   display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
+  boxSizing: 'border-box',
   gap: vars.space[4],
   borderRadius: vars.radius.lg,
   boxShadow: vars.shadow.overlay,
@@ -420,7 +424,7 @@ const contentStyle = css({
   overflow: 'auto',
   ...floatingSurfaceMotion,
   '&[data-layout="rail"]': {
-    gridTemplateColumns: 'auto 1fr',
+    gridTemplateColumns: 'minmax(0, auto) minmax(0, 1fr)',
   },
   [FORCED_COLORS]: {
     border: '1px solid CanvasText',
@@ -429,14 +433,21 @@ const contentStyle = css({
 
 const presetsStyle = css({
   display: 'flex',
+  boxSizing: 'border-box',
   gap: vars.space[2],
   '[data-layout="row"] > &': {
+    contain: 'inline-size',
     overflowX: 'auto',
-    paddingBlock: vars.space[1],
+    padding: vars.space[1],
   },
   '[data-layout="rail"] > &': {
     flexDirection: 'column',
+    contain: 'size',
+    inlineSize: `calc(${vars.space[12]} * 3)`,
+    overflowY: 'auto',
     gridRow: '1 / span 2',
+    paddingBlock: vars.space[1],
+    paddingInlineStart: vars.space[1],
     paddingInlineEnd: vars.space[4],
     borderInlineEnd: `1px solid ${vars.color.border}`,
   },
@@ -445,6 +456,7 @@ const presetsStyle = css({
 const presetStyle = css({
   appearance: 'none',
   flexShrink: 0,
+  maxInlineSize: '100%',
   minBlockSize: vars.space[8],
   paddingInline: vars.space[3],
   border: '1px solid transparent',
@@ -454,7 +466,8 @@ const presetStyle = css({
   fontSize: vars.textSize.sm,
   color: vars.color.text,
   textAlign: 'start',
-  whiteSpace: 'nowrap',
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
   cursor: 'pointer',
   transitionProperty: 'background-color, border-color',
   transitionDuration: vars.motion.duration.fast,
@@ -486,9 +499,11 @@ const presetStyle = css({
 // Months sit side by side and stack when the surface is too narrow, so days never shrink.
 const calendarsStyle = css({
   display: 'flex',
+  minInlineSize: 0,
   flexWrap: 'wrap',
   alignItems: 'flex-start',
   gap: vars.space[6],
+  '& [role="gridcell"]': { textAlign: 'center' },
 });
 
 const footerStyle = css({
@@ -503,14 +518,18 @@ const footerStyle = css({
 });
 
 const summaryStyle = css({
+  overflowWrap: 'anywhere',
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
 });
 
 const actionsStyle = css({
   display: 'flex',
+  flexWrap: 'wrap',
+  maxInlineSize: '100%',
   gap: vars.space[2],
   marginInlineStart: 'auto',
+  '& > button': { whiteSpace: 'normal', overflowWrap: 'anywhere', minInlineSize: 0 },
 });
 
 // ---- Parts.
@@ -568,6 +587,7 @@ function DateRangePickerLayer({
   const { refs, floatingStyles, context } = useOverlayFloating({
     open,
     placement: PLACEMENT,
+    shiftCrossAxis: false,
     nodeId,
     boundary,
     onAvailableSize: (size) =>
@@ -846,9 +866,9 @@ function DateRangePickerTrigger({
               </span>
             )}
             {displayValue !== undefined ? (
-              <span id={valueId}>{displayValue}</span>
+              <span id={valueId} dir="auto">{displayValue}</span>
             ) : (
-              <span id={valueId} data-placeholder="" css={placeholderStyle}>
+              <span id={valueId} dir="auto" data-placeholder="" css={placeholderStyle}>
                 {placeholder}
               </span>
             )}
@@ -1076,7 +1096,7 @@ function DateRangePickerPanel({
       : triggerLabelling?.labelledBy !== undefined
         ? { 'aria-labelledby': triggerLabelling.labelledBy }
         : { 'aria-label': triggerLabelling?.label };
-  const layout = monthCount === 2 && presetItems.length > 0 ? 'rail' : 'row';
+  const layout = monthCount === 2 && presetItems.length > 0 && availableWidth >= PRESET_RAIL_MIN_WIDTH ? 'rail' : 'row';
   const canApply = !readOnly && isAvailableRange(draft, min, max);
 
   return (
@@ -1171,6 +1191,7 @@ function DateRangePickerPanel({
                 <Summary
                   {...slotProps?.summary}
                   id={summaryId}
+                  dir="auto"
                   role="status"
                   data-ui="date-range-picker-summary"
                   className={slotProps?.summary?.className}
