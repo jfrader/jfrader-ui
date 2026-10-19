@@ -1,0 +1,6 @@
+/* The docs engine offsets headings twice: html scroll-padding-top plus [data-toc]
+   scroll-margin-top. Keep the root padding only, so TOC jumps land under the header
+   instead of 76px lower and the settle loop stops re-scrolling. */
+.main [data-toc] {
+  scroll-margin-top: 0;
+}
