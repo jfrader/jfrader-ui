@@ -1,13 +1,101 @@
-import { StrictMode, useLayoutEffect, useState } from 'react';
+import { StrictMode, useLayoutEffect, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { Dialog } from '../components/dialog/dialog';
+import { Popover } from '../components/popover/popover';
+import { Menu } from '../components/menu/menu';
+import { Select } from '../components/select/select';
+import { Combobox } from '../components/combobox/combobox';
+import { DatePicker } from '../components/date-picker/date-picker';
+import { Tooltip } from '../components/tooltip/tooltip';
 import { useOverlayFloating } from './use-overlay-floating';
 import { useScrollLock } from './use-scroll-lock';
 
 const meta = { title: 'Internals/Overlay' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+const FAMILY_OPTIONS = [{ value: 'apple', label: 'Apple' }, { value: 'pear', label: 'Pear' }];
+
+function FamilyPopup({ children, ...props }: ComponentPropsWithRef<'div'>) {
+  return (
+    <div {...props}>
+      {children}
+      <Menu triggerLabel="Date actions" items={[{ type: 'item', label: 'Save date' }]} />
+      <Select label="Date fruit" options={FAMILY_OPTIONS} />
+      <Combobox label="Search fruit" options={FAMILY_OPTIONS} />
+      <Tooltip triggerLabel="Date help" content="Choose a date" openDelay={0} />
+    </div>
+  );
+}
+
+export const WholeFamilyNesting: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <>
+      <Popover defaultOpen>
+        <Popover.Trigger>Planner</Popover.Trigger>
+        <Popover.Content aria-label="Planner">
+          <DatePicker label="Plan date" defaultValue="2026-10-18" locale="en-US" slots={{ popup: FamilyPopup }} />
+        </Popover.Content>
+      </Popover>
+      <button>Outside family</button>
+    </>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const planner = body.getByRole('dialog', { name: 'Planner' });
+    const date = within(planner).getByRole('combobox', { name: 'Plan date' });
+    date.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    const popup = await body.findByRole('dialog', { name: 'Plan date' });
+    const outside = body.getByRole('button', { name: 'Outside family' });
+
+    for (const { role, name, surface } of [
+      { role: 'button', name: 'Date actions', surface: 'menu' },
+      { role: 'combobox', name: 'Date fruit', surface: 'listbox' },
+      { role: 'combobox', name: 'Search fruit', surface: 'listbox' },
+      { role: 'button', name: 'Date help', surface: 'tooltip' },
+    ]) {
+      const trigger = within(popup).getByRole(role, { name });
+      trigger.focus();
+      if (surface !== 'tooltip') await userEvent.keyboard('{ArrowDown}');
+      await body.findByRole(surface);
+      await userEvent.keyboard('{Escape}');
+      await waitFor(() => expect(body.queryByRole(surface)).toBeNull());
+      await expect(trigger).toHaveFocus();
+      await expect(popup).toBeVisible();
+      await expect(planner).toBeVisible();
+
+      if (surface === 'tooltip') {
+        date.focus();
+        trigger.focus();
+      } else {
+        await userEvent.keyboard('{ArrowDown}');
+      }
+      await body.findByRole(surface);
+      await userEvent.click(outside);
+      await waitFor(() => expect(body.queryByRole(surface)).toBeNull());
+      await expect(outside).toHaveFocus();
+      await expect(popup).toBeVisible();
+      await expect(planner).toBeVisible();
+    }
+
+    await userEvent.click(outside);
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'Plan date' })).toBeNull());
+    await expect(outside).toHaveFocus();
+    await expect(planner).toBeVisible();
+    date.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    await body.findByRole('grid');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'Plan date' })).toBeNull());
+    await expect(date).toHaveFocus();
+    await expect(planner).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'Planner' })).toBeNull());
+  },
+};
 
 const closeRequest = fn();
 export const NoncancelableNativeClose: Story = {

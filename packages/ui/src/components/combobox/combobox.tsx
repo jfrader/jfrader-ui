@@ -48,7 +48,6 @@ import {
 } from 'react';
 import {
   FloatingList,
-  useDismiss,
   useInteractions,
   useListNavigation,
   useMergeRefs,
@@ -66,7 +65,7 @@ import {
   listboxSurfaceStyle,
 } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { IsolatedOverlay } from '../../overlay/overlay-layer';
+import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import {
@@ -307,7 +306,7 @@ const emptyStyle = css({
   color: vars.color.textMuted,
 });
 
-function ComboboxOverlay(props: ComboboxProps) {
+function ComboboxOverlay({ nodeId, ...props }: ComboboxProps & { nodeId: string | undefined }) {
   const {
     value: valueProp,
     defaultValue,
@@ -367,12 +366,13 @@ function ComboboxOverlay(props: ComboboxProps) {
   }, [options, query, matchesQuery]);
 
   const { refs, floatingStyles, context } = useOverlayFloating({
+    nodeId,
     open,
     placement: PLACEMENT,
     onOpenChange: (next) => requestOpenChange(next),
   });
 
-  const dismiss = useDismiss(context, { escapeKey: true, outsidePress: true });
+  const dismiss = useLayerDismiss(context, 'container');
   const listNavigation = useListNavigation(context, {
     enabled: !inactive,
     listRef: elementsRef,
@@ -382,7 +382,7 @@ function ComboboxOverlay(props: ComboboxProps) {
     loop: true,
     disabledIndices: (index) => skippedIndices.has(index),
   });
-  const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([dismiss, listNavigation]);
+  const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([...dismiss, listNavigation]);
 
   const value = useMemo<ComboboxContextValue>(() => {
     const selectValue = (next: string) => {
@@ -574,9 +574,9 @@ function ComboboxOverlay(props: ComboboxProps) {
 
 function ComboboxRoot(props: ComboboxProps) {
   return (
-    <IsolatedOverlay>
-      <ComboboxOverlay {...props} />
-    </IsolatedOverlay>
+    <OverlayLayer>
+      {(nodeId) => <ComboboxOverlay {...props} nodeId={nodeId} />}
+    </OverlayLayer>
   );
 }
 

@@ -16,7 +16,6 @@ import {
   type ReactNode,
 } from 'react';
 import {
-  useDismiss,
   useFocus,
   useHover,
   useInteractions,
@@ -30,7 +29,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
-import { IsolatedOverlay } from '../../overlay/overlay-layer';
+import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -140,12 +139,13 @@ export function useTooltipInteractions(
   // the close delay covers the offset gap (WCAG 1.4.13 hoverable + persistent).
   const hover = useHover(context, { enabled, delay: { open: openDelay, close: closeDelay }, move: false });
   const focus = useFocus(context, { enabled, visibleOnly: focusVisibleOnly });
-  const dismiss = useDismiss(context, { escapeKey: true });
+  const dismiss = useLayerDismiss(context, 'leaf');
   const role = useRole(context, { role: 'tooltip' });
-  return useInteractions([hover, focus, dismiss, role]);
+  return useInteractions([hover, focus, ...dismiss, role]);
 }
 
 function TooltipOverlay({
+  nodeId,
   open: openProp,
   defaultOpen = false,
   onOpenChange,
@@ -154,9 +154,9 @@ function TooltipOverlay({
   closeDelay = DEFAULT_CLOSE_DELAY_MS,
   children,
   slots,
-}: TooltipBaseProps & Pick<TooltipEasyProps, 'slots'>) {
+}: TooltipBaseProps & Pick<TooltipEasyProps, 'slots'> & { nodeId: string | undefined }) {
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
-  const { refs, floatingStyles, context } = useOverlayFloating({ open, placement, onOpenChange: requestOpenChange });
+  const { refs, floatingStyles, context } = useOverlayFloating({ open, placement, nodeId, onOpenChange: requestOpenChange });
   const { getReferenceProps, getFloatingProps } = useTooltipInteractions(context, { openDelay, closeDelay });
 
   const value = useMemo(
@@ -175,9 +175,9 @@ function TooltipRoot(props: TooltipProps) {
     </>
   ) : props.children;
   return (
-    <IsolatedOverlay>
-      <TooltipOverlay {...props}>{children}</TooltipOverlay>
-    </IsolatedOverlay>
+    <OverlayLayer>
+      {(nodeId) => <TooltipOverlay {...props} nodeId={nodeId}>{children}</TooltipOverlay>}
+    </OverlayLayer>
   );
 }
 

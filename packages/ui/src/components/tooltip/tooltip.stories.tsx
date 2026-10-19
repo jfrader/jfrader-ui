@@ -6,6 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
+import { Popover } from '../popover';
 import { Tooltip, type TooltipCompoundProps as TooltipProps, type TooltipEasyProps } from './index';
 
 const TRIGGER = 'Copy';
@@ -350,5 +351,38 @@ export const LightTheme: Story = {
     await expectThemedSurface(tooltip, 'light', vars.color.bgSoft);
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);
+  },
+};
+export const NestedDismissal: StoryObj = {
+  tags: ['!autodocs'],
+  render: () => (
+    <>
+      <Popover defaultOpen>
+        <Popover.Trigger>Parent</Popover.Trigger>
+        <Popover.Content aria-label="Parent">
+          <Tooltip triggerLabel="Nested help" content="Fruit help" openDelay={0} />
+        </Popover.Content>
+      </Popover>
+      <Button>Outside</Button>
+    </>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const parent = body.getByRole('dialog', { name: 'Parent' });
+    const trigger = within(parent).getByRole('button', { name: 'Nested help' });
+    trigger.focus();
+    await body.findByRole('tooltip');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(body.queryByRole('tooltip')).toBeNull());
+    await expect(parent).toBeVisible();
+    await expect(trigger).toHaveFocus();
+    const outside = body.getByRole('button', { name: 'Outside' });
+    outside.focus();
+    trigger.focus();
+    await body.findByRole('tooltip');
+    await userEvent.click(outside);
+    await waitFor(() => expect(body.queryByRole('tooltip')).toBeNull());
+    await expect(parent).toBeVisible();
+    await expect(outside).toHaveFocus();
   },
 };

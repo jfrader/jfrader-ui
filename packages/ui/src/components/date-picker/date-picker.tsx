@@ -42,7 +42,6 @@ import {
 import {
   FloatingFocusManager,
   useClick,
-  useDismiss,
   useInteractions,
   useMergeRefs,
   useRole,
@@ -52,7 +51,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { raisedSurface } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { IsolatedOverlay } from '../../overlay/overlay-layer';
+import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { dateTimeFormatter, defaultLocale } from '../../utils/intl';
@@ -252,6 +251,7 @@ const popupStyle = css({
 // ---- Parts.
 
 function DatePickerOverlay({
+  nodeId,
   value: valueProp,
   defaultValue,
   onValueChange,
@@ -267,7 +267,7 @@ function DatePickerOverlay({
   placeholder: placeholderProp,
   children,
   slots,
-}: DatePickerBaseProps & Pick<DatePickerEasyProps, 'slots'>) {
+}: DatePickerBaseProps & Pick<DatePickerEasyProps, 'slots'> & { nodeId: string | undefined }) {
   const [value, requestValueChange] = useControlledState<string>(valueProp, defaultValue, onValueChange);
   const [requestedOpen = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const [inputDisabled, setInputDisabled] = useState(false);
@@ -290,6 +290,7 @@ function DatePickerOverlay({
   const initialMonth = clampDate(validDate(value) ?? localToday(), min, max).slice(0, 7);
 
   const { refs, floatingStyles, context } = useOverlayFloating({
+    nodeId,
     open,
     placement: PLACEMENT,
     onOpenChange: (next, _event, reason) => {
@@ -316,9 +317,9 @@ function DatePickerOverlay({
 
   // Keyboard opening is handled by DatePicker.Input (Space on keyup, focus into the grid).
   const click = useClick(context, { enabled: !disabled, keyboardHandlers: false });
-  const dismiss = useDismiss(context, { escapeKey: true, outsidePress: true });
+  const dismiss = useLayerDismiss(context, 'container');
   const role = useRole(context, { role: 'dialog' });
-  const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
+  const { getReferenceProps, getFloatingProps } = useInteractions([click, ...dismiss, role]);
 
   const contextValue = useMemo<DatePickerContextValue>(
     () => ({
@@ -400,9 +401,9 @@ function DatePickerRoot(props: DatePickerProps) {
     </>
   ) : props.children;
   return (
-    <IsolatedOverlay>
-      <DatePickerOverlay {...props}>{children}</DatePickerOverlay>
-    </IsolatedOverlay>
+    <OverlayLayer>
+      {(nodeId) => <DatePickerOverlay {...props} nodeId={nodeId}>{children}</DatePickerOverlay>}
+    </OverlayLayer>
   );
 }
 

@@ -6,6 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
+import { Popover } from '../popover';
 import {
   Select,
   type SelectCompoundProps,
@@ -24,6 +25,44 @@ const NarrowFrame = styled.div({ inlineSize: 240 });
 const LABEL = 'Fruit';
 const PLACEHOLDER = 'Pick a fruit';
 const TYPEAHEAD_PAUSE_MS = 550;
+
+export const NestedDismissal: StoryObj = {
+  tags: ['!autodocs'],
+  render: () => (
+    <>
+      <Popover defaultOpen>
+        <Popover.Trigger>Parent</Popover.Trigger>
+        <Popover.Content aria-label="Parent">
+          <Select label="Nested fruit" options={FRUITS} />
+        </Popover.Content>
+      </Popover>
+      <Button>Outside</Button>
+    </>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const parent = body.getByRole('dialog', { name: 'Parent' });
+    const trigger = within(parent).getByRole('combobox', { name: 'Nested fruit' });
+    trigger.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    const list = await body.findByRole('listbox');
+    await userEvent.keyboard('{End}');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-activedescendant', within(list).getByRole('option', { name: 'Cherry' }).id),
+    );
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(body.queryByRole('listbox')).toBeNull());
+    await expect(parent).toBeVisible();
+    await expect(trigger).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    await body.findByRole('listbox');
+    const outside = body.getByRole('button', { name: 'Outside' });
+    await userEvent.click(outside);
+    await waitFor(() => expect(body.queryByRole('listbox')).toBeNull());
+    await expect(parent).toBeVisible();
+    await expect(outside).toHaveFocus();
+  },
+};
 
 const FRUITS: readonly SelectOption[] = [
   { value: 'apple', label: 'Apple' },
