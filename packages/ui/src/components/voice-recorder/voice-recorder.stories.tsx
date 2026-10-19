@@ -3,6 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
+import { styled } from '../../styling/styled';
 import { Button, type ButtonProps } from '../button';
 import {
   VoiceRecorder,
@@ -47,10 +49,29 @@ const usage = `<VoiceRecorder
   onDiscard={discardTake}
 />`;
 
+const StoryFrame = styled('div')({ inlineSize: '100%', maxInlineSize: '48rem' });
+const NarrowFrame = styled(StoryFrame)({ maxInlineSize: '20rem' });
+
+async function expectRecorderGeometry(canvasElement: HTMLElement) {
+  const root = canvasElement.querySelector<HTMLElement>('[data-ui="voice-recorder"]')!;
+  const composer = root.querySelector<HTMLElement>('[data-ui="voice-recorder-composer"]')!;
+  await expectInside(composer, root);
+  const controls = Array.from(composer.querySelectorAll('button, input'));
+  for (const control of controls) {
+    await expectInside(control, composer);
+    await expect(control.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await expect(control.scrollWidth).toBeLessThanOrEqual(control.clientWidth + 1);
+  }
+  for (let i = 1; i < controls.length; i++) {
+    await expectNoOverlap(controls[i - 1]!, controls[i]!);
+  }
+}
+
 const meta = {
   title: 'Media/VoiceRecorder',
   component: VoiceRecorder,
   tags: ['autodocs'],
+  decorators: [(Story) => <StoryFrame><Story /></StoryFrame>],
   args: {
     onRecordRequest: fn(async () => {}),
     onStopRequest: fn(async (sessionId: string) => ({ takeId: `take-${sessionId || '101'}` })),
@@ -63,6 +84,7 @@ const meta = {
     onMessageSeek: fn(),
   },
   parameters: {
+    layout: 'padded',
     docs: {
       source: { code: usage },
       description: {
@@ -305,6 +327,7 @@ export const Disabled: Story = {
 };
 
 export const LongLabels: Story = {
+  render: (args) => <NarrowFrame><VoiceRecorder {...args} duration={42} peaks={SAMPLE_PEAKS} /></NarrowFrame>,
   args: {
     labels: {
       root: 'Encrypted High-Fidelity Audio Note Terminal',
@@ -328,11 +351,20 @@ export const LongLabels: Story = {
       },
     },
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const button = within(canvasElement).getByRole('button', {
       name: 'Initiate High-Definition Audio Capture Sequence',
     });
     await expect(button).toBeVisible();
+    await expectRecorderGeometry(canvasElement);
+    await userEvent.click(button);
+    await expectRecorderGeometry(canvasElement);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Finalize Recording and Enter Review Inspection' }));
+    await within(canvasElement).findByRole('slider');
+    await expectRecorderGeometry(canvasElement);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Begin Acoustic Playback Stream' }));
+    await expect(within(canvasElement).getByRole('button', { name: 'Halt Acoustic Playback Stream' })).toBeVisible();
+    await expectRecorderGeometry(canvasElement);
   },
 };
 
@@ -342,6 +374,7 @@ export const LightTheme: Story = {
 };
 
 export const Rtl: Story = {
+  args: { value: { state: 'review', takeId: 'rtl-take' }, duration: 42, currentTime: 12, peaks: SAMPLE_PEAKS },
   parameters: { direction: 'rtl' },
   render: (args) => (
     <div dir="rtl">
@@ -351,6 +384,23 @@ export const Rtl: Story = {
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui="voice-recorder"]');
     await expect(root).toBeVisible();
+    await expectRecorderGeometry(canvasElement);
+    const bars = canvasElement.querySelectorAll('[data-ui="voice-recorder-waveform"] rect');
+    await expect(bars[0]!.getBoundingClientRect().left).toBeGreaterThan(bars[bars.length - 1]!.getBoundingClientRect().right);
+    const timer = canvasElement.querySelector('[data-ui="voice-recorder-timer"]')!;
+    await expect(getComputedStyle(timer).direction).toBe('ltr');
+  },
+};
+
+export const LongMessageMetadata: Story = {
+  args: { messages: [{ ...SAMPLE_MESSAGES[0]!, metadata: 'https://example.test/recordings/averylongunbrokensharedrecordingidentifier' }] },
+  render: (args) => <NarrowFrame><VoiceRecorder {...args} /></NarrowFrame>,
+  play: async ({ canvasElement }) => {
+    const message = canvasElement.querySelector('[data-ui="voice-recorder-message"]')!;
+    const metadata = canvasElement.querySelector<HTMLElement>('[data-ui="voice-recorder-message-metadata"]')!;
+    await expectInside(metadata, message);
+    await expect(metadata.scrollWidth).toBeLessThanOrEqual(metadata.clientWidth + 1);
+    for (const control of message.querySelectorAll('button, input')) await expectInside(control, message);
   },
 };
 

@@ -24,6 +24,7 @@ import { isRenderable } from '../../utils/renderable';
 import { createDurationFormatters } from '../../utils/duration-format';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
+import { buttonBlockSizes } from '../button/button';
 import { Avatar } from '../avatar';
 import { VoiceOrb } from '../voice-orb';
 
@@ -304,6 +305,7 @@ const rootStyle = css({
 
 const sizeStyles: Record<VoiceRecorderSize, SerializedStyles> = {
   sm: css({
+    '--voice-recorder-control-size': buttonBlockSizes.sm,
     fontSize: vars.textSize.sm,
     '& [data-ui="voice-recorder-composer"]': {
       padding: vars.space[3],
@@ -311,6 +313,7 @@ const sizeStyles: Record<VoiceRecorderSize, SerializedStyles> = {
     },
   }),
   md: css({
+    '--voice-recorder-control-size': buttonBlockSizes.md,
     fontSize: vars.textSize.md,
     '& [data-ui="voice-recorder-composer"]': {
       padding: vars.space[4],
@@ -320,6 +323,7 @@ const sizeStyles: Record<VoiceRecorderSize, SerializedStyles> = {
 };
 
 const composerStyle = css({
+  boxSizing: 'border-box',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -361,6 +365,7 @@ const reviewBarsSvgStyle = css({
   inlineSize: '100%',
   blockSize: '2.5rem',
   overflow: 'visible',
+  '&:dir(rtl)': { transform: 'scaleX(-1)' },
   [FORCED_COLORS]: {
     '& rect[data-played="true"]': {
       fill: 'Highlight',
@@ -380,7 +385,19 @@ const controlsRowStyle = css({
   inlineSize: '100%',
 });
 
+const controlStyle = css({
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  blockSize: 'auto',
+  minBlockSize: 'var(--voice-recorder-control-size)',
+  paddingBlock: vars.space[1],
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
+});
+
 const timerStyle = css({
+  direction: 'ltr',
+  unicodeBidi: 'isolate',
   fontFamily: vars.font.mono,
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
@@ -389,6 +406,7 @@ const timerStyle = css({
 });
 
 const seekInputStyle = css({
+  minInlineSize: 0,
   font: 'inherit',
   color: vars.color.text,
   inlineSize: '100%',
@@ -521,6 +539,7 @@ const messageControlsStyle = css({
 const messageMetadataStyle = css({
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
+  overflowWrap: 'anywhere',
 });
 
 export function VoiceRecorder({
@@ -1028,6 +1047,7 @@ export function VoiceRecorder({
                     size={size}
                     disabled={disabled}
                     {...slotProps?.record}
+                    css={[controlStyle, slotProps?.record?.css]}
                     ref={mergedRecordRef}
                     onClick={(e) => {
                       slotProps?.record?.onClick?.(e);
@@ -1048,6 +1068,7 @@ export function VoiceRecorder({
                       size={size}
                       disabled={disabled}
                       {...slotProps?.stop}
+                      css={[controlStyle, slotProps?.stop?.css]}
                       ref={mergedStopRef}
                       onClick={(e) => {
                         slotProps?.stop?.onClick?.(e);
@@ -1063,6 +1084,7 @@ export function VoiceRecorder({
                       size={size}
                       disabled={disabled}
                       {...slotProps?.discard}
+                      css={[controlStyle, slotProps?.discard?.css]}
                       onClick={(e) => {
                         slotProps?.discard?.onClick?.(e);
                         if (!e.defaultPrevented) handleDiscard();
@@ -1081,6 +1103,7 @@ export function VoiceRecorder({
                       variant="outline"
                       size={size}
                       {...slotProps?.play}
+                      css={[controlStyle, slotProps?.play?.css]}
                       disabled={disabled || value.state === 'pending' || slotProps?.play?.disabled}
                       onClick={(e) => {
                         slotProps?.play?.onClick?.(e);
@@ -1096,6 +1119,7 @@ export function VoiceRecorder({
                       size={size}
                       disabled={disabled || value.state === 'pending'}
                       {...slotProps?.discard}
+                      css={[controlStyle, slotProps?.discard?.css]}
                       onClick={(e) => {
                         slotProps?.discard?.onClick?.(e);
                         if (!e.defaultPrevented) handleDiscard();
@@ -1110,6 +1134,7 @@ export function VoiceRecorder({
                       tone="accent"
                       size={size}
                       {...slotProps?.send}
+                      css={[controlStyle, slotProps?.send?.css]}
                       disabled={disabled}
                       loading={value.state === 'pending'}
                       aria-busy={value.state === 'pending'}
@@ -1136,6 +1161,7 @@ export function VoiceRecorder({
                           size={size}
                           disabled={disabled}
                           {...slotProps?.discard}
+                          css={[controlStyle, slotProps?.discard?.css]}
                           onClick={(e) => {
                             slotProps?.discard?.onClick?.(e);
                             if (!e.defaultPrevented) handleDiscard();
@@ -1151,6 +1177,7 @@ export function VoiceRecorder({
                           size={size}
                           disabled={disabled}
                           {...slotProps?.send}
+                          css={[controlStyle, slotProps?.send?.css]}
                           ref={mergedSendRef}
                           onClick={(e) => {
                             slotProps?.send?.onClick?.(e);
@@ -1169,6 +1196,7 @@ export function VoiceRecorder({
                         size={size}
                         disabled={disabled}
                         {...slotProps?.record}
+                        css={[controlStyle, slotProps?.record?.css]}
                         ref={mergedRecordRef}
                         onClick={(e) => {
                           slotProps?.record?.onClick?.(e);
