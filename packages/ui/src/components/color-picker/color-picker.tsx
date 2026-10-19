@@ -143,12 +143,30 @@ export type ColorPickerProps = Omit<
 
 const panelStyle = css({
   display: 'grid',
-  gap: vars.space[3],
-  inlineSize: '19rem',
+  gap: vars.space[2],
+  inlineSize: 'min(30rem, calc(100vi - 2rem))',
+  maxInlineSize: 'calc(100vi - 2rem)',
   minInlineSize: 0,
-  maxInlineSize: `calc(100vi - ${vars.space[4]} * 2)`,
+  containerType: 'inline-size',
   color: vars.color.text,
+  '@media (min-width: 30rem)': { gap: vars.space[3] },
   '& button, & input, & [role="combobox"]': { minBlockSize: vars.space[8] },
+});
+const panelGridStyle = css({
+  display: 'grid',
+  gap: vars.space[4],
+  gridTemplateColumns: 'minmax(0, 1fr)',
+  alignItems: 'start',
+  '@container (min-width: 26rem)': {
+    gridTemplateColumns: 'minmax(0, 1.15fr) minmax(0, 1fr)',
+  },
+});
+const panelColumnStyle = css({
+  display: 'grid',
+  gap: vars.space[2],
+  alignContent: 'start',
+  minInlineSize: 0,
+  '@container (min-width: 26rem)': { gap: vars.space[3] },
 });
 const rowStyle = css({
   display: 'flex',
@@ -193,7 +211,8 @@ const triggerStyle = css({
 });
 const padStyle = css({
   position: 'relative',
-  blockSize: '10rem',
+  blockSize: '8rem',
+  '@container (min-width: 26rem)': { blockSize: '10rem' },
   touchAction: 'none',
   borderRadius: vars.radius.md,
   border: `1px solid ${vars.color.borderControl}`,
@@ -225,11 +244,16 @@ const paletteStyle = css({
 const optionStyle = css({
   minInlineSize: vars.space[8],
   minBlockSize: vars.space[8],
-  padding: vars.space[2],
+  padding: vars.space[1],
+  fontSize: vars.textSize.xs,
+  lineHeight: vars.lineHeight.tight,
+  textAlign: 'center',
   color: vars.color.text,
   backgroundColor: vars.color.surfaceInset,
   border: `1px solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.md,
+  overflowWrap: 'anywhere',
+  '@container (min-width: 26rem)': { padding: vars.space[2], fontSize: vars.textSize.sm },
   '&[aria-selected="true"]': { borderWidth: '2px' },
   '&:focus-visible': focusRingOutset,
 });
@@ -244,6 +268,10 @@ const noteStyle = css({
   overflowWrap: 'anywhere',
 });
 const checkerStyle = css({
+  display: 'inline-flex',
+  flexShrink: 0,
+  lineHeight: 0,
+  overflow: 'hidden',
   backgroundImage: `repeating-conic-gradient(${vars.color.colorPickerCheckerA} 0% 25%, ${vars.color.colorPickerCheckerB} 0% 50%)`,
   backgroundSize: `${vars.space[4]} ${vars.space[4]}`,
   borderRadius: vars.radius.md,
@@ -663,6 +691,8 @@ export function ColorPicker({
       <h3 id={`${id}-heading`} css={headingStyle}>
         {messages.dialog}
       </h3>
+      <div css={panelGridStyle}>
+        <div css={panelColumnStyle}>
       <FieldSlot
         element="div"
         component={slots?.pad}
@@ -733,6 +763,8 @@ export function ColorPicker({
           />
         </label>
       ))}
+        </div>
+        <div css={panelColumnStyle}>
       <Select
         label={messages.format}
         value={format}
@@ -805,6 +837,8 @@ export function ColorPicker({
         {isRenderable(icons?.save) && <span aria-hidden>{icons?.save}</span>}
         {messages.save}
       </Button>
+        </div>
+      </div>
       <FieldSlot
         element="div"
         component={slots?.swatches}
@@ -870,16 +904,16 @@ export function ColorPicker({
           },
           !activeId,
         )}
+        {eyeDropper &&
+          Dropper &&
+          action(
+            'eyeDropper',
+            () => {
+              void pickFromScreen();
+            },
+            !color,
+          )}
       </div>
-      {eyeDropper &&
-        Dropper &&
-        action(
-          'eyeDropper',
-          () => {
-            void pickFromScreen();
-          },
-          !color,
-        )}
       {dropperError && <span role="alert">{messages.eyeDropperError}</span>}
       <Button
         type="button"

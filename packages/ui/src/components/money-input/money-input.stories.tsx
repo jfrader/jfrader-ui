@@ -78,7 +78,9 @@ export const Sizes: Story = {
   play: async ({ canvasElement }) => {
     const inputs = within(canvasElement).getAllByRole('spinbutton');
     for (const [index, height] of [32, 40, 48].entries())
-      await expect(inputs[index]!.getBoundingClientRect().height).toBeGreaterThanOrEqual(height);
+      await expect(
+        inputs[index]!.parentElement!.getBoundingClientRect().height,
+      ).toBeGreaterThanOrEqual(height);
   },
 };
 /** Use the standard single-line editor. */
@@ -447,7 +449,7 @@ export const Keyboard: Story = {
     await expect(trigger.ownerDocument.activeElement).toBe(trigger);
     await userEvent.tab({ shift: true });
     await expect(input.ownerDocument.activeElement).toBe(input);
-    await expect(getComputedStyle(input).outlineStyle).not.toBe('none');
+    await expect(getComputedStyle(input.parentElement!).outlineStyle).not.toBe('none');
     fireEvent.compositionStart(input);
     await userEvent.keyboard('{ArrowUp}{Enter}');
     fireEvent.compositionEnd(input);
