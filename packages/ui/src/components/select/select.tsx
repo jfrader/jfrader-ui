@@ -61,8 +61,11 @@ import {
   listboxScrollStyle,
   listboxSurfaceStyle,
 } from '../../styling/listbox-style';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { fieldColumnStyle, type FieldLabelPlacement } from '../field/field-anatomy';
 import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
@@ -184,6 +187,7 @@ export interface SelectCompoundProps extends SelectBaseProps {
   options?: never;
   children?: ReactNode;
   label?: never;
+  labelPlacement?: never;
   description?: never;
   error?: never;
   placeholder?: never;
@@ -198,6 +202,8 @@ export interface SelectEasyProps extends SelectBaseProps {
   options: readonly SelectOption[];
   children?: never;
   label?: ReactNode;
+  /** Label placement. `hidden` keeps the accessible name without taking layout space. */
+  labelPlacement?: FieldLabelPlacement;
   description?: ReactNode;
   error?: ReactNode;
   placeholder?: ReactNode;
@@ -282,6 +288,28 @@ const selectTriggerStyle = css({
   },
 });
 
+// The trigger is a button, so it needs its own disclosure mark: a small CSS triangle pinned to
+// the inline end. It rotates while open and disappears under reduced motion.
+const selectCaretStyle = css({
+  '&::after': {
+    content: '""',
+    flexShrink: 0,
+    inlineSize: 0,
+    blockSize: 0,
+    marginInlineStart: 'auto',
+    borderInline: `${vars.space[1]} solid transparent`,
+    borderBlockStart: `${vars.space[1]} solid ${vars.color.textMuted}`,
+    transitionProperty: 'transform',
+    transitionDuration: vars.motion.duration.base,
+    transitionTimingFunction: vars.motion.easeStandard,
+  },
+  '&[aria-expanded="true"]::after': { transform: 'rotate(180deg)' },
+  [REDUCED_MOTION]: { '&::after': { transitionDuration: '0s' } },
+  [FORCED_COLORS]: {
+    '&::after': { forcedColorAdjust: 'none', borderBlockStartColor: 'CanvasText' },
+  },
+});
+
 const triggerSizes = {
   sm: css({ minBlockSize: vars.space[8] }),
   md: css({ minBlockSize: vars.space[10] }),
@@ -324,14 +352,6 @@ const selectEmptyStyle = css({
   paddingInline: vars.space[2],
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
-});
-
-const selectFieldStyle = css({
-  display: 'inline-flex',
-  flexDirection: 'column',
-  alignItems: 'flex-start',
-  gap: vars.space[1],
-  maxInlineSize: '100%',
 });
 
 const mergeIds = (...ids: Array<string | undefined>) => ids.filter(Boolean).join(' ') || undefined;
@@ -516,6 +536,7 @@ function SelectOverlay(props: SelectProps) {
     const {
       options: optionsList,
       label,
+      labelPlacement = 'above',
       description,
       error,
       placeholder,
@@ -552,7 +573,14 @@ function SelectOverlay(props: SelectProps) {
 
     const controlParts = (
       <>
-        {isRenderable(label) && <LabelPart {...slotProps?.label}>{label}</LabelPart>}
+        {isRenderable(label) &&
+          (labelPlacement === 'hidden' ? (
+            <span css={visuallyHiddenStyle}>
+              <LabelPart {...slotProps?.label}>{label}</LabelPart>
+            </span>
+          ) : (
+            <LabelPart {...slotProps?.label}>{label}</LabelPart>
+          ))}
         <TriggerPart size={size} {...slotProps?.trigger}>
           <ValuePart placeholder={placeholder} {...slotProps?.value} />
         </TriggerPart>
@@ -566,7 +594,7 @@ function SelectOverlay(props: SelectProps) {
     renderedContent = (
       <>
         {hasFieldAnatomy ? (
-          <WithSx className={rootClassName} styles={[selectFieldStyle, rootCss]} sx={rootSx}>
+          <WithSx className={rootClassName} styles={[fieldColumnStyle, rootCss]} sx={rootSx}>
             {(className) => (
               <RootPart
                 {...rootRest}
@@ -687,7 +715,17 @@ function SelectTrigger({
   };
 
   return (
-    <WithSx className={className} styles={[triggerStyle, selectTriggerStyle, triggerSizes[size], variant === 'morph' && morphTriggerStyle]} sx={sx}>
+    <WithSx
+      className={className}
+      styles={[
+        triggerStyle,
+        selectTriggerStyle,
+        selectCaretStyle,
+        triggerSizes[size],
+        variant === 'morph' && morphTriggerStyle,
+      ]}
+      sx={sx}
+    >
       {(className) => (
         <button
           type="button"

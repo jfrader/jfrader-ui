@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- `labelPlacement="hidden"` keeps a field's label as the control's accessible name without taking layout space. Available on TextField, Textarea, PasswordField, SearchField, TagInput, MentionInput, TimePicker, Combobox, Select and MultiSelect.
+
+### Fixed
+
+- Select and MultiSelect share one labeled-field layout, and Select triggers show a disclosure caret.
+- ShareAccess member rows share a uniform height, role pickers align on the control line, role labels stay available to assistive technology, and the surface fills its host. ShareSheet keeps the access picker at the end of the copy row while the "Copied" confirmation appears.
+
 ## 0.9.1
 
 ### Fixed

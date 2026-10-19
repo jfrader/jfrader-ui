@@ -1,12 +1,31 @@
-// Internal field anatomy shared by TextField, Textarea and PasswordField: root, label with
-// required marker, description and error parts plus their id wiring. Not exported from the
-// package index; each component keeps its own control element and control styles.
+// Internal field anatomy shared by the field components: root, label with required marker,
+// description and error parts plus their id wiring. Not exported from the package index; each
+// component keeps its own control element and control styles.
 import { useId, type AriaAttributes, type ComponentType, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import type { SxProps } from '../../styling/sx';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { FieldSlot, type FieldElementProps } from './field-slot';
+
+/**
+ * Where the field's label sits. `hidden` keeps the label as the control's accessible name but
+ * removes it from layout, so a labeled field is exactly as tall as its control.
+ */
+export type FieldLabelPlacement = 'above' | 'hidden';
+
+/**
+ * Column recipe for fields whose control is a button rather than a native input: Select and
+ * MultiSelect share it so their labeled boxes stay identical.
+ */
+export const fieldColumnStyle = css({
+  display: 'inline-flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[1],
+  maxInlineSize: '100%',
+});
 
 export interface FieldPartProps {
   [attribute: `data-${string}`]: unknown;
@@ -90,15 +109,24 @@ interface FieldLabelProps {
   id?: string;
   htmlFor: string;
   required?: boolean;
+  /** Visually hidden, still the accessible name. Removed from layout, not from the a11y tree. */
+  hidden?: boolean;
   part?: FieldElementProps<'label'>;
   component?: ComponentType<ComponentPropsWithRef<'label'>>;
   children: ReactNode;
 }
 
-export function FieldLabel({ id, htmlFor, required, part, component, children }: FieldLabelProps) {
+export function FieldLabel({ id, htmlFor, required, hidden, part, component, children }: FieldLabelProps) {
   if (!isRenderable(children)) return null;
   return (
-    <FieldSlot element="label" component={component} slotProps={part} id={id} htmlFor={htmlFor} styles={labelStyle}>
+    <FieldSlot
+      element="label"
+      component={component}
+      slotProps={part}
+      id={id}
+      htmlFor={htmlFor}
+      styles={[labelStyle, hidden && visuallyHiddenStyle]}
+    >
       {children}
       {required && (
         <span aria-hidden css={requiredMarkStyle}>

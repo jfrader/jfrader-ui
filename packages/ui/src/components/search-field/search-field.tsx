@@ -7,7 +7,13 @@ import { inputControlStyle } from '../../styling/input-control';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import type { SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { FieldDescription, FieldError, FieldLabel, useFieldAnatomy } from '../field/field-anatomy';
+import {
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  useFieldAnatomy,
+  type FieldLabelPlacement,
+} from '../field/field-anatomy';
 import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
 
 export type SearchFieldSize = 'sm' | 'md' | 'lg';
@@ -43,6 +49,8 @@ export interface SearchFieldProps
   defaultValue?: string;
   onValueChange?: (value: string) => void;
   label?: ReactNode;
+  /** Label placement. `hidden` keeps the accessible name without taking layout space. */
+  labelPlacement?: FieldLabelPlacement;
   description?: ReactNode;
   error?: ReactNode;
   size?: SearchFieldSize;
@@ -167,6 +175,7 @@ export function SearchField({
   defaultValue = '',
   onValueChange,
   label,
+  labelPlacement = 'above',
   description,
   error,
   size = 'md',
@@ -249,7 +258,13 @@ export function SearchField({
       dir={dir}
       className={className}
     >
-      <FieldLabel component={slots?.label} htmlFor={field.id} required={required} part={slotProps?.label}>
+      <FieldLabel
+        component={slots?.label}
+        htmlFor={field.id}
+        required={required}
+        hidden={labelPlacement === 'hidden'}
+        part={slotProps?.label}
+      >
         {label}
       </FieldLabel>
       <FieldSlot

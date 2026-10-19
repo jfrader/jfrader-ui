@@ -271,6 +271,7 @@ const rowStyle = css({
   flexWrap: 'wrap',
   alignItems: 'center',
   gap: vars.space[2],
+  minInlineSize: 0,
 });
 const titleStyle = css({
   margin: 0,
@@ -304,10 +305,13 @@ const copyStyle = css({
   whiteSpace: 'normal',
   overflowWrap: 'anywhere',
 });
-// Always laid out so the row keeps its geometry; only visibility changes.
+// Always laid out so the row keeps its geometry; only visibility changes. It is the flexible
+// middle of the row, which anchors the access picker to the inline end even while hidden.
 const copiedStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
+  flex: '1 1 auto',
+  minInlineSize: 0,
   gap: vars.space[1],
   overflowWrap: 'anywhere',
   color: vars.color.text,

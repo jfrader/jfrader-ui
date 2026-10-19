@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { expect, fn, within } from 'storybook/test';
+import { expect, fn, waitFor, within } from 'storybook/test';
+import { expectAligned } from '../../testing/geometry-assertions';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { Button } from '../button';
@@ -73,7 +74,38 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const invite = canvas.getByRole('button', { name: 'Invite' });
+    const inviteControl = invite.parentElement!.querySelector<HTMLElement>(
+      '[data-ui="select-trigger"]',
+    )!;
+    await expectAligned([invite, inviteControl], 'bottom');
+
+    const rows = canvasElement.querySelectorAll<HTMLElement>(
+      '[data-ui="share-access-member-list"] > li',
+    );
+    const ownerRow = rows[0]!;
+    const memberRow = rows[1]!;
+    const memberControl = memberRow.querySelector<HTMLElement>('[data-ui="select-trigger"]')!;
+    await expectAligned([memberRow, memberControl], 'center-y');
+    await expect(
+      Math.abs(ownerRow.getBoundingClientRect().height - memberRow.getBoundingClientRect().height),
+    ).toBeLessThanOrEqual(1);
+
+    const role = within(memberRow).getByRole('combobox', { name: 'Role for Sam Lee' });
+    await expect(role).toBeVisible();
+    await expect(role.getBoundingClientRect().height).toBe(40);
+    const roleLabel = memberRow.querySelector<HTMLElement>('[data-ui="select-label"]')!;
+    await expect(roleLabel.parentElement!.getBoundingClientRect().width).toBeLessThanOrEqual(1);
+
+    const access = canvasElement.querySelector<HTMLElement>(
+      '[data-ui="select-trigger"][data-share-control="access"]',
+    )!;
+    await expectAligned([access, access.parentElement!], 'right');
+  },
+};
 export const Light: Story = { globals: { theme: 'light' } };
 export const LinkAccess: Story = { args: { defaultAccess: 'link' } };
 export const EmptyMembers: Story = { args: { defaultValue: [] } };
@@ -287,9 +319,35 @@ function ConcurrentFixture() {
     </>
   );
 }
+async function expectRowsSettled(canvasElement: HTMLElement) {
+  const boxes = () =>
+    [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="share-access-member-list"] > li')].map(
+      (row) => row.getBoundingClientRect(),
+    );
+  await waitFor(
+    async () => {
+      const current = boxes();
+      const separated = current.every(
+        (box, index) => index === 0 || box.top >= current[index - 1]!.bottom - 1,
+      );
+      if (!separated) return false;
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      const next = boxes();
+      return next.every((box, index) => Math.abs(box.top - current[index]!.top) <= 0.5);
+    },
+    { timeout: 3000 },
+  );
+}
+
 export const ConcurrentUndo: Story = {
   tags: ['!autodocs'],
-  render: () => <ConcurrentFixture />,
+  render: () => (
+    <SharePanel>
+      <ConcurrentFixture />
+    </SharePanel>
+  ),
   parameters: {
     docs: {
       source: {
@@ -305,6 +363,7 @@ export const ConcurrentUndo: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await expect(canvas.getByRole('button', { name: 'Remove Sam Lee' })).toBeVisible();
     await expect(canvas.getByRole('button', { name: 'Remove new@example.com' })).toBeVisible();
+    await expectRowsSettled(canvasElement);
   },
 };
 

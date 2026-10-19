@@ -84,6 +84,17 @@ export const Default: Story = {
   },
 };
 
+export const HiddenLabel: Story = {
+  args: { label: 'Search', labelPlacement: 'hidden' },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByLabelText('Search');
+    await expect(input).toBeVisible();
+    await expect(input.getBoundingClientRect().height).toBe(40);
+    const label = canvasElement.querySelector('label')!;
+    await expect(label.getBoundingClientRect().width).toBeLessThanOrEqual(1);
+  },
+};
+
 export const WithDescription: Story = {
   args: { description: 'We only use it to send receipts.' },
   play: async ({ canvasElement }) => {
