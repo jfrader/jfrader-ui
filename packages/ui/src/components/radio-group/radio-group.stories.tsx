@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { Button } from '../button';
 import { RadioGroup, type RadioGroupOrientation, type RadioGroupCompoundProps as RadioGroupProps, type RadioGroupEasyProps } from './index';
 
 function ReplacementRadioLabel(props: ComponentPropsWithRef<'label'>) {
@@ -60,28 +61,25 @@ const meta = {
   component: RadioGroup,
   parameters: {
     docs: {
-      source: { language: 'tsx', code: `const plans = [
-  { value: 'free', label: 'Free', description: 'Up to 3 projects.' },
-  { value: 'pro', label: 'Pro', description: 'Unlimited projects.' },
-  { value: 'team', label: 'Team', description: 'Shared billing and roles.' },
-] as const;
-
-<RadioGroup label="Plan" options={plans} name="plan" defaultValue="free" />` },
+      sections: [
+        { title: 'Basic', stories: ['Easy'] },
+        { title: 'Labels', stories: ['Default', 'WithoutDescriptions'] },
+        { title: 'States', stories: ['DisabledOption', 'DisabledGroup'] },
+        { title: 'Required and invalid', stories: ['RequiredField'] },
+        { title: 'Orientation and forms', stories: ['Horizontal'] },
+        { title: 'Keyboard', stories: ['Keyboard'] },
+      ],
       description: { component: 'Choose one option from a group of radio buttons.' },
-      usage: `### Values
-- Use \`defaultValue\` for an initial selection. If you pass \`value\`, update it from \`onValueChange\`; selecting the already checked radio does not emit a change.
+      usage: `### When to use
+Use a radio group for one choice from a short, visible list. Use checkboxes when choices are independent.
 
 ### Forms
-- Set \`name\` to submit the selected radio's \`value\` under your field name. Without it, the group generates a shared input name.
-- In compound mode, supply \`aria-label\` or \`aria-labelledby\` on the group. In options mode, use \`label\` to generate the group label.
+Give form fields a stable name. Only the selected, enabled radio contributes a value. Put native required validation on the radio inputs; an invalid announcement alone does not enforce a selection.
 
-### Keyboard
-- Tab enters on the checked radio. Press an arrow key to move focus and selection, wrapping past disabled radios. Press Space to check the focused radio.
-- \`orientation\` defaults to \`vertical\` and changes layout, not the native key map. Both arrow pairs work in either orientation.
+### Keyboard and accessibility
+Name the group and each option. Tab enters on the checked radio; with no selection, the entry depends on the Tab direction. Arrow keys move focus and selection, wrapping and skipping disabled radios. Space selects the focused option.
 
-### Customization
-- Supply readonly \`options\` for the generated field, or children containing \`RadioGroup.Radio\` for custom anatomy. Do not mix the two modes.
-- In options mode, use \`slotProps\` for generated parts and \`slots\` to replace them. \`component\` is shorthand for \`slots.root\`; a replacement root must forward props and ref to one div.`,
+Both arrow pairs work in either layout. Selecting the checked radio leaves it selected. Supply either options or compound children, not both.`,
     },
   },
   argTypes: {
@@ -96,6 +94,16 @@ type Story = StoryObj<Omit<RadioGroupProps, 'component'>>;
 type EasyStory = StoryObj<Omit<RadioGroupEasyProps, 'component'>>;
 
 export const Easy: EasyStory = {
+  name: 'Choose a plan',
+  parameters: { docs: { description: { story: 'Choose a plan from labeled options with supporting descriptions.' }, source: { language: 'tsx', code: `import { RadioGroup } from '@jfrader/ui';
+
+const plans = [
+  { value: 'free', label: 'Free', description: 'Up to 3 projects.' },
+  { value: 'pro', label: 'Pro', description: 'Unlimited projects.' },
+  { value: 'team', label: 'Team', description: 'Shared billing and roles.' },
+];
+
+<RadioGroup label="Plan" options={plans} name="plan" defaultValue="free" />` } } },
   args: { label: 'Plan', options: OPTIONS, name: 'plan', defaultValue: 'free', onValueChange: fn() },
   render: (args) => <RadioGroup {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -122,9 +130,10 @@ function EasyControlledExample(args: RadioGroupEasyProps) {
     }} />
   );
 }
-export const EasyControlled: EasyStory = { ...Easy, render: (args) => <EasyControlledExample {...args} /> };
+export const EasyControlled: EasyStory = { ...Easy, name: 'Controlled options', render: (args) => <EasyControlledExample {...args} /> };
 export const EasyRejected: EasyStory = {
   ...Easy,
+  name: 'Rejected option change',
   args: { ...Easy.args, value: 'free' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('radio', { name: 'Pro' }));
@@ -136,6 +145,7 @@ export const EasyRejected: EasyStory = {
 };
 export const EasyKeyboard: EasyStory = {
   ...Easy,
+  name: 'Options keyboard navigation',
   args: { ...Easy.args, options: OPTIONS.map((option) => ({ ...option, disabled: option.value === 'pro' })) },
   play: async ({ canvas, userEvent, args }) => {
     const free = canvas.getByRole('radio', { name: 'Free' });
@@ -157,6 +167,7 @@ function EasyRoot(props: ComponentPropsWithRef<'div'>) {
 const StyledRadioGroup = styled(RadioGroup)({ borderRadius: vars.radius.sm });
 export const EasyCustomization: EasyStory = {
   ...Easy,
+  name: 'Options customization',
   parameters: { docs: { source: { code: `<RadioGroup label="Plan" options={plans} defaultValue="free"
   sx={{ borderRadius: 0 }}
   slotProps={{ label: { title: 'Plan label' }, radio: { slotProps: { control: { sx: { borderRadius: theme.radius.sm } } } } }}
@@ -244,7 +255,8 @@ const getGroup = (canvasElement: HTMLElement, name = 'Plan') =>
   within(within(canvasElement).getByRole('radiogroup', { name }));
 
 export const Default: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+  name: 'Compound field label',
+  parameters: { docs: { description: { story: 'Name a compound group with a visible field label.' }, source: { language: 'tsx', code: `import { useId } from 'react';
 import { RadioGroup } from '@jfrader/ui';
 
 function PlanField() {
@@ -279,6 +291,14 @@ function PlanField() {
 };
 
 export const WithoutDescriptions: Story = {
+  name: 'Labels only',
+  parameters: { docs: { description: { story: 'Keep short choices compact when they need no supporting text.' }, source: { language: 'tsx', code: `import { RadioGroup } from '@jfrader/ui';
+
+<RadioGroup aria-label="Plan">
+  <RadioGroup.Radio value="free" label="Free" />
+  <RadioGroup.Radio value="pro" label="Pro" />
+  <RadioGroup.Radio value="team" label="Team" />
+</RadioGroup>` } } },
   render: (args) => (
     <RadioGroup {...args} aria-label="Plan">
       {OPTIONS.map((option) => (
@@ -336,6 +356,14 @@ export const Controlled: Story = {
 };
 
 export const DisabledOption: Story = {
+  name: 'Unavailable option',
+  parameters: { docs: { description: { story: 'Keep Pro visible while keyboard navigation skips it.' }, source: { language: 'tsx', code: `import { RadioGroup } from '@jfrader/ui';
+
+<RadioGroup label="Plan" defaultValue="free" options={[
+  { value: 'free', label: 'Free', description: 'Up to 3 projects.' },
+  { value: 'pro', label: 'Pro', description: 'Unlimited projects.', disabled: true },
+  { value: 'team', label: 'Team', description: 'Shared billing and roles.' },
+]} />` } } },
   args: { defaultValue: 'free', onValueChange: fn() },
   render: (args) => <RadioExample {...args} disabledValue="pro" />,
   play: async ({ args, canvasElement }) => {
@@ -360,6 +388,14 @@ export const DisabledOption: Story = {
 };
 
 export const Horizontal: Story = {
+  name: 'Horizontal choices',
+  parameters: { docs: { description: { story: 'Arrange plans horizontally without changing native radio keyboard behavior.' }, source: { language: 'tsx', code: `import { RadioGroup } from '@jfrader/ui';
+
+<RadioGroup label="Plan" orientation="horizontal" defaultValue="free" options={[
+  { value: 'free', label: 'Free', description: 'Up to 3 projects.' },
+  { value: 'pro', label: 'Pro', description: 'Unlimited projects.' },
+  { value: 'team', label: 'Team', description: 'Shared billing and roles.' },
+]} />` } } },
   args: { defaultValue: 'free', orientation: 'horizontal' },
   render: (args) => <RadioExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -383,6 +419,14 @@ export const Horizontal: Story = {
 };
 
 export const Keyboard: Story = {
+  name: 'Keyboard navigation',
+  parameters: { docs: { description: { story: 'Tab into Pro, then use arrows to change both focus and selection.' }, source: { language: 'tsx', code: `import { RadioGroup } from '@jfrader/ui';
+
+<RadioGroup label="Plan" defaultValue="pro" options={[
+  { value: 'free', label: 'Free', description: 'Up to 3 projects.' },
+  { value: 'pro', label: 'Pro', description: 'Unlimited projects.' },
+  { value: 'team', label: 'Team', description: 'Shared billing and roles.' },
+]} />` } } },
   args: { defaultValue: 'pro', onValueChange: fn() },
   render: (args) => <RadioExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -426,6 +470,14 @@ export const LightTheme: Story = {
 };
 
 export const DisabledGroup: Story = {
+  name: 'Unavailable group',
+  parameters: { docs: { description: { story: 'Disable every plan while retaining the current selection.' }, source: { language: 'tsx', code: `import { RadioGroup } from '@jfrader/ui';
+
+<RadioGroup label="Plan" disabled defaultValue="free" options={[
+  { value: 'free', label: 'Free', description: 'Up to 3 projects.' },
+  { value: 'pro', label: 'Pro', description: 'Unlimited projects.' },
+  { value: 'team', label: 'Team', description: 'Shared billing and roles.' },
+]} />` } } },
   args: { defaultValue: 'free', disabled: true },
   render: (args) => <RadioExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -438,6 +490,46 @@ export const DisabledGroup: Story = {
     }
     await userEvent.tab();
     expect(radios).not.toContain(canvasElement.ownerDocument.activeElement);
+  },
+};
+
+export const RequiredField: Story = {
+  name: 'Required plan in a form',
+  parameters: { docs: { description: { story: 'Connect a missing-selection message to a required plan field.' }, source: { language: 'tsx', code: `import { useId } from 'react';
+import { Button, RadioGroup } from '@jfrader/ui';
+
+function PlanForm() {
+  const errorId = useId();
+  return (
+    <form>
+      <RadioGroup name="plan" aria-label="Plan" aria-required="true" aria-invalid="true" aria-describedby={errorId}>
+        <RadioGroup.Radio value="free" label="Free" required />
+        <RadioGroup.Radio value="pro" label="Pro" required />
+      </RadioGroup>
+      <p id={errorId}>Choose a plan.</p>
+      <Button type="submit">Continue</Button>
+    </form>
+  );
+}` } } },
+  render: function RequiredPlan() {
+    const errorId = useId();
+    return (
+      <form>
+        <RadioGroup name="plan" aria-label="Plan" aria-required="true" aria-invalid="true" aria-describedby={errorId}>
+          <RadioGroup.Radio value="free" label="Free" required />
+          <RadioGroup.Radio value="pro" label="Pro" required />
+        </RadioGroup>
+        <p id={errorId}>Choose a plan.</p>
+        <Button type="submit">Continue</Button>
+      </form>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const form = canvasElement.querySelector('form')!;
+    await expect(form.checkValidity()).toBe(false);
+    await userEvent.click(within(canvasElement).getByRole('radio', { name: 'Pro' }));
+    await expect(form.checkValidity()).toBe(true);
+    await expect(new FormData(form).get('plan')).toBe('pro');
   },
 };
 

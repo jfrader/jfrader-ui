@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { Button } from '../button';
 import { Checkbox, type CheckboxProps, type CheckboxSize } from './index';
 
 const SIZES = ['sm', 'md'] as const satisfies readonly CheckboxSize[];
@@ -43,16 +44,25 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Turn an option on or off, or show that only some items are selected.' },
-      usage: `### Values
-- Use \`defaultChecked\` for an uncontrolled initial state. If you pass \`checked\`, update it from \`onCheckedChange\`; the callback receives a boolean after \`onChange\`.
-- Activation does not clear \`indeterminate\`. Clear that prop yourself when the selection should leave the mixed state.
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Selection', stories: ['Checked', 'Indeterminate', 'Controlled'] },
+        { title: 'Labels and descriptions', stories: ['WithDescription'] },
+        { title: 'States', stories: ['Disabled'] },
+        { title: 'Groups and forms', stories: ['PreferencesForm'] },
+        { title: 'Keyboard', stories: ['Keyboard'] },
+      ],
+      usage: `### When to use
+Use a checkbox for independent choices or consent in a form. Use a switch for a setting that takes effect immediately.
+
+### Mixed selection
+The mixed state represents a partially selected group. Activation does not clear it; update the parent selection and clear the mixed state together.
 
 ### Forms
-- Pass \`name\` and \`value\` to submit the native input's value when checked. An unchecked or disabled checkbox contributes no value.
-- If you omit \`label\`, supply \`aria-label\` or \`aria-labelledby\` to name the input.
+Only checked, enabled inputs contribute values to form submission. Group related choices under a fieldset legend.
 
-### Keyboard
-- Tab to the checkbox and press Space to toggle it. Set \`disabled\` to prevent changes and remove it from the tab order.`,
+### Keyboard and accessibility
+Give each checkbox an accessible name, even without a visible label. Tab focuses enabled checkboxes; Space toggles the focused choice. Disabled choices cannot change and are skipped by Tab.`,
     },
   },
   args: { label: 'Email me updates', size: 'md' },
@@ -83,6 +93,10 @@ function ControlledCheckbox(props: CheckboxProps) {
 ControlledCheckbox.displayName = 'ControlledCheckbox';
 
 export const Default: Story = {
+  name: 'Email updates',
+  parameters: { docs: { description: { story: 'Toggle an independent email preference.' }, source: { language: 'tsx', code: `import { Checkbox } from '@jfrader/ui';
+
+<Checkbox label="Email me updates" size="md" />` } } },
   play: async ({ canvasElement }) => {
     const checkbox = within(canvasElement).getByRole('checkbox', { name: 'Email me updates' });
     await expect(checkbox).not.toBeChecked();
@@ -90,6 +104,9 @@ export const Default: Story = {
 };
 
 export const Checked: Story = {
+  parameters: { docs: { description: { story: 'Start with the email preference selected.' }, source: { language: 'tsx', code: `import { Checkbox } from '@jfrader/ui';
+
+<Checkbox label="Email me updates" defaultChecked />` } } },
   args: { defaultChecked: true },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('checkbox')).toBeChecked();
@@ -97,6 +114,10 @@ export const Checked: Story = {
 };
 
 export const Indeterminate: Story = {
+  name: 'Partially selected',
+  parameters: { docs: { description: { story: 'Show a mixed selection; activation leaves it mixed until the parent clears it.' }, source: { language: 'tsx', code: `import { Checkbox } from '@jfrader/ui';
+
+<Checkbox label="Select all" indeterminate />` } } },
   args: { indeterminate: true, label: 'Select all' },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByRole('checkbox') as HTMLInputElement;
@@ -110,6 +131,10 @@ export const Indeterminate: Story = {
 };
 
 export const WithDescription: Story = {
+  name: 'Label and description',
+  parameters: { docs: { description: { story: 'Add supporting text that is announced with the checkbox.' }, source: { language: 'tsx', code: `import { Checkbox } from '@jfrader/ui';
+
+<Checkbox label="Email me updates" description="One email a month, no more." />` } } },
   args: { description: 'One email a month, no more.' },
   play: async ({ canvasElement }) => {
     const checkbox = within(canvasElement).getByRole('checkbox', { name: 'Email me updates' });
@@ -142,7 +167,8 @@ export const BooleanNodes: Story = {
 };
 
 export const Controlled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  name: 'Controlled selection',
+  parameters: { docs: { description: { story: 'Keep the email preference in application state.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { Checkbox } from '@jfrader/ui';
 
 function EmailUpdates() {
@@ -165,6 +191,10 @@ function EmailUpdates() {
 };
 
 export const Keyboard: Story = {
+  name: 'Keyboard navigation',
+  parameters: { docs: { description: { story: 'Tab to the checkbox, then press Space to toggle it.' }, source: { language: 'tsx', code: `import { Checkbox } from '@jfrader/ui';
+
+<Checkbox label="Email me updates" />` } } },
   args: { onCheckedChange: fn() },
   play: async ({ args, canvasElement }) => {
     const input = within(canvasElement).getByRole('checkbox');
@@ -179,12 +209,45 @@ export const Keyboard: Story = {
 };
 
 export const Disabled: Story = {
+  parameters: { docs: { description: { story: 'Keep an unavailable preference visible without allowing changes.' }, source: { language: 'tsx', code: `import { Checkbox } from '@jfrader/ui';
+
+<Checkbox label="Email me updates" disabled />` } } },
   args: { disabled: true, onCheckedChange: fn() },
   play: async ({ args, canvasElement }) => {
     const checkbox = within(canvasElement).getByRole('checkbox');
     await expect(checkbox).toBeDisabled();
     await userEvent.click(checkbox);
     await expect(args.onCheckedChange).not.toHaveBeenCalled();
+  },
+};
+
+export const PreferencesForm: Story = {
+  name: 'Preferences form',
+  parameters: { docs: { description: { story: 'Group independent preferences and submit only the checked values.' }, source: { language: 'tsx', code: `import { Button, Checkbox } from '@jfrader/ui';
+
+<form>
+  <fieldset>
+    <legend>Email preferences</legend>
+    <Checkbox label="Product updates" name="emails" value="product" defaultChecked />
+    <Checkbox label="Community news" name="emails" value="community" />
+  </fieldset>
+  <Button type="submit">Save preferences</Button>
+</form>` } } },
+  render: () => (
+    <form>
+      <fieldset>
+        <legend>Email preferences</legend>
+        <Checkbox label="Product updates" name="emails" value="product" defaultChecked />
+        <Checkbox label="Community news" name="emails" value="community" />
+      </fieldset>
+      <Button type="submit">Save preferences</Button>
+    </form>
+  ),
+  play: async ({ canvasElement }) => {
+    const form = canvasElement.querySelector('form')!;
+    await expect(new FormData(form).getAll('emails')).toEqual(['product']);
+    await userEvent.click(within(canvasElement).getByRole('checkbox', { name: 'Community news' }));
+    await expect(new FormData(form).getAll('emails')).toEqual(['product', 'community']);
   },
 };
 

@@ -43,33 +43,28 @@ const meta = {
   component: ToggleGroup,
   parameters: {
     docs: {
-      source: { language: 'tsx', code: `const views = [
-  { value: 'list', label: 'List' },
-  { value: 'grid', label: 'Grid' },
-  { value: 'board', label: 'Board', disabled: true },
-  { value: 'table', label: 'Table' },
-] as const;
-
-<ToggleGroup label="View" options={views} defaultValue="list" />` },
+      sections: [
+        { title: 'Basic', stories: ['Easy'] },
+        { title: 'Single and multiple selection', stories: ['SingleAllowEmpty', 'Multiple'] },
+        { title: 'Orientation', stories: ['Vertical'] },
+        { title: 'States', stories: ['DisabledGroup'] },
+        { title: 'Composition', stories: ['Single'] },
+        { title: 'Keyboard', stories: ['EasyKeyboard'] },
+      ],
       description: { component: 'Choose one or more options from a group of toggle buttons.' },
-      usage: `### Choosing a component
-- Use ToggleGroup for the APG toolbar pattern with single or multiple selection and horizontal or vertical orientation. Use SegmentedControl to pick one visual state on a track.
+      usage: `### When to use
+Use toggle buttons for related view or formatting choices. Use SegmentedControl to pick one visual state on a track, or radios for a mutually exclusive form field.
 
-### Values
-- \`type\` defaults to \`single\`, which takes a string. Activating the pressed item keeps it pressed unless you set \`allowEmpty\`; clearing then reports \`''\`. Give every item a nonempty value.
-- Set \`type="multiple"\` to toggle items independently. Use an array for \`value\` or \`defaultValue\`; \`onValueChange\` reports values in activation order.
-- If you pass \`value\`, update it from \`onValueChange\` to apply requests. Use \`defaultValue\` when the group should own its selection.
+### Selection constraints
+Give every item a nonempty value. Single selection keeps the pressed item selected unless clearing is allowed. Multiple selection toggles choices independently and reports them in activation order. Supply either options or compound children, not both.
 
-### Keyboard
-- Tab enters the group's single tab stop. Horizontal arrows move focus and reverse in RTL; set \`orientation="vertical"\` to use Up and Down instead. Navigation wraps and skips disabled items.
-- Press Home or End to focus an edge item. Focus does not select; press Space or Enter to toggle the focused item.
+### Keyboard and accessibility
+Name the group and every button. Tab enters the group's single tab stop. Horizontal arrows move focus and reverse in RTL; vertical groups use Up and Down instead. Navigation wraps and skips disabled items.
+
+Home and End focus the edge items. Focus does not select; press Space or Enter to toggle the focused item.
 
 ### Forms
-- The items are buttons, not form inputs. If you need to submit the selection, control \`value\` and serialize it in your form.
-
-### Customization
-- Supply readonly \`options\` for the generated group, or children containing \`ToggleGroup.Item\` for custom anatomy. Do not mix them. Supply \`label\` or \`aria-labelledby\` to name the group.
-- In options mode, use \`slotProps\` for generated parts and \`slots\` to replace them. \`component\` is shorthand for \`slots.root\`; a replacement root must forward props and ref to one div.`,
+The items are buttons, not form inputs. Serialize the selection yourself when submitting a form.`,
     },
   },
   argTypes: {
@@ -103,6 +98,17 @@ type EasyStory = Omit<StoryObj<ToggleGroupProps>, 'args' | 'render' | 'play'> & 
 const views = VIEWS.map((option) => ({ ...option, disabled: option.value === 'board' }));
 const easyArgs = { label: 'View', options: views, defaultValue: 'list', onValueChange: fn() };
 export const Easy: EasyStory = {
+  name: 'Choose a view',
+  parameters: { docs: { description: { story: 'Choose one view while keeping the unavailable Board option visible.' }, source: { language: 'tsx', code: `import { ToggleGroup } from '@jfrader/ui';
+
+const views = [
+  { value: 'list', label: 'List' },
+  { value: 'grid', label: 'Grid' },
+  { value: 'board', label: 'Board', disabled: true },
+  { value: 'table', label: 'Table' },
+];
+
+<ToggleGroup label="View" options={views} defaultValue="list" />` } } },
   args: easyArgs,
   render: (args) => <ToggleGroup {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -126,9 +132,10 @@ function EasyControlledExample(args: EasyProps) {
     }} />
   );
 }
-export const EasyControlled: EasyStory = { ...Easy, render: (args) => <EasyControlledExample {...args} /> };
+export const EasyControlled: EasyStory = { ...Easy, name: 'Controlled options', render: (args) => <EasyControlledExample {...args} /> };
 export const EasyRejected: EasyStory = {
   ...Easy, args: { ...easyArgs, value: 'list' },
+  name: 'Rejected option change',
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Grid' }));
     await expect(canvas.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
@@ -139,6 +146,7 @@ export const EasyRejected: EasyStory = {
 };
 export const EasyMultiple: EasyStory = {
   ...Easy, args: { type: 'multiple', label: 'View', options: views, defaultValue: ['list'], onValueChange: fn() },
+  name: 'Multiple options',
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Grid' }));
     await expect(canvas.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
@@ -149,6 +157,7 @@ export const EasyMultiple: EasyStory = {
 };
 export const EasyAllowEmpty: EasyStory = {
   ...Easy, args: { ...easyArgs, allowEmpty: true },
+  name: 'Options allow empty',
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'List' }));
     await expect(canvas.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'false');
@@ -158,6 +167,15 @@ export const EasyAllowEmpty: EasyStory = {
 };
 export const EasyKeyboard: EasyStory = {
   ...Easy,
+  name: 'Keyboard navigation',
+  parameters: { docs: { description: { story: 'Use arrows to move past Board, then Space or Enter to select a view.' }, source: { language: 'tsx', code: `import { ToggleGroup } from '@jfrader/ui';
+
+<ToggleGroup label="View" defaultValue="list" options={[
+  { value: 'list', label: 'List' },
+  { value: 'grid', label: 'Grid' },
+  { value: 'board', label: 'Board', disabled: true },
+  { value: 'table', label: 'Table' },
+]} />` } } },
   play: async ({ canvas, userEvent, args }) => {
     const list = canvas.getByRole('button', { name: 'List' });
     const table = canvas.getByRole('button', { name: 'Table' });
@@ -176,6 +194,7 @@ export const EasyKeyboard: EasyStory = {
 };
 export const EasyRTL: EasyStory = {
   ...Easy, args: { ...easyArgs, dir: 'rtl' },
+  name: 'Options in RTL',
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{ArrowLeft}');
@@ -193,6 +212,7 @@ function EasyRoot(props: ComponentPropsWithRef<'div'>) {
 }
 export const EasyCustomization: EasyStory = {
   ...Easy,
+  name: 'Options customization',
   parameters: { docs: { source: { code: `<ToggleGroup label="View" options={views} defaultValue="list"
   slotProps={{ root: { title: 'View selector' }, item: { sx: { borderRadius: 0 } } }}
 />` } } },
@@ -282,7 +302,15 @@ function expectPressed(canvasElement: HTMLElement, pressed: readonly boolean[]) 
 }
 
 export const Single: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: '<ToggleGroup label="View" defaultValue="list">\n  <ToggleGroup.Item value="list">List</ToggleGroup.Item>\n  <ToggleGroup.Item value="grid">Grid</ToggleGroup.Item>\n  <ToggleGroup.Item value="board">Board</ToggleGroup.Item>\n  <ToggleGroup.Item value="table">Table</ToggleGroup.Item>\n</ToggleGroup>' } } },
+  name: 'Compound toggle buttons',
+  parameters: { docs: { description: { story: 'Compose a single-selection view picker from individual buttons.' }, source: { language: 'tsx', code: `import { ToggleGroup } from '@jfrader/ui';
+
+<ToggleGroup label="View" defaultValue="list">
+  <ToggleGroup.Item value="list">List</ToggleGroup.Item>
+  <ToggleGroup.Item value="grid">Grid</ToggleGroup.Item>
+  <ToggleGroup.Item value="board">Board</ToggleGroup.Item>
+  <ToggleGroup.Item value="table">Table</ToggleGroup.Item>
+</ToggleGroup>` } } },
   args: { defaultValue: 'list', onValueChange: fn() },
   render: (args) => <ToggleGroupExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -326,6 +354,15 @@ export const SingleArrayControlledValue: Story = {
 };
 
 export const SingleAllowEmpty: Story = {
+  name: 'Allow no selection',
+  parameters: { docs: { description: { story: 'Activate the selected view again to clear the selection.' }, source: { language: 'tsx', code: `import { ToggleGroup } from '@jfrader/ui';
+
+<ToggleGroup label="View" defaultValue="list" allowEmpty>
+  <ToggleGroup.Item value="list">List</ToggleGroup.Item>
+  <ToggleGroup.Item value="grid">Grid</ToggleGroup.Item>
+  <ToggleGroup.Item value="board">Board</ToggleGroup.Item>
+  <ToggleGroup.Item value="table">Table</ToggleGroup.Item>
+</ToggleGroup>` } } },
   args: { defaultValue: 'list', allowEmpty: true, onValueChange: fn() },
   render: (args) => <ToggleGroupExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -345,6 +382,14 @@ export const SingleAllowEmpty: Story = {
 };
 
 export const Multiple: Story = {
+  name: 'Multiple text styles',
+  parameters: { docs: { description: { story: 'Toggle Bold, Italic, and Underline independently.' }, source: { language: 'tsx', code: `import { ToggleGroup } from '@jfrader/ui';
+
+<ToggleGroup label="Text style" type="multiple" defaultValue={['bold']}>
+  <ToggleGroup.Item value="bold">Bold</ToggleGroup.Item>
+  <ToggleGroup.Item value="italic">Italic</ToggleGroup.Item>
+  <ToggleGroup.Item value="underline">Underline</ToggleGroup.Item>
+</ToggleGroup>` } } },
   args: { type: 'multiple', defaultValue: ['bold'], onValueChange: fn() },
   render: (args) => <ToggleGroupExample {...args} options={FORMATS} label="Text style" />,
   play: async ({ args, canvasElement }) => {
@@ -446,6 +491,15 @@ export const KeyboardRtl: Story = {
 };
 
 export const Vertical: Story = {
+  name: 'Vertical view picker',
+  parameters: { docs: { description: { story: 'Stack view buttons and navigate with Up and Down.' }, source: { language: 'tsx', code: `import { ToggleGroup } from '@jfrader/ui';
+
+<ToggleGroup label="View" orientation="vertical" defaultValue="grid">
+  <ToggleGroup.Item value="list">List</ToggleGroup.Item>
+  <ToggleGroup.Item value="grid">Grid</ToggleGroup.Item>
+  <ToggleGroup.Item value="board">Board</ToggleGroup.Item>
+  <ToggleGroup.Item value="table">Table</ToggleGroup.Item>
+</ToggleGroup>` } } },
   args: { defaultValue: 'grid', orientation: 'vertical' },
   render: (args) => <ToggleGroupExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -462,6 +516,15 @@ export const Vertical: Story = {
 };
 
 export const DisabledGroup: Story = {
+  name: 'Unavailable group',
+  parameters: { docs: { description: { story: 'Keep the current view visible while disabling all changes.' }, source: { language: 'tsx', code: `import { ToggleGroup } from '@jfrader/ui';
+
+<ToggleGroup label="View" disabled defaultValue="list">
+  <ToggleGroup.Item value="list">List</ToggleGroup.Item>
+  <ToggleGroup.Item value="grid">Grid</ToggleGroup.Item>
+  <ToggleGroup.Item value="board">Board</ToggleGroup.Item>
+  <ToggleGroup.Item value="table">Table</ToggleGroup.Item>
+</ToggleGroup>` } } },
   args: { defaultValue: 'list', disabled: true },
   render: (args) => <ToggleGroupExample {...args} />,
   play: async ({ canvasElement }) => {
