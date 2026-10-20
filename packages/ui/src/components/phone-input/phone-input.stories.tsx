@@ -18,25 +18,31 @@ const meta = {
   args: { label: 'Phone number', defaultCountry: 'GB', locale: 'en-GB' },
   decorators: [(Story) => <Stack><Story /></Stack>],
   parameters: { docs: {
-    description: { component: 'Enter a telephone number and choose its country. Paste an international number to select its country when the calling code and metadata identify one.' },
-    usage: `### Values
-- Store the first argument of onValueChange. It is a plus-prefixed candidate and can be incomplete. Check details.valid before using it as a valid E.164 number. Metadata validation does not verify ownership or deliverability.
-- Number, country and picker open state are independent controlled axes. Rejected requests retain the accepted display and focus. Country selection requests country, then reinterprets the national number once, then requests close.
-- An explicit country that disagrees with an international number keeps the international display and is invalid. Shared calling codes do not imply a country until metadata identifies one.
-- Incomplete national candidates preserve a typed trunk prefix until the number can be normalized. There is no digit cap. Extensions, non-geographic numbers and unsupported punctuation are rejected without discarding accepted digits.
-### Keyboard
-- Enter, Space or either vertical arrow on the country button opens the picker. Letters start a country search. Plus in the number field opens calling-code search.
-- Search uses virtual listbox focus: arrows move one row, PageUp/PageDown move eight, and Home/End move to an endpoint only when search is empty. Navigation clamps at the endpoints.
-- Enter selects. Escape closes and returns to the country button. Tab, Shift+Tab and outside press close without restoring focus.
-- Backspace/Delete beside a formatting separator remove the adjacent digit. Range selection keeps native editing behavior. Composition and modifier chords are not intercepted.
-### Forms
-- name belongs to the hidden canonical input. Disabled fields do not contribute to FormData. required checks a nonempty visible input, not metadata validity.
-- Validation runs on field exit by default; error can supply application feedback. Empty optional values are not invalid. Reset requests the seeded number, country and open state in that order, including controlled axes.
-### Localization and limits
-- Supply locale and messages for localized copy, including result-count callbacks. Country names come from Intl.DisplayNames. An explicit locale is recommended for deterministic SSR.
-- Use TextField with type="tel" for unrestricted telephone text. This component excludes extensions and non-geographic calling codes.
-- Screen-reader smoke testing and mobile telephone autofill remain manual verification gates. ForcedColors and ReducedMotion stories require the corresponding browser preference.`,
-    source: { code: `<PhoneInput label="Phone number" defaultCountry="GB" name="phone"\n  preferredCountries={['GB', 'IE']}\n  onValueChange={(value, details) => saveDraft(value, details.valid)} />`, language: 'tsx' },
+    description: { component: 'Enter a telephone number and choose its country.' },
+    sections: [
+      { title: 'Basic', stories: ['Default', 'Controlled'] },
+      { title: 'Country picker and search', stories: ['CountrySearch', 'Restricted', 'NoCountry'] },
+      { title: 'Formatting', stories: ['InternationalPaste', 'Valid'] },
+      { title: 'Incomplete numbers and validation', stories: ['Incomplete', 'Error'] },
+      { title: 'States', stories: ['Disabled', 'ReadOnly', 'Required'] },
+      { title: 'Forms', stories: ['FormReset'] },
+      { title: 'Right-to-left', stories: ['RTL'] },
+      { title: 'Keyboard', stories: ['KeyboardNavigation'] },
+    ],
+    usage: `### When to use
+Collect a telephone number with a country and national formatting. Use a TextField with type="tel" for unrestricted telephone text, extensions or non-geographic calling codes.
+
+### Constraints and validation
+An incomplete number is still an editable draft, not a valid E.164 number. Metadata validation does not verify ownership or deliverability. Validation runs on field exit by default; empty optional numbers are not invalid. Required checks nonempty text, not metadata validity.
+
+Pasting an international number selects a country only when its calling code and metadata identify one. Shared calling codes alone do not identify a country. A number that disagrees with an explicit country remains international and invalid. Incomplete national numbers retain typed trunk prefixes until they can be normalized. There is no digit cap; unsupported punctuation, extensions and non-geographic numbers are rejected without discarding accepted digits.
+
+### Keyboard and accessibility
+Enter, Space or a vertical arrow on the country button opens search. Letters start a country search; plus in the number field starts a calling-code search. Arrows move one result, PageUp/PageDown move eight, and Home/End reach endpoints when search is empty. Navigation does not wrap; Enter selects.
+
+Escape closes and returns focus to the country button. Tab, Shift+Tab and outside press close without restoring focus. Backspace/Delete beside formatting separators remove the adjacent digit; range selection, composition and modifier chords retain native editing behavior.
+
+Supply localized messages and an explicit locale for deterministic server rendering. Country names use Intl.DisplayNames. In RTL layouts, the number stays left-to-right. Check screen-reader announcements and mobile telephone autofill in your application.`,
   } },
 } satisfies Meta<typeof PhoneInput>;
 export default meta;
@@ -85,6 +91,13 @@ export const PanelPlacement: Story = {
   },
 };
 export const Default: Story = {
+  name: 'Enter a phone number',
+  parameters: { docs: {
+    description: { story: 'Enter a national number or choose another country before typing.' },
+    source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry="GB" locale="en-GB" />` },
+  } },
   play: async ({ canvas }) => {
     const input = canvas.getByRole('textbox', { name: 'Phone number' });
     await expect(input).toHaveAttribute('type', 'tel');
@@ -119,6 +132,21 @@ export const Sizes: Story = {
   },
 };
 export const Controlled: Story = {
+  name: 'Keep a number draft',
+  parameters: { docs: {
+    description: { story: 'Keep number, country and picker state in your application as the number is edited.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { PhoneInput, type PhoneCountryCode } from '@jfrader/ui';
+
+export function ContactPhone() {
+  const [value, setValue] = useState('');
+  const [country, setCountry] = useState<PhoneCountryCode | null>('GB');
+  const [open, setOpen] = useState(false);
+  return <PhoneInput label="Phone number" locale="en-GB" defaultCountry="GB"
+    value={value} onValueChange={setValue} country={country}
+    onCountryChange={setCountry} open={open} onOpenChange={setOpen} />;
+}` },
+  } },
   render: (args) => <ControlledExample {...args} />, args: { onValueChange: fn(), onChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('textbox');
@@ -131,6 +159,13 @@ export const Controlled: Story = {
 };
 export const CountryControlled: Story = { render: (args) => <CountryExample {...args} /> };
 export const InternationalPaste: Story = {
+  name: 'Paste an international number',
+  parameters: { docs: {
+    description: { story: 'Paste +44 20 7946 0018 to select the United Kingdom and apply national formatting.' },
+    source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry={null} locale="en-GB" />` },
+  } },
   args: { defaultCountry: null, onValueChange: fn(), onCountryChange: fn(), onPaste: fn() },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('textbox');
@@ -146,7 +181,17 @@ export const InternationalPaste: Story = {
   },
 };
 /** Restrict the picker to countries accepted by your service. */
-export const Restricted: Story = { args: { countries: ['GB', 'IE', 'FR'], preferredCountries: ['GB'] } };
+export const Restricted: Story = {
+  name: 'Limit available countries',
+  parameters: { docs: {
+    description: { story: 'Choose from the United Kingdom, Ireland and France, with the United Kingdom suggested first.' },
+    source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry="GB" locale="en-GB"
+  countries={['GB', 'IE', 'FR']} preferredCountries={['GB']} />` },
+  } },
+  args: { countries: ['GB', 'IE', 'FR'], preferredCountries: ['GB'] },
+};
 /** Suggested countries appear once, before the remaining countries. */
 export const Preferred: Story = {
   args: { preferredCountries: ['IE', 'GB', 'IE'], defaultOpen: true }, tags: ['!autodocs'],
@@ -157,7 +202,17 @@ export const Preferred: Story = {
     await expect(page.getByRole('group', { name: 'Suggested countries' })).toBeVisible();
   },
 };
-export const NoCountry: Story = { args: { defaultCountry: null, description: 'Choose a country or paste an international number.' } };
+export const NoCountry: Story = {
+  name: 'Start without a country',
+  parameters: { docs: {
+    description: { story: 'Choose a country explicitly or paste an international number to begin.' },
+    source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry={null} locale="en-GB"
+  description="Choose a country or paste an international number." />` },
+  } },
+  args: { defaultCountry: null, description: 'Choose a country or paste an international number.' },
+};
 export const EmptyCountries: Story = { args: { countries: [], defaultCountry: null, defaultOpen: true }, tags: ['!autodocs'],
   play: async ({ canvasElement }) => {
     await settleMotion(portal(canvasElement).getByRole('dialog', { name: 'Countries' }));
@@ -166,11 +221,57 @@ export const EmptyCountries: Story = { args: { countries: [], defaultCountry: nu
   },
 };
 export const Disabled: Story = { args: { disabled: true, defaultValue: '+442079460018', name: 'phone' }, render: (args) => <ResetExample {...args} />,
+  name: 'Disabled number',
+  parameters: { docs: {
+    description: { story: 'Show a disabled number that is omitted from form submission.' },
+    source: { language: 'tsx', code: `import { PhoneInput, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Form = styled.form({ display: 'grid', gap: vars.space[3] });
+const Action = styled.button({ font: 'inherit', color: vars.color.text,
+  backgroundColor: vars.color.surfaceRaised, border: \`1px solid \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.sm, minBlockSize: vars.space[8], paddingInline: vars.space[3] });
+
+<Form aria-label="Contact">
+  <PhoneInput label="Phone number" locale="en-GB" defaultCountry="GB"
+    defaultValue="+442079460018" name="phone" disabled />
+  <Action type="reset">Reset</Action>
+</Form>` },
+  } },
   play: async ({ canvas }) => { await expect(new FormData(canvas.getByRole('form', { name: 'Contact' }) as HTMLFormElement).has('phone')).toBe(false); },
 };
-export const ReadOnly: Story = { args: { readOnly: true, defaultValue: '+442079460018' } };
-export const Required: Story = { args: { required: true }, play: async ({ canvas }) => { await expect(canvas.getByRole('textbox')).toBeRequired(); } };
-export const Error: Story = { args: { defaultValue: '+4420', description: 'Include an area code.', error: 'Check the telephone number.' } };
+export const ReadOnly: Story = {
+  name: 'Read-only number',
+  parameters: { docs: {
+    description: { story: 'Keep an existing number readable without allowing changes.' },
+    source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry="GB" locale="en-GB"
+  defaultValue="+442079460018" readOnly />` },
+  } },
+  args: { readOnly: true, defaultValue: '+442079460018' },
+};
+export const Required: Story = {
+  name: 'Required number',
+  parameters: { docs: {
+    description: { story: 'Require a nonempty number before form submission; validate the number separately.' },
+    source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry="GB" locale="en-GB" required />` },
+  } },
+  args: { required: true }, play: async ({ canvas }) => { await expect(canvas.getByRole('textbox')).toBeRequired(); },
+};
+export const Error: Story = {
+  name: 'Application validation feedback',
+  parameters: { docs: {
+    description: { story: 'Show an application error beside an incomplete number and its field description.' },
+    source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry="GB" locale="en-GB"
+  defaultValue="+4420" description="Include an area code." error="Check the telephone number." />` },
+  } },
+  args: { defaultValue: '+4420', description: 'Include an area code.', error: 'Check the telephone number.' },
+};
 export const BlurInvalid: Story = {
   args: { defaultValue: '+4420' },
   render: (args) => <><PhoneInput {...args} /><Action>Continue</Action></>,
@@ -184,7 +285,17 @@ export const BlurInvalid: Story = {
 export const ValidationOff: Story = { ...BlurInvalid, args: { validateOnBlur: false, defaultValue: '+4420' }, play: async ({ canvas, userEvent }) => {
   await userEvent.click(canvas.getByRole('textbox')); await userEvent.click(canvas.getByRole('button', { name: 'Continue' })); await expect(canvas.queryByRole('alert')).toBeNull();
 } };
-export const Valid: Story = { args: { defaultValue: '+442079460018' }, play: async ({ canvas }) => { await expect(canvas.getByRole('status')).toHaveTextContent('Valid phone number for United Kingdom'); } };
+export const Valid: Story = {
+  name: 'Format a stored international number',
+  parameters: { docs: {
+    description: { story: 'Display a stored E.164 number in national format with validity feedback.' },
+    source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry="GB" locale="en-GB"
+  defaultValue="+442079460018" />` },
+  } },
+  args: { defaultValue: '+442079460018' }, play: async ({ canvas }) => { await expect(canvas.getByRole('status')).toHaveTextContent('Valid phone number for United Kingdom'); },
+};
 export const HiddenLabel: Story = { args: { hideLabel: true } };
 export const ExternalAria: Story = {
   args: { label: 'Phone', description: 'Include an area code.', error: 'Check this number.', 'aria-describedby': 'phone-help', 'aria-labelledby': 'phone-contact', 'aria-invalid': 'grammar' },
@@ -220,7 +331,13 @@ export const ScopedThemePortal: Story = { args: { defaultOpen: true }, tags: ['!
 } };
 export const RTL: Story = { args: { dir: 'rtl', defaultValue: '+442079460018' }, play: async ({ canvas }) => {
   const input = canvas.getByRole('textbox'); await expect(input).toHaveAttribute('dir', 'ltr'); await expect(getComputedStyle(input.closest('[data-ui="phone-input"]')!).direction).toBe('rtl');
-} };
+}, name: 'Right-to-left layout', parameters: { docs: {
+  description: { story: 'Place the country control in an RTL layout while keeping the number left-to-right.' },
+  source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry="GB" locale="en-GB"
+  defaultValue="+442079460018" dir="rtl" />` },
+} } };
 /** Enable Windows forced colors to check the control borders and active-option outline. */
 export const ForcedColors: Story = { args: { defaultOpen: true }, tags: ['!autodocs'] };
 /** Enable reduced motion to remove the picker fade. Focus and selection remain immediate. */
@@ -289,6 +406,23 @@ export const RejectedCountryAndClose: Story = {
   },
 };
 export const FormReset: Story = {
+  name: 'Reset a contact form',
+  parameters: { docs: {
+    description: { story: 'Edit the number or country, then reset both to the stored contact details.' },
+    source: { language: 'tsx', code: `import { PhoneInput, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Form = styled.form({ display: 'grid', gap: vars.space[3] });
+const Action = styled.button({ font: 'inherit', color: vars.color.text,
+  backgroundColor: vars.color.surfaceRaised, border: \`1px solid \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.sm, minBlockSize: vars.space[8], paddingInline: vars.space[3] });
+
+<Form aria-label="Contact">
+  <PhoneInput label="Phone number" locale="en-GB" defaultCountry="GB"
+    defaultValue="+442079460018" name="phone" />
+  <Action type="reset">Reset</Action>
+</Form>` },
+  } },
   render: (args) => <ResetExample {...args} />, args: { defaultValue: '+442079460018', name: 'phone', onValueChange: fn(), onCountryChange: fn(), onOpenChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     const form = canvas.getByRole('form', { name: 'Contact' }) as HTMLFormElement;
@@ -405,4 +539,39 @@ export const OutsideAndBackwardTab: Story = {
     await expect(portal(canvasElement).queryByRole('combobox')).toBeNull();
     await expect(trigger.ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'After phone' }));
   },
+};
+
+export const CountrySearch: Story = {
+  name: 'Search countries and calling codes',
+  args: { preferredCountries: ['IE', 'GB'] },
+  parameters: { docs: {
+    description: { story: 'Open the country picker and search by country name or calling code.' },
+    source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry="GB" locale="en-GB"
+  preferredCountries={['IE', 'GB']} />` },
+  } },
+};
+
+export const Incomplete: Story = {
+  name: 'Continue an incomplete number',
+  args: { defaultValue: '+4420' },
+  parameters: { docs: {
+    description: { story: 'Continue editing an incomplete national number, then leave the field to check validity.' },
+    source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry="GB" locale="en-GB" defaultValue="+4420" />` },
+  } },
+};
+
+export const KeyboardNavigation: Story = {
+  name: 'Choose a country with the keyboard',
+  args: { countries: ['GB', 'FR', 'IE'] },
+  parameters: { docs: {
+    description: { story: 'Tab to the country button, open with Enter, move with arrows and select with Enter.' },
+    source: { language: 'tsx', code: `import { PhoneInput } from '@jfrader/ui';
+
+<PhoneInput label="Phone number" defaultCountry="GB" locale="en-GB"
+  countries={['GB', 'FR', 'IE']} />` },
+  } },
 };

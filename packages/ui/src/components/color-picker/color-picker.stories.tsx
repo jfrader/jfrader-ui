@@ -61,6 +61,22 @@ const ThemeFrame = styled.div({
   backgroundColor: vars.color.bg,
   padding: vars.space[4],
 });
+const messagesSource = `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
+
+const messages: ColorPickerMessages = {
+  dialog: 'Choose a color', saturation: 'Saturation', value: 'Value', hue: 'Hue',
+  opacity: 'Opacity', format: 'Format', color: 'Color',
+  invalid: 'Enter a HEX, RGB, HSL or OKLCH color.',
+  gamutWarning: 'Mapped to the sRGB gamut. The original OKLCH color is not preserved.',
+  save: 'Save color', savedColors: 'Saved colors', movePrevious: 'Move previous',
+  moveNext: 'Move next', remove: 'Remove color', eyeDropper: 'Pick from screen',
+  eyeDropperError: 'Could not read the screen color.', done: 'Done', empty: 'No valid color',
+  grades: { aaa: 'AAA normal text', aa: 'AA normal text',
+    large: 'AA large text only', fail: 'Below AA text thresholds' },
+  contrast: (ratio, grade) => \`\${ratio}:1 — \${grade}\`,
+  result: (hex, contrast) => contrast ? \`Color: \${hex}. \${contrast}\` : \`Color: \${hex}\`,
+  swatch: (hex, label) => label ? \`\${label} \${hex}\` : hex,
+};`;
 const meta = {
   title: 'Inputs/ColorPicker',
   component: ColorPicker,
@@ -80,36 +96,63 @@ const meta = {
         component:
           'Choose a color, adjust its channels and save colors for later.',
       },
-      usage: `### Values
-Pass a controlled \`value\` or an uncontrolled \`defaultValue\`. Accepts HEX, RGB, HSL and OKLCH syntax. Changes emit uppercase sRGB #RRGGBB or #RRGGBBAA; equivalent colors emit no change. Controlled requests do not update the committed color until accepted. Open, format and saved colors have independent controlled/default pairs. Do not switch modes.
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Formats', stories: ['EveryFormat'] },
+        { title: 'Saved colors', stories: ['SavedColors', 'Capacity'] },
+        { title: 'Transparency', stories: ['Transparent'] },
+        { title: 'Contrast feedback', stories: ['CustomBackground'] },
+        { title: 'Dialog', stories: ['ControlledDialog'] },
+        { title: 'States', stories: ['Disabled', 'UnsupportedInput', 'Required'] },
+        { title: 'Keyboard', stories: ['KeyboardNavigation'] },
+      ],
+      usage: `### When to use
+Let people choose a custom color, adjust channels or reuse saved colors. Use a fixed set of choices instead when arbitrary colors are not allowed.
 
-Out-of-gamut colors use Culori perceptual sRGB mapping in OKLCH. The warning reports mapping, not preservation of the original color. Channel editing retains precision between hex emissions. Achromatic hue edits retain editing intent.
+### Constraints
+Color text must use HEX, RGB, HSL or OKLCH syntax with ASCII decimal points, not named colors or CSS variables. Out-of-gamut colors are mapped to sRGB; the original OKLCH color is not preserved. Required marks the field but does not enforce color validation.
 
-### Contrast
-Supply an opaque \`background\` to show the WCAG luminance ratio after foreground alpha compositing. Missing, invalid or translucent backgrounds hide the result. Categories use the unrounded ratio: 7 AAA normal text, 4.5 AA normal text, 3 AA large text. This evaluates this color pair for text, not the accessibility of a whole interface.
+Contrast feedback needs an opaque background and includes foreground transparency. It evaluates this color pair for text, not the accessibility of a whole interface. Missing, invalid or translucent backgrounds hide the result. Saved colors evict the oldest entry at capacity. Screen color picking depends on browser support.
 
-### Keyboard
-The picker is a modal dialog: focus moves inside on open, Tab stays in the dialog, Escape closes and focus returns to the trigger. Saturation and Value are separate native sliders, not a two-dimensional ARIA slider. Arrows step by one, Shift+arrows and PageUp/Down by ten, Home/End reach bounds. Inline arrows follow RTL; the visual pad remains left-to-right.
+### Keyboard and accessibility
+Opening moves focus into a modal dialog. Tab and Shift+Tab stay inside; closing restores trigger focus. Enter or blur commits valid text; invalid text stays visible. Escape discards a dirty draft first, then closes. Done and format changes validate before proceeding.
 
-Enter or blur commits valid text. Invalid text remains visible. Escape first discards a dirty draft, then closes the dialog and restores trigger focus after acceptance. Done validates before closing. Format changes validate first.
+Saturation and Value are separate sliders. Arrows step by one; Shift+arrows and PageUp/PageDown by ten; Home/End reach bounds. Inline arrows follow RTL while the visual pad remains left-to-right.
 
-Saved colors use a horizontal listbox: arrows, Home and End move focus without selecting; Enter/Space applies. Alt+inline arrows reorder; Delete/Backspace removes. Move and Remove buttons offer the same actions. Saving at capacity evicts the oldest. IDs must be unique.
-
-### Forms and environments
-\`name\` adds a canonical hidden field; disabled fields are omitted. Invalid external values serialize as an empty value, never invalid text. Reset restores uncontrolled seeds; controlled axes receive explicit reset requests when a default is supplied. Read-only allows inspection but blocks edits. Required is semantic and does not enforce color validation.
-
-The optional eyedropper is feature-detected, preserves alpha and ignores stale results. Provide every message and formatter for your locale; CSS syntax always uses ASCII decimal points. Test sliders with touch assistive technology before production. Screen-reader, forced-colors and reduced-motion manual checks are not yet recorded for this component.`,
-      source: {
-        code: '<ColorPicker label="Accent" defaultValue="#A78BFF" background="#08090A" messages={colorMessages} onValueChange={saveAccent} />',
-      },
+Saved-color arrows and Home/End move focus without selecting; Enter/Space applies a color. Alt+inline arrows reorder; Delete/Backspace removes. Move and Remove buttons offer the same actions. Provide localized messages and test sliders with touch assistive technology.`,
     },
   },
 } satisfies Meta<typeof ColorPicker>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  name: 'Choose an accent color',
+  parameters: { docs: {
+    description: { story: 'Open the picker to adjust an accent color or enter a color value.' },
+    source: { language: 'tsx', code: `${messagesSource}
+
+<ColorPicker label="Accent" defaultValue="#A78BFF" messages={messages} />` },
+  } },
+};
 export const EveryFormat: Story = {
+  name: 'Edit HEX, RGB, HSL and OKLCH',
+  parameters: { docs: {
+    description: { story: 'Open each picker to edit the same color in a different format.' },
+    source: { language: 'tsx', code: `${messagesSource}
+
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Formats = styled.div({ display: 'grid', gap: vars.space[4] });
+
+<Formats>
+  {(['hex', 'rgb', 'hsl', 'oklch'] as const).map(format => (
+    <ColorPicker key={format} label={format.toUpperCase()} defaultValue="#A78BFF"
+      defaultFormat={format} messages={messages} />
+  ))}
+</Formats>` },
+  } },
   render: (args) => (
     <Grid>
       {(['hex', 'rgb', 'hsl', 'oklch'] as const).map((format) => (
@@ -124,8 +167,10 @@ export const EveryFormat: Story = {
   ),
 };
 export const Transparent: Story = {
+  name: 'Adjust opacity',
   parameters: {
     docs: {
+      description: { story: 'Adjust a translucent accent and compare it against a dark background.' },
       source: {
         language: 'tsx',
         code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
@@ -199,7 +244,7 @@ const messages: ColorPickerMessages = {
 };
 
 <ColorPicker label="Accent" defaultValue="#808080" messages={messages} />` } } }, args: { defaultValue: '#808080' } };
-export const CustomBackground: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
+export const CustomBackground: Story = { name: 'Check text contrast', parameters: { docs: { description: { story: 'Compare the selected color with white to read its contrast ratio and text grade.' }, source: { language: 'tsx', code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
 
 const messages: ColorPickerMessages = {
   dialog: 'Choose a color',
@@ -232,7 +277,7 @@ const messages: ColorPickerMessages = {
 };
 
 <ColorPicker label="Accent" defaultValue="#A78BFF" background="#FFFFFF" messages={messages} />` } } }, args: { background: '#FFFFFF' } };
-export const SavedColors: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { ColorPicker, type ColorPickerMessages, type ColorSwatch } from '@jfrader/ui';
+export const SavedColors: Story = { name: 'Reuse saved colors', parameters: { docs: { description: { story: 'Apply a saved swatch, save the current color or remove a swatch.' }, source: { language: 'tsx', code: `import { ColorPicker, type ColorPickerMessages, type ColorSwatch } from '@jfrader/ui';
 
 const messages: ColorPickerMessages = {
   dialog: 'Choose a color',
@@ -272,8 +317,10 @@ const palette: ColorSwatch[] = [
 
 <ColorPicker label="Accent" defaultValue="#A78BFF" defaultSwatches={palette} messages={messages} />` } } }, args: { defaultSwatches: palette } };
 export const Capacity: Story = {
+  name: 'Limit saved colors',
   parameters: {
     docs: {
+      description: { story: 'Save a fourth color to replace the oldest of three saved swatches.' },
       source: {
         language: 'tsx',
         code: `import { ColorPicker, type ColorPickerMessages, type ColorSwatch } from '@jfrader/ui';
@@ -329,8 +376,10 @@ export const OutOfGamut: Story = {
   tags: ['!autodocs'],
 };
 export const UnsupportedInput: Story = {
+  name: 'Unsupported color text',
   parameters: {
     docs: {
+      description: { story: 'Open an invalid initial color and enter HEX, RGB, HSL or OKLCH text to replace it.' },
       source: {
         language: 'tsx',
         code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
@@ -372,7 +421,7 @@ const messages: ColorPickerMessages = {
   args: { defaultValue: 'currentColor' },
 };
 export const NoBackground: Story = {};
-export const Disabled: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
+export const Disabled: Story = { name: 'Disabled picker', parameters: { docs: { description: { story: 'Keep the current accent visible without allowing the picker to open.' }, source: { language: 'tsx', code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
 
 const messages: ColorPickerMessages = {
   dialog: 'Choose a color',
@@ -410,8 +459,10 @@ export const ReadOnly: Story = {
   tags: ['!autodocs'],
 };
 export const Required: Story = {
+  name: 'Required accent',
   parameters: {
     docs: {
+      description: { story: 'Mark an accent as required and give it a field description.' },
       source: {
         language: 'tsx',
         code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
@@ -999,4 +1050,43 @@ export const UncontrolledReset: Story = {
     await userEvent.click(canvas.getByRole('button', { name: /^Accent/ }));
     await expect(page.getAllByRole('option')).toHaveLength(3);
   },
+};
+
+function AccentDialog() {
+  const [open, setOpen] = useState(false);
+  return <ColorPicker label="Accent" defaultValue="#A78BFF" messages={messages}
+    open={open} onOpenChange={setOpen} />;
+}
+
+export const ControlledDialog: Story = {
+  name: 'Control the color dialog',
+  render: () => <AccentDialog />,
+  parameters: { docs: {
+    description: { story: 'Open and close the modal while keeping its open state in your application.' },
+    source: { language: 'tsx', code: `${messagesSource}
+
+import { useState } from 'react';
+
+export function AccentDialog() {
+  const [open, setOpen] = useState(false);
+  return <ColorPicker label="Accent" defaultValue="#A78BFF" messages={messages}
+    open={open} onOpenChange={setOpen} />;
+}` },
+  } },
+};
+
+export const KeyboardNavigation: Story = {
+  name: 'Navigate sliders and saved colors',
+  args: { defaultValue: '#FF0000', defaultSwatches: palette },
+  parameters: { docs: {
+    description: { story: 'Open with Enter, Tab to the sliders or swatches, and use arrow keys to adjust or navigate.' },
+    source: { language: 'tsx', code: `${messagesSource}
+
+<ColorPicker label="Accent" defaultValue="#FF0000" messages={messages}
+  defaultSwatches={[
+    { id: 'violet', color: '#A78BFF', label: 'Violet' },
+    { id: 'white', color: '#FFFFFF', label: 'White' },
+    { id: 'black', color: '#000000', label: 'Black' },
+  ]} />` },
+  } },
 };
