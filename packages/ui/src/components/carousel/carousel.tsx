@@ -231,9 +231,11 @@ const rootStyle = css({
   inlineSize: '100%',
   minInlineSize: 0,
   display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
   gap: vars.space[3],
   fontFamily: vars.font.sans,
   color: vars.color.text,
+  overflowWrap: 'anywhere',
   '&:focus-visible': focusRingOutset,
 });
 

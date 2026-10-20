@@ -33,7 +33,7 @@ const Frame = styled.div({
   maxInlineSize: '100%',
   padding: vars.space[4],
 });
-const NarrowFrame = styled.div({ inlineSize: '18rem' });
+const NarrowFrame = styled.div({ inlineSize: '18rem', maxInlineSize: '100%' });
 const CardRoot = styled.div({
   display: 'grid',
   alignContent: 'end',
@@ -83,6 +83,7 @@ const meta = {
     ),
   ],
   parameters: {
+    layout: 'padded',
     docs: {
       sections: [
         { title: 'Basic', stories: ['Default', 'NamedSlides'] },
@@ -2233,7 +2234,9 @@ export const LongContent: Story = {
   name: 'Long slide content',
   args: {
     children: [
-      <SuiteCard key="harbour" name="Harbour suite" detail="Balcony over the marina, sleeps two. The kitchen opens onto a dining area with room for a quiet breakfast. Follow the waterfront path to the market, or take the ferry from the nearby pier. Step-free access is available from the courtyard entrance." />,
+      <SuiteCard key="harbour" name="Harbour suite" detail="Balcony over the marina, sleeps two. The kitchen opens onto a dining area with room for a quiet breakfast. Follow the waterfront path to the market, or take the ferry from the nearby pier. Step-free access is available from the courtyard entrance.">
+        <span>{'HARBOUR'.repeat(24)}</span>
+      </SuiteCard>,
       <SuiteCard key="garden" name="Garden suite" detail="Ground floor, opens onto the lemon trees. The sheltered terrace has a table for two and a reading chair. A separate kitchen and a walk-in shower make this suite suitable for a longer stay. The entrance is beside the garden gate." />,
     ],
   },
@@ -2255,6 +2258,7 @@ const SlideText = styled.p({ margin: 0, color: vars.color.textMuted });
   <SlideCard key="harbour">
     <SlideTitle>Harbour suite</SlideTitle>
     <SlideText>Balcony over the marina, sleeps two. The kitchen opens onto a dining area with room for a quiet breakfast. Follow the waterfront path to the market, or take the ferry from the nearby pier. Step-free access is available from the courtyard entrance.</SlideText>
+    <span>{'HARBOUR'.repeat(24)}</span>
   </SlideCard>
   <SlideCard key="garden">
     <SlideTitle>Garden suite</SlideTitle>
@@ -2262,6 +2266,11 @@ const SlideText = styled.p({ margin: 0, color: vars.color.textMuted });
   </SlideCard>
 </Carousel>` },
   } },
+  play: async ({ canvasElement }) => {
+    const slide = slidesOf(canvasElement)[0]!;
+    await expect(slide.scrollWidth).toBeLessThanOrEqual(slide.clientWidth + 1);
+    await expectCentred(canvasElement, 0);
+  },
 };
 
 export const Narrow: Story = {
@@ -2351,6 +2360,9 @@ const SUITES = [
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const viewport = viewportOf(canvasElement).getBoundingClientRect();
+    const root = canvas.getByRole('region').getBoundingClientRect();
+    await expect(viewport.width).toBeLessThanOrEqual(root.width + 1);
+    await expect(root.right).toBeLessThanOrEqual(canvasElement.getBoundingClientRect().right + 1);
     await expect(slidesOf(canvasElement)[0]!.getBoundingClientRect().width).toBeLessThanOrEqual(viewport.width + 1);
     const targets = [...canvas.getAllByRole('tab'), ...canvas.getAllByRole('button')];
     for (const target of targets) {
@@ -2371,6 +2383,17 @@ const SUITES = [
     const lastBox = last.getBoundingClientRect();
     await expect(lastBox.right).toBeLessThanOrEqual(list.right + 1);
     await expect(lastBox.left).toBeGreaterThanOrEqual(list.left - 1);
+    const frame = canvas.getByRole('region').parentElement!.parentElement!;
+    const originalWidth = frame.style.inlineSize;
+    frame.style.inlineSize = '14rem';
+    try {
+      await waitFor(async () => {
+        const bounds = frame.getBoundingClientRect();
+        await expect(canvas.getByRole('region').getBoundingClientRect().right).toBeLessThanOrEqual(bounds.right + 1);
+      });
+    } finally {
+      frame.style.inlineSize = originalWidth;
+    }
   },
 };
 
