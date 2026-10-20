@@ -76,6 +76,33 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} />;
+}`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('region', { name: 'Announcements' })).toBeVisible();
@@ -89,7 +116,34 @@ export const Default: Story = {
     );
   },
 };
-export const Inverted: Story = { args: { variant: 'inverted' } };
+export const Inverted: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} variant="inverted" />;
+}`,
+      },
+    },
+  }, args: { variant: 'inverted' } };
 export const AllTones: Story = {
   render: (args) => (
     <Stack>
@@ -100,6 +154,33 @@ export const AllTones: Story = {
   ),
 };
 export const Single: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={[messages[0]!]} autoPlay />;
+}`,
+      },
+    },
+  },
   args: { messages: [messages[0]!], autoPlay: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -110,6 +191,33 @@ export const Single: Story = {
   },
 };
 export const MultipleManual: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} />;
+}`,
+      },
+    },
+  },
   play: async ({ canvasElement, args, userEvent }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Previous announcement' }));
@@ -129,6 +237,29 @@ export const AutoPlayWithPause: Story = {
   args: { autoPlay: true, controls: false, interval: 60000 },
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} autoPlay controls={false} interval={60000} />;
+}`,
+      },
       description: {
         story:
           'Reduced motion disables rotation, so this play skips when that preference is set. See Reduced Motion for that case.',
@@ -189,9 +320,95 @@ export const Dismissible: Story = {
     });
   },
 };
-export const NonDismissible: Story = { args: { dismissible: false } };
-export const PersistentOpen: Story = { args: { open: true } };
+export const NonDismissible: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} dismissible={false} />;
+}`,
+      },
+    },
+  }, args: { dismissible: false } };
+export const PersistentOpen: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} open />;
+}`,
+      },
+    },
+  }, args: { open: true } };
 export const Countdown: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const clock = () => NOW;
+
+export function Example() {
+  return (
+    <AnnouncementBar
+      messages={[
+        {
+          id: 'deadline',
+          message: 'Registration closes soon.',
+          countdown: {
+            target: NOW + 60000,
+            clock,
+            label: 'Registration deadline',
+            units: ['minutes', 'seconds'],
+          },
+        },
+      ]}
+      live="polite"
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     live: 'polite',
     messages: [
@@ -217,10 +434,64 @@ export const Countdown: Story = {
   },
 };
 export const LightTheme: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} />;
+}`,
+      },
+    },
+  },
   decorators: [withLightTheme],
   globals: { theme: 'light' },
 };
 export const InvertedLight: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} variant="inverted" />;
+}`,
+      },
+    },
+  },
   ...LightTheme,
   args: { variant: 'inverted' },
 };
@@ -266,6 +537,43 @@ export const Empty: Story = {
   },
 };
 export const RTL: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return (
+    <AnnouncementBar
+      messages={messages}
+      dir="rtl"
+      locale="ar"
+      label="Announcements"
+      getMessageLabel={(index, total) =>
+        \`\${new Intl.NumberFormat('ar').format(index + 1)} / \${new Intl.NumberFormat('ar').format(total)}\`
+      }
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     dir: 'rtl',
     locale: 'ar',
@@ -281,6 +589,29 @@ export const ReducedMotion: Story = {
   args: { autoPlay: true, defaultPaused: true },
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} autoPlay defaultPaused />;
+}`,
+      },
       description: {
         story:
           'Enable reduced motion in the browser. Autoplay should stop and collapse should happen without animation. This example shows the paused state.',
@@ -291,6 +622,29 @@ export const ReducedMotion: Story = {
 export const ForcedColors: Story = {
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} />;
+}`,
+      },
       description: {
         story:
           'Enable forced colors in the browser to check system colors on controls and borders.',
@@ -304,6 +658,33 @@ export const ForcedColors: Story = {
 };
 
 export const Keyboard: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} autoPlay interval={60000} />;
+}`,
+      },
+    },
+  },
   args: { autoPlay: true, interval: 60000 },
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -342,6 +723,33 @@ export const Keyboard: Story = {
   },
 };
 export const ControlledRejects: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} open value={0} paused autoPlay />;
+}`,
+      },
+    },
+  },
   args: { open: true, value: 0, paused: true, autoPlay: true },
   play: async ({ canvasElement, args, userEvent }) => {
     const canvas = within(canvasElement);
@@ -489,6 +897,62 @@ function SlotContent(props: ComponentPropsWithRef<'div'>) {
 
 // The slot API takes `css` values, so this story keeps the documented spelling.
 export const Slots: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { type ComponentPropsWithRef } from 'react';
+import { AnnouncementBar } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+function SlotRoot(props: ComponentPropsWithRef<'section'>) {
+  return <section {...props} data-slot="announcement-bar-root" />;
+}
+
+function SlotContent(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="announcement-bar-content" />;
+}
+
+function SlotNext(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-slot="announcement-bar-next" />;
+}
+
+function SlotPrevious(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-slot="announcement-bar-previous" />;
+}
+
+export function Example() {
+  return (
+    <AnnouncementBar
+      messages={messages}
+      slots={{ root: SlotRoot, content: SlotContent, next: SlotNext, previous: SlotPrevious }}
+      slotProps={{
+        root: { css: { paddingInline: vars.space[2] } },
+        message: { css: { fontWeight: vars.fontWeight.semibold } },
+        next: { css: { borderRadius: 0 } },
+      }}
+      sx={{ paddingInline: vars.space[4] }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     slots: { root: SlotRoot, content: SlotContent, next: SlotNext, previous: SlotPrevious },
     slotProps: {
@@ -530,6 +994,32 @@ export const Slots: Story = {
   },
 };
 export const NativeLink: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+export function Example() {
+  return (
+    <AnnouncementBar
+      messages={[
+        {
+          id: 'link',
+          message: 'Read the release notes.',
+          action: {
+            label: 'Release notes',
+            href: '#release-notes',
+            onClick: (event) => event.preventDefault(),
+          },
+        },
+      ]}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     messages: [
       {
@@ -557,6 +1047,33 @@ export const NativeLink: Story = {
   },
 };
 export const InvalidInputs: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return <AnnouncementBar messages={messages} value={Infinity} interval={NaN} autoPlay paused />;
+}`,
+      },
+    },
+  },
   args: { value: Infinity, interval: NaN, autoPlay: true, paused: true },
   play: async ({ canvasElement }) => {
     await waitFor(async () => {
@@ -675,6 +1192,40 @@ export const RotationTiming: Story = {
 };
 
 export const RefAttachment: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return (
+    <AnnouncementBar
+      messages={messages}
+      ref={(element) => {
+        console.info(element);
+      }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { ref: fn() },
   play: async ({ canvasElement, args }) => {
     await expect(args.ref).toHaveBeenCalled();
@@ -685,6 +1236,38 @@ export const RefAttachment: Story = {
   },
 };
 export const ActionVeto: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  {
+    id: 'release',
+    message: 'The new workspace is ready.',
+    action: {
+      label: 'Explore workspace',
+      onClick: () => {
+        console.info('Action selected');
+      },
+    },
+  },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+export function Example() {
+  return (
+    <AnnouncementBar
+      messages={messages}
+      slotProps={{ action: { onClick: (event) => event.preventDefault() } }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     slotProps: { action: { onClick: (event) => event.preventDefault() } },
   },
@@ -694,6 +1277,32 @@ export const ActionVeto: Story = {
   },
 };
 export const InvalidCountdown: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AnnouncementBar } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const clock = () => NOW;
+
+export function Example() {
+  return (
+    <AnnouncementBar
+      messages={[
+        {
+          id: 'invalid',
+          message: 'Deadline unavailable.',
+          countdown: { target: 'invalid', clock },
+        },
+      ]}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     messages: [
       {

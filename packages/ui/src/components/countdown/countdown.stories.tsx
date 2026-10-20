@@ -85,6 +85,22 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return <Countdown target={NOW + 90061000} initialNow={NOW} clock={fixedClock} locale="en" />;
+}`,
+      },
+    },
+  },
   play: async ({ canvasElement, args }) => {
     const timer = within(canvasElement).getByRole('timer', {
       name: 'Time remaining',
@@ -96,8 +112,56 @@ export const Default: Story = {
     await expect(args.onComplete).not.toHaveBeenCalled();
   },
 };
-export const Display: Story = { args: { variant: 'display' } };
+export const Display: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return (
+    <Countdown
+      target={NOW + 90061000}
+      initialNow={NOW}
+      clock={fixedClock}
+      locale="en"
+      variant="display"
+    />
+  );
+}`,
+      },
+    },
+  }, args: { variant: 'display' } };
 export const Compact: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return (
+    <Countdown
+      target={NOW + 90061000}
+      initialNow={NOW}
+      clock={fixedClock}
+      locale="en"
+      variant="compact"
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { variant: 'compact' },
   play: async ({ canvasElement }) => {
     await expect(
@@ -106,6 +170,30 @@ export const Compact: Story = {
   },
 };
 export const HoursMinutes: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return (
+    <Countdown
+      target={NOW + 90061000}
+      initialNow={NOW}
+      clock={fixedClock}
+      locale="en"
+      units={['hours', 'minutes']}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { units: ['hours', 'minutes'], target: NOW + 90061000 },
   play: async ({ canvasElement }) => {
     await expect(queryPart(within(canvasElement).getByRole('timer'), 'content')).toHaveTextContent(
@@ -114,6 +202,30 @@ export const HoursMinutes: Story = {
   },
 };
 export const SecondsOnly: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return (
+    <Countdown
+      target={NOW + 60000}
+      initialNow={NOW}
+      clock={fixedClock}
+      locale="en"
+      units={['seconds']}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { units: ['seconds'], target: NOW + 60000 },
   play: async ({ canvasElement }) => {
     await expect(
@@ -128,6 +240,30 @@ export const SecondsOnly: Story = {
   },
 };
 export const SparseUnits: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return (
+    <Countdown
+      target={NOW + 90061000}
+      initialNow={NOW}
+      clock={fixedClock}
+      locale="en"
+      units={['seconds', 'days', 'seconds']}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { units: ['seconds', 'days', 'seconds'], target: NOW + 90061000 },
   play: async ({ canvasElement }) => {
     const groups = within(canvasElement)
@@ -139,9 +275,51 @@ export const SparseUnits: Story = {
   },
 };
 export const MoreThan99Days: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return (
+    <Countdown target={NOW + 1000 * 86400000} initialNow={NOW} clock={fixedClock} locale="en" />
+  );
+}`,
+      },
+    },
+  },
   args: { target: NOW + 1000 * 86400000 },
 };
 export const Complete: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return (
+    <Countdown
+      target={NOW}
+      initialNow={NOW}
+      clock={fixedClock}
+      locale="en"
+      completeLabel="Registration open"
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { target: NOW, completeLabel: 'Registration open' },
 };
 export const InitiallyPast: Story = {
@@ -166,6 +344,24 @@ export const InitiallyPast: Story = {
 };
 
 export const PendingSSR: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return (
+    <Countdown target={NOW + 90061000} initialNow={undefined} clock={fixedClock} locale="en" />
+  );
+}`,
+      },
+    },
+  },
   args: { initialNow: undefined },
   play: async () => {
     const html = renderToString(
@@ -206,6 +402,20 @@ export const InvalidDate: Story = {
   },
 };
 export const InvalidClock: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+export function Example() {
+  return <Countdown target={NOW + 90061000} initialNow={NOW} clock={() => Infinity} locale="en" />;
+}`,
+      },
+    },
+  },
   args: { clock: () => Infinity },
   play: async ({ canvasElement, args }) => {
     await expect(within(canvasElement).getByRole('timer')).toHaveAttribute('data-state', 'invalid');
@@ -373,6 +583,32 @@ export const TargetReplacement: Story = {
 };
 
 export const NonTextCompletion: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return (
+    <Countdown
+      target={NOW}
+      initialNow={NOW}
+      clock={fixedClock}
+      locale="en"
+      completeLabel={<strong aria-label="Registration open">✓</strong>}
+      completeText="Registration open"
+      completionIcon={<span>●</span>}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     target: NOW,
     completeLabel: <strong aria-label="Registration open">✓</strong>,
@@ -483,10 +719,50 @@ export const DurationFormatMissing: Story = {
   },
 };
 export const LightTheme: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return <Countdown target={NOW + 90061000} initialNow={NOW} clock={fixedClock} locale="en" />;
+}`,
+      },
+    },
+  },
   decorators: [withLightTheme],
   globals: { theme: 'light' },
 };
 export const RTL: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return (
+    <Countdown
+      target={NOW + 90061000}
+      initialNow={NOW}
+      clock={fixedClock}
+      locale="ar-u-nu-arab"
+      dir="rtl"
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { dir: 'rtl', locale: 'ar-u-nu-arab' },
   play: async ({ canvasElement }) => {
     await expect(getComputedStyle(within(canvasElement).getByRole('timer')).direction).toBe('rtl');
@@ -507,6 +783,20 @@ export const ForcedColors: Story = {
   args: { variant: 'compact', target: NOW },
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Countdown } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-12-01T12:00:00Z');
+
+const fixedClock = () => NOW;
+
+export function Example() {
+  return (
+    <Countdown target={NOW} initialNow={NOW} clock={fixedClock} locale="en" variant="compact" />
+  );
+}`,
+      },
       description: {
         story:
           'Structural fixture. Enable forced colors in your browser to inspect system-color boundaries; this play does not emulate forced colors.',

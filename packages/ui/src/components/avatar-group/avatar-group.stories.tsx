@@ -130,6 +130,36 @@ export const ComposedMembers: Story = {
 };
 
 export const ComposedRefCleanup: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AvatarGroup, type AvatarGroupMember, PersonAvatar } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const PHOTO_SRC = sceneSource('avatar-ada');
+
+const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
+  { id: 'ada', name: 'Ada Lovelace', src: PHOTO_SRC },
+  {
+    id: 'grace',
+    name: 'Grace Hopper',
+    status: 'online',
+    avatarProps: {
+      children: <PersonAvatar seed="grace" alt="" size="full" crop="circle" />,
+    },
+  },
+  { id: 'margaret', name: 'Margaret Hamilton', status: 'busy' },
+  { id: 'katherine', name: 'Katherine Johnson' },
+  { id: 'hedy', name: 'Hedy Lamarr', status: 'away' },
+];
+
+export function Example() {
+  return <AvatarGroup members={SAMPLE_MEMBERS} max={4} size="md" label="Team members" />;
+}`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const host = canvasElement.ownerDocument.createElement('div');
     canvasElement.append(host);
@@ -339,6 +369,36 @@ export const AllStatuses: Story = {
 };
 
 export const Overflow: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AvatarGroup, type AvatarGroupMember, PersonAvatar } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const PHOTO_SRC = sceneSource('avatar-ada');
+
+const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
+  { id: 'ada', name: 'Ada Lovelace', src: PHOTO_SRC },
+  {
+    id: 'grace',
+    name: 'Grace Hopper',
+    status: 'online',
+    avatarProps: {
+      children: <PersonAvatar seed="grace" alt="" size="full" crop="circle" />,
+    },
+  },
+  { id: 'margaret', name: 'Margaret Hamilton', status: 'busy' },
+  { id: 'katherine', name: 'Katherine Johnson' },
+  { id: 'hedy', name: 'Hedy Lamarr', status: 'away' },
+];
+
+export function Example() {
+  return <AvatarGroup members={SAMPLE_MEMBERS} max={2} size="md" label="Team members" />;
+}`,
+      },
+    },
+  },
   args: {
     max: 2,
     members: SAMPLE_MEMBERS,
@@ -698,6 +758,36 @@ export const CountLabelCallbacks: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AvatarGroup, type AvatarGroupMember, PersonAvatar } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const PHOTO_SRC = sceneSource('avatar-ada');
+
+const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
+  { id: 'ada', name: 'Ada Lovelace', src: PHOTO_SRC },
+  {
+    id: 'grace',
+    name: 'Grace Hopper',
+    status: 'online',
+    avatarProps: {
+      children: <PersonAvatar seed="grace" alt="" size="full" crop="circle" />,
+    },
+  },
+  { id: 'margaret', name: 'Margaret Hamilton', status: 'busy' },
+  { id: 'katherine', name: 'Katherine Johnson' },
+  { id: 'hedy', name: 'Hedy Lamarr', status: 'away' },
+];
+
+export function Example() {
+  return <AvatarGroup members={SAMPLE_MEMBERS} max={3} size="md" label="Team members" />;
+}`,
+      },
+    },
+  },
   globals: { theme: 'light' },
   decorators: [withLightTheme],
   args: {
@@ -750,6 +840,36 @@ function forcedColorsDeclarations(element: Element): CSSStyleDeclaration[] {
 // Structural check only: the separation is a real border and a forced-colors rule maps it to
 // system colors. The browser runner cannot emulate forced colors; rendering is a manual QA check.
 export const ForcedColorsRule: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AvatarGroup, type AvatarGroupMember, PersonAvatar } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const PHOTO_SRC = sceneSource('avatar-ada');
+
+const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
+  { id: 'ada', name: 'Ada Lovelace', src: PHOTO_SRC },
+  {
+    id: 'grace',
+    name: 'Grace Hopper',
+    status: 'online',
+    avatarProps: {
+      children: <PersonAvatar seed="grace" alt="" size="full" crop="circle" />,
+    },
+  },
+  { id: 'margaret', name: 'Margaret Hamilton', status: 'busy' },
+  { id: 'katherine', name: 'Katherine Johnson' },
+  { id: 'hedy', name: 'Hedy Lamarr', status: 'away' },
+];
+
+export function Example() {
+  return <AvatarGroup members={SAMPLE_MEMBERS} max={3} size="md" label="Team members" />;
+}`,
+      },
+    },
+  },
   args: {
     members: SAMPLE_MEMBERS,
     max: 3,
@@ -776,6 +896,36 @@ const ANIMATED_PARTS = '[data-ui="avatar-group"], [data-ui="avatar-group"] *';
 // Structural check only: no part declares an animation or transition, so reduced-motion and
 // default rendering match. The OS reduced-motion setting itself is a manual QA check.
 export const StaticMotion: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AvatarGroup, type AvatarGroupMember, PersonAvatar } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const PHOTO_SRC = sceneSource('avatar-ada');
+
+const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
+  { id: 'ada', name: 'Ada Lovelace', src: PHOTO_SRC },
+  {
+    id: 'grace',
+    name: 'Grace Hopper',
+    status: 'online',
+    avatarProps: {
+      children: <PersonAvatar seed="grace" alt="" size="full" crop="circle" />,
+    },
+  },
+  { id: 'margaret', name: 'Margaret Hamilton', status: 'busy' },
+  { id: 'katherine', name: 'Katherine Johnson' },
+  { id: 'hedy', name: 'Hedy Lamarr', status: 'away' },
+];
+
+export function Example() {
+  return <AvatarGroup members={SAMPLE_MEMBERS} max={3} size="md" label="Team members" />;
+}`,
+      },
+    },
+  },
   args: {
     members: SAMPLE_MEMBERS,
     max: 3,
