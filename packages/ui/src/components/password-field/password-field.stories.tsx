@@ -21,14 +21,16 @@ const NarrowFrame = styled.div({ inlineSize: 200 });
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly PasswordFieldSize[];
 const HEIGHTS = { sm: 32, md: 40, lg: 48 } as const;
-const REVEAL_SIZES = { sm: 24, md: 32, lg: 40 } as const;
+const REVEAL_WIDTHS = { sm: 32, md: 32, lg: 40 } as const;
+const REVEAL_HEIGHTS = { sm: 24, md: 32, lg: 40 } as const;
 // motion.duration.base plus a frame of slack, so the slash is read after its transition.
 const SLASH_SETTLE_MS = 200;
 
 const Stack = styled.div({
   display: 'grid',
   gap: vars.space[4],
-  inlineSize: '320px',
+  inlineSize: 'min(100%, 320px)',
+  minInlineSize: 0,
 });
 
 const meta = {
@@ -180,8 +182,8 @@ export const Sizes: Story = {
       const inputRect = input.getBoundingClientRect();
       const buttonRect = button.getBoundingClientRect();
       await expect(Math.round(inputRect.height)).toBe(HEIGHTS[size]);
-      await expect(Math.round(buttonRect.width)).toBe(REVEAL_SIZES[size]);
-      await expect(Math.round(buttonRect.height)).toBe(REVEAL_SIZES[size]);
+      await expect(Math.round(buttonRect.width)).toBe(REVEAL_WIDTHS[size]);
+      await expect(Math.round(buttonRect.height)).toBe(REVEAL_HEIGHTS[size]);
       await expect(buttonRect.top).toBeGreaterThanOrEqual(inputRect.top);
       await expect(buttonRect.bottom).toBeLessThanOrEqual(inputRect.bottom);
       // The reveal lane is reserved: text never runs under the button.

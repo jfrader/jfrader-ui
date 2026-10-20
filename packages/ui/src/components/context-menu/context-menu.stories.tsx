@@ -1,11 +1,15 @@
+/// <reference types="vite/client" />
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
-import { Component, Fragment, useCallback, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { Component, Fragment, useCallback, useMemo, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import createCache from '@emotion/cache';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { ClassNames, css } from '../../styling/css';
+import tokenStyles from '@jfrader/tokens/tokens.css?inline';
+import baseStyles from '@jfrader/tokens/base.css?inline';
+import { CacheProvider, ClassNames, css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
@@ -33,8 +37,8 @@ const TYPEAHEAD_RESET_WAIT_MS = 600;
 // A viewport smaller than the menu's preferred size in both axes, in px.
 const TINY_VIEWPORT = { width: 200, height: 180 };
 
-const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
-const consumerSx = css({ marginInlineStart: vars.space[2] });
+const consumerCss = css({ paddingInlineStart: vars.space[1], letterSpacing: '0.05em' });
+const consumerSx = css({ paddingInlineStart: vars.space[2] });
 
 interface StoryArgs extends ContextMenuCompoundProps {
   onCopy: () => void;
@@ -2119,12 +2123,25 @@ const TargetBox = styled(ContextMenu.Target)({
 
 /** Renders `children` into a same-origin frame: another document and another JS realm. */
 function FrameHost({ children }: { children: ReactNode }) {
-  const [body, setBody] = useState<HTMLElement | null>(null);
-  const attach = useCallback((frame: HTMLIFrameElement | null) => setBody(frame?.contentDocument?.body ?? null), []);
+  const [frameDocument, setFrameDocument] = useState<Document | null>(null);
+  const attach = useCallback((frame: HTMLIFrameElement | null) => {
+    const document = frame?.contentDocument ?? null;
+    document?.documentElement.setAttribute('data-theme', 'light');
+    setFrameDocument(document);
+  }, []);
+  const cache = useMemo(
+    () => frameDocument && createCache({ key: 'context-menu-frame', container: frameDocument.head }),
+    [frameDocument],
+  );
   return (
     <>
       <EmbeddedFrame ref={attach} title="Embedded file view"  />
-      {body && createPortal(<ScopedHost>{children}</ScopedHost>, body)}
+      {frameDocument && cache && (
+        <CacheProvider value={cache}>
+          {createPortal(<><style>{tokenStyles}</style><style>{baseStyles}</style></>, frameDocument.head)}
+          {createPortal(<ScopedHost>{children}</ScopedHost>, frameDocument.body)}
+        </CacheProvider>
+      )}
     </>
   );
 }
@@ -2159,6 +2176,13 @@ export const ScrollInFrame: Story = {
     // The menu's nodes belong to the frame's realm, not to this one.
     await expect(menu).toBeInstanceOf(frameView.Node);
     await expect(menu instanceof canvasElement.ownerDocument.defaultView!.Node).toBe(false);
+    await expectThemedSurface(menu, 'light');
+    await settleMotion(menu);
+    await expect(menu.scrollWidth).toBeLessThanOrEqual(menu.clientWidth);
+    for (const item of within(menu).getAllByRole('menuitem')) {
+      await expect(item.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    await expectInsideViewport(menu, frameView);
 
     // Scrolling inside the menu keeps it open.
     menu.dispatchEvent(new frameView.Event('scroll'));
@@ -2913,6 +2937,7 @@ export const SxPrecedence: Story = {
   play: async ({ canvasElement }) => {
     const target = getTarget(canvasElement);
     const menu = await findMenu(canvasElement);
+    await expect(menu.scrollWidth).toBeLessThanOrEqual(menu.clientWidth);
     const parts: Array<[string, HTMLElement]> = [
       ['consumer-target', target],
       ['consumer-trigger', within(target).getByRole('button', { name: 'More actions' })],
@@ -2924,9 +2949,9 @@ export const SxPrecedence: Story = {
     for (const [className, element] of parts) {
       await expect(element).toHaveClass(className);
       // sx beats the incoming Emotion class without dropping its other declarations.
-      const margin = parseFloat(getComputedStyle(element).marginInlineStart);
-      await expect(near(margin, resolvedPx(element, vars.space[2]))).toBe(true);
-      await expect(near(margin, resolvedPx(element, vars.space[1]))).toBe(false);
+      const padding = parseFloat(getComputedStyle(element).paddingInlineStart);
+      await expect(near(padding, resolvedPx(element, vars.space[2]))).toBe(true);
+      await expect(near(padding, resolvedPx(element, vars.space[1]))).toBe(false);
       await expect(getComputedStyle(element).letterSpacing).not.toBe('normal');
     }
   },

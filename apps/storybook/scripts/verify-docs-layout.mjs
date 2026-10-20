@@ -5,6 +5,11 @@ import { chromium } from 'playwright';
 import { preview } from 'vite';
 
 const cases = [
+  {
+    id: 'data-filtertoolbar--docs', primary: '[data-ui~="filter-toolbar"]', containPreview: 'all',
+    verifyPreviewOverflow: true,
+    viewports: [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }],
+  },
   { id: 'media-lightboxgallery--docs', primary: '[data-ui="lightbox-gallery"]', containPreview: true },
   { id: 'data-display-commentthread--docs', primary: '[data-ui="comment-thread"]', containPreview: true },
   {
@@ -63,7 +68,7 @@ try {
   const page = await browser.newPage();
   page.setDefaultTimeout(30_000);
 
-  for (const { id, primary, containPreview, viewports: caseViewports = viewports } of cases) {
+  for (const { id, primary, containPreview, verifyPreviewOverflow, viewports: caseViewports = viewports } of cases) {
     for (const viewport of caseViewports) {
       await page.setViewportSize(viewport);
       await page.goto(new URL(`iframe.html?id=${id}&viewMode=docs`, baseURL).href);
@@ -74,6 +79,19 @@ try {
       await summary.press('Enter');
       assert.equal(await usage.evaluate((element) => element.open), true, `${id}: Enter opens usage notes`);
       await page.evaluate(() => document.fonts.ready);
+      if (verifyPreviewOverflow) {
+        for (let offset = 0; offset < await page.evaluate(() => document.documentElement.scrollHeight); offset += viewport.height / 2) {
+          await page.evaluate((top) => window.scrollTo(0, top), offset);
+          await page.waitForTimeout(200);
+        }
+        const previews = await page.locator('.docs-story').evaluateAll((elements) =>
+          elements.map((element) => ({ width: element.clientWidth, scrollWidth: element.scrollWidth })),
+        );
+        for (const preview of previews) {
+          assert.ok(preview.scrollWidth <= preview.width + 1,
+            `${id} at ${viewport.width}px: story preview overflows (${preview.scrollWidth}px)`);
+        }
+      }
       const dimensions = await page.evaluate(() => ({
         width: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,

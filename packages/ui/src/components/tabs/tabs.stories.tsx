@@ -7,6 +7,7 @@ import { Tabs, type TabsCompoundProps, type TabsEasyProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { Card } from '../card';
+import { expectAligned, expectInside } from '../../testing/geometry-assertions';
 
 const tabsSource = `import { Tabs } from '@jfrader/ui';
 
@@ -23,7 +24,7 @@ const ITEMS = [
 ] as const;
 
 const Frame = styled.div({
-  inlineSize: '360px',
+  inlineSize: `min(360px, calc(100vw - ${vars.space[8]}))`,
   maxInlineSize: '100%',
   minBlockSize: '120px',
   fontSize: vars.textSize.sm,
@@ -38,10 +39,10 @@ const meta = {
       sections: [
         { title: 'Basic', stories: ['Compound'] },
         { title: 'Variants', stories: ['Glass', 'Liquid', 'Vertical'] },
-        { title: 'Icons and labels', stories: ['IconLabels'] },
+        { title: 'Icons and labels', stories: ['IconLabels', 'LineIcons'] },
         { title: 'Controlled selection', stories: ['Controlled'] },
         { title: 'States', stories: ['DisabledTab', 'ManualActivation'] },
-        { title: 'Overflow', stories: ['Overflow'] },
+        { title: 'Overflow', stories: ['Overflow', 'LineOverflow', 'LongPanel'] },
         { title: 'Composition', stories: ['PanelComposition'] },
         { title: 'Keyboard', stories: ['Keyboard'] },
       ],
@@ -631,6 +632,9 @@ export const Overflow: EasyStory = {
     ],
   },
   render: (args) => <Tabs {...args} />,
+  play: async ({ canvas }) => {
+    await expect(getComputedStyle(canvas.getByRole('tablist')).touchAction).toBe('auto');
+  },
   parameters: { docs: {
     description: { story: 'Scroll a narrow bar to reach long labels without shrinking tab targets.' },
     source: { language: 'tsx', code: `import { Tabs } from '@jfrader/ui';
@@ -688,4 +692,62 @@ export const Liquid: EasyStory = {
   parameters: { docs: { description: { story: 'Move a lens indicator between settings in a rounded liquid bar.' }, source: { language: 'tsx', code: `${tabsSource}
 
 <Tabs variant="liquid" label="Settings" defaultValue="one" items={sections} />` } } },
+};
+
+export const LineOverflow: EasyStory = {
+  ...Overflow,
+  name: 'Scrollable line tabs',
+  parameters: { docs: {
+    description: { story: 'Scroll line tabs in a narrow container and keep keyboard focus visible.' },
+    source: { language: 'tsx', code: `${tabsSource}
+
+<Tabs label="Project settings" items={sections} defaultValue="one"
+  sx={{ inlineSize: '16rem', maxInlineSize: '100%' }} />` },
+  } },
+  args: { ...Overflow.args, variant: 'line' },
+  play: async ({ canvas, userEvent }) => {
+    const list = canvas.getByRole('tablist');
+    const root = list.parentElement!;
+    await expectInside(list, root);
+    for (const tab of canvas.getAllByRole('tab')) {
+      await expect(tab.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    canvas.getAllByRole('tab')[0]!.focus();
+    await userEvent.keyboard('{End}');
+    const last = canvas.getAllByRole('tab').at(-1)!;
+    await expect(last).toHaveFocus();
+    await expectInside(last, list);
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+  },
+};
+
+export const LineIcons: EasyStory = {
+  ...IconLabels,
+  name: 'Line tabs with icons',
+  args: { ...IconLabels.args, variant: 'line', labels: 'always' },
+  parameters: { docs: { description: { story: 'Align icons beside each label in a line tab list.' } } },
+  play: async ({ canvasElement }) => {
+    const icons = canvasElement.querySelectorAll<HTMLElement>('[data-ui="tabs-icon"]');
+    await expect(icons).toHaveLength(2);
+    for (const icon of icons) {
+      await expectAligned([icon, icon.parentElement!], 'center-y');
+    }
+  },
+};
+
+export const LongPanel: EasyStory = {
+  args: {
+    label: 'References', defaultValue: 'reference', orientation: 'vertical',
+    items: [
+      { value: 'reference', label: 'Reference', panel: 'SubscriptionRenewalAndBillingPreferences'.repeat(8) },
+      { value: 'history', label: 'History', panel: 'Previous billing periods.' },
+    ],
+  },
+  render: (args) => <Tabs {...args} />,
+  play: async ({ canvas }) => {
+    const panel = canvas.getByRole('tabpanel');
+    const root = panel.parentElement!;
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth + 1);
+  },
 };

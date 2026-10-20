@@ -583,6 +583,37 @@ const nodes: TreeNode[] = [
     sx: { maxInlineSize: '20rem' },
   },
 };
+const deepBranchIds = Array.from({ length: 24 }, (_, level) => `level-${level}`);
+const deepNodes = deepBranchIds.reduceRight<readonly TreeNode[]>(
+  (children, id) => [{ id, label: `Folder ${id}`, children }],
+  [{ id: 'deep-file', label: 'Translated project documentation.md' }],
+);
+
+export const DeepOverflow: Story = {
+  args: { nodes: deepNodes, defaultOpen: deepBranchIds, sx: { inlineSize: 280, maxInlineSize: '100%' } },
+  parameters: { docs: { description: { story: 'Scroll a deeply nested hierarchy inside a narrow tree.' } } },
+  play: async ({ canvas, userEvent }) => {
+    const tree = canvas.getByRole('tree');
+    const leaf = canvas.getByRole('treeitem', { name: 'Translated project documentation.md' });
+    await expect(leaf.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+    await expect(tree.scrollWidth).toBeGreaterThan(tree.clientWidth);
+    await userEvent.tab();
+    await userEvent.keyboard('{End}');
+    await focus(leaf);
+    const treeBox = tree.getBoundingClientRect();
+    const leafBox = leaf.getBoundingClientRect();
+    await expect(leafBox.left).toBeGreaterThanOrEqual(treeBox.left);
+    await expect(leafBox.right).toBeLessThanOrEqual(treeBox.right);
+    await expect(tree.ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(
+      tree.ownerDocument.documentElement.clientWidth,
+    );
+    await userEvent.keyboard('{Home}');
+    const first = canvas.getByRole('treeitem', { name: 'Folder level-0' });
+    await focus(first);
+    await expect(first.getBoundingClientRect().left).toBeGreaterThanOrEqual(treeBox.left);
+  },
+};
+
 export const ExternalAria: Story = {
   args: {
     'aria-label': 'Explicit',
@@ -716,7 +747,20 @@ export const ForcedColors: Story = {
     await expect(caret.borderTopColor).toBe('rgba(0, 0, 0, 0)');
     await expect(caret.borderBottomColor).toBe('rgba(0, 0, 0, 0)');
     if (forced) await expect(caret.forcedColorAdjust).toBe('none');
-    await expect(canvas.getByRole('treeitem', { name: 'Alpha' })).toHaveAttribute(
+    const selected = canvas.getByRole('treeitem', { name: 'Alpha' });
+    if (forced) {
+      await expect(getComputedStyle(selected.parentElement!).forcedColorAdjust).toBe('none');
+      const sample = canvasElement.ownerDocument.createElement('span');
+      sample.style.backgroundColor = 'Highlight';
+      sample.style.color = 'HighlightText';
+      selected.append(sample);
+      await expect(getComputedStyle(selected.parentElement!).backgroundColor).toBe(
+        getComputedStyle(sample).backgroundColor,
+      );
+      await expect(getComputedStyle(selected).color).toBe(getComputedStyle(sample).color);
+      sample.remove();
+    }
+    await expect(selected).toHaveAttribute(
       'aria-selected',
       'true',
     );

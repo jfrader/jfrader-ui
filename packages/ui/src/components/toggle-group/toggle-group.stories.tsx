@@ -1,6 +1,6 @@
 import { useState, type ReactNode, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ToggleGroup, type ToggleGroupCompoundProps as ToggleGroupProps, type ToggleGroupProps as PublicToggleGroupProps, type ToggleGroupSingleProps } from './index';
@@ -37,6 +37,63 @@ const Frame = styled.div({
   gap: vars.space[3],
   fontSize: vars.textSize.sm,
 });
+
+const NarrowFrame = styled.div({ inlineSize: '12rem', maxInlineSize: '100%', minInlineSize: 0 });
+
+export const CompactChoices: Story = {
+  render: () => (
+    <ToggleGroup
+      label="Level"
+      defaultValue="I"
+      options={['I', 'II', 'III'].map((value) => ({ value, label: value }))}
+    />
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const items = canvas.getAllByRole('button');
+    for (const item of items) {
+      await expect(item.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+      await expect(item.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    await userEvent.tab();
+    await userEvent.keyboard('{End}{Enter}');
+    await expect(items[2]).toHaveAttribute('aria-pressed', 'true');
+  },
+};
+
+export const LongLabelsOverflow: Story = {
+  args: { defaultValue: 'recent' },
+  render: (args) => (
+    <NarrowFrame>
+      <ToggleGroup {...args} label="Projects">
+        <ToggleGroup.Item value="recent">Recent projects</ToggleGroup.Item>
+        <ToggleGroup.Item value="shared">SharedWithTheEntireProjectTeam</ToggleGroup.Item>
+        <ToggleGroup.Item value="archived">Archived projects</ToggleGroup.Item>
+      </ToggleGroup>
+    </NarrowFrame>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const group = canvas.getByRole('group');
+    await expect(group.getBoundingClientRect().width).toBeLessThanOrEqual(group.parentElement!.clientWidth);
+    await expect(group.scrollWidth).toBeGreaterThan(group.clientWidth);
+    await userEvent.tab();
+    await userEvent.keyboard('{End}');
+    const last = canvas.getByRole('button', { name: 'Archived projects' });
+    await expect(last).toHaveFocus();
+    await waitFor(() => {
+      const bounds = group.getBoundingClientRect();
+      const item = last.getBoundingClientRect();
+      expect(item.left).toBeGreaterThanOrEqual(bounds.left);
+      expect(item.right).toBeLessThanOrEqual(bounds.right);
+    });
+    await expect(last).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.keyboard(' ');
+    await expect(last).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.keyboard('{Home}');
+    await expect(canvas.getByRole('button', { name: 'Recent projects' })).toHaveFocus();
+  },
+};
+
+export const RTLOverflow: Story = { ...LongLabelsOverflow, args: { ...LongLabelsOverflow.args, dir: 'rtl' } };
 
 const meta = {
   title: 'Inputs/ToggleGroup',

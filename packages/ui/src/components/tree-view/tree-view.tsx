@@ -147,11 +147,12 @@ const itemStyle = css({
   display: 'flex',
   alignItems: 'center',
   flex: 1,
-  minInlineSize: 0,
+  minInlineSize: `calc(${vars.space[12]} * 2)`,
   minBlockSize: vars.space[8],
 });
 const rowStyle = css({
   display: 'flex',
+  minInlineSize: 'min-content',
   alignItems: 'center',
   gap: vars.space[2],
   minBlockSize: vars.space[8],
@@ -175,8 +176,16 @@ const rowStyle = css({
   '&:has(> [role="treeitem"]:focus-visible)': focusRingInset,
   [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: {
+    color: 'CanvasText',
     borderInlineStartColor: 'Canvas',
-    '&:has(> [aria-selected="true"])': { borderInlineStartColor: 'Highlight' },
+    '&:has(> [aria-selected="true"])': {
+      borderInlineStartColor: 'Highlight',
+      background: 'Highlight',
+      color: 'HighlightText',
+      outlineColor: 'HighlightText',
+      forcedColorAdjust: 'none',
+    },
+    '&:has(> [aria-disabled="true"])': { color: 'GrayText' },
   },
 });
 const labelStyle = css({ minInlineSize: 0, overflowWrap: 'anywhere' });
@@ -204,7 +213,7 @@ const disclosureStyle = css({
   [FORCED_COLORS]: {
     '&[data-branch="true"]::after': {
       forcedColorAdjust: 'none',
-      color: 'CanvasText',
+      color: 'currentColor',
     },
   },
 });

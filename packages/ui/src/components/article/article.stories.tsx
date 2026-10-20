@@ -26,7 +26,7 @@ const meta = {
     sections: [
       { title: 'Headlines and summaries', stories: ['Standard', 'Lead', 'Secondary', 'Brief'] },
       { title: 'Editorial layouts', stories: ['Wide', 'TimeColumn', 'RuleTop', 'RuleBottom', 'Centered'] },
-      { title: 'Media', stories: ['Media', 'ImageMedia'] },
+      { title: 'Media', stories: ['Media', 'ImageMedia', 'PictureMedia'] },
       { title: 'Composition', stories: ['FullArticle', 'Compound', 'ArticleHeader'] },
       { title: 'Links', stories: ['RouterLink'] },
     ],
@@ -440,6 +440,29 @@ export const ImageMedia: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('img', { name: 'Share card preview' })).toHaveAttribute('src', '/og-image.png');
     await expect(canvas.getByRole('figure')).toBeInTheDocument();
+  },
+};
+export const PictureMedia: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
+
+<Article
+  headline="The river path opens for the weekend"
+  media={<picture><img src="/og-image.png" alt="Share card preview" width={1200} height={630} /></picture>}
+  slotProps={{ media: { caption: 'Share card preview', credit: 'jfrader-ui' } }}
+  style={{ maxInlineSize: '20rem' }}
+/>` } } },
+  args: {
+    media: <picture><img src="/og-image.png" alt="Share card preview" width={1200} height={630} /></picture>,
+    slotProps: { media: { caption: 'Share card preview', credit: 'jfrader-ui' } },
+    style: { maxInlineSize: '20rem' },
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const figure = canvas.getByRole('figure');
+    const image = canvas.getByRole('img', { name: 'Share card preview' });
+    await expect(image.closest('picture')).not.toBeNull();
+    await expect(image.getBoundingClientRect().width).toBeLessThanOrEqual(figure.clientWidth + 1);
+    await expect(figure.scrollWidth).toBeLessThanOrEqual(figure.clientWidth + 1);
+    await expect(canvasElement.ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(canvasElement.ownerDocument.documentElement.clientWidth + 1);
   },
 };
 export const RTL: Story = {

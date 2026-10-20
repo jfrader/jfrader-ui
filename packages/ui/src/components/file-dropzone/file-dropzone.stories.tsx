@@ -11,6 +11,7 @@ import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Button, type ButtonProps } from '../button';
 import { Progress, type ProgressProps } from '../progress';
 import {
@@ -24,6 +25,7 @@ import {
 import { styled } from '../../index';
 
 const NarrowFrame = styled.div({ inlineSize: '18rem', maxInlineSize: '100%' });
+const AttachmentComment = styled.input({ boxSizing: 'border-box', inlineSize: '10rem', maxInlineSize: '100%' });
 
 const messages: FileDropzoneMessages = {
   browse: 'Browse files',
@@ -524,6 +526,23 @@ export const ListInside: Story = {
   note="PDF and image attachments" messages={messages} listPlacement="inside"
   defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { defaultValue: existing, listPlacement: 'inside' },
+  play: async ({ canvasElement }) => {
+    const target = rootOf(canvasElement).querySelector<HTMLElement>('[data-dragging]')!;
+    const list = target.querySelector('ul')!;
+    await expectInside(list, target);
+    for (const row of list.querySelectorAll('li')) await expectInside(row, list);
+    await expect(target.scrollWidth).toBeLessThanOrEqual(target.clientWidth);
+  },
+};
+export const NarrowInside: Story = {
+  ...ListInside,
+  args: {
+    ...ListInside.args,
+    size: 'lg',
+    dir: 'rtl',
+    defaultValue: [{ id: 'long', size: 12500, name: 'receipt-from-the-international-conference-and-customer-meeting-in-october.pdf' }],
+  },
+  decorators: [Story => <NarrowFrame><Story /></NarrowFrame>],
 };
 export const ListBelow: Story = {
   args: { defaultValue: existing },
@@ -1580,9 +1599,16 @@ export function ReceiptUpload({ upload }: { upload: FileDropzoneUpload }) {
 export const PasteExcludesEditing: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
 
+import { styled } from '@jfrader/ui';
+
+const AttachmentComment = styled.input({
+  boxSizing: 'border-box', inlineSize: '10rem', maxInlineSize: '100%',
+});
+
 <FileDropzone label="Add receipts" messages={messages}
-  description={<input aria-label="Attachment comment" />} />` } } },
-  args: { description: <input aria-label="Attachment comment" /> },
+  sx={{ maxInlineSize: '14rem' }}
+  description={<AttachmentComment aria-label="Attachment comment" />} />` } } },
+  args: { description: <AttachmentComment aria-label="Attachment comment" />, sx: css({ maxInlineSize: '14rem' }) },
   play: async ({ canvasElement, userEvent, args }) => {
     const comment = within(canvasElement).getByRole('textbox', { name: 'Attachment comment' });
     await userEvent.click(comment);
@@ -1592,6 +1618,8 @@ export const PasteExcludesEditing: Story = {
     await expect(comment.ownerDocument.activeElement).toBe(inputOf(canvasElement));
     await dispatchFiles(rootOf(canvasElement), 'paste', [file()]);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    const root = rootOf(canvasElement);
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
   },
 };
 export const PasteDisabled: Story = {

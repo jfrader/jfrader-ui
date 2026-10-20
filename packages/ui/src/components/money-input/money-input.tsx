@@ -158,6 +158,7 @@ const shellStyle = css({
   gap: vars.space[2],
   minInlineSize: 0,
   paddingInline: vars.space[3],
+  '&[data-variant="prominent"]': { blockSize: `calc(${vars.space[10]} * 2)` },
 });
 const controlStyle = css({
   minInlineSize: 0,
@@ -174,7 +175,6 @@ const controlStyle = css({
   fontVariantNumeric: 'tabular-nums',
   '&:focus-visible': { outline: 'none' },
   '&[data-variant="prominent"]': {
-    minBlockSize: `calc(${vars.space[10]} * 2)`,
     fontSize: vars.textSize['2xl'],
     borderRadius: vars.radius.md,
   },
@@ -193,6 +193,9 @@ const currencyStyle = css({
   flexShrink: 0,
   minInlineSize: 0,
   maxInlineSize: '45%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 const currencyTriggerStyle = {
   minInlineSize: 0,
@@ -206,6 +209,7 @@ const currencyTriggerStyle = {
   gap: vars.space[1],
   '&:focus-visible': { outline: 'none' },
 } as const;
+const currencyCodeStyle = css({ minInlineSize: 0, overflow: 'hidden', textOverflow: 'ellipsis' });
 const stepDirections: Readonly<Record<string, number>> = {
   ArrowUp: 1,
   ArrowDown: -1,
@@ -214,6 +218,9 @@ const stepDirections: Readonly<Record<string, number>> = {
 };
 const quickAddStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
 const chipStyle = css({
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  overflowWrap: 'anywhere',
   minBlockSize: vars.space[8],
   paddingInline: vars.space[3],
   fontFamily: vars.font.sans,
@@ -233,7 +240,7 @@ const chipStyle = css({
   [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText' },
 });
-const rangeStyle = css({ fontSize: vars.textSize.sm, color: vars.color.textMuted });
+const rangeStyle = css({ fontSize: vars.textSize.sm, color: vars.color.textMuted, overflowWrap: 'anywhere' });
 
 export function MoneyInput({
   ref,
@@ -434,7 +441,7 @@ export function MoneyInput({
       >
         {label}
       </FieldLabel>
-      <div {...withoutSx(slotProps?.shell)} data-disabled={disabled ? '' : undefined} data-invalid={field.ariaInvalid === true ? '' : undefined} css={[inputControlStyle, shellStyle, sizes[size], slotProps?.shell?.sx]}>
+      <div {...withoutSx(slotProps?.shell)} data-variant={variant} data-disabled={disabled ? '' : undefined} data-invalid={field.ariaInvalid === true ? '' : undefined} css={[inputControlStyle, shellStyle, sizes[size], slotProps?.shell?.sx]}>
         <input
           {...native}
           {...withoutSx(slotProps?.control)}
@@ -559,7 +566,7 @@ export function MoneyInput({
                 sx={currencyTriggerStyle}
                 aria-label={messages.currencyName(names?.of(code) ?? code)}
               >
-                <span>{code}</span>
+                <span css={currencyCodeStyle}>{code}</span>
               </Select.Trigger>
               <Select.Content>
                 {currencies.map((choice) => (

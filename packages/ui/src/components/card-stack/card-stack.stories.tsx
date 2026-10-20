@@ -1317,6 +1317,7 @@ export const GestureDeck: Story = {
     await expect(args.onDecide).not.toHaveBeenCalled();
     send('pointerdown', 0);
     send('pointermove', 180);
+    send('lostpointercapture', 180, 0, {}, part(top(canvasElement), 'content'));
     send('pointerup', 180);
     await settled(canvasElement);
     await once(args.onDecide, cities[0], 'right');
@@ -1521,6 +1522,7 @@ const cities: City[] = [
     )!;
     await expect(content.scrollHeight).toBeGreaterThan(content.clientHeight);
     await expect(getComputedStyle(content).overflowY).toBe('auto');
+    await expect(getComputedStyle(content).touchAction).toBe('pan-y');
     await userEvent.tab();
     await userEvent.tab();
     const button = canvas.getByRole('button', { name: 'Read more' });

@@ -176,6 +176,8 @@ function defaultMessages(locale: Intl.LocalesArgument): TagInputMessages {
 const sameTokens = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((token, index) => token === b[index]);
 
+const rootLayoutStyle = css({ boxSizing: 'border-box' });
+
 const shellStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
@@ -294,8 +296,10 @@ const removeStyle = css({
 });
 
 const inputStyle = css({
+  boxSizing: 'border-box',
   flex: '1 1 0%',
-  minInlineSize: DRAFT_MIN_INLINE_SIZE,
+  minInlineSize: `min(${DRAFT_MIN_INLINE_SIZE}, 100%)`,
+  maxInlineSize: '100%',
   blockSize: vars.space[6],
   margin: 0,
   paddingBlock: 0,
@@ -615,7 +619,7 @@ export function TagInput({
       dir={dir}
       className={className}
       sx={sx}
-      part={slotProps?.root}
+      part={{ ...slotProps?.root, sx: [rootLayoutStyle, slotProps?.root?.sx] }}
     >
       <FieldLabel
         component={slots?.label}

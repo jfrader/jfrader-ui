@@ -103,6 +103,59 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+export const EdgeGeometry: StoryObj<DatePickerEasyProps> = {
+  tags: ['!autodocs'],
+  args: {
+    label: 'Departure date for the selected journey and all connecting flights',
+    defaultValue: '2026-10-12',
+    defaultOpen: true,
+    locale: LOCALE,
+  },
+  render: (args) => (
+    <div style={{ position: 'fixed', insetInlineEnd: vars.space[4], insetBlockEnd: vars.space[4], inlineSize: 'min(320px, calc(100% - 2rem))' }}>
+      <DatePicker {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const page = bodyOf(canvasElement);
+    const popup = await page.findByRole('dialog');
+    const input = within(canvasElement).getByRole('combobox');
+    await waitFor(() => {
+      const box = popup.getBoundingClientRect();
+      const anchor = input.getBoundingClientRect();
+      expect(box.left).toBeGreaterThanOrEqual(0);
+      expect(box.right).toBeLessThanOrEqual(canvasElement.ownerDocument.documentElement.clientWidth);
+      expect(box.top).toBeGreaterThanOrEqual(0);
+      expect(Math.abs(anchor.top - box.bottom - 8)).toBeLessThanOrEqual(1);
+    });
+    for (const day of popup.querySelectorAll('[data-ui="calendar-day"]')) {
+      await expect(day.getBoundingClientRect().width).toBeGreaterThanOrEqual(24);
+      await expect(day.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    await userEvent.keyboard('{ArrowRight}{Escape}');
+    await waitFor(() => expect(page.queryByRole('dialog')).toBeNull());
+    await expect(input).toHaveFocus();
+  },
+};
+
+export const RTL: StoryObj<DatePickerEasyProps> = {
+  tags: ['!autodocs'],
+  args: { label: 'تاريخ المغادرة', locale: 'ar-EG', defaultValue: '2026-10-12' },
+  render: (args) => <div dir="rtl"><DatePicker {...args} /></div>,
+  play: async ({ canvasElement, userEvent }) => {
+    const input = within(canvasElement).getByRole('combobox');
+    await userEvent.click(input);
+    const popup = await bodyOf(canvasElement).findByRole('dialog');
+    await waitFor(() => expect(getComputedStyle(popup).direction).toBe('rtl'));
+    const focused = canvasElement.ownerDocument.activeElement as HTMLElement;
+    const date = focused.dataset.date!;
+    await userEvent.keyboard('{ArrowLeft}');
+    const next = canvasElement.ownerDocument.activeElement as HTMLElement;
+    await expect(next.dataset.date! > date).toBe(true);
+    await expect(next.getBoundingClientRect().left).toBeLessThan(focused.getBoundingClientRect().left);
+  },
+};
+
 type CheckedDatePicker<Props extends import('./index').DatePickerProps> = Props;
 export type DatePickerTypeRegression = {
   // @ts-expect-error The non-DOM provider root has no component sugar.

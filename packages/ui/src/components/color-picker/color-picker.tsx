@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ComponentPropsWithRef,
@@ -19,6 +20,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { inputControlStyle } from '../../styling/input-control';
+import { useThemeScope } from '../../styling/theme-scope';
 import type { SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { isRenderable } from '../../utils/renderable';
@@ -38,6 +40,7 @@ import { Dialog } from '../dialog';
 import { TextField } from '../text-field';
 import { Select } from '../select';
 import { Button } from '../button';
+import { ThemeRoot } from '../theme-root';
 import {
   clamp,
   contrastColor,
@@ -189,7 +192,29 @@ const panelStyle = css({
   color: vars.color.text,
   '@media (min-width: 30rem)': { gap: vars.space[3] },
   '& button, & input, & [role="combobox"]': { minBlockSize: vars.space[8] },
+  '& [data-ui~="button"]': {
+    minInlineSize: 0,
+    maxInlineSize: '100%',
+    whiteSpace: 'normal',
+    overflowWrap: 'anywhere',
+  },
 });
+const portalScopeStyle = css({ display: 'contents' });
+
+function ColorPickerPortalScope({ children }: { children: ReactNode }) {
+  const scope = useThemeScope();
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  const [documentTheme, setDocumentTheme] = useState<'light' | 'dark'>('dark');
+  useLayoutEffect(() => {
+    if (container) setDocumentTheme(container.parentElement?.closest('[data-theme]')?.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+  }, [container]);
+  return (
+    <ThemeRoot ref={setContainer} theme={scope?.theme ?? documentTheme} portalContainer={container} sx={portalScopeStyle}>
+      {children}
+    </ThemeRoot>
+  );
+}
+
 const panelGridStyle = css({
   display: 'grid',
   gap: vars.space[4],
@@ -218,6 +243,7 @@ const channelStyle = css({
   alignItems: 'center',
   gap: vars.space[2],
   fontSize: vars.textSize.sm,
+  overflowWrap: 'anywhere',
 });
 const rangeStyle = css({
   inlineSize: '100%',
@@ -233,6 +259,7 @@ const swatchStyle = css({
   borderRadius: vars.radius.md,
   border: `1px solid ${vars.color.borderControl}`,
   backgroundColor: 'var(--picker-color)',
+  forcedColorAdjust: 'none',
   flexShrink: 0,
 });
 const triggerStyles = {
@@ -265,6 +292,7 @@ const padStyle = css({
   border: `1px solid ${vars.color.borderControl}`,
   backgroundColor: 'var(--picker-hue)',
   backgroundImage: `linear-gradient(to top, ${vars.color.colorPickerBlack}, transparent), linear-gradient(to right, ${vars.color.colorPickerWhite}, transparent)`,
+  forcedColorAdjust: 'none',
   '&[data-invalid="true"]': {
     backgroundImage: 'none',
     backgroundColor: vars.color.surfaceInset,
@@ -324,6 +352,7 @@ const checkerStyle = css({
   overflow: 'hidden',
   backgroundImage: `repeating-conic-gradient(${vars.color.colorPickerCheckerA} 0% 25%, ${vars.color.colorPickerCheckerB} 0% 50%)`,
   backgroundSize: `${vars.space[4]} ${vars.space[4]}`,
+  forcedColorAdjust: 'none',
   borderRadius: vars.radius.md,
 });
 const formats: ColorFormat[] = ['hex', 'rgb', 'hsl', 'oklch'];
@@ -1064,9 +1093,11 @@ export function ColorPicker({
       <Dialog.Content dir={effectiveDirection}>
         <Dialog.Panel>
           <Dialog.Title>{messages.dialog}</Dialog.Title>
-          <Content {...withoutSx(slotProps?.content)} css={[panelStyle, slotProps?.content?.sx]}>
-            {panel}
-          </Content>
+          <ColorPickerPortalScope>
+            <Content {...withoutSx(slotProps?.content)} css={[panelStyle, slotProps?.content?.sx]}>
+              {panel}
+            </Content>
+          </ColorPickerPortalScope>
         </Dialog.Panel>
       </Dialog.Content>
     </Dialog>

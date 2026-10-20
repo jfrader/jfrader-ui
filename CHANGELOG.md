@@ -33,8 +33,22 @@
 ### Fixed
 
 - The axe gate also runs the WCAG 2.2 A rules; `README.md`, `docs/qa-gates.md`, and `SKILL.md` list the exact rule set.
+- `Slider` centers marks on its track in RTL. `SegmentedControl` and `ToggleGroup` keep compact choices at least 32px wide, and `ToggleGroup` contains long options in a scrollable group.
+- `Article` keeps responsive picture images inside their media figure in narrow layouts.
+- `SearchField`, `PasswordField` and `NumberField` give small inline actions a 32px-wide target. `NumberField` wraps long messages without overflowing narrow fields.
+- `PhoneInput` fits narrow fields, keeps calling codes left-to-right, and contains scrolling inside its country list. `MoneyInput` gives prominent amounts a taller control and keeps long asset codes, limits, and quick-add labels inside narrow fields.
+- `Checkbox` and `Switch` keep a 32px minimum click-target height, including without visible labels. All three choice controls wrap unbroken labels and descriptions within narrow layouts.
+- `MentionInput` contains scrolling inside suggestions and dims disabled text and tokens together with its boundary. `TagInput` keeps its draft inside very narrow fields and includes root padding in its field width.
+- `DatePicker` preserves locally scoped right-to-left direction in its calendar popup. `ColorPicker` keeps its format menu inside the dialog, wraps long control labels, and preserves color samples and gradients in forced colors.
+- `Tabs` contains overflowing line tabs in a scrollable list, aligns icons with labels, keeps keyboard-focused tabs visible, and permits native touch scrolling when indicator dragging is off. `Tabs` panels and `Accordion` headers and panels wrap unbroken text within narrow containers.
+- `TimePicker` shows one disclosure arrow and wraps long field labels within narrow layouts; `DateRangePicker` keeps scrolling inside its popup when reaching the end of a long calendar panel.
+- `Toast` keeps long queues inside a scrollable viewport and aligns loading indicators with their messages. `ToastStack` wraps long toggle labels, preserves their focus rings and keeps taller collapsed cards below its toggle; both contain scrolling within notifications.
+- `FileDropzone` keeps inside file lists within the drop surface. `CodeBlock` preserves the copy button's target size beside long filenames and language labels, and its examples fit phone screens.
 - `CommandPalette` fits phone screens without clipping and keeps its search field visible while results scroll in short viewports. `Popover` wraps long links inside its panel; both contain scrolling within their content.
 - `Menu` wraps unbroken action labels inside its popup and keeps separators visible in scrolling lists.
+- `TreeView` keeps deeply nested labels readable and keyboard targets usable in horizontally scrolling trees, and keeps selection visible in forced colors. `FilterToolbar` shows the configured empty message for each generated filter, and its narrow examples fit phone-width documentation previews.
+- `Carousel` keeps its viewport and indicators within narrow containers, wraps unbroken slide text, and fits its examples on phone screens.
+- `CardStack` keeps horizontal touch decisions active when a swipe begins inside scrollable card content, while preserving vertical scrolling.
 - `VoiceOrb` keeps a violet shell with subtle cyan Listening, indigo Thinking and rose Speaking clouds. State changes crossfade and gather or release the cloud; Speaking reshapes the volume while Idle stays calm. Motion remains continuous and honors live reduced-motion changes.
 - `ImageCompare` keeps touch dragging active when pointer capture moves from the handle to the frame. Reveal, divider and handle animate together between values, follow dragging directly, and honor live reduced-motion changes. Resizable examples fit phone screens.
 - `ChatThread` wraps long typing names within narrow conversations, keeps keyboard attachment focus on the visible picker button, and fits its documentation examples inside phone-width previews.

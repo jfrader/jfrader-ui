@@ -693,6 +693,52 @@ export const SearchTextField: Story = {
   },
 };
 
+export const EmptyFilterOptions: Story = {
+  render: () => (
+    <NarrowFrame>
+      <FilterToolbar
+        defaultValue={[]}
+        filters={[
+          { type: 'select', id: 'status', label: 'Status', options: [], empty: 'No statuses available' },
+          { type: 'multiselect', id: 'owner', label: 'Owner', options: [], empty: 'No owners available' },
+        ]}
+        resultCount={0}
+      />
+    </NarrowFrame>
+  ),
+  parameters: { layout: 'padded', docs: {
+    description: { story: 'Show each filter’s empty message when no options are available.' },
+    source: { language: 'tsx', code: `import { FilterToolbar } from '@jfrader/ui';
+
+<FilterToolbar
+  filters={[
+    { type: 'select', id: 'status', label: 'Status', options: [], empty: 'No statuses available' },
+    { type: 'multiselect', id: 'owner', label: 'Owner', options: [], empty: 'No owners available' },
+  ]}
+  resultCount={0}
+/>` },
+  } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const root = canvas.getByRole('group', { name: 'Filters' });
+    const body = within(canvasElement.ownerDocument.body);
+    const triggers = canvas.getAllByRole('combobox');
+    await expect(triggers[1]!.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      triggers[0]!.getBoundingClientRect().bottom,
+    );
+    for (const [index, message] of ['No statuses available', 'No owners available'].entries()) {
+      await userEvent.click(triggers[index]!);
+      const listbox = body.getByRole('listbox');
+      await waitFor(() => expect(within(listbox).getByText(message)).toBeVisible());
+      const box = listbox.getBoundingClientRect();
+      await expect(box.left).toBeGreaterThanOrEqual(0);
+      await expect(box.right).toBeLessThanOrEqual(canvasElement.ownerDocument.documentElement.clientWidth);
+      await userEvent.keyboard('{Escape}');
+      await expect(triggers[index]).toHaveFocus();
+    }
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+  },
+};
+
 export const MultipleControls: Story = {
   render: (args) => (
     <FilterToolbar {...args}>
@@ -1147,7 +1193,7 @@ function CollectionFilters() {
 
 export const LongChips: Story = {
   name: 'Long filters in a narrow layout',
-  parameters: { docs: {
+  parameters: { layout: 'padded', docs: {
     description: { story: 'Truncate long chip text while preserving its full accessible remove label.' },
     source: { language: 'tsx', code: `import { FilterToolbar, styled } from '@jfrader/ui';
 

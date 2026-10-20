@@ -6,6 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { ThemeRoot } from '../theme-root';
 import { Button } from '../button';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { MoneyInput, type MoneyInputProps } from './money-input';
 import { addMinor, assertMinor, currencyChoices, moneyFormat, MONEY_LIMIT } from './money-math';
 
@@ -201,7 +202,53 @@ export const Sizes: Story = {
 /** Use the standard single-line editor. */
 export const Standard: Story = { args: { variant: 'standard' } };
 /** Give a checkout total a taller editor. */
-export const Prominent: Story = { args: { variant: 'prominent' } };
+export const Prominent: Story = {
+  args: { variant: 'prominent', currencies: ['USD', 'JPY'] },
+  play: async ({ canvas, userEvent }) => {
+    const input = canvas.getByRole('spinbutton');
+    const shell = input.parentElement!;
+    await expectInside(input, shell);
+    await expectNoOverlap(input, canvas.getByText('Amount', { selector: 'label' }));
+    await expectNoOverlap(input, canvas.getByText(/Amount from/));
+    await expect(shell.getBoundingClientRect().height).toBeGreaterThanOrEqual(80);
+    await userEvent.click(input);
+    await userEvent.tab();
+    const trigger = canvas.getByRole('combobox');
+    await expectInside(trigger, shell);
+    await expect(trigger.ownerDocument.activeElement).toBe(trigger);
+    await expect(getComputedStyle(shell).outlineStyle).not.toBe('none');
+  },
+};
+
+export const LongAssetCode: Story = {
+  args: { currencies: ['LONG_CUSTOM_ASSET_DENOMINATION'], decimals: 18, defaultValue: 1, quickAdd: [1] },
+  render: (args) => <NarrowLane><MoneyInput {...args} /></NarrowLane>,
+  play: async ({ canvas }) => {
+    const input = canvas.getByRole('spinbutton');
+    const root = input.closest('[data-ui="money-input"]')!;
+    const currency = canvas.getByText('LONG_CUSTOM_ASSET_DENOMINATION', { selector: 'span' });
+    await expectInside(currency, input.parentElement!);
+    await expect(currency.scrollWidth).toBeGreaterThan(currency.clientWidth);
+    await expect(getComputedStyle(currency).textOverflow).toBe('ellipsis');
+    const button = canvas.getByRole('button', { name: /Add/ });
+    await expectInside(button, root);
+    await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth);
+  },
+};
+export const LongAssetPicker: Story = {
+  args: { currencies: ['LONG_CUSTOM_ASSET_DENOMINATION', 'OTHER_CUSTOM_ASSET'], decimals: 18, defaultValue: 1 },
+  render: (args) => <NarrowLane><MoneyInput {...args} /></NarrowLane>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('combobox');
+    const code = canvas.getByText('LONG_CUSTOM_ASSET_DENOMINATION', { selector: 'span' });
+    await expectInside(code, trigger);
+    await expect(trigger.scrollWidth).toBeLessThanOrEqual(trigger.clientWidth);
+    await userEvent.click(trigger);
+    await userEvent.keyboard('{End}{Enter}');
+    await expect(trigger).toHaveTextContent('OTHER_CUSTOM_ASSET');
+    await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
+  },
+};
 /** Leave the amount empty. */
 export const Empty: Story = { args: { defaultValue: null } };
 /** Zero is an amount, not an empty value. */

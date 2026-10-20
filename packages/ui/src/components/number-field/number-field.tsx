@@ -97,6 +97,7 @@ const DEFAULT_MESSAGES: NumberFieldMessages = {
   required: 'Enter a number.',
 };
 const HOLD = { delay: 400, interval: 150, acceleration: 20, floor: 40 } as const;
+const rootStyle = css({ minInlineSize: 0, overflowWrap: 'anywhere' });
 const rootStyles: Record<NumberFieldSize, SerializedStyles> = {
   sm: css({ inlineSize: `calc(${vars.space[10]} * 4)` }),
   md: css({ inlineSize: `calc(${vars.space[12]} * 4)` }),
@@ -123,7 +124,7 @@ const controlStyle = css({
 });
 const stepperStyle = css({
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  inlineSize: vars.space[6], minBlockSize: vars.space[6], padding: 0, border: 0,
+  inlineSize: vars.space[8], minBlockSize: vars.space[6], padding: 0, border: 0,
   borderRadius: vars.radius.sm, background: 'transparent', color: vars.color.text,
   fontFamily: vars.font.sans, fontSize: vars.textSize.md, cursor: 'pointer', touchAction: 'none',
   transitionProperty: 'background-color, color', transitionDuration: vars.motion.duration.fast,
@@ -134,7 +135,7 @@ const stepperStyle = css({
   [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: { color: 'ButtonText', '&[aria-disabled="true"]': { color: 'GrayText' } },
 });
-const largeStepperStyle = css({ inlineSize: vars.space[8], minBlockSize: vars.space[8] });
+const largeStepperStyle = css({ minBlockSize: vars.space[8] });
 const affixStyle = css({ color: vars.color.textMuted, fontSize: 'inherit', overflowWrap: 'anywhere' });
 const messageStyle = css({ fontSize: vars.textSize.sm, lineHeight: vars.lineHeight.base, color: vars.color.textMuted });
 const statusStyle = css({ fontSize: vars.textSize.sm, lineHeight: vars.lineHeight.base, color: vars.color.warning });
@@ -314,7 +315,7 @@ export function NumberField({
 
   return (
     <FieldSlot element="div" root component={slots?.root ?? component} slotProps={slotProps?.root}
-      styles={[fieldColumnStyle, rootStyles[size]]} className={className} sx={sx} dir={dir} data-ui="number-field"
+      styles={[fieldColumnStyle, rootStyle, rootStyles[size]]} className={className} sx={sx} dir={dir} data-ui="number-field"
       onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) stopHold(); }}>
       <FieldLabel component={slots?.label} id={labelId} htmlFor={field.id} required={required} part={slotProps?.label}>{label}</FieldLabel>
       <FieldSlot element="div" component={slots?.shell} slotProps={slotProps?.shell}

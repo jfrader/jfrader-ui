@@ -185,7 +185,7 @@ export const Sizes: Story = {
     for (const [index, size] of sizes.entries()) {
       await expect(canvas.getAllByRole('searchbox')[index]!.getBoundingClientRect().height).toBe(heights[size]);
       const target = canvas.getAllByRole('button')[index]!.getBoundingClientRect();
-      await expect(target.width).toBeGreaterThanOrEqual(24);
+      await expect(target.width).toBeGreaterThanOrEqual(32);
       await expect(target.height).toBeGreaterThanOrEqual(24);
     }
   },

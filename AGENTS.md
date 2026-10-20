@@ -64,8 +64,10 @@ Packing and publishing are in `docs/releasing.md`.
 - `libphonenumber-js` (the `/max` build) for PhoneInput country metadata, AsYouType formatting, and
   E.164 validation.
 - `culori` for ColorPicker color-space conversion and contrast math.
-- `next` and `@emotion/cache` are optional peers and devDependencies. Only
-  `packages/ui/src/components/next/`, published as the `./next` subpath, may import them.
+- `next` and `@emotion/cache` are optional peers and devDependencies. Runtime imports stay in
+  `packages/ui/src/components/next/`, published as the `./next` subpath. Iframe stories may use
+  `@emotion/cache` with the frame's head as the container, plus the generated token and base styles in
+  that document.
 - `typescript-compiler` (an alias of TypeScript 5.9) is development-only, for the customization
   inventory. TypeScript 7 remains the typecheck command.
 - Any other dependency requires updating this file first.

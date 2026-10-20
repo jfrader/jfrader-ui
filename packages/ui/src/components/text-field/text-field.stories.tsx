@@ -10,6 +10,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { TextField, type TextFieldProps, type TextFieldSize } from './index';
 import { Button } from '../button';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -22,12 +23,16 @@ const StackFrame = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '320px',
+  maxInlineSize: '100%',
+  minInlineSize: 0,
+  marginInline: 'auto',
 });
 
 const meta = {
   title: 'Inputs/TextField',
   component: TextField,
   parameters: {
+    layout: 'padded',
     docs: {
       description: { component: 'Enter text in a field with a label, description and error message.' },
       sections: [
@@ -296,6 +301,36 @@ export const LongContent: Story = {
   parameters: { docs: { description: { story: 'Keep a long email on one line and move the caret to read the rest.' }, source: { language: 'tsx', code: `import { TextField } from '@jfrader/ui';
 
 <TextField label="Billing contact email address" placeholder="you@example.com" defaultValue="accounts-payable@international-example.com" />` } } },
+};
+
+export const NarrowLayout: Story = {
+  args: {
+    label: 'Billing contact email address',
+    description: 'Send receipts to the billing contact.',
+    error: 'Enter a valid email address.',
+    required: true,
+    defaultValue: 'accounts-payable@international-example.com',
+    slotProps: { root: { sx: { maxInlineSize: '10rem' } } },
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const root = canvasElement.querySelector('[data-ui="text-field"]')!;
+    const input = canvas.getByRole('textbox');
+    const inlineSize = canvasElement.style.inlineSize;
+    canvasElement.style.inlineSize = '15rem';
+    try {
+      await expectInside(root.parentElement!, canvasElement);
+    } finally {
+      canvasElement.style.inlineSize = inlineSize;
+    }
+    await expectInside(input, root);
+    await expectNoOverlap(canvas.getByText('Billing contact email address'), input);
+    await expect(input.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await userEvent.tab();
+    await expect(input.ownerDocument.activeElement).toBe(input);
+    await expect(getComputedStyle(input).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{End}!');
+    await expect(input).toHaveValue('accounts-payable@international-example.com!');
+  },
 };
 
 export const LightTheme: Story = {

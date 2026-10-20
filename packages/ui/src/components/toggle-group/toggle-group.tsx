@@ -156,6 +156,10 @@ const TRACK_INSET = '2px';
 
 const rootStyle = css({
   display: 'inline-flex',
+  boxSizing: 'border-box',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  overflow: 'auto',
   gap: TRACK_INSET,
   padding: TRACK_INSET,
   border: `1px solid ${vars.color.borderControl}`,
@@ -172,11 +176,13 @@ const rootOrientationStyles: Record<ToggleGroupOrientation, SerializedStyles> = 
 // accent border so the state is not carried by fill color alone.
 const itemStyle = css({
   appearance: 'none',
+  flexShrink: 0,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   gap: vars.space[2],
-  minBlockSize: '32px',
+  minBlockSize: vars.space[8],
+  minInlineSize: vars.space[8],
   boxSizing: 'border-box',
   border: '1px solid transparent',
   borderRadius: vars.radius.sm,

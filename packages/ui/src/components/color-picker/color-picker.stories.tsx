@@ -540,10 +540,12 @@ export const OpenGeometry: Story = {
   play: async ({ canvasElement }) => {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole('dialog');
-    // The panel fits its viewport; it must not fall back to an internal scroll.
-    await expect(dialog.scrollHeight - dialog.clientHeight).toBeLessThanOrEqual(1);
+    await expect(dialog.scrollWidth - dialog.clientWidth).toBeLessThanOrEqual(1);
     const wide = (canvasElement.ownerDocument.defaultView?.innerWidth ?? 0) >= 900;
-    if (wide) await expect(dialog.getBoundingClientRect().width).toBeGreaterThan(420);
+    if (wide) {
+      await expect(dialog.scrollHeight - dialog.clientHeight).toBeLessThanOrEqual(1);
+      await expect(dialog.getBoundingClientRect().width).toBeGreaterThan(420);
+    }
     // The checker wrapper is the swatch box, not a taller inline line box.
     const trigger = canvasElement.querySelector('[data-ui="color-picker"] button') as HTMLElement;
     const checker = trigger.querySelector('span[aria-hidden]') as HTMLElement;
@@ -552,6 +554,84 @@ export const OpenGeometry: Story = {
     const swatchBox = swatch.getBoundingClientRect();
     await expect(Math.abs(checkerBox.height - swatchBox.height)).toBeLessThan(1);
     await expect(Math.abs(checkerBox.width - swatchBox.width)).toBeLessThan(1);
+  },
+};
+export const LongLabels: Story = {
+  tags: ['!autodocs'],
+  args: {
+    label: 'Accent color for the selected workspace and its shared projects',
+    messages: {
+      ...messages,
+      saturation: 'VeryLongTranslatedSaturationLabelWithoutSpaces',
+      value: 'Brightness of the currently selected color',
+      hue: 'VeryLongTranslatedHueLabelWithoutSpaces',
+      opacity: 'Opacity of the currently selected color',
+      save: 'Save the currently selected color for all shared workspaces',
+      movePrevious: 'MoveSelectedColorToThePreviousPositionInThePalette',
+      moveNext: 'Move the selected color to the next position in the palette',
+    },
+    defaultSwatches: palette,
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: /Accent color for the selected workspace/ }));
+    const dialog = await page.findByRole('dialog');
+    await expect(dialog.scrollWidth - dialog.clientWidth).toBeLessThanOrEqual(1);
+    for (const slider of within(dialog).getAllByRole('slider')) {
+      const label = slider.closest('label')!;
+      const text = canvasElement.ownerDocument.createRange();
+      text.selectNodeContents(label.firstChild!);
+      await expect(text.getBoundingClientRect().right).toBeLessThanOrEqual(slider.getBoundingClientRect().left);
+      await expect(label.scrollWidth - label.clientWidth).toBeLessThanOrEqual(1);
+      await waitFor(() => expect(slider.getBoundingClientRect().height).toBeGreaterThanOrEqual(32));
+    }
+    const done = within(dialog).getByRole('button', { name: messages.done });
+    done.focus();
+    await waitFor(() => {
+      const box = done.getBoundingClientRect();
+      const panel = dialog.getBoundingClientRect();
+      expect(box.top).toBeGreaterThanOrEqual(panel.top);
+      expect(box.bottom).toBeLessThanOrEqual(panel.bottom);
+    });
+    await userEvent.click(done);
+    await waitFor(() => expect(page.queryByRole('dialog')).toBeNull());
+    await expect(page.getByRole('button', { name: /Accent color for the selected workspace/ })).toHaveFocus();
+  },
+};
+
+export const ColorSurfaces: Story = {
+  tags: ['!autodocs'],
+  args: { defaultOpen: true, defaultSwatches: palette },
+  play: async ({ canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole('dialog');
+    const pad = dialog.querySelector('[data-ui="color-picker-pad"]')!;
+    await expect(getComputedStyle(pad).forcedColorAdjust).toBe('none');
+    await expect(getComputedStyle(pad).backgroundImage).not.toBe('none');
+    const swatches = within(dialog).getAllByRole('option').map(option => option.querySelector('span')!);
+    for (const swatch of swatches) await expect(getComputedStyle(swatch).forcedColorAdjust).toBe('none');
+    await expect(new Set(swatches.map(swatch => getComputedStyle(swatch).backgroundColor)).size).toBe(palette.length);
+  },
+};
+export const FormatOverlay: Story = {
+  tags: ['!autodocs'],
+  args: { defaultOpen: true },
+  play: async ({ canvasElement, userEvent }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole('dialog');
+    const format = within(dialog).getByRole('combobox', { name: messages.format });
+    await userEvent.click(format);
+    const list = await page.findByRole('listbox', { name: messages.format });
+    await expect(dialog).toContainElement(list);
+    const rgb = within(list).getByRole('option', { name: 'RGB' });
+    await waitFor(() => {
+      const box = rgb.getBoundingClientRect();
+      expect(rgb.contains(canvasElement.ownerDocument.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2))).toBe(true);
+    });
+    await userEvent.click(rgb);
+    await expect(format).toHaveTextContent('RGB');
+    await userEvent.click(format);
+    await expect(await page.findByRole('listbox', { name: messages.format })).toBeVisible();
   },
 };
 export const OpenInvalid: Story = {

@@ -4,11 +4,14 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectAligned, expectInside } from '../../testing/geometry-assertions';
+import { styled } from '../../styling/styled';
 import { Button } from '../button';
 import { Switch, type SwitchProps, type SwitchSize } from './index';
 
 const SIZES = ['sm', 'md'] as const satisfies readonly SwitchSize[];
 const TRACK_WIDTHS = { sm: 36, md: 44 } as const;
+const NarrowChoices = styled.div({ display: 'grid', gap: vars.space[3], inlineSize: 'min(100%, 18rem)' });
 
 const stackStyle = {
   display: 'grid',
@@ -245,5 +248,31 @@ export const Rtl: Story = {
     await expect(control).toBeChecked();
     const track = control.nextElementSibling as HTMLElement;
     await expect(getComputedStyle(track, '::after').transform).toContain('-20');
+  },
+};
+
+export const LongContent: Story = {
+  render: () => (
+    <NarrowChoices>
+      <Switch size="sm" label="Automatically download new episodes over a mobile connection" description="notifications@internationalcommunityannouncements.example.com" />
+      <Switch label="Download episodes" disabled defaultChecked />
+      <Switch aria-label="Enable downloads" />
+    </NarrowChoices>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const controls = canvas.getAllByRole('switch');
+    for (const input of controls) {
+      const root = input.closest('label')!;
+      await expect(input.parentElement!.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+      await expectInside(root, root.parentElement!);
+      await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    }
+    const input = controls[0]!;
+    const label = canvas.getByText('Automatically download new episodes over a mobile connection');
+    await expectAligned([label, canvas.getByText('notifications@internationalcommunityannouncements.example.com')], 'left');
+    await userEvent.click(label);
+    await expect(input).toBeChecked();
+    await userEvent.keyboard('[Space]');
+    await expect(input).not.toBeChecked();
   },
 };
