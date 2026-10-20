@@ -132,8 +132,26 @@ const FixtureButton = styled.button({
   minInlineSize: vars.space[8],
   padding: vars.space[2],
 });
-const SOURCE =
-  '<PhotoGrid title="September Traverse" photos={photos} defaultDensity={3} onFavoriteChange={saveFavorite} />';
+const photoSource = (example: string) => `import { useState } from 'react';
+import { PhotoGrid } from '@jfrader/ui/photo-grid';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const photos = [
+  { id: 'p1', src: sceneSource('alps-dawn-01', { variant: 'landscape' }), alt: 'Ridge at First Light', width: 1200, height: 800, title: 'Ridge at First Light', detail: 'Alpine traverse, 2800 m' },
+  { id: 'p2', src: sceneSource('valley-noon-02', { variant: 'landscape' }), alt: 'Valley Floor', width: 1200, height: 800, title: 'Valley Floor', detail: 'Midday light on moraine' },
+  { id: 'p3', src: sceneSource('pass-sunset-03', { variant: 'dusk' }), alt: 'High Pass at Sunset', width: 1200, height: 800, title: 'High Pass at Sunset', detail: 'Col de la Meije' },
+  { id: 'p4', src: sceneSource('dunes-crest-04', { variant: 'dunes' }), alt: 'Dune Crest', width: 1200, height: 800, title: 'Dune Crest', detail: 'Erg Chebbi, late afternoon' },
+  { id: 'p5', src: sceneSource('dunes-wind-05', { variant: 'dunes' }), alt: 'Wind-Sculpted Dunes', width: 800, height: 1200, title: 'Wind-Sculpted Dunes', detail: 'Portrait orientation study' },
+  { id: 'p6', src: sceneSource('tide-pool-06', { variant: 'tide' }), alt: 'Tidal Pool', width: 1200, height: 800, title: 'Tidal Pool', detail: 'Low tide, Atlantic coast' },
+  { id: 'p7', src: sceneSource('dusk-lagoon-07', { variant: 'dusk' }), alt: 'Lagoon at Dusk', width: 800, height: 1200, title: 'Lagoon at Dusk', detail: 'Portrait: reflections' },
+  { id: 'p8', src: sceneSource('shore-mist-08', { variant: 'tide' }), alt: 'Misty Shore', width: 1200, height: 800, title: 'Misty Shore', detail: 'Morning fog on the flats' },
+  { id: 'p9', src: sceneSource('ridge-storm-09', { variant: 'landscape' }), alt: 'Storm Light on Ridge', width: 1200, height: 800, title: 'Storm Light on Ridge', detail: 'Clearing after rain' },
+  { id: 'p10', src: sceneSource('erg-shadow-10', { variant: 'dunes' }), alt: 'Erg in Shadow', width: 1200, height: 800, title: 'Erg in Shadow', detail: 'Lee faces at sundown' },
+  { id: 'p11', src: sceneSource('cove-swell-11', { variant: 'tide' }), alt: 'Cove Swell', width: 1000, height: 1000, title: 'Cove Swell', detail: 'Square crop, incoming tide' },
+  { id: 'p12', src: sceneSource('hills-night-12', { variant: 'dusk' }), alt: 'Night over the Hills', width: 800, height: 1200, title: 'Night over the Hills', detail: 'Portrait: first stars' },
+];
+
+${example}`;
 
 const meta = {
   title: 'Media/PhotoGrid',
@@ -159,35 +177,59 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
     docs: {
-      source: { code: SOURCE },
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Layouts', stories: ['EachDensity', 'CustomSteps'] },
+        { title: 'Captions', stories: ['PhotoCaptions'] },
+        { title: 'Selection', stories: ['Favorites', 'ControlledAxes'] },
+        { title: 'Long and missing media', stories: ['LongCaptions', 'FailedImage'] },
+        { title: 'States', stories: ['EmptyCollection'] },
+        { title: 'Slots', stories: ['SlotStyling'] },
+      ],
       description: {
-        component: 'Browse photos in a grid, inspect product images or choose a cover from a depth rail. Open grid and product images to zoom and pan.',
+        component: 'Browse a photo collection, save favorites, and open images to zoom and pan.',
       },
-      usage: `### Presentations
-- Use the default grid for a photo collection, variant="product" for a main image with color/size choices, or variant="cover-flow" for a short collection with one focused cover.
-- All presentations select photos by stable string ID. Product and cover examples below include their selection and keyboard contracts.
+      usage: `### When to use
+Use a photo grid for a collection of square thumbnails with favorites and a full-screen viewer. Choose a masonry gallery when preserving thumbnail proportions matters.
 
-### Collection and density
-- Density, favorites, current photo and viewer visibility have independent controlled state. Requests take effect only when accepted.
-- The caller handles storage, pagination and formatted details. Use for moderate collections; thumbnails are square, with no virtualization or masonry layout.
-- Density sets the column count from the configured steps; the container width never overrides it. Narrow containers produce smaller cells, and cells narrower than 7rem show the favorite below the photo.
-- Steps become unique positive integers in descending order, one toggle each. Invalid values use the nearest configured step. If the default 3 is absent, the first step seeds density.
-- Favorite IDs outside the current page are kept. Give each photo a stable, unique ID and finite positive intrinsic dimensions.
-- Use labels to translate actions/status and locale for Intl-formatted counts.
+### Limits
+Paginate large collections; thumbnails are not virtualized. Give each photo a stable unique ID and finite positive intrinsic dimensions. Keep favorites from other pages when saving a paginated collection. Provide translated action labels and a locale for counts.
+
+Density is fixed by the chosen column count rather than the container width; allow enough room for the controls. The caller handles storage and pagination.
 
 ### Keyboard and gestures
-- The grid uses native lists and buttons. Tab reaches every open/favorite action.
-- Arrows move one cell or row; Left/Right follow RTL. PageUp/PageDown move three rows; Home/End reach the ends.
-- Plus/minus change thumbnail size around the focused photo. Ctrl+scroll and a two-finger pinch change it around the photo under the pointer; a pinch requests one step on release.
-- The viewer fills the screen in a native modal dialog. Unzoomed stage arrows and Home/End select slides without wrapping; the thumbnail strip selects any photo.
-- Zoomed stage arrows pan; plus/minus magnify the image instead of resizing the grid.
-- Zoom/pan, previous/next, favorite and Close buttons provide alternatives to gestures. Drag down to close; Escape returns focus to the launch tile or nearest remaining tile.
-- On narrow or touch screens the viewer hides previous/next; swipe or use the thumbnail strip.`,
+Tab reaches photo and favorite buttons. Arrows move by cell or row, Home/End reach the ends, and PageUp/PageDown move three rows. Left/Right follow RTL. Plus/minus resize thumbnails; Ctrl+scroll and pinch offer pointer alternatives.
+
+In the modal viewer, unzoomed arrows and Home/End select photos without wrapping. Zoomed arrows pan, and plus/minus zoom. Buttons provide alternatives to gestures. Escape or Close returns focus to the launch tile or nearest remaining tile. On narrow screens, use the thumbnail strip or swipe to navigate.`,
     },
   },
 } satisfies Meta<typeof PhotoGrid>;
 export default meta;
 type Story = StoryObj<typeof PhotoGrid>;
+
+export const PhotoCaptions: Story = {
+  name: 'Titles and details',
+  args: { photos: photos.slice(0, 2) },
+  parameters: { docs: { description: { story: 'Open either photo to read its title and location detail.' }, source: { language: 'tsx', code: photoSource('<PhotoGrid title="September Traverse" photos={photos.slice(0, 2)} locale="en-GB" />') } } },
+};
+
+export const LongCaptions: Story = {
+  name: 'Long photo details',
+  args: { photos: [{ ...photos[0]!, title: 'Ridge at First Light — September traverse above the valley', detail: 'The trail crosses the ridge above the valley before descending toward the mountain refuge. Bring water for the exposed section.' }] },
+  parameters: { docs: { description: { story: 'Open the photo to read a longer title and trail description.' }, source: { language: 'tsx', code: photoSource(`<PhotoGrid title="September Traverse" locale="en-GB" photos={[{
+  ...photos[0]!,
+  title: 'Ridge at First Light — September traverse above the valley',
+  detail: 'The trail crosses the ridge above the valley before descending toward the mountain refuge. Bring water for the exposed section.',
+}]} />`) } } },
+};
+
+export const EmptyCollection: Story = {
+  name: 'Empty collection',
+  args: { photos: [] },
+  parameters: { docs: { description: { story: 'Show the empty collection message with inactive density controls.' }, source: { language: 'tsx', code: `import { PhotoGrid } from '@jfrader/ui/photo-grid';
+
+<PhotoGrid title="September Traverse" photos={[]} locale="en-GB" />` } } },
+};
 
 const tiles = (root: HTMLElement) =>
   Array.from(root.querySelectorAll<HTMLButtonElement>('[data-ui="photo-grid-photo"]'));
@@ -209,6 +251,8 @@ async function focused(element: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Photo collection',
+  parameters: { docs: { description: { story: 'Open a photo, change the thumbnail size, or mark a favorite.' }, source: { language: 'tsx', code: photoSource('<PhotoGrid title="September Traverse" photos={photos} locale="en-GB" />') } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('region', { name: 'September Traverse' })).toBeInTheDocument();
     await expect(canvas.getByRole('list', { name: 'September Traverse' })).toBeInTheDocument();
@@ -227,6 +271,17 @@ export const Default: Story = {
   },
 };
 export const EachDensity: Story = {
+  name: 'Thumbnail densities',
+  parameters: { docs: { description: { story: 'Compare the same collection at five, three, and two columns.' }, source: { language: 'tsx', code: photoSource(`import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const DensityStack = styled.div({ display: 'grid', gap: vars.space[8] });
+
+<DensityStack>
+  {[5, 3, 2].map((density) => (
+    <PhotoGrid key={density} title={\`\${density} columns\`} photos={photos} density={density} locale="en-GB" />
+  ))}
+</DensityStack>`) } } },
   render: (args) => (
     <DensityStack>
       {[5, 3, 2].map((density) => (
@@ -296,12 +351,16 @@ export const RetainedClose: Story = {
 };
 
 export const CustomSteps: Story = {
+  name: 'Custom column choices',
+  parameters: { docs: { description: { story: 'Switch between four, two, and one column.' }, source: { language: 'tsx', code: photoSource('<PhotoGrid title="September Traverse" photos={photos} densitySteps={[4, 2, 1]} locale="en-GB" />') } } },
   args: { densitySteps: [4, 2, 1] },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('region')).toHaveAttribute('data-density', '4');
   },
 };
 export const Favorites: Story = {
+  name: 'Saved favorites',
+  parameters: { docs: { description: { story: 'Start with two visible favorites and retain a saved ID from another page.' }, source: { language: 'tsx', code: photoSource('<PhotoGrid title="September Traverse" photos={photos} defaultFavorites={["p2", "p4", "unseen"]} locale="en-GB" />') } } },
   args: { defaultFavorites: ['p2', 'p4', 'unseen'] },
   play: async ({ canvasElement, args, userEvent }) => {
     await userEvent.click(favorites(canvasElement)[0]!);
@@ -366,6 +425,8 @@ export const SinglePhoto: Story = {
   },
 };
 export const FailedImage: Story = {
+  name: 'Unavailable image',
+  parameters: { docs: { description: { story: 'Keep a photo action available when its image cannot load.' }, source: { language: 'tsx', code: photoSource('<PhotoGrid title="September Traverse" photos={[{ ...photos[0]!, src: "data:image/png;base64,broken" }]} locale="en-GB" />') } } },
   args: { photos: [{ ...photos[0]!, src: 'data:image/png;base64,broken' }] },
   play: async ({ canvasElement }) => {
     await waitFor(async () => {
@@ -819,6 +880,17 @@ export const CtrlScrollDensity: Story = {
 };
 
 export const ControlledAxes: Story = {
+  name: 'Controlled collection',
+  parameters: { docs: { description: { story: 'Keep density, favorites, selection, and viewer visibility in application state.' }, source: { language: 'tsx', code: photoSource(`function Collection() {
+  const [density, setDensity] = useState(3);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [value, setValue] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  return <PhotoGrid title="September Traverse" photos={photos} locale="en-GB"
+    density={density} onDensityChange={setDensity}
+    favorites={favorites} onFavoritesChange={setFavorites}
+    value={value} onValueChange={setValue} open={open} onOpenChange={setOpen} />;
+}`) } } },
   render: (args) => {
     const [density, setDensity] = useState(3);
     const [favorites, setFavorites] = useState<string[]>([]);
@@ -918,11 +990,14 @@ export const RootRefCleanup: Story = {
   },
 };
 
-// These `css`, `sx` and inline values exercise the documented slot styling API.
 export const SlotStyling: Story = {
+  name: 'Tile and header styling',
+  parameters: { docs: { description: { story: 'Adjust the gallery spacing and the photo button border independently.' }, source: { language: 'tsx', code: photoSource(`<PhotoGrid title="September Traverse" photos={photos} locale="en-GB"
+  sx={{ padding: '24px' }}
+  slotProps={{ header: { sx: { padding: '12px' } }, item: { sx: { padding: '8px' } }, photo: { sx: { borderWidth: '3px' } } }} />`) } } },
   args: {
     slotProps: {
-      header: { style: { padding: '12px' } },
+      header: { sx: { padding: '12px' } },
       item: { sx: { padding: '8px' } },
       photo: { sx: { borderWidth: '3px' } },
     },
