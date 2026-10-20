@@ -136,7 +136,7 @@ export const ReplacementSlots: EasyStory = {
 };
 
 /** Restyle the generated trigger and every action with slotProps. */
-// This story tests native props and css forwarded through the slot API.
+// This story tests native props and sx forwarded through the slot API.
 export const SlotProps: EasyStory = {
   name: 'Part props and replacement',
   parameters: { docs: {
@@ -158,7 +158,7 @@ function MenuRoot(props: ComponentPropsWithRef<'div'>) {
   ]}
   slotProps={{
     root: { 'data-ui': 'menu custom' },
-    trigger: { css: { fontStyle: 'italic' } },
+    trigger: { sx: { fontStyle: 'italic' } },
     item: { className: 'custom-action' },
   }}
 />` },
