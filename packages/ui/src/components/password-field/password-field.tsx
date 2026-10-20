@@ -62,18 +62,29 @@ export type PasswordFieldSlots = FieldSlots<PasswordFieldAnatomy>;
 
 export interface PasswordFieldProps
   extends Omit<ComponentPropsWithRef<'input'>, 'type' | 'size' | 'value' | 'defaultValue' | 'children'>, SxProps {
+  /** Controls the password text. */
   value?: string;
+  /** Sets the initial uncontrolled password and native form-reset value. */
   defaultValue?: string;
+  /** Reports password edits, but not native form resets. */
   onValueChange?: (value: string) => void;
+  /** Controls whether the password is shown as plain text. */
   revealed?: boolean;
+  /** Sets the initial uncontrolled visibility and form-reset state. Defaults to `false`. */
   defaultRevealed?: boolean;
+  /** Requests a visibility change when the reveal button is activated. */
   onRevealedChange?: (revealed: boolean) => void;
+  /** Displays a label associated with the password input. */
   label?: ReactNode;
   /** Label placement. `hidden` keeps the accessible name without taking layout space. */
   labelPlacement?: FieldLabelPlacement;
+  /** Displays helper content below the input and links it as an accessible description. */
   description?: ReactNode;
+  /** Displays a validation message and marks the input invalid. */
   error?: ReactNode;
+  /** Sets the input and reveal button sizing. Defaults to `md`. */
   size?: PasswordFieldSize;
+  /** Overrides the reveal button's stable accessible name, which defaults to "Show password". */
   messages?: Partial<PasswordFieldMessages>;
   /** Replaces the eye icon inside the toggle; hidden from assistive technology. */
   revealIcon?: (revealed: boolean) => ReactNode;
@@ -81,6 +92,7 @@ export interface PasswordFieldProps
   component?: PasswordFieldSlots['root'];
   /** Replace generated parts with components that forward props and ref. */
   slots?: PasswordFieldSlots;
+  /** Passes props and `sx` to the field's named parts. */
   slotProps?: PasswordFieldSlotProps;
 }
 

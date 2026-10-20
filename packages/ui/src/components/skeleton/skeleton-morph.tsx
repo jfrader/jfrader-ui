@@ -17,21 +17,30 @@ export type SkeletonMorphValue = 'loading' | 'ready';
 export interface SkeletonMorphProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue'>, SxProps {
   /** Changes the accepted loading presentation; no request callback is emitted. */
   value?: SkeletonMorphValue;
+  /** Sets the initial uncontrolled presentation. Defaults to `loading`. */
   defaultValue?: SkeletonMorphValue;
+  /** Announces the loading state in the polite live region. */
   loadingLabel: string;
+  /** Announces the ready state. Defaults to `null`, which clears the live region. */
   readyLabel?: string | null;
   /** Animates shell and block geometry. Defaults to true. */
   animateLayout?: boolean;
 }
 
 export interface SkeletonBlockProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Sets the placeholder or line-group width in pixels or a CSS length. Defaults to full width for noncircular placeholders. */
   width?: SkeletonProps['width'];
+  /** Sets single-block height in pixels or a CSS length. Ignored in line mode. */
   height?: SkeletonProps['height'];
+  /** Rounds a single placeholder into a circle whose height follows its width unless `height` is set. Ignored in line mode. */
   circle?: boolean;
+  /** Sets placeholder corner radii in pixels or a CSS length. Ignored for a circular placeholder. */
   radius?: SkeletonProps['radius'];
   /** Positive integer line count; invalid values use one block instead. */
   lines?: number;
+  /** Sets each line's height in pixels or a CSS length. Defaults to `1.5em`; used only in line mode. */
   lineHeight?: SkeletonProps['height'];
+  /** Sets the final line's width in pixels or a CSS length. Defaults to `75%`; applies only when there are multiple lines. */
   lastLineWidth?: SkeletonProps['width'];
 }
 

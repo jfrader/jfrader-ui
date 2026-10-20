@@ -26,7 +26,9 @@ export interface PasswordStrengthResult {
   total: number;
 }
 export interface PasswordStrengthOptions {
+  /** Caps nonempty passwords below this character count at level 1. Defaults to `0`; must be a nonnegative integer. */
   shortLength?: number;
+  /** Counts characters for `shortLength`. Defaults to counting Unicode code points. */
   countCharacters?: (password: string) => number;
 }
 export interface PasswordStrengthMessages {
@@ -93,15 +95,25 @@ export interface PasswordStrengthProps
       'onValueChange' | 'slotProps' | 'slots' | 'component' | 'messages'
     >,
     PasswordStrengthOptions {
+  /** Defines the requirements shown and scored. Requires at least one rule with unique, nonblank ids. */
   rules: readonly PasswordRule[];
+  /** Reports password edits with their updated policy-compliance result. */
   onValueChange?: (password: string, result: PasswordStrengthResult) => void;
+  /** Formats requirement and remaining counts. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Overrides the meter labels, rule feedback and live summary. Unspecified messages remain in English. */
   messages?: PasswordStrengthMessagesInput;
+  /** Overrides the nested `PasswordField` reveal button's accessible name. */
   fieldMessages?: PasswordFieldProps['messages'];
+  /** Passes props and `sx` to the nested `PasswordField` parts. */
   fieldSlotProps?: PasswordFieldProps['slotProps'];
+  /** Replaces the nested `PasswordField` parts. */
   fieldSlots?: PasswordFieldProps['slots'];
+  /** Replaces the outer wrapper div; `slots.root` takes precedence. */
   component?: PasswordStrengthSlots['root'];
+  /** Replaces the meter and requirements parts with components that forward props and ref. */
   slots?: PasswordStrengthSlots;
+  /** Passes props and `sx` to the meter and requirements parts. */
   slotProps?: PasswordStrengthSlotProps;
 }
 
