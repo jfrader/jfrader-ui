@@ -8,7 +8,7 @@ export default {
     title: 'jfrader/ui',
     mark: 'j',
     tagline:
-      'The component system behind our products — documented straight from the library’s own Storybook stories.',
+      'The component system behind our products — navigation and examples from the library’s Storybook stories, API from the component sources.',
     links: [
       { label: 'Storybook', href: '/storybook/' },
       { label: 'GitHub', href: 'https://github.com/jfrader/jfrader-ui' },
@@ -67,8 +67,5 @@ export default {
   // The library's own code block, with its shiki highlighter, for every code sample the docs show.
   code: {
     module: './src/code.tsx',
-  },
-  composition: {
-    module: './src/composition.tsx',
   },
 };
