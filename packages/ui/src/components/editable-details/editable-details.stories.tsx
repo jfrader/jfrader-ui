@@ -8,6 +8,7 @@ import { expect, fn, mocked, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import { TextField } from '../text-field';
 import {
@@ -144,16 +145,11 @@ const EASY_SECTIONS: readonly EditableDetailsSectionRecord[] = [
 
 export const Default: EasyStory = {
   name: 'Easy mode',
-  beforeEach: () => {
-    const error = spyOn(console, 'error');
-    return () => error.mockRestore();
-  },
   args: {
     sections: EASY_SECTIONS,
   },
   render: (args) => <EasyExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
-    await expect(console.error).not.toHaveBeenCalled();
     const canvas = within(canvasElement);
     const section = canvas.getByRole('button', { name: 'Settings' });
     await expect(section).toHaveAttribute('aria-expanded', 'true');
@@ -197,6 +193,10 @@ export const Default: EasyStory = {
 
 export const EasyFalsyContent: EasyStory = {
   tags: ['!autodocs'],
+  beforeEach: () => {
+    const error = spyOn(console, 'error');
+    return () => error.mockRestore();
+  },
   args: { sections: [{ value: 'values', title: 'Values', defaultOpen: true, items: [
     { value: 'zero', label: 'Zero', content: 0 },
     { value: 'false', label: 'False', content: false },
@@ -204,6 +204,7 @@ export const EasyFalsyContent: EasyStory = {
   ] }] },
   render: (args) => <EasyExample {...args} />,
   play: async ({ canvas }) => {
+    await expect(console.error).not.toHaveBeenCalled();
     const values = canvas.getAllByRole('definition');
     await expect(values).toHaveLength(3);
     await expect(values.map((value) => value.textContent)).toEqual(['0', '', '']);
@@ -367,6 +368,42 @@ export const Compound: Story = {
 export const Light: Story = { render: () => <DetailsFixture />, decorators: [withLightTheme] };
 export const Rtl: Story = { render: () => <div dir="rtl"><DetailsFixture /></div> };
 export const Narrow: Story = { render: () => <NarrowFrame><DetailsFixture /></NarrowFrame> };
+
+export const LongContent: Story = {
+  render: () => <NarrowFrame><EditableDetails messages={{ edit: 'Edit configuration' }}>
+    <EditableDetails.Section title="Delivery configuration and notification preferences" defaultOpen headingLevel={2}>
+      <EditableDetails.List>
+        <EditableDetails.Item label="Deployment configuration for the production environment" renderEditor={(props) => <DraftEditor {...props} />}>
+          production-europe-west-primary-notification-delivery-configuration
+        </EditableDetails.Item>
+        <EditableDetails.Item label="Notification recipients">operations-and-delivery@example.com</EditableDetails.Item>
+      </EditableDetails.List>
+    </EditableDetails.Section>
+  </EditableDetails></NarrowFrame>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const root = canvasElement.querySelector('[data-ui="editable-details"]')!;
+    const trigger = canvas.getByRole('button', { name: 'Delivery configuration and notification preferences' });
+    const edit = canvas.getByRole('button', { name: 'Edit configuration Deployment configuration for the production environment' });
+    for (const element of [trigger, ...canvas.getAllByRole('term'), ...canvas.getAllByRole('definition'), edit]) {
+      await expectInside(element, root);
+    }
+    for (const button of [trigger, edit]) await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    const description = canvas.getAllByRole('definition')[0]!;
+    await expectNoOverlap(description.firstElementChild!.firstElementChild!, edit);
+    edit.focus();
+    await expect(getComputedStyle(edit).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Enter}');
+    const input = canvas.getByRole('textbox');
+    await expect(input).toHaveFocus();
+    await expectInside(input, description);
+    await userEvent.click(trigger);
+    await expect(input).not.toBeVisible();
+    await userEvent.keyboard(' ');
+    await expect(input).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));
+    await expect(canvas.getByRole('button', { name: 'Edit configuration Deployment configuration for the production environment' })).toHaveFocus();
+  },
+};
 
 /** Nest sections to group project, delivery and notification details. */
 export const NestedDepth: Story = {
