@@ -198,19 +198,29 @@ export interface PhotoGridProps
   photos?: readonly PhotoGridPhoto[];
   /** Shorthand for slots.root. */
   component?: PhotoGridSlots['root'];
+  /** Name the gallery and display its heading. */
   title: string;
   /** Keep the grid, show a product detail, or browse a focused cover rail. */
   variant?: 'grid' | 'product' | 'cover-flow';
   /** Cover rail geometry; reduced motion and forced colors also flatten depth. */
   depth?: boolean;
+  /** Show reflected images in the cover-flow rail. Defaults to `false`. */
   reflection?: boolean;
+  /** Supply product color choices and their photo collections. */
   colors?: readonly PhotoGridColor[];
+  /** Supply product options, including availability by color. */
   options?: readonly PhotoGridOption[];
+  /** Control the selected product color by its `value`. */
   selectedColor?: string;
+  /** Seed the uncontrolled color. Defaults to the first color that is not sold out. */
   defaultSelectedColor?: string;
+  /** Receive requests to select a product color. */
   onSelectedColorChange?: (value: string) => void;
+  /** Control the selected product option by its `value`, or `null` for none. */
   selectedOption?: string | null;
+  /** Seed the uncontrolled product option. Defaults to `null`. */
   defaultSelectedOption?: string | null;
+  /** Receive requests to select or clear a product option. */
   onSelectedOptionChange?: (value: string | null) => void;
   /** Content above the product or cover-flow presentation; ignored by `variant="grid"`. */
   header?: ReactNode;
@@ -226,22 +236,39 @@ export interface PhotoGridProps
   zoomFactor?: number;
   /** Column counts offered as density steps. The container width never overrides them. */
   densitySteps?: readonly number[];
+  /** Control the grid column count, snapped to the nearest `densitySteps` entry. */
   density?: number;
+  /** Seed the uncontrolled column count. Defaults to the density step nearest 3. */
   defaultDensity?: number;
+  /** Receive requests to change the grid column count. */
   onDensityChange?: (columns: number) => void;
+  /** Control the collection of favorite photo ids. */
   favorites?: readonly string[];
+  /** Seed the uncontrolled favorite photo ids. Defaults to an empty list. */
   defaultFavorites?: readonly string[];
+  /** Receive the next favorite photo ids after a toggle. */
   onFavoritesChange?: (ids: string[]) => void;
+  /** Receive the toggled photo id and its requested favorite state. */
   onFavoriteChange?: (id: string, favorite: boolean) => void;
+  /** Control the active photo id, or `null` for no selection. */
   value?: string | null;
+  /** Seed the uncontrolled active photo. Defaults to the first photo id, or `null` if empty. */
   defaultValue?: string | null;
+  /** Receive requests to change the active photo id. */
   onValueChange?: (id: string | null) => void;
+  /** Control whether the full-photo viewer is open. */
   open?: boolean;
+  /** Open the uncontrolled full-photo viewer initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receive requests to open or close the full-photo viewer. */
   onOpenChange?: (open: boolean) => void;
+  /** Override individual action labels, empty states, and announcement formatters. */
   labels?: Partial<PhotoGridLabels>;
+  /** Choose the locale for photo counts, positions, and column counts. */
   locale?: Intl.LocalesArgument;
+  /** Pass props to gallery, product, cover-flow, and viewer parts. */
   slotProps?: PhotoGridSlotProps;
+  /** Replace gallery, product, cover-flow, and viewer elements. */
   slots?: PhotoGridSlots;
 }
 

@@ -107,33 +107,61 @@ export interface VoiceRecorderSlotProps {
 export interface VoiceRecorderProps
   extends Omit<ComponentPropsWithRef<'section'>, 'children' | 'defaultValue' | 'onChange'>,
     SxProps {
+  /** Control the recording workflow state and active session or take. */
   value?: VoiceRecorderValue;
+  /** Seed the uncontrolled workflow. Defaults to `{ state: 'idle' }`. */
   defaultValue?: VoiceRecorderValue;
+  /** Receive requests to transition the recording workflow. */
   onValueChange?: (next: VoiceRecorderValue) => void;
+  /** Start consumer-owned audio capture for the generated session id. Rejection enters the error state. */
   onRecordRequest: (sessionId: string) => void | Promise<void>;
+  /** Stop consumer-owned capture and return the take id to review. Rejection enters the error state. */
   onStopRequest: (sessionId: string) => { takeId: string } | Promise<{ takeId: string }>;
+  /** Send the reviewed take. Resolution returns to idle; rejection preserves the take for retry. */
   onSend: (takeId: string) => void | Promise<void>;
+  /** Release the discarded session or take using its id. */
   onDiscard?: (id: string) => void;
+  /** Update the recording's elapsed time in seconds. Defaults to 0. */
   elapsed?: number;
+  /** Set the reviewed take's duration in seconds. Defaults to 0. */
   duration?: number;
+  /** Supply waveform amplitudes, clamped to 0–1. Omit for placeholder bars. */
   peaks?: readonly number[];
+  /** Request a stop when `elapsed` reaches this many seconds. Defaults to 60. */
   maxDuration?: number;
+  /** Control the review playback position in seconds. */
   currentTime?: number;
+  /** Seed the uncontrolled review position in seconds. Defaults to 0. */
   defaultCurrentTime?: number;
+  /** Receive review seek requests in seconds. */
   onCurrentTimeChange?: (seconds: number) => void;
+  /** Control the review's playing state; audio playback is consumer-owned. */
   playing?: boolean;
+  /** Seed the uncontrolled review playing state. Defaults to `false`. */
   defaultPlaying?: boolean;
+  /** Receive requests to start or pause consumer-owned review playback. */
   onPlayingChange?: (playing: boolean) => void;
+  /** Display previously sent voice messages. Defaults to an empty list. */
   messages?: readonly VoiceMessage[];
+  /** Receive a message id and its requested playing state. */
   onMessagePlay?: (id: string, playing: boolean) => void;
+  /** Receive a message id and its requested seek position in seconds. */
   onMessageSeek?: (id: string, time: number) => void;
+  /** Reflect the active message's playback state and position in seconds. Defaults to `null`. */
   messagePlayback?: { id: string; playing: boolean; currentTime: number } | null;
+  /** Choose the locale for durations and message timestamps. */
   locale?: string;
+  /** Replace action labels, announcements, and optional duration formatters. Defaults to English labels. */
   labels?: VoiceRecorderLabels;
+  /** Prevent recording and playback actions. Defaults to `false`. */
   disabled?: boolean;
+  /** Set composer control dimensions. Defaults to `md`. */
   size?: VoiceRecorderSize;
+  /** Replace the outer section; `slots.root` takes precedence. */
   component?: VoiceRecorderSlots['root'];
+  /** Replace composer, waveform, message list, and action elements. */
   slots?: VoiceRecorderSlots;
+  /** Pass props to composer, waveform, message list, and action elements. */
   slotProps?: VoiceRecorderSlotProps;
 }
 
