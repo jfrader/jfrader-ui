@@ -99,45 +99,95 @@ const meta = {
   title: 'Games/CardFlights', component: CardFlights, tags: ['autodocs'], args: { children: null },
   render: () => <Match />,
   parameters: { a11y: { test: 'error' }, docs: { source: { language: 'tsx', code: `import { useState } from 'react';
-import { CardFlights } from '@jfrader/ui/card-flights';
-import { GameHand } from '@jfrader/ui/game-hand';
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { Button } from '@jfrader/ui/button';
+import { CardFlights, useCardFlightStatus, type PlayingCard } from '@jfrader/ui/card-flights';
+import { GameHand, type GameHandCard } from '@jfrader/ui/game-hand';
 import { GameCardStack } from '@jfrader/ui/game-card-stack';
 import { GameTable } from '@jfrader/ui/game-table';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
 
-function Board({ cards, seats, deal, revision }) {
-  const [plays, setPlays] = useState([]);
-  return <CardFlights deal={deal} revision={revision} forehand="rival">
-    <GameTable players={2} seats={seats}>
-      <GameTable.Seat slotKey="rival"><GameHand.Hidden count={4} label="Rival hand" /></GameTable.Seat>
-      <GameTable.Dock>
-        <GameHand cards={cards.filter(card => !plays.some(play => play.cardId === card.id))}
-          playLabel="Play selected" onPlayIntent={card => setPlays(current => [...current,
-            { ...card, id: 'play-' + card.id, cardId: card.id }])} />
-      </GameTable.Dock>
-      <GameTable.Play slotKey="own"><GameCardStack.Pile playerKey="own" label="Own pile" cards={plays} /></GameTable.Play>
-    </GameTable>
-  </CardFlights>;
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: vars.space[3] });
+const Board = styled.div({ blockSize: '600px', maxInlineSize: '850px', inlineSize: '100%' });
+const StatusOutput = styled.output({ color: vars.color.text, background: vars.color.bg });
+const DemoTheme = styled.div({ background: vars.color.bg, color: vars.color.text });
+const ResponsiveHand = styled(GameHand)({
+  '@media (max-width: 30rem)': {
+    '--game-card-width': vars.size.gameCardSm,
+    '[data-ui~="game-card"]': { '--game-card-width': vars.size.gameCardSm },
+  },
+});
+const cards = [
+  { id: 'ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'two', label: 'Two of spades', value: { deck: 'french', suit: 'spades', rank: 2 } },
+  { id: 'three', label: 'Three of spades', value: { deck: 'french', suit: 'spades', rank: 3 } },
+  { id: 'four', label: 'Four of spades', value: { deck: 'french', suit: 'spades', rank: 4 } },
+] satisfies GameHandCard[];
+const seats = [{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }];
+type Play = PlayingCard & { cardId: string; playerKey: string };
+
+function FlightStatus() {
+  const { busy } = useCardFlightStatus();
+  return <StatusOutput aria-label="Flight status">{busy ? 'Flying' : 'Ready'}</StatusOutput>;
+}
+
+export function Match() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  const [deal, setDeal] = useState(0);
+  const [revision, setRevision] = useState(0);
+  const [plays, setPlays] = useState<Play[]>([]);
+  const [busy, setBusy] = useState(false);
+  const own = plays.filter(play => play.playerKey === 'own');
+  const rival = plays.filter(play => play.playerKey === 'rival');
+  const accept = (card: GameHandCard) => setPlays(current => [...current,
+    { ...card, id: 'play-' + card.id, cardId: card.id, playerKey: 'own' },
+    { ...card, id: 'reply-' + card.id, cardId: 'rival-' + card.id, playerKey: 'rival' },
+  ]);
+  return <div ref={setHost}><ThemeRoot theme="dark" portalContainer={host}><DemoTheme>
+    <StatusOutput aria-label="Reported status">{busy ? 'Flying' : 'Ready'}</StatusOutput>
+    <CardFlights deal={deal} revision={revision} forehand="rival" onBusyChange={setBusy}>
+      <Controls>
+        <Button onClick={() => { setPlays([]); setDeal(key => key + 1); }}>Deal hand</Button>
+        <Button onClick={() => {
+          setRevision(key => key + 1);
+          setPlays([{ id: 'server-four', cardId: 'four', playerKey: 'own', label: 'Four of spades',
+            value: { deck: 'french', suit: 'spades', rank: 4 } }]);
+        }}>Resync board</Button>
+        <Button onClick={() => setPlays([])}>Clear plays</Button>
+        <Button onClick={() => setPlays(cards.map(card => ({
+          ...card, id: 'play-' + card.id, cardId: card.id, playerKey: 'own',
+        })))}>Play all</Button>
+        <FlightStatus />
+      </Controls>
+      <Board><GameTable players={2} seats={seats}>
+        <GameTable.Seat slotKey="rival">
+          <GameHand.Hidden count={cards.length - rival.length} label="Rival hand" />
+        </GameTable.Seat>
+        <GameTable.Dock>
+          <ResponsiveHand cards={cards.filter(card => !own.some(play => play.cardId === card.id))}
+            playLabel="Play selected" onPlayIntent={accept} />
+        </GameTable.Dock>
+        {seats.map(seat => <GameTable.Play key={seat.key} slotKey={seat.key}>
+          <GameCardStack.Pile playerKey={seat.key} label={seat.key + ' pile'} maxCards={3}
+            cards={plays.filter(play => play.playerKey === seat.key)} />
+        </GameTable.Play>)}
+      </GameTable></Board>
+    </CardFlights>
+  </DemoTheme></ThemeRoot></div>;
 }` },
-    description: { component: 'Animate deals and plays from the rendered card tree.' },
-    usage: `## Setup
-Import from \`@jfrader/ui/card-flights\` and wrap one board in \`CardFlights\`. This subpath is opt-in; it is not exported from the package root. The component adds no DOM wrapper.
+    description: { component: 'Animate cards moving from a deck or hand to their next position.' },
+    sections: [
+      { title: 'Deals and plays', stories: ['ComposedBoard'] },
+      { title: 'Custom boards', stories: ['CustomTarget'] },
+    ],
+    usage: `### Board updates
+Use one table per flight board. The first render appears in place; later deals start at the deck or table centre and follow seat order, one card per seat per round. Accept a play by updating your rendered hand and piles. Keep source identities stable and give each play a unique identity. Missing origins appear in place.
 
-## Deals and snapshots
-The first render appears in place. Change \`deal\` to fly every rendered hand card from \`CardFlights.Deck\`, or the GameTable surface centre when no Deck is present. \`forehand\` is a seat key; cards follow the table seat order, one card per seat per round. Change \`revision\` to cancel flights and apply a snapshot in place.
+Apply server snapshots as resynchronizations so active flights are cancelled rather than replayed. Do not combine the rendered-tree engine with deprecated deal/play hooks.
 
-## Plays and identity
-\`PlayingCard\` contains \`id\`, \`label\` and optional \`value\`. GameHand requires a value. Each played card has a unique play \`id\`; set its optional \`cardId\` when the source card id differs. GameHand, GameHand.Hidden, GameCardStack.Pile and GameTable register their rendered nodes. Piles display their newest maxCards cards. Hidden hands inherit their player key from GameTable.Seat, or take an explicit \`playerKey\` outside it.
-New play nodes fly from the previous hand with the same cardId, or the rival seat's last hidden card. Missing origins appear in place. Confirm captures the current hand position automatically. Use \`useCardFlightOrigin()\` to capture an origin before accepting a custom drag.
-
-## Custom destinations and activity
-\`CardFlights.Target\` renders a div. Use \`kind="play" cardId="ace"\` without a pile, or \`kind="seat" seatKey="rival" index={0}\` for a hidden destination. Children supply the front artwork; optional \`front\`, \`back\` and \`face\` override it. Deck and Target forward native div props, refs and sx.
-\`useCardFlightStatus().busy\` reports activity inside the board and is false without a provider. Stock GameHand blocks selection and confirmation while busy. \`onBusyChange\` reports activity to a state owner above CardFlights, including cancellation on unmount. Reduced motion completes in place and interrupts active flights.
-
-## Accessibility
-Flights are decorative and hidden from assistive technology. GameHand keeps its native card buttons and explicit confirmation action; select a card with Enter or Space, then activate Play selected. No additional keyboard commands are introduced.
-
-## Migration
-CardFlightsProvider, useBoardFlights, useDealFlights, usePlayedCardFlights, useCardFlights, CardFlightSpec, CARD_FLIGHT_ATTRIBUTES, flightTarget and measureCardBox are deprecated and will be removed in the next major release. Replace provider and hook pairs with CardFlights around the existing tree; remove duplicated hand/play hook arguments and landing Sets. Do not mix legacy deal/play hooks with CardFlights.`,
+### Keyboard and motion
+Flights are decorative and hidden from assistive technology. Select a hand card with Enter or Space, then activate Play selected. The hand blocks selection and confirmation during flights. Custom controls must handle busy state themselves. Reduced motion places cards immediately and interrupts active flights.`,
   } },
 } satisfies Meta<typeof CardFlights>;
 export default meta;
@@ -155,6 +205,8 @@ function required<T>(value: T | null | undefined): T { if (value == null) throw 
 
 /** Deal from the table centre, then confirm a local card and receive a rival reply. */
 export const ComposedBoard: Story = {
+  name: 'Deal and play at a table',
+  parameters: { docs: { description: { story: 'Deal both hands, then confirm a local play and receive a rival reply.' } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(flights(canvasElement)).toHaveLength(0);
     const hand = canvas.getByRole('button', { name: 'Ace of spades' });
@@ -196,15 +248,48 @@ export const ComposedBoard: Story = {
 
 /** Play into a custom node without a GameCardStack. */
 export const CustomTarget: Story = {
+  name: 'Custom play destination',
   render: () => <CustomMatch />,
-  parameters: { docs: { source: { language: 'tsx', code: `import { CardFlights } from '@jfrader/ui/card-flights';
+  parameters: { docs: {
+    description: { story: 'Move a card between registered hand and play destinations without a table.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { Button } from '@jfrader/ui/button';
+import { CardFlights, useCardFlightStatus } from '@jfrader/ui/card-flights';
 import { GameCard } from '@jfrader/ui/game-card';
+import { ThemeRoot } from '@jfrader/ui/theme-root';
 
-function CustomBoard({ card, played }) {
-  return <CardFlights>
-    {!played && <CardFlights.Target kind="hand" cardId={card.id}><GameCard {...card} /></CardFlights.Target>}
-    {played && <CardFlights.Target kind="play" cardId={card.id}><GameCard {...card} /></CardFlights.Target>}
-  </CardFlights>;
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: vars.space[3] });
+const Board = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[8], padding: vars.space[4] });
+const StatusOutput = styled.output({ color: vars.color.text, background: vars.color.bg });
+
+function FlightStatus() {
+  const { busy } = useCardFlightStatus();
+  return <StatusOutput aria-label="Flight status">{busy ? 'Flying' : 'Ready'}</StatusOutput>;
+}
+
+export function CustomBoard() {
+  const [played, setPlayed] = useState(false);
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return <div ref={setHost}>
+    <ThemeRoot theme="dark" portalContainer={host}>
+      <CardFlights>
+        <Controls>
+          <Button onClick={() => setPlayed(value => !value)}>{played ? 'Return card' : 'Play card'}</Button>
+          <FlightStatus />
+        </Controls>
+        <Board>
+          {!played && <CardFlights.Target kind="hand" cardId="custom">
+            <GameCard label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
+          </CardFlights.Target>}
+          {played && <CardFlights.Target kind="play" cardId="custom">
+            <GameCard label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
+          </CardFlights.Target>}
+        </Board>
+      </CardFlights>
+    </ThemeRoot>
+  </div>;
 }` } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));

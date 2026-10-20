@@ -18,22 +18,11 @@ const Row = styled.div({
   padding: vars.space[3],
 });
 
-const USAGE_NOTES = `- Map your domain result to \`outcome\` ("victoria" etc are consumer labels).
-- Slots receive consumer content; title should be a heading in the page hierarchy.
-- Celebration slot receives your effect (positioned as overlay). The library does not ship emoji rain or particles.
-- Recipe for deterministic celebration (respects reduced motion): mount a stable seed (match id), use MotionConfig + useReducedMotion, compute fixed positions from seed (no Math.random per render), run the animation to its end state; under reduced motion render the final positions instantly and skip the travel. Example:
-  const seed = matchId;
-  const reduced = useReducedMotion();
-  <MotionConfig reducedMotion="user">
-    {positionsFromSeed(seed).map((p, i) => (
-      <motion.div
-        key={i}
-        initial={reduced ? p.final : p.start}
-        animate={p.final}
-        transition={{ duration: reduced ? 0 : 0.6, delay: i * 0.03 }}
-      />
-    ))}
-  </MotionConfig>`;
+const USAGE_NOTES = `### Match end
+Use your game's language for result text and give players a next action. Your application decides the match result and handles navigation.
+
+### Accessibility and motion
+The result is an atomic status announcement. Keep the title consistent with the page's heading hierarchy. Any celebration effect belongs to your application: keep positions stable between renders and skip travel when reduced motion is requested.`;
 
 const meta = {
   title: 'Games/GameResult',
@@ -42,8 +31,12 @@ const meta = {
     docs: {
       description: {
         component:
-          'Presentational panel for match end. Exposes outcome data; consumers supply labels, copy, actions and any celebration effect.',
+          'Show a match result with rewards and next actions.',
       },
+      sections: [
+        { title: 'Match results', stories: ['Win', 'Loss', 'Draw'] },
+        { title: 'Composition', stories: ['TitleReplacement'] },
+      ],
       usage: USAGE_NOTES,
     },
   },
@@ -83,6 +76,7 @@ export const Win: Story = {
   },
   parameters: {
     docs: {
+      description: { story: 'Show earned rewards with lobby and replay actions.' },
       source: {
         language: 'tsx',
         code: `import { Button } from '@jfrader/ui/button';
@@ -130,6 +124,7 @@ export const Loss: Story = {
   },
   parameters: {
     docs: {
+      description: { story: 'Show a loss with a single return action.' },
       source: {
         language: 'tsx',
         code: `import { Button } from '@jfrader/ui/button';
@@ -158,6 +153,7 @@ export const Draw: Story = {
   name: 'Draw',
   parameters: {
     docs: {
+      description: { story: 'Show a tied match without a reward or follow-up action.' },
       source: {
         language: 'tsx',
         code: `import { GameResult } from '@jfrader/ui/game-result';
@@ -227,6 +223,7 @@ export const TitleReplacement: Story = {
   name: 'Custom title',
   parameters: {
     docs: {
+      description: { story: 'Render the result title through a custom element.' },
       source: {
         language: 'tsx',
         code: `import type { ComponentPropsWithRef } from 'react';

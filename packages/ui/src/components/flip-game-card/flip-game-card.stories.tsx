@@ -62,6 +62,11 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Turn a playing card over to show its other face.' },
+      sections: [
+        { title: 'Flipping', stories: ['Default', 'FaceUp', 'FaceDown'] },
+        { title: 'Artwork', stories: ['PatternFronts', 'PatternBacks', 'ProviderBackLabel', 'CustomArtwork'] },
+        { title: 'Sizing', stories: ['Sizes'] },
+      ],
       source: {
         language: 'tsx',
         code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
@@ -72,26 +77,14 @@ const meta = {
   backLabel="Card back"
 />`,
       },
-      usage: `## Setup
-- Import from \`@jfrader/ui/flip-game-card\`. FlipGameCard is an opt-in subpath and is not re-exported by the package root.
+      usage: `### Faces
+Clicking the card does not turn it over; accept the change in your application. Both faces stay mounted, so do not pass secret card values. Give each face an accessible name. A missing back name throws even when the card starts face up. Custom artwork must fit the card frame.
 
-## Faces and state
-- Pass \`value\`, \`label\` and \`backLabel\` to render both faces from one deck. Set \`DeckProvider backLabel\` to name backs once in your language.
-- For custom content, pass two named faces with \`front\` and \`back\` instead of the shorthand; there is no \`children\` alias.
-- Set \`flipped\` to show the back (default \`false\`). Clicking the card does not change it. Shorthand without a nonempty back name throws \`MissingBackLabelError\`, even when initially face up.
-- Both faces stay mounted. Hidden content remains in the DOM: do not pass secret card values.
-- Place a \`GameCard\` directly in each face; the wrapper sizes both to its \`size\` (default \`md\`). Custom content must fit the frame.
+### Keyboard and focus
+Keep the flip control outside the faces so it retains focus. The inactive face becomes inert and hidden from assistive technology immediately, including during a flip. The wrapper adds no keyboard commands.
 
-## Keyboard
-- This wrapper has no APG widget role or keyboard commands. Give each face its own accessible name.
-- The inactive face is inert and hidden from assistive technology immediately, even during a flip.
-- Keep the flip control outside the faces so it retains focus when the accepted state changes.
-
-## Motion and layout
-- The outer root (and its React 19 \`ref\`) stays still; only the inner rotator moves. Use root \`sx\` for placement and \`slotProps\` for part styles.
-- Replace the root with \`component\` or \`slots.root\`. Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`. \`slotProps.root\` overrides root props; className and style merge.
-- Perspective uses \`size.gameCardPerspective\` (28rem). The flip uses \`motion.duration.cardFlip\` (300ms) and \`motion.easeCardFlip\` (ease).
-- Reduced motion switches faces immediately without rotation. No render-time measurements are needed.`,
+### Motion
+Only the inner card rotates; the outer frame stays still. Reduced motion switches faces immediately.`,
     },
   },
 } satisfies Meta<typeof FlipGameCard>;
@@ -114,6 +107,7 @@ export const FaceUp: Story = {
   name: 'Face up',
   parameters: {
     docs: {
+      description: { story: 'Show the named front while the back remains inactive.' },
       source: {
         language: 'tsx',
         code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
@@ -142,6 +136,7 @@ export const FaceDown: Story = {
   args: { flipped: true },
   parameters: {
     docs: {
+      description: { story: 'Start with the named card back visible.' },
       source: {
         language: 'tsx',
         code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
@@ -197,6 +192,7 @@ export const PatternFronts: Story = {
   render: patternFaces,
   parameters: {
     docs: {
+      description: { story: 'Compare the built-in French and Spanish card faces.' },
       source: {
         language: 'tsx',
         code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
@@ -235,6 +231,7 @@ export const PatternBacks: Story = {
   args: { flipped: true },
   parameters: {
     docs: {
+      description: { story: 'Compare Spanish diagonal backs and French poker checks.' },
       source: {
         language: 'tsx',
         code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
@@ -346,6 +343,7 @@ export const Sizes: Story = {
   name: 'Sizes',
   parameters: {
     docs: {
+      description: { story: 'Compare small, medium and large card frames.' },
       source: {
         language: 'tsx',
         code: `import { FlipGameCard } from '@jfrader/ui/flip-game-card';
@@ -501,18 +499,23 @@ function ControlledShorthand(args: FlipGameCardProps) {
 export const Default: Story = {
   name: 'Controlled flip',
   render: (args) => <ControlledShorthand {...args} />,
-  parameters: { docs: { source: { code: `import { useState } from 'react';
-import { Button } from '@jfrader/ui';
+  parameters: { docs: {
+    description: { story: 'Use the external button to turn the card over without moving focus.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
 import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+
+const Controls = styled.div({ display: 'grid', gap: vars.space[4], justifyItems: 'start' });
 
 export function FlippableCard() {
   const [flipped, setFlipped] = useState(false);
   return (
-    <>
+    <Controls>
       <Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
       <FlipGameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }}
         label="Ace of spades" backLabel="Card back" flipped={flipped} />
-    </>
+    </Controls>
   );
 }` } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
@@ -558,6 +561,7 @@ export const ProviderBackLabel: Story = {
   </DeckProvider>,
   parameters: {
     docs: {
+      description: { story: 'Name Spanish card backs once for the whole deck.' },
       source: {
         language: 'tsx',
         code: `import { DeckProvider } from '@jfrader/ui/deck';
@@ -605,6 +609,7 @@ export const CustomArtwork: Story = {
         language: 'tsx',
         code: `import { defineDeck, DeckProvider } from '@jfrader/ui/deck';
 import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+import { vars } from '@jfrader/tokens/vars';
 
 const artworkDeck = defineDeck({
   id: 'artwork',
@@ -612,7 +617,7 @@ const artworkDeck = defineDeck({
   ranks: {},
   back: (
     <svg viewBox="0 0 40 60" aria-hidden="true">
-      <circle cx="20" cy="30" r="12" />
+      <circle cx="20" cy="30" r="12" fill={vars.color.cardFace} />
     </svg>
   ),
 });
