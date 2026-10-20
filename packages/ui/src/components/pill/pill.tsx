@@ -9,6 +9,7 @@ import { WithSx, type SxProps } from '../../styling/sx';
 export type PillTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
 
 export interface PillProps extends ComponentPropsWithRef<'span'>, SxProps {
+  /** Set the label's text and background palette. Defaults to `neutral`. */
   tone?: PillTone;
 }
 

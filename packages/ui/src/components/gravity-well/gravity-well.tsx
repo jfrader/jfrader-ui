@@ -103,8 +103,18 @@ interface GravityWellBaseProps
 }
 
 export type GravityWellProps = GravityWellBaseProps & (
-  | { interactive?: true; controlLabels: GravityWellControlLabels }
-  | { interactive: false; controlLabels?: GravityWellControlLabels }
+  | {
+      /** Enable pointer and keyboard interaction and pause controls. Defaults to `true`. */
+      interactive?: true;
+      /** Label the pause and resume buttons. Required when `interactive` is `true` or omitted. */
+      controlLabels: GravityWellControlLabels;
+    }
+  | {
+      /** Disable interaction, motion and pause controls. */
+      interactive: false;
+      /** Label the pause and resume buttons. Unused when `interactive` is `false`. */
+      controlLabels?: GravityWellControlLabels;
+    }
 );
 
 // Named field and physics constants
