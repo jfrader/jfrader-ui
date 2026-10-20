@@ -313,6 +313,10 @@ const labelStyle = css({
   overflowWrap: 'anywhere',
 });
 
+const separatorStyle = css({
+  flexShrink: 0,
+});
+
 const checkStyle = css({
   boxSizing: 'border-box',
   display: 'inline-flex',
@@ -733,7 +737,7 @@ ContextMenuCheckboxItem.displayName = 'ContextMenu.CheckboxItem';
 
 function ContextMenuSeparator(props: ContextMenuSeparatorProps) {
   useContextMenuContext('Separator');
-  return <MenuSeparatorPart {...props} marker="context-menu-separator" styles={menuSeparatorStyles} />;
+  return <MenuSeparatorPart {...props} marker="context-menu-separator" styles={[menuSeparatorStyles, separatorStyle]} />;
 }
 
 ContextMenuSeparator.displayName = 'ContextMenu.Separator';

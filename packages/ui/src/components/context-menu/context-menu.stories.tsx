@@ -1,6 +1,6 @@
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
-import { Component, useCallback, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { Component, Fragment, useCallback, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
@@ -1094,7 +1094,10 @@ export const ManyItems: Story = {
       </TargetBox>
       <ContextMenu.Content>
         {Array.from({ length: 20 }, (_, index) => (
-          <ContextMenu.Item key={index}>{`Move to folder ${index + 1}`}</ContextMenu.Item>
+          <Fragment key={index}>
+            {index > 0 && index % 5 === 0 && <ContextMenu.Separator />}
+            <ContextMenu.Item>{`Move to folder ${index + 1}`}</ContextMenu.Item>
+          </Fragment>
         ))}
       </ContextMenu.Content>
     </ContextMenu>
@@ -1106,6 +1109,10 @@ export const ManyItems: Story = {
     // The menu scrolls past its maximum height; scrolling inside it keeps it open.
     await expect(menu.getBoundingClientRect().height).toBeLessThanOrEqual(300 + TOLERANCE_PX);
     await expect(menu.scrollHeight).toBeGreaterThan(menu.clientHeight);
+    await settleMotion(menu);
+    for (const separator of within(menu).getAllByRole('separator')) {
+      await expect(separator.getBoundingClientRect().height).toBeGreaterThanOrEqual(1);
+    }
     await userEvent.keyboard('{End}');
     await expectItemFocused(canvasElement, 'Move to folder 20');
     await waitFor(() => expect(menu.scrollTop).toBeGreaterThan(0));
