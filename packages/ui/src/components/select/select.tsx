@@ -282,6 +282,7 @@ function useSelectItemContext(): SelectContextValue {
 
 const selectTriggerStyle = css({
   justifyContent: 'flex-start',
+  gap: vars.space[2],
   minInlineSize: '180px',
   maxInlineSize: '100%',
   '&[aria-expanded="true"]': {
@@ -324,6 +325,10 @@ const valueStyle = css({
   '&[data-placeholder]': {
     color: vars.color.textMuted,
   },
+});
+
+const selectOptionTextStyle = css({
+  overflowWrap: 'anywhere',
 });
 
 const selectLabelStyle = css({
@@ -956,7 +961,7 @@ function SelectItem({
           data-ui="select-item"
           className={className}
         >
-          <span ref={textRef} css={listboxOptionTextStyle}>
+          <span ref={textRef} css={[listboxOptionTextStyle, selectOptionTextStyle]}>
             {children}
           </span>
           {isSelected && (
