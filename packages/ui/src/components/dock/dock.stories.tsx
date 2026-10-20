@@ -67,25 +67,159 @@ export const Default: Story = {
   },
 };
 export const Light: Story = { ...Default, decorators: [withLightTheme] };
-export const Grouped: Story = { args: { items: grouped, defaultValue: 'rectangle' } };
+export const Grouped: Story = {
+  args: { items: grouped, defaultValue: 'rectangle' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  {
+    id: 'shapes',
+    label: 'Shapes',
+    items: [
+      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon },
+    ],
+  },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+];
+
+<Dock items={items} defaultValue="rectangle" />`,
+      },
+    },
+  },
+};
 export const NoSelection: Story = {
   args: { value: null },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dock items={tools} value={null} />`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     for (const button of canvas.getAllByRole('button')) await expect(button).toHaveAttribute('aria-pressed', 'false');
     await expect(canvas.getByRole('button', { name: 'Select, V' }).tabIndex).toBe(0);
   },
 };
-export const AlwaysLabelsTouch: Story = { args: { items: grouped, labels: 'always' } };
+export const AlwaysLabelsTouch: Story = {
+  args: { items: grouped, labels: 'always' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  {
+    id: 'shapes',
+    label: 'Shapes',
+    items: [
+      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon },
+    ],
+  },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+];
+
+<Dock items={items} defaultValue="select" labels="always" />`,
+      },
+    },
+  },
+};
 export const LongLabels: Story = {
   args: { labels: 'always', items: [
     { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon },
     { id: 'comment', label: 'Add a comment for the review team', icon },
   ] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = [
+  { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon },
+  { id: 'comment', label: 'Add a comment for the review team', icon },
+];
+
+<Dock items={items} defaultValue="select" labels="always" />`,
+      },
+    },
+  },
 };
 export const NarrowOverflow: Story = {
   args: { style: { width: 320 }, items: Array.from({ length: 10 }, (_, index) => ({
     id: `tool-${index}`, label: `Tool ${new Intl.NumberFormat('en').format(index + 1)}`, icon,
   })) },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, styled, type DockItem } from '@jfrader/ui';
+
+const NarrowDock = styled(Dock)({ inlineSize: 320 });
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = Array.from({ length: 10 }, (_, index) => ({
+  id: \`tool-\${index}\`,
+  label: \`Tool \${new Intl.NumberFormat('en').format(index + 1)}\`,
+  icon,
+}));
+
+<NarrowDock items={items} defaultValue="select" />`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent }) => {
     const toolbar = canvas.getByRole('toolbar');
     await expect(toolbar.scrollWidth).toBeGreaterThan(toolbar.clientWidth);
@@ -100,6 +234,26 @@ export const NarrowOverflow: Story = {
 };
 export const BadgesZero: Story = {
   args: { items: [{ id: 'zero', label: 'Comments', icon, badge: 0 }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = [
+  { id: 'zero', label: 'Comments', icon, badge: 0 },
+];
+
+<Dock items={items} />`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('button', { name: 'Comments' })).toBeInTheDocument();
     await expect(canvasElement.querySelector('[data-ui="dock-badge"]')).toBeNull();
@@ -107,6 +261,26 @@ export const BadgesZero: Story = {
 };
 export const BadgesLarge: Story = {
   args: { locale: 'de-DE', items: [{ id: 'large', label: 'Comments', icon, badge: 1234567890, badgeLabel: 'comments' }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = [
+  { id: 'large', label: 'Comments', icon, badge: 1234567890, badgeLabel: 'comments' },
+];
+
+<Dock items={items} defaultValue="select" locale="de-DE" />`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('button', { name: 'Comments, 1.234.567.890 comments' })).toBeInTheDocument();
     await expect(canvasElement.querySelector('[data-ui="dock-badge"]')).toHaveTextContent('1.234.567.890');
@@ -125,6 +299,31 @@ export const DisabledEmptyGroups: Story = {
     { id: 'empty', label: 'Empty shapes', items: [] },
     { id: 'disabled-group', label: 'Disabled shapes', disabled: true, items: [{ id: 'shape', label: 'Shape', icon }] },
   ] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'empty', label: 'Empty shapes', items: [] },
+  { id: 'disabled-group', label: 'Disabled shapes', disabled: true, items: [{ id: 'shape', label: 'Shape', icon }] },
+];
+
+<Dock items={items} defaultValue="select" />`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     await expect(canvas.getByRole('button', { name: 'Empty shapes: No tools' })).toBeDisabled();
     await expect(canvas.getByRole('button', { name: 'Disabled shapes: Shape' })).toBeDisabled();
@@ -132,9 +331,44 @@ export const DisabledEmptyGroups: Story = {
     await expect(args.onValueChange).not.toHaveBeenCalled();
   },
 };
-export const Empty: Story = { args: { items: [] } };
+export const Empty: Story = {
+  args: { items: [] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock } from '@jfrader/ui';
+
+<Dock items={[]} />`,
+      },
+    },
+  },
+};
 export const RemovedOrDisabledSelection: Story = {
   args: { value: 'locked' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dock items={tools} value="locked" />`,
+      },
+    },
+  },
   play: async ({ canvas, args }) => {
     for (const item of canvas.getAllByRole('button')) await expect(item).toHaveAttribute('aria-pressed', 'false');
     await expect(args.onValueChange).not.toHaveBeenCalled();
@@ -172,6 +406,41 @@ export const Keyboard: Story = {
 export const PersistentTray: Story = { tags: ['!autodocs'], args: { items: grouped, defaultOpen: true, defaultTray: 'shapes', defaultValue: 'rectangle' } };
 export const TraySelection: Story = {
   args: { items: grouped, defaultValue: null },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  {
+    id: 'shapes',
+    label: 'Shapes',
+    items: [
+      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon },
+    ],
+  },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+];
+
+function TraySelectionDock() {
+  const [value, setValue] = useState<string | null>(null);
+  return <Dock items={items} value={value} onValueChange={setValue} />;
+}`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const body = page(canvasElement);
     const group = canvas.getByRole('button', { name: 'Shapes: Rectangle, R' });
@@ -205,6 +474,41 @@ export const TraySelection: Story = {
 };
 export const GroupActivation: Story = {
   args: { items: grouped, defaultValue: null },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  {
+    id: 'shapes',
+    label: 'Shapes',
+    items: [
+      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon },
+    ],
+  },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+];
+
+function GroupActivationDock() {
+  const [value, setValue] = useState<string | null>(null);
+  return <Dock items={items} value={value} onValueChange={setValue} />;
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab(); await userEvent.keyboard('{ArrowRight}{Enter}');
     const group = canvas.getByRole('button', { name: 'Shapes: Rectangle, R, Selected' });
@@ -239,6 +543,43 @@ export const TrayTab: Story = {
 };
 export const ControlledRejectValue: Story = {
   args: { value: 'select', items: grouped },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  {
+    id: 'shapes',
+    label: 'Shapes',
+    items: [
+      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon },
+    ],
+  },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+];
+
+<Dock
+  items={items}
+  value="select"
+  onValueChange={() => {
+    // Value change rejected by controller
+  }}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.tab(); await userEvent.keyboard('{ArrowRight}{Enter}');
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
@@ -271,6 +612,33 @@ export const ControlledRejectOpen: Story = {
 
 export const Reorderable: Story = {
   args: { reorderable: true },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+function ReorderableDock() {
+  const [order, setOrder] = useState<readonly string[]>(['select', 'hand', 'locked', 'text']);
+  return <Dock items={tools} defaultValue="select" reorderable order={order} onOrderChange={setOrder} />;
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const toolbar = canvas.getByRole('toolbar');
     const select = canvas.getByRole('button', { name: 'Select, V, Selected' });
@@ -291,6 +659,37 @@ export const Reorderable: Story = {
 };
 export const ControlledRejectOrder: Story = {
   args: { reorderable: true, order: ['select', 'hand', 'locked', 'text'] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dock
+  items={tools}
+  defaultValue="select"
+  reorderable
+  order={['select', 'hand', 'locked', 'text']}
+  onOrderChange={() => {
+    // Order change rejected by controller
+  }}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab(); await userEvent.keyboard('{Alt>}{ArrowRight}{/Alt}');
     await expect(args.onOrderChange).toHaveBeenCalledTimes(1);
@@ -301,6 +700,29 @@ export const ControlledRejectOrder: Story = {
 };
 export const NormalizedOrder: Story = {
   args: { order: ['text', 'unknown', 'text', 'hand'] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dock items={tools} defaultValue="select" order={['text', 'unknown', 'text', 'hand']} />`,
+      },
+    },
+  },
   play: async ({ canvas, args }) => {
     await expect(ids(canvas.getByRole('toolbar'))).toEqual(['text', 'hand', 'select', 'locked']);
     await expect(args.onOrderChange).not.toHaveBeenCalled();
@@ -308,6 +730,33 @@ export const NormalizedOrder: Story = {
 };
 export const MoveOptions: Story = {
   args: { reorderable: true },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+function MoveOptionsDock() {
+  const [order, setOrder] = useState<readonly string[]>(['select', 'hand', 'locked', 'text']);
+  return <Dock items={tools} defaultValue="select" reorderable order={order} onOrderChange={setOrder} />;
+}`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Move before / Move after: Select' }));
     const body = page(canvasElement);
@@ -320,6 +769,33 @@ export const MoveOptions: Story = {
 };
 export const PointerReorder: Story = {
   args: { reorderable: true },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+function PointerReorderDock() {
+  const [order, setOrder] = useState<readonly string[]>(['select', 'hand', 'locked', 'text']);
+  return <Dock items={tools} defaultValue="select" reorderable order={order} onOrderChange={setOrder} />;
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const select = canvas.getByRole('button', { name: 'Select, V, Selected' });
     const rect = select.getBoundingClientRect();
@@ -340,6 +816,37 @@ export const PointerReorder: Story = {
 export const PointerRejectOrder: Story = {
   ...PointerReorder,
   args: { reorderable: true, order: ['select', 'hand', 'locked', 'text'] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dock
+  items={tools}
+  defaultValue="select"
+  reorderable
+  order={['select', 'hand', 'locked', 'text']}
+  onOrderChange={() => {
+    // Order change rejected by controller
+  }}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const select = canvas.getByRole('button', { name: 'Select, V, Selected' });
     const rect = select.getBoundingClientRect();
@@ -356,6 +863,29 @@ export const PointerRejectOrder: Story = {
 };
 export const VerticalGesture: Story = {
   args: { reorderable: true },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dock items={tools} defaultValue="select" reorderable />`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const select = canvas.getByRole('button', { name: 'Select, V, Selected' });
     const rect = select.getBoundingClientRect();
@@ -370,6 +900,29 @@ export const VerticalGesture: Story = {
 };
 export const PointerCancel: Story = {
   args: { reorderable: true, defaultValue: null },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dock items={tools} defaultValue={null} reorderable />`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const select = canvas.getByRole('button', { name: 'Select, V' });
     const rect = select.getBoundingClientRect();
@@ -387,6 +940,37 @@ export const PointerCancel: Story = {
 };
 export const RTL: Story = {
   args: { dir: 'rtl', reorderable: true, items: grouped },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  {
+    id: 'shapes',
+    label: 'Shapes',
+    items: [
+      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon },
+    ],
+  },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+];
+
+<Dock items={items} defaultValue="select" dir="rtl" reorderable />`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.tab(); await userEvent.keyboard('{ArrowLeft}');
     const group = canvas.getByRole('button', { name: 'Shapes: Rectangle, R' });
@@ -405,7 +989,30 @@ export const InheritedRTL: Story = {
 };
 export const ReducedMotion: Story = {
   ...Reorderable,
-  parameters: { docs: { description: { story: 'Enable reduced motion in browser rendering settings to inspect instant tray, selection and order changes. The play checks keyboard behavior, not media emulation.' } } },
+  parameters: {
+    docs: {
+      description: { story: 'Enable reduced motion in browser rendering settings to inspect instant tray, selection and order changes. The play checks keyboard behavior, not media emulation.' },
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dock items={tools} defaultValue="select" reorderable />`,
+      },
+    },
+  },
 };
 export const ForcedColors: Story = {
   ...PersistentTray,
@@ -506,6 +1113,23 @@ export const ReplacementSlots: Story = {
 };
 export const FalsyIcons: Story = {
   args: { items: [false, null, 0, ''].map((content, index) => ({ id: `falsy-${index}`, label: `Icon ${content === 0 ? 0 : index}`, icon: content })) },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const items: readonly DockItem[] = [
+  { id: 'falsy-0', label: 'Icon 0', icon: false },
+  { id: 'falsy-1', label: 'Icon 1', icon: null },
+  { id: 'falsy-2', label: 'Icon 0', icon: 0 },
+  { id: 'falsy-3', label: 'Icon 3', icon: '' },
+];
+
+<Dock items={items} />`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     const buttons = canvas.getAllByRole('button');
     await expect(buttons[0]!.querySelector('[data-ui="dock-icon"]')).toBeNull();
@@ -570,6 +1194,31 @@ export const ControlledRejectTray: Story = {
 };
 export const EmptyStringValue: Story = {
   args: { value: '', items: [{ id: '', label: 'Selection', icon }, { id: 'other', label: 'Other', icon }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const items: readonly DockItem[] = [
+  { id: '', label: 'Selection', icon },
+  { id: 'other', label: 'Other', icon },
+];
+
+function EmptyStringDock() {
+  const [value] = useState('');
+  return <Dock items={items} value={value} onValueChange={(next) => console.log('Requested tool:', next)} />;
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const selected = canvas.getByRole('button', { name: 'Selection, Selected' });
     await expect(selected).toHaveAttribute('aria-pressed', 'true');

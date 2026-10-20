@@ -300,6 +300,23 @@ export const Keyboard: Story = {
 };
 
 export const Uncontrolled: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SegmentedControl } from '@jfrader/ui';
+
+<SegmentedControl label="Layout">
+  <SegmentedControl.Item value="List">List</SegmentedControl.Item>
+  <SegmentedControl.Item value="Grid">Grid</SegmentedControl.Item>
+  <SegmentedControl.Item value="Board" disabled>
+    Board
+  </SegmentedControl.Item>
+  <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
+</SegmentedControl>`,
+      },
+    },
+  },
   args: { defaultValue: undefined },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -313,6 +330,36 @@ export const Uncontrolled: Story = {
 };
 
 export const Rejects: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { SegmentedControl } from '@jfrader/ui';
+
+function Example() {
+  const [value] = useState('List');
+
+  return (
+    <SegmentedControl
+      label="Layout"
+      value={value}
+      onValueChange={(next) => {
+        // Controlled value rejects updates
+      }}
+    >
+      <SegmentedControl.Item value="List">List</SegmentedControl.Item>
+      <SegmentedControl.Item value="Grid">Grid</SegmentedControl.Item>
+      <SegmentedControl.Item value="Board" disabled>
+        Board
+      </SegmentedControl.Item>
+      <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
+    </SegmentedControl>
+  );
+}`,
+      },
+    },
+  },
   args: { value: 'List' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -367,15 +414,67 @@ export const Controlled: Story = {
 };
 
 export const NoSelection: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SegmentedControl } from '@jfrader/ui';
+
+<SegmentedControl label="Layout">
+  <SegmentedControl.Item value="List">List</SegmentedControl.Item>
+  <SegmentedControl.Item value="Grid">Grid</SegmentedControl.Item>
+  <SegmentedControl.Item value="Board" disabled>
+    Board
+  </SegmentedControl.Item>
+  <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
+</SegmentedControl>`,
+      },
+    },
+  },
   args: { defaultValue: undefined },
   play: async ({ canvas }) => {
     await expect(canvas.getAllByRole('radio', { checked: false })).toHaveLength(4);
     await waitFor(() => expect(canvas.getByRole('radio', { name: 'List' }).tabIndex).toBe(0));
   },
 };
-export const UnknownValue: Story = { ...NoSelection, args: { value: 'unknown' } };
+export const UnknownValue: Story = {
+  ...NoSelection,
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SegmentedControl } from '@jfrader/ui';
+
+<SegmentedControl label="Layout" value="unknown">
+  <SegmentedControl.Item value="List">List</SegmentedControl.Item>
+  <SegmentedControl.Item value="Grid">Grid</SegmentedControl.Item>
+  <SegmentedControl.Item value="Board" disabled>
+    Board
+  </SegmentedControl.Item>
+  <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
+</SegmentedControl>`,
+      },
+    },
+  },
+  args: { value: 'unknown' },
+};
 export const Empty: Story = { render: (args) => <Example {...args} options={[]} /> };
 export const Disabled: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SegmentedControl } from '@jfrader/ui';
+
+<SegmentedControl label="Layout" defaultValue="List" disabled>
+  <SegmentedControl.Item value="List">List</SegmentedControl.Item>
+  <SegmentedControl.Item value="Grid">Grid</SegmentedControl.Item>
+  <SegmentedControl.Item value="Board">Board</SegmentedControl.Item>
+  <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
+</SegmentedControl>`,
+      },
+    },
+  },
   args: { disabled: true, onOptionIntent: fn() },
   play: async ({ canvas, userEvent, args }) => {
     await expect(canvas.getByRole('radiogroup')).toHaveAttribute('aria-disabled', 'true');
@@ -401,6 +500,35 @@ export const AllDisabled: Story = {
 };
 
 export const IntentPrefetch: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SegmentedControl } from '@jfrader/ui';
+
+export function LayoutSwitcher({
+  prefetchView,
+}: {
+  prefetchView: (value: string) => void;
+}) {
+  return (
+    <SegmentedControl
+      label="Layout"
+      defaultValue="List"
+      onOptionIntent={(value) => prefetchView(value)}
+    >
+      <SegmentedControl.Item value="List">List</SegmentedControl.Item>
+      <SegmentedControl.Item value="Grid">Grid</SegmentedControl.Item>
+      <SegmentedControl.Item value="Board" disabled>
+        Board
+      </SegmentedControl.Item>
+      <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
+    </SegmentedControl>
+  );
+}`,
+      },
+    },
+  },
   args: { onOptionIntent: fn() },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.hover(canvas.getByRole('radio', { name: 'Grid' }));
@@ -563,6 +691,19 @@ export const ForcedColors: Story = {
         story:
           'Enable forced colors in the browser to check the selection border and focus outline.',
       },
+      source: {
+        language: 'tsx',
+        code: `import { SegmentedControl } from '@jfrader/ui';
+
+<SegmentedControl label="Layout" defaultValue="List" variant="solid">
+  <SegmentedControl.Item value="List">List</SegmentedControl.Item>
+  <SegmentedControl.Item value="Grid">Grid</SegmentedControl.Item>
+  <SegmentedControl.Item value="Board" disabled>
+    Board
+  </SegmentedControl.Item>
+  <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
+</SegmentedControl>`,
+      },
     },
   },
 };
@@ -604,6 +745,35 @@ export const OptionRemoval: Story = {
 };
 
 export const SlotsAndStyling: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SegmentedControl } from '@jfrader/ui';
+
+<SegmentedControl
+  label="Layout"
+  defaultValue="List"
+  slotProps={{
+    track: { className: 'custom-track', 'aria-hidden': true, role: 'presentation' },
+    selection: {
+      className: 'custom-selection',
+      'aria-hidden': false,
+      style: { position: 'fixed', inset: 100 },
+    },
+  }}
+  sx={{ borderRadius: '20px' }}
+>
+  <SegmentedControl.Item value="List">List</SegmentedControl.Item>
+  <SegmentedControl.Item value="Grid">Grid</SegmentedControl.Item>
+  <SegmentedControl.Item value="Board" disabled>
+    Board
+  </SegmentedControl.Item>
+  <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
+</SegmentedControl>`,
+      },
+    },
+  },
   args: {
     slotProps: {
       track: { className: 'custom-track', 'aria-hidden': true, role: 'presentation' },

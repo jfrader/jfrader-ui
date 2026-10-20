@@ -89,9 +89,123 @@ export const Default: Story = {
     }
   },
 };
-export const Unsorted: Story = { args: { value: null } };
-export const Ascending: Story = { args: { defaultValue: { columnId: 'name', direction: 'asc' } } };
-export const Descending: Story = { args: { defaultValue: { columnId: 'name', direction: 'desc' } } };
+export const Unsorted: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  value={null}
+/>`,
+      },
+    },
+  },
+  args: { value: null },
+};
+export const Ascending: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  defaultValue={{ columnId: 'name', direction: 'asc' }}
+/>`,
+      },
+    },
+  },
+  args: { defaultValue: { columnId: 'name', direction: 'asc' } },
+};
+export const Descending: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  defaultValue={{ columnId: 'name', direction: 'desc' }}
+/>`,
+      },
+    },
+  },
+  args: { defaultValue: { columnId: 'name', direction: 'desc' } },
+};
 export const Sizes: Story = {
   render: (args) => (
     <SizeGrid>
@@ -107,6 +221,42 @@ export const Sizes: Story = {
   },
 };
 export const StableNumericSorting: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  onValueChange={(sort) => console.log('Sort changed:', sort)}
+/>`,
+      },
+    },
+  },
   args: { onValueChange: fn() },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Budget: sort ascending' }));
@@ -170,6 +320,52 @@ export const ControlledSort: Story = {
   },
 };
 export const RejectedSort: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { SortableDataTable, type SortState } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+function Example() {
+  const [value] = useState<SortState | null>(null);
+
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={rows}
+      columns={columns}
+      getRowId={(row) => row.id}
+      value={value}
+      onValueChange={(next) => {
+        // Disallow sorting changes
+      }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { value: null, onValueChange: fn() },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Name: sort ascending' }));
@@ -192,6 +388,52 @@ export const ManualServerSort: Story = {
   },
 };
 export const Selection: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+function Example() {
+  const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
+
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={rows}
+      columns={columns}
+      getRowId={(row) => row.id}
+      getRowLabel={(row) => row.name}
+      selectable
+      selectedKeys={selectedKeys}
+      onSelectionChange={setSelectedKeys}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { selectable: true, getRowLabel, onSelectionChange: fn() },
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('checkbox', { name: 'Select Cedar' }));
@@ -211,8 +453,96 @@ export const Selection: Story = {
     await expect(all).not.toBeChecked();
   },
 };
-export const MixedSelection: Story = { args: { selectable: true, getRowLabel, defaultSelectedKeys: ['a'] } };
+export const MixedSelection: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  getRowLabel={(row) => row.name}
+  selectable
+  defaultSelectedKeys={['a']}
+/>`,
+      },
+    },
+  },
+  args: { selectable: true, getRowLabel, defaultSelectedKeys: ['a'] },
+};
 export const RejectedSelection: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+function Example() {
+  const [selectedKeys] = useState<readonly string[]>(['a']);
+
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={rows}
+      columns={columns}
+      getRowId={(row) => row.id}
+      getRowLabel={(row) => row.name}
+      selectable
+      selectedKeys={selectedKeys}
+      onSelectionChange={(next) => {
+        // Disallow selection changes
+      }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { selectable: true, getRowLabel, selectedKeys: ['a'], onSelectionChange: fn() },
   play: async ({ args, canvas, userEvent }) => {
     const all = canvas.getByRole('checkbox', { name: 'Select all visible rows' });
@@ -231,6 +561,53 @@ export const RejectedSelection: Story = {
   },
 };
 export const RangeSelection: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+function Example() {
+  const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
+
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={rows}
+      columns={columns}
+      getRowId={(row) => row.id}
+      getRowLabel={(row) => row.name}
+      selectable
+      selectedKeys={selectedKeys}
+      onSelectionChange={setSelectedKeys}
+      defaultValue={{ columnId: 'name', direction: 'asc' }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     selectable: true,
     getRowLabel,
@@ -248,6 +625,52 @@ export const RangeSelection: Story = {
   },
 };
 export const CrossPageSelection: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+function Example() {
+  const [selectedKeys, setSelectedKeys] = useState<readonly string[]>(['off-page']);
+
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={rows}
+      columns={columns}
+      getRowId={(row) => row.id}
+      getRowLabel={(row) => row.name}
+      selectable
+      selectedKeys={selectedKeys}
+      onSelectionChange={setSelectedKeys}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { selectable: true, getRowLabel, defaultSelectedKeys: ['off-page', 'off-page'], onSelectionChange: fn() },
   play: async ({ args, canvas, userEvent }) => {
     const all = canvas.getByRole('checkbox', { name: 'Select all visible rows' });
@@ -260,6 +683,36 @@ export const CrossPageSelection: Story = {
   },
 };
 export const Empty: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={[]}
+  columns={columns}
+  getRowId={(row) => row.id}
+  getRowLabel={(row) => row.name}
+  selectable
+/>`,
+      },
+    },
+  },
   args: { rows: [], selectable: true, getRowLabel },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('cell', { name: 'No records' })).toHaveAttribute('colspan', '3');
@@ -267,12 +720,95 @@ export const Empty: Story = {
   },
 };
 export const Loading: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  loading
+/>`,
+      },
+    },
+  },
   args: { loading: true },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('table')).toHaveAttribute('aria-busy', 'true');
   },
 };
 export const CustomCells: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  {
+    id: 'name',
+    header: 'Name',
+    accessor: (row: Project) => row.name,
+    cell: (row: Project) => <strong>{row.name}</strong>,
+  },
+  {
+    id: 'budget',
+    header: 'Budget',
+    accessor: (row: Project) => row.budget,
+    numeric: true,
+    cell: (row: Project) =>
+      new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(row.budget ?? 0),
+  },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+/>`,
+      },
+    },
+  },
   args: {
     columns: [
       { id: 'name', header: 'Name', accessor: (row) => row.name, cell: (row) => <strong>{row.name}</strong> },
@@ -287,6 +823,47 @@ export const CustomCells: Story = {
   },
 };
 export const CustomComparator: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar gardens', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  {
+    id: 'name',
+    header: <span>Project length</span>,
+    sortLabel: 'Project length',
+    compare: (a: Project, b: Project) => a.name.length - b.name.length,
+    cell: (row: Project) => row.name,
+  },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  defaultValue={{ columnId: 'name', direction: 'asc' }}
+/>`,
+      },
+    },
+  },
   args: {
     rows: rows.map((row) => (row.id === 'c' ? { ...row, name: 'Cedar gardens' } : row)),
     columns: [
@@ -305,6 +882,44 @@ export const CustomComparator: Story = {
   },
 };
 export const LocaleNumbersAndDates: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+  date: Date;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40, date: new Date('2026-03-03T12:00:00Z') },
+  { id: 'a', name: 'Atlas', budget: 0, date: new Date('2026-01-01T12:00:00Z') },
+  { id: 'b', name: 'Birch', budget: 40, date: new Date('2026-02-02T12:00:00Z') },
+  { id: 'd', name: 'Delta', budget: null, date: new Date('2026-04-04T12:00:00Z') },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+  { id: 'date', header: 'Date', accessor: (row: Project) => row.date },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="de-DE"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  defaultValue={{ columnId: 'date', direction: 'asc' }}
+/>`,
+      },
+    },
+  },
   args: {
     locale: 'de-DE',
     columns: [...columns, { id: 'date', header: 'Date', accessor: (row) => row.date }],
@@ -342,6 +957,62 @@ export const LongCells: Story = {
   },
 };
 export const LinksAndButtons: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar' },
+  { id: 'a', name: 'Atlas' },
+  { id: 'b', name: 'Birch' },
+  { id: 'd', name: 'Delta' },
+];
+
+export function ProjectTable() {
+  const columns = [
+    {
+      id: 'name',
+      header: 'Name',
+      cell: (row: Project) => (
+        <a href="#projects" onClick={(event) => event.preventDefault()}>
+          {row.name}
+        </a>
+      ),
+    },
+    {
+      id: 'action',
+      header: 'Action',
+      cell: (row: Project) => (
+        <Button size="sm">
+          Open {row.name}
+        </Button>
+      ),
+    },
+  ];
+
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={rows}
+      columns={columns}
+      getRowId={(row) => row.id}
+      getRowLabel={(row) => row.name}
+      selectable
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     selectable: true,
     getRowLabel,
@@ -466,9 +1137,85 @@ export const ConsumerStylePrecedence: Story = {
 export const LightTheme: Story = {
   decorators: [withLightTheme],
   globals: { theme: 'light' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  getRowLabel={(row) => row.name}
+  selectable
+  defaultSelectedKeys={['a']}
+/>`,
+      },
+    },
+  },
   args: { selectable: true, getRowLabel, defaultSelectedKeys: ['a'] },
 };
 export const RTL: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  dir="rtl"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  getRowLabel={(row) => row.name}
+  selectable
+/>`,
+      },
+    },
+  },
   args: { dir: 'rtl', selectable: true, getRowLabel },
   play: async ({ canvas }) => {
     await expect(getComputedStyle(canvas.getByRole('table')).direction).toBe('rtl');
@@ -481,6 +1228,40 @@ export const ForcedColors: Story = {
     docs: {
       description: {
         story: 'Enable forced colors in the browser to check rendering. This story checks structure only.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  getRowLabel={(row) => row.name}
+  selectable
+  defaultSelectedKeys={['a']}
+/>`,
       },
     },
   },
@@ -500,10 +1281,81 @@ export const ReducedMotion: Story = {
         story:
           'Enable reduced motion in the browser to check the override. This story checks structure only; rows always reorder immediately.',
       },
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  defaultValue={{ columnId: 'name', direction: 'asc' }}
+/>`,
+      },
     },
   },
 };
 export const KeyboardSortingAndSelection: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  getRowLabel={(row) => row.name}
+  selectable
+  onValueChange={(sort) => console.log('Sort:', sort)}
+  onSelectionChange={(keys) => console.log('Selected:', keys)}
+/>`,
+      },
+    },
+  },
   args: { selectable: true, getRowLabel, onValueChange: fn(), onSelectionChange: fn() },
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.tab();
@@ -543,6 +1395,44 @@ export const KeyboardSortingAndSelection: Story = {
 };
 
 export const CollationAndMissingValues: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number;
+  date: Date;
+}
+
+const rows: Project[] = [
+  { id: '10', name: 'Project 10', budget: Number.NaN, date: new Date('invalid') },
+  { id: '2', name: 'Project 2', budget: 2, date: new Date('2026-01-02T00:00:00Z') },
+  { id: 'empty', name: '', budget: Number.POSITIVE_INFINITY, date: new Date('invalid') },
+  { id: '1', name: 'project 1', budget: 1, date: new Date('2026-01-01T00:00:00Z') },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+  { id: 'date', header: 'Date', accessor: (row: Project) => row.date },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  onValueChange={(sort) => console.log('Sort:', sort)}
+/>`,
+      },
+    },
+  },
   args: {
     rows: [
       { id: '10', name: 'Project 10', budget: Number.NaN, date: new Date('invalid') },
@@ -571,6 +1461,42 @@ export const CollationAndMissingValues: Story = {
 };
 
 export const InvalidAndDisabledSort: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name, sortable: false },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  value={{ columnId: 'absent', direction: 'asc' }}
+/>`,
+      },
+    },
+  },
   args: {
     value: { columnId: 'absent', direction: 'asc' },
     columns: [{ ...columns[0]!, sortable: false }, columns[1]!],
@@ -635,6 +1561,47 @@ export const RangeAfterSortAndRemoval: Story = {
 };
 
 export const NativeHandlerVeto: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={rows}
+  columns={columns}
+  getRowId={(row) => row.id}
+  getRowLabel={(row) => row.name}
+  selectable
+  onClickCapture={(event) => {
+    // Intercept clicks before table handlers run
+    event.preventDefault();
+  }}
+/>`,
+      },
+    },
+  },
   args: {
     selectable: true,
     getRowLabel,
@@ -652,6 +1619,52 @@ export const NativeHandlerVeto: Story = {
 };
 
 export const RefsAndHiddenCaption: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useRef } from 'react';
+import { SortableDataTable } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const rows: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+];
+
+function Example() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+
+  return (
+    <SortableDataTable
+      ref={containerRef}
+      tableRef={tableRef}
+      caption="Projects"
+      captionHidden
+      locale="en-US"
+      timeZone="UTC"
+      rows={rows}
+      columns={columns}
+      getRowId={(row) => row.id}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { ref: fn(), tableRef: fn(), captionHidden: true },
   play: async ({ args, canvas, canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui="sortable-data-table"]');

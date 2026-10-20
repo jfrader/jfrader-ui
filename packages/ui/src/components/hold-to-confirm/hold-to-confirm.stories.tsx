@@ -43,6 +43,10 @@ export const RootReplacement: StoryObj<typeof HoldToConfirm> = {
 const TEST_DURATION = 240;
 const settle = (ms = TEST_DURATION + 80) => new Promise((resolve) => setTimeout(resolve, ms));
 const describeHold = (duration: string) => `Hold Space, Enter, or the primary pointer for ${duration}.`;
+const holdSnippetBase = `import { HoldToConfirm } from '@jfrader/ui';
+
+const describeHold = (duration: string) =>
+  \`Hold Space, Enter, or the primary pointer for \${duration}.\`;`;
 const Fixture = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[4], alignItems: 'center' });
 const FixtureButton = styled.button({ minBlockSize: vars.space[8], paddingInline: vars.space[3] });
 const usage = `<HoldToConfirm label="Hold to revoke" confirmedLabel="Revoked"
@@ -77,29 +81,210 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
-export const Accent: Story = { args: { tone: 'accent' } };
-export const Danger: Story = { args: { tone: 'danger' } };
-export const Neutral: Story = { args: { tone: 'neutral' } };
+export const Accent: Story = {
+  args: { tone: 'accent' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      tone="accent"
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
+};
+export const Danger: Story = {
+  args: { tone: 'danger' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      tone="danger"
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
+};
+export const Neutral: Story = {
+  args: { tone: 'neutral' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      tone="neutral"
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
+};
 export const Small: Story = {
   args: { size: 'sm' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      size="sm"
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button').getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
   },
 };
 export const Medium: Story = {
   args: { size: 'md' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      size="md"
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button').getBoundingClientRect().height).toBeGreaterThanOrEqual(40);
   },
 };
 export const Large: Story = {
   args: { size: 'lg' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      size="lg"
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button').getBoundingClientRect().height).toBeGreaterThanOrEqual(48);
   },
 };
 export const Disabled: Story = {
   args: { disabled: true },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      disabled
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button'));
     await expect(args.onConfirm).not.toHaveBeenCalled();
@@ -108,6 +293,31 @@ export const Disabled: Story = {
 };
 export const InitiallyConfirmed: Story = {
   args: { defaultValue: true },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      defaultValue={true}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button', { name: 'Revoked' })).toHaveAttribute('aria-disabled', 'true');
     await expect(canvas.getByRole('status')).toBeEmptyDOMElement();
@@ -115,6 +325,31 @@ export const InitiallyConfirmed: Story = {
 };
 export const Confirmed: Story = {
   args: { duration: TEST_DURATION },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={240}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{Enter>}');
@@ -138,6 +373,31 @@ export const Confirmed: Story = {
 };
 export const Holding: Story = {
   args: { duration: 600_000 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={600000}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent }) => {
     await userEvent.tab();
     await userEvent.keyboard('{ >}');
@@ -147,6 +407,31 @@ export const Holding: Story = {
 };
 export const CancelEarly: Story = {
   args: { duration: TEST_DURATION },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={240}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     for (const key of [' ', 'Enter']) {
@@ -210,6 +495,32 @@ export const ControlledReset: Story = {
 };
 export const ControlledReject: Story = {
   args: { value: false, duration: TEST_DURATION },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={240}
+      value={false}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const button = canvas.getByRole('button');
     await userEvent.tab();
@@ -270,6 +581,31 @@ export const Keyboard: Story = {
 
 export const PointerCancel: Story = {
   args: { duration: TEST_DURATION },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={240}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const button = canvas.getByRole('button');
     await userEvent.pointer({ target: button, keys: '[MouseLeft>]' });
@@ -283,6 +619,31 @@ export const PointerCancel: Story = {
 };
 export const PointerLeave: Story = {
   args: { duration: TEST_DURATION },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={240}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const button = canvas.getByRole('button');
     await userEvent.pointer({ target: button, keys: '[MouseLeft>]' });
@@ -298,6 +659,31 @@ export const PointerLeave: Story = {
 };
 export const BackgroundCancel: Story = {
   args: { duration: TEST_DURATION },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={240}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{ >}');
@@ -345,6 +731,32 @@ export const LocaleDuration: Story = {
     locale: 'es',
     getHoldDescription: (duration) => `Mantén Espacio, Intro o el puntero durante ${duration}.`,
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { HoldToConfirm } from '@jfrader/ui';
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={(duration) => \`Mantén Espacio, Intro o el puntero durante \${duration}.\`}
+      duration={125}
+      locale="es"
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button')).toHaveAccessibleDescription(
       'Mantén Espacio, Intro o el puntero durante 0,125 segundos.',
@@ -353,6 +765,32 @@ export const LocaleDuration: Story = {
 };
 export const SubmillisecondDuration: Story = {
   args: { duration: 0.1, locale: 'en' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={0.1}
+      locale="en"
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button')).toHaveAccessibleDescription(describeHold('0.0001 seconds'));
   },
@@ -418,6 +856,31 @@ export const LightTheme: Story = {
 };
 export const RTL: Story = {
   args: { dir: 'rtl', label: 'Mantén para revocar', confirmedLabel: 'Revocado' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Mantén para revocar"
+      confirmedLabel="Revocado"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      dir="rtl"
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button').matches(':dir(rtl)')).toBe(true);
   },
@@ -425,6 +888,27 @@ export const RTL: Story = {
 export const ReducedMotion: Story = {
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={240}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
       description: {
         story:
           'Structural timing fixture. Enable reduced motion in the browser to inspect instant cancellation; necessary linear elapsed-time feedback remains.',
@@ -436,6 +920,27 @@ export const ReducedMotion: Story = {
 export const ForcedColors: Story = {
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      defaultValue={true}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
       description: {
         story:
           'Structural state fixture. Enable forced colors in the browser to inspect the ButtonText boundary, Highlight focus/fill, and double holding border.',
@@ -447,6 +952,32 @@ export const ForcedColors: Story = {
 
 export const PointerLifecycle: Story = {
   args: { value: false, duration: TEST_DURATION },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      value={false}
+      duration={240}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const button = canvas.getByRole('button');
     const view = button.ownerDocument.defaultView!;
@@ -492,6 +1023,31 @@ export const PointerLifecycle: Story = {
 };
 export const FreshContinuousHold: Story = {
   args: { duration: TEST_DURATION },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={240}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{ >}');
@@ -511,6 +1067,31 @@ export const FreshContinuousHold: Story = {
 };
 export const HiddenDocument: Story = {
   args: { duration: TEST_DURATION },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={240}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const doc = canvas.getByRole('button').ownerDocument;
     await userEvent.tab();
@@ -568,6 +1149,38 @@ export const CallbackOrder: Story = {
     onKeyUp: fn(),
     onClick: fn(),
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={240}
+      onPointerDown={(event) => console.log('pointerdown', event)}
+      onPointerUp={(event) => console.log('pointerup', event)}
+      onKeyDown={(event) => console.log('keydown', event)}
+      onKeyUp={(event) => console.log('keyup', event)}
+      onClick={(event) => console.log('click', event)}
+      onConfirm={revokeKey}
+      onHoldChange={(holding) => console.log('holding', holding)}
+      onValueChange={(confirmed) => console.log('confirmed', confirmed)}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{Enter>}');
@@ -588,6 +1201,33 @@ export const PreventedStart: Story = {
     duration: TEST_DURATION,
     onKeyDown: fn((event) => event.preventDefault()),
     onPointerDown: fn((event) => event.preventDefault()),
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      duration={240}
+      onKeyDown={(event) => event.preventDefault()}
+      onPointerDown={(event) => event.preventDefault()}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
   },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -622,6 +1262,62 @@ export const SlotStyles: Story = {
     icon: '×',
     slotProps: { face: { css: faceOverride }, fill: { css: faceOverride }, label: { css: labelOverride }, fillLabel: { css: labelOverride } },
     sx: { borderRadius: vars.radius.sm },
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { ComponentPropsWithRef } from 'react';
+import { HoldToConfirm } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+function SlotStatus(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="hold-to-confirm-status" />;
+}
+function SlotFace(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="hold-to-confirm-face" />;
+}
+function SlotFill(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="hold-to-confirm-fill" />;
+}
+function SlotFillLabel(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="hold-to-confirm-fill-label" />;
+}
+
+const describeHold = (duration: string) =>
+  \`Hold Space, Enter, or the primary pointer for \${duration}.\`;
+
+export function RevokeKeyButton({
+  revokeKey,
+}: {
+  revokeKey: () => void;
+}) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      icon="×"
+      slots={{
+        status: SlotStatus,
+        face: SlotFace,
+        fill: SlotFill,
+        fillLabel: SlotFillLabel,
+      }}
+      slotProps={{
+        face: { css: { columnGap: vars.space[5] } },
+        fill: { css: { columnGap: vars.space[5] } },
+        label: { css: { fontWeight: vars.fontWeight.semibold } },
+        fillLabel: { css: { fontWeight: vars.fontWeight.semibold } },
+      }}
+      sx={{ borderRadius: vars.radius.sm }}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
   },
   play: async ({ canvas }) => {
     const button = canvas.getByRole('button');
