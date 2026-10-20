@@ -27,6 +27,7 @@ const Frame = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '360px',
+  maxInlineSize: '100%',
 });
 
 const PlanList = styled.ul({
