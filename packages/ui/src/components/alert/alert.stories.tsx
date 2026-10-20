@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef } from 'react';
+import { useRef, useState, type ComponentPropsWithRef } from 'react';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import type { Meta, StoryObj } from '@storybook/react-vite';
@@ -6,6 +6,7 @@ import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Alert, type AlertProps, type AlertTone } from './index';
+import { Button } from '../button';
 
 const TONES = ['info', 'success', 'warning', 'danger'] as const satisfies readonly AlertTone[];
 
@@ -39,6 +40,7 @@ const Stack = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '360px',
+  maxInlineSize: '100%',
 });
 
 const meta = {
@@ -46,17 +48,21 @@ const meta = {
   component: Alert,
   parameters: { docs: {
     description: { component: 'Show a message about an update, a problem, or an action to take.' },
-    usage: `### Announcements
-- \`tone\` defaults to \`info\`. Use \`danger\` for urgent messages: it uses an assertive \`alert\` region. Other tones use a polite \`status\` region.
-- Screen readers may not announce content that is already present when a region mounts. If you need to announce an update, mount the alert first, then change its content.
-- Put the meaning in your visible \`title\` or body. Use \`toneLabel\` to translate the announced tone word and \`dismissLabel\` to translate the button name, which defaults to "Dismiss".
+    sections: [
+      { title: 'Tones', stories: ['Tones'] },
+      { title: 'Title and description', stories: ['TitleOnly'] },
+      { title: 'Actions', stories: ['WithAction'] },
+      { title: 'Dismissal', stories: ['DismissWithState'] },
+      { title: 'Composition', stories: ['PaymentNotice'] },
+    ],
+    usage: `### When to use
+Show an update or problem beside the affected content. Reserve urgent announcements for problems that need immediate attention; put the meaning in visible text, not color alone.
+
+### Accessibility
+Screen readers may not announce content already present when a live region mounts. Mount the region before changing its text when an announcement is required. Keep actionable controls outside the announcement text.
 
 ### Dismissal
-- Pass \`onDismiss\` to show the dismiss button. Activation only calls your callback; remove the alert in your parent state to dismiss it.
-- Press Tab to reach the dismiss button, then Enter or Space to activate it.
-
-### Customization
-- Use \`sx\` for the root and \`slotProps\` to style the root, title, body or dismiss button.`,
+Remove dismissed messages in application state. Tab reaches the dismiss button; Enter or Space activates it. If removal takes focus away, move focus to the next relevant control.`,
   } },
   args: { tone: 'info', title: TONE_COPY.info.title, children: TONE_COPY.info.body },
   argTypes: {
@@ -95,7 +101,10 @@ async function expectToneRoles(canvasElement: HTMLElement) {
 }
 
 export const Tones: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<>
+  name: 'Message tones',
+  parameters: { docs: { description: { story: 'Compare informational, success, warning, and urgent messages.' }, source: { language: 'tsx', code: `import { Alert } from '@jfrader/ui';
+
+<>
   <Alert tone="info" title="Maintenance tonight">Sync pauses from 02:00 to 03:00 UTC.</Alert>
   <Alert tone="success" title="Invite sent">ana@example.com can join the workspace now.</Alert>
   <Alert tone="warning" title="Storage almost full">92% of 10 GB used.</Alert>
@@ -113,6 +122,10 @@ export const Tones: Story = {
 };
 
 export const TitleOnly: Story = {
+  name: 'Title without description',
+  parameters: { docs: { description: { story: 'Keep a short maintenance notice to a single heading.' }, source: { language: 'tsx', code: `import { Alert } from '@jfrader/ui';
+
+<Alert title="Maintenance tonight" />` } } },
   args: { children: undefined },
   play: async ({ canvasElement }) => {
     const status = within(canvasElement).getByRole('status');
@@ -203,4 +216,81 @@ export const LightTheme: Story = {
     await expectToneRoles(canvasElement);
     await expect(within(canvasElement).getAllByRole('button', { name: 'Dismiss' })).toHaveLength(TONES.length);
   },
+};
+
+export const WithAction: Story = {
+  name: 'Message with an action',
+  parameters: { docs: { description: { story: 'Place a billing action after the payment message.' }, source: { language: 'tsx', code: `import { Alert, Button } from '@jfrader/ui';
+
+<>
+  <Alert tone="danger" title="Payment failed">Update your card to keep the Pro plan.</Alert>
+  <Button render={(props) => <a {...props} href="/billing" />}>Update card</Button>
+</>` } } },
+  render: () => (
+    <>
+      <Alert tone="danger" title="Payment failed">Update your card to keep the Pro plan.</Alert>
+      <Button render={(props) => <a {...props} href="/billing" />}>Update card</Button>
+    </>
+  ),
+};
+
+export const DismissWithState: Story = {
+  name: 'Dismiss a message',
+  parameters: { docs: { description: { story: 'Dismiss the notice and restore it with the Show notice button.' }, source: { language: 'tsx', code: `import { useRef, useState } from 'react';
+import { Alert, Button } from '@jfrader/ui';
+
+export function MaintenanceNotice() {
+  const [visible, setVisible] = useState(true);
+  const showButton = useRef<HTMLButtonElement>(null);
+  const dismiss = () => {
+    setVisible(false);
+    showButton.current?.focus();
+  };
+  return <>
+    <Button ref={showButton} onClick={() => setVisible(true)}>Show notice</Button>
+    {visible && <Alert title="Maintenance tonight" onDismiss={dismiss}>Sync pauses from 02:00 to 03:00 UTC.</Alert>}
+  </>;
+}` } } },
+  render: function MaintenanceNotice() {
+    const [visible, setVisible] = useState(true);
+    const showButton = useRef<HTMLButtonElement>(null);
+    const dismiss = () => {
+      setVisible(false);
+      showButton.current?.focus();
+    };
+    return (
+      <>
+        <Button ref={showButton} onClick={() => setVisible(true)}>Show notice</Button>
+        {visible && (
+          <Alert title="Maintenance tonight" onDismiss={dismiss}>
+            Sync pauses from 02:00 to 03:00 UTC.
+          </Alert>
+        )}
+      </>
+    );
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Dismiss' }));
+    await expect(canvas.queryByRole('status')).toBeNull();
+    const showButton = canvas.getByRole('button', { name: 'Show notice' });
+    await expect(showButton).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await expect(canvas.getByRole('status')).toBeVisible();
+  },
+};
+
+export const PaymentNotice: Story = {
+  name: 'Billing summary',
+  parameters: { docs: { description: { story: 'Keep the alert beside a separate action outside the live announcement.' }, source: { language: 'tsx', code: `import { Alert, Button } from '@jfrader/ui';
+
+<section aria-label="Billing">
+  <Alert tone="warning" title="Storage almost full">92% of 10 GB used.</Alert>
+  <Button render={(props) => <a {...props} href="/billing/plans" />}>Compare plans</Button>
+</section>` } } },
+  render: () => (
+    <section aria-label="Billing">
+      <Alert tone="warning" title="Storage almost full">92% of 10 GB used.</Alert>
+      <Button render={(props) => <a {...props} href="/billing/plans" />}>Compare plans</Button>
+    </section>
+  ),
 };

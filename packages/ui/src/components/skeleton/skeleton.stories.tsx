@@ -9,12 +9,15 @@ const linesStyle = {
   display: 'grid',
   gap: vars.space[2],
   inlineSize: '20rem',
+  maxInlineSize: '100%',
 } satisfies CSSProperties;
 
 const cardStyle = {
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '20rem',
+  maxInlineSize: '100%',
+  boxSizing: 'border-box',
   padding: vars.space[4],
   border: `1px solid ${vars.color.border}`,
   borderRadius: vars.radius.md,
@@ -43,11 +46,16 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Reserve space for content while it loads.' },
-      usage: `- The placeholder is aria-hidden and has no role. Announce loading elsewhere with a Spinner or aria-busy on the region.
-- Numeric dimensions are pixels; strings are CSS lengths.
-- With circle, height follows width unless height is supplied.
-- Compose \`Skeleton.Morph\` and \`Skeleton.Block\` to replace placeholders with ready content. Pass \`value="loading" | "ready"\` and a localized \`loadingLabel\`; optional \`readyLabel\` announces completion. \`defaultValue\` seeds a static presentation and emits no state requests.
-- Ready content is mounted immediately; loading unmounts it. Reload parks focus on the shell only when a removed content control owned focus. Reduced motion swaps immediately. See the Morph Profile example for the complete composition.`,
+      sections: [
+        { title: 'Shapes', stories: ['Text', 'Circle', 'Media'] },
+        { title: 'Composition', stories: ['Card'] },
+        { title: 'Loading and ready', stories: ['ContentStates'] },
+      ],
+      usage: `### When to use
+Reserve the shape of content whose layout is known while it loads. Match the eventual content to reduce layout shifts. Use a Spinner for an operation without a known content layout.
+
+### Accessibility
+Placeholders are hidden from assistive technology. Announce loading separately and mark the affected region busy. Loading morph content is unmounted, so do not keep unsaved form state inside it. On reload, focus moves to the shell only when a removed control held focus. Reduced motion swaps content immediately.`,
     },
   },
   tags: ['autodocs'],
@@ -72,10 +80,11 @@ export const Default: Story = {
 };
 
 export const Text: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Skeleton, styled } from '@jfrader/ui';
+  name: 'Text lines',
+  parameters: { docs: { description: { story: 'Reserve three lines of text with a shorter final line.' }, source: { language: 'tsx', code: `import { Skeleton, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
-const TextPlaceholder = styled.div({ display: 'grid', gap: vars.space[2], inlineSize: '20rem' });
+const TextPlaceholder = styled.div({ display: 'grid', gap: vars.space[2], inlineSize: '20rem', maxInlineSize: '100%' });
 
 <TextPlaceholder>
   <Skeleton />
@@ -97,7 +106,8 @@ const TextPlaceholder = styled.div({ display: 'grid', gap: vars.space[2], inline
 };
 
 export const Circle: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Skeleton } from '@jfrader/ui';
+  name: 'Avatar placeholder',
+  parameters: { docs: { description: { story: 'Reserve a circular space for an avatar.' }, source: { language: 'tsx', code: `import { Skeleton } from '@jfrader/ui';
 
 <Skeleton circle width={48} />` } } },
   args: { circle: true, width: 48 },
@@ -122,11 +132,13 @@ export const CustomRadius: Story = {
 };
 
 export const Card: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Skeleton, styled } from '@jfrader/ui';
+  name: 'Profile card placeholder',
+  parameters: { docs: { description: { story: 'Combine an avatar, text, and media into a profile loading layout.' }, source: { language: 'tsx', code: `import { Skeleton, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
 const ProfilePlaceholder = styled.div({
-  display: 'grid', gap: vars.space[4], inlineSize: '20rem', padding: vars.space[4],
+  display: 'grid', gap: vars.space[4], inlineSize: '20rem', maxInlineSize: '100%',
+  boxSizing: 'border-box', padding: vars.space[4],
   border: \`1px solid \${vars.color.border}\`, borderRadius: vars.radius.md,
   backgroundColor: vars.color.surface,
 });
@@ -165,4 +177,37 @@ export const LightTheme: Story = {
   parameters: Card.parameters,
   decorators: [withLightTheme],
   render: Card.render,
+};
+
+export const Media: Story = {
+  name: 'Media placeholder',
+  parameters: { docs: { description: { story: 'Reserve a rounded rectangle for an image or video.' }, source: { language: 'tsx', code: `import { Skeleton } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+<Skeleton width={240} height={120} radius={vars.radius.md} />` } } },
+  args: { width: 240, height: 120, radius: vars.radius.md },
+};
+
+export const ContentStates: Story = {
+  name: 'Loading and ready content',
+  parameters: { docs: { description: { story: 'Compare reserved text blocks with the content that replaces them.' }, source: { language: 'tsx', code: `import { Skeleton } from '@jfrader/ui';
+
+<>
+  <Skeleton.Morph value="loading" loadingLabel="Loading profile">
+    <Skeleton.Block lines={2}>Morgan Lee</Skeleton.Block>
+  </Skeleton.Morph>
+  <Skeleton.Morph value="ready" loadingLabel="Loading profile">
+    <Skeleton.Block lines={2}>Morgan Lee</Skeleton.Block>
+  </Skeleton.Morph>
+</>` } } },
+  render: () => (
+    <>
+      <Skeleton.Morph value="loading" loadingLabel="Loading profile">
+        <Skeleton.Block lines={2}>Morgan Lee</Skeleton.Block>
+      </Skeleton.Morph>
+      <Skeleton.Morph value="ready" loadingLabel="Loading profile">
+        <Skeleton.Block lines={2}>Morgan Lee</Skeleton.Block>
+      </Skeleton.Morph>
+    </>
+  ),
 };

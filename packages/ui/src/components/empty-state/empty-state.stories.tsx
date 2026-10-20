@@ -7,6 +7,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { Button } from '../button';
+import { Card } from '../card';
 import { EmptyState, type EmptyStateProps, type EmptyStateVariant } from './index';
 
 const VARIANTS = ['centered', 'inline'] as const satisfies readonly EmptyStateVariant[];
@@ -76,6 +77,7 @@ const Frame = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '360px',
+  maxInlineSize: '100%',
 });
 
 const WideFrame = styled.div({ inlineSize: '560px' });
@@ -114,7 +116,18 @@ const meta = {
   component: EmptyState,
   parameters: { docs: {
     description: { component: 'Show a message and an action when there is no content to display.' },
-    usage: '- Use Skeleton while content is loading and Alert for an error alongside existing content.\n- Supply copy, translations and result announcements. Keep the icon decorative and put controls in `action`.',
+    sections: [
+      { title: 'Basic', stories: ['WithoutIcon'] },
+      { title: 'Icon', stories: ['Default'] },
+      { title: 'Actions', stories: ['WithAction', 'MultipleActions'] },
+      { title: 'Layout', stories: ['CompactLayout'] },
+      { title: 'Composition', stories: ['EmptyProjectCard'] },
+    ],
+    usage: `### When to use
+Explain why a collection is empty and offer a next step. Use Skeleton while content is loading and Alert for an error alongside existing content.
+
+### Accessibility
+Keep illustrations decorative and include their meaning in the text. Choose a heading level that fits the page. Empty states do not announce search results or move focus; provide result announcements in the surrounding application when needed.`,
   } },
   args: {
     title: 'No projects yet',
@@ -163,8 +176,10 @@ function focusCanvasStart(canvasElement: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Folder illustration',
   parameters: {
     docs: {
+      description: { story: 'Add a decorative folder above the empty project message.' },
       source: {
         language: 'tsx',
         code: `import { EmptyState } from '@jfrader/ui';
@@ -222,6 +237,10 @@ export function Example() {
 };
 
 export const WithoutIcon: Story = {
+  name: 'Text-only empty state',
+  parameters: { docs: { description: { story: 'Explain an empty project list with a heading and description.' }, source: { language: 'tsx', code: `import { EmptyState } from '@jfrader/ui';
+
+<EmptyState title="No projects yet" description="Create a project to start tracking work." headingLevel={3} />` } } },
   play: async ({ canvasElement }) => {
     const root = getRoot(canvasElement);
     await expect(getPart(root, 'icon')).toBeNull();
@@ -279,8 +298,10 @@ export function Example() {
 };
 
 export const WithAction: Story = {
+  name: 'Primary action',
   parameters: {
     docs: {
+      description: { story: 'Offer a Create project action below the empty list message.' },
       source: {
         language: 'tsx',
         code: `import { EmptyState, Button } from '@jfrader/ui';
@@ -337,8 +358,10 @@ export function Example() {
 };
 
 export const MultipleActions: Story = {
+  name: 'Create or import',
   parameters: {
     docs: {
+      description: { story: 'Offer a primary action and an alternative for existing projects.' },
       source: {
         language: 'tsx',
         code: `import { EmptyState, Button } from '@jfrader/ui';
@@ -433,6 +456,32 @@ export const Inline: Story = {
     await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
     await expect(narrow.scrollWidth).toBeLessThanOrEqual(narrow.clientWidth);
   },
+};
+
+export const CompactLayout: Story = {
+  name: 'Inline layout',
+  parameters: { docs: { description: { story: 'Place invoice copy and an action in a compact row that can wrap.' }, source: { language: 'tsx', code: `import { Button, EmptyState } from '@jfrader/ui';
+
+<EmptyState variant="inline" title="No invoices" description="Invoices appear after the first payment." action={<Button variant="outline">View plans</Button>} />` } } },
+  args: { variant: 'inline', title: 'No invoices', description: 'Invoices appear after the first payment.', action: <Button variant="outline">View plans</Button> },
+};
+
+export const EmptyProjectCard: Story = {
+  name: 'Empty collection in a card',
+  parameters: { docs: { description: { story: 'Keep the project collection heading visible above its empty state.' }, source: { language: 'tsx', code: `import { Card, EmptyState } from '@jfrader/ui';
+
+<Card>
+  <Card.Header><Card.Title>Projects</Card.Title></Card.Header>
+  <Card.Content><EmptyState title="No projects yet" description="Create a project to start tracking work." headingLevel={3} /></Card.Content>
+</Card>` } } },
+  render: () => (
+    <Card>
+      <Card.Header><Card.Title>Projects</Card.Title></Card.Header>
+      <Card.Content>
+        <EmptyState title="No projects yet" description="Create a project to start tracking work." headingLevel={3} />
+      </Card.Content>
+    </Card>
+  ),
 };
 
 export const Centered: Story = {

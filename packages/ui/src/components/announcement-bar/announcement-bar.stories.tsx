@@ -60,15 +60,22 @@ const meta = {
         component:
           'Show an announcement that people can dismiss. Rotate through messages when autoplay is enabled.',
       },
-      usage: `- The announcement is a named region. Rotation follows the APG basic carousel pattern.
-- Control \`open\`, \`value\`, and \`paused\`, or initialize each with its default prop. Do not switch modes while mounted. Rejected requests leave that state unchanged.
-- Your app stores dismissal state. Set \`dismissFocusRef\` to choose where focus goes after keyboard dismissal.
-- Focus stops rotation until Resume. Hover and a hidden document pause it temporarily. Reduced motion disables autoplay.
-- Live announcements are off by default. When enabled, polite announcements exclude the Countdown timer.
+       sections: [
+         { title: 'Messages and rotation', stories: ['Default', 'Single', 'AutoPlayWithPause'] },
+         { title: 'Countdown', stories: ['Countdown'] },
+         { title: 'Dismissal', stories: ['Dismissible', 'NonDismissible'] },
+         { title: 'Actions', stories: ['NativeLink'] },
+         { title: 'Controlled state', stories: ['ControlledMessages'] },
+         { title: 'States and appearance', stories: ['AllTones', 'Inverted'] },
+       ],
+       usage: `### When to use
+Show site-wide news or a deadline above the main content. Keep urgent errors beside the affected task instead. Store persistent dismissal preferences in your application.
 
-### Keyboard
-- Tab visits controls. Enter/Space activate buttons; Enter activates links.
-- Arrow keys and Escape keep their native behavior.`,
+### Rotation
+Focus stops rotation until Resume. Hover and a hidden document pause it temporarily. Reduced motion disables autoplay. Do not switch between controlled and uncontrolled state while mounted.
+
+### Accessibility
+Give the announcements region a localized name and choose a focus destination after dismissal. Live announcements are off by default; enabled announcements exclude the countdown timer. Tab visits controls; Enter or Space activates buttons, and Enter activates links. Arrow keys and Escape retain their native behavior.`,
     },
   },
 } satisfies Meta<typeof AnnouncementBar>;
@@ -76,8 +83,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Browse announcements',
   parameters: {
     docs: {
+      description: { story: 'Browse three announcements with previous and next controls.' },
       source: {
         language: 'tsx',
         code: `import { AnnouncementBar } from '@jfrader/ui';
@@ -117,8 +126,10 @@ export function Example() {
   },
 };
 export const Inverted: Story = {
+  name: 'Inverted appearance',
   parameters: {
     docs: {
+      description: { story: 'Use a contrasting background for the same announcements.' },
       source: {
         language: 'tsx',
         code: `import { AnnouncementBar } from '@jfrader/ui';
@@ -145,6 +156,23 @@ export function Example() {
     },
   }, args: { variant: 'inverted' } };
 export const AllTones: Story = {
+  name: 'Announcement tones',
+  parameters: { docs: { description: { story: 'Compare neutral, informational, warning, and danger announcements.' }, source: { language: 'tsx', code: `import { AnnouncementBar, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
+const messages = [
+  { id: 'release', message: 'The new workspace is ready.', action: { label: 'Explore workspace', onClick: () => window.location.assign('/workspace') } },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+  { id: 'export', message: 'Export your projects in one click.' },
+];
+
+<Stack>
+  <AnnouncementBar messages={messages} tone="neutral" label="neutral announcements" />
+  <AnnouncementBar messages={messages} tone="info" label="info announcements" />
+  <AnnouncementBar messages={messages} tone="warning" label="warning announcements" />
+  <AnnouncementBar messages={messages} tone="danger" label="danger announcements" />
+</Stack>` } } },
   render: (args) => (
     <Stack>
       {(['neutral', 'info', 'warning', 'danger'] as const).map((tone: AnnouncementBarTone) => (
@@ -154,8 +182,10 @@ export const AllTones: Story = {
   ),
 };
 export const Single: Story = {
+  name: 'Single message',
   parameters: {
     docs: {
+      description: { story: 'Show one announcement without rotation controls.' },
       source: {
         language: 'tsx',
         code: `import { AnnouncementBar } from '@jfrader/ui';
@@ -234,6 +264,7 @@ export function Example() {
   },
 };
 export const AutoPlayWithPause: Story = {
+  name: 'Automatic rotation',
   args: { autoPlay: true, controls: false, interval: 60000 },
   parameters: {
     docs: {
@@ -262,7 +293,7 @@ export function Example() {
       },
       description: {
         story:
-          'Reduced motion disables rotation, so this play skips when that preference is set. See Reduced Motion for that case.',
+           'Rotate announcements automatically and pause or resume with the rotation control.',
       },
     },
   },
@@ -296,6 +327,17 @@ function DismissFixture(args: AnnouncementBarProps) {
   );
 }
 export const Dismissible: Story = {
+  name: 'Dismiss and continue',
+  parameters: { docs: { description: { story: 'Dismiss the release notice and move keyboard focus to the workspace action.' }, source: { language: 'tsx', code: `import { useRef } from 'react';
+import { AnnouncementBar, Button } from '@jfrader/ui';
+
+export function ReleaseNotice() {
+  const destination = useRef<HTMLButtonElement>(null);
+  return <>
+    <AnnouncementBar messages={[{ id: 'notice', message: 'A new release is available.' }]} dismissFocusRef={destination} />
+    <Button ref={destination}>Continue to workspace</Button>
+  </>;
+}` } } },
   args: {
     messages: [{ id: 'notice', message: 'A new release is available.' }],
   },
@@ -321,8 +363,10 @@ export const Dismissible: Story = {
   },
 };
 export const NonDismissible: Story = {
+  name: 'Persistent announcement',
   parameters: {
     docs: {
+      description: { story: 'Keep announcements visible without a dismiss control.' },
       source: {
         language: 'tsx',
         code: `import { AnnouncementBar } from '@jfrader/ui';
@@ -377,15 +421,15 @@ export function Example() {
     },
   }, args: { open: true } };
 export const Countdown: Story = {
+  name: 'Registration countdown',
   parameters: {
     docs: {
+      description: { story: 'Show the time remaining alongside a registration notice.' },
       source: {
         language: 'tsx',
         code: `import { AnnouncementBar } from '@jfrader/ui';
 
-const NOW = Date.parse('2026-12-01T12:00:00Z');
-
-const clock = () => NOW;
+const registrationDeadline = Date.now() + 60000;
 
 export function Example() {
   return (
@@ -395,8 +439,7 @@ export function Example() {
           id: 'deadline',
           message: 'Registration closes soon.',
           countdown: {
-            target: NOW + 60000,
-            clock,
+            target: registrationDeadline,
             label: 'Registration deadline',
             units: ['minutes', 'seconds'],
           },
@@ -994,8 +1037,10 @@ export function Example() {
   },
 };
 export const NativeLink: Story = {
+  name: 'Link action',
   parameters: {
     docs: {
+      description: { story: 'Add a release-notes link to an announcement.' },
       source: {
         language: 'tsx',
         code: `import { AnnouncementBar } from '@jfrader/ui';
@@ -1044,6 +1089,34 @@ export function Example() {
     await expect(args.onAction).not.toHaveBeenCalled();
     await userEvent.keyboard('{Enter}');
     await expect(args.onAction).not.toHaveBeenCalled();
+  },
+};
+export const ControlledMessages: Story = {
+  name: 'Controlled message selection',
+  parameters: { docs: { description: { story: 'Keep the selected announcement index in application state.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+import { AnnouncementBar } from '@jfrader/ui';
+
+const messages = [
+  { id: 'release', message: 'The new workspace is ready.' },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+];
+
+export function WorkspaceNews() {
+  const [value, setValue] = useState(0);
+  return <AnnouncementBar messages={messages} value={value} onValueChange={setValue} />;
+}` } } },
+  render: function WorkspaceNews() {
+    const [value, setValue] = useState(0);
+    return (
+      <AnnouncementBar
+        messages={[
+          { id: 'release', message: 'The new workspace is ready.' },
+          { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+        ]}
+        value={value}
+        onValueChange={setValue}
+      />
+    );
   },
 };
 export const InvalidInputs: Story = {
