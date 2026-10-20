@@ -82,26 +82,43 @@ export interface UsageMeterSlots {
 }
 export interface UsageMeterProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
+  /** Displays the title naming the tracked resource. */
   label: ReactNode;
+  /** Supplies usage categories; negative or nonfinite amounts count as zero. */
   segments: readonly UsageMeterSegment[];
+  /** Sets the allowance in segment units; nonpositive or nonfinite values show unavailable status. */
   limit: number;
+  /** Sets the near-limit threshold as a ratio clamped to 0–1. Defaults to 0.9, including nonfinite values. */
   warnAt?: number;
+  /** Sets total text size and spacing. Defaults to `md`. */
   size?: UsageMeterSize;
+  /** Formats amounts and percentages; defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Customizes amount formatting, which defaults to at most one fractional digit. */
   numberFormatOptions?: Intl.NumberFormatOptions;
+  /** Displays the amount unit; string and number values also appear in accessible value text. */
   unitLabel?: ReactNode;
   /** Defaults to English. Use the value-label callbacks to translate comparison text too. */
   labels?: Partial<UsageMeterLabels>;
+  /** Builds the accessible meter value text from the usage summary. */
   getValueLabel?: (summary: UsageMeterSummary) => string;
+  /** Names interactive legend items unless their slot supplies `aria-label`. */
   getItemLabel?: (item: UsageMeterItem, summary: UsageMeterSummary) => string;
+  /** Enables category hover, focus and pinned selection. Defaults to true. */
   interactive?: boolean;
+  /** Controls the pinned category or remainder; `null` clears the pin. */
   value?: UsageMeterSelection | null;
+  /** Sets the initial uncontrolled pin. Defaults to `null`. */
   defaultValue?: UsageMeterSelection | null;
+  /** Reports requests to pin a category or remainder, or clear the pin with `null`. */
   onValueChange?: (selection: UsageMeterSelection | null) => void;
   /** Announce status transitions and growing overage, coalescing rapid updates. Defaults to true. */
   announceChanges?: boolean;
+  /** Renders the status glyph for the current state; defaults to a built-in glyph. */
   statusIcon?: (state: UsageMeterState) => ReactNode;
+  /** Replaces the meter container and its presentation parts. */
   slots?: UsageMeterSlots;
+  /** Passes props to the meter container and its presentation parts. */
   slotProps?: {
     /** Outer container element holding the usage meter and legend. */
     root?: UsageMeterPartProps<'div'>;

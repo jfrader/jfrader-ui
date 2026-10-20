@@ -39,21 +39,35 @@ export interface ActionButtonProps extends Omit<
   ButtonProps,
   'children' | 'value' | 'defaultValue' | 'loading' | 'render'
 > {
+  /** Text shown while the action is idle. */
   label: string;
+  /** Text shown and announced while the action is running. */
   pendingLabel: string;
+  /** Text shown and announced after the action resolves. */
   successLabel: string;
+  /** Text shown and announced after the action throws or rejects. */
   errorLabel: string;
+  /** Runs on activation unless the click is prevented; overlapping runs are blocked. */
   onAction: () => void | Promise<void>;
+  /** Receives the thrown or rejected error after requesting the error state. */
   onActionError?: (error: unknown) => void;
+  /** Controls the displayed action state without starting an action. */
   value?: ActionButtonValue;
+  /** Initial uncontrolled action state. Defaults to `idle`. */
   defaultValue?: ActionButtonValue;
+  /** Requests an action state change, including the timed return to `idle`. */
   onValueChange?: (value: ActionButtonValue) => void;
   /** Success feedback delay in milliseconds; 0 retains the result. Defaults to 2400. */
   resetAfterMs?: number;
+  /** Decorative icon shown after the action resolves. */
   successIcon?: ReactNode;
+  /** Decorative icon shown after the action throws or rejects. */
   errorIcon?: ReactNode;
+  /** Replaces the button root; `slots.root` takes precedence. */
   component?: ActionButtonSlots['root'];
+  /** Replaces generated elements with components that forward supplied props and refs. */
   slots?: ActionButtonSlots;
+  /** Supplies attributes, refs and `sx` to the generated elements. */
   slotProps?: {
     root?: ActionButtonRootProps;
     icon?: ActionButtonPartProps;

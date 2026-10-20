@@ -74,6 +74,7 @@ export interface ToastMessages {
 }
 
 export interface ToastProviderBaseProps {
+  /** Wrap content that can enqueue notifications with `useToast`. */
   children?: ReactNode;
   /** Maximum toasts kept. Adding beyond this count removes the oldest immediately. */
   max?: number;
@@ -81,6 +82,7 @@ export interface ToastProviderBaseProps {
   duration?: number;
   /** Accessible label for each toast's close button. */
   dismissLabel?: string;
+  /** Override translated messages. `messages.dismiss` takes precedence over `dismissLabel`. */
   messages?: Partial<ToastMessages>;
 }
 export interface ToastSlots<ViewportProps = ToastViewportProps> {
@@ -90,20 +92,31 @@ export interface ToastSlots<ViewportProps = ToastViewportProps> {
 
 export type ToastProviderProps = ToastProviderBaseProps &
   (
-    | { viewport?: undefined; viewportProps?: never; slots?: never; slotProps?: never }
     | {
+        /** Choose an automatic viewport with `default` or `stack`. Omit to render a viewport yourself. */
+        viewport?: undefined; viewportProps?: never; slots?: never; slotProps?: never
+      }
+    | {
+        /** Mount the standard viewport automatically. Omit to render a viewport yourself. */
         viewport: 'default';
+        /** Pass props to the automatic viewport. `slotProps.viewport` wins prop conflicts except merged styles and classes. */
         viewportProps?: ToastViewportProps;
+        /** Replace the automatic viewport component. */
         slots?: ToastSlots;
+        /** Pass props and styles to the automatic viewport. */
         slotProps?: {
           /** Viewport container element rendering active toasts. */
           viewport?: ToastViewportProps;
         };
       }
     | {
+        /** Mount the stacked viewport automatically. */
         viewport: 'stack';
+        /** Pass props to the automatic stack. `slotProps.viewport` wins prop conflicts except merged styles and classes. */
         viewportProps?: ToastStackProps & SxProps;
+        /** Replace the automatic stacked viewport component. */
         slots?: ToastSlots<ToastStackProps>;
+        /** Pass props and styles to the automatic stacked viewport. */
         slotProps?: {
           /** Stacked viewport container element rendering active toasts. */
           viewport?: ToastStackProps & SxProps;
@@ -123,8 +136,11 @@ export interface ToastViewportSlots {
   item?: ComponentType<ToastPartProps>;
 }
 export interface ToastViewportProps extends ComponentPropsWithRef<'div'>, ToastPartProps, SxProps {
+  /** Replace the viewport root. `slots.root` takes precedence. */
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replace the viewport root or individual toast containers. */
   slots?: ToastViewportSlots;
+  /** Pass props and styles to the viewport root and toast containers. */
   slotProps?: {
     /** Outer viewport container element holding toasts. */
     root?: ComponentPropsWithRef<'div'> & ToastPartProps & SxProps;
