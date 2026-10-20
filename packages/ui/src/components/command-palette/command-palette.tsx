@@ -180,6 +180,8 @@ export interface CommandPaletteEasyProps<T extends CommandPaletteItemRecord = Co
     SxProps {
 
   [attribute: `data-${string}`]: unknown;
+  /** Additional class names for the palette root. */
+  className?: string;
   /** Items to search and run. */
   items: readonly T[];
   /** Called when an item is selected. */
