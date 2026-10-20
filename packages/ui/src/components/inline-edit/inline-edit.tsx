@@ -121,12 +121,15 @@ export interface InlineEditProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>, SxProps {
   /** Saved value shown by the trigger, not the draft. */
   value?: string;
+  /** Initial uncontrolled saved text. Defaults to an empty string. */
   defaultValue?: string;
   /** Requested once per resolved save, before the close request. */
   onValueChange?: (value: string) => void;
   /** Editing mode, independent from the value. */
   open?: boolean;
+  /** Starts uncontrolled editing on mount. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Requests entering or leaving editing mode. */
   onOpenChange?: (open: boolean) => void;
   /** Saves a changed value. Throw or reject to report a failed save. */
   onSave: (next: string) => void | Promise<unknown>;
@@ -138,9 +141,13 @@ export interface InlineEditProps
   normalize?: (draft: string) => string;
   /** Edits in a textarea; Shift+Enter inserts a newline. */
   multiline?: boolean;
+  /** Chooses title or body typography. Defaults to `title`. */
   variant?: InlineEditVariant;
+  /** Sets the trigger and editor minimum height. Defaults to `md`. */
   size?: InlineEditSize;
+  /** Disables editing and saving. Defaults to `false`. */
   disabled?: boolean;
+  /** Prevents editing while keeping the value trigger focusable. Defaults to `false`. */
   readOnly?: boolean;
   /** Saves when focus leaves the whole widget. */
   saveOnBlur?: boolean;
@@ -148,20 +155,27 @@ export interface InlineEditProps
   placeholder?: ReactNode;
   /** Native placeholder of the editor. */
   inputPlaceholder?: string;
+  /** Helper content associated with the trigger and editor. */
   description?: ReactNode;
   /** External error; while present it marks the editor invalid and blocks saving. */
   error?: ReactNode;
+  /** Adds native editor attributes and handlers; value, editability and placeholder stay component-owned. */
   controlProps?: InlineEditControlProps;
   /** The editor element, or null when not editing. */
   controlRef?: Ref<ControlElement>;
+  /** Overrides English action labels, keyboard instructions and save announcements. */
   messages?: Partial<InlineEditMessages>;
+  /** Replaces the trigger's decorative pencil icon. */
   editIcon?: ReactNode;
+  /** Replaces the save button's decorative check icon. */
   saveIcon?: ReactNode;
+  /** Replaces the cancel button's decorative cross icon. */
   cancelIcon?: ReactNode;
   /** Replace the wrapper div; `slots.root` takes precedence. */
   component?: InlineEditSlots['root'];
   /** Replace generated parts with components that forward props and ref. */
   slots?: InlineEditSlots;
+  /** Supplies attributes, refs and `sx` to generated parts. */
   slotProps?: InlineEditSlotProps;
 }
 
