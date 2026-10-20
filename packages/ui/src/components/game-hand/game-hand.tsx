@@ -41,22 +41,30 @@ export interface GameHandHiddenSlots {
 export interface GameHandProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
   /** Replace the root; slots.root takes precedence. */
   component?: ComponentType<GameCardRootProps>;
+  /** Choose the card artwork set, overriding the enclosing deck's selection. */
   artSet?: string;
+  /** Override artwork sets by card art id, merging with the enclosing deck's overrides. */
   cardArtSets?: Readonly<Record<string, string>>;
+  /** Replace the root, fan, card buttons or confirmation button. */
   slots?: GameHandSlots;
   'data-ui'?: string;
+  /** Render these cards in fan order. */
   cards: readonly GameHandCard[];
+  /** Set the card dimensions. Defaults to `md`. */
   size?: GameCardSize;
   /** Selected card id. `null` clears selection. */
   value?: string | null;
   /** Initial selected card id for uncontrolled selection. */
   defaultValue?: string | null;
+  /** Receive the selected card id, or `null` when the selected card is clicked again. */
   onValueChange?: (cardId: string | null) => void;
   /** Runs only when the confirmation button is activated, never on selection. */
   onPlayIntent?: (card: GameHandCard) => void;
   /** Text for the explicit confirmation action, in your page's language. */
   playLabel: string;
+  /** Block selection and confirmation. Card flights also disable the hand while busy. */
   disabled?: boolean;
+  /** Pass props and styles to the root, fan, card buttons and confirmation button. */
   slotProps?: {
     root?: GameCardRootSlotProps;
     /** Fan container holding the interactive hand cards. */
@@ -176,19 +184,26 @@ export function GameHand({
 GameHand.displayName = 'GameHand';
 
 export interface GameHandHiddenProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  /** Choose the card-back artwork set, overriding the enclosing deck's selection. */
   artSet?: string;
+  /** Pass per-card artwork overrides to card rendering. Hidden backs use `artSet` instead. */
   cardArtSets?: Readonly<Record<string, string>>;
+  /** Replace the wrapper around each hidden card. */
   slots?: GameHandHiddenSlots;
   'data-ui'?: string;
   /** Number of backs, rounded down and clamped to zero. */
   count: number;
+  /** Name the hidden hand for assistive technology. */
   label: string;
   /** Stable player key for CardFlights' hidden-hand origins and deal destinations. */
   playerKey?: string;
+  /** Set the card-back dimensions. Defaults to `md`. */
   size?: GameCardSize;
   /** Seat vector for radial placement. Omit for a standalone fan. */
   polar?: HandPolarVector;
+  /** Scale fan spacing and layout-rule distances, not card dimensions. Defaults to `1`. */
   scale?: number;
+  /** Set hidden-hand placement and fan geometry. Defaults to `DEFAULT_HIDDEN_HAND_RULES`. */
   rules?: HiddenHandRules;
   /** Styles each hidden-card wrapper. */
   slotProps?: {
