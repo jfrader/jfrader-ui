@@ -319,6 +319,7 @@ const rootStyle = css({
   fontSize: vars.textSize.sm,
   lineHeight: vars.lineHeight.base,
   color: vars.color.text,
+  overflowWrap: 'anywhere',
 });
 const viewportStyle = css({ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minBlockSize: 0, gap: vars.space[2] });
 const scrollerStyle = css({
@@ -538,6 +539,7 @@ function ChatComposer({
               id={fileInput?.id ?? inputId}
               type="file"
               multiple
+              tabIndex={-1}
               accept={accept}
               disabled={disabled || pending}
               aria-label={fileInput?.['aria-label'] ?? labels.attach}
