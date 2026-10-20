@@ -679,6 +679,10 @@ export const AccessKeyboard: Story = {
   args: { defaultOpen: true },
   play: async ({ canvasElement, userEvent, args }) => {
     const access = await body(canvasElement).findByRole('combobox', { name: 'Access' });
+    const copy = body(canvasElement).getByRole('button', { name: 'Copy link' });
+    await waitFor(async () => {
+      await expect(copy.ownerDocument.activeElement).toBe(copy);
+    });
     await userEvent.tab();
     await waitFor(async () => {
       await expect(access.ownerDocument.activeElement).toBe(access);
