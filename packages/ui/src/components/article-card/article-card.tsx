@@ -12,38 +12,67 @@ export type ArticleSize = 'lead' | 'secondary' | 'standard' | 'brief';
 export type ArticleVariant = 'standard' | 'wide' | 'time-column' | 'rule-top' | 'no-dek' | 'rule-bottom' | 'centered';
 type HeadingRoot = ComponentPropsWithRef<'h2'> & { level?: ArticleHeadingLevel };
 type HeadlineSlots = { root?: ComponentType<HeadingRoot>; link?: ComponentType<ComponentPropsWithRef<'a'>> };
-type HeadlineLink = { renderLink: RenderArticleLink; slots?: Omit<HeadlineSlots, 'link'> & { link?: never } } | { renderLink?: never; slots?: HeadlineSlots };
+type HeadlineLink = {
+  /** Renders the headline link with its merged anchor props. Cannot be combined with `slots.link`. */
+  renderLink: RenderArticleLink;
+  /** Replaces the headline root while `renderLink` owns the link. */
+  slots?: Omit<HeadlineSlots, 'link'> & { link?: never };
+} | {
+  renderLink?: never;
+  /** Replaces the headline root and link elements. */
+  slots?: HeadlineSlots;
+};
 export type ArticleCardHeadlineProps = ComponentPropsWithRef<'h2'> & SxProps & HeadlineLink & {
+  /** Sets the heading level. Defaults to 2. */
   level?: ArticleHeadingLevel;
+  /** Sets headline typography. Defaults to the parent card's size or `standard`. */
   size?: ArticleSize;
+  /** Links the headline to the article destination. */
   href?: string;
+  /** Replaces the heading root. `slots.root` takes precedence. */
   component?: HeadlineSlots['root'];
+  /** Passes props to the heading and link elements. */
   slotProps?: PresentationParts<{ root: 'h2'; link: 'a' }>;
 };
 export type ArticleCardDekProps = ComponentPropsWithRef<'p'> & SxProps & {
+  /** Arranges the summary in one column or two desktop columns. Defaults to `standard`. */
   variant?: 'standard' | 'columns';
+  /** Sets summary typography. Defaults to `standard`. */
   size?: 'standard' | 'lead';
+  /** Replaces the paragraph root. `slots.root` takes precedence. */
   component?: ComponentType<ComponentPropsWithRef<'p'>>;
+  /** Replaces the summary root. */
   slots?: PresentationSlots<{ root: 'p' }>;
+  /** Passes props to the summary root. */
   slotProps?: PresentationParts<{ root: 'p' }>;
 };
 export type ArticleCardLedeProps = ComponentPropsWithRef<'p'> & SxProps & {
+  /** Shows the excerpt only on desktop or at every width. Defaults to `desktop`. */
   visibility?: 'desktop' | 'always';
+  /** Limits the excerpt to this many lines. Defaults to 4. */
   clampLines?: number;
+  /** Replaces the paragraph root. `slots.root` takes precedence. */
   component?: ComponentType<ComponentPropsWithRef<'p'>>;
+  /** Replaces the excerpt root. */
   slots?: PresentationSlots<{ root: 'p' }>;
+  /** Passes props to the excerpt root. */
   slotProps?: PresentationParts<{ root: 'p' }>;
 };
 export type ArticleCardMediaProps = ComponentPropsWithRef<'figure'> & SxProps & {
+  /** Adds a caption beneath the media. */
   caption?: ReactNode;
+  /** Adds a credit beside the caption. */
   credit?: ReactNode;
+  /** Replaces the figure root. `slots.root` takes precedence. */
   component?: ComponentType<ComponentPropsWithRef<'figure'>>;
+  /** Replaces the figure, caption and credit elements. */
   slots?: PresentationSlots<{
     root: 'figure';
     /** Renders a `figcaption` by default. */
     caption: 'figcaption';
     credit: 'span';
   }>;
+  /** Passes props to the figure, caption and credit elements. */
   slotProps?: PresentationParts<{
     root: 'figure';
     /** Renders a `figcaption` by default. */
@@ -66,14 +95,43 @@ export type ArticleCardSlotProps = PresentationParts<NativeAnatomy> & {
   media?: PartProps<ArticleCardMediaProps>;
 };
 type EasyContent = {
-  headline: ReactNode; href?: string; renderLink?: RenderArticleLink; level?: ArticleHeadingLevel;
-  kicker?: ReactNode; dek?: ReactNode; lede?: ReactNode; meta?: ReactNode; time?: PrintedTime; media?: ReactNode;
+  /** Names the article and selects the automatically composed card layout. */
+  headline: ReactNode;
+  /** Links the headline to the article destination. */
+  href?: string;
+  /** Renders the headline link with its merged anchor props. */
+  renderLink?: RenderArticleLink;
+  /** Sets the headline heading level. Defaults to 2. */
+  level?: ArticleHeadingLevel;
+  /** Adds a label above the headline. Omitted with `rule-bottom`. */
+  kicker?: ReactNode;
+  /** Adds a summary. Omitted for `brief` size and `no-dek` or `rule-bottom` variants. */
+  dek?: ReactNode;
+  /** Adds an opening excerpt, shown on desktop by default. */
+  lede?: ReactNode;
+  /** Adds metadata beneath the article content. */
+  meta?: ReactNode;
+  /** Adds a displayed time label and machine-readable timestamp. */
+  time?: PrintedTime;
+  /** Adds media beneath the headline. */
+  media?: ReactNode;
   children?: never;
 };
-type CompoundContent = { children?: ReactNode } & { [K in keyof Omit<EasyContent, 'children'>]?: never };
+type CompoundContent = {
+  /** Composes card content manually instead of using `headline` and the content props. */
+  children?: ReactNode;
+} & { [K in keyof Omit<EasyContent, 'children'>]?: never };
 export type ArticleCardProps = Omit<ComponentPropsWithRef<'article'>, 'children'> & SxProps & (EasyContent | CompoundContent) & {
-  size?: ArticleSize; variant?: ArticleVariant;
-  component?: ArticleCardSlots['root']; slots?: ArticleCardSlots; slotProps?: ArticleCardSlotProps;
+  /** Sets headline typography and card spacing. Defaults to `standard`. */
+  size?: ArticleSize;
+  /** Sets the card's editorial layout and treatment. Defaults to `standard`. */
+  variant?: ArticleVariant;
+  /** Replaces the article root. `slots.root` takes precedence. */
+  component?: ArticleCardSlots['root'];
+  /** Replaces card parts. */
+  slots?: ArticleCardSlots;
+  /** Passes props to card parts. */
+  slotProps?: ArticleCardSlotProps;
 };
 type CardContextValue = Pick<ArticleCardProps, 'slots' | 'slotProps'> & { size: ArticleSize; variant: ArticleVariant };
 const CardContext = createContext<CardContextValue>({ size: 'standard', variant: 'standard' });
