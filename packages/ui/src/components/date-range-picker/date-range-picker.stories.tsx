@@ -5,7 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { ANCHOR_GAP } from '../../overlay/use-overlay-floating';
-import { expectAligned } from '../../testing/geometry-assertions';
+import { expectAligned, expectInside } from '../../testing/geometry-assertions';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -1349,11 +1349,15 @@ export const ShortViewport: Story = {
     await waitFor(() => expect(dialog.getBoundingClientRect().height).toBeLessThanOrEqual(boundary.height + PX_TOLERANCE));
     await settleMotion(dialog);
     await expect(getComputedStyle(dialog).overflowY).toBe('auto');
+    await expect(getComputedStyle(dialog).overscrollBehaviorY).toBe('contain');
     await expect(dialog.scrollHeight).toBeGreaterThan(dialog.clientHeight);
     const trigger = getTrigger(canvasElement).getBoundingClientRect();
     const panel = dialog.getBoundingClientRect();
     const gap = dialog.dataset.side === 'bottom' ? panel.top - trigger.bottom : trigger.top - panel.bottom;
     await expect(gap).toBeCloseTo(ANCHOR_GAP, 0);
+    dialog.scrollTop = dialog.scrollHeight;
+    await expectInside(dialogButton(canvasElement, 'Apply'), dialog);
+    await expectInside(dialogButton(canvasElement, 'Cancel'), dialog);
   },
 };
 
