@@ -7,6 +7,7 @@ import { preview } from 'vite';
 const cases = [
   { id: 'media-lightboxgallery--docs', primary: '[data-ui="lightbox-gallery"]', containPreview: true },
   { id: 'data-display-commentthread--docs', primary: '[data-ui="comment-thread"]', containPreview: true },
+  { id: 'data-display-chatthread--docs', primary: '[data-ui="chat-thread"]', containPreview: true },
   { id: 'surfaces-bottomsheet--docs', primary: '[data-ui="bottom-sheet-trigger"]' },
   { id: 'media-article--docs', primary: '[data-ui~="article"]' },
   { id: 'media-articlelist--docs', primary: '[data-ui~="article-list"]' },
