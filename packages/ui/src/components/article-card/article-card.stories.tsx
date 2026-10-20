@@ -53,34 +53,359 @@ export const Standard: Story = { play: async ({ canvas, canvasElement, userEvent
   await expect(link.ownerDocument.activeElement).toBe(link);
   await expect(getComputedStyle(link).outlineStyle).not.toBe('none');
 } };
-export const Lead: Story = { args: { size: 'lead', lede } };
-export const Secondary: Story = { args: { size: 'secondary', lede } };
-export const Brief: Story = { args: { size: 'brief' }, play: async ({ canvasElement }) => { await expect(canvasElement.querySelector('[data-ui~="article-card-dek"]')).toBeNull(); } };
-export const Wide: Story = { args: { variant: 'wide', size: 'lead', slotProps: { dek: { variant: 'columns' } } } };
-export const WideNarrow: Story = { args: { variant: 'wide' } };
-export const TimeColumn: Story = { args: { variant: 'time-column', time, kicker: <ArticleKicker items={[{ id: 'city', label: 'The city' }]} />, meta: <ArticleMeta published={time} place="Northline" /> } };
-export const TimeColumnWithoutTime: Story = { args: { variant: 'time-column' } };
-export const RuleTop: Story = { args: { variant: 'rule-top' } };
-export const NoDek: Story = { args: { variant: 'no-dek' } };
-export const RuleBottom: Story = { args: { variant: 'rule-bottom', kicker: 'The city', meta: <ArticleMeta published={time} /> }, play: async ({ canvasElement }) => {
-  await expect(canvasElement.querySelector('[data-ui~="article-card-dek"]')).toBeNull();
-  await expect(canvasElement.querySelector('[data-ui~="article-card-kicker"]')).toBeNull();
-  await expect(canvasElement.querySelector('[data-ui~="article-card-rule"]')).not.toBeNull();
-} };
-export const Centered: Story = { args: { variant: 'centered', size: 'secondary', meta: <ArticleMeta place="Northline" published={time} /> } };
-export const MissingOptionals: Story = { args: { dek: undefined }, play: async ({ canvasElement }) => {
-  await expect(canvasElement.querySelectorAll('p, figure, time')).toHaveLength(0);
-} };
-export const LeadWithoutLede: Story = { args: { size: 'lead' } };
-export const BriefExplicitLede: Story = { args: { size: 'brief', lede, slotProps: { lede: { visibility: 'always' } } } };
-export const LongHeadlines: Story = { args: { headline: 'Northline'.repeat(30) } };
-export const MultilineHeadline: Story = { args: { headline: 'The river path links the two bridges as the old station prepares to reopen its doors for the weekend' } };
-export const Zero: Story = { args: { headline: 0, dek: 0, lede: 0, kicker: 0, meta: 0 } };
-export const Media: Story = { args: { media: <blockquote cite="https://example.com/river">The river path opens this weekend.</blockquote>, slotProps: { media: { caption: 'The northern river path', credit: <ArchiveLink href="#archive">City archive</ArchiveLink> } } }, play: async ({ canvasElement, canvas }) => {
-  await expect(canvas.getByRole('figure')).toBeInTheDocument();
-  await expect(canvasElement.querySelector('figcaption')).toHaveTextContent('City archive');
-  await expect(canvasElement.querySelector('blockquote')).toHaveAttribute('cite', 'https://example.com/river');
-} };
+export const Lead: Story = {
+  args: { size: 'lead', lede },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  size="lead"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  lede="Work along the river began at the station. The last section opens this weekend, linking the two bridges with a continuous path."
+/>`,
+      },
+    },
+  },
+};
+export const Secondary: Story = {
+  args: { size: 'secondary', lede },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  size="secondary"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  lede="Work along the river began at the station. The last section opens this weekend, linking the two bridges with a continuous path."
+/>`,
+      },
+    },
+  },
+};
+export const Brief: Story = {
+  args: { size: 'brief' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  size="brief"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => { await expect(canvasElement.querySelector('[data-ui~="article-card-dek"]')).toBeNull(); },
+};
+export const Wide: Story = {
+  args: { variant: 'wide', size: 'lead', slotProps: { dek: { variant: 'columns' } } },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  variant="wide"
+  size="lead"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  slotProps={{ dek: { variant: 'columns' } }}
+/>`,
+      },
+    },
+  },
+};
+export const WideNarrow: Story = {
+  args: { variant: 'wide' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  variant="wide"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const TimeColumn: Story = {
+  args: { variant: 'time-column', time, kicker: <ArticleKicker items={[{ id: 'city', label: 'The city' }]} />, meta: <ArticleMeta published={time} place="Northline" /> },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard, ArticleKicker, ArticleMeta } from '@jfrader/ui';
+
+<ArticleCard
+  variant="time-column"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  time={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }}
+  kicker={<ArticleKicker items={[{ id: 'city', label: 'The city' }]} />}
+  meta={<ArticleMeta published={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }} place="Northline" />}
+/>`,
+      },
+    },
+  },
+};
+export const TimeColumnWithoutTime: Story = {
+  args: { variant: 'time-column' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  variant="time-column"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const RuleTop: Story = {
+  args: { variant: 'rule-top' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  variant="rule-top"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const NoDek: Story = {
+  args: { variant: 'no-dek' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  variant="no-dek"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const RuleBottom: Story = {
+  args: { variant: 'rule-bottom', kicker: 'The city', meta: <ArticleMeta published={time} /> },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard, ArticleMeta } from '@jfrader/ui';
+
+<ArticleCard
+  variant="rule-bottom"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  kicker="The city"
+  meta={<ArticleMeta published={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }} />}
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-ui~="article-card-dek"]')).toBeNull();
+    await expect(canvasElement.querySelector('[data-ui~="article-card-kicker"]')).toBeNull();
+    await expect(canvasElement.querySelector('[data-ui~="article-card-rule"]')).not.toBeNull();
+  },
+};
+export const Centered: Story = {
+  args: { variant: 'centered', size: 'secondary', meta: <ArticleMeta place="Northline" published={time} /> },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard, ArticleMeta } from '@jfrader/ui';
+
+<ArticleCard
+  variant="centered"
+  size="secondary"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  meta={<ArticleMeta place="Northline" published={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }} />}
+/>`,
+      },
+    },
+  },
+};
+export const MissingOptionals: Story = {
+  args: { dek: undefined },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  headline="The river path opens for the weekend"
+  href="#river"
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelectorAll('p, figure, time')).toHaveLength(0);
+  },
+};
+export const LeadWithoutLede: Story = {
+  args: { size: 'lead' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  size="lead"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const BriefExplicitLede: Story = {
+  args: { size: 'brief', lede, slotProps: { lede: { visibility: 'always' } } },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  size="brief"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  lede="Work along the river began at the station. The last section opens this weekend, linking the two bridges with a continuous path."
+  slotProps={{ lede: { visibility: 'always' } }}
+/>`,
+      },
+    },
+  },
+};
+export const LongHeadlines: Story = {
+  args: { headline: 'Northline'.repeat(30) },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+const headline = 'Northline'.repeat(30);
+
+<ArticleCard
+  headline={headline}
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const MultilineHeadline: Story = {
+  args: { headline: 'The river path links the two bridges as the old station prepares to reopen its doors for the weekend' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  headline="The river path links the two bridges as the old station prepares to reopen its doors for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const Zero: Story = {
+  args: { headline: 0, dek: 0, lede: 0, kicker: 0, meta: 0 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard headline={0} href="#river" dek={0} lede={0} kicker={0} meta={0} />`,
+      },
+    },
+  },
+};
+export const Media: Story = {
+  args: { media: <blockquote cite="https://example.com/river">The river path opens this weekend.</blockquote>, slotProps: { media: { caption: 'The northern river path', credit: <ArchiveLink href="#archive">City archive</ArchiveLink> } } },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ArchiveLink = styled.a({ color: vars.color.accentText, textDecoration: 'underline' });
+
+<ArticleCard
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  media={<blockquote cite="https://example.com/river">The river path opens this weekend.</blockquote>}
+  slotProps={{
+    media: {
+      caption: 'The northern river path',
+      credit: <ArchiveLink href="#archive">City archive</ArchiveLink>,
+    },
+  }}
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement, canvas }) => {
+    await expect(canvas.getByRole('figure')).toBeInTheDocument();
+    await expect(canvasElement.querySelector('figcaption')).toHaveTextContent('City archive');
+    await expect(canvasElement.querySelector('blockquote')).toHaveAttribute('cite', 'https://example.com/river');
+  },
+};
 export const ImageMedia: Story = {
   args: { media: <img src="/og-image.png" alt="Share card preview" width={1200} height={630} />, slotProps: { media: { caption: 'Share card preview', credit: 'jfrader-ui' } } },
   parameters: { docs: { source: { code: `<ArticleCard headline="The river path opens for the weekend" media={<img src="/og-image.png" alt="Share card preview" width={1200} height={630} />} />` } } },
@@ -89,8 +414,45 @@ export const ImageMedia: Story = {
     await expect(canvas.getByRole('figure')).toBeInTheDocument();
   },
 };
-export const RTL: Story = { args: { dir: 'rtl', headline: 'Northline المنطقة', variant: 'time-column', time } };
-export const Light: Story = { globals: { theme: 'light' }, args: { variant: 'rule-top' } };
+export const RTL: Story = {
+  args: { dir: 'rtl', headline: 'Northline المنطقة', variant: 'time-column', time },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  dir="rtl"
+  variant="time-column"
+  headline="Northline المنطقة"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  time={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }}
+/>`,
+      },
+    },
+  },
+};
+export const Light: Story = {
+  globals: { theme: 'light' },
+  args: { variant: 'rule-top' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleCard } from '@jfrader/ui';
+
+<ArticleCard
+  variant="rule-top"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
 export const ReducedMotion: Story = { parameters: { chromatic: { pauseAnimationAtEnd: true } } };
 
 const Column = styled.div({ display: 'grid', gap: vars.space[6], minInlineSize: 0 });
@@ -138,6 +500,61 @@ const cardRef = createRef<HTMLElement>();
 const headingRef = createRef<HTMLHeadingElement>();
 export const ReplacementSlots: Story = {
   args: { ref: cardRef, slots: { root: Root, content: Div, time: Time, kicker: Div, headline: Heading, dek: Paragraph, lede: Paragraph, media: Figure, meta: Div }, slotProps: { root: { id: 'slot-card', 'data-ui': 'custom article-card' }, headline: { ref: headingRef, level: 3 }, lede: { visibility: 'always' } }, time, kicker: 'The city', lede, media: <p>The river path</p>, meta: <ArticleMeta published={time} /> },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { ComponentPropsWithRef } from 'react';
+import { ArticleCard, ArticleMeta } from '@jfrader/ui';
+
+function Root(props: ComponentPropsWithRef<'article'>) {
+  return <article {...props} />;
+}
+function Div(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+function Heading({ level = 2, ...props }: ComponentPropsWithRef<'h2'> & { level?: 1 | 2 | 3 | 4 | 5 | 6 }) {
+  const H = \`h\${level}\` as const;
+  return <H {...props} />;
+}
+function Paragraph(props: ComponentPropsWithRef<'p'>) {
+  return <p {...props} />;
+}
+function Figure(props: ComponentPropsWithRef<'figure'>) {
+  return <figure {...props} />;
+}
+function Time(props: ComponentPropsWithRef<'time'>) {
+  return <time {...props} />;
+}
+
+<ArticleCard
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  lede="Work along the river began at the station. The last section opens this weekend, linking the two bridges with a continuous path."
+  kicker="The city"
+  time={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }}
+  media={<p>The river path</p>}
+  meta={<ArticleMeta published={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }} />}
+  slots={{
+    root: Root,
+    content: Div,
+    time: Time,
+    kicker: Div,
+    headline: Heading,
+    dek: Paragraph,
+    lede: Paragraph,
+    media: Figure,
+    meta: Div,
+  }}
+  slotProps={{
+    headline: { level: 3 },
+    lede: { visibility: 'always' },
+  }}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement }) => {
     await expect(cardRef.current).toBe(canvas.getByRole('article'));
     await expect(headingRef.current).toBe(canvas.getByRole('heading', { level: 3 }));
@@ -154,7 +571,30 @@ export const ReplacementSlots: Story = {
     } finally { host.remove(); }
   },
 };
-export const RuleReplacement: Story = { args: { variant: 'rule-bottom', slots: { rule: Div } } };
+export const RuleReplacement: Story = {
+  args: { variant: 'rule-bottom', slots: { rule: Div } },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { ComponentPropsWithRef } from 'react';
+import { ArticleCard } from '@jfrader/ui';
+
+function Div(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<ArticleCard
+  variant="rule-bottom"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  slots={{ rule: Div }}
+/>`,
+      },
+    },
+  },
+};
 export const Compound: Story = {
   render: () => <ArticleCard size="brief"><ArticleCard.Headline href="#river">{headline}</ArticleCard.Headline><ArticleCard.Dek>{dek}</ArticleCard.Dek><ArticleCard.Lede visibility="always">{lede}</ArticleCard.Lede><ArticleCard.Media caption="The river path" credit="City archive"><p>The river path</p></ArticleCard.Media></ArticleCard>,
   parameters: { docs: { source: { code: `<ArticleCard size="brief"><ArticleCard.Headline href="#river">The river path opens for the weekend</ArticleCard.Headline><ArticleCard.Dek>The route connects the old station with the northern bridge.</ArticleCard.Dek><ArticleCard.Lede visibility="always">Work along the river began at the station.</ArticleCard.Lede></ArticleCard>` } } },

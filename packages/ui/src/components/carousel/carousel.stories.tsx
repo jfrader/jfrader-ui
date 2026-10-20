@@ -260,6 +260,57 @@ export const TrackReplacement: Story = {
 
 export const Default: Story = {
   args: { onValueChange: fn() },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel aria-label="Harbour suites">
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const region = canvas.getByRole('region', { name: 'Harbour suites' });
@@ -297,6 +348,62 @@ export const Default: Story = {
 
 export const NamedSlides: Story = {
   args: { getSlideLabel: (index) => SUITE_NAMES[index]! },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+const suiteNames = ['Harbour suite', 'Garden suite', 'Tower suite', 'Loft suite'];
+
+<Carousel
+  aria-label="Harbour suites"
+  getSlideLabel={(index) => suiteNames[index] ?? \`Suite \${index + 1}\`}
+>
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getAllByRole('tab').map((tab) => tab.getAttribute('aria-label'))).toEqual(SUITE_NAMES);
@@ -309,6 +416,57 @@ export const NamedSlides: Story = {
 
 export const CustomSlideSize: Story = {
   args: { slideSize: '12rem' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel aria-label="Harbour suites" slideSize="12rem">
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const rem = Number.parseFloat(getComputedStyle(canvasElement.ownerDocument.documentElement).fontSize);
     const slide = slidesOf(canvasElement)[0]!;
@@ -319,6 +477,57 @@ export const CustomSlideSize: Story = {
 
 export const OversizedSlides: Story = {
   args: { slideSize: '80rem' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel aria-label="Harbour suites" slideSize="80rem">
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const viewport = viewportOf(canvasElement).getBoundingClientRect();
     for (const slide of slidesOf(canvasElement))
@@ -342,6 +551,72 @@ export const InteractiveSlides: Story = {
   },
   beforeEach: () => {
     bookSpy.mockClear();
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+const Input = styled.input({
+  minBlockSize: vars.space[8],
+  justifySelf: 'start',
+});
+const BookButton = styled.button({ minBlockSize: vars.space[8], justifySelf: 'start' });
+
+function BookingCarousel({ onBook }: { onBook: (suite: string) => void }) {
+  return <Carousel aria-label="Harbour suites">
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+    <Input aria-label="Harbour suite guests" defaultValue="2" />
+    <BookButton type="button" onClick={() => onBook('harbour')}>Book Harbour suite</BookButton>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+    <Input aria-label="Garden suite guests" defaultValue="2" />
+    <BookButton type="button" onClick={() => onBook('garden')}>Book Garden suite</BookButton>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+    <Input aria-label="Tower suite guests" defaultValue="2" />
+    <BookButton type="button" onClick={() => onBook('tower')}>Book Tower suite</BookButton>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+    <Input aria-label="Loft suite guests" defaultValue="2" />
+    <BookButton type="button" onClick={() => onBook('loft')}>Book Loft suite</BookButton>
+  </SlideCard>
+</Carousel>;
+}`,
+      },
+    },
   },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -368,6 +643,57 @@ export const InteractiveSlides: Story = {
 
 export const KeyboardNavigation: Story = {
   args: { onValueChange: fn() },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel aria-label="Harbour suites">
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const viewport = viewportOf(canvasElement);
@@ -424,6 +750,57 @@ export const KeyboardNavigation: Story = {
 
 export const ManualIndicators: Story = {
   args: { activation: 'manual', onValueChange: fn() },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel aria-label="Harbour suites" activation="manual">
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const tabs = canvas.getAllByRole('tab');
@@ -471,6 +848,64 @@ export const Controlled: Story = {
 
 export const RejectedControlled: Story = {
   args: { value: 0, onValueChange: fn() },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+function ControlledCarousel() {
+  const [index] = useState(0);
+
+  return (
+    <Carousel aria-label="Harbour suites" value={index} onValueChange={() => undefined}>
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+    </Carousel>
+  );
+}`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Next slide' }));
@@ -518,6 +953,53 @@ export const PointerSnap: Story = {
   },
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel aria-label="Harbour suites">
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
       description: {
         story:
           'Drag past the midpoint and release to request the next slide once. Touch and trackpad scrolling use native scroll-snap.',
@@ -614,7 +1096,54 @@ export const OutsideReleaseBeforeCapture: Story = {
 export const RTLPointerDrag: Story = {
   args: { dir: 'rtl', onValueChange: fn() },
   parameters: {
-    docs: { description: { story: 'Under RTL later slides sit to the left, so dragging rightward moves forward.' } },
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel aria-label="Harbour suites" dir="rtl">
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      }, description: { story: 'Under RTL later slides sit to the left, so dragging rightward moves forward.' } },
   },
   play: async ({ args, canvasElement }) => {
     const mouse = mouseOn(viewportOf(canvasElement));
@@ -638,6 +1167,53 @@ export const ScrollSettle: Story = {
   args: { onValueChange: fn() },
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel aria-label="Harbour suites">
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
       description: {
         story:
           'This play uses `scrollBy` because synthetic wheel events do not scroll. Settling requests the nearest slide once. Check wheel and touch inertia in the browser.',
@@ -662,6 +1238,57 @@ export const ScrollSettle: Story = {
 
 export const RotationStopped: Story = {
   args: { interval: ROTATION_MS, onValueChange: fn(), onPlayingValueChange: fn() },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel aria-label="Harbour suites" interval={300}>
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const rotation = canvas.getByRole('button', { name: 'Start slide rotation' });
@@ -678,6 +1305,61 @@ export const RotationStopped: Story = {
 
 export const RotationRunning: Story = {
   args: { interval: ROTATION_MS, defaultPlayingValue: true, onValueChange: fn(), onPlayingValueChange: fn() },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel
+  aria-label="Harbour suites"
+  interval={300}
+  defaultPlayingValue
+>
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('button', { name: 'Stop slide rotation' })).toBeInTheDocument();
@@ -713,6 +1395,61 @@ export const RotationWrapsAround: Story = {
     defaultValue: 3,
     onValueChange: fn(),
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel
+  aria-label="Harbour suites"
+  interval={300}
+  defaultPlayingValue
+>
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ args }) => {
     await waitFor(async () => {
       await expect(args.onValueChange).toHaveBeenCalledTimes(1);
@@ -723,6 +1460,61 @@ export const RotationWrapsAround: Story = {
 
 export const FocusStopped: Story = {
   args: { interval: ROTATION_MS, autoPlay: true, onValueChange: fn(), onPlayingValueChange: fn() },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel
+  aria-label="Harbour suites"
+  interval={300}
+  autoPlay
+>
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const rotation = canvas.getByRole('button', { name: 'Stop slide rotation' });
@@ -778,6 +1570,68 @@ export const RotationSafety: Story = {
   beforeEach: stubPageHidden,
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+function RotatingCarousel() {
+  const [index] = useState(0);
+  const [playing] = useState(true);
+
+  return (
+    <Carousel
+      aria-label="Harbour suites"
+      interval={300}
+      value={index}
+      playingValue={playing}
+      onValueChange={() => undefined}
+      onPlayingValueChange={() => undefined}
+    >
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+    </Carousel>
+  );
+}`,
+      },
       description: { story: 'The parent declines both slide and playing changes; rotation still stops.' },
     },
   },
@@ -834,6 +1688,61 @@ export const RotationSafety: Story = {
 const OffscreenSpacer = styled.div({ blockSize: '300vh' });
 export const BackgroundPause: Story = {
   args: { interval: ROTATION_MS, defaultPlayingValue: true, onValueChange: fn() },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel
+  aria-label="Harbour suites"
+  interval={300}
+  defaultPlayingValue
+>
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   decorators: [
     (Story) => (
       <>
@@ -888,6 +1797,22 @@ export const UnmountCleanup: Story = {
 
 export const Empty: Story = {
   args: { children: [false, null, undefined], interval: ROTATION_MS, defaultPlayingValue: true },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel } from '@jfrader/ui';
+
+<Carousel
+  aria-label="Harbour suites"
+  interval={300}
+  defaultPlayingValue
+>
+  {[false, null, undefined]}
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('region', { name: 'Harbour suites' })).toHaveTextContent('No slides');
@@ -903,7 +1828,19 @@ export const Empty: Story = {
 export const FalsySlides: Story = {
   args: { children: [0, '', false, null, 'Plain text slide'], onValueChange: fn() },
   parameters: {
-    docs: { description: { story: '`0` and strings are slides; `false`, `null` and `undefined` are not.' } },
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel } from '@jfrader/ui';
+
+<Carousel aria-label="Harbour suites">
+  {0}
+  {''}
+  {false}
+  {null}
+  Plain text slide
+</Carousel>`,
+      }, description: { story: '`0` and strings are slides; `false`, `null` and `undefined` are not.' } },
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
@@ -920,6 +1857,49 @@ export const FalsySlides: Story = {
 
 export const SingleSlide: Story = {
   args: { children: suiteSlides(1), interval: ROTATION_MS, defaultPlayingValue: true, onValueChange: fn() },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel
+  aria-label="Harbour suites"
+  interval={300}
+  defaultPlayingValue
+>
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const [slide] = slidesOf(canvasElement);
@@ -1100,6 +2080,70 @@ export const Disabled: Story = {
   beforeEach: () => {
     disabledBook.mockClear();
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+const BookButton = styled.button({ minBlockSize: vars.space[8], justifySelf: 'start' });
+
+function BookingCarousel({ onBook }: { onBook: (suite: string) => void }) {
+  return <Carousel
+  aria-label="Harbour suites"
+  disabled
+  interval={300}
+  defaultPlayingValue
+>
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+    <BookButton type="button" onClick={() => onBook('harbour')}>Book Harbour suite</BookButton>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+    <BookButton type="button" onClick={() => onBook('garden')}>Book Garden suite</BookButton>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+    <BookButton type="button" onClick={() => onBook('tower')}>Book Tower suite</BookButton>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+    <BookButton type="button" onClick={() => onBook('loft')}>Book Loft suite</BookButton>
+  </SlideCard>
+</Carousel>;
+}`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     await expect(viewportOf(canvasElement)).toHaveAttribute('tabindex', '-1');
@@ -1126,6 +2170,71 @@ export const Narrow: Story = {
       const suite = SUITES[index % SUITES.length]!;
       return <SuiteCard key={`${suite.key}-${index}`} name={suite.name} detail={suite.detail} />;
     }),
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const NarrowFrame = styled.div({
+  inlineSize: '18rem',
+  maxInlineSize: '100%',
+});
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+const SUITES = [
+  { key: 'harbour', name: 'Harbour suite', detail: 'Balcony over the marina, sleeps two.' },
+  { key: 'garden', name: 'Garden suite', detail: 'Ground floor, opens onto the lemon trees.' },
+  { key: 'tower', name: 'Tower suite', detail: 'Top floor with a reading nook.' },
+  { key: 'loft', name: 'Loft suite', detail: 'Split level, sleeps four.' },
+];
+
+<NarrowFrame>
+  <Carousel
+    aria-label="Harbour suites"
+    locale="de-DE"
+    labels={{
+      slideCount: (index, count) =>
+        \`Unterkunft \${new Intl.NumberFormat('de-DE').format(index + 1)} von \${new Intl.NumberFormat('de-DE').format(count)}\`,
+    }}
+  >
+    {Array.from({ length: 12 }, (_, index) => {
+      const suite = SUITES[index % SUITES.length]!;
+      return (
+        <SlideCard key={\`\${suite.key}-\${index}\`}>
+          <SlideTitle>{suite.name}</SlideTitle>
+          <SlideText>{suite.detail}</SlideText>
+        </SlideCard>
+      );
+    })}
+  </Carousel>
+</NarrowFrame>`,
+      },
+    },
   },
   decorators: [
     (Story) => (
@@ -1162,12 +2271,114 @@ export const Narrow: Story = {
 
 export const LightTheme: Story = {
   args: { interval: ROTATION_MS },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel aria-label="Harbour suites" interval={300}>
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   globals: { theme: 'light' },
   decorators: [withLightTheme],
 };
 
 export const RTL: Story = {
   args: { dir: 'rtl', onValueChange: fn() },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel aria-label="Harbour suites" dir="rtl">
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     await expectCentred(canvasElement, 0);
@@ -1219,6 +2430,57 @@ export const ReducedMotion: Story = {
   beforeEach: () => stubReducedMotion(true),
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid',
+  alignContent: 'end',
+  gap: vars.space[1],
+  minBlockSize: '9rem',
+  boxSizing: 'border-box',
+  padding: vars.space[4],
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({
+  margin: 0,
+  fontWeight: vars.fontWeight.semibold,
+  fontSize: vars.textSize.md,
+});
+const SlideText = styled.p({
+  margin: 0,
+  color: vars.color.textMuted,
+});
+
+<Carousel
+  aria-label="Harbour suites"
+  interval={300}
+  defaultPlayingValue
+>
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees.</SlideText>
+  </SlideCard>
+  <SlideCard key="tower">
+    <SlideTitle>Tower suite</SlideTitle>
+    <SlideText>Top floor with a reading nook.</SlideText>
+  </SlideCard>
+  <SlideCard key="loft">
+    <SlideTitle>Loft suite</SlideTitle>
+    <SlideText>Split level, sleeps four.</SlideText>
+  </SlideCard>
+</Carousel>`,
+      },
       description: {
         story:
           'This play stubs `matchMedia`: rotation is unavailable and slides scroll without animation. Enable reduced motion in the browser to check the actual preference.',
