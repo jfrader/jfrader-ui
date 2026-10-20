@@ -74,12 +74,17 @@ const meta = {
       description: {
         component: 'Show a club, team or brand as a shaped mark built from its own colors and name.',
       },
-      usage: `### Mark
-- Supply \`name\` for the accessible name and initials. Without \`src\`, or after an image fails, the mark shows initials derived from up to three words. Use \`initials\` to replace them.
-- Defaults are \`shape="shield"\`, \`size="md"\` and \`pattern="none"\`. The shield is taller than its width. When you supply colors, check the ink against both the fill and pattern and set \`inkColor\` if needed.
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Appearance', stories: ['Shapes', 'Sizes', 'Patterns'] },
+        { title: 'Images', stories: ['CrestImage'] },
+        { title: 'Navigation', stories: ['Linked'] },
+      ],
+      usage: `### Contrast
+Check the initials against both the fill and pattern colors. A contrasting fill alone is not enough when a band crosses the letters. Shield marks are taller than they are wide; leave room for the full shape.
 
-### Links
-- The default mark is an image, not a control. To link it, use \`render\` to return an anchor and forward every supplied prop and ref. If you replace its \`aria-label\`, keep the visible initials in the name.`,
+### Accessibility
+A mark is not a control unless you make it a link. Keep visible initials in a linked mark's accessible name. Failed images fall back to initials, so keep a useful name even when supplying artwork.`,
     },
   },
 } satisfies Meta<typeof Emblem>;
@@ -89,6 +94,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Club initials',
+  parameters: { docs: { description: { story: 'Build a shield from a club name and its colors.' }, source: { language: 'tsx', code: `import { Emblem } from '@jfrader/ui';
+
+<Emblem name="Racing Club" color="#12306b" secondaryColor="#f0c33c" />` } } },
   play: async ({ canvasElement }) => {
     const emblem = within(canvasElement).getByRole('img', { name: NAME });
     await expect(emblem).toHaveTextContent('RC');
@@ -101,6 +110,18 @@ export const Default: Story = {
 };
 
 export const Shapes: Story = {
+  name: 'Mark shapes',
+  parameters: { docs: { description: { story: 'Compare shield, circle, squircle and hexagon silhouettes.' }, source: { language: 'tsx', code: `import { Emblem, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Marks = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+
+<Marks>
+  <Emblem name="shield club" shape="shield" color="#12306b" secondaryColor="#f0c33c" />
+  <Emblem name="circle club" shape="circle" color="#12306b" secondaryColor="#f0c33c" />
+  <Emblem name="squircle club" shape="squircle" color="#12306b" secondaryColor="#f0c33c" />
+  <Emblem name="hexagon club" shape="hexagon" color="#12306b" secondaryColor="#f0c33c" />
+</Marks>` } } },
   render: (args) => (
     <div style={rowStyle}>
       {SHAPES.map((shape) => (
@@ -125,6 +146,18 @@ export const Shapes: Story = {
 };
 
 export const Sizes: Story = {
+  name: 'Mark sizes',
+  parameters: { docs: { description: { story: 'Compare the four sizes with the same shield silhouette.' }, source: { language: 'tsx', code: `import { Emblem, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Marks = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+
+<Marks>
+  <Emblem name="Size sm" size="sm" color="#12306b" secondaryColor="#f0c33c" />
+  <Emblem name="Size md" size="md" color="#12306b" secondaryColor="#f0c33c" />
+  <Emblem name="Size lg" size="lg" color="#12306b" secondaryColor="#f0c33c" />
+  <Emblem name="Size xl" size="xl" color="#12306b" secondaryColor="#f0c33c" />
+</Marks>` } } },
   render: (args) => (
     <div style={rowStyle}>
       {SIZES.map((size) => (
@@ -142,6 +175,18 @@ export const Sizes: Story = {
 };
 
 export const Patterns: Story = {
+  name: 'Club patterns',
+  parameters: { docs: { description: { story: 'Add stripes, hoops or a sash while keeping the initials readable.' }, source: { language: 'tsx', code: `import { Emblem, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Marks = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+
+<Marks>
+  <Emblem name="Pattern none" pattern="none" color="#12306b" secondaryColor="#3a67b5" />
+  <Emblem name="Pattern stripes" pattern="stripes" color="#12306b" secondaryColor="#3a67b5" />
+  <Emblem name="Pattern hoops" pattern="hoops" color="#12306b" secondaryColor="#3a67b5" />
+  <Emblem name="Pattern sash" pattern="sash" color="#12306b" secondaryColor="#3a67b5" />
+</Marks>` } } },
   render: (args) => (
     <div style={rowStyle}>
       {PATTERNS.map((pattern) => (
@@ -183,6 +228,17 @@ export const ContrastInk: Story = {
 };
 
 export const CrestImage: Story = {
+  name: 'Crest artwork',
+  parameters: { docs: { description: { story: 'Use crest artwork in place of the generated initials.' }, source: { language: 'tsx', code: `import { Emblem } from '@jfrader/ui';
+
+const crest = 'data:image/svg+xml,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+  '<rect width="64" height="64" fill="#12306b"/>' +
+  '<circle cx="32" cy="28" r="13" fill="#f0c33c"/>' +
+  '<rect x="8" y="48" width="48" height="7" fill="#f0c33c"/></svg>',
+);
+
+<Emblem name="Racing Club" color="#12306b" secondaryColor="#f0c33c" src={crest} />` } } },
   args: { src: CREST_SRC },
   play: async ({ canvasElement }) => {
     const emblem = within(canvasElement).getByRole('img', { name: NAME });
@@ -206,11 +262,15 @@ export const BrokenImage: Story = {
 };
 
 export const Linked: Story = {
+  name: 'Linked club',
   parameters: {
     docs: {
+      description: { story: 'Make the club mark a keyboard-accessible link.' },
       source: {
         language: 'tsx',
-        code: `<Emblem
+        code: `import { Emblem } from '@jfrader/ui';
+
+<Emblem
   name="Racing Club"
   color="#12306b"
   secondaryColor="#f0c33c"
