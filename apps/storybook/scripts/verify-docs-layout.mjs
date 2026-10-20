@@ -14,6 +14,7 @@ const cases = [
   { id: 'games-gamehand--docs', primary: '[data-ui~="game-hand"]' },
   { id: 'games-gamecardstack--docs', primary: '[data-ui~="game-card-stack"]' },
   { id: 'games-gameseat--docs', primary: '[data-ui~="game-seat"]' },
+  { id: 'games-gameactions--docs', primary: '[data-ui~="game-actions"]' },
   { id: 'media-lightboxgallery--docs', primary: '[data-ui="lightbox-gallery"]', containPreview: true },
   { id: 'data-display-commentthread--docs', primary: '[data-ui="comment-thread"]', containPreview: true },
   {
