@@ -1,7 +1,7 @@
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
-import { modalBackdropMotion, modalPanelMotion, PALETTE_ENTER_SCALE } from '../../styling/overlay-motion';
+import { modalBackdropMotion, modalSurfaceMotion, PALETTE_ENTER_SCALE } from '../../styling/overlay-motion';
 import { modalShellReset, raisedSurface } from '../../styling/surface';
 
 export const dialogStyle = css(
@@ -20,7 +20,7 @@ export const panelStyle = css({
   borderRadius: vars.radius.lg,
   boxShadow: vars.shadow.floating,
   inlineSize: 'min(560px, calc(100vw - 32px))',
-  ...modalPanelMotion(PALETTE_ENTER_SCALE),
+  ...modalSurfaceMotion(PALETTE_ENTER_SCALE),
 });
 
 export const inputStyle = css({

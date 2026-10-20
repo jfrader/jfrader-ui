@@ -603,7 +603,7 @@ const Footer = styled.div({
     const { trigger, dialog } = await openDialog(canvasElement);
     await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    await expect(dialog).toBeVisible();
+    await waitFor(() => expect(dialog).toBeVisible());
     await expect(dialog).toHaveAttribute('open');
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
     const title = canvas.getByRole('heading', { name: TITLE });
@@ -701,8 +701,7 @@ export const SizingOverrides: Story = {
 
 async function playMotion(canvasElement: HTMLElement, onOpenChange: DialogCompoundProps['onOpenChange']) {
   const { canvas, trigger, dialog } = await openDialog(canvasElement);
-  const panel = dialog.firstElementChild!;
-  await expectEntranceMotion(panel);
+  await expectEntranceMotion(dialog);
   await expect(dialog).toHaveAttribute('data-state', 'open');
 
   await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
@@ -713,7 +712,7 @@ async function playMotion(canvasElement: HTMLElement, onOpenChange: DialogCompou
   requestEscape(dialog);
   await expect(onOpenChange).toHaveBeenCalledTimes(2);
 
-  await expectRetainedExit(panel, () => !dialog.hasAttribute('open'));
+  await expectRetainedExit(dialog, () => !dialog.hasAttribute('open'));
   await expect(dialog).toHaveAttribute('data-state', 'closed');
   await expectClosed(canvasElement, trigger);
   await expect(onOpenChange).toHaveBeenCalledTimes(2);
@@ -852,7 +851,7 @@ const Footer = styled.div({
     const { canvas, trigger, dialog } = await openDialog(canvasElement);
     fireEvent.click(canvas.getByRole('heading', { name: TITLE }));
     await expect(dialog).toHaveAttribute('open');
-    await expect(canvas.getByRole('dialog')).toBeVisible();
+    await waitFor(() => expect(canvas.getByRole('dialog')).toBeVisible());
 
     fireEvent.click(dialog);
     await expectClosed(canvasElement, trigger);
@@ -1310,6 +1309,57 @@ const NarrowContent = styled(Dialog.Content)({ inlineSize: '280px', minInlineSiz
       </NarrowDialogContent>
     </Dialog>
   ),
+};
+
+export const MotionWithoutScrollbars: Story = {
+  ...NarrowLayout,
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const dialog = canvasElement.querySelector('dialog')!;
+    const view = canvasElement.ownerDocument.defaultView!;
+    const trigger = canvas.getByRole('button', { name: 'View confirmation' });
+    let verticalOverflow = 0;
+    let horizontalOverflow = 0;
+    let frame = 0;
+    const measure = () => {
+      if (!dialog.open) return;
+      verticalOverflow = Math.max(verticalOverflow, dialog.scrollHeight - dialog.clientHeight);
+      horizontalOverflow = Math.max(horizontalOverflow, dialog.scrollWidth - dialog.clientWidth);
+    };
+    const sample = () => {
+      measure();
+      frame = view.requestAnimationFrame(sample);
+    };
+    const observer = new MutationObserver(measure);
+    observer.observe(dialog, { attributes: true, attributeFilter: ['open', 'data-state'] });
+    sample();
+    try {
+      for (let cycle = 0; cycle < 2; cycle += 1) {
+        await userEvent.click(trigger);
+        await waitFor(() => expect(dialog).toHaveAttribute('open'));
+        await settleMotion(dialog);
+        measure();
+        await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+        await expectClosed(canvasElement, trigger);
+      }
+      await expect(verticalOverflow).toBe(0);
+      await expect(horizontalOverflow).toBe(0);
+    } finally {
+      observer.disconnect();
+      view.cancelAnimationFrame(frame);
+    }
+  },
+};
+
+export const MotionWithoutScrollbarsLight: Story = {
+  ...MotionWithoutScrollbars,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+};
+
+export const MotionWithoutScrollbarsRTL: Story = {
+  ...MotionWithoutScrollbars,
+  decorators: [(Story) => <div dir="rtl"><Story /></div>],
 };
 
 export const ContrastPanel: Story = {

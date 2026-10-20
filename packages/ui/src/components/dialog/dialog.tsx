@@ -9,7 +9,7 @@
 // (Safari preview) — keep manual backdrop handling.
 // Synthetic key events in tests do not trigger native cancel; dispatch a cancel event.
 //
-// Motion: the panel scales and fades in; an accepted close fades it out before the native close
+// Motion: the shell scales and fades in; an accepted close fades it out before the native close
 // (`data-state="closing"`), and reduced motion makes both instant.
 //
 // Lifecycle contract (Root owns logical `open`, Content owns native state): see
@@ -41,7 +41,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
-import { MODAL_ENTER_SCALE, modalBackdropMotion, modalPanelMotion } from '../../styling/overlay-motion';
+import { MODAL_ENTER_SCALE, modalBackdropMotion, modalSurfaceMotion } from '../../styling/overlay-motion';
 import { modalShellReset } from '../../styling/surface';
 import type { DrawerPanelProps } from '../drawer';
 import { SurfaceRoot } from '../surface/surface-root';
@@ -224,6 +224,7 @@ function useDialogContext(part: string): DialogContextValue {
 }
 
 const dialogStyle = css(modalShellReset, modalBackdropMotion, {
+  ...modalSurfaceMotion(MODAL_ENTER_SCALE, '&[data-state="closing"]'),
   minInlineSize: 'min(320px, calc(100vw - 32px))',
   maxInlineSize: 'min(560px, calc(100vw - 32px))',
 });
@@ -231,7 +232,6 @@ const dialogStyle = css(modalShellReset, modalBackdropMotion, {
 const panelStyle = css({
   padding: vars.space[5],
   inlineSize: '100%',
-  ...modalPanelMotion(MODAL_ENTER_SCALE),
 });
 
 const titleStyle = css({
@@ -474,7 +474,7 @@ function dialogPanelChildren(children: ReactNode) {
   return children;
 }
 
-/** Render the dialog's surface, padding, and motion inside Dialog.Content. */
+/** Render the dialog's surface and padding inside Dialog.Content. */
 function DialogPanel(props: DialogPanelProps) {
   const context = useContext(DialogPanelContext);
   if (!context) throw new Error('Dialog.Panel must be rendered inside <Dialog.Content>.');
