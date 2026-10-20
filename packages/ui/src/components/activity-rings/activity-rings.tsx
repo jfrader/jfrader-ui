@@ -266,16 +266,16 @@ const centerStyle = css({
   lineHeight: vars.lineHeight.tight,
   fontVariantNumeric: 'tabular-nums',
   pointerEvents: 'none',
+  '&[data-focused="true"]': { inlineSize: '38%' },
 });
 const centerNumberStyle = css({
   display: 'block',
   fontSize: 'var(--rings-figure-size)',
   fontWeight: vars.fontWeight.semibold,
   '&[data-focused="true"]': {
-    fontSize: vars.textSize.xl,
-    display: '-webkit-box',
-    WebkitBoxOrient: 'vertical',
-    WebkitLineClamp: 2,
+    fontSize: 'var(--rings-focused-size)',
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis',
     overflow: 'hidden',
   },
 });
@@ -287,6 +287,7 @@ const centerCaptionStyle = css({
   marginBlockStart: vars.space[1],
   fontSize: vars.textSize.xs,
   color: vars.color.textMuted,
+  '[data-focused="true"] > &': { WebkitLineClamp: 1 },
 });
 const bodyStyle = css({
   display: 'grid',
@@ -295,11 +296,20 @@ const bodyStyle = css({
   minInlineSize: 0,
 });
 const sizeStyles = {
-  sm: css({ '--rings-size': RING_SIZE.sm, '--rings-figure-size': vars.textSize.xl }),
-  md: css({ '--rings-size': RING_SIZE.md, '--rings-figure-size': vars.textSize['3xl'] }),
+  sm: css({
+    '--rings-size': RING_SIZE.sm,
+    '--rings-figure-size': vars.textSize.xl,
+    '--rings-focused-size': vars.textSize.md,
+  }),
+  md: css({
+    '--rings-size': RING_SIZE.md,
+    '--rings-figure-size': vars.textSize['3xl'],
+    '--rings-focused-size': vars.textSize.lg,
+  }),
   lg: css({
     '--rings-size': RING_SIZE.lg,
     '--rings-figure-size': vars.textSize['3xl'],
+    '--rings-focused-size': vars.textSize.xl,
     fontSize: vars.textSize.md,
   }),
 };
@@ -884,6 +894,7 @@ export function ActivityRings({
                     css={centerStyle}
                     data-ui="activity-rings-center"
                     data-metric={active ?? undefined}
+                    data-focused={!!activeRing}
                   >
                     <span css={centerNumberStyle} data-focused={!!activeRing}>
                       {activeRing ? (

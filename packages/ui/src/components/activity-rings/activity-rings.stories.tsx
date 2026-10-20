@@ -4,6 +4,7 @@ import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import {
@@ -134,10 +135,11 @@ const amount = (value: number, unit: string, locale = 'en-GB') =>
   );
 
 const Frame = styled.div({
-  inlineSize: `min(24rem, calc(100vw - ${vars.space[8]}))`,
-  maxInlineSize: '100%',
+  inlineSize: 'min(100%, 24rem)',
   display: 'grid',
   gap: vars.space[4],
+  '&[data-width="narrow"]': { inlineSize: 'min(100%, 20rem)' },
+  '&[data-width="wide"]': { inlineSize: 'min(100%, 40rem)' },
 });
 const FixtureButton = styled.button({
   minBlockSize: vars.space[8],
@@ -148,9 +150,8 @@ const FixtureButton = styled.button({
   borderRadius: vars.radius.sm,
 });
 const FixtureRow = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
-const NarrowFrame = styled.div({ inlineSize: 320, maxInlineSize: '100%' });
-const WideFrame = styled.div({ inlineSize: '40rem', maxInlineSize: `calc(100vw - ${vars.space[8]})` });
 const Centered = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' });
+const PreviewFrame = styled.div({ inlineSize: 'min(100%, 18rem)', display: 'flex', justifyContent: 'center' });
 
 const ringParts = (root: Element, part = 'fill') => [
   ...root.querySelectorAll(`[data-ui="activity-rings-${part}"]`),
@@ -220,8 +221,8 @@ const meta = {
     onRingClose: fn(),
   },
   decorators: [
-    (Story) => (
-      <Frame>
+    (Story, { parameters }) => (
+      <Frame data-width={parameters.frameWidth}>
         <Story />
       </Frame>
     ),
@@ -1497,23 +1498,16 @@ export const LongIntlUnits: Story = {
 
 export const NarrowLongUnits: Story = {
   ...LongIntlUnits,
-  parameters: { docs: { source: { language: 'tsx', code: `${longUnitsDataSource}
+  parameters: { frameWidth: 'narrow', docs: { source: { language: 'tsx', code: `${longUnitsDataSource}
 
 import { styled } from '@jfrader/ui';
 
-const ActivityLane = styled.div({ inlineSize: 320, maxInlineSize: '100%' });
+const ActivityLane = styled.div({ inlineSize: 'min(100%, 20rem)' });
 
 <ActivityLane>
   <ActivityRings metrics={metrics} values={values} locale="de" interactiveLegend />
 </ActivityLane>` } } },
   args: { ...LongIntlUnits.args, interactiveLegend: true },
-  decorators: [
-    (Story) => (
-      <NarrowFrame>
-        <Story />
-      </NarrowFrame>
-    ),
-  ],
   play: async (context) => {
     await LongIntlUnits.play!(context);
     const { canvasElement } = context;
@@ -1525,23 +1519,16 @@ const ActivityLane = styled.div({ inlineSize: 320, maxInlineSize: '100%' });
   },
 };
 export const Narrow: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+  parameters: { frameWidth: 'narrow', docs: { source: { language: 'tsx', code: `${weekSource}
 
 import { styled } from '@jfrader/ui';
 
-const ActivityLane = styled.div({ inlineSize: 320, maxInlineSize: '100%' });
+const ActivityLane = styled.div({ inlineSize: 'min(100%, 20rem)' });
 
 <ActivityLane>
   <ActivityRings metrics={metrics} days={days} locale="en-GB" interactiveLegend />
 </ActivityLane>` } } },
   args: { days: week, values: undefined, interactiveLegend: true },
-  decorators: [
-    (Story) => (
-      <NarrowFrame>
-        <Story />
-      </NarrowFrame>
-    ),
-  ],
   play: async ({ canvasElement }) => {
     const days = [...canvasElement.querySelectorAll('[data-ui="activity-rings-day"]')];
     await expectLegendAlignment(canvasElement);
@@ -1551,26 +1538,25 @@ const ActivityLane = styled.div({ inlineSize: 320, maxInlineSize: '100%' });
   },
 };
 export const Wide: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+  parameters: { frameWidth: 'wide', docs: { source: { language: 'tsx', code: `${metricsSource}
 
-import { styled, theme } from '@jfrader/ui';
+import { styled } from '@jfrader/ui';
 
-const ActivityLane = styled.div({ inlineSize: '40rem', maxInlineSize: \`calc(100vw - \${theme.space[8]})\` });
+const ActivityLane = styled.div({ inlineSize: 'min(100%, 40rem)' });
 
 <ActivityLane>
   <ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB" />
 </ActivityLane>` } } },
-  decorators: [
-    (Story) => (
-      <WideFrame>
-        <Story />
-      </WideFrame>
-    ),
-  ],
   play: async ({ canvasElement }) => {
     const svg = canvasElement.querySelector('svg')!.getBoundingClientRect();
     const legend = within(canvasElement).getByRole('list').getBoundingClientRect();
-    await expect(legend.left).toBeGreaterThanOrEqual(svg.right - 1);
+    const root = within(canvasElement).getByRole('region');
+    const rem = Number.parseFloat(getComputedStyle(canvasElement.ownerDocument.documentElement).fontSize);
+    if (root.getBoundingClientRect().width >= 30 * rem) {
+      await expect(legend.left).toBeGreaterThanOrEqual(svg.right - 1);
+    } else {
+      await expect(legend.top).toBeGreaterThanOrEqual(svg.bottom - 1);
+    }
   },
 };
 
@@ -1962,4 +1948,61 @@ const ActivityLane = styled.div({ display: 'flex', flexWrap: 'wrap', justifyCont
 <ActivityLane>
   <ActivityRings metrics={metrics} days={days} locale="ar-EG" dir="rtl" />
 </ActivityLane>` } } },
+};
+
+export const FocusedLongLabels: Story = {
+  args: { ...LongIntlUnits.args, interactiveLegend: true, defaultFocusedMetric: 'distance' },
+  render: Sizes.render,
+  parameters: { docs: { source: { language: 'tsx', code: `${longUnitsDataSource}
+
+<>
+  {(['sm', 'md', 'lg'] as const).map(size => (
+    <ActivityRings key={size} metrics={metrics} values={values} locale="de" size={size}
+      interactiveLegend defaultFocusedMetric="distance" />
+  ))}
+</>` } } },
+  play: async ({ canvasElement }) => {
+    for (const root of canvasElement.querySelectorAll('[data-ui="activity-rings"]')) {
+      const plot = root.querySelector('svg')!;
+      const svg = plot.getBoundingClientRect();
+      const center = root.querySelector('[data-ui="activity-rings-center"]')!.getBoundingClientRect();
+      const tracks = root.querySelectorAll<SVGCircleElement>('[data-ui="activity-rings-track"]');
+      const inner = tracks[tracks.length - 1]!;
+      const coreRadius = (inner.r.baseVal.value - Number(inner.getAttribute('stroke-width')) / 2)
+        * svg.width / plot.viewBox.baseVal.width;
+      for (const x of [center.left, center.right]) {
+        for (const y of [center.top, center.bottom]) {
+          const distance = Math.hypot(x - (svg.left + svg.width / 2), y - (svg.top + svg.height / 2));
+          await expect(distance, 'Focused content stays inside the innermost track').toBeLessThanOrEqual(coreRadius);
+        }
+      }
+      await expect(root.querySelector('[data-ui="activity-rings-metric"]')).toHaveTextContent(
+        'Zurückgelegte Strecke im Wochenvergleich',
+      );
+    }
+  },
+};
+
+export const ConstrainedPreview: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: defaultSource } } },
+  render: (args) => (
+    <>
+      {['default', 'narrow', 'wide'].map((width) => (
+        <PreviewFrame key={width} data-testid="rings-preview">
+          <div>
+            <Frame data-width={width}>
+              <Rings {...args} aria-label={`${width} preview`} />
+            </Frame>
+          </div>
+        </PreviewFrame>
+      ))}
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const frame of within(canvasElement).getAllByTestId('rings-preview')) {
+      const root = within(frame).getByRole('region');
+      await expectInside(root, frame);
+      await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    }
+  },
 };
