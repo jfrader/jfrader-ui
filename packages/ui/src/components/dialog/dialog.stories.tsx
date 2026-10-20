@@ -577,7 +577,11 @@ export const Compound: Story = {
 import { vars } from '@jfrader/tokens/vars';
 
 const Body = styled.p({ margin: 0, fontSize: vars.textSize.sm });
-const Footer = styled.div({ display: 'flex', justifyContent: 'flex-end', marginBlockStart: vars.space[5] });
+const Footer = styled.div({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  marginBlockStart: vars.space[5],
+});
 
 <Dialog>
   <Dialog.Trigger>Open profile</Dialog.Trigger>
@@ -762,7 +766,11 @@ import { Dialog, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
 const Body = styled.p({ margin: 0, fontSize: vars.textSize.sm });
-const Footer = styled.div({ display: 'flex', justifyContent: 'flex-end', marginBlockStart: vars.space[5] });
+const Footer = styled.div({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  marginBlockStart: vars.space[5],
+});
 
 function ProfileDialog() {
   const [open, setOpen] = useState(false);
@@ -823,7 +831,11 @@ export const BackdropClick: Story = {
 import { vars } from '@jfrader/tokens/vars';
 
 const Body = styled.p({ margin: 0, fontSize: vars.textSize.sm });
-const Footer = styled.div({ display: 'flex', justifyContent: 'flex-end', marginBlockStart: vars.space[5] });
+const Footer = styled.div({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  marginBlockStart: vars.space[5],
+});
 
 <Dialog>
   <Dialog.Trigger>Open profile</Dialog.Trigger>
@@ -965,7 +977,11 @@ export const TriggerAsButton: Story = {
     source: { language: 'tsx', code: `import { Button, Dialog, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
-const Footer = styled.div({ display: 'flex', justifyContent: 'flex-end', marginBlockStart: vars.space[5] });
+const Footer = styled.div({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  marginBlockStart: vars.space[5],
+});
 
 <Dialog>
   <Dialog.Trigger render={(props) => (
