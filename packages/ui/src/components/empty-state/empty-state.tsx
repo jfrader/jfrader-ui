@@ -8,7 +8,8 @@
 import { useId, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { isRenderable } from '../../utils/renderable';
 import type { CardHeadingLevel } from '../card';
 
@@ -20,6 +21,8 @@ export interface EmptyStatePartProps {
 }
 
 export interface EmptyStateSlotProps {
+  /** Props for the outer section. */
+  root?: Omit<PresentationProps<'section'>, 'children'>;
   /** Container wrapping the decorative icon. */
   icon?: EmptyStatePartProps;
   /** Container wrapping the title and description text. */
@@ -33,6 +36,8 @@ export interface EmptyStateSlotProps {
 }
 
 export interface EmptyStateSlots {
+  /** Replaces the outer section; forwards its props, ref and className. */
+  root?: ComponentType<ComponentPropsWithRef<'section'>>;
   /** Container wrapping the decorative icon. */
   icon?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Container wrapping the title and description text. */
@@ -56,6 +61,8 @@ export interface EmptyStateProps extends Omit<ComponentPropsWithRef<'section'>, 
   headingLevel?: CardHeadingLevel;
   variant?: EmptyStateVariant;
   slots?: EmptyStateSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: EmptyStateSlots['root'];
   slotProps?: EmptyStateSlotProps;
 }
 
@@ -165,6 +172,7 @@ export function EmptyState({
   headingLevel = 3,
   variant = 'centered',
   slots,
+  component,
   slotProps,
   className,
   sx,
@@ -185,13 +193,15 @@ export function EmptyState({
   const Action = slots?.action ?? 'div';
 
   return (
-    <WithSx className={className} styles={[rootStyle, variantStyles[variant]]} sx={sx}>
-      {(className) => (
-        <section
+        <PresentationSlot
+          element="section"
+          component={slots?.root ?? component}
+          slotProps={{ ...slotProps?.root, 'data-variant': variant }}
+          styles={[rootStyle, variantStyles[variant]]}
+          sx={sx}
           {...rest}
           ref={ref}
-          data-ui="empty-state"
-          data-variant={variant}
+          marker="empty-state"
           aria-labelledby={labelledBy ? joinIds(labelledBy, hasTitle && titleId) : undefined}
           aria-describedby={joinIds(describedBy, hasDescription && descriptionId)}
           className={className}
@@ -240,9 +250,7 @@ export function EmptyState({
               {action}
             </Action>
           )}
-        </section>
-      )}
-    </WithSx>
+        </PresentationSlot>
   );
 }
 

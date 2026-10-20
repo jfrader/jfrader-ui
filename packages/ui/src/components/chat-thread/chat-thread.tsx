@@ -6,6 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { dateTimeFormatter } from '../../utils/intl';
@@ -110,6 +111,8 @@ type ChatThreadPart =
   | /** Reaction button element displaying an emoji reaction. */
     'reaction';
 export type ChatThreadSlotProps = Partial<Record<ChatThreadPart, ThreadPartProps>> & {
+  /** Props for the outer div. */
+  root?: Omit<PresentationProps<'div'>, 'children'>;
   /** Floating button that scrolls the thread to the latest message. */
   jumpButton?: ThreadButtonProps;
 };
@@ -200,9 +203,13 @@ export interface ChatThreadProps extends Omit<ComponentPropsWithRef<'div'>, 'def
   labels?: Partial<ChatThreadLabels>;
   slotProps?: ChatThreadSlotProps;
   slots?: ChatThreadSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: ChatThreadSlots['root'];
 }
 
 export interface ChatThreadSlots {
+    /** Replaces the outer div; forwards its props, ref and className. */
+    root?: ComponentType<ComponentPropsWithRef<'div'>>;
     /** Holds the scrollable viewport. */
     viewport?: ComponentType<ThreadPartProps>;
     /** Lists the message attachments. */
@@ -550,6 +557,7 @@ function ChatThreadRoot({
   labels: labelProps,
   slotProps,
   slots,
+  component,
   className,
   sx,
   ...rest
@@ -786,8 +794,7 @@ function ChatThreadRoot({
   const List = slots?.list ?? 'ol';
   const Message = slots?.message ?? 'li';
   const JumpButton = slots?.jumpButton ?? Button;
-  return <WithSx className={className} styles={[rootStyle, threadSizeStyles[size]]} sx={sx}>
-    {(rootClass) => <div {...rest} ref={rootRefs} className={rootClass} data-ui={UI} data-size={size}>
+  return <PresentationSlot element="div" component={slots?.root ?? component} slotProps={{ ...slotProps?.root, 'data-size': size }} styles={[rootStyle, threadSizeStyles[size]]} sx={sx} {...rest} ref={rootRefs} className={className} marker={UI}>
       <Viewport {...slotProps?.viewport} data-ui={`${UI}-viewport`} className={slotProps?.viewport?.className} css={[viewportStyle, slotProps?.viewport?.css]}>
         <Scroller {...slotProps?.scroller} ref={scrollerRef} tabIndex={0} role="group" aria-label={labels.transcript} data-ui={`${UI}-scroller`} className={slotProps?.scroller?.className} css={[scrollerStyle, slotProps?.scroller?.css]} onScroll={(event) => {
           const el = event.currentTarget;
@@ -865,8 +872,7 @@ function ChatThreadRoot({
       <div role="status" aria-atomic="true" css={visuallyHiddenStyle}>{typingText}</div>
       {composer ? <ChatComposer locale={locale} size={size} labels={labels} {...composerProps} disabled={disabled || composerProps?.disabled} onSend={send} acknowledged={acceptedDraft} onDraftInteraction={abandonProposal} /> : null}
       {retryError ? <p role="status" aria-atomic="true" data-ui={`${UI}-retry-error`} css={errorStyle}>{retryError}</p> : null}
-    </div>}
-  </WithSx>;
+  </PresentationSlot>;
 }
 ChatThreadRoot.displayName = 'ChatThread';
 export const ChatThread = Object.assign(ChatThreadRoot, { Composer });

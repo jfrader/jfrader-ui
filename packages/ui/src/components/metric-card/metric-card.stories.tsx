@@ -10,6 +10,50 @@ import { MetricCard, type MetricCardProps } from './index';
 import { styled } from '../../index';
 
 const NarrowFrame = styled.div({ maxInlineSize: '16rem' });
+function ReplacementRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="replacement-root" />;
+}
+
+function SugarRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the outer container while keeping the metric and its description. */
+export const RootReplacement: Story = {
+  tags: ['!autodocs'],
+  args: {
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    ref: fn(),
+    className: 'consumer-root',
+    title: 'consumer title',
+    role: 'region',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'slot title', 'data-ui': 'custom consumer' } },
+  },
+  render: (args) => <MetricCard {...args} data-ui="consumer" />,
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('DIV');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('title', 'slot title');
+    await expect(root).toHaveAttribute('data-ui', 'metric-card consumer custom');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(root).toHaveAccessibleName('Revenue');
+    await expect(root).toHaveAccessibleDescription('Last 30 days');
+    await expect(root.querySelector('[data-ui="metric-card-value"]')).toHaveTextContent('42,000');
+  },
+};
+
+/** Use component as shorthand for the root slot. */
+export const RootComponent: Story = {
+  tags: ['!autodocs'],
+  args: { component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'metric-card');
+  },
+};
 
 const Frame = styled.div({ display: 'grid', gap: vars.space[4], maxInlineSize: '28rem', minInlineSize: 0 });
 const consumerStyle = css({ fontStyle: 'italic' });

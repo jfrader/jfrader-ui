@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
@@ -10,6 +10,54 @@ import { Timeline, type TimelineEvent, type TimelineProps } from './index';
 import { styled } from '../../index';
 
 const MINUTE = 60_000;
+function ReplacementRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="replacement-root" />;
+}
+
+function SugarRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the outer container while retaining the event disclosures. */
+export const RootReplacement: Story = {
+  tags: ['!autodocs'],
+  args: {
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    ref: fn(),
+    className: 'consumer-root',
+    title: 'consumer title',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'slot title', 'data-ui': 'custom consumer' } },
+  },
+  render: (args) => <Timeline {...args} data-ui="consumer" />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const root = canvas.getByTestId('replacement-root');
+    await expect(canvas.queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('DIV');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('title', 'slot title');
+    await expect(root).toHaveAttribute('data-ui', 'timeline consumer custom');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(root).toHaveAttribute('role', 'region');
+    const triggers = canvas.getAllByRole('button', { expanded: false });
+    triggers[0]!.focus();
+    await fireEvent.keyDown(triggers[0]!, { key: 'ArrowDown' });
+    await expect(triggers[1]).toHaveFocus();
+    await fireEvent.click(triggers[0]!);
+    await expect(triggers[0]).toHaveAttribute('aria-expanded', 'true');
+  },
+};
+
+/** Use component as shorthand for the root slot. */
+export const RootComponent: Story = {
+  tags: ['!autodocs'],
+  args: { component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'timeline');
+  },
+};
 const HOUR = 60 * MINUTE;
 const NOW = Date.parse('2026-10-11T12:00:00Z');
 const LOCALE = 'en-US';
@@ -177,6 +225,7 @@ function LiveFeed(args: TimelineProps) {
 }
 
 const meta = {
+  argTypes: { events: { control: false } },
   title: 'Data display/Timeline',
   component: Timeline,
   tags: ['autodocs'],

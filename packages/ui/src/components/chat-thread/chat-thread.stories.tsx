@@ -14,6 +14,50 @@ function ReplacementViewport(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-testid="custom-viewport" />;
 }
 
+function ReplacementRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="replacement-root" />;
+}
+
+function SugarRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the outer container while keeping the transcript and composer. */
+export const RootReplacement: StoryObj<typeof ChatThread> = {
+  tags: ['!autodocs'],
+  args: {
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    ref: fn(),
+    className: 'consumer-root',
+    title: 'consumer title',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'slot title', 'data-ui': 'custom consumer' } },
+  },
+  render: (args) => <ChatThread {...args} data-ui="consumer" />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const root = canvas.getByTestId('replacement-root');
+    await expect(canvas.queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('DIV');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('title', 'slot title');
+    await expect(root).toHaveAttribute('data-ui', 'chat-thread consumer custom');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(within(root).getByRole('log')).toHaveTextContent('The build is ready to review.');
+    await expect(within(root).getByRole('textbox', { name: 'Message' })).toBeInTheDocument();
+  },
+};
+
+/** Use component as shorthand for the root slot. */
+export const RootComponent: StoryObj<typeof ChatThread> = {
+  tags: ['!autodocs'],
+  args: { component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'chat-thread');
+  },
+};
+
 function ReplacementTextarea(props: TextareaProps) {
   return <Textarea {...props} data-testid="custom-textarea" />;
 }
