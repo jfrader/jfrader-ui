@@ -5,6 +5,7 @@ import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import { StretchRefresh, type StretchRefreshProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -18,13 +19,21 @@ const ITEMS = [
   { id: 'invite', title: 'A team invitation arrived' },
 ];
 const Frame = styled.div({
-  inlineSize: '28rem',
-  maxInlineSize: '100%',
+  inlineSize: 'min(28rem, 100%)',
+  marginInline: 'auto',
   blockSize: '24rem',
   display: 'flex',
   flexDirection: 'column',
 });
 const Narrow = styled.div({ inlineSize: '14rem', maxInlineSize: '100%' });
+const Cases = styled.div({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gridAutoRows: '16rem',
+  gap: vars.space[2],
+  blockSize: '100%',
+  overflow: 'auto',
+});
 // These values exercise the documented css/sx and slot styling APIs.
 const overrideStyle = css({
   paddingInline: vars.space[8],
@@ -57,6 +66,7 @@ const meta = {
     ),
   ],
   parameters: {
+    layout: 'padded',
     docs: {
       source: { code: SOURCE },
       description: {
@@ -122,7 +132,16 @@ function pointer(feed: HTMLElement) {
     );
 }
 
-export const Default: Story = {};
+export const Default: Story = {
+  play: async ({ canvas, canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="stretch-refresh"]')!;
+    await expect(root.getBoundingClientRect().right).toBeLessThanOrEqual(
+      root.ownerDocument.documentElement.clientWidth,
+    );
+    await expectInside(canvas.getByRole('button'), root);
+    await expectInside(canvas.getByRole('region'), root);
+  },
+};
 export const FullHeightSidebar: Story = {
   parameters: {
     docs: {
@@ -262,6 +281,31 @@ const items = [
     await expect(canvas.getByRole('button').getBoundingClientRect().right).toBeLessThanOrEqual(
       root.getBoundingClientRect().right + 1,
     );
+  },
+};
+export const LongLabels: Story = {
+  args: {
+    title: 'Activity'.repeat(6),
+    subtitle: 'Updates'.repeat(8),
+    items: [],
+    emptyContent: 'NoActivityYet'.repeat(8),
+    labels: { pull: 'PullToRefresh'.repeat(6), refresh: 'Refresh'.repeat(6) },
+  },
+  decorators: [
+    (Story) => (
+      <Narrow>
+        <Story />
+      </Narrow>
+    ),
+  ],
+  play: async ({ canvas, canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="stretch-refresh"]')!;
+    const feed = canvas.getByRole('region');
+    await expect(feed.scrollWidth).toBeLessThanOrEqual(feed.clientWidth + 1);
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    const button = canvas.getByRole('button').getBoundingClientRect();
+    await expect(button.height).toBeGreaterThanOrEqual(TARGET);
+    await expect(button.right).toBeLessThanOrEqual(root.getBoundingClientRect().right);
   },
 };
 export const Disabled: Story = {
@@ -792,6 +836,8 @@ const items = [
   play: async ({ canvas, canvasElement, args }) => {
     const feed = canvas.getByRole('region');
     const line = part(feed, 'line');
+    const list = canvas.getByRole('list');
+    const restingTop = list.getBoundingClientRect().top;
     const fire = pointer(feed);
     await expect(scale(line)).toBe(0);
     fire('pointerdown', 0);
@@ -811,6 +857,12 @@ const items = [
     fire('pointermove', 80);
     await nextFrame();
     await expect(scale(line)).toBe(1);
+    await expectInside(line, feed);
+    await expectNoOverlap(part(feed, 'indicator'), list);
+    await expect(list.getBoundingClientRect().top - restingTop).toBeCloseTo(
+      80 * (1 - Math.exp(-1)),
+      1,
+    );
     await expect(canvasElement.querySelector('[data-ui="stretch-refresh"]')).toHaveAttribute(
       'data-state',
       'armed',
@@ -1014,7 +1066,7 @@ export const FeedAriaLabelWithLabelledBy: Story = {
 };
 export const FalsySlots: Story = {
   render: (args) => (
-    <>
+    <Cases>
       {[false, null, 0, ''].map((value, index) => (
         <StretchRefresh
           {...args}
@@ -1025,7 +1077,7 @@ export const FalsySlots: Story = {
           emptyContent={value}
         />
       ))}
-    </>
+    </Cases>
   ),
   play: async ({ canvasElement }) => {
     await expect(
@@ -1034,6 +1086,9 @@ export const FalsySlots: Story = {
     await expect(canvasElement.querySelectorAll('[data-ui="stretch-refresh-empty"]')).toHaveLength(
       1,
     );
+    const empty = part(canvasElement, 'empty');
+    empty.scrollIntoView({ block: 'nearest' });
+    await expectInside(empty, empty.closest('[data-ui="stretch-refresh-feed"]')!);
   },
 };
 export const UnmountDuringRefresh: Story = {
