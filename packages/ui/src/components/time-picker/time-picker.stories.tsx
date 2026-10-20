@@ -5,6 +5,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
 import { ThemeRoot } from '../theme-root';
 import { TimePicker, type TimePickerProps, type TimePickerMinuteStep } from './index';
@@ -14,6 +16,7 @@ import { styled } from '../../index';
 const LightThemeFrame = styled.div({ backgroundColor: vars.color.bg, padding: vars.space[4] });
 
 const ExampleGrid = styled.div({ display: 'grid', gap: vars.space[4] });
+const NarrowFrame = styled.div({ inlineSize: '16rem', maxInlineSize: '100%' });
 
 export const LocaleHydration: Story = {
   tags: ['!autodocs'],
@@ -120,6 +123,8 @@ export const Default: Story = {
   play: async ({ canvas, args, userEvent, canvasElement }) => {
     const trigger = canvas.getByRole('combobox', { name: 'Start time' });
     await expect(trigger).toHaveTextContent(format('09:00'));
+    await expect(trigger).not.toHaveTextContent('▾');
+    await expect(getComputedStyle(trigger, '::after').borderBlockStartWidth).not.toBe('0px');
     await expect(args.onValueChange).not.toHaveBeenCalled();
     await expect(args.onOpenChange).not.toHaveBeenCalled();
     await userEvent.click(trigger);
@@ -139,6 +144,32 @@ export const Default: Story = {
     await closed(canvasElement);
   },
 };
+export const LongLabels: Story = {
+  tags: ['!autodocs'],
+  args: {
+    label: 'AppointmentReferenceWithoutWordBreaksForTheSelectedReportingPeriod',
+    description: 'Choose the appointment start time for the selected reporting period.',
+    defaultValue: '',
+    placeholder: 'Choose the appointment start time for the selected reporting period',
+    defaultOpen: true,
+  },
+  render: (args) => <NarrowFrame><TimePicker {...args} /></NarrowFrame>,
+  parameters: { docs: { source: { code: '<TimePicker label="Appointment start time" description="Choose the appointment start time for the selected reporting period." defaultValue="" placeholder="Choose a start time" />' } } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('combobox');
+    const root = trigger.closest<HTMLElement>('[data-ui="time-picker"]')!;
+    const panel = await body(canvasElement).findByRole('listbox');
+    await settleMotion(panel);
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    await expectInside(root.querySelector('label')!, root);
+    await expectInside(trigger, root);
+    await expect(panel.getBoundingClientRect().width).toBeCloseTo(trigger.getBoundingClientRect().width, 0);
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await expect(trigger).toHaveTextContent(format('00:15'));
+  },
+};
+
 export const Empty: Story = {
   args: { value: '', placeholder: 'Choose a time' },
   play: async ({ canvas, args, userEvent, canvasElement }) => {
@@ -450,7 +481,7 @@ export const FalsyLabel: Story = {
       await expect(root.querySelector('label') !== null).toBe(renders);
       await expect(root.querySelector('[role="alert"]') !== null).toBe(renders);
       await expect(root.querySelector('[aria-hidden="true"]')?.textContent).toBe(
-        renders ? (index === 2 ? '0' : '') : '▾',
+        renders ? (index === 2 ? '0' : '') : undefined,
       );
       if (renders) {
         const ids = trigger.getAttribute('aria-describedby')!.split(' ');

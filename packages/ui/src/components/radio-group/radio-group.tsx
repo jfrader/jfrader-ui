@@ -158,10 +158,6 @@ const dotStateStyle = css({
   'input:checked + span::after': { opacity: 1 },
 });
 
-const rowFloorStyle = css({
-  minBlockSize: '32px',
-});
-
 const circleStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
@@ -298,7 +294,7 @@ function RadioGroupRadio({
     >
       {(className) => (
         <Root {...withoutSx(slotProps?.root)} css={undefined} data-ui="radio-group-radio" dir={dir} className={className}>
-          <span css={[choiceRowStyle, rowFloorStyle]}>
+          <span css={choiceRowStyle}>
             <input
               {...rest}
               ref={ref}

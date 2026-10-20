@@ -27,7 +27,7 @@ const sections = [
 ];`;
 
 const Frame = styled.div({
-  inlineSize: '360px',
+  inlineSize: `min(360px, calc(100vw - ${vars.space[8]}))`,
   maxInlineSize: '100%',
   fontSize: vars.textSize.sm,
 });
@@ -42,7 +42,7 @@ const meta = {
       { title: 'Single and multiple panels', stories: ['Multiple', 'NotCollapsible'] },
       { title: 'Default open', stories: ['Compound'] },
       { title: 'Disabled sections', stories: ['EasyMultiple'] },
-      { title: 'Long content', stories: ['LongContent'] },
+      { title: 'Long content', stories: ['LongContent', 'LongUnbrokenContent'] },
       { title: 'Composition', stories: ['GeneratedPartProps', 'Controlled'] },
       { title: 'Keyboard', stories: ['Keyboard'] },
     ],
@@ -584,5 +584,29 @@ export const ForcedColors: Story = {
       await expect(caret.borderBlockEndColor).toBe('rgba(0, 0, 0, 0)');
       await expect(parseFloat(caret.borderInlineStartWidth)).toBeGreaterThan(0);
     }
+  },
+};
+
+export const LongUnbrokenContent: StoryObj<EasySingleProps> = {
+  args: {
+    defaultValue: 'reference',
+    items: [{
+      value: 'reference',
+      label: 'SubscriptionRenewalAndBillingPreferences'.repeat(4),
+      panel: 'SubscriptionRenewalAndBillingPreferences'.repeat(8),
+    }],
+  },
+  render: (args) => <Accordion {...args} />,
+  play: async ({ canvas, userEvent }) => {
+    const trigger = canvas.getByRole('button');
+    const panel = canvas.getByRole('region');
+    for (const element of [trigger, panel]) {
+      await expect(element.scrollWidth).toBeLessThanOrEqual(element.clientWidth + 1);
+    }
+    await expect(trigger.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await userEvent.click(trigger);
+    await expect(panel).not.toBeVisible();
+    await userEvent.keyboard('{Enter}');
+    await expect(panel).toBeVisible();
   },
 };

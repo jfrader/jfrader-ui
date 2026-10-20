@@ -195,6 +195,7 @@ const TAB_QUERY: OwnedItemsQuery = {
 };
 
 const rootStyle = css({
+  minInlineSize: 0,
   '&[data-orientation="vertical"]': {
     display: 'flex',
     alignItems: 'flex-start',
@@ -205,11 +206,17 @@ const rootStyle = css({
 const listStyles: Record<TabsOrientation, SerializedStyles> = {
   horizontal: css({
     display: 'inline-flex',
+    boxSizing: 'border-box',
+    maxInlineSize: '100%',
+    overflowX: 'auto',
     gap: vars.space[1],
     borderBlockEnd: `1px solid ${vars.color.border}`,
   }),
   vertical: css({
     display: 'inline-flex',
+    flexShrink: 0,
+    maxInlineSize: '50%',
+    overflowWrap: 'anywhere',
     flexDirection: 'column',
     alignItems: 'stretch',
     borderInlineEnd: `1px solid ${vars.color.border}`,
@@ -218,6 +225,11 @@ const listStyles: Record<TabsOrientation, SerializedStyles> = {
 
 const tabStyle = css({
   appearance: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: vars.space[2],
+  flexShrink: 0,
+  minBlockSize: vars.space[8],
   border: 0,
   background: 'transparent',
   cursor: 'pointer',
@@ -255,6 +267,7 @@ const tabStyle = css({
 
 const tabOrientationStyles: Record<TabsOrientation, SerializedStyles> = {
   horizontal: css({
+    whiteSpace: 'nowrap',
     borderBlockEnd: '2px solid transparent',
     marginBlockEnd: '-1px',
   }),
@@ -266,6 +279,8 @@ const tabOrientationStyles: Record<TabsOrientation, SerializedStyles> = {
 };
 
 const panelStyle = css({
+  minInlineSize: 0,
+  overflowWrap: 'anywhere',
   color: vars.color.text,
   outline: 'none',
   '&:focus-visible': {
@@ -288,17 +303,13 @@ const materialListStyle = css({
   borderRadius: vars.radius.full,
   backgroundColor: vars.color.surfaceRaised,
   boxShadow: vars.shadow.overlay,
-  touchAction: 'pan-y',
+  '&[data-draggable="true"]': { touchAction: 'pan-y' },
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
 const materialTabStyle = css({
   position: 'relative',
   isolation: 'isolate',
-  display: 'inline-flex',
-  alignItems: 'center',
   justifyContent: 'center',
-  flexShrink: 0,
-  gap: vars.space[2],
   boxSizing: 'border-box',
   minBlockSize: vars.space[12],
   minInlineSize: vars.space[12],
@@ -315,6 +326,7 @@ const materialTabStyle = css({
 });
 const iconStyle = css({
   display: 'inline-flex',
+  flexShrink: 0,
   inlineSize: vars.space[5],
   blockSize: vars.space[5],
   alignItems: 'center',
@@ -554,17 +566,17 @@ function TabsList({
 
   useEffect(() => {
     const list = listRef.current;
-    if (!list || variant === 'line') return;
+    if (!list || orientation !== 'horizontal') return;
     const target = findByValue(queryOwnedItems(list, TAB_QUERY), focused ?? value);
     if (!target) return;
     const bounds = list.getBoundingClientRect();
     const item = target.getBoundingClientRect();
-    const gutter = parseFloat(getComputedStyle(list).paddingInlineStart);
+    const gutter = parseFloat(getComputedStyle(list).paddingInlineStart) || 0;
     const start = bounds.left + gutter;
     const end = bounds.right - gutter;
     const delta = item.left < start ? item.left - start : item.right > end ? item.right - end : 0;
     if (delta) list.scrollBy({ left: delta, behavior: 'instant' });
-  }, [focused, value, variant]);
+  }, [focused, value, orientation, variant]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
@@ -651,6 +663,7 @@ function TabsList({
           aria-orientation={orientation}
           data-ui="tabs-list"
           data-orientation={orientation}
+          data-draggable={draggableIndicator}
           data-roving={focused ?? ''}
           data-selected={value ?? ''}
           onKeyDown={handleKeyDown}

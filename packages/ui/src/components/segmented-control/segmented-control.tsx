@@ -165,6 +165,7 @@ const trackStyle = css({
 });
 const itemStyle = css({
   appearance: 'none',
+  minInlineSize: vars.space[8],
   position: 'relative',
   isolation: 'isolate',
   flexShrink: 0,

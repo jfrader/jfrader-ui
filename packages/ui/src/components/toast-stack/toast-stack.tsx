@@ -76,8 +76,10 @@ const rootStyle = css({
   fontFamily: vars.font.sans,
   display: 'grid',
   gap: vars.space[2],
+  padding: vars.space[1],
   maxBlockSize: `calc(100dvh - ${vars.space[8]})`,
   overflowY: 'auto',
+  overscrollBehavior: 'contain',
   pointerEvents: 'auto',
   '&[data-empty="true"]': { pointerEvents: 'none' },
   '&[data-contained="true"]': {
@@ -114,9 +116,20 @@ const itemStyle = css({
   transitionDuration: vars.motion.duration.base,
   transitionTimingFunction: vars.motion.easeStandard,
   '&[data-stack-visible="false"]': { visibility: 'hidden' },
+  '&[data-stack-collapsed="true"] > [data-ui~="toast"]': { overflow: 'hidden' },
   [REDUCED_MOTION]: { transitionDuration: '0s' },
 });
-const toggleStyle = css({ pointerEvents: 'auto', justifySelf: 'end', minBlockSize: vars.space[8] });
+const toggleStyle = css({
+  pointerEvents: 'auto',
+  justifySelf: 'end',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  blockSize: 'auto',
+  minBlockSize: vars.space[8],
+  paddingBlock: vars.space[2],
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
+});
 
 /** Replaces Toast.Viewport. Mount one queue renderer per Toast provider.
  * Tab visits controls from newest to oldest. Escape dismisses the focused card.
@@ -332,6 +345,7 @@ function ToastStackContent({
                 <div
                   key={record.id}
                   data-stack-visible={visible}
+                  data-stack-collapsed={!expanded && index > 0}
                   css={itemStyle}
                   style={
                     {
@@ -348,7 +362,10 @@ function ToastStackContent({
                     escapeDismiss
                     partProps={slotProps?.item}
                     component={Item}
-                    style={!expanded && index > 0 ? { minBlockSize: heights[open[0]!.id] } : undefined}
+                    style={!expanded && index > 0 ? {
+                      blockSize: heights[open[0]!.id],
+                      minBlockSize: heights[open[0]!.id],
+                    } : undefined}
                   />
                 </div>
               );

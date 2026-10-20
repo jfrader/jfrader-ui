@@ -92,7 +92,7 @@ const sizeStyles: Record<SearchFieldSize, SerializedStyles> = {
   sm: css({
     blockSize: vars.space[8],
     fontSize: vars.textSize.sm,
-    '--search-action-size': vars.space[6],
+    '--search-action-size': vars.space[8],
     '--search-control-size': vars.space[8],
   }),
   md: css({
@@ -140,7 +140,7 @@ const clearSlotStyle = css({
   justifyContent: 'center',
   flexShrink: 0,
   inlineSize: 'var(--search-action-size)',
-  blockSize: 'var(--search-action-size)',
+  blockSize: 'min(var(--search-action-size), calc(var(--search-control-size) - 2px))',
 });
 const clearStyle = css({
   display: 'inline-flex',

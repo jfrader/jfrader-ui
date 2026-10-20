@@ -101,12 +101,12 @@ const shellStyle = css({
   minInlineSize: 0,
 });
 
-// The control's inline-end padding equals its height: the square reveal lane plus its inset.
+// Reserve the reveal lane and its inset in the control's inline-end padding.
 const controlSizeStyles: Record<PasswordFieldSize, SerializedStyles> = {
   sm: css({
     blockSize: vars.space[8],
     paddingInlineStart: vars.space[3],
-    paddingInlineEnd: vars.space[8],
+    paddingInlineEnd: vars.space[10],
     fontSize: vars.textSize.sm,
   }),
   md: css({
@@ -167,7 +167,7 @@ const revealStyle = css({
 });
 
 const revealSizeStyles: Record<PasswordFieldSize, SerializedStyles> = {
-  sm: css({ inlineSize: vars.space[6], blockSize: vars.space[6], fontSize: vars.textSize.md }),
+  sm: css({ inlineSize: vars.space[8], blockSize: vars.space[6], fontSize: vars.textSize.md }),
   md: css({ inlineSize: vars.space[8], blockSize: vars.space[8], fontSize: vars.textSize.lg }),
   lg: css({ inlineSize: vars.space[10], blockSize: vars.space[10], fontSize: vars.textSize.xl }),
 };

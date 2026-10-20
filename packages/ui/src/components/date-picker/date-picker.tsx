@@ -181,6 +181,7 @@ interface DatePickerContextValue {
   refs: OverlayFloating['refs'];
   floatingContext: OverlayFloating['context'];
   floatingStyles: CSSProperties;
+  direction: 'ltr' | 'rtl';
   getReferenceProps: UseInteractionsReturn['getReferenceProps'];
   getFloatingProps: UseInteractionsReturn['getFloatingProps'];
   requestOpenChange: (open: boolean) => void;
@@ -284,6 +285,7 @@ function DatePickerOverlay({
   const open = requestedOpen && !disabled;
   const [inputLabelling, setInputLabelling] = useState<InputLabelling | null>(null);
   const gridRef = useRef<HTMLTableElement>(null);
+  const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
   const pendingFocusRestoreRef = useRef(false);
 
   const locale = useMemo(
@@ -309,6 +311,11 @@ function DatePickerOverlay({
       requestOpenChange(next);
     },
   });
+
+  useLayoutEffect(() => {
+    const input = refs.domReference.current;
+    if (open && input) setDirection(getComputedStyle(input).direction === 'rtl' ? 'rtl' : 'ltr');
+  }, [open, refs]);
 
   useEffect(() => {
     if (!disabled) return;
@@ -347,6 +354,7 @@ function DatePickerOverlay({
       refs,
       floatingContext: context,
       floatingStyles,
+      direction,
       getReferenceProps,
       getFloatingProps,
       requestOpenChange: (next) => {
@@ -380,6 +388,7 @@ function DatePickerOverlay({
       refs,
       context,
       floatingStyles,
+      direction,
       getReferenceProps,
       getFloatingProps,
       requestOpenChange,
@@ -535,6 +544,7 @@ function DatePickerPopup({ ref, style, className, sx, ...rest }: DatePickerPopup
     refs,
     floatingContext,
     floatingStyles,
+    direction,
     getFloatingProps,
     selectDate,
     slots,
@@ -595,6 +605,7 @@ function DatePickerPopup({ ref, style, className, sx, ...rest }: DatePickerPopup
               {...getFloatingProps({ ...labelling, ...rest })}
               ref={mergedRef}
               data-ui="date-picker-popup"
+              dir={rest.dir ?? direction}
               style={{ ...style, ...floatingStyles }}
               className={className}
             >

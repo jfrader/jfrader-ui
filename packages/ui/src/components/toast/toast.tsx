@@ -191,26 +191,31 @@ const RendererScope = createContext(false);
 
 // Fixed + portaled at the end of the body (or the ThemeRoot's `portalContainer`): later in DOM
 // order than the page, so no z-index. ThemeBoundary carries the enclosing ThemeRoot's theme.
-// The viewport ignores the pointer so the empty corner never blocks the page; toasts opt back in.
+// An empty viewport never blocks the page; active queues accept scrollbar interaction.
 const viewportStyle = css({
+  boxSizing: 'border-box',
   position: 'fixed',
-  insetBlockEnd: 0,
-  insetInlineEnd: 0,
+  insetBlockEnd: vars.space[4],
+  insetInlineEnd: vars.space[4],
   display: 'flex',
   flexDirection: 'column',
   gap: vars.space[2],
   inlineSize: TOAST_VIEWPORT_INLINE_SIZE,
   margin: 0,
-  paddingInlineEnd: vars.space[4],
-  paddingBlockEnd: vars.space[4],
-  pointerEvents: 'none',
+  maxBlockSize: `calc(100dvh - ${vars.space[8]})`,
+  overflowY: 'auto',
+  overscrollBehavior: 'contain',
+  pointerEvents: 'auto',
+  '&:empty': { pointerEvents: 'none' },
   fontFamily: vars.font.sans,
 });
 
 const toastStyle = css({
   boxSizing: 'border-box',
+  flexShrink: 0,
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr) auto',
+  '&[data-loading="true"]': { gridTemplateColumns: 'auto minmax(0, 1fr) auto' },
   alignItems: 'start',
   gap: vars.space[2],
   backgroundColor: vars.color.surfaceRaised,
@@ -269,11 +274,13 @@ const descriptionStyle = css({
 });
 
 const dismissStyle = css({
-  gridColumn: 2,
+  gridColumn: -2,
   gridRow: 1,
   inlineSize: '32px',
   paddingInline: 0,
 });
+
+const loadingStyle = css({ gridColumn: 1, gridRow: 1, alignSelf: 'center' });
 
 const actionsStyle = css({
   display: 'contents',
@@ -506,12 +513,24 @@ function ToastViewport({ component, slots, slotProps, className, style,  sx, ...
   const { className: slotClass, style: slotStyle, sx: slotSx, ...root } = slotProps?.root ?? {};
   const Root = slots?.root ?? component ?? 'div';
   const Item = slots?.item ?? 'div';
+  const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
+  const mergedRef = useMergeRefs([setViewport, root.ref ?? props.ref]);
+  useLayoutEffect(() => {
+    if (!viewport) return;
+    const scrollToNewest = () => {
+      if (!viewport.contains(viewport.ownerDocument.activeElement)) viewport.scrollTop = viewport.scrollHeight;
+    };
+    const observer = new ResizeObserver(scrollToNewest);
+    Array.from(viewport.children).forEach((item) => observer.observe(item));
+    scrollToNewest();
+    return () => observer.disconnect();
+  }, [viewport, toasts]);
   if (!enabled) return null;
   return (
     <ToastPortal>
       <WithSx className={[slotClass, className].filter(Boolean).join(' ')} styles={[viewportStyle, slotSx]} sx={sx}>
         {(className) => (
-          <Root {...props} {...root} style={{ ...style, ...slotStyle }} data-ui="toast-viewport" className={className}>
+          <Root {...props} {...root} ref={mergedRef} style={{ ...style, ...slotStyle }} data-ui="toast-viewport" className={className}>
             {toasts.map((record) => (
               <ToastItem key={record.id} record={record} partProps={slotProps?.item} component={Item} />
             ))}
@@ -670,6 +689,7 @@ export function ToastItem({
       }}
       data-ui="toast"
       data-tone={tone}
+      data-loading={loading || undefined}
       data-state={state}
       data-populated={populated}
       data-exposed={exposed}
@@ -699,7 +719,7 @@ export function ToastItem({
           </>
         )}
       </div>
-      {loading && <Spinner aria-hidden="true" label="" size="sm" />}
+      {loading && <Spinner aria-hidden="true" label="" size="sm" css={loadingStyle} />}
       {(populated || (escapeDismiss && exposed)) && (
         <div css={actionsStyle}>
           <Button

@@ -143,6 +143,8 @@ const rootStyle = css({
   display: 'grid',
   gap: vars.space[1],
   inlineSize: '100%',
+  minInlineSize: 0,
+  overflowWrap: 'anywhere',
 });
 const labelStyle = css({
   fontSize: vars.textSize.sm,
@@ -628,7 +630,6 @@ export function TimePicker({
               <span css={valueStyle} data-placeholder={selectedMinutes === undefined || undefined}>
                 {display}
               </span>
-              <span aria-hidden>▾</span>
             </Control>
             <Content
               {...withoutSx(slotProps?.content)}

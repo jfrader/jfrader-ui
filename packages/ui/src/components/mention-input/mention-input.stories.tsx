@@ -65,6 +65,7 @@ const Fixture = styled.button({
 });
 
 const ScrollFrame = styled.div({ paddingBlockStart: '65vh' });
+const ScrollContainmentFrame = styled.div({ paddingBlock: '50vh' });
 function LightThemeScope(props: Omit<ThemeRootProps, 'theme'>) {
   return <ThemeRoot {...props} theme="light" />;
 }
@@ -469,7 +470,10 @@ export const Disabled: Story = {
   tags: ['!autodocs'],
   args: { disabled: true, defaultValue: TOKEN_VALUE, open: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('textbox')).toBeDisabled();
+    const input = canvas.getByRole('textbox');
+    await expect(input).toBeDisabled();
+    await expect(getComputedStyle(input.parentElement!).opacity).toBe('0.55');
+    await expect(getComputedStyle(input).opacity).toBe('1');
     await expect(canvas.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
   },
 };
@@ -1069,6 +1073,39 @@ export const ScrolledSuggestions: Story = {
     }
     await context.userEvent.click(body.getByRole('option', { name: /Ada/ }));
     await expect(input).toHaveValue(`${'Earlier message line\n'.repeat(24)}@Ada `);
+    await expect(input).toHaveFocus();
+  },
+};
+
+export const ScrollableSuggestions: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultValue: { text: '@', mentions: [] },
+    open: true,
+    maxSuggestions: 12,
+    people: Array.from({ length: 12 }, (_, index) => ({
+      id: `person-${index}`,
+      name: `Teammate ${index.toString().padStart(2, '0')}`,
+      role: 'International research and accessibility',
+    })),
+    slotProps: { panel: { sx: { blockSize: '160px' } } },
+  },
+  decorators: [(Story) => <ScrollContainmentFrame><Story /></ScrollContainmentFrame>],
+  play: async (context) => {
+    await openPlay(context);
+    const input = context.canvas.getByRole('textbox');
+    const body = within(input.ownerDocument.body);
+    const panel = body.getByRole('listbox').parentElement!;
+    await expect(panel.scrollHeight).toBeGreaterThan(panel.clientHeight);
+    await expect(getComputedStyle(panel).overscrollBehaviorY).toBe('contain');
+    for (let index = 0; index < 11; index++) await context.userEvent.keyboard('{ArrowDown}');
+    await waitFor(async () => {
+      const active = input.ownerDocument.getElementById(input.getAttribute('aria-activedescendant')!)!;
+      const option = active.getBoundingClientRect();
+      const popup = panel.getBoundingClientRect();
+      await expect(option.top).toBeGreaterThanOrEqual(popup.top);
+      await expect(option.bottom).toBeLessThanOrEqual(popup.bottom);
+    });
     await expect(input).toHaveFocus();
   },
 };
