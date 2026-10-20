@@ -11,34 +11,30 @@ const meta = {
   args: { place: 'Northline', published },
   parameters: { docs: {
     description: { component: 'Show a place and publication or update times below an article headline.' },
-    source: { code: `import { Article } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
 
 <Article.Meta place="Northline" published={{ dateTime: '2026-10-19T09:00:00Z', label: '19 October · 09:00' }} />` },
     sections: [
-      { title: 'Variants', stories: ['MetaInline', 'MetaRuled'] },
-      { title: 'Time and place', stories: ['MetaMissingPlace', 'MetaUpdatedOnly', 'MetaPlaceAndUpdate'] },
-      { title: 'Customization', stories: ['MetaReplacementSlots'] },
+      { title: 'Publication details', stories: ['MetaInline', 'MetaRuled'] },
+      { title: 'Updates', stories: ['MetaUpdatedOnly'] },
     ],
     usage: `### Dates and labels
-Supply ISO dateTime values and already formatted labels. Publication and update labels are optional caller-owned text. No dates are parsed or compared.
-
-### Customization
-Use component or slots.root to replace the paragraph; slots.root wins. Every slot has matching slotProps. Replacements retain native semantics, refs, className and data-ui.
-
-The inherited --article-font-label, --article-rule-color and --article-rule-soft-color variables fall back to typed theme tokens. Tab and Enter use native behavior for consumer-owned place links.`,
+Prepare machine-readable timestamps and locale-aware display labels in your app. No dates are parsed or compared; validate the publication and update order before rendering. Omitted details leave no separator behind, and an empty row renders nothing.`,
   } },
 } satisfies Meta<typeof Article.Meta>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const MetaInline: Story = { play: async ({ canvasElement }) => {
+export const MetaInline: Story = { name: 'Place and publication time', parameters: { docs: { description: { story: 'Pair a place with a publication timestamp in one wrapping row.' } } }, play: async ({ canvasElement }) => {
   await expect(canvasElement.querySelector('time')).toHaveAttribute('dateTime', published.dateTime);
   await expect(canvasElement.querySelectorAll('[aria-hidden="true"]')).toHaveLength(1);
 } };
 export const MetaRuled: Story = {
+  name: 'Publication and update',
   args: { variant: 'ruled', publishedLabel: 'Published', updatedLabel: 'Updated', updated },
   parameters: {
     docs: {
+      description: { story: 'Separate labeled publication and update times with horizontal rules.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -58,7 +54,15 @@ export const MetaRuled: Story = {
 export const MetaMissingPlace: Story = { args: { place: undefined }, play: async ({ canvasElement }) => {
   await expect(canvasElement.querySelector('[aria-hidden="true"]')).toBeNull();
 } };
-export const MetaUpdatedOnly: Story = { args: { place: undefined, published: undefined, updated, updatedLabel: 'Updated' }, play: async ({ canvasElement }) => {
+export const MetaUpdatedOnly: Story = {
+  name: 'Latest update only',
+  parameters: { docs: { description: { story: 'Show only the latest update when publication details are absent.' }, source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
+
+<Article.Meta
+  updated={{ dateTime: '2026-10-19T10:00:00Z', label: '19 October · 10:00' }}
+  updatedLabel="Updated"
+/>` } } },
+  args: { place: undefined, published: undefined, updated, updatedLabel: 'Updated' }, play: async ({ canvasElement }) => {
   await expect(canvasElement.querySelector('[aria-hidden="true"]')).toBeNull();
   await expect(canvasElement.querySelector('time')).toHaveAttribute('dateTime', updated.dateTime);
 } };

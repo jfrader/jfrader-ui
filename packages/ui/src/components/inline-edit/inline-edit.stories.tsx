@@ -100,6 +100,10 @@ const meta = {
   decorators: [(Story) => <Frame><Story /></Frame>],
   parameters: {
     docs: {
+      sections: [
+        { title: 'Edit in place', stories: ['Default', 'Multiline'] },
+        { title: 'Save and validate', stories: ['Controlled', 'ValidationError'] },
+      ],
       description: {
         component: 'Edit and save a value in place, such as a project name or title.',
       },
@@ -117,7 +121,7 @@ const meta = {
 - Enter saves without submitting a surrounding form. Shift+Enter inserts a newline with \`multiline\`. Escape cancels. Tab/Shift+Tab follow the editor, Save, Cancel and page order.
 - \`saveOnBlur\` defaults to saving when focus leaves the widget. Moving between its controls or switching windows does not save. IME composition bypasses Enter, Escape and leave-to-save.
 - Keyboard or button save/cancel returns focus to the value after an accepted close. Leaving or a parent-driven close does not move focus.
-- The root is a \`div\`; do not put it inside \`h1\`–\`h6\`. Render the heading separately (see HeadingContext) and use \`variant="title"\` for typography.`,
+- Do not nest the editor inside a heading. Render the heading separately from its edit control.`,
     },
   },
 } satisfies Meta<typeof InlineEdit>;
@@ -334,6 +338,15 @@ function FrameField(props: InlineEditProps) {
 FrameField.displayName = 'FrameInlineEdit';
 
 export const Default: Story = {
+  name: 'Project name',
+  parameters: { docs: {
+    description: { story: 'Select the project name to edit it, then save or cancel.' },
+    source: { language: 'tsx', code: `import { InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
+  return <InlineEdit label="Project name" defaultValue="Apollo" onSave={save} />;
+}` },
+  } },
   play: async ({ canvas, canvasElement }) => {
     const trigger = canvas.getByRole('button', { name: 'Edit Project name: Apollo' });
     await expect(trigger).toHaveAttribute('type', 'button');
@@ -614,12 +627,19 @@ export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
 };
 
 export const Multiline: Story = {
+  name: 'Multiline description',
   parameters: {
     docs: {
       description: {
         story:
-          'Opening replaces the value with an input or textarea. Height and wrapping change without animation. A multiline editor grows with its content.',
+          'Edit a description and press Shift+Enter to add a line before saving.',
       },
+      source: { language: 'tsx', code: `import { InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function Description({ save }: { save: InlineEditProps['onSave'] }) {
+  return <InlineEdit multiline variant="body" label="Description"
+    defaultValue="Line one" onSave={save} />;
+}` },
     },
   },
   args: { multiline: true, variant: 'body', label: 'Description', defaultValue: 'Line one', onValueChange: fn() },
@@ -697,7 +717,10 @@ export const Open: Story = {
 };
 
 export const ValidationError: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { InlineEdit, type InlineEditProps } from '@jfrader/ui';
+  name: 'Required name',
+  parameters: { docs: {
+    description: { story: 'Clear the name and try saving to see the validation message.' },
+    source: { language: 'tsx', code: `import { InlineEdit, type InlineEditProps } from '@jfrader/ui';
 
 export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
   return <InlineEdit label="Project name" defaultValue="Apollo" onSave={save}
@@ -910,7 +933,10 @@ export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {
 };
 
 export const Controlled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  name: 'Controlled save',
+  parameters: { docs: {
+    description: { story: 'Save a new name and read the committed value below the editor.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
 import { InlineEdit, type InlineEditProps } from '@jfrader/ui';
 
 export function ProjectName({ save }: { save: InlineEditProps['onSave'] }) {

@@ -135,34 +135,56 @@ export interface CardStackSlots {
 }
 export interface CardStackProps<T>
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
+  /** Supplies cards in their decision order. */
   items: readonly T[];
+  /** Identifies each card uniquely; duplicate keys keep the first item. */
   getKey: (item: T) => string;
+  /** Names each card for accessible labels and announcements. */
   getLabel: (item: T) => string;
+  /** Renders the content inside each card. */
   renderCard: (item: T) => ReactNode;
+  /** Controls decision history; decided cards are removed from the stack. */
   value?: readonly CardStackDecision[];
+  /** Sets the initial decision history. Defaults to an empty history. */
   defaultValue?: readonly CardStackDecision[];
+  /** Requests a history change with the decision, undo or reset that caused it. */
   onValueChange?: (history: CardStackDecision[], event: CardStackEvent<T>) => void;
+  /** Runs after `onValueChange` when a card decision is requested. */
   onDecide?: (item: T, decision: CardDecision) => void;
+  /** Runs after `onValueChange` on undo; `item` is absent if it was removed. */
   onUndo?: (detail: { key: string; item: T | undefined; decision: CardDecision }) => void;
+  /** Runs after `onValueChange` when history is reset. */
   onReset?: () => void;
+  /** Overrides action text, keyboard instructions and announcements. */
   labels?: Partial<CardStackLabels>;
+  /** Names left and right outcomes in announcements. Defaults to `Passed` and `Kept`. */
   outcomes?: { left: string; right: string };
+  /** Selects number formatting and plural rules in default labels and announcements. */
   locale?: Intl.LocalesArgument;
+  /** Names the focusable card stage. Defaults to `Cards`. */
   label?: string;
+  /** Renders the empty or completed state with a reset action. */
   renderEmpty?: (context: { reset: () => void; completed: boolean }) => ReactNode;
+  /** Blocks decisions, undo, reset and gestures. Defaults to `false`. */
   disabled?: boolean;
+  /** Sets the visible card count. Defaults to 4; integers are clamped to 1–8. */
   visibleCount?: number;
+  /** Overrides swipe thresholds: width ratio 0.35, maximum 140px, flick minimum 12px at 500px/s, axis slop 6px. */
   gesture?: CardStackGestureOptions;
+  /** Sets card padding and action button size. Defaults to `md`. */
   size?: 'sm' | 'md';
   /** Use compact wallet cards with an inset stitched edge. Defaults to `default`. */
   variant?: 'default' | 'wallet';
+  /** Adds icons to the left, right, undo and reset actions. */
   icons?: {
     left?: ReactNode;
     right?: ReactNode;
     undo?: ReactNode;
     reset?: ReactNode;
   };
+  /** Passes props and styles to the stack's interior parts. */
   slotProps?: CardStackSlotProps;
+  /** Replaces the stack's interior components. */
   slots?: CardStackSlots;
 }
 

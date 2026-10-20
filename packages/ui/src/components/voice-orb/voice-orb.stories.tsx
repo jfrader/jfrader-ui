@@ -17,12 +17,6 @@ const STATES: Record<VoiceOrbState, string> = {
   speaking: 'Speaking',
   error: 'Voice session error',
 };
-const usage = `<VoiceOrb state={state} active={active} muted={muted} onActiveChange={requestSession} onMutedChange={requestMute}>
-  <VoiceOrb.Visual />
-  <VoiceOrb.Status />
-  <VoiceOrb.Transcript text={text} complete={complete} />
-  <VoiceOrb.Controls />
-</VoiceOrb>`;
 const meta = {
   title: 'Media/VoiceOrb',
   component: VoiceOrb,
@@ -30,16 +24,33 @@ const meta = {
   args: { state: 'idle', onStart: fn(), onEnd: fn(), onActiveChange: fn(), onMutedChange: fn() },
   parameters: {
     docs: {
-      source: { code: usage },
-      sections: [
-        { title: 'Basic', stories: ['DefaultIdle'] },
-        { title: 'Session states', stories: ['StateTransitions', 'Listening', 'Thinking', 'Speaking', 'Connecting', 'Muted', 'PermissionError'] },
-        { title: 'Transcript', stories: ['UserTranscript', 'AssistantTranscript', 'CompletedTurn'] },
-      ],
+      source: { language: 'tsx', code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="idle">
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>` },
       description: {
         component:
-          'Consumer-owned voice session visualization. Native Start, Mute and End buttons use normal Tab order and Enter/Space activation; Escape does not end the session. Active and muted requests support controlled rejection. The consumer owns permissions, getUserMedia, AudioContext, streams, speech, networking, elapsed time and cleanup. This component never opens a microphone.',
+          'Show a voice session’s status, audio activity and transcript.',
       },
+      sections: [
+        { title: 'Voice session', stories: ['DefaultIdle', 'StateTransitions', 'Listening', 'Speaking'] },
+        { title: 'Session feedback', stories: ['Thinking', 'Muted', 'PermissionError'] },
+        { title: 'Transcript', stories: ['PartialTurn', 'CompletedTurn'] },
+      ],
+      usage: `### Media ownership
+Connect your own permissions, microphone capture, audio processing, speech and network transport. This component never opens a microphone. Your application owns elapsed time and resource cleanup.
+
+### Session state
+Starting, muting and ending request state changes; a controlled parent can reject them. Keep the visual state synchronized with your actual session, rather than treating a button press as proof of a connection.
+
+### Keyboard
+Tab reaches Start, Mute and End in document order. Enter or Space activates a focused button. Escape does not end the session.
+
+### Transcript
+Keep partial speech visible without announcing each update. Mark a turn complete when it is ready for the polite announcement.`,
     },
   },
   render: (args) => (
@@ -170,25 +181,15 @@ const statePlay: Story['play'] = async ({ canvasElement, args }) => {
   await expect(canvasElement.querySelector('canvas')).toHaveAttribute('aria-hidden', 'true');
 };
 export const DefaultIdle: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { VoiceOrb } from '@jfrader/ui';
-
-<VoiceOrb state="idle">
-  <VoiceOrb.Visual />
-  <VoiceOrb.Status />
-  <VoiceOrb.Controls />
-</VoiceOrb>`,
-      },
-    },
-  },
+  name: 'Start a voice session',
+  parameters: { docs: { description: { story: 'Start a session from the ready state.' } } },
   play: statePlay,
 };
 export const Listening: Story = {
+  name: 'Listening for speech',
   parameters: {
     docs: {
+      description: { story: 'Show the active microphone listening for speech.' },
       source: {
         language: 'tsx',
         code: `import { VoiceOrb } from '@jfrader/ui';
@@ -223,8 +224,10 @@ export const Thinking: Story = {
   play: statePlay,
 };
 export const Speaking: Story = {
+  name: 'Assistant speaking',
   parameters: {
     docs: {
+      description: { story: 'Drive output activity while the assistant speaks.' },
       source: {
         language: 'tsx',
         code: `import { VoiceOrb } from '@jfrader/ui';
@@ -241,8 +244,10 @@ export const Speaking: Story = {
   play: statePlay,
 };
 export const Muted: Story = {
+  name: 'Microphone muted',
   parameters: {
     docs: {
+      description: { story: 'Keep an active session visible while the microphone is muted.' },
       source: {
         language: 'tsx',
         code: `import { VoiceOrb } from '@jfrader/ui';
@@ -291,8 +296,10 @@ export const Connecting: Story = {
   },
 };
 export const PermissionError: Story = {
+  name: 'Microphone permission error',
   parameters: {
     docs: {
+      description: { story: 'Show an error when microphone access is denied.' },
       source: {
         language: 'tsx',
         code: `import { VoiceOrb } from '@jfrader/ui';
@@ -457,6 +464,18 @@ export const AssistantTranscript = transcript('assistant', 'Your first meeting s
 export const SystemTranscript = transcript('system', 'Session connected.');
 export const PartialTurn: Story = {
   ...transcript('assistant', 'Your first meeting'),
+  name: 'Speech in progress',
+  parameters: { docs: {
+    description: { story: 'Show a partial assistant turn without announcing unfinished speech.' },
+    source: { language: 'tsx', code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="idle">
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Transcript text="Your first meeting" speaker="assistant" complete={false} />
+  <VoiceOrb.Controls />
+</VoiceOrb>` },
+  } },
   play: async ({ canvasElement }) => {
     const region = canvasElement.querySelector('[aria-live="polite"]');
     await expect(region).toHaveTextContent('');
@@ -468,6 +487,18 @@ export const PartialTurn: Story = {
 };
 export const CompletedTurn: Story = {
   ...transcript('assistant', 'Your first meeting starts at nine.', true),
+  name: 'Completed speech turn',
+  parameters: { docs: {
+    description: { story: 'Announce a completed assistant turn through the polite live region.' },
+    source: { language: 'tsx', code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="idle">
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Transcript text="Your first meeting starts at nine." speaker="assistant" complete />
+  <VoiceOrb.Controls />
+</VoiceOrb>` },
+  } },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[aria-live="polite"]')).toHaveTextContent(
       'Assistant: Your first meeting starts at nine.',

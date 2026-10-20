@@ -68,6 +68,10 @@ const meta = {
   parameters: {
     layout: 'padded',
     docs: {
+      sections: [
+        { title: 'Refresh a feed', stories: ['FullHeightSidebar', 'Empty'] },
+        { title: 'App state', stories: ['ControlledBusy'] },
+      ],
       source: { code: SOURCE },
       description: {
         component:
@@ -77,7 +81,6 @@ const meta = {
 - Fetch and cancel requests in your app. Update items before resolving \`onRefresh\`.
 - In controlled mode, accept refreshing requests during the interaction commit. Setting \`refreshing\` to true later only changes the display.
 - The progress line returns with the sheet. Reduced motion keeps the pull threshold and status without moving the sheet.
-- \`slotProps.feed\` merges \`aria-labelledby\` and \`aria-describedby\` with the heading and subtitle. An \`aria-label\` alone replaces the heading as the feed name.
 - Supply an accessible name when the heading has no text.
 - Check touch gestures and screen-reader announcements on a device.
 
@@ -143,8 +146,10 @@ export const Default: Story = {
   },
 };
 export const FullHeightSidebar: Story = {
+  name: 'Activity feed',
   parameters: {
     docs: {
+      description: { story: 'Pull from the top of the feed or press Refresh to check for team updates.' },
       source: {
         language: 'tsx',
         code: `import { StretchRefresh, styled } from '@jfrader/ui';
@@ -173,8 +178,10 @@ const items = [
   args: { subtitle: 'Team updates' },
 };
 export const Empty: Story = {
+  name: 'Empty feed',
   parameters: {
     docs: {
+      description: { story: 'Keep Refresh available when there are no activity items.' },
       source: {
         language: 'tsx',
         code: `import { StretchRefresh, styled } from '@jfrader/ui';
@@ -575,6 +582,29 @@ function Controlled(args: StretchRefreshProps<Item>) {
   );
 }
 export const ControlledBusy: Story = {
+  name: 'Track refresh state',
+  parameters: { docs: {
+    description: { story: 'Accept refresh requests in React state and announce completion when the promise resolves.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+export function Activity() {
+  const [refreshing, setRefreshing] = useState(false);
+  return <FeedFrame>
+    <StretchRefresh title="Activity" items={items}
+      getKey={(item) => item.id} renderItem={(item) => item.title}
+      refreshing={refreshing} onRefreshingChange={setRefreshing}
+      onRefresh={async () => 'All caught up'} sx={{ flex: 1 }} />
+  </FeedFrame>;
+}` },
+  } },
   args: { onRefresh: fn(async () => 'All caught up') },
   render: (args) => <Controlled {...args} />,
   play: Success.play,

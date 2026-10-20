@@ -134,24 +134,43 @@ export interface NowPlayingProps
     SxProps {
   /** Shorthand for slots.root. */
   component?: NowPlayingSlots['root'];
+  /** Supplies the playlist in playback order. */
   tracks: readonly NowPlayingTrack[];
+  /** Controls the selected track by its zero-based playlist index. */
   value?: number;
+  /** Sets the initial uncontrolled track index. Defaults to `0`. */
   defaultValue?: number;
+  /** Receives the requested zero-based track index. */
   onValueChange?: (index: number) => void;
+  /** Controls the playback state displayed by the player, not an audio source. */
   playing?: boolean;
+  /** Sets the initial uncontrolled playback state. Defaults to `false`. */
   defaultPlaying?: boolean;
+  /** Receives playback state requests from the controls. */
   onPlayingChange?: (playing: boolean) => void;
+  /** Controls whether the full player is expanded. */
   open?: boolean;
+  /** Expands the uncontrolled player initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives requests to expand or collapse the player. */
   onOpenChange?: (open: boolean) => void;
+  /** Controls the elapsed position in seconds. The display clamps it to the track duration. */
   position?: number;
+  /** Sets the initial uncontrolled position in seconds. Defaults to `0`. */
   defaultPosition?: number;
+  /** Receives requested seek positions in seconds. */
   onPositionChange?: (seconds: number) => void;
+  /** Shows loading status and disables playback and seeking controls. Defaults to `false`. */
   busy?: boolean;
+  /** Shows a playback error message. */
   error?: ReactNode;
+  /** Supplies decorative waveform bar heights. Omit to use the built-in pattern. */
   waveform?: readonly number[];
+  /** Names the player for assistive technology. Defaults to `Now playing`. */
   label?: string;
+  /** Overrides the English control labels and playback status messages. */
   labels?: Partial<NowPlayingLabels>;
+  /** Sets the locale for elapsed and duration numbers. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
   /**
    * Seconds per arrow step. Duration must be a whole number of steps.
@@ -159,11 +178,15 @@ export interface NowPlayingProps
    * Defaults to the largest step of at most one second that divides the duration.
    */
   seekStep?: number;
+  /** Sets the large seek increment in seconds. Defaults to `30`. */
   seekLargeStep?: number;
+  /** Replaces player elements with custom components. */
   slots?: NowPlayingSlots;
+  /** Passes props to the player elements. */
   slotProps?: NowPlayingSlotProps;
 }
 export interface NowPlayingLevelsProps extends ComponentPropsWithRef<'span'>, SxProps {
+  /** Animates the level bars during playback. Defaults to the enclosing player's state, or `false` outside a player. */
   playing?: boolean;
 }
 

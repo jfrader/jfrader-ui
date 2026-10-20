@@ -13,27 +13,25 @@ const meta = {
   args: { title: 'Coverage', items },
   parameters: { docs: {
     description: { component: 'List an article’s coverage or primary documents as linked or plain labels.' },
-    source: { code: `import { Article } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
 
 <Article.Sources title="Coverage" items={[{ id: 'edition', label: 'Morning edition', href: '#edition' }, { id: 'record', label: 'Station record' }]} />` },
     sections: [
-      { title: 'Layouts', stories: ['SourcesInline', 'SourcesStacked', 'SourcesPlain'] },
-      { title: 'Accessible names', stories: ['SourcesExternalName', 'SourcesMergedRelationships'] },
-      { title: 'Links and customization', stories: ['SourcesLinkAdapter', 'SourcesReplacementSlots'] },
+      { title: 'Source lists', stories: ['SourcesInline', 'SourcesStacked', 'SourcesPlain'] },
+      { title: 'Accessibility', stories: ['SourcesExternalName'] },
+      { title: 'Links', stories: ['SourcesLinkAdapter'] },
     ],
     usage: `### Sources
-Supply prepared items with stable ids and labels. Use inline for a wrapping list or stacked for a vertical list. Empty items render nothing. Without a title, provide aria-label or aria-labelledby. Title headings default to level 2.
+Supply prepared source labels and destinations with stable ids. Empty collections render nothing.
 
-### Links and customization
-Use href for native links or an item’s renderLink adapter. Adapters receive native anchor props, className, children and ref. Alternatively use slots.link; do not combine it with renderLink. Explicit target="_blank" in slotProps.link adds safe rel tokens. Tab and Enter retain native behavior.
-
-Use component or slots.root for root replacement; slots.root wins. Matching slots and slotProps cover root, heading, list, item and link. Forward native semantics, refs, className and data-ui. Repeated item/link props do not repeat ids or refs. Generated title ids merge with external aria-labelledby relationships.`,
+### Accessibility
+Give the source section an accessible name, even when it has no visible title. Choose a title heading level that fits the article outline. Tab moves between links and Enter follows them; plain source labels are not keyboard stops.`,
   } },
 } satisfies Meta<typeof Article.Sources>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const SourcesInline: Story = { play: async ({ canvasElement }) => {
+export const SourcesInline: Story = { name: 'Inline coverage', parameters: { docs: { description: { story: 'Mix linked and plain sources in a wrapping list.' } } }, play: async ({ canvasElement }) => {
   const section = canvasElement.querySelector('section')!; const heading = section.querySelector('h2')!;
   await expect(section).toHaveAttribute('aria-labelledby', heading.id);
   await expect(section.querySelectorAll('ul > li')).toHaveLength(2);
@@ -43,9 +41,11 @@ export const SourcesInline: Story = { play: async ({ canvasElement }) => {
   for (const tracker of [root, headingTracker]) { await expect(tracker.getAttachCount()).toBeGreaterThan(0); await expect(tracker.getCleanupCount()).toBe(tracker.getAttachCount()); }
 } };
 export const SourcesStacked: Story = {
+  name: 'Stacked documents',
   args: { variant: 'stacked', title: 'Primary documents' },
   parameters: {
     docs: {
+      description: { story: 'Put each primary document on its own line.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -63,9 +63,11 @@ export const SourcesStacked: Story = {
   },
 };
 export const SourcesPlain: Story = {
+  name: 'Unlinked source',
   args: { items: [{ id: 'record', label: 'Station record' }] },
   parameters: {
     docs: {
+      description: { story: 'List a source that has no destination link.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -81,7 +83,19 @@ export const SourcesPlain: Story = {
   },
 };
 export const SourcesEmpty: Story = { args: { items: [] }, play: async ({ canvasElement }) => { await expect(canvasElement.querySelector('section')).toBeNull(); } };
-export const SourcesExternalName: Story = { args: { title: undefined, 'aria-label': 'Coverage' } };
+export const SourcesExternalName: Story = {
+  name: 'Without a visible title',
+  args: { title: undefined, 'aria-label': 'Coverage' },
+  parameters: { docs: { description: { story: 'Name the source section for assistive technology without a visible title.' }, source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
+
+<Article.Sources
+  aria-label="Coverage"
+  items={[
+    { id: 'edition', label: 'Morning edition', href: '#edition' },
+    { id: 'record', label: 'Station record' },
+  ]}
+/>` } } },
+};
 export const SourcesEmptyTitle: Story = { args: { title: '', 'aria-label': 'Coverage' }, play: async ({ canvasElement }) => { await expect(canvasElement.querySelector('h2')).toBeNull(); await expect(canvasElement.querySelector('section')).toHaveAttribute('aria-label', 'Coverage'); } };
 export const SourcesExternalRelationship: Story = { render: () => <div><span id="coverage-label">Coverage</span><Article.Sources aria-labelledby="coverage-label" items={items} /></div> };
 export const SourcesMergedRelationships: Story = { render: () => <div><span id="external-coverage">Northline</span><span id="slot-coverage">Station</span><Article.Sources title="Coverage" aria-labelledby="external-coverage" items={items} slotProps={{ root: { 'aria-labelledby': 'slot-coverage' }, heading: { id: 'custom-coverage-title' } }} /></div>, play: async ({ canvasElement }) => {
@@ -95,16 +109,18 @@ export const SourcesHeadingLevels: Story = { render: () => <div><Article.Sources
 const clicked = fn((event: MouseEvent<HTMLAnchorElement>) => event.preventDefault());
 function renderLink(props: ComponentPropsWithRef<'a'>) { return <a {...props} data-adapter="router" />; }
 export const SourcesLinkAdapter: Story = {
+  name: 'Source link adapter',
   args: { items: [{ id: 'edition', label: 'Morning edition', href: '#edition', renderLink }], slotProps: { link: { onClick: clicked, target: '_blank', rel: 'author' } } },
   parameters: {
     docs: {
+      description: { story: 'Render a source link through an app-owned anchor adapter.' },
       source: {
         language: 'tsx',
         code: `import type { ComponentPropsWithRef } from 'react';
 import { Article } from '@jfrader/ui';
 
 function RouterLink(props: ComponentPropsWithRef<'a'>) {
-  return <a {...props} />;
+  return <a {...props} data-adapter="router" />;
 }
 
 <Article.Sources

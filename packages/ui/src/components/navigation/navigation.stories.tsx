@@ -52,15 +52,18 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Group links into navigation sections and mark the current page.' },
-      usage: `- Pass groups with readonly items, or compose the dotted parts with children. activeHref matches each item's href exactly; an explicit item.active takes precedence.
-- Use slotProps for generated root, group and item props. component replaces the root, as does slots.root. Group and item replacements compose the corresponding dotted part and forward received props/ref. Declare replacements outside render.
-- Name the navigation landmark with label. The current link exposes aria-current="page".
-- Collapsible groups use native details/summary. defaultOpen sets the initial open attribute; the browser owns later state.
-- Leading icons are decorative and hidden from assistive technology.
-- Use \`variant="morph"\` for a horizontal floating bar. Groups wrap at narrow widths; collapsible groups remain native disclosures containing links, not menus. \`compact\` reduces spacing; your application owns scroll thresholds.
-- Morph disclosures accept \`columns={2}\` for two columns, and items accept \`description\`. Below 420px, panels use one column. An active disclosure marks its current section with \`aria-current="location"\`; only destination links use \`page\`.
-- Use Left/Right, Home/End between top-level controls. Down opens a disclosure and focuses its first link; Up from its first link returns to the summary. Escape closes and returns focus; outside pointer or focus closes without restoring it. Tab keeps native link order. Enter/Space retain native anchor or disclosure behavior.
-- Compose search separately with Combobox and supply routing in application code. There is no built-in search index, route interception or responsive hamburger.`,
+      sections: [
+        { title: 'Page links', stories: ['Default', 'Compound'] },
+        { title: 'Floating navigation', stories: ['Morph'] },
+      ],
+      usage: `### Accessibility
+Name the navigation landmark. The current destination is announced as the current page; a floating disclosure marks its active section as the current location. Leading icons are decorative. Collapsible groups use native disclosures; after their initial state, the browser owns toggling.
+
+### Floating bar keyboard
+Left/Right and Home/End move between top-level controls. Down opens a disclosure and focuses its first link; Up from its first link returns to the summary. Escape closes and returns focus; outside pointer or focus closes without restoring it. Tab keeps native link order. Enter/Space retain native anchor or disclosure behaviour.
+
+### Layout and routing
+Floating groups wrap at narrow widths. Below 420px, disclosure panels use one column. Supply routing, scroll thresholds and responsive navigation in your application; search can be composed separately with Combobox.`,
     },
   },
   decorators: [
@@ -124,7 +127,7 @@ async function expectFocusRing(element: HTMLElement) {
 }
 
 export const Default: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
-  name: 'Easy mode',
+  name: 'Workspace links',
   args: {
     label: 'Main',
     activeHref: '/projects',
@@ -148,9 +151,12 @@ export const Default: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
   },
   parameters: {
     docs: {
+      description: { story: 'Group workspace and settings destinations and mark Projects as the current page.' },
       source: {
         language: 'tsx',
-        code: `const groups = [
+        code: `import { Navigation, type NavigationGroupRecord } from '@jfrader/ui';
+
+const groups = [
   {
     label: 'Workspace',
     items: [
@@ -200,7 +206,23 @@ export const Default: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
 };
 
 export const Compound: Story = {
-  name: 'Compound',
+  name: 'Compose link groups',
+  parameters: { docs: {
+    description: { story: 'Compose workspace and settings links with a current-page marker.' },
+    source: { language: 'tsx', code: `import { Navigation } from '@jfrader/ui';
+
+<Navigation label="Main">
+  <Navigation.Group label="Workspace">
+    <Navigation.Item href="/inbox">Inbox</Navigation.Item>
+    <Navigation.Item href="/projects" active>Projects</Navigation.Item>
+    <Navigation.Item href="/teams">Teams</Navigation.Item>
+  </Navigation.Group>
+  <Navigation.Group label="Settings">
+    <Navigation.Item href="/settings/account">Account</Navigation.Item>
+    <Navigation.Item href="/settings/billing">Billing</Navigation.Item>
+  </Navigation.Group>
+</Navigation>` },
+  } },
   render: (args) => <SidebarExample {...args} />,
   play: async ({ canvasElement }) => {
     const nav = within(canvasElement).getByRole('navigation', { name: 'Main' });
@@ -568,6 +590,7 @@ export const NarrowLabels: Story = {
 
 /** Open a grouped set of site links from a floating disclosure bar. */
 export const Morph: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
+  name: 'Floating site links',
   args: {
     variant: 'morph', label: 'Site', activeHref: '#overview',
     groups: [
@@ -579,7 +602,9 @@ export const Morph: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
     ],
   },
   render: (args) => <Navigation {...args} />,
-  parameters: { docs: { source: { language: 'tsx', code: `<Navigation variant="morph" label="Site" activeHref="#overview" groups={[
+  parameters: { docs: { description: { story: 'Open Product to browse destinations from a floating navigation bar.' }, source: { language: 'tsx', code: `import { Navigation } from '@jfrader/ui';
+
+<Navigation variant="morph" label="Site" activeHref="#overview" groups={[
   { label: 'Product', collapsible: true, items: [
     { label: 'Overview', href: '#overview', description: 'Projects and activity' },
     { label: 'Reports', href: '#reports', description: 'Usage and performance' },

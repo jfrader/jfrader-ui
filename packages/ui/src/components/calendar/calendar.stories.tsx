@@ -5,6 +5,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectAligned, expectInside, expectMirroredDirection } from '../../testing/geometry-assertions';
 import { Calendar, type CalendarCompoundProps as CalendarProps, type CalendarEasyProps } from './index';
 
 const LOCALE = 'en-US';
@@ -15,10 +16,15 @@ const meta: Meta<CalendarProps> = {
   title: 'Inputs/Calendar',
   component: Calendar,
   parameters: { docs: {
-    description: { component: 'Choose a date or show a range of dates. Move between months to find a day.' },
+    description: { component: 'Choose a date or show a range of dates in a month grid.' },
+    sections: [
+      { title: 'Choose a date', stories: ['Default', 'EasyControlled', 'EasyMinMax'] },
+      { title: 'Composition', stories: ['Compound', 'RangeSelection'] },
+      { title: 'Localization', stories: ['EasyLocale'] },
+    ],
     usage: `### Values
 - Use date-only \`YYYY-MM-DD\` strings for \`value\`, \`min\` and \`max\`, and \`YYYY-MM\` for \`visibleMonth\`. Dates use the Gregorian calendar without storing a time or time zone.
-- Use \`defaultValue\` and \`defaultVisibleMonth\` for uncontrolled state. If you control \`value\` or \`visibleMonth\`, update them from their respective change callbacks. Changing selection does not control the displayed month for you.
+- Changing selection does not control the displayed month for you; keep selection and month navigation in sync when owning both.
 - Set \`selectionRange\`, including \`null\` for no range, to enter range mode. Handle \`onDayActivate\` and update the interval yourself; range activation does not call \`onValueChange\`. \`previewRange\` only decorates dates, without selecting them.
 
 ### Keyboard
@@ -30,9 +36,8 @@ const meta: Meta<CalendarProps> = {
 - \`min\` and \`max\` are inclusive. Days outside them cannot be selected, but header buttons stay focusable at the boundary. Supply valid bounds in chronological order.
 - The locale defaults to \`navigator.language\`, and its week start is used when available, otherwise Sunday. Set \`locale\` and \`firstDayOfWeek\` when you need a specific display or week start.
 
-### Customization
-- Omit children for the generated header and grid, customized through \`slots\` or \`slotProps\`. A grid replacement must render a table and forward props and ref.
-- Supply \`Calendar.Header\` and \`Calendar.Grid\` as children for custom layout. Keep the header for month-change announcements; explicit \`null\` children render no calendar parts.`,
+### Accessibility
+- Keep the month header for month-change announcements.`,
   } },
   args: { locale: LOCALE },
 };
@@ -165,9 +170,15 @@ async function expectSelected(canvasElement: HTMLElement, name: string) {
 }
 
 export const Default: StoryObj<Meta<CalendarEasyProps>> = {
+  name: 'Choose a day',
   args: { locale: LOCALE, defaultValue: '2026-10-14', today: '2026-10-14', onValueChange: fn() },
   render: (args) => <Calendar {...args} />,
-  parameters: { docs: { source: { language: 'tsx', code: '<Calendar locale="en-US" defaultValue="2026-10-14" today="2026-10-14" />' } } },
+  parameters: { docs: {
+    description: { story: 'Select a day or use the header to move between months.' },
+    source: { language: 'tsx', code: `import { Calendar } from '@jfrader/ui';
+
+<Calendar locale="en-US" defaultValue="2026-10-14" today="2026-10-14" />` },
+  } },
   play: async ({ args, canvasElement, userEvent }) => {
     await expectMonth(canvasElement, 'October 2026');
     await expectSelected(canvasElement, 'October 14, 2026');
@@ -183,13 +194,17 @@ export const Default: StoryObj<Meta<CalendarEasyProps>> = {
 
 /** Assemble the month header and grid for a custom layout. */
 export const Compound: Story = {
+  name: 'Header and grid',
   args: { defaultValue: '2026-10-12' },
   render: (args) => <CalendarExample {...args} />,
   parameters: {
     docs: {
+      description: { story: 'Compose a month header and date grid inside the calendar.' },
       source: {
         language: 'tsx',
-        code: `<Calendar locale="en-US" defaultValue="2026-10-12">
+        code: `import { Calendar } from '@jfrader/ui';
+
+<Calendar locale="en-US" defaultValue="2026-10-12">
   <Calendar.Header />
   <Calendar.Grid />
 </Calendar>`,
@@ -299,6 +314,17 @@ export const RootSlotPrecedence: StoryObj<Meta<CalendarEasyProps>> = {
 };
 
 export const EasyControlled: StoryObj<Meta<CalendarEasyProps>> = {
+  name: 'Controlled selection',
+  parameters: { docs: {
+    description: { story: 'Keep the selected date in application state while navigating months independently.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Calendar } from '@jfrader/ui';
+
+export function AppointmentDate() {
+  const [date, setDate] = useState('2026-10-14');
+  return <Calendar locale="en-US" today="2026-10-14" value={date} onValueChange={setDate} />;
+}` },
+  } },
   args: { locale: LOCALE, today: '2026-10-14', onValueChange: fn() },
   render: (args) => <EasyControlledCalendar {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -311,6 +337,13 @@ export const EasyControlled: StoryObj<Meta<CalendarEasyProps>> = {
 
 /** Days outside the bounds cannot be selected. */
 export const EasyMinMax: StoryObj<Meta<CalendarEasyProps>> = {
+  name: 'Available dates',
+  parameters: { docs: {
+    description: { story: 'Limit selection to October 14 and 15; dates outside the interval are disabled.' },
+    source: { language: 'tsx', code: `import { Calendar } from '@jfrader/ui';
+
+<Calendar locale="en-US" defaultValue="2026-10-14" min="2026-10-14" max="2026-10-15" />` },
+  } },
   args: { locale: LOCALE, defaultValue: '2026-10-14', min: '2026-10-14', max: '2026-10-15', onValueChange: fn() },
   render: (args) => <Calendar {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -324,6 +357,13 @@ export const EasyMinMax: StoryObj<Meta<CalendarEasyProps>> = {
 
 /** The header, weekdays and day names follow the locale. */
 export const EasyLocale: StoryObj<Meta<CalendarEasyProps>> = {
+  name: 'Spanish calendar',
+  parameters: { docs: {
+    description: { story: 'Read month headings, weekday labels, and day names in Spanish.' },
+    source: { language: 'tsx', code: `import { Calendar } from '@jfrader/ui';
+
+<Calendar locale="es-ES" defaultValue="2026-10-14" />` },
+  } },
   args: { locale: 'es-ES', defaultValue: '2026-10-14' },
   render: (args) => <Calendar {...args} />,
   play: async ({ canvasElement }) => {
@@ -527,6 +567,44 @@ export const PersianLocaleGregorianDates: Story = {
   },
 };
 
+export const LocalizedGeometry: Story = {
+  args: { locale: 'fa-IR', defaultValue: '2026-09-14', today: '2026-09-14' },
+  render: (args) => (
+    <div style={{ inlineSize: 260, maxInlineSize: '100%' }}>
+      <CalendarExample {...args} sx={{ inlineSize: '100%' }} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="calendar"]')!;
+    const headers = within(root).getAllByRole('columnheader');
+    await expectInside(root, root.parentElement!);
+    const widths = headers.map((header) => header.getBoundingClientRect().width);
+    await expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
+    for (const button of root.querySelectorAll<HTMLButtonElement>('[data-ui="calendar-day"]')) {
+      const column = (button.closest('td') as HTMLTableCellElement).cellIndex;
+      await expectAligned([headers[column]!, button], 'center-x');
+      await expectInside(button, root);
+      await expect(button.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+      await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    await expectMirroredDirection(root, '[data-ui="calendar-day"], [data-ui="calendar-previous"], [data-ui="calendar-next"]');
+  },
+};
+
+export const RightToLeft: Story = {
+  args: { locale: 'ar-SA', defaultValue: '2026-09-14', today: '2026-09-14', dir: 'rtl', onValueChange: fn() },
+  render: (args) => <CalendarExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const selected = canvasElement.querySelector<HTMLButtonElement>('[data-date="2026-09-14"]')!;
+    selected.focus();
+    await userEvent.keyboard('{ArrowLeft}{Enter}');
+    await expect(canvasElement.querySelector('[data-date="2026-09-15"]')).toHaveFocus();
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('2026-09-15');
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(selected).toHaveFocus();
+  },
+};
+
 export const CivilDateRoundTrip: Story = {
   args: { defaultValue: '2011-12-29', min: '2011-12-29', max: '2011-12-31' },
   render: (args) => (
@@ -699,9 +777,14 @@ export const LightTheme: Story = {
   },
 };
 
-/** Range mode: multi-selection semantics, endpoint descriptions, preview without selection. */
+/** Show selected dates and a preview interval without changing the selection. */
 export const RangeSelection: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<Calendar
+  name: 'Range and preview',
+  parameters: { docs: {
+    description: { story: 'Show a selected interval beside a preview; the application owns range updates.' },
+    source: { language: 'tsx', code: `import { Calendar } from '@jfrader/ui';
+
+<Calendar
   locale="en-US"
   visibleMonth="2026-10"
   today="2026-10-11"
@@ -735,6 +818,14 @@ export const RangeSelection: Story = {
     await expect(day(canvasElement, 'October 12, 2026')).toHaveAccessibleDescription('Start date');
     await expect(day(canvasElement, 'October 14, 2026')).toHaveAccessibleDescription('End date');
     await expect(day(canvasElement, 'October 11, 2026')).toHaveAttribute('aria-current', 'date');
+    if (canvasElement.ownerDocument.defaultView!.matchMedia('(forced-colors: active)').matches) {
+      const start = getComputedStyle(day(canvasElement, 'October 12, 2026'));
+      const interior = getComputedStyle(day(canvasElement, 'October 13, 2026'));
+      const outside = getComputedStyle(day(canvasElement, 'October 20, 2026'));
+      await expect(interior.backgroundColor).toBe(start.backgroundColor);
+      await expect(interior.backgroundColor).not.toBe(outside.backgroundColor);
+      await expect(interior.color).toBe(start.color);
+    }
 
     // Activation only reports; the selection stays with the parent.
     await userEvent.click(day(canvasElement, 'October 20, 2026'));

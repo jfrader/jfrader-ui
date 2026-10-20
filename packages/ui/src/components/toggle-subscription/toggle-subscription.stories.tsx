@@ -17,13 +17,17 @@ const NarrowFrame = styled.div({ width: 180 });
 const FixedSubscription = styled(ToggleSubscription)({ width: 280 });
 
 const saving = `Save ${new Intl.NumberFormat('en', { style: 'percent' }).format(0.2)}`;
-const usage = `<ToggleSubscription value={period} onValueChange={setPeriod} locale="en-US">
+const usage = `import { ToggleSubscription } from '@jfrader/ui';
+
+const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
+
+<ToggleSubscription defaultValue="monthly" locale="en-US">
   <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
   <ToggleSubscription.List>
     <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-    <ToggleSubscription.Item value="annual" badge={savingText}>Annual</ToggleSubscription.Item>
+    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
   </ToggleSubscription.List>
-  <ToggleSubscription.Price amount={price.amount} currency="USD" period={price.periodText} />
+  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
 </ToggleSubscription>`;
 const FixtureButton = styled.button({ minHeight: vars.space[8], minWidth: vars.space[8] });
 function Example({
@@ -58,28 +62,20 @@ const meta = {
   render: (args) => <Example {...args} />,
   parameters: {
     docs: {
-      source: { code: `const periods = [
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'annual', label: 'Annual' },
-] as const;
-const prices = {
-  monthly: { amount: 24, currency: 'USD', period: '/ month' },
-  annual: { amount: 230, currency: 'USD', period: '/ year' },
-} as const;
-
-<ToggleSubscription label="Billing period" options={periods} prices={prices} defaultValue="monthly" locale="en-US" />` },
+      sections: [
+        { title: 'Choose a billing period', stories: ['Easy', 'MonthlyYearly'] },
+        { title: 'Price displays', stories: ['SeveralPrices', 'IntlCurrencies'] },
+      ],
       description: {
         component:
           'Choose a billing period and show its price, savings, or a previous price.',
       },
-      usage: `- Supply readonly options and an explicit prices map keyed by period value, or children for custom anatomy; do not mix them. No selection displays no price; a selected value without a mapped price throws.
-- slotProps customizes the generated root, label, list, items and price, including badge and price anatomy. slots replaces those parts; component is shorthand for slots.root. Replacement roots forward props and ref to one div.
-- Supply labels, savings, and prices. The component does not calculate prices or create a form field.
-- Controlled changes take effect when the parent updates \`value\`.
-- Price needs a finite amount and an ISO currency. Supply \`previousLabel\` when showing a previous price. Set \`locale\` for SSR.
-- Badges must not contain controls.
-- The selector keeps SegmentedControl data-ui markers. Each Item has a wrapper with \`data-ui="toggle-subscription-item"\`.
-- List ref targets the radiogroup; Item ref targets its button.
+      usage: `### Prices and forms
+- Supply the billing amounts and savings; the component does not calculate them or create a form field.
+- With mapped prices, no selection displays no price; a selected period without a mapped price throws.
+- In a compound composition, keep displayed prices in sync with the selected period yourself.
+- Use finite amounts and ISO currencies. Give a previous price an accessible label and set an explicit locale for server rendering.
+- Keep badges free of interactive controls.
 
 ### Keyboard
 - Arrow keys select and wrap, skipping disabled periods. Horizontal arrows reverse in RTL.
@@ -110,6 +106,25 @@ async function expectSettledPrice(root: HTMLElement, formatted: string) {
   });
 }
 export const Easy: EasyStory = {
+  name: 'Mapped billing prices',
+  parameters: { docs: {
+    description: { story: 'Choose Monthly or Annual to update the price; Quarterly is unavailable.' },
+    source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+
+const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
+const periods = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly', disabled: true },
+  { value: 'annual', label: 'Annual', badge: saving },
+] as const;
+const prices = {
+  monthly: { amount: 24, currency: 'USD', period: '/ month' },
+  quarterly: { amount: 60, currency: 'USD', period: '/ quarter' },
+  annual: { amount: 230, currency: 'USD', period: '/ year' },
+} as const;
+
+<ToggleSubscription label="Billing period" options={periods} prices={prices} defaultValue="monthly" locale="en-US" />` },
+  } },
   args: { label: 'Billing period', options: periods, prices, defaultValue: 'monthly', locale: 'en-US', onValueChange: fn() },
   render: (args) => <ToggleSubscription {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -253,7 +268,11 @@ async function assertFocus(item: HTMLElement) {
   await expect(Math.abs(parseFloat(getComputedStyle(item).outlineWidth) - 2)).toBeLessThan(1.1);
 }
 export const MonthlyYearly: Story = {
-  parameters: { docs: { source: { code: usage } } },
+  name: 'Compose the billing selector',
+  parameters: { docs: {
+    description: { story: 'Choose Annual to swap the savings badge; this composition keeps its monthly price unchanged.' },
+    source: { language: 'tsx', code: usage },
+  } },
   play: async ({ canvas, userEvent, args }) => {
     const monthly = canvas.getByRole('radio', { name: 'Monthly' });
     const annual = canvas.getByRole('radio', { name: 'Annual' });
@@ -495,6 +514,35 @@ function PricesExample({ reject = false, ...args }: ToggleSubscriptionProps & { 
   );
 }
 export const SeveralPrices: Story = {
+  name: 'Update several prices',
+  parameters: { docs: {
+    description: { story: 'Choose a period to update two prices, or apply Annual from the external button.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { ToggleSubscription, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ApplyButton = styled.button({ minHeight: vars.space[8], minWidth: vars.space[8] });
+const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
+
+export function PlanPrices() {
+  const [period, setPeriod] = useState('monthly');
+  const annual = period === 'annual';
+  return (
+    <>
+      <ToggleSubscription value={period} onValueChange={setPeriod} locale="en-US">
+        <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+        <ToggleSubscription.List>
+          <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+          <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
+        </ToggleSubscription.List>
+        <ToggleSubscription.Price amount={annual ? 240 : 24} currency="USD" period={annual ? '/ year' : '/ month'} />
+        <ToggleSubscription.Price amount={annual ? 480 : 48} currency="USD" period={annual ? '/ year' : '/ month'} />
+      </ToggleSubscription>
+      <ApplyButton onClick={() => setPeriod('annual')}>Set annual externally</ApplyButton>
+    </>
+  );
+}` },
+  } },
   render: (args) => <PricesExample {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     const construct = spyOn(Intl, 'NumberFormat');
@@ -644,6 +692,19 @@ const currencies = [
   { locale: new Intl.Locale('fr-CH'), currency: 'CHF', amount: 1234.56 },
 ];
 export const IntlCurrencies: Story = {
+  name: 'Localized currencies',
+  parameters: { docs: {
+    description: { story: 'Compare currency formatting for US, German, Japanese, Egyptian and Swiss locales.' },
+    source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+
+<ToggleSubscription defaultValue="monthly" locale="en-US">
+  <ToggleSubscription.Price amount={1234.56} currency="USD" locale="en-US" />
+  <ToggleSubscription.Price amount={1234.56} currency="EUR" locale="de-DE" />
+  <ToggleSubscription.Price amount={1234.56} currency="JPY" locale="ja-JP" />
+  <ToggleSubscription.Price amount={1234.56} currency="USD" locale="ar-EG" />
+  <ToggleSubscription.Price amount={1234.56} currency="CHF" locale={new Intl.Locale('fr-CH')} />
+</ToggleSubscription>` },
+  } },
   render: (args) => (
     <ToggleSubscription {...args}>
       {currencies.map((props) => (

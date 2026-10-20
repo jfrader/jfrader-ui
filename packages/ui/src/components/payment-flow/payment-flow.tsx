@@ -78,29 +78,51 @@ export interface PaymentFlowSlotProps extends FieldParts<Anatomy> {
 export interface PaymentFlowProps
   extends Omit<ComponentPropsWithRef<'figure'>, 'children'>,
     SxProps {
+  /** Supplies each payment participant. A missing participant label shows `emptyContent`. */
   nodes: Record<PaymentFlowNodeKey, PaymentFlowNode>;
+  /** Sets the illustrative gross charge in major currency units. Must be finite and nonnegative. */
   amount: number;
+  /** Sets the deduction in major currency units. Must be nonnegative and no greater than `amount`. */
   fee: number;
+  /** Sets the initial merchant balance in major currency units. Must be finite and nonnegative. */
   balance: number;
+  /** Sets the currency code used to format amounts. Unsupported currencies show `invalidContent`. */
   currency: string;
+  /** Sets the locale for currency amounts. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Sets the illustrative authorization time in milliseconds, not the animation duration. Must be finite and nonnegative. */
   authorizationMs: number;
+  /** Supplies phase names and labels for fees, approval and settlement time. */
   labels: PaymentFlowLabels;
+  /** Supplies the ordered text summary. Fewer than five entries shows `invalidContent`. */
   summary: readonly { id: string; content: ReactNode }[];
+  /** Shows the text summary or limits it to assistive technology. Defaults to `visible`. */
   summaryVisibility?: 'visible' | 'sr-only';
+  /** Names the payment illustration for assistive technology. */
   label: string;
+  /** Adds a caption associated with the illustration. */
   caption?: ReactNode;
+  /** Sets the participant layout. Defaults to `auto`, which stacks participants at container widths of 700px or less. */
   orientation?: 'auto' | 'horizontal' | 'vertical';
   /** Playback multiplier from 0 (static) to 3. Defaults to 1. */
   speed?: number;
+  /** Controls whether automatic playback is paused. Reduced motion and `speed={0}` also stop playback. */
   paused?: boolean;
+  /** Pauses uncontrolled playback initially. Defaults to `false`. */
   defaultPaused?: boolean;
+  /** Receives playback pause requests from the controls. */
   onPausedChange?: (paused: boolean) => void;
+  /** Names the control group and its pause, resume, step and replay actions. */
   controlLabels: { group: string; pause: string; resume: string; step: string; replay: string };
+  /** Replaces the scene when a participant label is missing. */
   emptyContent: ReactNode;
+  /** Replaces the scene when amounts, currency, timing, speed or summary entries are invalid. */
   invalidContent: ReactNode;
+  /** Replaces illustration elements with custom components. */
   slots?: PaymentFlowSlots;
+  /** Passes props to the illustration elements. */
   slotProps?: PaymentFlowSlotProps;
+  /** Replaces the root figure. Shorthand for `slots.root`. */
   component?: PaymentFlowSlots['root'];
 }
 const rootStyle = css({

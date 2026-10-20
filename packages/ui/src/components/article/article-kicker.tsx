@@ -8,12 +8,32 @@ import { articleLabelStyle, articleLinkStyle } from '../../styling/article';
 import { isRenderable } from '../../utils/renderable';
 import { PresentationSlot, repeatedTemplate, type PresentationParts, type PresentationSlots, type RenderArticleLink } from '../../utils/presentation-slot';
 
-type PlainItem = ComponentPropsWithRef<'span'> & { href?: never; renderLink?: never; slots?: PresentationSlots<ItemAnatomy> };
-type LinkedItem = ComponentPropsWithRef<'a'> & { href: string; renderLink?: never; slots?: PresentationSlots<ItemAnatomy> };
-type RenderedItem = ComponentPropsWithRef<'a'> & { href?: string; renderLink: RenderArticleLink; slots?: Omit<PresentationSlots<ItemAnatomy>, 'link'> & { link?: never } };
+type PlainItem = ComponentPropsWithRef<'span'> & {
+  href?: never;
+  renderLink?: never;
+  /** Replaces the topic label root. */
+  slots?: PresentationSlots<ItemAnatomy>;
+};
+type LinkedItem = ComponentPropsWithRef<'a'> & {
+  /** Links the topic label to its coverage. */
+  href: string;
+  renderLink?: never;
+  /** Replaces the topic root and link elements. */
+  slots?: PresentationSlots<ItemAnatomy>;
+};
+type RenderedItem = ComponentPropsWithRef<'a'> & {
+  /** Sets the destination passed to `renderLink`. */
+  href?: string;
+  /** Renders the topic link with merged anchor props. Cannot be combined with `slots.link`. */
+  renderLink: RenderArticleLink;
+  /** Replaces the topic root while `renderLink` owns the link. */
+  slots?: Omit<PresentationSlots<ItemAnatomy>, 'link'> & { link?: never };
+};
 type ItemAnatomy = { root: 'span'; link: 'a' };
 export type ArticleKickerItemProps = (PlainItem | LinkedItem | RenderedItem) & SxProps & {
+  /** Replaces the topic root. `slots.root` or `slots.link` takes precedence. */
   component?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Passes props to the topic root and link. */
   slotProps?: PresentationParts<ItemAnatomy>;
 };
 export type ArticleKickerEntry = { id: string; label: ReactNode; href?: string; renderLink?: RenderArticleLink };
@@ -27,11 +47,23 @@ export interface ArticleKickerSlotProps {
   /** Renders an `a` for linked items or a `span` otherwise by default. */
   item?: Omit<ArticleKickerItemProps, 'children'>;
 }
-type Content = { items: readonly ArticleKickerEntry[]; children?: never } | { items?: never; children?: ReactNode };
+type Content = {
+  /** Generates topic labels and links from entries instead of `children`. */
+  items: readonly ArticleKickerEntry[];
+  children?: never;
+} | {
+  items?: never;
+  /** Composes topic labels and links manually instead of using `items`. */
+  children?: ReactNode;
+};
 export type ArticleKickerProps = Omit<ComponentPropsWithRef<'p'>, 'children'> & SxProps & Content & {
+  /** Sets the topic label color. Defaults to `accent`. */
   tone?: 'accent' | 'neutral';
+  /** Replaces the paragraph root. `slots.root` takes precedence. */
   component?: ArticleKickerSlots['root'];
+  /** Replaces the topic group and its items. */
   slots?: ArticleKickerSlots;
+  /** Passes props to the topic group and its items. */
   slotProps?: ArticleKickerSlotProps;
 };
 const rootStyle = css({ display: 'flex', flexWrap: 'wrap', justifyContent: 'var(--_article-inline-justify, normal)', gap: vars.space[2], fontSize: vars.editorial.kicker, fontWeight: vars.fontWeight.bold, letterSpacing: vars.editorial.tracking.kicker });

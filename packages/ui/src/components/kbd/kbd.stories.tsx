@@ -22,11 +22,11 @@ const meta = {
   component: Kbd,
   parameters: {
     docs: {
+      sections: [
+        { title: 'Shortcut hints', stories: ['Inline', 'Default', 'Combination'] },
+      ],
       description: { component: 'Show a keyboard key or a combination of keys in text.' },
-      usage: `### Combinations
-- Put one \`Kbd\` per key inside \`Kbd.Group\`. The group inserts a visible \`+\` between children and hides those separators from assistive technology.
-
-### Keyboard
+      usage: `### Keyboard
 - Kbd labels input but does not register shortcuts or receive focus by default. Handle the shortcut in your application and supply the key names for the user's platform.`,
     },
   },
@@ -57,7 +57,8 @@ function ShortcutHints() {
 ShortcutHints.displayName = 'ShortcutHints';
 
 export const Default: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Kbd } from '@jfrader/ui';
+  name: 'Single key',
+  parameters: { docs: { description: { story: 'Label the Escape key on its own.' }, source: { language: 'tsx', code: `import { Kbd } from '@jfrader/ui';
 
 <Kbd>Esc</Kbd>` } } },
   play: async ({ canvasElement }) => {
@@ -70,11 +71,15 @@ export const Default: Story = {
 };
 
 export const Combination: Story = {
+  name: 'Key combination',
   parameters: {
     docs: {
+      description: { story: 'Join the keys pressed together for a shortcut.' },
       source: {
         language: 'tsx',
-        code: `<Kbd.Group>
+        code: `import { Kbd } from '@jfrader/ui';
+
+<Kbd.Group>
   <Kbd>Cmd</Kbd>
   <Kbd>K</Kbd>
 </Kbd.Group>`,
@@ -184,10 +189,20 @@ export const KeyboardFocus: Story = {
 };
 
 export const Inline: Story = {
+  name: 'Shortcuts in text',
   parameters: {
     docs: {
+      description: { story: 'Place search and close shortcuts in a sentence.' },
       source: {
-        code: '<p>Press <Kbd.Group><Kbd>Cmd</Kbd><Kbd>K</Kbd></Kbd.Group> to search, or <Kbd>Esc</Kbd> to close.</p>',
+        language: 'tsx',
+        code: `import { Kbd, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Hint = styled.p({ margin: 0, fontSize: vars.textSize.sm, color: vars.color.text });
+
+<Hint>
+  Press <Kbd.Group><Kbd>Cmd</Kbd><Kbd>K</Kbd></Kbd.Group> to search, or <Kbd>Esc</Kbd> to close.
+</Hint>`,
       },
     },
   },

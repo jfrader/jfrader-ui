@@ -10,21 +10,27 @@ const meta = {
   title: 'Media/ArticleList', component: ArticleList, tags: ['autodocs'], args: { items },
   parameters: { docs: {
     description: { component: 'Show article headlines in time, topic, place or stacked rows.' },
-    source: { code: `<ArticleList items={[{ id: 'river', headline: 'The river path opens for the weekend', href: '#river', time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' } }]} />` },
+    source: { language: 'tsx', code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList items={[
+  { id: 'river', headline: 'The river path opens for the weekend', href: '#river', time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' }, label: 'The city', place: 'Northline' },
+  { id: 'station', headline: 'Work begins at the old station', href: '#station', time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' } },
+]} />` },
+    sections: [
+      { title: 'Headline rows', stories: ['Headlines', 'HeadlineTime', 'HeadlineTag', 'HeadlinePlace'] },
+      { title: 'News feeds', stories: ['Wire', 'WireWithLabel', 'Stacked'] },
+      { title: 'Density', stories: ['Small'] },
+    ],
     usage: `### Rows and headings
-Use items for a list or ArticleList.Item children for custom rows. Input order is preserved. Empty items omit the list; compound children remain caller-owned. There is no sorting, pagination or column splitting.
+Input order is preserved; sort and paginate in your app. Empty collections render nothing. Add heading semantics only when the headlines belong in the page outline. Prepare locale-aware time labels before rendering.
 
-Headlines are plain text or links unless level is supplied. Choose level 1–6 to match your page outline. wire defaults to small regular text; headline rows default to medium bold text. A wire label is inside the link; a headline-tag label is outside it.
-
-### Keyboard and customization
-Tab and Shift+Tab follow native link order; Enter follows links. renderLink is a leaf adapter; forward supplied props, className and ref. Do not combine it with slots.link.
-
-Every slot has matching slotProps. Root conflicts favor slotProps.root, with classes, style and refs composed. Repeated item templates do not repeat ids or refs; customize those on individual Items. --article-font-heading, --article-font-label and --article-rule-soft-color inherit with typed token fallbacks.`,
+### Keyboard
+Tab and Shift+Tab follow native link order; Enter follows links. Keep linked headlines free of nested links. A wire label is part of its headline link, while a topic label in a headline row is not.`,
   } },
 } satisfies Meta<typeof ArticleList>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Headlines: Story = { play: async ({ canvas, userEvent, canvasElement }) => {
+export const Headlines: Story = { name: 'Headline list', parameters: { docs: { description: { story: 'List linked headlines and their publication times without adding headings.' } } }, play: async ({ canvas, userEvent, canvasElement }) => {
   await expect(canvas.getAllByRole('listitem')).toHaveLength(2);
   await expect(canvas.queryByRole('heading')).not.toBeInTheDocument();
   await expect(canvasElement.querySelector('time')).toHaveAttribute('dateTime', time.dateTime);
@@ -38,9 +44,11 @@ export const Headlines: Story = { play: async ({ canvas, userEvent, canvasElemen
   await expect(links[0]!.ownerDocument.activeElement).toBe(links[0]);
 } };
 export const HeadlineTime: Story = {
+  name: 'Headline with time',
   args: { items: [{ ...items[0], variant: 'headline-time', level: 2 }] },
   parameters: {
     docs: {
+      description: { story: 'Give a timed headline a place in the page outline.' },
       source: {
         language: 'tsx',
         code: `import { ArticleList } from '@jfrader/ui';
@@ -64,9 +72,11 @@ export const HeadlineTime: Story = {
   },
 };
 export const HeadlineTag: Story = {
+  name: 'Headline with topic',
   args: { items: [{ ...items[0], variant: 'headline-tag', level: 2 }] },
   parameters: {
     docs: {
+      description: { story: 'Place a topic label outside the linked headline.' },
       source: {
         language: 'tsx',
         code: `import { ArticleList } from '@jfrader/ui';
@@ -93,9 +103,11 @@ export const HeadlineTag: Story = {
   },
 };
 export const HeadlinePlace: Story = {
+  name: 'Headline with place',
   args: { items: [{ ...items[0], variant: 'headline-place', level: 3 }] },
   parameters: {
     docs: {
+      description: { story: 'Align a place label beside a linked headline on wider screens.' },
       source: {
         language: 'tsx',
         code: `import { ArticleList } from '@jfrader/ui';
@@ -119,9 +131,11 @@ export const HeadlinePlace: Story = {
   },
 };
 export const Wire: Story = {
+  name: 'News wire',
   args: { variant: 'wire', items: [{ ...items[0], label: undefined }] },
   parameters: {
     docs: {
+      description: { story: 'Put a timestamp before a headline in a news-wire row.' },
       source: {
         language: 'tsx',
         code: `import { ArticleList } from '@jfrader/ui';
@@ -143,9 +157,11 @@ export const Wire: Story = {
   },
 };
 export const WireWithLabel: Story = {
+  name: 'Labeled news wire',
   args: { variant: 'wire' },
   parameters: {
     docs: {
+      description: { story: 'Include a topic label inside a wire headline’s link.' },
       source: {
         language: 'tsx',
         code: `import { ArticleList } from '@jfrader/ui';
@@ -175,9 +191,11 @@ export const WireWithLabel: Story = {
   play: async ({ canvas }) => { await expect(canvas.getAllByRole('link')[0]).toHaveTextContent('The city'); },
 };
 export const Stacked: Story = {
+  name: 'Stacked headlines',
   args: { variant: 'stacked' },
   parameters: {
     docs: {
+      description: { story: 'Place topic and time metadata above each headline.' },
       source: {
         language: 'tsx',
         code: `import { ArticleList } from '@jfrader/ui';
@@ -206,9 +224,11 @@ export const Stacked: Story = {
   },
 };
 export const Small: Story = {
+  name: 'Compact headlines',
   args: { size: 'sm' },
   parameters: {
     docs: {
+      description: { story: 'Use smaller headline text in a compact list.' },
       source: {
         language: 'tsx',
         code: `import { ArticleList } from '@jfrader/ui';

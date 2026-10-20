@@ -32,14 +32,15 @@ const meta = {
   args: { label: 'Score', rows, locale: 'de-DE' },
   parameters: { docs: {
     description: { component: 'Show named scores and stage labels for players or teams.' },
+    sections: [
+      { title: 'Scores', stories: ['Default', 'Empty'] },
+      { title: 'Composition', stories: ['MatchSummary', 'RowReplacement'] },
+    ],
     usage: `### Values
-Pass rows with stable keys, labels, numeric values and optional stage text. Values use Intl.NumberFormat with locale; omitting locale uses the runtime default. Pass the same locale on server and client for hydration. Stages are displayed verbatim and exposed as data-stage. No scoring rules or count-up animation run here.
+Use the same locale on server and client for number formatting. Stage text is displayed as written. Your application owns scoring rules; updates do not run a count-up animation.
 
 ### Accessibility
-The named group contains a native description list. It adds no focus target or keyboard bindings and does not announce updates. Choose a live region in your application when needed. No motion is used.
-
-### Customization
-Use slotProps for root, label, list, row, name, value and stage; each accepts sx. Repeated slots apply to every row. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. Consumer sx applies after slot sx.`,
+The named group contains a native description list. It adds no keyboard commands or live announcements. Announce score changes in your application when needed.`,
     source: { language: 'tsx', code: source },
   } },
 } satisfies Meta<typeof GameScore>;
@@ -48,7 +49,8 @@ type Story = StoryObj<typeof meta>;
 
 /** Default score table with formatted numbers and match stage badges. */
 export const Default: Story = {
-  name: 'Default',
+  name: 'Formatted scores',
+  parameters: { docs: { description: { story: 'Format team scores in German and show the current stage.' } } },
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Score' });
     const terms = within(group).getAllByRole('term');
@@ -82,7 +84,7 @@ export const LightRtl: Story = {
 export const Empty: Story = {
   name: 'No rows',
   args: { rows: [] },
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameScore } from '@jfrader/ui/game-score';
+  parameters: { docs: { description: { story: 'Keep a named score group before any scores are available.' }, source: { language: 'tsx', code: `import { GameScore } from '@jfrader/ui/game-score';
 
 <GameScore label="Score" rows={[]} />` } } },
   play: async ({ canvasElement }) => {
@@ -101,7 +103,7 @@ export const MatchSummary: Story = {
     <GameRounds label="North rounds" rounds={[{ key: 'opening', label: 'Opening', outcome: 'won' }]}
       outcomeLabels={{ won: 'Won', lost: 'Lost', pending: 'Pending' }} />
   </Summary>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Combine team scores with awards and round history.' }, source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameScore } from '@jfrader/ui/game-score';
 import { GameMarks } from '@jfrader/ui/game-marks';
@@ -219,7 +221,7 @@ function ReplacementRow(props: ComponentPropsWithRef<'div'> & GameScorePartProps
 /** Supply a custom score row for each player. */
 export const RowReplacement: Story = {
   name: 'Custom row',
-  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+  parameters: { docs: { description: { story: 'Render score rows through a custom element.' }, source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { GameScore, type GameScorePartProps } from '@jfrader/ui/game-score';
 
 function ReplacementRow(props: ComponentPropsWithRef<'div'> & GameScorePartProps<'div'>) {

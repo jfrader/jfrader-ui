@@ -68,9 +68,23 @@ const meta = {
     docs: {
       description: {
         component:
-          'Show the time remaining until a date and time.',
+          'Display the time remaining until a deadline, launch, or scheduled event.',
       },
-      usage: '- The timer has no controls or editable state. Tab and other keys pass through. Set the target in the parent; the clock supplies the current time.\n- Updates are not announced. Completion announcements are opt-in.\n- In the background, completion runs when the browser can next execute a callback, which may be after the target time.\n- Pass `locale` and `initialNow` for server rendering.',
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Complete'] },
+        { title: 'Variants', stories: ['Display', 'Compact'] },
+        { title: 'Units', stories: ['HoursMinutes', 'SecondsOnly'] },
+      ],
+      usage: `### When to use
+Show remaining time toward a specific date or deadline. For an editable or interactive input, use a time picker or duration field instead.
+
+### Behaviour and constraints
+Use an unambiguous target instant. Provide the same initial time and locale on the server and client to keep the first render consistent.
+
+In background tabs, completion runs when the browser can next execute a callback, which may be after the target instant.
+
+### Keyboard and accessibility
+Updates are not announced; completion announcements are opt-in. Tab and other keys pass through because the timer has no controls or editable state.`,
     },
   },
   decorators: [
@@ -85,18 +99,18 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Standard',
   parameters: {
     docs: {
+      description: {
+        story: 'Display remaining days, hours, minutes, and seconds toward a target instant.',
+      },
       source: {
         language: 'tsx',
         code: `import { Countdown } from '@jfrader/ui';
 
-const NOW = Date.parse('2026-12-01T12:00:00Z');
-
-const fixedClock = () => NOW;
-
-export function Example() {
-  return <Countdown target={NOW + 90061000} initialNow={NOW} clock={fixedClock} locale="en" />;
+export function Deadline({ now, clock }: { now: number; clock: () => number }) {
+  return <Countdown target={now + 90061000} initialNow={now} clock={clock} locale="en" />;
 }`,
       },
     },
@@ -113,22 +127,22 @@ export function Example() {
   },
 };
 export const Display: Story = {
+  name: 'Display',
   parameters: {
     docs: {
+      description: {
+        story: 'Present large numbers for prominent launch banners and hero sections.',
+      },
       source: {
         language: 'tsx',
         code: `import { Countdown } from '@jfrader/ui';
 
-const NOW = Date.parse('2026-12-01T12:00:00Z');
-
-const fixedClock = () => NOW;
-
-export function Example() {
+export function LaunchCountdown({ now, clock }: { now: number; clock: () => number }) {
   return (
     <Countdown
-      target={NOW + 90061000}
-      initialNow={NOW}
-      clock={fixedClock}
+      target={now + 90061000}
+      initialNow={now}
+      clock={clock}
       locale="en"
       variant="display"
     />
@@ -136,24 +150,26 @@ export function Example() {
 }`,
       },
     },
-  }, args: { variant: 'display' } };
+  },
+  args: { variant: 'display' },
+};
 export const Compact: Story = {
+  name: 'Compact',
   parameters: {
     docs: {
+      description: {
+        story: 'Render an inline compact layout for toolbars and dense status cards.',
+      },
       source: {
         language: 'tsx',
         code: `import { Countdown } from '@jfrader/ui';
 
-const NOW = Date.parse('2026-12-01T12:00:00Z');
-
-const fixedClock = () => NOW;
-
-export function Example() {
+export function InlineCountdown({ now, clock }: { now: number; clock: () => number }) {
   return (
     <Countdown
-      target={NOW + 90061000}
-      initialNow={NOW}
-      clock={fixedClock}
+      target={now + 90061000}
+      initialNow={now}
+      clock={clock}
       locale="en"
       variant="compact"
     />
@@ -170,22 +186,22 @@ export function Example() {
   },
 };
 export const HoursMinutes: Story = {
+  name: 'Hours and minutes',
   parameters: {
     docs: {
+      description: {
+        story: 'Display only hours and minutes when days and seconds are not needed.',
+      },
       source: {
         language: 'tsx',
         code: `import { Countdown } from '@jfrader/ui';
 
-const NOW = Date.parse('2026-12-01T12:00:00Z');
-
-const fixedClock = () => NOW;
-
-export function Example() {
+export function HoursRemaining({ now, clock }: { now: number; clock: () => number }) {
   return (
     <Countdown
-      target={NOW + 90061000}
-      initialNow={NOW}
-      clock={fixedClock}
+      target={now + 90061000}
+      initialNow={now}
+      clock={clock}
       locale="en"
       units={['hours', 'minutes']}
     />
@@ -202,22 +218,22 @@ export function Example() {
   },
 };
 export const SecondsOnly: Story = {
+  name: 'Seconds only',
   parameters: {
     docs: {
+      description: {
+        story: 'Show a single-unit countdown for short timers and timeouts.',
+      },
       source: {
         language: 'tsx',
         code: `import { Countdown } from '@jfrader/ui';
 
-const NOW = Date.parse('2026-12-01T12:00:00Z');
-
-const fixedClock = () => NOW;
-
-export function Example() {
+export function MinuteRemaining({ now, clock }: { now: number; clock: () => number }) {
   return (
     <Countdown
-      target={NOW + 60000}
-      initialNow={NOW}
-      clock={fixedClock}
+      target={now + 60000}
+      initialNow={now}
+      clock={clock}
       locale="en"
       units={['seconds']}
     />
@@ -296,22 +312,21 @@ export function Example() {
   args: { target: NOW + 1000 * 86400000 },
 };
 export const Complete: Story = {
+  name: 'Completed',
   parameters: {
     docs: {
+      description: {
+        story: 'Replace the remaining time with Registration open once the deadline is reached.',
+      },
       source: {
         language: 'tsx',
         code: `import { Countdown } from '@jfrader/ui';
 
-const NOW = Date.parse('2026-12-01T12:00:00Z');
-
-const fixedClock = () => NOW;
-
-export function Example() {
+export function RegistrationCountdown({ completedAt }: { completedAt: number }) {
   return (
     <Countdown
-      target={NOW}
-      initialNow={NOW}
-      clock={fixedClock}
+      target={completedAt}
+      initialNow={completedAt}
       locale="en"
       completeLabel="Registration open"
     />

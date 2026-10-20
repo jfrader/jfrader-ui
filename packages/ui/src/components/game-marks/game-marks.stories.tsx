@@ -10,14 +10,15 @@ const meta = {
   args: { label: 'Awards', count: 7, maxPerRow: 3, mark: <span>◆</span>, locale: 'en-US' },
   parameters: { docs: {
     description: { component: 'Arrange your award marks in rows or overlapping piles.' },
+    sections: [
+      { title: 'Awards', stories: ['Default', 'Empty'] },
+      { title: 'Composition', stories: ['MarkReplacement'] },
+    ],
     usage: `### Art and layout
-Supply decorative, noninteractive mark content without IDs: it is repeated count times. count must be a nonnegative safe integer; maxPerRow must be a positive safe integer (default 5). Invalid inputs throw RangeError. Choose rows (default) or pile; pile overlaps adjacent marks by one spacing token. Art size belongs to your application. Keep counts small enough to render one element per mark.
+Supply decorative, noninteractive artwork without IDs: the same artwork is repeated for each award. Award counts must be nonnegative safe integers; row limits must be positive safe integers. Invalid values throw RangeError. Keep counts small enough to render one element per mark. Size the artwork in your application.
 
 ### Accessibility
-The named group shows a number formatted by Intl.NumberFormat. locale defaults to the runtime locale; use the same locale on server and client. Repeated art is hidden from assistive technology. No APG widget, focus target, keyboard bindings, motion or live announcements are added.
-
-### Customization
-slotProps styles root, label, count, marks and each mark through sx. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. Consumer sx applies after slot sx.`,
+Use the same locale on server and client for number formatting. Repeated art is hidden from assistive technology; the named group exposes the count. It adds no keyboard commands, motion or live announcements.`,
     source: { language: 'tsx', code: `import { GameMarks } from '@jfrader/ui/game-marks';
 
 <GameMarks label="Awards" count={7} maxPerRow={3} locale="en-US" mark={<span>◆</span>} />` },
@@ -28,7 +29,8 @@ type Story = StoryObj<typeof meta>;
 
 /** Display award marks arranged in rows. */
 export const Default: Story = {
-  name: 'Default',
+  name: 'Award rows',
+  parameters: { docs: { description: { story: 'Wrap seven awards into rows of three marks.' } } },
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Awards' });
     await expect(within(group).getByText('7')).toBeVisible();
@@ -70,7 +72,7 @@ export const LightRtlPile: Story = {
 export const Empty: Story = {
   name: 'No awards',
   args: { count: 0 },
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameMarks } from '@jfrader/ui/game-marks';
+  parameters: { docs: { description: { story: 'Show a zero count without repeated artwork.' }, source: { language: 'tsx', code: `import { GameMarks } from '@jfrader/ui/game-marks';
 
 <GameMarks label="Awards" count={0} mark={<span>◆</span>} />` } } },
   play: async ({ canvasElement }) => {
@@ -101,7 +103,7 @@ function ReplacementMark(props: ComponentPropsWithRef<'span'> & GameMarksPartPro
 /** Use one custom mark element for every mark in the row. */
 export const MarkReplacement: Story = {
   name: 'Custom mark',
-  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+  parameters: { docs: { description: { story: 'Render every award through a custom mark element.' }, source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { GameMarks, type GameMarksPartProps } from '@jfrader/ui/game-marks';
 
 function ReplacementMark(props: ComponentPropsWithRef<'span'> & GameMarksPartProps) {

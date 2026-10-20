@@ -81,6 +81,44 @@ const controlLabels = {
   resume: 'Resume motion',
 };
 
+const directoryItemsCode = `const items = [
+  'Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta',
+  'Eta', 'Theta', 'Iota', 'Kappa', 'Lambda', 'Mu',
+].map((content, index) => ({ id: 'item-' + (index + 1), content }));`;
+
+function directoryCode(items: string, attributes = '', avatars = false) {
+  return `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { GravityWell } from '@jfrader/ui/gravity-well';
+
+const Frame = styled.div({
+  display: 'grid', gap: vars.space[4],
+  inlineSize: \`min(640px, calc(100vw - \${vars.space[4]} * 2))\`,
+  maxInlineSize: '100%', boxSizing: 'border-box', padding: vars.space[5],
+  borderRadius: vars.radius.xl, background: vars.color.surfaceInset,
+  border: \`1px solid \${vars.color.border}\`,
+});
+${avatars ? `const AvatarBadge = styled.span({
+  fontWeight: 600, fontSize: vars.textSize.md, color: vars.color.text, userSelect: 'none',
+});` : `const WallTitle = styled.h2({
+  margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.lg, color: vars.color.text,
+});
+const WallCaption = styled.p({
+  margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted,
+});`}
+
+${items}
+
+export function Directory() {
+  return <Frame>
+    ${avatars ? '' : `<WallCaption>STUDIO DIRECTORY</WallCaption>
+    <WallTitle>Meet the teams</WallTitle>`}
+    <GravityWell items={items} label="Team directory showcase" ${attributes}
+      controlLabels={{ pause: 'Pause motion', resume: 'Resume motion' }} />
+  </Frame>;
+}`;
+}
+
 const meta = {
   title: 'Showcase/GravityWell',
   component: GravityWell,
@@ -99,24 +137,20 @@ const meta = {
         component:
            'Arrange logos, portraits or noninteractive tiles in a wall that responds to the pointer and keyboard.',
       },
+      sections: [
+        { title: 'Directory', stories: ['Default', 'AvatarWall'] },
+        { title: 'Layout', stories: ['FixedColumns', 'AutoColumns'] },
+        { title: 'Motion', stories: ['Static'] },
+      ],
       source: {
         language: 'tsx',
-        code: `import { GravityWell } from '@jfrader/ui/gravity-well';
-
-<GravityWell
-  items={[
-    { id: 'alpha', content: 'Alpha' },
-    { id: 'beta', content: 'Beta' },
-  ]}
-  label="Team directory showcase"
-  controlLabels={{ pause: 'Pause motion', resume: 'Resume motion' }}
-/>`,
+        code: directoryCode(directoryItemsCode, 'columns={6}'),
       },
       usage: `### Content
 Supply unique item ids and noninteractive content. Do not put links, buttons or focusable descendants in tiles. This is a named group containing a list, not a selectable grid or gallery.
 
 ### Keyboard
-Tab reaches the field and then the pause button. Arrow keys move the visual marker by row or column, with Left/Right reversed in RTL. Home and End move to the first and last item. Enter or Space requests one pulse. Moving the marker does not select an item. Controlled value requests only commit when the parent updates value.
+Tab reaches the field and then the pause button. Arrow keys move the visual marker by row or column, with Left/Right reversed in RTL. Home and End move to the first and last item. Enter or Space requests one pulse. Moving the marker does not select an item. In controlled use, accept location requests in your application before the marker moves.
 
 ### Motion
 Use the pause button to freeze motion. Reduced motion and forced colors show static tiles. More than 60 items render without animated transforms.`,
@@ -135,6 +169,11 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Team directory',
+  parameters: { docs: {
+    description: { story: 'Move the pointer over the teams or use arrow keys to move the marker.' },
+    source: { language: 'tsx', code: directoryCode(directoryItemsCode, 'columns={6}') },
+  } },
   args: { columns: 6 },
   play: async ({ canvasElement }) => {
     const field = canvasElement.querySelector('[data-ui="gravity-well-field"]')!;
@@ -146,6 +185,13 @@ export const Default: Story = {
 };
 
 export const FixedColumns: Story = {
+  name: 'Three-column directory',
+  parameters: { docs: {
+    description: { story: 'Keep nine teams arranged in three columns.' },
+    source: { language: 'tsx', code: directoryCode(`const items = [
+  'Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota',
+].map((content, index) => ({ id: 'item-' + (index + 1), content }));`, 'columns={3}') },
+  } },
   args: {
     columns: 3,
     items: defaultItems.slice(0, 9),
@@ -172,6 +218,13 @@ export const NarrowContainer: Story = {
 };
 
 export const AutoColumns: Story = {
+  name: 'Responsive columns',
+  parameters: { docs: {
+    description: { story: 'Resize the directory to fit columns around a 72-pixel minimum tile size.' },
+    source: { language: 'tsx', code: directoryCode(`const items = Array.from({ length: 16 }, (_, index) => ({
+  id: 'auto-' + (index + 1), content: 'Item ' + (index + 1),
+}));`, 'minTileSize={72}') },
+  } },
   args: {
     minTileSize: 72,
     items: Array.from({ length: 16 }, (_, i) => ({
@@ -188,6 +241,11 @@ export const ZeroStrength: Story = {
 };
 
 export const Static: Story = {
+  name: 'Static directory',
+  parameters: { docs: {
+    description: { story: 'Display teams without pointer or keyboard motion.' },
+    source: { language: 'tsx', code: directoryCode(directoryItemsCode, 'interactive={false}') },
+  } },
   args: {
     interactive: false,
   },
@@ -218,6 +276,15 @@ export const Empty: Story = {
 };
 
 export const AvatarWall: Story = {
+  name: 'Portrait tiles',
+  parameters: { docs: {
+    description: { story: 'Use initials as noninteractive tile content.' },
+    source: { language: 'tsx', code: directoryCode(`const items = [
+  'AL', 'BK', 'CR', 'DT', 'EF', 'GH', 'IJ', 'KL', 'MN', 'OP', 'QR', 'ST',
+].map((initials, index) => ({
+  id: 'av-' + (index + 1), content: <AvatarBadge>{initials}</AvatarBadge>,
+}));`, '', true) },
+  } },
   render: (args) => (
     <Frame>
       <GravityWell {...args} items={avatarItems} />
