@@ -147,11 +147,15 @@ export interface ComboboxSlotProps {
 export interface ComboboxBaseProps {
   /** `null` is the controlled "nothing selected" state. */
   value?: string | null;
+  /** Sets the initially selected option. Defaults to no selection. */
   defaultValue?: string;
   /** Fires once per accepted selection with the option's `value`, or `null` when the text is cleared. */
   onValueChange?: (value: string | null) => void;
+  /** Controls popup visibility; disabled and read-only inputs keep it closed. */
   open?: boolean;
+  /** Sets initial popup visibility. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Requests popup visibility changes. */
   onOpenChange?: (open: boolean) => void;
   /** Renders a hidden input so the value takes part in native form submission. */
   name?: string;
@@ -163,6 +167,7 @@ export interface ComboboxBaseProps {
 
 export interface ComboboxCompoundProps extends ComboboxBaseProps {
   options?: never;
+  /** Composes the input, list, items and empty state instead of using `options`. */
   children?: ReactNode;
   label?: never;
   labelPlacement?: never;
@@ -181,22 +186,36 @@ export interface ComboboxCompoundProps extends ComboboxBaseProps {
 }
 
 export interface ComboboxEasyProps extends ComboboxBaseProps {
+  /** Supplies the suggestions rendered in the popup. */
   options: readonly ComboboxOption[];
   children?: never;
+  /** Labels the text input. */
   label?: ReactNode;
   /** Label placement. `hidden` keeps the accessible name without taking layout space. */
   labelPlacement?: FieldLabelPlacement;
+  /** Displays supporting text beneath the input. */
   description?: ReactNode;
+  /** Displays a validation error and marks the input invalid. */
   error?: ReactNode;
+  /** Displays input text while the field is empty. */
   placeholder?: string;
+  /** Sets the text field size. Defaults to `md`. */
   size?: TextFieldSize;
+  /** Disables the input and prevents opening or selecting suggestions. */
   disabled?: boolean;
+  /** Prevents editing, opening and selecting while keeping the input focusable. */
   readOnly?: boolean;
+  /** Replaces the no-match message. Defaults to `No results`. */
   empty?: ReactNode;
+  /** Controls the input text independently of the selected value. */
   inputValue?: string;
+  /** Sets initial input text and filters suggestions from the first render. */
   defaultInputValue?: string;
+  /** Replaces the field, popup and suggestion components. */
   slots?: ComboboxSlots;
+  /** Replaces the root wrapper; `slots.root` takes precedence. */
   component?: ComboboxSlots['root'];
+  /** Passes props and styles to the field and popup parts. */
   slotProps?: ComboboxSlotProps;
 }
 
@@ -214,7 +233,9 @@ export interface ComboboxListProps extends ComponentPropsWithRef<'div'>, SxProps
 export interface ComboboxItemProps extends ComponentPropsWithRef<'div'>, SxProps {
   /** Unique within the combobox. */
   value: string;
+  /** Keeps the option visible but skips it during navigation and selection. */
   disabled?: boolean;
+  /** Supplies text for filtering and label commits instead of rendered text. */
   textValue?: string;
 }
 export interface ComboboxEmptyProps extends ComponentPropsWithRef<'div'>, SxProps {}

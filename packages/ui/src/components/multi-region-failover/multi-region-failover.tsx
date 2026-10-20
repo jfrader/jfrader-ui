@@ -128,27 +128,49 @@ export type MultiRegionFailoverSlots = FieldSlots<Anatomy>;
 export type MultiRegionFailoverSlotProps = FieldParts<Anatomy>;
 export interface MultiRegionFailoverProps
   extends Omit<ComponentPropsWithRef<'figure'>, 'children'>, SxProps {
+  /** Supplies labels and artwork for users, the balancer and both regions. */
   nodes: Record<(typeof ACTORS)[number], FailoverNode>;
+  /** Displays the service hostname in the scene. */
   hostname: string;
+  /** Supplies all six stages in order: `balanced`, `degraded`, `failover`, `rerouted`, `recovery`, `rebalanced`. */
   stages: readonly FailoverStage[];
+  /** Controls the displayed failover stage. */
   value?: FailoverStageId;
+  /** Sets the initial stage. Defaults to `balanced`. */
   defaultValue?: FailoverStageId;
+  /** Requests a stage change from playback or navigation. */
   onValueChange?: (value: FailoverStageId) => void;
+  /** Controls whether automatic stage playback is paused. */
   paused?: boolean;
+  /** Starts automatic playback paused. Defaults to `false`. */
   defaultPaused?: boolean;
+  /** Requests a playback pause or resume. */
   onPausedChange?: (paused: boolean) => void;
+  /** Multiplies playback speed from 0 to 3. Defaults to 1; 0 stops automatic advancement. */
   speed?: number;
+  /** Restarts after the final stage. Defaults to `false`. */
   loop?: boolean;
+  /** Arranges the scene; `auto` switches to portrait below 640px. Defaults to `auto`. */
   orientation?: 'auto' | 'landscape' | 'portrait';
+  /** Names the failover figure for assistive technology. */
   label: string;
+  /** Adds content before the current stage's caption. */
   caption?: ReactNode;
+  /** Displays the current stage title and description. Defaults to `true`. */
   showStageCaption?: boolean;
+  /** Names playback controls and their group. */
   controlLabels: FailoverControlLabels;
+  /** Names the displayed regional metrics. */
   metricLabels: FailoverMetricLabels;
+  /** Selects number, percentage and latency formatting. */
   locale?: Intl.LocalesArgument;
+  /** Replaces the scene when stages, snapshots, speed or the selected stage are invalid. */
   invalidContent: ReactNode;
+  /** Replaces the figure root; `slots.root` takes precedence. */
   component?: MultiRegionFailoverSlots['root'];
+  /** Replaces scene, caption and control elements. */
   slots?: MultiRegionFailoverSlots;
+  /** Passes props and styles to the figure's parts. */
   slotProps?: MultiRegionFailoverSlotProps;
 }
 function validStages(stages: readonly FailoverStage[]) {

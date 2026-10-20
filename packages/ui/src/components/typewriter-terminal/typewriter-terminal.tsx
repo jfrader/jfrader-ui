@@ -126,27 +126,47 @@ export interface TypewriterTerminalProps
   extends Omit<ComponentPropsWithRef<'figure'>, 'children' | 'onChange'>, SxProps {
   /** Use fixed charcoal with `contrast`; `default` inherits the parent appearance. */
   appearance?: SurfaceAppearance;
+  /** Supplies scripted commands and output for playback; commands are never executed. */
   steps: readonly TerminalStep[];
+  /** Displays the terminal header title. Defaults to `Terminal`. */
   title?: string;
+  /** Sets the prompt directory for steps without their own `cwd`. Defaults to `~`. */
   cwd?: string;
+  /** Sets the prompt symbol. Defaults to `$`. */
   symbol?: string;
+  /** Controls playback position in milliseconds, clamped to the session duration. */
   value?: number;
+  /** Sets initial playback position in milliseconds. Defaults to 0. */
   defaultValue?: number;
+  /** Requests a playback position change in milliseconds. */
   onValueChange?: (value: number) => void;
+  /** Controls whether session playback is paused. */
   paused?: boolean;
+  /** Starts playback paused. Defaults to `false`. */
   defaultPaused?: boolean;
+  /** Requests a playback pause or resume. */
   onPausedChange?: (paused: boolean) => void;
+  /** Multiplies playback speed. Defaults to 1; nonpositive or nonfinite values use 1. */
   speed?: number;
+  /** Restarts playback after completion. Defaults to `false`. */
   loop?: boolean;
+  /** Sets viewport height in text rows. Defaults to 11; requires a positive integer. */
   rows?: number;
+  /** Shows the button that copies all commands. Defaults to `true`. */
   copyable?: boolean;
+  /** Displays a caption beneath the terminal. */
   caption?: ReactNode;
+  /** Names the terminal figure. Defaults to `Terminal session`; `aria-labelledby` takes precedence. */
   label?: string;
+  /** Overrides control text, playback announcements and output tone names. */
   labels?: Partial<Omit<TypewriterTerminalLabels, 'tones'>> & {
     tones?: Partial<Record<TerminalTone, string>>;
   };
+  /** Selects grapheme segmentation and elapsed-time number formatting. */
   locale?: Intl.LocalesArgument;
+  /** Passes props and styles to terminal parts. */
   slotProps?: TypewriterTerminalSlotProps;
+  /** Replaces terminal, transcript and playback control components. */
   slots?: TypewriterTerminalSlots;
   /** Shorthand for slots.root; slots.root takes precedence. */
   component?: TypewriterTerminalSlots['root'];

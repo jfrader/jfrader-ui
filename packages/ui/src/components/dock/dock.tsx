@@ -90,25 +90,45 @@ export interface DockSlots {
 }
 
 export interface DockProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue'>, SxProps {
+  /** Supplies top-level tools and groups of tools. */
   items: readonly DockItem[];
+  /** Controls the selected tool ID; `null` clears selection. */
   value?: string | null;
+  /** Sets the initially selected tool. Defaults to `null`. */
   defaultValue?: string | null;
+  /** Requests selection of a tool. */
   onValueChange?: (next: string | null) => void;
+  /** Controls top-level ID order; unknown IDs are ignored and omitted items are appended. */
   order?: readonly string[];
+  /** Sets initial top-level order. Defaults to the order in `items`. */
   defaultOrder?: readonly string[];
+  /** Requests a reordered ID list with the moved item's destination index. */
   onOrderChange?: (ids: string[], change: DockMove) => void;
+  /** Enables drag and menu actions for reordering top-level items. Defaults to `false`. */
   reorderable?: boolean;
+  /** Controls group tray visibility; an enabled group must also be selected by `tray`. */
   open?: boolean;
+  /** Sets initial group tray visibility. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Requests opening or closing the group tray. */
   onOpenChange?: (next: boolean) => void;
+  /** Controls which group supplies the tray's tools; `null` selects no group. */
   tray?: string | null;
+  /** Sets the initial tray group ID. Defaults to `null`. */
   defaultTray?: string | null;
+  /** Requests a change to the tray's group. */
   onTrayChange?: (next: string | null) => void;
+  /** Names the tool toolbar. Defaults to `Tools`. */
   label?: string;
+  /** Shows labels on focus or hover, or persistently with `always`. Defaults to `focus`. */
   labels?: 'focus' | 'always';
+  /** Selects number formatting and plural rules for badges and move announcements. */
   locale?: string;
+  /** Replaces accessible names, reorder actions and announcements. Defaults to English messages. */
   messages?: DockMessages;
+  /** Replaces toolbar, tray, tool and announcement components. */
   slots?: DockSlots;
+  /** Passes props and styles to dock parts and individual tool buttons. */
   slotProps?: DockSlotProps;
 }
 
