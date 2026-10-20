@@ -20,36 +20,29 @@ const meta = {
   title: 'Media/Article', component: Article, tags: ['autodocs'], args: { headline, href: '#river', dek },
   parameters: { docs: {
     description: { component: 'Present an article headline with optional summary, media, kicker and publication details.' },
-    source: { code: `import { Article } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
 
 <Article headline="The river path opens for the weekend" href="#river" dek="The route connects the old station with the northern bridge." />` },
     sections: [
-      { title: 'Sizes', stories: ['Standard', 'Lead', 'Secondary', 'Brief'] },
-      { title: 'Variants', stories: ['Wide', 'TimeColumn', 'RuleTop', 'RuleBottom', 'Centered'] },
+      { title: 'Headlines and summaries', stories: ['Standard', 'Lead', 'Secondary', 'Brief'] },
+      { title: 'Editorial layouts', stories: ['Wide', 'TimeColumn', 'RuleTop', 'RuleBottom', 'Centered'] },
       { title: 'Media', stories: ['Media', 'ImageMedia'] },
       { title: 'Composition', stories: ['FullArticle', 'Compound', 'ArticleHeader'] },
-      { title: 'Customization', stories: ['ReplacementSlots', 'PartSlots', 'RouterLink'] },
+      { title: 'Links', stories: ['RouterLink'] },
     ],
     usage: `### Content and hierarchy
-Use the headline prop for generated anatomy, or Article.Headline, Dek, Lede and Media children for custom anatomy. These modes are mutually exclusive. Headline and Dek also work outside an Article. Compose Body, Kicker, Meta and Sources for a full article.
+Choose heading levels to fit the surrounding page. Supply either generated content or compound children, not both. Generated brief and summary-free treatments omit the summary; the bottom-rule treatment also omits the kicker. Compound content stays caller-controlled.
 
-Choose size for headline hierarchy and variant for treatment. Headline level defaults to 2; choose 1–6 for your page outline. Generated brief cards omit the dek. no-dek and rule-bottom omit generated dek; rule-bottom also omits the kicker. Compound content stays caller-controlled.
-
-Lede defaults to desktop-only with a four-line clamp. Your app decides whether to supply it; the library does not deduplicate summaries. Media accepts consumer-owned image, picture, video or other content. Without media there is no figure or placeholder. Caption and credit share one figcaption.
+Choose excerpts that add information rather than repeat the summary. Excerpts can be hidden on smaller screens, so keep essential information in the headline, summary or body. Supply accessible media content; no figure or placeholder appears without media.
 
 ### Links and keyboard
-Only the headline link is generated; the article is never an anchor. Keep linked headline children free of links. Unlinked headings may contain source links. Tab and Shift+Tab follow native links; Enter follows them. renderLink is a leaf adapter that forwards all supplied props and ref, and cannot be combined with slots.link. Explicit target _blank retains rel tokens and adds noopener noreferrer.
-
-### Customization
-Use component or slots.root for a native article replacement; slots.root wins. Each slot has matching slotProps. Replacements forward semantics, props, className, data-ui and refs. Use sx on public parts.
-
-Inherited --article-font-heading, --article-font-body and --article-font-label fall back to the sans token. --article-measure defaults to 65ch; --article-rule-color defaults to text and --article-rule-soft-color to borderStrong. Fluid sizes use editorial tokens. No fonts are downloaded or theme palettes replaced.`,
+Only the headline becomes a link, not the whole article. Keep linked headline children free of nested links. Tab and Shift+Tab follow native link order; Enter follows links.`,
   } },
 } satisfies Meta<typeof Article>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Standard: Story = { play: async ({ canvas, canvasElement, userEvent }) => {
+export const Standard: Story = { name: 'Headline and summary', parameters: { docs: { description: { story: 'Link a headline and add a short summary beneath it.' } } }, play: async ({ canvas, canvasElement, userEvent }) => {
   await expect(canvas.getByRole('article').tagName).toBe('ARTICLE');
   await expect(canvas.getByRole('heading', { level: 2 })).toHaveTextContent(headline);
   await expect(canvasElement.querySelector('figure')).toBeNull();
@@ -61,9 +54,11 @@ export const Standard: Story = { play: async ({ canvas, canvasElement, userEvent
   await expect(getComputedStyle(link).outlineStyle).not.toBe('none');
 } };
 export const Lead: Story = {
+  name: 'Lead story',
   args: { size: 'lead', lede },
   parameters: {
     docs: {
+      description: { story: 'Lead a page with a large headline, summary and desktop excerpt.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -80,9 +75,11 @@ export const Lead: Story = {
   },
 };
 export const Secondary: Story = {
+  name: 'Supporting story',
   args: { size: 'secondary', lede },
   parameters: {
     docs: {
+      description: { story: 'Give a supporting story a smaller headline than the lead.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -99,9 +96,11 @@ export const Secondary: Story = {
   },
 };
 export const Brief: Story = {
+  name: 'Headline brief',
   args: { size: 'brief' },
   parameters: {
     docs: {
+      description: { story: 'Show a compact headline without the generated summary.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -118,9 +117,11 @@ export const Brief: Story = {
   play: async ({ canvasElement }) => { await expect(canvasElement.querySelector('[data-ui~="article-dek"]')).toBeNull(); },
 };
 export const Wide: Story = {
+  name: 'Wide summary',
   args: { variant: 'wide', size: 'lead', slotProps: { dek: { variant: 'columns' } } },
   parameters: {
     docs: {
+      description: { story: 'Split the summary into columns on desktop.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -156,9 +157,11 @@ export const WideNarrow: Story = {
   },
 };
 export const TimeColumn: Story = {
+  name: 'Time beside the story',
   args: { variant: 'time-column', time, kicker: <Article.Kicker items={[{ id: 'city', label: 'The city' }]} />, meta: <Article.Meta published={time} place="Northline" /> },
   parameters: {
     docs: {
+      description: { story: 'Set the publication time beside the article on desktop.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -195,9 +198,11 @@ export const TimeColumnWithoutTime: Story = {
   },
 };
 export const RuleTop: Story = {
+  name: 'Top rule',
   args: { variant: 'rule-top' },
   parameters: {
     docs: {
+      description: { story: 'Separate the article from preceding content with a top rule.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -231,9 +236,11 @@ export const NoDek: Story = {
   },
 };
 export const RuleBottom: Story = {
+  name: 'Bottom rule',
   args: { variant: 'rule-bottom', kicker: 'The city', meta: <Article.Meta published={time} /> },
   parameters: {
     docs: {
+      description: { story: 'Follow the headline with a short rule and publication time.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -256,9 +263,11 @@ export const RuleBottom: Story = {
   },
 };
 export const Centered: Story = {
+  name: 'Centered story',
   args: { variant: 'centered', size: 'secondary', meta: <Article.Meta place="Northline" published={time} /> },
   parameters: {
     docs: {
+      description: { story: 'Center the headline and summary in their reading measure.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -382,9 +391,11 @@ export const Zero: Story = {
   },
 };
 export const Media: Story = {
+  name: 'Captioned media',
   args: { media: <blockquote cite="https://example.com/river">The river path opens this weekend.</blockquote>, slotProps: { media: { caption: 'The northern river path', credit: <ArchiveLink href="#archive">City archive</ArchiveLink> } } },
   parameters: {
     docs: {
+      description: { story: 'Add a media figure with its caption and credit.' },
       source: {
         language: 'tsx',
         code: `import { Article, styled } from '@jfrader/ui';
@@ -414,10 +425,17 @@ const ArchiveLink = styled.a({ color: vars.color.accentText, textDecoration: 'un
   },
 };
 export const ImageMedia: Story = {
+  name: 'Article image',
   args: { media: <img src="/og-image.png" alt="Share card preview" width={1200} height={630} />, slotProps: { media: { caption: 'Share card preview', credit: 'jfrader-ui' } } },
-  parameters: { docs: { source: { code: `import { Article } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Supply an image with alternative text as the article’s media.' }, source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
 
-<Article headline="The river path opens for the weekend" media={<img src="/og-image.png" alt="Share card preview" width={1200} height={630} />} />` } } },
+<Article
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  media={<img src="/og-image.png" alt="Share card preview" width={1200} height={630} />}
+  slotProps={{ media: { caption: 'Share card preview', credit: 'jfrader-ui' } }}
+/>` } } },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('img', { name: 'Share card preview' })).toHaveAttribute('src', '/og-image.png');
     await expect(canvas.getByRole('figure')).toBeInTheDocument();
@@ -486,8 +504,9 @@ export const NewspaperFrontPage: Story = {
 <ArticleList variant="wire" items={[{ id: 'station', headline: 'Work begins at the old station', href: '#station' }]} />` } } },
 };
 export const ArticleHeader: Story = {
+  name: 'Standalone article header',
   render: () => <Narrow><Article.Kicker items={[{ id: 'city', label: 'The city', href: '#city' }]} /><Article.Headline size="lead" level={1}>{headline}</Article.Headline><Article.Dek size="lead">{dek}</Article.Dek><Article.Meta variant="ruled" place="Northline" published={time} /></Narrow>,
-  parameters: { docs: { source: { code: `import { vars } from '@jfrader/tokens/vars';
+  parameters: { docs: { description: { story: 'Use the headline parts together without an article wrapper.' }, source: { language: 'tsx', code: `import { vars } from '@jfrader/tokens/vars';
 import { Article, styled } from '@jfrader/ui';
 
 const Header = styled.div({ maxInlineSize: vars.editorial.centeredMeasure, minInlineSize: 0 });
@@ -616,8 +635,9 @@ function Div(props: ComponentPropsWithRef<'div'>) {
   },
 };
 export const Compound: Story = {
+  name: 'Composed article',
   render: () => <Article size="brief"><Article.Headline href="#river">{headline}</Article.Headline><Article.Dek>{dek}</Article.Dek><Article.Lede visibility="always">{lede}</Article.Lede><Article.Media caption="The river path" credit="City archive"><p>The river path</p></Article.Media></Article>,
-  parameters: { docs: { source: { code: `import { Article } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Compose the headline, summary, excerpt and media explicitly.' }, source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
 
 <Article size="brief">
   <Article.Headline href="#river">The river path opens for the weekend</Article.Headline>
@@ -627,6 +647,7 @@ export const Compound: Story = {
 </Article>` } } },
 };
 export const FullArticle: Story = {
+  name: 'Full reading article',
   render: () => <Article size="lead">
     <Article.Kicker items={[{ id: 'city', label: 'The city', href: '#city' }]} />
     <Article.Headline level={1}>{headline}</Article.Headline>
@@ -644,7 +665,7 @@ export const FullArticle: Story = {
     </Article.Body>
     <Article.Sources title="Coverage" items={[{ id: 'record', label: 'Station record', href: '#record' }]} />
   </Article>,
-  parameters: { docs: { source: { code: `import { Article } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Combine the headline, reading body and source links in a complete article.' }, source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
 
 <Article size="lead">
   <Article.Kicker items={[{ id: 'city', label: 'The city', href: '#city' }]} />
@@ -722,10 +743,11 @@ function Credit(props: ComponentPropsWithRef<'span'>) { return <span {...props} 
   },
 };
 export const RouterLink: Story = {
+  name: 'Headline link adapter',
   render: () => <Article.Headline href="#river" renderLink={(props) => <a {...props} data-router="true" />}>{headline}</Article.Headline>,
-  parameters: { docs: { source: { code: `import { Article } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Connect the headline through an app-owned link adapter.' }, source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
 
-<Article.Headline href="#river" renderLink={(props) => <a {...props} />}>
+<Article.Headline href="#river" renderLink={(props) => <a {...props} data-router="true" />}>
   The river path opens for the weekend
 </Article.Headline>` } } },
   play: async ({ canvas }) => { await expect(canvas.getByRole('link')).toHaveAttribute('data-router', 'true'); },
