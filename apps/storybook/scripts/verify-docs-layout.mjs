@@ -11,6 +11,9 @@ const cases = [
     fontFamily: 'monospace',
     viewports: [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }],
   },
+  { id: 'games-gamehand--docs', primary: '[data-ui~="game-hand"]' },
+  { id: 'games-gamecardstack--docs', primary: '[data-ui~="game-card-stack"]' },
+  { id: 'games-gameseat--docs', primary: '[data-ui~="game-seat"]' },
   { id: 'media-lightboxgallery--docs', primary: '[data-ui="lightbox-gallery"]', containPreview: true },
   { id: 'data-display-commentthread--docs', primary: '[data-ui="comment-thread"]', containPreview: true },
   {

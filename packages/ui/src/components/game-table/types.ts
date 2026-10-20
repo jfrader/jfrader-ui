@@ -26,12 +26,6 @@ export interface BoardSeatGeometry {
   rotationDeg: number;
   /** Already applied by the table. Do not apply again inside Seat. */
   scale: number;
-  /** @deprecated Preset translations were removed. Always zero. */
-  groupShiftY: number;
-  /** @deprecated Preset translations were removed. Always zero. */
-  seatShiftX: number;
-  /** @deprecated Preset translations were removed. Always zero. */
-  seatShiftY: number;
 }
 /** Measured seat coordinates. Children own avatar, hand, point and card-pile presentation. */
 export interface BoardLayoutModel {

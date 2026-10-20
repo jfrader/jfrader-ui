@@ -21,8 +21,6 @@ export interface SeatVector {
 export const PLAYED_PILE = {
   openScale: 1.45,
   openSpreadRatio: 0.52,
-  // The reference caps played and revealed cards at three, independently of viewport.
-  maxCards: 3,
   zIndex: { closed: 40, open: 240, card: 20, openCard: 280 },
 } as const;
 
@@ -75,7 +73,7 @@ export function buildPlayedCardOrder(rounds: readonly (readonly PlayedCardEntry[
   return Object.fromEntries(rounds.flat().map((played, index) => [played.id, index + 1]));
 }
 
-/** Groups up to three cards per player; revealed cards come from the caller, not a match. */
+/** Groups cards per player; revealed cards come from the caller, not a match. */
 export function getPlayerTableCards(
   rounds: readonly (readonly PlayedCardEntry[])[],
   revealedCards: Readonly<Record<string, readonly PlayedCard[]>> = {},
@@ -85,7 +83,7 @@ export function getPlayerTableCards(
   rounds.forEach((round) => {
     round.forEach((played) => {
       const cards = cardsByPlayerKey[played.player.key] ??= [];
-      if (cards.length < PLAYED_PILE.maxCards) cards.push({ ...played, order: played.order ?? order });
+      cards.push({ ...played, order: played.order ?? order });
       order += 1;
     });
   });
@@ -95,7 +93,7 @@ export function getPlayerTableCards(
     const cards = cardsByPlayerKey[playerKey] ??= [];
     const visibleCards = new Set(cards.map(({ id }) => id));
     revealed.forEach((card) => {
-      if (visibleCards.has(card.id) || cards.length >= PLAYED_PILE.maxCards) return;
+      if (visibleCards.has(card.id)) return;
       visibleCards.add(card.id);
       cards.push(card);
     });

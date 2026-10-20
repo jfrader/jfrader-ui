@@ -61,7 +61,9 @@ interface InspectionProps {
   onValueChange?: (playerKey: string | null) => void;
   /** Jitter and rotation only; GameTable owns placement of composed piles. */
   layout?: Partial<PileLayout>;
-  /** Newest cards to render, rounded down and clamped to zero; defaults to three. */
+  /** Newest cards to render, rounded down and clamped to zero. Omit to show all cards. */
+  visible?: number;
+  /** @deprecated For one release. Use visible; it takes precedence over maxCards. */
   maxCards?: number;
   /** Preferred card width; defaults to the inherited width or the medium card token. */
   cardWidth?: string;
@@ -84,10 +86,23 @@ export interface GameCardStackProps extends Omit<ComponentPropsWithRef<'div'>, '
   placement?: 'grid' | 'free';
 }
 
-export interface GameCardStackPileProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps, InspectionProps {
-  /** Identifies the player whose pile opens when `value` matches. */
+export interface GameCardStackPileProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps,
+  Omit<InspectionProps, 'value' | 'defaultValue' | 'onValueChange'> {
+  /** @deprecated For one release. Use open on standalone piles. */
+  value?: string | null;
+  /** @deprecated For one release. Use defaultOpen on standalone piles. */
+  defaultValue?: string | null;
+  /** @deprecated For one release. Use onOpenChange on standalone piles. */
+  onValueChange?: (playerKey: string | null) => void;
+  /** Controlled inspection state; takes precedence over the legacy value prop. */
+  open?: boolean;
+  /** Initial inspection state for an uncontrolled pile. Defaults to false. */
+  defaultOpen?: boolean;
+  /** Request inspection changes from the trigger or Escape; controlled state waits for acceptance. */
+  onOpenChange?: (open: boolean) => void;
+  /** Identifies the player for stack inspection, card registration and legacy `value` matching. */
   playerKey: string;
-  /** Supplies cards in play order; only the newest `maxCards` are rendered. */
+  /** Supplies cards in play order; all render unless `visible` or legacy `maxCards` limits the newest cards. */
   cards: readonly PlayedCard[];
   /** Names the pile's inspection button for assistive technology. */
   label: string;
@@ -125,7 +140,7 @@ const triggerStyle = css({
   blockSize: `max(calc(var(--pile-width) * ${CARD_FRAME.ratio}), ${vars.size.gameCardSm})`,
   transform: 'translate(-50%, -50%)', '&:dir(rtl)': { transform: 'translate(50%, -50%)' },
   border: 0, padding: 0, background: 'transparent', cursor: 'pointer', borderRadius: vars.radius.md,
-  zIndex: PLAYED_PILE.zIndex.openCard + PLAYED_PILE.maxCards, '&:focus-visible': focusRingOutset,
+  zIndex: 'var(--pile-trigger-layer)', '&:focus-visible': focusRingOutset,
 });
 const cardsStyle = css({ position: 'absolute', inset: 0, pointerEvents: 'none' });
 const visibleCardWidth = 'calc(var(--pile-width) * var(--pile-card-scale))';
@@ -142,13 +157,13 @@ const cardStyle = css({
   '& > [data-ui~="game-card"]': { inlineSize: '100%', blockSize: '100%' },
 });
 
-function cardLimit(maxCards: number) {
-  return Number.isFinite(maxCards) ? Math.max(0, Math.floor(maxCards)) : PLAYED_PILE.maxCards;
+function cardLimit(visible: number | undefined, count: number) {
+  return visible !== undefined && Number.isFinite(visible) ? Math.max(0, Math.floor(visible)) : count;
 }
 
 export function GameCardStack({
   ref, piles, placement = 'grid', value, defaultValue = null, onValueChange,
-  layout, cardWidth = `var(--game-card-width, ${vars.size.gameCardMd})`, maxCards = PLAYED_PILE.maxCards,
+  layout, cardWidth = `var(--game-card-width, ${vars.size.gameCardMd})`, visible, maxCards,
   backPattern, artSet: explicitArtSet, cardArtSets: explicitCardArtSets, slots, component, className, sx, style, onKeyDown, slotProps, ...rest
 }: GameCardStackProps) {
   const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
@@ -158,7 +173,7 @@ export function GameCardStack({
   const probeRef = useRef<HTMLDivElement>(null);
   const automaticCount = placement === 'grid' ? piles.filter((pile) => !pile.geometry).length : 0;
   const config = { ...DEFAULT_PILE_LAYOUT, ...layout };
-  const limit = cardLimit(maxCards);
+  const limit = cardLimit(visible ?? maxCards, Math.max(0, ...piles.map((pile) => pile.cards.length)));
   const [fitted, setFitted] = useState<{ columns: number; rows: number; cardWidth: number } | null>(null);
   useEffect(() => {
     const stage = stageRef.current;
@@ -216,8 +231,8 @@ export function GameCardStack({
           style={{ '--pile-x': position ? `${position.x}%` : undefined, '--pile-y': position ? `${position.y}%` : undefined,
             '--game-card-width': position ? cardWidth : undefined } as CSSProperties}>
           <GameCardStack.Pile playerKey={pile.playerKey} cards={pile.cards} label={pile.label}
-            value={inspected} onValueChange={inspect} revealed={pile.revealed}
-            layout={layout} maxCards={limit} backPattern={backPattern} artSet={artSet} cardArtSets={cardArtSets} slots={slots} slotProps={slotProps}
+            open={inspected === pile.playerKey} onOpenChange={(open) => inspect(open ? pile.playerKey : null)} revealed={pile.revealed}
+            layout={layout} visible={limit} backPattern={backPattern} artSet={artSet} cardArtSets={cardArtSets} slots={slots} slotProps={slotProps}
             style={{ '--pile-base-rotation': config.facePlayerRotation && pile.geometry ? `${(pile.geometry.angleDeg ?? 90) - 90}deg` : undefined } as CSSProperties} />
         </div>;
       })}
@@ -227,14 +242,17 @@ export function GameCardStack({
 GameCardStack.displayName = 'GameCardStack';
 
 function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, defaultValue = null,
-  onValueChange, revealed = false, maxCards = PLAYED_PILE.maxCards, cardWidth, layout, backPattern,
+  onValueChange, open, defaultOpen, onOpenChange, revealed = false, visible, maxCards, cardWidth, layout, backPattern,
   className, sx, style, onKeyDown, slotProps, slots, artSet: explicitArtSet, cardArtSets: explicitCardArtSets, ...rest }: GameCardStackPileProps) {
   const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
   const Pile = slots?.pile ?? 'div';
   const Trigger = slots?.trigger ?? 'button';
   const Card = slots?.card ?? 'div';
-  const [inspected, inspect] = useControlledState(value, defaultValue, onValueChange);
-  const inspecting = inspected === playerKey;
+  const [inspecting, inspect] = useControlledState(open ?? (value !== undefined ? value === playerKey : undefined),
+    defaultOpen ?? defaultValue === playerKey, (next) => {
+      onOpenChange?.(next);
+      onValueChange?.(next ? playerKey : null);
+    });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef(false);
   const cardsId = useId();
@@ -246,7 +264,7 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
     returnFocus.current = false;
   }, [inspecting]);
   const config = { ...DEFAULT_PILE_LAYOUT, ...layout };
-  const limit = cardLimit(maxCards);
+  const limit = cardLimit(visible ?? maxCards, allCards.length);
   const cards = limit > 0 ? allCards.slice(-limit) : [];
   const artwork = (card: PlayingCard, face: 'front' | 'back') => <GameCard label={card.label} value={card.value} face={face === 'back' ? 'back' : undefined}
     backPattern={backPattern} artSet={artSet} cardArtSets={cardArtSets} sx={faceStyle} />;
@@ -258,7 +276,8 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
     <Pile {...rest} {...pileProps} ref={ref} data-ui={cardPartIdentity('game-card-stack-pile', `${rest['data-ui'] ?? ''} ${pileProps['data-ui'] ?? ''}`)} data-player-key={playerKey}
       data-spread={spread} data-state={inspecting ? 'open' : 'closed'} data-revealed={revealed || undefined}
       className={rootClass}
-      style={{ '--pile-width': cardWidth ?? `var(--game-card-width, ${vars.size.gameCardMd})`, '--pile-card-scale': inspecting ? PLAYED_PILE.openScale : 1, ...style, ...pileInlineStyle } as CSSProperties}
+      style={{ '--pile-width': cardWidth ?? `var(--game-card-width, ${vars.size.gameCardMd})`, '--pile-card-scale': inspecting ? PLAYED_PILE.openScale : 1,
+        '--pile-trigger-layer': PLAYED_PILE.zIndex.openCard + cards.length, ...style, ...pileInlineStyle } as CSSProperties}
       onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
         onKeyDown?.(event);
         slotProps?.pile?.onKeyDown?.(event);
@@ -267,11 +286,11 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
         if (event.currentTarget.closest('[data-ui~="game-card-stack"]')) return;
         event.preventDefault();
         returnFocus.current = true;
-        inspect(null);
+        inspect(false);
       }}>
       {cards.length > 0 && <>
         <Trigger {...withoutSx(slotProps?.trigger)} type="button" data-ui={cardPartIdentity('game-card-stack-trigger', slotProps?.trigger?.['data-ui'])} className={slotProps?.trigger?.className} css={[triggerStyle, slotProps?.trigger?.sx]}
-          ref={triggerRef} onClick={(event) => { slotProps?.trigger?.onClick?.(event); if (!event.defaultPrevented) inspect(inspecting ? null : playerKey); }} aria-label={label}
+          ref={triggerRef} onClick={(event) => { slotProps?.trigger?.onClick?.(event); if (!event.defaultPrevented) inspect(!inspecting); }} aria-label={label}
           aria-expanded={inspecting} aria-controls={cardsId} />
         <div id={cardsId} css={cardsStyle}>
           {cards.map((card, index) => {
