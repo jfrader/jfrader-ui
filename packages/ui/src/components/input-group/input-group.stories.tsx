@@ -22,17 +22,20 @@ const meta = {
   title: 'Inputs/InputGroup', component: InputGroup, tags: ['autodocs'],
   parameters: { docs: {
     description: { component: 'Group an input or textarea with units, icons or actions in one frame.' },
-    usage: `### Labels and errors
-Put labels, IDs, descriptions and native value handlers on \`InputGroup.Input\` or \`InputGroup.Textarea\`. Use React \`useId\` for label and error relationships. The frame creates no IDs or validation messages. Native \`value\`, \`defaultValue\` and \`onChange\` work unchanged.
+    sections: [
+      { title: 'Basic', stories: ['Default'] },
+      { title: 'Addons and actions', stories: ['AddonAction'] },
+      { title: 'Sizes and states', stories: ['Small', 'Large', 'Invalid', 'Disabled'] },
+      { title: 'Composition', stories: ['Multiline', 'Controlled'] },
+    ],
+    usage: `### When to use
+Use an input group when units, prefixes, suffixes or actions need to share a frame with a native control. Use TextField or Textarea when you need a ready-made label, description and error message.
+
+### Labels and errors
+Give the control an accessible name and connect any help or error text to it. The frame creates no labels, IDs or validation messages. Validate and submit text in your application. Disable addon actions explicitly when the group is disabled.
 
 ### Keyboard
-InputGroup composes native controls. \`Tab\` and \`Shift+Tab\` follow DOM order. Addon placement changes visual order only. Put start addons before the control and end addons after it when they contain buttons. Focus on the control or an addon action outlines the frame.
-
-### Disabled
-\`disabled\` disables the input or textarea. Disable addon actions explicitly. \`invalid\` marks the frame and sets the control's \`aria-invalid\` to \`true\`. Provide an error message as well. InputGroup does not submit or process text.
-
-### Customization
-\`component\`, \`slots.root\` and \`slotProps.root\` replace or configure the frame. Compound parts accept native props, refs and \`sx\`. \`size\` belongs to the frame. The native input \`size\` still controls the character width.`,
+Tab and Shift+Tab follow DOM order. Addon placement changes visual order only; put start actions before the control and end actions after it. Focus on the control or an addon action outlines the frame. Text editing and form submission follow native browser behavior.`,
   } },
   args: { size: 'md' }, render: (args) => <Example {...args} />,
 } satisfies Meta<typeof InputGroup>;
@@ -40,15 +43,26 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Amount with prefix and suffix',
   parameters: {
     docs: {
+      description: { story: 'Frame an amount with a currency prefix and a unit suffix.' },
       source: {
         language: 'tsx',
-        code: `<InputGroup>
-  <InputGroup.Addon placement="start">$</InputGroup.Addon>
-  <InputGroup.Input aria-label="Amount" defaultValue="25" />
-  <InputGroup.Addon placement="end">USD</InputGroup.Addon>
-</InputGroup>`,
+        code: `import { useId } from 'react';
+import { InputGroup } from '@jfrader/ui';
+
+export function AmountField() {
+  const id = useId();
+  return <>
+    <label htmlFor={id}>Amount</label>
+    <InputGroup>
+      <InputGroup.Addon placement="start">$</InputGroup.Addon>
+      <InputGroup.Input id={id} defaultValue="25" />
+      <InputGroup.Addon placement="end">USD</InputGroup.Addon>
+    </InputGroup>
+  </>;
+}`,
       },
     },
   },
@@ -70,7 +84,8 @@ export const Default: Story = {
   },
 };
 export const Invalid: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+  name: 'Validation error',
+  parameters: { docs: { description: { story: 'Connect an external error message to the invalid amount input.' }, source: { language: 'tsx', code: `import { useId } from 'react';
 import { InputGroup } from '@jfrader/ui';
 
 export function AmountField() {
@@ -101,7 +116,7 @@ export function AmountField() {
   },
 };
 export const Disabled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+  parameters: { docs: { description: { story: 'Disable the native input while keeping its currency context visible.' }, source: { language: 'tsx', code: `import { useId } from 'react';
 import { InputGroup } from '@jfrader/ui';
 
 export function AmountField() {
@@ -123,6 +138,13 @@ export function AmountField() {
   },
 };
 export const Multiline: Story = {
+  name: 'Textarea with addon',
+  parameters: { docs: { description: { story: 'Keep an optional marker inside the frame of a multi-line control.' }, source: { language: 'tsx', code: `import { InputGroup } from '@jfrader/ui';
+
+<InputGroup>
+  <InputGroup.Textarea aria-label="Notes" rows={2} defaultValue="First line" />
+  <InputGroup.Addon placement="end">Optional</InputGroup.Addon>
+</InputGroup>` } } },
   render: () => <InputGroup><InputGroup.Textarea aria-label="Notes" rows={2} defaultValue="First line" /><InputGroup.Addon placement="end">Optional</InputGroup.Addon></InputGroup>,
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByRole('textbox', { name: 'Notes' });
@@ -142,6 +164,19 @@ function ActionExample() {
   </InputGroup>;
 }
 export const AddonAction: Story = {
+  name: 'Addon action',
+  parameters: { docs: { description: { story: 'Tab to an addon button and activate it to focus the input.' }, source: { language: 'tsx', code: `import { useRef } from 'react';
+import { Button, InputGroup } from '@jfrader/ui';
+
+export function ReferenceField() {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return <InputGroup>
+    <InputGroup.Input ref={inputRef} aria-label="Reference" />
+    <InputGroup.Addon placement="end">
+      <Button size="sm" variant="ghost" type="button" onClick={() => inputRef.current?.focus()}>Focus input</Button>
+    </InputGroup.Addon>
+  </InputGroup>;
+}` } } },
   render: () => <ActionExample />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -161,6 +196,16 @@ function ControlledExample() {
   return <InputGroup><InputGroup.Input aria-label="Name" value={value} onChange={(event) => setValue(event.currentTarget.value)} /></InputGroup>;
 }
 export const Controlled: Story = {
+  name: 'Controlled input',
+  parameters: { docs: { description: { story: 'Update a native input value with React state inside the shared frame.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+import { InputGroup } from '@jfrader/ui';
+
+export function NameField() {
+  const [value, setValue] = useState('');
+  return <InputGroup>
+    <InputGroup.Input aria-label="Name" value={value} onChange={(event) => setValue(event.currentTarget.value)} />
+  </InputGroup>;
+}` } } },
   render: () => <ControlledExample />,
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByRole('textbox');
@@ -201,7 +246,8 @@ export function AmountField() {
   },
 };
 export const Small: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+  name: 'Small group',
+  parameters: { docs: { description: { story: 'Use a compact frame for the amount and its addons.' }, source: { language: 'tsx', code: `import { useId } from 'react';
 import { InputGroup } from '@jfrader/ui';
 
 export function AmountField() {
@@ -220,7 +266,8 @@ export function AmountField() {
   args: { size: 'sm' },
 };
 export const Large: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+  name: 'Large group',
+  parameters: { docs: { description: { story: 'Use a taller frame for the amount and its addons.' }, source: { language: 'tsx', code: `import { useId } from 'react';
 import { InputGroup } from '@jfrader/ui';
 
 export function AmountField() {

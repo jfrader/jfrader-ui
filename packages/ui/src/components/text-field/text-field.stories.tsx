@@ -30,16 +30,23 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Enter text in a field with a label, description and error message.' },
-      usage: `### Values
-- Use \`defaultValue\` for an uncontrolled initial value. If you pass \`value\`, update it from \`onValueChange\`; the callback receives the input's string value after \`onChange\`.
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Sizes', stories: ['Sizes'] },
+        { title: 'States', stories: ['Disabled', 'ReadOnly', 'Required'] },
+        { title: 'Labels and feedback', stories: ['HiddenLabel', 'WithDescription', 'WithError'] },
+        { title: 'Forms', stories: ['Controlled', 'Form'] },
+        { title: 'Long content', stories: ['LongContent'] },
+      ],
+      usage: `### When to use
+Use a text field for a single line of text. Use Textarea for a message, SearchField for a query, or PasswordField for a secret. For prefixes, suffixes or icons inside the frame, use InputGroup instead.
 
-### Forms
-- Pass \`name\` to include the input in form data. Set native props such as \`type\`, \`required\` and \`autoComplete\` on the field to configure the input.
-- Supplying \`error\` displays an alert and marks the input invalid. It does not validate the value for you; compute the error in your form.
-- If you omit \`label\`, supply \`aria-label\` or \`aria-labelledby\` to name the input.
+### Forms and accessibility
+Give each input an accessible name, even when its label is hidden. Keep a visible label unless the surrounding context makes the purpose clear. Placeholders are not labels.
 
-### Customization
-- \`ref\` targets the input, while \`component\` replaces the wrapper. Use \`slots\` to replace generated parts and forward their supplied props and refs so label and description relationships remain attached.`,
+Validate in your form and provide a specific error message. Disabled fields are skipped by keyboard navigation and omitted from form data; read-only fields remain focusable and are submitted.
+
+Tab and Shift+Tab move between controls. Text editing and Enter submission follow the browser's native behavior.`,
     },
   },
   args: { label: 'Email', placeholder: 'you@example.com', size: 'md' },
@@ -77,6 +84,10 @@ function ControlledTextField(props: TextFieldProps) {
 ControlledTextField.displayName = 'ControlledTextField';
 
 export const Default: Story = {
+  name: 'Email field',
+  parameters: { docs: { description: { story: 'Enter an email address in a labeled, single-line field.' }, source: { language: 'tsx', code: `import { TextField } from '@jfrader/ui';
+
+<TextField label="Email" placeholder="you@example.com" />` } } },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByLabelText('Email');
     await expect(input).not.toHaveAttribute('aria-invalid');
@@ -85,6 +96,10 @@ export const Default: Story = {
 };
 
 export const HiddenLabel: Story = {
+  name: 'Hidden label',
+  parameters: { docs: { description: { story: 'Keep the accessible name when the surrounding context already identifies the field.' }, source: { language: 'tsx', code: `import { TextField } from '@jfrader/ui';
+
+<TextField label="Search" labelPlacement="hidden" placeholder="you@example.com" />` } } },
   args: { label: 'Search', labelPlacement: 'hidden' },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByLabelText('Search');
@@ -96,6 +111,10 @@ export const HiddenLabel: Story = {
 };
 
 export const WithDescription: Story = {
+  name: 'Description',
+  parameters: { docs: { description: { story: 'Explain how the email address will be used below the input.' }, source: { language: 'tsx', code: `import { TextField } from '@jfrader/ui';
+
+<TextField label="Email" placeholder="you@example.com" description="We only use it to send receipts." />` } } },
   args: { description: 'We only use it to send receipts.' },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByLabelText('Email');
@@ -104,6 +123,10 @@ export const WithDescription: Story = {
 };
 
 export const WithError: Story = {
+  name: 'Validation error',
+  parameters: { docs: { description: { story: 'Show an error alongside the description and mark the input invalid.' }, source: { language: 'tsx', code: `import { TextField } from '@jfrader/ui';
+
+<TextField label="Email" placeholder="you@example.com" description="We only use it to send receipts." error="Enter a valid email address." />` } } },
   args: { description: 'We only use it to send receipts.', error: 'Enter a valid email address.' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -148,7 +171,8 @@ export const BooleanNodes: Story = {
 };
 
 export const Controlled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  name: 'Controlled value',
+  parameters: { docs: { description: { story: 'Store the email value in React state as you type.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { TextField } from '@jfrader/ui';
 
 export function EmailField() {
@@ -186,6 +210,13 @@ export const Keyboard: Story = {
 };
 
 export const Sizes: Story = {
+  parameters: { docs: { description: { story: 'Compare small, medium and large fields.' }, source: { language: 'tsx', code: `import { TextField } from '@jfrader/ui';
+
+<>
+  <TextField size="sm" label="Size sm" placeholder="you@example.com" />
+  <TextField size="md" label="Size md" placeholder="you@example.com" />
+  <TextField size="lg" label="Size lg" placeholder="you@example.com" />
+</>` } } },
   render: (args) => (
     <>
       {SIZES.map((size) => (
@@ -204,6 +235,9 @@ export const Sizes: Story = {
 };
 
 export const Disabled: Story = {
+  parameters: { docs: { description: { story: 'Prevent editing and remove the field from keyboard navigation.' }, source: { language: 'tsx', code: `import { TextField } from '@jfrader/ui';
+
+<TextField label="Email" placeholder="you@example.com" disabled defaultValue="locked@example.com" />` } } },
   args: { disabled: true, defaultValue: 'locked@example.com' },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByLabelText('Email')).toBeDisabled();
@@ -211,12 +245,56 @@ export const Disabled: Story = {
 };
 
 export const Required: Story = {
+  parameters: { docs: { description: { story: 'Require an email value before native form submission.' }, source: { language: 'tsx', code: `import { TextField } from '@jfrader/ui';
+
+<TextField label="Email" placeholder="you@example.com" required />` } } },
   args: { required: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('textbox')).toHaveAttribute('required');
     await expect(canvas.getByText('*')).toHaveAttribute('aria-hidden', 'true');
   },
+};
+
+export const ReadOnly: Story = {
+  name: 'Read-only value',
+  args: { readOnly: true, defaultValue: 'billing@example.com' },
+  parameters: { docs: { description: { story: 'Keep an email selectable and submittable without allowing edits.' }, source: { language: 'tsx', code: `import { TextField } from '@jfrader/ui';
+
+<TextField label="Email" placeholder="you@example.com" readOnly defaultValue="billing@example.com" />` } } },
+};
+
+function EmailForm() {
+  const [submittedEmail, setSubmittedEmail] = useState('');
+  return <form action={(data) => setSubmittedEmail(String(data.get('email') ?? ''))}>
+    <TextField label="Email" name="email" type="email" autoComplete="email" required />
+    <Button type="submit">Submit email</Button>
+    <output aria-live="polite">{submittedEmail}</output>
+  </form>;
+}
+
+export const Form: Story = {
+  name: 'Native form',
+  render: () => <EmailForm />,
+  parameters: { docs: { description: { story: 'Submit a named email input with native validation and read its value from FormData.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, TextField } from '@jfrader/ui';
+
+export function EmailForm() {
+  const [submittedEmail, setSubmittedEmail] = useState('');
+  return <form action={(data) => setSubmittedEmail(String(data.get('email') ?? ''))}>
+    <TextField label="Email" name="email" type="email" autoComplete="email" required />
+    <Button type="submit">Submit email</Button>
+    <output aria-live="polite">{submittedEmail}</output>
+  </form>;
+}` } } },
+};
+
+export const LongContent: Story = {
+  name: 'Long value',
+  args: { label: 'Billing contact email address', defaultValue: 'accounts-payable@international-example.com' },
+  parameters: { docs: { description: { story: 'Keep a long email on one line and move the caret to read the rest.' }, source: { language: 'tsx', code: `import { TextField } from '@jfrader/ui';
+
+<TextField label="Billing contact email address" placeholder="you@example.com" defaultValue="accounts-payable@international-example.com" />` } } },
 };
 
 export const LightTheme: Story = {

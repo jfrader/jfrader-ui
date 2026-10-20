@@ -10,6 +10,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { Button } from '../button';
 import { Textarea, type TextareaProps, type TextareaResize, type TextareaSize } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -30,19 +31,24 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Write text across multiple lines in a field with a label and error message.' },
-      usage: `### Values
-- Use \`defaultValue\` for an uncontrolled initial value. If you pass \`value\`, update it from \`onValueChange\`; the callback receives a string after \`onChange\`.
-
-### Forms
-- Pass \`name\` to include the textarea in form data. Use \`required\` or \`maxLength\` for native constraints. Supplying \`error\` displays an alert and marks the field invalid, but does not validate its contents.
-- If you omit \`label\`, supply \`aria-label\` or \`aria-labelledby\` to name the textarea.
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Sizes', stories: ['Sizes'] },
+        { title: 'States', stories: ['Disabled', 'ReadOnly', 'Required'] },
+        { title: 'Labels and feedback', stories: ['HiddenLabel', 'WithDescription', 'WithError'] },
+        { title: 'Forms', stories: ['Controlled', 'Form'] },
+        { title: 'Long content', stories: ['LongContent', 'AutoResize'] },
+      ],
+      usage: `### When to use
+Use a textarea for messages, notes and other multi-line text. Use TextField for a single line. Use InputGroup.Textarea when text needs an addon inside the frame.
 
 ### Limits
-- The field defaults to \`rows={3}\` and \`resize="vertical"\`. Set \`resize="none"\` to turn off manual resizing.
-- \`autoResize\` uses CSS \`field-sizing: content\`. Supporting browsers size to the text and ignore \`rows\`; other browsers keep the row-based height. Keep \`rows\` as a fallback when you enable it.
+Automatic growth depends on browser support for CSS field-sizing. Supporting browsers size to the text and ignore the row count; other browsers keep the row-based height. Keep a usable fallback height and enough space for long content.
 
-### Customization
-- \`ref\` targets the textarea, while \`component\` replaces the wrapper. If you replace a part through \`slots\`, forward its supplied props and ref to preserve the field relationships.`,
+### Forms and accessibility
+Give the control an accessible name even when its label is hidden. Placeholders are not labels. Validate in your form and provide a specific error message; displaying an error does not validate the text.
+
+Tab and Shift+Tab move between controls; Enter inserts a line break. Disabled textareas are omitted from form data; read-only textareas remain focusable and are submitted.`,
     },
   },
   args: { label: 'Message', placeholder: 'Write a message', size: 'md' },
@@ -82,6 +88,10 @@ function ControlledTextarea(props: TextareaProps) {
 ControlledTextarea.displayName = 'ControlledTextarea';
 
 export const Default: Story = {
+  name: 'Message field',
+  parameters: { docs: { description: { story: 'Write a multi-line message in a labeled field.' }, source: { language: 'tsx', code: `import { Textarea } from '@jfrader/ui';
+
+<Textarea label="Message" placeholder="Write a message" />` } } },
   play: async ({ canvasElement }) => {
     const textarea = within(canvasElement).getByLabelText('Message');
     await expect(textarea).toHaveAttribute('rows', '3');
@@ -92,6 +102,10 @@ export const Default: Story = {
 };
 
 export const WithDescription: Story = {
+  name: 'Description',
+  parameters: { docs: { description: { story: 'Tell the writer who can read the message.' }, source: { language: 'tsx', code: `import { Textarea } from '@jfrader/ui';
+
+<Textarea label="Message" placeholder="Write a message" description="Visible to the whole team." />` } } },
   args: { description: 'Visible to the whole team.' },
   play: async ({ canvasElement }) => {
     const textarea = within(canvasElement).getByLabelText('Message');
@@ -100,6 +114,17 @@ export const WithDescription: Story = {
 };
 
 export const WithError: Story = {
+  name: 'Validation error',
+  parameters: { docs: { description: { story: 'Combine a validation error with the description and an external hint.' }, source: { language: 'tsx', code: `import { useId } from 'react';
+import { Textarea } from '@jfrader/ui';
+
+export function MessageField() {
+  const hintId = useId();
+  return <>
+    <Textarea label="Message" placeholder="Write a message" aria-describedby={hintId} description="Visible to the whole team." error="Write at least 10 characters." />
+    <span id={hintId}>External hint</span>
+  </>;
+}` } } },
   args: {
     'aria-describedby': 'external-hint',
     description: 'Visible to the whole team.',
@@ -125,7 +150,8 @@ export const WithError: Story = {
 };
 
 export const Controlled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  name: 'Controlled value',
+  parameters: { docs: { description: { story: 'Store the message in React state, including its line breaks.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { Textarea } from '@jfrader/ui';
 
 function MessageField() {
@@ -166,6 +192,13 @@ export const RejectedControlled: Story = {
 };
 
 export const Sizes: Story = {
+  parameters: { docs: { description: { story: 'Compare minimum heights for small, medium and large textareas.' }, source: { language: 'tsx', code: `import { Textarea } from '@jfrader/ui';
+
+<>
+  <Textarea label="Message sm" size="sm" rows={1} placeholder="Write a message" />
+  <Textarea label="Message md" size="md" rows={1} placeholder="Write a message" />
+  <Textarea label="Message lg" size="lg" rows={1} placeholder="Write a message" />
+</>` } } },
   render: (args) => (
     <>
       {SIZES.map((size) => (
@@ -183,6 +216,9 @@ export const Sizes: Story = {
 };
 
 export const Required: Story = {
+  parameters: { docs: { description: { story: 'Require a message before native form submission.' }, source: { language: 'tsx', code: `import { Textarea } from '@jfrader/ui';
+
+<Textarea label="Message" placeholder="Write a message" required />` } } },
   args: { required: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -217,6 +253,10 @@ export const ConsumerInvalid: Story = {
 };
 
 export const AutoResize: Story = {
+  name: 'Grow with content',
+  parameters: { docs: { description: { story: 'Type several lines to grow the field in browsers that support CSS field-sizing.' }, source: { language: 'tsx', code: `import { Textarea } from '@jfrader/ui';
+
+<Textarea label="Message" placeholder="Write a message" autoResize resize="none" />` } } },
   args: { autoResize: true, resize: 'none' },
   play: async ({ canvasElement }) => {
     const textarea = within(canvasElement).getByLabelText('Message');
@@ -232,6 +272,9 @@ export const AutoResize: Story = {
 };
 
 export const Disabled: Story = {
+  parameters: { docs: { description: { story: 'Prevent editing and skip the message in keyboard navigation.' }, source: { language: 'tsx', code: `import { Textarea } from '@jfrader/ui';
+
+<Textarea label="Message" placeholder="Write a message" disabled defaultValue="Locked message" />` } } },
   args: { disabled: true, defaultValue: 'Locked message', onValueChange: fn() },
   play: async ({ args, canvasElement }) => {
     const textarea = within(canvasElement).getByLabelText('Message');
@@ -240,6 +283,55 @@ export const Disabled: Story = {
     await expect(textarea).toHaveValue('Locked message');
     await expect(args.onValueChange).not.toHaveBeenCalled();
   },
+};
+
+export const ReadOnly: Story = {
+  name: 'Read-only message',
+  args: { readOnly: true, defaultValue: 'The release is scheduled for Friday.' },
+  parameters: { docs: { description: { story: 'Keep a message selectable and submittable without allowing edits.' }, source: { language: 'tsx', code: `import { Textarea } from '@jfrader/ui';
+
+<Textarea label="Message" placeholder="Write a message" readOnly defaultValue="The release is scheduled for Friday." />` } } },
+};
+
+export const HiddenLabel: Story = {
+  name: 'Hidden label',
+  args: { labelPlacement: 'hidden' },
+  parameters: { docs: { description: { story: 'Keep an accessible name when the surrounding context identifies the message field.' }, source: { language: 'tsx', code: `import { Textarea } from '@jfrader/ui';
+
+<Textarea label="Message" labelPlacement="hidden" placeholder="Write a message" />` } } },
+};
+
+function MessageForm() {
+  const [submittedMessage, setSubmittedMessage] = useState('');
+  return <form action={(data) => setSubmittedMessage(String(data.get('message') ?? ''))}>
+    <Textarea label="Message" name="message" required />
+    <Button type="submit">Submit message</Button>
+    <output aria-live="polite">{submittedMessage}</output>
+  </form>;
+}
+
+export const Form: Story = {
+  name: 'Native form',
+  render: () => <MessageForm />,
+  parameters: { docs: { description: { story: 'Submit a required message and read its value from FormData.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Textarea } from '@jfrader/ui';
+
+export function MessageForm() {
+  const [submittedMessage, setSubmittedMessage] = useState('');
+  return <form action={(data) => setSubmittedMessage(String(data.get('message') ?? ''))}>
+    <Textarea label="Message" name="message" required />
+    <Button type="submit">Submit message</Button>
+    <output aria-live="polite">{submittedMessage}</output>
+  </form>;
+}` } } },
+};
+
+export const LongContent: Story = {
+  name: 'Long message',
+  args: { defaultValue: 'Release checklist:\nReview the migration guide and confirm the deployment window.\nNotify the team before starting the rollout.\nCheck the service after deployment.\nRecord any follow-up work.', rows: 4 },
+  parameters: { docs: { description: { story: 'Scroll or resize a multi-line message that exceeds the initial height.' }, source: { language: 'tsx', code: `import { Textarea } from '@jfrader/ui';
+
+<Textarea label="Message" placeholder="Write a message" rows={4} defaultValue={'Release checklist:\\nReview the migration guide and confirm the deployment window.\\nNotify the team before starting the rollout.\\nCheck the service after deployment.\\nRecord any follow-up work.'} />` } } },
 };
 
 export const Keyboard: Story = {

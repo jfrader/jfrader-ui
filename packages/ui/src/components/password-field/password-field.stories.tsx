@@ -24,7 +24,6 @@ const HEIGHTS = { sm: 32, md: 40, lg: 48 } as const;
 const REVEAL_SIZES = { sm: 24, md: 32, lg: 40 } as const;
 // motion.duration.base plus a frame of slack, so the slash is read after its transition.
 const SLASH_SETTLE_MS = 200;
-const usage = `<PasswordField label="Password" name="password" autoComplete="current-password" required />`;
 
 const Stack = styled.div({
   display: 'grid',
@@ -60,16 +59,27 @@ const meta = {
   ],
   parameters: {
     docs: {
-      source: { code: usage },
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Reveal and hide', stories: ['Revealed'] },
+        { title: 'Feedback', stories: ['WithDescription', 'WithError'] },
+        { title: 'Sizes and states', stories: ['Sizes', 'Required', 'ReadOnly', 'Disabled'] },
+        { title: 'Custom icons', stories: ['CustomIcon'] },
+      ],
       description: {
         component:
           'Enter a password, token or API key and toggle whether it is visible.',
       },
-      usage: `- One native input switches between password and text, preserving value, selection, focus and password-manager support.
-- The reveal button's accessible name stays the same when visibility changes. Its \`aria-pressed\` state indicates whether the password is revealed, and \`aria-controls\` identifies the input.
-- Tab moves from input to reveal to page. Enter or Space on reveal toggles once without submitting. Enter in the input submits the form; Escape does nothing. Text editing follows browser behavior.
-- value and revealed support controlled and uncontrolled state independently. Form reset restores uncontrolled state without callbacks.
-- Use TextField for other text.`,
+      usage: `### When to use
+Use a password field for passwords, tokens and API keys that should start concealed. Use TextField for other text. Masking is a display choice, not encryption; avoid revealing secrets on shared screens.
+
+### Feedback and forms
+Your application owns validation. Use PasswordStrength for an account-creation field with policy feedback; PasswordField does not calculate strength. State password requirements before submission and provide a specific error when validation fails. Keep password-manager autocomplete appropriate to sign-in or account creation.
+
+### Keyboard and accessibility
+Give the input an accessible name. Tab moves from input to reveal to page. Enter or Space on reveal toggles visibility without submitting; Enter in the input submits its form. Escape does nothing. The reveal button keeps its accessible name and announces its pressed state.
+
+Toggling keeps the value, selection and input focus. Read-only values can still be revealed; disabled fields disable both input and reveal. Form reset restores uncontrolled value and visibility without change callbacks.`,
     },
   },
 } satisfies Meta<typeof PasswordField>;
@@ -106,6 +116,10 @@ const slashOffset = (button: HTMLButtonElement) =>
   parseFloat(getComputedStyle(button.querySelector('svg > [data-slash]')!).strokeDashoffset);
 
 export const Default: Story = {
+  name: 'Password entry',
+  parameters: { docs: { description: { story: 'Enter a concealed password and toggle visibility with the reveal button.' }, source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
+
+<PasswordField label="Password" name="password" autoComplete="current-password" />` } } },
   play: async ({ canvas, canvasElement }) => {
     const { root, input, button } = parts(canvasElement);
     await expect(canvas.getByLabelText('Password')).toBe(input);
@@ -128,6 +142,10 @@ export const Default: Story = {
 };
 
 export const Revealed: Story = {
+  name: 'Initially revealed',
+  parameters: { docs: { description: { story: 'Start with the value visible, then use the reveal button to hide it.' }, source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
+
+<PasswordField label="Password" name="password" autoComplete="current-password" defaultRevealed defaultValue="correct horse battery staple" />` } } },
   args: { defaultRevealed: true, defaultValue: 'correct horse battery staple' },
   play: async ({ canvasElement }) => {
     const { input, button } = parts(canvasElement);
@@ -139,6 +157,13 @@ export const Revealed: Story = {
 };
 
 export const Sizes: Story = {
+  parameters: { docs: { description: { story: 'Compare password inputs and reveal buttons at each size.' }, source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
+
+<>
+  <PasswordField label="Size sm" name="password" autoComplete="current-password" size="sm" />
+  <PasswordField label="Size md" name="password" autoComplete="current-password" size="md" />
+  <PasswordField label="Size lg" name="password" autoComplete="current-password" size="lg" />
+</>` } } },
   render: (args) => (
     <>
       {SIZES.map((size) => (
@@ -166,6 +191,10 @@ export const Sizes: Story = {
 };
 
 export const WithDescription: Story = {
+  name: 'Password requirements',
+  parameters: { docs: { description: { story: 'Keep the password requirements available as the input description.' }, source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
+
+<PasswordField label="Password" name="password" autoComplete="current-password" description="At least 12 characters." />` } } },
   args: { description: 'At least 12 characters.' },
   play: async ({ canvas }) => {
     const input = canvas.getByLabelText('Password');
@@ -175,6 +204,10 @@ export const WithDescription: Story = {
 };
 
 export const WithError: Story = {
+  name: 'Validation feedback',
+  parameters: { docs: { description: { story: 'Show an application-provided error alongside the password requirements.' }, source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
+
+<PasswordField label="Password" name="password" autoComplete="current-password" description="At least 12 characters." error="Password is incorrect." />` } } },
   args: { description: 'At least 12 characters.', error: 'Password is incorrect.' },
   play: async ({ canvas }) => {
     const input = canvas.getByLabelText('Password');
@@ -189,6 +222,9 @@ export const WithError: Story = {
 };
 
 export const Required: Story = {
+  parameters: { docs: { description: { story: 'Require a password before native form submission.' }, source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
+
+<PasswordField label="Password" name="password" autoComplete="current-password" required />` } } },
   args: { required: true },
   play: async ({ canvas }) => {
     await expect(canvas.getByLabelText(/Password/)).toBeRequired();
@@ -198,6 +234,10 @@ export const Required: Story = {
 };
 
 export const ReadOnly: Story = {
+  name: 'Read-only secret',
+  parameters: { docs: { description: { story: 'Prevent edits to a stored secret while keeping its reveal button available.' }, source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
+
+<PasswordField label="Password" name="password" autoComplete="current-password" readOnly defaultValue="stored-secret" />` } } },
   args: { readOnly: true, defaultValue: 'stored-secret' },
   play: async ({ canvasElement, userEvent, args }) => {
     const { input, button } = parts(canvasElement);
@@ -212,6 +252,9 @@ export const ReadOnly: Story = {
 };
 
 export const Disabled: Story = {
+  parameters: { docs: { description: { story: 'Disable password editing and the reveal button together.' }, source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
+
+<PasswordField label="Password" name="password" autoComplete="current-password" disabled defaultValue="locked-secret" />` } } },
   args: { disabled: true, defaultValue: 'locked-secret' },
   play: async ({ canvasElement, userEvent, args }) => {
     const { input, button } = parts(canvasElement);
@@ -540,7 +583,8 @@ export const Translated: Story = {
 };
 
 export const CustomIcon: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
+  name: 'Custom reveal icon',
+  parameters: { docs: { description: { story: 'Render different reveal artwork for the concealed and visible states.' }, source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
 
 <PasswordField
   label="Password"
