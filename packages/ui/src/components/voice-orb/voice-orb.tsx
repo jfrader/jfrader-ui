@@ -394,6 +394,7 @@ function VoiceOrbVisual({
   const reducedMotion = useReducedMotion();
   const latest = useRef(context);
   const repaint = useRef<(() => void) | undefined>(undefined);
+  const phase = useRef(0);
   useLayoutEffect(() => {
     latest.current = context;
   });
@@ -403,6 +404,9 @@ function VoiceOrbVisual({
   const energy = useSpring(STATE_ENERGY[context.state], SPRING);
   const expression = useSpring(STATE_EXPRESSION[context.state], SPRING);
   const level = useSpring(0, SPRING);
+  const listening = useSpring(context.state === 'listening' ? 1 : 0, SPRING);
+  const thinking = useSpring(context.state === 'thinking' ? 1 : 0, SPRING);
+  const speaking = useSpring(context.state === 'speaking' ? 1 : 0, SPRING);
   useEffect(() => {
     const source =
       context.state === 'speaking'
@@ -422,7 +426,16 @@ function VoiceOrbVisual({
     else energy.set(STATE_ENERGY[context.state]);
     if (reducedMotion) expression.jump(0);
     else expression.set(STATE_EXPRESSION[context.state]);
-  }, [context.state, energy, expression, reducedMotion]);
+    for (const [state, weight] of [
+      ['listening', listening],
+      ['thinking', thinking],
+      ['speaking', speaking],
+    ] as const) {
+      const target = context.state === state ? 1 : 0;
+      if (reducedMotion) weight.jump(target);
+      else weight.set(target);
+    }
+  }, [context.state, energy, expression, listening, thinking, speaking, reducedMotion]);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -434,7 +447,6 @@ function VoiceOrbVisual({
     let frame = 0;
     let visible = true;
     let disposed = false;
-    let phase = 0;
     let previousTime = 0;
     let pixels = 0;
     let palette: OrbPalette;
@@ -443,12 +455,20 @@ function VoiceOrbVisual({
       const current = latest.current;
       const amplitude = reducedMotion ? 0 : level.get();
       if (!reducedMotion && previousTime)
-        phase +=
+        phase.current +=
           (Math.min(time - previousTime, 64) / Math.max(1, motionDurationMs.slow)) *
           (0.06 + energy.get() * 0.38 + amplitude * 0.22);
       previousTime = time;
       const activity = reducedMotion ? STATE_ENERGY[current.state] : energy.get();
-      paintOrb(drawing, pixels, phase, activity, amplitude, palette, reducedMotion ? 0 : expression.get());
+      paintOrb(
+        drawing, pixels, phase.current, activity, amplitude, palette,
+        reducedMotion ? 0 : expression.get(),
+        {
+          listening: reducedMotion ? Number(current.state === 'listening') : listening.get(),
+          thinking: reducedMotion ? Number(current.state === 'thinking') : thinking.get(),
+          speaking: reducedMotion ? Number(current.state === 'speaking') : speaking.get(),
+        },
+      );
     };
     const tick = (time: number) => {
       frame = 0;
@@ -473,6 +493,9 @@ function VoiceOrbVisual({
           highlight: styles.getPropertyValue('--ui-color-accent-hover').trim(),
           shadow: styles.getPropertyValue('--ui-color-surface-raised').trim(),
           light: styles.getPropertyValue('--ui-color-color-picker-white').trim(),
+          listening: styles.getPropertyValue('--ui-color-voice-orb-cloud-listening').trim(),
+          thinking: styles.getPropertyValue('--ui-color-voice-orb-cloud-thinking').trim(),
+          speaking: styles.getPropertyValue('--ui-color-voice-orb-cloud-speaking').trim(),
         };
         draw(view.performance.now());
         if (!reducedMotion && !forced.matches) frame = view.requestAnimationFrame(tick);
@@ -507,7 +530,7 @@ function VoiceOrbVisual({
       view.removeEventListener('resize', refresh);
       forced.removeEventListener('change', refresh);
     };
-  }, [Canvas, reducedMotion, energy, expression, level]);
+  }, [Canvas, reducedMotion, energy, expression, level, listening, thinking, speaking]);
   return (
     <WithSx className={className} styles={visualStyle} sx={sx}>
       {(className) => (

@@ -1,10 +1,15 @@
 const FILAMENT_COUNT = 18;
+const CLOUD_STATES = ['listening', 'thinking', 'speaking'] as const;
+export type OrbCloudWeights = Partial<Record<(typeof CLOUD_STATES)[number], number>>;
 
 export interface OrbPalette {
   accent: string;
   highlight: string;
   shadow: string;
   light: string;
+  listening: string;
+  thinking: string;
+  speaking: string;
 }
 
 export function paintOrb(
@@ -15,6 +20,7 @@ export function paintOrb(
   amplitude: number,
   palette: OrbPalette,
   expression: number,
+  clouds: OrbCloudWeights = {},
 ) {
   const center = pixels / 2;
   const radius = pixels * (0.32 + amplitude * 0.035);
@@ -72,6 +78,40 @@ export function paintOrb(
     highlight,
     0.65 + expression * 0.3,
   );
+
+  const breath = (Math.sin(phase * 1.8) + 1) / 2;
+  const cloudShapes = {
+    listening: {
+      orbit: 0.34 - amplitude * 0.1,
+      spread: 0.64 + breath * 0.08,
+      brightness: 0.44 + amplitude * 0.18,
+    },
+    thinking: {
+      orbit: 0.22 - breath * 0.12,
+      spread: 0.5 - breath * 0.08,
+      brightness: 0.54 + breath * 0.12,
+    },
+    speaking: {
+      orbit: 0.22 + breath * 0.26,
+      spread: 0.56 + breath * 0.18,
+      brightness: 0.48 + amplitude * 0.16,
+    },
+  };
+  for (const state of CLOUD_STATES) {
+    const weight = Math.max(0, Math.min(1, clouds[state] ?? 0));
+    if (!weight) continue;
+    const { orbit, spread, brightness } = cloudShapes[state];
+    for (let cloud = 0; cloud < 2; cloud++) {
+      const angle = drift + cloud * Math.PI + 0.8;
+      glow(
+        center + Math.cos(angle) * radius * orbit,
+        center + Math.sin(angle * 1.13) * radius * orbit * 0.8,
+        radius * spread,
+        palette[state],
+        weight * brightness * (cloud ? 0.72 : 1),
+      );
+    }
+  }
 
   drawing.save();
   drawing.translate(center, center);

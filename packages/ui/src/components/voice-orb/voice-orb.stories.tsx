@@ -4,6 +4,7 @@ import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { motionValue } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { ClassNames, css } from '../../styling/css';
+import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button, type ButtonProps } from '../button';
 import { VoiceOrb, type VoiceOrbState } from './index';
@@ -32,7 +33,7 @@ const meta = {
       source: { code: usage },
       sections: [
         { title: 'Basic', stories: ['DefaultIdle'] },
-        { title: 'Session states', stories: ['Listening', 'Thinking', 'Speaking', 'Connecting', 'Muted', 'PermissionError'] },
+        { title: 'Session states', stories: ['StateTransitions', 'Listening', 'Thinking', 'Speaking', 'Connecting', 'Muted', 'PermissionError'] },
         { title: 'Transcript', stories: ['UserTranscript', 'AssistantTranscript', 'CompletedTurn'] },
       ],
       description: {
@@ -51,6 +52,72 @@ const meta = {
 } satisfies Meta<typeof VoiceOrb>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+const StateButtons = styled('div')({
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  gap: vars.space[2],
+});
+const TRANSITION_STATES = ['idle', 'listening', 'thinking', 'speaking'] as const;
+function StateTransitionsExample() {
+  const [state, setState] = useState<VoiceOrbState>('idle');
+  return (
+    <VoiceOrb state={state} inputLevel={0.4} outputLevel={0.65}>
+      <VoiceOrb.Visual size="lg" />
+      <VoiceOrb.Status />
+      <StateButtons role="group" aria-label="Orb state">
+        {TRANSITION_STATES.map((value) => (
+          <Button key={value} variant="outline" aria-pressed={state === value} onClick={() => setState(value)}>
+            {STATES[value]}
+          </Button>
+        ))}
+      </StateButtons>
+    </VoiceOrb>
+  );
+}
+export const StateTransitions: Story = {
+  render: () => <StateTransitionsExample />,
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Button, VoiceOrb, styled, type VoiceOrbState } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const StateButtons = styled('div')({
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  gap: vars.space[2],
+});
+const states = [
+  { value: 'idle', label: 'Ready' },
+  { value: 'listening', label: 'Listening' },
+  { value: 'thinking', label: 'Thinking' },
+  { value: 'speaking', label: 'Speaking' },
+] as const;
+
+function Example() {
+  const [state, setState] = useState<VoiceOrbState>('idle');
+  return (
+    <VoiceOrb state={state} inputLevel={0.4} outputLevel={0.65}>
+      <VoiceOrb.Visual size="lg" />
+      <VoiceOrb.Status />
+      <StateButtons role="group" aria-label="Orb state">
+        {states.map(({ value, label }) => (
+          <Button key={value} variant="outline" aria-pressed={state === value} onClick={() => setState(value)}>
+            {label}
+          </Button>
+        ))}
+      </StateButtons>
+    </VoiceOrb>
+  );
+}`,
+      },
+    },
+  },
+};
 function ReplacementCanvas(props: ComponentPropsWithRef<'canvas'>) {
   return <canvas {...props} data-replacement="canvas" />;
 }
