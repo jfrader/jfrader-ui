@@ -33,6 +33,14 @@ const meta = {
   args: { cards: CARDS.slice(0, 3), playLabel: 'Play card', onValueChange: fn(), onPlayIntent: fn() },
   parameters: { docs: {
     description: { component: 'Choose a card from your hand and confirm to play it. Show opponents’ hands as card backs with GameHand.Hidden.' },
+    sections: [
+      { title: 'Basic', stories: ['Default'] },
+      { title: 'Hidden hand', stories: ['HiddenHands'] },
+      { title: 'Layout', stories: ['Sizes'] },
+      { title: 'Interactions', stories: ['Controlled', 'AcceptedPlay', 'StableIdentity'] },
+      { title: 'States', stories: ['Selected', 'Disabled', 'Empty'] },
+      { title: 'Composition', stories: ['HiddenCardSlots'] },
+    ],
     source: {
       language: 'tsx',
       code: `import { GameHand } from '@jfrader/ui/game-hand';
@@ -49,35 +57,14 @@ const cards = [
   onPlayIntent={(card) => console.log(card)}
 />`,
     },
-    usage: `## Setup
-- Import from \`@jfrader/ui/game-hand\`. GameHand is an opt-in subpath and is not re-exported by the package root.
+    usage: `### When to use
+Let a player select a card and confirm a play. Your application accepts the play and updates the hand; selection alone does not play or remove a card. There is no drag gesture.
 
-## Selection and keyboard
-- Each card is a native toggle button (APG Button pattern, \`aria-pressed\`).
-- Tab and Shift+Tab follow card order, then confirmation. Enter or Space selects or clears a card.
-- Only confirmation calls \`onPlayIntent\`. There is no drag gesture.
+### Card identity and hidden hands
+Keep each card's id unique and stable when reordering or removing cards so selection follows the same card. Use count-only hidden hands for opponents; never include secret values or revealing labels. Reserve enough space for the fan and its confirmation control. Radial hidden hands need a caller-positioned seat.
 
-## Values
-- Pass plain cards with a unique stable \`id\`, \`value\` and a \`label\` in your page’s language.
-- Keep \`id\` when reordering or removing cards. Selection follows the card id in both controlled and uncontrolled hands.
-- \`value\` and \`onValueChange\` control selection. \`defaultValue\` seeds uncontrolled selection. \`null\` clears selection.
-- Removing the selected card makes confirmation unavailable with \`aria-disabled\` and keeps focus on it. Select another card before confirming again.
-- \`disabled\` keeps cards and confirmation focusable with \`aria-disabled\` while blocking selection and play.
-- \`onPlayIntent\` receives the selected card, without an index.
-
-## Geometry
-- \`size\` uses the GameCard scale.
-- The fan turns 3 cards by −10/0/10° and 2 by −7/7°. Other counts stay straight.
-- Cards overlap by 1.32 spacing steps (10.56px) at \`md\` and \`lg\`. At \`sm\`, cards do not overlap, leaving a 32px strip for pointer selection.
-- Hands have no opening animation, including with reduced motion.
-- Roots accept \`ref\` and \`sx\`. \`slotProps\` styles the fan, card buttons and confirmation through \`sx\`.
-
-## Hidden hands
-- \`GameHand.Hidden\` takes \`count\`, never card values. It renders 0–3 backs and needs a \`label\` naming the hand.
-- Omit \`polar\` for a standalone fan.
-- With \`polar\`, the root moves inward from a caller-positioned seat, allowing for a 56px avatar and a 28px name block. Position the seat yourself.
-- \`rules\` and \`scale\` configure radial geometry. \`size\` controls the card width.
-- \`slotProps.card.sx\` styles each hidden-card wrapper. Root styles use \`sx\`.`,
+### Keyboard and accessibility
+Tab and Shift+Tab follow card order, then confirmation. Enter or Space selects or clears a card; activate confirmation to request a play. Name cards and confirmation in the player's language. Disabled cards and confirmation remain focusable but do not act. After removing a selected card, confirmation stays focused and unavailable until another card is selected. Hands have no opening animation.`,
   } },
 } satisfies Meta<typeof GameHand>;
 export default meta;
@@ -141,9 +128,10 @@ async function checkFan(element: HTMLElement, count: number) {
 
 /** Three cards held in hand with an unselected play button. */
 export const Default: Story = {
-  name: 'Default',
+  name: 'Choose a card',
   parameters: {
     docs: {
+      description: { story: 'Select one of three cards, then confirm to request a play.' },
       source: {
         language: 'tsx',
         code: `import { GameHand } from '@jfrader/ui/game-hand';
@@ -172,7 +160,7 @@ export const FiveCards: Story = { tags: ['!autodocs'], args: { cards: CARDS }, p
 export const Selected: Story = {
   name: 'Selected card',
   args: { defaultValue: CARDS[1]!.id },
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+  parameters: { docs: { description: { story: 'Start with the king selected and raised above the fan.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 
 const cards = [
   { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
@@ -291,7 +279,7 @@ const cards = [
 /** Cards and confirmation button dimmed with aria-disabled while remaining focusable. */
 export const Disabled: Story = {
   name: 'Disabled hand',
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+  parameters: { docs: { description: { story: 'Keep a selected hand focusable while blocking selection and play.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { Button } from '@jfrader/ui/button';
 
 const cards = [
@@ -345,7 +333,7 @@ function AcceptedHand(args: GameHandProps) {
 /** Playing the selected card removes it from the hand and disables confirmation. */
 export const AcceptedPlay: Story = {
   name: 'Playing a card removes it',
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  parameters: { docs: { description: { story: 'Confirm a play to remove the selected card from application state.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { GameHand } from '@jfrader/ui/game-hand';
 
 const initialCards = [
@@ -387,7 +375,7 @@ export function AcceptedPlay() {
 /** Selected card state driven by a parent component value. */
 export const Controlled: Story = {
   name: 'Controlled selection',
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  parameters: { docs: { description: { story: 'Keep the selected card id in parent state.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { GameHand } from '@jfrader/ui/game-hand';
 
 const cards = [
@@ -434,7 +422,7 @@ function MutableHand(args: GameHandProps) {
 /** Selection stays on the chosen card when neighboring cards are removed or reversed. */
 export const StableIdentity: Story = {
   name: 'Selection follows the card',
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  parameters: { docs: { description: { story: 'Remove or reverse cards while keeping selection attached to a stable id.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { GameHand } from '@jfrader/ui/game-hand';
 import { Button } from '@jfrader/ui/button';
 import { vars } from '@jfrader/tokens/vars';
@@ -482,7 +470,7 @@ export function MutableHand() {
 export const Empty: Story = {
   name: 'Empty hand',
   args: { cards: [] },
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+  parameters: { docs: { description: { story: 'Show an empty hand with confirmation unavailable.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 
 <GameHand cards={[]} playLabel="Play card" onPlayIntent={console.log} />` } } },
 };
@@ -531,7 +519,7 @@ export function ReorderedControlledHand() {
 /** Small, medium, and large card hands displayed side by side. */
 export const Sizes: Story = {
   name: 'Sizes',
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+  parameters: { docs: { description: { story: 'Compare three-card fans at small, medium and large sizes.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
@@ -566,7 +554,7 @@ export const HiddenHands: Story = {
   render: () => <Hands>
     {[1, 2, 3].map((count) => <GameHand.Hidden key={count} count={count} label="Opponent hand" />)}
   </Hands>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+  parameters: { docs: { description: { story: 'Show opponents holding one, two and three cards without passing card values.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
@@ -636,10 +624,10 @@ const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.s
 
 /** Hidden opponent cards styled with custom rounded corners via slot props. */
 export const HiddenCardSlots: Story = {
-  name: 'Hidden card slots',
+  name: 'Style hidden card corners',
   render: () => <GameHand.Hidden count={3} label="Opponent hand"
     slotProps={{ card: { className: 'custom-hidden-card', sx: { borderRadius: vars.radius.lg } } }} />,
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+  parameters: { docs: { description: { story: 'Round each hidden card wrapper through its sx styling slot.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { vars } from '@jfrader/tokens/vars';
 
 <GameHand.Hidden count={3} label="Opponent hand"

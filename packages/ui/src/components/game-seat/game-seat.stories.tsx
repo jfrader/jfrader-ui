@@ -30,21 +30,21 @@ const meta = {
   },
   parameters: { docs: {
     description: { component: 'Show a player, their hand and the current turn. Supply avatars, badges, points and chat in your game’s language.' },
-    usage: `## Placement
-GameTable.Seat is the region that places a player around the table. GameSeat is the player’s appearance inside that region; it also works on its own.
+    sections: [
+      { title: 'Basic', stories: ['Default'] },
+      { title: 'Player and status', stories: ['TimerOnly', 'InjectedClock'] },
+      { title: 'Interactions', stories: ['TurnMilestoneNotifications'] },
+      { title: 'States', stories: ['Offline'] },
+      { title: 'Composition', stories: ['InteriorReplacements'] },
+    ],
+    usage: `### When to use
+Show a player's identity and turn status on its own or inside a GameTable seat region. GameSeat does not position players around the board or enforce turn rules.
 
-## Content
-Pass name and any avatar, badges, points, chat or hand nodes. The shell does not choose avatar sizes, badge meanings or chat behavior. handCount renders a decorative GameHand.Hidden when hand is absent. Supply a labeled GameHand.Hidden through hand if the count needs an accessible description. null explicitly suppresses the hand shorthand.
+### Clock constraints
+Synchronize the initial clock for server rendering. The ring runs without React ticks; reduced motion keeps its sampled geometry still. Milestone notifications can arrive late in background tabs, so use authoritative game state to enforce a deadline.
 
-## Turn
-deadline and now are epoch milliseconds; durationMs is the full positive turn length. Inject now for server rendering and deterministic synchronization. Without now, the clock is sampled when deadline or durationMs changes. CSS drains the ring with no React ticks. Reduced motion keeps the sampled geometry without movement. A changed now resynchronizes it.
-onTurnMilestone schedules at most three one-shot deadlines, never an interval: half (50% remaining), quarter (25%) and ending (zero). Past thresholds are skipped. Increasing a still-live deadline emits extended and starts a new threshold schedule. Removing the turn or callback cancels pending notifications. Callbacks may run late in background tabs.
-
-## Accessibility
-The seat is a named group, not an APG widget. It adds no keyboard bindings or focus target. The ring is decorative. Supply localized remaining-time text in chat or your own content; announce only turn changes or milestones, not ticks. Mark decorative avatars aria-hidden to avoid repeating the player name. turned, offline and dimmed are exposed as data attributes; supply visible state labels in your slots.
-
-## Customization
-slotProps accepts native props and sx for root, avatar, name, badges, points, hand, timer and chat. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div and are declared outside render. Root slot props win conflicts; className and style merge. Consumer sx applies after slot sx.`,
+### Keyboard and accessibility
+The seat is a named group, not an interactive widget, and adds no focus target or keyboard bindings. The timer ring and shorthand hand are decorative. Supply localized time text, visible offline status and a labeled hidden hand when its count needs announcing. Announce turn changes or milestones, not ticks. Mark decorative avatars aria-hidden to avoid repeating the player's name.`,
     source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
@@ -64,7 +64,8 @@ type Story = StoryObj<typeof meta>;
 
 /** Player seat displaying player identity, status badges, hand count, and turn timer ring. */
 export const Default: Story = {
-  name: 'Default',
+  name: 'Player seat',
+  parameters: { docs: { description: { story: 'Show a player with host status, points, hidden cards and a turn timer.' } } },
   play: async ({ canvasElement }) => {
     const seat = within(canvasElement).getByRole('group', { name: 'Alex' });
     await expect(seat).toHaveAttribute('data-turned', 'true');
@@ -95,7 +96,7 @@ const turn = { deadline: start + durationMs, durationMs, now: start + durationMs
 export const Offline: Story = {
   name: 'Offline player',
   args: { turn: undefined, offline: true, dimmed: true, badges: <Badge>Disconnected</Badge>, chat: undefined },
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Pair a dimmed player seat with a visible disconnected label.' }, source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
 <GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
@@ -106,7 +107,7 @@ import { GameSeat } from '@jfrader/ui/game-seat';
 export const TimerOnly: Story = {
   name: 'Turn timer only',
   args: { avatar: undefined },
-  parameters: { docs: { source: { language: 'tsx', code: `import { Badge } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Keep the turn countdown ring when no avatar is supplied.' }, source: { language: 'tsx', code: `import { Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
 const durationMs = 60000;
@@ -141,7 +142,7 @@ function ReplacementTimer(props: NonNullable<GameSeatSlotProps['timer']>) { retu
 /** Replace every interior anatomy part with custom elements. */
 export const InteriorReplacements: Story = {
   name: 'Replace the seat interior',
-  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+  parameters: { docs: { description: { story: 'Replace the interior elements while retaining the player name and timer semantics.' }, source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { Avatar, Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
@@ -177,12 +178,12 @@ function ReplacementTimer(props: ComponentPropsWithRef<'svg'>) { return <svg {..
 
 /** Two seats show different remaining portions of the same turn. */
 export const InjectedClock: Story = {
-  name: 'Injected clock',
+  name: 'Synchronized turn clocks',
   render: (args) => <ClockRow>
     <GameSeat {...args} name="Earlier" turn={turn} />
     <GameSeat {...args} name="Later" turn={{ ...turn, now: NOW + DURATION * 3 / 4 }} />
   </ClockRow>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge, styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Compare earlier and later clock samples within the same turn.' }, source: { language: 'tsx', code: `import { Avatar, Badge, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
@@ -322,7 +323,7 @@ export const TurnMilestoneNotifications: Story = {
     await expect(seat).toHaveAttribute('data-turned', 'true');
     await expect(within(seat).getByText('Your turn')).toBeVisible();
   },
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  parameters: { docs: { description: { story: 'Start a turn and announce its milestones through a polite live region.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameSeat, type GameSeatTurnMilestone } from '@jfrader/ui/game-seat';
