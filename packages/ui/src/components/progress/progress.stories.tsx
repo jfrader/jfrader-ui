@@ -11,6 +11,7 @@ const Frame = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: `min(20rem, calc(100vw - ${vars.space[8]}))`,
+  maxInlineSize: '100%',
 });
 
 function ReplacementIndicator(props: ComponentPropsWithRef<'div'>) {
@@ -55,8 +56,17 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show how much of a task is complete, or show that work is in progress.' },
-      usage: `- \`value\` is in 0..max. Leave it undefined when completion is unknown.
-- \`label\` provides a visually hidden name. \`getValueLabel\` supplies \`aria-valuetext\`.`,
+      sections: [
+        { title: 'Completion', stories: ['Determinate', 'Indeterminate'] },
+        { title: 'Size and color', stories: ['CustomAppearance'] },
+        { title: 'Labels', stories: ['ValueText'] },
+        { title: 'Composition', stories: ['VisibleLabel'] },
+      ],
+      usage: `### When to use
+Show measured completion for work with a known total. Use an indeterminate bar while the total is unknown; do not invent a percentage.
+
+### Accessibility
+Name the task, and describe values in meaningful units when a percentage is insufficient. A progress bar is not focusable and has no keyboard interaction. Announce important completion or error messages separately; changes to the bar alone are not a live announcement. Reduced motion keeps indeterminate feedback still.`,
     },
   },
   tags: ['autodocs'],
@@ -77,6 +87,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Determinate: Story = {
+  name: 'Measured completion',
+  parameters: { docs: { description: { story: 'Show a file upload at forty percent completion.' }, source: { language: 'tsx', code: `import { Progress } from '@jfrader/ui';
+
+<Progress label="Uploading file" value={40} />` } } },
   args: { label: 'Uploading file', value: 40 },
   play: async ({ canvasElement }) => {
     const progressbar = within(canvasElement).getByRole('progressbar', { name: 'Uploading file' });
@@ -89,6 +103,10 @@ export const Determinate: Story = {
 };
 
 export const Indeterminate: Story = {
+  name: 'Unknown completion',
+  parameters: { docs: { description: { story: 'Show upload activity before its total is known.' }, source: { language: 'tsx', code: `import { Progress } from '@jfrader/ui';
+
+<Progress label="Uploading file" />` } } },
   args: { label: 'Uploading file' },
   play: async ({ canvasElement }) => {
     const progressbar = within(canvasElement).getByRole('progressbar', { name: 'Uploading file' });
@@ -126,8 +144,21 @@ const ThickProgress = styled(Progress)({ blockSize: vars.space[2] });
   },
 };
 
+export const CustomAppearance: Story = {
+  name: 'Track height and indicator color',
+  parameters: { docs: { description: { story: 'Use tokens to give a thicker storage bar a warning-colored fill.' }, source: { language: 'tsx', code: `import { Progress } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+<Progress label="Storage used" value={92} sx={{ blockSize: vars.space[2] }}
+  slotProps={{ indicator: { sx: { backgroundColor: vars.color.warning } } }} />` } } },
+  args: { label: 'Storage used', value: 92, sx: { blockSize: vars.space[2] }, slotProps: { indicator: { sx: { backgroundColor: vars.color.warning } } } },
+};
+
 export const ValueText: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<Progress label="Importing files" value={3} max={8}
+  name: 'File count label',
+  parameters: { docs: { description: { story: 'Announce completed files instead of only a percentage.' }, source: { language: 'tsx', code: `import { Progress } from '@jfrader/ui';
+
+<Progress label="Importing files" value={3} max={8}
   getValueLabel={(value, max) => \`\${value} of \${max} files\`} />` } } },
   args: {
     label: 'Importing files',
@@ -145,7 +176,8 @@ export const ValueText: Story = {
 };
 
 export const VisibleLabel: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+  name: 'Visible storage label',
+  parameters: { docs: { description: { story: 'Name a storage bar with the visible text above it.' }, source: { language: 'tsx', code: `import { useId } from 'react';
 import { Progress, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
