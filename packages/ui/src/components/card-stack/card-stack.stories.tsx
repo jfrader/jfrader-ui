@@ -96,12 +96,22 @@ const icon = (
     />
   </svg>
 );
-const SOURCE = `<CardStack
+const SOURCE = `import { CardStack } from '@jfrader/ui';
+
+const cities = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<CardStack
   items={cities}
   getKey={city => city.id}
   getLabel={city => city.name}
-  renderCard={city => <h3>{city.name}</h3>}
-  labels={{ right: 'Shortlist' }}
+  renderCard={city => <><h3>{city.name}</h3><p>{city.description}</p></>}
+  locale="en-GB"
 />`;
 const meta = {
   title: 'Data display/CardStack',
@@ -133,22 +143,29 @@ const meta = {
   parameters: {
     layout: 'padded',
     docs: {
-      source: { code: SOURCE },
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Stack and deck', stories: ['Wallet', 'SingleCard'] },
+        { title: 'Drag and click', stories: ['CustomActions', 'Undo'] },
+        { title: 'Keyboard', stories: ['KeyboardDeck', 'InteractiveCardContent'] },
+        { title: 'Empty and long content', stories: ['InitiallyEmpty', 'CustomEmpty', 'LongContent'] },
+        { title: 'States', stories: ['Completed', 'Disabled', 'Controlled'] },
+        { title: 'Slots', stories: ['SlotReplacements'] },
+      ],
+      source: { language: 'tsx', code: SOURCE },
       description: {
-        component: `Review a queue using physical left/right decisions. This is a labelled group with native buttons, not an invented ARIA widget. The stage handles Left/Right, Backspace and Control/Command+Z; embedded controls keep native editing and undo. Held keys do not review multiple cards.
-
-Accepted history is the only authority. \`value\` controls that history; \`defaultValue\` seeds it. The active card is the first item whose stable key is not recorded. Unknown history keys remain available for audit and undo. Notifications describe interaction requests, not successful persistence, and run once in order: onValueChange, then onDecide/onUndo/onReset. Rejected controlled requests return home silently.
-
-The default display window is four cards (configurable from one to eight). Inactive and outgoing cards are inert. Buttons remain focusable at exhaustion; undo restores the final history entry and reset requests an empty history. Use Carousel for browsing rather than decisions.
-
-Use \`variant="wallet"\` for compact translucent cards with stitched edges and decision stamps. It keeps the same decision history and keyboard map; it does not select accounts or open activity panels. Supply card content with \`renderCard\` and use only masked payment details.
-
-Drag horizontally from noninteractive content. Default thresholds: 35% of stage width capped at 140px, or a 12px minimum flick at 500px/s. Vertical intent scrolls; cancellation and lost capture always revert. Motion v14 uses velocity-carrying springs. Reduced motion completes immediately without travel or tilt. RTL mirrors presentation, not physical left/right outcomes.
-
-Names, action labels, past-tense outcomes and announcements are localizable. Number formatting uses Intl. The ReducedMotion and ForcedColors stories are structural fixtures; actual media emulation is a separate browser QA gate.
-
-Use slots to replace internal elements and slotProps to customize their props. Each key targets one element per rendered item; emptyResetButton customizes the completed-state reset independently of resetButton in the persistent controls.`,
+        component: 'Review a queue of cards with left and right decisions.',
       },
+      usage: `### When to use
+Use a stack to review items one at a time and keep or pass each item. Use Carousel to browse without recording decisions. Use only masked payment details in wallet cards.
+
+### Constraints
+Keep item keys stable across updates. Accepted history determines the next card; requests do not confirm successful persistence. Rejected controlled requests return the card home without an announcement. Unknown history keys remain available for audit and undo.
+
+Drag horizontally from noninteractive content. Vertical gestures scroll; cancellation and lost capture return the card home. Left and right outcomes remain physical directions in RTL. Reduced motion completes without travel or tilt.
+
+### Keyboard and accessibility
+Focus the stage and press Left or Right to decide, or Backspace and Control/Command+Z to undo. Held keys do not review multiple cards. Embedded controls keep their native editing and undo keys. Inactive and outgoing cards are inert; action buttons remain focusable when the queue is exhausted. Give the queue and its actions meaningful localized names.`,
     },
   },
 } satisfies Meta<typeof CardStack<City>>;
@@ -166,6 +183,7 @@ function ReplacementButton(props: ComponentPropsWithRef<typeof Button>) {
 }
 
 export const SlotReplacements: Story = {
+  name: 'Replace stack parts',
   args: {
     items: cities.slice(0, 1),
     slots: {
@@ -191,6 +209,7 @@ export const SlotReplacements: Story = {
   },
   parameters: {
     docs: {
+      description: { story: 'Replace the stack, card and action elements while keeping their props and refs.' },
       source: {
         language: 'tsx',
         code: `import type { ComponentPropsWithRef } from 'react';
@@ -357,6 +376,8 @@ function pointer(stage: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Review destinations',
+  parameters: { docs: { description: { story: 'Drag a card left or right, or choose Pass or Keep to review the queue.' } } },
   play: async ({ canvas, canvasElement }) => {
     await containedGeometry(canvasElement);
     await expect(part(canvasElement, 'stage').parentElement).not.toHaveAttribute('data-variant');
@@ -380,6 +401,7 @@ export const Default: Story = {
 };
 /** Review travel passes in a compact wallet stack. Pass and Keep still record decisions. */
 export const Wallet: Story = {
+  name: 'Wallet deck',
   render: (args) => (
     <WalletPanel>
       <WalletLabel>Weekend passes · Shortlist</WalletLabel>
@@ -403,10 +425,33 @@ export const Wallet: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Use variant="wallet" for compact cards with translucent material and stitched edges. Content comes from renderCard. This remains a review queue: arrows decide, Backspace undoes; it does not select accounts or open activity panels. Use a list or Carousel to browse accounts. Put only masked card details in examples and application content.',
+        story: 'Review weekend passes in a compact wallet deck with the same Pass and Keep decisions.',
       },
       source: {
-        code: `<CardStack
+        language: 'tsx',
+        code: `import { CardStack, Surface, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const cities = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+const WalletPanel = styled(Surface)({
+  boxSizing: 'border-box', inlineSize: '30rem', maxInlineSize: '100%',
+  padding: vars.space[6], display: 'grid', gap: vars.space[6],
+});
+const WalletLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
+const PassContent = styled.div({ display: 'grid', alignContent: 'space-between', blockSize: '100%', gap: vars.space[3] });
+const PassTitle = styled.h3({ margin: 0, fontSize: vars.textSize.xl });
+const PassDetail = styled.p({ margin: 0, fontSize: vars.textSize.sm });
+const PassCode = styled.span({ fontFamily: vars.font.mono, fontSize: vars.textSize.sm });
+
+<WalletPanel>
+<WalletLabel>Weekend passes · Shortlist</WalletLabel>
+<CardStack
   variant="wallet"
   items={cities}
   getKey={city => city.id}
@@ -422,7 +467,8 @@ export const Wallet: Story = {
     </PassContent>
   )}
   label="Travel passes"
-/>`,
+/>
+</WalletPanel>`,
       },
     },
   },
@@ -500,9 +546,11 @@ export const Sizes: Story = {
   ),
 };
 export const SingleCard: Story = {
+  name: 'Single-card deck',
   args: { items: cities.slice(0, 1), visibleCount: 1 },
   parameters: {
     docs: {
+      description: { story: 'Review one destination without preview cards behind it.' },
       source: {
         language: 'tsx',
         code: `import { CardStack } from '@jfrader/ui';
@@ -538,6 +586,7 @@ const cities: City[] = [
   },
 };
 export const CustomActions: Story = {
+  name: 'Shortlist actions',
   args: {
     labels: { left: 'Skip for now', right: 'Add to shortlist' },
     outcomes: { left: 'Skipped', right: 'Shortlisted' },
@@ -545,6 +594,7 @@ export const CustomActions: Story = {
   },
   parameters: {
     docs: {
+      description: { story: 'Use shortlist labels and an undo icon for the same drag and button actions.' },
       source: {
         language: 'tsx',
         code: `import { CardStack } from '@jfrader/ui';
@@ -588,9 +638,11 @@ const undoIcon = (
   },
 };
 export const InitiallyEmpty: Story = {
+  name: 'Empty queue',
   args: { items: [] },
   parameters: {
     docs: {
+      description: { story: 'Show an empty queue before any destinations are available.' },
       source: {
         language: 'tsx',
         code: `import { CardStack } from '@jfrader/ui';
@@ -673,9 +725,11 @@ const completedHistory: CardStackDecision[] = cities.map((city) => ({
   decision: 'right',
 }));
 export const Completed: Story = {
+  name: 'Completed review',
   args: { defaultValue: completedHistory },
   parameters: {
     docs: {
+      description: { story: 'Show a finished queue with history available for undo or reset.' },
       source: {
         language: 'tsx',
         code: `import { CardStack, type CardStackDecision } from '@jfrader/ui';
@@ -716,6 +770,7 @@ const completedHistory: CardStackDecision[] = cities.map((city) => ({
   },
 };
 export const CustomEmpty: Story = {
+  name: 'Review again',
   args: {
     defaultValue: completedHistory,
     renderEmpty: ({ reset, completed }) => (
@@ -727,6 +782,7 @@ export const CustomEmpty: Story = {
   },
   parameters: {
     docs: {
+      description: { story: 'Offer a Review again action after all destinations have been reviewed.' },
       source: {
         language: 'tsx',
         code: `import { CardStack, Button, type CardStackDecision } from '@jfrader/ui';
@@ -779,12 +835,14 @@ const completedHistory: CardStackDecision[] = cities.map((city) => ({
   },
 };
 export const Disabled: Story = {
+  name: 'Disabled decisions',
   args: {
     disabled: true,
     defaultValue: [{ key: 'removed', decision: 'left' }],
   },
   parameters: {
     docs: {
+      description: { story: 'Keep the queue visible while preventing decisions, undo and reset.' },
       source: {
         language: 'tsx',
         code: `import { CardStack } from '@jfrader/ui';
@@ -853,6 +911,32 @@ function ControlledFixture(args: CardStackProps<City>) {
   );
 }
 export const Controlled: Story = {
+  name: 'Saved decision history',
+  parameters: { docs: {
+    description: { story: 'Keep decision history in application state and apply a previously saved review.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, CardStack, type CardStackDecision } from '@jfrader/ui';
+
+const cities = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+export function SavedDeck() {
+  const [history, setHistory] = useState<readonly CardStackDecision[]>([]);
+  return <>
+    <CardStack items={cities} getKey={city => city.id} getLabel={city => city.name}
+      renderCard={city => <><h3>{city.name}</h3><p>{city.description}</p></>}
+      value={history} onValueChange={setHistory} locale="en-GB" />
+    <Button onClick={() => setHistory([
+      { key: 'oslo', decision: 'right' }, { key: 'porto', decision: 'left' },
+    ])}>Apply saved history</Button>
+  </>;
+}` },
+  } },
   render: (args) => <ControlledFixture {...args} />,
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Keep' }));
@@ -939,9 +1023,11 @@ function ControlledDeck() {
   },
 };
 export const Undo: Story = {
+  name: 'Undo a decision',
   args: { defaultValue: [{ key: 'oslo', decision: 'left' }] },
   parameters: {
     docs: {
+      description: { story: 'Restore the last reviewed destination with Undo.' },
       source: {
         language: 'tsx',
         code: `import { CardStack } from '@jfrader/ui';
@@ -1042,9 +1128,11 @@ const completedHistory: CardStackDecision[] = cities.map((city) => ({
   },
 };
 export const KeyboardDeck: Story = {
+  name: 'Keyboard review',
   args: { items: cities.slice(0, 2) },
   parameters: {
     docs: {
+      description: { story: 'Focus the stage, use Left or Right to decide, and Backspace to undo.' },
       source: {
         language: 'tsx',
         code: `import { CardStack } from '@jfrader/ui';
@@ -1124,6 +1212,7 @@ const cities: City[] = [
   },
 };
 export const InteractiveCardContent: Story = {
+  name: 'Controls inside cards',
   args: {
     renderCard: (city) => (
       <>
@@ -1137,6 +1226,7 @@ export const InteractiveCardContent: Story = {
   },
   parameters: {
     docs: {
+      description: { story: 'Tab into notes and detail controls without triggering card decisions while editing.' },
       source: {
         language: 'tsx',
         code: `import { CardStack, Button } from '@jfrader/ui';
@@ -1373,6 +1463,7 @@ export const DynamicItems: Story = {
   },
 };
 export const LongContent: Story = {
+  name: 'Scrollable card content',
   args: {
     renderCard: (city) => (
       <>
@@ -1386,9 +1477,10 @@ export const LongContent: Story = {
   },
   parameters: {
     docs: {
+      description: { story: 'Scroll long card content and tab to the Read more action.' },
       source: {
         language: 'tsx',
-        code: `import { CardStack } from '@jfrader/ui';
+        code: `import { Button, CardStack } from '@jfrader/ui';
 
 interface City {
   id: string;
@@ -1414,6 +1506,7 @@ const cities: City[] = [
       {Array.from({ length: 12 }, (_, index) => (
         <p key={index}>{city.description}</p>
       ))}
+      <Button>Read more</Button>
     </>
   )}
 />`,

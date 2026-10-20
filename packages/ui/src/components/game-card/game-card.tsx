@@ -41,6 +41,7 @@ export interface GameCardPartProps extends HTMLAttributes<HTMLElement> {
 }
 
 export interface GameCardSlots {
+  /** Renders a `div` by default. */
   root?: ComponentType<GameCardRootProps>;
   face?: ComponentType<ComponentPropsWithRef<'span'> & GameCardPartProps>;
   back?: ComponentType<ComponentPropsWithRef<'span'> & GameCardPartProps>;
@@ -72,7 +73,7 @@ export interface GameCardProps
   /** Your own art — an image, an SVG, anything. Replaces the emoji print or back pattern. */
   children?: ReactNode;
   slotProps?: {
-    /** Outer card container wrapping the card face or back. */
+    /** Outer card container wrapping the card face or back. Renders a `div` by default. */
     root?: GameCardRootSlotProps;
     /** Face layer displaying the card rank and suit print. */
     face?: GameCardPartProps;

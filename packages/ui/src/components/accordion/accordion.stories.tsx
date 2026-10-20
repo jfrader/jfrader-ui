@@ -18,9 +18,17 @@ type ItemLabel = (typeof ITEMS)[number]['label'];
 
 const REJECTED_VALUE = 'three';
 
+const accordionSource = `import { Accordion } from '@jfrader/ui';
+
+const sections = [
+  { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
+  { value: 'two', label: 'Security', panel: 'Password and two-factor sign-in.' },
+  { value: 'three', label: 'Billing', panel: 'Plan, invoices and payment method.' },
+];`;
+
 const Frame = styled.div({
   inlineSize: '360px',
-  maxInlineSize: `calc(100vw - ${vars.space[8]})`,
+  maxInlineSize: '100%',
   fontSize: vars.textSize.sm,
 });
 
@@ -29,21 +37,25 @@ const meta = {
   component: Accordion,
   parameters: { docs: {
     description: { component: 'Open and close sections of content.' },
-    usage: `### Values
-- Pass \`items\` with \`value\`, \`label\`, \`panel\` and optional \`disabled\`, or use \`children\` with \`Accordion.Item\`, \`Accordion.Trigger\` and \`Accordion.Panel\`. Do not combine the two modes.
-- Single mode is the default and uses a string. Use \`''\` to close every panel. With \`type="multiple"\`, pass an array and use \`[]\` to close every panel.
-- Use \`defaultValue\` to seed expansion, or pair \`value\` with \`onValueChange\`. When you control \`value\`, update it to accept a request.
-- \`collapsible\` defaults to \`true\`. Set it to \`false\` to prevent closing the last open panel. Seed an open value if you need a panel open initially.
+    sections: [
+      { title: 'Basic', stories: ['Default'] },
+      { title: 'Single and multiple panels', stories: ['Multiple', 'NotCollapsible'] },
+      { title: 'Default open', stories: ['Compound'] },
+      { title: 'Disabled sections', stories: ['EasyMultiple'] },
+      { title: 'Long content', stories: ['LongContent'] },
+      { title: 'Composition', stories: ['GeneratedPartProps', 'Controlled'] },
+      { title: 'Keyboard', stories: ['Keyboard'] },
+    ],
+    usage: `### When to use
+Use an accordion for related sections readers can open independently, such as settings or frequently asked questions. Keep essential instructions visible outside collapsed sections.
 
 ### Keyboard
 - Press Enter or Space to toggle a header. Use ArrowUp and ArrowDown to move between enabled headers with wrapping, or Home and End to reach the first and last. Moving focus does not open a panel.
 
-### Limits
+### Content constraints
 - Headers render as \`h3\` and panels as labelled regions. Place the accordion where level-three headings fit your page outline.
 - Closed panels stay mounted and hidden. Their child state persists when you reopen them.
-
-### Customization
-- In \`items\` mode, use \`slotProps\` for generated parts and \`component\` or \`slots.root\` to replace the root. Forward every received prop and ref to the matching native element, and declare replacements outside render.`,
+- If one panel must remain open, start with an open section. Preventing collapse does not open an initially closed accordion.`,
   } },
   argTypes: {
     type: { control: 'radio', options: ['single', 'multiple'] },
@@ -173,13 +185,10 @@ async function expectExpanded(canvasElement: HTMLElement, openLabels: readonly I
 }
 
 export const Default: StoryObj<EasySingleProps> = {
+  name: 'Account sections',
   args: { items: ITEMS, defaultValue: 'one', onValueChange: fn() },
   render: (args) => <Accordion {...args} />,
-  parameters: { docs: { source: { language: 'tsx', code: `const sections = [
-  { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
-  { value: 'two', label: 'Security', panel: 'Password and two-factor sign-in.' },
-  { value: 'three', label: 'Billing', panel: 'Plan, invoices and payment method.' },
-];
+  parameters: { docs: { description: { story: 'Open one account section at a time, starting with Account.' }, source: { language: 'tsx', code: `${accordionSource}
 
 <Accordion items={sections} defaultValue="one" />` } } },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -196,17 +205,24 @@ export const Default: StoryObj<EasySingleProps> = {
 };
 
 export const GeneratedPartProps: StoryObj<EasySingleProps> = {
+  name: 'Style section headers',
   args: { items: ITEMS, defaultValue: 'one', slotProps: { trigger: { sx: { fontWeight: vars.fontWeight.semibold } } } },
   render: (args) => <Accordion {...args} />,
-  parameters: { docs: { source: { code: `<Accordion items={sections} slotProps={{ trigger: { sx: { fontWeight: vars.fontWeight.semibold } } }} />` } } },
+  parameters: { docs: { description: { story: 'Give every generated header the same text weight.' }, source: { language: 'tsx', code: `import { vars } from '@jfrader/tokens/vars';
+${accordionSource}
+
+<Accordion items={sections} defaultValue="one" slotProps={{ trigger: { sx: { fontWeight: vars.fontWeight.semibold } } }} />` } } },
   play: async ({ canvas }) => {
     await expect(getComputedStyle(canvas.getByRole('button', { name: 'Account' })).fontWeight).toBe('600');
   },
 };
 
 export const Compound: Story = {
+  name: 'Initially open panel',
   args: { defaultValue: 'one' },
-  parameters: { docs: { source: { language: 'tsx', code: `<Accordion defaultValue="one">
+  parameters: { docs: { description: { story: 'Start with Account expanded using explicit section anatomy.' }, source: { language: 'tsx', code: `import { Accordion } from '@jfrader/ui';
+
+<Accordion defaultValue="one">
   <Accordion.Item value="one">
     <Accordion.Trigger>Account</Accordion.Trigger>
     <Accordion.Panel>Name, email and avatar.</Accordion.Panel>
@@ -231,6 +247,12 @@ export const Compound: Story = {
 };
 
 export const EasyMultiple: StoryObj<Omit<Extract<AccordionEasyProps, { type: 'multiple' }>, 'component'>> = {
+  name: 'Unavailable section',
+  parameters: { docs: { description: { story: 'Keep Account and Billing available while Security is disabled.' }, source: { language: 'tsx', code: `${accordionSource}
+
+<Accordion type="multiple" defaultValue={['one']} items={sections.map((section) => ({
+  ...section, disabled: section.value === 'two',
+}))} />` } } },
   args: { items: ITEMS.map((item) => ({ ...item, disabled: item.value === 'two' })), type: 'multiple', defaultValue: ['one'], onValueChange: fn() },
   render: (args) => <Accordion {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -298,6 +320,10 @@ export const ReplacedParts: StoryObj<EasySingleProps> = {
 };
 
 export const Multiple: Story = {
+  name: 'Multiple open panels',
+  parameters: { docs: { description: { story: 'Open Security without closing Account.' }, source: { language: 'tsx', code: `${accordionSource}
+
+<Accordion items={sections} type="multiple" defaultValue={['one']} />` } } },
   args: { type: 'multiple', defaultValue: ['one'], onValueChange: fn() },
   render: (args) => <AccordionExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -314,6 +340,16 @@ export const Multiple: Story = {
 };
 
 export const Controlled: Story = {
+  name: 'Parent-owned expansion',
+  parameters: { docs: { description: { story: 'Accept expansion changes for Account and Security while keeping Billing closed.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+${accordionSource}
+
+function AccountSections() {
+  const [value, setValue] = useState('one');
+  return <Accordion items={sections} value={value} onValueChange={(next) => {
+    if (next !== 'three') setValue(next);
+  }} />;
+}` } } },
   args: { onValueChange: fn() },
   render: (args) => <ControlledAccordion {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -365,6 +401,10 @@ export const ControlledMultiple: Story = {
 };
 
 export const NotCollapsible: Story = {
+  name: 'Keep one panel open',
+  parameters: { docs: { description: { story: 'Switch sections without closing the last open panel.' }, source: { language: 'tsx', code: `${accordionSource}
+
+<Accordion items={sections} defaultValue="one" collapsible={false} />` } } },
   args: { defaultValue: 'one', collapsible: false, onValueChange: fn() },
   render: (args) => <AccordionExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -385,6 +425,12 @@ export const NotCollapsible: Story = {
 };
 
 export const Keyboard: Story = {
+  name: 'Navigate section headers',
+  parameters: { docs: { description: { story: 'Use Up, Down, Home and End to focus enabled headers, then Enter or Space to toggle.' }, source: { language: 'tsx', code: `${accordionSource}
+
+<Accordion items={sections.map((section) => ({
+  ...section, disabled: section.value === 'two',
+}))} />` } } },
   args: { onValueChange: fn() },
   render: (args) => <AccordionExample {...args} disabledValue="two" />,
   play: async ({ args, canvasElement }) => {
@@ -472,6 +518,41 @@ export const StatePreserved: Story = {
     await expect(input).toBeVisible();
     await expect(input).toHaveValue('Draft');
   },
+};
+
+export const LongContent: Story = {
+  name: 'Long section content',
+  parameters: { docs: {
+    description: { story: 'Read a longer billing explanation without leaving the surrounding settings.' },
+    source: { language: 'tsx', code: `import { Accordion } from '@jfrader/ui';
+
+<Accordion defaultValue="billing">
+  <Accordion.Item value="billing">
+    <Accordion.Trigger>How does billing work?</Accordion.Trigger>
+    <Accordion.Panel>
+      Your subscription renews each month on the date you signed up. Download invoices
+      from your billing history and update your payment method before the next renewal.
+      Changes to your plan take effect at the next billing period. If a payment fails,
+      check your card details and contact your bank before trying again. You can cancel
+      renewal at any time and keep access until the end of the current billing period.
+    </Accordion.Panel>
+  </Accordion.Item>
+</Accordion>` },
+  } },
+  render: () => (
+    <Accordion defaultValue="billing">
+      <Accordion.Item value="billing">
+        <Accordion.Trigger>How does billing work?</Accordion.Trigger>
+        <Accordion.Panel>
+          Your subscription renews each month on the date you signed up. Download invoices
+          from your billing history and update your payment method before the next renewal.
+          Changes to your plan take effect at the next billing period. If a payment fails,
+          check your card details and contact your bank before trying again. You can cancel
+          renewal at any time and keep access until the end of the current billing period.
+        </Accordion.Panel>
+      </Accordion.Item>
+    </Accordion>
+  ),
 };
 
 export const LightTheme: Story = {

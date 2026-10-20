@@ -303,13 +303,13 @@ export interface UserMenuItemProps extends Omit<ComponentPropsWithRef<'button'>,
 export interface UserMenuGroupSlotProps {
   /** Label element displaying the choice group heading. */
   label?: UserMenuPartProps;
-  /** Radio option button element within the choice group. */
+  /** Radio option button element within the choice group. Renders a `button` by default. */
   option?: UserMenuPartProps;
 }
 export interface UserMenuGroupSlots {
   /** Text naming the choice group. */
   label?: ComponentType<ComponentPropsWithRef<'span'> & UserMenuPartProps>;
-  /** Radio option inside the choice group. */
+  /** Radio option inside the choice group. Renders a `button` by default. */
   option?: ComponentType<MenuItemRenderProps & UserMenuPartProps>;
 }
 

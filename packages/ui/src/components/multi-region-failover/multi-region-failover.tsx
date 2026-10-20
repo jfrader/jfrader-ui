@@ -110,12 +110,14 @@ export interface FailoverMetricLabels {
   passedChecks: string;
 }
 type Anatomy = {
+  /** Renders a `figure` by default. */
   root: 'figure';
   scene: 'div';
   node: 'div';
   summary: 'ol';
   controls: 'div';
   stageButton: 'button';
+  /** Renders a `figcaption` by default. */
   caption: 'figcaption';
   previous: 'button';
   next: 'button';

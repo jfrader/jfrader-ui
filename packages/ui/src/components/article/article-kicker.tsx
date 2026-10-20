@@ -19,10 +19,12 @@ export type ArticleKickerItemProps = (PlainItem | LinkedItem | RenderedItem) & S
 export type ArticleKickerEntry = { id: string; label: ReactNode; href?: string; renderLink?: RenderArticleLink };
 export interface ArticleKickerSlots {
   root?: ComponentType<ComponentPropsWithRef<'p'>>;
+  /** Renders an `a` for linked items or a `span` otherwise by default. */
   item?: ComponentType<ComponentPropsWithRef<'span'> | ComponentPropsWithRef<'a'>>;
 }
 export interface ArticleKickerSlotProps {
   root?: PresentationParts<{ root: 'p' }>['root'];
+  /** Renders an `a` for linked items or a `span` otherwise by default. */
   item?: Omit<ArticleKickerItemProps, 'children'>;
 }
 type Content = { items: readonly ArticleKickerEntry[]; children?: never } | { items?: never; children?: ReactNode };

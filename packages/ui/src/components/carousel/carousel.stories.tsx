@@ -30,7 +30,7 @@ const DRAG_PX = 240;
 const Frame = styled.div({
   boxSizing: 'border-box',
   inlineSize: '32rem',
-  maxInlineSize: 'calc(100vw - 2rem)',
+  maxInlineSize: '100%',
   padding: vars.space[4],
 });
 const NarrowFrame = styled.div({ inlineSize: '18rem' });
@@ -84,18 +84,32 @@ const meta = {
   ],
   parameters: {
     docs: {
+      sections: [
+        { title: 'Basic', stories: ['Default', 'NamedSlides'] },
+        { title: 'Sizes', stories: ['CustomSlideSize', 'OversizedSlides'] },
+        { title: 'Rotation and autoplay', stories: ['RotationStopped', 'RotationRunning'] },
+        { title: 'Keyboard and pointer', stories: ['KeyboardNavigation', 'InteractiveSlides'] },
+        { title: 'Indicators', stories: ['ManualIndicators'] },
+        { title: 'States', stories: ['Controlled', 'Disabled'] },
+        { title: 'Long and empty content', stories: ['LongContent', 'Empty', 'SingleSlide'] },
+      ],
       source: {
         code: '<Carousel aria-label="Harbour suites"><img key="sea" src="/sea.jpg" alt="Sea suite" /><img key="garden" src="/garden.jpg" alt="Garden suite" /></Carousel>',
       },
       description: {
         component:
-          'Browse slides with a picker, Previous/Next buttons, or a swipe. Enable rotation when slides should advance on their own.',
+          'Browse a collection one slide at a time.',
       },
-      usage: `- Use a short set of slides; all stay mounted. Scrolling snaps to a slide with trackpad, touch, or mouse drag.
-- Give every slide a stable key. Use \`getSlideLabel\` when slides have names.
-- Rotation is off by default. It needs \`interval\` and Start, or a playing-state seed.
-- Rotation stops when focus enters or the parent rejects a rotation step. It pauses on hover, drag, when offscreen, and on hidden pages. Reduced motion disables rotation.
-- If the parent rejects a controlled \`value\` change, the accepted slide stays selected and the carousel scrolls back to it.`,
+      usage: `### When to use
+Use a carousel for a short collection of related slides. All slides stay mounted; use a list or paginated view for large collections. Give slides stable keys and name the carousel and its slides for assistive technology.
+
+### Rotation
+Keep essential information reachable without waiting for rotation. Rotation stops when focus enters or a controlled step is rejected. Hover, dragging, offscreen placement and hidden pages pause rotation. Reduced motion disables it.
+
+### Keyboard and accessibility
+Use Left/Right or Home/End on the viewport or slide picker to navigate; Left/Right reverse in RTL. With manual indicators, press Enter or Space to select the focused indicator. Tab reaches controls in the active slide only; editing keys inside inputs keep their native behavior. Touch, trackpad and mouse dragging snap to a slide.
+
+A rejected controlled change keeps the accepted slide selected and scrolls back to it.`,
     },
   },
 } satisfies Meta<typeof Carousel>;
@@ -259,9 +273,11 @@ export const TrackReplacement: Story = {
 };
 
 export const Default: Story = {
+  name: 'Browse suites',
   args: { onValueChange: fn() },
   parameters: {
     docs: {
+      description: { story: 'Browse four suites with Previous, Next, indicators or a swipe.' },
       source: {
         language: 'tsx',
         code: `import { Carousel, styled } from '@jfrader/ui';
@@ -347,9 +363,11 @@ const SlideText = styled.p({
 };
 
 export const NamedSlides: Story = {
+  name: 'Named slides',
   args: { getSlideLabel: (index) => SUITE_NAMES[index]! },
   parameters: {
     docs: {
+      description: { story: 'Announce each suite by name rather than only its position.' },
       source: {
         language: 'tsx',
         code: `import { Carousel, styled } from '@jfrader/ui';
@@ -415,9 +433,11 @@ const suiteNames = ['Harbour suite', 'Garden suite', 'Tower suite', 'Loft suite'
 };
 
 export const CustomSlideSize: Story = {
+  name: 'Compact slides',
   args: { slideSize: '12rem' },
   parameters: {
     docs: {
+      description: { story: 'Show compact slides with neighboring cards visible in the viewport.' },
       source: {
         language: 'tsx',
         code: `import { Carousel, styled } from '@jfrader/ui';
@@ -476,9 +496,11 @@ const SlideText = styled.p({
 };
 
 export const OversizedSlides: Story = {
+  name: 'Viewport-sized slides',
   args: { slideSize: '80rem' },
   parameters: {
     docs: {
+      description: { story: 'Constrain a requested wide slide to the available viewport width.' },
       source: {
         language: 'tsx',
         code: `import { Carousel, styled } from '@jfrader/ui';
@@ -538,6 +560,7 @@ const SlideText = styled.p({
 
 const bookSpy = fn();
 export const InteractiveSlides: Story = {
+  name: 'Controls inside slides',
   args: {
     onValueChange: fn(),
     children: SUITES.map((suite) => (
@@ -554,6 +577,7 @@ export const InteractiveSlides: Story = {
   },
   parameters: {
     docs: {
+      description: { story: 'Edit the guest count and activate booking without moving the slide.' },
       source: {
         language: 'tsx',
         code: `import { Carousel, styled } from '@jfrader/ui';
@@ -642,9 +666,11 @@ function BookingCarousel({ onBook }: { onBook: (suite: string) => void }) {
 };
 
 export const KeyboardNavigation: Story = {
+  name: 'Keyboard navigation',
   args: { onValueChange: fn() },
   parameters: {
     docs: {
+      description: { story: 'Focus the viewport or indicators and navigate with arrow keys, Home and End.' },
       source: {
         language: 'tsx',
         code: `import { Carousel, styled } from '@jfrader/ui';
@@ -749,9 +775,11 @@ const SlideText = styled.p({
 };
 
 export const ManualIndicators: Story = {
+  name: 'Manual indicators',
   args: { activation: 'manual', onValueChange: fn() },
   parameters: {
     docs: {
+      description: { story: 'Move indicator focus with arrow keys, then select a slide with Enter or Space.' },
       source: {
         language: 'tsx',
         code: `import { Carousel, styled } from '@jfrader/ui';
@@ -827,6 +855,38 @@ const SlideText = styled.p({
 };
 
 export const Controlled: Story = {
+  name: 'Application-owned selection',
+  parameters: { docs: {
+    description: { story: 'Keep the selected slide in application state while browsing.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid', alignContent: 'end', gap: vars.space[1], minBlockSize: '9rem',
+  boxSizing: 'border-box', padding: vars.space[4], border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg, backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text, fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({ margin: 0, fontWeight: vars.fontWeight.semibold, fontSize: vars.textSize.md });
+const SlideText = styled.p({ margin: 0, color: vars.color.textMuted });
+const suites = [
+  { key: 'harbour', name: 'Harbour suite', detail: 'Balcony over the marina, sleeps two.' },
+  { key: 'garden', name: 'Garden suite', detail: 'Ground floor, opens onto the lemon trees.' },
+  { key: 'tower', name: 'Tower suite', detail: 'Top floor with a reading nook.' },
+  { key: 'loft', name: 'Loft suite', detail: 'Split level, sleeps four.' },
+];
+
+export function SuiteCarousel() {
+  const [value, setValue] = useState(0);
+  return <Carousel aria-label="Harbour suites" value={value} onValueChange={setValue}>
+    {suites.map(suite => <SlideCard key={suite.key}>
+      <SlideTitle>{suite.name}</SlideTitle>
+      <SlideText>{suite.detail}</SlideText>
+    </SlideCard>)}
+  </Carousel>;
+}` },
+  } },
   args: { onValueChange: fn() },
   render: (args) => <ControlledCarousel {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -1237,9 +1297,11 @@ const SlideText = styled.p({
 };
 
 export const RotationStopped: Story = {
+  name: 'Start rotation',
   args: { interval: ROTATION_MS, onValueChange: fn(), onPlayingValueChange: fn() },
   parameters: {
     docs: {
+      description: { story: 'Start automatic rotation on demand and pause it with the rotation control.' },
       source: {
         language: 'tsx',
         code: `import { Carousel, styled } from '@jfrader/ui';
@@ -1304,9 +1366,11 @@ const SlideText = styled.p({
 };
 
 export const RotationRunning: Story = {
+  name: 'Autoplay',
   args: { interval: ROTATION_MS, defaultPlayingValue: true, onValueChange: fn(), onPlayingValueChange: fn() },
   parameters: {
     docs: {
+      description: { story: 'Advance slides automatically until focus or a pause condition stops rotation.' },
       source: {
         language: 'tsx',
         code: `import { Carousel, styled } from '@jfrader/ui';
@@ -1796,9 +1860,11 @@ export const UnmountCleanup: Story = {
 };
 
 export const Empty: Story = {
+  name: 'Empty collection',
   args: { children: [false, null, undefined], interval: ROTATION_MS, defaultPlayingValue: true },
   parameters: {
     docs: {
+      description: { story: 'Render an empty carousel when no slides are available.' },
       source: {
         language: 'tsx',
         code: `import { Carousel } from '@jfrader/ui';
@@ -1856,9 +1922,11 @@ export const FalsySlides: Story = {
 };
 
 export const SingleSlide: Story = {
+  name: 'One slide',
   args: { children: suiteSlides(1), interval: ROTATION_MS, defaultPlayingValue: true, onValueChange: fn() },
   parameters: {
     docs: {
+      description: { story: 'Show a single suite without requiring a second slide.' },
       source: {
         language: 'tsx',
         code: `import { Carousel, styled } from '@jfrader/ui';
@@ -2064,6 +2132,7 @@ export const ReorderedFocusedSlide: Story = {
 
 const disabledBook = fn();
 export const Disabled: Story = {
+  name: 'Disabled navigation',
   args: {
     disabled: true,
     interval: ROTATION_MS,
@@ -2082,6 +2151,7 @@ export const Disabled: Story = {
   },
   parameters: {
     docs: {
+      description: { story: 'Keep the selected suite visible while preventing navigation and rotation.' },
       source: {
         language: 'tsx',
         code: `import { Carousel, styled } from '@jfrader/ui';
@@ -2157,6 +2227,41 @@ function BookingCarousel({ onBook }: { onBook: (suite: string) => void }) {
     await userEvent.click(canvas.getByRole('button', { name: 'Book Harbour suite' }));
     await expect(disabledBook).toHaveBeenCalledTimes(1);
   },
+};
+
+export const LongContent: Story = {
+  name: 'Long slide content',
+  args: {
+    children: [
+      <SuiteCard key="harbour" name="Harbour suite" detail="Balcony over the marina, sleeps two. The kitchen opens onto a dining area with room for a quiet breakfast. Follow the waterfront path to the market, or take the ferry from the nearby pier. Step-free access is available from the courtyard entrance." />,
+      <SuiteCard key="garden" name="Garden suite" detail="Ground floor, opens onto the lemon trees. The sheltered terrace has a table for two and a reading chair. A separate kitchen and a walk-in shower make this suite suitable for a longer stay. The entrance is beside the garden gate." />,
+    ],
+  },
+  parameters: { docs: {
+    description: { story: 'Wrap longer suite descriptions inside each slide without horizontal text overflow.' },
+    source: { language: 'tsx', code: `import { Carousel, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SlideCard = styled.div({
+  display: 'grid', alignContent: 'end', gap: vars.space[1], minBlockSize: '9rem',
+  boxSizing: 'border-box', padding: vars.space[4], border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.lg, backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text, fontSize: vars.textSize.sm,
+});
+const SlideTitle = styled.p({ margin: 0, fontWeight: vars.fontWeight.semibold, fontSize: vars.textSize.md });
+const SlideText = styled.p({ margin: 0, color: vars.color.textMuted });
+
+<Carousel aria-label="Harbour suites">
+  <SlideCard key="harbour">
+    <SlideTitle>Harbour suite</SlideTitle>
+    <SlideText>Balcony over the marina, sleeps two. The kitchen opens onto a dining area with room for a quiet breakfast. Follow the waterfront path to the market, or take the ferry from the nearby pier. Step-free access is available from the courtyard entrance.</SlideText>
+  </SlideCard>
+  <SlideCard key="garden">
+    <SlideTitle>Garden suite</SlideTitle>
+    <SlideText>Ground floor, opens onto the lemon trees. The sheltered terrace has a table for two and a reading chair. A separate kitchen and a walk-in shower make this suite suitable for a longer stay. The entrance is beside the garden gate.</SlideText>
+  </SlideCard>
+</Carousel>` },
+  } },
 };
 
 export const Narrow: Story = {

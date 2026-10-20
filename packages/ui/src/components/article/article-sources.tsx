@@ -8,7 +8,14 @@ import { articleBodyFont, articleLabelStyle, articleLinkStyle } from '../../styl
 import { isRenderable } from '../../utils/renderable';
 import { PresentationSlot, repeatedTemplate, type ArticleHeadingLevel, type PresentationHeadingProps, type PresentationParts, type PresentationSlots, type RenderArticleLink } from '../../utils/presentation-slot';
 
-type Anatomy = { root: 'section'; heading: 'h2'; list: 'ul'; item: 'li'; link: 'a' };
+type Anatomy = {
+  /** Renders a `section` by default. */
+  root: 'section';
+  heading: 'h2';
+  list: 'ul';
+  item: 'li';
+  link: 'a';
+};
 export type ArticleSourcesSlots = Omit<PresentationSlots<Anatomy>, 'heading'> & { heading?: ComponentType<PresentationHeadingProps> };
 export type ArticleSourcesSlotProps = PresentationParts<Anatomy>;
 export type ArticleSourceItem = { id: string; label: ReactNode; href?: string; renderLink?: RenderArticleLink };

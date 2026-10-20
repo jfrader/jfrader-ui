@@ -76,11 +76,12 @@ export interface LocaleSwitcherSlotProps {
   trigger?: Omit<ComponentPropsWithoutRef<'button'>, 'children' | 'className' | 'aria-labelledby'> & SlotStyle;
   /** Menu variant's popup. */
   content?: Omit<ComponentPropsWithoutRef<'div'>, 'children' | 'className'> & SlotStyle;
-  /** Styles every option: menu items, the swap link, inline links, and the current label. */
+  /** Styles every option: menu items, the swap link, inline links, and the current label. Renders an `a` for links or a `span` for the current label by default. */
   option?: SlotStyle;
 }
 
 export interface LocaleSwitcherSlots extends Pick<MenuSlots, 'trigger' | 'content'> {
+  /** Renders an `a` for links or a `span` for the current label by default. */
   option?: ComponentType<HTMLAttributes<HTMLElement> & {
     ref?: RefCallback<HTMLElement> | null;
     href?: string;

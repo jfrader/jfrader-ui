@@ -74,7 +74,7 @@ export interface InlineEditPartProps {
 }
 
 export type InlineEditSlotProps = Omit<FieldParts<InlineEditAnatomy>, 'control'> & {
-  /** Input or textarea control receiving draft edits. */
+  /** Input or textarea control receiving draft edits. Renders an `input` by default, or a `textarea` when `multiline` is true. */
   control?: FieldElementProps<'input'> | FieldElementProps<'textarea'>;
 };
 
@@ -95,7 +95,7 @@ type InlineEditAnatomy = {
   editor: 'div';
   /** Read-only button trigger activating edit mode on click. */
   trigger: 'button';
-  /** Input or textarea control receiving draft edits. */
+  /** Input or textarea control receiving draft edits. Renders an `input` by default, or a `textarea` when `multiline` is true. */
   control: 'input';
   /** Action button container holding save and cancel buttons. */
   actions: 'div';
@@ -113,7 +113,7 @@ type InlineEditAnatomy = {
   status: 'span';
 };
 export type InlineEditSlots = Omit<FieldSlots<InlineEditAnatomy>, 'control'> & {
-  /** Input or textarea control receiving draft edits. */
+  /** Input or textarea control receiving draft edits. Renders an `input` by default, or a `textarea` when `multiline` is true. */
   control?: ComponentType<ComponentPropsWithRef<'input'> | ComponentPropsWithRef<'textarea'>>;
 };
 

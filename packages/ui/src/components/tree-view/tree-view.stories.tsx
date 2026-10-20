@@ -24,8 +24,17 @@ const nodes: readonly TreeNode[] = [
   { id: 'écho', label: 'Écho' },
 ];
 const lazyNode: readonly TreeNode[] = [{ id: 'remote', label: 'Remote', hasChildren: true }];
-const usage =
-  '<TreeView label="Files" nodes={[{ id: "src", label: "src", children: [{ id: "index", label: "index.ts" }] }, { id: "package", label: "package.json" }]} defaultOpen={["src"]} defaultValue="index" />';
+const treeNodesSource = `const nodes: TreeNode[] = [
+  {
+    id: 'app', label: 'Application', children: [
+      { id: 'alpha', label: 'Alpha' },
+      { id: 'disabled', label: 'Archived', disabled: true },
+      { id: 'assets', label: 'Assets', children: [{ id: 'image', label: 'Image' }] },
+    ],
+  },
+  { id: 'beta', label: 'Beta' },
+  { id: 'écho', label: 'Écho' },
+];`;
 const meta = {
   title: 'Data display/TreeView',
   component: TreeView,
@@ -35,20 +44,29 @@ const meta = {
     layout: 'padded',
     a11y: { test: 'error' },
     docs: {
-      source: { code: usage },
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Expansion and selection', stories: ['Expanded', 'ControlledSelection', 'ControlledExpansion', 'DisabledNode'] },
+        { title: 'Lazy loading and empty states', stories: ['LazyChildren', 'LazyError', 'EmptyLoadedChildren', 'Empty'] },
+        { title: 'Long labels and deep trees', stories: ['DeepAndLongLabels'] },
+        { title: 'Keyboard', stories: ['KeyboardFullTree', 'TypeaheadLocale'] },
+        { title: 'Composition', stories: ['RefTargets'] },
+      ],
       description: {
         component:
           'Browse a tree, expand branches and select one item.',
       },
-      usage: `- Selection and expansion can be controlled independently.
-- Each parent links to its sibling child group with \`aria-owns\`. Its accessible name contains only its own label.
-- Lazy loading starts after expansion is accepted. Collapse or unmount aborts loading. Successful results are cached per instance; remount with a new key to replace the cache.
-- Environment stories check structure. Check media preferences and screen readers separately.
+      usage: `### When to use
+Use a tree for a hierarchy whose branches readers need to explore and whose items can be selected. Use a flat list when nesting adds no useful context.
+
+### Loading constraints
+Loading starts after expansion is accepted. Collapse or unmount aborts the request. Successful results are cached per instance; remount the tree to discard the cache. An empty response turns a branch into a leaf. Enter or Space retries a failed load while selecting the item.
 
 ### Keyboard
 - Up and Down move focus and stop at the ends. Home and End jump to the first and last item.
 - Right expands or enters a branch. Left collapses or moves to its parent. These keys stay the same in RTL.
-- Enter or Space selects without expanding. Typing searches using the locale, with a 500ms buffer.`,
+- Enter or Space selects without expanding. Typing searches using the locale, with a 500ms buffer. Disabled items are skipped.
+- Tab enters the tree once, then leaves it; give the tree an accessible name.`,
     },
   },
 } satisfies Meta<typeof TreeView>;
@@ -81,6 +99,25 @@ const projectFiles: readonly TreeNode[] = [
 ];
 
 export const Default: Story = {
+  name: 'Project files',
+  parameters: { docs: {
+    description: { story: 'Browse project files with the source folder expanded and index.ts selected.' },
+    source: { language: 'tsx', code: `import { TreeView, type TreeNode } from '@jfrader/ui';
+
+const files: TreeNode[] = [
+  { id: 'src', label: 'src', children: [
+    { id: 'components', label: 'components', children: [
+      { id: 'button', label: 'button.tsx' },
+      { id: 'dialog', label: 'dialog.tsx' },
+    ] },
+    { id: 'index', label: 'index.ts' },
+  ] },
+  { id: 'package', label: 'package.json' },
+  { id: 'readme', label: 'README.md' },
+];
+
+<TreeView label="Files" nodes={files} defaultOpen={['src']} defaultValue="index" />` },
+  } },
   args: { nodes: projectFiles, defaultOpen: ['src'], defaultValue: 'index' },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('tree', { name: 'Files' })).toBeInTheDocument();
@@ -94,6 +131,15 @@ export const Default: Story = {
   },
 };
 export const Expanded: Story = {
+  name: 'Expanded branches',
+  parameters: { docs: {
+    description: { story: 'Open nested branches and select an item at the third level.' },
+    source: { language: 'tsx', code: `import { TreeView, type TreeNode } from '@jfrader/ui';
+
+${treeNodesSource}
+
+<TreeView label="Files" nodes={nodes} defaultOpen={['app', 'assets']} defaultValue="image" />` },
+  } },
   args: { defaultOpen: ['app', 'assets'], defaultValue: 'image' },
   play: async ({ canvas, canvasElement }) => {
     const parent = canvas.getByRole('treeitem', { name: 'Application' });
@@ -118,6 +164,19 @@ export const Expanded: Story = {
   },
 };
 export const KeyboardFullTree: Story = {
+  name: 'Navigate the hierarchy',
+  parameters: { docs: {
+    description: { story: 'Tab into the tree, then use arrows to explore branches without changing selection.' },
+    source: { language: 'tsx', code: `import { Button, TreeView, type TreeNode } from '@jfrader/ui';
+
+${treeNodesSource}
+
+<>
+  <Button>Before tree</Button>
+  <TreeView label="Files" nodes={nodes} />
+  <Button>After tree</Button>
+</>` },
+  } },
   render: (args) => (
     <>
       <Button>Before tree</Button>
@@ -188,6 +247,19 @@ function Controlled({ axis, ...args }: TreeViewProps & { axis: 'selection' | 'ex
   );
 }
 export const ControlledSelection: Story = {
+  name: 'Controlled selection',
+  parameters: { docs: {
+    description: { story: 'Keep selection in application state while branches expand independently.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { TreeView, type TreeNode } from '@jfrader/ui';
+
+${treeNodesSource}
+
+function FileSelection() {
+  const [value, setValue] = useState<string | null>(null);
+  return <TreeView label="Files" nodes={nodes} value={value} onValueChange={setValue} />;
+}` },
+  } },
   render: (args) => <Controlled {...args} axis="selection" />,
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByText('Beta'));
@@ -201,6 +273,19 @@ export const ControlledSelection: Story = {
   },
 };
 export const ControlledExpansion: Story = {
+  name: 'Controlled expansion',
+  parameters: { docs: {
+    description: { story: 'Keep expanded branch IDs in application state without controlling selection.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { TreeView, type TreeNode } from '@jfrader/ui';
+
+${treeNodesSource}
+
+function ExpandedFiles() {
+  const [open, setOpen] = useState<readonly string[]>([]);
+  return <TreeView label="Files" nodes={nodes} open={open} onOpenChange={setOpen} />;
+}` },
+  } },
   render: (args) => <Controlled {...args} axis="expansion" />,
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(disclosure(canvas.getByRole('treeitem', { name: 'Application' })));
@@ -265,10 +350,31 @@ export const LazyLoading: Story = {
     });
   },
 };
+export const LazyChildren: Story = {
+  name: 'Load children on expansion',
+  args: {
+    nodes: lazyNode,
+    loadChildren: async () => [{ id: 'loaded', label: 'Loaded' }],
+  },
+  parameters: { docs: {
+    description: { story: 'Expand Remote to load its children on demand.' },
+    source: { language: 'tsx', code: `import { TreeView } from '@jfrader/ui';
+
+<TreeView label="Files"
+  nodes={[{ id: 'remote', label: 'Remote', hasChildren: true }]}
+  loadChildren={async () => [{ id: 'loaded', label: 'Loaded' }]} />` },
+  } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(disclosure(canvas.getByRole('treeitem', { name: 'Remote' })));
+    await expect(await canvas.findByRole('treeitem', { name: 'Loaded' })).toBeVisible();
+  },
+};
 const failure = new Error('Unavailable');
 export const LazyError: Story = {
+  name: 'Failed branch load',
   parameters: {
     docs: {
+      description: { story: 'Show a failed load beside its branch; select it and press Enter to retry.' },
       source: {
         language: 'tsx',
         code: `import { TreeView, type TreeNode } from '@jfrader/ui';
@@ -395,6 +501,13 @@ export const AbortOnCollapse: Story = {
   },
 };
 export const Empty: Story = {
+  name: 'Empty tree',
+  parameters: { docs: {
+    description: { story: 'Keep an empty collection named and keyboard reachable.' },
+    source: { language: 'tsx', code: `import { TreeView } from '@jfrader/ui';
+
+<TreeView label="Files" nodes={[]} />` },
+  } },
   args: { nodes: [] },
   play: async ({ canvas, userEvent }) => {
     await userEvent.tab();
@@ -410,6 +523,15 @@ export const AllDisabled: Story = {
   },
 };
 export const DisabledNode: Story = {
+  name: 'Unavailable item',
+  parameters: { docs: {
+    description: { story: 'Keep Archived visible while excluding it from selection and keyboard navigation.' },
+    source: { language: 'tsx', code: `import { TreeView, type TreeNode } from '@jfrader/ui';
+
+${treeNodesSource}
+
+<TreeView label="Files" nodes={nodes} defaultOpen={['app']} />` },
+  } },
   args: { defaultOpen: ['app'] },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByText('Archived'));
@@ -420,6 +542,21 @@ export const DisabledNode: Story = {
   },
 };
 export const DeepAndLongLabels: Story = {
+  name: 'Deep tree with wrapping labels',
+  parameters: { docs: {
+    description: { story: 'Wrap a long label inside a narrow tree without losing its nesting guides.' },
+    source: { language: 'tsx', code: `import { TreeView, type TreeNode } from '@jfrader/ui';
+
+const nodes: TreeNode[] = [
+  { id: 'a', label: 'Projects', children: [
+    { id: 'b', label: 'Translations', children: [
+      { id: 'c', label: 'A very long translated category label that wraps without cropping essential text or descenders' },
+    ] },
+  ] },
+];
+
+<TreeView label="Files" nodes={nodes} defaultOpen={['a', 'b']} sx={{ maxInlineSize: '20rem' }} />` },
+  } },
   args: {
     nodes: [
       {
@@ -586,8 +723,10 @@ export const ForcedColors: Story = {
 export const ReducedMotion: Story = {
   args: { defaultOpen: ['app'] } };
 export const EmptyLoadedChildren: Story = {
+  name: 'Empty branch response',
   parameters: {
     docs: {
+      description: { story: 'Resolve a lazy branch to an empty list so it becomes a leaf.' },
       source: {
         language: 'tsx',
         code: `import { TreeView, type TreeNode } from '@jfrader/ui';
@@ -620,6 +759,15 @@ const nodes: TreeNode[] = [
 };
 
 export const TypeaheadLocale: Story = {
+  name: 'Locale-aware typeahead',
+  parameters: { docs: {
+    description: { story: 'Type e to focus Écho using French text matching without selecting it.' },
+    source: { language: 'tsx', code: `import { TreeView, type TreeNode } from '@jfrader/ui';
+
+${treeNodesSource}
+
+<TreeView label="Files" nodes={nodes} locale="fr" />` },
+  } },
   args: { locale: 'fr' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -665,8 +813,10 @@ export const HiddenSelection: Story = {
   },
 };
 export const RefTargets: Story = {
+  name: 'Container and tree refs',
   parameters: {
     docs: {
+      description: { story: 'Keep separate refs for the outer container and the keyboard-navigable tree.' },
       source: {
         language: 'tsx',
         code: `import { useRef } from 'react';
