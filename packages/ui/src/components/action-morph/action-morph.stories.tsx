@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, mocked, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
+import { expectNativeScrollbar } from '../../testing/theme-assertions';
 import { ActionMorph, type ActionMorphAction } from './index';
 import { Button } from '../button';
 
@@ -116,6 +117,10 @@ export const EmptyActions: Story = { args: { actions: [] } };
 export const PersistentMenu: Story = {
   args: { defaultOpen: true },
   tags: ['!autodocs'],
+  play: async ({ canvasElement }) => {
+    const menu = await within(canvasElement.ownerDocument.body).findByRole('menu');
+    await expectNativeScrollbar(menu);
+  },
 };
 
 export const KeyboardAndDrafts: Story = {

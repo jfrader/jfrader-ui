@@ -8,7 +8,7 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **167**; public callable parts: **179**.
+- Public callable families: **167**; public callable parts: **181**.
 - Families exposing `slots.root`: **117**; remaining without a family-level root slot: **50** (includes DOM-less providers).
 - Families exposing any non-root replacement slot: **128**; remaining without family-level interior slots: **39** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
@@ -148,10 +148,12 @@ panel material. The section has no background, border or radius to migrate.
 | [DateReel](../packages/ui/src/components/date-reel/date-reel.tsx) | yes | `confirm`, `error`, `lens`, `preset`, `presets`, `reel`, `reels`, `root`, `status`, `summary`, `title` | `confirm`, `error`, `lens`, `preset`, `presets`, `reel`, `reels`, `root`, `status`, `summary`, `title` | — | — | — |
 | [DeckArtProvider](../packages/ui/src/components/deck/art-context.tsx) | — | — | — | — | — | — |
 | [DeckProvider](../packages/ui/src/components/deck/deck-context.tsx) | — | — | — | — | — | — |
-| [Dialog](../packages/ui/src/components/dialog/dialog.tsx) | yes | `close`, `content`, `description`, `header`, `panel`, `root`, `title`, `trigger` | `close`, `content`, `description`, `header`, `panel`, `root`, `title`, `trigger` | — | — | `Close`, `Content`, `Description`, `Panel`, `Title`, `Trigger` |
+| [Dialog](../packages/ui/src/components/dialog/dialog.tsx) | yes | `body`, `close`, `content`, `description`, `footer`, `header`, `panel`, `root`, `title`, `trigger` | `body`, `close`, `content`, `description`, `footer`, `header`, `panel`, `root`, `title`, `trigger` | — | — | `Body`, `Close`, `Content`, `Description`, `Footer`, `Panel`, `Title`, `Trigger` |
+| [Dialog.Body](../packages/ui/src/components/dialog/dialog.tsx) | — | — | — | — | — | — |
 | [Dialog.Close](../packages/ui/src/components/dialog/dialog.tsx) | — | — | — | — | — | — |
 | [Dialog.Content](../packages/ui/src/components/dialog/dialog.tsx) | — | — | — | — | — | — |
 | [Dialog.Description](../packages/ui/src/components/dialog/dialog.tsx) | — | — | — | — | — | — |
+| [Dialog.Footer](../packages/ui/src/components/dialog/dialog.tsx) | — | — | — | — | — | — |
 | [Dialog.Panel](../packages/ui/src/components/dialog/dialog.tsx) | yes | `root` | `root` | — | — | — |
 | [Dialog.Title](../packages/ui/src/components/dialog/dialog.tsx) | — | — | — | — | — | — |
 | [Dialog.Trigger](../packages/ui/src/components/dialog/dialog.tsx) | — | — | — | — | — | — |

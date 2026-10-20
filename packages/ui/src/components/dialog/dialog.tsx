@@ -9,7 +9,7 @@
 // (Safari preview) — keep manual backdrop handling.
 // Synthetic key events in tests do not trigger native cancel; dispatch a cancel event.
 //
-// Motion: the shell scales and fades in; an accepted close fades it out before the native close
+// Motion: the paper shell or body-mode panel scales and fades in before the native close
 // (`data-state="closing"`), and reduced motion makes both instant.
 //
 // Lifecycle contract (Root owns logical `open`, Content owns native state): see
@@ -38,6 +38,7 @@ import {
   type RefObject,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
+import { useMergeRefs } from '@floating-ui/react';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
@@ -54,11 +55,16 @@ import {
   useNativeDialog,
   useNativeDialogRoot,
   type NativeDialogController,
+  type NativeDialogTransition,
 } from '../../overlay/use-native-dialog';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { isRenderable } from '../../utils/renderable';
 
+export type DialogScroll = 'paper' | 'body';
+
 interface DialogStateProps {
+  /** Scroll the content region (`paper`, default), or the whole panel in the overlay viewport (`body`). */
+  scroll?: DialogScroll;
   /** Control whether the dialog is open. */
   open?: boolean;
   /** Open the uncontrolled dialog on mount; defaults to false. */
@@ -113,6 +119,10 @@ export interface DialogSlotProps {
   panel?: Omit<DialogPanelProps, 'children'>;
   /** Container grouping the title and optional description. */
   header?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { sx?: Interpolation<Theme> };
+  /** Scrollable content region. */
+  body?: Omit<DialogBodyProps, 'children'>;
+  /** Stationary action region in paper mode. */
+  footer?: Omit<DialogFooterProps, 'children'>;
   /** Accessible heading element naming the dialog. */
   title?: Omit<DialogTitleProps, 'children'>;
   /** Accessible text element describing the dialog purpose. */
@@ -131,6 +141,10 @@ export interface DialogSlots {
   panel?: NonNullable<DialogPanelProps['slots']>['root'];
   /** Replaces the container grouping the title and optional description. */
   header?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the generated content region; forward to Dialog.Body. */
+  body?: ComponentType<DialogBodyProps>;
+  /** Replaces the generated action region; forward to Dialog.Footer. */
+  footer?: ComponentType<DialogFooterProps>;
   /** Replaces the accessible heading element naming the dialog. */
   title?: ComponentType<DialogTitleProps>;
   /** Replaces the accessible text element describing the dialog purpose. */
@@ -180,6 +194,10 @@ export interface DialogPanelProps extends DrawerPanelProps {
 export interface DialogTitleProps extends ComponentPropsWithRef<'h2'>, SxProps {}
 /** Text used as the dialog's accessible description unless Content disables it. */
 export interface DialogDescriptionProps extends ComponentPropsWithRef<'p'>, SxProps {}
+/** Native scrolling region; siblings remain stationary in paper mode. */
+export interface DialogBodyProps extends ComponentPropsWithRef<'div'>, SxProps {}
+/** Action region outside the scrolling body in paper mode. */
+export interface DialogFooterProps extends ComponentPropsWithRef<'div'>, SxProps {}
 /** Button requesting closure through the shell's cancelable dismissal path. */
 export interface DialogCloseProps extends ComponentPropsWithRef<'button'>, SxProps {
   /**
@@ -198,6 +216,7 @@ export interface DialogCloseProps extends ComponentPropsWithRef<'button'>, SxPro
 }
 
 interface DialogContextValue extends NativeDialogController {
+  scroll: DialogScroll;
   shell?: DialogSlots['content'];
   titleId: string;
   descriptionId: string;
@@ -223,16 +242,75 @@ function useDialogContext(part: string): DialogContextValue {
   return context;
 }
 
+const dialogMinInlineSize = '320px';
+const dialogMaxInlineSize = '560px';
+const dialogViewportGutter = vars.space[4];
+
 const dialogStyle = css(modalShellReset, modalBackdropMotion, {
-  ...modalSurfaceMotion(MODAL_ENTER_SCALE, '&[data-state="closing"]'),
-  minInlineSize: 'min(320px, calc(100vw - 32px))',
-  maxInlineSize: 'min(560px, calc(100vw - 32px))',
+  minInlineSize: `min(${dialogMinInlineSize}, calc(100vw - 2 * ${dialogViewportGutter}))`,
+  maxInlineSize: `min(${dialogMaxInlineSize}, calc(100vw - 2 * ${dialogViewportGutter}))`,
+  maxBlockSize: `calc(100dvh - 2 * ${dialogViewportGutter})`,
+  overflow: 'clip',
+  '&[open]': { display: 'flex' },
+  '&[data-scroll="body"]': {
+    position: 'fixed',
+    inset: 0,
+    margin: 0,
+    boxSizing: 'border-box',
+    inlineSize: '100%',
+    blockSize: '100%',
+    minInlineSize: 0,
+    maxInlineSize: 'none',
+    maxBlockSize: 'none',
+    padding: dialogViewportGutter,
+    overflow: 'auto',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
 });
 
 const panelStyle = css({
   boxSizing: 'border-box',
   padding: vars.space[5],
   inlineSize: '100%',
+  minBlockSize: 0,
+  maxBlockSize: 'inherit',
+  overflow: 'auto',
+  '&:has(> [data-ui="dialog-body"])': {
+    display: 'flex',
+    flexDirection: 'column',
+    '& > :not([data-ui="dialog-body"])': { flexShrink: 0 },
+  },
+});
+
+const paperMotionStyle = css(modalSurfaceMotion(MODAL_ENTER_SCALE, '&[data-state="closing"]'));
+const bodyPanelStyle = css({
+  ...modalSurfaceMotion(MODAL_ENTER_SCALE),
+  inlineSize: `min(${dialogMaxInlineSize}, 100%)`,
+  minInlineSize: `min(${dialogMinInlineSize}, 100%)`,
+  maxBlockSize: 'none',
+  flexShrink: 0,
+  marginBlock: 'auto',
+  overflow: 'visible',
+});
+
+const bodyStyle = css({
+  minBlockSize: '1lh',
+  flex: '1 1 auto',
+  overflow: 'auto',
+  '&:focus-visible': { ...focusRingOutset },
+  '[data-scroll="body"] > [data-ui~="dialog-panel"] > &': {
+    flex: 'none',
+    overflow: 'visible',
+  },
+});
+
+const footerStyle = css({
+  display: 'flex',
+  flexShrink: 0,
+  justifyContent: 'flex-end',
+  gap: vars.space[2],
+  paddingBlockStart: vars.space[4],
 });
 
 const titleStyle = css({
@@ -290,6 +368,7 @@ function DialogRoot(props: DialogProps) {
     open: openProp,
     defaultOpen = false,
     onOpenChange,
+    scroll = 'paper',
     children,
     triggerLabel,
     title,
@@ -306,6 +385,8 @@ function DialogRoot(props: DialogProps) {
   const Description = slots?.description ?? DialogDescription;
   const Trigger = slots?.trigger ?? DialogTrigger;
   const Close = slots?.close ?? DialogClose;
+  const Body = slots?.body ?? DialogBody;
+  const Footer = slots?.footer ?? DialogFooter;
   const shell = slots?.content;
   const baseId = useId();
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
@@ -316,6 +397,7 @@ function DialogRoot(props: DialogProps) {
   const context = useMemo(
     () => ({
       shell,
+      scroll,
       open,
       setOpen,
       requestClose,
@@ -328,7 +410,7 @@ function DialogRoot(props: DialogProps) {
       setHasTitle,
       setHasDescription,
     }),
-    [shell, open, setOpen, requestClose, repairToken, setDialogElement, baseId, hasTitle, hasDescription],
+    [shell, scroll, open, setOpen, requestClose, repairToken, setDialogElement, baseId, hasTitle, hasDescription],
   );
 
   return (
@@ -352,8 +434,8 @@ function DialogRoot(props: DialogProps) {
                   </Header>
                 )}
               </WithSx>
-              {content}
-              <Close {...slotProps?.close}>{closeLabel}</Close>
+              <Body {...slotProps?.body}>{content}</Body>
+              <Footer {...slotProps?.footer}><Close {...slotProps?.close}>{closeLabel}</Close></Footer>
             </DialogPanel>
           </DialogContent>
         </>
@@ -397,6 +479,17 @@ function DialogTrigger({ ref = null, onClick, render, className, sx, ...rest }: 
 
 DialogTrigger.displayName = 'Dialog.Trigger';
 
+const dialogTransition: NativeDialogTransition = {
+  ...styledDialogTransition,
+  enter(dialog, reason) {
+    const focused = dialog.ownerDocument.activeElement;
+    if (reason === 'open' && dialog.dataset.scroll === 'body' && focused?.getAttribute('data-ui') === 'dialog-body'
+      && focused.closest('dialog') === dialog) {
+      dialog.scrollTop = 0;
+    }
+  },
+};
+
 /** Render the native modal shell with a default panel or one direct Dialog.Panel. */
 function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
   const {
@@ -404,6 +497,7 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
     onCancel,
     onClick,
     onClose,
+    onPointerDown,
     'aria-labelledby': ariaLabelledByProp,
     'aria-describedby': ariaDescribedByProp,
     withDescription = true,
@@ -415,16 +509,27 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
   const { setOpen, titleId, descriptionId, hasTitle, hasDescription } = context;
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const backdropPress = useRef(false);
   const panelContext = useMemo(() => ({ dialogRef, panelRef }), []);
   const requestClose = useCallback(() => {
     requestNativeDialogClose(dialogRef.current, setOpen);
   }, [setOpen]);
   const dialogProps = useNativeDialog(
     { ...context, requestClose },
-    { onCancel, onClick, onClose },
+    {
+      onCancel,
+      onClose,
+      onClick: (event) => {
+        onClick?.(event);
+        if (context.scroll === 'body' && event.target === event.currentTarget) {
+          if (!backdropPress.current || !inScrollport(event)) event.preventDefault();
+          backdropPress.current = false;
+        }
+      },
+    },
     ref,
     dialogRef,
-    styledDialogTransition,
+    dialogTransition,
   );
 
   const labelledBy = [ariaLabelledByProp, hasTitle && titleId].filter(Boolean).join(' ') || undefined;
@@ -433,12 +538,17 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
     .join(' ') || undefined;
 
   return (
-    <WithSx className={className} styles={dialogStyle} sx={sx}>
+    <WithSx className={className} styles={[dialogStyle, context.scroll === 'paper' && paperMotionStyle]} sx={sx}>
       {(className) => (
         <Shell
           {...rest}
           {...dialogProps}
           data-ui="dialog"
+          data-scroll={context.scroll}
+          onPointerDown={(event) => {
+            onPointerDown?.(event);
+            backdropPress.current = event.target === event.currentTarget && !event.defaultPrevented && inScrollport(event);
+          }}
           aria-modal="true"
           aria-labelledby={labelledBy}
           aria-describedby={describedBy}
@@ -456,6 +566,15 @@ function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
 }
 
 DialogContent.displayName = 'Dialog.Content';
+
+function inScrollport(event: MouseEvent<HTMLDialogElement>) {
+  const element = event.currentTarget;
+  const rect = element.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  return x >= element.clientLeft && x < element.clientLeft + element.clientWidth
+    && y >= element.clientTop && y < element.clientTop + element.clientHeight;
+}
 
 function directChildren(children: ReactNode): ReactNode[] {
   return Children.toArray(children).flatMap((child) =>
@@ -478,6 +597,7 @@ function dialogPanelChildren(children: ReactNode) {
 /** Render the dialog's surface and padding inside Dialog.Content. */
 function DialogPanel(props: DialogPanelProps) {
   const context = useContext(DialogPanelContext);
+  const dialog = useContext(DialogContext);
   if (!context) throw new Error('Dialog.Panel must be rendered inside <Dialog.Content>.');
   return (
     <SurfaceRoot
@@ -485,7 +605,7 @@ function DialogPanel(props: DialogPanelProps) {
       owner="Dialog.Panel"
       marker="dialog-panel"
       variant="floating"
-      structure={panelStyle}
+      structure={[panelStyle, dialog?.scroll === 'body' && bodyPanelStyle]}
       internalRef={context.panelRef}
       containerRef={context.dialogRef}
     />
@@ -494,9 +614,44 @@ function DialogPanel(props: DialogPanelProps) {
 
 DialogPanel.displayName = 'Dialog.Panel';
 
+/** Render the native scrolling region without moving sibling headings and actions. */
+function DialogBody({ ref, className, sx, tabIndex = 0, autoFocus, ...props }: DialogBodyProps) {
+  useDialogContext('Body');
+  const prepare = useCallback((element: HTMLDivElement | null) => {
+    if (!element) return;
+    element.toggleAttribute('autofocus', Boolean(autoFocus));
+  }, [autoFocus]);
+  const mergedRef = useMergeRefs([ref, prepare]);
+  return (
+    <WithSx className={className} styles={bodyStyle} sx={sx}>
+      {(className) => (
+        <div {...props} ref={mergedRef} tabIndex={tabIndex} autoFocus={autoFocus} data-ui="dialog-body" className={className} />
+      )}
+    </WithSx>
+  );
+}
+
+DialogBody.displayName = 'Dialog.Body';
+
+/** Keep actions outside the scrolling region in paper mode. */
+function DialogFooter({ ref, className, sx, ...props }: DialogFooterProps) {
+  useDialogContext('Footer');
+  return (
+    <WithSx className={className} styles={footerStyle} sx={sx}>
+      {(className) => <div {...props} ref={ref} data-ui="dialog-footer" className={className} />}
+    </WithSx>
+  );
+}
+
+DialogFooter.displayName = 'Dialog.Footer';
+
 /** Name the dialog with a visible heading. */
-function DialogTitle({ ref, className, sx, ...props }: DialogTitleProps) {
+function DialogTitle({ ref, className, sx, autoFocus, ...props }: DialogTitleProps) {
   const { titleId, setHasTitle } = useDialogContext('Title');
+  const prepare = useCallback((element: HTMLHeadingElement | null) => {
+    element?.toggleAttribute('autofocus', Boolean(autoFocus));
+  }, [autoFocus]);
+  const mergedRef = useMergeRefs([ref, prepare]);
 
   useEffect(() => {
     setHasTitle(true);
@@ -505,7 +660,7 @@ function DialogTitle({ ref, className, sx, ...props }: DialogTitleProps) {
 
   return (
     <WithSx className={className} styles={titleStyle} sx={sx}>
-      {(className) => <h2 {...props} ref={ref} id={titleId} data-ui="dialog-title" className={className} />}
+      {(className) => <h2 {...props} ref={mergedRef} autoFocus={autoFocus} id={titleId} data-ui="dialog-title" className={className} />}
     </WithSx>
   );
 }
@@ -570,6 +725,8 @@ export const Dialog = Object.assign(DialogRoot, {
   Trigger: DialogTrigger,
   Content: DialogContent,
   Panel: DialogPanel,
+  Body: DialogBody,
+  Footer: DialogFooter,
   Title: DialogTitle,
   Description: DialogDescription,
   Close: DialogClose,

@@ -2,6 +2,7 @@ import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectNativeScrollbar } from '../../testing/theme-assertions';
 import { ThemeRoot } from '../theme-root';
 import { Button } from '../button';
 import { Select } from '../select';
@@ -408,6 +409,7 @@ export const LongMemberList: Story = {
     )!;
     await expect(panel.scrollHeight).toBeGreaterThan(panel.clientHeight);
     await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth + 1);
+    await expectNativeScrollbar(panel);
     const last = body(canvasElement).getByRole('button', { name: 'Team member 40' });
     await userEvent.click(last);
     await expect(last).toHaveAttribute('aria-pressed', 'true');

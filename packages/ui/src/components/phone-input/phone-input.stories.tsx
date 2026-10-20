@@ -6,6 +6,7 @@ import { styled } from '../../styling/styled';
 import { ThemeRoot } from '../theme-root';
 import { withLightTheme } from '../../testing/story-decorators';
 import { settleMotion } from '../../testing/motion-assertions';
+import { expectNativeScrollbar } from '../../testing/theme-assertions';
 import { PhoneInput, type PhoneInputProps, type PhoneCountryCode } from './index';
 
 const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 400px)', fontFamily: vars.font.sans, color: vars.color.text });
@@ -320,6 +321,9 @@ export const PersistentOpen: Story = { args: { defaultOpen: true }, tags: ['!aut
   await expect(bounds.right).toBeLessThanOrEqual(viewport.clientWidth);
   await expect(bounds.bottom).toBeLessThanOrEqual(viewport.clientHeight);
   await expect(bounds.width).toBeCloseTo(canvas.getByRole('textbox').parentElement!.getBoundingClientRect().width, 0);
+  const list = portal(canvasElement).getByRole('listbox');
+  await expect(list.scrollHeight).toBeGreaterThan(list.clientHeight);
+  await expectNativeScrollbar(list);
 } };
 export const EmptyResults: Story = { args: { defaultOpen: true }, tags: ['!autodocs'], play: async ({ canvasElement, userEvent }) => {
   const page = portal(canvasElement); await userEvent.type(page.getByRole('combobox'), 'zzzzzz'); await expect(page.getByText('No countries found')).toBeVisible(); await expect(page.getByRole('combobox')).not.toHaveAttribute('aria-activedescendant');
@@ -328,6 +332,7 @@ export const LightTheme: Story = { globals: { theme: 'light' }, decorators: [wit
 export const ScopedThemePortal: Story = { args: { defaultOpen: true }, tags: ['!autodocs'], render: (args) => <ThemeRoot theme="light"><ScopedSurface><PhoneInput {...args} /></ScopedSurface></ThemeRoot>, play: async ({ canvasElement }) => {
   const panel = portal(canvasElement).getByRole('listbox').closest('[data-ui="phone-input-panel"]')!;
   await expect(panel.closest('[data-theme="light"]')).not.toBeNull();
+  await expectNativeScrollbar(portal(canvasElement).getByRole('listbox'));
 } };
 export const RTL: Story = { args: { dir: 'rtl', defaultValue: '+442079460018' }, play: async ({ canvas }) => {
   const input = canvas.getByRole('textbox'); await expect(input).toHaveAttribute('dir', 'ltr'); await expect(getComputedStyle(input.closest('[data-ui="phone-input"]')!).direction).toBe('rtl');

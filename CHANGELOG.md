@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Library scroll regions use theme-aware native scrollbar colors, retaining browser controls and system colors in forced-colors mode. Host-page scrollbars are unchanged.
 - `CardFlights` now animates the rendered board tree, with `Deck`, custom `Target` destinations, `deal`/`revision`, automatic hand locking and `onBusyChange`. The provider, explicit deal/play hooks, measurement helpers and flight-spec exports are deprecated until the next major release; replace them with `CardFlights` and `useCardFlightStatus`. Piles now retain the newest `maxCards` cards.
 - Breaking pre-1.0 API cleanup: every `slotProps` part accepts `sx` instead of `css`, preserving own styles → slot `sx` → consumer `sx` precedence. Emotion's `css` remains internal.
 
@@ -40,6 +41,7 @@
 
 ### Added
 
+- `Dialog` supports `scroll="paper"` (default) and `scroll="body"`, with `Dialog.Body` and `Dialog.Footer` for scrollable content and fixed actions. Body mode scrolls the whole panel within the overlay while the page stays locked.
 - Component documentation ends with one API section (root and parts, native element, slots and dependencies) generated from the component sources; curated examples carry authored code. `packages/ui/src/components/dialog` is the reference page.
 - `LinkUnfurl`, `ChatMessage`, `HoldToConfirm` and `AttachmentList` accept `slots.root`, `slotProps.root` and `component` to replace their native root while retaining generated content, props, refs and styling.
 - `CodeBlock`, `TypewriterTerminal` and `JsonViewer` share Surface panel material and support inherited or contrast appearance. Root replacements own their panel material.
