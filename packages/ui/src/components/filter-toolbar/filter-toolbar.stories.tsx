@@ -704,7 +704,7 @@ export const EmptyFilterOptions: Story = {
       />
     </NarrowFrame>
   ),
-  parameters: { docs: {
+  parameters: { layout: 'padded', docs: {
     description: { story: 'Show each filter’s empty message when no options are available.' },
     source: { language: 'tsx', code: `import { FilterToolbar } from '@jfrader/ui';
 
@@ -1191,7 +1191,7 @@ function CollectionFilters() {
 
 export const LongChips: Story = {
   name: 'Long filters in a narrow layout',
-  parameters: { docs: {
+  parameters: { layout: 'padded', docs: {
     description: { story: 'Truncate long chip text while preserving its full accessible remove label.' },
     source: { language: 'tsx', code: `import { FilterToolbar, styled } from '@jfrader/ui';
 

@@ -12,7 +12,7 @@
 
 - `CommandPalette` fits phone screens without clipping and keeps its search field visible while results scroll in short viewports. `Popover` wraps long links inside its panel; both contain scrolling within their content.
 - `Menu` wraps unbroken action labels inside its popup and keeps separators visible in scrolling lists.
-- `TreeView` keeps deeply nested labels readable and keyboard targets usable in horizontally scrolling trees, and keeps selection visible in forced colors. `FilterToolbar` shows the configured empty message for each generated filter.
+- `TreeView` keeps deeply nested labels readable and keyboard targets usable in horizontally scrolling trees, and keeps selection visible in forced colors. `FilterToolbar` shows the configured empty message for each generated filter, and its narrow examples fit phone-width documentation previews.
 - `VoiceOrb` keeps a violet shell with subtle cyan Listening, indigo Thinking and rose Speaking clouds. State changes crossfade and gather or release the cloud; Speaking reshapes the volume while Idle stays calm. Motion remains continuous and honors live reduced-motion changes.
 - `ImageCompare` keeps touch dragging active when pointer capture moves from the handle to the frame. Reveal, divider and handle animate together between values, follow dragging directly, and honor live reduced-motion changes. Resizable examples fit phone screens.
 - `ChatThread` wraps long typing names within narrow conversations, keeps keyboard attachment focus on the visible picker button, and fits its documentation examples inside phone-width previews.
