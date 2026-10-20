@@ -1,6 +1,6 @@
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
-import { Component, useCallback, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { Component, Fragment, useCallback, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
@@ -173,11 +173,13 @@ function mediaRuleSets(element: Element, query: string, property: string, expect
 
 // Generated-part stories exercise slotProps.target.style with these shared declarations.
 const targetBoxStyle = {
+  boxSizing: 'border-box',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'flex-start',
   gap: vars.space[2],
   inlineSize: '16rem',
+  maxInlineSize: '100%',
   minBlockSize: '6rem',
   padding: vars.space[4],
   border: `1px dashed ${vars.color.borderControl}`,
@@ -199,11 +201,15 @@ const Row = styled.div({
 });
 
 const Frame = styled.div({
+  boxSizing: 'border-box',
+  maxInlineSize: '100%',
   padding: vars.space[6],
 });
 
 const EmbeddedFrame = styled.iframe({
+  boxSizing: 'border-box',
   inlineSize: '20rem',
+  maxInlineSize: '100%',
   blockSize: '12rem',
   border: `1px solid ${vars.color.border}`,
 });
@@ -211,7 +217,12 @@ const EmbeddedFrame = styled.iframe({
 function LightThemeRoot(props: Omit<ComponentPropsWithRef<typeof ThemeRoot>, 'theme'>) {
   return <ThemeRoot {...props} theme="light" />;
 }
-const LightScope = styled(LightThemeRoot)({ padding: vars.space[4], backgroundColor: vars.color.bg });
+const LightScope = styled(LightThemeRoot)({
+  boxSizing: 'border-box',
+  maxInlineSize: '100%',
+  padding: vars.space[4],
+  backgroundColor: vars.color.bg,
+});
 
 const meta = {
   title: 'Navigation/ContextMenu',
@@ -1094,7 +1105,10 @@ export const ManyItems: Story = {
       </TargetBox>
       <ContextMenu.Content>
         {Array.from({ length: 20 }, (_, index) => (
-          <ContextMenu.Item key={index}>{`Move to folder ${index + 1}`}</ContextMenu.Item>
+          <Fragment key={index}>
+            {index > 0 && index % 5 === 0 && <ContextMenu.Separator />}
+            <ContextMenu.Item>{`Move to folder ${index + 1}`}</ContextMenu.Item>
+          </Fragment>
         ))}
       </ContextMenu.Content>
     </ContextMenu>
@@ -1106,6 +1120,10 @@ export const ManyItems: Story = {
     // The menu scrolls past its maximum height; scrolling inside it keeps it open.
     await expect(menu.getBoundingClientRect().height).toBeLessThanOrEqual(300 + TOLERANCE_PX);
     await expect(menu.scrollHeight).toBeGreaterThan(menu.clientHeight);
+    await settleMotion(menu);
+    for (const separator of within(menu).getAllByRole('separator')) {
+      await expect(separator.getBoundingClientRect().height).toBeGreaterThanOrEqual(1);
+    }
     await userEvent.keyboard('{End}');
     await expectItemFocused(canvasElement, 'Move to folder 20');
     await waitFor(() => expect(menu.scrollTop).toBeGreaterThan(0));
@@ -1202,7 +1220,16 @@ export const ScrollInFrame: Story = {
     </FrameHost>
   ),
   play: async ({ args, canvasElement }) => {
-    const frameDocument = canvasElement.querySelector('iframe')!.contentDocument!;
+    const frame = canvasElement.querySelector('iframe')!;
+    const host = frame.parentElement!;
+    const previousInlineSize = host.style.inlineSize;
+    host.style.inlineSize = '18rem';
+    try {
+      await expect(frame.getBoundingClientRect().width).toBeLessThanOrEqual(host.getBoundingClientRect().width);
+    } finally {
+      host.style.inlineSize = previousInlineSize;
+    }
+    const frameDocument = frame.contentDocument!;
     const frameView = frameDocument.defaultView!;
     const target = await waitFor(() => within(frameDocument.body).getByRole('group', { name: TARGET }));
     // The new frame resizes once while it is laid out; open after that.
@@ -1540,6 +1567,8 @@ export const ScopedPortal: Story = {
     // Portaled into the scope's host (mounted after the menu asked for it), keeping its theme.
     await expect(canvasElement.querySelector('[data-overlay-host]')!.contains(menu)).toBe(true);
     await expectThemedSurface(menu, 'light');
+    const view = canvasElement.ownerDocument.defaultView!;
+    await expect(canvasElement.ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(view.innerWidth);
   },
 };
 
