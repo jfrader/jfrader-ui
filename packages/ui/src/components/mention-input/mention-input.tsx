@@ -327,7 +327,12 @@ const sizeStyles: Record<'sm' | 'md' | 'lg', SerializedStyles> = {
   md: css({ paddingInline: vars.space[4], fontSize: vars.textSize.sm }),
   lg: css({ paddingInline: vars.space[4], fontSize: vars.textSize.md }),
 };
-const shellStyle = css({ position: 'relative', minInlineSize: 0, borderRadius: vars.radius.sm });
+const shellStyle = css({
+  position: 'relative',
+  minInlineSize: 0,
+  borderRadius: vars.radius.sm,
+  '&[data-disabled]': { opacity: 0.55, cursor: 'not-allowed' },
+});
 const inputStyle = css({
   display: 'block',
   resize: 'none',
@@ -337,6 +342,7 @@ const inputStyle = css({
   color: 'transparent',
   caretColor: vars.color.text,
   position: 'relative',
+  '&:disabled': { opacity: 1 },
   '&::placeholder': { color: vars.color.textMuted },
   [FORCED_COLORS]: {
     color: 'CanvasText',
@@ -364,6 +370,7 @@ const tokenStyle = css({
 const panelStyle = css({
   minInlineSize: 0,
   overflow: 'auto',
+  overscrollBehavior: 'contain',
   transitionProperty: 'opacity',
   transitionDuration: vars.motion.duration.base,
   transitionTimingFunction: vars.motion.easeStandard,
@@ -804,6 +811,7 @@ export function MentionInput({
         element="div"
         component={slots?.control}
         slotProps={slotProps?.control}
+        data-disabled={disabled ? '' : undefined}
         role="combobox"
         aria-label={rest['aria-label']}
         aria-labelledby={ariaLabelledBy}

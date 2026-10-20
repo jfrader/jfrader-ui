@@ -577,6 +577,25 @@ export const Wrapping: Story = {
 };
 
 const LONG_TOKEN = 'interaction-design-for-multilingual-onboarding-flows-across-regions';
+export const NarrowControl: Story = {
+  tags: ['!autodocs'],
+  args: { defaultValue: ['accessibility', 'design'], sx: { inlineSize: '80px' } },
+  play: async ({ canvas, userEvent }) => {
+    const input = inputOf(canvas);
+    const shell = shellOf(input);
+    await expect(shell.scrollWidth).toBeLessThanOrEqual(shell.clientWidth);
+    const bounds = shell.getBoundingClientRect();
+    for (const element of [input, ...canvas.getAllByRole('button')]) {
+      const rect = element.getBoundingClientRect();
+      await expect(rect.left).toBeGreaterThanOrEqual(bounds.left);
+      await expect(rect.right).toBeLessThanOrEqual(bounds.right);
+    }
+    await userEvent.type(input, 'ux{Enter}');
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Remove ux' })).toBeVisible());
+    await expect(shell.scrollWidth).toBeLessThanOrEqual(shell.clientWidth);
+  },
+};
+
 export const LongToken: Story = {
   name: 'Long topic names',
   parameters: { docs: {
