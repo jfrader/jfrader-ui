@@ -11,9 +11,10 @@ import { createRefCleanupTracker } from '../../testing/interior-slot-assertions'
 const snippet = `import { Article } from '@jfrader/ui';
 
 <Article.Body>
-  <Article.Body.Paragraph variant="drop-cap">The morning edition reached Northline.</Article.Body.Paragraph>
+  <Article.Body.Paragraph variant="drop-cap">The morning edition reached Northline before the first train.</Article.Body.Paragraph>
   <Article.Body.Heading>At the station</Article.Body.Heading>
-  <Article.Body.Fact title="The record" items={[{ id: 'edition', content: 'The first edition arrived at dawn.' }]} />
+  <Article.Body.Paragraph>The platform reopened after the inspection.</Article.Body.Paragraph>
+  <Article.Body.Fact title="The record" items={[{ id: 'edition', content: 'The first edition arrived at dawn.' }, { id: 'platform', content: 'The platform reopened.' }]} />
   <Article.Body.Quote speaker="The editor" attribution="Morning edition">The record remains open.</Article.Body.Quote>
   <Article.Body.Split>
     <Article.Body.Cell label="Before">The platform was closed.</Article.Body.Cell>
@@ -24,20 +25,17 @@ const meta = {
   title: 'Media/Article', component: Article.Body, tags: ['!autodocs'],
   parameters: { docs: {
     description: { component: 'Compose article paragraphs, headings, facts, quotations and comparisons.' },
-    source: { code: snippet },
+    source: { language: 'tsx', code: snippet },
     sections: [
-      { title: 'Prose', stories: ['BodyPrimary', 'BodyStandard', 'BodyDropCap', 'BodyHeadingLevels'] },
+      { title: 'Prose', stories: ['BodyPrimary', 'BodyStandard', 'BodyDropCap'] },
       { title: 'Editorial elements', stories: ['BodyFact', 'BodyFactChildren', 'BodyQuote', 'BodySplit'] },
-      { title: 'Composition', stories: ['BodyArticleDetail', 'BodyReplacementSlots'] },
+      { title: 'Composition', stories: ['BodyArticleDetail'] },
     ],
-    usage: `### Anatomy
-Use Paragraph for text, Heading with level 1–6, Fact with keyed items or children, and Quote with an optional body-text speaker paragraph above a separate source attribution footer. Split requires exactly two Cell elements, including memoized Cells; their reading order stays unchanged on narrow screens.
+    usage: `### Reading order
+Choose headings to fit the surrounding article outline. A split requires exactly two cells, including memoized cells; they stack in the same reading order on narrow screens.
 
-### Customization
-Every part accepts sx, native props and ref. Use component or slots.root for root replacement; slots.root wins. Interior slotProps and slots have matching keys. Repeated item props are templates: ids and refs are not repeated. Keep replacements at module scope and forward props, className, data-ui and ref.
-
-### Typography
-The shared Prose base styles native rich text. Override inherited --article-font-body, --article-font-heading, --article-font-label, --article-measure and --article-rule-soft-color with sx. No HTML is parsed and no copy is supplied. Links in children retain native Tab and Enter behavior.` } },
+### Content
+Supply React content, not an HTML string to parse. Links in the body retain native Tab and Enter behavior.` } },
   render: (args) => <Article.Body {...args}>
     <Article.Body.Paragraph variant="drop-cap">The morning edition reached Northline before the first train.</Article.Body.Paragraph>
     <Article.Body.Heading>At the station</Article.Body.Heading>
@@ -50,7 +48,7 @@ The shared Prose base styles native rich text. Override inherited --article-font
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const BodyPrimary: Story = { play: async ({ canvasElement }) => {
+export const BodyPrimary: Story = { name: 'Article body', parameters: { docs: { description: { story: 'Combine prose, supporting facts, a quotation and a before-and-after comparison.' } } }, play: async ({ canvasElement }) => {
   await expect(canvasElement.querySelector('aside ul')?.children).toHaveLength(2);
   await expect(canvasElement.querySelector('blockquote > p')).toHaveTextContent('The editor');
   await expect(canvasElement.querySelector('blockquote footer')).toHaveTextContent('Morning edition');
@@ -64,9 +62,11 @@ export const BodyPrimary: Story = { play: async ({ canvasElement }) => {
   for (const tracker of [ownRef, slotRef]) { await expect(tracker.getAttachCount()).toBeGreaterThan(0); await expect(tracker.getCleanupCount()).toBe(tracker.getAttachCount()); }
 } };
 export const BodyStandard: Story = {
+  name: 'Body paragraph',
   render: () => <Article.Body><Article.Body.Paragraph>The morning edition reached Northline before the first train.</Article.Body.Paragraph></Article.Body>,
   parameters: {
     docs: {
+      description: { story: 'Set a paragraph in the article’s body typography.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -79,9 +79,11 @@ export const BodyStandard: Story = {
   },
 };
 export const BodyDropCap: Story = {
+  name: 'Opening drop cap',
   render: () => <Article.Body><Article.Body.Paragraph variant="drop-cap">The morning edition reached Northline before the first train.</Article.Body.Paragraph></Article.Body>,
   parameters: {
     docs: {
+      description: { story: 'Start the opening paragraph with an enlarged first letter.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -117,9 +119,11 @@ export const BodyHeadingLevels: Story = {
   play: async ({ canvasElement }) => { for (const level of [1, 2, 3, 4, 5, 6]) await expect(canvasElement.querySelector(`h${level}`)).not.toBeNull(); },
 };
 export const BodyFact: Story = {
+  name: 'Supporting facts',
   render: () => <Article.Body><Article.Body.Fact title="The record" level={2} items={[{ id: 'zero', content: 0 }, { id: 'edition', content: 'Morning edition' }]} /></Article.Body>,
   parameters: {
     docs: {
+      description: { story: 'Present keyed facts beneath a heading inside a bordered aside.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -128,7 +132,7 @@ export const BodyFact: Story = {
   <Article.Body.Fact
     title="The record"
     level={2}
-    items={[{ id: 'edition', content: 'Morning edition' }]}
+    items={[{ id: 'zero', content: 0 }, { id: 'edition', content: 'Morning edition' }]}
   />
 </Article.Body>`,
       },
@@ -143,9 +147,11 @@ export const BodyFact: Story = {
   },
 };
 export const BodyFactChildren: Story = {
+  name: 'Fact box with prose',
   render: () => <Article.Body><Article.Body.Fact title="The record"><Article.Body.Paragraph>The inspection is complete.</Article.Body.Paragraph></Article.Body.Fact></Article.Body>,
   parameters: {
     docs: {
+      description: { story: 'Put a paragraph in the fact box instead of a list.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -160,15 +166,17 @@ export const BodyFactChildren: Story = {
   },
 };
 export const BodyQuote: Story = {
+  name: 'Attributed quotation',
   render: () => <Article.Body><Article.Body.Quote cite="#edition" speaker="The editor" attribution="Morning edition">The record remains open.</Article.Body.Quote></Article.Body>,
   parameters: {
     docs: {
+      description: { story: 'Credit a quotation with its speaker and source.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
 
 <Article.Body>
-  <Article.Body.Quote speaker="The editor" attribution="Morning edition">
+  <Article.Body.Quote cite="#edition" speaker="The editor" attribution="Morning edition">
     The record remains open.
   </Article.Body.Quote>
 </Article.Body>`,
@@ -203,9 +211,11 @@ export const BodySpeakerOnly: Story = { render: () => <Article.Body><Article.Bod
 export const BodyAttributionOnly: Story = { render: () => <Article.Body><Article.Body.Quote attribution="Morning edition">The record remains open.</Article.Body.Quote></Article.Body> };
 const MemoCell = memo(Article.Body.Cell);
 export const BodySplit: Story = {
+  name: 'Before and after',
   render: () => <Article.Body><Article.Body.Split><Article.Body.Cell label="Before"><p>The platform was closed.</p></Article.Body.Cell><MemoCell label="After"><p>The platform reopened.</p></MemoCell></Article.Body.Split></Article.Body>,
   parameters: {
     docs: {
+      description: { story: 'Compare two labeled cells that stack in reading order on narrow screens.' },
       source: {
         language: 'tsx',
         code: `import { Article } from '@jfrader/ui';
@@ -263,9 +273,12 @@ export const BodyRTL: Story = {
 };
 export const BodyLight: Story = { globals: { theme: 'light' } };
 export const BodyArticleDetail: Story = {
+  name: 'Complete article with related coverage',
   parameters: {
     docs: {
+      description: { story: 'Add a record, related coverage and source lists around the reading body.' },
       source: {
+        language: 'tsx',
         code: `import { Article, ArticleList, ArticleSection } from '@jfrader/ui';
 
 <Article>
