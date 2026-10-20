@@ -109,7 +109,7 @@ export interface DialogSlotProps {
   trigger?: Omit<DialogTriggerProps, 'children'> & { css?: Interpolation<Theme> };
   /** Native `<dialog>` shell that manages backdrop and focus trapping. */
   content?: Omit<DialogContentProps, 'children'> & { css?: Interpolation<Theme> };
-  /** Adopted panel container that renders the dialog surface material. */
+  /** Adopted panel container that renders the dialog surface material; Dialog.Panel by default. */
   panel?: Omit<DialogPanelProps, 'children'>;
   /** Container grouping the title and optional description. */
   header?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { css?: Interpolation<Theme> };
